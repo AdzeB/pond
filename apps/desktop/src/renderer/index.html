@@ -8,6 +8,69 @@
 			content="default-src 'self' pond:; img-src 'self' data: blob: pond: https:; media-src 'self' data: blob: pond: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* https:; font-src 'self' data:"
 		/>
 		<title>Pond</title>
+		<style>
+			/* Pre-bundle shell paint. Resolved tokens that mirror
+			   packages/ui/src/theme.css so the very first frame already
+			   looks like Pond before main.tsx parses. */
+			:root {
+				font-family:
+					inter-variable, ui-sans-serif, system-ui, -apple-system,
+					"SF Pro Text", "Segoe UI", sans-serif;
+				color-scheme: light dark;
+			}
+			html[data-theme="light"] {
+				color: #1a1a1a;
+				color-scheme: light;
+				background: #ffffff;
+			}
+			html[data-theme="dark"] {
+				color: #ededed;
+				color-scheme: dark;
+				background: #000000;
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				overflow: hidden;
+				overscroll-behavior: none;
+			}
+			#root {
+				display: flex;
+				flex-direction: column;
+				height: 100%;
+				isolation: isolate;
+			}
+		</style>
+		<script>
+			(() => {
+				try {
+					const raw = localStorage.getItem("pondShell");
+					const shell = raw ? JSON.parse(raw) : {};
+					const doc = document.documentElement;
+
+					let theme = shell.theme;
+					if (theme !== "light" && theme !== "dark") {
+						theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+							? "dark"
+							: "light";
+					}
+					doc.setAttribute("data-theme", theme);
+					doc.classList.add(theme);
+
+					if (shell.pointerCursors)
+						doc.setAttribute("data-pointer-cursors", "true");
+
+					const ua = navigator.userAgent || "";
+					const platform = /Mac|iPhone|iPad/i.test(ua) ? "mac" : "other";
+					doc.setAttribute("data-platform", platform);
+
+					performance.mark("pondAppStart");
+				} catch {
+					/* bundle will paint */
+				}
+			})();
+		</script>
 	</head>
 	<body>
 		<div id="root"></div>
