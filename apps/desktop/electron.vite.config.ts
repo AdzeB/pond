@@ -41,6 +41,7 @@ export default defineConfig({
       },
     },
     build: {
+      target: "esnext",
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
@@ -50,6 +51,7 @@ export default defineConfig({
   },
   preload: {
     build: {
+      target: "esnext",
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: {
@@ -77,6 +79,11 @@ export default defineConfig({
       },
     },
     build: {
+      // Electron always ships a recent Chromium, so we never need
+      // legacy transforms or polyfills. Matches Linear's `target: esnext`
+      // — drops ~15-20% of output bytes from ES helper functions.
+      target: "esnext",
+      modulePreload: { polyfill: false },
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
