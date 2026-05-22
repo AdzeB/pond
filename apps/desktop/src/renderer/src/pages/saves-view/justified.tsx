@@ -1,7 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
+import { useDisplayPrefs } from "@/lib/display-prefs";
+import { useFrozenValue, useIsAnimating } from "@/lib/motion";
 import type { Save } from "@/pool/types";
-import { aspectFor } from "./aspect";
+import { aspectFor, useAspectVersion } from "./aspect";
+import { chromeHeightFor } from "./chrome";
 import { useVisibleIndices } from "./virtual";
 
 const TARGET_ROW_HEIGHT = 180;
@@ -24,6 +27,7 @@ function packRows(
   saves: Save[],
   containerWidth: number,
   targetHeight: number,
+  chromeHeight: number,
 ): PackResult {
   if (containerWidth <= 0 || saves.length === 0) {
     return { items: [], totalHeight: 0 };
@@ -46,7 +50,10 @@ function packRows(
       });
       cursorLeft += width + ITEM_GAP;
     }
-    cursorTop += height + ITEM_GAP;
+    // Advance past the media slot AND the meta block underneath it
+    // (title / date). Without `chromeHeight` the next row would draw
+    // its media on top of the previous row's meta block.
+    cursorTop += height + chromeHeight + ITEM_GAP;
     current = [];
     aspectSum = 0;
   };
@@ -129,10 +136,19 @@ export function JustifiedView({
     };
   }, []);
 
-  const { items, totalHeight } = useMemo(
-    () => packRows(saves, width, targetHeight),
-    [saves, width, targetHeight],
-  );
+  const prefs = useDisplayPrefs();
+  const chromeHeight = chromeHeightFor(prefs);
+  const aspectVersion = useAspectVersion();
+
+  /* See `waterfall.tsx` — freeze the packer input width while the
+   * chrome animates so cards FLIP from one packed layout to the next
+   * in a single transition instead of repacking every frame. */
+  const packWidth = useFrozenValue(width, useIsAnimating());
+
+  const { items, totalHeight } = useMemo(() => {
+    void aspectVersion;
+    return packRows(saves, packWidth, targetHeight, chromeHeight);
+  }, [saves, packWidth, targetHeight, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),

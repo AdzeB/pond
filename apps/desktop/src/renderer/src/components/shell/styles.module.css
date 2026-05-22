@@ -11,6 +11,11 @@
   min-height: 0;
 }
 
+.sidebar-wrap {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
 .content {
   display: flex;
   flex: 1;
@@ -62,6 +67,7 @@
   padding-inline: 12px;
   margin-block-start: -12px;
   margin-inline: -12px;
+  background: var(--ds-background-primary);
 }
 
 .empty {

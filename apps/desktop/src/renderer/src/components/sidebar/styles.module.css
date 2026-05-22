@@ -197,6 +197,20 @@
   white-space: nowrap;
 }
 
+.link-count {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+  letter-spacing: -0.04px;
+}
+
+.link[aria-current="page"] .link-count,
+.link[data-active="true"] .link-count {
+  color: var(--ds-gray-11);
+}
+
 :global([data-platform="mac"]) .root,
 :global([data-platform="mac"]) .scroll,
 :global([data-platform="mac"]) .toolbar {

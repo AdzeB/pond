@@ -1,5 +1,7 @@
 import { cn } from "@pond/ui";
+import { type HTMLMotionProps, motion } from "motion/react";
 import { createContext, type ReactNode, use } from "react";
+import { drawerSpring } from "@/lib/motion";
 import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";
@@ -79,8 +81,21 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 }
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
+  /* `motion.li` with `layout` FLIPs the card between its old and new
+   * bounding box on every commit — so when the sidebar/inspector slide
+   * changes the available width, cards glide to their new packed or
+   * grid-cell positions instead of teleporting. The packers in
+   * `pages/saves-view/waterfall.tsx` and `justified.tsx` freeze their
+   * input width during the slide (see `useFrozenValue`), so motion only
+   * has to interpolate between two end states rather than every frame.
+   *
+   * Cast bypasses Motion's `onDrag*` type override: callers pass React's
+   * native `onDragStart` (DragEvent), and since we never enable `drag`,
+   * motion passes it through to the underlying `<li>` unchanged. */
   return (
-    <li
+    <motion.li
+      layout
+      transition={drawerSpring}
       className={cn(
         styles.item,
         selected && styles["item-selected"],
@@ -91,7 +106,7 @@ function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
       data-selected={selected ? "true" : undefined}
       data-multi={multi ? "true" : undefined}
       data-dimmed={dimmed ? "true" : undefined}
-      {...props}
+      {...(props as HTMLMotionProps<"li">)}
     />
   );
 }

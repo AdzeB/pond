@@ -71,6 +71,12 @@ body {
   overscroll-behavior: none;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
 #root {
   display: flex;
   flex-direction: column;

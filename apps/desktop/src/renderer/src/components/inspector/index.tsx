@@ -6,6 +6,7 @@ import {
   IconTrashOutline18,
 } from "@pond/icons/outline/18";
 import { Menu, useToast } from "@pond/ui";
+import { motion } from "motion/react";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTrackVisit } from "@/components/recents";
@@ -14,6 +15,7 @@ import {
   humaniseRefreshReason,
   REVEAL_LABEL,
 } from "@/components/save-preview/helpers";
+import { drawerSpring, useAnimationSignal } from "@/lib/motion";
 import { useInspector } from "@/lib/use-inspector";
 import { optimistic } from "@/pool/bootstrap";
 import { useSave } from "@/pool/hooks";
@@ -26,24 +28,35 @@ export function Inspector() {
   const { open } = useInspector();
 
   useTrackVisit(id);
-
-  if (!open) return null;
+  const inspectorSignal = useAnimationSignal("inspector");
 
   return (
-    <aside aria-label="Inspector" className={styles.pane}>
-      <div className={styles.toolbar}>
-        <KebabMenu save={save ?? null} />
+    <motion.aside
+      aria-label="Inspector"
+      aria-hidden={!open || undefined}
+      data-state={open ? "open" : "closed"}
+      className={styles.pane}
+      initial={false}
+      animate={{ width: open ? 224 : 0 }}
+      transition={drawerSpring}
+      onAnimationStart={inspectorSignal.start}
+      onAnimationComplete={inspectorSignal.end}
+    >
+      <div className={styles.inner}>
+        <div className={styles.toolbar}>
+          <KebabMenu save={save ?? null} />
+        </div>
+        <div className={styles.body}>
+          {save ? (
+            <SavePreview.Pane save={save} />
+          ) : id ? (
+            <p className={styles.empty}>Save not found.</p>
+          ) : (
+            <p className={styles.empty}>Select a save to inspect.</p>
+          )}
+        </div>
       </div>
-      <div className={styles.body}>
-        {save ? (
-          <SavePreview.Pane save={save} />
-        ) : id ? (
-          <p className={styles.empty}>Save not found.</p>
-        ) : (
-          <p className={styles.empty}>Select a save to inspect.</p>
-        )}
-      </div>
-    </aside>
+    </motion.aside>
   );
 }
 

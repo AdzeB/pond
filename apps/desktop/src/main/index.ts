@@ -9,7 +9,11 @@ import {
   shell,
 } from "electron";
 import log from "electron-log/main.js";
-import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
+import {
+  DEFAULT_INGEST_PORT,
+  IPC,
+  type MenuActionId,
+} from "../shared/constants";
 import { startBackupCron } from "./core/backups";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
@@ -47,10 +51,23 @@ import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { schedule } from "./lib/scheduler";
-import { resolvePaths } from "./paths";
+import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { ensureTray, setTrayVisible, type TrayHandle } from "./tray";
 import { registerAutoUpdater } from "./updater";
+
+// macOS reads the app menu's title and the About / Hide / Quit labels
+// from `app.name`, which in dev falls back to the Electron binary's
+// own `name` ("Electron") instead of our `productName`. Force it
+// before any menu, dock, or about-panel work.
+app.setName("Pond");
+if (process.platform === "darwin") {
+  app.setAboutPanelOptions({
+    applicationName: "Pond",
+    applicationVersion: app.getVersion(),
+    copyright: "Copyright © 2026 Raphael Salaja",
+  });
+}
 
 log.initialize();
 log.info("[pond] main starting", {
@@ -440,15 +457,42 @@ function registerSyncCron() {
   });
 }
 
+function focusedOrMain(): BrowserWindow | null {
+  const target = mainWindow ?? BrowserWindow.getFocusedWindow();
+  if (!target || target.isDestroyed()) return null;
+  if (target.isMinimized()) target.restore();
+  target.show();
+  target.focus();
+  return target;
+}
+
+function navTo(path: string) {
+  return () => {
+    const target = focusedOrMain();
+    target?.webContents.send(IPC.nav, path);
+  };
+}
+
+function sendMenuAction(id: MenuActionId) {
+  return () => {
+    const target = focusedOrMain();
+    target?.webContents.send(IPC.menuAction, id);
+  };
+}
+
+function openExternalUrl(url: string) {
+  return () => {
+    void shell.openExternal(url);
+  };
+}
+
 function installAppMenu() {
   const isMac = process.platform === "darwin";
-  const openPreferences = () => {
-    const target = mainWindow ?? BrowserWindow.getFocusedWindow();
-    if (!target || target.isDestroyed()) return;
-    if (target.isMinimized()) target.restore();
-    target.show();
-    target.focus();
-    target.webContents.send(IPC.nav, "/settings");
+
+  const preferencesItem: Electron.MenuItemConstructorOptions = {
+    label: "Preferences…",
+    accelerator: isMac ? "Command+," : "Control+,",
+    click: navTo("/settings"),
   };
 
   const template: Electron.MenuItemConstructorOptions[] = [
@@ -457,13 +501,14 @@ function installAppMenu() {
           {
             label: app.name,
             submenu: [
-              { role: "about" as const },
+              { role: "about" as const, label: `About ${app.name}` },
               { type: "separator" as const },
               {
-                label: "Preferences…",
-                accelerator: "Command+,",
-                click: openPreferences,
+                label: "Check for Updates…",
+                click: navTo("/settings/updates"),
               },
+              { type: "separator" as const },
+              preferencesItem,
               { type: "separator" as const },
               { role: "services" as const },
               { type: "separator" as const },
@@ -473,12 +518,47 @@ function installAppMenu() {
               { type: "separator" as const },
               { role: "quit" as const },
             ],
-          },
+          } satisfies Electron.MenuItemConstructorOptions,
         ]
       : []),
     {
       label: "File",
-      submenu: [isMac ? { role: "close" as const } : { role: "quit" as const }],
+      submenu: [
+        {
+          label: "New Save…",
+          accelerator: "CommandOrControl+N",
+          click: navTo("/?capture=1"),
+        },
+        { type: "separator" },
+        {
+          label: "Sync All Sources",
+          accelerator: "CommandOrControl+Shift+R",
+          click: () => void syncAllSources({ trigger: "manual" }),
+        },
+        {
+          label: "Refresh All Metadata…",
+          click: sendMenuAction("refresh.all"),
+        },
+        { type: "separator" },
+        {
+          label: "Reveal Library in Finder",
+          accelerator: "CommandOrControl+Shift+O",
+          click: () => void shell.openPath(libraryRoot()),
+        },
+        {
+          label: "Create Backup Snapshot",
+          click: async () => {
+            try {
+              const { snapshotNow } = await import("./core/backups");
+              await snapshotNow();
+            } catch (err) {
+              log.warn("[pond menu] snapshotNow failed", err);
+            }
+          },
+        },
+        { type: "separator" },
+        isMac ? { role: "close" } : { role: "quit" },
+      ],
     },
     {
       label: "Edit",
@@ -503,49 +583,155 @@ function installAppMenu() {
             win.webContents.send(IPC.editRedoRequested);
           },
         },
-        { type: "separator" as const },
-        { role: "cut" as const },
-        { role: "copy" as const },
-        { role: "paste" as const },
-        { role: "selectAll" as const },
-        ...(!isMac
-          ? [
-              { type: "separator" as const },
-              {
-                label: "Preferences…",
-                accelerator: "Control+,",
-                click: openPreferences,
-              },
-            ]
-          : []),
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+        ...(!isMac ? [{ type: "separator" as const }, preferencesItem] : []),
+      ],
+    },
+    {
+      label: "Find",
+      submenu: [
+        {
+          label: "Command Palette…",
+          accelerator: "CommandOrControl+K",
+          click: sendMenuAction("palette.open"),
+        },
+      ],
+    },
+    {
+      label: "Library",
+      submenu: [
+        {
+          label: "All Saves",
+          accelerator: "Control+CommandOrControl+1",
+          click: navTo("/"),
+        },
+        {
+          label: "Recents",
+          accelerator: "Control+CommandOrControl+2",
+          click: navTo("/recents"),
+        },
+        {
+          label: "Random",
+          accelerator: "Control+CommandOrControl+3",
+          click: navTo("/random"),
+        },
+        {
+          label: "Untagged",
+          accelerator: "Control+CommandOrControl+4",
+          click: navTo("/untagged"),
+        },
+        {
+          label: "Trash",
+          accelerator: "Control+CommandOrControl+5",
+          click: navTo("/trash"),
+        },
+        { type: "separator" },
+        { label: "Activity", click: navTo("/activity") },
+        { type: "separator" },
+        {
+          label: "Rescan Library",
+          click: () =>
+            void reconcileLibrary().catch((err) =>
+              log.warn("[pond menu] rescan failed", err),
+            ),
+        },
+        {
+          label: "Verify Integrity",
+          click: async () => {
+            try {
+              const { verifyLibraryIntegrity } = await import(
+                "./core/library-ops"
+              );
+              await verifyLibraryIntegrity();
+            } catch (err) {
+              log.warn("[pond menu] verify failed", err);
+            }
+          },
+        },
       ],
     },
     {
       label: "View",
       submenu: [
+        {
+          label: "Toggle Sidebar",
+          accelerator: isMac ? "Alt+Command+1" : "Alt+Control+1",
+          click: sendMenuAction("view.sidebar.toggle"),
+        },
+        {
+          label: "Toggle Inspector",
+          accelerator: isMac ? "Alt+Command+2" : "Alt+Control+2",
+          click: sendMenuAction("view.inspector.toggle"),
+        },
+        { type: "separator" },
+        {
+          label: "Theme",
+          submenu: [
+            { label: "Light", click: sendMenuAction("theme.light") },
+            { label: "Dark", click: sendMenuAction("theme.dark") },
+            { label: "Match System", click: sendMenuAction("theme.system") },
+          ],
+        },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
         ...(!app.isPackaged
-          ? [
-              { role: "reload" as const },
-              { role: "forceReload" as const },
-              { role: "toggleDevTools" as const },
-              { type: "separator" as const },
-            ]
+          ? ([
+              { type: "separator" },
+              { role: "reload" },
+              { role: "forceReload" },
+              { role: "toggleDevTools" },
+            ] satisfies Electron.MenuItemConstructorOptions[])
           : []),
-        { role: "resetZoom" as const },
-        { role: "zoomIn" as const },
-        { role: "zoomOut" as const },
-        { type: "separator" as const },
-        { role: "togglefullscreen" as const },
       ],
     },
     {
       label: "Window",
       submenu: [
-        { role: "minimize" as const },
-        { role: "zoom" as const },
+        { role: "minimize" },
+        { role: "zoom" },
         ...(isMac
-          ? [{ type: "separator" as const }, { role: "front" as const }]
-          : [{ role: "close" as const }]),
+          ? ([
+              { type: "separator" },
+              { role: "front" },
+              { type: "separator" },
+              {
+                label: "Library",
+                accelerator: "CommandOrControl+Shift+P",
+                click: () => void openLibraryWindow(),
+              },
+            ] satisfies Electron.MenuItemConstructorOptions[])
+          : ([
+              { role: "close" },
+            ] satisfies Electron.MenuItemConstructorOptions[])),
+      ],
+    },
+    {
+      label: "Help",
+      role: "help",
+      submenu: [
+        {
+          label: "Pond on GitHub",
+          click: openExternalUrl("https://github.com/raphaelsalaja/pond"),
+        },
+        {
+          label: "Report an Issue…",
+          click: openExternalUrl(
+            "https://github.com/raphaelsalaja/pond/issues/new",
+          ),
+        },
+        { type: "separator" },
+        {
+          label: "Show Logs in Finder",
+          click: () => void shell.openPath(app.getPath("logs")),
+        },
       ],
     },
   ];

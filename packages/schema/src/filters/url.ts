@@ -212,10 +212,3 @@ function decodeBase64Json(value: string): Query | null {
 function urlSafe(b64: string): string {
   return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
-
-export function extractFilterKeys(): readonly string[] {
-  return [
-    FULL_KEY,
-    ...Object.keys(FIELD_META).map((id) => `${COMPACT_PREFIX}${id}`),
-  ];
-}

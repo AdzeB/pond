@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import { IPC } from "../shared/constants";
+import { IPC, type MenuActionId } from "../shared/constants";
 import type { SuggestionPayload, SuggestionResult } from "../shared/suggestion";
 
 export interface RefreshBackfillStatusWire {
@@ -109,6 +109,12 @@ const api = {
     const listener = () => cb();
     ipcRenderer.on(IPC.editRedoRequested, listener);
     return () => ipcRenderer.off(IPC.editRedoRequested, listener);
+  },
+
+  onMenuAction(cb: (id: MenuActionId) => void): () => void {
+    const listener = (_: unknown, id: MenuActionId) => cb(id);
+    ipcRenderer.on(IPC.menuAction, listener);
+    return () => ipcRenderer.off(IPC.menuAction, listener);
   },
 
   appInfo(): Promise<{

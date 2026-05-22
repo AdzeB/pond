@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
 import { ThemeApplier } from "./components/theme-applier";
+import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { ViewShortcuts } from "./effects/view-shortcuts";
@@ -67,6 +68,7 @@ export function App() {
         <ThemeApplier />
         <ViewShortcuts />
         <UndoRedoBridge />
+        <MenuBridge />
         <ToastChime />
         <SaveCompleteToast />
         <RouterProvider router={router} />

@@ -115,8 +115,13 @@ function useSortState(): {
   return { sortKey, sortDir, setSortKey, setSortDir };
 }
 
-function LayoutPickerRoot({ trigger }: PickerProps) {
+function ViewPickerRoot({ trigger }: PickerProps) {
   const [layout, setLayout] = useLayoutValue();
+  const { sortKey, sortDir, setSortKey, setSortDir } = useSortState();
+  const prefs = useDisplayPrefs();
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
+  const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
+
   return (
     <Popover.Root>
       <Popover.Trigger render={trigger} />
@@ -157,22 +162,7 @@ function LayoutPickerRoot({ trigger }: PickerProps) {
             </Select.Portal>
           </Select.Root>
         </Row>
-      </Popover.Content>
-    </Popover.Root>
-  );
-}
 
-function SortPickerRoot({ trigger }: PickerProps) {
-  const { sortKey, sortDir, setSortKey, setSortDir } = useSortState();
-  return (
-    <Popover.Root>
-      <Popover.Trigger render={trigger} />
-      <Popover.Content
-        side="bottom"
-        align="end"
-        sideOffset={6}
-        className={styles.popup}
-      >
         <Row label="Sort by">
           <span className={styles["sort-controls"]}>
             <Select.Root
@@ -246,24 +236,9 @@ function SortPickerRoot({ trigger }: PickerProps) {
             </fieldset>
           </span>
         </Row>
-      </Popover.Content>
-    </Popover.Root>
-  );
-}
 
-function DisplayPickerRoot({ trigger }: PickerProps) {
-  const prefs = useDisplayPrefs();
-  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
-  const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
-  return (
-    <Popover.Root>
-      <Popover.Trigger render={trigger} />
-      <Popover.Content
-        side="bottom"
-        align="end"
-        sideOffset={6}
-        className={styles.popup}
-      >
+        <hr className={styles.separator} />
+
         {DISPLAY_TOGGLES.map(({ key, label }) => (
           <Row key={key} label={label}>
             <Switch.Root
@@ -272,7 +247,9 @@ function DisplayPickerRoot({ trigger }: PickerProps) {
             />
           </Row>
         ))}
+
         <hr className={styles.separator} />
+
         <Row label="Show sidebar">
           <Switch.Root
             checked={sidebarOpen}
@@ -304,6 +281,4 @@ function Row({ label, children }: RowProps) {
   );
 }
 
-export const LayoutPicker = { Root: LayoutPickerRoot };
-export const SortPicker = { Root: SortPickerRoot };
-export const DisplayPicker = { Root: DisplayPickerRoot };
+export const ViewPicker = { Root: ViewPickerRoot };

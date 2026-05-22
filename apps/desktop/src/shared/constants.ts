@@ -48,4 +48,14 @@ export const IPC = {
   suggestionNotify: "pond:suggestion-notify",
   notificationShow: "pond:notification-show",
   processingProgress: "pond:processing-progress",
+  menuAction: "pond:menu-action",
 } as const;
+
+export type MenuActionId =
+  | "palette.open"
+  | "view.sidebar.toggle"
+  | "view.inspector.toggle"
+  | "theme.light"
+  | "theme.dark"
+  | "theme.system"
+  | "refresh.all";

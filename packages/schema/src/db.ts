@@ -334,17 +334,6 @@ export interface Prefs {
     action: "warn" | "pauseSync" | "pauseVideo";
     watchIntervalMinutes: number;
   };
-  views: {
-    saved: SavedFilterView[];
-  };
-}
-
-export interface SavedFilterView {
-  id: string;
-  name: string;
-  params: Record<string, string>;
-  createdAt: number;
-  updatedAt: number;
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -410,9 +399,6 @@ export const DEFAULT_PREFS: Prefs = {
     warnAtPercent: 80,
     action: "warn",
     watchIntervalMinutes: 5,
-  },
-  views: {
-    saved: [],
   },
 };
 

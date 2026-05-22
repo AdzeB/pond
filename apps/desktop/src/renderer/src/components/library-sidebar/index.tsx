@@ -16,10 +16,11 @@ import {
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
 import type { SVGProps } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
+import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 
@@ -29,28 +30,42 @@ const _ISSUES_URL = `${REPO_URL}/issues`;
 const _CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 const DISCUSSIONS_URL = `${REPO_URL}/discussions`;
 
-const routes = [
+type RouteKey = "library" | "untagged" | "recents" | "random" | "trash";
+
+interface Route {
+  key: RouteKey;
+  path: string;
+  label: string;
+  icon: typeof IconArchiveContent2Outline18;
+}
+
+const routes: Route[] = [
   {
+    key: "library",
     path: "/",
     label: "Library",
     icon: IconArchiveContent2Outline18,
   },
   {
+    key: "untagged",
     path: "/untagged",
     label: "Untagged",
     icon: IconTagSlashOutline18,
   },
   {
+    key: "recents",
     path: "/recents",
     label: "Recents",
     icon: IconHourglassClockOutline18,
   },
   {
+    key: "random",
     path: "/random",
     label: "Random",
     icon: IconShuffleSparkleOutline18,
   },
   {
+    key: "trash",
     path: "/trash",
     label: "Trash",
     icon: IconTrash2ContentOutline18,
@@ -60,6 +75,7 @@ const routes = [
 function Root() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const counts = useRouteCounts();
 
   const openQuickCapture = useCallback(() => {
     const next = new URLSearchParams(searchParams);
@@ -100,8 +116,9 @@ function Root() {
 
         <Sidebar.Group>
           {routes.map((route) => {
+            const count = counts[route.key];
             if (route.path === "/trash") {
-              return <TrashLink key={route.path} route={route} />;
+              return <TrashLink key={route.path} route={route} count={count} />;
             }
             return (
               <Sidebar.Link key={route.path} to={route.path}>
@@ -109,6 +126,7 @@ function Root() {
                   <route.icon />
                 </Sidebar.LinkIcon>
                 <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
+                {count != null ? <Sidebar.LinkCount value={count} /> : null}
               </Sidebar.Link>
             );
           })}
@@ -119,11 +137,33 @@ function Root() {
   );
 }
 
-interface TrashLinkProps {
-  route: { path: string; label: string; icon: (typeof routes)[number]["icon"] };
+type RouteCounts = Partial<Record<RouteKey, number>>;
+
+function useRouteCounts(): RouteCounts {
+  const saves = useSaves();
+  return useMemo(() => {
+    let library = 0;
+    let untagged = 0;
+    let trash = 0;
+    for (const save of saves) {
+      if (save.deletedAt) {
+        trash++;
+        continue;
+      }
+      if (save.status && save.status !== "complete") continue;
+      library++;
+      if (save.tags.length === 0) untagged++;
+    }
+    return { library, untagged, trash };
+  }, [saves]);
 }
 
-function TrashLink({ route }: TrashLinkProps) {
+interface TrashLinkProps {
+  route: Route;
+  count: number | undefined;
+}
+
+function TrashLink({ route, count }: TrashLinkProps) {
   const toast = useToast();
   const [trashPrefs] = usePrefs("trash");
   const [confirmEmpty, setConfirmEmpty] = useState(false);
@@ -168,6 +208,7 @@ function TrashLink({ route }: TrashLinkProps) {
                 <route.icon />
               </Sidebar.LinkIcon>
               <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
+              {count != null ? <Sidebar.LinkCount value={count} /> : null}
             </Sidebar.Link>
           }
         />

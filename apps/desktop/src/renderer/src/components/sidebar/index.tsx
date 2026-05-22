@@ -93,6 +93,18 @@ function LinkLabel({ ...props }: LinkLabelProps) {
   return <span className={styles["link-label"]} {...props} />;
 }
 
+interface LinkCountProps extends React.ComponentPropsWithoutRef<"span"> {
+  value: number;
+}
+
+function LinkCount({ value, ...props }: LinkCountProps) {
+  return (
+    <span className={styles["link-count"]} {...props}>
+      {value.toLocaleString()}
+    </span>
+  );
+}
+
 export const Sidebar = {
   Root: Root,
   Back: Back,
@@ -107,4 +119,5 @@ export const Sidebar = {
   Anchor: Anchor,
   LinkIcon: LinkIcon,
   LinkLabel: LinkLabel,
+  LinkCount: LinkCount,
 };

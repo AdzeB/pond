@@ -1,15 +1,14 @@
 import {
-  IconAscendingSortingOutline18,
   IconBarsFilterOutline18,
   IconEyeOutline18,
-  IconGridOutline18,
   IconMagnifierOutline18,
   IconMinusOutline18,
   IconPlusOutline18,
 } from "@pond/icons/outline/18";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
-import { cn, Menu, Tooltip } from "@pond/ui";
+import { Button, cn, Menu, Tooltip } from "@pond/ui";
+import { type HTMLMotionProps, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -21,12 +20,10 @@ import {
   AddFilterMenu,
   useFilterHotkey,
 } from "@/components/filter-bar/registry";
-import {
-  DisplayPicker,
-  LayoutPicker,
-  SortPicker,
-} from "@/components/layout-popover";
-import { SavedFilters } from "@/components/saved-filters";
+import { ViewPicker } from "@/components/layout-popover";
+import { drawerSpring } from "@/lib/motion";
+import { usePlatform } from "@/lib/platform";
+import { useSidebar } from "@/lib/use-sidebar";
 import styles from "./styles.module.css";
 
 const SEARCH_DEBOUNCE_MS = 150;
@@ -122,58 +119,26 @@ function Root() {
 
       <Right>
         <ZoomControls value={zoom} onChange={setZoom} />
-        <SavedFilters.Root />
         <Tooltip.Root>
           <Tooltip.Trigger
             render={
-              <LayoutPicker.Root
+              <ViewPicker.Root
                 trigger={
-                  <IconButton aria-label="Layout">
-                    <IconGridOutline18 />
-                  </IconButton>
-                }
-              />
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Layout</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <SortPicker.Root
-                trigger={
-                  <IconButton aria-label="Sort">
-                    <IconAscendingSortingOutline18 />
-                  </IconButton>
-                }
-              />
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Sort</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <DisplayPicker.Root
-                trigger={
-                  <IconButton aria-label="Display">
+                  <Button
+                    icon
+                    variant="ghost"
+                    size="xs"
+                    aria-label="View options"
+                  >
                     <IconEyeOutline18 />
-                  </IconButton>
+                  </Button>
                 }
               />
             }
           />
           <Tooltip.Portal>
             <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Display</Tooltip.Popup>
+              <Tooltip.Popup>View options</Tooltip.Popup>
             </Tooltip.Positioner>
           </Tooltip.Portal>
         </Tooltip.Root>
@@ -183,9 +148,14 @@ function Root() {
               render={
                 <Menu.Trigger
                   render={
-                    <IconButton aria-label="Add filter">
+                    <Button
+                      icon
+                      variant="ghost"
+                      size="xs"
+                      aria-label="Add filter"
+                    >
                       <IconBarsFilterOutline18 />
-                    </IconButton>
+                    </Button>
                   }
                 />
               }
@@ -209,14 +179,21 @@ function Root() {
   );
 }
 
-interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface ToolbarProps extends HTMLMotionProps<"div"> {}
 
 function Toolbar({ className, ...props }: ToolbarProps) {
+  const { open: sidebarOpen } = useSidebar();
+  const platform = usePlatform();
+  const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
+
   return (
-    <div
+    <motion.div
       role="toolbar"
       aria-label="Library toolbar"
       className={cn(styles.toolbar, className)}
+      initial={false}
+      animate={{ paddingInlineStart: trafficLightInset }}
+      transition={drawerSpring}
       {...props}
     />
   );
@@ -252,22 +229,6 @@ function Right({ className, ...props }: RightProps) {
   return <div className={cn(styles.right, className)} {...props} />;
 }
 
-interface IconButtonProps extends React.ComponentPropsWithoutRef<"button"> {
-  "data-active"?: "true" | undefined;
-}
-
-function IconButton({ className, type = "button", ...props }: IconButtonProps) {
-  return (
-    <button
-      type={type}
-      className={[styles["icon-btn"], className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    />
-  );
-}
-
 export const HeaderToolbar = {
   Root,
   Toolbar,
@@ -275,12 +236,14 @@ export const HeaderToolbar = {
   SearchIcon,
   SearchInput,
   Right,
-  IconButton,
 };
 
 const ZOOM_MIN = 80;
+
 const ZOOM_MAX = 240;
+
 const ZOOM_STEP = 10;
+
 const ZOOM_DEFAULT = 130;
 
 interface ZoomControlsProps {
@@ -303,13 +266,16 @@ function ZoomControls({ value, onChange }: ZoomControlsProps) {
       <Tooltip.Root>
         <Tooltip.Trigger
           render={
-            <IconButton
+            <Button
+              icon
+              variant="ghost"
+              size="xs"
               aria-label="Smaller cards"
               onClick={() => step(-ZOOM_STEP)}
               disabled={value <= ZOOM_MIN}
             >
-              <IconMinusOutline18 width="0.85em" height="0.85em" />
-            </IconButton>
+              <IconMinusOutline18 size={12} />
+            </Button>
           }
         />
         <Tooltip.Portal>
@@ -331,13 +297,16 @@ function ZoomControls({ value, onChange }: ZoomControlsProps) {
       <Tooltip.Root>
         <Tooltip.Trigger
           render={
-            <IconButton
+            <Button
+              icon
+              variant="ghost"
+              size="xs"
               aria-label="Larger cards"
               onClick={() => step(ZOOM_STEP)}
               disabled={value >= ZOOM_MAX}
             >
-              <IconPlusOutline18 width="0.85em" height="0.85em" />
-            </IconButton>
+              <IconPlusOutline18 size={12} />
+            </Button>
           }
         />
         <Tooltip.Portal>

@@ -588,8 +588,6 @@ export function AddFilterMenu({ api, inputRef }: AddFilterMenuProps) {
     [api],
   );
 
-  // Recents bookkeeping for live submenu commits — we only want to push
-  // the first activation, not every keystroke / pick along the way.
   const pushedOnceRef = useRef(false);
   const onLiveValueCommit = useCallback((predicate: Predicate) => {
     if (pushedOnceRef.current) return;
