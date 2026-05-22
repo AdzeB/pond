@@ -41,7 +41,6 @@ export default defineConfig({
       },
     },
     build: {
-      target: "esnext",
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
@@ -51,7 +50,6 @@ export default defineConfig({
   },
   preload: {
     build: {
-      target: "esnext",
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: {
@@ -88,6 +86,21 @@ export default defineConfig({
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
           suggestion: resolve(__dirname, "src/renderer/suggestion.html"),
+        },
+        output: {
+          // One chunk per npm package. Bumping a single dependency
+          // invalidates that one chunk's hash instead of one giant
+          // vendor.js, and parsing on cold start is parallel across
+          // the chunks instead of single-file serial.
+          manualChunks(id: string) {
+            if (!id.includes("node_modules")) return;
+            const match = id.match(
+              /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
+            );
+            if (!match) return;
+            const pkg = match[1].replace(/^@/, "").replace(/\//g, "-");
+            return `vendor-${pkg}`;
+          },
         },
       },
     },
