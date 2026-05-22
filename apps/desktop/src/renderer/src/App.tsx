@@ -7,6 +7,7 @@ import { ThemeApplier } from "./components/theme-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
 import { SaveShortcuts } from "./effects/save-shortcuts";
+import { ToastHost } from "./effects/toast-host";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { ViewShortcuts } from "./effects/view-shortcuts";
 import { getPrefsSnapshot } from "./pool/prefs";
@@ -79,6 +80,7 @@ export function App() {
           <MenuBridge />
           <ToastChime />
           <SaveCompleteToast />
+          <ToastHost />
           <RouterProvider router={router} />
         </Toast.Provider>
       </Tooltip.Provider>

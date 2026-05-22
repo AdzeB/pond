@@ -1,77 +1,72 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import type { ReactNode } from "react";
+import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-interface ProviderProps {
-  children: ReactNode;
+function Provider(props: Base.Provider.Props) {
+  return <Base.Provider {...props} />;
 }
 
-function Provider({ children }: ProviderProps) {
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
+}
+
+function Viewport({ className, ...props }: Base.Viewport.Props) {
   return (
-    <Base.Provider>
-      {children}
-      <Base.Portal>
-        <Base.Viewport className={styles.viewport}>
-          <ToastList />
-        </Base.Viewport>
-      </Base.Portal>
-    </Base.Provider>
+    <Base.Viewport className={cn(styles.viewport, className)} {...props} />
   );
 }
 
-function ToastList() {
-  const { toasts } = Base.useToastManager();
-  return toasts.map((toast) => (
-    <Base.Root
-      key={toast.id}
-      toast={toast}
-      className={styles.popup}
-      data-type={toast.type ?? "info"}
-    >
-      <Base.Content className={styles.content}>
-        <div className={styles.body}>
-          {toast.title ? <Base.Title className={styles.title} /> : null}
-          {toast.description ? (
-            <Base.Description className={styles.description} />
-          ) : null}
-        </div>
-        <Base.Close className={styles.close} aria-label="Close">
-          <XIcon />
-        </Base.Close>
-      </Base.Content>
-    </Base.Root>
-  ));
+function Positioner(props: Base.Positioner.Props) {
+  return <Base.Positioner {...props} />;
 }
 
-function XIcon() {
+function Root({ className, ...props }: Base.Root.Props) {
+  return <Base.Root className={cn(styles.popup, className)} {...props} />;
+}
+
+function Content({ className, ...props }: Base.Content.Props) {
+  return <Base.Content className={cn(styles.content, className)} {...props} />;
+}
+
+function Title({ className, ...props }: Base.Title.Props) {
+  return <Base.Title className={cn(styles.title, className)} {...props} />;
+}
+
+function Description({ className, ...props }: Base.Description.Props) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
+    <Base.Description
+      className={cn(styles.description, className)}
+      {...props}
+    />
   );
+}
+
+function Action(props: Base.Action.Props) {
+  return <Base.Action {...props} />;
+}
+
+function Close({ className, ...props }: Base.Close.Props) {
+  return <Base.Close className={cn(styles.close, className)} {...props} />;
+}
+
+function Arrow(props: Base.Arrow.Props) {
+  return <Base.Arrow {...props} />;
 }
 
 export const useToast = Base.useToastManager;
 
 export const Toast = {
   Provider,
-  Root: Base.Root,
-  Title: Base.Title,
-  Description: Base.Description,
-  Action: Base.Action,
-  Close: Base.Close,
-  Content: Base.Content,
+  Portal,
+  Viewport,
+  Positioner,
+  Root,
+  Content,
+  Title,
+  Description,
+  Action,
+  Close,
+  Arrow,
   useToast,
+  createToastManager: Base.createToastManager,
 };
