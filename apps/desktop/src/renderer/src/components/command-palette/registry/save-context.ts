@@ -1,3 +1,4 @@
+import type { Save as DbSave } from "@pond/schema/db";
 import type { Command } from "./types";
 
 export const SAVE_CONTEXT_COMMANDS: Command[] = [
@@ -81,6 +82,100 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
       const r = await pond.refreshSave(focusedSaveId);
       if (r.ok) toast.success("Metadata refreshed");
       else toast.warn(`Refresh failed: ${r.reason.replace("_", " ")}`);
+    },
+  },
+  {
+    id: "save.trash",
+    label: "Move to Trash",
+    group: "Save",
+    scope: "saves",
+    keywords: ["trash", "delete", "remove"],
+    shortcut: ["⌫"],
+    when: (ctx) => !!ctx.focusedSaveId && !ctx.focusedSave?.deletedAt,
+    perform: async ({ pond, focusedSaveId, toast, close }) => {
+      if (!focusedSaveId) return;
+      close();
+      await pond.tx({ kind: "trash", model: "save", id: focusedSaveId });
+      toast.success("Moved to trash");
+    },
+  },
+  {
+    id: "save.untrash",
+    label: "Restore from Trash",
+    group: "Save",
+    scope: "saves",
+    keywords: ["restore", "untrash", "recover"],
+    shortcut: ["⌫"],
+    when: (ctx) => !!ctx.focusedSave?.deletedAt,
+    perform: async ({ pond, focusedSaveId, toast, close }) => {
+      if (!focusedSaveId) return;
+      close();
+      await pond.tx({ kind: "untrash", model: "save", id: focusedSaveId });
+      toast.success("Restored");
+    },
+  },
+  {
+    id: "save.delete-forever",
+    label: "Delete forever",
+    description: "Removes from disk and database with no recovery",
+    group: "Save",
+    scope: "saves",
+    keywords: ["delete", "purge", "forever", "permanent"],
+    when: (ctx) => !!ctx.focusedSave?.deletedAt,
+    perform: async ({ pond, focusedSave, toast, close }) => {
+      if (!focusedSave) return;
+      close();
+      // `purge` needs a snapshot for undo. The palette only fires
+      // this when focusedSave is trashed, so the local row matches
+      // what's on disk.
+      await pond.tx({
+        kind: "purge",
+        model: "save",
+        id: focusedSave.id,
+        before: focusedSave as unknown as DbSave,
+      });
+      toast.success("Deleted forever");
+    },
+  },
+  {
+    id: "save.bulk-trash",
+    label: "Move selected to Trash",
+    group: "Save",
+    scope: "saves",
+    keywords: ["trash", "delete", "bulk", "selection"],
+    when: (ctx) => ctx.selectionSize > 1,
+    perform: async ({ pond, selectedIds, selectionSize, toast, close }) => {
+      if (selectedIds.length === 0) return;
+      close();
+      await pond.batch(
+        selectedIds.map((id) => ({
+          kind: "trash",
+          model: "save",
+          id,
+          meta: { actor: "user", actorReason: "palette-bulk-trash" },
+        })),
+      );
+      toast.success(
+        `Moved ${selectionSize} save${selectionSize === 1 ? "" : "s"} to trash`,
+      );
+    },
+  },
+  {
+    id: "save.bulk-refresh",
+    label: "Refresh selected saves",
+    group: "Save",
+    scope: "saves",
+    keywords: ["refresh", "metadata", "bulk", "selection"],
+    when: (ctx) => ctx.selectionSize > 1,
+    perform: async ({ pond, selectedIds, selectionSize, toast, close }) => {
+      if (selectedIds.length === 0) return;
+      close();
+      let ok = 0;
+      for (const id of selectedIds) {
+        const r = await pond.refreshSave(id);
+        if (r.ok) ok++;
+      }
+      toast.success(`Refreshed ${ok}/${selectionSize} saves`);
     },
   },
 ];

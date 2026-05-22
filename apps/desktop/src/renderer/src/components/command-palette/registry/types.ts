@@ -28,6 +28,12 @@ export interface PaletteCtx {
   selectedIds: string[];
   focusedSaveId: string | null;
   focusedSave: Save | null;
+  // Current route pathname so `when` clauses can scope commands to
+  // specific surfaces (e.g. "Empty trash" only when /trash is visible).
+  pathname: string;
+  // Multi-select count from the selection store; commands branching on
+  // bulk-vs-single read this instead of selectedIds.length.
+  selectionSize: number;
   setTheme: (theme: "system" | "light" | "dark") => void;
   toast: { success(msg: string): void; warn(msg: string): void };
 }

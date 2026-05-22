@@ -132,6 +132,10 @@ export const ACTION_COMMANDS: Command[] = [
     group: "Actions",
     scope: "actions",
     keywords: ["empty", "trash", "delete", "purge"],
+    // Surface only when the user is already looking at /trash —
+    // anywhere else the command is destructive without
+    // explanation. Searchable when they type "empty trash".
+    when: (ctx) => ctx.pathname.startsWith("/trash"),
     perform: async ({ pond, toast, close }) => {
       close();
       await pond.query("saves.emptyTrash", {});
@@ -144,6 +148,7 @@ export const ACTION_COMMANDS: Command[] = [
     group: "Actions",
     scope: "actions",
     keywords: ["restore", "trash", "undelete"],
+    when: (ctx) => ctx.pathname.startsWith("/trash"),
     perform: async ({ pond, toast, close }) => {
       close();
       await pond.query("saves.restoreAll", {});

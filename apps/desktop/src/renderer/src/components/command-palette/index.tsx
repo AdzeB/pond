@@ -72,6 +72,8 @@ function Root() {
       selectedIds,
       focusedSaveId,
       focusedSave: (focusedSave as Save | null) ?? null,
+      pathname: location.pathname,
+      selectionSize: selectedIds.length,
       setTheme: (theme) => patchPreferences({ theme }),
       toast: {
         success: (msg) => toastManager.add({ title: msg, type: "success" }),
@@ -84,6 +86,7 @@ function Root() {
       selectedIds,
       focusedSaveId,
       focusedSave,
+      location.pathname,
       patchPreferences,
       toastManager,
     ],
