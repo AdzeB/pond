@@ -68,6 +68,7 @@ export function Pane({ save, className, ...props }: PaneProps) {
         contentEditable
         suppressContentEditableWarning
         spellCheck={false}
+        data-pane-title
         onBlur={async (e) => {
           const next = e.currentTarget.textContent?.trim() ?? "";
           if (next === (save.title ?? "")) return;
@@ -272,6 +273,7 @@ function PaneTags({ save }: { save: Save }) {
             type="button"
             className={styles["pane-tag-add"]}
             aria-label="Add tag"
+            data-tag-add
           >
             <IconPlusOutline18 width={10} height={10} />
           </button>
