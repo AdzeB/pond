@@ -3,6 +3,25 @@ import type { Command, PaletteCtx } from "./registry/types";
 
 const CHORD_TIMEOUT_MS = 1500;
 
+// Pending state lives at module scope so other shortcut handlers (save
+// shortcuts, grid navigation) can defer to an in-flight chord. Without
+// this, pressing `r` to complete `g r` (Recents) would also fire the
+// single-letter `r` (Refresh) on the focused save.
+let pendingChord: string | null = null;
+let pendingTimer: ReturnType<typeof setTimeout> | null = null;
+
+function resetPending(): void {
+  pendingChord = null;
+  if (pendingTimer) {
+    clearTimeout(pendingTimer);
+    pendingTimer = null;
+  }
+}
+
+export function isChordPending(): boolean {
+  return pendingChord !== null;
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   const tag = target.tagName;
@@ -18,50 +37,39 @@ export function useChords(commands: Command[], getCtx: () => PaletteCtx): void {
   ctxRef.current = getCtx;
 
   useEffect(() => {
-    let pending: string | null = null;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const reset = (): void => {
-      pending = null;
-      if (timer) {
-        clearTimeout(timer);
-        timer = null;
-      }
-    };
-
     const onKey = (e: KeyboardEvent): void => {
       if (e.metaKey || e.ctrlKey || e.altKey) {
-        reset();
+        resetPending();
         return;
       }
       if (isEditableTarget(e.target)) {
-        reset();
+        resetPending();
         return;
       }
       if (e.key === "Escape") {
-        reset();
+        resetPending();
         return;
       }
 
       const key = e.key.toLowerCase();
       const isLetter = /^[a-z]$/.test(key);
       if (!isLetter) {
-        reset();
+        resetPending();
         return;
       }
 
-      if (!pending) {
+      if (!pendingChord) {
         const couldStart = cmdsRef.current.some(
           (c) => c.chord && c.chord[0]?.toLowerCase() === key,
         );
         if (!couldStart) return;
-        pending = key;
-        timer = setTimeout(reset, CHORD_TIMEOUT_MS);
+        pendingChord = key;
+        pendingTimer = setTimeout(resetPending, CHORD_TIMEOUT_MS);
         return;
       }
 
-      const sequence = `${pending} ${key}`;
-      reset();
+      const sequence = `${pendingChord} ${key}`;
+      resetPending();
 
       const match = cmdsRef.current.find(
         (c) =>
@@ -79,7 +87,7 @@ export function useChords(commands: Command[], getCtx: () => PaletteCtx): void {
 
     window.addEventListener("keydown", onKey);
     return () => {
-      reset();
+      resetPending();
       window.removeEventListener("keydown", onKey);
     };
   }, []);
