@@ -9,7 +9,7 @@ import {
   IconTrashXmarkOutline18,
 } from "@pond/icons/outline/18";
 import type { Save as DbSave } from "@pond/schema/db";
-import { ContextMenu, Menu, useToast } from "@pond/ui";
+import { ContextMenu, Kbd, Menu, useToast } from "@pond/ui";
 import { type ReactElement, useMemo } from "react";
 import { optimistic } from "@/pool/bootstrap";
 import { pool } from "@/pool/pool";
@@ -33,6 +33,10 @@ type ActionDescriptor =
       icon: React.ComponentType<{ width: number; height: number }>;
       disabled?: boolean;
       variant?: "danger";
+      // Shortcut hints stay in sync with `SaveShortcuts`
+      // (effects/save-shortcuts.tsx). When a primary save is focused,
+      // these keys fire the same action without modifiers.
+      shortcut?: string[];
       onSelect: () => void | Promise<void>;
     }
   | { type: "separator"; key: string };
@@ -170,6 +174,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
         label: "Open with Default App",
         icon: IconOpenExternalOutline18,
         disabled: !hasFiles,
+        shortcut: ["O"],
         onSelect: openFile,
       },
       {
@@ -187,6 +192,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
         label: "Copy URL",
         icon: IconLinkOutline18,
         disabled: !hasUrl,
+        shortcut: ["C"],
         onSelect: copyUrl,
       },
       {
@@ -205,6 +211,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
               key: "untrash",
               label: "Restore from Trash",
               icon: IconArrowDoorOutOutline18,
+              shortcut: ["⌫"],
               onSelect: untrash,
             },
             {
@@ -223,6 +230,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
               label: "Move to Trash",
               icon: IconTrashXmarkOutline18,
               variant: "danger",
+              shortcut: ["⌫"],
               onSelect: trash,
             },
           ] satisfies ActionDescriptor[])),
@@ -233,6 +241,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
         label: "Refresh Metadata",
         icon: IconRefreshClockwiseOutline18,
         disabled: !hasUrl,
+        shortcut: ["R"],
         onSelect: refresh,
       },
       {
@@ -278,6 +287,11 @@ export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
                     <Icon component={action.icon} />
                   </ContextMenu.ItemIcon>
                   <ContextMenu.ItemLabel>{action.label}</ContextMenu.ItemLabel>
+                  {action.shortcut ? (
+                    <ContextMenu.ItemKbd>
+                      <Kbd.Cluster keys={action.shortcut} />
+                    </ContextMenu.ItemKbd>
+                  ) : null}
                 </ContextMenu.Item>
               );
             })}
@@ -317,6 +331,11 @@ export function SaveActionsMenu({ save, children }: SaveActionsMenuProps) {
                     <Icon component={action.icon} />
                   </Menu.ItemIcon>
                   <Menu.ItemLabel>{action.label}</Menu.ItemLabel>
+                  {action.shortcut ? (
+                    <Menu.ItemKbd>
+                      <Kbd.Cluster keys={action.shortcut} />
+                    </Menu.ItemKbd>
+                  ) : null}
                 </Menu.Item>
               );
             })}
