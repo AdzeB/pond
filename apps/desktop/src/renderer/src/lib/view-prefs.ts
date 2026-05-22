@@ -25,3 +25,21 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
     /* storage denied — fall back to URL-only behaviour */
   }
 }
+
+export type LayoutValue = "waterfall" | "grid" | "justified" | "list";
+
+export const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
+  "waterfall",
+  "grid",
+  "justified",
+  "list",
+];
+
+export function isLayoutValue(value: string): value is LayoutValue {
+  return (LAYOUT_CYCLE as ReadonlyArray<string>).includes(value);
+}
+
+export function nextLayout(current: LayoutValue): LayoutValue {
+  const idx = LAYOUT_CYCLE.indexOf(current);
+  return LAYOUT_CYCLE[(idx + 1) % LAYOUT_CYCLE.length] ?? "waterfall";
+}

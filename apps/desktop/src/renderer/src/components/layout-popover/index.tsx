@@ -13,10 +13,14 @@ import {
 } from "@/lib/display-prefs";
 import { useInspector } from "@/lib/use-inspector";
 import { useSidebar } from "@/lib/use-sidebar";
-import { readViewPref, writeViewPref } from "@/lib/view-prefs";
+import {
+  isLayoutValue,
+  type LayoutValue,
+  readViewPref,
+  writeViewPref,
+} from "@/lib/view-prefs";
 import styles from "./styles.module.css";
 
-type LayoutValue = "waterfall" | "grid" | "justified" | "list";
 type SortKey = "savedAt" | "title" | "fileSize";
 type SortDir = "asc" | "desc";
 
@@ -40,13 +44,6 @@ const DISPLAY_TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "sourceBadge", label: "Show source badge" },
 ];
 
-const LAYOUT_VALUES = new Set<LayoutValue>([
-  "waterfall",
-  "grid",
-  "justified",
-  "list",
-]);
-
 const SORT_VALUES = new Set<SortKey>(["savedAt", "title", "fileSize"]);
 
 interface PickerProps {
@@ -56,9 +53,7 @@ interface PickerProps {
 function useLayoutValue(): [LayoutValue, (next: LayoutValue) => void] {
   const [params, setParams] = useSearchParams();
   const raw = params.get("view") ?? readViewPref("view") ?? "waterfall";
-  const value: LayoutValue = LAYOUT_VALUES.has(raw as LayoutValue)
-    ? (raw as LayoutValue)
-    : "waterfall";
+  const value: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
 
   const set = useCallback(
     (next: LayoutValue) => {
@@ -135,11 +130,8 @@ function ViewPickerRoot({ trigger }: PickerProps) {
           <Select.Root
             value={layout}
             onValueChange={(v) => {
-              if (
-                typeof v === "string" &&
-                LAYOUT_VALUES.has(v as LayoutValue)
-              ) {
-                setLayout(v as LayoutValue);
+              if (typeof v === "string" && isLayoutValue(v)) {
+                setLayout(v);
               }
             }}
           >

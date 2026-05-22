@@ -1,7 +1,19 @@
 import { useToast } from "@pond/ui";
 import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { selection, useSelectionSize } from "@/pool/selection";
+import { isChordPending } from "@/components/command-palette/use-chords";
+import {
+  isLayoutValue,
+  type LayoutValue,
+  nextLayout,
+  readViewPref,
+  writeViewPref,
+} from "@/lib/view-prefs";
+import {
+  primarySelection,
+  selection,
+  useSelectionSize,
+} from "@/pool/selection";
 import type { SavesMode } from "./use-saves-data";
 
 export interface CardActions {
@@ -20,7 +32,7 @@ export function useCardActions(
 ): CardActions {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
 
   const selectionSize = useSelectionSize();
@@ -81,6 +93,17 @@ export function useCardActions(
     [filteredIds, multiSelectActive, select],
   );
 
+  const cycleLayout = useCallback(() => {
+    const raw = searchParams.get("view") ?? readViewPref("view") ?? "waterfall";
+    const current: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
+    const next = nextLayout(current);
+    const p = new URLSearchParams(searchParams);
+    if (next === "waterfall") p.delete("view");
+    else p.set("view", next);
+    setSearchParams(p, { replace: true });
+    writeViewPref("view", next);
+  }, [searchParams, setSearchParams]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -89,19 +112,95 @@ export function useCardActions(
         tag === "INPUT" ||
         tag === "TEXTAREA" ||
         target?.isContentEditable === true;
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "a" && !isInput) {
+      if (isInput) return;
+
+      // Don't steal arrows / J / K from open dialogs, menus, listboxes —
+      // they have their own roving focus and Base UI doesn't stop these
+      // events from bubbling to the window.
+      const inOverlay = target?.closest(
+        '[role="dialog"],[role="menu"],[role="listbox"],[role="combobox"]',
+      );
+      if (inOverlay) return;
+
+      const meta = e.metaKey || e.ctrlKey;
+
+      if (meta && e.key.toLowerCase() === "a") {
         if (filteredIds.length === 0) return;
         e.preventDefault();
         selection.set(filteredIds);
         return;
       }
+
+      // Cmd+B cycles layout (waterfall → grid → justified → list → …).
+      if (meta && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        cycleLayout();
+        return;
+      }
+
       if (e.key === "Escape" && selectionSize > 0) {
         selection.clear();
+        return;
+      }
+
+      // Below: bare-key grid navigation. Bail on any modifier or in-flight
+      // chord so we don't steal keys from `useChords` (e.g. `g a`).
+      if (meta || e.altKey) return;
+      if (isChordPending()) return;
+      if (filteredIds.length === 0) return;
+
+      const id = primarySelection.get();
+      const idx = id ? filteredIds.indexOf(id) : -1;
+
+      const isUp =
+        e.key === "ArrowUp" ||
+        (!e.shiftKey && (e.key === "k" || e.key === "K"));
+      const isDown =
+        e.key === "ArrowDown" ||
+        (!e.shiftKey && (e.key === "j" || e.key === "J"));
+      const isLeft = e.key === "ArrowLeft";
+      const isRight = e.key === "ArrowRight";
+
+      if (isUp || isDown || isLeft || isRight) {
+        e.preventDefault();
+        let nextIdx: number;
+        if (idx < 0) {
+          nextIdx = isUp || isLeft ? filteredIds.length - 1 : 0;
+        } else if (isUp || isLeft) {
+          nextIdx = Math.max(0, idx - 1);
+        } else {
+          nextIdx = Math.min(filteredIds.length - 1, idx + 1);
+        }
+        const nextId = filteredIds[nextIdx];
+        if (nextId) select(nextId);
+        return;
+      }
+
+      // Linear-parity action keys on the focused row: Enter = open detail,
+      // Space = peek (open inspector), X = toggle multi-select membership.
+      if (idx < 0) return;
+      const focusedId = filteredIds[idx];
+      if (!focusedId) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        focus(focusedId);
+        return;
+      }
+      if (e.key === " ") {
+        e.preventDefault();
+        select(focusedId);
+        return;
+      }
+      if (!e.shiftKey && (e.key === "x" || e.key === "X")) {
+        e.preventDefault();
+        selection.toggle(focusedId);
+        if (selection.has(focusedId)) selection.setAnchor(focusedId);
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filteredIds, selectionSize]);
+  }, [filteredIds, selectionSize, select, focus, cycleLayout]);
 
   useEffect(() => {
     void mode;
