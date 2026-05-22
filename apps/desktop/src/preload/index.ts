@@ -342,8 +342,30 @@ const api = {
   },
 };
 
+interface ShellHint {
+  theme?: "light" | "dark";
+  pointerCursors?: boolean;
+}
+
+function readShellHint(): ShellHint {
+  // Main passes `--pond-shell=<json>` via webPreferences.additionalArguments
+  // so the inline <script> in index.html can pick up the stored theme +
+  // pointer cursors before any bundle parses. Falls back to {} so the
+  // inline script's localStorage / system-preference path still works.
+  const prefix = "--pond-shell=";
+  const arg = process.argv.find((a) => a.startsWith(prefix));
+  if (!arg) return {};
+  try {
+    const parsed = JSON.parse(arg.slice(prefix.length));
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 try {
   contextBridge.exposeInMainWorld("pond", api);
+  contextBridge.exposeInMainWorld("__pondShell", readShellHint());
 } catch (err) {
   console.error("[pond preload] contextBridge failed", err);
 }

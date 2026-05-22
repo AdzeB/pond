@@ -53,6 +53,10 @@ function playChime(): void {
 declare global {
   interface Window {
     pond: PondApi;
+    __pondShell?: {
+      theme?: "light" | "dark";
+      pointerCursors?: boolean;
+    };
   }
 }
 

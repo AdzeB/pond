@@ -52,8 +52,14 @@
 		<script>
 			(() => {
 				try {
+					// Main process stamps `window.__pondShell` via the preload script
+					// (apps/desktop/src/preload/index.ts) using the persisted DB prefs.
+					// localStorage.pondShell is the fallback for early-launch or when
+					// the DB read failed. The hint object is the authoritative source.
+					const hint = window.__pondShell || {};
 					const raw = localStorage.getItem("pondShell");
-					const shell = raw ? JSON.parse(raw) : {};
+					const stored = raw ? JSON.parse(raw) : {};
+					const shell = { ...stored, ...hint };
 					const doc = document.documentElement;
 
 					let theme = shell.theme;

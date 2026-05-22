@@ -214,8 +214,32 @@ function configureSessionDefaults(): void {
   }
 }
 
+interface ShellHint {
+  theme?: "light" | "dark";
+  pointerCursors?: boolean;
+}
+
+async function resolveShellHint(): Promise<ShellHint> {
+  try {
+    const prefs = await getPrefs();
+    const themePref = prefs.preferences.theme;
+    return {
+      theme: themePref === "system" ? undefined : themePref,
+      pointerCursors: prefs.preferences.pointerCursors === true,
+    };
+  } catch {
+    return {};
+  }
+}
+
 async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
+
+  // Resolve the user's stored shell tokens before the BrowserWindow exists
+  // so the preload can hand them to the inline boot script and the very
+  // first paint is correctly themed. Falls back to system preference if
+  // the DB read fails or this is a first launch.
+  const shellHint = await resolveShellHint();
 
   const win = new BrowserWindow({
     width: 1280,
@@ -229,6 +253,7 @@ async function createWindow(): Promise<BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
   });
 
