@@ -1,14 +1,9 @@
 import { pool } from "./pool";
 import type { Save } from "./types";
 
-// Cold-start snapshot cache. Linear writes its store to IndexedDB so
-// the second-and-later launches can paint the issue list before any
-// network round-trip; same idea here, just bridging the SQLite IPC
-// hydrate instead of a network call. The cache is best-effort: if any
-// IDB call fails we silently fall back to the IPC hydrate.
-//
-// We always reconcile against `saves.list` after restoring from cache,
-// so stale rows are corrected by `hydrateFromMain` in `bootstrap.ts`.
+// Cold-start cache so the grid can paint before the SQLite IPC hydrate
+// returns. Best-effort: failures fall back to IPC, and `bootstrap.ts`
+// always reconciles against `saves.list` so stale rows are corrected.
 
 const DB_NAME = "pond-pool";
 const STORE = "snapshot";

@@ -38,9 +38,8 @@ export const ACTION_COMMANDS: Command[] = [
     when: (ctx) => !ctx.pathname.startsWith("/settings"),
     perform: ({ close }) => {
       close();
-      // Re-emit Cmd+B so `useCardActions` (the route-scoped owner of
-      // URL params) handles the cycle. Avoids duplicating layout
-      // bookkeeping at module scope.
+      // `useCardActions` owns the URL — re-emit Cmd+B instead of
+      // duplicating its layout bookkeeping here.
       window.dispatchEvent(
         new KeyboardEvent("keydown", {
           key: "b",

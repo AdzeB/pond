@@ -17,7 +17,6 @@ export function ViewShortcuts() {
 
       const meta = e.metaKey || e.ctrlKey;
 
-      // Linear-standard: bare `[` / `]` toggle left / right panes.
       if (!meta && !e.altKey && !e.shiftKey) {
         if (e.key === "[") {
           e.preventDefault();
@@ -31,8 +30,8 @@ export function ViewShortcuts() {
         }
       }
 
-      // Legacy Cmd+Alt+1 / Cmd+Alt+2 — kept for muscle memory and
-      // accessibility (some users prefer modifier combos for pane toggles).
+      // Cmd+Alt+1 / Cmd+Alt+2 are kept alongside `[` / `]` for users
+      // who rely on modifier combos (a11y, remapped keyboards).
       if (!meta || !e.altKey || e.shiftKey) return;
 
       if (e.key === "1" || e.code === "Digit1") {

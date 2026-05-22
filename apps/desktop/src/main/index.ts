@@ -235,10 +235,9 @@ async function resolveShellHint(): Promise<ShellHint> {
 async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
-  // Resolve the user's stored shell tokens before the BrowserWindow exists
-  // so the preload can hand them to the inline boot script and the very
-  // first paint is correctly themed. Falls back to system preference if
-  // the DB read fails or this is a first launch.
+  // Resolved before the BrowserWindow exists so the preload can hand
+  // these tokens to the inline boot script in index.html — the very
+  // first paint is themed without waiting for the renderer bundle.
   const shellHint = await resolveShellHint();
 
   const win = new BrowserWindow({

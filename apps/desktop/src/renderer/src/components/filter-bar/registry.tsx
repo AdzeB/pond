@@ -793,8 +793,6 @@ export function useFilterHotkey(onActivate: () => void): void {
   }, []);
 }
 
-// Linear-standard `/` focuses global search. Same chord/typing guards as
-// `useFilterHotkey` so chord completions (`g s`) and text input both win.
 export function useSearchHotkey(onActivate: () => void): void {
   const cb = useRef(onActivate);
   cb.current = onActivate;

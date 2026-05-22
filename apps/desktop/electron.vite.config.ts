@@ -77,9 +77,8 @@ export default defineConfig({
       },
     },
     build: {
-      // Electron always ships a recent Chromium, so we never need
-      // legacy transforms or polyfills. Matches Linear's `target: esnext`
-      // — drops ~15-20% of output bytes from ES helper functions.
+      // Electron ships a recent Chromium — skip legacy transforms and
+      // module-preload polyfills.
       target: "esnext",
       modulePreload: { polyfill: false },
       rollupOptions: {
@@ -88,10 +87,9 @@ export default defineConfig({
           suggestion: resolve(__dirname, "src/renderer/suggestion.html"),
         },
         output: {
-          // One chunk per npm package. Bumping a single dependency
-          // invalidates that one chunk's hash instead of one giant
-          // vendor.js, and parsing on cold start is parallel across
-          // the chunks instead of single-file serial.
+          // One chunk per npm package: bumping a dependency invalidates
+          // a single hash instead of vendor.js, and chunks parse in
+          // parallel on cold start.
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
             const match = id.match(

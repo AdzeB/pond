@@ -16,10 +16,8 @@ export function bootPool(): Promise<void> {
   bootPromise = (async () => {
     subscribeToSyncActions();
 
-    // Paint instantly from the cached IDB snapshot before waiting on
-    // the SQLite hydrate. `hydrateFromMain` reconciles afterwards —
-    // stale rows are deleted, new rows are added — so the cache being
-    // wrong is self-healing inside the same boot.
+    // Paint from the cached snapshot before the SQLite hydrate returns.
+    // `hydrateFromMain` reconciles afterwards, so stale rows self-heal.
     try {
       const cached = await readSnapshot();
       if (cached.length > 0) {

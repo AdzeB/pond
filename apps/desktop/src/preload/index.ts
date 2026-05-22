@@ -348,10 +348,9 @@ interface ShellHint {
 }
 
 function readShellHint(): ShellHint {
-  // Main passes `--pond-shell=<json>` via webPreferences.additionalArguments
-  // so the inline <script> in index.html can pick up the stored theme +
-  // pointer cursors before any bundle parses. Falls back to {} so the
-  // inline script's localStorage / system-preference path still works.
+  // Main forwards `--pond-shell=<json>` via additionalArguments; the
+  // inline boot script in index.html reads `window.__pondShell` to set
+  // theme + pointer cursors before any bundle parses.
   const prefix = "--pond-shell=";
   const arg = process.argv.find((a) => a.startsWith(prefix));
   if (!arg) return {};

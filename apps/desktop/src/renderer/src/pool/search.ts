@@ -2,18 +2,9 @@ import { useMemo } from "react";
 import { useSaves } from "./hooks";
 import type { Save } from "./types";
 
-// Client-side fuzzy search over the in-memory pool. Linear's argument
-// for this pattern: every search hit a local store rather than the
-// server, so results paint in the same frame the user finishes typing.
-// Pond's `Save[]` is small enough (mid-thousands at most) that a
-// substring scorer over the pool runs in <1ms even on a cold machine,
-// and side-steps the IPC roundtrip + SQLite FTS planner the old
-// `saves.search` query went through.
-//
-// We score per-term against each field and require every term to hit
-// at least one field. Title prefix beats title substring beats URL/tag
-// hits, so the most relevant save lands first even before cmdk's own
-// fuzzy ranking re-orders the visible commands.
+// Client-side scorer over the in-memory pool. Every term has to hit
+// at least one field; title prefix beats title substring beats tag
+// beats URL/author/description/notes.
 
 const MAX_RESULTS = 500;
 
@@ -59,8 +50,6 @@ function scoreMatch(save: Save, terms: string[]): number {
     if (author.includes(term)) score = Math.max(score, 150);
     if (description.includes(term)) score = Math.max(score, 100);
     if (notes.includes(term)) score = Math.max(score, 50);
-    // Every term has to hit somewhere — otherwise "react native" would
-    // match a save with only "react" in the title.
     if (score === 0) return 0;
     total += score;
   }

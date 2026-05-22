@@ -98,14 +98,9 @@ function Root() {
       if (!meta) return;
       if (e.key.toLowerCase() === "k") {
         e.preventDefault();
-        // Linear-style "everything is measured" — the palette is the
-        // app's most exercised cold path, so we capture the press-to-
-        // interactive delta. Read it in DevTools via
-        // `performance.getEntriesByName("pond:palette:open").pop()` or
-        // by name in the Performance panel.
-        try {
-          performance.mark("pond:palette:cmd");
-        } catch {}
+        // Read latency in DevTools via
+        // `performance.getEntriesByName("pond:palette:open").pop()`.
+        performance.mark("pond:palette:cmd");
         setOpen((v) => !v);
       }
     };
@@ -117,8 +112,8 @@ function Root() {
     if (open) {
       setSearch("");
       setScope("all");
-      // Two RAFs: first lets the dialog paint, second lets the input
-      // pick up autofocus. By then the palette is interactive.
+      // Two rAFs: one for the dialog to paint, one for autofocus to
+      // land. After both, the palette is interactive.
       let raf2 = 0;
       const raf1 = requestAnimationFrame(() => {
         raf2 = requestAnimationFrame(() => {
@@ -133,12 +128,14 @@ function Root() {
               .getEntriesByName("pond:palette:open")
               .at(-1);
             if (entry && entry.duration > 0) {
-              // eslint-disable-next-line no-console
               console.debug(
                 `[pond palette] cmd→interactive ${entry.duration.toFixed(1)}ms`,
               );
             }
-          } catch {}
+          } catch {
+            // No-op: missing start mark (palette opened via something
+            // other than Cmd+K) — measurement is best-effort.
+          }
         });
       });
       return () => {

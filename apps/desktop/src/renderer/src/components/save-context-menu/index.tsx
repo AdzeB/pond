@@ -33,9 +33,7 @@ type ActionDescriptor =
       icon: React.ComponentType<{ width: number; height: number }>;
       disabled?: boolean;
       variant?: "danger";
-      // Shortcut hints stay in sync with `SaveShortcuts`
-      // (effects/save-shortcuts.tsx). When a primary save is focused,
-      // these keys fire the same action without modifiers.
+      // Mirrors the keys in `effects/save-shortcuts.tsx`.
       shortcut?: string[];
       onSelect: () => void | Promise<void>;
     }

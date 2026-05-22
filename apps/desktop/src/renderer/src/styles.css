@@ -77,10 +77,8 @@ body {
   }
 }
 
-/* `MotionConfig reducedMotion="user"` in App.tsx handles motion/react
-   components. This rule covers plain CSS transitions + keyframes that
-   the library doesn't see. Pulls them to a single frame instead of
-   killing them entirely — preserves the visual feedback. */
+/* `MotionConfig reducedMotion="user"` in App.tsx handles motion/react;
+   this catches the plain-CSS transitions and keyframes it can't see. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

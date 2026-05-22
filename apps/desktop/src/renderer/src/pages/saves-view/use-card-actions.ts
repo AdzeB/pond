@@ -114,9 +114,8 @@ export function useCardActions(
         target?.isContentEditable === true;
       if (isInput) return;
 
-      // Don't steal arrows / J / K from open dialogs, menus, listboxes —
-      // they have their own roving focus and Base UI doesn't stop these
-      // events from bubbling to the window.
+      // Dialogs / menus / listboxes own their own roving focus — Base UI
+      // doesn't stop arrow keys from bubbling so we have to.
       const inOverlay = target?.closest(
         '[role="dialog"],[role="menu"],[role="listbox"],[role="combobox"]',
       );
@@ -131,7 +130,6 @@ export function useCardActions(
         return;
       }
 
-      // Cmd+B cycles layout (waterfall → grid → justified → list → …).
       if (meta && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
         cycleLayout();
@@ -143,8 +141,8 @@ export function useCardActions(
         return;
       }
 
-      // Below: bare-key grid navigation. Bail on any modifier or in-flight
-      // chord so we don't steal keys from `useChords` (e.g. `g a`).
+      // Bare-key grid nav from here on: defer to chord matcher so `g a`
+      // etc. wins over single-letter actions.
       if (meta || e.altKey) return;
       if (isChordPending()) return;
       if (filteredIds.length === 0) return;
@@ -176,8 +174,6 @@ export function useCardActions(
         return;
       }
 
-      // Linear-parity action keys on the focused row: Enter = open detail,
-      // Space = peek (open inspector), X = toggle multi-select membership.
       if (idx < 0) return;
       const focusedId = filteredIds[idx];
       if (!focusedId) return;

@@ -81,13 +81,9 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 }
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
-  /* `motion.li layout="position"` FLIPs the card between old and new
-   * positions via a composited transform — no width/height interpolation.
-   * Size changes (e.g. waterfall re-pack when grid width shifts) snap in
-   * one frame. This is the Linear playbook: animate position+opacity,
-   * never size, never anything layout-bound. Skipping size measurement
-   * also halves the work motion does per item per commit, which matters
-   * when the grid has hundreds of cards.
+  /* `layout="position"` FLIPs only the transform — size deltas (e.g.
+   * waterfall re-pack on grid width changes) snap in one frame, so
+   * we never measure or interpolate width/height per item.
    *
    * Cast bypasses Motion's `onDrag*` type override: callers pass React's
    * native `onDragStart` (DragEvent), and since we never enable `drag`,
