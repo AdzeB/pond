@@ -61,7 +61,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     ) => (
       <SaveCard
         key={save.id}
-        save={save}
+        id={save.id}
         layout="justified"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
@@ -81,7 +81,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     ) => (
       <SaveCard
         key={save.id}
-        save={save}
+        id={save.id}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}
@@ -141,7 +141,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       {saves.map((save) => (
         <SaveCard
           key={save.id}
-          save={save}
+          id={save.id}
           layout={viewMode as CardLayout}
           onClick={onClick}
           onDoubleClick={onDoubleClick}
@@ -170,7 +170,7 @@ function useGroupedWaterfallRenderer({
     ) => (
       <SaveCard
         key={save.id}
-        save={save}
+        id={save.id}
         layout="waterfall"
         onClick={onClick}
         onDoubleClick={onDoubleClick}

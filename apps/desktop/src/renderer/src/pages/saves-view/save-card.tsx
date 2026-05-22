@@ -8,13 +8,14 @@ import { Library } from "@/components/library";
 import { SaveContextMenu } from "@/components/save-context-menu";
 import { SourceBadge } from "@/components/source-badge";
 import { useDisplayPrefs } from "@/lib/display-prefs";
+import { useSave } from "@/pool/hooks";
 import { buildMediaUnits, pickPrimaryFile } from "@/pool/media";
 import { selection, useIsPrimary, useIsSelected } from "@/pool/selection";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 
 interface SaveCardProps {
-  save: Save;
+  id: string;
   layout: CardLayout;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
@@ -25,7 +26,7 @@ interface SaveCardProps {
 }
 
 export const SaveCard = memo(function SaveCard({
-  save,
+  id,
   layout,
   onClick,
   onDoubleClick,
@@ -34,13 +35,12 @@ export const SaveCard = memo(function SaveCard({
   packedTop,
   packedLeft,
 }: SaveCardProps) {
-  const isMulti = useIsSelected(save.id);
-  const isPrimary = useIsPrimary(save.id);
-  const cardSelection: CardSelection | undefined = isPrimary
-    ? "primary"
-    : isMulti
-      ? "multi"
-      : undefined;
+  // Per-id subscription: title / status / files edits to *this* save
+  // wake only this card via notifyId; the parent grid keeps a stable
+  // snapshot from useSaves() and never re-renders for field changes.
+  const save = useSave(id);
+  const isMulti = useIsSelected(id);
+  const isPrimary = useIsPrimary(id);
 
   const liStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (packedWidth == null || packedHeight == null) return undefined;
@@ -56,36 +56,45 @@ export const SaveCard = memo(function SaveCard({
     return base;
   }, [packedWidth, packedHeight, packedTop, packedLeft]);
 
+  const files = save?.files;
+  const coverIndex = save?.coverIndex;
   const onDragStart = useCallback(
     (e: React.DragEvent) => {
-      if (save.files.length === 0) return;
+      if (!files || files.length === 0) return;
       e.preventDefault();
       void window.pond.query("saves.startDrag", {
-        id: save.id,
-        fileIndex: save.coverIndex ?? 0,
+        id,
+        fileIndex: coverIndex ?? 0,
       });
     },
-    [save],
+    [id, files, coverIndex],
   );
 
   const onCheckboxClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      selection.toggle(save.id);
-      if (selection.has(save.id)) selection.setAnchor(save.id);
+      selection.toggle(id);
+      if (selection.has(id)) selection.setAnchor(id);
     },
-    [save.id],
+    [id],
   );
 
   const onSelectClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => onClick(save.id, e),
-    [onClick, save.id],
+    (e: React.MouseEvent<HTMLButtonElement>) => onClick(id, e),
+    [onClick, id],
   );
   const onSelectDoubleClick = useCallback(
-    () => onDoubleClick(save.id),
-    [onDoubleClick, save.id],
+    () => onDoubleClick(id),
+    [onDoubleClick, id],
   );
+
+  if (!save) return null;
+  const cardSelection: CardSelection | undefined = isPrimary
+    ? "primary"
+    : isMulti
+      ? "multi"
+      : undefined;
 
   return (
     <SaveContextMenu save={save}>
