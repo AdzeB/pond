@@ -8,7 +8,6 @@ import {
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import { Button, cn, Menu, Tooltip } from "@pond/ui";
-import { type HTMLMotionProps, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -21,7 +20,6 @@ import {
   useFilterHotkey,
 } from "@/components/filter-bar/registry";
 import { ViewPicker } from "@/components/layout-popover";
-import { drawerSpring } from "@/lib/motion";
 import { usePlatform } from "@/lib/platform";
 import { useSidebar } from "@/lib/use-sidebar";
 import styles from "./styles.module.css";
@@ -179,21 +177,19 @@ function Root() {
   );
 }
 
-interface ToolbarProps extends HTMLMotionProps<"div"> {}
+interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Toolbar({ className, ...props }: ToolbarProps) {
+function Toolbar({ className, style, ...props }: ToolbarProps) {
   const { open: sidebarOpen } = useSidebar();
   const platform = usePlatform();
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
 
   return (
-    <motion.div
+    <div
       role="toolbar"
       aria-label="Library toolbar"
       className={cn(styles.toolbar, className)}
-      initial={false}
-      animate={{ paddingInlineStart: trafficLightInset }}
-      transition={drawerSpring}
+      style={{ paddingInlineStart: trafficLightInset, ...style }}
       {...props}
     />
   );

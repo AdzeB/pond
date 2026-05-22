@@ -3,9 +3,13 @@
   display: flex;
   flex-shrink: 0;
   flex-direction: column;
-  width: 224px;
+  width: 0;
   height: 100%;
   overflow: hidden;
+}
+
+.pane[data-state="open"] {
+  width: 224px;
 }
 
 .inner {

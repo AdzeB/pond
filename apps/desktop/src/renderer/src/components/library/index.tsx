@@ -81,13 +81,12 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 }
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
-  /* `motion.li` with `layout` FLIPs the card between its old and new
-   * bounding box on every commit — so when the sidebar/inspector slide
-   * changes the available width, cards glide to their new packed or
-   * grid-cell positions instead of teleporting. The packers in
-   * `pages/saves-view/waterfall.tsx` and `justified.tsx` freeze their
-   * input width during the slide (see `useFrozenValue`), so motion only
-   * has to interpolate between two end states rather than every frame.
+  /* `motion.li layout` FLIPs the card between old and new bounding boxes
+   * on every commit, so cards glide to their new positions when sidebar
+   * or inspector visibility flips. The shell/inspector now snap width in
+   * one frame (no per-frame layout work), so FLIP just interpolates
+   * between two end states — same compositor-friendly transform path the
+   * packers were already designed around.
    *
    * Cast bypasses Motion's `onDrag*` type override: callers pass React's
    * native `onDragStart` (DragEvent), and since we never enable `drag`,

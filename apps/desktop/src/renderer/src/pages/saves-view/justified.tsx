@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
 import { useDisplayPrefs } from "@/lib/display-prefs";
-import { useFrozenValue, useIsAnimating } from "@/lib/motion";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
 import { chromeHeightFor } from "./chrome";
@@ -140,15 +139,10 @@ export function JustifiedView({
   const chromeHeight = chromeHeightFor(prefs);
   const aspectVersion = useAspectVersion();
 
-  /* See `waterfall.tsx` — freeze the packer input width while the
-   * chrome animates so cards FLIP from one packed layout to the next
-   * in a single transition instead of repacking every frame. */
-  const packWidth = useFrozenValue(width, useIsAnimating());
-
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packRows(saves, packWidth, targetHeight, chromeHeight);
-  }, [saves, packWidth, targetHeight, chromeHeight, aspectVersion]);
+    return packRows(saves, width, targetHeight, chromeHeight);
+  }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),

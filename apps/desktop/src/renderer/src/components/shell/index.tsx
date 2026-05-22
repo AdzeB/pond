@@ -1,5 +1,4 @@
 import { cn } from "@pond/ui";
-import { motion } from "motion/react";
 import type React from "react";
 import type { ReactNode } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
@@ -16,7 +15,6 @@ import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { HistoryHotkey } from "@/effects/history-hotkey";
 import { OnboardedGuard } from "@/effects/onboarded-guard";
 import { PreferencesHotkey } from "@/effects/preferences-hotkey";
-import { drawerSpring, useAnimationSignal } from "@/lib/motion";
 import { usePlatform } from "@/lib/platform";
 import { useSidebar } from "@/lib/use-sidebar";
 import {
@@ -101,21 +99,16 @@ export function AppRoot() {
 export function LibraryLayout() {
   const platform = usePlatform();
   const { open: sidebarOpen } = useSidebar();
-  const sidebarSignal = useAnimationSignal("sidebar");
 
   return (
     <Shell.Root platform={platform}>
-      <motion.div
+      <div
         className={styles["sidebar-wrap"]}
-        initial={false}
-        animate={{ width: sidebarOpen ? 224 : 0 }}
-        transition={drawerSpring}
-        onAnimationStart={sidebarSignal.start}
-        onAnimationComplete={sidebarSignal.end}
+        data-open={sidebarOpen ? "true" : "false"}
         aria-hidden={!sidebarOpen || undefined}
       >
         <LibrarySidebar.Root />
-      </motion.div>
+      </div>
       <Shell.Content>
         <div aria-hidden className={styles["drag-strip"]} />
         <Shell.Split>

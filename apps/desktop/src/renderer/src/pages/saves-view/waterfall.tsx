@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
 import { useDisplayPrefs } from "@/lib/display-prefs";
-import { useFrozenValue, useIsAnimating } from "@/lib/motion";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
 import { chromeHeightFor } from "./chrome";
@@ -144,17 +143,10 @@ export function WaterfallView({
     };
   }, []);
 
-  /* Freeze the width fed into the packer while the sidebar/inspector
-   * are mid-slide. The cards keep their packed positions, the panels
-   * animate, and on completion the packer recomputes once — Motion's
-   * `layout` on `Library.Item` then FLIPs cards from old to new in a
-   * single smooth transition instead of repacking 60×/sec. */
-  const packWidth = useFrozenValue(width, useIsAnimating());
-
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packMasonry(saves, packWidth, colMin, ITEM_GAP, chromeHeight);
-  }, [saves, packWidth, colMin, chromeHeight, aspectVersion]);
+    return packMasonry(saves, width, colMin, ITEM_GAP, chromeHeight);
+  }, [saves, width, colMin, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),
