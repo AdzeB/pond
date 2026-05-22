@@ -501,7 +501,7 @@ function SyncPanel() {
               <div className={styles["backfill-bar"]}>
                 <span
                   className={styles["backfill-bar-fill"]}
-                  style={{ width: `${pct}%` }}
+                  style={{ transform: `scaleX(${pct / 100})` }}
                 />
               </div>
             ) : null}

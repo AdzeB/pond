@@ -37,7 +37,6 @@
 
 .usage-bar-segment {
   height: 100%;
-  transition: flex-basis 200ms ease;
 }
 
 .usage-bar-segment-items {

@@ -967,7 +967,10 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
       aria-valuemax={100}
       aria-label={`${done} of ${total} tasks done`}
     >
-      <span className={styles["progress-fill"]} style={{ width: `${pct}%` }} />
+      <span
+        className={styles["progress-fill"]}
+        style={{ transform: `scaleX(${pct / 100})` }}
+      />
     </span>
   );
 }
