@@ -260,34 +260,44 @@ export function DeveloperSection() {
                 <AlertDialog.Trigger
                   render={<Button variant="danger">Factory Reset…</Button>}
                 />
-                <AlertDialog.Content>
-                  <AlertDialog.Title>Factory Reset?</AlertDialog.Title>
-                  <AlertDialog.Description>
-                    This wipes the SQLite index and prefs. Saves on disk stay
-                    put. You'll see onboarding on next launch.
-                  </AlertDialog.Description>
-                  <AlertDialog.Actions>
-                    <AlertDialog.Close
-                      render={<Button variant="ghost">Cancel</Button>}
-                    />
-                    <AlertDialog.Close
-                      render={
-                        <Button
-                          variant="danger"
-                          disabled={resetBusy === "factory"}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            void factoryReset();
-                          }}
-                        >
-                          {resetBusy === "factory"
-                            ? "Resetting…"
-                            : "Wipe & Restart"}
-                        </Button>
-                      }
-                    />
-                  </AlertDialog.Actions>
-                </AlertDialog.Content>
+                <AlertDialog.Portal>
+                  <AlertDialog.Backdrop />
+                  <AlertDialog.Popup>
+                    <AlertDialog.Title>Factory Reset?</AlertDialog.Title>
+                    <AlertDialog.Description>
+                      This wipes the SQLite index and prefs. Saves on disk stay
+                      put. You'll see onboarding on next launch.
+                    </AlertDialog.Description>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        justifyContent: "flex-end",
+                        marginTop: 8,
+                      }}
+                    >
+                      <AlertDialog.Close
+                        render={<Button variant="ghost">Cancel</Button>}
+                      />
+                      <AlertDialog.Close
+                        render={
+                          <Button
+                            variant="danger"
+                            disabled={resetBusy === "factory"}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              void factoryReset();
+                            }}
+                          >
+                            {resetBusy === "factory"
+                              ? "Resetting…"
+                              : "Wipe & Restart"}
+                          </Button>
+                        }
+                      />
+                    </div>
+                  </AlertDialog.Popup>
+                </AlertDialog.Portal>
               </AlertDialog.Root>
             </Settings.ItemControl>
           </Settings.Item>

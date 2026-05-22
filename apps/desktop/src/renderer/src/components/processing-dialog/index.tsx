@@ -549,366 +549,385 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
   const queuedTotal = Math.max(0, counts.totalIngesting - inflightTotal);
 
   return (
-    <Dialog.Content className={styles.dialog}>
-      <aside className={styles.rail}>
-        <RailRow
-          icon={<IconStackOutline18 width="0.95em" height="0.95em" />}
-          label="All"
-          count={counts.totalIngesting + counts.totalFailed}
-          selected={selection.kind === "all"}
-          onSelect={() => setSelection({ kind: "all" })}
-        />
-        {railSources.map((source) => {
-          const entry = counts.bySource.get(source);
-          if (!entry) return null;
-          return (
-            <RailRow
-              key={source}
-              badge={<SourceBadge.Root source={source} data-size="sm" />}
-              label={getSourceLabel(source)}
-              count={entry.ingesting + entry.failed}
-              gate={pausedSourceReasons.get(source) ?? null}
-              selected={
-                selection.kind === "source" && selection.source === source
-              }
-              onSelect={() => setSelection({ kind: "source", source })}
-            />
-          );
-        })}
-        {counts.totalFailed > 0 ? (
-          <>
-            <hr className={styles["rail-divider"]} />
-            <RailRow
-              icon={
-                <IconTriangleWarningOutline18 width="0.95em" height="0.95em" />
-              }
-              label="Failed"
-              count={counts.totalFailed}
-              tone="danger"
-              selected={selection.kind === "failed"}
-              onSelect={() => setSelection({ kind: "failed" })}
-            />
-          </>
-        ) : null}
-      </aside>
+    <Dialog.Portal>
+      <Dialog.Backdrop />
+      <Dialog.Popup className={styles.dialog}>
+        <aside className={styles.rail}>
+          <RailRow
+            icon={<IconStackOutline18 width="0.95em" height="0.95em" />}
+            label="All"
+            count={counts.totalIngesting + counts.totalFailed}
+            selected={selection.kind === "all"}
+            onSelect={() => setSelection({ kind: "all" })}
+          />
+          {railSources.map((source) => {
+            const entry = counts.bySource.get(source);
+            if (!entry) return null;
+            return (
+              <RailRow
+                key={source}
+                badge={<SourceBadge.Root source={source} data-size="sm" />}
+                label={getSourceLabel(source)}
+                count={entry.ingesting + entry.failed}
+                gate={pausedSourceReasons.get(source) ?? null}
+                selected={
+                  selection.kind === "source" && selection.source === source
+                }
+                onSelect={() => setSelection({ kind: "source", source })}
+              />
+            );
+          })}
+          {counts.totalFailed > 0 ? (
+            <>
+              <hr className={styles["rail-divider"]} />
+              <RailRow
+                icon={
+                  <IconTriangleWarningOutline18
+                    width="0.95em"
+                    height="0.95em"
+                  />
+                }
+                label="Failed"
+                count={counts.totalFailed}
+                tone="danger"
+                selected={selection.kind === "failed"}
+                onSelect={() => setSelection({ kind: "failed" })}
+              />
+            </>
+          ) : null}
+        </aside>
 
-      <div className={styles.pane}>
-        <header className={styles.header}>
-          <Dialog.Title>{paneTitle(selection)}</Dialog.Title>
-          <Dialog.Description>
-            {describeCounts(visibleIngesting.length, visibleFailed.length)}
-          </Dialog.Description>
-          <div className={styles["header-actions"]}>
-            <button
-              type="button"
-              className={styles["icon-button"]}
-              data-active={paused ? "true" : undefined}
-              onClick={handleTogglePause}
-              title={paused ? "Resume processing" : "Pause processing"}
-              aria-label={paused ? "Resume processing" : "Pause processing"}
-            >
+        <div className={styles.pane}>
+          <header className={styles.header}>
+            <Dialog.Title>{paneTitle(selection)}</Dialog.Title>
+            <Dialog.Description>
+              {describeCounts(visibleIngesting.length, visibleFailed.length)}
+            </Dialog.Description>
+            <div className={styles["header-actions"]}>
+              <button
+                type="button"
+                className={styles["icon-button"]}
+                data-active={paused ? "true" : undefined}
+                onClick={handleTogglePause}
+                title={paused ? "Resume processing" : "Pause processing"}
+                aria-label={paused ? "Resume processing" : "Pause processing"}
+              >
+                {paused ? (
+                  <IconMediaPlayOutline18 width="0.95em" height="0.95em" />
+                ) : (
+                  <IconMediaPauseOutline18 width="0.95em" height="0.95em" />
+                )}
+              </button>
+              {backfillRunning ? (
+                <button
+                  type="button"
+                  className={styles["retry-all"]}
+                  data-variant="stop"
+                  onClick={handleCancelRetryAll}
+                  title="Stop the in-progress retry"
+                >
+                  <IconMediaStopOutline18 width="0.85em" height="0.85em" />
+                  <span>Stop retrying</span>
+                </button>
+              ) : counts.totalFailed > 0 ? (
+                <button
+                  type="button"
+                  className={styles["retry-all"]}
+                  onClick={handleRetryAll}
+                >
+                  <IconRefreshClockwiseOutline18
+                    width="0.85em"
+                    height="0.85em"
+                  />
+                  <span>{`Retry all failed (${counts.totalFailed})`}</span>
+                </button>
+              ) : null}
+              {clearScope.count > 0 ? (
+                <button
+                  type="button"
+                  className={styles["retry-all"]}
+                  data-variant="danger"
+                  onClick={() => setConfirmClear(true)}
+                  title={`${clearScope.label} (moves ${clearScope.count} to trash)`}
+                >
+                  <IconTrashXmarkOutline18 width="0.85em" height="0.85em" />
+                  <span>{`${clearScope.label} (${clearScope.count})`}</span>
+                </button>
+              ) : null}
+            </div>
+          </header>
+
+          {(metrics && (inflightTotal > 0 || queuedTotal > 0 || paused)) ||
+          truncated > 0 ? (
+            <div className={styles.chips}>
               {paused ? (
-                <IconMediaPlayOutline18 width="0.95em" height="0.95em" />
-              ) : (
-                <IconMediaPauseOutline18 width="0.95em" height="0.95em" />
-              )}
-            </button>
-            {backfillRunning ? (
-              <button
-                type="button"
-                className={styles["retry-all"]}
-                data-variant="stop"
-                onClick={handleCancelRetryAll}
-                title="Stop the in-progress retry"
-              >
-                <IconMediaStopOutline18 width="0.85em" height="0.85em" />
-                <span>Stop retrying</span>
-              </button>
-            ) : counts.totalFailed > 0 ? (
-              <button
-                type="button"
-                className={styles["retry-all"]}
-                onClick={handleRetryAll}
-              >
-                <IconRefreshClockwiseOutline18 width="0.85em" height="0.85em" />
-                <span>{`Retry all failed (${counts.totalFailed})`}</span>
-              </button>
-            ) : null}
-            {clearScope.count > 0 ? (
-              <button
-                type="button"
-                className={styles["retry-all"]}
-                data-variant="danger"
-                onClick={() => setConfirmClear(true)}
-                title={`${clearScope.label} (moves ${clearScope.count} to trash)`}
-              >
-                <IconTrashXmarkOutline18 width="0.85em" height="0.85em" />
-                <span>{`${clearScope.label} (${clearScope.count})`}</span>
-              </button>
-            ) : null}
-          </div>
-        </header>
-
-        {(metrics && (inflightTotal > 0 || queuedTotal > 0 || paused)) ||
-        truncated > 0 ? (
-          <div className={styles.chips}>
-            {paused ? (
-              <span
-                className={styles.chip}
-                data-tone="warn"
-                title="The reconciler is paused — no new tasks will dispatch."
-              >
-                Paused
-              </span>
-            ) : null}
-            {inflightTotal > 0 ? (
-              <span className={styles.chip}>{inflightTotal} active</span>
-            ) : null}
-            {queuedTotal > 0 ? (
-              <span className={styles.chip}>{queuedTotal} queued</span>
-            ) : null}
-            {(metrics?.pausedSources ?? []).map((entry) => {
-              const desc = describeGate(
-                entry.reason,
-                entry.until,
-                now,
-                getSourceLabel(entry.source),
-              );
-              return (
                 <span
-                  key={entry.source}
                   className={styles.chip}
-                  data-tone={entry.reason === "breaker" ? "danger" : "warn"}
-                  title={desc.long}
+                  data-tone="warn"
+                  title="The reconciler is paused — no new tasks will dispatch."
                 >
-                  {desc.short}
+                  Paused
                 </span>
-              );
-            })}
-            {truncated > 0 ? (
-              <span
-                className={styles.chip}
-                data-tone="muted"
-                title="The dialog caps at 500 rows — clear or retry to see the rest."
-              >
-                +{truncated} more
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-
-        {selection.kind === "source" &&
-        pausedSourceReasons.has(selection.source) ? (
-          <p className={styles.notice} data-tone="warn">
-            {
-              describeGate(
-                pausedSourceReasons.get(selection.source) ?? "cooldown",
-                metrics?.pausedSources.find(
-                  (e) => e.source === selection.source,
-                )?.until ?? now,
-                now,
-                getSourceLabel(selection.source),
-              ).long
-            }
-          </p>
-        ) : null}
-
-        {paused && visibleRows.length === 0 ? (
-          <p className={styles.notice} data-tone="warn">
-            Processing is paused. Hit play to resume.
-          </p>
-        ) : null}
-
-        {backfillRunning && backfillMessage ? (
-          <p className={styles["backfill-status"]}>{backfillMessage}</p>
-        ) : null}
-
-        <div className={styles.scroll}>
-          {visibleIngesting.length > 0 ? (
-            <section className={styles.section}>
-              <h3 className={styles["section-title"]}>
-                Ingesting{" "}
-                <span className={styles["section-count"]}>
-                  {visibleIngesting.length}
+              ) : null}
+              {inflightTotal > 0 ? (
+                <span className={styles.chip}>{inflightTotal} active</span>
+              ) : null}
+              {queuedTotal > 0 ? (
+                <span className={styles.chip}>{queuedTotal} queued</span>
+              ) : null}
+              {(metrics?.pausedSources ?? []).map((entry) => {
+                const desc = describeGate(
+                  entry.reason,
+                  entry.until,
+                  now,
+                  getSourceLabel(entry.source),
+                );
+                return (
+                  <span
+                    key={entry.source}
+                    className={styles.chip}
+                    data-tone={entry.reason === "breaker" ? "danger" : "warn"}
+                    title={desc.long}
+                  >
+                    {desc.short}
+                  </span>
+                );
+              })}
+              {truncated > 0 ? (
+                <span
+                  className={styles.chip}
+                  data-tone="muted"
+                  title="The dialog caps at 500 rows — clear or retry to see the rest."
+                >
+                  +{truncated} more
                 </span>
-              </h3>
-              <ul className={styles.list}>
-                {visibleIngesting.map((row) => {
-                  const stage = describeIngestingStage(row, now);
-                  return (
-                    <li
-                      key={row.id}
-                      className={styles.row}
-                      data-status="ingesting"
-                    >
-                      <SourceBadge.Root source={row.source} data-size="sm" />
-                      <div className={styles.body}>
-                        <span className={styles.title} title={row.url}>
-                          {row.title?.trim() || displayUrl(row.url)}
-                        </span>
-                        <span
-                          className={styles.stage}
-                          data-tone={stage.tone}
-                          title={stage.hint}
-                        >
-                          {stage.label}
-                        </span>
-                      </div>
-                      <ProgressBar
-                        done={row.progress.done}
-                        total={row.progress.total}
-                      />
-                      {row.stageTaskId ? (
-                        <button
-                          type="button"
-                          className={styles["row-button"]}
-                          aria-label="Skip current step"
-                          title="Skip current step (marks save failed)"
-                          onClick={() => handleSkipStage(row)}
-                          disabled={busyId === row.id}
-                        >
-                          <IconMediaSkipToEndOutline18
-                            width="0.95em"
-                            height="0.95em"
-                          />
-                        </button>
-                      ) : null}
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
+              ) : null}
+            </div>
           ) : null}
 
-          {visibleFailed.length > 0 ? (
-            <section className={styles.section}>
-              <h3 className={styles["section-title"]}>
-                Failed{" "}
-                <span className={styles["section-count"]}>
-                  {visibleFailed.length}
-                </span>
-              </h3>
-              <ul className={styles.list}>
-                {visibleFailed.map((row) => {
-                  const explain = explainTaskError(
-                    row.lastErrorName,
-                    row.lastError,
-                    row.source,
-                    row.stageOp,
-                  );
-                  const dwell = formatRelative(now, row.lastErrorAt);
-                  const detailParts = [explain.hint, row.lastError].filter(
-                    Boolean,
-                  );
-                  return (
-                    <li
-                      key={row.id}
-                      className={styles.row}
-                      data-status="failed"
-                    >
-                      <SourceBadge.Root source={row.source} data-size="sm" />
-                      <div className={styles.body}>
-                        <span className={styles.title} title={row.url}>
-                          {row.title?.trim() || displayUrl(row.url)}
-                        </span>
-                        <span
-                          className={styles.error}
-                          data-tone={explain.tone}
-                          title={detailParts.join("\n\n") || undefined}
-                        >
-                          {explain.short}
-                          {dwell ? (
-                            <span className={styles["error-meta"]}>
-                              {" · "}
-                              {dwell}
-                              {row.stageOp
-                                ? ` · ${STAGE_LABELS[row.stageOp]}`
-                                : ""}
-                            </span>
-                          ) : null}
-                        </span>
-                      </div>
-                      <div className={styles.actions}>
-                        <button
-                          type="button"
-                          className={styles["row-button"]}
-                          aria-label="Retry"
-                          title="Retry"
-                          onClick={() => handleRetry(row.id)}
-                          disabled={busyId === row.id}
-                        >
-                          <IconRefreshClockwiseOutline18
-                            width="0.95em"
-                            height="0.95em"
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles["row-button"]}
-                          aria-label="Open URL"
-                          title="Open URL"
-                          onClick={() => handleOpen(row.url)}
-                        >
-                          <IconOpenInBrowserOutline18
-                            width="0.95em"
-                            height="0.95em"
-                          />
-                        </button>
-                        <button
-                          type="button"
-                          className={styles["row-button"]}
-                          aria-label="Delete"
-                          title="Delete"
-                          onClick={() => handleDelete(row.id)}
-                          disabled={busyId === row.id}
-                        >
-                          <IconTrashXmarkOutline18
-                            width="0.95em"
-                            height="0.95em"
-                          />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          ) : null}
-
-          {payload && visibleRows.length === 0
-            ? renderEmpty(selection, rows.length === 0)
-            : null}
-        </div>
-      </div>
-
-      <AlertDialog.Root open={confirmClear} onOpenChange={setConfirmClear}>
-        <AlertDialog.Content>
-          <AlertDialog.Title>{clearScope.confirmTitle}</AlertDialog.Title>
-          <AlertDialog.Description>
-            {clearScope.confirmBody}
-          </AlertDialog.Description>
-          <AlertDialog.Actions>
-            <AlertDialog.Close
-              render={<Button variant="ghost">Cancel</Button>}
-            />
-            <AlertDialog.Close
-              render={
-                <Button
-                  variant="danger"
-                  disabled={clearing}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    void handleClearQueue();
-                  }}
-                >
-                  Clear
-                </Button>
+          {selection.kind === "source" &&
+          pausedSourceReasons.has(selection.source) ? (
+            <p className={styles.notice} data-tone="warn">
+              {
+                describeGate(
+                  pausedSourceReasons.get(selection.source) ?? "cooldown",
+                  metrics?.pausedSources.find(
+                    (e) => e.source === selection.source,
+                  )?.until ?? now,
+                  now,
+                  getSourceLabel(selection.source),
+                ).long
               }
-            />
-          </AlertDialog.Actions>
-        </AlertDialog.Content>
-      </AlertDialog.Root>
-    </Dialog.Content>
+            </p>
+          ) : null}
+
+          {paused && visibleRows.length === 0 ? (
+            <p className={styles.notice} data-tone="warn">
+              Processing is paused. Hit play to resume.
+            </p>
+          ) : null}
+
+          {backfillRunning && backfillMessage ? (
+            <p className={styles["backfill-status"]}>{backfillMessage}</p>
+          ) : null}
+
+          <div className={styles.scroll}>
+            {visibleIngesting.length > 0 ? (
+              <section className={styles.section}>
+                <h3 className={styles["section-title"]}>
+                  Ingesting{" "}
+                  <span className={styles["section-count"]}>
+                    {visibleIngesting.length}
+                  </span>
+                </h3>
+                <ul className={styles.list}>
+                  {visibleIngesting.map((row) => {
+                    const stage = describeIngestingStage(row, now);
+                    return (
+                      <li
+                        key={row.id}
+                        className={styles.row}
+                        data-status="ingesting"
+                      >
+                        <SourceBadge.Root source={row.source} data-size="sm" />
+                        <div className={styles.body}>
+                          <span className={styles.title} title={row.url}>
+                            {row.title?.trim() || displayUrl(row.url)}
+                          </span>
+                          <span
+                            className={styles.stage}
+                            data-tone={stage.tone}
+                            title={stage.hint}
+                          >
+                            {stage.label}
+                          </span>
+                        </div>
+                        <ProgressBar
+                          done={row.progress.done}
+                          total={row.progress.total}
+                        />
+                        {row.stageTaskId ? (
+                          <button
+                            type="button"
+                            className={styles["row-button"]}
+                            aria-label="Skip current step"
+                            title="Skip current step (marks save failed)"
+                            onClick={() => handleSkipStage(row)}
+                            disabled={busyId === row.id}
+                          >
+                            <IconMediaSkipToEndOutline18
+                              width="0.95em"
+                              height="0.95em"
+                            />
+                          </button>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
+            {visibleFailed.length > 0 ? (
+              <section className={styles.section}>
+                <h3 className={styles["section-title"]}>
+                  Failed{" "}
+                  <span className={styles["section-count"]}>
+                    {visibleFailed.length}
+                  </span>
+                </h3>
+                <ul className={styles.list}>
+                  {visibleFailed.map((row) => {
+                    const explain = explainTaskError(
+                      row.lastErrorName,
+                      row.lastError,
+                      row.source,
+                      row.stageOp,
+                    );
+                    const dwell = formatRelative(now, row.lastErrorAt);
+                    const detailParts = [explain.hint, row.lastError].filter(
+                      Boolean,
+                    );
+                    return (
+                      <li
+                        key={row.id}
+                        className={styles.row}
+                        data-status="failed"
+                      >
+                        <SourceBadge.Root source={row.source} data-size="sm" />
+                        <div className={styles.body}>
+                          <span className={styles.title} title={row.url}>
+                            {row.title?.trim() || displayUrl(row.url)}
+                          </span>
+                          <span
+                            className={styles.error}
+                            data-tone={explain.tone}
+                            title={detailParts.join("\n\n") || undefined}
+                          >
+                            {explain.short}
+                            {dwell ? (
+                              <span className={styles["error-meta"]}>
+                                {" · "}
+                                {dwell}
+                                {row.stageOp
+                                  ? ` · ${STAGE_LABELS[row.stageOp]}`
+                                  : ""}
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+                        <div className={styles.actions}>
+                          <button
+                            type="button"
+                            className={styles["row-button"]}
+                            aria-label="Retry"
+                            title="Retry"
+                            onClick={() => handleRetry(row.id)}
+                            disabled={busyId === row.id}
+                          >
+                            <IconRefreshClockwiseOutline18
+                              width="0.95em"
+                              height="0.95em"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles["row-button"]}
+                            aria-label="Open URL"
+                            title="Open URL"
+                            onClick={() => handleOpen(row.url)}
+                          >
+                            <IconOpenInBrowserOutline18
+                              width="0.95em"
+                              height="0.95em"
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            className={styles["row-button"]}
+                            aria-label="Delete"
+                            title="Delete"
+                            onClick={() => handleDelete(row.id)}
+                            disabled={busyId === row.id}
+                          >
+                            <IconTrashXmarkOutline18
+                              width="0.95em"
+                              height="0.95em"
+                            />
+                          </button>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
+            {payload && visibleRows.length === 0
+              ? renderEmpty(selection, rows.length === 0)
+              : null}
+          </div>
+        </div>
+
+        <AlertDialog.Root open={confirmClear} onOpenChange={setConfirmClear}>
+          <AlertDialog.Portal>
+            <AlertDialog.Backdrop />
+            <AlertDialog.Popup>
+              <AlertDialog.Title>{clearScope.confirmTitle}</AlertDialog.Title>
+              <AlertDialog.Description>
+                {clearScope.confirmBody}
+              </AlertDialog.Description>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 8,
+                }}
+              >
+                <AlertDialog.Close
+                  render={<Button variant="ghost">Cancel</Button>}
+                />
+                <AlertDialog.Close
+                  render={
+                    <Button
+                      variant="danger"
+                      disabled={clearing}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        void handleClearQueue();
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  }
+                />
+              </div>
+            </AlertDialog.Popup>
+          </AlertDialog.Portal>
+        </AlertDialog.Root>
+      </Dialog.Popup>
+    </Dialog.Portal>
   );
 }
 

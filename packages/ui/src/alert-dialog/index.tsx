@@ -2,7 +2,6 @@ import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
 import dialogStyles from "../dialog/styles.module.css";
 import { renderFrozenPopup } from "../freeze/popup";
 import { cn } from "../lib/cn";
-import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
@@ -12,22 +11,26 @@ function Trigger(props: Base.Trigger.Props) {
   return <Base.Trigger {...props} />;
 }
 
-function Close(props: Base.Close.Props) {
-  return <Base.Close {...props} />;
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
 }
 
-function Content({ className, children, render, ...rest }: Base.Popup.Props) {
+function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Portal>
-      <Base.Backdrop className={dialogStyles.backdrop} />
-      <Base.Popup
-        {...rest}
-        className={cn(dialogStyles.popup, className)}
-        render={render ?? renderFrozenPopup}
-      >
-        {children}
-      </Base.Popup>
-    </Base.Portal>
+    <Base.Backdrop
+      className={cn(dialogStyles.backdrop, className)}
+      {...props}
+    />
+  );
+}
+
+function Popup({ className, render, ...props }: Base.Popup.Props) {
+  return (
+    <Base.Popup
+      {...props}
+      className={cn(dialogStyles.popup, className)}
+      render={render ?? renderFrozenPopup}
+    />
   );
 }
 
@@ -46,16 +49,24 @@ function Description({ className, ...props }: Base.Description.Props) {
   );
 }
 
-function Actions({ className, ...props }: React.ComponentProps<"div">) {
-  return <div className={cn(styles.actions, className)} {...props} />;
+function Close(props: Base.Close.Props) {
+  return <Base.Close {...props} />;
+}
+
+function Viewport(props: Base.Viewport.Props) {
+  return <Base.Viewport {...props} />;
 }
 
 export const AlertDialog = {
   Root,
   Trigger,
-  Content,
+  Portal,
+  Backdrop,
+  Popup,
   Title,
   Description,
-  Actions,
   Close,
+  Viewport,
+  createHandle: Base.createHandle,
+  Handle: Base.Handle,
 };

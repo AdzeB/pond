@@ -6,6 +6,7 @@ import {
 import { Popover, Select, Switch, Tooltip } from "@pond/ui";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { type Density, setDensity, useDensity } from "@/lib/density";
 import {
   type DisplayPrefKey,
   setDisplayPref,
@@ -43,6 +44,14 @@ const DISPLAY_TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "fileCount", label: "Show file count" },
   { key: "sourceBadge", label: "Show source badge" },
 ];
+
+const DENSITY_OPTIONS: Array<{ value: Density; label: string }> = [
+  { value: "compact", label: "Compact" },
+  { value: "comfortable", label: "Comfortable" },
+  { value: "spacious", label: "Spacious" },
+];
+
+const DENSITY_VALUES = new Set<Density>(["compact", "comfortable", "spacious"]);
 
 const SORT_VALUES = new Set<SortKey>(["savedAt", "title", "fileSize"]);
 
@@ -114,147 +123,188 @@ function ViewPickerRoot({ trigger }: PickerProps) {
   const [layout, setLayout] = useLayoutValue();
   const { sortKey, sortDir, setSortKey, setSortDir } = useSortState();
   const prefs = useDisplayPrefs();
+  const density = useDensity();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
   const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
 
   return (
     <Popover.Root>
       <Popover.Trigger render={trigger} />
-      <Popover.Content
-        side="bottom"
-        align="end"
-        sideOffset={6}
-        className={styles.popup}
-      >
-        <Row label="Layout">
-          <Select.Root
-            value={layout}
-            onValueChange={(v) => {
-              if (typeof v === "string" && isLayoutValue(v)) {
-                setLayout(v);
-              }
-            }}
-          >
-            <Select.Trigger>
-              <Select.Value />
-              <Select.Icon>
-                <IconChevronExpandYOutline12 />
-              </Select.Icon>
-            </Select.Trigger>
-            <Select.Portal>
-              <Select.Positioner sideOffset={6}>
-                <Select.Popup>
-                  {LAYOUT_OPTIONS.map((opt) => (
-                    <Select.Item key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </Select.Item>
-                  ))}
-                </Select.Popup>
-              </Select.Positioner>
-            </Select.Portal>
-          </Select.Root>
-        </Row>
-
-        <Row label="Sort by">
-          <span className={styles["sort-controls"]}>
-            <Select.Root
-              value={sortKey}
-              onValueChange={(v) => {
-                if (typeof v === "string" && SORT_VALUES.has(v as SortKey)) {
-                  setSortKey(v as SortKey);
-                }
-              }}
-            >
-              <Select.Trigger>
-                <Select.Value />
-                <Select.Icon>
-                  <IconChevronExpandYOutline12 />
-                </Select.Icon>
-              </Select.Trigger>
-              <Select.Portal>
-                <Select.Positioner sideOffset={6}>
-                  <Select.Popup>
-                    {SORT_OPTIONS.map((opt) => (
-                      <Select.Item key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </Select.Item>
-                    ))}
-                  </Select.Popup>
-                </Select.Positioner>
-              </Select.Portal>
-            </Select.Root>
-            <fieldset className={styles["dir-group"]}>
-              <legend className={styles["sr-only"]}>Sort direction</legend>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  render={
-                    <button
-                      type="button"
-                      aria-label="Sort ascending"
-                      aria-pressed={sortDir === "asc"}
-                      className={styles["dir-btn"]}
-                      onClick={() => setSortDir("asc")}
-                    >
-                      <IconArrowUpOutline18 width="0.85em" height="0.85em" />
-                    </button>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="end" sideOffset={6}>
+          <Popover.Popup className={styles.popup}>
+            <Row label="Layout">
+              <Select.Root
+                value={layout}
+                onValueChange={(v) => {
+                  if (typeof v === "string" && isLayoutValue(v)) {
+                    setLayout(v);
                   }
-                />
-                <Tooltip.Portal>
-                  <Tooltip.Positioner side="bottom">
-                    <Tooltip.Popup>Ascending</Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-              <Tooltip.Root>
-                <Tooltip.Trigger
-                  render={
-                    <button
-                      type="button"
-                      aria-label="Sort descending"
-                      aria-pressed={sortDir === "desc"}
-                      className={styles["dir-btn"]}
-                      onClick={() => setSortDir("desc")}
-                    >
-                      <IconArrowDownOutline18 width="0.85em" height="0.85em" />
-                    </button>
+                }}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Icon>
+                    <IconChevronExpandYOutline12 />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={6}>
+                    <Select.Popup>
+                      {LAYOUT_OPTIONS.map((opt) => (
+                        <Select.Item key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </Row>
+
+            <Row label="Sort by">
+              <span className={styles["sort-controls"]}>
+                <Select.Root
+                  value={sortKey}
+                  onValueChange={(v) => {
+                    if (
+                      typeof v === "string" &&
+                      SORT_VALUES.has(v as SortKey)
+                    ) {
+                      setSortKey(v as SortKey);
+                    }
+                  }}
+                >
+                  <Select.Trigger>
+                    <Select.Value />
+                    <Select.Icon>
+                      <IconChevronExpandYOutline12 />
+                    </Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Positioner sideOffset={6}>
+                      <Select.Popup>
+                        {SORT_OPTIONS.map((opt) => (
+                          <Select.Item key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Popup>
+                    </Select.Positioner>
+                  </Select.Portal>
+                </Select.Root>
+                <fieldset className={styles["dir-group"]}>
+                  <legend className={styles["sr-only"]}>Sort direction</legend>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger
+                      render={
+                        <button
+                          type="button"
+                          aria-label="Sort ascending"
+                          aria-pressed={sortDir === "asc"}
+                          className={styles["dir-btn"]}
+                          onClick={() => setSortDir("asc")}
+                        >
+                          <IconArrowUpOutline18
+                            width="0.85em"
+                            height="0.85em"
+                          />
+                        </button>
+                      }
+                    />
+                    <Tooltip.Portal>
+                      <Tooltip.Positioner side="bottom">
+                        <Tooltip.Popup>Ascending</Tooltip.Popup>
+                      </Tooltip.Positioner>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger
+                      render={
+                        <button
+                          type="button"
+                          aria-label="Sort descending"
+                          aria-pressed={sortDir === "desc"}
+                          className={styles["dir-btn"]}
+                          onClick={() => setSortDir("desc")}
+                        >
+                          <IconArrowDownOutline18
+                            width="0.85em"
+                            height="0.85em"
+                          />
+                        </button>
+                      }
+                    />
+                    <Tooltip.Portal>
+                      <Tooltip.Positioner side="bottom">
+                        <Tooltip.Popup>Descending</Tooltip.Popup>
+                      </Tooltip.Positioner>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </fieldset>
+              </span>
+            </Row>
+
+            <Row label="Density">
+              <Select.Root
+                value={density}
+                onValueChange={(v) => {
+                  if (
+                    typeof v === "string" &&
+                    DENSITY_VALUES.has(v as Density)
+                  ) {
+                    setDensity(v as Density);
                   }
+                }}
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Icon>
+                    <IconChevronExpandYOutline12 />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={6}>
+                    <Select.Popup>
+                      {DENSITY_OPTIONS.map((opt) => (
+                        <Select.Item key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </Row>
+
+            <hr className={styles.separator} />
+
+            {DISPLAY_TOGGLES.map(({ key, label }) => (
+              <Row key={key} label={label}>
+                <Switch.Root
+                  checked={prefs[key]}
+                  onCheckedChange={(v) => setDisplayPref(key, Boolean(v))}
                 />
-                <Tooltip.Portal>
-                  <Tooltip.Positioner side="bottom">
-                    <Tooltip.Popup>Descending</Tooltip.Popup>
-                  </Tooltip.Positioner>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </fieldset>
-          </span>
-        </Row>
+              </Row>
+            ))}
 
-        <hr className={styles.separator} />
+            <hr className={styles.separator} />
 
-        {DISPLAY_TOGGLES.map(({ key, label }) => (
-          <Row key={key} label={label}>
-            <Switch.Root
-              checked={prefs[key]}
-              onCheckedChange={(v) => setDisplayPref(key, Boolean(v))}
-            />
-          </Row>
-        ))}
-
-        <hr className={styles.separator} />
-
-        <Row label="Show sidebar">
-          <Switch.Root
-            checked={sidebarOpen}
-            onCheckedChange={(v) => setSidebarOpen(Boolean(v))}
-          />
-        </Row>
-        <Row label="Show inspector">
-          <Switch.Root
-            checked={inspectorOpen}
-            onCheckedChange={(v) => setInspectorOpen(Boolean(v))}
-          />
-        </Row>
-      </Popover.Content>
+            <Row label="Show sidebar">
+              <Switch.Root
+                checked={sidebarOpen}
+                onCheckedChange={(v) => setSidebarOpen(Boolean(v))}
+              />
+            </Row>
+            <Row label="Show inspector">
+              <Switch.Root
+                checked={inspectorOpen}
+                onCheckedChange={(v) => setInspectorOpen(Boolean(v))}
+              />
+            </Row>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
     </Popover.Root>
   );
 }

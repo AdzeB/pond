@@ -1,14 +1,10 @@
-import { NumberField } from "@pond/ui";
+import { NumberFieldStepper } from "@/components/number-field-stepper";
 import { Cell } from "./cell";
 
 export default function NumberFieldCell() {
   return (
     <Cell label="Number Field">
-      <NumberField.Root defaultValue={1}>
-        <NumberField.Decrement />
-        <NumberField.Input />
-        <NumberField.Increment />
-      </NumberField.Root>
+      <NumberFieldStepper defaultValue={1} />
     </Cell>
   );
 }

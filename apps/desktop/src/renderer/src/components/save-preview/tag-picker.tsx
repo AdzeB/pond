@@ -232,83 +232,89 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger render={trigger} />
-      <Popover.Content
-        className={styles["tag-picker-popup"]}
-        sideOffset={6}
-        align="start"
-      >
-        <div className={styles["tag-picker-header"]}>
-          <span className={styles["tag-picker-header-icon"]} aria-hidden>
-            <IconMagnifierOutline18 width={14} height={14} />
-          </span>
-          <Input
-            data-size="sm"
-            className={styles["tag-picker-search"]}
-            placeholder="Search…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={onSearchKeyDown}
-            autoFocus
-            spellCheck={false}
-            disabled={busy}
-          />
-        </div>
-        <div className={styles["tag-picker-body"]}>
-          {filtered.recently.length > 0 ? (
-            <Section
-              title="Recently"
-              count={filtered.recently.length}
-              items={filtered.recently}
-              renderIcon={() => <IconClockOutline18 width={12} height={12} />}
-              onPick={apply}
-            />
-          ) : null}
-          {filtered.recommended.length > 0 ? (
-            <Section
-              title="Recommended"
-              count={filtered.recommended.length}
-              items={filtered.recommended}
-              renderIcon={() => (
-                <IconSparkle2Outline18 width={12} height={12} />
-              )}
-              onPick={apply}
-            />
-          ) : null}
-          {filtered.others.length > 0 ? (
-            <Section
-              title="Others"
-              count={filtered.others.length}
-              items={filtered.others}
-              renderIcon={(color) => (
-                <span
-                  className={styles["tag-picker-item-dot"]}
-                  style={{ background: color ?? "var(--ds-gray-a6)" }}
-                />
-              )}
-              onPick={apply}
-            />
-          ) : null}
-          {!hasAny ? (
-            <div className={styles["tag-picker-empty"]}>
-              {q.trim() ? `Press ↵ to create "${q.trim()}"` : "No tags yet."}
+      <Popover.Portal>
+        <Popover.Positioner sideOffset={6} align="start">
+          <Popover.Popup className={styles["tag-picker-popup"]}>
+            <div className={styles["tag-picker-header"]}>
+              <span className={styles["tag-picker-header-icon"]} aria-hidden>
+                <IconMagnifierOutline18 width={14} height={14} />
+              </span>
+              <Input
+                data-size="sm"
+                className={styles["tag-picker-search"]}
+                placeholder="Search…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={onSearchKeyDown}
+                autoFocus
+                spellCheck={false}
+                disabled={busy}
+              />
             </div>
-          ) : null}
-        </div>
-        <div className={styles["tag-picker-footer"]}>
-          <span className={styles["tag-picker-footer-cell"]}>
-            <Kbd.Cluster keys={["↑", "↓", "←", "→"]} />
-            <span className={styles["tag-picker-footer-label"]}>Move</span>
-          </span>
-          <span className={styles["tag-picker-footer-cell"]}>
-            <Kbd.Key>↵</Kbd.Key>
-            <span className={styles["tag-picker-footer-label"]}>Select</span>
-          </span>
-          <span className={styles["tag-picker-footer-cell"]}>
-            <Kbd.Key>esc</Kbd.Key>
-            <span className={styles["tag-picker-footer-label"]}>Close</span>
-          </span>
-        </div>
-      </Popover.Content>
+            <div className={styles["tag-picker-body"]}>
+              {filtered.recently.length > 0 ? (
+                <Section
+                  title="Recently"
+                  count={filtered.recently.length}
+                  items={filtered.recently}
+                  renderIcon={() => (
+                    <IconClockOutline18 width={12} height={12} />
+                  )}
+                  onPick={apply}
+                />
+              ) : null}
+              {filtered.recommended.length > 0 ? (
+                <Section
+                  title="Recommended"
+                  count={filtered.recommended.length}
+                  items={filtered.recommended}
+                  renderIcon={() => (
+                    <IconSparkle2Outline18 width={12} height={12} />
+                  )}
+                  onPick={apply}
+                />
+              ) : null}
+              {filtered.others.length > 0 ? (
+                <Section
+                  title="Others"
+                  count={filtered.others.length}
+                  items={filtered.others}
+                  renderIcon={(color) => (
+                    <span
+                      className={styles["tag-picker-item-dot"]}
+                      style={{ background: color ?? "var(--ds-gray-a6)" }}
+                    />
+                  )}
+                  onPick={apply}
+                />
+              ) : null}
+              {!hasAny ? (
+                <div className={styles["tag-picker-empty"]}>
+                  {q.trim()
+                    ? `Press ↵ to create "${q.trim()}"`
+                    : "No tags yet."}
+                </div>
+              ) : null}
+            </div>
+            <div className={styles["tag-picker-footer"]}>
+              <span className={styles["tag-picker-footer-cell"]}>
+                <Kbd.Cluster keys={["↑", "↓", "←", "→"]} />
+                <span className={styles["tag-picker-footer-label"]}>Move</span>
+              </span>
+              <span className={styles["tag-picker-footer-cell"]}>
+                <Kbd.Key>↵</Kbd.Key>
+                <span className={styles["tag-picker-footer-label"]}>
+                  Select
+                </span>
+              </span>
+              <span className={styles["tag-picker-footer-cell"]}>
+                <Kbd.Key>esc</Kbd.Key>
+                <span className={styles["tag-picker-footer-label"]}>Close</span>
+              </span>
+            </div>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
     </Popover.Root>
   );
 }

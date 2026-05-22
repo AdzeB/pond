@@ -739,91 +739,95 @@ function RepeatCustomDialog({
         if (!next) onClose();
       }}
     >
-      <Dialog.Content>
-        <Dialog.Title>Custom schedule</Dialog.Title>
-        <Dialog.Description>
-          Pick a cadence and the days Pond should run on.
-        </Dialog.Description>
-        <form
-          className={styles["handle-form"]}
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!canSubmit) return;
-            onSubmit({
-              frequency: draftFrequency,
-              weekdays: draftFrequency === "weekly" ? draftWeekdays : ALL_DAYS,
-            });
-          }}
-        >
-          <Field.Root>
-            <Field.Label>Frequency</Field.Label>
-            <Select.Root<SyncFrequency>
-              value={draftFrequency}
-              onValueChange={(v) =>
-                setDraftFrequency((v ?? "daily") as SyncFrequency)
-              }
-            >
-              <Select.Trigger>
-                <Select.Value>
-                  {FREQUENCY_OPTIONS.find((o) => o.value === draftFrequency)
-                    ?.label ?? "Daily"}
-                </Select.Value>
-                <Select.Icon>
-                  <IconChevronExpandYOutline12 />
-                </Select.Icon>
-              </Select.Trigger>
-              <Select.Portal>
-                <Select.Positioner sideOffset={6}>
-                  <Select.Popup>
-                    {FREQUENCY_OPTIONS.map((o) => (
-                      <Select.Item key={o.value} value={o.value}>
-                        {o.label}
-                      </Select.Item>
-                    ))}
-                  </Select.Popup>
-                </Select.Positioner>
-              </Select.Portal>
-            </Select.Root>
-          </Field.Root>
-
-          {showDays ? (
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup>
+          <Dialog.Title>Custom schedule</Dialog.Title>
+          <Dialog.Description>
+            Pick a cadence and the days Pond should run on.
+          </Dialog.Description>
+          <form
+            className={styles["handle-form"]}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!canSubmit) return;
+              onSubmit({
+                frequency: draftFrequency,
+                weekdays:
+                  draftFrequency === "weekly" ? draftWeekdays : ALL_DAYS,
+              });
+            }}
+          >
             <Field.Root>
-              <Field.Label>Days</Field.Label>
-              <div className={styles["weekday-chips"]}>
-                {WEEKDAYS.map((d) => {
-                  const on = draftWeekdays.includes(d.index);
-                  return (
-                    <button
-                      key={d.index}
-                      type="button"
-                      aria-label={d.full}
-                      aria-pressed={on}
-                      className={styles["weekday-chip"]}
-                      data-on={on ? "true" : "false"}
-                      onClick={() => toggleDraftWeekday(d.index)}
-                    >
-                      {d.short}
-                    </button>
-                  );
-                })}
-              </div>
-              <Field.Description>
-                Sync runs at the time set on the main page, on the days you pick
-                here.
-              </Field.Description>
+              <Field.Label>Frequency</Field.Label>
+              <Select.Root<SyncFrequency>
+                value={draftFrequency}
+                onValueChange={(v) =>
+                  setDraftFrequency((v ?? "daily") as SyncFrequency)
+                }
+              >
+                <Select.Trigger>
+                  <Select.Value>
+                    {FREQUENCY_OPTIONS.find((o) => o.value === draftFrequency)
+                      ?.label ?? "Daily"}
+                  </Select.Value>
+                  <Select.Icon>
+                    <IconChevronExpandYOutline12 />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={6}>
+                    <Select.Popup>
+                      {FREQUENCY_OPTIONS.map((o) => (
+                        <Select.Item key={o.value} value={o.value}>
+                          {o.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
             </Field.Root>
-          ) : null}
 
-          <div className={styles["handle-actions"]}>
-            <Dialog.Close render={<Button size="sm" variant="ghost" />}>
-              Cancel
-            </Dialog.Close>
-            <Button size="sm" type="submit" disabled={!canSubmit}>
-              Save
-            </Button>
-          </div>
-        </form>
-      </Dialog.Content>
+            {showDays ? (
+              <Field.Root>
+                <Field.Label>Days</Field.Label>
+                <div className={styles["weekday-chips"]}>
+                  {WEEKDAYS.map((d) => {
+                    const on = draftWeekdays.includes(d.index);
+                    return (
+                      <button
+                        key={d.index}
+                        type="button"
+                        aria-label={d.full}
+                        aria-pressed={on}
+                        className={styles["weekday-chip"]}
+                        data-on={on ? "true" : "false"}
+                        onClick={() => toggleDraftWeekday(d.index)}
+                      >
+                        {d.short}
+                      </button>
+                    );
+                  })}
+                </div>
+                <Field.Description>
+                  Sync runs at the time set on the main page, on the days you
+                  pick here.
+                </Field.Description>
+              </Field.Root>
+            ) : null}
+
+            <div className={styles["handle-actions"]}>
+              <Dialog.Close render={<Button size="sm" variant="ghost" />}>
+                Cancel
+              </Dialog.Close>
+              <Button size="sm" type="submit" disabled={!canSubmit}>
+                Save
+              </Button>
+            </div>
+          </form>
+        </Dialog.Popup>
+      </Dialog.Portal>
     </Dialog.Root>
   );
 }

@@ -991,60 +991,70 @@ function RelocateConfirmDialog({
         if (!o && !busy) onCancel();
       }}
     >
-      <AlertDialog.Content>
-        <AlertDialog.Title>{title}</AlertDialog.Title>
-        <AlertDialog.Description>
-          {preview ? (
-            <div className={styles["relocate-body"]}>
-              <p>
-                {mode === "adopt"
-                  ? `That folder already looks like a Pond library (${itemCount} item${itemCount === 1 ? "" : "s"}). Pond will use it directly without copying anything.`
-                  : "Pond will copy the files from your current library to the new location, then restart. The old folder stays put so you can verify everything looks right before deleting it yourself."}
-              </p>
-              <dl className={styles["relocate-paths"]}>
-                <div>
-                  <dt>From</dt>
-                  <dd>
-                    <code>{preview.currentPath}</code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>To</dt>
-                  <dd>
-                    <code>{preview.candidatePath}</code>
-                  </dd>
-                </div>
-              </dl>
-              {preview.cloudKind ? (
-                <p className={styles["relocate-cloud"]}>
-                  This folder is inside {preview.cloudKind}. Your saved files
-                  will sync across devices, but Pond's index stays on this Mac —
-                  each Mac maintains its own index over the shared files.
+      <AlertDialog.Portal>
+        <AlertDialog.Backdrop />
+        <AlertDialog.Popup>
+          <AlertDialog.Title>{title}</AlertDialog.Title>
+          <AlertDialog.Description>
+            {preview ? (
+              <div className={styles["relocate-body"]}>
+                <p>
+                  {mode === "adopt"
+                    ? `That folder already looks like a Pond library (${itemCount} item${itemCount === 1 ? "" : "s"}). Pond will use it directly without copying anything.`
+                    : "Pond will copy the files from your current library to the new location, then restart. The old folder stays put so you can verify everything looks right before deleting it yourself."}
                 </p>
-              ) : null}
-            </div>
-          ) : null}
-        </AlertDialog.Description>
-        <AlertDialog.Actions>
-          <AlertDialog.Close
-            render={
-              <Button variant="ghost" disabled={busy}>
-                Cancel
-              </Button>
-            }
-          />
-          <Button
-            variant="primary"
-            disabled={busy}
-            onClick={(e) => {
-              e.preventDefault();
-              onConfirm();
+                <dl className={styles["relocate-paths"]}>
+                  <div>
+                    <dt>From</dt>
+                    <dd>
+                      <code>{preview.currentPath}</code>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>To</dt>
+                    <dd>
+                      <code>{preview.candidatePath}</code>
+                    </dd>
+                  </div>
+                </dl>
+                {preview.cloudKind ? (
+                  <p className={styles["relocate-cloud"]}>
+                    This folder is inside {preview.cloudKind}. Your saved files
+                    will sync across devices, but Pond's index stays on this Mac
+                    — each Mac maintains its own index over the shared files.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </AlertDialog.Description>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              justifyContent: "flex-end",
+              marginTop: 8,
             }}
           >
-            {primaryLabel}
-          </Button>
-        </AlertDialog.Actions>
-      </AlertDialog.Content>
+            <AlertDialog.Close
+              render={
+                <Button variant="ghost" disabled={busy}>
+                  Cancel
+                </Button>
+              }
+            />
+            <Button
+              variant="primary"
+              disabled={busy}
+              onClick={(e) => {
+                e.preventDefault();
+                onConfirm();
+              }}
+            >
+              {primaryLabel}
+            </Button>
+          </div>
+        </AlertDialog.Popup>
+      </AlertDialog.Portal>
     </AlertDialog.Root>
   );
 }

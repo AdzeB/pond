@@ -234,31 +234,41 @@ function TrashLink({ route, count }: TrashLinkProps) {
       </ContextMenu.Root>
 
       <AlertDialog.Root open={confirmEmpty} onOpenChange={setConfirmEmpty}>
-        <AlertDialog.Content>
-          <AlertDialog.Title>Empty trash?</AlertDialog.Title>
-          <AlertDialog.Description>
-            Permanently delete every trashed save. This cannot be undone.
-          </AlertDialog.Description>
-          <AlertDialog.Actions>
-            <AlertDialog.Close
-              render={<Button variant="ghost">Cancel</Button>}
-            />
-            <AlertDialog.Close
-              render={
-                <Button
-                  variant="danger"
-                  disabled={busy}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    void emptyTrash();
-                  }}
-                >
-                  Delete forever
-                </Button>
-              }
-            />
-          </AlertDialog.Actions>
-        </AlertDialog.Content>
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop />
+          <AlertDialog.Popup>
+            <AlertDialog.Title>Empty trash?</AlertDialog.Title>
+            <AlertDialog.Description>
+              Permanently delete every trashed save. This cannot be undone.
+            </AlertDialog.Description>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 8,
+              }}
+            >
+              <AlertDialog.Close
+                render={<Button variant="ghost">Cancel</Button>}
+              />
+              <AlertDialog.Close
+                render={
+                  <Button
+                    variant="danger"
+                    disabled={busy}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void emptyTrash();
+                    }}
+                  >
+                    Delete forever
+                  </Button>
+                }
+              />
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
       </AlertDialog.Root>
     </>
   );

@@ -1,76 +1,51 @@
 import { NumberField as Base } from "@base-ui/react/number-field";
-import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
-import { Calligraph } from "calligraph";
 import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-function Root({ className, children, ...props }: Base.Root.Props) {
-  return (
-    <Base.Root className={cn(styles.root, className)} {...props}>
-      <Base.Group className={styles.group}>{children}</Base.Group>
-    </Base.Root>
-  );
+function Root({ className, ...props }: Base.Root.Props) {
+  return <Base.Root className={cn(styles.root, className)} {...props} />;
+}
+
+function Group({ className, ...props }: Base.Group.Props) {
+  return <Base.Group className={cn(styles.group, className)} {...props} />;
 }
 
 function Input({ className, ...props }: Base.Input.Props) {
+  return <Base.Input className={cn(styles.input, className)} {...props} />;
+}
+
+function Increment({ className, ...props }: Base.Increment.Props) {
+  return <Base.Increment className={cn(styles.button, className)} {...props} />;
+}
+
+function Decrement({ className, ...props }: Base.Decrement.Props) {
+  return <Base.Decrement className={cn(styles.button, className)} {...props} />;
+}
+
+function ScrubArea({ className, ...props }: Base.ScrubArea.Props) {
   return (
-    <Base.Input
-      className={cn(styles.input, className)}
+    <Base.ScrubArea
+      className={cn(styles["scrub-area"], className)}
       {...props}
-      render={(inputProps, state) => (
-        <span
-          className={styles["input-wrap"]}
-          data-focused={state.focused ? "" : undefined}
-        >
-          <input {...inputProps} />
-          <Calligraph
-            variant="number"
-            aria-hidden
-            className={styles["input-display"]}
-          >
-            {state.inputValue}
-          </Calligraph>
-        </span>
-      )}
     />
   );
 }
 
-function Increment({
-  className,
-  children = <IconPlusOutline12 />,
-  ...props
-}: Base.Increment.Props) {
+function ScrubAreaCursor({ className, ...props }: Base.ScrubAreaCursor.Props) {
   return (
-    <Base.Increment
-      aria-label="Increment"
-      className={cn(styles.button, className)}
+    <Base.ScrubAreaCursor
+      className={cn(styles["scrub-area-cursor"], className)}
       {...props}
-    >
-      {children}
-    </Base.Increment>
-  );
-}
-
-function Decrement({
-  className,
-  children = <IconMinusOutline12 />,
-  ...props
-}: Base.Decrement.Props) {
-  return (
-    <Base.Decrement
-      aria-label="Decrement"
-      className={cn(styles.button, className)}
-      {...props}
-    >
-      {children}
-    </Base.Decrement>
+    />
   );
 }
 
 export const NumberField = {
   Root,
+  Group,
   Input,
   Increment,
   Decrement,
+  ScrubArea,
+  ScrubAreaCursor,
 };

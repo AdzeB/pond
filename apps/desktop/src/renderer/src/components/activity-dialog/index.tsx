@@ -155,196 +155,199 @@ function Content({ open }: ContentProps) {
   );
 
   return (
-    <Dialog.Content className={styles.dialog}>
-      <header className={styles.header}>
-        <Dialog.Title>Activity</Dialog.Title>
-        <Dialog.Description>
-          One wide event per task, sync, and save lifecycle — straight from{" "}
-          <code>pipeline_events</code>. Filter by source, outcome, or error
-          class; click a row for the full payload.
-        </Dialog.Description>
-        <div className={styles["header-actions"]}>
-          <div className={styles["mode-toggle"]} role="tablist">
-            <button
-              type="button"
-              role="tab"
-              className={styles["mode-button"]}
-              data-active={mode === "recent" ? "true" : undefined}
-              onClick={() => setMode("recent")}
-            >
-              Recent
-            </button>
-            <button
-              type="button"
-              role="tab"
-              className={styles["mode-button"]}
-              data-active={mode === "failures" ? "true" : undefined}
-              onClick={() => setMode("failures")}
-            >
-              Failures by error
-            </button>
-          </div>
-          <div className={styles["range-toggle"]} role="tablist">
-            {TIME_RANGES.map((r) => (
+    <Dialog.Portal>
+      <Dialog.Backdrop />
+      <Dialog.Popup className={styles.dialog}>
+        <header className={styles.header}>
+          <Dialog.Title>Activity</Dialog.Title>
+          <Dialog.Description>
+            One wide event per task, sync, and save lifecycle — straight from{" "}
+            <code>pipeline_events</code>. Filter by source, outcome, or error
+            class; click a row for the full payload.
+          </Dialog.Description>
+          <div className={styles["header-actions"]}>
+            <div className={styles["mode-toggle"]} role="tablist">
               <button
-                key={r.id}
                 type="button"
-                className={styles["range-button"]}
-                data-active={rangeId === r.id ? "true" : undefined}
-                onClick={() => setRangeId(r.id)}
+                role="tab"
+                className={styles["mode-button"]}
+                data-active={mode === "recent" ? "true" : undefined}
+                onClick={() => setMode("recent")}
               >
-                {r.label}
+                Recent
               </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            className={styles["refresh-button"]}
-            onClick={() => void refresh()}
-            disabled={busy}
-            title="Re-run the query"
-          >
-            {busy ? "Loading…" : "Refresh"}
-          </button>
-        </div>
-      </header>
-
-      {mode === "recent" ? (
-        <>
-          <div className={styles["filter-row"]}>
-            <FacetSelect
-              label="Kind"
-              value={filters.kind}
-              options={facets?.kinds ?? []}
-              onChange={(v) => setFilter("kind", v)}
-            />
-            <FacetSelect
-              label="Source"
-              value={filters.source}
-              options={facets?.sources ?? []}
-              labelFor={(v) => getSourceLabel(v)}
-              onChange={(v) => setFilter("source", v)}
-            />
-            <FacetSelect
-              label="Outcome"
-              value={filters.outcome}
-              options={facets?.outcomes ?? []}
-              onChange={(v) => setFilter("outcome", v)}
-            />
-            <FacetSelect
-              label="Error"
-              value={filters.errorName}
-              options={facets?.errorNames ?? []}
-              onChange={(v) => setFilter("errorName", v)}
-            />
-            <label className={styles["save-input"]}>
-              <span>Save id</span>
-              <input
-                type="text"
-                value={filters.saveId}
-                onChange={(e) => setFilter("saveId", e.target.value)}
-                placeholder="abc12345"
-                spellCheck={false}
-              />
-            </label>
+              <button
+                type="button"
+                role="tab"
+                className={styles["mode-button"]}
+                data-active={mode === "failures" ? "true" : undefined}
+                onClick={() => setMode("failures")}
+              >
+                Failures by error
+              </button>
+            </div>
+            <div className={styles["range-toggle"]} role="tablist">
+              {TIME_RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={styles["range-button"]}
+                  data-active={rangeId === r.id ? "true" : undefined}
+                  onClick={() => setRangeId(r.id)}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
-              className={styles["clear-button"]}
-              onClick={clearFilters}
-              disabled={
-                !filters.kind &&
-                !filters.source &&
-                !filters.outcome &&
-                !filters.errorName &&
-                !filters.saveId
-              }
+              className={styles["refresh-button"]}
+              onClick={() => void refresh()}
+              disabled={busy}
+              title="Re-run the query"
             >
-              Clear filters
+              {busy ? "Loading…" : "Refresh"}
             </button>
           </div>
+        </header>
 
+        {mode === "recent" ? (
+          <>
+            <div className={styles["filter-row"]}>
+              <FacetSelect
+                label="Kind"
+                value={filters.kind}
+                options={facets?.kinds ?? []}
+                onChange={(v) => setFilter("kind", v)}
+              />
+              <FacetSelect
+                label="Source"
+                value={filters.source}
+                options={facets?.sources ?? []}
+                labelFor={(v) => getSourceLabel(v)}
+                onChange={(v) => setFilter("source", v)}
+              />
+              <FacetSelect
+                label="Outcome"
+                value={filters.outcome}
+                options={facets?.outcomes ?? []}
+                onChange={(v) => setFilter("outcome", v)}
+              />
+              <FacetSelect
+                label="Error"
+                value={filters.errorName}
+                options={facets?.errorNames ?? []}
+                onChange={(v) => setFilter("errorName", v)}
+              />
+              <label className={styles["save-input"]}>
+                <span>Save id</span>
+                <input
+                  type="text"
+                  value={filters.saveId}
+                  onChange={(e) => setFilter("saveId", e.target.value)}
+                  placeholder="abc12345"
+                  spellCheck={false}
+                />
+              </label>
+              <button
+                type="button"
+                className={styles["clear-button"]}
+                onClick={clearFilters}
+                disabled={
+                  !filters.kind &&
+                  !filters.source &&
+                  !filters.outcome &&
+                  !filters.errorName &&
+                  !filters.saveId
+                }
+              >
+                Clear filters
+              </button>
+            </div>
+
+            <div className={styles.scroll}>
+              {rows && rows.length === 0 ? (
+                <p className={styles.empty}>No events match these filters.</p>
+              ) : null}
+              {rows && rows.length > 0 ? (
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>When</th>
+                      <th>Kind</th>
+                      <th>Source / Op</th>
+                      <th>Outcome</th>
+                      <th>Duration</th>
+                      <th>Save</th>
+                      <th>Error</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <EventRowItem key={row.id} row={row} />
+                    ))}
+                  </tbody>
+                </table>
+              ) : null}
+            </div>
+          </>
+        ) : (
           <div className={styles.scroll}>
-            {rows && rows.length === 0 ? (
-              <p className={styles.empty}>No events match these filters.</p>
+            {failures && failures.length === 0 ? (
+              <p className={styles.empty}>No failures in this window. Good.</p>
             ) : null}
-            {rows && rows.length > 0 ? (
+            {failures && failures.length > 0 ? (
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>When</th>
-                    <th>Kind</th>
-                    <th>Source / Op</th>
-                    <th>Outcome</th>
-                    <th>Duration</th>
-                    <th>Save</th>
                     <th>Error</th>
+                    <th>Source</th>
+                    <th>Op</th>
+                    <th className={styles["num-col"]}>Count</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <EventRowItem key={row.id} row={row} />
+                  {failures.map((f) => (
+                    <tr
+                      key={`${f.errorName ?? "_"}|${f.source ?? "_"}|${f.op ?? "_"}`}
+                    >
+                      <td className={styles["mono-cell"]}>
+                        {f.errorName ?? "—"}
+                      </td>
+                      <td>{f.source ? getSourceLabel(f.source) : "—"}</td>
+                      <td className={styles["mono-cell"]}>{f.op ?? "—"}</td>
+                      <td
+                        className={styles["num-col"]}
+                        title="Click to view matching events"
+                      >
+                        <button
+                          type="button"
+                          className={styles["count-button"]}
+                          onClick={() => {
+                            setMode("recent");
+                            setFilters({
+                              kind: null,
+                              source: f.source,
+                              outcome: "failed",
+                              errorName: f.errorName,
+                              saveId: "",
+                            });
+                            if (f.op)
+                              setFilter("kind", "pipeline.task.completed");
+                          }}
+                        >
+                          {f.count}
+                        </button>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             ) : null}
           </div>
-        </>
-      ) : (
-        <div className={styles.scroll}>
-          {failures && failures.length === 0 ? (
-            <p className={styles.empty}>No failures in this window. Good.</p>
-          ) : null}
-          {failures && failures.length > 0 ? (
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Error</th>
-                  <th>Source</th>
-                  <th>Op</th>
-                  <th className={styles["num-col"]}>Count</th>
-                </tr>
-              </thead>
-              <tbody>
-                {failures.map((f) => (
-                  <tr
-                    key={`${f.errorName ?? "_"}|${f.source ?? "_"}|${f.op ?? "_"}`}
-                  >
-                    <td className={styles["mono-cell"]}>
-                      {f.errorName ?? "—"}
-                    </td>
-                    <td>{f.source ? getSourceLabel(f.source) : "—"}</td>
-                    <td className={styles["mono-cell"]}>{f.op ?? "—"}</td>
-                    <td
-                      className={styles["num-col"]}
-                      title="Click to view matching events"
-                    >
-                      <button
-                        type="button"
-                        className={styles["count-button"]}
-                        onClick={() => {
-                          setMode("recent");
-                          setFilters({
-                            kind: null,
-                            source: f.source,
-                            outcome: "failed",
-                            errorName: f.errorName,
-                            saveId: "",
-                          });
-                          if (f.op)
-                            setFilter("kind", "pipeline.task.completed");
-                        }}
-                      >
-                        {f.count}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : null}
-        </div>
-      )}
-    </Dialog.Content>
+        )}
+      </Dialog.Popup>
+    </Dialog.Portal>
   );
 }
 

@@ -75,63 +75,68 @@ function Root() {
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Content>
-        <Form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void submit();
-          }}
-        >
-          <Title>Quick save</Title>
-          <Hint>Paste a URL — Pond will fetch the rest in the background.</Hint>
-          <Field.Root>
-            <Field.Label>URL</Field.Label>
-            <Input
-              ref={inputRef}
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://…"
-              autoComplete="off"
-              spellCheck={false}
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>Note (optional)</Field.Label>
-            <Input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Why are you saving this?"
-            />
-          </Field.Root>
-          <Field.Root>
-            <Field.Label>Tags (optional)</Field.Label>
-            <Input
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              placeholder="design, inspiration, todo"
-            />
-          </Field.Root>
-          <Actions>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                reset();
-                setOpen(false);
-              }}
-              disabled={busy}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={busy || !url.trim()}
-            >
-              {busy ? "Saving…" : "Save"}
-            </Button>
-          </Actions>
-        </Form>
-      </Dialog.Content>
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup>
+          <Form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submit();
+            }}
+          >
+            <Title>Quick save</Title>
+            <Hint>
+              Paste a URL — Pond will fetch the rest in the background.
+            </Hint>
+            <Field.Root>
+              <Field.Label>URL</Field.Label>
+              <Input
+                ref={inputRef}
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://…"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Note (optional)</Field.Label>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Why are you saving this?"
+              />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Tags (optional)</Field.Label>
+              <Input
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                placeholder="design, inspiration, todo"
+              />
+            </Field.Root>
+            <Actions>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  reset();
+                  setOpen(false);
+                }}
+                disabled={busy}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={busy || !url.trim()}
+              >
+                {busy ? "Saving…" : "Save"}
+              </Button>
+            </Actions>
+          </Form>
+        </Dialog.Popup>
+      </Dialog.Portal>
     </Dialog.Root>
   );
 }

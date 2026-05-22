@@ -213,67 +213,72 @@ function Root() {
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Content className={styles.dialog}>
-        <div className={styles.shell}>
-          <ScopeTabs scope={scope} onScopeChange={setScope} />
-          <Cmd
-            label="Pond command palette"
-            shouldFilter
-            loop
-            onKeyDown={onScopeKey}
-          >
-            <div className={styles["search-row"]}>
-              <Cmd.Input
-                value={search}
-                onValueChange={setSearch}
-                placeholder="Type a command or search…"
-                className={styles["search-input"]}
-                autoFocus
-              />
-            </div>
-            <Cmd.List className={styles.list}>
-              <Cmd.Empty>
-                <span className={styles["empty-headline"]}>
-                  No commands match
-                </span>
-                <span className={styles["empty-hint"]}>
-                  Try a different scope or search term
-                </span>
-              </Cmd.Empty>
-              {grouped.map(({ group, items }) => (
-                <Cmd.Group key={group} heading={group}>
-                  {items.map((c) => (
-                    <Cmd.Item
-                      key={c.id}
-                      value={c.id}
-                      keywords={[c.label, ...(c.keywords ?? [])]}
-                      onSelect={() => void c.perform(ctx)}
-                    >
-                      <span className={styles["item-main"]}>
-                        <span className={styles["item-label"]}>{c.label}</span>
-                        {c.description ? (
-                          <span className={styles["item-description"]}>
-                            {c.description}
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup className={styles.dialog}>
+          <div className={styles.shell}>
+            <ScopeTabs scope={scope} onScopeChange={setScope} />
+            <Cmd
+              label="Pond command palette"
+              shouldFilter
+              loop
+              onKeyDown={onScopeKey}
+            >
+              <div className={styles["search-row"]}>
+                <Cmd.Input
+                  value={search}
+                  onValueChange={setSearch}
+                  placeholder="Type a command or search…"
+                  className={styles["search-input"]}
+                  autoFocus
+                />
+              </div>
+              <Cmd.List className={styles.list}>
+                <Cmd.Empty>
+                  <span className={styles["empty-headline"]}>
+                    No commands match
+                  </span>
+                  <span className={styles["empty-hint"]}>
+                    Try a different scope or search term
+                  </span>
+                </Cmd.Empty>
+                {grouped.map(({ group, items }) => (
+                  <Cmd.Group key={group} heading={group}>
+                    {items.map((c) => (
+                      <Cmd.Item
+                        key={c.id}
+                        value={c.id}
+                        keywords={[c.label, ...(c.keywords ?? [])]}
+                        onSelect={() => void c.perform(ctx)}
+                      >
+                        <span className={styles["item-main"]}>
+                          <span className={styles["item-label"]}>
+                            {c.label}
                           </span>
+                          {c.description ? (
+                            <span className={styles["item-description"]}>
+                              {c.description}
+                            </span>
+                          ) : null}
+                        </span>
+                        {c.shortcut ? (
+                          <Kbd.Cluster keys={c.shortcut} />
+                        ) : c.chord ? (
+                          <Kbd.Cluster
+                            keys={c.chord.map((k) => k.toUpperCase())}
+                            separator="then"
+                          />
                         ) : null}
-                      </span>
-                      {c.shortcut ? (
-                        <Kbd.Cluster keys={c.shortcut} />
-                      ) : c.chord ? (
-                        <Kbd.Cluster
-                          keys={c.chord.map((k) => k.toUpperCase())}
-                          separator="then"
-                        />
-                      ) : null}
-                    </Cmd.Item>
-                  ))}
-                </Cmd.Group>
-              ))}
-            </Cmd.List>
-          </Cmd>
-          <Footer />
-        </div>
-      </Dialog.Content>
+                      </Cmd.Item>
+                    ))}
+                  </Cmd.Group>
+                ))}
+              </Cmd.List>
+            </Cmd>
+            <Footer />
+          </div>
+        </Dialog.Popup>
+      </Dialog.Portal>
     </Dialog.Root>
   );
 }

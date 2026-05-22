@@ -4,11 +4,11 @@ import {
   Collapsible,
   Field,
   Input,
-  NumberField,
   useToast,
 } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { NumberFieldStepper } from "@/components/number-field-stepper";
 import styles from "./styles.module.css";
 
 interface RelocatePreviewWire {
@@ -141,16 +141,12 @@ export function WelcomePage() {
               </p>
               <Field.Root>
                 <Field.Label>Port</Field.Label>
-                <NumberField.Root
+                <NumberFieldStepper
                   value={port}
                   onValueChange={(v) => setPort(v ?? 41610)}
                   min={1024}
                   max={65535}
-                >
-                  <NumberField.Decrement />
-                  <NumberField.Input />
-                  <NumberField.Increment />
-                </NumberField.Root>
+                />
                 <Field.Description>
                   Change only if 41610 is taken on your machine.
                 </Field.Description>
@@ -307,65 +303,76 @@ function LibraryLocationStep() {
           if (!o && !busy) setPreview(null);
         }}
       >
-        <AlertDialog.Content>
-          <AlertDialog.Title>
-            {mode === "adopt"
-              ? "Use this Pond library?"
-              : "Move your library here?"}
-          </AlertDialog.Title>
-          <AlertDialog.Description>
-            {preview ? (
-              <div>
-                <p style={{ marginTop: 0 }}>
-                  {mode === "adopt"
-                    ? `That folder already looks like a Pond library (${preview.existing.itemCount} item${preview.existing.itemCount === 1 ? "" : "s"}). Pond will use it directly.`
-                    : "Pond will move your library to the new location and restart. Your current folder stays put so you can confirm everything before removing it yourself."}
-                </p>
-                <p style={{ fontSize: 11, color: "var(--ds-gray-11)" }}>
-                  <strong>From</strong> <code>{preview.currentPath}</code>
-                  <br />
-                  <strong>To</strong> <code>{preview.candidatePath}</code>
-                </p>
-                {preview.cloudKind ? (
-                  <p
-                    style={{
-                      padding: "8px 10px",
-                      background: "light-dark(#fef3c7, rgba(120, 53, 15, 0.4))",
-                      borderRadius: 6,
-                      fontSize: 11,
-                    }}
-                  >
-                    This folder is inside {preview.cloudKind}. Files will sync
-                    across devices; Pond's index stays per-Mac.
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop />
+          <AlertDialog.Popup>
+            <AlertDialog.Title>
+              {mode === "adopt"
+                ? "Use this Pond library?"
+                : "Move your library here?"}
+            </AlertDialog.Title>
+            <AlertDialog.Description>
+              {preview ? (
+                <div>
+                  <p style={{ marginTop: 0 }}>
+                    {mode === "adopt"
+                      ? `That folder already looks like a Pond library (${preview.existing.itemCount} item${preview.existing.itemCount === 1 ? "" : "s"}). Pond will use it directly.`
+                      : "Pond will move your library to the new location and restart. Your current folder stays put so you can confirm everything before removing it yourself."}
                   </p>
-                ) : null}
-              </div>
-            ) : null}
-          </AlertDialog.Description>
-          <AlertDialog.Actions>
-            <AlertDialog.Close
-              render={
-                <Button variant="ghost" disabled={busy}>
-                  Cancel
-                </Button>
-              }
-            />
-            <Button
-              variant="primary"
-              disabled={busy}
-              onClick={(e) => {
-                e.preventDefault();
-                void confirm();
+                  <p style={{ fontSize: 11, color: "var(--ds-gray-11)" }}>
+                    <strong>From</strong> <code>{preview.currentPath}</code>
+                    <br />
+                    <strong>To</strong> <code>{preview.candidatePath}</code>
+                  </p>
+                  {preview.cloudKind ? (
+                    <p
+                      style={{
+                        padding: "8px 10px",
+                        background:
+                          "light-dark(#fef3c7, rgba(120, 53, 15, 0.4))",
+                        borderRadius: 6,
+                        fontSize: 11,
+                      }}
+                    >
+                      This folder is inside {preview.cloudKind}. Files will sync
+                      across devices; Pond's index stays per-Mac.
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
+            </AlertDialog.Description>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 8,
               }}
             >
-              {busy
-                ? "Relaunching…"
-                : mode === "adopt"
-                  ? "Switch and Relaunch"
-                  : "Move and Relaunch"}
-            </Button>
-          </AlertDialog.Actions>
-        </AlertDialog.Content>
+              <AlertDialog.Close
+                render={
+                  <Button variant="ghost" disabled={busy}>
+                    Cancel
+                  </Button>
+                }
+              />
+              <Button
+                variant="primary"
+                disabled={busy}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void confirm();
+                }}
+              >
+                {busy
+                  ? "Relaunching…"
+                  : mode === "adopt"
+                    ? "Switch and Relaunch"
+                    : "Move and Relaunch"}
+              </Button>
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
       </AlertDialog.Root>
     </div>
   );

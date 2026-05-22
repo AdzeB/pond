@@ -3,15 +3,7 @@ import {
   IconDotsOutline18,
   IconMagnifierOutline18,
 } from "@pond/icons/outline/18";
-import {
-  AlertDialog,
-  Button,
-  Dialog,
-  Input,
-  Menu,
-  Popover,
-  useToast,
-} from "@pond/ui";
+import { AlertDialog, Button, Dialog, Input, Menu, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./styles.module.css";
 
@@ -460,86 +452,103 @@ export function TagsSection() {
       </div>
 
       <Dialog.Root open={mergeOpen} onOpenChange={setMergeOpen}>
-        <Dialog.Content className={styles["labels-merge-dialog"]}>
-          <Dialog.Title>Merge tags</Dialog.Title>
-          <Dialog.Description>
-            Choose the tag to keep. The others are merged into it and removed
-            from this list.
-          </Dialog.Description>
-          <div className={styles["labels-merge-field"]}>
-            <label
-              className={styles["labels-merge-label"]}
-              htmlFor="merge-target"
-            >
-              Keep
-            </label>
-            <select
-              id="merge-target"
-              className={styles["labels-merge-select"]}
-              value={mergeTarget}
-              onChange={(e) => setMergeTarget(e.target.value)}
-            >
-              {[...selected].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className={styles["labels-merge-actions"]}>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setMergeOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              disabled={busy || selected.size < 2}
-              onClick={() => void runMerge()}
-            >
-              Merge
-            </Button>
-          </div>
-        </Dialog.Content>
+        <Dialog.Portal>
+          <Dialog.Backdrop />
+          <Dialog.Popup className={styles["labels-merge-dialog"]}>
+            <Dialog.Title>Merge tags</Dialog.Title>
+            <Dialog.Description>
+              Choose the tag to keep. The others are merged into it and removed
+              from this list.
+            </Dialog.Description>
+            <div className={styles["labels-merge-field"]}>
+              <label
+                className={styles["labels-merge-label"]}
+                htmlFor="merge-target"
+              >
+                Keep
+              </label>
+              <select
+                id="merge-target"
+                className={styles["labels-merge-select"]}
+                value={mergeTarget}
+                onChange={(e) => setMergeTarget(e.target.value)}
+              >
+                {[...selected].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles["labels-merge-actions"]}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setMergeOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={busy || selected.size < 2}
+                onClick={() => void runMerge()}
+              >
+                Merge
+              </Button>
+            </div>
+          </Dialog.Popup>
+        </Dialog.Portal>
       </Dialog.Root>
 
       <AlertDialog.Root
         open={Boolean(deleting)}
         onOpenChange={(o) => !o && setDeleting(null)}
       >
-        <AlertDialog.Content>
-          <AlertDialog.Title>
-            {deleting && deleting.length > 1 ? "Delete tags?" : "Delete tag?"}
-          </AlertDialog.Title>
-          <AlertDialog.Description>
-            {deleting && deleting.length > 1 ? (
-              <>
-                This removes <strong>{deleting.length} tags</strong> from every
-                save and from the catalog. Cmd+Z restores it.
-              </>
-            ) : (
-              <>
-                This removes <strong>{deleting?.[0]}</strong> from every save
-                and the catalog. Cmd+Z restores it.
-              </>
-            )}
-          </AlertDialog.Description>
-          <AlertDialog.Actions>
-            <Button size="sm" variant="ghost" onClick={() => setDeleting(null)}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => deleting?.length && void remove(deleting)}
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop />
+          <AlertDialog.Popup>
+            <AlertDialog.Title>
+              {deleting && deleting.length > 1 ? "Delete tags?" : "Delete tag?"}
+            </AlertDialog.Title>
+            <AlertDialog.Description>
+              {deleting && deleting.length > 1 ? (
+                <>
+                  This removes <strong>{deleting.length} tags</strong> from
+                  every save and from the catalog. Cmd+Z restores it.
+                </>
+              ) : (
+                <>
+                  This removes <strong>{deleting?.[0]}</strong> from every save
+                  and the catalog. Cmd+Z restores it.
+                </>
+              )}
+            </AlertDialog.Description>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 8,
+              }}
             >
-              Delete
-            </Button>
-          </AlertDialog.Actions>
-        </AlertDialog.Content>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setDeleting(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                onClick={() => deleting?.length && void remove(deleting)}
+              >
+                Delete
+              </Button>
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
       </AlertDialog.Root>
     </div>
   );
@@ -591,8 +600,8 @@ function LabelRowView({
           onChange={(e) => onToggleCheck(e.target.checked)}
         />
       </span>
-      <Popover.Root open={colorMenuOpen} onOpenChange={onOpenColorMenu}>
-        <Popover.Trigger
+      <Menu.Root open={colorMenuOpen} onOpenChange={onOpenColorMenu}>
+        <Menu.Trigger
           render={
             <button
               type="button"
@@ -607,28 +616,29 @@ function LabelRowView({
             </button>
           }
         />
-        <Popover.Content
-          className={styles["labels-color-popup"]}
-          sideOffset={6}
-        >
-          <div className={styles["labels-color-grid"]}>
-            {LABEL_COLORS.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={styles["labels-color-opt"]}
-                style={{ background: c }}
-                aria-label={`Use ${c}`}
-                onClick={() => onPickColor(c)}
-              />
-            ))}
-          </div>
-          <Popover.Separator />
-          <Popover.Item type="button" onClick={() => onPickColor(null)}>
-            <Popover.ItemLabel>Clear color</Popover.ItemLabel>
-          </Popover.Item>
-        </Popover.Content>
-      </Popover.Root>
+        <Menu.Portal>
+          <Menu.Positioner sideOffset={6}>
+            <Menu.Popup className={styles["labels-color-popup"]}>
+              <div className={styles["labels-color-grid"]}>
+                {LABEL_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    className={styles["labels-color-opt"]}
+                    style={{ background: c }}
+                    aria-label={`Use ${c}`}
+                    onClick={() => onPickColor(c)}
+                  />
+                ))}
+              </div>
+              <Menu.Separator />
+              <Menu.Item onClick={() => onPickColor(null)}>
+                <Menu.ItemLabel>Clear color</Menu.ItemLabel>
+              </Menu.Item>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
       <div className={styles["labels-name-cell"]}>
         {editingName ? (
           <RenameInput

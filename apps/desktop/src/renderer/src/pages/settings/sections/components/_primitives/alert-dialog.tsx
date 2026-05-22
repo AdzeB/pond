@@ -12,28 +12,38 @@ export default function AlertDialogCell() {
             </Button>
           }
         />
-        <AlertDialog.Content>
-          <AlertDialog.Title>Are you sure?</AlertDialog.Title>
-          <AlertDialog.Description>
-            This action can't be undone. The item will be moved to the trash.
-          </AlertDialog.Description>
-          <AlertDialog.Actions>
-            <AlertDialog.Close
-              render={
-                <Button size="sm" variant="ghost">
-                  Cancel
-                </Button>
-              }
-            />
-            <AlertDialog.Close
-              render={
-                <Button size="sm" variant="danger">
-                  Delete
-                </Button>
-              }
-            />
-          </AlertDialog.Actions>
-        </AlertDialog.Content>
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop />
+          <AlertDialog.Popup>
+            <AlertDialog.Title>Are you sure?</AlertDialog.Title>
+            <AlertDialog.Description>
+              This action can't be undone. The item will be moved to the trash.
+            </AlertDialog.Description>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                justifyContent: "flex-end",
+                marginTop: 8,
+              }}
+            >
+              <AlertDialog.Close
+                render={
+                  <Button size="sm" variant="ghost">
+                    Cancel
+                  </Button>
+                }
+              />
+              <AlertDialog.Close
+                render={
+                  <Button size="sm" variant="danger">
+                    Delete
+                  </Button>
+                }
+              />
+            </div>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
       </AlertDialog.Root>
     </Cell>
   );

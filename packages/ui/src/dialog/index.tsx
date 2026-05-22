@@ -3,12 +3,6 @@ import { renderFrozenPopup } from "../freeze/popup";
 import { cn } from "../lib/cn";
 import styles from "./styles.module.css";
 
-type DialogSize = "default" | "fullscreen";
-
-interface ContentProps extends Base.Popup.Props {
-  "data-size"?: DialogSize;
-}
-
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
@@ -17,22 +11,23 @@ function Trigger(props: Base.Trigger.Props) {
   return <Base.Trigger {...props} />;
 }
 
-function Close(props: Base.Close.Props) {
-  return <Base.Close {...props} />;
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
 }
 
-function Content({ className, children, render, ...rest }: ContentProps) {
+function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Portal>
-      <Base.Backdrop className={styles.backdrop} />
-      <Base.Popup
-        {...rest}
-        className={cn(styles.popup, className)}
-        render={render ?? renderFrozenPopup}
-      >
-        {children}
-      </Base.Popup>
-    </Base.Portal>
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
+  );
+}
+
+function Popup({ className, render, ...props }: Base.Popup.Props) {
+  return (
+    <Base.Popup
+      {...props}
+      className={cn(styles.popup, className)}
+      render={render ?? renderFrozenPopup}
+    />
   );
 }
 
@@ -49,11 +44,24 @@ function Description({ className, ...props }: Base.Description.Props) {
   );
 }
 
+function Close(props: Base.Close.Props) {
+  return <Base.Close {...props} />;
+}
+
+function Viewport(props: Base.Viewport.Props) {
+  return <Base.Viewport {...props} />;
+}
+
 export const Dialog = {
   Root,
   Trigger,
-  Content,
+  Portal,
+  Backdrop,
+  Popup,
   Title,
   Description,
   Close,
+  Viewport,
+  createHandle: Base.createHandle,
+  Handle: Base.Handle,
 };
