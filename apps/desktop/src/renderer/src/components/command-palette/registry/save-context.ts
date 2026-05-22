@@ -34,6 +34,7 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
     group: "Save",
     scope: "saves",
     keywords: ["open", "default"],
+    shortcut: ["O"],
     when: (ctx) => !!ctx.focusedSaveId,
     perform: async ({ pond, focusedSaveId, close }) => {
       if (!focusedSaveId) return;
@@ -47,11 +48,27 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
     group: "Save",
     scope: "saves",
     keywords: ["copy", "url", "link"],
+    shortcut: ["⌘", "⇧", ","],
     when: (ctx) => !!ctx.focusedSave?.url,
     perform: async ({ focusedSave, toast, close }) => {
       if (!focusedSave?.url) return;
       await navigator.clipboard.writeText(focusedSave.url);
       toast.success("URL copied");
+      close();
+    },
+  },
+  {
+    id: "save.copy-id",
+    label: "Copy save ID",
+    group: "Save",
+    scope: "saves",
+    keywords: ["copy", "id", "identifier"],
+    shortcut: ["⌘", "."],
+    when: (ctx) => !!ctx.focusedSaveId,
+    perform: async ({ focusedSaveId, toast, close }) => {
+      if (!focusedSaveId) return;
+      await navigator.clipboard.writeText(focusedSaveId);
+      toast.success("ID copied");
       close();
     },
   },
@@ -75,6 +92,7 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
     group: "Save",
     scope: "saves",
     keywords: ["refresh", "metadata", "rescrape"],
+    shortcut: ["R"],
     when: (ctx) => !!ctx.focusedSaveId,
     perform: async ({ pond, focusedSaveId, toast, close }) => {
       if (!focusedSaveId) return;
@@ -121,6 +139,7 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
     group: "Save",
     scope: "saves",
     keywords: ["delete", "purge", "forever", "permanent"],
+    shortcut: ["⌘", "⌫"],
     when: (ctx) => !!ctx.focusedSave?.deletedAt,
     perform: async ({ pond, focusedSave, toast, close }) => {
       if (!focusedSave) return;

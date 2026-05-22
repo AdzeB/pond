@@ -220,6 +220,7 @@ function useSaveActions(save: Save): ActionDescriptor[] {
               label: "Delete Forever",
               icon: IconTrashXmarkOutline18,
               variant: "danger",
+              shortcut: ["⌘", "⌫"],
               onSelect: purge,
             },
           ] satisfies ActionDescriptor[])

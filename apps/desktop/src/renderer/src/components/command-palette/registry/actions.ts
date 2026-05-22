@@ -9,7 +9,7 @@ export const ACTION_COMMANDS: Command[] = [
     group: "Actions",
     scope: "actions",
     keywords: ["sidebar", "navigation", "hide", "show", "collapse"],
-    shortcut: ["⌥", "⌘", "1"],
+    shortcut: ["["],
     perform: ({ close }) => {
       close();
       toggleSidebar();
@@ -21,10 +21,34 @@ export const ACTION_COMMANDS: Command[] = [
     group: "Actions",
     scope: "actions",
     keywords: ["inspector", "metadata", "hide", "show", "pane"],
-    shortcut: ["⌥", "⌘", "2"],
+    shortcut: ["]"],
     perform: ({ close }) => {
       close();
       toggleInspector();
+    },
+  },
+  {
+    id: "view.layout.cycle",
+    label: "Cycle layout",
+    description: "Waterfall → Grid → Justified → List",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["layout", "view", "cycle", "switch", "waterfall", "grid"],
+    shortcut: ["⌘", "B"],
+    when: (ctx) => !ctx.pathname.startsWith("/settings"),
+    perform: ({ close }) => {
+      close();
+      // Re-emit Cmd+B so `useCardActions` (the route-scoped owner of
+      // URL params) handles the cycle. Avoids duplicating layout
+      // bookkeeping at module scope.
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "b",
+          code: "KeyB",
+          metaKey: true,
+          bubbles: true,
+        }),
+      );
     },
   },
   {
