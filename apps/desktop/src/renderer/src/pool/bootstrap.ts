@@ -1,5 +1,6 @@
 import { notifyAll, pool } from "./pool";
 import { applyAction, normalise, type SyncActionEvent } from "./reconcile";
+import { readSnapshot, scheduleSnapshotWrite } from "./snapshot";
 import type { Save } from "./types";
 
 let started = false;
@@ -15,11 +16,31 @@ export function bootPool(): Promise<void> {
   bootPromise = (async () => {
     subscribeToSyncActions();
 
+    // Paint instantly from the cached IDB snapshot before waiting on
+    // the SQLite hydrate. `hydrateFromMain` reconciles afterwards —
+    // stale rows are deleted, new rows are added — so the cache being
+    // wrong is self-healing inside the same boot.
+    try {
+      const cached = await readSnapshot();
+      if (cached.length > 0) {
+        const normalised = cached
+          .map((row) => normalise(row))
+          .filter((r): r is Save => r !== null);
+        if (normalised.length > 0) {
+          pool.bulkUpsert(normalised, { silent: true });
+          notifyAll();
+        }
+      }
+    } catch (err) {
+      console.warn("[pond pool] snapshot prime failed", err);
+    }
+
     try {
       await hydrateFromMain();
     } catch (err) {
       console.warn("[pond pool] hydrate failed", err);
     }
+    scheduleSnapshotWrite();
 
     bootReady = true;
     for (const cb of readySubs) cb();
@@ -74,6 +95,7 @@ export function subscribeToSyncActions(): void {
   window.pond.onSyncAction((raw) => {
     try {
       applyAction(raw as SyncActionEvent);
+      scheduleSnapshotWrite();
     } catch (err) {
       console.warn("[pond pool] applyAction failed", err, raw);
     }
