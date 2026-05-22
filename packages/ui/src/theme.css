@@ -1,32 +1,11 @@
+/* Only the Radix scales actually consumed below are imported. */
+/* Adding a new --ds-*-N alias means adding the matching scale here too. */
 @import "@radix-ui/themes/tokens/colors/slate.css";
 @import "@radix-ui/themes/tokens/colors/gray.css";
-@import "@radix-ui/themes/tokens/colors/gold.css";
-@import "@radix-ui/themes/tokens/colors/bronze.css";
-@import "@radix-ui/themes/tokens/colors/brown.css";
-@import "@radix-ui/themes/tokens/colors/yellow.css";
-@import "@radix-ui/themes/tokens/colors/amber.css";
-@import "@radix-ui/themes/tokens/colors/orange.css";
 @import "@radix-ui/themes/tokens/colors/tomato.css";
-@import "@radix-ui/themes/tokens/colors/red.css";
-@import "@radix-ui/themes/tokens/colors/ruby.css";
-@import "@radix-ui/themes/tokens/colors/crimson.css";
-@import "@radix-ui/themes/tokens/colors/pink.css";
-@import "@radix-ui/themes/tokens/colors/plum.css";
-@import "@radix-ui/themes/tokens/colors/purple.css";
-@import "@radix-ui/themes/tokens/colors/violet.css";
-@import "@radix-ui/themes/tokens/colors/iris.css";
-@import "@radix-ui/themes/tokens/colors/indigo.css";
-@import "@radix-ui/themes/tokens/colors/blue.css";
-@import "@radix-ui/themes/tokens/colors/cyan.css";
-@import "@radix-ui/themes/tokens/colors/teal.css";
-@import "@radix-ui/themes/tokens/colors/jade.css";
-@import "@radix-ui/themes/tokens/colors/green.css";
 @import "@radix-ui/themes/tokens/colors/grass.css";
-@import "@radix-ui/themes/tokens/colors/lime.css";
-@import "@radix-ui/themes/tokens/colors/mint.css";
 @import "@radix-ui/themes/tokens/colors/sky.css";
 @import "@radix-ui/colors/black-alpha.css";
-@import "@radix-ui/colors/white-alpha.css";
 
 :root {
   --ds-gray-1: var(--gray-1);
