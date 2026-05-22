@@ -97,9 +97,9 @@ export default defineConfig({
             const match = id.match(
               /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
             );
-            if (!match) return;
-            const pkg = match[1].replace(/^@/, "").replace(/\//g, "-");
-            return `vendor-${pkg}`;
+            const pkg = match?.[1];
+            if (!pkg) return;
+            return `vendor-${pkg.replace(/^@/, "").replace(/\//g, "-")}`;
           },
         },
       },

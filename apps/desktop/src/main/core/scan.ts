@@ -1,8 +1,14 @@
-import { libraryScan, type SaveFile, saves } from "@pond/schema/db";
+import {
+  libraryScan,
+  type SaveFile,
+  saves,
+  syncActions,
+} from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { scanLibrary } from "../lib/library";
+import { broadcastSyncAction } from "./executor";
 
 export async function reconcileLibrary(): Promise<{
   updated: number;
@@ -47,50 +53,76 @@ export async function reconcileLibrary(): Promise<{
     const tags = metadata.tags ?? [];
 
     try {
+      const insertValues: typeof saves.$inferInsert = {
+        id,
+        source:
+          metadata.source as unknown as (typeof saves.$inferInsert)["source"],
+        sourceId: metadata.sourceId,
+        url: metadata.url,
+        title: metadata.name,
+        description: metadata.pond.description ?? null,
+        author: metadata.pond.author ?? null,
+        notes: metadata.annotation || null,
+        mediaUrl: null,
+        mediaType:
+          (metadata.pond.mediaType as
+            | (typeof saves.$inferInsert)["mediaType"]
+            | null
+            | undefined) ?? null,
+        rawJson: metadata.pond.rawSource ?? null,
+        tags,
+        files,
+        coverIndex: metadata.pond.coverIndex ?? 0,
+        width: metadata.width,
+        height: metadata.height,
+        fileSize: metadata.size,
+        deletedAt: metadata.isDeleted ? new Date(metadata.mtime) : null,
+        savedAt: new Date(metadata.importedAt),
+        createdAt: new Date(metadata.btime),
+      };
+      const updateSet = {
+        title: metadata.name,
+        description: metadata.pond.description ?? null,
+        author: metadata.pond.author ?? null,
+        notes: metadata.annotation || null,
+        tags,
+        files,
+        width: metadata.width,
+        height: metadata.height,
+        fileSize: metadata.size,
+      };
+
+      // Check row presence first so we know whether to emit an `I` or
+      // `U` action. One extra select per save isn't free, but it's
+      // dwarfed by the metadata read; this lets the renderer pool
+      // reconcile without a full re-hydrate after a rescan.
+      const prior = await db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(eq(saves.id, id));
+      const wasInsert = prior.length === 0;
+
       await db
         .insert(saves)
-        .values({
-          id,
-          source:
-            metadata.source as unknown as (typeof saves.$inferInsert)["source"],
-          sourceId: metadata.sourceId,
-          url: metadata.url,
-          title: metadata.name,
-          description: metadata.pond.description ?? null,
-          author: metadata.pond.author ?? null,
-          notes: metadata.annotation || null,
-          mediaUrl: null,
-          mediaType:
-            (metadata.pond.mediaType as
-              | (typeof saves.$inferInsert)["mediaType"]
-              | null
-              | undefined) ?? null,
-          rawJson: metadata.pond.rawSource ?? null,
-          tags,
-          files,
-          coverIndex: metadata.pond.coverIndex ?? 0,
-          width: metadata.width,
-          height: metadata.height,
-          fileSize: metadata.size,
-          deletedAt: metadata.isDeleted ? new Date(metadata.mtime) : null,
-          savedAt: new Date(metadata.importedAt),
-          createdAt: new Date(metadata.btime),
-        })
-        .onConflictDoUpdate({
-          target: saves.id,
-          set: {
-            title: metadata.name,
-            description: metadata.pond.description ?? null,
-            author: metadata.pond.author ?? null,
-            notes: metadata.annotation || null,
-            tags,
-            files,
-            width: metadata.width,
-            height: metadata.height,
-            fileSize: metadata.size,
-          },
-        })
+        .values(insertValues)
+        .onConflictDoUpdate({ target: saves.id, set: updateSet })
         .run();
+
+      const inserted = db
+        .insert(syncActions)
+        .values({
+          modelName: "save",
+          modelId: id,
+          action: wasInsert ? "I" : "U",
+          data: (wasInsert
+            ? insertValues
+            : updateSet) as unknown as (typeof syncActions.$inferInsert)["data"],
+          actor: "system",
+          actorReason: "library-scan",
+        })
+        .returning()
+        .all()[0];
+      if (inserted) broadcastSyncAction(inserted);
 
       await stampScan(db, id, mtimeMs);
       updated++;
