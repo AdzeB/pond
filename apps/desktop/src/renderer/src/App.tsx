@@ -1,4 +1,5 @@
 import { Toast, Tooltip, useToast } from "@pond/ui";
+import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
@@ -67,16 +68,18 @@ export function App() {
   );
 
   return (
-    <Tooltip.Provider>
-      <Toast.Provider>
-        <ThemeApplier />
-        <ViewShortcuts />
-        <UndoRedoBridge />
-        <MenuBridge />
-        <ToastChime />
-        <SaveCompleteToast />
-        <RouterProvider router={router} />
-      </Toast.Provider>
-    </Tooltip.Provider>
+    <MotionConfig reducedMotion="user">
+      <Tooltip.Provider>
+        <Toast.Provider>
+          <ThemeApplier />
+          <ViewShortcuts />
+          <UndoRedoBridge />
+          <MenuBridge />
+          <ToastChime />
+          <SaveCompleteToast />
+          <RouterProvider router={router} />
+        </Toast.Provider>
+      </Tooltip.Provider>
+    </MotionConfig>
   );
 }
