@@ -4,7 +4,9 @@ import {
   IconXmarkOutline18,
 } from "@pond/icons/outline/18";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
+import { optimistic } from "@/pool/bootstrap";
 import { pickPrimaryUnit } from "@/pool/media";
+import { pool } from "@/pool/pool";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import { pickAuthorAvatarUrl } from "@/pool/url";
@@ -69,13 +71,25 @@ export function Pane({ save, className, ...props }: PaneProps) {
         onBlur={async (e) => {
           const next = e.currentTarget.textContent?.trim() ?? "";
           if (next === (save.title ?? "")) return;
-          await window.pond.tx({
-            kind: "update",
-            model: "save",
-            id: save.id,
-            patch: { title: next || null },
-            before: { title: save.title },
-          });
+          const prev = pool.get(save.id);
+          if (!prev) return;
+          const nextTitle = next || null;
+          await optimistic(
+            () => {
+              pool.upsert({ ...prev, title: nextTitle });
+            },
+            () => {
+              pool.upsert(prev);
+            },
+            async () =>
+              window.pond.tx({
+                kind: "update",
+                model: "save",
+                id: save.id,
+                patch: { title: nextTitle },
+                before: { title: save.title },
+              }),
+          );
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
