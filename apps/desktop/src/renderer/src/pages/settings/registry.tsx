@@ -16,16 +16,17 @@ import {
   IconWorkflowOutline18,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
+import {
+  SETTINGS_SECTIONS,
+  type SettingsGroup,
+  type SettingsSection,
+} from "@pond/schema";
 import type { ComponentType } from "react";
 
-export type SectionGroup = "library" | "media" | "capture" | "app";
+export type SectionGroup = SettingsGroup;
 
-export interface SectionDef {
-  id: string;
-  path: string;
-  label: string;
+export interface SectionDef extends SettingsSection {
   icon: IconComponent;
-  group: SectionGroup;
   // Dynamic import so settings sections stay out of the initial bundle.
   // Each section ships as its own vendor-* chunk (see manualChunks in
   // electron.vite.config.ts).
@@ -39,155 +40,106 @@ function lazyComponent<K extends string>(
   return async () => ({ Component: (await loader())[key] });
 }
 
-export const SECTIONS: SectionDef[] = [
+const RENDERER_BY_ID: Record<
+  string,
   {
-    id: "storage",
-    path: "storage",
-    label: "Storage",
+    icon: IconComponent;
+    load: () => Promise<{ Component: ComponentType }>;
+  }
+> = {
+  storage: {
     icon: IconStackOutline18,
-    group: "library",
     load: lazyComponent(() => import("./sections/storage"), "StorageSection"),
   },
-  {
-    id: "tags",
-    path: "tags",
-    label: "Tags",
+  tags: {
     icon: IconTagOutline18,
-    group: "library",
     load: lazyComponent(() => import("./sections/tags"), "TagsSection"),
   },
-  {
-    id: "trash-prefs",
-    path: "trash-prefs",
-    label: "Trash",
+  "trash-prefs": {
     icon: IconTrash2ContentOutline18,
-    group: "library",
     load: lazyComponent(() => import("./sections/trash"), "TrashPrefsSection"),
   },
-  {
-    id: "backups",
-    path: "backups",
-    label: "Backups & Export",
+  backups: {
     icon: IconCloudOutline18,
-    group: "library",
     load: lazyComponent(() => import("./sections/backups"), "BackupsSection"),
   },
-
-  {
-    id: "media",
-    path: "media",
-    label: "Media",
+  media: {
     icon: IconImagesOutline18,
-    group: "media",
     load: lazyComponent(() => import("./sections/media"), "MediaSection"),
   },
-
-  {
-    id: "sources",
-    path: "integrations",
-    label: "Connected Apps",
+  sources: {
     icon: IconConnectedDotsOutline18,
-    group: "capture",
     load: lazyComponent(
       () => import("./sections/integrations"),
       "IntegrationsSection",
     ),
   },
-  {
-    id: "capture-behavior",
-    path: "capture-behavior",
-    label: "Capture Behavior",
+  "capture-behavior": {
     icon: IconBoltOutline18,
-    group: "capture",
     load: lazyComponent(
       () => import("./sections/capture-behavior"),
       "CaptureBehaviorSection",
     ),
   },
-  {
-    id: "extension",
-    path: "extension",
-    label: "Browser Extension",
+  extension: {
     icon: IconWindowCode2Outline18,
-    group: "capture",
     load: lazyComponent(
       () => import("./sections/extension"),
       "ExtensionSection",
     ),
   },
-
-  {
-    id: "preferences",
-    path: "preferences",
-    label: "Preferences",
+  preferences: {
     icon: IconSliderOutline18,
-    group: "app",
     load: lazyComponent(
       () => import("./sections/preferences"),
       "PreferencesSection",
     ),
   },
-  {
-    id: "notifications",
-    path: "notifications",
-    label: "Notifications",
+  notifications: {
     icon: IconBellOutline18,
-    group: "app",
     load: lazyComponent(
       () => import("./sections/notifications"),
       "NotificationsSection",
     ),
   },
-  {
-    id: "updates",
-    path: "updates",
-    label: "Updates",
+  updates: {
     icon: IconClockRotateClockwiseOutline18,
-    group: "app",
     load: lazyComponent(() => import("./sections/updates"), "UpdatesSection"),
   },
-  {
-    id: "automation",
-    path: "automation",
-    label: "Automation",
+  automation: {
     icon: IconWorkflowOutline18,
-    group: "app",
     load: lazyComponent(
       () => import("./sections/automation"),
       "AutomationSection",
     ),
   },
-  {
-    id: "developer",
-    path: "developer",
-    label: "Developer",
+  developer: {
     icon: IconTerminalOutline18,
-    group: "app",
     load: lazyComponent(
       () => import("./sections/developer"),
       "DeveloperSection",
     ),
   },
-  {
-    id: "components",
-    path: "components",
-    label: "Components",
+  components: {
     icon: IconShapesOutline18,
-    group: "app",
     load: lazyComponent(
       () => import("./sections/components"),
       "ComponentsSection",
     ),
   },
-  {
-    id: "about",
-    path: "about",
-    label: "About",
+  about: {
     icon: IconCircleInfoOutline18,
-    group: "app",
     load: lazyComponent(() => import("./sections/about"), "AboutSection"),
   },
-];
+};
+
+export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
+  const renderer = RENDERER_BY_ID[section.id];
+  if (!renderer) {
+    throw new Error(`settings registry missing renderer for "${section.id}"`);
+  }
+  return { ...section, ...renderer };
+});
 
 export const GROUP_ORDER: readonly SectionGroup[] = [
   "app",
