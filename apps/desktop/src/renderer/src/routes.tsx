@@ -10,7 +10,6 @@ import { SaveDetailPage } from "./pages/save-detail";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
 import { TrashView } from "./pages/trash-view";
-import { WelcomePage } from "./pages/welcome";
 
 function settingsChildren(): RouteObject[] {
   return [
@@ -21,7 +20,7 @@ function settingsChildren(): RouteObject[] {
     ...SECTIONS.map(
       (section): RouteObject => ({
         path: section.path,
-        element: <section.component />,
+        lazy: section.load,
       }),
     ),
     {
@@ -92,7 +91,15 @@ export function buildRoutes(): RouteObject[] {
         },
         {
           element: <StandaloneLayout />,
-          children: [{ path: "welcome", element: <WelcomePage /> }],
+          children: [
+            {
+              path: "welcome",
+              lazy: async () => {
+                const mod = await import("./pages/welcome");
+                return { Component: mod.WelcomePage };
+              },
+            },
+          ],
         },
       ],
     },

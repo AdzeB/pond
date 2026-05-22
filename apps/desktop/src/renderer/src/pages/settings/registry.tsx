@@ -17,21 +17,6 @@ import {
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import type { ComponentType } from "react";
-import { AboutSection } from "./sections/about";
-import { AutomationSection } from "./sections/automation";
-import { BackupsSection } from "./sections/backups";
-import { CaptureBehaviorSection } from "./sections/capture-behavior";
-import { ComponentsSection } from "./sections/components";
-import { DeveloperSection } from "./sections/developer";
-import { ExtensionSection } from "./sections/extension";
-import { IntegrationsSection } from "./sections/integrations";
-import { MediaSection } from "./sections/media";
-import { NotificationsSection } from "./sections/notifications";
-import { PreferencesSection } from "./sections/preferences";
-import { StorageSection } from "./sections/storage";
-import { TagsSection } from "./sections/tags";
-import { TrashPrefsSection } from "./sections/trash";
-import { UpdatesSection } from "./sections/updates";
 
 export type SectionGroup = "library" | "media" | "capture" | "app";
 
@@ -41,7 +26,17 @@ export interface SectionDef {
   label: string;
   icon: IconComponent;
   group: SectionGroup;
-  component: ComponentType;
+  // Dynamic import so settings sections stay out of the initial bundle.
+  // Each section ships as its own vendor-* chunk (see manualChunks in
+  // electron.vite.config.ts).
+  load: () => Promise<{ Component: ComponentType }>;
+}
+
+function lazyComponent<K extends string>(
+  loader: () => Promise<Record<K, ComponentType>>,
+  key: K,
+): () => Promise<{ Component: ComponentType }> {
+  return async () => ({ Component: (await loader())[key] });
 }
 
 export const SECTIONS: SectionDef[] = [
@@ -51,7 +46,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Storage",
     icon: IconStackOutline18,
     group: "library",
-    component: StorageSection,
+    load: lazyComponent(() => import("./sections/storage"), "StorageSection"),
   },
   {
     id: "tags",
@@ -59,7 +54,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Tags",
     icon: IconTagOutline18,
     group: "library",
-    component: TagsSection,
+    load: lazyComponent(() => import("./sections/tags"), "TagsSection"),
   },
   {
     id: "trash-prefs",
@@ -67,7 +62,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Trash",
     icon: IconTrash2ContentOutline18,
     group: "library",
-    component: TrashPrefsSection,
+    load: lazyComponent(() => import("./sections/trash"), "TrashPrefsSection"),
   },
   {
     id: "backups",
@@ -75,7 +70,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Backups & Export",
     icon: IconCloudOutline18,
     group: "library",
-    component: BackupsSection,
+    load: lazyComponent(() => import("./sections/backups"), "BackupsSection"),
   },
 
   {
@@ -84,7 +79,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Media",
     icon: IconImagesOutline18,
     group: "media",
-    component: MediaSection,
+    load: lazyComponent(() => import("./sections/media"), "MediaSection"),
   },
 
   {
@@ -93,7 +88,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Connected Apps",
     icon: IconConnectedDotsOutline18,
     group: "capture",
-    component: IntegrationsSection,
+    load: lazyComponent(
+      () => import("./sections/integrations"),
+      "IntegrationsSection",
+    ),
   },
   {
     id: "capture-behavior",
@@ -101,7 +99,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Capture Behavior",
     icon: IconBoltOutline18,
     group: "capture",
-    component: CaptureBehaviorSection,
+    load: lazyComponent(
+      () => import("./sections/capture-behavior"),
+      "CaptureBehaviorSection",
+    ),
   },
   {
     id: "extension",
@@ -109,7 +110,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Browser Extension",
     icon: IconWindowCode2Outline18,
     group: "capture",
-    component: ExtensionSection,
+    load: lazyComponent(
+      () => import("./sections/extension"),
+      "ExtensionSection",
+    ),
   },
 
   {
@@ -118,7 +122,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Preferences",
     icon: IconSliderOutline18,
     group: "app",
-    component: PreferencesSection,
+    load: lazyComponent(
+      () => import("./sections/preferences"),
+      "PreferencesSection",
+    ),
   },
   {
     id: "notifications",
@@ -126,7 +133,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Notifications",
     icon: IconBellOutline18,
     group: "app",
-    component: NotificationsSection,
+    load: lazyComponent(
+      () => import("./sections/notifications"),
+      "NotificationsSection",
+    ),
   },
   {
     id: "updates",
@@ -134,7 +144,7 @@ export const SECTIONS: SectionDef[] = [
     label: "Updates",
     icon: IconClockRotateClockwiseOutline18,
     group: "app",
-    component: UpdatesSection,
+    load: lazyComponent(() => import("./sections/updates"), "UpdatesSection"),
   },
   {
     id: "automation",
@@ -142,7 +152,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Automation",
     icon: IconWorkflowOutline18,
     group: "app",
-    component: AutomationSection,
+    load: lazyComponent(
+      () => import("./sections/automation"),
+      "AutomationSection",
+    ),
   },
   {
     id: "developer",
@@ -150,7 +163,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Developer",
     icon: IconTerminalOutline18,
     group: "app",
-    component: DeveloperSection,
+    load: lazyComponent(
+      () => import("./sections/developer"),
+      "DeveloperSection",
+    ),
   },
   {
     id: "components",
@@ -158,7 +174,10 @@ export const SECTIONS: SectionDef[] = [
     label: "Components",
     icon: IconShapesOutline18,
     group: "app",
-    component: ComponentsSection,
+    load: lazyComponent(
+      () => import("./sections/components"),
+      "ComponentsSection",
+    ),
   },
   {
     id: "about",
@@ -166,7 +185,7 @@ export const SECTIONS: SectionDef[] = [
     label: "About",
     icon: IconCircleInfoOutline18,
     group: "app",
-    component: AboutSection,
+    load: lazyComponent(() => import("./sections/about"), "AboutSection"),
   },
 ];
 
