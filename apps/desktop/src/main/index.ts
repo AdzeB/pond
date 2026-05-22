@@ -1,4 +1,5 @@
 import { join, resolve as resolvePath } from "node:path";
+import { SETTINGS_SECTIONS, SOURCES, type Source } from "@pond/schema";
 import {
   app,
   BrowserWindow,
@@ -42,6 +43,7 @@ import {
   type SyncStatusUpdate,
   subscribeToSyncStatus,
   syncAllSources,
+  syncSource,
 } from "./core/sync";
 import { isOnWifi } from "./core/sync/network-type";
 import { computeNextDueAt, isInQuietHours } from "./core/sync/schedule";
@@ -510,6 +512,43 @@ function openExternalUrl(url: string) {
   };
 }
 
+const SOURCE_LABELS: Record<Source, string> = {
+  twitter: "X / Twitter",
+  instagram: "Instagram",
+  pinterest: "Pinterest",
+  arena: "Are.na",
+  cosmos: "Cosmos",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+};
+
+function settingsSubmenu(): Electron.MenuItemConstructorOptions[] {
+  return SETTINGS_SECTIONS.map((section) => ({
+    label: section.label,
+    click: navTo(`/settings/${section.path}`),
+  }));
+}
+
+function sourcesSubmenu(): Electron.MenuItemConstructorOptions[] {
+  const filterItems: Electron.MenuItemConstructorOptions[] = SOURCES.map(
+    (source) => ({
+      label: `Filter by ${SOURCE_LABELS[source]}`,
+      click: navTo(`/source/${source}`),
+    }),
+  );
+  const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.map(
+    (source) => ({
+      label: `Sync ${SOURCE_LABELS[source]} Now`,
+      click: () => {
+        void syncSource(source, { trigger: "manual" }).catch((err) =>
+          log.warn(`[pond menu] sync ${source} failed`, err),
+        );
+      },
+    }),
+  );
+  return [...filterItems, { type: "separator" }, ...syncItems];
+}
+
 function installAppMenu() {
   const isMac = process.platform === "darwin";
 
@@ -533,6 +572,7 @@ function installAppMenu() {
               },
               { type: "separator" as const },
               preferencesItem,
+              { label: "Settings", submenu: settingsSubmenu() },
               { type: "separator" as const },
               { role: "services" as const },
               { type: "separator" as const },
@@ -554,20 +594,38 @@ function installAppMenu() {
           click: navTo("/?capture=1"),
         },
         { type: "separator" },
+        { label: "Sources", submenu: sourcesSubmenu() },
         {
           label: "Sync All Sources",
           accelerator: "CommandOrControl+Shift+R",
           click: () => void syncAllSources({ trigger: "manual" }),
         },
+        { type: "separator" },
         {
           label: "Refresh All Metadata…",
           click: sendMenuAction("refresh.all"),
+        },
+        {
+          label: "Cancel Metadata Refresh",
+          click: sendMenuAction("refresh.cancel"),
         },
         { type: "separator" },
         {
           label: "Reveal Library in Finder",
           accelerator: "CommandOrControl+Shift+O",
           click: () => void shell.openPath(libraryRoot()),
+        },
+        {
+          label: "Export Library as ZIP…",
+          click: sendMenuAction("library.export-zip"),
+        },
+        {
+          label: "Export Library as JSON…",
+          click: sendMenuAction("library.export-json"),
+        },
+        {
+          label: "Move Library…",
+          click: sendMenuAction("library.move"),
         },
         {
           label: "Create Backup Snapshot",
@@ -623,6 +681,96 @@ function installAppMenu() {
           accelerator: "CommandOrControl+K",
           click: sendMenuAction("palette.open"),
         },
+        { type: "separator" },
+        { label: "Search", click: sendMenuAction("find.search") },
+        { label: "Filter", click: sendMenuAction("find.filter") },
+        { type: "separator" },
+        {
+          label: "Go to",
+          submenu: [
+            { label: "Library", click: navTo("/") },
+            { label: "Recents", click: navTo("/recents") },
+            { label: "Random", click: navTo("/random") },
+            { label: "Untagged", click: navTo("/untagged") },
+            { label: "Trash", click: navTo("/trash") },
+            { label: "Activity", click: navTo("/activity") },
+            { label: "Settings", click: navTo("/settings") },
+          ],
+        },
+      ],
+    },
+    {
+      label: "Save",
+      submenu: [
+        {
+          label: "Open in Detail View",
+          click: sendMenuAction("save.open-detail"),
+        },
+        {
+          label: "Open with Default App",
+          click: sendMenuAction("save.open-with-default"),
+        },
+        {
+          label: "Open Original URL",
+          click: sendMenuAction("save.open-original"),
+        },
+        {
+          label: "Reveal in Finder",
+          click: sendMenuAction("save.reveal"),
+        },
+        { type: "separator" },
+        {
+          label: "Copy URL",
+          accelerator: "CommandOrControl+Shift+,",
+          click: sendMenuAction("save.copy-url"),
+        },
+        {
+          label: "Copy Save ID",
+          accelerator: "CommandOrControl+.",
+          click: sendMenuAction("save.copy-id"),
+        },
+        { type: "separator" },
+        {
+          label: "Rename",
+          accelerator: "Shift+R",
+          click: sendMenuAction("save.rename"),
+        },
+        {
+          label: "Add Tag",
+          click: sendMenuAction("save.add-tag"),
+        },
+        {
+          label: "Refresh Metadata",
+          click: sendMenuAction("save.refresh"),
+        },
+        { type: "separator" },
+        {
+          label: "Move to Trash",
+          click: sendMenuAction("save.trash"),
+        },
+        {
+          label: "Restore from Trash",
+          click: sendMenuAction("save.untrash"),
+        },
+        {
+          label: "Delete Forever",
+          accelerator: "CommandOrControl+Backspace",
+          click: sendMenuAction("save.delete-forever"),
+        },
+        { type: "separator" },
+        {
+          label: "Bulk",
+          submenu: [
+            {
+              label: "Move Selected to Trash",
+              click: sendMenuAction("save.bulk-trash"),
+            },
+            {
+              label: "Refresh Selected",
+              click: sendMenuAction("save.bulk-refresh"),
+            },
+          ],
+        },
       ],
     },
     {
@@ -676,6 +824,15 @@ function installAppMenu() {
             }
           },
         },
+        { type: "separator" },
+        {
+          label: "Empty Trash",
+          click: sendMenuAction("trash.empty"),
+        },
+        {
+          label: "Restore All from Trash",
+          click: sendMenuAction("trash.restore-all"),
+        },
       ],
     },
     {
@@ -690,6 +847,27 @@ function installAppMenu() {
           label: "Toggle Inspector",
           accelerator: isMac ? "Alt+Command+2" : "Alt+Control+2",
           click: sendMenuAction("view.inspector.toggle"),
+        },
+        { type: "separator" },
+        {
+          label: "Cycle Layout",
+          accelerator: "CommandOrControl+B",
+          click: sendMenuAction("view.layout.cycle"),
+        },
+        {
+          label: "Layout",
+          submenu: [
+            {
+              label: "Waterfall",
+              click: sendMenuAction("view.layout.waterfall"),
+            },
+            { label: "Grid", click: sendMenuAction("view.layout.grid") },
+            {
+              label: "Justified",
+              click: sendMenuAction("view.layout.justified"),
+            },
+            { label: "List", click: sendMenuAction("view.layout.list") },
+          ],
         },
         { type: "separator" },
         {
@@ -756,6 +934,28 @@ function installAppMenu() {
           label: "Show Logs in Finder",
           click: () => void shell.openPath(app.getPath("logs")),
         },
+        ...(!app.isPackaged
+          ? ([
+              { type: "separator" as const },
+              {
+                label: "Developer",
+                submenu: [
+                  {
+                    label: "Restart Local API",
+                    click: sendMenuAction("developer.restart-api"),
+                  },
+                  {
+                    label: "Open Developer Logs",
+                    click: sendMenuAction("developer.open-logs"),
+                  },
+                  {
+                    label: "Open IPC Inspector",
+                    click: sendMenuAction("developer.ipc-inspector"),
+                  },
+                ],
+              },
+            ] satisfies Electron.MenuItemConstructorOptions[])
+          : []),
       ],
     },
   ];

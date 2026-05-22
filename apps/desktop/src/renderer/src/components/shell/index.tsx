@@ -13,6 +13,7 @@ import { Sidebar } from "@/components/sidebar";
 import { SidebarTools } from "@/components/sidebar-tools";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { HistoryHotkey } from "@/effects/history-hotkey";
+import { LayoutMenuBridge } from "@/effects/layout-menu-bridge";
 import { OnboardedGuard } from "@/effects/onboarded-guard";
 import { PreferencesHotkey } from "@/effects/preferences-hotkey";
 import { usePlatform } from "@/lib/platform";
@@ -102,6 +103,7 @@ export function LibraryLayout() {
 
   return (
     <Shell.Root platform={platform}>
+      <LayoutMenuBridge />
       <div
         className={styles["sidebar-wrap"]}
         data-open={sidebarOpen ? "true" : "false"}
