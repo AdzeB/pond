@@ -6,6 +6,7 @@ import type { PondApi } from "../../preload";
 import { ThemeApplier } from "./components/theme-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
+import { SaveShortcuts } from "./effects/save-shortcuts";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { ViewShortcuts } from "./effects/view-shortcuts";
 import { getPrefsSnapshot } from "./pool/prefs";
@@ -73,6 +74,7 @@ export function App() {
         <Toast.Provider>
           <ThemeApplier />
           <ViewShortcuts />
+          <SaveShortcuts />
           <UndoRedoBridge />
           <MenuBridge />
           <ToastChime />
