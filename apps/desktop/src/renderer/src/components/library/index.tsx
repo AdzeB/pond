@@ -81,19 +81,20 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 }
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
-  /* `motion.li layout` FLIPs the card between old and new bounding boxes
-   * on every commit, so cards glide to their new positions when sidebar
-   * or inspector visibility flips. The shell/inspector now snap width in
-   * one frame (no per-frame layout work), so FLIP just interpolates
-   * between two end states — same compositor-friendly transform path the
-   * packers were already designed around.
+  /* `motion.li layout="position"` FLIPs the card between old and new
+   * positions via a composited transform — no width/height interpolation.
+   * Size changes (e.g. waterfall re-pack when grid width shifts) snap in
+   * one frame. This is the Linear playbook: animate position+opacity,
+   * never size, never anything layout-bound. Skipping size measurement
+   * also halves the work motion does per item per commit, which matters
+   * when the grid has hundreds of cards.
    *
    * Cast bypasses Motion's `onDrag*` type override: callers pass React's
    * native `onDragStart` (DragEvent), and since we never enable `drag`,
    * motion passes it through to the underlying `<li>` unchanged. */
   return (
     <motion.li
-      layout
+      layout="position"
       transition={drawerSpring}
       className={cn(
         styles.item,

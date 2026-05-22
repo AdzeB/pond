@@ -1,9 +1,10 @@
 import type { Transition } from "motion/react";
 
-// Used by `motion.li layout` on grid items: when sidebar/inspector
-// visibility flips, content area resizes in one frame and FLIP
-// interpolates each card from its old to new bounding box via composited
-// transforms (no per-frame layout).
+// Used by `motion.li layout="position"` on grid items: when
+// sidebar/inspector visibility flips, the shell resizes in one frame and
+// motion FLIPs each card from its old to new position via composited
+// transforms. Size deltas snap (see Library.Item) — we never animate
+// width/height, only position+opacity.
 //
 // Linear-leaning durations: 220ms keeps the transition under the 250ms
 // cause-and-effect threshold (Material defaults to 200ms, iOS spring to
