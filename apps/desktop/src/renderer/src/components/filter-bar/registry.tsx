@@ -31,6 +31,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { isChordPending } from "@/components/command-palette/use-chords";
 import { useSaves } from "@/pool/hooks";
 import { DATE_PRESETS } from "./date-presets";
 import { DateDropdown } from "./dropdowns/date";
@@ -769,8 +770,40 @@ export function useFilterHotkey(onActivate: () => void): void {
 
   useEffect(() => {
     function handler(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
       if (e.key.toLowerCase() !== "f") return;
+      if (isChordPending()) return;
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === "INPUT" ||
+          tag === "TEXTAREA" ||
+          tag === "SELECT" ||
+          target.isContentEditable
+        ) {
+          return;
+        }
+      }
+      e.preventDefault();
+      cb.current();
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
+}
+
+// Linear-standard `/` focuses global search. Same chord/typing guards as
+// `useFilterHotkey` so chord completions (`g s`) and text input both win.
+export function useSearchHotkey(onActivate: () => void): void {
+  const cb = useRef(onActivate);
+  cb.current = onActivate;
+
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key !== "/") return;
+      if (isChordPending()) return;
       const target = e.target as HTMLElement | null;
       if (target) {
         const tag = target.tagName;

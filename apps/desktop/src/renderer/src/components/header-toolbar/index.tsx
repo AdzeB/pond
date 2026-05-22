@@ -18,6 +18,7 @@ import {
 import {
   AddFilterMenu,
   useFilterHotkey,
+  useSearchHotkey,
 } from "@/components/filter-bar/registry";
 import { ViewPicker } from "@/components/layout-popover";
 import { usePlatform } from "@/lib/platform";
@@ -66,6 +67,7 @@ function Root() {
 
   const [filterOpen, setFilterOpen] = useState(false);
   const filterInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const addApi = useMemo<AddCommitApi>(() => {
     const baseFromCurrent = () => {
@@ -100,6 +102,13 @@ function Root() {
     requestAnimationFrame(() => filterInputRef.current?.focus());
   });
 
+  useSearchHotkey(() => {
+    const el = searchInputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  });
+
   return (
     <Toolbar>
       <Search>
@@ -107,6 +116,7 @@ function Root() {
           <IconMagnifierOutline18 />
         </SearchIcon>
         <SearchInput
+          ref={searchInputRef}
           type="search"
           placeholder="Search"
           value={search}
@@ -213,10 +223,16 @@ function SearchIcon({ className, ...props }: SearchIconProps) {
   );
 }
 
-interface SearchInputProps extends React.ComponentPropsWithoutRef<"input"> {}
+interface SearchInputProps extends React.ComponentProps<"input"> {}
 
-function SearchInput({ className, ...props }: SearchInputProps) {
-  return <input className={cn(styles["search-input"], className)} {...props} />;
+function SearchInput({ className, ref, ...props }: SearchInputProps) {
+  return (
+    <input
+      ref={ref}
+      className={cn(styles["search-input"], className)}
+      {...props}
+    />
+  );
 }
 
 interface RightProps extends React.ComponentPropsWithoutRef<"div"> {}
