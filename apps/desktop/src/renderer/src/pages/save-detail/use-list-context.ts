@@ -1,7 +1,7 @@
 import { readQuery } from "@pond/schema/filters/url";
 import { useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { useRecents } from "@/components/recents";
+import { useRecents } from "@/lib/recents";
 import { useStableById } from "@/lib/use-stable-array";
 import { readViewPref } from "@/lib/view-prefs";
 import { useSaves } from "@/pool/hooks";

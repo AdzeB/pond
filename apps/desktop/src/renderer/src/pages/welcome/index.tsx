@@ -8,7 +8,7 @@ import {
 } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { NumberFieldStepper } from "@/components/number-field-stepper";
+import { NumberFieldStepper } from "@/components/_primitives/number-field-stepper";
 import styles from "./styles.module.css";
 
 interface RelocatePreviewWire {

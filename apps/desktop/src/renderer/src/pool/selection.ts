@@ -128,14 +128,6 @@ class PrimarySelectionStore {
 
 export const primarySelection = new PrimarySelectionStore();
 
-export function usePrimarySelectedId(): string | null {
-  return useSyncExternalStore(
-    (cb) => primarySelection.subscribe(cb),
-    () => primarySelection.get(),
-    () => primarySelection.get(),
-  );
-}
-
 export function useIsPrimary(id: string): boolean {
   return useSyncExternalStore(
     (cb) => primarySelection.subscribe(cb),

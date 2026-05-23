@@ -1,6 +1,6 @@
 import { Button, Input, useToast } from "@pond/ui";
 import { useEffect, useMemo, useState } from "react";
-import { InlineRow } from "@/components/inline-row";
+import { InlineRow } from "@/components/_primitives/inline-row";
 import { Settings } from "@/components/settings";
 
 export function ExtensionSection() {

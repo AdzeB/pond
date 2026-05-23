@@ -28,7 +28,7 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
 
 export type LayoutValue = "waterfall" | "grid" | "justified" | "list";
 
-export const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
+const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
   "waterfall",
   "grid",
   "justified",

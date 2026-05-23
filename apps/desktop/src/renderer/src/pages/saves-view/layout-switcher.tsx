@@ -12,9 +12,9 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Card, type CardLayout } from "@/components/card-thumb";
+import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { type GridLayout, Library } from "@/components/library";
-import { SaveContextMenu } from "@/components/save-context-menu";
+import { SaveContextMenu } from "@/components/save/context-menu";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import type { Save } from "@/pool/types";
 import { JustifiedView } from "./justified";

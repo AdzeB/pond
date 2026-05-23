@@ -2,13 +2,13 @@ import { useSyncExternalStore } from "react";
 
 export type Density = "compact" | "comfortable" | "spacious";
 
-export const DENSITY_ITEM_GAP: Record<Density, number> = {
+const DENSITY_ITEM_GAP: Record<Density, number> = {
   compact: 8,
   comfortable: 16,
   spacious: 28,
 };
 
-export const DEFAULT_DENSITY: Density = "comfortable";
+const DEFAULT_DENSITY: Density = "comfortable";
 
 const STORAGE_KEY = "pond.display.density";
 

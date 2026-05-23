@@ -1,9 +1,9 @@
 import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { InlineRow } from "@/components/inline-row";
+import { InlineRow } from "@/components/_primitives/inline-row";
+import { getSourceLabel } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
-import { getSourceLabel } from "@/components/source-badge";
 import { usePrefs } from "@/pool/prefs";
 import type {
   RefreshBackfillStatusWire,

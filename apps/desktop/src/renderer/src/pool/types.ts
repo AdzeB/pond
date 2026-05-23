@@ -11,7 +11,7 @@ export interface SaveFile {
   height?: number | null;
 }
 
-export interface SaveTask {
+interface SaveTask {
   op: Op;
   status: TaskStatus;
   attempts: number;

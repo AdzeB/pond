@@ -1,5 +1,5 @@
-import { Inspector } from "@/components/inspector";
 import { Library } from "@/components/library";
+import { Inspector } from "@/components/library/inspector";
 import { LibraryChrome, Shell } from "@/components/shell";
 import { LayoutSwitcher } from "./layout-switcher";
 import { useCardActions } from "./use-card-actions";

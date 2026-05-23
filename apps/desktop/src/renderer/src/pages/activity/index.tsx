@@ -1,4 +1,4 @@
-import { ActivityList } from "@/components/activity-list";
+import { ActivityList } from "@/components/capture/activity-list";
 import { LibraryChrome, Shell } from "@/components/shell";
 import styles from "./styles.module.css";
 

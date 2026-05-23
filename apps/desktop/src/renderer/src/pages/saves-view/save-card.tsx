@@ -1,8 +1,8 @@
 import { memo, useCallback, useMemo } from "react";
-import { Card, type CardLayout } from "@/components/card-thumb";
+import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
+import { SourceBadge } from "@/components/_primitives/source-badge";
 import { Library } from "@/components/library";
-import { SaveContextMenu } from "@/components/save-context-menu";
-import { SourceBadge } from "@/components/source-badge";
+import { SaveContextMenu } from "@/components/save/context-menu";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { useSave } from "@/pool/hooks";
 import { buildMediaUnits, pickPrimaryFile } from "@/pool/media";

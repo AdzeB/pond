@@ -5,8 +5,6 @@ import {
   IconMinusOutline18,
   IconPlusOutline18,
 } from "@pond/icons/outline/18";
-import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import {
   Button,
   Input,
@@ -15,16 +13,12 @@ import {
   Slider,
   Tooltip,
 } from "@pond/ui";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import {
-  type AddCommitApi,
-  appendPredicate,
-  replacePredicate,
-} from "@/components/filter-bar/helpers";
-import { AddFilterMenu } from "@/components/filter-bar/registry";
-import { ViewPicker } from "@/components/library/toolbar/menus/layout";
+import { useCallback, useRef, useState } from "react";
+import { AddFilterMenu } from "@/components/library/filter-bar/registry";
+import { useAddCommitApi } from "@/components/library/filter-bar/use-add-commit-api";
+import { ViewPicker } from "@/components/library/menus/layout";
 import { usePlatform } from "@/lib/platform";
+import { useDebouncedSearchParam } from "@/lib/use-debounced-search-param";
 import { useFilterHotkey, useSearchHotkey } from "@/lib/use-hotkeys";
 import { useSidebar } from "@/lib/use-sidebar";
 import { useZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
@@ -56,42 +50,8 @@ export const HeaderToolbar = { Root };
 const SEARCH_DEBOUNCE_MS = 150;
 
 function Search() {
-  const [params, setParams] = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
-  const urlSearch = params.get("q") ?? "";
-  const [value, setValue] = useState(urlSearch);
-
-  useEffect(() => {
-    setValue(urlSearch);
-  }, [urlSearch]);
-
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    },
-    [],
-  );
-
-  const onChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const next = e.target.value;
-      setValue(next);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        setParams(
-          (prev) => {
-            const p = new URLSearchParams(prev);
-            if (next) p.set("q", next);
-            else p.delete("q");
-            return p;
-          },
-          { replace: true },
-        );
-      }, SEARCH_DEBOUNCE_MS);
-    },
-    [setParams],
-  );
+  const [value, setValue] = useDebouncedSearchParam("q", SEARCH_DEBOUNCE_MS);
 
   useSearchHotkey(() => {
     const el = inputRef.current;
@@ -110,7 +70,7 @@ function Search() {
         type="search"
         placeholder="Search"
         value={value}
-        onChange={onChange}
+        onChange={(e) => setValue(e.target.value)}
         aria-label="Search saves"
       />
     </Input.Root>
@@ -196,37 +156,9 @@ function ViewOptionsButton() {
 }
 
 function AddFilterButton() {
-  const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const api = useMemo<AddCommitApi>(() => {
-    const baseFromCurrent = () => {
-      const current = readQuery(params);
-      return current.kind === "and" ? current : EMPTY_QUERY;
-    };
-    return {
-      commitOne: (predicate) => {
-        const base = baseFromCurrent();
-        setParams(writeQuery(params, appendPredicate(base, predicate)), {
-          replace: true,
-        });
-      },
-      liveAdd: (predicate) => {
-        const base = baseFromCurrent();
-        setParams(writeQuery(params, appendPredicate(base, predicate)), {
-          replace: true,
-        });
-        return base.clauses.length;
-      },
-      liveUpdate: (idx, predicate) => {
-        const base = baseFromCurrent();
-        setParams(writeQuery(params, replacePredicate(base, idx, predicate)), {
-          replace: true,
-        });
-      },
-    };
-  }, [params, setParams]);
+  const api = useAddCommitApi();
 
   useFilterHotkey(() => {
     setOpen(true);

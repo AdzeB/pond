@@ -23,7 +23,7 @@ export interface MediaUnit {
   posterUrl?: string;
 }
 
-export interface MediaPickOptions {
+interface MediaPickOptions {
   theme?: ResolvedTheme;
 }
 

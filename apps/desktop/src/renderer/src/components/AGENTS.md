@@ -4,8 +4,35 @@ Rules for creating or refactoring any component in this tree. Defer to
 [`.cursor/components/SKILL.md`](../../../../../../.cursor/components/SKILL.md)
 for the full Pond house style — compound objects, CSS Modules, `data-*`
 variants, semantic HTML, design tokens. This file only adds the rules
-that aren't there yet: the single-file containment preference and the
-Vercel composition patterns checklist.
+that aren't there yet: where things live, the single-file containment
+preference, and the Vercel composition patterns checklist.
+
+## Where things live
+
+The tree is grouped by surface, not by component type.
+
+| Folder | What goes here |
+|---|---|
+| `_primitives/` | Presentational, no domain state. Could be promoted to `@pond/ui` if a second consumer appears. |
+| `shell/` | App frame, layouts, and the chrome shared by every page (sidebar, sidebar-tools). |
+| `library/` | Anything that lives inside the Library surface — grid/list primitive, sidebar, toolbar, filter-bar, bulk-action-bar, inspector, quick-capture, and the toolbar's menus. |
+| `save/` | Per-save surfaces (preview pane, context menu). Imported by the save-detail route and the inspector. |
+| `capture/` | Background capture pipeline UI — the processing button + dialog and the activity dialog/list. |
+| `media/` | Media playback (video player). |
+| `command-palette/` | Top-level, cross-cutting. Stays at the root. |
+| `settings/` | The `<Settings.*>` compound used by the settings sections. Stays at the root. |
+
+### Placement decisions
+
+- **Purely presentational, no domain knowledge?** → `_primitives/`.
+- **Used by exactly one surface?** → that surface's folder (e.g. only
+  the library uses it → `library/`).
+- **Shared across surfaces with domain state?** → top level
+  (`command-palette/`, `settings/`).
+- **Not a component at all** (a mounted-once effect, a hook, a
+  zustand-style store)? → it doesn't go in `components/`. Effects live
+  in [`../effects/`](../effects/); hooks and stores in
+  [`../lib/`](../lib/).
 
 ## Creating components
 
@@ -18,7 +45,7 @@ namespaces are the templates — multiple named pieces in one file:
 - [`packages/ui/src/context-menu/index.tsx`](../../../../../../packages/ui/src/context-menu/index.tsx) — 17 named pieces, one file.
 - [`packages/ui/src/tooltip/index.tsx`](../../../../../../packages/ui/src/tooltip/index.tsx) — 8 pieces, one file.
 - [`packages/ui/src/dialog/index.tsx`](../../../../../../packages/ui/src/dialog/index.tsx) — 6 pieces, one file.
-- [`apps/desktop/src/renderer/src/components/settings/index.tsx`](settings/index.tsx) — 12 pieces, one file.
+- [`./settings/index.tsx`](settings/index.tsx) — 12 pieces, one file.
 
 Reach for a split only when the file genuinely becomes hard to navigate
 — rough rule of thumb: 400+ lines and the sub-components carry
@@ -106,4 +133,6 @@ Mirrors the priority ordering in
 - Reference compound implementations in this codebase:
   - [`packages/ui/src/context-menu/index.tsx`](../../../../../../packages/ui/src/context-menu/index.tsx)
   - [`packages/ui/src/tooltip/index.tsx`](../../../../../../packages/ui/src/tooltip/index.tsx)
-  - [`apps/desktop/src/renderer/src/components/settings/index.tsx`](settings/index.tsx)
+  - [`./settings/index.tsx`](settings/index.tsx)
+  - [`./library/index.tsx`](library/index.tsx)
+  - [`./shell/sidebar/index.tsx`](shell/sidebar/index.tsx)

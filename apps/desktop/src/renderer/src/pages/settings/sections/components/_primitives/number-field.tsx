@@ -1,4 +1,4 @@
-import { NumberFieldStepper } from "@/components/number-field-stepper";
+import { NumberFieldStepper } from "@/components/_primitives/number-field-stepper";
 import { Cell } from "./cell";
 
 export default function NumberFieldCell() {

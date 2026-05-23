@@ -11,7 +11,7 @@ export interface PanePref {
   setOpen: (next: boolean) => void;
 }
 
-export interface PanePrefStore {
+interface PanePrefStore {
   eventName: string;
   read: () => boolean;
   set: (next: boolean) => void;

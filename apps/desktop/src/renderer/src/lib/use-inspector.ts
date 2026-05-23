@@ -10,6 +10,5 @@ export function useInspector(): PanePref {
   return usePanePref(store);
 }
 
-export const readInspectorPref = store.read;
 export const setInspectorOpen = store.set;
 export const toggleInspector = store.toggle;

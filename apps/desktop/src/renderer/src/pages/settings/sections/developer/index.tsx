@@ -1,6 +1,6 @@
 import { AlertDialog, Button, Dialog, Switch, useToast } from "@pond/ui";
 import { useCallback, useState } from "react";
-import { ActivityDialog } from "@/components/activity-dialog";
+import { ActivityDialog } from "@/components/capture/activity-dialog";
 import { Settings } from "@/components/settings";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 

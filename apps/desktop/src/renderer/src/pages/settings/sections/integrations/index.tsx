@@ -22,8 +22,8 @@ import {
   useState,
 } from "react";
 import { useSearchParams } from "react-router-dom";
+import { SourceBadge } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
-import { SourceBadge } from "@/components/source-badge";
 import { usePrefs } from "@/pool/prefs";
 import { ALL_SOURCES, type AnySource, SOURCE_DESCRIPTIONS } from "../_types";
 import styles from "./styles.module.css";

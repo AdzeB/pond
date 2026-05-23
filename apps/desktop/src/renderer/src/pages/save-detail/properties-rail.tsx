@@ -7,8 +7,8 @@ import {
   collectMetadataRows,
   collectPropertyRows,
   type PaneRow,
-} from "@/components/save-preview/rows";
-import { TagEditor } from "@/components/save-preview/tag-editor";
+} from "@/components/save/preview/rows";
+import { TagEditor } from "@/components/save/preview/tag-editor";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 

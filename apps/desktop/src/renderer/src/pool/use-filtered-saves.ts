@@ -6,7 +6,7 @@ import type { Save } from "./types";
 export type SortKey = "savedAt" | "title" | "fileSize";
 export type SortDir = "asc" | "desc";
 
-export interface FilterOptions {
+interface FilterOptions {
   sortKey?: SortKey;
   sortDir?: SortDir;
 }

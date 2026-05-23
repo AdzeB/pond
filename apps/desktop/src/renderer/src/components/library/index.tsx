@@ -1,26 +1,12 @@
 import { cn } from "@pond/ui";
 import { type HTMLMotionProps, motion } from "motion/react";
-import { createContext, type ReactNode, use } from "react";
+import type { ReactNode } from "react";
 import { useItemGap } from "@/lib/density";
 import { drawerSpring } from "@/lib/motion";
 import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";
 type GridLayout = "waterfall" | "grid" | "justified";
-
-interface LibraryContextValue {
-  view: LibraryView;
-}
-
-const LibraryContext = createContext<LibraryContextValue | null>(null);
-
-export function useLibraryContext(): LibraryContextValue {
-  const ctx = use(LibraryContext);
-  if (!ctx) {
-    throw new Error("Library.* must be rendered inside <Library.Root>");
-  }
-  return ctx;
-}
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   view: LibraryView;
@@ -34,16 +20,14 @@ function Root({ view, className, style, children, ...props }: RootProps) {
     ...style,
   };
   return (
-    <LibraryContext value={{ view }}>
-      <div
-        data-view={view}
-        className={cn(styles.root, className)}
-        style={mergedStyle}
-        {...props}
-      >
-        {children}
-      </div>
-    </LibraryContext>
+    <div
+      data-view={view}
+      className={cn(styles.root, className)}
+      style={mergedStyle}
+      {...props}
+    >
+      {children}
+    </div>
   );
 }
 

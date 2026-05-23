@@ -63,10 +63,6 @@ export function subscribeBootReady(cb: () => void): () => void {
   };
 }
 
-export function hydratePool(): Promise<void> {
-  return bootPool();
-}
-
 async function hydrateFromMain(): Promise<void> {
   const rows = (await window.pond.query("saves.list", {})) as Array<
     Partial<Save>
@@ -88,7 +84,7 @@ async function hydrateFromMain(): Promise<void> {
 
 let subscribedToSync = false;
 
-export function subscribeToSyncActions(): void {
+function subscribeToSyncActions(): void {
   if (subscribedToSync) return;
   window.pond.onSyncAction((raw) => {
     try {

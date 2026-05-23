@@ -165,12 +165,6 @@
   white-space: nowrap;
 }
 
-.item-aside {
-  flex-shrink: 0;
-  font-size: 11px;
-  color: var(--ds-gray-10);
-}
-
 .empty-headline {
   font-size: 13px;
   color: var(--ds-gray-11);

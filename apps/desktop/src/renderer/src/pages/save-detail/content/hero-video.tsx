@@ -1,5 +1,5 @@
-import { VideoPlayer } from "@/components/video-player";
-import type { ChapterCue } from "@/components/video-player/chapters-vtt";
+import { VideoPlayer } from "@/components/media/video-player";
+import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";
 import type { Save, SaveFile } from "@/pool/types";
 import { buildPondUrl } from "@/pool/url";
 import styles from "./styles.module.css";

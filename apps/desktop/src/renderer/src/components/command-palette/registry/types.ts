@@ -1,10 +1,9 @@
-import type { Source } from "@pond/schema/db";
 import type { ReactNode } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import type { Save } from "@/pool/types";
 import type { PondApi } from "../../../../../preload";
 
-export type CommandGroup =
+type CommandGroup =
   | "Navigation"
   | "Settings"
   | "Actions"
@@ -52,15 +51,6 @@ export interface Command {
   perform: (ctx: PaletteCtx) => void | Promise<void>;
 }
 
-export function indexChords(commands: Command[]): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const c of commands) {
-    if (!c.chord || c.chord.length === 0) continue;
-    map.set(c.chord.map((k) => k.toLowerCase()).join(" "), c.id);
-  }
-  return map;
-}
-
 export const SCOPE_LABEL: Record<CommandScope, string> = {
   all: "All",
   saves: "Saves",
@@ -88,9 +78,3 @@ export const GROUP_ORDER: CommandGroup[] = [
   "Tags",
   "Saves",
 ];
-
-export type ScopeKey = `${CommandScope}`;
-
-export function defaultSourceLabel(source: Source): string {
-  return source.charAt(0).toUpperCase() + source.slice(1);
-}

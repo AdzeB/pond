@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { getYouTubeChapters } from "@/components/save-preview/helpers";
-import { MediaViewer } from "@/components/save-preview/media-viewer";
+import { getYouTubeChapters } from "@/components/save/preview/helpers";
+import { MediaViewer } from "@/components/save/preview/media-viewer";
 import { buildMediaUnits } from "@/pool/media";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
