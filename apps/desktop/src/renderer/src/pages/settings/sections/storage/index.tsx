@@ -1,7 +1,6 @@
 import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { InlineRow } from "@/components/_primitives/inline-row";
 import { getSourceLabel } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
@@ -121,9 +120,8 @@ export function StorageSection() {
 
   const [storagePrefs, patchStorage] = usePrefs("storage");
   const [libraryPrefs, patchLibrary] = usePrefs("library");
-  const [guardStatus, setGuardStatus] = useState<StorageGuardStatusWire | null>(
-    null,
-  );
+  const [_guardStatus, setGuardStatus] =
+    useState<StorageGuardStatusWire | null>(null);
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
@@ -502,26 +500,24 @@ export function StorageSection() {
                     </Settings.ItemDescription>
                   </Settings.ItemDetails>
                   <Settings.ItemControl>
-                    <InlineRow>
-                      <Input.Field
-                        data-size="sm"
-                        type="number"
-                        min={1}
-                        max={1000}
-                        value={String(storagePrefs.maxLibraryGb ?? 50)}
-                        onChange={(e) =>
-                          applyStoragePrefsPatch({
-                            maxLibraryGb: clamp(
-                              Number(e.target.value) || 50,
-                              1,
-                              1000,
-                            ),
-                          })
-                        }
-                        style={{ width: 96 }}
-                      />
-                      <span className={styles["usage-stat-label"]}>GB</span>
-                    </InlineRow>
+                    <Input.Field
+                      data-size="sm"
+                      type="number"
+                      min={1}
+                      max={1000}
+                      value={String(storagePrefs.maxLibraryGb ?? 50)}
+                      onChange={(e) =>
+                        applyStoragePrefsPatch({
+                          maxLibraryGb: clamp(
+                            Number(e.target.value) || 50,
+                            1,
+                            1000,
+                          ),
+                        })
+                      }
+                      style={{ width: 96 }}
+                    />
+                    <span className={styles["usage-stat-label"]}>GB</span>
                   </Settings.ItemControl>
                 </Settings.Item>
               ) : null}
@@ -535,26 +531,24 @@ export function StorageSection() {
                     </Settings.ItemDescription>
                   </Settings.ItemDetails>
                   <Settings.ItemControl>
-                    <InlineRow>
-                      <Input.Field
-                        data-size="sm"
-                        type="number"
-                        min={50}
-                        max={100}
-                        value={String(storagePrefs.warnAtPercent)}
-                        onChange={(e) =>
-                          applyStoragePrefsPatch({
-                            warnAtPercent: clamp(
-                              Number(e.target.value) || 80,
-                              50,
-                              100,
-                            ),
-                          })
-                        }
-                        style={{ width: 96 }}
-                      />
-                      <span className={styles["usage-stat-label"]}>%</span>
-                    </InlineRow>
+                    <Input.Field
+                      data-size="sm"
+                      type="number"
+                      min={50}
+                      max={100}
+                      value={String(storagePrefs.warnAtPercent)}
+                      onChange={(e) =>
+                        applyStoragePrefsPatch({
+                          warnAtPercent: clamp(
+                            Number(e.target.value) || 80,
+                            50,
+                            100,
+                          ),
+                        })
+                      }
+                      style={{ width: 96 }}
+                    />
+                    <span className={styles["usage-stat-label"]}>%</span>
                   </Settings.ItemControl>
                 </Settings.Item>
               ) : null}
@@ -610,35 +604,29 @@ export function StorageSection() {
                   </Settings.ItemDescription>
                 </Settings.ItemDetails>
                 <Settings.ItemControl>
-                  <InlineRow>
-                    <Input.Field
-                      data-size="sm"
-                      type="number"
-                      min={1}
-                      max={60}
-                      value={String(storagePrefs.watchIntervalMinutes)}
-                      onChange={(e) =>
-                        applyStoragePrefsPatch({
-                          watchIntervalMinutes: clamp(
-                            Number(e.target.value) || 5,
-                            1,
-                            60,
-                          ),
-                        })
-                      }
-                      style={{ width: 96 }}
-                    />
-                    <span className={styles["usage-stat-label"]}>min</span>
-                  </InlineRow>
+                  <Input.Field
+                    data-size="sm"
+                    type="number"
+                    min={1}
+                    max={60}
+                    value={String(storagePrefs.watchIntervalMinutes)}
+                    onChange={(e) =>
+                      applyStoragePrefsPatch({
+                        watchIntervalMinutes: clamp(
+                          Number(e.target.value) || 5,
+                          1,
+                          60,
+                        ),
+                      })
+                    }
+                    style={{ width: 96 }}
+                  />
+                  <span className={styles["usage-stat-label"]}>min</span>
                 </Settings.ItemControl>
               </Settings.Item>
             </>
           ) : null}
         </Settings.List>
-        <GuardStatusRow
-          status={guardStatus}
-          enabled={storagePrefs.guardsEnabled}
-        />
       </Settings.Section>
 
       <Settings.Section>
@@ -676,25 +664,23 @@ export function StorageSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <InlineRow>
-                <Button size="sm" onClick={() => void openInFinder()}>
-                  Open in Finder
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={busy === "rescan"}
-                  onClick={() => void rescan()}
-                >
-                  Rescan Library
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={busy === "relocate"}
-                  onClick={() => void chooseLocation()}
-                >
-                  Change Location…
-                </Button>
-              </InlineRow>
+              <Button size="sm" onClick={() => void openInFinder()}>
+                Open in Finder
+              </Button>
+              <Button
+                size="sm"
+                disabled={busy === "rescan"}
+                onClick={() => void rescan()}
+              >
+                Rescan Library
+              </Button>
+              <Button
+                size="sm"
+                disabled={busy === "relocate"}
+                onClick={() => void chooseLocation()}
+              >
+                Change Location…
+              </Button>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>
@@ -814,26 +800,24 @@ function MetadataSection() {
             </Settings.ItemDescription>
           </Settings.ItemDetails>
           <Settings.ItemControl>
-            <InlineRow>
-              {refreshRunning ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => void cancelGlobalRefresh()}
-                >
-                  Cancel
-                </Button>
-              ) : null}
+            {refreshRunning ? (
               <Button
                 size="sm"
-                disabled={refreshRunning}
-                onClick={() => void startGlobalRefresh()}
+                variant="ghost"
+                onClick={() => void cancelGlobalRefresh()}
               >
-                {refreshRunning
-                  ? `${refreshStatus.current}/${refreshStatus.total}`
-                  : "Refresh Metadata"}
+                Cancel
               </Button>
-            </InlineRow>
+            ) : null}
+            <Button
+              size="sm"
+              disabled={refreshRunning}
+              onClick={() => void startGlobalRefresh()}
+            >
+              {refreshRunning
+                ? `${refreshStatus.current}/${refreshStatus.total}`
+                : "Refresh Metadata"}
+            </Button>
           </Settings.ItemControl>
         </Settings.Item>
 
@@ -866,76 +850,7 @@ function MetadataSection() {
   );
 }
 
-function GuardStatusRow({
-  status,
-  enabled,
-}: {
-  status: StorageGuardStatusWire | null;
-  enabled: boolean;
-}) {
-  if (!enabled) {
-    return (
-      <div className={styles["status-row"]}>
-        <span className={styles["status-dot"]} aria-hidden />
-        <span>Guards are off. Pond won't block new saves.</span>
-      </div>
-    );
-  }
-  if (!status) {
-    return (
-      <div className={styles["status-row"]}>
-        <span className={styles["status-dot"]} aria-hidden />
-        <span>Waiting for the next check…</span>
-      </div>
-    );
-  }
-
-  if (status.state === "ok") {
-    return (
-      <div className={styles["status-row"]}>
-        <span
-          className={[styles["status-dot"], styles["status-dot-ok"]]
-            .filter(Boolean)
-            .join(" ")}
-          aria-hidden
-        />
-        <span>All clear. Using {formatBytes(status.pondBytes)}.</span>
-      </div>
-    );
-  }
-
-  if (status.state === "warn") {
-    const pct = pctOfCap(status);
-    return (
-      <div className={styles["status-row"]}>
-        <span
-          className={[styles["status-dot"], styles["status-dot-warn"]]
-            .filter(Boolean)
-            .join(" ")}
-          aria-hidden
-        />
-        <span>
-          Approaching limit. Using {formatBytes(status.pondBytes)}
-          {pct !== null ? ` (${pct}% of cap)` : ""}.
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div className={styles["status-row"]}>
-      <span
-        className={[styles["status-dot"], styles["status-dot-error"]]
-          .filter(Boolean)
-          .join(" ")}
-        aria-hidden
-      />
-      <span>Limit exceeded. {ACTION_LABELS[status.action].description}</span>
-    </div>
-  );
-}
-
-function pctOfCap(status: StorageGuardStatusWire): number | null {
+function _pctOfCap(status: StorageGuardStatusWire): number | null {
   if (!status.capBytes || status.capBytes <= 0) return null;
   return Math.min(100, Math.round((status.pondBytes / status.capBytes) * 100));
 }

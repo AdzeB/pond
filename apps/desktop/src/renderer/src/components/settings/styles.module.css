@@ -75,6 +75,7 @@
 .details {
   display: flex;
   flex-direction: column;
+  margin-inline-end: auto;
 }
 
 .item-title {
@@ -90,5 +91,8 @@
 }
 
 .control {
-  margin-inline-start: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
 }

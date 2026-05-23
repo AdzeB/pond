@@ -107,7 +107,7 @@
   padding-inline: var(--sidebar-padding-inline-inset);
   margin: 0;
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ds-gray-11);
   letter-spacing: 0.01px;
 }
@@ -120,7 +120,7 @@
   height: var(--sidebar-item-height);
   padding-inline: var(--sidebar-padding-inline-inset);
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ds-gray-11);
   letter-spacing: -0.04px;
   text-decoration: none;

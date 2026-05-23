@@ -1,6 +1,5 @@
 import { Button, Input, useToast } from "@pond/ui";
 import { useEffect, useMemo, useState } from "react";
-import { InlineRow } from "@/components/_primitives/inline-row";
 import { Settings } from "@/components/settings";
 
 export function ExtensionSection() {
@@ -66,22 +65,20 @@ export function ExtensionSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <InlineRow>
-                <Input.Field
-                  data-variant="code"
-                  data-size="sm"
-                  readOnly
-                  value={pairingLink}
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <Button
-                  size="sm"
-                  disabled={!pairingLink}
-                  onClick={() => void copy(pairingLink, "pairing link")}
-                >
-                  Copy link
-                </Button>
-              </InlineRow>
+              <Input.Field
+                data-variant="code"
+                data-size="sm"
+                readOnly
+                value={pairingLink}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Button
+                size="sm"
+                disabled={!pairingLink}
+                onClick={() => void copy(pairingLink, "pairing link")}
+              >
+                Copy link
+              </Button>
             </Settings.ItemControl>
           </Settings.Item>
 
@@ -93,30 +90,28 @@ export function ExtensionSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <InlineRow>
-                <Input.Field
-                  data-variant="code"
-                  data-size="sm"
-                  readOnly
-                  value={token}
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <Button
-                  size="sm"
-                  disabled={busy || !token}
-                  onClick={() => void copy(token, "token")}
-                >
-                  Copy
-                </Button>
-                <Button
-                  size="sm"
-                  variant="danger"
-                  disabled={busy}
-                  onClick={() => void rotate()}
-                >
-                  Rotate
-                </Button>
-              </InlineRow>
+              <Input.Field
+                data-variant="code"
+                data-size="sm"
+                readOnly
+                value={token}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <Button
+                size="sm"
+                disabled={busy || !token}
+                onClick={() => void copy(token, "token")}
+              >
+                Copy
+              </Button>
+              <Button
+                size="sm"
+                variant="danger"
+                disabled={busy}
+                onClick={() => void rotate()}
+              >
+                Rotate
+              </Button>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>
