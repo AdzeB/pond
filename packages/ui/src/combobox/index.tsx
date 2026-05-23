@@ -1,5 +1,5 @@
 import { Combobox as Base } from "@base-ui/react/combobox";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root<Value, Multiple extends boolean | undefined = false>(

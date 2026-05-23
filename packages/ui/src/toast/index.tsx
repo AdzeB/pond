@@ -1,5 +1,5 @@
 import { Toast as Base } from "@base-ui/react/toast";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Provider(props: Base.Provider.Props) {

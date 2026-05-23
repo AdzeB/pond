@@ -3,12 +3,7 @@ import { useIsVideoDownloading } from "@/pool/downloads";
 import { pickPrimaryUnit } from "@/pool/media";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
-import {
-  CardContext,
-  type CardContextValue,
-  type CardLayout,
-  type CardSelection,
-} from "./context";
+import { CardContext, type CardContextValue, type CardLayout } from "./context";
 import { DownloadingBadge } from "./downloading-badge";
 import { Image } from "./image";
 import { Media } from "./media";
@@ -19,11 +14,10 @@ import { Video } from "./video";
 interface RootProps {
   save: Save;
   layout?: CardLayout;
-  selection?: CardSelection;
   children: ReactNode;
 }
 
-function Root({ save, layout, selection, children }: RootProps) {
+function Root({ save, layout, children }: RootProps) {
   const theme = useResolvedTheme();
   const unit = useMemo(() => pickPrimaryUnit(save, { theme }), [save, theme]);
   const isDownloading = useIsVideoDownloading(save);
@@ -49,11 +43,7 @@ function Root({ save, layout, selection, children }: RootProps) {
 
   return (
     <CardContext value={value}>
-      <div
-        className={styles.thumb}
-        data-layout={layout}
-        data-selection={selection}
-      >
+      <div className={styles.thumb} data-layout={layout}>
         {children}
       </div>
     </CardContext>
@@ -73,7 +63,6 @@ export type {
   CardActions,
   CardContextValue,
   CardLayout,
-  CardSelection,
   CardState,
 } from "./context";
 export { CardContext, useCardContext } from "./context";

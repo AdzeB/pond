@@ -53,7 +53,7 @@ export function EnumDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input
+        <Input.Field
           type="search"
           value={q}
           placeholder={`Filter ${meta.label.toLowerCase()}…`}

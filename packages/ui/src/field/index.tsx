@@ -1,6 +1,6 @@
 import { Field as Base } from "@base-ui/react/field";
-import { cn } from "../lib/cn";
-import controlStyles from "../lib/control.module.css";
+import { cn } from "../_shared/cn";
+import controlStyles from "../_shared/control.module.css";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: Base.Root.Props) {

@@ -1,6 +1,5 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
-import { renderFrozenPopup } from "../freeze/popup";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -37,14 +36,8 @@ function Positioner({
   );
 }
 
-function Popup({ className, render, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup
-      {...props}
-      className={cn(styles.popup, className)}
-      render={render ?? renderFrozenPopup}
-    />
-  );
+function Popup({ className, ...props }: Base.Popup.Props) {
+  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {

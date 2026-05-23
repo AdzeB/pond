@@ -108,7 +108,7 @@ export function WelcomePage() {
               Pairing link
             </Field.Label>
             <div className={styles.row}>
-              <Input
+              <Input.Field
                 data-variant="code"
                 readOnly
                 value={pairing ?? "generating…"}

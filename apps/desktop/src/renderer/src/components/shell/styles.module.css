@@ -1,4 +1,9 @@
 .root {
+  --shell-main-background: light-dark(
+    var(--ds-background-primary),
+    var(--ds-background-secondary)
+  );
+
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -55,11 +60,10 @@
   min-width: 0;
   padding: 12px;
   margin: 8px;
-  overflow: auto;
-  background: light-dark(
-    var(--ds-background-primary),
-    var(--ds-background-secondary)
-  );
+  overflow-y: auto;
+  overflow-x: clip;
+  overflow-clip-margin: 8px;
+  background: var(--shell-main-background);
   border-radius: 12px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
 }
@@ -72,7 +76,7 @@
   padding-inline: 12px;
   margin-block-start: -12px;
   margin-inline: -12px;
-  background: var(--ds-background-primary);
+  background: var(--shell-main-background);
 }
 
 .empty {

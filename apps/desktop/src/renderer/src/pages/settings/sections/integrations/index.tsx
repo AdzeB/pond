@@ -394,7 +394,7 @@ export function IntegrationsSection() {
                 </Settings.ItemDescription>
               </Settings.ItemDetails>
               <Settings.ItemControl>
-                <Input
+                <Input.Field
                   type="time"
                   data-size="sm"
                   className={styles["inline-time"]}
@@ -424,7 +424,7 @@ export function IntegrationsSection() {
                 />
                 {global.quietHours ? (
                   <>
-                    <Input
+                    <Input.Field
                       type="time"
                       data-size="sm"
                       className={styles["inline-time"]}
@@ -442,7 +442,7 @@ export function IntegrationsSection() {
                       }
                     />
                     <span className={styles["quiet-hours-sep"]}>to</span>
-                    <Input
+                    <Input.Field
                       type="time"
                       data-size="sm"
                       className={styles["inline-time"]}

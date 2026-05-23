@@ -160,7 +160,7 @@ export function CaptureBehaviorSection() {
                     </button>
                   </span>
                 ))}
-                <Input
+                <Input.Field
                   data-size="sm"
                   placeholder="Add Tag…"
                   value={chip}

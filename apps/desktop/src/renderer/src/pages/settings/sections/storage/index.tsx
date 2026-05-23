@@ -503,7 +503,7 @@ export function StorageSection() {
                   </Settings.ItemDetails>
                   <Settings.ItemControl>
                     <InlineRow>
-                      <Input
+                      <Input.Field
                         data-size="sm"
                         type="number"
                         min={1}
@@ -536,7 +536,7 @@ export function StorageSection() {
                   </Settings.ItemDetails>
                   <Settings.ItemControl>
                     <InlineRow>
-                      <Input
+                      <Input.Field
                         data-size="sm"
                         type="number"
                         min={50}
@@ -611,7 +611,7 @@ export function StorageSection() {
                 </Settings.ItemDetails>
                 <Settings.ItemControl>
                   <InlineRow>
-                    <Input
+                    <Input.Field
                       data-size="sm"
                       type="number"
                       min={1}
@@ -652,7 +652,7 @@ export function StorageSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Input
+              <Input.Field
                 data-size="sm"
                 placeholder="My Pond"
                 value={libraryPrefs.displayName}

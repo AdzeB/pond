@@ -123,7 +123,7 @@ export function TagEditor({ save }: { save: Save }) {
           </span>
         );
       })}
-      <Input
+      <Input.Field
         ref={inputRef}
         data-size="sm"
         placeholder="Add tag…"

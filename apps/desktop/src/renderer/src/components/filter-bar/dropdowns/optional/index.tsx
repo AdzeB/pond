@@ -27,7 +27,7 @@ export function OptionalDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input
+        <Input.Field
           type="search"
           value={q}
           placeholder="Filter…"

@@ -1,5 +1,5 @@
 import { Autocomplete as Base } from "@base-ui/react/autocomplete";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 const Root = Base.Root;

@@ -1,6 +1,7 @@
 import { cn } from "@pond/ui";
 import { type HTMLMotionProps, motion } from "motion/react";
 import { createContext, type ReactNode, use } from "react";
+import { useItemGap } from "@/lib/density";
 import { drawerSpring } from "@/lib/motion";
 import styles from "./styles.module.css";
 
@@ -26,10 +27,20 @@ interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   children: ReactNode;
 }
 
-function Root({ view, className, children, ...props }: RootProps) {
+function Root({ view, className, style, children, ...props }: RootProps) {
+  const itemGap = useItemGap();
+  const mergedStyle: React.CSSProperties = {
+    ["--library-item-gap" as never]: `${itemGap}px`,
+    ...style,
+  };
   return (
     <LibraryContext value={{ view }}>
-      <div data-view={view} className={cn(styles.root, className)} {...props}>
+      <div
+        data-view={view}
+        className={cn(styles.root, className)}
+        style={mergedStyle}
+        {...props}
+      >
         {children}
       </div>
     </LibraryContext>
@@ -81,13 +92,6 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 }
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
-  /* `layout="position"` FLIPs only the transform — size deltas (e.g.
-   * waterfall re-pack on grid width changes) snap in one frame, so
-   * we never measure or interpolate width/height per item.
-   *
-   * Cast bypasses Motion's `onDrag*` type override: callers pass React's
-   * native `onDragStart` (DragEvent), and since we never enable `drag`,
-   * motion passes it through to the underlying `<li>` unchanged. */
   return (
     <motion.li
       layout="position"

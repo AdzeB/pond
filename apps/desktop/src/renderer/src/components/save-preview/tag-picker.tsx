@@ -239,7 +239,7 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
               <span className={styles["tag-picker-header-icon"]} aria-hidden>
                 <IconMagnifierOutline18 width={14} height={14} />
               </span>
-              <Input
+              <Input.Field
                 data-size="sm"
                 className={styles["tag-picker-search"]}
                 placeholder="Search…"

@@ -89,7 +89,7 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input
+        <Input.Field
           type="search"
           value={q}
           placeholder="Filter tags…"

@@ -9,7 +9,6 @@ import { ActivityPage } from "./pages/activity";
 import { SaveDetailPage } from "./pages/save-detail";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
-import { TrashView } from "./pages/trash-view";
 
 function settingsChildren(): RouteObject[] {
   return [
@@ -69,7 +68,7 @@ export function buildRoutes(): RouteObject[] {
             },
             {
               path: "trash",
-              element: <TrashView />,
+              element: <SavesView mode="trash" />,
               children: [saveSplitChild],
             },
             { path: "detail/:id", element: <SaveDetailPage /> },

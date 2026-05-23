@@ -11,7 +11,7 @@ import {
   trashSave,
   untrashSave,
 } from "@/lib/save-actions";
-import { setInspectorOpen, toggleInspector } from "@/lib/use-inspector";
+import { toggleInspector } from "@/lib/use-inspector";
 import { toggleSidebar } from "@/lib/use-sidebar";
 import { pool } from "@/pool/pool";
 import { usePrefs } from "@/pool/prefs";
@@ -187,7 +187,6 @@ export function MenuBridge() {
 
         case "save.add-tag":
           if (!primarySelection.get()) return;
-          setInspectorOpen(true);
           openTagPicker();
           return;
 

@@ -1,15 +1,19 @@
 import { Toolbar as Base } from "@base-ui/react/toolbar";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 type GroupAlign = "start" | "center" | "end";
 
-interface GroupProps extends React.ComponentProps<"div"> {
+interface GroupProps extends Base.Group.Props {
   "data-align"?: GroupAlign;
 }
 
 function Root({ className, ...props }: Base.Root.Props) {
   return <Base.Root className={cn(styles.root, className)} {...props} />;
+}
+
+function Group({ className, ...props }: GroupProps) {
+  return <Base.Group className={cn(styles.group, className)} {...props} />;
 }
 
 function Separator({ className, ...props }: Base.Separator.Props) {
@@ -18,12 +22,11 @@ function Separator({ className, ...props }: Base.Separator.Props) {
   );
 }
 
-function Group({ className, ...props }: GroupProps) {
-  return <div className={cn(styles.group, className)} {...props} />;
-}
-
 export const Toolbar = {
   Root,
-  Separator,
   Group,
+  Separator,
+  Button: Base.Button,
+  Input: Base.Input,
+  Link: Base.Link,
 };

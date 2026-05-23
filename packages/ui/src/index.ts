@@ -1,3 +1,4 @@
+export { cn } from "./_shared/cn";
 export { Accordion } from "./accordion";
 export { AlertDialog } from "./alert-dialog";
 export { Autocomplete } from "./autocomplete";
@@ -13,10 +14,8 @@ export { Drawer } from "./drawer";
 export { Field } from "./field";
 export { Fieldset } from "./fieldset";
 export { Form } from "./form";
-export { Freeze } from "./freeze";
 export { Input } from "./input";
 export { Kbd } from "./kbd";
-export { cn } from "./lib/cn";
 export { Menu } from "./menu";
 export { Menubar } from "./menubar";
 export { Meter } from "./meter";

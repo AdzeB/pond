@@ -1,5 +1,5 @@
 import { Separator as Base } from "@base-ui/react/separator";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: Base.Props) {

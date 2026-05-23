@@ -1,7 +1,6 @@
 import { Select as Base } from "@base-ui/react/select";
-import { renderFrozenPopup } from "../freeze/popup";
-import { cn } from "../lib/cn";
-import popupStyles from "../lib/popup.module.css";
+import { cn } from "../_shared/cn";
+import popupStyles from "../_shared/popup.module.css";
 import styles from "./styles.module.css";
 
 function Root<Value>(props: Base.Root.Props<Value>) {
@@ -40,12 +39,11 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
   );
 }
 
-function Popup({ className, render, ...props }: Base.Popup.Props) {
+function Popup({ className, ...props }: Base.Popup.Props) {
   return (
     <Base.Popup
       {...props}
       className={cn(popupStyles.popup, styles.popup, className)}
-      render={render ?? renderFrozenPopup}
     />
   );
 }

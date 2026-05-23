@@ -4,8 +4,6 @@ import type { Save } from "@/pool/types";
 
 export type CardLayout = "waterfall" | "grid" | "justified";
 
-export type CardSelection = "primary" | "multi";
-
 export interface CardState {
   save: Save;
   unit: MediaUnit | null;

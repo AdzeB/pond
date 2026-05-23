@@ -1,6 +1,5 @@
 .root {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   width: 100%;
@@ -8,10 +7,8 @@
 
 .group {
   display: flex;
-  flex: 1;
   gap: 8px;
   align-items: center;
-  justify-content: flex-start;
   min-width: 0;
 
   &[data-align="center"] {

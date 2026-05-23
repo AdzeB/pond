@@ -1,6 +1,5 @@
 import { Dialog as Base } from "@base-ui/react/dialog";
-import { renderFrozenPopup } from "../freeze/popup";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -21,14 +20,8 @@ function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   );
 }
 
-function Popup({ className, render, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup
-      {...props}
-      className={cn(styles.popup, className)}
-      render={render ?? renderFrozenPopup}
-    />
-  );
+function Popup({ className, ...props }: Base.Popup.Props) {
+  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
 function Title({ className, ...props }: Base.Title.Props) {

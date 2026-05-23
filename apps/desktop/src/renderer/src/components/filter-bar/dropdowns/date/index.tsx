@@ -59,7 +59,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input
+        <Input.Field
           type="search"
           value={q}
           placeholder="Filter…"
@@ -86,7 +86,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
       </Menu.Item>
       {showCustom ? (
         <div className={styles.range}>
-          <Input
+          <Input.Field
             type="date"
             value={isoToYmd(from)}
             onChange={(e) => setRange(e.target.value, isoToYmd(to))}
@@ -94,7 +94,7 @@ export function DateDropdown({ predicate, onChange }: DropdownProps) {
           <span className={styles.dash} aria-hidden>
             –
           </span>
-          <Input
+          <Input.Field
             type="date"
             value={isoToYmd(to)}
             onChange={(e) => setRange(isoToYmd(from), e.target.value)}

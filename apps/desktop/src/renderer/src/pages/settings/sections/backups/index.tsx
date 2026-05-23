@@ -164,7 +164,7 @@ export function BackupsSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Input
+              <Input.Field
                 data-size="sm"
                 type="number"
                 value={String(prefs.retainCount)}

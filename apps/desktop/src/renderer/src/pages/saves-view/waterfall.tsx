@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
+import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
 import { chromeHeightFor } from "./chrome";
 import { useVisibleIndices } from "./virtual";
 
-const ITEM_GAP = 12;
 const DEFAULT_COL_MIN = 130;
 
 interface PackedPosition {
@@ -102,6 +102,7 @@ export function WaterfallView({
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
+  const itemGap = useItemGap();
   const aspectVersion = useAspectVersion();
 
   useLayoutEffect(() => {
@@ -145,8 +146,8 @@ export function WaterfallView({
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packMasonry(saves, width, colMin, ITEM_GAP, chromeHeight);
-  }, [saves, width, colMin, chromeHeight, aspectVersion]);
+    return packMasonry(saves, width, colMin, itemGap, chromeHeight);
+  }, [saves, width, colMin, itemGap, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),

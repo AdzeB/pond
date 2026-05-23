@@ -90,7 +90,7 @@ function Root() {
             </Hint>
             <Field.Root>
               <Field.Label>URL</Field.Label>
-              <Input
+              <Input.Field
                 ref={inputRef}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
@@ -101,7 +101,7 @@ function Root() {
             </Field.Root>
             <Field.Root>
               <Field.Label>Note (optional)</Field.Label>
-              <Input
+              <Input.Field
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Why are you saving this?"
@@ -109,7 +109,7 @@ function Root() {
             </Field.Root>
             <Field.Root>
               <Field.Label>Tags (optional)</Field.Label>
-              <Input
+              <Input.Field
                 value={tags}
                 onChange={(e) => setTags(e.target.value)}
                 placeholder="design, inspiration, todo"

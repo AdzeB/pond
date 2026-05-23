@@ -1,7 +1,8 @@
 import { readQuery } from "@pond/schema/filters/url";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useRecents } from "@/components/recents";
+import { useStableById, useStableStrings } from "@/lib/use-stable-array";
 import { readViewPref } from "@/lib/view-prefs";
 import { useBootReady, useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
@@ -10,52 +11,13 @@ import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
 import type { ViewMode } from "./layout-switcher";
 
-// Reuses the previous array reference when the new array has the
-// same length and id sequence. Stops downstream `useMemo`s and
-// `useCallback`s from invalidating just because the upstream pool
-// produced a fresh array on a field-only update.
-function useStableById<T extends { id: string }>(next: T[]): T[] {
-  const ref = useRef<T[]>(next);
-  const prev = ref.current;
-  if (prev.length === next.length) {
-    let same = true;
-    for (let i = 0; i < next.length; i++) {
-      const a = prev[i];
-      const b = next[i];
-      if (!a || !b || a.id !== b.id) {
-        same = false;
-        break;
-      }
-    }
-    if (same) return prev;
-  }
-  ref.current = next;
-  return next;
-}
-
-function useStableStrings(next: string[]): string[] {
-  const ref = useRef<string[]>(next);
-  const prev = ref.current;
-  if (prev.length === next.length) {
-    let same = true;
-    for (let i = 0; i < next.length; i++) {
-      if (prev[i] !== next[i]) {
-        same = false;
-        break;
-      }
-    }
-    if (same) return prev;
-  }
-  ref.current = next;
-  return next;
-}
-
 export type SavesMode =
   | "library"
   | "source"
   | "untagged"
   | "recents"
-  | "random";
+  | "random"
+  | "trash";
 
 export interface SavesData {
   bootReady: boolean;
@@ -106,14 +68,20 @@ export function useSavesData(mode: SavesMode): SavesData {
   const search = useSearchResults(q);
 
   const narrowedFresh = useMemo(() => {
-    const base = search.results ?? saves;
+    // Trash mode ignores the text-search pool (which excludes deleted)
+    // and works directly off the full saves list.
+    const base = mode === "trash" ? saves : (search.results ?? saves);
     const filteredList = base.filter((save) => {
-      if (save.deletedAt) return false;
-      // Non-complete saves (ingesting / failed) live behind the
-      // ProcessingButton dialog, not in the grid. Keep them out of every
-      // mode so a fresh sync or stuck failure can't flood the view with
-      // placeholder / "Failed" cards.
-      if (save.status !== "complete") return false;
+      if (mode === "trash") {
+        if (!save.deletedAt) return false;
+      } else {
+        if (save.deletedAt) return false;
+        // Non-complete saves (ingesting / failed) live behind the
+        // ProcessingButton dialog, not in the grid. Keep them out of
+        // every mode so a fresh sync or stuck failure can't flood the
+        // view with placeholder / "Failed" cards.
+        if (save.status !== "complete") return false;
+      }
       if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
         return false;
       }
@@ -137,13 +105,19 @@ export function useSavesData(mode: SavesMode): SavesData {
       );
     }
 
+    if (mode === "trash") {
+      return filteredList.sort((a, b) => deletedAtMs(b) - deletedAtMs(a));
+    }
+
     return filteredList;
   }, [saves, search.results, sourceFilter, mode, recentsOrder, randomSeed]);
 
   const narrowed = useStableById(narrowedFresh);
 
   const sortOpts = useMemo(() => {
-    if (mode === "recents" || mode === "random") return undefined;
+    if (mode === "recents" || mode === "random" || mode === "trash") {
+      return undefined;
+    }
     const rawSort =
       searchParams.get("sort") ?? readViewPref("sort") ?? "savedAt";
     const sortKey: "savedAt" | "title" | "fileSize" =
@@ -167,6 +141,12 @@ export function useSavesData(mode: SavesMode): SavesData {
     selectedId,
     viewMode,
   };
+}
+
+function deletedAtMs(s: Save): number {
+  if (!s.deletedAt) return 0;
+  const t = new Date(s.deletedAt).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 function hashShuffleKey(id: string, seed: string): number {

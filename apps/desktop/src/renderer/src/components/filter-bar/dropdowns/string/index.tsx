@@ -9,7 +9,7 @@ export function StringDropdown({ predicate, onChange }: DropdownProps) {
 
   return (
     <div className={styles.body}>
-      <Input
+      <Input.Field
         type="search"
         value={value}
         autoFocus

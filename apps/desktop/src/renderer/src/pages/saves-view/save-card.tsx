@@ -1,9 +1,5 @@
 import { memo, useCallback, useMemo } from "react";
-import {
-  Card,
-  type CardLayout,
-  type CardSelection,
-} from "@/components/card-thumb";
+import { Card, type CardLayout } from "@/components/card-thumb";
 import { Library } from "@/components/library";
 import { SaveContextMenu } from "@/components/save-context-menu";
 import { SourceBadge } from "@/components/source-badge";
@@ -90,11 +86,6 @@ export const SaveCard = memo(function SaveCard({
   );
 
   if (!save) return null;
-  const cardSelection: CardSelection | undefined = isPrimary
-    ? "primary"
-    : isMulti
-      ? "multi"
-      : undefined;
 
   return (
     <SaveContextMenu save={save}>
@@ -115,7 +106,7 @@ export const SaveCard = memo(function SaveCard({
           onClick={onSelectClick}
           onDoubleClick={onSelectDoubleClick}
         >
-          <SaveCardBody save={save} layout={layout} selection={cardSelection} />
+          <SaveCardBody save={save} layout={layout} />
         </Library.Item.Select>
       </Library.Item>
     </SaveContextMenu>
@@ -125,11 +116,9 @@ export const SaveCard = memo(function SaveCard({
 const SaveCardBody = memo(function SaveCardBody({
   save,
   layout,
-  selection,
 }: {
   save: Save;
   layout?: CardLayout;
-  selection?: CardSelection;
 }) {
   const theme = useResolvedTheme();
   const primary = pickPrimaryFile(save, { theme });
@@ -155,7 +144,7 @@ const SaveCardBody = memo(function SaveCardBody({
   return (
     <>
       <Library.Item.Media style={mediaStyle}>
-        <Card.Root save={save} layout={layout} selection={selection}>
+        <Card.Root save={save} layout={layout}>
           <Card.Media />
           <Card.DownloadingBadge />
         </Card.Root>

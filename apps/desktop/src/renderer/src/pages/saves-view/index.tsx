@@ -23,7 +23,9 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
           onDrop={(e) => void actions.onDrop(e)}
         >
           {data.filtered.length === 0 ? (
-            !data.bootReady ? null : data.totalSaves === 0 ? (
+            !data.bootReady ? null : mode === "trash" ? (
+              <Library.Empty>Trash is empty.</Library.Empty>
+            ) : data.totalSaves === 0 ? (
               <Library.Empty>
                 No saves yet. Drop a link, image, or file to get started.
               </Library.Empty>

@@ -732,7 +732,6 @@ function installAppMenu() {
         { type: "separator" },
         {
           label: "Rename",
-          accelerator: "Shift+R",
           click: sendMenuAction("save.rename"),
         },
         {

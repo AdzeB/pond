@@ -1,4 +1,4 @@
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 interface KbdProps {

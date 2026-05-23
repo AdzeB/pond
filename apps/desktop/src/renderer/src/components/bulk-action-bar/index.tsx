@@ -78,7 +78,7 @@ function Root() {
     <Bar>
       <Count>{size} selected</Count>
       <Divider />
-      <Input
+      <Input.Field
         data-size="sm"
         placeholder="Add tag…"
         value={tagDraft}

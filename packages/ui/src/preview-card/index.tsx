@@ -1,5 +1,5 @@
 import { PreviewCard as Base } from "@base-ui/react/preview-card";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {

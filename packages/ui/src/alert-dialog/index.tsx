@@ -1,7 +1,6 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
+import { cn } from "../_shared/cn";
 import dialogStyles from "../dialog/styles.module.css";
-import { renderFrozenPopup } from "../freeze/popup";
-import { cn } from "../lib/cn";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
@@ -24,13 +23,9 @@ function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   );
 }
 
-function Popup({ className, render, ...props }: Base.Popup.Props) {
+function Popup({ className, ...props }: Base.Popup.Props) {
   return (
-    <Base.Popup
-      {...props}
-      className={cn(dialogStyles.popup, className)}
-      render={render ?? renderFrozenPopup}
-    />
+    <Base.Popup {...props} className={cn(dialogStyles.popup, className)} />
   );
 }
 

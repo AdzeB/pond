@@ -46,7 +46,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
   return (
     <div className={styles.body}>
       <div className={styles.search}>
-        <Input
+        <Input.Field
           type="search"
           value={q}
           placeholder="Filter…"
@@ -65,7 +65,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
       ) : null}
       <Menu.Separator />
       <div className={styles.range}>
-        <Input
+        <Input.Field
           type="number"
           inputMode="numeric"
           placeholder="min"
@@ -77,7 +77,7 @@ export function NumberDropdown({ predicate, onChange }: DropdownProps) {
         <span className={styles.dash} aria-hidden>
           –
         </span>
-        <Input
+        <Input.Field
           type="number"
           inputMode="numeric"
           placeholder="max"

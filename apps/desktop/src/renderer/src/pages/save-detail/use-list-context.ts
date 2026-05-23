@@ -1,31 +1,13 @@
 import { readQuery } from "@pond/schema/filters/url";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { useRecents } from "@/components/recents";
+import { useStableById } from "@/lib/use-stable-array";
 import { readViewPref } from "@/lib/view-prefs";
 import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
-
-function useStableById<T extends { id: string }>(next: T[]): T[] {
-  const ref = useRef<T[]>(next);
-  const prev = ref.current;
-  if (prev.length === next.length) {
-    let same = true;
-    for (let i = 0; i < next.length; i++) {
-      const a = prev[i];
-      const b = next[i];
-      if (!a || !b || a.id !== b.id) {
-        same = false;
-        break;
-      }
-    }
-    if (same) return prev;
-  }
-  ref.current = next;
-  return next;
-}
 
 export type ListMode =
   | "library"

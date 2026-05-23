@@ -290,7 +290,7 @@ function UnpairedBody({
       <div className={styles.block}>
         <Field.Root>
           <Field.Label htmlFor="pairing">Pairing link</Field.Label>
-          <Input
+          <Input.Field
             id="pairing"
             data-variant="code"
             type="text"

@@ -175,11 +175,17 @@
   color: var(--ds-gray-12);
   letter-spacing: 0.01px;
   cursor: pointer;
+  outline: none;
   background: none;
   border: 0;
 
   &:hover {
     color: var(--ds-gray-12);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  &:focus-visible {
     text-decoration: underline;
     text-underline-offset: 2px;
   }
@@ -242,6 +248,7 @@
   color: var(--ds-gray-11);
   pointer-events: none;
   cursor: pointer;
+  outline: none;
   background: none;
   border: 0;
   border-radius: var(--ds-radius-full);
@@ -258,7 +265,8 @@
     opacity: 0.4;
   }
 
-  &:hover {
+  &:hover,
+  &:focus-visible {
     color: var(--ds-gray-12);
     background: var(--ds-gray-a3);
   }
@@ -281,6 +289,7 @@
   padding: 0;
   color: var(--ds-gray-11);
   cursor: pointer;
+  outline: none;
   background: var(--ds-gray-1);
   border: 0;
   border-radius: var(--ds-radius-full);
@@ -292,6 +301,11 @@
   &:hover {
     color: var(--ds-gray-12);
     box-shadow: 0 0 0 1px var(--ds-gray-a6);
+  }
+
+  &:focus-visible {
+    color: var(--ds-gray-12);
+    box-shadow: 0 0 0 1px var(--ds-gray-a8);
   }
 }
 

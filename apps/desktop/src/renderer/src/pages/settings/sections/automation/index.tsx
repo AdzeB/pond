@@ -101,7 +101,7 @@ export function AutomationSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Input
+              <Input.Field
                 data-size="sm"
                 type="number"
                 value={String(apiPrefs.port)}
@@ -245,7 +245,7 @@ export function AutomationSection() {
               </button>
             </span>
           ))}
-          <Input
+          <Input.Field
             data-size="sm"
             placeholder="https://example.com"
             value={origin}

@@ -1,6 +1,6 @@
 import { Form as Base } from "@base-ui/react/form";
 import type { Ref } from "react";
-import { cn } from "../lib/cn";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 // biome-ignore lint/suspicious/noExplicitAny: matches base-ui's Form generic constraint

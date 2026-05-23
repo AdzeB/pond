@@ -67,7 +67,7 @@ export function ExtensionSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <InlineRow>
-                <Input
+                <Input.Field
                   data-variant="code"
                   data-size="sm"
                   readOnly
@@ -94,7 +94,7 @@ export function ExtensionSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <InlineRow>
-                <Input
+                <Input.Field
                   data-variant="code"
                   data-size="sm"
                   readOnly

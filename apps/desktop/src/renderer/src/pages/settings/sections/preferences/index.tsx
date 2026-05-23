@@ -54,7 +54,7 @@ export function PreferencesSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Input
+              <Input.Field
                 data-size="sm"
                 placeholder="Your name"
                 value={profile.displayName}

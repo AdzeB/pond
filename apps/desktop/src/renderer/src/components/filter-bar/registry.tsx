@@ -26,12 +26,10 @@ import {
   type ComponentType,
   Fragment,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { isChordPending } from "@/components/command-palette/use-chords";
 import { useSaves } from "@/pool/hooks";
 import { DATE_PRESETS } from "./date-presets";
 import { DateDropdown } from "./dropdowns/date";
@@ -599,7 +597,7 @@ export function AddFilterMenu({ api, inputRef }: AddFilterMenuProps) {
   return (
     <>
       <div className={styles["search-row"]}>
-        <Input
+        <Input.Field
           ref={inputRef}
           type="search"
           value={q}
@@ -762,62 +760,4 @@ function formatCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
   return String(n);
-}
-
-export function useFilterHotkey(onActivate: () => void): void {
-  const cb = useRef(onActivate);
-  cb.current = onActivate;
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (e.key.toLowerCase() !== "f") return;
-      if (isChordPending()) return;
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (
-          tag === "INPUT" ||
-          tag === "TEXTAREA" ||
-          tag === "SELECT" ||
-          target.isContentEditable
-        ) {
-          return;
-        }
-      }
-      e.preventDefault();
-      cb.current();
-    }
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
-}
-
-export function useSearchHotkey(onActivate: () => void): void {
-  const cb = useRef(onActivate);
-  cb.current = onActivate;
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key !== "/") return;
-      if (isChordPending()) return;
-      const target = e.target as HTMLElement | null;
-      if (target) {
-        const tag = target.tagName;
-        if (
-          tag === "INPUT" ||
-          tag === "TEXTAREA" ||
-          tag === "SELECT" ||
-          target.isContentEditable
-        ) {
-          return;
-        }
-      }
-      e.preventDefault();
-      cb.current();
-    }
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
 }

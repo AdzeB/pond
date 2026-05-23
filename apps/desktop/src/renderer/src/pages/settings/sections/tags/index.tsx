@@ -300,7 +300,7 @@ export function TagsSection() {
             <span className={styles["labels-filter-icon"]} aria-hidden>
               <IconMagnifierOutline18 width={14} height={14} />
             </span>
-            <Input
+            <Input.Field
               type="search"
               data-size="sm"
               className={styles["labels-filter-input"]}
@@ -386,7 +386,7 @@ export function TagsSection() {
                 style={{ background: DEFAULT_DOT }}
                 aria-hidden
               />
-              <Input
+              <Input.Field
                 ref={newInputRef}
                 data-size="sm"
                 value={newName}
@@ -736,7 +736,7 @@ function DescriptionInput({
 }) {
   const [value, setValue] = useState(initial);
   return (
-    <Input
+    <Input.Field
       data-size="sm"
       value={value}
       autoFocus
@@ -762,7 +762,7 @@ function RenameInput({
 }) {
   const [value, setValue] = useState(initial);
   return (
-    <Input
+    <Input.Field
       data-size="sm"
       value={value}
       autoFocus

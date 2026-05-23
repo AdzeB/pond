@@ -1,7 +1,6 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
-import { renderFrozenPopup } from "../freeze/popup";
-import { cn } from "../lib/cn";
-import popupStyles from "../lib/popup.module.css";
+import { cn } from "../_shared/cn";
+import popupStyles from "../_shared/popup.module.css";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -26,12 +25,11 @@ function Positioner(props: Base.Positioner.Props) {
   return <Base.Positioner {...props} />;
 }
 
-function Popup({ className, render, ...props }: Base.Popup.Props) {
+function Popup({ className, ...props }: Base.Popup.Props) {
   return (
     <Base.Popup
       {...props}
       className={cn(popupStyles.popup, popupStyles["popup-compact"], className)}
-      render={render ?? renderFrozenPopup}
     />
   );
 }

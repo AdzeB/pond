@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
+import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import type { Save } from "@/pool/types";
 import { aspectFor, useAspectVersion } from "./aspect";
@@ -7,7 +8,6 @@ import { chromeHeightFor } from "./chrome";
 import { useVisibleIndices } from "./virtual";
 
 const TARGET_ROW_HEIGHT = 180;
-const ITEM_GAP = 12;
 
 interface PackedItem {
   save: Save;
@@ -26,6 +26,7 @@ function packRows(
   saves: Save[],
   containerWidth: number,
   targetHeight: number,
+  gap: number,
   chromeHeight: number,
 ): PackResult {
   if (containerWidth <= 0 || saves.length === 0) {
@@ -47,12 +48,12 @@ function packRows(
         top: cursorTop,
         left: cursorLeft,
       });
-      cursorLeft += width + ITEM_GAP;
+      cursorLeft += width + gap;
     }
     // Advance past the media slot AND the meta block underneath it
     // (title / date). Without `chromeHeight` the next row would draw
     // its media on top of the previous row's meta block.
-    cursorTop += height + chromeHeight + ITEM_GAP;
+    cursorTop += height + chromeHeight + gap;
     current = [];
     aspectSum = 0;
   };
@@ -61,17 +62,16 @@ function packRows(
     const aspect = aspectFor(save);
     current.push(save);
     aspectSum += aspect;
-    const naturalWidth =
-      aspectSum * targetHeight + ITEM_GAP * (current.length - 1);
+    const naturalWidth = aspectSum * targetHeight + gap * (current.length - 1);
     if (naturalWidth >= containerWidth) {
-      const available = containerWidth - ITEM_GAP * (current.length - 1);
+      const available = containerWidth - gap * (current.length - 1);
       flushRow(available / aspectSum);
     }
   }
   /* Last partial row keeps target height; cards retain natural widths
    * and trail off rather than over-stretching. Matches Eagle. */
   if (current.length > 0) flushRow(targetHeight);
-  const totalHeight = Math.max(0, cursorTop - ITEM_GAP);
+  const totalHeight = Math.max(0, cursorTop - gap);
   return { items, totalHeight };
 }
 
@@ -137,12 +137,13 @@ export function JustifiedView({
 
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
+  const itemGap = useItemGap();
   const aspectVersion = useAspectVersion();
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packRows(saves, width, targetHeight, chromeHeight);
-  }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
+    return packRows(saves, width, targetHeight, itemGap, chromeHeight);
+  }, [saves, width, targetHeight, itemGap, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),
