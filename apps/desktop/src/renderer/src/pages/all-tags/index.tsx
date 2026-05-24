@@ -50,6 +50,11 @@ interface DisplayItem {
   lastUsedAt: number | null;
 }
 
+interface AlphaSection {
+  letter: string;
+  items: DisplayItem[];
+}
+
 export function AllTagsPage() {
   const tags = useTags();
   const groups = useTagGroups();
@@ -148,6 +153,25 @@ export function AllTagsPage() {
       .filter((i) => (needle ? i.name.toLowerCase().includes(needle) : true));
     return sortItems(mapped);
   }, [baseItems, toItem, needle, sortItems]);
+
+  const sections = useMemo<AlphaSection[]>(() => {
+    const buckets = new Map<string, DisplayItem[]>();
+    for (const item of visibleItems) {
+      const first = item.name.trim().charAt(0).toUpperCase();
+      const key = /[A-Z]/.test(first) ? first : "#";
+      const list = buckets.get(key) ?? [];
+      list.push(item);
+      buckets.set(key, list);
+    }
+    return Array.from(buckets.entries())
+      .sort(([a], [b]) => {
+        if (a === b) return 0;
+        if (a === "#") return 1;
+        if (b === "#") return -1;
+        return a.localeCompare(b);
+      })
+      .map(([letter, items]) => ({ letter, items }));
+  }, [visibleItems]);
 
   const selectedGroup = useMemo(() => {
     if (!selectedRail.startsWith("g:")) return null;
@@ -249,16 +273,36 @@ export function AllTagsPage() {
                   query={q}
                 />
               ) : (
-                <div className={layout === "grid" ? styles.grid : styles.list}>
-                  {visibleItems.map((item) => (
-                    <TagItem
-                      key={item.id}
-                      item={item}
-                      showCounts={prefs.showCounts ?? true}
-                      groups={groups.map((g) => g.name)}
-                      inGroup={selectedGroupName}
-                      onPick={openTag}
-                    />
+                <div className={styles.sections}>
+                  {sections.map((section) => (
+                    <section
+                      key={section.letter}
+                      className={styles.section}
+                      aria-label={`Tags starting with ${section.letter}`}
+                    >
+                      <h2 className={styles["section-header"]}>
+                        {section.letter}{" "}
+                        <span className={styles["section-count"]}>
+                          ({section.items.length})
+                        </span>
+                      </h2>
+                      <div
+                        className={
+                          layout === "grid" ? styles.grid : styles.list
+                        }
+                      >
+                        {section.items.map((item) => (
+                          <TagItem
+                            key={item.id}
+                            item={item}
+                            showCounts={prefs.showCounts ?? true}
+                            groups={groups.map((g) => g.name)}
+                            inGroup={selectedGroupName}
+                            onPick={openTag}
+                          />
+                        ))}
+                      </div>
+                    </section>
                   ))}
                 </div>
               )}
@@ -682,9 +726,12 @@ function TagItem({ item, showCounts, groups, inGroup, onPick }: TagItemProps) {
               onClick={() => onPick(item.name)}
               title={item.name}
             >
+              <span className={styles["item-bullet"]} aria-hidden>
+                •
+              </span>
               <span className={styles["item-name"]}>{item.name}</span>
               {showCounts && item.count > 0 ? (
-                <span className={styles["item-count"]}>{item.count}</span>
+                <span className={styles["item-count"]}>({item.count})</span>
               ) : null}
               <button
                 type="button"

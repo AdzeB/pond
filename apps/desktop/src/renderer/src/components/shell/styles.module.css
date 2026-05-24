@@ -59,13 +59,10 @@
   flex: 1;
   min-width: 0;
   padding: 12px;
-  margin: 8px;
+
   overflow-y: auto;
   overflow-x: clip;
   overflow-clip-margin: 8px;
-  background: var(--shell-main-background);
-  border-radius: 12px;
-  box-shadow: 0 0 0 1px var(--ds-gray-a4);
 }
 
 .header {
