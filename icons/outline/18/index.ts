@@ -1,10 +1,90 @@
 /**
- * 18px outline icons. Re-exports the Nucleo `nucleo-ui-outline-18`
- * family verbatim. Every icon ships as `Icon<Name>Outline18` and
- * accepts `IconProps` (`size`, `strokeWidth`, `corners`, plus
- * standard SVG attrs).
+ * 18px outline icons. Names map onto Lucide components, kept under the
+ * legacy `Icon<Name>Outline18` aliases so consumer code doesn't churn
+ * when we change icon vendors.
  *
- * See https://nucleoapp.com/app?library=ui for the full catalogue.
+ * Lucide icons accept all the SVG attrs callers already pass
+ * (`width`, `height`, `className`, `stroke-width`, etc.), so the call
+ * sites stay verbatim.
  */
 
-export * from "nucleo-ui-outline-18";
+export {
+  Archive as IconArchiveContent2Outline18,
+  ArrowDown as IconArrowDownOutline18,
+  ArrowUp as IconArrowUpOutline18,
+  ArrowUpRight as IconArrowUpRightOutline18,
+  Bookmark as IconBookmarkOutline18,
+  Calendar as IconCalendarOutline18,
+  Check as IconCheckOutline18,
+  ChevronDown as IconChevronDownOutline18,
+  ChevronLeft as IconChevronLeftOutline18,
+  ChevronRight as IconChevronRightOutline18,
+  CircleQuestionMark as IconCircleQuestionOutline18,
+  Clock as IconClockOutline18,
+  Command as IconCommandOutline18,
+  Copy as IconCopyOutline18,
+  Ellipsis as IconDotsOutline18,
+  ExternalLink as IconOpenExternalOutline18,
+  Eye as IconEyeOutline18,
+  File as IconFileOutline18,
+  Folder as IconFolder5Outline18,
+  FolderOpen as IconFinderOutline18,
+  Globe as IconGlobe2Outline18,
+  Globe as IconOpenInBrowserOutline18,
+  HardDrive as IconStorageOutline18,
+  History as IconClockRotateAnticlockwiseOutline18,
+  Hourglass as IconHourglassClockOutline18,
+  Italic as IconTextItalicOutline18,
+  Layers as IconStackOutline18,
+  LayoutGrid as IconGridOutline18,
+  Link as IconLinkOutline18,
+  ListChecks as IconListCheckboxOutline18,
+  ListFilter as IconBarsFilterOutline18,
+  LogOut as IconArrowDoorOutOutline18,
+  Maximize as IconFullScreenOutline18,
+  Maximize2 as IconExpand2Outline18,
+  MessageCircle as IconMsgOutline18,
+  Minus as IconMinusOutline18,
+  MoveVertical as IconHeightMaxOutline18,
+  Network as IconConnectedDotsOutline18,
+  Palette as IconColorPaletteOutline18,
+  Pause as IconMediaPauseOutline18,
+  Pencil as IconPencilOutline18,
+  PictureInPicture2 as IconWindowBottomRightOutline18,
+  Pin as IconPinOutline18,
+  Play as IconMediaPlayOutline18,
+  Plus as IconPlusOutline18,
+  RefreshCw as IconRefreshClockwiseOutline18,
+  RefreshCw as IconRefreshOutline18,
+  Ruler as IconRulerOutline18,
+  Scale as IconScaleOutline18,
+  Search as IconMagnifierOutline18,
+  Shapes as IconShapesOutline18,
+  SkipBack as IconMediaPreviousOutline18,
+  SkipForward as IconMediaNextOutline18,
+  SkipForward as IconMediaSkipToEndOutline18,
+  SlidersHorizontal as IconSliderOutline18,
+  Sparkles as IconShuffleSparkleOutline18,
+  Sparkles as IconSparkleOutline18,
+  Square as IconMediaStopOutline18,
+  Star as IconStarOutline18,
+  Star as IconStar2Outline18,
+  Tag as IconTagOutline18,
+  Tags as IconTagsOutline18,
+  Terminal as IconTerminalOutline18,
+  ThumbsUp as IconThumbsUpOutline18,
+  Timer as IconStopwatchOutline18,
+  Trash as IconTrashOutline18,
+  Trash2 as IconTrash2ContentOutline18,
+  Trash2 as IconTrash2Outline18,
+  Trash2 as IconTrashXmarkOutline18,
+  TriangleAlert as IconTriangleWarningOutline18,
+  Upload as IconUploadOutline18,
+  User as IconUserOutline18,
+  Volume2 as IconVolumeOutline18,
+  VolumeX as IconVolumeOffOutline18,
+  X as IconXmarkOutline18,
+  Zap as IconBoltOutline18,
+} from "lucide-react";
+
+export { default as IconTagSlashOutline18 } from "./tag-slash";
