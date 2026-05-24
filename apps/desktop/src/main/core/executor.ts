@@ -2,10 +2,12 @@ import type { Save, SyncAction, Tag } from "@pond/schema/db";
 import {
   saves as savesTable,
   syncActions as syncActionsTable,
+  tagGroupMembers as tagGroupMembersTable,
+  tagGroups as tagGroupsTable,
   tags as tagsTable,
 } from "@pond/schema/db";
 import type { Transaction, TxMeta } from "@pond/schema/tx";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
@@ -299,6 +301,42 @@ function applyToIndex(
         return;
       case "delete":
         db.delete(tagsTable).where(eq(tagsTable.id, tx.id)).run();
+        return;
+    }
+  }
+  if (tx.model === "tag_group") {
+    switch (tx.kind) {
+      case "create":
+        db.insert(tagGroupsTable).values(tx.data).onConflictDoNothing().run();
+        return;
+      case "update":
+        db.update(tagGroupsTable)
+          .set(tx.patch)
+          .where(eq(tagGroupsTable.id, tx.id))
+          .run();
+        return;
+      case "delete":
+        db.delete(tagGroupsTable).where(eq(tagGroupsTable.id, tx.id)).run();
+        return;
+    }
+  }
+  if (tx.model === "tag_group_member") {
+    switch (tx.kind) {
+      case "create":
+        db.insert(tagGroupMembersTable)
+          .values(tx.data)
+          .onConflictDoNothing()
+          .run();
+        return;
+      case "delete":
+        db.delete(tagGroupMembersTable)
+          .where(
+            and(
+              eq(tagGroupMembersTable.tagId, tx.before.tagId),
+              eq(tagGroupMembersTable.groupId, tx.before.groupId),
+            ),
+          )
+          .run();
         return;
     }
   }

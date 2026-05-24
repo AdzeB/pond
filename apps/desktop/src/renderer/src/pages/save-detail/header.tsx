@@ -31,7 +31,7 @@ export function DetailHeader({ save, list }: HeaderProps) {
   }, [list, navigate]);
 
   const counter =
-    list.index >= 0 ? `${list.index + 1} / ${list.total}` : `— / ${list.total}`;
+    list.index >= 0 ? `${list.index + 1} / ${list.total}` : `- / ${list.total}`;
 
   return (
     <header className={styles.header}>

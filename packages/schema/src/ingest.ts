@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// HTTP enqueue contract — the only thing the extension and the desktop
+// HTTP enqueue contract: the only thing the extension and the desktop
 // app exchange when adding a save. The pipeline derives everything else
 // (title, media, metrics, raw json…) from the URL alone, on the
 // desktop side, via the extractors in `core/pipeline`.

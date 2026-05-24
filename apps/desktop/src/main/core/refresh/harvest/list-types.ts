@@ -6,7 +6,7 @@ export interface ListHarvestArgs {
 
 // What list harvesters emit per saved item. The sync path only consumes
 // `url` (to enqueue into the URL-first pipeline) and `sourceId` (to
-// dedupe against already-imported saves) — the rest is kept around for
+// dedupe against already-imported saves). The rest is kept around for
 // the in-flight progress UI / future use, but no source-specific blob
 // rides along, because the per-URL pipeline rebuilds the full `Capture`
 // from scratch.

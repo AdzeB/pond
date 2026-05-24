@@ -80,7 +80,7 @@ export function harvestSource(): string {
       if (dt) meta.publishedAt = dt;
     }
 
-    // Fall back to any <time datetime> inside the article — newer Twitter
+    // Fall back to any <time datetime> inside the article. Newer Twitter
     // renders the timestamp outside the User-Name block on the /i/web/status/
     // route, so the User-Name-scoped selector above can miss it.
     if (!meta.publishedAt) {
@@ -302,7 +302,7 @@ export function harvestSource(): string {
       );
       const ogSrc = ogMeta?.content?.trim();
       // X serves abs.twimg.com/rweb/ssr/default/v2/og/image.png as the
-      // og:image for any tweet without media — picking it up here would
+      // og:image for any tweet without media; picking it up here would
       // mark every text-only tweet as having an image and stop the
       // text-tweet card from rendering.
       const isSsrDefault =

@@ -15,7 +15,7 @@ export const TWEET_SCREENSHOT_KIND = "tweet_screenshot";
 export const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
-// runCaptureTweet — runs for every twitter save, regardless of whether
+// runCaptureTweet: runs for every twitter save, regardless of whether
 // the extractor pulled real media off the tweet. The screenshot is the
 // canonical visual identity for a tweet in the grid / preview pane; the
 // extracted media stays addressable via `fetch_blobs` for the detail
@@ -27,7 +27,7 @@ export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 // across re-runs and partial failures.
 //
 // Returns silently on every failure mode (auth wall, no article,
-// network) so a screenshot miss never marks the save as failed — the
+// network) so a screenshot miss never marks the save as failed; the
 // placeholder gradient is a fine interim state until the next refresh
 // tries again.
 export async function runCaptureTweet(saveId: string): Promise<void> {

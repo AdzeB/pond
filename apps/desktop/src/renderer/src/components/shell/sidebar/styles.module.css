@@ -3,7 +3,7 @@
   --sidebar-padding: 12px;
   --sidebar-padding-inline-inset: 6px;
   --sidebar-row-gap: 8px;
-  --sidebar-row-radius: var(--ds-radius-md);
+  --sidebar-row-radius: 6px;
   --sidebar-toolbar-height: 32px;
   --sidebar-account-height: 32px;
   --sidebar-item-height: 28px;
@@ -178,6 +178,56 @@
 .link[aria-current="page"] .link-count,
 .link[data-active="true"] .link-count {
   color: var(--ds-gray-11);
+}
+
+.dot {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-inline-start: 2px;
+  border-radius: 2147483647px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+}
+
+.group-toggle {
+  display: inline-flex;
+  flex: 1 1 auto;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  height: 24px;
+  padding-inline: var(--sidebar-padding-inline-inset);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  text-align: left;
+  letter-spacing: 0.01px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--sidebar-row-radius);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a2);
+  }
+}
+
+.group-toggle-chevron {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-10);
+}
+
+.group-toggle-count {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
 }
 
 :global([data-platform="mac"]) .root,

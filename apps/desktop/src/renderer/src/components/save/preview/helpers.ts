@@ -42,7 +42,7 @@ export function descriptionMatchesTitle(save: Save): boolean {
 }
 
 export function formatCount(n: number): string {
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n)) return "-";
   if (n >= 1_000_000) return `${trimZero(n / 1_000_000)}M`;
   if (n >= 1_000) return `${trimZero(n / 1_000)}k`;
   return String(Math.round(n));
@@ -73,7 +73,7 @@ export function formatShortDate(value: string | number): string {
 }
 
 export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "—";
+  if (!Number.isFinite(bytes) || bytes <= 0) return "-";
   if (bytes < 1024) return `${bytes} B`;
   const kb = bytes / 1024;
   if (kb < 1024) return `${kb.toFixed(2)} KB`;
@@ -123,7 +123,7 @@ export function humaniseRefreshReason(
     case "no_url":
       return "This save has no source URL to refresh from.";
     case "blocked":
-      return "Couldn't reach the source — the host may be offline or blocking us.";
+      return "Couldn't reach the source. The host may be offline or blocking us.";
     case "no_metadata":
       return "The source page didn't expose anything new.";
     case "auth_required":

@@ -10,6 +10,7 @@ import { libraryQueries } from "./library";
 import { pipelineQueries } from "./pipeline";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
+import { tagGroupsQueries } from "./tag-groups";
 import { tagsQueries } from "./tags";
 import { videoQueries } from "./video";
 
@@ -17,6 +18,7 @@ const queryRegistry: QueryHandlerMap = {
   ...savesQueries,
   ...settingsQueries,
   ...tagsQueries,
+  ...tagGroupsQueries,
   ...libraryQueries,
   ...developerQueries,
   ...pipelineQueries,

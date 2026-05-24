@@ -33,7 +33,7 @@ export function readLibraryPointer(): string | null {
     const candidate = parsed?.path;
     if (typeof candidate !== "string" || candidate.length === 0) return null;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    // Refuse to honor a pointer into our own userData — that would
+    // Refuse to honor a pointer into our own userData. That would
     // create infinite recursion (library inside its own metadata dir).
     if (abs.startsWith(`${app.getPath("userData")}/`)) return null;
     return abs;
@@ -60,7 +60,7 @@ export function writeLibraryPointer(absPath: string): void {
 // - the folder exists or can be created
 // - it sits outside userData
 // - it's not equal to the current resolution (caller decides what to
-//   do with that — we just report)
+//   do with that; we just report)
 export interface PointerSafetyReport {
   ok: boolean;
   reason?:
@@ -146,7 +146,7 @@ export function detectCloudKind(absPath: string): CloudKind | null {
   return null;
 }
 
-// "Does this folder already look like a Pond library?" — used so we
+// "Does this folder already look like a Pond library?" Used so we
 // can default the relocate dialog to "adopt" (skip the copy) when the
 // user is pointing at, say, an iCloud folder that's already synced
 // from another Mac. Pond libraries have `items/` and `metadata.json`
@@ -178,7 +178,7 @@ export function probeExistingLibrary(absPath: string): ExistingLibraryProbe {
       const entries = readdirSync(itemsDir).filter((e) => e.endsWith(".info"));
       out.itemCount = entries.length;
     } catch {
-      // Best-effort — a permission error here is the same outcome as
+      // Best-effort: a permission error here is the same outcome as
       // an empty folder for our purposes.
     }
   }

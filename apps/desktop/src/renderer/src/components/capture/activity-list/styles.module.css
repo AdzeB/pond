@@ -20,7 +20,7 @@
   height: 8px;
   margin-block-start: 6px;
   background: var(--ds-gray-10);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 
   &[data-actor="ai"] {
     background: #5e5ce6;

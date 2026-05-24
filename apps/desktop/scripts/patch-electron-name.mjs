@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // macOS reads the dev menu-bar title ("Electron") straight from the
-// Electron binary's own Info.plist — `app.setName("Pond")` cannot
+// Electron binary's own Info.plist; `app.setName("Pond")` cannot
 // override it. Patch the bundle in node_modules so the dev app shows
 // "Pond" in the menu bar, Dock, and ⌘-Tab switcher.
 //

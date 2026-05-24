@@ -32,7 +32,7 @@ export async function runFinalize(saveId: string): Promise<void> {
     // If harvest_metadata still has retries left, kick it back to pending so
     // it can take another swing at filling in the missing field. If it has
     // already failed (e.g. Twitter's hidden-window scrape can't render the
-    // /i/web/status URL), don't re-pend it — that just churns the reconciler
+    // /i/web/status URL), don't re-pend it. That just churns the reconciler
     // forever. Accept the partial capture and move on; the save still lands
     // as `complete` with whatever the extractor managed to grab.
     const harvestRow = taskRows.find((t) => t.op === "harvest_metadata");

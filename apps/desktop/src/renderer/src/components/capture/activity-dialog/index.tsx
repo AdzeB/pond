@@ -8,8 +8,8 @@ import styles from "./styles.module.css";
  * Reads from `pipeline_events` (one row per task / sync / save
  * lifecycle, courtesy of `lib/wide-event.ts`) and lets you slice
  * recent activity by kind / source / outcome / error class without
- * ever touching `main.log`. The point isn't to be a full log viewer —
- * it's to make the canonical wide-event queries one-click so
+ * ever touching `main.log`. The point isn't to be a full log viewer.
+ * It's to make the canonical wide-event queries one-click so
  * "debugging" stops being grep archaeology. */
 
 interface EventRow {
@@ -161,7 +161,7 @@ function Content({ open }: ContentProps) {
         <header className={styles.header}>
           <Dialog.Title>Activity</Dialog.Title>
           <Dialog.Description>
-            One wide event per task, sync, and save lifecycle — straight from{" "}
+            One wide event per task, sync, and save lifecycle, straight from{" "}
             <code>pipeline_events</code>. Filter by source, outcome, or error
             class; click a row for the full payload.
           </Dialog.Description>
@@ -312,10 +312,10 @@ function Content({ open }: ContentProps) {
                       key={`${f.errorName ?? "_"}|${f.source ?? "_"}|${f.op ?? "_"}`}
                     >
                       <td className={styles["mono-cell"]}>
-                        {f.errorName ?? "—"}
+                        {f.errorName ?? "-"}
                       </td>
-                      <td>{f.source ? getSourceLabel(f.source) : "—"}</td>
-                      <td className={styles["mono-cell"]}>{f.op ?? "—"}</td>
+                      <td>{f.source ? getSourceLabel(f.source) : "-"}</td>
+                      <td className={styles["mono-cell"]}>{f.op ?? "-"}</td>
                       <td
                         className={styles["num-col"]}
                         title="Click to view matching events"
@@ -363,7 +363,7 @@ function EventRowItem({ row }: { row: EventRow }) {
         <td className={styles["time-cell"]}>{formatTime(row.ts)}</td>
         <td className={styles["mono-cell"]}>{shortKind(row.kind)}</td>
         <td>
-          {row.source ? getSourceLabel(row.source) : "—"}
+          {row.source ? getSourceLabel(row.source) : "-"}
           {row.op ? <span className={styles.op}>{` · ${row.op}`}</span> : null}
         </td>
         <td>
@@ -372,10 +372,10 @@ function EventRowItem({ row }: { row: EventRow }) {
           </span>
         </td>
         <td className={styles["num-col"]}>
-          {row.durationMs != null ? formatDuration(row.durationMs) : "—"}
+          {row.durationMs != null ? formatDuration(row.durationMs) : "-"}
         </td>
         <td className={styles["mono-cell"]}>
-          {row.saveId ? row.saveId.slice(0, 8) : "—"}
+          {row.saveId ? row.saveId.slice(0, 8) : "-"}
         </td>
         <td
           className={styles["error-cell"]}

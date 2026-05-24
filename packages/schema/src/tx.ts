@@ -1,4 +1,14 @@
-import type { NewSave, NewTag, Save, SyncAction, Tag } from "./db";
+import type {
+  NewSave,
+  NewTag,
+  NewTagGroup,
+  NewTagGroupMember,
+  Save,
+  SyncAction,
+  Tag,
+  TagGroup,
+  TagGroupMember,
+} from "./db";
 
 export type ActorKind = "user" | "system";
 
@@ -80,6 +90,42 @@ export type Transaction =
       id: string;
       before: Tag;
       meta?: TxMeta;
+    }
+  | {
+      kind: "create";
+      model: "tag_group";
+      id: string;
+      data: NewTagGroup;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "update";
+      model: "tag_group";
+      id: string;
+      patch: Partial<NewTagGroup>;
+      before: Partial<TagGroup>;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "delete";
+      model: "tag_group";
+      id: string;
+      before: TagGroup;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "create";
+      model: "tag_group_member";
+      id: string;
+      data: NewTagGroupMember;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "delete";
+      model: "tag_group_member";
+      id: string;
+      before: TagGroupMember;
+      meta?: TxMeta;
     };
 
 export type TransactionKind = Transaction["kind"];
@@ -93,58 +139,108 @@ export interface TransactionResult {
 export function inverse(tx: Transaction): Transaction {
   switch (tx.kind) {
     case "create":
-      if (tx.model === "save") {
-        return {
-          kind: "delete",
-          model: "save",
-          id: tx.id,
-          before: tx.data as Save,
-          meta: tx.meta,
-        };
+      switch (tx.model) {
+        case "save":
+          return {
+            kind: "delete",
+            model: "save",
+            id: tx.id,
+            before: tx.data as Save,
+            meta: tx.meta,
+          };
+        case "tag":
+          return {
+            kind: "delete",
+            model: "tag",
+            id: tx.id,
+            before: tx.data as Tag,
+            meta: tx.meta,
+          };
+        case "tag_group":
+          return {
+            kind: "delete",
+            model: "tag_group",
+            id: tx.id,
+            before: tx.data as TagGroup,
+            meta: tx.meta,
+          };
+        case "tag_group_member":
+          return {
+            kind: "delete",
+            model: "tag_group_member",
+            id: tx.id,
+            before: tx.data as TagGroupMember,
+            meta: tx.meta,
+          };
       }
-      return {
-        kind: "delete",
-        model: "tag",
-        id: tx.id,
-        before: tx.data as Tag,
-        meta: tx.meta,
-      };
+      break;
     case "update":
-      if (tx.model === "save") {
-        return {
-          kind: "update",
-          model: "save",
-          id: tx.id,
-          patch: tx.before,
-          before: tx.patch as Partial<Save>,
-          meta: tx.meta,
-        };
+      switch (tx.model) {
+        case "save":
+          return {
+            kind: "update",
+            model: "save",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch as Partial<Save>,
+            meta: tx.meta,
+          };
+        case "tag":
+          return {
+            kind: "update",
+            model: "tag",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch as Partial<Tag>,
+            meta: tx.meta,
+          };
+        case "tag_group":
+          return {
+            kind: "update",
+            model: "tag_group",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch as Partial<TagGroup>,
+            meta: tx.meta,
+          };
       }
-      return {
-        kind: "update",
-        model: "tag",
-        id: tx.id,
-        patch: tx.before,
-        before: tx.patch as Partial<Tag>,
-        meta: tx.meta,
-      };
+      break;
     case "delete":
-      if (tx.model === "save") {
-        return {
-          kind: "create",
-          model: "save",
-          id: tx.id,
-          data: tx.before as NewSave,
-          meta: tx.meta,
-        };
+      switch (tx.model) {
+        case "save":
+          return {
+            kind: "create",
+            model: "save",
+            id: tx.id,
+            data: tx.before as NewSave,
+            meta: tx.meta,
+          };
+        case "tag":
+          return {
+            kind: "create",
+            model: "tag",
+            id: tx.id,
+            data: tx.before as NewTag,
+            meta: tx.meta,
+          };
+        case "tag_group":
+          return {
+            kind: "create",
+            model: "tag_group",
+            id: tx.id,
+            data: tx.before as NewTagGroup,
+            meta: tx.meta,
+          };
+        case "tag_group_member":
+          return {
+            kind: "create",
+            model: "tag_group_member",
+            id: tx.id,
+            data: tx.before as NewTagGroupMember,
+            meta: tx.meta,
+          };
       }
-      return {
-        kind: "create",
-        model: "tag",
-        id: tx.id,
-        data: tx.before as NewTag,
-        meta: tx.meta,
-      };
+      break;
     case "trash":
       return { kind: "untrash", model: "save", id: tx.id, meta: tx.meta };
     case "untrash":
@@ -158,4 +254,5 @@ export function inverse(tx: Transaction): Transaction {
         meta: tx.meta,
       };
   }
+  throw new Error("tx.inverse: unhandled transaction shape");
 }

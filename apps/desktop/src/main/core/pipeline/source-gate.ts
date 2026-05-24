@@ -4,17 +4,17 @@ import log from "electron-log/main.js";
 // Process-wide, in-memory gate for per-source pacing. Two independent
 // reasons a source can be "paused":
 //
-// 1. Cooldown — set when a worker observes an explicit rate-limit
+// 1. Cooldown: set when a worker observes an explicit rate-limit
 //    signal (e.g. `RateLimitedError(retryAfterSec)`). Affects every
 //    queued task for that source, not just the one that failed.
-// 2. Circuit breaker — set when N consecutive transient failures land
+// 2. Circuit breaker: set when N consecutive transient failures land
 //    against a source within a short window. Trips the source off for
 //    ~10 minutes so we don't burn the pool on a dead-on-arrival host.
 //
 // Both reasons are unioned into a single "next allowed" timestamp per
 // source. Consumers (scrape-window lease, reconciler `pullDueTasks`)
 // check `sourcePausedUntil(s)` and either skip or queue-with-delay.
-// Nothing here persists across restarts — by design. Soft-blocks clear
+// Nothing here persists across restarts, by design. Soft-blocks clear
 // on their own and the user shouldn't have to wait through them after
 // quitting and relaunching.
 
@@ -93,7 +93,7 @@ export function noteTransientFailure(source: Source): void {
 }
 
 export function noteSuccess(source: Source): void {
-  // A success closes the breaker window — the host is healthy again.
+  // A success closes the breaker window: the host is healthy again.
   // Cooldowns set by explicit RateLimitedError signals stay because
   // the host is asking us to wait regardless of whether the last call
   // happened to slip through.
@@ -118,7 +118,7 @@ export function snapshotSourceGate(): PausedState[] {
   for (const [source, until] of breakerUntil) {
     if (until <= now) continue;
     if (seen.has(source)) {
-      // Replace with whichever is later — show the longest wait.
+      // Replace with whichever is later: show the longest wait.
       const idx = out.findIndex((e) => e.source === source);
       const existing = idx !== -1 ? out[idx] : null;
       if (existing && until > existing.until) {

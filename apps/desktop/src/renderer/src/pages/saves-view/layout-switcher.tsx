@@ -283,7 +283,7 @@ function ListView({
         cell: ({ row }) => {
           const save = row.original;
           if (save.tags.length === 0) {
-            return <span className={styles["col-muted"]}>—</span>;
+            return <span className={styles["col-muted"]}>-</span>;
           }
           return (
             <span className={styles["tag-chips"]}>
@@ -323,7 +323,7 @@ function ListView({
             if (save.width && save.height) {
               return `${save.width} × ${save.height}`;
             }
-            return "—";
+            return "-";
           },
           sortingFn: "basic",
           sortUndefined: "last",
@@ -336,7 +336,7 @@ function ListView({
         header: "Extension",
         cell: ({ row }) => {
           const ext = extensionFor(row.original).toUpperCase();
-          return ext ? <span className={styles["ext-chip"]}>{ext}</span> : "—";
+          return ext ? <span className={styles["ext-chip"]}>{ext}</span> : "-";
         },
         sortingFn: localeSort,
         sortDescFirst: false,

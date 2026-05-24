@@ -94,7 +94,7 @@
   cursor: default;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 }
 
 .status-pill:where([data-state="ingesting"]) {
@@ -122,7 +122,7 @@
   width: 6px;
   height: 6px;
   background: var(--ds-gray-11);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   animation: pond-pulse 1.4s ease-in-out infinite;
 }
 
@@ -144,6 +144,11 @@
     opacity: 1;
     animation: none;
   }
+}
+
+:global(html[data-reduce-motion="true"]) .status-dot {
+  opacity: 1;
+  animation: none;
 }
 
 .header-icon-btn {
@@ -192,7 +197,7 @@
   cursor: pointer;
   background: var(--ds-background-primary);
   border: 0;
-  border-radius: var(--ds-radius-md);
+  border-radius: 6px;
   box-shadow:
     0 0 0 1px rgb(0 0 0 / 8%),
     0 2px 4px 0 rgb(0 0 0 / 6%);
@@ -399,7 +404,7 @@
   cursor: pointer;
   background: var(--ds-gray-a4);
   border: 0;
-  border-radius: var(--ds-radius-md);
+  border-radius: 6px;
   transition: background 80ms ease;
 
   & + & {

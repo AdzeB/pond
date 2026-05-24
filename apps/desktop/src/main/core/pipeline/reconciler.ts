@@ -30,7 +30,7 @@ const POLL_INTERVAL_MS = 5_000;
 // Tuned against the scrape-window budgets (see `GLOBAL_POOL_CAP` and
 // `PER_SOURCE_CAP` in scrape-window.ts). The two pool-bound ops
 // (harvest_metadata, capture_tweet) share the per-source cap for
-// whichever source dominates — currently Twitter at 3 — so per-op
+// whichever source dominates (currently Twitter at 3), so per-op
 // caps below act as a second-order limit; the per-source pool budget
 // is the binding constraint.
 const MAX_GLOBAL_INFLIGHT = 8;
@@ -48,7 +48,7 @@ const PER_OP_CONCURRENCY: Record<Op, number> = {
 // this, the dispatcher treats it as a transient failure, releases the
 // inflight counter, and lets the reconciler move on. The worker
 // promise keeps running in the background (we can't cancel arbitrary
-// Promises), but the reconciler is no longer pinned — without this
+// Promises), but the reconciler is no longer pinned. Without this
 // safety net a single hung worker would silently freeze the entire
 // queue (see: stalled `wc.loadURL` against X under soft-block).
 const TASK_WATCHDOG_MS: Record<Op, number> = {
@@ -242,7 +242,7 @@ export async function skipTask(
     .where(eq(tasks.id, taskId))
     .run();
 
-  // Cascade — mirror the failed-task path in `handleFailure` so the
+  // Cascade: mirror the failed-task path in `handleFailure` so the
   // save row and downstream siblings move together.
   const current = db
     .select({ status: saves.status })
@@ -322,7 +322,7 @@ async function recoverStaleRunningTasks(): Promise<void> {
 
 // Startup cleanup #2 (also run periodically): any `pending` task whose
 // save is no longer `ingesting` (failed, blocked, deleted, complete)
-// can never run — it's gated behind an op that's already failed or
+// can never run; it's gated behind an op that's already failed or
 // moot. Left in place these rows occupy the oldest slots of the
 // `next_run_at ASC LIMIT 20` window and starve healthy ingesting
 // saves. Mark them failed so the runtime view of the queue matches
@@ -392,13 +392,13 @@ interface DueTask extends Task {
 // fill with tasks that `isOpReady` will reject. Earlier this was JS-only,
 // which let an unattempted later op (its `next_run_at` still pinned at the
 // original enqueue time) crowd out its own deferred leading op (pushed
-// forward by a watchdog/backoff) at the head of the queue — the reconciler
+// forward by a watchdog/backoff) at the head of the queue. The reconciler
 // would then pull 20 blocked rows, dispatch none, and starve every other
 // ingesting save behind them. The save-status filter further keeps tasks
 // belonging to failed/blocked/deleted saves out of the window.
 //
 // We pull 3x the dispatch window so the per-save round-robin interleave
-// below has enough material to truly spread across saves — otherwise a
+// below has enough material to truly spread across saves; otherwise a
 // single save with 7 pending ops would dominate every window pull.
 async function pullDueTasks(): Promise<DueTask[]> {
   const db = await getDb();
@@ -440,7 +440,7 @@ async function pullDueTasks(): Promise<DueTask[]> {
 
   // Per-save round-robin: bucket the candidates by saveId, then drain
   // one task per save per pass. The first 20 emitted will hit at most
-  // 20 distinct saves before any save gets a second task — visible
+  // 20 distinct saves before any save gets a second task: visible
   // progress is shared across the queue instead of monopolised by
   // whichever save happens to be at the head of the time-ordered
   // window. Also skip tasks whose source is currently paused
@@ -512,7 +512,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   metrics.tasksDispatched++;
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
-  /* One wide event per task attempt — populated as the work proceeds,
+  /* One wide event per task attempt: populated as the work proceeds,
    * committed in the finally. Replaces the scattered "[pond pipeline:
    * reconciler] dispatching/done/failed" trio that used to require
    * three greps to reconstruct one outcome. */
@@ -658,12 +658,12 @@ async function handleFailure(
   }
 
   // Signal the source gate. Explicit rate-limit errors set a hard
-  // cooldown — every queued task on that source defers, not just the
+  // cooldown: every queued task on that source defers, not just the
   // failed one. Only `TransientError` and watchdog trips advance the
   // breaker counter; everything else is per-URL or per-auth and isn't
   // a host-health signal. (Earlier this also counted `TerminalError`,
   // which made the breaker trip whenever a user retried a backlog of
-  // dead-URL Twitter saves — the host was fine, the URLs weren't.)
+  // dead-URL Twitter saves: the host was fine, the URLs weren't.)
   if (isSourceTask(task.op)) {
     const source = task.source as never;
     if (err instanceof RateLimitedError) {
@@ -699,7 +699,7 @@ async function handleFailure(
     : task.attempts;
   if (decision.status === "failed") {
     metrics.tasksFailed++;
-    // Status only moves forward — once a save is `complete` (data on disk,
+    // Status only moves forward: once a save is `complete` (data on disk,
     // raw_json captured) a re-harvest failure shouldn't blow away the
     // user-visible state. The failed task row stays around so we can retry
     // later; the save itself keeps its previous status.
@@ -732,7 +732,7 @@ async function handleFailure(
      * `finalize`; from here we just emit the per-task event in the
      * dispatcher's finally. */
     if (current?.status === "ingesting") {
-      // Save just transitioned to failed because of this task — emit
+      // Save just transitioned to failed because of this task. Emit
       // the save-level ingest event right here. `maybeFinalizeSave`
       // only handles the success path.
       void commitSaveIngestEvent(task.saveId, {
@@ -755,7 +755,7 @@ async function handleFailure(
 }
 
 // Event-driven replacement for the old whole-table `sweepCompleteSaves`
-// pass. Called from `dispatchTask` after a successful run — flips the
+// pass. Called from `dispatchTask` after a successful run; flips the
 // save to `complete` iff every one of its tasks is now `done`. The
 // failed-task path already downgrades the save in `handleFailure`, so
 // the only thing left for this helper to do is the success transition.

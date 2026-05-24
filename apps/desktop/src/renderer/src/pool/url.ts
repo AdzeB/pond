@@ -6,11 +6,6 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
-export function buildAvatarUrl(avatarPath: string): string {
-  const filename = avatarPath.replace(/^.*[\\/]/, "");
-  return `pond://_meta/${filename}`;
-}
-
 export function pickAuthorAvatarUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "avatar");
   if (local) return buildPondUrl(save.id, local);

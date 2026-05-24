@@ -9,7 +9,7 @@ import {
   YOUTUBE_PATTERNS,
 } from "./extractors/url-patterns";
 
-// sourceIdFromUrl — canonical id used in `saves.source_id`. Matches the
+// sourceIdFromUrl: canonical id used in `saves.source_id`. Matches the
 // extractor's regex capture so a given (source, sourceId) pair is unique per
 // post regardless of which URL form the user pasted in.
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {

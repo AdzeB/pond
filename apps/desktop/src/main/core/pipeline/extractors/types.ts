@@ -15,7 +15,7 @@ export type {
   RawJson,
 } from "@pond/schema/raw";
 
-// Historic alias — extractors still import `MediaCandidate` from this
+// Historic alias: extractors still import `MediaCandidate` from this
 // module. `CaptureMedia` IS the same shape (both use
 // `"image" | "video" | "link"` for `type`), so keep the alias for
 // backward compatibility instead of churning every extractor file.

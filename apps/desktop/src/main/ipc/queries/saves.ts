@@ -56,7 +56,7 @@ export interface ProcessingDetailWire {
   lastError: string | null;
   // Extracted so the renderer can humanise without fragile parsing.
   lastErrorName: string | null;
-  // When the failing task last changed status — drives "Failed 2m ago".
+  // When the failing task last changed status. Drives "Failed 2m ago".
   lastErrorAt: string | null;
   // When the current/next attempt will fire, if any. Drives the
   // "Retries in 30s" / "Waiting for rate limit" copy on pending rows.
@@ -194,7 +194,7 @@ export const savesQueries: QueryHandlerMap = {
   },
 
   async "saves.dropFiles"() {
-    // Local file drops aren't supported in the URL-first pipeline yet —
+    // Local file drops aren't supported in the URL-first pipeline yet:
     // every save now flows through enqueueSaveByUrl. Keep the IPC alive so
     // the renderer's drop handler can no-op gracefully.
     return { ok: false, error: "local_files_unsupported" };
@@ -317,7 +317,7 @@ export const savesQueries: QueryHandlerMap = {
   },
 
   async "saves.clearQueue"(params) {
-    /* Hard-delete every queue entry that matches the filter — failed
+    /* Hard-delete every queue entry that matches the filter: failed
      * scrapes and in-flight noise the user never accepted as a save.
      * Trashing would just move the clutter from the queue view to the
      * trash view and force a second "empty trash" step. Default scope
@@ -365,7 +365,7 @@ export const savesQueries: QueryHandlerMap = {
 
   async "saves.processingDetails"() {
     const db = await getDb();
-    /* Pull both ingesting + failed in one shot — the dialog renders the
+    /* Pull both ingesting + failed in one shot. The dialog renders the
      * two as separate sections but the live count is one number. */
     const allRows = await db
       .select()

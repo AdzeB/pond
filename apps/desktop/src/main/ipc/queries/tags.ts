@@ -12,7 +12,6 @@ export const tagsQueries: QueryHandlerMap = {
     const { createTag } = await import("../../core/tags");
     return await createTag({
       name: String(params.name ?? ""),
-      color: params.color ? String(params.color) : null,
       description: params.description ? String(params.description) : null,
     });
   },
@@ -66,5 +65,24 @@ export const tagsQueries: QueryHandlerMap = {
       userCount: count,
       aiCount: 0,
     }));
+  },
+
+  async "tags.setStarred"(params) {
+    const { setStarred } = await import("../../core/tags");
+    return await setStarred(
+      String(params.name ?? ""),
+      Boolean(params.starred ?? false),
+    );
+  },
+
+  async "tags.recents"(params) {
+    const { listRecent } = await import("../../core/tags");
+    const limit = typeof params.limit === "number" ? params.limit : 12;
+    return await listRecent(limit);
+  },
+
+  async "tags.starred"() {
+    const { listStarred } = await import("../../core/tags");
+    return await listStarred();
   },
 };

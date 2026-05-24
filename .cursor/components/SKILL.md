@@ -1,6 +1,6 @@
 ---
 name: components
-description: Build React components in the Pond house style — compound component objects, CSS Modules, variants via data-attributes, props that extend native HTML elements. Use when creating, refactoring, or reviewing any component under apps/desktop/src/renderer/src/components/, ui/, or pages/. Triggers on /components or when the user asks to "make a component", "refactor this to match Settings", "follow the component convention", or asks how components should be structured in this codebase.
+description: Build React components in the Pond house style: compound component objects, CSS Modules, variants via data-attributes, props that extend native HTML elements. Use when creating, refactoring, or reviewing any component under apps/desktop/src/renderer/src/components/, ui/, or pages/. Triggers on /components or when the user asks to "make a component", "refactor this to match Settings", "follow the component convention", or asks how components should be structured in this codebase.
 ---
 
 # /components: component patterns in the Pond house style
@@ -157,7 +157,7 @@ function Page({ width = "medium", ...props }: PageProps) {
 }
 ```
 
-This lets a consumer pass `id`, `aria-*`, `data-testid`, event handlers, and even `className` (which will replace yours — accept that and merge with `clsx` only when necessary).
+This lets a consumer pass `id`, `aria-*`, `data-testid`, event handlers, and even `className` (which will replace yours; accept that and merge with `clsx` only when necessary).
 
 ### 6. Semantic HTML by role
 
@@ -186,7 +186,7 @@ The Settings file uses `h1`/`h2`/`h3`/`p`/`header` deliberately. Mirror this in 
 <h2 className={styles["section-title"]} {...props} />
 ```
 
-Don't use Tailwind, `styled-components`, `cva`, inline `style={{ ... }}`, or `clsx` on internal classes. The few `style={{ ... }}` blocks you'll find in pages (e.g. `preferences.tsx`) are page-level glue, not component primitives — don't propagate them into new components.
+Don't use Tailwind, `styled-components`, `cva`, inline `style={{ ... }}`, or `clsx` on internal classes. The few `style={{ ... }}` blocks you'll find in pages (e.g. `preferences.tsx`) are page-level glue, not component primitives. Don't propagate them into new components.
 
 ### 8. CSS custom properties for tokens, locals on the root
 
@@ -214,7 +214,7 @@ Locals live at the top of the root class, in declaration order. Token reads (`va
 
 All theme tokens live in `packages/ui/src/theme.css` (re-exported as `@pond/ui/theme.css`). There is one system: `--ds-*`. Don't reach for ad-hoc colours, hex literals, or page-local hand-rolled scales.
 
-- **Color scales.** Backed by Radix Themes — `--ds-gray-1`…`--ds-gray-12` plus alpha (`--ds-gray-a1`…`--ds-gray-a12`), and `--ds-accent-1`…`--ds-accent-12` (sky-based) plus alpha. Same scale, same semantics in light and dark.
+- **Color scales.** Backed by Radix Themes: `--ds-gray-1`…`--ds-gray-12` plus alpha (`--ds-gray-a1`…`--ds-gray-a12`), and `--ds-accent-1`…`--ds-accent-12` (sky-based) plus alpha. Same scale, same semantics in light and dark.
 - **Semantic.** `--ds-tomato-{1..12,a3,a6}` for danger / required / error. `--ds-grass-{3,6,9,11,a6}` for success.
 - **Surface.** `--ds-background-primary` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
 - **Radius.** `--ds-radius-xs` (8px), `--ds-radius-sm` (10px), `--ds-radius-md` (12px), `--ds-radius-lg` (14px), `--ds-radius-xl` (16px), `--ds-radius-full` (9999px).
@@ -275,12 +275,12 @@ The destructure form is the same line count, types correctly, and shows the defa
 
 ### 10. No JSDoc on primitives, prose where intent matters
 
-Sub-components like `Settings.Item` don't need JSDoc — the name and the props say it all. Reserve doc comments for non-obvious behavior, like the notifications section explaining how toast categories map to the `useToast` wrapper.
+Sub-components like `Settings.Item` don't need JSDoc; the name and the props say it all. Reserve doc comments for non-obvious behavior, like the notifications section explaining how toast categories map to the `useToast` wrapper.
 
 ```5:10:apps/desktop/src/renderer/src/pages/settings/sections/notifications.tsx
 /**
  * Notifications section. Each switch maps to a `category` tag the
- * shared `useToast()` wrapper checks before rendering — see
+ * shared `useToast()` wrapper checks before rendering. See
  * `apps/desktop/src/renderer/src/ui/toast.tsx`. Untagged toasts
  * (system errors, IPC failures) always show.
  */
@@ -328,7 +328,7 @@ export const Card = {
 
   display: flex;
   flex-direction: column;
-  border-radius: var(--ds-radius-md);
+  border-radius: 6px;
   background-color: var(--ds-gray-2);
   box-shadow: var(--ds-shadow-2);
 
@@ -385,7 +385,7 @@ Before you commit a new component, walk this list:
 - [ ] Single named export of a PascalCase compound object.
 - [ ] Every sub-component has a `<Name>Props` interface that extends `React.ComponentPropsWithoutRef<"tag">`.
 - [ ] Every sub-component spreads `...props` onto its element.
-- [ ] No boolean variants — use `data-*` attributes with a string union.
+- [ ] No boolean variants. Use `data-*` attributes with a string union.
 - [ ] Every variant is reflected as a `data-*` attribute on the rendered element.
 - [ ] Semantic tags chosen by role (`<header>`, `<h1>`–`<h3>`, `<p>`, `<button>`).
 - [ ] No inline styles, no Tailwind, no CSS-in-JS.

@@ -58,7 +58,7 @@ export class CosmosTileExtractor implements Extractor {
       }
     })();
 
-    // Cosmos tiles often wrap iframe embeds (YouTube/Vimeo) — the DOM
+    // Cosmos tiles often wrap iframe embeds (YouTube/Vimeo). The DOM
     // normalizer picks up the poster image but not the underlying video.
     // If we have an upstream URL, synthesize a video candidate so the
     // fetch_video_ytdlp gate fires.

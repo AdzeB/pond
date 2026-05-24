@@ -1,22 +1,16 @@
 import {
-  IconBellOutline18,
   IconBoltOutline18,
-  IconCircleInfoOutline18,
-  IconClockRotateClockwiseOutline18,
-  IconCloudOutline18,
+  IconColorPaletteOutline18,
+  IconCommandOutline18,
   IconConnectedDotsOutline18,
-  IconImagesOutline18,
   IconShapesOutline18,
   IconSliderOutline18,
   IconStackOutline18,
-  IconTagOutline18,
   IconTerminalOutline18,
-  IconTrash2ContentOutline18,
-  IconWindowCode2Outline18,
-  IconWorkflowOutline18,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import {
+  SETTINGS_DEV_GROUPS,
   SETTINGS_SECTIONS,
   type SettingsGroup,
   type SettingsSection,
@@ -47,77 +41,37 @@ const RENDERER_BY_ID: Record<
     load: () => Promise<{ Component: ComponentType }>;
   }
 > = {
-  storage: {
+  general: {
+    icon: IconSliderOutline18,
+    load: lazyComponent(() => import("./sections/general"), "GeneralSection"),
+  },
+  appearance: {
+    icon: IconColorPaletteOutline18,
+    load: lazyComponent(
+      () => import("./sections/appearance"),
+      "AppearanceSection",
+    ),
+  },
+  shortcuts: {
+    icon: IconCommandOutline18,
+    load: lazyComponent(
+      () => import("./sections/shortcuts"),
+      "ShortcutsSection",
+    ),
+  },
+  library: {
     icon: IconStackOutline18,
-    load: lazyComponent(() => import("./sections/storage"), "StorageSection"),
+    load: lazyComponent(() => import("./sections/library"), "LibrarySection"),
   },
-  tags: {
-    icon: IconTagOutline18,
-    load: lazyComponent(() => import("./sections/tags"), "TagsSection"),
-  },
-  "trash-prefs": {
-    icon: IconTrash2ContentOutline18,
-    load: lazyComponent(() => import("./sections/trash"), "TrashPrefsSection"),
-  },
-  backups: {
-    icon: IconCloudOutline18,
-    load: lazyComponent(() => import("./sections/backups"), "BackupsSection"),
-  },
-  media: {
-    icon: IconImagesOutline18,
-    load: lazyComponent(() => import("./sections/media"), "MediaSection"),
+  saving: {
+    icon: IconBoltOutline18,
+    load: lazyComponent(() => import("./sections/saving"), "SavingSection"),
   },
   sources: {
     icon: IconConnectedDotsOutline18,
     load: lazyComponent(
       () => import("./sections/integrations"),
       "IntegrationsSection",
-    ),
-  },
-  "capture-behavior": {
-    icon: IconBoltOutline18,
-    load: lazyComponent(
-      () => import("./sections/capture-behavior"),
-      "CaptureBehaviorSection",
-    ),
-  },
-  extension: {
-    icon: IconWindowCode2Outline18,
-    load: lazyComponent(
-      () => import("./sections/extension"),
-      "ExtensionSection",
-    ),
-  },
-  preferences: {
-    icon: IconSliderOutline18,
-    load: lazyComponent(
-      () => import("./sections/preferences"),
-      "PreferencesSection",
-    ),
-  },
-  notifications: {
-    icon: IconBellOutline18,
-    load: lazyComponent(
-      () => import("./sections/notifications"),
-      "NotificationsSection",
-    ),
-  },
-  updates: {
-    icon: IconClockRotateClockwiseOutline18,
-    load: lazyComponent(() => import("./sections/updates"), "UpdatesSection"),
-  },
-  automation: {
-    icon: IconWorkflowOutline18,
-    load: lazyComponent(
-      () => import("./sections/automation"),
-      "AutomationSection",
-    ),
-  },
-  developer: {
-    icon: IconTerminalOutline18,
-    load: lazyComponent(
-      () => import("./sections/developer"),
-      "DeveloperSection",
     ),
   },
   components: {
@@ -127,9 +81,12 @@ const RENDERER_BY_ID: Record<
       "ComponentsSection",
     ),
   },
-  about: {
-    icon: IconCircleInfoOutline18,
-    load: lazyComponent(() => import("./sections/about"), "AboutSection"),
+  developer: {
+    icon: IconTerminalOutline18,
+    load: lazyComponent(
+      () => import("./sections/developer"),
+      "DeveloperSection",
+    ),
   },
 };
 
@@ -144,16 +101,18 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
 export const GROUP_ORDER: readonly SectionGroup[] = [
   "app",
   "library",
-  "media",
-  "capture",
+  "saving",
+  "dev",
 ] as const;
 
 export const GROUP_LABELS: Record<SectionGroup, string | null> = {
   app: null,
   library: "Library",
-  media: "Media",
-  capture: "Capture",
+  saving: "Saving",
+  dev: "Development",
 };
+
+export const DEV_GROUPS: readonly SectionGroup[] = SETTINGS_DEV_GROUPS;
 
 export function sectionsByGroup(group: SectionGroup): SectionDef[] {
   return SECTIONS.filter((s) => s.group === group);

@@ -1,5 +1,3 @@
-/* Only the Radix scales actually consumed below are imported. */
-/* Adding a new --ds-*-N alias means adding the matching scale here too. */
 @import "@radix-ui/themes/tokens/colors/slate.css";
 @import "@radix-ui/themes/tokens/colors/gray.css";
 @import "@radix-ui/themes/tokens/colors/tomato.css";
@@ -88,27 +86,15 @@
   --ds-background-secondary: var(--ds-gray-1);
   --ds-background-tertiary: var(--ds-gray-2);
 
-  --ds-radius-xs: 8px;
-  --ds-radius-sm: 10px;
-  --ds-radius-md: 12px;
-  --ds-radius-lg: 14px;
-  --ds-radius-xl: 16px;
-  --ds-radius-full: 9999px;
-
   --ds-shadow-1: 0 0 0 1px var(--gray-a3), 0 1px 2px 0 var(--black-a1);
-
   --ds-shadow-2: 0 0 0 1px var(--gray-a3), 0 2px 4px 0 var(--black-a1);
-
   --ds-filter-shadow-2: drop-shadow(1px 0 0 var(--gray-a3))
     drop-shadow(-1px 0 0 var(--gray-a3)) drop-shadow(0 1px 0 var(--gray-a3))
     drop-shadow(0 -1px 0 var(--gray-a3)) drop-shadow(0 2px 4px var(--black-a1));
-
   --ds-shadow-2-focused:
     0 0 0 1px var(--ds-accent-9), 0 2px 4px 0 var(--black-a1),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
-
   --ds-shadow-3: 0 0 0 1px var(--gray-a3), 0 4px 8px 0 var(--black-a1);
-
   --ds-shadow-focus-halo:
     0 0 0 1px var(--ds-accent-9),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
@@ -132,4 +118,37 @@
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
 
   --ds-mac-inset: 16px;
+}
+
+html[style*="--ds-tint-hue"] {
+  --ds-accent-3: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 70% 88%) var(--ds-tint-intensity),
+    var(--sky-3)
+  );
+  --ds-accent-6: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 75% 65%) var(--ds-tint-intensity),
+    var(--sky-6)
+  );
+  --ds-accent-8: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 70% 50%) var(--ds-tint-intensity),
+    var(--sky-8)
+  );
+  --ds-accent-9: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
+    var(--sky-9)
+  );
+  --ds-accent-10: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 75% 50%) var(--ds-tint-intensity),
+    var(--sky-10)
+  );
+  --ds-accent-a9: color-mix(
+    in oklch,
+    hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
+    var(--sky-a9)
+  );
 }

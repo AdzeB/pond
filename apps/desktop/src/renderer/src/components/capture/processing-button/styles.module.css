@@ -56,7 +56,7 @@
   width: 8px;
   height: 8px;
   background: var(--ds-gray-11);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   animation: processing-pulse 1.4s ease-in-out infinite;
 }
 
@@ -66,7 +66,7 @@
   width: 8px;
   height: 8px;
   background: var(--ds-red-9, var(--ds-gray-11));
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 }
 
 @keyframes processing-pulse {
@@ -87,4 +87,9 @@
     opacity: 1;
     animation: none;
   }
+}
+
+:global(html[data-reduce-motion="true"]) .pulse {
+  opacity: 1;
+  animation: none;
 }

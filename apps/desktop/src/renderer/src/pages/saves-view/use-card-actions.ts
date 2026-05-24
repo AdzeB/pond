@@ -114,7 +114,7 @@ export function useCardActions(
         target?.isContentEditable === true;
       if (isInput) return;
 
-      // Dialogs / menus / listboxes own their own roving focus — Base UI
+      // Dialogs / menus / listboxes own their own roving focus. Base UI
       // doesn't stop arrow keys from bubbling so we have to.
       const inOverlay = target?.closest(
         '[role="dialog"],[role="menu"],[role="listbox"],[role="combobox"]',

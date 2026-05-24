@@ -95,7 +95,7 @@ export function JustifiedView({
   const [width, setWidth] = useState(0);
 
   /* Read the container width synchronously after layout so the very
-   * first paint already shows the packed rows — avoids a one-frame
+   * first paint already shows the packed rows. Avoids a one-frame
    * flash where everything piles up at width=0. */
   useLayoutEffect(() => {
     if (!ref.current) return;

@@ -15,7 +15,7 @@ import { getDb } from "../db";
 /* The wide-event substrate.
  *
  * `startEvent` returns a typed builder you can mutate over the life of
- * a unit of work — populating fields as the request flows — then
+ * a unit of work (populating fields as the request flows), then
  * `commitEvent` writes one row to `pipeline_events` and emits a single
  * human-readable line to `electron-log`. The scattered "[pond ...]"
  * narration that used to live around the producer dies as a side
@@ -94,7 +94,7 @@ export function startIngestEvent(
 /* Convenience for the two save-terminal call sites (finalize success
  * + reconciler cascade-failure). Builds and commits a single
  * `save.ingest.completed` row by reading the current save + tasks
- * state. Best-effort — if the save vanished we just no-op. */
+ * state. Best-effort: if the save vanished we just no-op. */
 export async function commitSaveIngestEvent(
   saveId: string,
   override: {

@@ -1,8 +1,8 @@
-# AGENTS.md — components/
+# AGENTS.md (components/)
 
 Rules for creating or refactoring any component in this tree. Defer to
 [`.cursor/components/SKILL.md`](../../../../../../.cursor/components/SKILL.md)
-for the full Pond house style — compound objects, CSS Modules, `data-*`
+for the full Pond house style: compound objects, CSS Modules, `data-*`
 variants, semantic HTML, design tokens. This file only adds the rules
 that aren't there yet: where things live, the single-file containment
 preference, and the Vercel composition patterns checklist.
@@ -15,9 +15,9 @@ The tree is grouped by surface, not by component type.
 |---|---|
 | `_primitives/` | Presentational, no domain state. Could be promoted to `@pond/ui` if a second consumer appears. |
 | `shell/` | App frame, layouts, and the chrome shared by every page (sidebar, sidebar-tools). |
-| `library/` | Anything that lives inside the Library surface — grid/list primitive, sidebar, toolbar, filter-bar, bulk-action-bar, inspector, quick-capture, and the toolbar's menus. |
+| `library/` | Anything that lives inside the Library surface: grid/list primitive, sidebar, toolbar, filter-bar, bulk-action-bar, inspector, quick-capture, and the toolbar's menus. |
 | `save/` | Per-save surfaces (preview pane, context menu). Imported by the save-detail route and the inspector. |
-| `capture/` | Background capture pipeline UI — the processing button + dialog and the activity dialog/list. |
+| `capture/` | Background capture pipeline UI: the processing button + dialog and the activity dialog/list. |
 | `media/` | Media playback (video player). |
 | `command-palette/` | Top-level, cross-cutting. Stays at the root. |
 | `settings/` | The `<Settings.*>` compound used by the settings sections. Stays at the root. |
@@ -40,15 +40,15 @@ The tree is grouped by surface, not by component type.
 
 A new component is `index.tsx` + `styles.module.css`. That's it. Don't
 pre-split sub-components into sibling files. The `packages/ui`
-namespaces are the templates — multiple named pieces in one file:
+namespaces are the templates: multiple named pieces in one file.
 
-- [`packages/ui/src/context-menu/index.tsx`](../../../../../../packages/ui/src/context-menu/index.tsx) — 17 named pieces, one file.
-- [`packages/ui/src/tooltip/index.tsx`](../../../../../../packages/ui/src/tooltip/index.tsx) — 8 pieces, one file.
-- [`packages/ui/src/dialog/index.tsx`](../../../../../../packages/ui/src/dialog/index.tsx) — 6 pieces, one file.
-- [`./settings/index.tsx`](settings/index.tsx) — 12 pieces, one file.
+- [`packages/ui/src/context-menu/index.tsx`](../../../../../../packages/ui/src/context-menu/index.tsx): 17 named pieces, one file.
+- [`packages/ui/src/tooltip/index.tsx`](../../../../../../packages/ui/src/tooltip/index.tsx): 8 pieces, one file.
+- [`packages/ui/src/dialog/index.tsx`](../../../../../../packages/ui/src/dialog/index.tsx): 6 pieces, one file.
+- [`./settings/index.tsx`](settings/index.tsx): 12 pieces, one file.
 
-Reach for a split only when the file genuinely becomes hard to navigate
-— rough rule of thumb: 400+ lines and the sub-components carry
+Reach for a split only when the file genuinely becomes hard to
+navigate. Rough rule of thumb: 400+ lines and the sub-components carry
 non-trivial logic of their own. A long file of small, declarative
 sub-components is fine; jumping between four files to read one render
 path is not.
@@ -74,7 +74,7 @@ consumer.
 
 If you find yourself reaching for `forwardRef`, prop-drilling
 `isActive` through three layers, or wrapping a sub-component in `memo`
-to dodge a re-render — that's the signal to refactor toward a
+to dodge a re-render: that's the signal to refactor toward a
 context-driven compound, **not** to split into more files. See the
 checklist below and the
 [`vercel-composition-patterns`](../../../../../../.agents/skills/vercel-composition-patterns/SKILL.md)
@@ -89,7 +89,7 @@ Mirrors the priority ordering in
 ### Architecture (HIGH)
 
 - [ ] **No boolean props that switch behavior.** `compact`, `isThread`,
-      `isEditing`, `bordered` — collapse into a `data-*` variant for
+      `isEditing`, `bordered`: collapse into a `data-*` variant for
       styling, or split into separate sub-components for behavior.
 - [ ] **Compound components share state via Context + `use()`,** not via
       props drilled through every level. Sub-components like `Icon`,
@@ -110,7 +110,7 @@ Mirrors the priority ordering in
 
 - [ ] **No `renderHeader` / `renderFooter` / `renderActions` props.**
       Use `children` and let consumers compose. (`base-ui`'s internal
-      `render={…}` is a separate idiom — fine to use, don't expose it
+      `render={…}` is a separate idiom: fine to use, don't expose it
       on your own surface.)
 - [ ] **Explicit variants over modes.** Two callers needing different
       behavior get two named components (`Root`, `CompactRoot`), not
@@ -120,16 +120,16 @@ Mirrors the priority ordering in
 
 - [ ] **No `forwardRef`.** `ref` is a regular prop on the props
       interface.
-- [ ] **No `useContext`.** Use `use()` instead — it can be called
+- [ ] **No `useContext`.** Use `use()` instead. It can be called
       conditionally.
 
 ## Where to look
 
-- [`.cursor/components/SKILL.md`](../../../../../../.cursor/components/SKILL.md) — full Pond
-  component conventions: compound objects, CSS Modules, `data-*`
-  variants, semantic HTML, design tokens.
-- [`.agents/skills/vercel-composition-patterns/SKILL.md`](../../../../../../.agents/skills/vercel-composition-patterns/SKILL.md)
-  — composition pattern rules with code examples per rule.
+- [`.cursor/components/SKILL.md`](../../../../../../.cursor/components/SKILL.md): full Pond
+  component conventions (compound objects, CSS Modules, `data-*`
+  variants, semantic HTML, design tokens).
+- [`.agents/skills/vercel-composition-patterns/SKILL.md`](../../../../../../.agents/skills/vercel-composition-patterns/SKILL.md):
+  composition pattern rules with code examples per rule.
 - Reference compound implementations in this codebase:
   - [`packages/ui/src/context-menu/index.tsx`](../../../../../../packages/ui/src/context-menu/index.tsx)
   - [`packages/ui/src/tooltip/index.tsx`](../../../../../../packages/ui/src/tooltip/index.tsx)

@@ -57,7 +57,7 @@
   cursor: pointer;
   background: transparent;
   border: 1px solid var(--ds-gray-5);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   transition:
     color 80ms ease,
     border-color 80ms ease,

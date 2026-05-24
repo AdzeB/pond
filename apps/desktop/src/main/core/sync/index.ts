@@ -54,8 +54,8 @@ interface InFlight {
 const inFlight = new Map<Source, InFlight>();
 
 /* If a sync hasn't resolved within this window it's almost certainly
- * stuck — usually `harvestTwitterBookmarks` waiting on a hidden window
- * navigation that never finishes. Abort via the controller so the
+ * stuck (usually `harvestTwitterBookmarks` waiting on a hidden window
+ * navigation that never finishes). Abort via the controller so the
  * `finally` clears the slot and the next cron tick can try again
  * instead of being permanently shadowed by a ghost. Twitter has to
  * harvest+enqueue hundreds of bookmarks so it gets the loosest cap. */
@@ -168,8 +168,7 @@ export async function syncSource(
     emit({
       source,
       state: "error",
-      message:
-        "Paused — Pond storage cap reached. Free space or raise the cap.",
+      message: "Paused. Pond storage cap reached. Free space or raise the cap.",
       lastError: "storage_cap_exceeded",
     });
     return;
@@ -189,7 +188,7 @@ export async function syncSource(
     startedAt,
     watchdog,
   });
-  /* One wide event per sync run — mutated as the run proceeds and
+  /* One wide event per sync run, mutated as the run proceeds and
    * committed unconditionally in the finally. Replaces the trio of
    * "[pond sync:<source>] starting / enqueueing / done" lines that
    * used to drift apart and force you to grep two timestamps to know
@@ -451,7 +450,7 @@ async function syncListSource(
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
   if (maxItems && allFresh.length > fresh.length) {
     log.info(
-      `[pond sync:${source}] test cap active — enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
+      `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
   ev.harvest = {
@@ -609,9 +608,9 @@ async function syncTwitter(
   }
 
   // Two batches:
-  //   `fresh`     — tweets we haven't seen yet (creates new saves).
-  //   `recovery`  — tweets we have but in `failed` status; seeding lets
-  //                 the pipeline restart with metadata already populated.
+  //   `fresh`:     tweets we haven't seen yet (creates new saves).
+  //   `recovery`:  tweets we have but in `failed` status; seeding lets
+  //                the pipeline restart with metadata already populated.
   const allFresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
   const recovery = harvest.entries.filter((e) =>
     failedSourceIds.has(e.tweetId),
@@ -620,7 +619,7 @@ async function syncTwitter(
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
   if (maxItems && allFresh.length > fresh.length) {
     log.info(
-      `[pond sync:twitter] test cap active — enqueueing ${fresh.length} of ${allFresh.length} fresh bookmarks`,
+      `[pond sync:twitter] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh bookmarks`,
     );
   }
   const total = fresh.length + recovery.length;

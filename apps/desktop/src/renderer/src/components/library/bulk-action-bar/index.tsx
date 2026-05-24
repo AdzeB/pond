@@ -1,7 +1,9 @@
-import { Button, cn, Input, Tooltip, useToast } from "@pond/ui";
-import { useCallback, useState } from "react";
+import { normalizeLabelName } from "@pond/schema/label-name";
+import { Button, cn, Input, Popover, Tooltip, useToast } from "@pond/ui";
+import { useCallback, useMemo, useState } from "react";
 import { pool } from "@/pool/pool";
 import { selection, useSelectedIds, useSelectionSize } from "@/pool/selection";
+import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
 function Root() {
@@ -9,26 +11,22 @@ function Root() {
   const ids = useSelectedIds();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [tagDraft, setTagDraft] = useState("");
+  const [open, setOpen] = useState(false);
 
   const close = useCallback(() => selection.clear(), []);
 
   const addTag = useCallback(
     async (raw: string) => {
-      const cleaned = raw
-        .trim()
-        .replace(/^#+/, "")
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/gi, "")
-        .toLowerCase();
+      const cleaned = normalizeLabelName(raw);
       if (!cleaned || ids.length === 0) return;
+      const lowered = cleaned.toLowerCase();
       setBusy(true);
       try {
         const txs: unknown[] = [];
         for (const id of ids) {
           const save = pool.get(id);
           if (!save) continue;
-          if (save.tags.some((t) => t.toLowerCase() === cleaned)) continue;
+          if (save.tags.some((t) => t.toLowerCase() === lowered)) continue;
           txs.push({
             kind: "update",
             model: "save",
@@ -43,7 +41,7 @@ function Root() {
           title: `Added "${cleaned}" to ${txs.length} save${txs.length === 1 ? "" : "s"}`,
           type: "success",
         });
-        setTagDraft("");
+        setOpen(false);
       } finally {
         setBusy(false);
       }
@@ -78,35 +76,25 @@ function Root() {
     <Bar>
       <Count>{size} selected</Count>
       <Divider />
-      <Input.Field
-        data-size="sm"
-        placeholder="Add tag…"
-        value={tagDraft}
-        onChange={(e) => setTagDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") void addTag(tagDraft);
-        }}
-        disabled={busy}
-        style={{ width: 140 }}
-      />
-      <Tooltip.Root>
-        <Tooltip.Trigger
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        <Popover.Trigger
           render={
-            <Button
-              size="sm"
-              onClick={() => void addTag(tagDraft)}
-              disabled={busy || !tagDraft.trim()}
-            >
-              Add tag
+            <Button size="sm" disabled={busy}>
+              Add tag…
             </Button>
           }
         />
-        <Tooltip.Portal>
-          <Tooltip.Positioner>
-            <Tooltip.Popup>Add this tag to every selected save</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+        <Popover.Portal>
+          <Popover.Positioner sideOffset={6} align="start">
+            <Popover.Popup className={styles["bulk-tag-popup"]}>
+              <BulkTagPicker
+                onPick={(name) => void addTag(name)}
+                disabled={busy}
+              />
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
       <Tooltip.Root>
         <Tooltip.Trigger
           render={
@@ -142,6 +130,73 @@ function Root() {
         </Tooltip.Portal>
       </Tooltip.Root>
     </Bar>
+  );
+}
+
+function BulkTagPicker({
+  onPick,
+  disabled,
+}: {
+  onPick: (name: string) => void;
+  disabled: boolean;
+}) {
+  const [q, setQ] = useState("");
+  const tags = useTags();
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const list = needle
+      ? tags.filter((t) => t.name.toLowerCase().includes(needle))
+      : tags;
+    return list
+      .slice()
+      .sort(
+        (a, b) =>
+          Number(b.starred) - Number(a.starred) || a.name.localeCompare(b.name),
+      )
+      .slice(0, 20);
+  }, [q, tags]);
+  const needle = q.trim();
+  const exact =
+    needle && tags.some((t) => t.name.toLowerCase() === needle.toLowerCase());
+  return (
+    <div className={styles["bulk-tag-body"]}>
+      <Input.Field
+        autoFocus
+        data-size="sm"
+        placeholder="Add tag…"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            const target = filtered[0]?.name ?? q;
+            if (target.trim()) onPick(target);
+          }
+        }}
+        disabled={disabled}
+      />
+      <div className={styles["bulk-tag-list"]}>
+        {filtered.map((t) => (
+          <button
+            key={t.name}
+            type="button"
+            className={styles["bulk-tag-item"]}
+            onClick={() => onPick(t.name)}
+          >
+            <span>{t.name}</span>
+          </button>
+        ))}
+        {needle && !exact ? (
+          <button
+            type="button"
+            className={styles["bulk-tag-item"]}
+            data-create
+            onClick={() => onPick(q)}
+          >
+            Create "{normalizeLabelName(q) || q}"
+          </button>
+        ) : null}
+      </div>
+    </div>
   );
 }
 

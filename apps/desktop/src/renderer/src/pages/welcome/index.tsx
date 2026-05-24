@@ -76,8 +76,8 @@ export function WelcomePage() {
     <div className={styles.welcome}>
       <h2>Welcome to Pond</h2>
       <p className={styles.lead}>
-        A local archive for the stuff you save. Everything lives on your machine
-        — no cloud, no accounts.
+        A local archive for the stuff you save. Everything lives on your
+        machine: no cloud, no accounts.
       </p>
 
       <ol className={styles.steps}>
@@ -85,7 +85,7 @@ export function WelcomePage() {
           <h3>Pick where your library lives</h3>
           <p>
             Pond stores your saves on disk so you keep full control. Default is
-            a folder in your home directory — pick somewhere in iCloud Drive (or
+            a folder in your home directory. Pick somewhere in iCloud Drive (or
             Dropbox, Google Drive…) if you want your saves to sync across
             machines.
           </p>
@@ -158,8 +158,8 @@ export function WelcomePage() {
         <li>
           <h3>Save something</h3>
           <p>
-            Right-click any page and pick "Save this page to Pond" — it'll
-            appear in your library within a second.
+            Right-click any page and pick "Save this page to Pond". It'll appear
+            in your library within a second.
           </p>
         </li>
 

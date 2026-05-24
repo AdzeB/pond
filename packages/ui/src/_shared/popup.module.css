@@ -6,9 +6,9 @@
   max-width: var(--available-width);
   padding: 6px;
   outline: none;
-  background: var(--ds-gray-2);
+  background: var(--ds-background-primary);
   border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-popover);
+  box-shadow: var(--ds-shadow-2);
   transform-origin: var(--transform-origin);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-standard),
@@ -67,7 +67,7 @@
   user-select: none;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-md);
+  border-radius: 6px;
   isolation: isolate;
 
   &::before {

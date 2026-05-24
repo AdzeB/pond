@@ -6,7 +6,7 @@ export const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
 // Per-op attempt budget. Tuned against each worker's wall-clock cost
 // and recoverability. yt-dlp downloads are the most expensive (10-min
-// watchdog) and the least likely to recover on retry — videos that
+// watchdog) and the least likely to recover on retry: videos that
 // errored once usually error every time. Avatar fetches are cheap but
 // likely to be served from a CDN that's either available or it isn't.
 // Anything pool-bound (harvest, capture, finalize) keeps the historical
@@ -27,7 +27,7 @@ export function maxAttemptsFor(op: Op): number {
 }
 
 export function planOps(source: Source): readonly Op[] {
-  // capture_tweet only runs for text-only X posts — for every other source
+  // capture_tweet only runs for text-only X posts. For every other source
   // it would lease a hidden window, navigate to a non-tweet URL, and
   // produce nothing. Filter the op out of the spec for them so we don't
   // create dead tasks at enqueue time.
@@ -101,7 +101,7 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
   },
 };
 
-// resolveYtDlpTarget — Capture.upstream is populated by the extractor when the
+// resolveYtDlpTarget: Capture.upstream is populated by the extractor when the
 // save wraps content hosted elsewhere (Arena embed of YouTube, Cosmos tile of
 // Vimeo). yt-dlp's existing extractor list handles those hosts directly so we
 // just hand it the upstream URL. Pinterest pin URLs aren't yt-dlp-able on

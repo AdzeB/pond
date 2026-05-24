@@ -314,4 +314,18 @@ export const libraryQueries: QueryHandlerMap = {
       };
     }
   },
+
+  async "window.applyPrefs"() {
+    try {
+      const { applyWindowPrefsAtRuntime } = await import("../../index");
+      await applyWindowPrefsAtRuntime();
+      return { ok: true as const };
+    } catch (err) {
+      log.warn("[pond ipc] applyWindowPrefsAtRuntime failed", err);
+      return {
+        ok: false as const,
+        reason: err instanceof Error ? err.message : "internal_error",
+      };
+    }
+  },
 };

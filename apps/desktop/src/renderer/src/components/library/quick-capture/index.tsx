@@ -86,7 +86,7 @@ function Root() {
           >
             <Title>Quick save</Title>
             <Hint>
-              Paste a URL — Pond will fetch the rest in the background.
+              Paste a URL. Pond will fetch the rest in the background.
             </Hint>
             <Field.Root>
               <Field.Label>URL</Field.Label>

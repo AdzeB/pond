@@ -28,7 +28,7 @@ export function defaultLibraryRoot(): string {
 
 // Bust the cache. Call this after writing a new pointer so the next
 // call to resolvePaths() picks up the user's choice. In practice we
-// always pair this with `app.relaunch(); app.exit(0)` — live re-pointing
+// always pair this with `app.relaunch(); app.exit(0)`; live re-pointing
 // is hard because many modules captured the old paths at boot.
 export function invalidatePaths(): void {
   cached = null;

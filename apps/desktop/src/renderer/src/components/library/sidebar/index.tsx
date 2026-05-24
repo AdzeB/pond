@@ -10,6 +10,7 @@ import {
   IconRefreshClockwiseOutline18,
   IconShuffleSparkleOutline18,
   IconTagSlashOutline18,
+  IconTagsOutline18,
   IconTrash2ContentOutline18,
   IconTrash2Outline18,
 } from "@pond/icons/outline/18";
@@ -22,6 +23,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
+import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
 const REPO_URL = "https://github.com/raphaelsalaja/pond";
@@ -30,7 +32,13 @@ const _ISSUES_URL = `${REPO_URL}/issues`;
 const _CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 const DISCUSSIONS_URL = `${REPO_URL}/discussions`;
 
-type RouteKey = "library" | "untagged" | "recents" | "random" | "trash";
+type RouteKey =
+  | "library"
+  | "untagged"
+  | "recents"
+  | "random"
+  | "all-tags"
+  | "trash";
 
 interface Route {
   key: RouteKey;
@@ -63,6 +71,12 @@ const routes: Route[] = [
     path: "/random",
     label: "Random",
     icon: IconShuffleSparkleOutline18,
+  },
+  {
+    key: "all-tags",
+    path: "/tags",
+    label: "All Tags",
+    icon: IconTagsOutline18,
   },
   {
     key: "trash",
@@ -141,6 +155,7 @@ type RouteCounts = Partial<Record<RouteKey, number>>;
 
 function useRouteCounts(): RouteCounts {
   const saves = useSaves();
+  const tags = useTags();
   return useMemo(() => {
     let library = 0;
     let untagged = 0;
@@ -154,8 +169,8 @@ function useRouteCounts(): RouteCounts {
       library++;
       if (save.tags.length === 0) untagged++;
     }
-    return { library, untagged, trash };
-  }, [saves]);
+    return { library, untagged, trash, "all-tags": tags.length };
+  }, [saves, tags]);
 }
 
 interface TrashLinkProps {

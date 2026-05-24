@@ -1,6 +1,6 @@
 import type { Save } from "./types";
 
-// useIsVideoDownloading — pre-pipeline this listened to a separate IPC.
+// useIsVideoDownloading: pre-pipeline this listened to a separate IPC.
 // In the URL-first world the task rows live on the save itself, so we
 // just inspect the save's pipeline state. A save is "downloading" while
 // the fetch_video_ytdlp task is running or pending AND we have evidence

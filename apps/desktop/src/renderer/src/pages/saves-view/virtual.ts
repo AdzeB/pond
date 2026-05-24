@@ -26,7 +26,7 @@ const OVERSCAN_PX = 600;
 // Returns the subset of indices into `items` whose vertical extent
 // overlaps the scroll viewport (plus an overscan band). The waterfall
 // packer interleaves columns so item ordering is not monotonic by
-// `top` — we scan every item, but the per-item comparison is two
+// `top`. We scan every item, but the per-item comparison is two
 // numeric checks and stays well under a millisecond for thousands
 // of items.
 export function useVisibleIndices<T extends PositionedItem>(

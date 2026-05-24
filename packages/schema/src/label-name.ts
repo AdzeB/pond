@@ -2,7 +2,7 @@
 // whitespace runs for `-`, and drops anything outside the slug
 // character set. Casing is preserved so "Funny" stays "Funny" in the
 // UI and on the save. Match / dedup against the canonical form via
-// `labelKey` below — every comparison in the system goes through it.
+// `labelKey` below; every comparison in the system goes through it.
 export function normalizeLabelName(raw: string): string {
   return raw
     .trim()

@@ -22,7 +22,7 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
   try {
     window.localStorage.setItem(STORAGE_KEYS[key], value);
   } catch {
-    /* storage denied — fall back to URL-only behaviour */
+    /* storage denied: fall back to URL-only behaviour */
   }
 }
 

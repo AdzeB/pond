@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { usePrefs } from "@/pool/prefs";
 
 export type Density = "compact" | "comfortable" | "spacious";
 
@@ -10,56 +10,26 @@ const DENSITY_ITEM_GAP: Record<Density, number> = {
 
 const DEFAULT_DENSITY: Density = "comfortable";
 
-const STORAGE_KEY = "pond.display.density";
-
 const VALID = new Set<Density>(["compact", "comfortable", "spacious"]);
 
-function isDensity(value: string | null): value is Density {
-  return value !== null && VALID.has(value as Density);
-}
-
-function read(): Density {
-  if (typeof window === "undefined") return DEFAULT_DENSITY;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return isDensity(raw) ? raw : DEFAULT_DENSITY;
-  } catch {
-    return DEFAULT_DENSITY;
+function coerce(value: unknown): Density {
+  if (typeof value === "string" && VALID.has(value as Density)) {
+    return value as Density;
   }
+  return DEFAULT_DENSITY;
 }
 
-const listeners = new Set<() => void>();
-let snapshot: Density = read();
-
-function emit() {
-  snapshot = read();
-  for (const fn of listeners) fn();
-}
-
-function subscribe(fn: () => void) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-function getSnapshot(): Density {
-  return snapshot;
-}
-
-export function setDensity(next: Density): void {
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* storage denied — keep the in-memory snapshot in sync anyway */
-    }
-  }
-  emit();
-}
-
-export function useDensity(): Density {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+export function useDensity(): [Density, (next: Density) => void] {
+  const [prefs, patch] = usePrefs("preferences");
+  const current = coerce(prefs.density);
+  const set = (next: Density) => {
+    if (next === current) return;
+    patch({ density: next });
+  };
+  return [current, set];
 }
 
 export function useItemGap(): number {
-  return DENSITY_ITEM_GAP[useDensity()];
+  const [prefs] = usePrefs("preferences");
+  return DENSITY_ITEM_GAP[coerce(prefs.density)];
 }

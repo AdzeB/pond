@@ -1,71 +1,93 @@
+import { IconStarFill18 } from "@pond/icons/fill/18";
 import {
-  IconClockOutline18,
+  IconCheckOutline18,
+  IconChevronDownOutline18,
+  IconChevronRightOutline18,
+  IconDotsOutline18,
+  IconGridOutline18,
+  IconListCheckboxOutline18,
   IconMagnifierOutline18,
-  IconSparkle2Outline18,
+  IconPinOutline18,
+  IconSparkleOutline18,
+  IconStarOutline18,
 } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Input, Kbd, Popover } from "@pond/ui";
+import { Input, Kbd, Menu, Popover } from "@pond/ui";
 import {
   type ReactElement,
-  type ReactNode,
+  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { getRecentTags, pushRecentTag } from "@/lib/recent-tags";
 import { useSaves } from "@/pool/hooks";
+import { usePrefs } from "@/pool/prefs";
+import { useTagGroups } from "@/pool/tag-groups";
+import { useTags } from "@/pool/tags";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
-interface CanonTag {
-  name: string;
-  color: string | null;
+interface TagPickerProps {
+  save: Save;
+  trigger: ReactElement;
+  /** Force the picker open from a keyboard shortcut. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface TagItem {
   name: string;
   count: number;
-  color: string | null;
-}
-
-interface TagPickerProps {
-  save: Save;
-  trigger: ReactElement;
+  starred: boolean;
+  applied: boolean;
 }
 
 const RECOMMENDED_CAP = 12;
 
-export function TagPicker({ save, trigger }: TagPickerProps) {
-  const [open, setOpen] = useState(false);
+export function TagPicker({
+  save,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: TagPickerProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
   const [q, setQ] = useState("");
-  const [canonical, setCanonical] = useState<CanonTag[]>([]);
-  const [recentNames, setRecentNames] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [prefs, patchPrefs] = usePrefs("tagPicker");
+
+  const setOpen = (next: boolean) => {
+    // Pinned: swallow auto-close (outside click / Escape). Unpin to close.
+    if (next === false && prefs.pinned) return;
+    if (controlledOpen === undefined) setInternalOpen(next);
+    onOpenChange?.(next);
+  };
+  const tags = useTags();
+  const groups = useTagGroups();
   const saves = useSaves();
 
   useEffect(() => {
     if (!open) return;
     setQ("");
-    setRecentNames(getRecentTags());
-    let cancelled = false;
-    void window.pond
-      .query("tags.list", {})
-      .then((rows) => {
-        if (!cancelled) setCanonical(rows as CanonTag[]);
-      })
-      .catch(() => {
-        if (!cancelled) setCanonical([]);
-      });
-    return () => {
-      cancelled = true;
-    };
   }, [open]);
 
-  const colorByLower = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const t of canonical) map.set(t.name.toLowerCase(), t.color ?? null);
+  const groupsByTagId = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const g of groups) {
+      for (const id of g.tagIds) {
+        const list = map.get(id);
+        if (list) list.push(g.name);
+        else map.set(id, [g.name]);
+      }
+    }
     return map;
-  }, [canonical]);
+  }, [groups]);
+
+  const tagsByLowerName = useMemo(() => {
+    const map = new Map<string, (typeof tags)[number]>();
+    for (const t of tags) map.set(t.name.toLowerCase(), t);
+    return map;
+  }, [tags]);
 
   const countsByLower = useMemo(() => {
     const counts = new Map<string, number>();
@@ -79,27 +101,65 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
     return counts;
   }, [saves]);
 
-  const applied = useMemo(
+  const appliedSet = useMemo(
     () => new Set(save.tags.map((t) => t.toLowerCase())),
     [save.tags],
   );
 
-  const { recently, recommended, others } = useMemo(() => {
-    const seen = new Set<string>(applied);
+  const toItem = useCallback(
+    (name: string): TagItem => {
+      const lowered = name.toLowerCase();
+      const meta = tagsByLowerName.get(lowered);
+      return {
+        name: meta?.name ?? name,
+        count: countsByLower.get(lowered) ?? 0,
+        starred: Boolean(meta?.starred),
+        applied: appliedSet.has(lowered),
+      };
+    },
+    [tagsByLowerName, countsByLower, appliedSet],
+  );
 
-    const recentlyOut: TagItem[] = [];
-    for (const name of recentNames) {
-      const k = name.toLowerCase();
-      if (seen.has(k)) continue;
-      seen.add(k);
-      recentlyOut.push({
-        name,
-        count: countsByLower.get(k) ?? 0,
-        color: colorByLower.get(k) ?? null,
-      });
-    }
+  const needle = q.trim().toLowerCase();
+  const matchesNeedle = useCallback(
+    (name: string): boolean => {
+      if (!needle) return true;
+      if (name.toLowerCase().includes(needle)) return true;
+      const meta = tagsByLowerName.get(name.toLowerCase());
+      if (!meta) return false;
+      const memberOf = groupsByTagId.get(meta.id) ?? [];
+      return memberOf.some((g) => g.toLowerCase().includes(needle));
+    },
+    [needle, tagsByLowerName, groupsByTagId],
+  );
 
-    const recommendedCounts = new Map<string, number>();
+  const starredItems = useMemo<TagItem[]>(() => {
+    if (!prefs.showStarred) return [];
+    return tags
+      .filter((t) => t.starred && matchesNeedle(t.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => toItem(t.name));
+  }, [tags, prefs.showStarred, toItem, matchesNeedle]);
+
+  const recentItems = useMemo<TagItem[]>(() => {
+    if (!prefs.showRecently) return [];
+    const seen = new Set<string>();
+    return tags
+      .filter((t) => t.lastUsedAt != null)
+      .sort((a, b) => (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0))
+      .filter((t) => {
+        const k = t.name.toLowerCase();
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return matchesNeedle(t.name);
+      })
+      .slice(0, 12)
+      .map((t) => toItem(t.name));
+  }, [tags, prefs.showRecently, toItem, matchesNeedle]);
+
+  const recommendedItems = useMemo<TagItem[]>(() => {
+    if (!prefs.showRecommended) return [];
+    const candidates = new Map<string, number>();
     for (const s of saves) {
       if (s.deletedAt) continue;
       if (s.id === save.id) continue;
@@ -109,131 +169,141 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
       if (!sameSource && !sameAuthor) continue;
       for (const t of s.tags) {
         const k = t.toLowerCase();
-        if (seen.has(k)) continue;
-        recommendedCounts.set(k, (recommendedCounts.get(k) ?? 0) + 1);
+        candidates.set(k, (candidates.get(k) ?? 0) + 1);
       }
     }
-    const recommendedOut: TagItem[] = [...recommendedCounts.entries()]
+    return Array.from(candidates.entries())
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, RECOMMENDED_CAP)
-      .map(([name]) => {
-        seen.add(name);
-        return {
-          name,
-          count: countsByLower.get(name) ?? 0,
-          color: colorByLower.get(name) ?? null,
-        };
-      });
-
-    const candidates = new Map<string, TagItem>();
-    for (const t of canonical) {
-      const k = t.name.toLowerCase();
-      if (seen.has(k)) continue;
-      candidates.set(k, {
-        name: t.name,
-        count: countsByLower.get(k) ?? 0,
-        color: t.color ?? null,
-      });
-    }
-    for (const [k, count] of countsByLower) {
-      if (seen.has(k) || candidates.has(k)) continue;
-      candidates.set(k, { name: k, count, color: null });
-    }
-    const othersOut = [...candidates.values()].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-
-    return {
-      recently: recentlyOut,
-      recommended: recommendedOut,
-      others: othersOut,
-    };
+      .filter(([name]) => matchesNeedle(name))
+      .map(([name]) => toItem(name));
   }, [
-    applied,
-    recentNames,
     saves,
     save.id,
     save.source,
     save.author,
-    countsByLower,
-    colorByLower,
-    canonical,
+    prefs.showRecommended,
+    toItem,
+    matchesNeedle,
   ]);
 
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    if (!needle) return { recently, recommended, others };
-    const test = (t: TagItem): boolean => t.name.toLowerCase().includes(needle);
-    return {
-      recently: recently.filter(test),
-      recommended: recommended.filter(test),
-      others: others.filter(test),
-    };
-  }, [q, recently, recommended, others]);
+  interface AllTagsSection {
+    key: string;
+    label: string;
+    collapsed: boolean;
+    items: TagItem[];
+    onToggleCollapsed?: () => void;
+  }
 
+  const allTagsSections = useMemo<AllTagsSection[]>(() => {
+    const taggedIds = new Set<string>();
+    const sections: AllTagsSection[] = [];
+
+    for (const group of groups) {
+      const items = group.tagNames
+        .filter((name) => matchesNeedle(name))
+        .map((name) => toItem(name));
+      for (const id of group.tagIds) taggedIds.add(id);
+      sections.push({
+        key: `g:${group.id}`,
+        label: group.name,
+        collapsed: group.collapsed,
+        items,
+        onToggleCollapsed: () => {
+          void window.pond.query("tagGroups.update", {
+            name: group.name,
+            patch: { collapsed: !group.collapsed },
+          });
+        },
+      });
+    }
+
+    const uncategorisedItems = tags
+      .filter((t) => !taggedIds.has(t.id))
+      .filter((t) => matchesNeedle(t.name))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => toItem(t.name));
+    if (uncategorisedItems.length > 0 || groups.length === 0) {
+      sections.push({
+        key: "uncategorised",
+        label: "Uncategorized",
+        collapsed: false,
+        items: uncategorisedItems,
+      });
+    }
+
+    return sections;
+  }, [groups, tags, toItem, matchesNeedle]);
+
+  const totalAllTags = allTagsSections.reduce((n, s) => n + s.items.length, 0);
   const hasAny =
-    filtered.recently.length > 0 ||
-    filtered.recommended.length > 0 ||
-    filtered.others.length > 0;
+    starredItems.length +
+      recentItems.length +
+      recommendedItems.length +
+      totalAllTags >
+    0;
 
-  async function apply(rawName: string) {
+  // Exact match check: don't show ✦ create-new if the typed query already
+  // exists as a tag.
+  const exactExists = needle.length > 0 && tagsByLowerName.has(needle);
+
+  async function toggle(rawName: string) {
     const cleaned = normalizeLabelName(rawName);
     if (!cleaned) return;
-    if (applied.has(cleaned.toLowerCase())) {
-      setOpen(false);
-      return;
-    }
+    const lower = cleaned.toLowerCase();
     setBusy(true);
     try {
+      const next = appliedSet.has(lower)
+        ? save.tags.filter((t) => t.toLowerCase() !== lower)
+        : [...save.tags, cleaned];
       await window.pond.query("tags.setForSave", {
         saveId: save.id,
-        tags: [...save.tags, cleaned],
+        tags: next,
       });
-      pushRecentTag(cleaned);
     } finally {
       setBusy(false);
-      setOpen(false);
     }
   }
 
-  // Arrow-key navigation across the two-column grid is intentionally out of
-  // scope for v1 — the footer hint is shown for visual parity with the
-  // reference design. Only Enter and Esc are wired here; Esc is handled by
-  // Popover.Root via base-ui.
+  async function toggleStar(name: string) {
+    const meta = tagsByLowerName.get(name.toLowerCase());
+    await window.pond.query("tags.setStarred", {
+      name,
+      starred: !meta?.starred,
+    });
+  }
+
   function onSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
     e.preventDefault();
-    const needle = q.trim().toLowerCase();
     if (!needle) return;
     const exact =
-      filtered.recently.find((t) => t.name.toLowerCase() === needle) ??
-      filtered.recommended.find((t) => t.name.toLowerCase() === needle) ??
-      filtered.others.find((t) => t.name.toLowerCase() === needle);
+      starredItems.find((t) => t.name.toLowerCase() === needle) ??
+      recentItems.find((t) => t.name.toLowerCase() === needle) ??
+      recommendedItems.find((t) => t.name.toLowerCase() === needle) ??
+      allTagsSections
+        .flatMap((s) => s.items)
+        .find((t) => t.name.toLowerCase() === needle);
     if (exact) {
-      void apply(exact.name);
+      void toggle(exact.name);
       return;
     }
-    const onlyMatch =
-      filtered.recently.length +
-        filtered.recommended.length +
-        filtered.others.length ===
-      1
-        ? (filtered.recently[0] ??
-          filtered.recommended[0] ??
-          filtered.others[0])
-        : null;
-    if (onlyMatch) {
-      void apply(onlyMatch.name);
-      return;
-    }
-    void apply(q);
+    void toggle(q);
   }
+
+  const layout = prefs.layout ?? "list";
+  const gridSize = prefs.gridSize ?? "md";
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger render={trigger} />
       <Popover.Portal>
-        <Popover.Positioner sideOffset={6} align="start">
+        <Popover.Positioner
+          anchor={() => document.getElementById("inspector-pane")}
+          side="left"
+          align="start"
+          sideOffset={12}
+        >
           <Popover.Popup className={styles["tag-picker-popup"]}>
             <div className={styles["tag-picker-header"]}>
               <span className={styles["tag-picker-header-icon"]} aria-hidden>
@@ -250,50 +320,89 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
                 spellCheck={false}
                 disabled={busy}
               />
+              <HeaderToolbar
+                layout={layout}
+                gridSize={gridSize}
+                pinned={prefs.pinned ?? false}
+                showStarred={prefs.showStarred ?? true}
+                showRecently={prefs.showRecently ?? true}
+                showRecommended={prefs.showRecommended ?? true}
+                showCounts={prefs.showCounts ?? true}
+                onPatch={patchPrefs}
+              />
             </div>
-            <div className={styles["tag-picker-body"]}>
-              {filtered.recently.length > 0 ? (
+            <div
+              className={styles["tag-picker-body"]}
+              data-layout={layout}
+              data-grid-size={gridSize}
+            >
+              {starredItems.length > 0 ? (
+                <Section
+                  title="Starred"
+                  count={starredItems.length}
+                  items={starredItems}
+                  layout={layout}
+                  showCounts={prefs.showCounts ?? true}
+                  onPick={toggle}
+                  onStar={toggleStar}
+                />
+              ) : null}
+              {recentItems.length > 0 ? (
                 <Section
                   title="Recently"
-                  count={filtered.recently.length}
-                  items={filtered.recently}
-                  renderIcon={() => (
-                    <IconClockOutline18 width={12} height={12} />
-                  )}
-                  onPick={apply}
+                  count={recentItems.length}
+                  items={recentItems}
+                  layout={layout}
+                  showCounts={prefs.showCounts ?? true}
+                  onPick={toggle}
+                  onStar={toggleStar}
                 />
               ) : null}
-              {filtered.recommended.length > 0 ? (
+              {recommendedItems.length > 0 ? (
                 <Section
                   title="Recommended"
-                  count={filtered.recommended.length}
-                  items={filtered.recommended}
-                  renderIcon={() => (
-                    <IconSparkle2Outline18 width={12} height={12} />
-                  )}
-                  onPick={apply}
+                  count={recommendedItems.length}
+                  items={recommendedItems}
+                  layout={layout}
+                  showCounts={prefs.showCounts ?? true}
+                  onPick={toggle}
+                  onStar={toggleStar}
                 />
               ) : null}
-              {filtered.others.length > 0 ? (
-                <Section
-                  title="Others"
-                  count={filtered.others.length}
-                  items={filtered.others}
-                  renderIcon={(color) => (
-                    <span
-                      className={styles["tag-picker-item-dot"]}
-                      style={{ background: color ?? "var(--ds-gray-a6)" }}
-                    />
-                  )}
-                  onPick={apply}
-                />
+              {allTagsSections.map((section) =>
+                section.items.length === 0 ? null : (
+                  <Section
+                    key={section.key}
+                    title={section.label}
+                    count={section.items.length}
+                    items={section.items}
+                    layout={layout}
+                    showCounts={prefs.showCounts ?? true}
+                    collapsible
+                    collapsed={section.collapsed}
+                    onToggleCollapsed={section.onToggleCollapsed}
+                    onPick={toggle}
+                    onStar={toggleStar}
+                  />
+                ),
+              )}
+              {needle && !exactExists ? (
+                <button
+                  type="button"
+                  className={styles["tag-picker-item"]}
+                  data-create
+                  onClick={() => void toggle(q)}
+                >
+                  <span className={styles["tag-picker-item-icon"]} aria-hidden>
+                    <IconSparkleOutline18 width={12} height={12} />
+                  </span>
+                  <span className={styles["tag-picker-item-name"]}>
+                    Create "{normalizeLabelName(q) || q}"
+                  </span>
+                </button>
               ) : null}
-              {!hasAny ? (
-                <div className={styles["tag-picker-empty"]}>
-                  {q.trim()
-                    ? `Press ↵ to create "${q.trim()}"`
-                    : "No tags yet."}
-                </div>
+              {!hasAny && !needle ? (
+                <div className={styles["tag-picker-empty"]}>No tags yet.</div>
               ) : null}
             </div>
             <div className={styles["tag-picker-footer"]}>
@@ -304,7 +413,7 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
               <span className={styles["tag-picker-footer-cell"]}>
                 <Kbd.Key>↵</Kbd.Key>
                 <span className={styles["tag-picker-footer-label"]}>
-                  Select
+                  Toggle
                 </span>
               </span>
               <span className={styles["tag-picker-footer-cell"]}>
@@ -319,46 +428,235 @@ export function TagPicker({ save, trigger }: TagPickerProps) {
   );
 }
 
+function HeaderToolbar({
+  layout,
+  gridSize,
+  pinned,
+  showStarred,
+  showRecently,
+  showRecommended,
+  showCounts,
+  onPatch,
+}: {
+  layout: "list" | "grid";
+  gridSize: "sm" | "md" | "lg";
+  pinned: boolean;
+  showStarred: boolean;
+  showRecently: boolean;
+  showRecommended: boolean;
+  showCounts: boolean;
+  onPatch: (patch: Record<string, unknown>) => void;
+}) {
+  return (
+    <div className={styles["tag-picker-toolbar"]}>
+      <button
+        type="button"
+        className={styles["tag-picker-tool"]}
+        data-active={layout === "list" || undefined}
+        title="List layout"
+        onClick={() => onPatch({ layout: "list" })}
+      >
+        <IconListCheckboxOutline18 width={14} height={14} />
+      </button>
+      <button
+        type="button"
+        className={styles["tag-picker-tool"]}
+        data-active={layout === "grid" || undefined}
+        title="Grid layout"
+        onClick={() => onPatch({ layout: "grid" })}
+      >
+        <IconGridOutline18 width={14} height={14} />
+      </button>
+      {layout === "grid" ? (
+        <Menu.Root>
+          <Menu.Trigger
+            render={
+              <button
+                type="button"
+                className={styles["tag-picker-tool"]}
+                title="Grid size"
+              >
+                {gridSize.toUpperCase()}
+              </button>
+            }
+          />
+          <Menu.Portal>
+            <Menu.Positioner sideOffset={6}>
+              <Menu.Popup>
+                {(["sm", "md", "lg"] as const).map((sz) => (
+                  <Menu.CheckboxItem
+                    key={sz}
+                    checked={gridSize === sz}
+                    onCheckedChange={() => onPatch({ gridSize: sz })}
+                  >
+                    <Menu.ItemLabel>
+                      {sz === "sm" ? "Small" : sz === "md" ? "Medium" : "Large"}
+                    </Menu.ItemLabel>
+                  </Menu.CheckboxItem>
+                ))}
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      ) : null}
+      <Menu.Root>
+        <Menu.Trigger
+          render={
+            <button
+              type="button"
+              className={styles["tag-picker-tool"]}
+              title="Display options"
+            >
+              <IconDotsOutline18 width={14} height={14} />
+            </button>
+          }
+        />
+        <Menu.Portal>
+          <Menu.Positioner sideOffset={6} align="end">
+            <Menu.Popup>
+              <Menu.CheckboxItem
+                checked={showStarred}
+                onCheckedChange={(v) => onPatch({ showStarred: v })}
+              >
+                <Menu.ItemLabel>Starred</Menu.ItemLabel>
+              </Menu.CheckboxItem>
+              <Menu.CheckboxItem
+                checked={showRecently}
+                onCheckedChange={(v) => onPatch({ showRecently: v })}
+              >
+                <Menu.ItemLabel>Recently</Menu.ItemLabel>
+              </Menu.CheckboxItem>
+              <Menu.CheckboxItem
+                checked={showRecommended}
+                onCheckedChange={(v) => onPatch({ showRecommended: v })}
+              >
+                <Menu.ItemLabel>Recommended</Menu.ItemLabel>
+              </Menu.CheckboxItem>
+              <Menu.Separator />
+              <Menu.CheckboxItem
+                checked={showCounts}
+                onCheckedChange={(v) => onPatch({ showCounts: v })}
+              >
+                <Menu.ItemLabel>Show counts</Menu.ItemLabel>
+              </Menu.CheckboxItem>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+      <button
+        type="button"
+        className={styles["tag-picker-tool"]}
+        data-active={pinned || undefined}
+        title="Pin picker"
+        onClick={() => onPatch({ pinned: !pinned })}
+      >
+        <IconPinOutline18 width={14} height={14} />
+      </button>
+    </div>
+  );
+}
+
 function Section({
   title,
   count,
   items,
-  renderIcon,
+  layout,
+  showCounts,
+  collapsible = false,
+  collapsed = false,
+  onToggleCollapsed,
   onPick,
+  onStar,
 }: {
   title: string;
   count: number;
   items: TagItem[];
-  renderIcon: (color: string | null) => ReactNode;
+  layout: "list" | "grid";
+  showCounts: boolean;
+  collapsible?: boolean;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
   onPick: (name: string) => void;
+  onStar: (name: string) => void;
 }) {
   return (
     <section className={styles["tag-picker-section"]}>
-      <h4 className={styles["tag-picker-section-title"]}>
-        {title}{" "}
-        <span className={styles["tag-picker-section-count"]}>({count})</span>
-      </h4>
-      <div className={styles["tag-picker-grid"]}>
-        {items.map((item) => (
-          <button
-            key={item.name}
-            type="button"
-            className={styles["tag-picker-item"]}
-            onClick={() => onPick(item.name)}
-            title={item.name}
-          >
-            <span className={styles["tag-picker-item-icon"]} aria-hidden>
-              {renderIcon(item.color)}
+      {collapsible ? (
+        <button
+          type="button"
+          className={styles["tag-picker-section-header"]}
+          onClick={onToggleCollapsed}
+        >
+          <span className={styles["tag-picker-section-chevron"]} aria-hidden>
+            {collapsed ? (
+              <IconChevronRightOutline18 width={12} height={12} />
+            ) : (
+              <IconChevronDownOutline18 width={12} height={12} />
+            )}
+          </span>
+          <span className={styles["tag-picker-section-title"]}>
+            {title}{" "}
+            <span className={styles["tag-picker-section-count"]}>
+              ({count})
             </span>
-            <span className={styles["tag-picker-item-name"]}>{item.name}</span>
-            {item.count > 0 ? (
-              <span className={styles["tag-picker-item-count"]}>
-                ({item.count})
+          </span>
+        </button>
+      ) : (
+        <h4 className={styles["tag-picker-section-title"]}>
+          {title}{" "}
+          <span className={styles["tag-picker-section-count"]}>({count})</span>
+        </h4>
+      )}
+      {collapsible && collapsed ? null : (
+        <div
+          className={
+            layout === "grid"
+              ? styles["tag-picker-grid"]
+              : styles["tag-picker-list"]
+          }
+        >
+          {items.map((item) => (
+            <button
+              key={item.name}
+              type="button"
+              className={styles["tag-picker-item"]}
+              data-applied={item.applied || undefined}
+              onClick={() => onPick(item.name)}
+              title={item.name}
+            >
+              <span className={styles["tag-picker-item-icon"]} aria-hidden>
+                {item.applied ? (
+                  <IconCheckOutline18 width={12} height={12} />
+                ) : null}
               </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
+              <span className={styles["tag-picker-item-name"]}>
+                {item.name}
+              </span>
+              {showCounts && item.count > 0 ? (
+                <span className={styles["tag-picker-item-count"]}>
+                  {item.count}
+                </span>
+              ) : null}
+              <button
+                type="button"
+                className={styles["tag-picker-item-star"]}
+                data-active={item.starred || undefined}
+                aria-label={item.starred ? "Unstar tag" : "Star tag"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStar(item.name);
+                }}
+              >
+                {item.starred ? (
+                  <IconStarFill18 width={11} height={11} />
+                ) : (
+                  <IconStarOutline18 width={11} height={11} />
+                )}
+              </button>
+            </button>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

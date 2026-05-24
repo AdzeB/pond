@@ -26,7 +26,7 @@ coverage/
 .DS_Store
 Thumbs.db
 
-# editors — track only the shared workspace files
+# editors: track only the shared workspace files
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json

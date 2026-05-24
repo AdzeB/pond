@@ -10,7 +10,7 @@
   line-height: 1.5;
   color: var(--ds-gray-12);
   background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-standard),
     transform var(--ds-duration-snap) var(--ds-easing-standard);

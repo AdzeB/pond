@@ -69,7 +69,7 @@ function readGridMin(): number {
 /* `useZoom()` (in `library/toolbar/index.tsx`) writes the current zoom
  * to `document.documentElement.style.--grid-min`. The CSS layouts pick
  * the change up reactively; the JS packer can't, so we observe the
- * root style attribute and re-read on every mutation. Cheap — runs
+ * root style attribute and re-read on every mutation. Cheap: runs
  * once per zoom step, gated by an equality check. */
 function useGridMin(): number {
   const [value, setValue] = useState<number>(readGridMin);

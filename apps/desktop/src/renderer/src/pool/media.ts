@@ -31,7 +31,7 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  // Tweet screenshots are a thumbnail asset, not a carousel slide — drop
+  // Tweet screenshots are a thumbnail asset, not a carousel slide; drop
   // them when there's real extracted media to walk. Avatars are author
   // metadata and never belong in the carousel.
   const files = (save.files ?? []).filter(
@@ -44,7 +44,7 @@ export function buildMediaUnits(
   const images = slides.filter((f) => !isVideoFile(f));
 
   // Single-stream save (YouTube, TikTok, single IG reel, Twitter video):
-  // one video plus optionally one cover image acting as the poster — emit
+  // one video plus optionally one cover image acting as the poster: emit
   // a single unit and use the cover as the poster instead of a standalone
   // slide. Anything else is a carousel and gets walked in declared order.
   if (videos.length === 1 && images.length <= 1) {
@@ -101,7 +101,7 @@ export function buildMediaUnits(
   return units;
 }
 
-// pickPrimaryUnit — returns the unit that should drive thumbnails and
+// pickPrimaryUnit: returns the unit that should drive thumbnails and
 // pane covers. Twitter saves prefer the theme-matched tweet screenshot
 // (see `capture-tweet.ts`); every other source uses extracted media.
 export function pickPrimaryUnit(
@@ -135,7 +135,7 @@ export function pickPrimaryFile(
   return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
 }
 
-// pickTweetScreenshot — resolves the theme-appropriate screenshot
+// pickTweetScreenshot: resolves the theme-appropriate screenshot
 // variant. Prefers the matching theme, then the other theme, then the
 // legacy single-variant file. Returns null for non-twitter saves or
 // when no screenshot exists yet.

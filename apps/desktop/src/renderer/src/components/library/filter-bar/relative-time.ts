@@ -15,7 +15,7 @@ export function parseRelative(query: string): RelativeMatch | null {
   const r = results[0];
   if (!r) return null;
 
-  /* Reject parses that didn't span (most of) the input — chrono
+  /* Reject parses that didn't span (most of) the input. Chrono
    * happily extracts "5" from "5 unrelated stuff" which would be
    * a false positive in a filter dropdown. */
   if (r.text.length / s.length < 0.5) return null;
@@ -26,7 +26,7 @@ export function parseRelative(query: string): RelativeMatch | null {
   /* Allow a small future tolerance so `today` (which chrono can
    * round to start-of-day) doesn't fall off the wrong side. */
   if (diffMs < -12 * 3600 * 1000) return null;
-  /* Reject absurd parses (>50 years out) — likely a misparse. */
+  /* Reject absurd parses (>50 years out): likely a misparse. */
   if (diffMs > 50 * 365 * MS_PER_DAY) return null;
 
   const days = Math.max(1, Math.round(diffMs / MS_PER_DAY));

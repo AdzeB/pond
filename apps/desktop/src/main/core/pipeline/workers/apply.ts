@@ -31,7 +31,7 @@ export interface ApplyPatchOptions {
   replaceFilesWithKind?: SaveFile["kind"];
 }
 
-// applySavePatch — single helper for workers to update a save row and (when
+// applySavePatch: single helper for workers to update a save row and (when
 // they produce new files) write them to disk + append to save.files. Emits a
 // sync_actions row so the renderer's IPC listener gets the update.
 export async function applySavePatch(

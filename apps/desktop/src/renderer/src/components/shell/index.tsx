@@ -2,13 +2,11 @@ import { cn } from "@pond/ui";
 import type React from "react";
 import type { ReactNode } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
-import { ProcessingButton } from "@/components/capture/processing-button";
 import { CommandPalette } from "@/components/command-palette";
+import { KeyboardCheatsheet } from "@/components/keyboard-cheatsheet";
 import { BulkActionBar } from "@/components/library/bulk-action-bar";
-import { FilterBar } from "@/components/library/filter-bar";
 import { QuickCapture } from "@/components/library/quick-capture";
 import { LibrarySidebar } from "@/components/library/sidebar";
-import { HeaderToolbar } from "@/components/library/toolbar";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
@@ -19,10 +17,12 @@ import { PreferencesHotkey } from "@/effects/preferences-hotkey";
 import { usePlatform } from "@/lib/platform";
 import { useSidebar } from "@/lib/use-sidebar";
 import {
+  DEV_GROUPS,
   GROUP_LABELS,
   GROUP_ORDER,
   sectionsByGroup,
 } from "@/pages/settings/registry";
+import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 
 type Platform = "mac" | "other";
@@ -66,9 +66,9 @@ function Main({ className, ...props }: MainProps) {
   return <main className={cn(styles.main, className)} {...props} />;
 }
 
-interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Header({ className, ...props }: HeaderProps) {
+function Toolbar({ className, ...props }: ToolbarProps) {
   return <div className={cn(styles.header, className)} {...props} />;
 }
 
@@ -80,7 +80,7 @@ function Empty({ className, ...props }: EmptyProps) {
   return <p className={cn(styles.empty, className)} {...props} />;
 }
 
-export const Shell = { Root, Content, Split, Main, Header, Empty };
+export const Shell = { Root, Content, Split, Main, Toolbar, Empty };
 
 export function AppRoot() {
   return (
@@ -93,6 +93,7 @@ export function AppRoot() {
       <BulkActionBar.Root />
       <QuickCapture.Root />
       <CommandPalette.Root />
+      <KeyboardCheatsheet />
     </div>
   );
 }
@@ -121,19 +122,11 @@ export function LibraryLayout() {
   );
 }
 
-export function LibraryChrome() {
-  return (
-    <Shell.Header>
-      <HeaderToolbar.Root />
-      <FilterBar.Root />
-      <ProcessingButton.Root />
-    </Shell.Header>
-  );
-}
-
 export function SettingsLayout() {
   const platform = usePlatform();
   const navigate = useNavigate();
+  const [developer] = usePrefs("developer");
+  const developerMode = developer.developerMode === true;
 
   return (
     <Shell.Root platform={platform}>
@@ -148,6 +141,7 @@ export function SettingsLayout() {
           </Sidebar.Back>
 
           {GROUP_ORDER.flatMap((group) => {
+            if (DEV_GROUPS.includes(group) && !developerMode) return [];
             const items = sectionsByGroup(group);
             if (items.length === 0) return [];
             const label = GROUP_LABELS[group];

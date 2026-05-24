@@ -10,7 +10,7 @@ import { kickReconciler } from "./reconciler";
  * The thing that pushed these saves into `failed` is usually a
  * soft-block from the source (X.com rate limiter, Pinterest pinned-IP
  * filter). Hitting the same partition in parallel just trips the same
- * limiter all over again — but partitions are per-host, so twitter
+ * limiter all over again. But partitions are per-host, so twitter
  * doesn't share a budget with pinterest. We group by `saves.source`
  * and run one serial chain per source; the chains run concurrently.
  *
@@ -132,7 +132,7 @@ export async function startProcessingBackfill(): Promise<ProcessingBackfillStart
   return { ok: true as const, total };
 }
 
-/* Single-save retry — synchronous reset + kick, no pacing. Used when
+/* Single-save retry: synchronous reset + kick, no pacing. Used when
  * the user clicks the per-row "Retry" button in the dialog. Returns
  * once the reset has been written so the renderer can flip its own
  * status optimistically. */

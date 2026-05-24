@@ -1,6 +1,6 @@
 /**
  * 18px duotone filled icons. Re-exports the Nucleo
- * `nucleo-ui-fill-duo-18` family verbatim — every icon ships as
+ * `nucleo-ui-fill-duo-18` family verbatim. Every icon ships as
  * `Icon<Name>FillDuo18` and accepts `IconProps`.
  *
  * The secondary fill is exposed via `data-color="color-2"` on the

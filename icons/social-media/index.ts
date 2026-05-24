@@ -1,7 +1,7 @@
 /**
  * Brand glyphs. Re-exports the Nucleo `nucleo-social-media` family
  * (32px React SVG icons) plus a small set of local-only marks for
- * sources Nucleo doesn't ship — currently `IconArena` and
+ * sources Nucleo doesn't ship: currently `IconArena` and
  * `IconCosmos`.
  *
  * Use the same `Icon<Name>` naming convention so consumers don't

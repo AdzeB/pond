@@ -1,4 +1,4 @@
-export type SettingsGroup = "library" | "media" | "capture" | "app";
+export type SettingsGroup = "app" | "library" | "saving" | "dev";
 
 export interface SettingsSection {
   id: string;
@@ -8,49 +8,29 @@ export interface SettingsSection {
 }
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "storage", path: "storage", label: "Storage", group: "library" },
-  { id: "tags", path: "tags", label: "Tags", group: "library" },
-  { id: "trash-prefs", path: "trash-prefs", label: "Trash", group: "library" },
+  { id: "general", path: "general", label: "General", group: "app" },
   {
-    id: "backups",
-    path: "backups",
-    label: "Backups & Export",
-    group: "library",
+    id: "appearance",
+    path: "appearance",
+    label: "Appearance",
+    group: "app",
   },
-  { id: "media", path: "media", label: "Media", group: "media" },
+  {
+    id: "shortcuts",
+    path: "shortcuts",
+    label: "Browser Extension",
+    group: "app",
+  },
+  { id: "library", path: "library", label: "Library", group: "library" },
+  { id: "saving", path: "saving", label: "Saving", group: "saving" },
   {
     id: "sources",
     path: "integrations",
     label: "Connected Apps",
-    group: "capture",
+    group: "saving",
   },
-  {
-    id: "capture-behavior",
-    path: "capture-behavior",
-    label: "Capture Behavior",
-    group: "capture",
-  },
-  {
-    id: "extension",
-    path: "extension",
-    label: "Browser Extension",
-    group: "capture",
-  },
-  {
-    id: "preferences",
-    path: "preferences",
-    label: "Preferences",
-    group: "app",
-  },
-  {
-    id: "notifications",
-    path: "notifications",
-    label: "Notifications",
-    group: "app",
-  },
-  { id: "updates", path: "updates", label: "Updates", group: "app" },
-  { id: "automation", path: "automation", label: "Automation", group: "app" },
-  { id: "developer", path: "developer", label: "Developer", group: "app" },
-  { id: "components", path: "components", label: "Components", group: "app" },
-  { id: "about", path: "about", label: "About", group: "app" },
+  { id: "components", path: "components", label: "Components", group: "dev" },
+  { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ] as const;
+
+export const SETTINGS_DEV_GROUPS: readonly SettingsGroup[] = ["dev"] as const;

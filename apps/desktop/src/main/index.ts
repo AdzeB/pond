@@ -25,7 +25,7 @@ import {
 } from "./core/pipeline/backfill-failed";
 import { enqueueCaptureTweetForExisting } from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
-import { getPrefs, invalidatePrefs } from "./core/prefs";
+import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import {
   type RefreshBackfillStatus,
   subscribeRefreshBackfillStatus,
@@ -81,6 +81,12 @@ let httpServer: RunningServer | null = null;
 let mainWindow: BrowserWindow | null = null;
 let tray: TrayHandle | null = null;
 let trayRefreshQueued = false;
+// `close` events fire synchronously; reading prefs from disk would race the
+// window destruction. We mirror the user-facing toggle into this flag every
+// time prefs change (boot + window.applyPrefs).
+let closeToTrayEnabled = false;
+// Set during graceful quit so the close handler stops swallowing the event.
+let isQuitting = false;
 
 function queueTrayRefresh() {
   if (!tray || trayRefreshQueued) return;
@@ -134,7 +140,7 @@ function handleDeepLink(url: string): void {
       route = `/quick-capture?url=${encodeURIComponent(target)}`;
     } else if (parsed.hostname === "pair") {
       const token = parsed.searchParams.get("token") ?? "";
-      route = `/settings/api${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+      route = `/settings/shortcuts${token ? `?token=${encodeURIComponent(token)}` : ""}`;
     } else if (parsed.hostname === "settings") {
       const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
       route = sub ? `/settings/${sub}` : "/settings";
@@ -217,7 +223,7 @@ function configureSessionDefaults(): void {
 }
 
 interface ShellHint {
-  theme?: "light" | "dark";
+  theme?: "light" | "dark" | "high-contrast";
   pointerCursors?: boolean;
 }
 
@@ -238,13 +244,20 @@ async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
   // Resolved before the BrowserWindow exists so the preload can hand
-  // these tokens to the inline boot script in index.html — the very
+  // these tokens to the inline boot script in index.html. The very
   // first paint is themed without waiting for the renderer bundle.
   const shellHint = await resolveShellHint();
+  const prefs = await getPrefs().catch(() => null);
+  const restored =
+    prefs?.window.restorePosition && prefs.window.bounds
+      ? prefs.window.bounds
+      : null;
 
   const win = new BrowserWindow({
-    width: 1280,
-    height: 800,
+    width: restored?.width ?? 1280,
+    height: restored?.height ?? 800,
+    x: restored?.x,
+    y: restored?.y,
     show: false,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
@@ -259,6 +272,38 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   win.on("ready-to-show", () => win.show());
+
+  // Persist bounds on resize/move so the next launch can restore them.
+  // Saves are debounced because the events fire on every pixel change.
+  let saveBoundsTimer: NodeJS.Timeout | null = null;
+  const saveBounds = () => {
+    if (win.isDestroyed()) return;
+    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
+    saveBoundsTimer = setTimeout(() => {
+      saveBoundsTimer = null;
+      const b = win.getBounds();
+      void setPrefs({ window: { bounds: b } }).catch((err) =>
+        log.warn("[pond] persist window bounds failed", err),
+      );
+    }, 400);
+  };
+  win.on("resize", saveBounds);
+  win.on("move", saveBounds);
+
+  // Close-to-tray: keep the renderer process alive and just hide the
+  // window. The tray menu provides a Quit affordance for users who
+  // want the old behavior. The flag mirrors `prefs.window.closeToTray`
+  // so we can decide synchronously inside the close event.
+  win.on("close", (event) => {
+    if (isQuitting) return;
+    if (!closeToTrayEnabled) return;
+    if (!tray) return;
+    if (win.isDestroyed()) return;
+    if (mainWindow !== win) return;
+    event.preventDefault();
+    win.hide();
+    if (process.platform === "darwin") app.dock?.hide();
+  });
 
   win.webContents.on("did-finish-load", () => {
     if (win.isDestroyed()) return;
@@ -342,8 +387,16 @@ app.whenReady().then(async () => {
   installAppMenu();
 
   const loginItem = app.getLoginItemSettings();
+  const wantsLaunchHidden = await getPrefs()
+    .then((p) => p.window.launchHidden === true)
+    .catch(() => false);
+  closeToTrayEnabled = await getPrefs()
+    .then((p) => p.window.closeToTray === true)
+    .catch(() => false);
   const launchedHidden =
-    loginItem.wasOpenedAsHidden ?? loginItem.wasOpenedAtLogin ?? false;
+    wantsLaunchHidden ||
+    loginItem.wasOpenedAsHidden === true ||
+    loginItem.wasOpenedAtLogin === true;
   if (!launchedHidden) {
     mainWindow = await createWindow();
   }
@@ -568,7 +621,7 @@ function installAppMenu() {
               { type: "separator" as const },
               {
                 label: "Check for Updates…",
-                click: navTo("/settings/updates"),
+                click: navTo("/settings/general"),
               },
               { type: "separator" as const },
               preferencesItem,
@@ -986,6 +1039,13 @@ export async function applyPrefsAtRuntime() {
     openAtLogin: prefs.quickCapture.launchAtLogin,
     openAsHidden: true,
   });
+  closeToTrayEnabled = prefs.window.closeToTray === true;
+}
+
+export async function applyWindowPrefsAtRuntime() {
+  invalidatePrefs();
+  const prefs = await getPrefs();
+  closeToTrayEnabled = prefs.window.closeToTray === true;
 }
 
 export async function restartHttpServer(): Promise<{
@@ -1018,6 +1078,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", async () => {
+  isQuitting = true;
   globalShortcut.unregisterAll();
   try {
     stopStorageWatcher();

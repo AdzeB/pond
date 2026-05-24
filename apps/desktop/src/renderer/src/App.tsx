@@ -3,6 +3,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
+import { DeveloperApplier } from "./effects/developer-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
 import { SaveShortcuts } from "./effects/save-shortcuts";
@@ -49,7 +50,7 @@ function playChime(): void {
     osc.start();
     osc.stop(ctx.currentTime + 0.3);
   } catch {
-    /* swallow — chime is decorative */
+    /* swallow: chime is decorative */
   }
 }
 
@@ -57,7 +58,7 @@ declare global {
   interface Window {
     pond: PondApi;
     __pondShell?: {
-      theme?: "light" | "dark";
+      theme?: "light" | "dark" | "high-contrast";
       pointerCursors?: boolean;
     };
   }
@@ -74,6 +75,7 @@ export function App() {
       <Tooltip.Provider>
         <Toast.Provider>
           <ThemeApplier />
+          <DeveloperApplier />
           <ViewShortcuts />
           <SaveShortcuts />
           <UndoRedoBridge />

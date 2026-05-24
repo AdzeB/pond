@@ -35,7 +35,7 @@ function ImageInner() {
       alt=""
       loading="lazy"
       decoding="async"
-      // Grid thumbs are background work — never starve the foreground
+      // Grid thumbs are background work; never starve the foreground
       // detail image or first-paint hero by competing on the same
       // connection.
       fetchPriority="low"

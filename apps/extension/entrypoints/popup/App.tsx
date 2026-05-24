@@ -139,7 +139,7 @@ export function App() {
         if (res.data.connected) {
           setPushResult({
             tone: "ok",
-            label: `Sent — Pond is connected to ${sourceLabel(pushable)}`,
+            label: `Sent. Pond is connected to ${sourceLabel(pushable)}`,
           });
         } else if (res.data.imported > 0) {
           setPushResult({
@@ -163,7 +163,7 @@ export function App() {
       } else if (res.reason === "no_cookies") {
         setPushResult({
           tone: "error",
-          label: `No cookies for ${sourceLabel(pushable)} — sign in first`,
+          label: `No cookies for ${sourceLabel(pushable)}. Sign in first.`,
         });
       } else {
         setPushResult({
@@ -245,7 +245,7 @@ export function App() {
         <button
           type="button"
           className={styles["footer-link"]}
-          onClick={() => openDeepLink("pond://settings/extension")}
+          onClick={() => openDeepLink("pond://settings/shortcuts")}
         >
           Settings
         </button>
@@ -386,7 +386,7 @@ function PushSessionBody({
         <div className={styles["block-row"]}>
           <span aria-hidden className={styles["block-dot"]} />
           <span>
-            Pond uses your {label} cookies to scrape on your behalf — no
+            Pond uses your {label} cookies to scrape on your behalf, with no
             embedded sign-in window
           </span>
         </div>

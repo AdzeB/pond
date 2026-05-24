@@ -28,6 +28,8 @@
     "./ingest": "./src/ingest.ts",
     "./raw": "./src/raw.ts",
     "./session": "./src/session.ts",
+    "./settings": "./src/settings.ts",
+    "./keyboard": "./src/keyboard.ts",
     "./filters": "./src/filters/index.ts",
     "./filters/types": "./src/filters/types.ts",
     "./filters/meta": "./src/filters/meta.ts",

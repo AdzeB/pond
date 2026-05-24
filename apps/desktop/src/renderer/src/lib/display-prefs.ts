@@ -65,7 +65,7 @@ export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
     try {
       window.localStorage.setItem(STORAGE_KEYS[key], value ? "1" : "0");
     } catch {
-      /* storage denied — keep the in-memory snapshot in sync anyway */
+      /* storage denied: keep the in-memory snapshot in sync anyway */
     }
   }
   emit();

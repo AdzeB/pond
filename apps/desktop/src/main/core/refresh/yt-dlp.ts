@@ -272,7 +272,7 @@ function runWithTimeout(
       try {
         child.kill("SIGKILL");
       } catch {
-        /* ignore — process may have already exited */
+        /* ignore: process may have already exited */
       }
       resolve({ code: 124, stderr: `${stderr}\n[pond yt-dlp] timeout` });
     }, timeoutMs);

@@ -6,7 +6,7 @@ import {
 import { Popover, Select, Switch, Tooltip } from "@pond/ui";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { type Density, setDensity, useDensity } from "@/lib/density";
+import { type Density, useDensity } from "@/lib/density";
 import {
   type DisplayPrefKey,
   setDisplayPref,
@@ -123,7 +123,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
   const [layout, setLayout] = useLayoutValue();
   const { sortKey, sortDir, setSortKey, setSortDir } = useSortState();
   const prefs = useDisplayPrefs();
-  const density = useDensity();
+  const [density, setDensity] = useDensity();
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
   const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
 

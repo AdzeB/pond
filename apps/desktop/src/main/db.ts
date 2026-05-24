@@ -102,12 +102,27 @@ function migrate(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS tags (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
-					color TEXT,
-					"group" TEXT,
 					usage_count INTEGER NOT NULL DEFAULT 0,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
-				CREATE INDEX IF NOT EXISTS tags_group_idx ON tags("group");
+
+				CREATE TABLE IF NOT EXISTS tag_groups (
+					id TEXT PRIMARY KEY,
+					name TEXT NOT NULL UNIQUE,
+					color TEXT,
+					sort_order INTEGER NOT NULL DEFAULT 0,
+					collapsed INTEGER NOT NULL DEFAULT 0,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+
+				CREATE TABLE IF NOT EXISTS tag_group_members (
+					tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+					group_id TEXT NOT NULL REFERENCES tag_groups(id) ON DELETE CASCADE,
+					sort_order INTEGER NOT NULL DEFAULT 0,
+					PRIMARY KEY (tag_id, group_id)
+				);
+				CREATE INDEX IF NOT EXISTS tag_group_members_tag_idx ON tag_group_members(tag_id);
+				CREATE INDEX IF NOT EXISTS tag_group_members_group_idx ON tag_group_members(group_id);
 
 				CREATE TABLE IF NOT EXISTS sync_actions (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -232,9 +247,71 @@ function ensureTagsLabelColumns(sqlite: Database.Database): void {
   if (!have.has("description")) {
     sqlite.exec("ALTER TABLE tags ADD COLUMN description TEXT");
   }
+  if (!have.has("starred")) {
+    sqlite.exec(
+      "ALTER TABLE tags ADD COLUMN starred INTEGER NOT NULL DEFAULT 0",
+    );
+  }
+  if (!have.has("last_used_at")) {
+    sqlite.exec("ALTER TABLE tags ADD COLUMN last_used_at INTEGER");
+  }
+  if (have.has("group")) {
+    migrateLegacyTagGroupColumn(sqlite);
+  }
+  if (have.has("color")) {
+    try {
+      sqlite.exec('ALTER TABLE tags DROP COLUMN "color";');
+    } catch (err) {
+      log.warn("[pond db] failed to drop legacy tags.color column", err);
+    }
+  }
 }
 
-// hardDeleteArticleSaves — the article source has been removed from the
+// Backfill `tag_groups` + `tag_group_members` from the legacy single-string
+// `tags.group` column, then drop the column. Idempotent: safe to run on a
+// DB that already has tag_groups rows (the upserts won't duplicate names).
+function migrateLegacyTagGroupColumn(sqlite: Database.Database): void {
+  try {
+    const rows = sqlite
+      .prepare<unknown[], { id: string; group: string | null }>(
+        'SELECT id, "group" FROM tags WHERE "group" IS NOT NULL AND TRIM("group") != \'\'',
+      )
+      .all() as Array<{ id: string; group: string | null }>;
+
+    const tx = sqlite.transaction((items: typeof rows) => {
+      const insertGroup = sqlite.prepare(
+        "INSERT OR IGNORE INTO tag_groups (id, name) VALUES (?, ?)",
+      );
+      const findGroup = sqlite.prepare(
+        "SELECT id FROM tag_groups WHERE name = ?",
+      );
+      const insertMember = sqlite.prepare(
+        "INSERT OR IGNORE INTO tag_group_members (tag_id, group_id) VALUES (?, ?)",
+      );
+      for (const row of items) {
+        const groupName = row.group?.trim();
+        if (!groupName) continue;
+        const groupId = cryptoRandomId();
+        insertGroup.run(groupId, groupName);
+        const resolved = findGroup.get(groupName) as { id: string } | undefined;
+        if (!resolved) continue;
+        insertMember.run(row.id, resolved.id);
+      }
+    });
+    tx(rows);
+
+    sqlite.exec(
+      'DROP INDEX IF EXISTS tags_group_idx; ALTER TABLE tags DROP COLUMN "group";',
+    );
+    log.info(
+      `[pond db] migration: moved ${rows.length} tag/group memberships into tag_group_members`,
+    );
+  } catch (err) {
+    log.warn("[pond db] legacy tag group migration failed", err);
+  }
+}
+
+// hardDeleteArticleSaves: the article source has been removed from the
 // URL-first pipeline. Any legacy rows tagged `article` are unreachable
 // from the new code path; drop them so the renderer never has to render
 // an unknown source.
@@ -253,7 +330,7 @@ function hardDeleteArticleSaves(sqlite: Database.Database): void {
   }
 }
 
-// backfillCompleteStatusForExistingSaves — saves created before the
+// backfillCompleteStatusForExistingSaves: saves created before the
 // status column existed default to `ingesting`. If they already have at
 // least one file on disk we know ingest finished long ago, so mark them
 // `complete` and stamp ingestCompletedAt to silence the in-progress UI.
@@ -298,7 +375,7 @@ function dropLegacyArtifacts(sqlite: Database.Database): void {
   }
 }
 
-// The archive concept is gone — trash is the only soft-delete state.
+// The archive concept is gone. Trash is the only soft-delete state.
 // Drop the column from existing databases. SQLite 3.35+ supports
 // `ALTER TABLE … DROP COLUMN`, which is what better-sqlite3 ships with.
 function dropArchivedAtColumn(sqlite: Database.Database): void {

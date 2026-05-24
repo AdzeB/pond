@@ -237,7 +237,7 @@
   width: 14px;
   height: 14px;
   border: 1px solid var(--ds-gray-a4);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 }
 
 .empty {

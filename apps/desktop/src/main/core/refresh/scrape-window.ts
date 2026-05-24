@@ -181,7 +181,7 @@ async function leaseWindow(source: Source): Promise<Lease> {
 
 function drainQueues(): void {
   // Round-robin across sources, one grant per source per pass. Loop
-  // until no source can be served — either everyone with a waiter is
+  // until no source can be served: either everyone with a waiter is
   // already at cap or no windows are idle.
   let progress = true;
   while (progress) {
@@ -321,11 +321,11 @@ const SCREENSHOT_VERTICAL_PADDING = 40;
 // anything beyond this just gets cropped at the bottom (rare).
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
-// screenshotTweet — opens the tweet in a hidden window, finds the
+// screenshotTweet: opens the tweet in a hidden window, finds the
 // rendered <article>, and captures just that element via
 // `webContents.capturePage(rect)`. Reuses the same window pool / cookies
 // as `harvestUrl`, so logged-in tweets work when the X integration is
-// connected. Returns `ok: false` for any failure — callers should treat
+// connected. Returns `ok: false` for any failure; callers should treat
 // misses as a no-op and fall back to whatever they were rendering
 // before (we never want a screenshot miss to mark a save as failed).
 export async function screenshotTweet(
@@ -334,7 +334,7 @@ export async function screenshotTweet(
   const colorScheme = args.colorScheme ?? "dark";
   const lease = await leaseWindow("twitter");
   // CDP's `Emulation.setEmulatedMedia` has to be in place before the
-  // navigation commits — X reads `prefers-color-scheme` once on mount
+  // navigation commits. X reads `prefers-color-scheme` once on mount
   // and never reacts to a mid-life flip, so flipping it after the page
   // has rendered would only repaint the platform chrome and leave the
   // article unchanged.
@@ -561,7 +561,7 @@ async function readArticleRect(
 
 function buildArticleRectExpression(tweetId: string): string {
   // Scroll to the very top of the document instead of centering the
-  // article — centering produces a negative top when the article is
+  // article. Centering produces a negative top when the article is
   // taller than the viewport, which the capture path used to clamp to
   // 0, pulling in X's "Post" header above the article and clipping the
   // bottom. With scrollTo(0, 0), `rect.y` is the article's natural
@@ -992,7 +992,7 @@ async function navigateWithTimeout(
   // rate-limit / soft-block stops emitting both did-finish-load and
   // did-fail-load, and the loadURL promise never settles). Previously
   // we awaited loadURL before racing the load events against the
-  // timeout — a hang there leaked the pool window forever, eventually
+  // timeout. A hang there leaked the pool window forever, eventually
   // pinning the reconciler at MAX_GLOBAL_INFLIGHT. Race the entire
   // navigation against a wall-clock budget and forcibly stop the
   // WebContents on miss so the pool slot can be reused.
@@ -1117,7 +1117,7 @@ async function _writeStoredHandle(
 
 // Opens the hidden window logged in via the partition cookies and reads
 // the user's own handle from the rendered DOM. We pick the handle off
-// the profile link in the top nav — it's the one stable, public-facing
+// the profile link in the top nav: it's the one stable, public-facing
 // identifier every social site exposes once you're authenticated.
 //
 // Returns `null` if the session isn't authenticated or the DOM probe
@@ -1235,7 +1235,7 @@ function isAuthCookie(source: Source, cookie: Cookie): boolean {
         name === "_arena_session" ||
         name === "remember_user_token" ||
         name === "cf_clearance" // not auth on its own; tolerated so the
-        // first sync probes — gets refined below if it's the only one.
+        // first sync probes; gets refined below if it's the only one.
       );
     case "cosmos":
       // cosmos.so uses Supabase/NextAuth-style session tokens. Their cookie
@@ -1288,7 +1288,7 @@ export async function disconnectSource(
   const domain = primaryDomainForSource(source);
   if (!domain) return { ok: true };
 
-  // Drop the cached handle too — derived from the session we're clearing.
+  // Drop the cached handle too: derived from the session we're clearing.
   try {
     const prefs = await getPrefs();
     if (prefs.sync.handles?.[source]) {

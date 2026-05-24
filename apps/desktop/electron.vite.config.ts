@@ -77,7 +77,7 @@ export default defineConfig({
       },
     },
     build: {
-      // Electron ships a recent Chromium — skip legacy transforms and
+      // Electron ships a recent Chromium; skip legacy transforms and
       // module-preload polyfills.
       target: "esnext",
       modulePreload: { polyfill: false },

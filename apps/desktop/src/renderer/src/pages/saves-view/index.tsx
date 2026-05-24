@@ -1,6 +1,9 @@
+import { ProcessingButton } from "@/components/capture/processing-button";
 import { Library } from "@/components/library";
+import { FilterBar } from "@/components/library/filter-bar";
 import { Inspector } from "@/components/library/inspector";
-import { LibraryChrome, Shell } from "@/components/shell";
+import { HeaderToolbar } from "@/components/library/toolbar";
+import { Shell } from "@/components/shell";
 import { LayoutSwitcher } from "./layout-switcher";
 import { useCardActions } from "./use-card-actions";
 import { type SavesMode, useSavesData } from "./use-saves-data";
@@ -16,7 +19,11 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
   return (
     <>
       <Shell.Main>
-        <LibraryChrome />
+        <Shell.Toolbar>
+          <HeaderToolbar.Root />
+          <FilterBar.Root />
+          <ProcessingButton.Root />
+        </Shell.Toolbar>
         <Library.Root
           view={data.viewMode === "list" ? "list" : "grid"}
           onDragOver={actions.onDragOver}

@@ -60,7 +60,7 @@ export class TikTokVideoExtractor implements Extractor {
     if (typeof metricsRaw.shares === "number") {
       metrics.shares = metricsRaw.shares;
     }
-    // TikTok shows this number labeled "Plays" — keep the same semantic key
+    // TikTok shows this number labeled "Plays". Keep the same semantic key
     // so the UI mirrors what the app shows.
     if (typeof metricsRaw.plays === "number") metrics.plays = metricsRaw.plays;
     if (typeof metricsRaw.bookmarks === "number") {

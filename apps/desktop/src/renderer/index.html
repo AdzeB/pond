@@ -30,7 +30,8 @@
 				color-scheme: light;
 				background: #ffffff;
 			}
-			html[data-theme="dark"] {
+			html[data-theme="dark"],
+			html[data-theme="high-contrast"] {
 				color: #ededed;
 				color-scheme: dark;
 				background: #000000;
@@ -63,7 +64,11 @@
 					const doc = document.documentElement;
 
 					let theme = shell.theme;
-					if (theme !== "light" && theme !== "dark") {
+					if (
+						theme !== "light" &&
+						theme !== "dark" &&
+						theme !== "high-contrast"
+					) {
 						theme = window.matchMedia("(prefers-color-scheme: dark)").matches
 							? "dark"
 							: "light";

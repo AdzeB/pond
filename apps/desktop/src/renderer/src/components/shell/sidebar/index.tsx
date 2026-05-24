@@ -87,6 +87,55 @@ function LinkIcon({ ...props }: LinkIconProps) {
   return <span aria-hidden className={styles["link-icon"]} {...props} />;
 }
 
+interface DotProps
+  extends Omit<React.ComponentPropsWithoutRef<"span">, "color"> {
+  color?: string | null;
+}
+
+function Dot({ color, style, ...props }: DotProps) {
+  return (
+    <span
+      aria-hidden
+      className={styles.dot}
+      style={{ background: color ?? "var(--ds-gray-a6)", ...style }}
+      {...props}
+    />
+  );
+}
+
+interface GroupToggleProps extends React.ComponentPropsWithoutRef<"button"> {
+  expanded: boolean;
+  count?: number;
+}
+
+function GroupToggle({
+  expanded,
+  count,
+  children,
+  type = "button",
+  ...props
+}: GroupToggleProps) {
+  return (
+    <button type={type} className={styles["group-toggle"]} {...props}>
+      <span className={styles["group-toggle-chevron"]} aria-hidden>
+        <span
+          style={{
+            display: "inline-block",
+            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+            transition: "transform 100ms ease",
+          }}
+        >
+          ▸
+        </span>
+      </span>
+      <span>{children}</span>
+      {count != null ? (
+        <span className={styles["group-toggle-count"]}>{count}</span>
+      ) : null}
+    </button>
+  );
+}
+
 interface LinkLabelProps extends React.ComponentPropsWithoutRef<"span"> {}
 
 function LinkLabel({ ...props }: LinkLabelProps) {
@@ -120,4 +169,6 @@ export const Sidebar = {
   LinkIcon: LinkIcon,
   LinkLabel: LinkLabel,
   LinkCount: LinkCount,
+  Dot: Dot,
+  GroupToggle: GroupToggle,
 };

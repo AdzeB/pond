@@ -68,7 +68,7 @@
   letter-spacing: 0.02em;
   pointer-events: none;
   background: rgba(0, 0, 0, 0.62);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -86,7 +86,7 @@
   color: #fff;
   letter-spacing: 0.02em;
   background: rgba(220, 38, 38, 0.85);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
@@ -96,7 +96,7 @@
   width: 6px;
   height: 6px;
   background: #4ac26b;
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   animation: ponddl-pulse 1.4s ease-in-out infinite;
 }
 
@@ -118,4 +118,9 @@
     opacity: 1;
     animation: none;
   }
+}
+
+:global(html[data-reduce-motion="true"]) .downloading-dot {
+  opacity: 1;
+  animation: none;
 }

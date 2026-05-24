@@ -15,7 +15,7 @@ export interface InWindowResult {
   sourceId?: string;
 }
 
-// fetchHtmlInWindow — wraps the existing scrape-window pool so extractors can
+// fetchHtmlInWindow: wraps the existing scrape-window pool so extractors can
 // get fully-rendered DOM data (Twitter/Instagram/YouTube/etc. don't ship usable
 // SSR HTML). Maps the harvest result's `reason` onto our error taxonomy so the
 // retry policy knows what to do.

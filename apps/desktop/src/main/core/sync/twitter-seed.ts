@@ -16,7 +16,7 @@ export interface SaveSeed {
 // When the bookmarks sync gives us a rich tweet from the GraphQL response
 // we already have everything `harvest_metadata` would otherwise re-scrape
 // (title, body, author, media, metrics). Hand the seed to the pipeline so
-// `isFreshHarvest` short-circuits the navigate step — X rate-limits hard
+// `isFreshHarvest` short-circuits the navigate step. X rate-limits hard
 // once a partition starts loading ~hundreds of individual tweet pages back
 // to back, which is what made every freshly-synced bookmark land as
 // `failed`.

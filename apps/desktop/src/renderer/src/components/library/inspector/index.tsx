@@ -29,6 +29,7 @@ export function Inspector() {
 
   return (
     <aside
+      id="inspector-pane"
       aria-label="Inspector"
       aria-hidden={!open || undefined}
       data-state={open ? "open" : "closed"}

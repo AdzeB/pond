@@ -99,7 +99,7 @@ After:
 "Two-factor authentication"
 "Manage your connected accounts"
 
-> Writing for a Pond surface? Title Case applies to all headings and buttons — see "Pond-specific conventions" below.
+> Writing for a Pond surface? Title Case applies to all headings and buttons. See "Pond-specific conventions" below.
 
 ### 9. Talk to the user as "you"
 
@@ -189,7 +189,7 @@ After:
 
 ### Keep nouns consistent
 
-Introduce as few unique terms as possible. If a thing is called a "Project" in one place, it stays a "Project" everywhere — not "app", "site", or "repo" interchangeably. Pick the canonical noun and reuse it.
+Introduce as few unique terms as possible. If a thing is called a "Project" in one place, it stays a "Project" everywhere, not "app", "site", or "repo" interchangeably. Pick the canonical noun and reuse it.
 
 ### Numbers and units
 
@@ -203,7 +203,7 @@ After:
 
 ### Currency
 
-In any one context, use **either** 0 decimals **or** 2 decimals — never mix. `$20` and `$20.00` should not appear in the same table, page, or paragraph.
+In any one context, use **either** 0 decimals **or** 2 decimals. Never mix. `$20` and `$20.00` should not appear in the same table, page, or paragraph.
 
 ### Placeholders
 
@@ -215,7 +215,7 @@ Use these consistent placeholders in code samples, docs, and forms:
 
 ### Positive framing
 
-Frame messages around the path forward, not the failure. Errors still tell the truth — they just lead with the fix.
+Frame messages around the path forward, not the failure. Errors still tell the truth; they just lead with the fix.
 
 Before:
 "Your deployment failed."

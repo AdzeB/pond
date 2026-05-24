@@ -2,8 +2,8 @@ import type { Source } from "./db";
 
 // Raw shapes written into `saves.rawJson`.
 //
-// Everything flows through the universal `RawJson` below — one
-// well-known shape regardless of source — so consumers never have to
+// Everything flows through the universal `RawJson` below: one
+// well-known shape regardless of source, so consumers never have to
 // branch on `source` to read a field.
 //
 // `RawYtdlp` is the only other shape we model directly, because it
@@ -80,7 +80,7 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-// v1 capture schema — the universal shape written to `saves.rawJson` by
+// v1 capture schema: the universal shape written to `saves.rawJson` by
 // the URL-first pipeline. Mirrors the `Capture` interface produced by
 // `apps/desktop/src/main/core/pipeline/extractors/types.ts` so the
 // renderer can read it without depending on main-process code.
@@ -107,13 +107,13 @@ export interface CaptureMedia {
 // renderer iterates over whatever is present.
 //
 // Mapping per source:
-//   twitter   — likes, retweets, replies, views, bookmarks, quotes
-//   instagram — likes, comments, plays
-//   tiktok    — likes, comments, shares, plays, bookmarks (collects)
-//   youtube   — views, likes
-//   pinterest — saves, repins, reactions, comments, shares
-//   arena     — connections, comments
-//   cosmos    — (none publicly exposed)
+//   twitter:   likes, retweets, replies, views, bookmarks, quotes
+//   instagram: likes, comments, plays
+//   tiktok:    likes, comments, shares, plays, bookmarks (collects)
+//   youtube:   views, likes
+//   pinterest: saves, repins, reactions, comments, shares
+//   arena:     connections, comments
+//   cosmos:    (none publicly exposed)
 export interface CaptureMetrics {
   likes?: number;
   views?: number;

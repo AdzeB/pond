@@ -6,6 +6,7 @@ import {
   StandaloneLayout,
 } from "./components/shell";
 import { ActivityPage } from "./pages/activity";
+import { AllTagsPage } from "./pages/all-tags";
 import { SaveDetailPage } from "./pages/save-detail";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
@@ -81,6 +82,7 @@ export function buildRoutes(): RouteObject[] {
             { path: "random/detail/:id", element: <SaveDetailPage /> },
             { path: "trash/detail/:id", element: <SaveDetailPage /> },
             { path: "activity", element: <ActivityPage /> },
+            { path: "tags", element: <AllTagsPage /> },
           ],
         },
         {

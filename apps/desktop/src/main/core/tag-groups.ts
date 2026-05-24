@@ -1,0 +1,288 @@
+import {
+  type NewTagGroup,
+  type NewTagGroupMember,
+  type Tag,
+  type TagGroup,
+  type TagGroupMember,
+  tagGroupMembers as tagGroupMembersTable,
+  tagGroups as tagGroupsTable,
+  tags as tagsTable,
+} from "@pond/schema/db";
+import type { Transaction } from "@pond/schema/tx";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { ulid } from "ulid";
+import type { Db } from "../db";
+import { getDb } from "../db";
+import { executeBatch, executeTransaction } from "./executor";
+
+export interface TagGroupWithMembers extends TagGroup {
+  tagIds: string[];
+  tagNames: string[];
+}
+
+async function groupByLowerName(
+  db: Db,
+  lowered: string,
+): Promise<TagGroup | undefined> {
+  const rows = await db
+    .select()
+    .from(tagGroupsTable)
+    .where(sql`lower(${tagGroupsTable.name}) = ${lowered}`);
+  return rows[0];
+}
+
+async function tagByLowerName(
+  db: Db,
+  lowered: string,
+): Promise<Tag | undefined> {
+  const rows = await db
+    .select()
+    .from(tagsTable)
+    .where(sql`lower(${tagsTable.name}) = ${lowered}`);
+  return rows[0];
+}
+
+export async function listGroups(): Promise<TagGroupWithMembers[]> {
+  const db = await getDb();
+  const groups = await db
+    .select()
+    .from(tagGroupsTable)
+    .orderBy(asc(tagGroupsTable.sortOrder), asc(tagGroupsTable.name));
+  if (groups.length === 0) return [];
+
+  const memberRows = await db
+    .select({
+      groupId: tagGroupMembersTable.groupId,
+      tagId: tagGroupMembersTable.tagId,
+      tagName: tagsTable.name,
+      sortOrder: tagGroupMembersTable.sortOrder,
+    })
+    .from(tagGroupMembersTable)
+    .innerJoin(tagsTable, eq(tagGroupMembersTable.tagId, tagsTable.id))
+    .orderBy(asc(tagGroupMembersTable.sortOrder), asc(tagsTable.name));
+
+  const byGroup = new Map<string, { tagIds: string[]; tagNames: string[] }>();
+  for (const g of groups) byGroup.set(g.id, { tagIds: [], tagNames: [] });
+  for (const m of memberRows) {
+    const bucket = byGroup.get(m.groupId);
+    if (!bucket) continue;
+    bucket.tagIds.push(m.tagId);
+    bucket.tagNames.push(m.tagName);
+  }
+
+  return groups.map((g) => ({
+    ...g,
+    tagIds: byGroup.get(g.id)?.tagIds ?? [],
+    tagNames: byGroup.get(g.id)?.tagNames ?? [],
+  }));
+}
+
+export async function createGroup(input: {
+  name: string;
+  color?: string | null;
+}): Promise<{ ok: boolean; id?: string }> {
+  const name = input.name.trim();
+  if (!name) return { ok: false };
+  const db = await getDb();
+  const existing = await groupByLowerName(db, name.toLowerCase());
+  if (existing) return { ok: true, id: existing.id };
+  const nextOrder = await nextSortOrder(db);
+  const data: NewTagGroup = {
+    id: ulid(),
+    name,
+    color: input.color ?? null,
+    sortOrder: nextOrder,
+    collapsed: false,
+  };
+  await executeTransaction({
+    kind: "create",
+    model: "tag_group",
+    id: data.id,
+    data,
+    meta: { actor: "user", actorReason: "tag-group-create" },
+  });
+  return { ok: true, id: data.id };
+}
+
+export async function renameGroup(
+  from: string,
+  to: string,
+): Promise<{ ok: boolean }> {
+  const target = to.trim();
+  if (!target) return { ok: false };
+  const db = await getDb();
+  const fromRow = await groupByLowerName(db, from.trim().toLowerCase());
+  if (!fromRow) return { ok: false };
+  const targetKey = target.toLowerCase();
+  if (fromRow.name.toLowerCase() === targetKey && fromRow.name === target) {
+    return { ok: true };
+  }
+  const collision = await groupByLowerName(db, targetKey);
+  if (collision && collision.id !== fromRow.id) {
+    return { ok: false };
+  }
+  await executeTransaction({
+    kind: "update",
+    model: "tag_group",
+    id: fromRow.id,
+    patch: { name: target },
+    before: fromRow,
+    meta: { actor: "user", actorReason: "tag-group-rename" },
+  });
+  return { ok: true };
+}
+
+export async function updateGroup(
+  name: string,
+  patch: Partial<NewTagGroup>,
+): Promise<{ ok: boolean }> {
+  const db = await getDb();
+  const row = await groupByLowerName(db, name.trim().toLowerCase());
+  if (!row) return { ok: false };
+  await executeTransaction({
+    kind: "update",
+    model: "tag_group",
+    id: row.id,
+    patch,
+    before: row,
+    meta: { actor: "user", actorReason: "tag-group-update" },
+  });
+  return { ok: true };
+}
+
+export async function deleteGroup(
+  name: string,
+): Promise<{ ok: boolean; affected: number }> {
+  const db = await getDb();
+  const row = await groupByLowerName(db, name.trim().toLowerCase());
+  if (!row) return { ok: false, affected: 0 };
+  const members = await db
+    .select()
+    .from(tagGroupMembersTable)
+    .where(eq(tagGroupMembersTable.groupId, row.id));
+  const txs: Transaction[] = [];
+  for (const m of members) {
+    txs.push({
+      kind: "delete",
+      model: "tag_group_member",
+      id: memberKey(m),
+      before: m,
+      meta: { actor: "user", actorReason: "tag-group-delete" },
+    });
+  }
+  txs.push({
+    kind: "delete",
+    model: "tag_group",
+    id: row.id,
+    before: row,
+    meta: { actor: "user", actorReason: "tag-group-delete" },
+  });
+  await executeBatch(txs);
+  return { ok: true, affected: members.length };
+}
+
+export async function addTagsToGroup(
+  tagNames: string[],
+  groupName: string,
+): Promise<{ ok: boolean; affected: number }> {
+  const db = await getDb();
+  const group = await groupByLowerName(db, groupName.trim().toLowerCase());
+  if (!group) return { ok: false, affected: 0 };
+  const txs: Transaction[] = [];
+  for (const raw of tagNames) {
+    const tag = await tagByLowerName(db, raw.trim().toLowerCase());
+    if (!tag) continue;
+    const existing = await db
+      .select()
+      .from(tagGroupMembersTable)
+      .where(
+        and(
+          eq(tagGroupMembersTable.tagId, tag.id),
+          eq(tagGroupMembersTable.groupId, group.id),
+        ),
+      );
+    if (existing[0]) continue;
+    const data: NewTagGroupMember = {
+      tagId: tag.id,
+      groupId: group.id,
+      sortOrder: 0,
+    };
+    txs.push({
+      kind: "create",
+      model: "tag_group_member",
+      id: memberKey(data),
+      data,
+      meta: { actor: "user", actorReason: "tag-group-add" },
+    });
+  }
+  if (txs.length === 0) return { ok: true, affected: 0 };
+  await executeBatch(txs);
+  return { ok: true, affected: txs.length };
+}
+
+export async function removeTagFromGroup(
+  tagName: string,
+  groupName: string,
+): Promise<{ ok: boolean }> {
+  const db = await getDb();
+  const tag = await tagByLowerName(db, tagName.trim().toLowerCase());
+  const group = await groupByLowerName(db, groupName.trim().toLowerCase());
+  if (!tag || !group) return { ok: false };
+  const rows = await db
+    .select()
+    .from(tagGroupMembersTable)
+    .where(
+      and(
+        eq(tagGroupMembersTable.tagId, tag.id),
+        eq(tagGroupMembersTable.groupId, group.id),
+      ),
+    );
+  const member = rows[0];
+  if (!member) return { ok: true };
+  await executeTransaction({
+    kind: "delete",
+    model: "tag_group_member",
+    id: memberKey(member),
+    before: member,
+    meta: { actor: "user", actorReason: "tag-group-remove" },
+  });
+  return { ok: true };
+}
+
+export async function reorderGroups(
+  orderedNames: string[],
+): Promise<{ ok: boolean }> {
+  const db = await getDb();
+  const txs: Transaction[] = [];
+  for (let i = 0; i < orderedNames.length; i++) {
+    const name = orderedNames[i];
+    if (!name) continue;
+    const row = await groupByLowerName(db, name.trim().toLowerCase());
+    if (!row) continue;
+    if (row.sortOrder === i) continue;
+    txs.push({
+      kind: "update",
+      model: "tag_group",
+      id: row.id,
+      patch: { sortOrder: i },
+      before: row,
+      meta: { actor: "user", actorReason: "tag-group-reorder" },
+    });
+  }
+  if (txs.length === 0) return { ok: true };
+  await executeBatch(txs);
+  return { ok: true };
+}
+
+async function nextSortOrder(db: Db): Promise<number> {
+  const rows = await db
+    .select({
+      max: sql<number>`coalesce(max(${tagGroupsTable.sortOrder}), -1)`,
+    })
+    .from(tagGroupsTable);
+  return (rows[0]?.max ?? -1) + 1;
+}
+
+function memberKey(member: Pick<TagGroupMember, "tagId" | "groupId">): string {
+  return `${member.tagId}:${member.groupId}`;
+}

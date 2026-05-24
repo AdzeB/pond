@@ -382,7 +382,7 @@ function buildSearchIndex(saves: readonly SaveLike[]): SearchEntry[] {
     }
   }
 
-  /* optional (note) — with / without */
+  /* optional (note): with / without */
   out.push({
     kind: "value",
     predicate: { kind: "p", field: "note", cmp: "exists", value: true },

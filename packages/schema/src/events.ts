@@ -1,5 +1,5 @@
-/* Wide-event shapes for the pipeline. One row per *unit of work* —
- * task attempt, sync run, save lifecycle — denormalised on purpose so
+/* Wide-event shapes for the pipeline. One row per *unit of work*
+ * (task attempt, sync run, save lifecycle), denormalised on purpose so
  * a single `SELECT ... WHERE save_id = ?` reconstructs the whole story
  * without grep-archeology across scattered log lines.
  *
@@ -95,7 +95,7 @@ export interface SyncRunEvent {
    * captured here so retrospectives can spot ghost holds. */
   lockHeldMs: number | null;
   /* True if the watchdog aborted the run instead of it completing
-   * normally. Sets `outcome=aborted` too — kept separate so a future
+   * normally. Sets `outcome=aborted` too. Kept separate so a future
    * panel can filter "show me watchdog-aborted runs" without parsing
    * outcome strings. */
   watchdogTripped: boolean;

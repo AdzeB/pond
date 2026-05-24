@@ -11,8 +11,8 @@ const FETCH_TIMEOUT_MS = 15_000;
 //     "<url-encoded descriptor>",
 //     {"data":{"v3GetPinQueryv2":{"data": <pin>}}}
 //   )</script>
-// We grab that JSON directly — it has the clean title, creator name, full
-// resolution image URL, dominant color, etc. — none of which OG meta exposes.
+// We grab that JSON directly: it has the clean title, creator name, full
+// resolution image URL, dominant color, etc. None of which OG meta exposes.
 
 interface RelayUser {
   fullName?: string;
@@ -134,7 +134,7 @@ function extractPin(html: string): RelayPin | null {
   // Pinterest emits several Relay calls per page. The first usually has the
   // pin's content fields (title, image, attribution stub) but a stripped
   // creator object; later calls return the full creator with avatar URLs.
-  // We collect every payload and merge — for each key, prefer the richest
+  // We collect every payload and merge: for each key, prefer the richest
   // value (most keys for nested objects, first non-empty for scalars).
   const candidates: RelayPin[] = [];
   const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";

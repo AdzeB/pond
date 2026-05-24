@@ -1,0 +1,54 @@
+@import "@pond/ui/reset.css";
+@import "@pond/ui/theme.css";
+
+:root {
+  --site-font-sans:
+    ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Inter,
+    sans-serif;
+  --site-font-display: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --site-font-mono: var(--ds-font-mono);
+
+  --site-page-max: 1120px;
+  --site-page-padding: 24px;
+  --site-section-gap: 88px;
+
+  --site-radius-card: 14px;
+  --site-radius-pill: 999px;
+  --site-radius-chip: 6px;
+}
+
+html {
+  font-family: var(--site-font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  color-scheme: light dark;
+  background: var(--ds-background-primary);
+}
+
+body {
+  min-height: 100dvh;
+  background: var(--ds-background-primary);
+}
+
+::selection {
+  color: var(--ds-gray-12);
+  background: color-mix(in srgb, var(--ds-accent-9) 25%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --site-page-padding: 20px;
+    --site-section-gap: 64px;
+  }
+}

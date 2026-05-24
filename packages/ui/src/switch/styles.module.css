@@ -10,7 +10,7 @@
   outline: none;
   background: var(--ds-gray-a6);
   border: 0;
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   transition:
     background var(--ds-duration-snap) var(--ds-easing-standard),
     box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
@@ -45,7 +45,7 @@
   height: 14px;
   margin-left: 2px;
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   box-shadow: var(--ds-shadow-thumb);
   transition:
     transform var(--ds-duration-snap) var(--ds-easing-standard),

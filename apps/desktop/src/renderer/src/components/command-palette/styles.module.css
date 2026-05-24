@@ -29,7 +29,7 @@
   cursor: default;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 
   &:hover {
     color: var(--ds-gray-12);

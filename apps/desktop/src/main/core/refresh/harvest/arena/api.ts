@@ -328,7 +328,7 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  // Upstream: prefer the embed (iframe target — YouTube/Vimeo/etc.),
+  // Upstream: prefer the embed (iframe target like YouTube/Vimeo/etc.),
   // then the attachment, then the original `source.url`. The first one
   // that parses as a valid URL wins. yt-dlp targets this host rather
   // than the are.na permalink for video blocks.

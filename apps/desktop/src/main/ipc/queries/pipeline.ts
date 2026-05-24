@@ -117,7 +117,7 @@ export const pipelineQueries: QueryHandlerMap = {
   },
 
   /* The Activity panel's recent-N view. Filters are intentionally
-   * narrow — every column we expose to the UI is indexed in
+   * narrow: every column we expose to the UI is indexed in
    * `pipeline_events`, so adding a knob means adding it here AND in
    * the schema's index list, not silently regressing into a table
    * scan. */
@@ -193,7 +193,7 @@ export const pipelineQueries: QueryHandlerMap = {
   },
 
   /* "Show me failing harvest_metadata grouped by error in the last
-   * hour" — the canonical wide-event query, exposed as a one-click
+   * hour": the canonical wide-event query, exposed as a one-click
    * panel button so users don't have to remember the SQL. */
   async "pipeline.events.failuresByError"(params) {
     const db = await getDb();

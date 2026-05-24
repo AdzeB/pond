@@ -1,16 +1,19 @@
-import { copyFile, mkdir, readdir, unlink } from "node:fs/promises";
-import { extname, resolve as resolvePath } from "node:path";
 import {
+  DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
+  type ImageDownloadSettings,
   settings as settingsTable,
   type VideoDownloadSettings,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
-import { BrowserWindow, dialog } from "electron";
-import { getPrefs, setPrefs, setVideoDownloadPrefs } from "../../core/prefs";
+import {
+  getPrefs,
+  setImageDownloadPrefs,
+  setPrefs,
+  setVideoDownloadPrefs,
+} from "../../core/prefs";
 import { getDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
-import { libraryRoot as libraryRootDir } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const settingsQueries: QueryHandlerMap = {
@@ -24,6 +27,7 @@ export const settingsQueries: QueryHandlerMap = {
       return {
         ...rows[0],
         videoDownload: rows[0].videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
+        imageDownload: rows[0].imageDownload ?? DEFAULT_IMAGE_DOWNLOAD,
       };
     }
     await db
@@ -31,12 +35,14 @@ export const settingsQueries: QueryHandlerMap = {
       .values({
         id: "singleton",
         videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+        imageDownload: DEFAULT_IMAGE_DOWNLOAD,
       })
       .onConflictDoNothing()
       .run();
     return {
       id: "singleton",
       videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+      imageDownload: DEFAULT_IMAGE_DOWNLOAD,
       libraryRoot: null,
       updatedAt: new Date(),
     };
@@ -47,6 +53,13 @@ export const settingsQueries: QueryHandlerMap = {
       params as Partial<VideoDownloadSettings>,
     );
     return { ok: true, videoDownload: next };
+  },
+
+  async "settings.setImageDownload"(params) {
+    const next = await setImageDownloadPrefs(
+      params as Partial<ImageDownloadSettings>,
+    );
+    return { ok: true, imageDownload: next };
   },
 
   async "settings.ingestToken"() {
@@ -90,60 +103,4 @@ export const settingsQueries: QueryHandlerMap = {
     const next = await setPrefs(params as Parameters<typeof setPrefs>[0]);
     return { ok: true, prefs: next };
   },
-
-  async "profile.pickAvatar"() {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const result = win
-      ? await dialog.showOpenDialog(win, {
-          title: "Pick avatar",
-          properties: ["openFile"],
-          filters: [
-            {
-              name: "Images",
-              extensions: ["png", "jpg", "jpeg", "gif", "webp"],
-            },
-          ],
-        })
-      : await dialog.showOpenDialog({
-          title: "Pick avatar",
-          properties: ["openFile"],
-          filters: [
-            {
-              name: "Images",
-              extensions: ["png", "jpg", "jpeg", "gif", "webp"],
-            },
-          ],
-        });
-    if (result.canceled || result.filePaths.length === 0) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
-    const src = result.filePaths[0];
-    if (!src) return { ok: false as const, reason: "cancelled" as const };
-    const meta = resolvePath(libraryRootDir(), "_meta");
-    await mkdir(meta, { recursive: true });
-    const ext = extname(src).toLowerCase() || ".png";
-    // Reuse the filename means renderer img caches by URL — pick a
-    // fresh name on every upload so the URL changes too.
-    const dest = resolvePath(meta, `avatar-${Date.now()}${ext}`);
-    await copyFile(src, dest);
-    await pruneStaleAvatars(meta, dest);
-    await setPrefs({ profile: { avatarPath: dest } });
-    return { ok: true as const, path: dest };
-  },
-
-  async "profile.clearAvatar"() {
-    await setPrefs({ profile: { avatarPath: null } });
-    return { ok: true as const };
-  },
 };
-
-async function pruneStaleAvatars(dir: string, keep: string) {
-  const entries = await readdir(dir).catch(() => [] as string[]);
-  await Promise.all(
-    entries
-      .filter((name) => /^avatar[-.]/.test(name))
-      .map((name) => resolvePath(dir, name))
-      .filter((path) => path !== keep)
-      .map((path) => unlink(path).catch(() => undefined)),
-  );
-}

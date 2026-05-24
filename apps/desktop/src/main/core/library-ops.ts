@@ -47,7 +47,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   try {
     entries = await readdir(paths.itemsDir);
   } catch {
-    /* libraryRoot/items missing — leave entries empty */
+    /* libraryRoot/items missing; leave entries empty */
   }
   const onDiskIds = entries
     .filter((e) => e.endsWith(".info"))
@@ -90,8 +90,8 @@ export interface RelocateResult {
 // Two modes of "switch library folder":
 //
 //  - copy:  copy contents of the current library into `dest`, then
-//           switch. Leaves the source intact so it's a safe operation
-//           — users can verify the destination then delete the source
+//           switch. Leaves the source intact so it's a safe operation:
+//           users can verify the destination then delete the source
 //           themselves. This is the right default when moving the
 //           library somewhere new (e.g. opting into iCloud).
 //

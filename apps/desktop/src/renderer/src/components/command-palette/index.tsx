@@ -134,7 +134,7 @@ function Root() {
             }
           } catch {
             // No-op: missing start mark (palette opened via something
-            // other than Cmd+K) — measurement is best-effort.
+            // other than Cmd+K). Measurement is best-effort.
           }
         });
       });

@@ -21,7 +21,7 @@ user, not synced from a server. The browser extension feeds a local HTTP
 server on `127.0.0.1:41610`. Nothing leaves the machine unless the user
 chooses to.
 
-Two characteristic moments: the quick save (a tab, a tweet, a pin —
+Two characteristic moments: the quick save (a tab, a tweet, a pin,
 captured via the extension and forgotten) and the slower retrieval
 (opening Pond on a Sunday afternoon to find that thing they saved last
 March). The interface has to be uneventful at the first and rewarding
@@ -98,8 +98,8 @@ Five strategic principles that should hold across every surface.
    from the library on next launch.
 
 3. **Survive platform decay.** Assume the original source disappears.
-   When a tweet is deleted, an Are.na block is removed, an Instagram
-   account vanishes — the saved version stays, with the same metadata,
+   When a tweet is deleted, an Are.na block is removed, or an Instagram
+   account vanishes, the saved version stays, with the same metadata,
    tags, and confidence as a live one. The archived snapshot is
    first-class, not a fallback.
 
@@ -117,7 +117,7 @@ Five strategic principles that should hold across every surface.
 
 - **WCAG 2.2 AA across the board.** 4.5:1 minimum contrast for body
   text, 3:1 for UI elements and large text. Color is never the only
-  signal — source identity is carried by both the brand color and the
+  signal: source identity is carried by both the brand color and the
   glyph icon.
 - **Full keyboard navigation everywhere.** Every interactive surface
   reachable via tab + arrows + the command palette. Focus is visible

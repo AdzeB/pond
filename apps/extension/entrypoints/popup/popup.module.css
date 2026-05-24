@@ -66,7 +66,7 @@
   height: 6px;
   margin-top: 7px;
   background: var(--ds-gray-a8);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 }
 
 .pairing-error {

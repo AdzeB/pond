@@ -3,7 +3,7 @@
 Hidden-Chromium page harvesting + list-import helpers used by the
 URL-first ingest pipeline.
 
-- `index.ts` exposes `refreshSave(saveId)` — refresh in the URL-first
+- `index.ts` exposes `refreshSave(saveId)`. Refresh in the URL-first
   world is "reset the task rows back to `pending` and bump the
   reconciler". The `harvest_metadata` worker re-runs and rebuilds the
   `Capture` from scratch.
@@ -25,6 +25,6 @@ URL-first ingest pipeline.
 > **Adding a new source?** Read
 > [`harvest/CAPTURE-STANDARD.md`](harvest/CAPTURE-STANDARD.md) first.
 > Everything the page exposes ends up on the universal
-> [`Capture`](../../../../../../packages/schema/src/raw.ts) shape — there
+> [`Capture`](../../../../../../packages/schema/src/raw.ts) shape. There
 > is no per-source persistence DTO any more. The current per-source
 > coverage matrix lives in [`harvest/COVERAGE.md`](harvest/COVERAGE.md).

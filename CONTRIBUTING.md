@@ -6,7 +6,7 @@ need to get started.
 ## Prerequisites
 
 - **Node.js** 20+ (enforced via `engines` in `package.json`)
-- **pnpm** 10+ (managed via the `packageManager` field — `corepack enable`
+- **pnpm** 10+ (managed via the `packageManager` field; `corepack enable`
   is the easiest path)
 
 The desktop app builds the `better-sqlite3` native module against
@@ -60,7 +60,7 @@ icons/          Local icon set (auto-generated TSX wrappers)
 ```
 
 If your change spans the desktop app and the extension, check whether
-the contract belongs in `packages/schema` first — the shared types are
+the contract belongs in `packages/schema` first. The shared types are
 the source of truth for what crosses the loopback boundary.
 
 ## Making changes
@@ -86,7 +86,7 @@ Format: `<type>(<scope>): <subject>`
 | `fix`      | Fix a bug                                                  |
 | `refactor` | Restructure code without changing behavior                 |
 | `perf`     | Performance improvement (special refactor)                 |
-| `style`    | Formatting, whitespace, semicolons — no behavior change    |
+| `style`    | Formatting, whitespace, semicolons (no behavior change)    |
 | `test`     | Add or correct tests                                       |
 | `docs`     | Documentation only                                         |
 | `build`    | Build tools, dependencies, project version                 |
@@ -115,12 +115,12 @@ chore: init
 
 ## Pull requests
 
-- Keep PRs focused — one feature or fix per PR.
+- Keep PRs focused: one feature or fix per PR.
 - Include a clear description of what changed and why.
 - Make sure CI passes before requesting review.
 - If your change affects the public ingest API
   (`POST /api/v2/item/add`, `/item/get`, `/library/info`, `/pair`),
-  call it out explicitly — these are consumed by the extension and any
+  call it out explicitly. These are consumed by the extension and any
   Apple Shortcut a user might have set up.
 
 ## Adding a new capture site
@@ -128,10 +128,10 @@ chore: init
 The extension's per-site capture lives in
 `apps/extension/entrypoints/`. Each site is two files:
 
-- `<site>-inject.content.ts` — runs in the page world. A small
+- `<site>-inject.content.ts`: runs in the page world. A small
   `window.fetch` / `XMLHttpRequest` shim that pulls the structured
   payload the site already sends to its own API.
-- `<site>.content.ts` — runs in the isolated world. Receives the
+- `<site>.content.ts`: runs in the isolated world. Receives the
   payload over `window.postMessage` and forwards it to the desktop app
   over `localhost`.
 

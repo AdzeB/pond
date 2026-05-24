@@ -7,6 +7,10 @@ const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024; // 50 MiB
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MiB -- avatars are tiny
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
+export interface FetchMediaOptions {
+  imageMaxBytes?: number | null;
+}
+
 function extensionFor(mimeType: string | null, url: string): string {
   const fromUrl = extname(new URL(url).pathname).toLowerCase();
   if (fromUrl) return fromUrl;
@@ -33,6 +37,7 @@ function kindFor(mimeType: string | null): "cover" | "video" | "other" {
 export async function fetchMediaToTxFile(
   mediaUrl: string,
   index = 0,
+  options: FetchMediaOptions = {},
 ): Promise<TxSaveFile | null> {
   let res: Response;
   try {
@@ -49,23 +54,38 @@ export async function fetchMediaToTxFile(
     return null;
   }
 
+  const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
+  const isImage = (mime ?? "").startsWith("image/");
+  const imageCap =
+    isImage && options.imageMaxBytes && options.imageMaxBytes > 0
+      ? options.imageMaxBytes
+      : null;
+  const hardCap = imageCap
+    ? Math.min(imageCap, MAX_DOWNLOAD_BYTES)
+    : MAX_DOWNLOAD_BYTES;
+
   const contentLength = Number(res.headers.get("content-length") ?? 0);
-  if (contentLength > MAX_DOWNLOAD_BYTES) {
-    log.warn("[pond blob] too big, skipping", contentLength, mediaUrl);
+  if (contentLength > hardCap) {
+    log.warn("[pond blob] too big, skipping", {
+      url: mediaUrl,
+      contentLength,
+      cap: hardCap,
+      reason: imageCap ? "image cap" : "absolute cap",
+    });
     return null;
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.byteLength > MAX_DOWNLOAD_BYTES) {
-    log.warn(
-      "[pond blob] declared size mismatch, skipping",
-      buf.byteLength,
-      mediaUrl,
-    );
+  if (buf.byteLength > hardCap) {
+    log.warn("[pond blob] declared size mismatch, skipping", {
+      url: mediaUrl,
+      bytes: buf.byteLength,
+      cap: hardCap,
+      reason: imageCap ? "image cap" : "absolute cap",
+    });
     return null;
   }
 
-  const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
   const ext = extensionFor(mime, mediaUrl);
   const kind = kindFor(mime);
   const filename = nameFor(kind, ext, index);
@@ -136,7 +156,10 @@ export async function fetchAvatarToTxFile(
   };
 }
 
-export async function fetchMediaBatch(urls: string[]): Promise<TxSaveFile[]> {
+export async function fetchMediaBatch(
+  urls: string[],
+  options: FetchMediaOptions = {},
+): Promise<TxSaveFile[]> {
   const unique: string[] = [];
   const seen = new Set<string>();
   for (const u of urls) {
@@ -148,7 +171,7 @@ export async function fetchMediaBatch(urls: string[]): Promise<TxSaveFile[]> {
 
   const results = await Promise.all(
     unique.map((u, i) =>
-      fetchMediaToTxFile(u, i).catch((err) => {
+      fetchMediaToTxFile(u, i, options).catch((err) => {
         log.warn("[pond blob] batch fetch failed", u, err);
         return null;
       }),

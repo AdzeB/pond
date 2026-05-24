@@ -1,0 +1,132 @@
+.hero {
+  width: 100%;
+  padding: 96px var(--site-page-padding) 64px;
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: var(--site-page-max);
+  margin: 0 auto;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 12px;
+  font-family: var(--site-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.04em;
+  background: var(--ds-gray-3);
+  border-radius: var(--site-radius-pill);
+}
+
+.title {
+  max-width: 920px;
+  font-size: clamp(38px, 6.4vw, 76px);
+  font-weight: 500;
+  line-height: 1.02;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+.title-soft {
+  color: var(--ds-gray-10);
+}
+
+.lead {
+  max-width: 640px;
+  margin-top: 8px;
+  font-size: clamp(16px, 1.8vw, 19px);
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+  text-wrap: pretty;
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 550;
+  letter-spacing: -0.005em;
+  text-decoration: none;
+  border-radius: var(--site-radius-pill);
+  transition:
+    background-color var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-accent-9);
+    outline-offset: 3px;
+  }
+}
+
+.button-primary {
+  color: var(--ds-background-primary);
+  background: var(--ds-gray-12);
+
+  &:hover {
+    background: var(--ds-gray-11);
+  }
+}
+
+.button-secondary {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+
+  &:hover {
+    background: var(--ds-gray-4);
+  }
+}
+
+.meta {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--ds-gray-10);
+}
+
+.still {
+  width: 100%;
+  max-width: var(--site-page-max);
+  margin: 56px auto 0;
+}
+
+.still-mask {
+  overflow: hidden;
+  opacity: 0.85;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    black 0%,
+    black 60%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(180deg, black 0%, black 60%, transparent 100%);
+}
+
+@media (max-width: 720px) {
+  .hero {
+    padding: 64px var(--site-page-padding) 40px;
+  }
+
+  .still {
+    margin-top: 40px;
+  }
+}

@@ -26,7 +26,7 @@ function write(next: string[]): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(cache));
   } catch {
-    /* storage might be denied — fail silently, keep in-memory cache */
+    /* storage might be denied; fail silently, keep in-memory cache */
   }
   for (const cb of listeners) cb();
 }

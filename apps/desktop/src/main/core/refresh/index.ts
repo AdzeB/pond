@@ -11,7 +11,7 @@ export type RefreshOutcome =
       reason: "not_found" | "no_url" | "internal_error";
     };
 
-// refreshSave — in the URL-first world there is no distinct "refresh"
+// refreshSave: in the URL-first world there is no distinct "refresh"
 // pipeline. Refreshing a save means resetting its task rows back to
 // `pending` and bumping the reconciler; the harvest_metadata worker will
 // re-run with `force: true` so even fresh captures get re-harvested.

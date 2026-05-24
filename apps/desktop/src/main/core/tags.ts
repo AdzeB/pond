@@ -1,11 +1,12 @@
 import {
   type NewTag,
   saves as savesTable,
+  type Tag,
   tags as tagsTable,
 } from "@pond/schema/db";
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, isNotNull, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { Db } from "../db";
 import { getDb } from "../db";
@@ -13,7 +14,6 @@ import { executeBatch, executeTransaction } from "./executor";
 
 export interface CreateTagInput {
   name: string;
-  color?: string | null;
   description?: string | null;
 }
 
@@ -38,7 +38,6 @@ export async function createTag(
   const data: NewTag = {
     id: ulid(),
     name,
-    color: input.color ?? null,
     description: input.description?.trim() || null,
     usageCount: 0,
   };
@@ -181,7 +180,6 @@ export async function mergeTags(
     if (!toRow.description?.trim() && fromRow.description?.trim()) {
       patch.description = fromRow.description;
     }
-    if (!toRow.color && fromRow.color) patch.color = fromRow.color;
     if (Object.keys(patch).length > 0) {
       txs.push({
         kind: "update",
@@ -293,5 +291,82 @@ export async function setSaveTags(
       /* race-safe; another concurrent write may have just created it */
     }
   }
+  if (normalized.length > 0) {
+    await bumpLastUsedAt(normalized).catch(() => {
+      /* best-effort; failing to bump shouldn't fail the tag write */
+    });
+  }
   return { ok: true };
+}
+
+export async function setStarred(
+  name: string,
+  starred: boolean,
+): Promise<{ ok: boolean }> {
+  const key = labelKey(name);
+  if (!key) return { ok: false };
+  const db = await getDb();
+  const row = await tagByLowerName(db, key);
+  if (!row) {
+    const id = ulid();
+    const stored = normalizeLabelName(name);
+    if (!stored) return { ok: false };
+    await executeTransaction({
+      kind: "create",
+      model: "tag",
+      id,
+      data: { id, name: stored, starred, usageCount: 0 },
+      meta: { actor: "user", actorReason: "tag-star" },
+    });
+    return { ok: true };
+  }
+  if (Boolean(row.starred) === starred) return { ok: true };
+  await executeTransaction({
+    kind: "update",
+    model: "tag",
+    id: row.id,
+    patch: { starred },
+    before: row,
+    meta: { actor: "user", actorReason: "tag-star" },
+  });
+  return { ok: true };
+}
+
+export async function bumpLastUsedAt(names: string[]): Promise<void> {
+  if (names.length === 0) return;
+  const db = await getDb();
+  const now = new Date();
+  for (const raw of names) {
+    const key = labelKey(raw);
+    if (!key) continue;
+    const row = await tagByLowerName(db, key);
+    if (!row) continue;
+    await executeTransaction(
+      {
+        kind: "update",
+        model: "tag",
+        id: row.id,
+        patch: { lastUsedAt: now },
+        before: { lastUsedAt: row.lastUsedAt },
+        meta: { actor: "system", actorReason: "tag-bump-last-used" },
+      },
+      // Silent: don't broadcast a syncAction storm for a passive bump.
+      { silent: true },
+    );
+  }
+}
+
+export async function listRecent(limit = 12): Promise<Tag[]> {
+  const db = await getDb();
+  return await db
+    .select()
+    .from(tagsTable)
+    .where(isNotNull(tagsTable.lastUsedAt))
+    .orderBy(desc(tagsTable.lastUsedAt))
+    .limit(limit);
+}
+
+export async function listStarred(): Promise<Tag[]> {
+  const db = await getDb();
+  return await db.select().from(tagsTable).where(eq(tagsTable.starred, true));
 }

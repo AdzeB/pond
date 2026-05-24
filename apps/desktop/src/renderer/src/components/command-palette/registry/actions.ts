@@ -38,7 +38,7 @@ export const ACTION_COMMANDS: Command[] = [
     when: (ctx) => !ctx.pathname.startsWith("/settings"),
     perform: ({ close }) => {
       close();
-      // `useCardActions` owns the URL — re-emit Cmd+B instead of
+      // `useCardActions` owns the URL. Re-emit Cmd+B instead of
       // duplicating its layout bookkeeping here.
       window.dispatchEvent(
         new KeyboardEvent("keydown", {
@@ -155,7 +155,7 @@ export const ACTION_COMMANDS: Command[] = [
     group: "Actions",
     scope: "actions",
     keywords: ["empty", "trash", "delete", "purge"],
-    // Surface only when the user is already looking at /trash —
+    // Surface only when the user is already looking at /trash:
     // anywhere else the command is destructive without
     // explanation. Searchable when they type "empty trash".
     when: (ctx) => ctx.pathname.startsWith("/trash"),

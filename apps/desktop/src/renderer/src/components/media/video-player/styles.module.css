@@ -103,7 +103,7 @@
   height: 3px;
   overflow: hidden;
   background: var(--ds-gray-a4);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
 }
 
 .slider-buffer {
@@ -126,7 +126,7 @@
   width: 10px;
   height: 10px;
   background: var(--ds-gray-12);
-  border-radius: var(--ds-radius-full);
+  border-radius: 2147483647px;
   box-shadow: var(--ds-shadow-thumb);
   opacity: 0;
   transform: translate(-50%, -50%);

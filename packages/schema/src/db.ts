@@ -144,28 +144,57 @@ export const tasks = sqliteTable(
   }),
 );
 
-export const tags = sqliteTable(
-  "tags",
+export const tags = sqliteTable("tags", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  starred: integer("starred", { mode: "boolean" }).notNull().default(false),
+  lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
+  usageCount: integer("usage_count").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const tagGroups = sqliteTable("tag_groups", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  color: text("color"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  collapsed: integer("collapsed", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const tagGroupMembers = sqliteTable(
+  "tag_group_members",
   {
-    id: text("id").primaryKey(),
-    name: text("name").notNull().unique(),
-    color: text("color"),
-    description: text("description"),
-    group: text("group"),
-    usageCount: integer("usage_count").notNull().default(0),
-    createdAt: integer("created_at", { mode: "timestamp_ms" })
+    tagId: text("tag_id")
       .notNull()
-      .default(sql`(unixepoch() * 1000)`),
+      .references(() => tags.id, { onDelete: "cascade" }),
+    groupId: text("group_id")
+      .notNull()
+      .references(() => tagGroups.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").notNull().default(0),
   },
   (t) => ({
-    groupIdx: index("tags_group_idx").on(t.group),
+    pk: unique("tag_group_members_pk").on(t.tagId, t.groupId),
+    tagIdx: index("tag_group_members_tag_idx").on(t.tagId),
+    groupIdx: index("tag_group_members_group_idx").on(t.groupId),
   }),
 );
 
 export const SYNC_ACTIONS = ["I", "U", "D", "A"] as const;
 export type SyncActionKind = (typeof SYNC_ACTIONS)[number];
 
-export const SYNC_MODELS = ["save", "tag", "settings"] as const;
+export const SYNC_MODELS = [
+  "save",
+  "tag",
+  "tag_group",
+  "tag_group_member",
+  "settings",
+] as const;
 export type SyncModel = (typeof SYNC_MODELS)[number];
 
 export const SYNC_ACTORS = ["user", "system"] as const;
@@ -230,6 +259,16 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
   maxFileSizeMb: 500,
 };
 
+export interface ImageDownloadSettings {
+  maxLongEdge: number | null;
+  maxFileSizeMb: number | null;
+}
+
+export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
+  maxLongEdge: 2048,
+  maxFileSizeMb: 10,
+};
+
 export const SYNC_FREQUENCIES = [
   "hourly",
   "every6h",
@@ -272,38 +311,53 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
 
 export interface Prefs {
   preferences: {
-    theme: "system" | "light" | "dark";
+    theme: "system" | "light" | "dark" | "high-contrast";
     pointerCursors: boolean;
-    convertEmoticons: boolean;
-  };
-  profile: {
-    displayName: string;
-    avatarPath: string | null;
+    reduceMotion: "system" | "always" | "never";
+    density: "compact" | "comfortable" | "spacious";
+    tintHue: number | null;
+    tintIntensity: number;
+    reduceTransparency: boolean;
+    uiFontSize: number;
+    codeFontSize: number;
+    uiFontFamily: string;
+    codeFontFamily: string;
+    fontSmoothing: boolean;
   };
   notifications: {
     saveComplete: boolean;
-    refreshFailed: boolean;
-    videoDone: boolean;
     sound: boolean;
   };
   trash: {
     autoEmptyDays: number | null;
     confirmBeforeEmpty: boolean;
   };
-  library: {
-    displayName: string;
+  window: {
+    closeToTray: boolean;
+    launchHidden: boolean;
+    restorePosition: boolean;
+    bounds: { x: number; y: number; width: number; height: number } | null;
   };
   quickCapture: {
     menuBarIcon: boolean;
     launchAtLogin: boolean;
   };
-  saveBehavior: {
-    autoTag: boolean;
-    dedupeByUrl: boolean;
-    defaultTags: string[];
+  tagPicker: {
+    layout: "list" | "grid";
+    gridSize: "sm" | "md" | "lg";
+    showStarred: boolean;
+    showRecently: boolean;
+    showRecommended: boolean;
+    showCounts: boolean;
+    pinned: boolean;
+  };
+  allTags: {
+    layout: "list" | "grid";
+    gridSize: "sm" | "md" | "lg";
+    showCounts: boolean;
+    sort: "name" | "count" | "recent";
   };
   search: {
-    recencyBoost: boolean;
     resultLimit: number;
   };
   backups: {
@@ -320,6 +374,7 @@ export interface Prefs {
     autoInstall: boolean;
   };
   developer: {
+    developerMode: boolean;
     verboseLogging: boolean;
   };
   sync: {
@@ -340,36 +395,51 @@ export const DEFAULT_PREFS: Prefs = {
   preferences: {
     theme: "system",
     pointerCursors: false,
-    convertEmoticons: true,
-  },
-  profile: {
-    displayName: "",
-    avatarPath: null,
+    reduceMotion: "system",
+    density: "comfortable",
+    tintHue: null,
+    tintIntensity: 0,
+    reduceTransparency: false,
+    uiFontSize: 13,
+    codeFontSize: 12,
+    uiFontFamily: "",
+    codeFontFamily: "",
+    fontSmoothing: true,
   },
   notifications: {
     saveComplete: true,
-    refreshFailed: true,
-    videoDone: true,
     sound: false,
   },
   trash: {
     autoEmptyDays: null,
     confirmBeforeEmpty: true,
   },
-  library: {
-    displayName: "My Pond",
+  window: {
+    closeToTray: false,
+    launchHidden: false,
+    restorePosition: true,
+    bounds: null,
   },
   quickCapture: {
     menuBarIcon: true,
     launchAtLogin: false,
   },
-  saveBehavior: {
-    autoTag: true,
-    dedupeByUrl: true,
-    defaultTags: [],
+  tagPicker: {
+    layout: "list",
+    gridSize: "md",
+    showStarred: true,
+    showRecently: true,
+    showRecommended: true,
+    showCounts: true,
+    pinned: false,
+  },
+  allTags: {
+    layout: "grid",
+    gridSize: "md",
+    showCounts: true,
+    sort: "name",
   },
   search: {
-    recencyBoost: false,
     resultLimit: 200,
   },
   backups: {
@@ -386,6 +456,7 @@ export const DEFAULT_PREFS: Prefs = {
     autoInstall: true,
   },
   developer: {
+    developerMode: false,
     verboseLogging: false,
   },
   sync: {
@@ -408,6 +479,10 @@ export const settings = sqliteTable("settings", {
     .$type<VideoDownloadSettings>()
     .notNull()
     .default(sql`'${sql.raw(JSON.stringify(DEFAULT_VIDEO_DOWNLOAD))}'`),
+  imageDownload: text("image_download", { mode: "json" })
+    .$type<ImageDownloadSettings>()
+    .notNull()
+    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_IMAGE_DOWNLOAD))}'`),
   prefs: text("prefs", { mode: "json" })
     .$type<Prefs>()
     .notNull()
@@ -423,6 +498,10 @@ export type Save = typeof saves.$inferSelect;
 export type NewSave = typeof saves.$inferInsert;
 export type Tag = typeof tags.$inferSelect;
 export type NewTag = typeof tags.$inferInsert;
+export type TagGroup = typeof tagGroups.$inferSelect;
+export type NewTagGroup = typeof tagGroups.$inferInsert;
+export type TagGroupMember = typeof tagGroupMembers.$inferSelect;
+export type NewTagGroupMember = typeof tagGroupMembers.$inferInsert;
 export type SyncAction = typeof syncActions.$inferSelect;
 export type NewSyncAction = typeof syncActions.$inferInsert;
 export type TransactionRow = typeof transactionsLog.$inferSelect;

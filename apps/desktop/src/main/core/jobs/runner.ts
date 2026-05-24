@@ -24,7 +24,7 @@ export interface JobRunner<TJob> {
 }
 
 // In-memory keyed job runner. Drains asynchronously on setImmediate; one
-// job per key — re-enqueueing while the same key is in flight is a no-op
+// job per key. Re-enqueueing while the same key is in flight is a no-op
 // unless a `merge` callback is provided.
 export function createJobRunner<TJob>(
   opts: JobRunnerOptions<TJob>,

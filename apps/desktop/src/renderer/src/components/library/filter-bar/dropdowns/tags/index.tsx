@@ -1,63 +1,50 @@
+import { IconStarFill18 } from "@pond/icons/fill/18";
 import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { Input, Menu } from "@pond/ui";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/library/filter-bar/dropdowns/types";
 import { useSaves } from "@/pool/hooks";
+import { useTagGroups } from "@/pool/tag-groups";
+import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
-interface CanonTag {
+interface TagEntry {
   name: string;
-  color: string | null;
+  count: number;
+  starred: boolean;
   description: string | null;
+}
+
+interface Section {
+  key: string;
+  label: string | null;
+  starred?: boolean;
+  items: TagEntry[];
 }
 
 export function TagsDropdown({ predicate, onChange }: DropdownProps) {
   const [q, setQ] = useState("");
-  const [canonical, setCanonical] = useState<CanonTag[]>([]);
+  const tags = useTags();
+  const groups = useTagGroups();
   const saves = useSaves();
 
-  useEffect(() => {
-    let cancelled = false;
-    void window.pond
-      .query("tags.list", {})
-      .then((rows) => {
-        if (!cancelled) setCanonical(rows as CanonTag[]);
-      })
-      .catch(() => {
-        if (!cancelled) setCanonical([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const colorByLower = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const t of canonical) map.set(t.name.toLowerCase(), t.color ?? null);
-    return map;
-  }, [canonical]);
-
-  const descByLower = useMemo(() => {
-    const map = new Map<string, string | null>();
-    for (const t of canonical) {
-      map.set(t.name.toLowerCase(), t.description ?? null);
-    }
-    return map;
-  }, [canonical]);
-
-  const tags = useMemo(() => {
-    const counts = new Map<string, number>();
+  const counts = useMemo(() => {
+    const c = new Map<string, number>();
     for (const s of saves) {
       if (s.deletedAt) continue;
       for (const t of s.tags) {
-        const key = t.toLowerCase();
-        counts.set(key, (counts.get(key) ?? 0) + 1);
+        const k = t.toLowerCase();
+        c.set(k, (c.get(k) ?? 0) + 1);
       }
     }
-    return [...counts.entries()].sort(
-      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-    );
+    return c;
   }, [saves]);
+
+  const tagByLower = useMemo(() => {
+    const map = new Map<string, (typeof tags)[number]>();
+    for (const t of tags) map.set(t.name.toLowerCase(), t);
+    return map;
+  }, [tags]);
 
   const selected = useMemo(() => {
     const v = predicate.value;
@@ -66,7 +53,72 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
     return new Set<string>();
   }, [predicate.value]);
 
-  const filtered = tags.filter(([id]) => id.includes(q.trim().toLowerCase()));
+  const entryFor = useCallback(
+    (name: string): TagEntry => {
+      const lower = name.toLowerCase();
+      const meta = tagByLower.get(lower);
+      return {
+        name,
+        count: counts.get(lower) ?? 0,
+        starred: Boolean(meta?.starred),
+        description: meta?.description ?? null,
+      };
+    },
+    [tagByLower, counts],
+  );
+
+  const needle = q.trim().toLowerCase();
+  const sections = useMemo<Section[]>(() => {
+    const matches = (e: TagEntry, headerLabel: string | null = null) =>
+      !needle ||
+      e.name.toLowerCase().includes(needle) ||
+      (headerLabel ?? "").toLowerCase().includes(needle);
+
+    const starredItems = tags
+      .filter((t) => t.starred)
+      .map((t) => entryFor(t.name))
+      .filter((e) => matches(e))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    const grouped: Section[] = [];
+    const taggedIds = new Set<string>();
+    for (const g of groups) {
+      for (const id of g.tagIds) taggedIds.add(id);
+      const items = g.tagNames
+        .map((name) => entryFor(name))
+        .filter((e) => matches(e, g.name))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      if (items.length > 0) {
+        grouped.push({ key: `g:${g.id}`, label: g.name, items });
+      }
+    }
+
+    const uncategorisedItems = tags
+      .filter((t) => !taggedIds.has(t.id))
+      .map((t) => entryFor(t.name))
+      .filter((e) => matches(e))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const uncatSection: Section | null =
+      uncategorisedItems.length > 0
+        ? {
+            key: "uncategorised",
+            label: groups.length === 0 ? null : "Uncategorized",
+            items: uncategorisedItems,
+          }
+        : null;
+
+    const sections: Section[] = [];
+    if (starredItems.length > 0)
+      sections.push({
+        key: "starred",
+        label: "Starred",
+        starred: true,
+        items: starredItems,
+      });
+    sections.push(...grouped);
+    if (uncatSection) sections.push(uncatSection);
+    return sections;
+  }, [tags, groups, needle, entryFor]);
 
   function toggle(tag: string) {
     const next = new Set(selected);
@@ -78,13 +130,7 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
     });
   }
 
-  if (!tags.length) {
-    return (
-      <div className={styles.body}>
-        <div className={styles.empty}>No tags yet.</div>
-      </div>
-    );
-  }
+  const flat = sections.flatMap((s) => s.items);
 
   return (
     <div className={styles.body}>
@@ -98,40 +144,49 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
           spellCheck={false}
         />
       </div>
-      {filtered.map(([tag, count]) => {
-        const checked = selected.has(tag);
-        const color = colorByLower.get(tag);
-        const desc = descByLower.get(tag);
-        return (
-          <Menu.CheckboxItem
-            key={tag}
-            closeOnClick={false}
-            checked={checked}
-            onCheckedChange={() => toggle(tag)}
-            title={desc ?? undefined}
-          >
-            <span className={styles.check} aria-hidden>
-              {checked ? (
-                <IconCheckOutline18 width="0.85em" height="0.85em" />
-              ) : null}
-            </span>
-            {color ? (
-              <span
-                className={styles.swatch}
-                style={{ background: color }}
-                aria-hidden
-              />
-            ) : (
-              <span className={styles["swatch-empty"]} aria-hidden />
-            )}
-            <Menu.ItemLabel>{tag}</Menu.ItemLabel>
-            <span className={styles.count}>{count}</span>
-          </Menu.CheckboxItem>
-        );
-      })}
-      {filtered.length === 0 ? (
-        <div className={styles.empty}>No matches.</div>
-      ) : null}
+      {flat.length === 0 ? (
+        <div className={styles.empty}>
+          {needle ? "No matches." : "No tags yet."}
+        </div>
+      ) : (
+        sections.map((section) => (
+          <Fragment key={section.key}>
+            {section.label ? (
+              <div className={styles["section-header"]}>
+                {section.starred ? (
+                  <IconStarFill18 width={11} height={11} aria-hidden />
+                ) : null}
+                <span>{section.label}</span>
+              </div>
+            ) : null}
+            {section.items.map((entry) => {
+              const checked = selected.has(entry.name);
+              return (
+                <Menu.CheckboxItem
+                  key={`${section.key}:${entry.name}`}
+                  closeOnClick={false}
+                  checked={checked}
+                  onCheckedChange={() => toggle(entry.name)}
+                  title={entry.description ?? undefined}
+                >
+                  <span className={styles.check} aria-hidden>
+                    {checked ? (
+                      <IconCheckOutline18 width="0.85em" height="0.85em" />
+                    ) : null}
+                  </span>
+                  {entry.starred ? (
+                    <span className={styles["star-flag"]} aria-hidden>
+                      <IconStarFill18 width="0.8em" height="0.8em" />
+                    </span>
+                  ) : null}
+                  <Menu.ItemLabel>{entry.name}</Menu.ItemLabel>
+                  <span className={styles.count}>{entry.count}</span>
+                </Menu.CheckboxItem>
+              );
+            })}
+          </Fragment>
+        ))
+      )}
     </div>
   );
 }

@@ -13,7 +13,7 @@ const fallbackCache = new WeakMap<Save, number>();
  * launch re-measures dim-less covers as their `<img>` lazy-loads,
  * triggering a re-pack cascade that's especially visible during fast
  * scrolling. The serialized blob is small (~30 bytes per save) and
- * tolerant of stale entries — if the cover changes, the next image
+ * tolerant of stale entries: if the cover changes, the next image
  * load updates the map and persists the corrected value. */
 const STORAGE_KEY = "pond:aspects:v1";
 const PERSIST_DEBOUNCE_MS = 800;
@@ -36,7 +36,7 @@ function hydrateFromStorage(): void {
       }
     }
   } catch {
-    // Storage corrupt / unavailable — start with an empty cache.
+    // Storage corrupt / unavailable: start with an empty cache.
   }
 }
 
@@ -53,7 +53,7 @@ function persistSoon(): void {
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
     } catch {
-      // Storage full / private browsing — drop the persistence pass.
+      // Storage full / private browsing: drop the persistence pass.
     }
   }, PERSIST_DEBOUNCE_MS);
 }

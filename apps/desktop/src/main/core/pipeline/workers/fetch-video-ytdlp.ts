@@ -26,7 +26,7 @@ export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
 
   // Positive gate: require explicit `type: "video"` evidence in
   // capture.media before spawning yt-dlp. Empty media, missing rawJson, or
-  // "media exists but no video" all skip — extractors that legitimately
+  // "media exists but no video" all skip; extractors that legitimately
   // carry video (TikTok, YouTube, Arena/Cosmos with video embeds) populate
   // a video entry; everything else is text-or-image and yt-dlp would just
   // error with "No video could be found".

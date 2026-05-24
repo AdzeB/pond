@@ -201,7 +201,7 @@ interface ContentProps {
   onClose: () => void;
 }
 
-/* Trailing debounce — coalesce burst refresh notifications from the
+/* Trailing debounce: coalesce burst refresh notifications from the
  * pool (one per save mutation × N saves during a sync) into a single
  * IPC round-trip. 150 ms keeps the UI feeling live while smoothing
  * 100-mutation bursts down to a couple of fetches. */
@@ -221,7 +221,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
   const [clearing, setClearing] = useState(false);
   /* A renderer-only clock so relative timestamps ("2m ago", "in 30s")
    * stay fresh without subscribing every row to its own setInterval.
-   * One tick every 15s is plenty — finer than that and we're just
+   * One tick every 15s is plenty: finer than that and we're just
    * burning paints to nudge rounded labels by a second. */
   const [now, setNow] = useState(() => Date.now());
   const toast = useToast();
@@ -233,7 +233,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
     setPayload(next);
   }, []);
 
-  /* Debounced trigger — re-uses one timer for every notification while
+  /* Debounced trigger: re-uses one timer for every notification while
    * the dialog is open. Cleared on close so the IPC settles. */
   const refreshTimer = useRef<number | null>(null);
   const scheduleRefresh = useCallback(() => {
@@ -251,7 +251,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
     void refresh();
     /* The pool fires `subscribeToAll` on every save mutation, which
      * happens whenever a task moves status. Piggyback that for live
-     * dialog updates — debounced so a 100-save backfill doesn't
+     * dialog updates, debounced so a 100-save backfill doesn't
      * trigger 100 IPC calls in quick succession. */
     const off = subscribeToAll(() => {
       scheduleRefresh();
@@ -667,7 +667,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                 <span
                   className={styles.chip}
                   data-tone="warn"
-                  title="The reconciler is paused — no new tasks will dispatch."
+                  title="The reconciler is paused. No new tasks will dispatch."
                 >
                   Paused
                 </span>
@@ -700,7 +700,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                 <span
                   className={styles.chip}
                   data-tone="muted"
-                  title="The dialog caps at 500 rows — clear or retry to see the rest."
+                  title="The dialog caps at 500 rows. Clear or retry to see the rest."
                 >
                   +{truncated} more
                 </span>
@@ -1002,15 +1002,13 @@ function describeIngestingStage(
   now: number,
 ): { label: string; tone?: "warn" | "muted"; hint?: string } {
   if (!row.stageOp) {
-    return { label: "Queued — waiting for a worker", tone: "muted" };
+    return { label: "Queued, waiting for a worker", tone: "muted" };
   }
   const baseLabel = STAGE_LABELS[row.stageOp];
   if (row.stageStatus === "running") {
     const dwell = formatRelative(now, row.ingestStartedAt);
     return {
-      label: dwell
-        ? `${baseLabel} — running ${dwell}`
-        : `${baseLabel} — running`,
+      label: dwell ? `${baseLabel}: running ${dwell}` : `${baseLabel}: running`,
       hint:
         row.attempts > 1
           ? `Attempt ${row.attempts} of ${row.maxAttempts}.`
@@ -1019,7 +1017,7 @@ function describeIngestingStage(
   }
   if (row.stageStatus === "blocked") {
     return {
-      label: `${baseLabel} — blocked`,
+      label: `${baseLabel}: blocked`,
       tone: "warn",
       hint:
         row.lastError ??
@@ -1031,8 +1029,8 @@ function describeIngestingStage(
     if (row.attempts > 0) {
       return {
         label: rel
-          ? `${baseLabel} — retrying ${rel}`
-          : `${baseLabel} — retrying soon`,
+          ? `${baseLabel}: retrying ${rel}`
+          : `${baseLabel}: retrying soon`,
         tone: "warn",
         hint:
           row.maxAttempts > 0
@@ -1041,7 +1039,7 @@ function describeIngestingStage(
       };
     }
     return {
-      label: rel ? `${baseLabel} — starts ${rel}` : `${baseLabel} — queued`,
+      label: rel ? `${baseLabel}: starts ${rel}` : `${baseLabel}: queued`,
       tone: "muted",
     };
   }
@@ -1073,7 +1071,7 @@ function paneTitle(selection: Selection): string {
 
 function renderEmpty(selection: Selection, totallyEmpty: boolean) {
   if (totallyEmpty) {
-    return <p className={styles.empty}>Nothing to show — closing.</p>;
+    return <p className={styles.empty}>Nothing to show. Closing.</p>;
   }
   if (selection.kind === "source") {
     return (

@@ -44,7 +44,7 @@ function persist(next: RecentEntry[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   } catch {
-    /* localStorage may be denied (private mode, quota) — ignore */
+    /* localStorage may be denied (private mode, quota); ignore */
   }
 }
 

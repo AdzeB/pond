@@ -43,7 +43,7 @@ a smaller function, or a different shape. Reach for those first.
 - Don't write essay-length comments. Two lines that name the problem
   and the lever almost always beat a fourteen-line history lesson. If
   the explanation truly needs paragraphs, write an ADR, a commit
-  message, or a short file-top prose block — not a wall wedged
+  message, or a short file-top prose block, not a wall wedged
   between two lines of config.
 
   Bad:
@@ -53,7 +53,7 @@ a smaller function, or a different shape. Reach for those first.
   // optimizer pre-bundles it once at boot from
   // `node_modules/@pond/ui/src/index.ts` and serves the bundle
   // from `.vite/deps/`. Source edits inside `packages/ui/` then
-  // sit outside the live module graph — HMR has nothing to
+  // sit outside the live module graph, so HMR has nothing to
   // invalidate and you have to restart the dev server to see
   // changes. Aliasing the bare specifier to the source folder
   // pulls the package back into the graph so Fast Refresh and
@@ -66,7 +66,7 @@ a smaller function, or a different shape. Reach for those first.
 
   ```ts
   // Pull into the live module graph so HMR works on workspace
-  // edits — Vite's dep optimizer otherwise freezes the package
+  // edits. Vite's dep optimizer otherwise freezes the package
   // at dev-server boot.
   "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
   ```
@@ -96,8 +96,8 @@ a smaller function, or a different shape. Reach for those first.
   the current file.
 
   ```ts
-  // Mirrors the toast categories in `useToast()` —
-  // `apps/desktop/src/renderer/src/ui/toast.tsx`.
+  // Mirrors the toast categories in `useToast()`
+  // (`apps/desktop/src/renderer/src/ui/toast.tsx`).
   ```
 
 ### Rule of thumb
@@ -108,18 +108,74 @@ answer is yes, keep the comment short and put it directly above the line
 or block it explains.
 
 Prose blocks at the top of a file are fine when they document the
-component's place in the system — see
+component's place in the system. See
 `apps/desktop/src/renderer/src/components/preview-pane/index.tsx` for the
 shape. They are not required.
+
+## Writing
+
+Never use em dashes (`—`, U+2014) anywhere we write: code comments,
+user-facing copy (toasts, descriptions, settings labels, dialog text,
+error messages, empty states), Markdown docs, commit messages, PR
+descriptions. En dashes (`–`, U+2013) and hyphens (`-`) are fine.
+
+A comma, colon, period, or pair of parentheses almost always reads
+better and survives every editor, font, and clipboard without surprise.
+
+### Don't
+
+- Don't use an em dash for a parenthetical aside.
+
+  ```ts
+  toast.error("Couldn't save tag — the name is already taken.");
+  ```
+
+- Don't use an em dash for a strong break between clauses.
+
+  ```md
+  The pipeline runs every minute — failures are retried with backoff.
+  ```
+
+- Don't use an em dash to introduce a list-style continuation.
+
+  ```ts
+  // Three sources feed the index — saves, tags, and tag groups.
+  ```
+
+### Do
+
+- Do use a comma, parentheses, or a colon for a parenthetical aside.
+
+  ```ts
+  toast.error("Couldn't save tag: the name is already taken.");
+  ```
+
+- Do use a period and start a new sentence for a strong break.
+
+  ```md
+  The pipeline runs every minute. Failures are retried with backoff.
+  ```
+
+- Do use a colon to introduce a list-style continuation.
+
+  ```ts
+  // Three sources feed the index: saves, tags, and tag groups.
+  ```
+
+### Rule of thumb
+
+If you reach for an em dash, replace it with a comma, colon, period, or
+pair of parentheses. The sentence will read the same and the codebase
+stays consistent.
 
 ## CSS class names
 
 All class names in `*.css` and `*.module.css` are kebab-case. No
-exceptions — no camelCase, no BEM `__` / `--` separators, no
+exceptions: no camelCase, no BEM `__` / `--` separators, no
 PascalCase. Use plain `-` for word breaks and a second `-` to namespace
 modifiers.
 
-### Class names — Don't
+### Class names: Don't
 
 ```css
 .gridWaterfall { ... }
@@ -128,7 +184,7 @@ modifiers.
 .pondCard--dimmed { ... }
 ```
 
-### Class names — Do
+### Class names: Do
 
 ```css
 .grid-waterfall { ... }

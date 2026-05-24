@@ -1,61 +1,35 @@
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Input } from "@pond/ui";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTags } from "@/pool/tags";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
-
-interface CanonTag {
-  name: string;
-  color: string | null;
-  description: string | null;
-}
 
 export function TagEditor({ save }: { save: Save }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [canonical, setCanonical] = useState<CanonTag[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const tags = useTags();
 
-  useEffect(() => {
-    let cancelled = false;
-    void window.pond
-      .query("tags.list", {})
-      .then((rows) => {
-        if (cancelled) return;
-        const list = (rows as CanonTag[]).map((r) => ({
-          name: r.name,
-          color: r.color ?? null,
-          description: r.description ?? null,
-        }));
-        setCanonical(list);
-      })
-      .catch(() => {
-        if (!cancelled) setCanonical([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const canonicalByLower = useMemo(() => {
-    const map = new Map<string, CanonTag>();
-    for (const t of canonical) map.set(t.name.toLowerCase(), t);
+  const tagByLower = useMemo(() => {
+    const map = new Map<string, (typeof tags)[number]>();
+    for (const t of tags) map.set(t.name.toLowerCase(), t);
     return map;
-  }, [canonical]);
+  }, [tags]);
 
   const suggestions = useMemo(() => {
     const needle = draft.trim().toLowerCase();
-    if (!needle) return [] as CanonTag[];
+    if (!needle) return [] as Array<(typeof tags)[number]>;
     const have = new Set(save.tags.map((t) => t.toLowerCase()));
-    return canonical
+    return tags
       .filter(
         (t) =>
           !have.has(t.name.toLowerCase()) &&
           t.name.toLowerCase().includes(needle),
       )
       .slice(0, 6);
-  }, [draft, canonical, save.tags]);
+  }, [draft, tags, save.tags]);
 
   async function commit(name: string) {
     const cleaned = normalizeLabelName(name);
@@ -93,8 +67,7 @@ export function TagEditor({ save }: { save: Save }) {
   return (
     <div className={styles.tags}>
       {save.tags.map((tag) => {
-        const meta = canonicalByLower.get(tag.toLowerCase());
-        const color = meta?.color ?? null;
+        const meta = tagByLower.get(tag.toLowerCase());
         return (
           <span key={tag} className={styles["tag-wrap"]}>
             <Link
@@ -102,13 +75,6 @@ export function TagEditor({ save }: { save: Save }) {
               className={styles.tag}
               title={meta?.description ?? "Filter library by this tag"}
             >
-              {color ? (
-                <span
-                  className={styles["tag-dot"]}
-                  style={{ background: color }}
-                  aria-hidden
-                />
-              ) : null}
               #{tag}
             </Link>
             <button
@@ -158,13 +124,6 @@ export function TagEditor({ save }: { save: Save }) {
               onClick={() => void commit(s.name)}
               title={s.description ?? undefined}
             >
-              {s.color ? (
-                <span
-                  className={styles["tag-dot"]}
-                  style={{ background: s.color }}
-                  aria-hidden
-                />
-              ) : null}
               {s.name}
             </button>
           ))}

@@ -1,6 +1,8 @@
 import {
+  DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
   DEFAULT_VIDEO_DOWNLOAD,
+  type ImageDownloadSettings,
   type Prefs,
   settings as settingsTable,
   type VideoDownloadSettings,
@@ -12,6 +14,7 @@ import { getDb } from "../db";
 interface SettingsCache {
   prefs: Prefs;
   videoDownload: VideoDownloadSettings;
+  imageDownload: ImageDownloadSettings;
 }
 
 let cache: SettingsCache | null = null;
@@ -30,6 +33,10 @@ export function invalidateVideoDownloadPrefs(): void {
   invalidate();
 }
 
+export function invalidateImageDownloadPrefs(): void {
+  invalidate();
+}
+
 async function loadSettings(): Promise<SettingsCache> {
   if (cache) return cache;
   if (inflight) return inflight;
@@ -40,13 +47,19 @@ async function loadSettings(): Promise<SettingsCache> {
         .select({
           prefs: settingsTable.prefs,
           videoDownload: settingsTable.videoDownload,
+          imageDownload: settingsTable.imageDownload,
         })
         .from(settingsTable)
         .where(eq(settingsTable.id, "singleton"));
       const row = rows[0];
       cache = {
         prefs: mergePrefs(DEFAULT_PREFS, row?.prefs),
-        videoDownload: normalize(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
+        videoDownload: normalizeVideo(
+          row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
+        ),
+        imageDownload: normalizeImage(
+          row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD,
+        ),
       };
       return cache;
     } catch (err) {
@@ -54,6 +67,7 @@ async function loadSettings(): Promise<SettingsCache> {
       return {
         prefs: DEFAULT_PREFS,
         videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+        imageDownload: DEFAULT_IMAGE_DOWNLOAD,
       };
     } finally {
       inflight = null;
@@ -68,6 +82,10 @@ export async function getPrefs(): Promise<Prefs> {
 
 export async function getVideoDownloadPrefs(): Promise<VideoDownloadSettings> {
   return (await loadSettings()).videoDownload;
+}
+
+export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
+  return (await loadSettings()).imageDownload;
 }
 
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
@@ -93,7 +111,7 @@ export async function setVideoDownloadPrefs(
   next: Partial<VideoDownloadSettings>,
 ): Promise<VideoDownloadSettings> {
   const current = await loadSettings();
-  const merged = normalize({ ...current.videoDownload, ...next });
+  const merged = normalizeVideo({ ...current.videoDownload, ...next });
   const db = await getDb();
   await db
     .insert(settingsTable)
@@ -110,13 +128,34 @@ export async function setVideoDownloadPrefs(
   return merged;
 }
 
+export async function setImageDownloadPrefs(
+  next: Partial<ImageDownloadSettings>,
+): Promise<ImageDownloadSettings> {
+  const current = await loadSettings();
+  const merged = normalizeImage({ ...current.imageDownload, ...next });
+  const db = await getDb();
+  await db
+    .insert(settingsTable)
+    .values({
+      id: "singleton",
+      imageDownload: merged,
+    })
+    .onConflictDoUpdate({
+      target: settingsTable.id,
+      set: { imageDownload: merged, updatedAt: new Date() },
+    })
+    .run();
+  if (cache) cache = { ...cache, imageDownload: merged };
+  return merged;
+}
+
 const ALLOWED_HEIGHTS = new Set([480, 720, 1080, 1440, 2160]);
 
-function normalize(value: VideoDownloadSettings): VideoDownloadSettings {
+function normalizeVideo(value: VideoDownloadSettings): VideoDownloadSettings {
   return {
     enabled: Boolean(value.enabled),
     maxHeight: clampHeight(value.maxHeight),
-    maxFileSizeMb: clampFilesize(value.maxFileSizeMb),
+    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 10_000),
   };
 }
 
@@ -137,13 +176,42 @@ function clampHeight(h: VideoDownloadSettings["maxHeight"]): number | null {
   return best;
 }
 
+const ALLOWED_LONG_EDGES = new Set([1024, 2048, 4096]);
+
+function normalizeImage(value: ImageDownloadSettings): ImageDownloadSettings {
+  return {
+    maxLongEdge: clampLongEdge(value.maxLongEdge),
+    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 1_000),
+  };
+}
+
+function clampLongEdge(
+  edge: ImageDownloadSettings["maxLongEdge"],
+): number | null {
+  if (edge === null || edge === undefined) return null;
+  const n = Math.floor(Number(edge));
+  if (!Number.isFinite(n) || n <= 0) return null;
+  if (ALLOWED_LONG_EDGES.has(n)) return n;
+  let best = 2048;
+  let bestDelta = Math.abs(best - n);
+  for (const bucket of ALLOWED_LONG_EDGES) {
+    const d = Math.abs(bucket - n);
+    if (d < bestDelta) {
+      best = bucket;
+      bestDelta = d;
+    }
+  }
+  return best;
+}
+
 function clampFilesize(
-  mb: VideoDownloadSettings["maxFileSizeMb"],
+  mb: number | null | undefined,
+  ceiling: number,
 ): number | null {
   if (mb === null || mb === undefined) return null;
   const n = Math.floor(Number(mb));
   if (!Number.isFinite(n) || n <= 0) return null;
-  return Math.min(n, 10_000);
+  return Math.min(n, ceiling);
 }
 
 type DeepPartial<T> = T extends object

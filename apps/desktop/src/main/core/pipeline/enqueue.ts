@@ -28,7 +28,7 @@ export interface EnqueueResult {
   id: string;
   created: boolean;
   // True when an existing save was reset because it was previously failed
-  // and a fresh seed was supplied — distinguishes the "no-op" case from
+  // and a fresh seed was supplied. Distinguishes the "no-op" case from
   // the "recovered a failed save" case at the call site.
   reseeded?: boolean;
 }
@@ -50,7 +50,7 @@ export interface EnqueueOptions {
   // Pre-extracted capture data from an upstream source (e.g. the Twitter
   // bookmarks GraphQL response). When provided, the save row is populated
   // immediately and `harvest_metadata` skips its scrape via
-  // `isFreshHarvest()` — saving a round-trip and dodging X.com's
+  // `isFreshHarvest()`, saving a round-trip and dodging X.com's
   // per-partition rate limiter when syncing dozens of new bookmarks at
   // once.
   seed?: EnqueueSeed;
@@ -104,7 +104,7 @@ export async function enqueueSaveByUrl(
     } else if (opts.seed) {
       // Additive enrichment: an existing (non-failed) save predates the
       // parser update that started extracting a field the sync now hands us
-      // — most commonly `capture.author.avatarUrl`. Merge anything new from
+      // (most commonly `capture.author.avatarUrl`). Merge anything new from
       // the seed into `rawJson` without touching values the save already
       // has, and re-pend the downstream worker so the new field actually
       // lands as a file on disk.
@@ -189,12 +189,12 @@ export async function enqueueSaveByUrl(
   return { id, created: true };
 }
 
-// enqueueCaptureTweetForExisting — idempotent backfill that schedules a
+// enqueueCaptureTweetForExisting: idempotent backfill that schedules a
 // `capture_tweet` task for every twitter save that doesn't already have
 // both the light and dark screenshot variants on disk. Runs for tweets
 // with media too: the screenshot is the canonical thumbnail, the
 // extracted media is the detail-carousel content. Safe to call on every
-// app start — existing tasks for the same `(saveId, op)` pair are left
+// app start. Existing tasks for the same `(saveId, op)` pair are left
 // alone, so re-running never duplicates work.
 export async function enqueueCaptureTweetForExisting(): Promise<{
   scheduled: number;
@@ -322,7 +322,7 @@ interface SeedMerge {
 
 // Additive merge: for each field the seed provides, fill it in only if
 // the existing save doesn't already have a value. Never overwrites.
-// Currently scoped to `capture.author.*` — that's where new extractor
+// Currently scoped to `capture.author.*`: that's where new extractor
 // fields (avatarUrl, profileUrl) tend to show up first; widen as needed.
 function mergeSeedIntoExistingSave(
   current: Save,
@@ -396,7 +396,7 @@ async function persistEnrichment(
 }
 
 // Newly-filled avatar URL only lands on disk if `fetch_avatar` runs
-// again — its prior pass for this save was a no-op (rawJson had no URL).
+// again. Its prior pass for this save was a no-op (rawJson had no URL).
 // Only re-pend `done` rows: `pending`/`running` will pick up the new
 // rawJson on their natural run, and reviving `failed`/`blocked` here
 // would step on whatever signal pushed them there.

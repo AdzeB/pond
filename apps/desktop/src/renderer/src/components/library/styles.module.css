@@ -57,7 +57,7 @@
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-md);
+  border-radius: 6px;
   outline: none;
   user-select: none;
   text-align: inherit;
@@ -159,6 +159,11 @@
   backdrop-filter: blur(6px);
 }
 
+:global(html[data-reduce-transparency="true"]) .count {
+  background: rgb(0, 0, 0);
+  backdrop-filter: none;
+}
+
 .source-badge {
   position: absolute;
   bottom: 6px;
@@ -192,6 +197,11 @@
     opacity 120ms ease,
     background 120ms ease,
     border-color 120ms ease;
+}
+
+:global(html[data-reduce-transparency="true"]) .checkbox {
+  background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
+  backdrop-filter: none;
 }
 
 .checkmark {

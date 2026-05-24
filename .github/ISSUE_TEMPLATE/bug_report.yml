@@ -53,7 +53,7 @@ body:
     id: pond-version
     attributes:
       label: pond version
-      description: From the tray menu, "About pond" — or the GitHub release tag.
+      description: From the tray menu, "About pond", or the GitHub release tag.
       placeholder: 0.1.0
     validations:
       required: true

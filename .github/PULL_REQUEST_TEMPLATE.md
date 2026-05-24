@@ -1,6 +1,6 @@
 <!--
 Thanks for contributing to pond! Please fill in the sections below.
-Keep PRs focused — one feature or fix per PR.
+Keep PRs focused: one feature or fix per PR.
 -->
 
 ## Summary
@@ -16,12 +16,12 @@ Keep PRs focused — one feature or fix per PR.
 
 ## Type of change
 
-- [ ] `feat` — new feature
-- [ ] `fix` — bug fix
-- [ ] `refactor` — no behavior change
-- [ ] `perf` — performance improvement
-- [ ] `docs` — documentation only
-- [ ] `build` / `ops` / `chore` — tooling, CI, deps
+- [ ] `feat`: new feature
+- [ ] `fix`: bug fix
+- [ ] `refactor`: no behavior change
+- [ ] `perf`: performance improvement
+- [ ] `docs`: documentation only
+- [ ] `build` / `ops` / `chore`: tooling, CI, deps
 - [ ] Breaking change (note in commit with `!`)
 
 ## Areas touched

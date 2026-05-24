@@ -23,7 +23,7 @@ function affectsList(data: Partial<Save>): boolean {
 export interface SyncActionEvent {
   id: number;
   batchId: string | null;
-  modelName: "save" | "tag" | "settings";
+  modelName: "save" | "tag" | "tag_group" | "tag_group_member" | "settings";
   modelId: string;
   action: "I" | "U" | "D" | "A";
   data: unknown;

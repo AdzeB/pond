@@ -36,7 +36,7 @@ deciding whether something is a vulnerability:
   Authentication is a per-install bearer token kept in the OS keychain.
   Reports about the loopback server being reachable from other
   processes on the same machine are valid; reports about it being
-  reachable over the network are not — it isn't.
+  reachable over the network are not (it isn't).
 - The browser extension communicates with the desktop app over the
   same loopback channel using the pairing token the user pastes into
   the popup. The token is never sent to a remote server.

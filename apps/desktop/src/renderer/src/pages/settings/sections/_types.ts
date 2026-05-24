@@ -9,7 +9,7 @@ export const AUTH_WALLED_SOURCES = [
 ] as const;
 export type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
-// Every source connects the same way now — the extension pushes cookies,
+// Every source connects the same way now: the extension pushes cookies,
 // the desktop derives any per-account info (e.g. the user's handle) from
 // the cookied session in the hidden window.
 export const ALL_SOURCES = AUTH_WALLED_SOURCES.map(
@@ -39,8 +39,19 @@ export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadPrefs = {
   maxFileSizeMb: 500,
 };
 
+export interface ImageDownloadPrefs {
+  maxLongEdge: number | null;
+  maxFileSizeMb: number | null;
+}
+
+export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadPrefs = {
+  maxLongEdge: 2048,
+  maxFileSizeMb: 10,
+};
+
 export interface SettingsRow {
   id: string;
   videoDownload: VideoDownloadPrefs;
+  imageDownload: ImageDownloadPrefs;
   libraryRoot: string | null;
 }

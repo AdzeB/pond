@@ -2,6 +2,7 @@ import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
+import { getImageDownloadPrefs } from "../../prefs";
 import { applySavePatch, readSave } from "./apply";
 
 export async function runFetchBlobs(saveId: string): Promise<void> {
@@ -25,7 +26,21 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     return;
   }
 
-  const fetched = await fetchMediaBatch(urls);
+  const imagePrefs = await getImageDownloadPrefs();
+  // maxLongEdge is read but not yet enforced: downscaling needs an image
+  // library (e.g. sharp) that is not yet a dependency. The file-size cap
+  // alone keeps disks bounded today.
+  if (imagePrefs.maxLongEdge !== null) {
+    log.debug(
+      "[pond pipeline:fetch-blobs] image maxLongEdge set but not enforced",
+      { saveId, maxLongEdge: imagePrefs.maxLongEdge },
+    );
+  }
+  const imageMaxBytes = imagePrefs.maxFileSizeMb
+    ? imagePrefs.maxFileSizeMb * 1024 * 1024
+    : null;
+
+  const fetched = await fetchMediaBatch(urls, { imageMaxBytes });
   if (fetched.length === 0) {
     log.warn("[pond pipeline:fetch-blobs] all fetches failed", saveId, urls);
     return;
