@@ -1,6 +1,5 @@
-import { IconStarFill18 } from "@pond/icons/fill/18";
-import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { Input, Menu } from "@pond/ui";
+import { Check, Star } from "lucide-react";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/library/filter-bar/dropdowns/types";
 import { useSaves } from "@/pool/hooks";
@@ -154,7 +153,12 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
             {section.label ? (
               <div className={styles["section-header"]}>
                 {section.starred ? (
-                  <IconStarFill18 width={11} height={11} aria-hidden />
+                  <Star
+                    fill="currentColor"
+                    width={11}
+                    height={11}
+                    aria-hidden
+                  />
                 ) : null}
                 <span>{section.label}</span>
               </div>
@@ -170,13 +174,11 @@ export function TagsDropdown({ predicate, onChange }: DropdownProps) {
                   title={entry.description ?? undefined}
                 >
                   <span className={styles.check} aria-hidden>
-                    {checked ? (
-                      <IconCheckOutline18 width="0.85em" height="0.85em" />
-                    ) : null}
+                    {checked ? <Check width="0.85em" height="0.85em" /> : null}
                   </span>
                   {entry.starred ? (
                     <span className={styles["star-flag"]} aria-hidden>
-                      <IconStarFill18 width="0.8em" height="0.8em" />
+                      <Star fill="currentColor" width="0.8em" height="0.8em" />
                     </span>
                   ) : null}
                   <Menu.ItemLabel>{entry.name}</Menu.ItemLabel>

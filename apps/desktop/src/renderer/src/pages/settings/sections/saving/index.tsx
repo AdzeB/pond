@@ -1,5 +1,5 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { Button, Select, Switch, useToast } from "@pond/ui";
+import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
@@ -246,7 +246,7 @@ export function SavingSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -291,7 +291,7 @@ export function SavingSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -341,7 +341,7 @@ export function SavingSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -384,7 +384,7 @@ export function SavingSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>

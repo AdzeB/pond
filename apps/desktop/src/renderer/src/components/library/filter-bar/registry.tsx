@@ -1,17 +1,3 @@
-import {
-  IconCalendarOutline18,
-  IconChevronRightOutline18,
-  IconFileOutline18,
-  IconLinkOutline18,
-  IconPencilOutline18,
-  IconRulerOutline18,
-  IconScaleOutline18,
-  IconShapesOutline18,
-  IconStopwatchOutline18,
-  IconTagOutline18,
-  IconUploadOutline18,
-  IconUserOutline18,
-} from "@pond/icons/outline/18";
 import type { SaveLike } from "@pond/schema/filters/match";
 import { matches } from "@pond/schema/filters/match";
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
@@ -22,6 +8,20 @@ import type {
   Query,
 } from "@pond/schema/filters/types";
 import { Input, Menu } from "@pond/ui";
+import {
+  Calendar,
+  ChevronRight,
+  File as FileIcon,
+  Link as LinkIcon,
+  Pencil,
+  Ruler,
+  Scale,
+  Shapes,
+  Tag,
+  Timer,
+  Upload,
+  User,
+} from "lucide-react";
 import {
   type ComponentType,
   Fragment,
@@ -55,19 +55,19 @@ type IconType = ComponentType<{
 }>;
 
 export const FIELD_ICONS: Record<FieldId, IconType> = {
-  tags: IconTagOutline18,
-  source: IconLinkOutline18,
-  type: IconFileOutline18,
-  shape: IconShapesOutline18,
-  size: IconScaleOutline18,
-  duration: IconStopwatchOutline18,
-  dimensions: IconRulerOutline18,
-  creator: IconUserOutline18,
-  url: IconLinkOutline18,
-  note: IconPencilOutline18,
-  savedAt: IconUploadOutline18,
-  publishedAt: IconCalendarOutline18,
-  modifiedAt: IconCalendarOutline18,
+  tags: Tag,
+  source: LinkIcon,
+  type: FileIcon,
+  shape: Shapes,
+  size: Scale,
+  duration: Timer,
+  dimensions: Ruler,
+  creator: User,
+  url: LinkIcon,
+  note: Pencil,
+  savedAt: Upload,
+  publishedAt: Calendar,
+  modifiedAt: Calendar,
 };
 
 interface FieldGroup {
@@ -87,7 +87,7 @@ const FIELD_GROUPS: readonly FieldGroup[] = [
     id: "time",
     label: "Dates",
     display: "submenu",
-    icon: IconCalendarOutline18,
+    icon: Calendar,
   },
 ];
 
@@ -206,7 +206,7 @@ function FilterSubmenu({
           {meta.label}
         </Menu.ItemLabel>
         <span className={styles["submenu-chevron"]} aria-hidden>
-          <IconChevronRightOutline18 width="0.85em" height="0.85em" />
+          <ChevronRight width="0.85em" height="0.85em" />
         </span>
       </Menu.SubmenuTrigger>
       <Menu.Portal>
@@ -251,7 +251,7 @@ function GroupSubmenu({
           {group.label}
         </Menu.ItemLabel>
         <span className={styles["submenu-chevron"]} aria-hidden>
-          <IconChevronRightOutline18 width="0.85em" height="0.85em" />
+          <ChevronRight width="0.85em" height="0.85em" />
         </span>
       </Menu.SubmenuTrigger>
       <Menu.Portal>

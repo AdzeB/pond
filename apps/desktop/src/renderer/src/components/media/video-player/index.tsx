@@ -1,16 +1,6 @@
 import "@videojs/react/video/skin.css";
 
 import {
-  IconFullScreenOutline18,
-  IconMediaNextOutline18,
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconMediaPreviousOutline18,
-  IconVolumeOffOutline18,
-  IconVolumeOutline18,
-  IconWindowBottomRightOutline18,
-} from "@pond/icons/outline/18";
-import {
   Controls,
   createPlayer,
   FullscreenButton,
@@ -28,6 +18,16 @@ import {
   VolumeSlider,
 } from "@videojs/react";
 import { Video, videoFeatures } from "@videojs/react/video";
+import {
+  Maximize,
+  Pause,
+  PictureInPicture2,
+  Play,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
@@ -283,9 +283,9 @@ function PlayerControls({
                 }
               >
                 {state.paused ? (
-                  <IconMediaPlayOutline18 width={14} height={14} />
+                  <Play width={14} height={14} />
                 ) : (
-                  <IconMediaPauseOutline18 width={14} height={14} />
+                  <Pause width={14} height={14} />
                 )}
               </button>
             )}
@@ -300,7 +300,7 @@ function PlayerControls({
                 type="button"
                 aria-label={`Seek back ${SEEK_BUTTON_STEP} seconds`}
               >
-                <IconMediaPreviousOutline18 width={14} height={14} />
+                <SkipBack width={14} height={14} />
               </button>
             )}
           />
@@ -314,7 +314,7 @@ function PlayerControls({
                 type="button"
                 aria-label={`Seek forward ${SEEK_BUTTON_STEP} seconds`}
               >
-                <IconMediaNextOutline18 width={14} height={14} />
+                <SkipForward width={14} height={14} />
               </button>
             )}
           />
@@ -365,7 +365,7 @@ function PlayerControls({
                   type="button"
                   aria-label="Picture-in-Picture (keyboard shortcut p)"
                 >
-                  <IconWindowBottomRightOutline18 width={14} height={14} />
+                  <PictureInPicture2 width={14} height={14} />
                 </button>
               )}
             />
@@ -380,7 +380,7 @@ function PlayerControls({
                   type="button"
                   aria-label="Full window (keyboard shortcut f)"
                 >
-                  <IconFullScreenOutline18 width={14} height={14} />
+                  <Maximize width={14} height={14} />
                 </button>
               )}
             />
@@ -424,9 +424,9 @@ function VolumeControl({ unsupported }: { unsupported: boolean }) {
             }
           >
             {muted || volume === 0 ? (
-              <IconVolumeOffOutline18 width={14} height={14} />
+              <VolumeX width={14} height={14} />
             ) : (
-              <IconVolumeOutline18 width={14} height={14} />
+              <Volume2 width={14} height={14} />
             )}
           </button>
         );

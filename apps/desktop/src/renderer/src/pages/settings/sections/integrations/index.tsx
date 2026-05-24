@@ -1,4 +1,3 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   DEFAULT_GLOBAL_SYNC_PREFS,
   type GlobalSyncPrefs,
@@ -13,6 +12,7 @@ import {
   Switch,
   useToast,
 } from "@pond/ui";
+import { ChevronsUpDown } from "lucide-react";
 import {
   Fragment,
   useCallback,
@@ -354,7 +354,7 @@ export function IntegrationsSection() {
                 <Select.Trigger>
                   <Select.Value>{formatRepeatTrigger(global)}</Select.Value>
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -772,7 +772,7 @@ function RepeatCustomDialog({
                       ?.label ?? "Daily"}
                   </Select.Value>
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>

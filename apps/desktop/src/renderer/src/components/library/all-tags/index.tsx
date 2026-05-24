@@ -1,9 +1,5 @@
-import {
-  IconBookmarkOutline18,
-  IconCircleQuestionOutline18,
-  IconDotsOutline18,
-} from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
+import { Bookmark, CircleQuestionMark, Ellipsis } from "lucide-react";
 import { Rail } from "./rail";
 import styles from "./styles.module.css";
 import { TagItem } from "./tag-item";
@@ -26,9 +22,9 @@ function EmptyState({ hasAnyTags, needle, query }: EmptyStateProps) {
   return (
     <div className={styles.empty}>
       <div className={styles["empty-art"]} aria-hidden>
-        <IconBookmarkOutline18 width={56} height={56} />
+        <Bookmark width={56} height={56} />
         <span className={styles["empty-art-overlay"]}>
-          <IconCircleQuestionOutline18 width={18} height={18} />
+          <CircleQuestionMark width={18} height={18} />
         </span>
       </div>
       <div className={styles["empty-title"]}>No Tags Yet</div>
@@ -61,7 +57,7 @@ function DisplayMenu({ prefs, patch }: DisplayMenuProps) {
             aria-label="Display options"
             title="Display options"
           >
-            <IconDotsOutline18 width={16} height={16} />
+            <Ellipsis width={16} height={16} />
           </button>
         }
       />

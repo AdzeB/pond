@@ -1,4 +1,3 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   AlertDialog,
   Button,
@@ -8,6 +7,7 @@ import {
   Switch,
   useToast,
 } from "@pond/ui";
+import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityDialog } from "@/components/capture/activity-dialog";
 import { Settings } from "@/components/settings";
@@ -340,7 +340,7 @@ export function DeveloperSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>

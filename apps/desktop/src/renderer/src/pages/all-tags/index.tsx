@@ -1,10 +1,6 @@
-import {
-  IconGridOutline18,
-  IconListCheckboxOutline18,
-  IconPlusOutline18,
-} from "@pond/icons/outline/18";
 import { tagFilterSearch } from "@pond/schema/filters/url";
 import { Input } from "@pond/ui";
+import { LayoutGrid, ListChecks, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -12,7 +8,7 @@ import {
   type DisplayItem,
   type RailKey,
 } from "@/components/library/all-tags";
-import { GroupTagAdder } from "@/components/save/preview/group-tag-adder";
+import { TagPicker } from "@/components/save/preview/tag-picker";
 import { Shell } from "@/components/shell";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
@@ -185,8 +181,11 @@ export function AllTagsPage() {
                 </span>
               </h1>
               {selectedGroup ? (
-                <GroupTagAdder
-                  group={selectedGroup}
+                <TagPicker
+                  target={{ kind: "group", group: selectedGroup }}
+                  side="bottom"
+                  align="start"
+                  sideOffset={6}
                   trigger={
                     <button
                       type="button"
@@ -194,7 +193,7 @@ export function AllTagsPage() {
                       aria-label={`Add tag to ${selectedGroup.name}`}
                       title={`Add tag to ${selectedGroup.name}`}
                     >
-                      <IconPlusOutline18 width={14} height={14} />
+                      <Plus width={14} height={14} />
                     </button>
                   }
                 />
@@ -217,7 +216,7 @@ export function AllTagsPage() {
                 title="List layout"
                 onClick={() => patchPrefs({ layout: "list" })}
               >
-                <IconListCheckboxOutline18 width={16} height={16} />
+                <ListChecks width={16} height={16} />
               </button>
               <button
                 type="button"
@@ -226,7 +225,7 @@ export function AllTagsPage() {
                 title="Grid layout"
                 onClick={() => patchPrefs({ layout: "grid" })}
               >
-                <IconGridOutline18 width={16} height={16} />
+                <LayoutGrid width={16} height={16} />
               </button>
               <AllTags.DisplayMenu prefs={prefs} patch={patchPrefs} />
             </div>

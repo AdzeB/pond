@@ -1,9 +1,5 @@
-import {
-  IconBarsFilterOutline18,
-  IconEyeOutline18,
-  IconMagnifierOutline18,
-} from "@pond/icons/outline/18";
 import { Button, Input, Menu, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
+import { Eye, ListFilter, Search as SearchIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { AddFilterMenu } from "@/components/library/filter-bar/registry";
 import { useAddCommitApi } from "@/components/library/filter-bar/use-add-commit-api";
@@ -52,7 +48,7 @@ function Search() {
   return (
     <Input.Root className={styles.search}>
       <Input.Icon>
-        <IconMagnifierOutline18 />
+        <SearchIcon />
       </Input.Icon>
       <Input.Field
         className={styles.field}
@@ -74,8 +70,8 @@ function ViewOptionsButton() {
         render={
           <ViewPicker.Root
             trigger={
-              <Button icon variant="ghost" size="xs" aria-label="View options">
-                <IconEyeOutline18 />
+              <Button icon aria-label="View options">
+                <Eye style={{ width: "100%", height: "100%" }} />
               </Button>
             }
           />
@@ -107,8 +103,8 @@ function AddFilterButton() {
           render={
             <Menu.Trigger
               render={
-                <Button icon variant="ghost" size="xs" aria-label="Add filter">
-                  <IconBarsFilterOutline18 />
+                <Button icon aria-label="Add filter">
+                  <ListFilter style={{ width: "100%", height: "100%" }} />
                 </Button>
               }
             />

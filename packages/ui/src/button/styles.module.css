@@ -121,7 +121,7 @@
 .root {
   /* primary */
   &[data-variant="primary"] {
-    color: var(--ds-gray-12);
+    color: var(--ds-gray-11);
     background-color: var(--ds-background-primary);
     box-shadow:
       0 0 0 1px var(--ds-gray-3),

@@ -1,11 +1,5 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
-import {
-  IconArrowDownOutline18,
-  IconArrowUpOutline18,
-  IconMinusOutline18,
-  IconPlusOutline18,
-} from "@pond/icons/outline/18";
 import { Button, Popover, Select, Slider, Switch, Tooltip } from "@pond/ui";
+import { ArrowDown, ArrowUp, ChevronsUpDown, Minus, Plus } from "lucide-react";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { type Density, useDensity } from "@/lib/density";
@@ -148,7 +142,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -181,7 +175,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
                   <Select.Trigger>
                     <Select.Value />
                     <Select.Icon>
-                      <IconChevronExpandYOutline12 />
+                      <ChevronsUpDown />
                     </Select.Icon>
                   </Select.Trigger>
                   <Select.Portal>
@@ -208,10 +202,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
                           className={styles["dir-btn"]}
                           onClick={() => setSortDir("asc")}
                         >
-                          <IconArrowUpOutline18
-                            width="0.85em"
-                            height="0.85em"
-                          />
+                          <ArrowUp width="0.85em" height="0.85em" />
                         </button>
                       }
                     />
@@ -231,10 +222,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
                           className={styles["dir-btn"]}
                           onClick={() => setSortDir("desc")}
                         >
-                          <IconArrowDownOutline18
-                            width="0.85em"
-                            height="0.85em"
-                          />
+                          <ArrowDown width="0.85em" height="0.85em" />
                         </button>
                       }
                     />
@@ -263,7 +251,7 @@ function ViewPickerRoot({ trigger }: PickerProps) {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -348,7 +336,7 @@ function ZoomControl() {
         onClick={() => step(-ZOOM_STEP)}
         disabled={value <= ZOOM_MIN}
       >
-        <IconMinusOutline18 size={12} />
+        <Minus size={12} />
       </Button>
       <Slider.Root
         min={ZOOM_MIN}
@@ -379,7 +367,7 @@ function ZoomControl() {
         onClick={() => step(ZOOM_STEP)}
         disabled={value >= ZOOM_MAX}
       >
-        <IconPlusOutline18 size={12} />
+        <Plus size={12} />
       </Button>
     </fieldset>
   );

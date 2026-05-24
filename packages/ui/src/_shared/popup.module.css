@@ -7,7 +7,7 @@
   padding: 6px;
   outline: none;
   background: var(--ds-background-primary);
-  border-radius: var(--ds-radius-lg);
+  border-radius: 12px;
   box-shadow: var(--ds-shadow-2);
   transform-origin: var(--transform-origin);
   transition:

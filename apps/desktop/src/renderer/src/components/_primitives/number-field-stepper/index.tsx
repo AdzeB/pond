@@ -1,6 +1,6 @@
-import { IconMinusOutline12, IconPlusOutline12 } from "@pond/icons/outline/12";
 import { NumberField } from "@pond/ui";
 import { Calligraph } from "calligraph";
+import { Minus, Plus } from "lucide-react";
 import type { ComponentProps } from "react";
 import styles from "./styles.module.css";
 
@@ -11,7 +11,7 @@ export function NumberFieldStepper(props: RootProps) {
     <NumberField.Root {...props}>
       <NumberField.Group>
         <NumberField.Decrement aria-label="Decrement">
-          <IconMinusOutline12 />
+          <Minus />
         </NumberField.Decrement>
         <NumberField.Input
           render={(inputProps, state) => (
@@ -31,7 +31,7 @@ export function NumberFieldStepper(props: RootProps) {
           )}
         />
         <NumberField.Increment aria-label="Increment">
-          <IconPlusOutline12 />
+          <Plus />
         </NumberField.Increment>
       </NumberField.Group>
     </NumberField.Root>

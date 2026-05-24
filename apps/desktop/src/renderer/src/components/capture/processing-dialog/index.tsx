@@ -1,16 +1,16 @@
-import {
-  IconMediaPauseOutline18,
-  IconMediaPlayOutline18,
-  IconMediaSkipToEndOutline18,
-  IconMediaStopOutline18,
-  IconOpenInBrowserOutline18,
-  IconRefreshClockwiseOutline18,
-  IconStackOutline18,
-  IconTrashXmarkOutline18,
-  IconTriangleWarningOutline18,
-} from "@pond/icons/outline/18";
 import { type Op, SOURCES } from "@pond/schema/db";
 import { AlertDialog, Button, Dialog, useToast } from "@pond/ui";
+import {
+  Globe,
+  Layers,
+  Pause,
+  Play,
+  RefreshCw,
+  SkipForward,
+  Square,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getSourceLabel,
@@ -557,7 +557,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
       <Dialog.Popup className={styles.dialog}>
         <aside className={styles.rail}>
           <RailRow
-            icon={<IconStackOutline18 width="0.95em" height="0.95em" />}
+            icon={<Layers width="0.95em" height="0.95em" />}
             label="All"
             count={counts.totalIngesting + counts.totalFailed}
             selected={selection.kind === "all"}
@@ -584,12 +584,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
             <>
               <hr className={styles["rail-divider"]} />
               <RailRow
-                icon={
-                  <IconTriangleWarningOutline18
-                    width="0.95em"
-                    height="0.95em"
-                  />
-                }
+                icon={<TriangleAlert width="0.95em" height="0.95em" />}
                 label="Failed"
                 count={counts.totalFailed}
                 tone="danger"
@@ -616,9 +611,9 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                 aria-label={paused ? "Resume processing" : "Pause processing"}
               >
                 {paused ? (
-                  <IconMediaPlayOutline18 width="0.95em" height="0.95em" />
+                  <Play width="0.95em" height="0.95em" />
                 ) : (
-                  <IconMediaPauseOutline18 width="0.95em" height="0.95em" />
+                  <Pause width="0.95em" height="0.95em" />
                 )}
               </button>
               {backfillRunning ? (
@@ -629,7 +624,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                   onClick={handleCancelRetryAll}
                   title="Stop the in-progress retry"
                 >
-                  <IconMediaStopOutline18 width="0.85em" height="0.85em" />
+                  <Square width="0.85em" height="0.85em" />
                   <span>Stop retrying</span>
                 </button>
               ) : counts.totalFailed > 0 ? (
@@ -638,10 +633,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                   className={styles["retry-all"]}
                   onClick={handleRetryAll}
                 >
-                  <IconRefreshClockwiseOutline18
-                    width="0.85em"
-                    height="0.85em"
-                  />
+                  <RefreshCw width="0.85em" height="0.85em" />
                   <span>{`Retry all failed (${counts.totalFailed})`}</span>
                 </button>
               ) : null}
@@ -653,7 +645,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                   onClick={() => setConfirmClear(true)}
                   title={`${clearScope.label} (moves ${clearScope.count} to trash)`}
                 >
-                  <IconTrashXmarkOutline18 width="0.85em" height="0.85em" />
+                  <Trash2 width="0.85em" height="0.85em" />
                   <span>{`${clearScope.label} (${clearScope.count})`}</span>
                 </button>
               ) : null}
@@ -778,10 +770,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                             onClick={() => handleSkipStage(row)}
                             disabled={busyId === row.id}
                           >
-                            <IconMediaSkipToEndOutline18
-                              width="0.95em"
-                              height="0.95em"
-                            />
+                            <SkipForward width="0.95em" height="0.95em" />
                           </button>
                         ) : null}
                       </li>
@@ -848,10 +837,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                             onClick={() => handleRetry(row.id)}
                             disabled={busyId === row.id}
                           >
-                            <IconRefreshClockwiseOutline18
-                              width="0.95em"
-                              height="0.95em"
-                            />
+                            <RefreshCw width="0.95em" height="0.95em" />
                           </button>
                           <button
                             type="button"
@@ -860,10 +846,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                             title="Open URL"
                             onClick={() => handleOpen(row.url)}
                           >
-                            <IconOpenInBrowserOutline18
-                              width="0.95em"
-                              height="0.95em"
-                            />
+                            <Globe width="0.95em" height="0.95em" />
                           </button>
                           <button
                             type="button"
@@ -873,10 +856,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                             onClick={() => handleDelete(row.id)}
                             disabled={busyId === row.id}
                           >
-                            <IconTrashXmarkOutline18
-                              width="0.95em"
-                              height="0.95em"
-                            />
+                            <Trash2 width="0.95em" height="0.95em" />
                           </button>
                         </div>
                       </li>

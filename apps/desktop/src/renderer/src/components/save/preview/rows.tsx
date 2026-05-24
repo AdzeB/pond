@@ -1,13 +1,13 @@
 import {
-  IconClockOutline18,
-  IconExpand2Outline18,
-  IconEyeOutline18,
-  IconHeightMaxOutline18,
-  IconMsgOutline18,
-  IconStorageOutline18,
-  IconThumbsUpOutline18,
-  IconCalendarOutline18 as RowsCalendarIcon,
-} from "@pond/icons/outline/18";
+  Calendar,
+  Clock,
+  Eye,
+  HardDrive,
+  Maximize2,
+  MessageCircle,
+  MoveVertical,
+  ThumbsUp,
+} from "lucide-react";
 import type { ReactNode } from "react";
 import type { Save } from "@/pool/types";
 import {
@@ -41,7 +41,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (durationSec && Number.isFinite(durationSec)) {
     out.push({
       id: "duration",
-      icon: <IconClockOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Clock width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Duration",
       value: formatDuration(durationSec),
     });
@@ -52,7 +52,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (views !== null && views !== undefined) {
     out.push({
       id: "views",
-      icon: <IconEyeOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Eye width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Views",
       value: formatCount(views),
     });
@@ -62,7 +62,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (likes !== null && likes !== undefined) {
     out.push({
       id: "likes",
-      icon: <IconThumbsUpOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <ThumbsUp width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Likes",
       value: formatCount(likes),
     });
@@ -73,7 +73,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (comments !== null && comments !== undefined) {
     out.push({
       id: "comments",
-      icon: <IconMsgOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <MessageCircle width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Comments",
       value: formatCount(comments),
     });
@@ -82,7 +82,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (capture.publishedAt) {
     out.push({
       id: "published",
-      icon: <RowsCalendarIcon width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Published",
       value: formatShortDate(capture.publishedAt),
     });
@@ -98,7 +98,7 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (type) {
     out.push({
       id: "type",
-      icon: <IconStorageOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <HardDrive width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Type",
       value: prettifyType(type),
     });
@@ -107,7 +107,7 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.savedAt) {
     out.push({
       id: "imported",
-      icon: <RowsCalendarIcon width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Imported",
       value: formatShortDate(save.savedAt),
     });
@@ -116,7 +116,7 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.createdAt) {
     out.push({
       id: "modified",
-      icon: <RowsCalendarIcon width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Modified",
       value: formatShortDate(save.createdAt),
     });
@@ -125,7 +125,7 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.fileSize) {
     out.push({
       id: "size",
-      icon: <IconExpand2Outline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <Maximize2 width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Size",
       value: formatBytes(save.fileSize),
     });
@@ -134,7 +134,7 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.width && save.height) {
     out.push({
       id: "dimensions",
-      icon: <IconHeightMaxOutline18 width={ICON_SIZE} height={ICON_SIZE} />,
+      icon: <MoveVertical width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Dimensions",
       value: `${save.width} × ${save.height}`,
     });

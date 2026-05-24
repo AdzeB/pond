@@ -1,5 +1,5 @@
-import { IconSidebarLeft2ShowOutline18 } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
+import { PanelRight } from "lucide-react";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Inspector } from "@/components/library/inspector";
@@ -74,7 +74,14 @@ export function SaveDetailPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [list.goNext, list.goPrev, list.nextId, list.prevId, list.parentTo, navigate]);
+  }, [
+    list.goNext,
+    list.goPrev,
+    list.nextId,
+    list.prevId,
+    list.parentTo,
+    navigate,
+  ]);
 
   if (!save) {
     return (
@@ -101,7 +108,7 @@ export function SaveDetailPage() {
                   onClick={toggleInspector}
                   aria-label="Show inspector"
                 >
-                  <IconSidebarLeft2ShowOutline18 width={16} height={16} />
+                  <PanelRight width={16} height={16} />
                 </button>
               }
             />

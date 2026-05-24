@@ -1,4 +1,4 @@
-import { IconChevronLeftFill18 } from "@pond/icons/fill/18";
+import { ChevronLeft } from "lucide-react";
 import { NavLink, type NavLinkProps } from "react-router-dom";
 import styles from "./styles.module.css";
 
@@ -13,7 +13,7 @@ interface BackProps extends React.ComponentPropsWithoutRef<"button"> {}
 function Back({ type = "button", children, ...props }: BackProps) {
   return (
     <button type={type} className={styles.back} {...props}>
-      <IconChevronLeftFill18 width={14} height={14} />
+      <ChevronLeft fill="currentColor" width={14} height={14} />
       <span>{children}</span>
     </button>
   );

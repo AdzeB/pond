@@ -1,6 +1,6 @@
-import { IconCheckOutline18 } from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { Input, Menu } from "@pond/ui";
+import { Check } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { DropdownProps } from "@/components/library/filter-bar/dropdowns/types";
 import styles from "./styles.module.css";
@@ -72,9 +72,7 @@ export function EnumDropdown({ predicate, onChange }: DropdownProps) {
             onCheckedChange={() => toggle(p.value)}
           >
             <span className={styles.check} aria-hidden>
-              {checked ? (
-                <IconCheckOutline18 width="0.85em" height="0.85em" />
-              ) : null}
+              {checked ? <Check width="0.85em" height="0.85em" /> : null}
             </span>
             <Menu.ItemLabel>{p.label}</Menu.ItemLabel>
           </Menu.CheckboxItem>

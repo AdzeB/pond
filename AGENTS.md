@@ -204,3 +204,57 @@ import styles from "./styles.module.css";
 If a class would only ever be reached via bracket access, prefer a
 shorter name (`.grid` + `data-layout="waterfall"`) over a longer one
 (`.grid-layout-waterfall`).
+
+## CSS file structure
+
+One `*.module.css` per component. A styles file is owned by exactly one
+consumer.
+
+The smell is a single `styles.module.css` imported by N sibling `.tsx`
+files. When you see that, the components have been quietly fused into
+one "feature surface" and classes from one start bleeding into another.
+There are exactly two fixes:
+
+- **Split.** Move each component into its own folder with its own
+  `index.tsx` + `styles.module.css`. The shared file gets carved up so
+  each component owns the rules it actually touches.
+- **Unify.** Recognise that the consumers are variants of the same
+  component (same visual contract, different inputs) and collapse them
+  into one component with one styles file. Use a discriminated prop
+  (`target: { kind: "save"; save } | { kind: "group"; group }`) over
+  duplicating the popup shell.
+
+Never leave the shared file in place.
+
+Helpers that are pure logic (e.g. `helpers.ts` formatters, `rows.tsx`
+row collectors) can stay flat alongside the component folders. The rule
+is about CSS ownership, not file count.
+
+### Don't
+
+```text
+components/save/preview/
+  pane.tsx               # imports ./styles.module.css
+  media-viewer.tsx       # imports ./styles.module.css
+  tag-picker.tsx         # imports ./styles.module.css
+  group-tag-adder.tsx    # imports ./styles.module.css as `pickerStyles`
+  styles.module.css      # 800 lines, classes for all four
+```
+
+### Do
+
+```text
+components/save/preview/
+  index.tsx              # re-exports
+  helpers.ts             # pure logic, used by pane
+  rows.tsx               # pure logic, used by pane
+  pane/
+    index.tsx
+    styles.module.css
+  media-viewer/
+    index.tsx
+    styles.module.css
+  tag-picker/            # one picker, polymorphic over target
+    index.tsx
+    styles.module.css
+```

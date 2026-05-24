@@ -2,7 +2,7 @@ import { useToast } from "@pond/ui";
 import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { isChordPending } from "@/components/command-palette/use-chords";
-import { type SavesMode } from "@/lib/use-saves-data";
+import type { SavesMode } from "@/lib/use-saves-data";
 import {
   isLayoutValue,
   type LayoutValue,

@@ -1,11 +1,6 @@
-import { IconStarFill18 } from "@pond/icons/fill/18";
-import {
-  IconChevronRightOutline18,
-  IconStarOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { AlertDialog, Button, ContextMenu, Input, Menu } from "@pond/ui";
+import { ChevronRight, Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import styles from "./styles.module.css";
 
@@ -112,9 +107,9 @@ export function TagItem({
                 }}
               >
                 {item.starred ? (
-                  <IconStarFill18 width={12} height={12} />
+                  <Star fill="currentColor" width={12} height={12} />
                 ) : (
-                  <IconStarOutline18 width={12} height={12} />
+                  <Star width={12} height={12} />
                 )}
               </button>
             </button>
@@ -127,9 +122,9 @@ export function TagItem({
               <ContextMenu.Item onClick={() => void toggleStar()}>
                 <ContextMenu.ItemIcon>
                   {item.starred ? (
-                    <IconStarFill18 width="1em" height="1em" />
+                    <Star fill="currentColor" width="1em" height="1em" />
                   ) : (
-                    <IconStarOutline18 width="1em" height="1em" />
+                    <Star width="1em" height="1em" />
                   )}
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>
@@ -141,10 +136,7 @@ export function TagItem({
                   <Menu.SubmenuTrigger>
                     <Menu.ItemLabel>Add to Group</Menu.ItemLabel>
                     <Menu.ItemKbd>
-                      <IconChevronRightOutline18
-                        width="0.85em"
-                        height="0.85em"
-                      />
+                      <ChevronRight width="0.85em" height="0.85em" />
                     </Menu.ItemKbd>
                   </Menu.SubmenuTrigger>
                   <Menu.Portal>
@@ -186,7 +178,7 @@ export function TagItem({
               <ContextMenu.Separator />
               <ContextMenu.Item onClick={() => setConfirmDelete(true)}>
                 <ContextMenu.ItemIcon>
-                  <IconTrash2Outline18 />
+                  <Trash2 />
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>Delete</ContextMenu.ItemLabel>
               </ContextMenu.Item>

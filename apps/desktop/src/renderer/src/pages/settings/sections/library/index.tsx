@@ -1,5 +1,5 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSourceLabel } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
@@ -570,7 +570,7 @@ export function LibrarySection() {
                         {ACTION_LABELS[storagePrefs.action].label}
                       </Select.Value>
                       <Select.Icon>
-                        <IconChevronExpandYOutline12 />
+                        <ChevronsUpDown />
                       </Select.Icon>
                     </Select.Trigger>
                     <Select.Portal>
@@ -853,7 +853,7 @@ function TrashSection() {
               <Select.Trigger>
                 <Select.Value />
                 <Select.Icon>
-                  <IconChevronExpandYOutline12 />
+                  <ChevronsUpDown />
                 </Select.Icon>
               </Select.Trigger>
               <Select.Portal>
@@ -1010,7 +1010,7 @@ function BackupsSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>

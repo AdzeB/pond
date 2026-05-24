@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Pond's icon barrel. Re-exports lucide-react under stable Pond names (outline / fill / fill-duo) plus a small set of local brand marks for the sources we capture from.",
+  "description": "Pond's local brand marks for the sources we capture from. Lucide icons are imported directly from `lucide-react` at the call site.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -19,11 +19,6 @@
     "directory": "icons"
   },
   "exports": {
-    "./fill/12": "./fill/12/index.tsx",
-    "./fill/18": "./fill/18/index.tsx",
-    "./fill-duo": "./fill-duo/index.tsx",
-    "./outline/12": "./outline/12/index.ts",
-    "./outline/18": "./outline/18/index.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
@@ -35,8 +30,5 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14"
-  },
-  "dependencies": {
-    "lucide-react": "^1.16.0"
   }
 }

@@ -1,5 +1,5 @@
-import { IconXmarkOutline18 } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
+import { X } from "lucide-react";
 import { Cell } from "./cell";
 
 export default function ButtonCell() {
@@ -11,7 +11,7 @@ export default function ButtonCell() {
       <Button variant="danger">Submit</Button>
       <Button variant="accent">Submit</Button>
       <Button icon variant="primary">
-        <IconXmarkOutline18 />
+        <X />
       </Button>
     </Cell>
   );

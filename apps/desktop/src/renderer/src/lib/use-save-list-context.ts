@@ -138,8 +138,5 @@ export function useSaveListContext({
     navigate(base.buildDetailPath(base.nextId));
   }, [base, navigate]);
 
-  return useMemo(
-    () => ({ ...base, goPrev, goNext }),
-    [base, goPrev, goNext],
-  );
+  return useMemo(() => ({ ...base, goPrev, goNext }), [base, goPrev, goNext]);
 }

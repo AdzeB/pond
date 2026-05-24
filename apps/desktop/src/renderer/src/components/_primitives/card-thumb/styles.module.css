@@ -16,8 +16,8 @@
   max-height: 100%;
   margin: auto;
   object-fit: contain;
-  box-shadow: var(--ds-shadow-2);
   border-radius: 4px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .media[data-loaded] {

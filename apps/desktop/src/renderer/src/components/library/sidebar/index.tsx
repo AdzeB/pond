@@ -1,22 +1,18 @@
-import {
-  IconConnectedDotsFillDuo18,
-  IconSliderFillDuo18,
-} from "@pond/icons/fill-duo";
-import {
-  IconArchiveContent2Outline18,
-  IconArrowUpRightOutline18,
-  IconHourglassClockOutline18,
-  IconPlusOutline18,
-  IconRefreshClockwiseOutline18,
-  IconShuffleSparkleOutline18,
-  IconTagSlashOutline18,
-  IconTagsOutline18,
-  IconTrash2ContentOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
-import type { SVGProps } from "react";
+import {
+  Archive,
+  ArrowUpRight,
+  Hourglass,
+  Network,
+  Plus,
+  RefreshCw,
+  SlidersHorizontal,
+  Sparkles,
+  Tags,
+  Trash2,
+} from "lucide-react";
+import type { ElementType, SVGProps } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -44,7 +40,7 @@ interface Route {
   key: RouteKey;
   path: string;
   label: string;
-  icon: typeof IconArchiveContent2Outline18;
+  icon: ElementType;
 }
 
 const routes: Route[] = [
@@ -52,37 +48,37 @@ const routes: Route[] = [
     key: "library",
     path: "/",
     label: "Library",
-    icon: IconArchiveContent2Outline18,
+    icon: Archive,
   },
   {
     key: "untagged",
     path: "/untagged",
     label: "Untagged",
-    icon: IconTagSlashOutline18,
+    icon: TagSlash,
   },
   {
     key: "recents",
     path: "/recents",
     label: "Recents",
-    icon: IconHourglassClockOutline18,
+    icon: Hourglass,
   },
   {
     key: "random",
     path: "/random",
     label: "Random",
-    icon: IconShuffleSparkleOutline18,
+    icon: Sparkles,
   },
   {
     key: "all-tags",
     path: "/tags",
     label: "All Tags",
-    icon: IconTagsOutline18,
+    icon: Tags,
   },
   {
     key: "trash",
     path: "/trash",
     label: "Trash",
-    icon: IconTrash2ContentOutline18,
+    icon: Trash2,
   },
 ];
 
@@ -123,7 +119,7 @@ function Root() {
               aria-label="Quick capture"
               onClick={openQuickCapture}
             >
-              <IconPlusOutline18 />
+              <Plus />
             </Button>
           </Sidebar.HeaderActions>
         </Sidebar.Header>
@@ -233,13 +229,13 @@ function TrashLink({ route, count }: TrashLinkProps) {
             <ContextMenu.Popup>
               <ContextMenu.Item onClick={onEmptyTrashClick}>
                 <ContextMenu.ItemIcon>
-                  <IconTrash2Outline18 />
+                  <Trash2 />
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>Empty Trash</ContextMenu.ItemLabel>
               </ContextMenu.Item>
               <ContextMenu.Item onClick={() => void restoreAll()}>
                 <ContextMenu.ItemIcon>
-                  <IconRefreshClockwiseOutline18 />
+                  <RefreshCw />
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>Restore All Items</ContextMenu.ItemLabel>
               </ContextMenu.Item>
@@ -328,7 +324,7 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
                 onClick={() => navigate("/settings", { viewTransition: true })}
               >
                 <Menu.ItemIcon>
-                  <IconSliderFillDuo18 />
+                  <SlidersHorizontal fill="currentColor" fillOpacity={0.2} />
                 </Menu.ItemIcon>
                 <Menu.ItemLabel>Settings</Menu.ItemLabel>
                 <Menu.ItemKbd>G then S</Menu.ItemKbd>
@@ -338,11 +334,11 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
 
               <Menu.Item onClick={() => openUrl(DISCUSSIONS_URL)}>
                 <Menu.ItemIcon>
-                  <IconConnectedDotsFillDuo18 />
+                  <Network fill="currentColor" fillOpacity={0.2} />
                 </Menu.ItemIcon>
                 <Menu.ItemLabel>Community</Menu.ItemLabel>
                 <Menu.ItemKbd>
-                  <IconArrowUpRightOutline18 width={12} height={12} />
+                  <ArrowUpRight width={12} height={12} />
                 </Menu.ItemKbd>
               </Menu.Item>
 
@@ -352,7 +348,7 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
                 </Menu.ItemIcon>
                 <Menu.ItemLabel>Twitter</Menu.ItemLabel>
                 <Menu.ItemKbd>
-                  <IconArrowUpRightOutline18 width={12} height={12} />
+                  <ArrowUpRight width={12} height={12} />
                 </Menu.ItemKbd>
               </Menu.Item>
 
@@ -364,7 +360,7 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
                 </Menu.ItemIcon>
                 <Menu.ItemLabel>GitHub</Menu.ItemLabel>
                 <Menu.ItemKbd>
-                  <IconArrowUpRightOutline18 width={12} height={12} />
+                  <ArrowUpRight width={12} height={12} />
                 </Menu.ItemKbd>
               </Menu.Item>
             </Menu.Popup>
@@ -372,6 +368,28 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
         </Menu.Portal>
       </Menu.Root>
     </div>
+  );
+}
+
+function TagSlash(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role="img"
+      aria-label="Untagged"
+      {...props}
+    >
+      <title>Untagged</title>
+      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
+      <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
+      <line x1="2" y1="2" x2="22" y2="22" />
+    </svg>
   );
 }
 

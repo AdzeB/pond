@@ -1,8 +1,5 @@
-import {
-  IconCheck3Outline12,
-  IconChevronExpandYOutline12,
-} from "@pond/icons/outline/12";
 import { Select } from "@pond/ui";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { Cell } from "./cell";
 
 export default function SelectCell() {
@@ -13,7 +10,7 @@ export default function SelectCell() {
         <Select.Trigger>
           <Select.Value placeholder="Select..." />
           <Select.Icon>
-            <IconChevronExpandYOutline12 />
+            <ChevronsUpDown />
           </Select.Icon>
         </Select.Trigger>
         <Select.Portal>
@@ -24,25 +21,25 @@ export default function SelectCell() {
                 <Select.Item value="Dawn">
                   <Select.ItemText>Dawn</Select.ItemText>
                   <Select.ItemIndicator>
-                    <IconCheck3Outline12 />
+                    <Check />
                   </Select.ItemIndicator>
                 </Select.Item>
                 <Select.Item value="Paper">
                   <Select.ItemText>Paper</Select.ItemText>
                   <Select.ItemIndicator>
-                    <IconCheck3Outline12 />
+                    <Check />
                   </Select.ItemIndicator>
                 </Select.Item>
                 <Select.Item value="Dusk">
                   <Select.ItemText>Dusk</Select.ItemText>
                   <Select.ItemIndicator>
-                    <IconCheck3Outline12 />
+                    <Check />
                   </Select.ItemIndicator>
                 </Select.Item>
                 <Select.Item value="Ink">
                   <Select.ItemText>Ink</Select.ItemText>
                   <Select.ItemIndicator>
-                    <IconCheck3Outline12 />
+                    <Check />
                   </Select.ItemIndicator>
                 </Select.Item>
               </Select.List>

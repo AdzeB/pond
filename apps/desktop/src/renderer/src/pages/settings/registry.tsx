@@ -1,13 +1,3 @@
-import {
-  IconBoltOutline18,
-  IconColorPaletteOutline18,
-  IconCommandOutline18,
-  IconConnectedDotsOutline18,
-  IconShapesOutline18,
-  IconSliderOutline18,
-  IconStackOutline18,
-  IconTerminalOutline18,
-} from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import {
   SETTINGS_DEV_GROUPS,
@@ -15,6 +5,16 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
+import {
+  Command,
+  Layers,
+  Network,
+  Palette,
+  Shapes,
+  SlidersHorizontal,
+  Terminal,
+  Zap,
+} from "lucide-react";
 import type { ComponentType } from "react";
 
 type SectionGroup = SettingsGroup;
@@ -42,47 +42,47 @@ const RENDERER_BY_ID: Record<
   }
 > = {
   general: {
-    icon: IconSliderOutline18,
+    icon: SlidersHorizontal,
     load: lazyComponent(() => import("./sections/general"), "GeneralSection"),
   },
   appearance: {
-    icon: IconColorPaletteOutline18,
+    icon: Palette,
     load: lazyComponent(
       () => import("./sections/appearance"),
       "AppearanceSection",
     ),
   },
   shortcuts: {
-    icon: IconCommandOutline18,
+    icon: Command,
     load: lazyComponent(
       () => import("./sections/shortcuts"),
       "ShortcutsSection",
     ),
   },
   library: {
-    icon: IconStackOutline18,
+    icon: Layers,
     load: lazyComponent(() => import("./sections/library"), "LibrarySection"),
   },
   saving: {
-    icon: IconBoltOutline18,
+    icon: Zap,
     load: lazyComponent(() => import("./sections/saving"), "SavingSection"),
   },
   sources: {
-    icon: IconConnectedDotsOutline18,
+    icon: Network,
     load: lazyComponent(
       () => import("./sections/integrations"),
       "IntegrationsSection",
     ),
   },
   components: {
-    icon: IconShapesOutline18,
+    icon: Shapes,
     load: lazyComponent(
       () => import("./sections/components"),
       "ComponentsSection",
     ),
   },
   developer: {
-    icon: IconTerminalOutline18,
+    icon: Terminal,
     load: lazyComponent(
       () => import("./sections/developer"),
       "DeveloperSection",

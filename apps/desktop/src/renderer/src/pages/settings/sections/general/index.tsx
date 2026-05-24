@@ -1,5 +1,5 @@
-import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import { Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
@@ -230,7 +230,7 @@ export function GeneralSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>

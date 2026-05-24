@@ -1,8 +1,4 @@
-import {
-  IconChevronDownOutline18,
-  IconPlusOutline18,
-  IconXmarkOutline18,
-} from "@pond/icons/outline/18";
+import { ChevronDown, Plus, X } from "lucide-react";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { optimistic } from "@/pool/bootstrap";
 import { pickPrimaryUnit } from "@/pool/media";
@@ -10,10 +6,14 @@ import { pool } from "@/pool/pool";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import { pickAuthorAvatarUrl } from "@/pool/url";
-import { descriptionMatchesTitle, pickAuthorColor } from "./helpers";
-import { collectMetadataRows, collectPropertyRows, type PaneRow } from "./rows";
+import { descriptionMatchesTitle, pickAuthorColor } from "../helpers";
+import {
+  collectMetadataRows,
+  collectPropertyRows,
+  type PaneRow,
+} from "../rows";
+import { TagPicker } from "../tag-picker";
 import styles from "./styles.module.css";
-import { TagPicker } from "./tag-picker";
 
 interface PaneProps extends React.ComponentPropsWithoutRef<"article"> {
   save: Save;
@@ -141,7 +141,7 @@ export function Pane({ save, className, ...props }: PaneProps) {
               aria-expanded={descExpanded}
             >
               <span>{descExpanded ? "Show Less" : "Read More"}</span>
-              <IconChevronDownOutline18
+              <ChevronDown
                 width={12}
                 height={12}
                 data-rotate={descExpanded ? "true" : undefined}
@@ -262,12 +262,16 @@ function PaneTags({ save }: { save: Save }) {
             aria-label={`Remove tag ${tag}`}
             disabled={busy}
           >
-            <IconXmarkOutline18 width={10} height={10} />
+            <X width={10} height={10} />
           </button>
         </span>
       ))}
       <TagPicker
-        save={save}
+        target={{ kind: "save", save }}
+        anchor={() => document.getElementById("inspector-pane")}
+        side="left"
+        align="start"
+        sideOffset={12}
         trigger={
           <button
             type="button"
@@ -275,7 +279,7 @@ function PaneTags({ save }: { save: Save }) {
             aria-label="Add tag"
             data-tag-add
           >
-            <IconPlusOutline18 width={10} height={10} />
+            <Plus width={10} height={10} />
           </button>
         }
       />

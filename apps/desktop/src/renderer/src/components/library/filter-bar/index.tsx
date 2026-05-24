@@ -1,8 +1,3 @@
-import {
-  IconCheckOutline18,
-  IconPlusOutline18,
-  IconXmarkOutline18,
-} from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import {
   COMPARATORS_BY_TYPE,
@@ -13,6 +8,7 @@ import {
 } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import { cn, Menu } from "@pond/ui";
+import { Check, Plus, X } from "lucide-react";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -133,7 +129,7 @@ function Chip({ predicate, onChange }: ChipProps) {
         className={[styles["chip-segment"], styles["chip-close"]].join(" ")}
         onClick={() => onChange(null)}
       >
-        <IconXmarkOutline18 width="0.7em" height="0.7em" />
+        <X width="0.7em" height="0.7em" />
       </button>
     </span>
   );
@@ -173,7 +169,7 @@ function ComparatorSegment({
               {allowed.map((id) => (
                 <Menu.RadioItem key={id} value={id}>
                   <Menu.RadioItemIndicator>
-                    <IconCheckOutline18 width="0.85em" height="0.85em" />
+                    <Check width="0.85em" height="0.85em" />
                   </Menu.RadioItemIndicator>
                   {COMPARATOR_LABELS[id]}
                 </Menu.RadioItem>
@@ -239,7 +235,7 @@ function AddTrigger({ api, className, ...props }: AddTriggerProps) {
             {...props}
           >
             <span className={styles["chip-icon"]} aria-hidden>
-              <IconPlusOutline18 width="0.85em" height="0.85em" />
+              <Plus width="0.85em" height="0.85em" />
             </span>
           </button>
         }

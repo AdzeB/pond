@@ -1,11 +1,5 @@
-import {
-  IconDotsOutline18,
-  IconFolder5Outline18,
-  IconGlobe2Outline18,
-  IconRefreshOutline18,
-  IconTrashOutline18,
-} from "@pond/icons/outline/18";
 import { Menu, useToast } from "@pond/ui";
+import { Ellipsis, Folder, Globe, RefreshCw, Trash } from "lucide-react";
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SavePreview } from "@/components/save/preview";
@@ -127,7 +121,7 @@ function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
             className={styles["toolbar-btn"]}
             disabled={!save}
           >
-            <IconDotsOutline18 width={14} height={14} />
+            <Ellipsis width={14} height={14} />
           </button>
         }
       />
@@ -136,26 +130,26 @@ function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
           <Menu.Popup>
             <Menu.Item disabled={!hasUrl} onClick={onOpenOriginal}>
               <Menu.ItemIcon>
-                <IconGlobe2Outline18 width={14} height={14} />
+                <Globe width={14} height={14} />
               </Menu.ItemIcon>
               <Menu.ItemLabel>Open Original</Menu.ItemLabel>
             </Menu.Item>
             <Menu.Item disabled={!hasLocalFile} onClick={onReveal}>
               <Menu.ItemIcon>
-                <IconFolder5Outline18 width={14} height={14} />
+                <Folder width={14} height={14} />
               </Menu.ItemIcon>
               <Menu.ItemLabel>{REVEAL_LABEL}</Menu.ItemLabel>
             </Menu.Item>
             <Menu.Item disabled={!hasUrl} onClick={onRefresh}>
               <Menu.ItemIcon>
-                <IconRefreshOutline18 width={14} height={14} />
+                <RefreshCw width={14} height={14} />
               </Menu.ItemIcon>
               <Menu.ItemLabel>Refresh</Menu.ItemLabel>
             </Menu.Item>
             <Menu.Separator />
             <Menu.Item disabled={!save} onClick={onDelete}>
               <Menu.ItemIcon>
-                <IconTrashOutline18 width={14} height={14} />
+                <Trash width={14} height={14} />
               </Menu.ItemIcon>
               <Menu.ItemLabel>Move to Trash</Menu.ItemLabel>
             </Menu.Item>

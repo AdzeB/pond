@@ -1,14 +1,14 @@
-import {
-  IconBookmarkOutline18,
-  IconChevronRightOutline18,
-  IconCircleQuestionOutline18,
-  IconPlusOutline18,
-  IconStarOutline18,
-  IconTrash2Outline18,
-} from "@pond/icons/outline/18";
 import { AlertDialog, Button, ContextMenu, Input, Menu } from "@pond/ui";
+import {
+  Bookmark,
+  ChevronRight,
+  CircleQuestionMark,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { useTagGroups } from "@/pool/tag-groups";
+import type { useTagGroups } from "@/pool/tag-groups";
 import type { TagRow } from "@/pool/tags";
 import styles from "./styles.module.css";
 
@@ -109,21 +109,21 @@ export function Rail({
       <RailRow
         active={selected === "all"}
         onSelect={() => onSelect("all")}
-        icon={<IconBookmarkOutline18 width={14} height={14} />}
+        icon={<Bookmark width={14} height={14} />}
         label="All"
         count={tags.length}
       />
       <RailRow
         active={selected === "uncategorized"}
         onSelect={() => onSelect("uncategorized")}
-        icon={<IconCircleQuestionOutline18 width={14} height={14} />}
+        icon={<CircleQuestionMark width={14} height={14} />}
         label="Uncategorized"
         count={uncategorisedCount}
       />
       <RailRow
         active={selected === "starred"}
         onSelect={() => onSelect("starred")}
-        icon={<IconStarOutline18 width={14} height={14} />}
+        icon={<Star width={14} height={14} />}
         label="Starred"
         count={starredCount}
       />
@@ -142,7 +142,7 @@ export function Rail({
           title="New tag group"
           onClick={() => setCreating(true)}
         >
-          <IconPlusOutline18 width={12} height={12} />
+          <Plus width={12} height={12} />
         </button>
       </div>
 
@@ -183,7 +183,7 @@ export function Rail({
                       style={g.color ? { color: g.color } : undefined}
                       aria-hidden
                     >
-                      <IconBookmarkOutline18 width={14} height={14} />
+                      <Bookmark width={14} height={14} />
                     </span>
                     <Input.Field
                       data-size="sm"
@@ -211,7 +211,7 @@ export function Rail({
                       style={g.color ? { color: g.color } : undefined}
                       aria-hidden
                     >
-                      <IconBookmarkOutline18 width={14} height={14} />
+                      <Bookmark width={14} height={14} />
                     </span>
                     <span className={styles["rail-label"]}>{g.name}</span>
                     <span className={styles["rail-count"]}>
@@ -237,10 +237,7 @@ export function Rail({
                     <Menu.SubmenuTrigger>
                       <Menu.ItemLabel>Color</Menu.ItemLabel>
                       <Menu.ItemKbd>
-                        <IconChevronRightOutline18
-                          width="0.85em"
-                          height="0.85em"
-                        />
+                        <ChevronRight width="0.85em" height="0.85em" />
                       </Menu.ItemKbd>
                     </Menu.SubmenuTrigger>
                     <Menu.Portal>
@@ -275,7 +272,7 @@ export function Rail({
                     onClick={() => setConfirmDeleteName(g.name)}
                   >
                     <ContextMenu.ItemIcon>
-                      <IconTrash2Outline18 />
+                      <Trash2 />
                     </ContextMenu.ItemIcon>
                     <ContextMenu.ItemLabel>Remove</ContextMenu.ItemLabel>
                   </ContextMenu.Item>

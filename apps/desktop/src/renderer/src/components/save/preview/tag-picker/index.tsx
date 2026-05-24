@@ -1,18 +1,17 @@
-import { IconStarFill18 } from "@pond/icons/fill/18";
-import {
-  IconCheckOutline18,
-  IconChevronDownOutline18,
-  IconChevronRightOutline18,
-  IconDotsOutline18,
-  IconGridOutline18,
-  IconListCheckboxOutline18,
-  IconMagnifierOutline18,
-  IconPinOutline18,
-  IconSparkleOutline18,
-  IconStarOutline18,
-} from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Input, Kbd, Menu, Popover } from "@pond/ui";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Ellipsis,
+  LayoutGrid,
+  ListChecks,
+  Pin,
+  Search,
+  Sparkles,
+  Star,
+} from "lucide-react";
 import {
   type ReactElement,
   useCallback,
@@ -22,17 +21,27 @@ import {
 } from "react";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
-import { useTagGroups } from "@/pool/tag-groups";
+import { type TagGroupRow, useTagGroups } from "@/pool/tag-groups";
 import { useTags } from "@/pool/tags";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
+type PopoverAnchor = Element | null | (() => Element | null) | undefined;
+
+export type TagPickerTarget =
+  | { kind: "save"; save: Save }
+  | { kind: "group"; group: TagGroupRow };
+
 interface TagPickerProps {
-  save: Save;
+  target: TagPickerTarget;
   trigger: ReactElement;
   /** Force the picker open from a keyboard shortcut. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  anchor?: PopoverAnchor;
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
 }
 
 interface TagItem {
@@ -45,10 +54,14 @@ interface TagItem {
 const RECOMMENDED_CAP = 12;
 
 export function TagPicker({
-  save,
+  target,
   trigger,
   open: controlledOpen,
   onOpenChange,
+  anchor,
+  side = "bottom",
+  align = "start",
+  sideOffset = 6,
 }: TagPickerProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -70,6 +83,11 @@ export function TagPicker({
     if (!open) return;
     setQ("");
   }, [open]);
+
+  const liveGroup = useMemo(() => {
+    if (target.kind !== "group") return null;
+    return groups.find((g) => g.id === target.group.id) ?? target.group;
+  }, [target, groups]);
 
   const groupsByTagId = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -101,10 +119,12 @@ export function TagPicker({
     return counts;
   }, [saves]);
 
-  const appliedSet = useMemo(
-    () => new Set(save.tags.map((t) => t.toLowerCase())),
-    [save.tags],
-  );
+  const appliedSet = useMemo(() => {
+    if (target.kind === "save") {
+      return new Set(target.save.tags.map((t) => t.toLowerCase()));
+    }
+    return new Set((liveGroup?.tagNames ?? []).map((t) => t.toLowerCase()));
+  }, [target, liveGroup]);
 
   const toItem = useCallback(
     (name: string): TagItem => {
@@ -159,29 +179,40 @@ export function TagPicker({
 
   const recommendedItems = useMemo<TagItem[]>(() => {
     if (!prefs.showRecommended) return [];
-    const candidates = new Map<string, number>();
-    for (const s of saves) {
-      if (s.deletedAt) continue;
-      if (s.id === save.id) continue;
-      const sameSource = s.source === save.source;
-      const sameAuthor =
-        Boolean(save.author) && Boolean(s.author) && s.author === save.author;
-      if (!sameSource && !sameAuthor) continue;
-      for (const t of s.tags) {
-        const k = t.toLowerCase();
-        candidates.set(k, (candidates.get(k) ?? 0) + 1);
+    if (target.kind === "save") {
+      const save = target.save;
+      const candidates = new Map<string, number>();
+      for (const s of saves) {
+        if (s.deletedAt) continue;
+        if (s.id === save.id) continue;
+        const sameSource = s.source === save.source;
+        const sameAuthor =
+          Boolean(save.author) && Boolean(s.author) && s.author === save.author;
+        if (!sameSource && !sameAuthor) continue;
+        for (const t of s.tags) {
+          const k = t.toLowerCase();
+          candidates.set(k, (candidates.get(k) ?? 0) + 1);
+        }
       }
+      return Array.from(candidates.entries())
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, RECOMMENDED_CAP)
+        .filter(([name]) => matchesNeedle(name))
+        .map(([name]) => toItem(name));
     }
-    return Array.from(candidates.entries())
+    return Array.from(countsByLower.entries())
+      .filter(([k]) => !appliedSet.has(k))
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, RECOMMENDED_CAP)
-      .filter(([name]) => matchesNeedle(name))
-      .map(([name]) => toItem(name));
+      .map(([k]) => tagsByLowerName.get(k)?.name ?? k)
+      .filter((name) => matchesNeedle(name))
+      .map((name) => toItem(name));
   }, [
+    target,
     saves,
-    save.id,
-    save.source,
-    save.author,
+    countsByLower,
+    appliedSet,
+    tagsByLowerName,
     prefs.showRecommended,
     toItem,
     matchesNeedle,
@@ -247,31 +278,56 @@ export function TagPicker({
   // exists as a tag.
   const exactExists = needle.length > 0 && tagsByLowerName.has(needle);
 
-  async function toggle(rawName: string) {
-    const cleaned = normalizeLabelName(rawName);
-    if (!cleaned) return;
-    const lower = cleaned.toLowerCase();
-    setBusy(true);
-    try {
-      const next = appliedSet.has(lower)
-        ? save.tags.filter((t) => t.toLowerCase() !== lower)
-        : [...save.tags, cleaned];
-      await window.pond.query("tags.setForSave", {
-        saveId: save.id,
-        tags: next,
-      });
-    } finally {
-      setBusy(false);
-    }
-  }
+  const toggle = useCallback(
+    async (rawName: string) => {
+      const cleaned = normalizeLabelName(rawName);
+      if (!cleaned) return;
+      const lower = cleaned.toLowerCase();
+      setBusy(true);
+      try {
+        if (target.kind === "save") {
+          const save = target.save;
+          const next = appliedSet.has(lower)
+            ? save.tags.filter((t) => t.toLowerCase() !== lower)
+            : [...save.tags, cleaned];
+          await window.pond.query("tags.setForSave", {
+            saveId: save.id,
+            tags: next,
+          });
+          return;
+        }
+        const groupName = (liveGroup ?? target.group).name;
+        if (appliedSet.has(lower)) {
+          await window.pond.query("tagGroups.removeTag", {
+            tag: cleaned,
+            group: groupName,
+          });
+          return;
+        }
+        if (!tagsByLowerName.has(lower)) {
+          await window.pond.query("tags.create", { name: cleaned });
+        }
+        await window.pond.query("tagGroups.addTags", {
+          tags: [cleaned],
+          group: groupName,
+        });
+      } finally {
+        setBusy(false);
+      }
+    },
+    [target, liveGroup, appliedSet, tagsByLowerName],
+  );
 
-  async function toggleStar(name: string) {
-    const meta = tagsByLowerName.get(name.toLowerCase());
-    await window.pond.query("tags.setStarred", {
-      name,
-      starred: !meta?.starred,
-    });
-  }
+  const toggleStar = useCallback(
+    async (name: string) => {
+      const meta = tagsByLowerName.get(name.toLowerCase());
+      await window.pond.query("tags.setStarred", {
+        name,
+        starred: !meta?.starred,
+      });
+    },
+    [tagsByLowerName],
+  );
 
   function onSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter") return;
@@ -299,15 +355,15 @@ export function TagPicker({
       <Popover.Trigger render={trigger} />
       <Popover.Portal>
         <Popover.Positioner
-          anchor={() => document.getElementById("inspector-pane")}
-          side="left"
-          align="start"
-          sideOffset={12}
+          anchor={anchor}
+          side={side}
+          align={align}
+          sideOffset={sideOffset}
         >
           <Popover.Popup className={styles["tag-picker-popup"]}>
             <div className={styles["tag-picker-header"]}>
               <span className={styles["tag-picker-header-icon"]} aria-hidden>
-                <IconMagnifierOutline18 width={14} height={14} />
+                <Search width={14} height={14} />
               </span>
               <Input.Field
                 data-size="sm"
@@ -394,7 +450,7 @@ export function TagPicker({
                   onClick={() => void toggle(q)}
                 >
                   <span className={styles["tag-picker-item-icon"]} aria-hidden>
-                    <IconSparkleOutline18 width={12} height={12} />
+                    <Sparkles width={12} height={12} />
                   </span>
                   <span className={styles["tag-picker-item-name"]}>
                     Create "{normalizeLabelName(q) || q}"
@@ -456,7 +512,7 @@ function HeaderToolbar({
         title="List layout"
         onClick={() => onPatch({ layout: "list" })}
       >
-        <IconListCheckboxOutline18 width={14} height={14} />
+        <ListChecks width={14} height={14} />
       </button>
       <button
         type="button"
@@ -465,7 +521,7 @@ function HeaderToolbar({
         title="Grid layout"
         onClick={() => onPatch({ layout: "grid" })}
       >
-        <IconGridOutline18 width={14} height={14} />
+        <LayoutGrid width={14} height={14} />
       </button>
       {layout === "grid" ? (
         <Menu.Root>
@@ -507,7 +563,7 @@ function HeaderToolbar({
               className={styles["tag-picker-tool"]}
               title="Display options"
             >
-              <IconDotsOutline18 width={14} height={14} />
+              <Ellipsis width={14} height={14} />
             </button>
           }
         />
@@ -550,7 +606,7 @@ function HeaderToolbar({
         title="Pin picker"
         onClick={() => onPatch({ pinned: !pinned })}
       >
-        <IconPinOutline18 width={14} height={14} />
+        <Pin width={14} height={14} />
       </button>
     </div>
   );
@@ -589,9 +645,9 @@ function Section({
         >
           <span className={styles["tag-picker-section-chevron"]} aria-hidden>
             {collapsed ? (
-              <IconChevronRightOutline18 width={12} height={12} />
+              <ChevronRight width={12} height={12} />
             ) : (
-              <IconChevronDownOutline18 width={12} height={12} />
+              <ChevronDown width={12} height={12} />
             )}
           </span>
           <span className={styles["tag-picker-section-title"]}>
@@ -625,9 +681,7 @@ function Section({
               title={item.name}
             >
               <span className={styles["tag-picker-item-icon"]} aria-hidden>
-                {item.applied ? (
-                  <IconCheckOutline18 width={12} height={12} />
-                ) : null}
+                {item.applied ? <Check width={12} height={12} /> : null}
               </span>
               <span className={styles["tag-picker-item-name"]}>
                 {item.name}
@@ -648,9 +702,9 @@ function Section({
                 }}
               >
                 {item.starred ? (
-                  <IconStarFill18 width={11} height={11} />
+                  <Star fill="currentColor" width={11} height={11} />
                 ) : (
-                  <IconStarOutline18 width={11} height={11} />
+                  <Star width={11} height={11} />
                 )}
               </button>
             </button>

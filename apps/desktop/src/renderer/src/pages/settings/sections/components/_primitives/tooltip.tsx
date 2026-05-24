@@ -1,5 +1,5 @@
-import { IconTextItalicOutline18 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
+import { Italic } from "lucide-react";
 import { Cell } from "./cell";
 
 export default function TooltipCell() {
@@ -10,7 +10,7 @@ export default function TooltipCell() {
           <Tooltip.Trigger
             render={
               <Button icon size="sm">
-                <IconTextItalicOutline18 />
+                <Italic />
               </Button>
             }
           />

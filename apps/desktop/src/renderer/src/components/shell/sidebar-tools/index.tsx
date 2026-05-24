@@ -1,9 +1,5 @@
-import {
-  IconChevronLeftOutline18,
-  IconChevronRightOutline18,
-  IconClockRotateAnticlockwiseOutline18,
-} from "@pond/icons/outline/18";
 import { Button, Menu, Tooltip } from "@pond/ui";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useRecents } from "@/lib/recents";
@@ -31,7 +27,7 @@ export function SidebarTools() {
               aria-label="Back"
               onClick={() => navigate(-1)}
             >
-              <IconChevronLeftOutline18 />
+              <ChevronLeft />
             </Button>
           }
         />
@@ -51,7 +47,7 @@ export function SidebarTools() {
               aria-label="Forward"
               onClick={() => navigate(1)}
             >
-              <IconChevronRightOutline18 />
+              <ChevronRight />
             </Button>
           }
         />
@@ -73,7 +69,7 @@ export function SidebarTools() {
                     icon
                     aria-label="Recently Viewed"
                   >
-                    <IconClockRotateAnticlockwiseOutline18 />
+                    <History />
                   </Button>
                 }
               />

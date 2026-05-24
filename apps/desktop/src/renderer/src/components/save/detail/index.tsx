@@ -1,10 +1,5 @@
-import {
-  IconChevronLeftOutline18,
-  IconChevronRightOutline18,
-  IconDotsOutline18,
-  IconStar2Outline18,
-} from "@pond/icons/outline/18";
 import { Tooltip, useToast } from "@pond/ui";
+import { ChevronLeft, ChevronRight, Ellipsis, Star } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { VideoPlayer } from "@/components/media/video-player";
@@ -32,7 +27,7 @@ function Header({ save, list }: HeaderProps) {
     <header className={styles.header}>
       <div className={styles["header-lead"]}>
         <Link className={styles["header-back"]} to={list.parentTo}>
-          <IconChevronLeftOutline18 width={14} height={14} aria-hidden />
+          <ChevronLeft width={14} height={14} aria-hidden />
           <span>{list.parentLabel}</span>
         </Link>
         <span
@@ -55,7 +50,7 @@ function Header({ save, list }: HeaderProps) {
                 aria-label="Star (coming soon)"
                 disabled
               >
-                <IconStar2Outline18 width={14} height={14} />
+                <Star width={14} height={14} />
               </button>
             }
           />
@@ -71,7 +66,7 @@ function Header({ save, list }: HeaderProps) {
             className={styles["header-icon-btn"]}
             aria-label="More options"
           >
-            <IconDotsOutline18 width={14} height={14} />
+            <Ellipsis width={14} height={14} />
           </button>
         </SaveActionsMenu>
         <span className={styles["header-divider"]} aria-hidden />
@@ -85,7 +80,7 @@ function Header({ save, list }: HeaderProps) {
                 disabled={!list.prevId}
                 aria-label="Previous save"
               >
-                <IconChevronLeftOutline18 width={14} height={14} />
+                <ChevronLeft width={14} height={14} />
               </button>
             }
           />
@@ -105,7 +100,7 @@ function Header({ save, list }: HeaderProps) {
                 disabled={!list.nextId}
                 aria-label="Next save"
               >
-                <IconChevronRightOutline18 width={14} height={14} />
+                <ChevronRight width={14} height={14} />
               </button>
             }
           />

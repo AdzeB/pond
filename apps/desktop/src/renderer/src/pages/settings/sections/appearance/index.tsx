@@ -1,11 +1,6 @@
-import {
-  IconArrowRotateAnticlockwiseOutline12,
-  IconChevronExpandYOutline12,
-  IconMinusOutline12,
-  IconPlusOutline12,
-} from "@pond/icons/outline/12";
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import { Button, Input, Select, Slider, Switch } from "@pond/ui";
+import { ChevronsUpDown, Minus, Plus, RotateCcw } from "lucide-react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
@@ -55,7 +50,7 @@ export function AppearanceSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -95,7 +90,7 @@ export function AppearanceSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -151,7 +146,7 @@ export function AppearanceSection() {
                 onClick={() => patch({ tintHue: null })}
                 disabled={(prefs.tintHue ?? null) === null}
               >
-                <IconArrowRotateAnticlockwiseOutline12 />
+                <RotateCcw />
               </Button>
             </Settings.ItemControl>
           </Settings.Item>
@@ -193,7 +188,7 @@ export function AppearanceSection() {
                 onClick={() => patch({ tintIntensity: 0 })}
                 disabled={prefs.tintIntensity === 0}
               >
-                <IconArrowRotateAnticlockwiseOutline12 />
+                <RotateCcw />
               </Button>
             </Settings.ItemControl>
           </Settings.Item>
@@ -232,7 +227,7 @@ export function AppearanceSection() {
                 <Select.Trigger>
                   <Select.Value />
                   <Select.Icon>
-                    <IconChevronExpandYOutline12 />
+                    <ChevronsUpDown />
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
@@ -385,7 +380,7 @@ function FontSizeStepper({
         onClick={() => onChange(clamp(safe - 1, min, max))}
         disabled={safe <= min}
       >
-        <IconMinusOutline12 />
+        <Minus />
       </Button>
       <Input.Field
         data-size="sm"
@@ -405,7 +400,7 @@ function FontSizeStepper({
         onClick={() => onChange(clamp(safe + 1, min, max))}
         disabled={safe >= max}
       >
-        <IconPlusOutline12 />
+        <Plus />
       </Button>
       <Button
         size="xs"
@@ -414,7 +409,7 @@ function FontSizeStepper({
         onClick={() => onChange(fallback)}
         disabled={safe === fallback}
       >
-        <IconArrowRotateAnticlockwiseOutline12 />
+        <RotateCcw />
       </Button>
     </div>
   );
