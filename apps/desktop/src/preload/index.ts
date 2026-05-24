@@ -15,6 +15,22 @@ export interface RefreshBackfillStatusWire {
   message?: string;
 }
 
+export interface RelocatePreviewWire {
+  currentPath: string;
+  candidatePath: string;
+  samePath: boolean;
+  safety: { ok: boolean; reason: string | null };
+  cloudKind: string | null;
+  existing: {
+    exists: boolean;
+    hasItemsDir: boolean;
+    hasMetadataFile: boolean;
+    itemCount: number;
+    looksLikePondLibrary: boolean;
+  };
+  suggestedMode: "copy" | "adopt";
+}
+
 export interface StorageGuardStatusWire {
   state: "ok" | "warn" | "exceeded";
   pondBytes: number;

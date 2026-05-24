@@ -41,6 +41,14 @@ export function clearQueryParams(params: URLSearchParams): void {
   for (const key of drop) params.delete(key);
 }
 
+export function tagFilterSearch(name: string): string {
+  const params = writeQuery(new URLSearchParams(), {
+    kind: "and",
+    clauses: [{ kind: "p", field: "tags", cmp: "some", value: [name] }],
+  });
+  return params.toString();
+}
+
 export function readQuery(params: URLSearchParams): Query {
   const full = params.get(FULL_KEY);
   if (full) {

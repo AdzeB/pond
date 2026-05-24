@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
+import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
+import { chromeHeightFor } from "@/lib/library-chrome";
+import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
-import { aspectFor, useAspectVersion } from "./aspect";
-import { chromeHeightFor } from "./chrome";
-import { useVisibleIndices } from "./virtual";
 
 const DEFAULT_COL_MIN = 130;
 
@@ -86,7 +86,7 @@ function useGridMin(): number {
   return value;
 }
 
-export interface WaterfallViewProps {
+interface WaterfallViewProps {
   saves: Save[];
   renderCard: (save: Save, packed: PackedPosition) => React.ReactNode;
   multiSelectActive: boolean;

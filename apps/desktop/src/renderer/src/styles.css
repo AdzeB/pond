@@ -98,7 +98,7 @@ body,
 #root {
   height: 100%;
   color: var(--ds-gray-12);
-  background: var(--ds-background-primary);
+  background: var(--ds-background-tertiary);
 }
 
 html,
@@ -113,8 +113,6 @@ body {
   }
 }
 
-/* `MotionConfig reducedMotion="user"` in App.tsx handles motion/react;
-   this catches the plain-CSS transitions and keyframes it can't see. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

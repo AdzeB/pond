@@ -1,3 +1,4 @@
+import { tagFilterSearch } from "@pond/schema/filters/url";
 import { useEffect, useMemo, useState } from "react";
 import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
@@ -59,7 +60,7 @@ export function useTagCommands(open: boolean): Command[] {
           scope: "tags",
           keywords: [tag.name, "tag", "filter", "label"],
           perform: ({ navigate, close }) => {
-            navigate(`/?tag=${encodeURIComponent(tag.name)}`, {
+            navigate(`/?${tagFilterSearch(tag.name)}`, {
               viewTransition: true,
             });
             close();

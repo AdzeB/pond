@@ -1,3 +1,4 @@
+import { tagFilterSearch } from "@pond/schema/filters/url";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Input } from "@pond/ui";
 import { useMemo, useRef, useState } from "react";
@@ -71,7 +72,7 @@ export function TagEditor({ save }: { save: Save }) {
         return (
           <span key={tag} className={styles["tag-wrap"]}>
             <Link
-              to={`/?tag=${encodeURIComponent(tag)}`}
+              to={`/?${tagFilterSearch(tag)}`}
               className={styles.tag}
               title={meta?.description ?? "Filter library by this tag"}
             >

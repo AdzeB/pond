@@ -1,0 +1,77 @@
+.location-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.location-current {
+  flex: 1;
+  padding: 6px 10px;
+  overflow-x: auto;
+  font-size: 11px;
+  white-space: nowrap;
+  background: var(--ds-gray-3);
+  border-radius: 4px;
+}
+
+.cloud-warning {
+  padding: 8px 10px;
+  font-size: 11px;
+  background: light-dark(#fef3c7, rgba(120, 53, 15, 0.4));
+  border-radius: 6px;
+}
+
+.dialog-intro {
+  margin-top: 0;
+}
+
+.dialog-paths {
+  font-size: 11px;
+  color: var(--ds-gray-11);
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.backfill-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.backfill-label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.backfill-status {
+  font-size: 11px;
+  color: var(--ds-gray-11);
+}
+
+.backfill-bar {
+  width: 100%;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  background: light-dark(rgba(0, 0, 0, 0.06), rgba(255, 255, 255, 0.06));
+  border-radius: 2px;
+}
+
+.backfill-bar-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--ds-accent-9, var(--ds-gray-12));
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s ease-out;
+}

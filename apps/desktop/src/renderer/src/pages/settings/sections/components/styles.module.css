@@ -15,8 +15,9 @@
   flex-direction: column;
   height: 220px;
   padding: 12px;
-  border: 1px solid var(--ds-gray-3);
+  background-color: var(--ds-background-primary);
   border-radius: 12px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .cell-label {

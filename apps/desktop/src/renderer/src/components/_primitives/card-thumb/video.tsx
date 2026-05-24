@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInView } from "@/lib/use-in-view";
-import { recordAspect } from "@/pages/saves-view/aspect";
+import { recordAspect } from "@/lib/aspect";
 import { useCardContext } from "./context";
 import styles from "./styles.module.css";
 

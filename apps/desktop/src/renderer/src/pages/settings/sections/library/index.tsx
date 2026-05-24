@@ -6,6 +6,7 @@ import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
 import type {
   RefreshBackfillStatusWire,
+  RelocatePreviewWire,
   StorageGuardStatusWire,
 } from "../../../../../../preload";
 import {
@@ -33,22 +34,6 @@ interface IntegrityReport {
   errors: Record<string, string>;
   totalIndexed: number;
   totalOnDisk: number;
-}
-
-interface RelocatePreviewWire {
-  currentPath: string;
-  candidatePath: string;
-  samePath: boolean;
-  safety: { ok: boolean; reason: string | null };
-  cloudKind: string | null;
-  existing: {
-    exists: boolean;
-    hasItemsDir: boolean;
-    hasMetadataFile: boolean;
-    itemCount: number;
-    looksLikePondLibrary: boolean;
-  };
-  suggestedMode: "copy" | "adopt";
 }
 
 interface StorageSnapshotWire {

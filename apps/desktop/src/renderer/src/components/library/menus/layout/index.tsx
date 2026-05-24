@@ -2,8 +2,10 @@ import { IconChevronExpandYOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowDownOutline18,
   IconArrowUpOutline18,
+  IconMinusOutline18,
+  IconPlusOutline18,
 } from "@pond/icons/outline/18";
-import { Popover, Select, Switch, Tooltip } from "@pond/ui";
+import { Button, Popover, Select, Slider, Switch, Tooltip } from "@pond/ui";
 import { useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { type Density, useDensity } from "@/lib/density";
@@ -14,6 +16,7 @@ import {
 } from "@/lib/display-prefs";
 import { useInspector } from "@/lib/use-inspector";
 import { useSidebar } from "@/lib/use-sidebar";
+import { useZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
 import {
   isLayoutValue,
   type LayoutValue,
@@ -277,6 +280,10 @@ function ViewPickerRoot({ trigger }: PickerProps) {
               </Select.Root>
             </Row>
 
+            <Row label="Zoom">
+              <ZoomControl />
+            </Row>
+
             <hr className={styles.separator} />
 
             {DISPLAY_TOGGLES.map(({ key, label }) => (
@@ -320,6 +327,61 @@ function Row({ label, children }: RowProps) {
       <span className={styles["row-label"]}>{label}</span>
       <span className={styles["row-control"]}>{children}</span>
     </div>
+  );
+}
+
+function ZoomControl() {
+  const [value, setValue] = useZoom();
+  const step = useCallback(
+    (delta: number) => setValue(value + delta),
+    [setValue, value],
+  );
+
+  return (
+    <fieldset className={styles.zoom}>
+      <legend className={styles["sr-only"]}>Grid zoom</legend>
+      <Button
+        icon
+        variant="ghost"
+        size="xs"
+        aria-label="Smaller cards"
+        onClick={() => step(-ZOOM_STEP)}
+        disabled={value <= ZOOM_MIN}
+      >
+        <IconMinusOutline18 size={12} />
+      </Button>
+      <Slider.Root
+        min={ZOOM_MIN}
+        max={ZOOM_MAX}
+        step={ZOOM_STEP}
+        value={value}
+        onValueChange={(next) => {
+          const n = typeof next === "number" ? next : next[0];
+          if (n !== undefined) setValue(n);
+        }}
+        className={styles["zoom-slider"]}
+      >
+        <Slider.Control className={styles["zoom-slider-control"]}>
+          <Slider.Track className={styles["zoom-slider-track"]}>
+            <Slider.Indicator className={styles["zoom-slider-indicator"]} />
+            <Slider.Thumb
+              aria-label="Grid zoom"
+              className={styles["zoom-slider-thumb"]}
+            />
+          </Slider.Track>
+        </Slider.Control>
+      </Slider.Root>
+      <Button
+        icon
+        variant="ghost"
+        size="xs"
+        aria-label="Larger cards"
+        onClick={() => step(ZOOM_STEP)}
+        disabled={value >= ZOOM_MAX}
+      >
+        <IconPlusOutline18 size={12} />
+      </Button>
+    </fieldset>
   );
 }
 

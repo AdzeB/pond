@@ -14,13 +14,7 @@ interface MediaSlide {
   height?: number;
 }
 
-export function MediaViewer({
-  save,
-  videoRef,
-}: {
-  save: Save;
-  videoRef?: React.MutableRefObject<HTMLVideoElement | null>;
-}) {
+export function MediaViewer({ save }: { save: Save }) {
   const theme = useResolvedTheme();
   const allSlides = useMemo<MediaSlide[]>(
     () =>
@@ -68,7 +62,6 @@ export function MediaViewer({
           src={slide.src}
           poster={slide.posterUrl}
           save={save}
-          videoRef={videoRef}
           onError={() => markBroken(slide.src)}
         />
       ) : (

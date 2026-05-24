@@ -123,6 +123,7 @@ export function VideoPlayer({
         <Video
           src={src}
           poster={poster}
+          autoPlay
           playsInline
           ref={setVideoRef}
           className={styles.video}

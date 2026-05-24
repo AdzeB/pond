@@ -48,6 +48,7 @@ export {
   MoveVertical as IconHeightMaxOutline18,
   Network as IconConnectedDotsOutline18,
   Palette as IconColorPaletteOutline18,
+  PanelRight as IconSidebarLeft2ShowOutline18,
   Pause as IconMediaPauseOutline18,
   Pencil as IconPencilOutline18,
   PictureInPicture2 as IconWindowBottomRightOutline18,

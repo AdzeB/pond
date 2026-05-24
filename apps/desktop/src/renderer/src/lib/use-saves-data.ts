@@ -1,7 +1,13 @@
 import { readQuery } from "@pond/schema/filters/url";
 import { useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
+import type { ViewMode } from "@/components/library/layout-switcher";
 import { useRecents } from "@/lib/recents";
+import {
+  applyModeFilter,
+  applyModeSort,
+  type SaveListMode,
+} from "@/lib/save-list";
 import { useStableById, useStableStrings } from "@/lib/use-stable-array";
 import { readViewPref } from "@/lib/view-prefs";
 import { useBootReady, useSaves } from "@/pool/hooks";
@@ -9,17 +15,10 @@ import { useSearchResults } from "@/pool/search";
 import { primarySelection } from "@/pool/selection";
 import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
-import type { ViewMode } from "./layout-switcher";
 
-export type SavesMode =
-  | "library"
-  | "source"
-  | "untagged"
-  | "recents"
-  | "random"
-  | "trash";
+export type SavesMode = SaveListMode;
 
-export interface SavesData {
+interface SavesData {
   bootReady: boolean;
   totalSaves: number;
   filtered: Save[];
@@ -71,45 +70,12 @@ export function useSavesData(mode: SavesMode): SavesData {
     // Trash mode ignores the text-search pool (which excludes deleted)
     // and works directly off the full saves list.
     const base = mode === "trash" ? saves : (search.results ?? saves);
-    const filteredList = base.filter((save) => {
-      if (mode === "trash") {
-        if (!save.deletedAt) return false;
-      } else {
-        if (save.deletedAt) return false;
-        // Non-complete saves (ingesting / failed) live behind the
-        // ProcessingButton dialog, not in the grid. Keep them out of
-        // every mode so a fresh sync or stuck failure can't flood the
-        // view with placeholder / "Failed" cards.
-        if (save.status !== "complete") return false;
-      }
-      if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
-        return false;
-      }
-      if (mode === "untagged" && save.tags.length > 0) return false;
-      if (mode === "recents" && !recentsOrder?.has(save.id)) return false;
-      return true;
+    const filteredList = applyModeFilter(base, {
+      mode,
+      sourceFilter,
+      recentsOrder,
     });
-
-    if (mode === "recents" && recentsOrder) {
-      return filteredList.sort(
-        (a, b) =>
-          (recentsOrder.get(a.id) ?? Infinity) -
-          (recentsOrder.get(b.id) ?? Infinity),
-      );
-    }
-
-    if (mode === "random") {
-      return filteredList.sort(
-        (a, b) =>
-          hashShuffleKey(a.id, randomSeed) - hashShuffleKey(b.id, randomSeed),
-      );
-    }
-
-    if (mode === "trash") {
-      return filteredList.sort((a, b) => deletedAtMs(b) - deletedAtMs(a));
-    }
-
-    return filteredList;
+    return applyModeSort(filteredList, { mode, recentsOrder, randomSeed });
   }, [saves, search.results, sourceFilter, mode, recentsOrder, randomSeed]);
 
   const narrowed = useStableById(narrowedFresh);
@@ -141,19 +107,4 @@ export function useSavesData(mode: SavesMode): SavesData {
     selectedId,
     viewMode,
   };
-}
-
-function deletedAtMs(s: Save): number {
-  if (!s.deletedAt) return 0;
-  const t = new Date(s.deletedAt).getTime();
-  return Number.isFinite(t) ? t : 0;
-}
-
-function hashShuffleKey(id: string, seed: string): number {
-  const s = `${id}:${seed}`;
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  }
-  return h >>> 0;
 }

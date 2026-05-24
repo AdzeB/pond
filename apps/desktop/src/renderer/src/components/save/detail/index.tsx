@@ -5,31 +5,26 @@ import {
   IconStar2Outline18,
 } from "@pond/icons/outline/18";
 import { Tooltip, useToast } from "@pond/ui";
-import { useCallback, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { VideoPlayer } from "@/components/media/video-player";
+import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";
 import { SaveActionsMenu } from "@/components/save/context-menu";
-import type { Save } from "@/pool/types";
+import { getYouTubeChapters } from "@/components/save/preview/helpers";
+import { MediaViewer } from "@/components/save/preview/media-viewer";
+import type { ListContext } from "@/lib/use-save-list-context";
+import { buildMediaUnits } from "@/pool/media";
+import { useResolvedTheme } from "@/pool/theme";
+import type { Save, SaveFile } from "@/pool/types";
+import { buildPondUrl } from "@/pool/url";
 import styles from "./styles.module.css";
-import type { ListContext } from "./use-list-context";
 
 interface HeaderProps {
   save: Save;
   list: ListContext;
 }
 
-export function DetailHeader({ save, list }: HeaderProps) {
-  const navigate = useNavigate();
-
-  const goPrev = useCallback(() => {
-    if (!list.prevId) return;
-    navigate(list.buildDetailPath(list.prevId));
-  }, [list, navigate]);
-
-  const goNext = useCallback(() => {
-    if (!list.nextId) return;
-    navigate(list.buildDetailPath(list.nextId));
-  }, [list, navigate]);
-
+function Header({ save, list }: HeaderProps) {
   const counter =
     list.index >= 0 ? `${list.index + 1} / ${list.total}` : `- / ${list.total}`;
 
@@ -86,7 +81,7 @@ export function DetailHeader({ save, list }: HeaderProps) {
               <button
                 type="button"
                 className={styles["header-icon-btn"]}
-                onClick={goPrev}
+                onClick={list.goPrev}
                 disabled={!list.prevId}
                 aria-label="Previous save"
               >
@@ -106,7 +101,7 @@ export function DetailHeader({ save, list }: HeaderProps) {
               <button
                 type="button"
                 className={styles["header-icon-btn"]}
-                onClick={goNext}
+                onClick={list.goNext}
                 disabled={!list.nextId}
                 aria-label="Next save"
               >
@@ -173,3 +168,68 @@ function StatusPill({ save }: { save: Save }) {
     </button>
   );
 }
+
+interface ContentProps {
+  save: Save;
+}
+
+function Content({ save }: ContentProps) {
+  const theme = useResolvedTheme();
+  const units = useMemo(() => buildMediaUnits(save, { theme }), [save, theme]);
+  const useHero = units.length === 1 && units[0]?.isVideo === true;
+
+  const chapters = useMemo(
+    () =>
+      useHero && save.source === "youtube"
+        ? getYouTubeChapters(save)
+        : undefined,
+    [save, useHero],
+  );
+
+  return (
+    <div className={styles.content}>
+      <div className={styles.frame}>
+        {useHero ? (
+          <HeroVideo save={save} chapters={chapters} />
+        ) : (
+          <MediaViewer save={save} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface HeroVideoProps {
+  save: Save;
+  chapters?: readonly ChapterCue[];
+}
+
+function HeroVideo({ save, chapters }: HeroVideoProps) {
+  const files = save.files ?? [];
+  const video = files.find((f) => f.kind === "video");
+  if (!video) return null;
+  const poster = pickPoster(files);
+
+  const src = buildPondUrl(save.id, video);
+  const posterUrl = poster ? buildPondUrl(save.id, poster) : undefined;
+
+  return (
+    <VideoPlayer
+      key={src}
+      src={src}
+      poster={posterUrl}
+      save={save}
+      chapters={chapters}
+    />
+  );
+}
+
+function pickPoster(files: SaveFile[]): SaveFile | null {
+  return (
+    files.find((f) => f.kind === "poster") ??
+    files.find((f) => f.kind === "cover") ??
+    null
+  );
+}
+
+export const SaveDetail = { Header, Content };

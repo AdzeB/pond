@@ -2,18 +2,9 @@ import {
   IconBarsFilterOutline18,
   IconEyeOutline18,
   IconMagnifierOutline18,
-  IconMinusOutline18,
-  IconPlusOutline18,
 } from "@pond/icons/outline/18";
-import {
-  Button,
-  Input,
-  Menu,
-  Toolbar as PondToolbar,
-  Slider,
-  Tooltip,
-} from "@pond/ui";
-import { useCallback, useRef, useState } from "react";
+import { Button, Input, Menu, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
+import { useRef, useState } from "react";
 import { AddFilterMenu } from "@/components/library/filter-bar/registry";
 import { useAddCommitApi } from "@/components/library/filter-bar/use-add-commit-api";
 import { ViewPicker } from "@/components/library/menus/layout";
@@ -21,7 +12,6 @@ import { usePlatform } from "@/lib/platform";
 import { useDebouncedSearchParam } from "@/lib/use-debounced-search-param";
 import { useFilterHotkey, useSearchHotkey } from "@/lib/use-hotkeys";
 import { useSidebar } from "@/lib/use-sidebar";
-import { useZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
 import styles from "./styles.module.css";
 
 function Root() {
@@ -37,7 +27,6 @@ function Root() {
     >
       <Search />
       <PondToolbar.Group data-align="end" className={styles.right}>
-        <Zoom />
         <ViewOptionsButton />
         <AddFilterButton />
       </PondToolbar.Group>
@@ -66,6 +55,7 @@ function Search() {
         <IconMagnifierOutline18 />
       </Input.Icon>
       <Input.Field
+        className={styles.field}
         ref={inputRef}
         type="search"
         placeholder="Search"
@@ -74,61 +64,6 @@ function Search() {
         aria-label="Search saves"
       />
     </Input.Root>
-  );
-}
-
-function Zoom() {
-  const [value, setValue] = useZoom();
-  const step = useCallback(
-    (delta: number) => setValue(value + delta),
-    [setValue, value],
-  );
-
-  return (
-    <fieldset className={styles.zoom}>
-      <legend className={styles["sr-only"]}>Grid zoom</legend>
-      <Button
-        icon
-        variant="ghost"
-        size="xs"
-        aria-label="Smaller cards"
-        onClick={() => step(-ZOOM_STEP)}
-        disabled={value <= ZOOM_MIN}
-      >
-        <IconMinusOutline18 size={12} />
-      </Button>
-      <Slider.Root
-        min={ZOOM_MIN}
-        max={ZOOM_MAX}
-        step={ZOOM_STEP}
-        value={value}
-        onValueChange={(next) => {
-          const n = typeof next === "number" ? next : next[0];
-          if (n !== undefined) setValue(n);
-        }}
-        className={styles["zoom-slider"]}
-      >
-        <Slider.Control className={styles["zoom-slider-control"]}>
-          <Slider.Track className={styles["zoom-slider-track"]}>
-            <Slider.Indicator className={styles["zoom-slider-indicator"]} />
-            <Slider.Thumb
-              aria-label="Grid zoom"
-              className={styles["zoom-slider-thumb"]}
-            />
-          </Slider.Track>
-        </Slider.Control>
-      </Slider.Root>
-      <Button
-        icon
-        variant="ghost"
-        size="xs"
-        aria-label="Larger cards"
-        onClick={() => step(ZOOM_STEP)}
-        disabled={value >= ZOOM_MAX}
-      >
-        <IconPlusOutline18 size={12} />
-      </Button>
-    </fieldset>
   );
 }
 

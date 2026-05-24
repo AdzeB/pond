@@ -188,24 +188,3 @@ export function formatAbsolute(
   const mi = String(d.getMinutes()).padStart(2, "0");
   return `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
 }
-
-export function formatBytes(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "-";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
-}
-
-export function extensionFor(save: Save): string {
-  const cover = save.files[save.coverIndex ?? 0];
-  if (cover?.path) {
-    const m = /\.([a-z0-9]+)$/i.exec(cover.path);
-    if (m?.[1]) return m[1].toLowerCase();
-  }
-  if (cover?.mimeType) {
-    const m = /^[^/]+\/(.+)$/.exec(cover.mimeType);
-    if (m?.[1]) return m[1].toLowerCase();
-  }
-  return "";
-}

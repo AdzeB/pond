@@ -2,11 +2,11 @@ import { ProcessingButton } from "@/components/capture/processing-button";
 import { Library } from "@/components/library";
 import { FilterBar } from "@/components/library/filter-bar";
 import { Inspector } from "@/components/library/inspector";
+import { LayoutSwitcher } from "@/components/library/layout-switcher";
 import { HeaderToolbar } from "@/components/library/toolbar";
 import { Shell } from "@/components/shell";
-import { LayoutSwitcher } from "./layout-switcher";
-import { useCardActions } from "./use-card-actions";
-import { type SavesMode, useSavesData } from "./use-saves-data";
+import { useCardActions } from "@/lib/use-card-actions";
+import { type SavesMode, useSavesData } from "@/lib/use-saves-data";
 
 interface SavesViewProps {
   mode?: SavesMode;

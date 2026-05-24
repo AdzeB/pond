@@ -6,10 +6,10 @@ import {
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Input, Kbd, Popover } from "@pond/ui";
 import { type ReactElement, useEffect, useMemo, useState } from "react";
-import pickerStyles from "@/components/save/preview/styles.module.css";
 import { useSaves } from "@/pool/hooks";
 import { type TagGroupRow, useTagGroups } from "@/pool/tag-groups";
 import { useTags } from "@/pool/tags";
+import pickerStyles from "./styles.module.css";
 
 const RECENT_CAP = 12;
 const RECOMMENDED_CAP = 12;

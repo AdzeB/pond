@@ -17,9 +17,9 @@ import {
 } from "@pond/schema";
 import type { ComponentType } from "react";
 
-export type SectionGroup = SettingsGroup;
+type SectionGroup = SettingsGroup;
 
-export interface SectionDef extends SettingsSection {
+interface SectionDef extends SettingsSection {
   icon: IconComponent;
   // Dynamic import so settings sections stay out of the initial bundle.
   // Each section ships as its own vendor-* chunk (see manualChunks in

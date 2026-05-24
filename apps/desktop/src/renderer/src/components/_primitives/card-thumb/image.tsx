@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { recordAspect } from "@/pages/saves-view/aspect";
+import { recordAspect } from "@/lib/aspect";
 import { useCardContext } from "./context";
 import styles from "./styles.module.css";
 

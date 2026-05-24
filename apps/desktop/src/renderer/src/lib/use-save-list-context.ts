@@ -1,24 +1,23 @@
 import { readQuery } from "@pond/schema/filters/url";
-import { useMemo } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useCallback, useMemo } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useRecents } from "@/lib/recents";
+import {
+  applyModeFilter,
+  applyModeSort,
+  extractSource,
+  labelForMode,
+  parseMode,
+  type SaveListMode,
+} from "@/lib/save-list";
 import { useStableById } from "@/lib/use-stable-array";
 import { readViewPref } from "@/lib/view-prefs";
 import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
-import type { Save } from "@/pool/types";
 import { useFilteredSaves } from "@/pool/use-filtered-saves";
 
-export type ListMode =
-  | "library"
-  | "source"
-  | "untagged"
-  | "recents"
-  | "random"
-  | "trash";
-
 export interface ListContext {
-  mode: ListMode;
+  mode: SaveListMode;
   parentLabel: string;
   parentTo: string;
   buildDetailPath: (id: string) => string;
@@ -27,17 +26,22 @@ export interface ListContext {
   index: number;
   prevId: string | null;
   nextId: string | null;
+  goPrev: () => void;
+  goNext: () => void;
 }
 
 interface ListContextOptions {
   activeId: string | null;
 }
 
-export function useListContext({ activeId }: ListContextOptions): ListContext {
+export function useSaveListContext({
+  activeId,
+}: ListContextOptions): ListContext {
   const saves = useSaves();
   const recents = useRecents();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const path = location.pathname;
   const parentBase =
@@ -64,37 +68,12 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
 
   const narrowedFresh = useMemo(() => {
     const base = mode === "trash" ? saves : (search.results ?? saves);
-    const filteredList = base.filter((save) => {
-      if (mode === "trash") return Boolean(save.deletedAt);
-      if (save.deletedAt) return false;
-      if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
-        return false;
-      }
-      if (mode === "untagged" && save.tags.length > 0) return false;
-      if (mode === "recents" && !recentsOrder?.has(save.id)) return false;
-      return true;
+    const filteredList = applyModeFilter(base, {
+      mode,
+      sourceFilter,
+      recentsOrder,
     });
-
-    if (mode === "trash") {
-      return filteredList.sort((a, b) => deletedAtMs(b) - deletedAtMs(a));
-    }
-
-    if (mode === "recents" && recentsOrder) {
-      return filteredList.sort(
-        (a, b) =>
-          (recentsOrder.get(a.id) ?? Infinity) -
-          (recentsOrder.get(b.id) ?? Infinity),
-      );
-    }
-
-    if (mode === "random") {
-      return filteredList.sort(
-        (a, b) =>
-          hashShuffleKey(a.id, randomSeed) - hashShuffleKey(b.id, randomSeed),
-      );
-    }
-
-    return filteredList;
+    return applyModeSort(filteredList, { mode, recentsOrder, randomSeed });
   }, [saves, search.results, mode, sourceFilter, recentsOrder, randomSeed]);
 
   const narrowed = useStableById(narrowedFresh);
@@ -119,7 +98,7 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
   );
   const filtered = useStableById(filteredFresh);
 
-  return useMemo(() => {
+  const base = useMemo(() => {
     const ids = filtered.map((s) => s.id);
     const index = activeId ? ids.indexOf(activeId) : -1;
     const prevId = index > 0 ? (ids[index - 1] ?? null) : null;
@@ -148,55 +127,19 @@ export function useListContext({ activeId }: ListContextOptions): ListContext {
       nextId,
     };
   }, [filtered, activeId, mode, sourceFilter, searchParams, parentBase]);
-}
 
-function parseMode(parentBase: string): ListMode {
-  if (parentBase === "/" || parentBase === "") return "library";
-  if (parentBase.startsWith("/source/")) return "source";
-  if (parentBase === "/untagged") return "untagged";
-  if (parentBase === "/recents") return "recents";
-  if (parentBase === "/random") return "random";
-  if (parentBase === "/trash") return "trash";
-  return "library";
-}
+  const goPrev = useCallback(() => {
+    if (!base.prevId) return;
+    navigate(base.buildDetailPath(base.prevId));
+  }, [base, navigate]);
 
-function extractSource(parentBase: string): string {
-  const match = /^\/source\/([^/]+)/.exec(parentBase);
-  return match?.[1]?.toLowerCase() ?? "";
-}
+  const goNext = useCallback(() => {
+    if (!base.nextId) return;
+    navigate(base.buildDetailPath(base.nextId));
+  }, [base, navigate]);
 
-function labelForMode(mode: ListMode, sourceFilter: string): string {
-  switch (mode) {
-    case "source":
-      return sourceFilter ? capitalise(sourceFilter) : "Source";
-    case "untagged":
-      return "Untagged";
-    case "recents":
-      return "Recents";
-    case "random":
-      return "Random";
-    case "trash":
-      return "Trash";
-    default:
-      return "All Saves";
-  }
-}
-
-function capitalise(s: string): string {
-  return s.length === 0 ? s : s[0]?.toUpperCase() + s.slice(1);
-}
-
-function deletedAtMs(save: Save): number {
-  if (!save.deletedAt) return 0;
-  const t = new Date(save.deletedAt).getTime();
-  return Number.isFinite(t) ? t : 0;
-}
-
-function hashShuffleKey(id: string, seed: string): number {
-  const s = `${id}:${seed}`;
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  }
-  return h >>> 0;
+  return useMemo(
+    () => ({ ...base, goPrev, goNext }),
+    [base, goPrev, goNext],
+  );
 }

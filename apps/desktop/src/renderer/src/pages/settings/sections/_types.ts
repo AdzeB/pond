@@ -7,7 +7,7 @@ export const AUTH_WALLED_SOURCES = [
   { id: "cosmos", label: "Cosmos" },
   { id: "arena", label: "Are.na" },
 ] as const;
-export type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
+type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
 // Every source connects the same way now: the extension pushes cookies,
 // the desktop derives any per-account info (e.g. the user's handle) from

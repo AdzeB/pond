@@ -2,7 +2,7 @@
 @import "@radix-ui/themes/tokens/colors/gray.css";
 @import "@radix-ui/themes/tokens/colors/tomato.css";
 @import "@radix-ui/themes/tokens/colors/grass.css";
-@import "@radix-ui/themes/tokens/colors/sky.css";
+@import "@radix-ui/themes/tokens/colors/blue.css";
 @import "@radix-ui/colors/black-alpha.css";
 
 :root {
@@ -34,30 +34,30 @@
   --ds-gray-indicator: var(--gray-indicator);
   --ds-gray-track: var(--gray-track);
 
-  --ds-accent-1: var(--sky-1);
-  --ds-accent-2: var(--sky-2);
-  --ds-accent-3: var(--sky-3);
-  --ds-accent-4: var(--sky-4);
-  --ds-accent-5: var(--sky-5);
-  --ds-accent-6: var(--sky-6);
-  --ds-accent-7: var(--sky-7);
-  --ds-accent-8: var(--sky-8);
-  --ds-accent-9: var(--sky-9);
-  --ds-accent-10: var(--sky-10);
-  --ds-accent-11: var(--sky-11);
-  --ds-accent-12: var(--sky-12);
-  --ds-accent-a1: var(--sky-a1);
-  --ds-accent-a2: var(--sky-a2);
-  --ds-accent-a3: var(--sky-a3);
-  --ds-accent-a4: var(--sky-a4);
-  --ds-accent-a5: var(--sky-a5);
-  --ds-accent-a6: var(--sky-a6);
-  --ds-accent-a7: var(--sky-a7);
-  --ds-accent-a8: var(--sky-a8);
-  --ds-accent-a9: var(--sky-a9);
-  --ds-accent-a10: var(--sky-a10);
-  --ds-accent-a11: var(--sky-a11);
-  --ds-accent-a12: var(--sky-a12);
+  --ds-accent-1: var(--blue-1);
+  --ds-accent-2: var(--blue-2);
+  --ds-accent-3: var(--blue-3);
+  --ds-accent-4: var(--blue-4);
+  --ds-accent-5: var(--blue-5);
+  --ds-accent-6: var(--blue-6);
+  --ds-accent-7: var(--blue-7);
+  --ds-accent-8: var(--blue-8);
+  --ds-accent-9: var(--blue-9);
+  --ds-accent-10: var(--blue-10);
+  --ds-accent-11: var(--blue-11);
+  --ds-accent-12: var(--blue-12);
+  --ds-accent-a1: var(--blue-a1);
+  --ds-accent-a2: var(--blue-a2);
+  --ds-accent-a3: var(--blue-a3);
+  --ds-accent-a4: var(--blue-a4);
+  --ds-accent-a5: var(--blue-a5);
+  --ds-accent-a6: var(--blue-a6);
+  --ds-accent-a7: var(--blue-a7);
+  --ds-accent-a8: var(--blue-a8);
+  --ds-accent-a9: var(--blue-a9);
+  --ds-accent-a10: var(--blue-a10);
+  --ds-accent-a11: var(--blue-a11);
+  --ds-accent-a12: var(--blue-a12);
 
   --ds-tomato-1: var(--tomato-1);
   --ds-tomato-2: var(--tomato-2);
@@ -124,31 +124,31 @@ html[style*="--ds-tint-hue"] {
   --ds-accent-3: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 70% 88%) var(--ds-tint-intensity),
-    var(--sky-3)
+    var(--blue-3)
   );
   --ds-accent-6: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 75% 65%) var(--ds-tint-intensity),
-    var(--sky-6)
+    var(--blue-6)
   );
   --ds-accent-8: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 70% 50%) var(--ds-tint-intensity),
-    var(--sky-8)
+    var(--blue-8)
   );
   --ds-accent-9: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
-    var(--sky-9)
+    var(--blue-9)
   );
   --ds-accent-10: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 75% 50%) var(--ds-tint-intensity),
-    var(--sky-10)
+    var(--blue-10)
   );
   --ds-accent-a9: color-mix(
     in oklch,
     hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
-    var(--sky-a9)
+    var(--blue-a9)
   );
 }

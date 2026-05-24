@@ -54,10 +54,9 @@
 }
 
 .list {
+  background-color: var(--ds-background-primary);
   border-radius: 12px;
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a3),
-    0 2px 4px 0px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .item {

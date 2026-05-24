@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Library } from "@/components/library";
+import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
+import { chromeHeightFor } from "@/lib/library-chrome";
+import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
-import { aspectFor, useAspectVersion } from "./aspect";
-import { chromeHeightFor } from "./chrome";
-import { useVisibleIndices } from "./virtual";
 
 const TARGET_ROW_HEIGHT = 180;
 
@@ -75,7 +75,7 @@ function packRows(
   return { items, totalHeight };
 }
 
-export interface JustifiedViewProps {
+interface JustifiedViewProps {
   saves: Save[];
   renderCard: (
     save: Save,

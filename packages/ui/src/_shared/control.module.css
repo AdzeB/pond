@@ -7,6 +7,7 @@
 .icon {
   position: absolute;
   left: 8px;
+  z-index: 123;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -25,6 +26,7 @@
   font-weight: 500;
   color: var(--ds-gray-12);
   outline: none;
+  background: var(--ds-background-primary);
   border-radius: 6px;
   box-shadow: var(--ds-shadow-2);
   transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);

@@ -2,6 +2,7 @@ import { useToast } from "@pond/ui";
 import { useCallback, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { isChordPending } from "@/components/command-palette/use-chords";
+import { type SavesMode } from "@/lib/use-saves-data";
 import {
   isLayoutValue,
   type LayoutValue,
@@ -14,9 +15,8 @@ import {
   selection,
   useSelectionSize,
 } from "@/pool/selection";
-import type { SavesMode } from "./use-saves-data";
 
-export interface CardActions {
+interface CardActions {
   selectionSize: number;
   multiSelectActive: boolean;
   handleCardClick: (id: string, e: React.MouseEvent) => void;

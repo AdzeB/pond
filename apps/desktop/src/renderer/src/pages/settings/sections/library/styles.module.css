@@ -60,9 +60,6 @@
 .usage-bar-segment-device {
   background: var(--ds-gray-a6);
 }
-.usage-bar-segment-free {
-  background: transparent;
-}
 
 .usage-legend {
   display: grid;
@@ -100,11 +97,6 @@
   color: var(--ds-gray-12);
 }
 
-.usage-breakdown-row-mono-control {
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-12);
-}
-
 .usage-refresh-row {
   display: flex;
   gap: 8px;
@@ -122,36 +114,6 @@
   padding: 8px 0 0;
   font-size: 12px;
   color: light-dark(#b91c1c, #f87171);
-}
-
-.status-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 12px 0 0;
-  font-size: 12px;
-  color: var(--ds-gray-11);
-}
-
-.status-dot {
-  display: inline-block;
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  background: var(--ds-gray-11);
-  border-radius: 2147483647px;
-}
-
-.status-dot-ok {
-  background: light-dark(#1a7f37, #4ac26b);
-}
-
-.status-dot-warn {
-  background: light-dark(#9a6700, #d4a72c);
-}
-
-.status-dot-error {
-  background: light-dark(#cf222e, #ff7b72);
 }
 
 .relocate-body {

@@ -16,7 +16,7 @@
   max-height: 100%;
   margin: auto;
   object-fit: contain;
-  border: 1px solid var(--ds-gray-a4);
+  box-shadow: var(--ds-shadow-2);
   border-radius: 4px;
 }
 

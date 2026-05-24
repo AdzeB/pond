@@ -14,18 +14,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { type GridLayout, Library } from "@/components/library";
+import { JustifiedView } from "@/components/library/justified";
+import { formatAbsolute, SaveCard } from "@/components/library/save-card";
+import { WaterfallView } from "@/components/library/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import type { Save } from "@/pool/types";
-import { JustifiedView } from "./justified";
-import {
-  extensionFor,
-  formatAbsolute,
-  formatBytes,
-  SaveCard,
-} from "./save-card";
 import styles from "./styles.module.css";
-import { WaterfallView } from "./waterfall";
 
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
@@ -33,7 +28,7 @@ declare module "@tanstack/react-table" {
   }
 }
 
-export type ViewMode = "waterfall" | "justified" | "grid" | "list" | "timeline";
+export type ViewMode = "waterfall" | "justified" | "grid" | "list";
 
 interface LayoutSwitcherProps {
   viewMode: ViewMode;
@@ -104,17 +99,6 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       />
     );
   }
-  if (viewMode === "timeline") {
-    return (
-      <TimelineView
-        saves={saves}
-        selectedId={selectedId}
-        multiSelectActive={multiSelectActive}
-        onClick={onClick}
-        onDoubleClick={onDoubleClick}
-      />
-    );
-  }
   if (viewMode === "justified") {
     return (
       <JustifiedView
@@ -148,39 +132,6 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         />
       ))}
     </Library.Grid>
-  );
-}
-
-interface GroupViewProps {
-  saves: Save[];
-  selectedId: string | null;
-  multiSelectActive: boolean;
-  onClick: (id: string, e: React.MouseEvent) => void;
-  onDoubleClick: (id: string) => void;
-}
-
-function useGroupedWaterfallRenderer({
-  onClick,
-  onDoubleClick,
-}: Omit<GroupViewProps, "saves">) {
-  return useCallback(
-    (
-      save: Save,
-      packed: { top: number; left: number; width: number; height: number },
-    ) => (
-      <SaveCard
-        key={save.id}
-        id={save.id}
-        layout="waterfall"
-        onClick={onClick}
-        onDoubleClick={onDoubleClick}
-        packedWidth={packed.width}
-        packedHeight={packed.height}
-        packedTop={packed.top}
-        packedLeft={packed.left}
-      />
-    ),
-    [onClick, onDoubleClick],
   );
 }
 
@@ -511,46 +462,23 @@ function ListView({
   );
 }
 
-function TimelineView(props: GroupViewProps) {
-  const groups = useMemo(() => {
-    const buckets = new Map<string, Save[]>();
-    for (const s of props.saves) {
-      const d = new Date(s.savedAt);
-      const key = Number.isFinite(d.getTime())
-        ? d.toISOString().slice(0, 10)
-        : "unknown";
-      const list = buckets.get(key) ?? [];
-      list.push(s);
-      buckets.set(key, list);
-    }
-    return Array.from(buckets.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
-  }, [props.saves]);
-  const renderCard = useGroupedWaterfallRenderer(props);
-
-  return (
-    <div className={styles.timeline}>
-      {groups.map(([day, items]) => (
-        <section key={day} className={styles["timeline-section"]}>
-          <h3 className={styles["timeline-heading"]}>{formatDay(day)}</h3>
-          <WaterfallView
-            saves={items}
-            multiSelectActive={props.multiSelectActive}
-            renderCard={renderCard}
-          />
-        </section>
-      ))}
-    </div>
-  );
+function formatBytes(n: number | null): string {
+  if (n == null || !Number.isFinite(n)) return "-";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-function formatDay(iso: string): string {
-  if (iso === "unknown") return "Undated";
-  const d = new Date(iso);
-  if (!Number.isFinite(d.getTime())) return iso;
-  const today = new Date();
-  const sameYear = d.getFullYear() === today.getFullYear();
-  const opts: Intl.DateTimeFormatOptions = sameYear
-    ? { weekday: "long", month: "short", day: "numeric" }
-    : { year: "numeric", month: "short", day: "numeric" };
-  return d.toLocaleDateString(undefined, opts);
+function extensionFor(save: Save): string {
+  const cover = save.files[save.coverIndex ?? 0];
+  if (cover?.path) {
+    const m = /\.([a-z0-9]+)$/i.exec(cover.path);
+    if (m?.[1]) return m[1].toLowerCase();
+  }
+  if (cover?.mimeType) {
+    const m = /^[^/]+\/(.+)$/.exec(cover.mimeType);
+    if (m?.[1]) return m[1].toLowerCase();
+  }
+  return "";
 }
