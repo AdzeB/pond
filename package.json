@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/raphaelsalaja/pond.git"
   },
-  "packageManager": "pnpm@10.15.0",
+  "packageManager": "pnpm@11.3.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
