@@ -95,40 +95,22 @@ function Root() {
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Button
-              size="sm"
-              variant="danger"
-              onClick={() => void trash()}
-              disabled={busy}
-            >
-              Trash
-            </Button>
-          }
-        />
-        <Tooltip.Portal>
-          <Tooltip.Positioner>
-            <Tooltip.Popup>Move every selected save to trash</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <Tooltip label="Move every selected save to trash">
+        <Button
+          size="sm"
+          variant="danger"
+          onClick={() => void trash()}
+          disabled={busy}
+        >
+          Trash
+        </Button>
+      </Tooltip>
       <Divider />
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Button size="sm" variant="ghost" onClick={close} disabled={busy}>
-              Done
-            </Button>
-          }
-        />
-        <Tooltip.Portal>
-          <Tooltip.Positioner>
-            <Tooltip.Popup>Clear selection (Esc)</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <Tooltip label="Clear selection (Esc)">
+        <Button size="sm" variant="ghost" onClick={close} disabled={busy}>
+          Done
+        </Button>
+      </Tooltip>
     </Bar>
   );
 }

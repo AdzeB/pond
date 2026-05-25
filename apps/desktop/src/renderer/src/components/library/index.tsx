@@ -50,12 +50,7 @@ function Grid({
         : styles["grid-grid"];
   return (
     <ul
-      className={cn(
-        styles.grid,
-        layoutClass,
-        multiSelect && styles["grid-multiselect"],
-        className,
-      )}
+      className={cn(styles.grid, layoutClass, className)}
       data-layout={layout}
       data-multi-select={multiSelect ? "true" : undefined}
       {...props}
@@ -80,13 +75,7 @@ function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
     <motion.li
       layout="position"
       transition={drawerSpring}
-      className={cn(
-        styles.item,
-        selected && styles["item-selected"],
-        multi && styles["item-multi"],
-        dimmed && styles["item-dimmed"],
-        className,
-      )}
+      className={cn(styles.item, className)}
       data-selected={selected ? "true" : undefined}
       data-multi={multi ? "true" : undefined}
       data-dimmed={dimmed ? "true" : undefined}

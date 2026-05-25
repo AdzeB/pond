@@ -80,9 +80,3 @@ linux:
     - target: AppImage
     - target: deb
   category: Utility
-
-publish:
-  provider: github
-  owner: raphaelsalaja
-  repo: pond
-  releaseType: release

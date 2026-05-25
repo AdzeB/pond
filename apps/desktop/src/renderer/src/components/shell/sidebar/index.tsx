@@ -116,17 +116,14 @@ function GroupToggle({
   ...props
 }: GroupToggleProps) {
   return (
-    <button type={type} className={styles["group-toggle"]} {...props}>
+    <button
+      type={type}
+      className={styles["group-toggle"]}
+      data-expanded={expanded || undefined}
+      {...props}
+    >
       <span className={styles["group-toggle-chevron"]} aria-hidden>
-        <span
-          style={{
-            display: "inline-block",
-            transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-            transition: "transform 100ms ease",
-          }}
-        >
-          ▸
-        </span>
+        ▸
       </span>
       <span>{children}</span>
       {count != null ? (

@@ -1,21 +1,15 @@
 .toolbar {
+  --backdrop-blur: 6px;
+
   display: flex;
   flex-shrink: 0;
-  gap: 12px;
+  gap: 4px;
   align-items: center;
-  justify-content: space-between;
   -webkit-app-region: drag;
 
   & > * {
     -webkit-app-region: no-drag;
   }
-}
-
-.right {
-  display: flex;
-  flex-shrink: 0;
-  gap: 4px;
-  align-items: center;
 }
 
 .search {
@@ -24,6 +18,7 @@
   flex-shrink: 0;
   align-items: center;
   max-width: 256px;
+  margin-inline-end: auto;
 
   .field {
     background: color-mix(
@@ -32,6 +27,30 @@
       transparent
     );
     border-radius: 100px;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(var(--backdrop-blur));
+  }
+}
+
+.trigger {
+  flex: 1 1 auto;
+  width: 32px;
+  height: 32px;
+  padding: 8px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  outline: none;
+  background: color-mix(in srgb, var(--ds-background-primary) 80%, transparent);
+  border-radius: 999px;
+  box-shadow: var(--ds-shadow-2);
+  backdrop-filter: blur(var(--backdrop-blur));
+  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    background: var(--ds-gray-2);
+  }
+
+  &:active {
+    background: var(--ds-gray-3);
+    transform: scale(0.98);
   }
 }

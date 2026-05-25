@@ -99,25 +99,16 @@ export function SaveDetailPage() {
         <SaveDetail.Header save={save} list={list} />
         <SaveDetail.Content save={save} />
         {!inspectorOpen ? (
-          <Tooltip.Root>
-            <Tooltip.Trigger
-              render={
-                <button
-                  type="button"
-                  className={styles["inspector-restore"]}
-                  onClick={toggleInspector}
-                  aria-label="Show inspector"
-                >
-                  <PanelRight width={16} height={16} />
-                </button>
-              }
-            />
-            <Tooltip.Portal>
-              <Tooltip.Positioner>
-                <Tooltip.Popup>Show inspector</Tooltip.Popup>
-              </Tooltip.Positioner>
-            </Tooltip.Portal>
-          </Tooltip.Root>
+          <Tooltip label="Show inspector">
+            <button
+              type="button"
+              className={styles["inspector-restore"]}
+              onClick={toggleInspector}
+              aria-label="Show inspector"
+            >
+              <PanelRight width={16} height={16} />
+            </button>
+          </Tooltip>
         ) : null}
       </Shell.Main>
       <Inspector />

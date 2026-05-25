@@ -53,6 +53,7 @@
     "drizzle-orm": "^0.45.2",
     "electron-log": "^5.4.3",
     "electron-updater": "^6.8.3",
+    "embla-carousel-react": "9.0.0-rc02",
     "ffmpeg-static": "^5.2.0",
     "fuse.js": "^7.3.0",
     "hono": "^4.12.18",

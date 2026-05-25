@@ -68,11 +68,11 @@ interface Filters {
   saveId: string;
 }
 
-interface ContentProps {
+interface ActivityDialogProps {
   open: boolean;
 }
 
-function Content({ open }: ContentProps) {
+export function ActivityDialog({ open }: ActivityDialogProps) {
   const [rangeId, setRangeId] =
     useState<(typeof TIME_RANGES)[number]["id"]>("24h");
   const [mode, setMode] = useState<Mode>("recent");
@@ -466,5 +466,3 @@ function formatTime(ms: number): string {
     ? time
     : `${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} ${time}`;
 }
-
-export const ActivityDialog = { Content };

@@ -12,18 +12,18 @@ import { Check, Plus, X } from "lucide-react";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
+  AddFilterMenu,
+  COMPARATOR_LABELS,
+  dropdownFor,
+  FIELD_ICONS,
+} from "@/components/library/menus/filter";
+import {
   type AddCommitApi,
   appendPredicate,
   predicateIsActive,
   replacePredicate,
   topLevelPredicates,
-} from "./helpers";
-import {
-  AddFilterMenu,
-  COMPARATOR_LABELS,
-  dropdownFor,
-  FIELD_ICONS,
-} from "./registry";
+} from "@/components/library/menus/filter/helpers";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {

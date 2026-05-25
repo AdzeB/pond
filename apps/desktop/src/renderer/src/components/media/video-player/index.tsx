@@ -1,5 +1,6 @@
 import "@videojs/react/video/skin.css";
 
+import { ContextMenu } from "@pond/ui";
 import {
   Controls,
   createPlayer,
@@ -28,7 +29,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
 import { VideoContextMenu } from "./context-menu";
@@ -82,7 +83,6 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const internalVideoRef = useRef<HTMLVideoElement | null>(null);
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null);
 
   const setVideoRef = useCallback(
     (el: HTMLVideoElement | null) => {
@@ -91,13 +91,6 @@ export function VideoPlayer({
     },
     [videoRef],
   );
-
-  const onContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setCtxMenu({ x: e.clientX, y: e.clientY });
-  }, []);
-
-  const closeCtxMenu = useCallback(() => setCtxMenu(null), []);
 
   const chaptersVttUrl = useMemo(
     () => (chapters && chapters.length > 0 ? chaptersToVttUrl(chapters) : null),
@@ -115,41 +108,38 @@ export function VideoPlayer({
 
   return (
     <Player.Provider>
-      <Player.Container
-        ref={containerRef}
-        className={styles.root}
-        onContextMenu={onContextMenu}
-      >
-        <Video
-          src={src}
-          poster={poster}
-          autoPlay
-          playsInline
-          ref={setVideoRef}
-          className={styles.video}
-          onError={handleError}
-        >
-          {chaptersVttUrl ? (
-            <track
-              src={chaptersVttUrl}
-              kind="chapters"
-              srcLang="en"
-              label="Chapters"
-              default
-            />
-          ) : null}
-        </Video>
+      <ContextMenu.Root>
+        <ContextMenu.Trigger
+          render={
+            <Player.Container ref={containerRef} className={styles.root}>
+              <Video
+                src={src}
+                poster={poster}
+                autoPlay
+                playsInline
+                ref={setVideoRef}
+                className={styles.video}
+                onError={handleError}
+              >
+                {chaptersVttUrl ? (
+                  <track
+                    src={chaptersVttUrl}
+                    kind="chapters"
+                    srcLang="en"
+                    label="Chapters"
+                    default
+                  />
+                ) : null}
+              </Video>
 
-        <PlayerHotkeys videoRef={internalVideoRef} />
+              <PlayerHotkeys videoRef={internalVideoRef} />
 
-        <PlayerControls
-          src={src}
-          save={save}
-          containerRef={containerRef}
-          ctxMenu={ctxMenu}
-          onCloseCtxMenu={closeCtxMenu}
+              <PlayerControls src={src} />
+            </Player.Container>
+          }
         />
-      </Player.Container>
+        <VideoContextMenu save={save} containerRef={containerRef} />
+      </ContextMenu.Root>
     </Player.Provider>
   );
 }
@@ -233,22 +223,9 @@ function PlayerHotkeys({
   );
 }
 
-function PlayerControls({
-  src,
-  save,
-  containerRef,
-  ctxMenu,
-  onCloseCtxMenu,
-}: {
-  src: string;
-  save: Save;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-  ctxMenu: { x: number; y: number } | null;
-  onCloseCtxMenu: () => void;
-}) {
+function PlayerControls({ src }: { src: string }) {
   const playbackRate = usePlayer(select("playbackRate"));
   const setPlaybackRate = usePlayer(select("setPlaybackRate"));
-  const requestPip = usePlayer(select("requestPictureInPicture"));
   const pipAvailable = usePlayer(select("pipAvailability")) === "available";
   const volumeUnsupported =
     usePlayer(select("volumeAvailability")) === "unsupported";
@@ -264,142 +241,125 @@ function PlayerControls({
   );
 
   return (
-    <>
-      <Controls.Root className={styles.controls}>
-        <Controls.Group
-          className={styles["controls-group"]}
-          aria-label="Playback controls"
-        >
-          <PlayButton
-            className={styles.btn}
-            render={(props, state) => (
-              <button
-                {...props}
-                type="button"
-                aria-label={
-                  state.paused
-                    ? "Play (keyboard shortcut k)"
-                    : "Pause (keyboard shortcut k)"
-                }
-              >
-                {state.paused ? (
-                  <Play width={14} height={14} />
-                ) : (
-                  <Pause width={14} height={14} />
-                )}
-              </button>
-            )}
-          />
-
-          <SeekButton
-            seconds={-SEEK_BUTTON_STEP}
-            className={styles.btn}
-            render={(props) => (
-              <button
-                {...props}
-                type="button"
-                aria-label={`Seek back ${SEEK_BUTTON_STEP} seconds`}
-              >
-                <SkipBack width={14} height={14} />
-              </button>
-            )}
-          />
-
-          <SeekButton
-            seconds={SEEK_BUTTON_STEP}
-            className={styles.btn}
-            render={(props) => (
-              <button
-                {...props}
-                type="button"
-                aria-label={`Seek forward ${SEEK_BUTTON_STEP} seconds`}
-              >
-                <SkipForward width={14} height={14} />
-              </button>
-            )}
-          />
-
-          <VolumeControl unsupported={volumeUnsupported} />
-
-          <Time.Value type="current" className={styles.time} />
-
-          <TimeSlider.Root
-            ref={seekSliderRef}
-            className={styles["seek-slider"]}
-          >
-            <TimeSlider.Track className={styles["slider-track"]}>
-              <TimeSlider.Buffer className={styles["slider-buffer"]} />
-              <TimeSlider.Fill className={styles["slider-fill"]} />
-            </TimeSlider.Track>
-            <TimeSlider.Thumb className={styles["slider-thumb"]} />
-            <Slider.Preview className={styles["slider-preview"]}>
-              <ScrubPreview src={src} sliderRef={seekSliderRef} />
-              <TimeSlider.Value
-                type="pointer"
-                className={styles["slider-preview-time"]}
-              />
-            </Slider.Preview>
-          </TimeSlider.Root>
-
-          <Time.Value type="duration" className={styles.time} />
-
-          <select
-            className={styles["speed-select"]}
-            aria-label="Change playback rate (keyboard shortcut > or <)"
-            value={playbackRate}
-            onChange={onSpeedChange}
-          >
-            {SPEED_OPTIONS.map((rate) => (
-              <option key={rate} value={rate}>
-                {rate}×
-              </option>
-            ))}
-          </select>
-
-          {pipAvailable ? (
-            <PiPButton
-              className={styles.btn}
-              render={(props) => (
-                <button
-                  {...props}
-                  type="button"
-                  aria-label="Picture-in-Picture (keyboard shortcut p)"
-                >
-                  <PictureInPicture2 width={14} height={14} />
-                </button>
+    <Controls.Root className={styles.controls}>
+      <Controls.Group
+        className={styles["controls-group"]}
+        aria-label="Playback controls"
+      >
+        <PlayButton
+          className={styles.btn}
+          render={(props, state) => (
+            <button
+              {...props}
+              type="button"
+              aria-label={
+                state.paused
+                  ? "Play (keyboard shortcut k)"
+                  : "Pause (keyboard shortcut k)"
+              }
+            >
+              {state.paused ? (
+                <Play width={14} height={14} />
+              ) : (
+                <Pause width={14} height={14} />
               )}
-            />
-          ) : null}
-
-          {fullscreenAvailable ? (
-            <FullscreenButton
-              className={styles.btn}
-              render={(props) => (
-                <button
-                  {...props}
-                  type="button"
-                  aria-label="Full window (keyboard shortcut f)"
-                >
-                  <Maximize width={14} height={14} />
-                </button>
-              )}
-            />
-          ) : null}
-        </Controls.Group>
-      </Controls.Root>
-
-      {ctxMenu ? (
-        <VideoContextMenu
-          position={ctxMenu}
-          save={save}
-          containerRef={containerRef}
-          playbackRate={playbackRate}
-          onSetPlaybackRate={setPlaybackRate}
-          onRequestPip={requestPip}
-          onClose={onCloseCtxMenu}
+            </button>
+          )}
         />
-      ) : null}
-    </>
+
+        <SeekButton
+          seconds={-SEEK_BUTTON_STEP}
+          className={styles.btn}
+          render={(props) => (
+            <button
+              {...props}
+              type="button"
+              aria-label={`Seek back ${SEEK_BUTTON_STEP} seconds`}
+            >
+              <SkipBack width={14} height={14} />
+            </button>
+          )}
+        />
+
+        <SeekButton
+          seconds={SEEK_BUTTON_STEP}
+          className={styles.btn}
+          render={(props) => (
+            <button
+              {...props}
+              type="button"
+              aria-label={`Seek forward ${SEEK_BUTTON_STEP} seconds`}
+            >
+              <SkipForward width={14} height={14} />
+            </button>
+          )}
+        />
+
+        <VolumeControl unsupported={volumeUnsupported} />
+
+        <Time.Value type="current" className={styles.time} />
+
+        <TimeSlider.Root ref={seekSliderRef} className={styles["seek-slider"]}>
+          <TimeSlider.Track className={styles["slider-track"]}>
+            <TimeSlider.Buffer className={styles["slider-buffer"]} />
+            <TimeSlider.Fill className={styles["slider-fill"]} />
+          </TimeSlider.Track>
+          <TimeSlider.Thumb className={styles["slider-thumb"]} />
+          <Slider.Preview className={styles["slider-preview"]}>
+            <ScrubPreview src={src} sliderRef={seekSliderRef} />
+            <TimeSlider.Value
+              type="pointer"
+              className={styles["slider-preview-time"]}
+            />
+          </Slider.Preview>
+        </TimeSlider.Root>
+
+        <Time.Value type="duration" className={styles.time} />
+
+        <select
+          className={styles["speed-select"]}
+          aria-label="Change playback rate (keyboard shortcut > or <)"
+          value={playbackRate}
+          onChange={onSpeedChange}
+        >
+          {SPEED_OPTIONS.map((rate) => (
+            <option key={rate} value={rate}>
+              {rate}×
+            </option>
+          ))}
+        </select>
+
+        {pipAvailable ? (
+          <PiPButton
+            className={styles.btn}
+            render={(props) => (
+              <button
+                {...props}
+                type="button"
+                aria-label="Picture-in-Picture (keyboard shortcut p)"
+              >
+                <PictureInPicture2 width={14} height={14} />
+              </button>
+            )}
+          />
+        ) : null}
+
+        {fullscreenAvailable ? (
+          <FullscreenButton
+            className={styles.btn}
+            render={(props) => (
+              <button
+                {...props}
+                type="button"
+                aria-label="Full window (keyboard shortcut f)"
+              >
+                <Maximize width={14} height={14} />
+              </button>
+            )}
+          />
+        ) : null}
+      </Controls.Group>
+    </Controls.Root>
   );
 }
 

@@ -29,8 +29,8 @@
   max-width: 100%;
   max-height: 150px;
   object-fit: contain;
-  border-radius: var(--ds-radius-sm);
-  box-shadow: var(--ds-shadow-card);
+  border-radius: 4px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .pane-cover-video {
@@ -67,7 +67,7 @@
   }
 
   &[contenteditable="true"]:focus-visible {
-    border-radius: var(--ds-radius-sm);
+    border-radius: 4px;
     box-shadow:
       0 0 0 2px var(--ds-gray-1),
       0 0 0 4px var(--ds-gray-a8);

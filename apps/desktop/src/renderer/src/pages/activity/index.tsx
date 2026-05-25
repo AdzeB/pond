@@ -13,7 +13,7 @@ export function ActivityPage() {
             renamed, AI suggestions that were applied.
           </p>
         </header>
-        <ActivityList.Root saveId={null} limit={200} />
+        <ActivityList saveId={null} limit={200} />
       </div>
     </Shell.Main>
   );

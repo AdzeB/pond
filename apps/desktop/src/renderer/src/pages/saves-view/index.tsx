@@ -19,11 +19,11 @@ export function SavesView({ mode = "library" }: SavesViewProps) {
   return (
     <>
       <Shell.Main>
-        <Shell.Toolbar>
-          <HeaderToolbar.Root />
+        <Shell.Header>
+          <HeaderToolbar />
           <FilterBar.Root />
-          <ProcessingButton.Root />
-        </Shell.Toolbar>
+          <ProcessingButton />
+        </Shell.Header>
         <Library.Root
           view={data.viewMode === "list" ? "list" : "grid"}
           onDragOver={actions.onDragOver}

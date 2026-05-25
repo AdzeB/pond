@@ -245,7 +245,7 @@ export function DeveloperSection() {
                 <Dialog.Trigger
                   render={<Button size="sm">Open Activity</Button>}
                 />
-                <ActivityDialog.Content open={activityOpen} />
+                <ActivityDialog open={activityOpen} />
               </Dialog.Root>
             </Settings.ItemControl>
           </Settings.Item>
@@ -511,14 +511,7 @@ export function DeveloperSection() {
                       This wipes the SQLite index and prefs. Saves on disk stay
                       put. You'll see onboarding on next launch.
                     </AlertDialog.Description>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        justifyContent: "flex-end",
-                        marginTop: 8,
-                      }}
-                    >
+                    <AlertDialog.Actions>
                       <AlertDialog.Close
                         render={<Button variant="ghost">Cancel</Button>}
                       />
@@ -538,7 +531,7 @@ export function DeveloperSection() {
                           </Button>
                         }
                       />
-                    </div>
+                    </AlertDialog.Actions>
                   </AlertDialog.Popup>
                 </AlertDialog.Portal>
               </AlertDialog.Root>

@@ -1,5 +1,8 @@
+import { copyFile } from "node:fs/promises";
+import { extname } from "node:path";
 import { SOURCES, type Source, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
+import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
 import {
   and,
@@ -11,6 +14,7 @@ import {
   isNull,
   or,
 } from "drizzle-orm";
+import { BrowserWindow, clipboard, dialog, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
 import {
@@ -80,6 +84,33 @@ const PROCESSING_DETAILS_LIMIT = 500;
  * `tasks.lastError`. Pulling the name back out gives the renderer a
  * stable discriminator (`TerminalError`, `RateLimitedError`, …) to map
  * onto human copy without fragile substring matches on the message. */
+function isHttpUrl(u: string | undefined | null): u is string {
+  if (!u) return false;
+  return u.startsWith("http://") || u.startsWith("https://");
+}
+
+// Best-effort public URL for the save's primary image, used by reverse
+// image search. Engines like Google Lens fetch the URL server-side, so
+// only http(s) URLs work: local-only library files are skipped.
+function derivePublicImageUrl(raw: RawJson | null): string | null {
+  if (!raw) return null;
+  const media = raw.capture?.media ?? [];
+  const image = media.find((m) => m.type === "image" && isHttpUrl(m.url));
+  if (image) return image.url;
+  const video = media.find((m) => m.type === "video" && isHttpUrl(m.posterUrl));
+  if (video?.posterUrl) return video.posterUrl;
+  const ytdlpThumb = raw.ytdlp?.thumbnail;
+  if (isHttpUrl(ytdlpThumb)) return ytdlpThumb;
+  const ogImage = (() => {
+    const extras = raw.capture?.extras;
+    if (!extras || typeof extras !== "object") return null;
+    const candidate = (extras as Record<string, unknown>)["og:image"];
+    if (typeof candidate === "string" && isHttpUrl(candidate)) return candidate;
+    return null;
+  })();
+  return ogImage;
+}
+
 function extractErrorName(blob: string | null): string | null {
   if (!blob) return null;
   const idx = blob.indexOf(":");
@@ -444,6 +475,80 @@ export const savesQueries: QueryHandlerMap = {
       };
     });
     return { rows: out, truncated } satisfies ProcessingDetailsResultWire;
+  },
+
+  async "saves.copyImage"(params) {
+    const id = String(params.id ?? "");
+    const fileIndex = Number(params.fileIndex ?? 0);
+    if (!id) return { ok: false as const, reason: "not_found" as const };
+    const target = await resolveSaveFilePath(
+      id,
+      Number.isFinite(fileIndex) ? fileIndex : 0,
+    );
+    if (!target.ok) return target;
+    try {
+      const img = nativeImage.createFromPath(target.path);
+      if (img.isEmpty()) {
+        return { ok: false as const, reason: "missing" as const };
+      }
+      clipboard.writeImage(img);
+      return { ok: true as const };
+    } catch (err) {
+      log.warn("[pond ipc] saves.copyImage failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
+  },
+
+  async "saves.exportFile"(params, event) {
+    const id = String(params.id ?? "");
+    const fileIndex = Number(params.fileIndex ?? 0);
+    if (!id) return { ok: false as const, reason: "not_found" as const };
+    const target = await resolveSaveFilePath(
+      id,
+      Number.isFinite(fileIndex) ? fileIndex : 0,
+    );
+    if (!target.ok) return target;
+
+    const db = await getDb();
+    const rows = await db.select().from(saves).where(eq(saves.id, id));
+    const row = rows[0];
+    const ext = extname(target.path);
+    const base = (row?.title ?? row?.id ?? "save")
+      .replace(/[\\/:*?"<>|]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+    const defaultName = `${base || "save"}${ext}`;
+
+    const win = event
+      ? (BrowserWindow.fromWebContents(event.sender) ?? undefined)
+      : undefined;
+    try {
+      const result = await dialog.showSaveDialog({
+        ...(win ? { browserWindow: win } : {}),
+        defaultPath: defaultName,
+      } as Electron.SaveDialogOptions);
+      if (result.canceled || !result.filePath) {
+        return { ok: false as const, reason: "cancelled" as const };
+      }
+      await copyFile(target.path, result.filePath);
+      return { ok: true as const, path: result.filePath };
+    } catch (err) {
+      log.warn("[pond ipc] saves.exportFile failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
+  },
+
+  async "saves.publicImageUrl"(params) {
+    const id = String(params.id ?? "");
+    if (!id) return { ok: false as const, url: null };
+    const db = await getDb();
+    const rows = await db.select().from(saves).where(eq(saves.id, id));
+    const row = rows[0];
+    if (!row) return { ok: false as const, url: null };
+    const raw = (row.rawJson ?? null) as RawJson | null;
+    const url = derivePublicImageUrl(raw);
+    return { ok: true as const, url };
   },
 
   async "saves.activity"(params) {

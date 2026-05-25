@@ -8,27 +8,6 @@
   isolation: isolate;
 }
 
-.media {
-  position: relative;
-  z-index: 1;
-  display: block;
-  max-width: 100%;
-  max-height: 100%;
-  margin: auto;
-  object-fit: contain;
-  border-radius: 4px;
-  box-shadow: var(--ds-shadow-2);
-}
-
-.media[data-loaded] {
-  opacity: 0;
-  transition: opacity 220ms ease;
-}
-
-.media[data-loaded="true"] {
-  opacity: 1;
-}
-
 .thumb[data-layout="grid"] {
   width: auto;
   max-width: 100%;
@@ -36,91 +15,4 @@
   max-height: 100%;
   aspect-ratio: var(--card-aspect, 1 / 1);
   border-radius: 4px;
-}
-
-.thumb[data-layout="grid"] .media {
-  border-radius: 4px;
-}
-
-.placeholder {
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 1 / 1;
-  background: linear-gradient(
-    135deg,
-    light-dark(#f4f4f5, #1a1a1f) 0%,
-    light-dark(#e4e4e7, #111114) 100%
-  );
-}
-
-.downloading {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-  display: inline-flex;
-  gap: 5px;
-  align-items: center;
-  padding: 3px 8px 3px 7px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-  background: rgba(0, 0, 0, 0.62);
-  border-radius: 2147483647px;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-
-.failed {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 8px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #fff;
-  letter-spacing: 0.02em;
-  background: rgba(220, 38, 38, 0.85);
-  border-radius: 2147483647px;
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
-}
-
-.downloading-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: #4ac26b;
-  border-radius: 2147483647px;
-  animation: ponddl-pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes ponddl-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-    transform: scale(0.85);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .downloading-dot {
-    opacity: 1;
-    animation: none;
-  }
-}
-
-:global(html[data-reduce-motion="true"]) .downloading-dot {
-  opacity: 1;
-  animation: none;
 }

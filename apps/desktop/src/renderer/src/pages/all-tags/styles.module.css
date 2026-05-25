@@ -52,7 +52,7 @@
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-sm);
+  border-radius: 4px;
 }
 
 .pane-add:hover {
@@ -79,7 +79,7 @@
   cursor: pointer;
   background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-sm);
+  border-radius: 4px;
 }
 
 .tool:hover {

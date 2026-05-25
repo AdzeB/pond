@@ -191,7 +191,7 @@ type Selection =
   | { kind: "source"; source: string }
   | { kind: "failed" };
 
-interface ContentProps {
+interface ProcessingDialogProps {
   open: boolean;
   /* Live counts owned by the trigger button. Passed in so the dialog
    * can auto-close itself when both hit zero without each consumer
@@ -211,7 +211,12 @@ const REFRESH_DEBOUNCE_MS = 150;
  * without spamming IPC. */
 const METRICS_POLL_MS = 2_000;
 
-function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
+export function ProcessingDialog({
+  open,
+  ingestingCount,
+  failedCount,
+  onClose,
+}: ProcessingDialogProps) {
   const [payload, setPayload] = useState<ProcessingDetailsPayload | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ProcessingProgressWire | null>(null);
@@ -569,7 +574,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
             return (
               <RailRow
                 key={source}
-                badge={<SourceBadge.Root source={source} data-size="sm" />}
+                badge={<SourceBadge source={source} data-size="sm" />}
                 label={getSourceLabel(source)}
                 count={entry.ingesting + entry.failed}
                 gate={pausedSourceReasons.get(source) ?? null}
@@ -744,7 +749,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                         className={styles.row}
                         data-status="ingesting"
                       >
-                        <SourceBadge.Root source={row.source} data-size="sm" />
+                        <SourceBadge source={row.source} data-size="sm" />
                         <div className={styles.body}>
                           <span className={styles.title} title={row.url}>
                             {row.title?.trim() || displayUrl(row.url)}
@@ -806,7 +811,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                         className={styles.row}
                         data-status="failed"
                       >
-                        <SourceBadge.Root source={row.source} data-size="sm" />
+                        <SourceBadge source={row.source} data-size="sm" />
                         <div className={styles.body}>
                           <span className={styles.title} title={row.url}>
                             {row.title?.trim() || displayUrl(row.url)}
@@ -880,14 +885,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
               <AlertDialog.Description>
                 {clearScope.confirmBody}
               </AlertDialog.Description>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  justifyContent: "flex-end",
-                  marginTop: 8,
-                }}
-              >
+              <AlertDialog.Actions>
                 <AlertDialog.Close
                   render={<Button variant="ghost">Cancel</Button>}
                 />
@@ -905,7 +903,7 @@ function Content({ open, ingestingCount, failedCount, onClose }: ContentProps) {
                     </Button>
                   }
                 />
-              </div>
+              </AlertDialog.Actions>
             </AlertDialog.Popup>
           </AlertDialog.Portal>
         </AlertDialog.Root>
@@ -1070,5 +1068,3 @@ function renderEmpty(selection: Selection, totallyEmpty: boolean) {
   }
   return <p className={styles.empty}>Nothing to show.</p>;
 }
-
-export const ProcessingDialog = { Content };

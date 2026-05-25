@@ -5,6 +5,7 @@ import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
 import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
+import { openSaveWindow } from "../../lib/save-window";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
@@ -83,5 +84,15 @@ export function registerAppHandlers(): void {
       return { ok: false as const, reason: err };
     }
     return { ok: true as const };
+  });
+
+  safeHandle(IPC.openSaveWindow, async (_, id: string) => {
+    try {
+      await openSaveWindow(String(id));
+      return { ok: true as const };
+    } catch (err) {
+      log.warn("[pond ipc] openSaveWindow failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
   });
 }

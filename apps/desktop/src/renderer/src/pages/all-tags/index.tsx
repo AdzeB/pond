@@ -8,6 +8,7 @@ import {
   type DisplayItem,
   type RailKey,
 } from "@/components/library/all-tags";
+import { DisplayMenu } from "@/components/library/menus/display";
 import { TagPicker } from "@/components/save/preview/tag-picker";
 import { Shell } from "@/components/shell";
 import { useSaves } from "@/pool/hooks";
@@ -181,22 +182,27 @@ export function AllTagsPage() {
                 </span>
               </h1>
               {selectedGroup ? (
-                <TagPicker
+                <TagPicker.Root
                   target={{ kind: "group", group: selectedGroup }}
-                  side="bottom"
-                  align="start"
-                  sideOffset={6}
-                  trigger={
-                    <button
-                      type="button"
-                      className={styles["pane-add"]}
-                      aria-label={`Add tag to ${selectedGroup.name}`}
-                      title={`Add tag to ${selectedGroup.name}`}
-                    >
-                      <Plus width={14} height={14} />
-                    </button>
-                  }
-                />
+                >
+                  <TagPicker.Trigger
+                    render={
+                      <button
+                        type="button"
+                        className={styles["pane-add"]}
+                        aria-label={`Add tag to ${selectedGroup.name}`}
+                        title={`Add tag to ${selectedGroup.name}`}
+                      >
+                        <Plus width={14} height={14} />
+                      </button>
+                    }
+                  />
+                  <TagPicker.Content
+                    side="bottom"
+                    align="start"
+                    sideOffset={6}
+                  />
+                </TagPicker.Root>
               ) : null}
               <div className={styles.spacer} />
               <div className={styles["pane-search"]}>
@@ -227,7 +233,7 @@ export function AllTagsPage() {
               >
                 <LayoutGrid width={16} height={16} />
               </button>
-              <AllTags.DisplayMenu prefs={prefs} patch={patchPrefs} />
+              <DisplayMenu prefs={prefs} patch={patchPrefs} />
             </div>
 
             <div

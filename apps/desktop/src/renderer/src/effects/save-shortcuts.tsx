@@ -1,12 +1,19 @@
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
 import { isChordPending } from "@/components/command-palette/use-chords";
+import { presentation } from "@/lib/presentation";
 import {
   copyId,
+  copyImage,
+  copyTags,
   copyUrl,
+  enterPresentation,
+  exportFile,
   focusPaneTitle,
   openDefaultApp,
+  openInNewWindow,
   openTagPicker,
+  pasteTags,
   purgeForever,
   refreshSaveMetadata,
   toggleTrash,
@@ -45,6 +52,7 @@ export function SaveShortcuts() {
       if (!save) return;
 
       const key = e.key;
+      const lower = key.length === 1 ? key.toLowerCase() : key;
 
       if (
         (e.metaKey || e.ctrlKey) &&
@@ -68,6 +76,52 @@ export function SaveShortcuts() {
         return;
       }
 
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && lower === "c") {
+        e.preventDefault();
+        copyTags(save, toast);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && lower === "v") {
+        e.preventDefault();
+        void pasteTags(save, toast);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && lower === "o") {
+        e.preventDefault();
+        void openInNewWindow(save);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && lower === "c") {
+        if (save.files.length === 0) return;
+        e.preventDefault();
+        void copyImage(save, toast);
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && lower === "e") {
+        if (save.files.length === 0) return;
+        e.preventDefault();
+        void exportFile(save, toast);
+        return;
+      }
+
+      if (
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.shiftKey &&
+        key === "F5"
+      ) {
+        if (presentation.isOpen()) return;
+        if (save.files.length === 0) return;
+        e.preventDefault();
+        enterPresentation(save);
+        return;
+      }
+
       if (e.metaKey || e.ctrlKey || e.altKey) return;
 
       // Defer to the chord matcher mid-sequence so `g r` (Recents)
@@ -88,7 +142,7 @@ export function SaveShortcuts() {
 
       if (e.shiftKey) return;
 
-      const lowered = key.length === 1 ? key.toLowerCase() : key;
+      const lowered = lower;
       switch (lowered) {
         case "o": {
           if (save.files.length === 0) return;

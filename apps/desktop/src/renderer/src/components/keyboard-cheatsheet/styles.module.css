@@ -52,7 +52,7 @@
   padding: 0 4px;
   font-family: inherit;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-sm);
+  border-radius: 4px;
 }
 
 .close {

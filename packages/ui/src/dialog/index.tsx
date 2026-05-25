@@ -45,6 +45,13 @@ function Viewport(props: Base.Viewport.Props) {
   return <Base.Viewport {...props} />;
 }
 
+function Actions({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.actions, className)} {...props} />;
+}
+
 export const Dialog = {
   Root,
   Trigger,
@@ -53,6 +60,7 @@ export const Dialog = {
   Popup,
   Title,
   Description,
+  Actions,
   Close,
   Viewport,
   createHandle: Base.createHandle,

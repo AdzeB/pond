@@ -16,12 +16,17 @@ interface ActivityRow {
   created_at: string | number;
 }
 
-interface RootProps extends React.ComponentPropsWithoutRef<"ul"> {
+interface ActivityListProps extends React.ComponentPropsWithoutRef<"ul"> {
   saveId: string | null;
   limit?: number;
 }
 
-function Root({ saveId, limit = 50, className, ...props }: RootProps) {
+export function ActivityList({
+  saveId,
+  limit = 50,
+  className,
+  ...props
+}: ActivityListProps) {
   const [rows, setRows] = useState<ActivityRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,10 +74,6 @@ function Root({ saveId, limit = 50, className, ...props }: RootProps) {
     </ul>
   );
 }
-
-export const ActivityList = {
-  Root,
-};
 
 function summary(row: ActivityRow): string {
   const actor = actorLabel(row.actor);

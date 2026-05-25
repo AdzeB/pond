@@ -10,6 +10,7 @@ import { AllTagsPage } from "./pages/all-tags";
 import { SaveDetailPage } from "./pages/save-detail";
 import { SavesView } from "./pages/saves-view";
 import { DEFAULT_SECTION, SECTIONS } from "./pages/settings/registry";
+import { StandaloneSavePage } from "./pages/standalone-save";
 
 function settingsChildren(): RouteObject[] {
   return [
@@ -99,6 +100,10 @@ export function buildRoutes(): RouteObject[] {
                 const mod = await import("./pages/welcome");
                 return { Component: mod.WelcomePage };
               },
+            },
+            {
+              path: "standalone/save/:id",
+              element: <StandaloneSavePage />,
             },
           ],
         },

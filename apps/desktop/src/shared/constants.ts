@@ -22,6 +22,7 @@ export const IPC = {
   openExternal: "pond:open-external",
   revealSave: "pond:reveal-save",
   openSaveFile: "pond:open-save-file",
+  openSaveWindow: "pond:open-save-window",
   refreshSave: "pond:refresh-save",
   refreshBackfillStart: "pond:refresh-backfill-start",
   refreshBackfillCancel: "pond:refresh-backfill-cancel",

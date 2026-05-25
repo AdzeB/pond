@@ -7,12 +7,12 @@ function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-function Trigger(props: Base.Trigger.Props) {
-  return <Base.Trigger {...props} />;
+function Trigger({ className, ...props }: Base.Trigger.Props) {
+  return <Base.Trigger className={cn(styles.trigger, className)} {...props} />;
 }
 
-function Portal(props: Base.Portal.Props) {
-  return <Base.Portal {...props} />;
+function Portal({ className, ...props }: Base.Portal.Props) {
+  return <Base.Portal className={cn(styles.portal, className)} {...props} />;
 }
 
 function Positioner({

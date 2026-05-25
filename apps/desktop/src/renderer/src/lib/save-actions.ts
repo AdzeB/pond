@@ -1,5 +1,7 @@
 import type { Save as DbSave } from "@pond/schema/db";
 import type { useToast } from "@pond/ui";
+import { presentation } from "@/lib/presentation";
+import { mergeUniqueTags, tagClipboard } from "@/lib/tag-clipboard";
 import { setInspectorOpen } from "@/lib/use-inspector";
 import { optimistic } from "@/pool/bootstrap";
 import { pool } from "@/pool/pool";
@@ -132,4 +134,85 @@ export async function refreshSaveMetadata(
   if (!save.url) return;
   await window.pond.refreshSave(save.id);
   toast.add({ title: "Refreshing metadata…", type: "success" });
+}
+
+export async function openInNewWindow(save: Save): Promise<void> {
+  await window.pond.openSaveWindow(save.id);
+}
+
+export async function copyImage(save: Save, toast: Toast): Promise<void> {
+  if (save.files.length === 0) return;
+  const result = (await window.pond.query("saves.copyImage", {
+    id: save.id,
+    fileIndex: save.coverIndex ?? 0,
+  })) as { ok: true } | { ok: false; reason?: string };
+  if (result.ok) {
+    toast.add({ title: "Image copied", type: "success" });
+  } else {
+    toast.add({ title: "Couldn't copy image", type: "error" });
+  }
+}
+
+export function copyTags(save: Save, toast: Toast): void {
+  if (save.tags.length === 0) {
+    toast.add({ title: "No tags to copy", type: "error" });
+    return;
+  }
+  tagClipboard.set(save.tags);
+  const n = save.tags.length;
+  toast.add({
+    title: `Copied ${n} tag${n === 1 ? "" : "s"}`,
+    type: "success",
+  });
+}
+
+export async function pasteTags(save: Save, toast: Toast): Promise<void> {
+  const buf = tagClipboard.get();
+  if (buf.length === 0) {
+    toast.add({ title: "No tags in clipboard", type: "error" });
+    return;
+  }
+  const next = mergeUniqueTags(save.tags, buf);
+  const added = next.length - save.tags.length;
+  if (added === 0) {
+    toast.add({ title: "Tags already present", type: "success" });
+    return;
+  }
+  const prev = pool.get(save.id);
+  if (!prev) return;
+  await optimistic(
+    () => {
+      pool.upsert({ ...prev, tags: next } as typeof prev);
+    },
+    () => {
+      pool.upsert(prev);
+    },
+    async () =>
+      window.pond.query("tags.setForSave", {
+        saveId: save.id,
+        tags: next,
+      }),
+  );
+  toast.add({
+    title: `Pasted ${added} tag${added === 1 ? "" : "s"}`,
+    type: "success",
+  });
+}
+
+export async function exportFile(save: Save, toast: Toast): Promise<void> {
+  if (save.files.length === 0) return;
+  const result = (await window.pond.query("saves.exportFile", {
+    id: save.id,
+    fileIndex: save.coverIndex ?? 0,
+  })) as { ok: true; path: string } | { ok: false; reason?: string };
+  if (result.ok) {
+    toast.add({ title: "Exported", type: "success" });
+  } else if (result.reason !== "cancelled") {
+    toast.add({ title: "Couldn't export", type: "error" });
+  }
+}
+
+export function enterPresentation(save: Save): void {
+  if (save.files.length === 0) return;
+  presentation.open(save.id);
 }

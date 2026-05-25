@@ -13,11 +13,9 @@ export default function DialogCell() {
             <Dialog.Description>
               Dialogs trap focus and dim the rest of the app while open.
             </Dialog.Description>
-            <div
-              style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
-            >
+            <Dialog.Actions>
               <Dialog.Close render={<Button size="sm">Close</Button>} />
-            </div>
+            </Dialog.Actions>
           </Dialog.Popup>
         </Dialog.Portal>
       </Dialog.Root>

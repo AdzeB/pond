@@ -511,7 +511,7 @@ export function IntegrationsSection() {
             return (
               <Fragment key={entry.id}>
                 <Settings.Item className={styles["app-row"]}>
-                  <SourceBadge.Root source={entry.id} data-size="md" />
+                  <SourceBadge source={entry.id} data-size="md" />
                   <Settings.ItemDetails>
                     <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
                     <Settings.ItemDescription>

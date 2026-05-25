@@ -220,6 +220,11 @@
   align-items: center;
   justify-content: center;
   color: var(--ds-gray-10);
+  transition: transform 100ms ease;
+}
+
+.group-toggle[data-expanded] .group-toggle-chevron {
+  transform: rotate(90deg);
 }
 
 .group-toggle-count {

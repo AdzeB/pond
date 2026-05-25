@@ -119,7 +119,7 @@ export function ShortcutsSection() {
         <Settings.List>
           {ALL_SOURCES.map((entry) => (
             <Settings.Item key={entry.id} className={styles["source-row"]}>
-              <SourceBadge.Root source={entry.id} data-size="md" />
+              <SourceBadge source={entry.id} data-size="md" />
               <Settings.ItemDetails>
                 <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
                 <Settings.ItemDescription>

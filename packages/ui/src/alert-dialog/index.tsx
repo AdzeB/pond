@@ -52,6 +52,13 @@ function Viewport(props: Base.Viewport.Props) {
   return <Base.Viewport {...props} />;
 }
 
+function Actions({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(dialogStyles.actions, className)} {...props} />;
+}
+
 export const AlertDialog = {
   Root,
   Trigger,
@@ -60,6 +67,7 @@ export const AlertDialog = {
   Popup,
   Title,
   Description,
+  Actions,
   Close,
   Viewport,
   createHandle: Base.createHandle,

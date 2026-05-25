@@ -3,6 +3,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
+import { Presentation } from "./components/save/presentation";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
@@ -64,9 +65,25 @@ declare global {
   }
 }
 
+function resolveInitialEntries(): string[] {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("standalone") === "save") {
+      const id = params.get("id");
+      if (id) return [`/standalone/save/${encodeURIComponent(id)}`];
+    }
+  } catch {
+    /* falls through to library home */
+  }
+  return ["/"];
+}
+
 export function App() {
   const router = useMemo(
-    () => createMemoryRouter(buildRoutes(), { initialEntries: ["/"] }),
+    () =>
+      createMemoryRouter(buildRoutes(), {
+        initialEntries: resolveInitialEntries(),
+      }),
     [],
   );
 
@@ -84,6 +101,7 @@ export function App() {
           <SaveCompleteToast />
           <ToastHost />
           <RouterProvider router={router} />
+          <Presentation />
         </Toast.Provider>
       </Tooltip.Provider>
     </MotionConfig>

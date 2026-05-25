@@ -1,0 +1,138 @@
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 0;
+  padding: 12px 8px;
+  overflow-y: auto;
+  background: var(--ds-gray-a1);
+  border-right: 1px solid var(--ds-gray-a4);
+}
+
+.rail-row {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-12);
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+}
+
+.rail-row:hover,
+.rail-row:focus-visible {
+  outline: none;
+  background: var(--ds-gray-a3);
+}
+
+.rail-row[data-active] {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a4);
+}
+
+.rail-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ds-gray-11);
+}
+
+.rail-row[data-active] .rail-icon {
+  color: var(--ds-gray-12);
+}
+
+.rail-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-count {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.rail-row[data-active] .rail-count {
+  color: var(--ds-gray-11);
+}
+
+.rail-section-header {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 16px 8px 4px;
+}
+
+.rail-section-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.rail-section-count {
+  margin-inline-start: 4px;
+  font-weight: 400;
+  color: var(--ds-gray-9);
+}
+
+.rail-section-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+}
+
+.rail-section-action:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+}
+
+.rail-create {
+  padding: 2px 4px 6px;
+}
+
+.color-popup {
+  padding: 6px;
+}
+
+.color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  padding: 2px;
+}
+
+.color-swatch {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+}
+
+.color-swatch:hover {
+  outline: 2px solid var(--ds-gray-a8);
+  outline-offset: 1px;
+}

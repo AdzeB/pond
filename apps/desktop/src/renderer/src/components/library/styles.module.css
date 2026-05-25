@@ -91,8 +91,8 @@
   transition: all 180ms ease;
 }
 
-.item-selected .media::before,
-.item-multi .media::before {
+.item[data-selected] .media::before,
+.item[data-multi] .media::before {
   border-color: var(--ds-accent-9);
 }
 
@@ -210,23 +210,23 @@
   line-height: 1;
 }
 
-.item-multi .checkbox,
-.grid-multiselect .checkbox {
+.item[data-multi] .checkbox,
+.grid[data-multi-select] .checkbox {
   opacity: 1;
 }
 
-.item-multi .checkbox {
+.item[data-multi] .checkbox {
   color: light-dark(#fff, #141414);
   background: light-dark(#141414, #f5f5f5);
   border-color: light-dark(#141414, #f5f5f5);
 }
 
-.item-selected .title {
+.item[data-selected] .title {
   color: light-dark(#000, #fff);
 }
 
-.item-dimmed .media,
-.item-dimmed .meta {
+.item[data-dimmed] .media,
+.item[data-dimmed] .meta {
   opacity: 0.7;
   transition: opacity 120ms ease;
 }
@@ -235,8 +235,8 @@
  * itself selected. Driven by `data-multi-select` on the grid and
  * `data-multi` on each item so a selection change is a single class
  * flip on the grid root rather than re-rendering every card. */
-.grid-multiselect .item:not([data-multi="true"]) .media,
-.grid-multiselect .item:not([data-multi="true"]) .meta {
+.grid[data-multi-select] .item:not([data-multi]) .media,
+.grid[data-multi-select] .item:not([data-multi]) .meta {
   opacity: 0.7;
   transition: opacity 120ms ease;
 }

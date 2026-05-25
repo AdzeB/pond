@@ -48,7 +48,7 @@ function useFocusedSaveId(): string | null {
   return null;
 }
 
-function Root() {
+export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<CommandScope>("all");
@@ -331,5 +331,3 @@ function Footer() {
     </div>
   );
 }
-
-export const CommandPalette = { Root };

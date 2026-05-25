@@ -72,3 +72,11 @@
   line-height: 1.5;
   color: var(--ds-gray-11);
 }
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}

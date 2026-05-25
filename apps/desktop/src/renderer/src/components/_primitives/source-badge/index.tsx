@@ -101,12 +101,17 @@ export function getSourceLabel(source: string): string {
   return source.charAt(0).toUpperCase() + source.slice(1);
 }
 
-interface RootProps extends React.ComponentPropsWithoutRef<"span"> {
+interface SourceBadgeProps extends React.ComponentPropsWithoutRef<"span"> {
   source: string;
   "data-size"?: "sm" | "md" | "lg";
 }
 
-function Root({ source, style, title, ...props }: RootProps) {
+export function SourceBadge({
+  source,
+  style,
+  title,
+  ...props
+}: SourceBadgeProps) {
   const meta = getSourceMeta(source);
   if (!meta) {
     return (
@@ -136,10 +141,6 @@ function Root({ source, style, title, ...props }: RootProps) {
     </span>
   );
 }
-
-export const SourceBadge = {
-  Root,
-};
 
 function FacebookMark(props: SVGProps<SVGSVGElement>) {
   return (

@@ -1,16 +1,16 @@
 import { Button, Input, Menu, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
 import { Eye, ListFilter, Search as SearchIcon } from "lucide-react";
 import { useRef, useState } from "react";
-import { AddFilterMenu } from "@/components/library/filter-bar/registry";
-import { useAddCommitApi } from "@/components/library/filter-bar/use-add-commit-api";
-import { ViewPicker } from "@/components/library/menus/layout";
+import { AddFilterMenu } from "@/components/library/menus/filter";
+import { useAddCommitApi } from "@/components/library/menus/filter/use-add-commit-api";
+import { ViewPicker } from "@/components/library/menus/view";
 import { usePlatform } from "@/lib/platform";
 import { useDebouncedSearchParam } from "@/lib/use-debounced-search-param";
 import { useFilterHotkey, useSearchHotkey } from "@/lib/use-hotkeys";
 import { useSidebar } from "@/lib/use-sidebar";
 import styles from "./styles.module.css";
 
-function Root() {
+export function HeaderToolbar() {
   const { open: sidebarOpen } = useSidebar();
   const platform = usePlatform();
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
@@ -22,15 +22,11 @@ function Root() {
       style={{ paddingInlineStart: trafficLightInset }}
     >
       <Search />
-      <PondToolbar.Group data-align="end" className={styles.right}>
-        <ViewOptionsButton />
-        <AddFilterButton />
-      </PondToolbar.Group>
+      <ViewOptions />
+      <Filter />
     </PondToolbar.Root>
   );
 }
-
-export const HeaderToolbar = { Root };
 
 const SEARCH_DEBOUNCE_MS = 150;
 
@@ -63,30 +59,21 @@ function Search() {
   );
 }
 
-function ViewOptionsButton() {
+function ViewOptions() {
   return (
-    <Tooltip.Root>
-      <Tooltip.Trigger
-        render={
-          <ViewPicker.Root
-            trigger={
-              <Button icon aria-label="View options">
-                <Eye style={{ width: "100%", height: "100%" }} />
-              </Button>
-            }
-          />
+    <Tooltip label="View options" side="bottom">
+      <ViewPicker
+        trigger={
+          <Button icon aria-label="View options">
+            <Eye style={{ width: "100%", height: "100%" }} />
+          </Button>
         }
       />
-      <Tooltip.Portal>
-        <Tooltip.Positioner side="bottom">
-          <Tooltip.Popup>View options</Tooltip.Popup>
-        </Tooltip.Positioner>
-      </Tooltip.Portal>
-    </Tooltip.Root>
+    </Tooltip>
   );
 }
 
-function AddFilterButton() {
+function Filter() {
   const [open, setOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const api = useAddCommitApi();
@@ -98,24 +85,11 @@ function AddFilterButton() {
 
   return (
     <Menu.Root open={open} onOpenChange={setOpen}>
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Menu.Trigger
-              render={
-                <Button icon aria-label="Add filter">
-                  <ListFilter style={{ width: "100%", height: "100%" }} />
-                </Button>
-              }
-            />
-          }
-        />
-        <Tooltip.Portal>
-          <Tooltip.Positioner side="bottom">
-            <Tooltip.Popup>Add filter</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <Tooltip label="Add filter" side="bottom">
+        <Menu.Trigger className={styles.trigger}>
+          <ListFilter style={{ width: "100%", height: "100%" }} />
+        </Menu.Trigger>
+      </Tooltip>
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={6}>
           <Menu.Popup>

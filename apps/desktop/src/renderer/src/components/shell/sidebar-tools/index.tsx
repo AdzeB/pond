@@ -17,70 +17,43 @@ export function SidebarTools() {
 
   return (
     <React.Fragment>
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Button
-              variant="ghost"
-              size="sm"
-              icon
-              aria-label="Back"
-              onClick={() => navigate(-1)}
-            >
-              <ChevronLeft />
-            </Button>
-          }
-        />
-        <Tooltip.Portal>
-          <Tooltip.Positioner side="bottom">
-            <Tooltip.Popup>Back</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
-      <Tooltip.Root>
-        <Tooltip.Trigger
-          render={
-            <Button
-              variant="ghost"
-              size="sm"
-              icon
-              aria-label="Forward"
-              onClick={() => navigate(1)}
-            >
-              <ChevronRight />
-            </Button>
-          }
-        />
-        <Tooltip.Portal>
-          <Tooltip.Positioner side="bottom">
-            <Tooltip.Popup>Forward</Tooltip.Popup>
-          </Tooltip.Positioner>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <Tooltip label="Back" side="bottom">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon
+          aria-label="Back"
+          onClick={() => navigate(-1)}
+        >
+          <ChevronLeft />
+        </Button>
+      </Tooltip>
+      <Tooltip label="Forward" side="bottom">
+        <Button
+          variant="ghost"
+          size="sm"
+          icon
+          aria-label="Forward"
+          onClick={() => navigate(1)}
+        >
+          <ChevronRight />
+        </Button>
+      </Tooltip>
       <Menu.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger
+        <Tooltip label="Recently viewed" side="bottom">
+          <Menu.Trigger
             render={
-              <Menu.Trigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon
-                    aria-label="Recently Viewed"
-                  >
-                    <History />
-                  </Button>
-                }
-              />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon
+                aria-label="Recently Viewed"
+              >
+                <History />
+              </Button>
             }
           />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Recently viewed</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
+        </Tooltip>
         <Menu.Portal>
           <Menu.Positioner side="bottom" align="start" sideOffset={6}>
             <Menu.Popup className={styles.popup}>

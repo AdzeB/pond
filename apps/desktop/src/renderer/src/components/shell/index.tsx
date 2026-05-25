@@ -66,9 +66,9 @@ function Main({ className, ...props }: MainProps) {
   return <main className={cn(styles.main, className)} {...props} />;
 }
 
-interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Toolbar({ className, ...props }: ToolbarProps) {
+function Header({ className, ...props }: HeaderProps) {
   return <div className={cn(styles.header, className)} {...props} />;
 }
 
@@ -80,7 +80,7 @@ function Empty({ className, ...props }: EmptyProps) {
   return <p className={cn(styles.empty, className)} {...props} />;
 }
 
-export const Shell = { Root, Content, Split, Main, Toolbar, Empty };
+export const Shell = { Root, Content, Split, Main, Header, Empty };
 
 export function AppRoot() {
   return (
@@ -92,7 +92,7 @@ export function AppRoot() {
       <Outlet />
       <BulkActionBar.Root />
       <QuickCapture.Root />
-      <CommandPalette.Root />
+      <CommandPalette />
       <KeyboardCheatsheet />
     </div>
   );
@@ -110,7 +110,7 @@ export function LibraryLayout() {
         data-open={sidebarOpen ? "true" : "false"}
         aria-hidden={!sidebarOpen || undefined}
       >
-        <LibrarySidebar.Root />
+        <LibrarySidebar />
       </div>
       <Shell.Content>
         <div aria-hidden className={styles["drag-strip"]} />

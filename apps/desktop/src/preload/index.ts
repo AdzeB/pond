@@ -161,6 +161,10 @@ const api = {
     return ipcRenderer.invoke(IPC.openSaveFile, id, fileIndex);
   },
 
+  openSaveWindow(id: string): Promise<{ ok: boolean; reason?: string }> {
+    return ipcRenderer.invoke(IPC.openSaveWindow, id);
+  },
+
   refreshSave(id: string): Promise<
     | { ok: true; method: "og" | "hidden-window"; created: boolean }
     | {

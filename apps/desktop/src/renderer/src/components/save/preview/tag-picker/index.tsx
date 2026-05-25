@@ -13,8 +13,9 @@ import {
   Star,
 } from "lucide-react";
 import {
-  type ReactElement,
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useState,
@@ -32,16 +33,18 @@ export type TagPickerTarget =
   | { kind: "save"; save: Save }
   | { kind: "group"; group: TagGroupRow };
 
-interface TagPickerProps {
+interface TagPickerContextValue {
   target: TagPickerTarget;
-  trigger: ReactElement;
-  /** Force the picker open from a keyboard shortcut. */
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  anchor?: PopoverAnchor;
-  side?: "top" | "right" | "bottom" | "left";
-  align?: "start" | "center" | "end";
-  sideOffset?: number;
+}
+
+const TagPickerContext = createContext<TagPickerContextValue | null>(null);
+
+function useTagPickerContext(): TagPickerContextValue {
+  const ctx = useContext(TagPickerContext);
+  if (!ctx) {
+    throw new Error("TagPicker.* must be used inside <TagPicker.Root>");
+  }
+  return ctx;
 }
 
 interface TagItem {
@@ -53,21 +56,23 @@ interface TagItem {
 
 const RECOMMENDED_CAP = 12;
 
-export function TagPicker({
+interface RootProps {
+  target: TagPickerTarget;
+  /** Force the picker open from a keyboard shortcut. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  children?: React.ReactNode;
+}
+
+function Root({
   target,
-  trigger,
   open: controlledOpen,
   onOpenChange,
-  anchor,
-  side = "bottom",
-  align = "start",
-  sideOffset = 6,
-}: TagPickerProps) {
+  children,
+}: RootProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
-  const [q, setQ] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [prefs, patchPrefs] = usePrefs("tagPicker");
+  const [prefs] = usePrefs("tagPicker");
 
   const setOpen = (next: boolean) => {
     // Pinned: swallow auto-close (outside click / Escape). Unpin to close.
@@ -75,14 +80,42 @@ export function TagPicker({
     if (controlledOpen === undefined) setInternalOpen(next);
     onOpenChange?.(next);
   };
+
+  return (
+    <TagPickerContext.Provider value={{ target }}>
+      <Popover.Root open={open} onOpenChange={setOpen}>
+        {children}
+      </Popover.Root>
+    </TagPickerContext.Provider>
+  );
+}
+
+const Trigger = Popover.Trigger;
+
+interface ContentProps {
+  anchor?: PopoverAnchor;
+  side?: "top" | "right" | "bottom" | "left";
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
+}
+
+function Content({
+  anchor,
+  side = "bottom",
+  align = "start",
+  sideOffset = 6,
+}: ContentProps) {
+  const { target } = useTagPickerContext();
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [prefs, patchPrefs] = usePrefs("tagPicker");
   const tags = useTags();
   const groups = useTagGroups();
   const saves = useSaves();
 
   useEffect(() => {
-    if (!open) return;
     setQ("");
-  }, [open]);
+  }, []);
 
   const liveGroup = useMemo(() => {
     if (target.kind !== "group") return null;
@@ -274,8 +307,6 @@ export function TagPicker({
       totalAllTags >
     0;
 
-  // Exact match check: don't show ✦ create-new if the typed query already
-  // exists as a tag.
   const exactExists = needle.length > 0 && tagsByLowerName.has(needle);
 
   const toggle = useCallback(
@@ -351,138 +382,135 @@ export function TagPicker({
   const gridSize = prefs.gridSize ?? "md";
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger render={trigger} />
-      <Popover.Portal>
-        <Popover.Positioner
-          anchor={anchor}
-          side={side}
-          align={align}
-          sideOffset={sideOffset}
-        >
-          <Popover.Popup className={styles["tag-picker-popup"]}>
-            <div className={styles["tag-picker-header"]}>
-              <span className={styles["tag-picker-header-icon"]} aria-hidden>
-                <Search width={14} height={14} />
-              </span>
-              <Input.Field
-                data-size="sm"
-                className={styles["tag-picker-search"]}
-                placeholder="Search…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                onKeyDown={onSearchKeyDown}
-                autoFocus
-                spellCheck={false}
-                disabled={busy}
-              />
-              <HeaderToolbar
+    <Popover.Portal>
+      <Popover.Positioner
+        anchor={anchor}
+        side={side}
+        align={align}
+        sideOffset={sideOffset}
+      >
+        <Popover.Popup className={styles["tag-picker-popup"]}>
+          <div className={styles["tag-picker-header"]}>
+            <span className={styles["tag-picker-header-icon"]} aria-hidden>
+              <Search width={14} height={14} />
+            </span>
+            <Input.Field
+              data-size="sm"
+              className={styles["tag-picker-search"]}
+              placeholder="Search…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={onSearchKeyDown}
+              autoFocus
+              spellCheck={false}
+              disabled={busy}
+            />
+            <HeaderToolbar
+              layout={layout}
+              gridSize={gridSize}
+              pinned={prefs.pinned ?? false}
+              showStarred={prefs.showStarred ?? true}
+              showRecently={prefs.showRecently ?? true}
+              showRecommended={prefs.showRecommended ?? true}
+              showCounts={prefs.showCounts ?? true}
+              onPatch={patchPrefs}
+            />
+          </div>
+          <div
+            className={styles["tag-picker-body"]}
+            data-layout={layout}
+            data-grid-size={gridSize}
+          >
+            {starredItems.length > 0 ? (
+              <Section
+                title="Starred"
+                count={starredItems.length}
+                items={starredItems}
                 layout={layout}
-                gridSize={gridSize}
-                pinned={prefs.pinned ?? false}
-                showStarred={prefs.showStarred ?? true}
-                showRecently={prefs.showRecently ?? true}
-                showRecommended={prefs.showRecommended ?? true}
                 showCounts={prefs.showCounts ?? true}
-                onPatch={patchPrefs}
+                onPick={toggle}
+                onStar={toggleStar}
               />
-            </div>
-            <div
-              className={styles["tag-picker-body"]}
-              data-layout={layout}
-              data-grid-size={gridSize}
-            >
-              {starredItems.length > 0 ? (
+            ) : null}
+            {recentItems.length > 0 ? (
+              <Section
+                title="Recently"
+                count={recentItems.length}
+                items={recentItems}
+                layout={layout}
+                showCounts={prefs.showCounts ?? true}
+                onPick={toggle}
+                onStar={toggleStar}
+              />
+            ) : null}
+            {recommendedItems.length > 0 ? (
+              <Section
+                title="Recommended"
+                count={recommendedItems.length}
+                items={recommendedItems}
+                layout={layout}
+                showCounts={prefs.showCounts ?? true}
+                onPick={toggle}
+                onStar={toggleStar}
+              />
+            ) : null}
+            {allTagsSections.map((section) =>
+              section.items.length === 0 ? null : (
                 <Section
-                  title="Starred"
-                  count={starredItems.length}
-                  items={starredItems}
+                  key={section.key}
+                  title={section.label}
+                  count={section.items.length}
+                  items={section.items}
                   layout={layout}
                   showCounts={prefs.showCounts ?? true}
+                  collapsible
+                  collapsed={section.collapsed}
+                  onToggleCollapsed={section.onToggleCollapsed}
                   onPick={toggle}
                   onStar={toggleStar}
                 />
-              ) : null}
-              {recentItems.length > 0 ? (
-                <Section
-                  title="Recently"
-                  count={recentItems.length}
-                  items={recentItems}
-                  layout={layout}
-                  showCounts={prefs.showCounts ?? true}
-                  onPick={toggle}
-                  onStar={toggleStar}
-                />
-              ) : null}
-              {recommendedItems.length > 0 ? (
-                <Section
-                  title="Recommended"
-                  count={recommendedItems.length}
-                  items={recommendedItems}
-                  layout={layout}
-                  showCounts={prefs.showCounts ?? true}
-                  onPick={toggle}
-                  onStar={toggleStar}
-                />
-              ) : null}
-              {allTagsSections.map((section) =>
-                section.items.length === 0 ? null : (
-                  <Section
-                    key={section.key}
-                    title={section.label}
-                    count={section.items.length}
-                    items={section.items}
-                    layout={layout}
-                    showCounts={prefs.showCounts ?? true}
-                    collapsible
-                    collapsed={section.collapsed}
-                    onToggleCollapsed={section.onToggleCollapsed}
-                    onPick={toggle}
-                    onStar={toggleStar}
-                  />
-                ),
-              )}
-              {needle && !exactExists ? (
-                <button
-                  type="button"
-                  className={styles["tag-picker-item"]}
-                  data-create
-                  onClick={() => void toggle(q)}
-                >
-                  <span className={styles["tag-picker-item-icon"]} aria-hidden>
-                    <Sparkles width={12} height={12} />
-                  </span>
-                  <span className={styles["tag-picker-item-name"]}>
-                    Create "{normalizeLabelName(q) || q}"
-                  </span>
-                </button>
-              ) : null}
-              {!hasAny && !needle ? (
-                <div className={styles["tag-picker-empty"]}>No tags yet.</div>
-              ) : null}
-            </div>
-            <div className={styles["tag-picker-footer"]}>
-              <span className={styles["tag-picker-footer-cell"]}>
-                <Kbd.Cluster keys={["↑", "↓", "←", "→"]} />
-                <span className={styles["tag-picker-footer-label"]}>Move</span>
-              </span>
-              <span className={styles["tag-picker-footer-cell"]}>
-                <Kbd.Key>↵</Kbd.Key>
-                <span className={styles["tag-picker-footer-label"]}>
-                  Toggle
+              ),
+            )}
+            {needle && !exactExists ? (
+              <button
+                type="button"
+                className={styles["tag-picker-item"]}
+                data-create
+                onClick={() => void toggle(q)}
+              >
+                <span className={styles["tag-picker-item-icon"]} aria-hidden>
+                  <Sparkles width={12} height={12} />
                 </span>
-              </span>
-              <span className={styles["tag-picker-footer-cell"]}>
-                <Kbd.Key>esc</Kbd.Key>
-                <span className={styles["tag-picker-footer-label"]}>Close</span>
-              </span>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+                <span className={styles["tag-picker-item-name"]}>
+                  Create "{normalizeLabelName(q) || q}"
+                </span>
+              </button>
+            ) : null}
+            {!hasAny && !needle ? (
+              <div className={styles["tag-picker-empty"]}>No tags yet.</div>
+            ) : null}
+          </div>
+          <div className={styles["tag-picker-footer"]}>
+            <span className={styles["tag-picker-footer-cell"]}>
+              <Kbd.Cluster keys={["↑", "↓", "←", "→"]} />
+              <span className={styles["tag-picker-footer-label"]}>Move</span>
+            </span>
+            <span className={styles["tag-picker-footer-cell"]}>
+              <Kbd.Key>↵</Kbd.Key>
+              <span className={styles["tag-picker-footer-label"]}>Toggle</span>
+            </span>
+            <span className={styles["tag-picker-footer-cell"]}>
+              <Kbd.Key>esc</Kbd.Key>
+              <span className={styles["tag-picker-footer-label"]}>Close</span>
+            </span>
+          </div>
+        </Popover.Popup>
+      </Popover.Positioner>
+    </Popover.Portal>
   );
 }
+
+export const TagPicker = { Root, Trigger, Content };
 
 function HeaderToolbar({
   layout,

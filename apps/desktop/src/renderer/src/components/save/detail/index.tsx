@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { VideoPlayer } from "@/components/media/video-player";
 import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";
-import { SaveActionsMenu } from "@/components/save/context-menu";
+import {
+  SaveActionsMenu,
+  SaveContextMenu,
+} from "@/components/save/context-menu";
 import { getYouTubeChapters } from "@/components/save/preview/helpers";
 import { MediaViewer } from "@/components/save/preview/media-viewer";
 import type { ListContext } from "@/lib/use-save-list-context";
@@ -41,25 +44,16 @@ function Header({ save, list }: HeaderProps) {
 
       <div className={styles["header-actions"]}>
         <StatusPill save={save} />
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <button
-                type="button"
-                className={styles["header-icon-btn"]}
-                aria-label="Star (coming soon)"
-                disabled
-              >
-                <Star width={14} height={14} />
-              </button>
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Star</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
+        <Tooltip label="Star" side="bottom">
+          <button
+            type="button"
+            className={styles["header-icon-btn"]}
+            aria-label="Star (coming soon)"
+            disabled
+          >
+            <Star width={14} height={14} />
+          </button>
+        </Tooltip>
         <SaveActionsMenu save={save}>
           <button
             type="button"
@@ -70,46 +64,28 @@ function Header({ save, list }: HeaderProps) {
           </button>
         </SaveActionsMenu>
         <span className={styles["header-divider"]} aria-hidden />
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <button
-                type="button"
-                className={styles["header-icon-btn"]}
-                onClick={list.goPrev}
-                disabled={!list.prevId}
-                aria-label="Previous save"
-              >
-                <ChevronLeft width={14} height={14} />
-              </button>
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Previous (K)</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
-        <Tooltip.Root>
-          <Tooltip.Trigger
-            render={
-              <button
-                type="button"
-                className={styles["header-icon-btn"]}
-                onClick={list.goNext}
-                disabled={!list.nextId}
-                aria-label="Next save"
-              >
-                <ChevronRight width={14} height={14} />
-              </button>
-            }
-          />
-          <Tooltip.Portal>
-            <Tooltip.Positioner side="bottom">
-              <Tooltip.Popup>Next (J)</Tooltip.Popup>
-            </Tooltip.Positioner>
-          </Tooltip.Portal>
-        </Tooltip.Root>
+        <Tooltip label="Previous (K)" side="bottom">
+          <button
+            type="button"
+            className={styles["header-icon-btn"]}
+            onClick={list.goPrev}
+            disabled={!list.prevId}
+            aria-label="Previous save"
+          >
+            <ChevronLeft width={14} height={14} />
+          </button>
+        </Tooltip>
+        <Tooltip label="Next (J)" side="bottom">
+          <button
+            type="button"
+            className={styles["header-icon-btn"]}
+            onClick={list.goNext}
+            disabled={!list.nextId}
+            aria-label="Next save"
+          >
+            <ChevronRight width={14} height={14} />
+          </button>
+        </Tooltip>
       </div>
     </header>
   );
@@ -183,13 +159,15 @@ function Content({ save }: ContentProps) {
 
   return (
     <div className={styles.content}>
-      <div className={styles.frame}>
-        {useHero ? (
-          <HeroVideo save={save} chapters={chapters} />
-        ) : (
-          <MediaViewer save={save} />
-        )}
-      </div>
+      <SaveContextMenu save={save}>
+        <div className={styles.frame}>
+          {useHero ? (
+            <HeroVideo save={save} chapters={chapters} />
+          ) : (
+            <MediaViewer save={save} />
+          )}
+        </div>
+      </SaveContextMenu>
     </div>
   );
 }

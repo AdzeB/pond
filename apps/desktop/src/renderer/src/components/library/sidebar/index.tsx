@@ -82,7 +82,7 @@ const routes: Route[] = [
   },
 ];
 
-function Root() {
+export function LibrarySidebar() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const counts = useRouteCounts();
@@ -229,13 +229,13 @@ function TrashLink({ route, count }: TrashLinkProps) {
             <ContextMenu.Popup>
               <ContextMenu.Item onClick={onEmptyTrashClick}>
                 <ContextMenu.ItemIcon>
-                  <Trash2 />
+                  <Trash2 width={14} height={14} />
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>Empty Trash</ContextMenu.ItemLabel>
               </ContextMenu.Item>
               <ContextMenu.Item onClick={() => void restoreAll()}>
                 <ContextMenu.ItemIcon>
-                  <RefreshCw />
+                  <RefreshCw width={14} height={14} />
                 </ContextMenu.ItemIcon>
                 <ContextMenu.ItemLabel>Restore All Items</ContextMenu.ItemLabel>
               </ContextMenu.Item>
@@ -252,14 +252,7 @@ function TrashLink({ route, count }: TrashLinkProps) {
             <AlertDialog.Description>
               Permanently delete every trashed save. This cannot be undone.
             </AlertDialog.Description>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 8,
-              }}
-            >
+            <AlertDialog.Actions>
               <AlertDialog.Close
                 render={<Button variant="ghost">Cancel</Button>}
               />
@@ -277,17 +270,13 @@ function TrashLink({ route, count }: TrashLinkProps) {
                   </Button>
                 }
               />
-            </div>
+            </AlertDialog.Actions>
           </AlertDialog.Popup>
         </AlertDialog.Portal>
       </AlertDialog.Root>
     </>
   );
 }
-
-export const LibrarySidebar = {
-  Root,
-};
 
 interface HelpButtonProps {
   openUrl: (url: string) => void;

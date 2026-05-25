@@ -1236,14 +1236,7 @@ function RelocateConfirmDialog({
               </div>
             ) : null}
           </AlertDialog.Description>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              justifyContent: "flex-end",
-              marginTop: 8,
-            }}
-          >
+          <AlertDialog.Actions>
             <AlertDialog.Close
               render={
                 <Button variant="ghost" disabled={busy}>
@@ -1261,7 +1254,7 @@ function RelocateConfirmDialog({
             >
               {primaryLabel}
             </Button>
-          </div>
+          </AlertDialog.Actions>
         </AlertDialog.Popup>
       </AlertDialog.Portal>
     </AlertDialog.Root>

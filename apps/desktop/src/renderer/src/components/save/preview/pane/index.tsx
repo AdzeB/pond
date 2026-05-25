@@ -15,11 +15,11 @@ import {
 import { TagPicker } from "../tag-picker";
 import styles from "./styles.module.css";
 
-interface PaneProps extends React.ComponentPropsWithoutRef<"article"> {
+interface SavePreviewProps extends React.ComponentPropsWithoutRef<"article"> {
   save: Save;
 }
 
-export function Pane({ save, className, ...props }: PaneProps) {
+export function SavePreview({ save, className, ...props }: SavePreviewProps) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const theme = useResolvedTheme();
@@ -266,23 +266,26 @@ function PaneTags({ save }: { save: Save }) {
           </button>
         </span>
       ))}
-      <TagPicker
-        target={{ kind: "save", save }}
-        anchor={() => document.getElementById("inspector-pane")}
-        side="left"
-        align="start"
-        sideOffset={12}
-        trigger={
-          <button
-            type="button"
-            className={styles["pane-tag-add"]}
-            aria-label="Add tag"
-            data-tag-add
-          >
-            <Plus width={10} height={10} />
-          </button>
-        }
-      />
+      <TagPicker.Root target={{ kind: "save", save }}>
+        <TagPicker.Trigger
+          render={
+            <button
+              type="button"
+              className={styles["pane-tag-add"]}
+              aria-label="Add tag"
+              data-tag-add
+            >
+              <Plus width={10} height={10} />
+            </button>
+          }
+        />
+        <TagPicker.Content
+          anchor={() => document.getElementById("inspector-pane")}
+          side="left"
+          align="start"
+          sideOffset={12}
+        />
+      </TagPicker.Root>
     </div>
   );
 }

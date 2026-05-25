@@ -35,7 +35,7 @@ export function Inspector() {
         </div>
         <div className={styles.body}>
           {save ? (
-            <SavePreview.Pane save={save} />
+            <SavePreview save={save} />
           ) : id ? (
             <p className={styles.empty}>Save not found.</p>
           ) : (
@@ -113,18 +113,9 @@ function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
 
   return (
     <Menu.Root>
-      <Menu.Trigger
-        render={
-          <button
-            type="button"
-            aria-label="More options"
-            className={styles["toolbar-btn"]}
-            disabled={!save}
-          >
-            <Ellipsis width={14} height={14} />
-          </button>
-        }
-      />
+      <Menu.Trigger>
+        <Ellipsis width={14} height={14} />
+      </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={6}>
           <Menu.Popup>

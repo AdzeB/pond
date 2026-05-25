@@ -1,17 +1,49 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ContextMenu, useToast } from "@pond/ui";
+import { usePlayer } from "@videojs/react";
+import {
+  Camera,
+  Check,
+  ClipboardCopy,
+  Copy,
+  Download,
+  ExternalLink,
+  FolderOpen,
+  Gauge,
+  Image as ImageIcon,
+  Maximize2,
+  PictureInPicture2,
+  Play,
+} from "lucide-react";
+import { useCallback } from "react";
 import { REVEAL_LABEL } from "@/components/save/preview/helpers";
+import {
+  enterPresentation,
+  exportFile,
+  openInNewWindow,
+} from "@/lib/save-actions";
 import type { Save } from "@/pool/types";
 import { SPEED_OPTIONS } from "./speed-options";
-import styles from "./styles.module.css";
 
-interface VideoContextMenuProps {
-  position: { x: number; y: number };
-  save: Save;
-  containerRef: React.RefObject<HTMLDivElement | null>;
+const ICON_SIZE = 14;
+
+type Availability = "available" | "unavailable" | "unsupported";
+type PlayerStateSlice = {
   playbackRate: number;
-  onSetPlaybackRate: (rate: number) => void;
-  onRequestPip: () => Promise<void>;
-  onClose: () => void;
+  setPlaybackRate: (rate: number) => void;
+  requestPictureInPicture: () => Promise<void>;
+  pipAvailability: Availability;
+};
+const select =
+  <K extends keyof PlayerStateSlice>(key: K) =>
+  (s: unknown) =>
+    (s as PlayerStateSlice)[key];
+
+function Icon({
+  component: Component,
+}: {
+  component: React.ComponentType<{ width: number; height: number }>;
+}) {
+  return <Component width={ICON_SIZE} height={ICON_SIZE} />;
 }
 
 function captureFrame(
@@ -31,50 +63,34 @@ function captureFrame(
   return canvas.toDataURL("image/png");
 }
 
+interface VideoContextMenuProps {
+  save: Save;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+}
+
 export function VideoContextMenu({
-  position,
   save,
   containerRef,
-  playbackRate,
-  onSetPlaybackRate,
-  onRequestPip,
-  onClose,
 }: VideoContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [speedOpen, setSpeedOpen] = useState(false);
+  const toast = useToast();
   const hasFiles = save.files.length > 0;
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  useEffect(() => {
-    const menu = menuRef.current;
-    if (!menu) return;
-    const rect = menu.getBoundingClientRect();
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    if (rect.right > vw) menu.style.left = `${vw - rect.width - 8}px`;
-    if (rect.bottom > vh) menu.style.top = `${vh - rect.height - 8}px`;
-  }, []);
+  const playbackRate = usePlayer(select("playbackRate"));
+  const setPlaybackRate = usePlayer(select("setPlaybackRate"));
+  const requestPip = usePlayer(select("requestPictureInPicture"));
+  const pipAvailable = usePlayer(select("pipAvailability")) === "available";
 
   const onCopyFrame = useCallback(async () => {
     const dataUrl = captureFrame(containerRef);
     if (!dataUrl) return;
     await window.pond.query("video.copyFrame", { dataUrl });
-    onClose();
-  }, [containerRef, onClose]);
+  }, [containerRef]);
 
   const onSaveFrame = useCallback(async () => {
     const dataUrl = captureFrame(containerRef);
     if (!dataUrl) return;
     await window.pond.query("video.saveFrame", { dataUrl });
-    onClose();
-  }, [containerRef, onClose]);
+  }, [containerRef]);
 
   const onSetThumbnail = useCallback(async () => {
     const dataUrl = captureFrame(containerRef);
@@ -83,142 +99,180 @@ export function VideoContextMenu({
       saveId: save.id,
       dataUrl,
     });
-    onClose();
-  }, [containerRef, save.id, onClose]);
+  }, [containerRef, save.id]);
 
   const onReveal = useCallback(async () => {
     await window.pond.revealSave(save.id);
-    onClose();
-  }, [save.id, onClose]);
+  }, [save.id]);
 
   const onOpenDefault = useCallback(async () => {
     await window.pond.openSaveFile(save.id);
-    onClose();
-  }, [save.id, onClose]);
+  }, [save.id]);
 
   const onCopyFilePath = useCallback(async () => {
     await window.pond.query("video.copyFilePath", { saveId: save.id });
-    onClose();
-  }, [save.id, onClose]);
+  }, [save.id]);
 
   const onPip = useCallback(() => {
-    void onRequestPip().catch(() => {});
-    onClose();
-  }, [onRequestPip, onClose]);
+    void requestPip().catch(() => {});
+  }, [requestPip]);
+
+  const onOpenWindow = useCallback(() => {
+    void openInNewWindow(save);
+  }, [save]);
+
+  const onExport = useCallback(() => {
+    void exportFile(save, toast);
+  }, [save, toast]);
+
+  const onPresentation = useCallback(() => {
+    enterPresentation(save);
+  }, [save]);
+
+  const onSpeedChange = useCallback(
+    (value: number) => {
+      setPlaybackRate(value);
+    },
+    [setPlaybackRate],
+  );
 
   return (
-    <>
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: backdrop dismiss */}
-      <div
-        className={styles["ctx-backdrop"]}
-        onClick={onClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape") onClose();
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-      />
-      <div
-        ref={menuRef}
-        className={styles["ctx-menu"]}
-        style={{ left: position.x, top: position.y }}
-      >
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          onClick={() => void onSetThumbnail()}
-        >
-          Set as Video Thumbnail
-        </button>
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          onClick={() => void onCopyFrame()}
-        >
-          Copy Current Frame to Clipboard
-          <span className={styles["menu-shortcut"]}>⌥C</span>
-        </button>
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          onClick={() => void onSaveFrame()}
-        >
-          Save Current Frame
-          <span className={styles["menu-shortcut"]}>⌥S</span>
-        </button>
+    <ContextMenu.Portal>
+      <ContextMenu.Backdrop />
+      <ContextMenu.Positioner>
+        <ContextMenu.Popup>
+          <ContextMenu.Item onClick={() => void onSetThumbnail()}>
+            <ContextMenu.ItemIcon>
+              <Icon component={ImageIcon} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>
+              Set as Video Thumbnail
+            </ContextMenu.ItemLabel>
+          </ContextMenu.Item>
+          <ContextMenu.Item onClick={() => void onCopyFrame()}>
+            <ContextMenu.ItemIcon>
+              <Icon component={ClipboardCopy} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Copy Frame</ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>⌥C</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
+          <ContextMenu.Item onClick={() => void onSaveFrame()}>
+            <ContextMenu.ItemIcon>
+              <Icon component={Camera} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Save Current Frame</ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>⌥S</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
 
-        <div className={styles["ctx-separator"]} />
+          <ContextMenu.Separator />
 
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: hover submenu */}
-        <div
-          className={styles["ctx-submenu"]}
-          onMouseEnter={() => setSpeedOpen(true)}
-          onMouseLeave={() => setSpeedOpen(false)}
-        >
-          <button type="button" className={styles["ctx-item"]}>
-            Playback Speed
-            <span className={styles["menu-shortcut"]}>{playbackRate}x ›</span>
-          </button>
-          {speedOpen ? (
-            <div className={styles["ctx-submenu-items"]}>
-              {SPEED_OPTIONS.map((rate) => (
-                <button
-                  key={rate}
-                  type="button"
-                  className={styles["ctx-item"]}
-                  onClick={() => {
-                    onSetPlaybackRate(rate);
-                    onClose();
-                  }}
-                >
-                  <span className={styles["ctx-check"]}>
-                    {rate === playbackRate ? "✓" : ""}
-                  </span>
-                  {rate}x
-                </button>
-              ))}
-            </div>
+          <ContextMenu.SubmenuRoot>
+            <ContextMenu.SubmenuTrigger>
+              <ContextMenu.ItemIcon>
+                <Icon component={Gauge} />
+              </ContextMenu.ItemIcon>
+              <ContextMenu.ItemLabel>Playback Speed</ContextMenu.ItemLabel>
+              <ContextMenu.ItemKbd>{playbackRate}×</ContextMenu.ItemKbd>
+            </ContextMenu.SubmenuTrigger>
+            <ContextMenu.Portal>
+              <ContextMenu.Positioner>
+                <ContextMenu.Popup>
+                  <ContextMenu.RadioGroup
+                    value={playbackRate}
+                    onValueChange={onSpeedChange}
+                  >
+                    {SPEED_OPTIONS.map((rate) => (
+                      <ContextMenu.RadioItem
+                        key={rate}
+                        value={rate}
+                        closeOnClick
+                      >
+                        <ContextMenu.ItemIcon>
+                          <ContextMenu.RadioItemIndicator>
+                            <Icon component={Check} />
+                          </ContextMenu.RadioItemIndicator>
+                        </ContextMenu.ItemIcon>
+                        <ContextMenu.ItemLabel>{rate}×</ContextMenu.ItemLabel>
+                      </ContextMenu.RadioItem>
+                    ))}
+                  </ContextMenu.RadioGroup>
+                </ContextMenu.Popup>
+              </ContextMenu.Positioner>
+            </ContextMenu.Portal>
+          </ContextMenu.SubmenuRoot>
+
+          <ContextMenu.Separator />
+
+          <ContextMenu.Item
+            disabled={!hasFiles}
+            onClick={() => void onOpenDefault()}
+          >
+            <ContextMenu.ItemIcon>
+              <Icon component={ExternalLink} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Open with Default App</ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>O</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
+          <ContextMenu.Item onClick={onOpenWindow}>
+            <ContextMenu.ItemIcon>
+              <Icon component={Maximize2} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Open in New Window</ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>⌘O</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            disabled={!hasFiles}
+            onClick={() => void onReveal()}
+          >
+            <ContextMenu.ItemIcon>
+              <Icon component={FolderOpen} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>{REVEAL_LABEL}</ContextMenu.ItemLabel>
+          </ContextMenu.Item>
+          <ContextMenu.Item
+            disabled={!hasFiles}
+            onClick={() => void onCopyFilePath()}
+          >
+            <ContextMenu.ItemIcon>
+              <Icon component={Copy} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Copy File Path</ContextMenu.ItemLabel>
+          </ContextMenu.Item>
+
+          <ContextMenu.Separator />
+
+          <ContextMenu.Item disabled={!hasFiles} onClick={onExport}>
+            <ContextMenu.ItemIcon>
+              <Icon component={Download} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>Export…</ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>⌘E</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
+          <ContextMenu.Item disabled={!hasFiles} onClick={onPresentation}>
+            <ContextMenu.ItemIcon>
+              <Icon component={Play} />
+            </ContextMenu.ItemIcon>
+            <ContextMenu.ItemLabel>
+              Enter Presentation Mode
+            </ContextMenu.ItemLabel>
+            <ContextMenu.ItemKbd>F5</ContextMenu.ItemKbd>
+          </ContextMenu.Item>
+
+          {pipAvailable ? (
+            <>
+              <ContextMenu.Separator />
+              <ContextMenu.Item onClick={onPip}>
+                <ContextMenu.ItemIcon>
+                  <Icon component={PictureInPicture2} />
+                </ContextMenu.ItemIcon>
+                <ContextMenu.ItemLabel>
+                  Picture-in-Picture
+                </ContextMenu.ItemLabel>
+              </ContextMenu.Item>
+            </>
           ) : null}
-        </div>
-
-        <div className={styles["ctx-separator"]} />
-
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          data-disabled={!hasFiles ? "" : undefined}
-          onClick={() => void onOpenDefault()}
-        >
-          Open with Default App
-          <span className={styles["menu-shortcut"]}>⏎</span>
-        </button>
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          data-disabled={!hasFiles ? "" : undefined}
-          onClick={() => void onReveal()}
-        >
-          {REVEAL_LABEL}
-          <span className={styles["menu-shortcut"]}>⌘⏎</span>
-        </button>
-        <button
-          type="button"
-          className={styles["ctx-item"]}
-          data-disabled={!hasFiles ? "" : undefined}
-          onClick={() => void onCopyFilePath()}
-        >
-          Copy File Path
-          <span className={styles["menu-shortcut"]}>⌥⌘C</span>
-        </button>
-
-        <div className={styles["ctx-separator"]} />
-
-        <button type="button" className={styles["ctx-item"]} onClick={onPip}>
-          Picture-in-Picture
-        </button>
-      </div>
-    </>
+        </ContextMenu.Popup>
+      </ContextMenu.Positioner>
+    </ContextMenu.Portal>
   );
 }

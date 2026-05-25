@@ -8,7 +8,7 @@ import styles from "./styles.module.css";
  * failed is surfaced behind this trigger and the ProcessingDialog. We
  * watch the pool directly for the count so the button appears the
  * instant a sync seeds new ingesting rows. */
-function Root() {
+export function ProcessingButton() {
   const saves = useSaves();
   const counts = useMemo(() => {
     let ingesting = 0;
@@ -46,7 +46,7 @@ function Root() {
           <span className={styles.label}>{label}</span>
         </Dialog.Trigger>
       </div>
-      <ProcessingDialog.Content
+      <ProcessingDialog
         open={open}
         ingestingCount={counts.ingesting}
         failedCount={counts.failed}
@@ -62,5 +62,3 @@ function describe(ingesting: number, failed: number): string {
   if (failed > 0) parts.push(`${failed} failed`);
   return parts.join(" · ");
 }
-
-export const ProcessingButton = { Root };

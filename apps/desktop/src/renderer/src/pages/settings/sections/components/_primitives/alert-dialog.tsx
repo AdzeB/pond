@@ -19,14 +19,7 @@ export default function AlertDialogCell() {
             <AlertDialog.Description>
               This action can't be undone. The item will be moved to the trash.
             </AlertDialog.Description>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 8,
-              }}
-            >
+            <AlertDialog.Actions>
               <AlertDialog.Close
                 render={
                   <Button size="sm" variant="ghost">
@@ -41,7 +34,7 @@ export default function AlertDialogCell() {
                   </Button>
                 }
               />
-            </div>
+            </AlertDialog.Actions>
           </AlertDialog.Popup>
         </AlertDialog.Portal>
       </AlertDialog.Root>

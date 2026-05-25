@@ -155,7 +155,7 @@ const SaveCardBody = memo(function SaveCardBody({
         ) : null}
         {prefs.sourceBadge ? (
           <Library.Item.SourceBadge>
-            <SourceBadge.Root source={save.source} data-size="sm" />
+            <SourceBadge source={save.source} data-size="sm" />
           </Library.Item.SourceBadge>
         ) : null}
       </Library.Item.Media>

@@ -59,7 +59,6 @@
   flex: 1;
   min-width: 0;
   padding: 12px;
-  margin: 4px;
   overflow-y: auto;
   overflow-x: clip;
   overflow-clip-margin: 8px;
