@@ -7,11 +7,7 @@ export const AUTH_WALLED_SOURCES = [
   { id: "cosmos", label: "Cosmos" },
   { id: "arena", label: "Are.na" },
 ] as const;
-type AuthWalledSource = (typeof AUTH_WALLED_SOURCES)[number]["id"];
 
-// Every source connects the same way now: the extension pushes cookies,
-// the desktop derives any per-account info (e.g. the user's handle) from
-// the cookied session in the hidden window.
 export const ALL_SOURCES = AUTH_WALLED_SOURCES.map(
   (s) => ({ ...s, kind: "auth-walled" }) as const,
 );
