@@ -1,5 +1,6 @@
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Archive,
   ArrowUpRight,
@@ -14,9 +15,10 @@ import {
 } from "lucide-react";
 import type { ElementType, SVGProps } from "react";
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
+import { navigateTo, patchSearch } from "@/lib/navigate-path";
+import { useSidebar } from "@/lib/use-sidebar";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
 import { useTags } from "@/pool/tags";
@@ -84,66 +86,72 @@ const routes: Route[] = [
 
 export function LibrarySidebar() {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const counts = useRouteCounts();
+  const { open } = useSidebar();
 
   const openQuickCapture = useCallback(() => {
-    const next = new URLSearchParams(searchParams);
-    next.set("capture", "1");
-    setSearchParams(next);
-  }, [searchParams, setSearchParams]);
+    patchSearch(navigate, (prev) => ({ ...prev, capture: "1" }));
+  }, [navigate]);
 
   function openUrl(url: string) {
     void window.pond.openExternal(url);
   }
 
   return (
-    <Sidebar.Root aria-label="Library navigation">
-      <Sidebar.Scroll>
-        <Sidebar.Toolbar>
-          <SidebarTools />
-        </Sidebar.Toolbar>
+    <div
+      className={styles.collapse}
+      data-open={open ? "true" : "false"}
+      aria-hidden={!open || undefined}
+    >
+      <Sidebar.Root aria-label="Library navigation">
+        <Sidebar.Scroll>
+          <Sidebar.Toolbar>
+            <SidebarTools />
+          </Sidebar.Toolbar>
 
-        <Sidebar.Header>
-          <div className={styles["account-trigger"]}>
-            <span aria-hidden className={styles["account-logo"]}>
-              <PondLogo />
-            </span>
-            <span className={styles["account-name"]}>Pond</span>
-          </div>
-          <Sidebar.HeaderActions>
-            <Button
-              variant="ghost"
-              size="sm"
-              icon
-              aria-label="Quick capture"
-              onClick={openQuickCapture}
-            >
-              <Plus />
-            </Button>
-          </Sidebar.HeaderActions>
-        </Sidebar.Header>
+          <Sidebar.Header>
+            <div className={styles["account-trigger"]}>
+              <span aria-hidden className={styles["account-logo"]}>
+                <PondLogo />
+              </span>
+              <span className={styles["account-name"]}>Pond</span>
+            </div>
+            <Sidebar.HeaderActions>
+              <Button
+                variant="ghost"
+                size="sm"
+                icon
+                aria-label="Quick capture"
+                onClick={openQuickCapture}
+              >
+                <Plus />
+              </Button>
+            </Sidebar.HeaderActions>
+          </Sidebar.Header>
 
-        <Sidebar.Group>
-          {routes.map((route) => {
-            const count = counts[route.key];
-            if (route.path === "/trash") {
-              return <TrashLink key={route.path} route={route} count={count} />;
-            }
-            return (
-              <Sidebar.Link key={route.path} to={route.path}>
-                <Sidebar.LinkIcon>
-                  <route.icon />
-                </Sidebar.LinkIcon>
-                <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
-                {count != null ? <Sidebar.LinkCount value={count} /> : null}
-              </Sidebar.Link>
-            );
-          })}
-        </Sidebar.Group>
-      </Sidebar.Scroll>
-      <HelpButton openUrl={openUrl} navigate={navigate} />
-    </Sidebar.Root>
+          <Sidebar.Group>
+            {routes.map((route) => {
+              const count = counts[route.key];
+              if (route.path === "/trash") {
+                return (
+                  <TrashLink key={route.path} route={route} count={count} />
+                );
+              }
+              return (
+                <Sidebar.Link key={route.path} to={route.path}>
+                  <Sidebar.LinkIcon>
+                    <route.icon />
+                  </Sidebar.LinkIcon>
+                  <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
+                  {count != null ? <Sidebar.LinkCount value={count} /> : null}
+                </Sidebar.Link>
+              );
+            })}
+          </Sidebar.Group>
+        </Sidebar.Scroll>
+        <HelpButton openUrl={openUrl} navigate={navigate} />
+      </Sidebar.Root>
+    </div>
   );
 }
 
@@ -310,7 +318,9 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
               </Menu.Item>
 
               <Menu.Item
-                onClick={() => navigate("/settings", { viewTransition: true })}
+                onClick={() =>
+                  navigateTo(navigate, "/settings", { viewTransition: true })
+                }
               >
                 <Menu.ItemIcon>
                   <SlidersHorizontal fill="currentColor" fillOpacity={0.2} />

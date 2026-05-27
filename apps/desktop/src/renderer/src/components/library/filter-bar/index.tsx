@@ -8,9 +8,9 @@ import {
 } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import { cn, Menu } from "@pond/ui";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Check, Plus, X } from "lucide-react";
 import { useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
 import {
   AddFilterMenu,
   COMPARATOR_LABELS,
@@ -24,17 +24,22 @@ import {
   replacePredicate,
   topLevelPredicates,
 } from "@/components/library/menus/filter/helpers";
+import { patchSearch } from "@/lib/navigate-path";
+import { paramsToSearch, searchToParams } from "@/lib/search-schemas";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
-  const [params, setParams] = useSearchParams();
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const navigate = useNavigate();
+  const params = useMemo(() => searchToParams(search), [search]);
   const query = useMemo(() => readQuery(params), [params]);
   const predicates = topLevelPredicates(query).map((p, idx) => ({ p, idx }));
   const active = predicates.filter(({ p }) => predicateIsActive(p));
   if (active.length === 0) return null;
 
   function commit(next: Query) {
-    setParams(writeQuery(params, next), { replace: true });
+    const written = writeQuery(params, next);
+    patchSearch(navigate, () => paramsToSearch(written), { replace: true });
   }
 
   function clearAll() {

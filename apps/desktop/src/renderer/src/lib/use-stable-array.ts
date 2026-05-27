@@ -4,8 +4,10 @@ import { useRef } from "react";
 // length and id sequence. Stops downstream `useMemo` / `useCallback`s
 // from invalidating just because the upstream pool produced a fresh
 // array on a field-only update.
-export function useStableById<T extends { id: string }>(next: T[]): T[] {
-  const ref = useRef<T[]>(next);
+export function useStableById<T extends { id: string }>(
+  next: ReadonlyArray<T>,
+): ReadonlyArray<T> {
+  const ref = useRef<ReadonlyArray<T>>(next);
   const prev = ref.current;
   if (prev.length === next.length) {
     let same = true;
@@ -23,8 +25,10 @@ export function useStableById<T extends { id: string }>(next: T[]): T[] {
   return next;
 }
 
-export function useStableStrings(next: string[]): string[] {
-  const ref = useRef<string[]>(next);
+export function useStableStrings(
+  next: ReadonlyArray<string>,
+): ReadonlyArray<string> {
+  const ref = useRef<ReadonlyArray<string>>(next);
   const prev = ref.current;
   if (prev.length === next.length) {
     let same = true;

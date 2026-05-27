@@ -1,13 +1,14 @@
 import { Button, Menu, Tooltip } from "@pond/ui";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import React from "react";
-import { useNavigate } from "react-router-dom";
 import { useRecents } from "@/lib/recents";
 import { pool } from "@/pool/pool";
 import styles from "./styles.module.css";
 
 export function SidebarTools() {
   const navigate = useNavigate();
+  const router = useRouter();
   const recents = useRecents();
 
   const rows = recents.flatMap((entry) => {
@@ -23,7 +24,7 @@ export function SidebarTools() {
           size="sm"
           icon
           aria-label="Back"
-          onClick={() => navigate(-1)}
+          onClick={() => router.history.back()}
         >
           <ChevronLeft />
         </Button>
@@ -34,7 +35,7 @@ export function SidebarTools() {
           size="sm"
           icon
           aria-label="Forward"
-          onClick={() => navigate(1)}
+          onClick={() => router.history.forward()}
         >
           <ChevronRight />
         </Button>
@@ -66,7 +67,9 @@ export function SidebarTools() {
                     <Menu.Item
                       key={entry.saveId}
                       className={styles.row}
-                      onClick={() => navigate(`/save/${entry.saveId}`)}
+                      onClick={() =>
+                        void navigate({ to: `/save/${entry.saveId}` })
+                      }
                     >
                       <Menu.ItemLabel>
                         {save.title?.trim() || save.url || "Untitled save"}

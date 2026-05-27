@@ -60,7 +60,7 @@ export function scheduleSnapshotWrite(): void {
   }, WRITE_DEBOUNCE_MS);
 }
 
-async function writeSnapshot(saves: Save[]): Promise<void> {
+async function writeSnapshot(saves: ReadonlyArray<Save>): Promise<void> {
   try {
     const db = await openDb();
     await new Promise<void>((resolve, reject) => {

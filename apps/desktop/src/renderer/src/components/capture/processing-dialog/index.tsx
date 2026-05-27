@@ -1,5 +1,6 @@
 import { type Op, SOURCES } from "@pond/schema/db";
 import { AlertDialog, Button, Dialog, useToast } from "@pond/ui";
+import { useDebouncedCallback } from "@tanstack/react-pacer";
 import {
   Globe,
   Layers,
@@ -11,13 +12,13 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   getSourceLabel,
   SourceBadge,
 } from "@/components/_primitives/source-badge";
 import { optimistic } from "@/pool/bootstrap";
-import { pool, subscribeToAll } from "@/pool/pool";
+import { pool, savesStore } from "@/pool/pool";
 import type {
   PipelineMetricsWire,
   ProcessingProgressWire,
@@ -238,35 +239,25 @@ export function ProcessingDialog({
     setPayload(next);
   }, []);
 
-  /* Debounced trigger: re-uses one timer for every notification while
-   * the dialog is open. Cleared on close so the IPC settles. */
-  const refreshTimer = useRef<number | null>(null);
-  const scheduleRefresh = useCallback(() => {
-    if (refreshTimer.current !== null) {
-      window.clearTimeout(refreshTimer.current);
-    }
-    refreshTimer.current = window.setTimeout(() => {
-      refreshTimer.current = null;
+  const scheduleRefresh = useDebouncedCallback(
+    () => {
       void refresh();
-    }, REFRESH_DEBOUNCE_MS);
-  }, [refresh]);
+    },
+    { wait: REFRESH_DEBOUNCE_MS },
+  );
 
   useEffect(() => {
     if (!open) return;
     void refresh();
-    /* The pool fires `subscribeToAll` on every save mutation, which
-     * happens whenever a task moves status. Piggyback that for live
-     * dialog updates, debounced so a 100-save backfill doesn't
-     * trigger 100 IPC calls in quick succession. */
-    const off = subscribeToAll(() => {
+    /* The store wakes on every save mutation, which happens whenever
+     * a task moves status. Piggyback that for live dialog updates,
+     * debounced so a 100-save backfill doesn't trigger 100 IPC calls
+     * in quick succession. */
+    const sub = savesStore.subscribe(() => {
       scheduleRefresh();
     });
     return () => {
-      off();
-      if (refreshTimer.current !== null) {
-        window.clearTimeout(refreshTimer.current);
-        refreshTimer.current = null;
-      }
+      sub.unsubscribe();
     };
   }, [open, refresh, scheduleRefresh]);
 

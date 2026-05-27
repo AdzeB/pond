@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Library } from "@/components/library";
+import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
@@ -23,7 +23,7 @@ interface PackResult {
 }
 
 function packRows(
-  saves: Save[],
+  saves: ReadonlyArray<Save>,
   containerWidth: number,
   targetHeight: number,
   gap: number,
@@ -76,7 +76,7 @@ function packRows(
 }
 
 interface JustifiedViewProps {
-  saves: Save[];
+  saves: ReadonlyArray<Save>;
   renderCard: (
     save: Save,
     packed: { top: number; left: number; width: number; height: number },
@@ -153,7 +153,7 @@ export function JustifiedView({
   const visible = useVisibleIndices(ref, items);
 
   return (
-    <Library.Grid
+    <LibraryGrid.Grid
       ref={ref}
       layout="justified"
       multiSelect={multiSelectActive}
@@ -169,6 +169,6 @@ export function JustifiedView({
           height: it.height,
         });
       })}
-    </Library.Grid>
+    </LibraryGrid.Grid>
   );
 }

@@ -1,3 +1,13 @@
+.collapse {
+  flex-shrink: 0;
+  width: 0;
+  overflow: hidden;
+}
+
+.collapse[data-open="true"] {
+  width: 224px;
+}
+
 .account-trigger {
   display: inline-flex;
   flex-shrink: 0;

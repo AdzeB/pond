@@ -365,6 +365,7 @@ const api = {
 interface ShellHint {
   theme?: "light" | "dark";
   pointerCursors?: boolean;
+  onboarded?: boolean;
 }
 
 function readShellHint(): ShellHint {

@@ -12,10 +12,10 @@ interface FilterOptions {
 }
 
 export function useFilteredSaves(
-  saves: Save[],
+  saves: ReadonlyArray<Save>,
   query: Query | null,
   opts?: FilterOptions,
-): Save[] {
+): ReadonlyArray<Save> {
   const sortKey = opts?.sortKey ?? "savedAt";
   const sortDir = opts?.sortDir ?? "desc";
   return useMemo(() => {
@@ -28,7 +28,11 @@ export function useFilteredSaves(
   }, [saves, query, sortKey, sortDir]);
 }
 
-function sortSaves(saves: Save[], key: SortKey, dir: SortDir): Save[] {
+function sortSaves(
+  saves: ReadonlyArray<Save>,
+  key: SortKey,
+  dir: SortDir,
+): Save[] {
   const sign = dir === "asc" ? 1 : -1;
   const out = saves.slice();
   out.sort((a, b) => sign * cmp(a, b, key));

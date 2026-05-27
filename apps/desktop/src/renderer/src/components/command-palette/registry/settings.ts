@@ -1,4 +1,4 @@
-import { SECTIONS } from "@/pages/settings/registry";
+import { SECTIONS } from "@/components/settings/registry";
 import type { Command } from "./types";
 
 export const SETTINGS_COMMANDS: Command[] = SECTIONS.map((section) => ({

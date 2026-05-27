@@ -5,7 +5,7 @@ import { AddFilterMenu } from "@/components/library/menus/filter";
 import { useAddCommitApi } from "@/components/library/menus/filter/use-add-commit-api";
 import { ViewPicker } from "@/components/library/menus/view";
 import { usePlatform } from "@/lib/platform";
-import { useDebouncedSearchParam } from "@/lib/use-debounced-search-param";
+import { useDebouncedSearch } from "@/lib/use-debounced-search";
 import { useFilterHotkey, useSearchHotkey } from "@/lib/use-hotkeys";
 import { useSidebar } from "@/lib/use-sidebar";
 import styles from "./styles.module.css";
@@ -32,7 +32,7 @@ const SEARCH_DEBOUNCE_MS = 150;
 
 function Search() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useDebouncedSearchParam("q", SEARCH_DEBOUNCE_MS);
+  const [value, setValue] = useDebouncedSearch("q", SEARCH_DEBOUNCE_MS);
 
   useSearchHotkey(() => {
     const el = inputRef.current;

@@ -1,8 +1,10 @@
 import { useToast } from "@pond/ui";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { isChordPending } from "@/components/command-palette/use-chords";
-import type { SavesMode } from "@/lib/use-saves-data";
+import { navigateTo, patchSearch } from "@/lib/navigate-path";
+import { listBaseFromPath } from "@/lib/search-schemas";
+import type { SavesMode } from "@/lib/use-library-state";
 import {
   isLayoutValue,
   type LayoutValue,
@@ -26,19 +28,18 @@ interface CardActions {
 }
 
 export function useCardActions(
-  filteredIds: string[],
+  filteredIds: ReadonlyArray<string>,
   mode: SavesMode,
   sourceFilter: string,
 ): CardActions {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
 
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  const listBase = location.pathname.replace(/\/save\/[^/]+\/?$/, "") || "/";
+  const listBase = listBaseFromPath(location.pathname);
   const buildSavePath = useCallback(
     (id: string) =>
       listBase === "/" ? `/save/${id}` : `${listBase}/save/${id}`,
@@ -52,22 +53,16 @@ export function useCardActions(
 
   const select = useCallback(
     (id: string) => {
-      navigate({
-        pathname: buildSavePath(id),
-        search: searchParams.toString(),
-      });
+      navigateTo(navigate, buildSavePath(id));
     },
-    [buildSavePath, navigate, searchParams],
+    [buildSavePath, navigate],
   );
 
   const focus = useCallback(
     (id: string) => {
-      navigate({
-        pathname: buildDetailPath(id),
-        search: searchParams.toString(),
-      });
+      navigateTo(navigate, buildDetailPath(id));
     },
-    [buildDetailPath, navigate, searchParams],
+    [buildDetailPath, navigate],
   );
 
   const handleCardClick = useCallback(
@@ -94,15 +89,24 @@ export function useCardActions(
   );
 
   const cycleLayout = useCallback(() => {
-    const raw = searchParams.get("view") ?? readViewPref("view") ?? "waterfall";
-    const current: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
-    const next = nextLayout(current);
-    const p = new URLSearchParams(searchParams);
-    if (next === "waterfall") p.delete("view");
-    else p.set("view", next);
-    setSearchParams(p, { replace: true });
-    writeViewPref("view", next);
-  }, [searchParams, setSearchParams]);
+    patchSearch(
+      navigate,
+      (prev) => {
+        const raw =
+          (prev.view as string | undefined) ??
+          readViewPref("view") ??
+          "waterfall";
+        const current: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
+        const next = nextLayout(current);
+        writeViewPref("view", next);
+        const out = { ...prev };
+        if (next === "waterfall") delete out.view;
+        else out.view = next;
+        return out;
+      },
+      { replace: true },
+    );
+  }, [navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

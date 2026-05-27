@@ -1,6 +1,6 @@
 import { cn } from "@pond/ui";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import styles from "./styles.module.css";
 
 interface ActivityRow {
@@ -61,7 +61,11 @@ export function ActivityList({
             <span className={styles.summary}>
               {summary(row)}
               {!saveId ? (
-                <Link to={`/save/${row.model_id}`} className={styles.link}>
+                <Link
+                  to="/save/$id"
+                  params={{ id: row.model_id }}
+                  className={styles.link}
+                >
                   {" "}
                   · open
                 </Link>

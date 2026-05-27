@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Library } from "@/components/library";
+import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
@@ -26,7 +26,7 @@ interface PackResult {
 }
 
 function packMasonry(
-  saves: Save[],
+  saves: ReadonlyArray<Save>,
   containerWidth: number,
   colMin: number,
   gap: number,
@@ -87,7 +87,7 @@ function useGridMin(): number {
 }
 
 interface WaterfallViewProps {
-  saves: Save[];
+  saves: ReadonlyArray<Save>;
   renderCard: (save: Save, packed: PackedPosition) => React.ReactNode;
   multiSelectActive: boolean;
 }
@@ -161,7 +161,7 @@ export function WaterfallView({
   const visible = useVisibleIndices(ref, items);
 
   return (
-    <Library.Grid
+    <LibraryGrid.Grid
       ref={ref}
       layout="waterfall"
       multiSelect={multiSelectActive}
@@ -177,6 +177,6 @@ export function WaterfallView({
           height: it.height,
         });
       })}
-    </Library.Grid>
+    </LibraryGrid.Grid>
   );
 }

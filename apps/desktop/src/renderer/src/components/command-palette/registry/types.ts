@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { NavigateFunction } from "react-router-dom";
+import type { PathNavigate } from "@/lib/navigate-path";
 import type { Save } from "@/pool/types";
 import type { PondApi } from "../../../../../preload";
 
@@ -21,10 +21,10 @@ export type CommandScope =
   | "tags";
 
 export interface PaletteCtx {
-  navigate: NavigateFunction;
+  navigate: PathNavigate;
   close: () => void;
   pond: PondApi;
-  selectedIds: string[];
+  selectedIds: ReadonlyArray<string>;
   focusedSaveId: string | null;
   focusedSave: Save | null;
   // Current route pathname so `when` clauses can scope commands to

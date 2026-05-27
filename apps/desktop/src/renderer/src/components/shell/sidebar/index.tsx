@@ -1,5 +1,5 @@
+import { Link as TSLink } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
-import { NavLink, type NavLinkProps } from "react-router-dom";
 import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"aside"> {}
@@ -61,10 +61,21 @@ function Item({ ...props }: ItemProps) {
   return <div className={styles.item} {...props} />;
 }
 
-interface LinkProps extends NavLinkProps {}
+interface LinkProps extends React.ComponentPropsWithoutRef<"a"> {
+  to: string;
+}
 
-function Link({ to, ...props }: LinkProps) {
-  return <NavLink className={styles.link} to={to} {...props} />;
+function Link({ to, children, ...props }: LinkProps) {
+  return (
+    <TSLink
+      className={styles.link}
+      to={to as never}
+      activeProps={{ "data-active": "true" }}
+      {...(props as React.ComponentPropsWithoutRef<"a">)}
+    >
+      {children as never}
+    </TSLink>
+  );
 }
 
 interface AnchorProps extends React.ComponentPropsWithoutRef<"a"> {

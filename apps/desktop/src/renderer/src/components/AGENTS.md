@@ -14,8 +14,8 @@ The tree is grouped by surface, not by component type.
 | Folder | What goes here |
 |---|---|
 | `_primitives/` | Presentational, no domain state. Could be promoted to `@pond/ui` if a second consumer appears. |
-| `shell/` | App frame, layouts, and the chrome shared by every page (sidebar, sidebar-tools). |
-| `library/` | Anything that lives inside the Library surface: grid/list primitive, sidebar, toolbar, filter-bar, bulk-action-bar, inspector, quick-capture. Named library dropdowns (view, filter, display) live under `library/menus/`. |
+| `shell/` | The `Shell` container, `Shell.Main` / `Header` / `Empty` chrome primitives, the universal `AppRoot`, `StandaloneLayout`, and the chrome shared by every page: `Sidebar.*` primitives, `SidebarTools`, and the `Inspector` side panel. Surface-specific layouts live next to their surface (e.g. `library/layout.tsx`, `settings/layout.tsx`). |
+| `library/` | Anything that lives inside the Library surface: grid/list primitive, sidebar, toolbar, filter-bar, bulk-action-bar, quick-capture. Named library dropdowns (view, filter, display) live under `library/menus/`. |
 | `save/` | Per-save surfaces (preview pane, context menu). Imported by the save-detail route and the inspector. |
 | `capture/` | Background capture pipeline UI: the processing button + dialog and the activity dialog/list. |
 | `media/` | Media playback (video player). |

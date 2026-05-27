@@ -23,7 +23,7 @@ import { primarySelection } from "@/pool/selection";
 
 // Linear's playbook: when one issue is focused, unmodified letter keys
 // fire the most-used action without ever leaving the keyboard. The
-// "focused save" here is whatever `useSavesData` mirrored into
+// "focused save" here is whatever `useLibraryState` mirrored into
 // `primarySelection` from the URL `:id` param, so the inspector save is
 // always the one being acted on.
 //

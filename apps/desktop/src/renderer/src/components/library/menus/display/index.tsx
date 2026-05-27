@@ -15,17 +15,13 @@ export function DisplayMenu({ prefs, patch }: DisplayMenuProps) {
   return (
     <Menu.Root>
       <Menu.Trigger
-        render={
-          <button
-            type="button"
-            className={styles.trigger}
-            aria-label="Display options"
-            title="Display options"
-          >
-            <Ellipsis width={16} height={16} />
-          </button>
-        }
-      />
+        type="button"
+        className={styles.trigger}
+        aria-label="Display options"
+        title="Display options"
+      >
+        <Ellipsis width={16} height={16} />
+      </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={6}>
           <Menu.Popup>

@@ -19,7 +19,7 @@ const GROUP_COLORS = [
 export type RailKey = "all" | "uncategorized" | "starred" | `g:${string}`;
 
 interface RailProps {
-  tags: TagRow[];
+  tags: ReadonlyArray<TagRow>;
   groups: ReturnType<typeof useTagGroups>;
   counts: Map<string, number>;
   uncategorisedCount: number;

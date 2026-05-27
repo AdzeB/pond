@@ -8,14 +8,19 @@ export type SaveListMode =
   | "random"
   | "trash";
 
-export function parseMode(parentBase: string): SaveListMode {
+// Returns `null` for unrecognized URLs so callers can decide whether
+// to redirect (the library view does) or silently fall back to
+// `"library"` (the detail page does). Keeps the route table free of
+// per-mode listings while still letting the UI catch typos and stale
+// deep links.
+export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase === "/" || parentBase === "") return "library";
   if (parentBase.startsWith("/source/")) return "source";
   if (parentBase === "/untagged") return "untagged";
   if (parentBase === "/recents") return "recents";
   if (parentBase === "/random") return "random";
   if (parentBase === "/trash") return "trash";
-  return "library";
+  return null;
 }
 
 export function extractSource(parentBase: string): string {

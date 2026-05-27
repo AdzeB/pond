@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
+import { useEffect } from "react";
 
 export interface TagRow {
   id: string;
@@ -10,9 +12,14 @@ export interface TagRow {
   createdAt: number | null;
 }
 
-let cache: TagRow[] | null = null;
-let inflight: Promise<TagRow[]> | null = null;
-const listeners = new Set<(rows: TagRow[]) => void>();
+interface TagsState {
+  readonly rows: ReadonlyArray<TagRow>;
+  readonly loaded: boolean;
+}
+
+export const tagsStore = new Store<TagsState>({ rows: [], loaded: false });
+
+let inflight: Promise<ReadonlyArray<TagRow>> | null = null;
 let subscribed = false;
 
 function toMs(v: unknown): number | null {
@@ -46,13 +53,12 @@ function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
   };
 }
 
-function emit(next: TagRow[]): void {
-  cache = next;
-  for (const fn of listeners) fn(next);
+function setRows(rows: ReadonlyArray<TagRow>): void {
+  tagsStore.setState(() => ({ rows, loaded: true }));
 }
 
-async function load(): Promise<TagRow[]> {
-  if (cache) return cache;
+async function load(): Promise<ReadonlyArray<TagRow>> {
+  if (tagsStore.state.loaded) return tagsStore.state.rows;
   if (inflight) return inflight;
   inflight = (async () => {
     const rows = (await window.pond.query("tags.list", {})) as Array<
@@ -62,7 +68,7 @@ async function load(): Promise<TagRow[]> {
       .map(normaliseRow)
       .filter((r): r is TagRow => r !== null)
       .sort((a, b) => a.name.localeCompare(b.name));
-    cache = normalised;
+    setRows(normalised);
     inflight = null;
     return normalised;
   })();
@@ -80,7 +86,9 @@ function ensureSubscribed(): void {
       data?: unknown;
     };
     if (event.modelName !== "tag") return;
-    if (!cache) return;
+    if (!tagsStore.state.loaded) return;
+
+    const cache = tagsStore.state.rows;
 
     if (event.action === "I") {
       const row = normaliseRow(event.data as Partial<TagRow>);
@@ -90,7 +98,7 @@ function ensureSubscribed(): void {
       if (idx >= 0) next[idx] = row;
       else next.push(row);
       next.sort((a, b) => a.name.localeCompare(b.name));
-      emit(next);
+      setRows(next);
       return;
     }
 
@@ -105,43 +113,32 @@ function ensureSubscribed(): void {
       const next = cache.slice();
       next[idx] = merged;
       next.sort((a, b) => a.name.localeCompare(b.name));
-      emit(next);
+      setRows(next);
       return;
     }
 
     if (event.action === "D") {
       const next = cache.filter((r) => r.id !== event.modelId);
-      emit(next);
+      setRows(next);
       return;
     }
   });
 }
 
-export function useTags(): TagRow[] {
-  const [value, setValue] = useState<TagRow[]>(() => cache ?? []);
+export function useTags(): ReadonlyArray<TagRow> {
   useEffect(() => {
     ensureSubscribed();
-    let active = true;
-    const update = (next: TagRow[]) => {
-      if (!active) return;
-      setValue(next);
-    };
-    listeners.add(update);
-    void load().then(update);
-    return () => {
-      active = false;
-      listeners.delete(update);
-    };
+    void load();
   }, []);
-  return value;
+  return useStore(tagsStore, (s) => s.rows);
 }
 
-export function useStarredTags(): TagRow[] {
+export function useStarredTags(): ReadonlyArray<TagRow> {
   const all = useTags();
   return all.filter((t) => t.starred);
 }
 
-export function useRecentTags(limit = 12): TagRow[] {
+export function useRecentTags(limit = 12): ReadonlyArray<TagRow> {
   const all = useTags();
   return all
     .filter((t) => t.lastUsedAt != null)
@@ -149,14 +146,12 @@ export function useRecentTags(limit = 12): TagRow[] {
     .slice(0, limit);
 }
 
-export function getTagsSnapshot(): TagRow[] {
-  return cache ?? [];
+export function getTagsSnapshot(): ReadonlyArray<TagRow> {
+  return tagsStore.state.rows;
 }
 
-export async function reloadTags(): Promise<TagRow[]> {
-  cache = null;
+export async function reloadTags(): Promise<ReadonlyArray<TagRow>> {
   inflight = null;
-  const next = await load();
-  emit(next);
-  return next;
+  tagsStore.setState(() => ({ rows: [], loaded: false }));
+  return load();
 }

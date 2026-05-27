@@ -1,6 +1,7 @@
 import { Dialog, Kbd, useToast } from "@pond/ui";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { matchPath, useLocation, useNavigate } from "react-router-dom";
+import { adaptNavigate } from "@/lib/navigate-path";
 import { useSave } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
 import { useSelectedIds } from "@/pool/selection";
@@ -23,36 +24,23 @@ import {
 import styles from "./styles.module.css";
 import { useChords } from "./use-chords";
 
-const DETAIL_PATTERNS: readonly string[] = [
-  "/detail/:id",
-  "/source/:source/detail/:id",
-  "/untagged/detail/:id",
-  "/recents/detail/:id",
-  "/random/detail/:id",
-  "/trash/detail/:id",
-  "/save/:id",
-  "/source/:source/save/:id",
-  "/untagged/save/:id",
-  "/recents/save/:id",
-  "/random/save/:id",
-  "/trash/save/:id",
-  "/item/:id",
-];
+// Matches the trailing /save/:id, /detail/:id, or /item/:id segment of
+// any library URL so the palette can identify the focused save without
+// pattern enumeration.
+const FOCUSED_RE = /\/(?:save|detail|item)\/([^/]+)\/?$/;
 
 function useFocusedSaveId(): string | null {
   const location = useLocation();
-  for (const pattern of DETAIL_PATTERNS) {
-    const match = matchPath({ path: pattern, end: true }, location.pathname);
-    if (match?.params?.id) return match.params.id;
-  }
-  return null;
+  const match = FOCUSED_RE.exec(location.pathname);
+  return match?.[1] ?? null;
 }
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState<CommandScope>("all");
-  const navigate = useNavigate();
+  const tsNavigate = useNavigate();
+  const navigate = useMemo(() => adaptNavigate(tsNavigate), [tsNavigate]);
   const location = useLocation();
   const selectedIds = useSelectedIds();
   const focusedFromUrl = useFocusedSaveId();

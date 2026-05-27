@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from "react";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { SourceBadge } from "@/components/_primitives/source-badge";
-import { Library } from "@/components/library";
+import { LibraryGrid } from "@/components/library";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { useSave } from "@/pool/hooks";
@@ -89,26 +89,26 @@ export const SaveCard = memo(function SaveCard({
 
   return (
     <SaveContextMenu save={save}>
-      <Library.Item
+      <LibraryGrid.Item
         selected={isPrimary}
         multi={isMulti}
         style={liStyle}
         draggable={save.files.length > 0}
         onDragStart={onDragStart}
       >
-        <Library.Item.Checkbox
+        <LibraryGrid.Item.Checkbox
           checked={isMulti}
           aria-label={isMulti ? "Deselect" : "Select"}
           onClick={onCheckboxClick}
         />
-        <Library.Item.Select
+        <LibraryGrid.Item.Select
           aria-pressed={isPrimary}
           onClick={onSelectClick}
           onDoubleClick={onSelectDoubleClick}
         >
           <SaveCardBody save={save} layout={layout} />
-        </Library.Item.Select>
-      </Library.Item>
+        </LibraryGrid.Item.Select>
+      </LibraryGrid.Item>
     </SaveContextMenu>
   );
 });
@@ -143,33 +143,35 @@ const SaveCardBody = memo(function SaveCardBody({
   const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
   return (
     <>
-      <Library.Item.Media style={mediaStyle}>
+      <LibraryGrid.Item.Media style={mediaStyle}>
         <Card.Root save={save} layout={layout}>
           <Card.Media />
           <Card.DownloadingBadge />
         </Card.Root>
         {prefs.fileCount && mediaUnitCount > 1 ? (
-          <Library.Item.Count aria-label={`${mediaUnitCount} media files`}>
+          <LibraryGrid.Item.Count aria-label={`${mediaUnitCount} media files`}>
             {mediaUnitCount}
-          </Library.Item.Count>
+          </LibraryGrid.Item.Count>
         ) : null}
         {prefs.sourceBadge ? (
-          <Library.Item.SourceBadge>
+          <LibraryGrid.Item.SourceBadge>
             <SourceBadge source={save.source} data-size="sm" />
-          </Library.Item.SourceBadge>
+          </LibraryGrid.Item.SourceBadge>
         ) : null}
-      </Library.Item.Media>
+      </LibraryGrid.Item.Media>
       {showMeta ? (
-        <Library.Item.Meta>
+        <LibraryGrid.Item.Meta>
           {prefs.name ? (
-            <Library.Item.Title>{save.title ?? save.url}</Library.Item.Title>
+            <LibraryGrid.Item.Title>
+              {save.title ?? save.url}
+            </LibraryGrid.Item.Title>
           ) : null}
           {prefs.date ? (
-            <Library.Item.Time>
+            <LibraryGrid.Item.Time>
               {formatAbsolute(save.savedAt)}
-            </Library.Item.Time>
+            </LibraryGrid.Item.Time>
           ) : null}
-        </Library.Item.Meta>
+        </LibraryGrid.Item.Meta>
       ) : null}
     </>
   );

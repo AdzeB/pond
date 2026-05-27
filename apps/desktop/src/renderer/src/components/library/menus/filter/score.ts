@@ -1,6 +1,6 @@
 import type { Predicate } from "@pond/schema/filters/types";
 import Fuse, { type IFuseOptions } from "fuse.js";
-import type { SearchEntry } from "./registry";
+import type { SearchEntry } from "./index";
 
 const KIND_PRIORITY: Record<SearchEntry["kind"], number> = {
   group: 4,

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { isChordPending } from "@/components/command-palette/use-chords";
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -10,37 +10,19 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function useFilterHotkey(onActivate: () => void): void {
-  const cb = useRef(onActivate);
-  cb.current = onActivate;
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
-      if (e.key.toLowerCase() !== "f") return;
-      if (isChordPending()) return;
-      if (isEditableTarget(e.target)) return;
-      e.preventDefault();
-      cb.current();
-    }
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+  useHotkey("F", (e) => {
+    if (isChordPending()) return;
+    if (isEditableTarget(e.target)) return;
+    e.preventDefault();
+    onActivate();
+  });
 }
 
 export function useSearchHotkey(onActivate: () => void): void {
-  const cb = useRef(onActivate);
-  cb.current = onActivate;
-
-  useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key !== "/") return;
-      if (isChordPending()) return;
-      if (isEditableTarget(e.target)) return;
-      e.preventDefault();
-      cb.current();
-    }
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, []);
+  useHotkey("/", (e) => {
+    if (isChordPending()) return;
+    if (isEditableTarget(e.target)) return;
+    e.preventDefault();
+    onActivate();
+  });
 }

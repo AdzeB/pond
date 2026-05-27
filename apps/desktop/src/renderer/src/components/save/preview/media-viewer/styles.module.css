@@ -21,7 +21,12 @@
   position: relative;
   width: 100%;
   height: 100%;
-  overflow: hidden;
+  contain: paint;
+  /* `overflow: hidden` alone leaks ~1px of the neighbouring slide on the
+     right edge: Embla translates the strip with sub-pixel offsets and the
+     compositor rounds outward. `contain: paint` enforces a hard paint
+     boundary so the slide can't bleed past the viewport's content box. */
+  overflow: clip;
 }
 
 .container {

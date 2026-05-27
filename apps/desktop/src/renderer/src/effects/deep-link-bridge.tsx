@@ -1,12 +1,14 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { adaptNavigate } from "@/lib/navigate-path";
 
 export function DeepLinkBridge() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const nav = adaptNavigate(navigate);
     const off = window.pond.onNavigate((path) =>
-      navigate(path, { viewTransition: true }),
+      nav(path, { viewTransition: true }),
     );
     return off;
   }, [navigate]);

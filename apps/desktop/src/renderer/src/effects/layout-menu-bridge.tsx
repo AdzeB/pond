@@ -1,5 +1,6 @@
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { patchSearch } from "@/lib/navigate-path";
 import {
   isLayoutValue,
   type LayoutValue,
@@ -7,19 +8,25 @@ import {
 } from "@/lib/view-prefs";
 
 export function LayoutMenuBridge() {
-  const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
       if (!id.startsWith("view.layout.")) return;
       if (id === "view.layout.cycle") return;
       const next = id.slice("view.layout.".length) as LayoutValue;
       if (!isLayoutValue(next)) return;
-      const p = new URLSearchParams(params);
-      if (next === "waterfall") p.delete("view");
-      else p.set("view", next);
-      setParams(p, { replace: true });
       writeViewPref("view", next);
+      patchSearch(
+        navigate,
+        (prev) => {
+          const out = { ...prev };
+          if (next === "waterfall") delete out.view;
+          else out.view = next;
+          return out;
+        },
+        { replace: true },
+      );
     });
-  }, [params, setParams]);
+  }, [navigate]);
   return null;
 }

@@ -134,10 +134,10 @@ function handleDeepLink(url: string): void {
       if (id) route = `/save/${encodeURIComponent(id)}`;
     } else if (parsed.hostname === "search") {
       const q = parsed.searchParams.get("q") ?? "";
-      route = `/search?q=${encodeURIComponent(q)}`;
+      route = `/?q=${encodeURIComponent(q)}`;
     } else if (parsed.hostname === "capture") {
       const target = parsed.searchParams.get("url") ?? "";
-      route = `/quick-capture?url=${encodeURIComponent(target)}`;
+      route = `/?capture=1${target ? `&url=${encodeURIComponent(target)}` : ""}`;
     } else if (parsed.hostname === "pair") {
       const token = parsed.searchParams.get("token") ?? "";
       route = `/settings/shortcuts${token ? `?token=${encodeURIComponent(token)}` : ""}`;
@@ -225,18 +225,36 @@ function configureSessionDefaults(): void {
 interface ShellHint {
   theme?: "light" | "dark" | "high-contrast";
   pointerCursors?: boolean;
+  onboarded?: boolean;
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
   try {
     const prefs = await getPrefs();
     const themePref = prefs.preferences.theme;
+    const onboarded = await readOnboarded();
     return {
       theme: themePref === "system" ? undefined : themePref,
       pointerCursors: prefs.preferences.pointerCursors === true,
+      onboarded,
     };
   } catch {
     return {};
+  }
+}
+
+async function readOnboarded(): Promise<boolean> {
+  try {
+    const { settings: settingsTable } = await import("@pond/schema/db");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDb();
+    const rows = await db
+      .select({ onboarded: settingsTable.onboarded })
+      .from(settingsTable)
+      .where(eq(settingsTable.id, "singleton"));
+    return Boolean(rows[0]?.onboarded);
+  } catch {
+    return false;
   }
 }
 
@@ -746,7 +764,6 @@ function installAppMenu() {
             { label: "Random", click: navTo("/random") },
             { label: "Untagged", click: navTo("/untagged") },
             { label: "Trash", click: navTo("/trash") },
-            { label: "Activity", click: navTo("/activity") },
             { label: "Settings", click: navTo("/settings") },
           ],
         },
@@ -854,7 +871,6 @@ function installAppMenu() {
           click: navTo("/trash"),
         },
         { type: "separator" },
-        { label: "Activity", click: navTo("/activity") },
         { type: "separator" },
         {
           label: "Rescan Library",

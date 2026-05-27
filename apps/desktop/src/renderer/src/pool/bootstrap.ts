@@ -1,12 +1,17 @@
-import { notifyAll, pool } from "./pool";
+import { Store } from "@tanstack/store";
+import { bulkUpsertSaves, deleteSave, pool } from "./pool";
 import { applyAction, normalise, type SyncActionEvent } from "./reconcile";
 import { readSnapshot, scheduleSnapshotWrite } from "./snapshot";
 import type { Save } from "./types";
 
+interface BootState {
+  readonly ready: boolean;
+}
+
+export const bootStore = new Store<BootState>({ ready: false });
+
 let started = false;
 let bootPromise: Promise<void> | null = null;
-let bootReady = false;
-const readySubs = new Set<() => void>();
 
 export function bootPool(): Promise<void> {
   if (bootPromise) return bootPromise;
@@ -25,8 +30,7 @@ export function bootPool(): Promise<void> {
           .map((row) => normalise(row))
           .filter((r): r is Save => r !== null);
         if (normalised.length > 0) {
-          pool.bulkUpsert(normalised, { silent: true });
-          notifyAll();
+          bulkUpsertSaves(normalised);
         }
       }
     } catch (err) {
@@ -40,27 +44,14 @@ export function bootPool(): Promise<void> {
     }
     scheduleSnapshotWrite();
 
-    bootReady = true;
-    for (const cb of readySubs) cb();
-    readySubs.clear();
+    bootStore.setState(() => ({ ready: true }));
   })();
 
   return bootPromise;
 }
 
 export function isBootReady(): boolean {
-  return bootReady;
-}
-
-export function subscribeBootReady(cb: () => void): () => void {
-  if (bootReady) {
-    queueMicrotask(cb);
-    return () => {};
-  }
-  readySubs.add(cb);
-  return () => {
-    readySubs.delete(cb);
-  };
+  return bootStore.state.ready;
 }
 
 async function hydrateFromMain(): Promise<void> {
@@ -77,9 +68,8 @@ async function hydrateFromMain(): Promise<void> {
     if (!freshIds.has(id)) stale.push(id);
   }
 
-  pool.bulkUpsert(fresh, { silent: true });
-  for (const id of stale) pool.delete(id, { silent: true });
-  notifyAll();
+  bulkUpsertSaves(fresh);
+  for (const id of stale) deleteSave(id);
 }
 
 let subscribedToSync = false;
@@ -103,13 +93,11 @@ export async function optimistic<T>(
   run: () => Promise<T>,
 ): Promise<T | null> {
   optimisticUpdate();
-  notifyAll();
   try {
     return await run();
   } catch (err) {
     console.warn("[pond pool] tx failed, rolling back", err);
     rollback();
-    notifyAll();
     return null;
   }
 }

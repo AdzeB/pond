@@ -1,3 +1,4 @@
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   createColumnHelper,
   flexRender,
@@ -11,13 +12,13 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
-import { type GridLayout, Library } from "@/components/library";
+import { type GridLayout, LibraryGrid } from "@/components/library";
 import { JustifiedView } from "@/components/library/justified";
 import { formatAbsolute, SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
+import { patchSearch } from "@/lib/navigate-path";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
@@ -32,7 +33,7 @@ export type ViewMode = "waterfall" | "justified" | "grid" | "list";
 
 interface LayoutSwitcherProps {
   viewMode: ViewMode;
-  saves: Save[];
+  saves: ReadonlyArray<Save>;
   selectedId: string | null;
   multiSelectActive: boolean;
   onClick: (id: string, e: React.MouseEvent) => void;
@@ -118,7 +119,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     );
   }
   return (
-    <Library.Grid
+    <LibraryGrid.Grid
       layout={viewMode as GridLayout}
       multiSelect={multiSelectActive}
     >
@@ -131,7 +132,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
           onDoubleClick={onDoubleClick}
         />
       ))}
-    </Library.Grid>
+    </LibraryGrid.Grid>
   );
 }
 
@@ -167,17 +168,19 @@ function ListView({
   onClick,
   onDoubleClick,
 }: {
-  saves: Save[];
+  saves: ReadonlyArray<Save>;
   selectedId: string | null;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }) {
-  const [params, setParams] = useSearchParams();
-  const rawSort = params.get("sort") ?? readViewPref("sort") ?? "savedAt";
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const navigate = useNavigate();
+  const rawSort =
+    (search.sort as string | undefined) ?? readViewPref("sort") ?? "savedAt";
   const sortKey: SortKey = SORT_KEYS.has(rawSort as SortKey)
     ? (rawSort as SortKey)
     : "savedAt";
-  const rawDir = params.get("dir") ?? readViewPref("dir");
+  const rawDir = (search.dir as string | undefined) ?? readViewPref("dir");
   const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
 
   const sorting = useMemo<SortingState>(
@@ -193,14 +196,19 @@ function ListView({
       const item = next[0] ?? sorting[0];
       if (!item) return;
       const dir: "asc" | "desc" = item.desc ? "desc" : "asc";
-      const p = new URLSearchParams(params);
-      p.set("sort", item.id);
-      p.set("dir", dir);
-      setParams(p, { replace: true });
       writeViewPref("sort", item.id);
       writeViewPref("dir", dir);
+      patchSearch(
+        navigate,
+        (prev) => ({
+          ...prev,
+          sort: item.id,
+          dir,
+        }),
+        { replace: true },
+      );
     },
-    [params, setParams, sorting],
+    [navigate, sorting],
   );
 
   const columns = useMemo(() => {
@@ -332,7 +340,7 @@ function ListView({
   }, []);
 
   const table = useReactTable({
-    data: saves,
+    data: saves as Save[],
     columns,
     state: { sorting },
     onSortingChange: handleSortingChange,

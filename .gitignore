@@ -47,3 +47,6 @@ apps/desktop/resources/bin/yt-dlp.tmp
 
 # agent caches
 .agents
+
+# TanStack Router generated route tree
+apps/desktop/src/renderer/src/routeTree.gen.ts

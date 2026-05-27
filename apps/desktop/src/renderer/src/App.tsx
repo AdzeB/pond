@@ -1,7 +1,12 @@
 import { Toast, Tooltip, useToast } from "@pond/ui";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  createMemoryHistory,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import type { PondApi } from "../../preload";
 import { Presentation } from "./components/save/presentation";
 import { DeveloperApplier } from "./effects/developer-applier";
@@ -13,7 +18,7 @@ import { ToastHost } from "./effects/toast-host";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { ViewShortcuts } from "./effects/view-shortcuts";
 import { getPrefsSnapshot } from "./pool/prefs";
-import { buildRoutes } from "./routes";
+import { routeTree } from "./routeTree.gen";
 
 function ToastChime() {
   const { toasts } = useToast();
@@ -61,7 +66,14 @@ declare global {
     __pondShell?: {
       theme?: "light" | "dark" | "high-contrast";
       pointerCursors?: boolean;
+      onboarded?: boolean;
     };
+  }
+}
+
+declare module "@tanstack/react-router" {
+  interface Register {
+    router: ReturnType<typeof buildRouter>;
   }
 }
 
@@ -78,32 +90,48 @@ function resolveInitialEntries(): string[] {
   return ["/"];
 }
 
+function buildRouter() {
+  return createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: resolveInitialEntries() }),
+    defaultPreload: "intent",
+  });
+}
+
 export function App() {
-  const router = useMemo(
+  const router = useMemo(() => buildRouter(), []);
+  const queryClient = useMemo(
     () =>
-      createMemoryRouter(buildRoutes(), {
-        initialEntries: resolveInitialEntries(),
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000,
+            refetchOnWindowFocus: false,
+          },
+        },
       }),
     [],
   );
 
   return (
     <MotionConfig reducedMotion="user">
-      <Tooltip.Provider>
-        <Toast.Provider>
-          <ThemeApplier />
-          <DeveloperApplier />
-          <ViewShortcuts />
-          <SaveShortcuts />
-          <UndoRedoBridge />
-          <MenuBridge />
-          <ToastChime />
-          <SaveCompleteToast />
-          <ToastHost />
-          <RouterProvider router={router} />
-          <Presentation />
-        </Toast.Provider>
-      </Tooltip.Provider>
+      <QueryClientProvider client={queryClient}>
+        <Tooltip.Provider>
+          <Toast.Provider>
+            <ThemeApplier />
+            <DeveloperApplier />
+            <ViewShortcuts />
+            <SaveShortcuts />
+            <UndoRedoBridge />
+            <MenuBridge />
+            <ToastChime />
+            <SaveCompleteToast />
+            <ToastHost />
+            <RouterProvider router={router} />
+            <Presentation />
+          </Toast.Provider>
+        </Tooltip.Provider>
+      </QueryClientProvider>
     </MotionConfig>
   );
 }

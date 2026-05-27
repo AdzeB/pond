@@ -14,18 +14,6 @@ export const NAVIGATION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "nav.activity",
-    label: "Go to Activity",
-    group: "Navigation",
-    scope: "all",
-    keywords: ["history", "log"],
-    chord: ["g", "a"],
-    perform: ({ navigate, close }) => {
-      navigate("/activity", { viewTransition: true });
-      close();
-    },
-  },
-  {
     id: "nav.trash",
     label: "Go to Trash",
     group: "Navigation",

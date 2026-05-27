@@ -1,24 +1,15 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useRouter } from "@tanstack/react-router";
 
 export function HistoryHotkey() {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (!meta) return;
-      if (e.key === "[") {
-        e.preventDefault();
-        navigate(-1);
-      } else if (e.key === "]") {
-        e.preventDefault();
-        navigate(1);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
-
+  const router = useRouter();
+  useHotkey("Mod+[", (e) => {
+    e.preventDefault();
+    router.history.back();
+  });
+  useHotkey("Mod+]", (e) => {
+    e.preventDefault();
+    router.history.forward();
+  });
   return null;
 }

@@ -1,11 +1,12 @@
 import { Button, cn, Dialog, Field, Input, useToast } from "@pond/ui";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { navigateTo, patchSearch } from "@/lib/navigate-path";
 import styles from "./styles.module.css";
 
 function Root() {
   const [open, setOpen] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
   const navigate = useNavigate();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,16 +16,22 @@ function Root() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("capture") === "1") {
+    if (search.capture === "1") {
       void primeFromClipboard().then((seed) => {
         if (seed) setUrl(seed);
         setOpen(true);
       });
-      const next = new URLSearchParams(searchParams);
-      next.delete("capture");
-      setSearchParams(next, { replace: true });
+      patchSearch(
+        navigate,
+        (prev) => {
+          const out = { ...prev };
+          delete out.capture;
+          return out;
+        },
+        { replace: true },
+      );
     }
-  }, [searchParams, setSearchParams]);
+  }, [search.capture, navigate]);
 
   useEffect(() => {
     if (!open) return;
@@ -65,7 +72,7 @@ function Root() {
         description: "Pond is fetching the rich metadata in the background.",
         type: "success",
       });
-      if (result.id) navigate(`/save/${result.id}`);
+      if (result.id) navigateTo(navigate, `/save/${result.id}`);
       reset();
       setOpen(false);
     } finally {

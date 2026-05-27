@@ -1,13 +1,14 @@
 import { Button, Popover, Select, Slider, Switch, Tooltip } from "@pond/ui";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { ArrowDown, ArrowUp, ChevronsUpDown, Minus, Plus } from "lucide-react";
 import { useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
 import { type Density, useDensity } from "@/lib/density";
 import {
   type DisplayPrefKey,
   setDisplayPref,
   useDisplayPrefs,
 } from "@/lib/display-prefs";
+import { patchSearch } from "@/lib/navigate-path";
 import { useInspector } from "@/lib/use-inspector";
 import { useSidebar } from "@/lib/use-sidebar";
 import { useZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
@@ -57,19 +58,27 @@ interface ViewPickerProps {
 }
 
 function useLayoutValue(): [LayoutValue, (next: LayoutValue) => void] {
-  const [params, setParams] = useSearchParams();
-  const raw = params.get("view") ?? readViewPref("view") ?? "waterfall";
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const navigate = useNavigate();
+  const raw =
+    (search.view as string | undefined) ?? readViewPref("view") ?? "waterfall";
   const value: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
 
   const set = useCallback(
     (next: LayoutValue) => {
-      const p = new URLSearchParams(params);
-      if (next === "waterfall") p.delete("view");
-      else p.set("view", next);
-      setParams(p, { replace: true });
       writeViewPref("view", next);
+      patchSearch(
+        navigate,
+        (prev) => {
+          const out = { ...prev };
+          if (next === "waterfall") delete out.view;
+          else out.view = next;
+          return out;
+        },
+        { replace: true },
+      );
     },
-    [params, setParams],
+    [navigate],
   );
 
   return [value, set];
@@ -81,36 +90,50 @@ function useSortState(): {
   setSortKey: (next: SortKey) => void;
   setSortDir: (next: SortDir) => void;
 } {
-  const [params, setParams] = useSearchParams();
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const navigate = useNavigate();
 
-  const rawKey = params.get("sort") ?? readViewPref("sort") ?? "savedAt";
+  const rawKey =
+    (search.sort as string | undefined) ?? readViewPref("sort") ?? "savedAt";
   const sortKey: SortKey = SORT_VALUES.has(rawKey as SortKey)
     ? (rawKey as SortKey)
     : "savedAt";
 
-  const rawDir = params.get("dir") ?? readViewPref("dir");
+  const rawDir = (search.dir as string | undefined) ?? readViewPref("dir");
   const sortDir: SortDir = rawDir === "asc" ? "asc" : "desc";
 
   const setSortKey = useCallback(
     (next: SortKey) => {
-      const p = new URLSearchParams(params);
-      if (next === "savedAt") p.delete("sort");
-      else p.set("sort", next);
-      setParams(p, { replace: true });
       writeViewPref("sort", next);
+      patchSearch(
+        navigate,
+        (prev) => {
+          const out = { ...prev };
+          if (next === "savedAt") delete out.sort;
+          else out.sort = next;
+          return out;
+        },
+        { replace: true },
+      );
     },
-    [params, setParams],
+    [navigate],
   );
 
   const setSortDir = useCallback(
     (next: SortDir) => {
-      const p = new URLSearchParams(params);
-      if (next === "desc") p.delete("dir");
-      else p.set("dir", next);
-      setParams(p, { replace: true });
       writeViewPref("dir", next);
+      patchSearch(
+        navigate,
+        (prev) => {
+          const out = { ...prev };
+          if (next === "desc") delete out.dir;
+          else out.dir = next;
+          return out;
+        },
+        { replace: true },
+      );
     },
-    [params, setParams],
+    [navigate],
   );
 
   return { sortKey, sortDir, setSortKey, setSortDir };

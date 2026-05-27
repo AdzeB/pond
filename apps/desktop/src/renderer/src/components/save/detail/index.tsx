@@ -1,7 +1,7 @@
-import { Tooltip, useToast } from "@pond/ui";
-import { ChevronLeft, ChevronRight, Ellipsis, Star } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Tooltip } from "@pond/ui";
+import { Link } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
+import { useMemo } from "react";
 import { VideoPlayer } from "@/components/media/video-player";
 import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/components/save/context-menu";
 import { getYouTubeChapters } from "@/components/save/preview/helpers";
 import { MediaViewer } from "@/components/save/preview/media-viewer";
-import type { ListContext } from "@/lib/use-save-list-context";
+import type { SaveList } from "@/lib/use-save-list";
 import { buildMediaUnits } from "@/pool/media";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save, SaveFile } from "@/pool/types";
@@ -19,7 +19,7 @@ import styles from "./styles.module.css";
 
 interface HeaderProps {
   save: Save;
-  list: ListContext;
+  list: SaveList;
 }
 
 function Header({ save, list }: HeaderProps) {
@@ -43,17 +43,6 @@ function Header({ save, list }: HeaderProps) {
       </div>
 
       <div className={styles["header-actions"]}>
-        <StatusPill save={save} />
-        <Tooltip label="Star" side="bottom">
-          <button
-            type="button"
-            className={styles["header-icon-btn"]}
-            aria-label="Star (coming soon)"
-            disabled
-          >
-            <Star width={14} height={14} />
-          </button>
-        </Tooltip>
         <SaveActionsMenu save={save}>
           <button
             type="button"
@@ -88,55 +77,6 @@ function Header({ save, list }: HeaderProps) {
         </Tooltip>
       </div>
     </header>
-  );
-}
-
-function StatusPill({ save }: { save: Save }) {
-  const toast = useToast();
-  const [retrying, setRetrying] = useState(false);
-  const status = save.status ?? "complete";
-  if (status === "complete") return null;
-  if (status === "ingesting") {
-    const running = save.tasks?.find((t) => t.status === "running");
-    const label = running ? running.op.replace(/_/g, " ") : "ingesting";
-    return (
-      <span
-        className={styles["status-pill"]}
-        data-state="ingesting"
-        title={`Pipeline running: ${label}`}
-      >
-        <span className={styles["status-dot"]} aria-hidden />
-        {label}
-      </span>
-    );
-  }
-  const failedTask = save.tasks?.find((t) => t.status === "failed");
-  const reason = failedTask?.lastError ?? "Ingest failed";
-  return (
-    <button
-      type="button"
-      className={styles["status-pill"]}
-      data-state="failed"
-      disabled={retrying}
-      title={reason}
-      onClick={async () => {
-        setRetrying(true);
-        try {
-          const r = await window.pond.refreshSave(save.id);
-          toast.add({
-            title: r.ok ? "Retrying ingest" : "Couldn't retry",
-            description: r.ok
-              ? "The pipeline will pick this up shortly."
-              : "Try again in a moment.",
-            type: r.ok ? "success" : "error",
-          });
-        } finally {
-          setRetrying(false);
-        }
-      }}
-    >
-      {retrying ? "Retrying…" : "Retry ingest"}
-    </button>
   );
 }
 

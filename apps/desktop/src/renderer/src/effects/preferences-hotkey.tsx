@@ -1,20 +1,12 @@
-import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { useNavigate } from "@tanstack/react-router";
+import { navigateTo } from "@/lib/navigate-path";
 
 export function PreferencesHotkey() {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (!meta) return;
-      if (e.key !== ",") return;
-      e.preventDefault();
-      navigate("/settings", { viewTransition: true });
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [navigate]);
-
+  useHotkey("Mod+,", (e) => {
+    e.preventDefault();
+    navigateTo(navigate, "/settings", { viewTransition: true });
+  });
   return null;
 }

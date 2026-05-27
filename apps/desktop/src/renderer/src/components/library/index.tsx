@@ -186,7 +186,7 @@ function Empty({ className, ...props }: EmptyProps) {
   return <p className={cn(styles.empty, className)} {...props} />;
 }
 
-export const Library = {
+export const LibraryGrid = {
   Root,
   Grid,
   List,

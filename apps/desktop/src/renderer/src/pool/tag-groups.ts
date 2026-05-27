@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
+import { useEffect } from "react";
 
 export interface TagGroupRow {
   id: string;
@@ -10,24 +12,31 @@ export interface TagGroupRow {
   tagNames: string[];
 }
 
-let cache: TagGroupRow[] | null = null;
-let inflight: Promise<TagGroupRow[]> | null = null;
-const listeners = new Set<(rows: TagGroupRow[]) => void>();
+interface TagGroupsState {
+  readonly rows: ReadonlyArray<TagGroupRow>;
+  readonly loaded: boolean;
+}
+
+export const tagGroupsStore = new Store<TagGroupsState>({
+  rows: [],
+  loaded: false,
+});
+
+let inflight: Promise<ReadonlyArray<TagGroupRow>> | null = null;
 let subscribed = false;
 
-function sortGroups(rows: TagGroupRow[]): TagGroupRow[] {
+function sortGroups(rows: ReadonlyArray<TagGroupRow>): TagGroupRow[] {
   return rows
     .slice()
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
 }
 
-function emit(next: TagGroupRow[]): void {
-  cache = sortGroups(next);
-  for (const fn of listeners) fn(cache);
+function setRows(rows: ReadonlyArray<TagGroupRow>): void {
+  tagGroupsStore.setState(() => ({ rows: sortGroups(rows), loaded: true }));
 }
 
-async function load(): Promise<TagGroupRow[]> {
-  if (cache) return cache;
+async function load(): Promise<ReadonlyArray<TagGroupRow>> {
+  if (tagGroupsStore.state.loaded) return tagGroupsStore.state.rows;
   if (inflight) return inflight;
   inflight = (async () => {
     const rows = (await window.pond.query("tagGroups.list", {})) as Array<
@@ -36,9 +45,9 @@ async function load(): Promise<TagGroupRow[]> {
     const normalised = rows
       .map(normaliseRow)
       .filter((r): r is TagGroupRow => r !== null);
-    cache = sortGroups(normalised);
+    setRows(normalised);
     inflight = null;
-    return cache;
+    return tagGroupsStore.state.rows;
   })();
   return inflight;
 }
@@ -58,10 +67,11 @@ function normaliseRow(
   };
 }
 
-// tag_group_member rows always trigger a refetch; they don't have stable
-// IDs in the sync log (we encode tagId:groupId) and the membership lists
-// in cache need both names + sort order resolved from a join, which the
-// in-memory store can't reconstruct on its own.
+// tag_group_member rows always trigger a refetch; they don't have
+// stable IDs in the sync log (we encode tagId:groupId) and the
+// membership lists in cache need both names + sort order resolved
+// from a join, which the in-memory store can't reconstruct on its
+// own.
 let refetchScheduled = false;
 function scheduleRefetch(): void {
   if (refetchScheduled) return;
@@ -69,10 +79,9 @@ function scheduleRefetch(): void {
   queueMicrotask(() => {
     refetchScheduled = false;
     void (async () => {
-      cache = null;
+      tagGroupsStore.setState(() => ({ rows: [], loaded: false }));
       inflight = null;
-      const next = await load();
-      for (const fn of listeners) fn(next);
+      await load();
     })();
   });
 }
@@ -92,7 +101,9 @@ function ensureSubscribed(): void {
       return;
     }
     if (event.modelName !== "tag_group") return;
-    if (!cache) return;
+    if (!tagGroupsStore.state.loaded) return;
+
+    const cache = tagGroupsStore.state.rows;
 
     if (event.action === "I") {
       const row = normaliseRow(event.data as Partial<TagGroupRow>);
@@ -106,7 +117,7 @@ function ensureSubscribed(): void {
           tagNames: cache[idx]?.tagNames ?? [],
         };
       else next.push(row);
-      emit(next);
+      setRows(next);
       return;
     }
     if (event.action === "U") {
@@ -117,44 +128,31 @@ function ensureSubscribed(): void {
       if (!existing) return;
       const next = cache.slice();
       next[idx] = { ...existing, ...patch };
-      emit(next);
+      setRows(next);
       return;
     }
     if (event.action === "D") {
       const next = cache.filter((r) => r.id !== event.modelId);
-      emit(next);
+      setRows(next);
       return;
     }
   });
 }
 
-export function useTagGroups(): TagGroupRow[] {
-  const [value, setValue] = useState<TagGroupRow[]>(() => cache ?? []);
+export function useTagGroups(): ReadonlyArray<TagGroupRow> {
   useEffect(() => {
     ensureSubscribed();
-    let active = true;
-    const update = (next: TagGroupRow[]) => {
-      if (!active) return;
-      setValue(next);
-    };
-    listeners.add(update);
-    void load().then(update);
-    return () => {
-      active = false;
-      listeners.delete(update);
-    };
+    void load();
   }, []);
-  return value;
+  return useStore(tagGroupsStore, (s) => s.rows);
 }
 
-export function getTagGroupsSnapshot(): TagGroupRow[] {
-  return cache ?? [];
+export function getTagGroupsSnapshot(): ReadonlyArray<TagGroupRow> {
+  return tagGroupsStore.state.rows;
 }
 
-export async function reloadTagGroups(): Promise<TagGroupRow[]> {
-  cache = null;
+export async function reloadTagGroups(): Promise<ReadonlyArray<TagGroupRow>> {
+  tagGroupsStore.setState(() => ({ rows: [], loaded: false }));
   inflight = null;
-  const next = await load();
-  for (const fn of listeners) fn(next);
-  return next;
+  return load();
 }
