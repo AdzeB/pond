@@ -8,7 +8,6 @@ import {
 import {
   Command,
   Layers,
-  Network,
   Palette,
   Shapes,
   SlidersHorizontal,
@@ -66,13 +65,6 @@ const RENDERER_BY_ID: Record<
   saving: {
     icon: Zap,
     load: lazyComponent(() => import("./sections/saving"), "SavingSection"),
-  },
-  sources: {
-    icon: Network,
-    load: lazyComponent(
-      () => import("./sections/integrations"),
-      "IntegrationsSection",
-    ),
   },
   components: {
     icon: Shapes,

@@ -5,8 +5,8 @@
 }
 
 .heading {
-  font: var(--font-heading-md);
   margin: 0;
+  font: var(--font-heading-md);
 }
 
 .actions {

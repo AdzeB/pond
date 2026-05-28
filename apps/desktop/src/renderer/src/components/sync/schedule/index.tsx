@@ -28,7 +28,9 @@ export function Schedule() {
     () =>
       `${global.enabled}|${global.frequency}|${global.anchorTime}|${(
         global.weekdays ?? []
-      ).join(",")}|${global.quietHours?.start ?? ""}-${global.quietHours?.end ?? ""}`,
+      ).join(
+        ",",
+      )}|${global.quietHours?.start ?? ""}-${global.quietHours?.end ?? ""}`,
     [global],
   );
   const schedule = useScheduleStatus(scheduleKey);

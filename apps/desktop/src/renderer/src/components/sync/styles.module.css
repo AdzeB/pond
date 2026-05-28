@@ -8,8 +8,8 @@
 }
 
 .title {
-  font: var(--font-display-md);
   margin: 0;
+  font: var(--font-display-md);
 }
 
 .placeholder {

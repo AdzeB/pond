@@ -170,5 +170,5 @@ export function formatScheduleFooter(
   return parts.join(" \u00B7 ");
 }
 
-export { DEFAULT_GLOBAL_SYNC_PREFS };
 export type { GlobalSyncPrefs, SyncFrequency };
+export { DEFAULT_GLOBAL_SYNC_PREFS };

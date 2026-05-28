@@ -23,12 +23,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   },
   { id: "library", path: "library", label: "Library", group: "library" },
   { id: "saving", path: "saving", label: "Saving", group: "saving" },
-  {
-    id: "sources",
-    path: "integrations",
-    label: "Connected Apps",
-    group: "saving",
-  },
   { id: "components", path: "components", label: "Components", group: "dev" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ] as const;
