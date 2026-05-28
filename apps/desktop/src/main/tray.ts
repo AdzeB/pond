@@ -6,6 +6,7 @@ import { count, isNull } from "drizzle-orm";
 import { app, Menu, type NativeImage, nativeImage, Tray } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT } from "../shared/constants";
+import { syncAllSources } from "./core/sync";
 import { getDb } from "./db";
 import { getIngestToken, rotateIngestToken } from "./keychain";
 import { appDataRoot, libraryRoot } from "./paths";
@@ -132,6 +133,12 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
     {
       label: "Settings…",
       click: () => void (opts.onOpenSettings ?? opts.onOpenLibrary)(),
+    },
+    {
+      label: "Sync Now",
+      click: () => {
+        void syncAllSources({ trigger: "manual" });
+      },
     },
     { type: "separator" },
     {
