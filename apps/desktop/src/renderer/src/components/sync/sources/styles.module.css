@@ -1,0 +1,15 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heading {
+  font: var(--font-heading-md);
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}

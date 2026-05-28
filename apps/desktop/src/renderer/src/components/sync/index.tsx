@@ -1,6 +1,7 @@
 import { Shell } from "@/components/shell";
 import { Header } from "./header";
 import { Schedule } from "./schedule";
+import { Sources } from "./sources";
 import styles from "./styles.module.css";
 
 function Page() {
@@ -8,6 +9,7 @@ function Page() {
     <Shell.Main>
       <div className={styles.page}>
         <Header />
+        <Sources />
         <Schedule />
       </div>
     </Shell.Main>
