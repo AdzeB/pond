@@ -6,7 +6,7 @@ import { Schedule } from "./schedule";
 import { Sources } from "./sources";
 import styles from "./styles.module.css";
 
-function Page() {
+export function SyncPage() {
   return (
     <Shell.Main>
       <div className={styles.page}>
@@ -20,4 +20,4 @@ function Page() {
   );
 }
 
-export const Sync = { Page };
+export const Sync = { Page: SyncPage };
