@@ -1,21 +1,11 @@
 import { Button, useToast } from "@pond/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import {
-  DEFAULT_GLOBAL_SYNC_PREFS,
-  formatScheduleFooter,
-  type ScheduleStatus,
-} from "@/lib/sync-helpers";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 
 export function Header() {
   const toast = useToast();
-  const [syncPrefs, , syncReady] = usePrefs("sync");
-  const enabled = syncReady
-    ? syncPrefs.global.enabled
-    : DEFAULT_GLOBAL_SYNC_PREFS.enabled;
-  const status = useScheduleStatus();
+  const [, , syncReady] = usePrefs("sync");
   const anyRunning = useAnyRunning();
 
   async function onClick() {
@@ -34,8 +24,8 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.text}>
+        <span className={styles.eyebrow}>Dashboard</span>
         <h1 className={styles.title}>Sync</h1>
-        <p className={styles.status}>{formatScheduleFooter(status, enabled)}</p>
       </div>
       <Button
         size="md"
@@ -46,27 +36,6 @@ export function Header() {
       </Button>
     </header>
   );
-}
-
-function useScheduleStatus(): ScheduleStatus {
-  const qc = useQueryClient();
-  const { data } = useQuery<ScheduleStatus>({
-    queryKey: ["sync", "schedule", "header"],
-    queryFn: async () => {
-      const res = await window.pond.syncSchedulePeek();
-      if (!res.ok) return { lastFireAt: null, nextDueAt: null };
-      return { lastFireAt: res.lastFireAt, nextDueAt: res.nextDueAt };
-    },
-  });
-  useEffect(() => {
-    return window.pond.onSyncSchedule((u) => {
-      qc.setQueryData<ScheduleStatus>(["sync", "schedule", "header"], {
-        lastFireAt: u.lastFireAt,
-        nextDueAt: u.nextDueAt,
-      });
-    });
-  }, [qc]);
-  return data ?? { lastFireAt: null, nextDueAt: null };
 }
 
 function useAnyRunning(): boolean {

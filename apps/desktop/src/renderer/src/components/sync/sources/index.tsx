@@ -1,7 +1,6 @@
 import { Button, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useCallback, useEffect, useState } from "react";
-import { Settings } from "@/components/settings";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ALL_SOURCES,
   type AnySource,
@@ -16,6 +15,8 @@ interface SourceSyncState {
   lastSyncedAt: string | null;
   lastError: string | null;
 }
+
+type Dot = "off" | "ok" | "active" | "error";
 
 function emptyStatus(): Record<AnySource, boolean> {
   return Object.fromEntries(ALL_SOURCES.map((s) => [s.id, false])) as Record<
@@ -174,14 +175,31 @@ export function Sources() {
     await window.pond.syncCancel(source);
   }, []);
 
+  const connectedCount = useMemo(
+    () => Object.values(connected).filter(Boolean).length,
+    [connected],
+  );
+
   return (
     <section className={styles.section}>
-      <h2 className={styles.heading}>Sources</h2>
-      <Settings.List>
+      <header className={styles.head}>
+        <h2 className={styles.heading}>Sources</h2>
+        <span className={styles.summary}>
+          {connectedCount} of {ALL_SOURCES.length} connected
+        </span>
+      </header>
+      <div className={styles.grid}>
         {ALL_SOURCES.map((entry) => {
           const isConnected = connected[entry.id];
           const isPending = pendingSource === entry.id;
           const state = syncStates[entry.id];
+          const dot: Dot = !isConnected
+            ? "off"
+            : state.running
+              ? "active"
+              : state.lastError
+                ? "error"
+                : "ok";
           const subtitle = !isConnected
             ? SOURCE_DESCRIPTIONS[entry.id]
             : state.running
@@ -192,58 +210,57 @@ export function Sources() {
                   ? `Last sync ${formatRelative(new Date(state.lastSyncedAt))}`
                   : "Never synced";
           return (
-            <Fragment key={entry.id}>
-              <Settings.Item>
-                <Settings.ItemDetails>
-                  <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
-                  <Settings.ItemDescription>
-                    {subtitle}
-                  </Settings.ItemDescription>
-                </Settings.ItemDetails>
-                <Settings.ItemControl>
-                  {!statusReady ? null : isConnected ? (
-                    <div className={styles.actions}>
-                      {state.running ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => void cancelOne(entry.id)}
-                        >
-                          Cancel
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => void syncOne(entry.id)}
-                        >
-                          Sync
-                        </Button>
-                      )}
+            <article key={entry.id} className={styles.card} data-dot={dot}>
+              <div className={styles["card-head"]}>
+                <span className={styles.dot} aria-hidden />
+                <span className={styles.title}>{entry.label}</span>
+              </div>
+              <p className={styles.status} title={subtitle}>
+                {subtitle}
+              </p>
+              <div className={styles.actions}>
+                {!statusReady ? null : isConnected ? (
+                  <>
+                    {state.running ? (
                       <Button
                         size="sm"
                         variant="ghost"
-                        disabled={isPending}
-                        onClick={() => void disconnect(entry.id)}
+                        onClick={() => void cancelOne(entry.id)}
                       >
-                        Disconnect
+                        Cancel
                       </Button>
-                    </div>
-                  ) : (
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => void syncOne(entry.id)}
+                      >
+                        Sync
+                      </Button>
+                    )}
                     <Button
                       size="sm"
+                      variant="ghost"
                       disabled={isPending}
-                      onClick={() => void connectSource(entry.id)}
+                      onClick={() => void disconnect(entry.id)}
                     >
-                      {isPending ? "Opening\u2026" : "Sign in"}
+                      Disconnect
                     </Button>
-                  )}
-                </Settings.ItemControl>
-              </Settings.Item>
-            </Fragment>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => void connectSource(entry.id)}
+                  >
+                    {isPending ? "Opening\u2026" : "Sign in"}
+                  </Button>
+                )}
+              </div>
+            </article>
           );
         })}
-      </Settings.List>
+      </div>
     </section>
   );
 }

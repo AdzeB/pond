@@ -4,6 +4,7 @@ import { History } from "./history";
 import { RightNow } from "./right-now";
 import { Schedule } from "./schedule";
 import { Sources } from "./sources";
+import { Stats } from "./stats";
 import styles from "./styles.module.css";
 
 export function SyncPage() {
@@ -11,9 +12,16 @@ export function SyncPage() {
     <Shell.Main>
       <div className={styles.page}>
         <Header />
+        <Stats />
         <RightNow />
-        <Sources />
-        <Schedule />
+        <div className={styles.split}>
+          <div className={styles["split-main"]}>
+            <Sources />
+          </div>
+          <div className={styles["split-side"]}>
+            <Schedule />
+          </div>
+        </div>
         <History />
       </div>
     </Shell.Main>

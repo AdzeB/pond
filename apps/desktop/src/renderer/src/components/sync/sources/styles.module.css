@@ -1,15 +1,128 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  padding: 18px;
+  background: var(--ds-gray-2);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .heading {
   margin: 0;
   font: var(--font-heading-md);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.summary {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 12px 10px;
+  background: var(--ds-gray-3);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  transition:
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.card:hover {
+  background: var(--ds-gray-4);
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+}
+
+.card[data-dot="off"] {
+  background: var(--ds-gray-a2);
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+
+.card-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ds-gray-7);
+  flex-shrink: 0;
+}
+
+.card[data-dot="ok"] .dot {
+  background: var(--ds-grass-9);
+}
+
+.card[data-dot="active"] .dot {
+  background: var(--ds-accent-9);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.card[data-dot="error"] .dot {
+  background: var(--ds-tomato-9);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.title {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.status {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card[data-dot="error"] .status {
+  color: var(--ds-tomato-11);
 }
 
 .actions {
-  display: flex;
-  gap: 8px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
 }

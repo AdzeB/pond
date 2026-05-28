@@ -1,17 +1,29 @@
 .page {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  max-width: 880px;
-  padding: 32px 28px 64px;
+  gap: 20px;
+  max-width: 1120px;
+  padding: 28px 28px 64px;
   margin: 0 auto;
 }
 
-.title {
-  margin: 0;
-  font: var(--font-display-md);
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
-.placeholder {
-  color: var(--fg-2);
+.split-main,
+.split-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+@media (max-width: 880px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
