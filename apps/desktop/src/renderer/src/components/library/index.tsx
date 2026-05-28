@@ -132,18 +132,6 @@ function ItemCount({ className, role, ...props }: ItemCountProps) {
   );
 }
 
-interface ItemSourceBadgeProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemSourceBadge({ className, ...props }: ItemSourceBadgeProps) {
-  return (
-    <span
-      aria-hidden
-      className={cn(styles["source-badge"], className)}
-      {...props}
-    />
-  );
-}
-
 interface ItemCheckboxProps
   extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
   checked: boolean;
@@ -176,7 +164,6 @@ const Item = Object.assign(ItemBase, {
   Title: ItemTitle,
   Time: ItemTime,
   Count: ItemCount,
-  SourceBadge: ItemSourceBadge,
   Checkbox: ItemCheckbox,
 });
 

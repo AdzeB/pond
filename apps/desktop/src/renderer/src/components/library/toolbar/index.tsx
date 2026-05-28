@@ -1,13 +1,12 @@
-import { Button, Input, Menu, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
-import { Eye, ListFilter, Search as SearchIcon } from "lucide-react";
-import { useRef, useState } from "react";
-import { AddFilterMenu } from "@/components/library/menus/filter";
-import { useAddCommitApi } from "@/components/library/menus/filter/use-add-commit-api";
-import { ViewPicker } from "@/components/library/menus/view";
+import { Button, Input, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
+import { Eye, Search as SearchIcon } from "lucide-react";
+import { useRef } from "react";
+import { QuickViews } from "@/components/library/quick-views";
+import { View } from "@/components/library/view-menu";
 import { usePlatform } from "@/lib/platform";
+import { useSidebar } from "@/lib/shell-state";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
-import { useFilterHotkey, useSearchHotkey } from "@/lib/use-hotkeys";
-import { useSidebar } from "@/lib/use-sidebar";
+import { useSearchHotkey } from "@/lib/use-hotkeys";
 import styles from "./styles.module.css";
 
 export function HeaderToolbar() {
@@ -21,9 +20,11 @@ export function HeaderToolbar() {
       className={styles.toolbar}
       style={{ paddingInlineStart: trafficLightInset }}
     >
-      <Search />
-      <ViewOptions />
-      <Filter />
+      <QuickViews />
+      <div className={styles["right-group"]}>
+        <Search />
+        <ViewPicker />
+      </div>
     </PondToolbar.Root>
   );
 }
@@ -59,10 +60,10 @@ function Search() {
   );
 }
 
-function ViewOptions() {
+function ViewPicker() {
   return (
     <Tooltip label="View options" side="bottom">
-      <ViewPicker
+      <View.Picker
         trigger={
           <Button icon aria-label="View options">
             <Eye style={{ width: "100%", height: "100%" }} />
@@ -70,33 +71,5 @@ function ViewOptions() {
         }
       />
     </Tooltip>
-  );
-}
-
-function Filter() {
-  const [open, setOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const api = useAddCommitApi();
-
-  useFilterHotkey(() => {
-    setOpen(true);
-    requestAnimationFrame(() => inputRef.current?.focus());
-  });
-
-  return (
-    <Menu.Root open={open} onOpenChange={setOpen}>
-      <Tooltip label="Add filter" side="bottom">
-        <Menu.Trigger className={styles.trigger}>
-          <ListFilter style={{ width: "100%", height: "100%" }} />
-        </Menu.Trigger>
-      </Tooltip>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
-          <Menu.Popup>
-            <AddFilterMenu api={api} inputRef={inputRef} />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
   );
 }

@@ -1,5 +1,5 @@
 import { SOURCES, type Source } from "@pond/schema/db";
-import { getSourceLabel } from "@/components/_primitives/source-badge";
+import { getSourceLabel } from "@/lib/source-labels";
 import type { Command } from "./types";
 
 export const SOURCE_COMMANDS: Command[] = SOURCES.flatMap(

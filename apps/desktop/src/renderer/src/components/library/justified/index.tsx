@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
+import { useGridWidth } from "@/lib/shell-state";
 import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
 
@@ -92,49 +93,7 @@ export function JustifiedView({
   targetHeight = TARGET_ROW_HEIGHT,
 }: JustifiedViewProps) {
   const ref = useRef<HTMLUListElement>(null);
-  const [width, setWidth] = useState(0);
-
-  /* Read the container width synchronously after layout so the very
-   * first paint already shows the packed rows. Avoids a one-frame
-   * flash where everything piles up at width=0. */
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const w = ref.current.getBoundingClientRect().width;
-    if (w > 0) setWidth(w);
-  }, []);
-
-  // Hidden tabs keep the component mounted via `display: none`
-  // (see `App.tsx`). ResizeObserver would otherwise fire with width
-  // 0 every time we leave the tab, collapsing the row layout. Hold
-  // the last non-zero width across visibility changes so returning
-  // to the tab doesn't trigger a full re-pack.
-  useEffect(() => {
-    if (!ref.current) return;
-    let raf = 0;
-    let pending: number | null = null;
-    const ro = new ResizeObserver((entries) => {
-      const last = entries[entries.length - 1];
-      if (!last) return;
-      const w = last.contentRect.width;
-      if (w <= 0) return;
-      pending = w;
-      if (raf !== 0) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (pending !== null) {
-          const next = pending;
-          pending = null;
-          setWidth((prev) => (prev === next ? prev : next));
-        }
-      });
-    });
-    ro.observe(ref.current);
-    return () => {
-      ro.disconnect();
-      if (raf !== 0) cancelAnimationFrame(raf);
-    };
-  }, []);
-
+  const width = useGridWidth();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
   const itemGap = useItemGap();

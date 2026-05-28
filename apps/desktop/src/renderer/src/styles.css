@@ -158,7 +158,8 @@ html[data-reduce-motion="true"] *::after {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   mix-blend-mode: normal;
-  animation: none;
+  animation-duration: 260ms;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 ::view-transition-group(app-sidebar) {
@@ -179,13 +180,17 @@ html[data-reduce-motion="true"] *::after {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(app-sidebar),
   ::view-transition-old(app-sidebar),
-  ::view-transition-new(app-sidebar) {
+  ::view-transition-new(app-sidebar),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
     animation: none;
   }
 }
 
 html[data-reduce-motion="true"]::view-transition-group(app-sidebar),
 html[data-reduce-motion="true"]::view-transition-old(app-sidebar),
-html[data-reduce-motion="true"]::view-transition-new(app-sidebar) {
+html[data-reduce-motion="true"]::view-transition-new(app-sidebar),
+html[data-reduce-motion="true"]::view-transition-old(root),
+html[data-reduce-motion="true"]::view-transition-new(root) {
   animation: none;
 }

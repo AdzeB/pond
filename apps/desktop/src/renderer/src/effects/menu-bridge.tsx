@@ -11,8 +11,7 @@ import {
   trashSave,
   untrashSave,
 } from "@/lib/save-actions";
-import { toggleInspector } from "@/lib/use-inspector";
-import { toggleSidebar } from "@/lib/use-sidebar";
+import { toggleInspector, toggleSidebar } from "@/lib/shell-state";
 import { pool } from "@/pool/pool";
 import { usePrefs } from "@/pool/prefs";
 import { primarySelection, selection } from "@/pool/selection";

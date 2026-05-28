@@ -3,13 +3,22 @@
 
   display: flex;
   flex-shrink: 0;
-  gap: 4px;
+  gap: 8px;
   align-items: center;
+  min-width: 0;
   -webkit-app-region: drag;
 
   & > * {
     -webkit-app-region: no-drag;
   }
+}
+
+.right-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  align-items: center;
+  margin-inline-start: auto;
 }
 
 .search {
@@ -18,7 +27,6 @@
   flex-shrink: 0;
   align-items: center;
   max-width: 256px;
-  margin-inline-end: auto;
 
   .field {
     background: color-mix(

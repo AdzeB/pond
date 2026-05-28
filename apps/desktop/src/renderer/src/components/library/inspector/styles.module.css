@@ -1,0 +1,42 @@
+.pane {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px;
+}
+
+.toolbar {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  height: 32px;
+  -webkit-app-region: drag;
+
+  & > * {
+    -webkit-app-region: no-drag;
+  }
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  outline: none;
+}
+
+.empty {
+  margin: 40px 0;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+:global([data-platform="mac"]) .pane {
+  -webkit-app-region: drag;
+}
+
+:global([data-platform="mac"]) .pane > * {
+  -webkit-app-region: no-drag;
+}

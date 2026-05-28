@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
+import { useGridWidth } from "@/lib/shell-state";
 import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
 
@@ -98,51 +99,12 @@ export function WaterfallView({
   multiSelectActive,
 }: WaterfallViewProps) {
   const ref = useRef<HTMLUListElement>(null);
-  const [width, setWidth] = useState(0);
+  const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
   const itemGap = useItemGap();
   const aspectVersion = useAspectVersion();
-
-  useLayoutEffect(() => {
-    if (!ref.current) return;
-    const w = ref.current.getBoundingClientRect().width;
-    if (w > 0) setWidth(w);
-  }, []);
-
-  // Each tab is kept mounted and hidden via `display: none` (see
-  // `App.tsx`). A hidden element has no layout box, so ResizeObserver
-  // would otherwise fire with width 0 every time we leave the tab,
-  // wiping the packed grid and forcing a full re-pack on return. We
-  // keep the last known non-zero width across visibility changes so
-  // the layout survives tab switches without a visible reflow.
-  useEffect(() => {
-    if (!ref.current) return;
-    let raf = 0;
-    let pending: number | null = null;
-    const ro = new ResizeObserver((entries) => {
-      const last = entries[entries.length - 1];
-      if (!last) return;
-      const w = last.contentRect.width;
-      if (w <= 0) return;
-      pending = w;
-      if (raf !== 0) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        if (pending !== null) {
-          const next = pending;
-          pending = null;
-          setWidth((prev) => (prev === next ? prev : next));
-        }
-      });
-    });
-    ro.observe(ref.current);
-    return () => {
-      ro.disconnect();
-      if (raf !== 0) cancelAnimationFrame(raf);
-    };
-  }, []);
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;

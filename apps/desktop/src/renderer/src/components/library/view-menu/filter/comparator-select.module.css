@@ -1,0 +1,32 @@
+.trigger {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--ds-gray-12);
+  cursor: pointer;
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: 4px;
+}
+
+.trigger:hover {
+  background: var(--ds-gray-a4);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 180px;
+  padding: 6px;
+}

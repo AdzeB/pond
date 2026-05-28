@@ -1,6 +1,6 @@
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
-import { getSourceLabel } from "@/components/_primitives/source-badge";
+import { getSourceLabel } from "@/lib/source-labels";
 import { getPrefsSnapshot } from "@/pool/prefs";
 import type { SyncActionEvent } from "@/pool/reconcile";
 import type { Save } from "@/pool/types";

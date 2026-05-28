@@ -1,6 +1,5 @@
 import { Button, Input, useToast } from "@pond/ui";
 import { useEffect, useMemo, useState } from "react";
-import { SourceBadge } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
 import { ALL_SOURCES, SOURCE_DESCRIPTIONS } from "../_types";
@@ -119,7 +118,6 @@ export function ShortcutsSection() {
         <Settings.List>
           {ALL_SOURCES.map((entry) => (
             <Settings.Item key={entry.id} className={styles["source-row"]}>
-              <SourceBadge source={entry.id} data-size="md" />
               <Settings.ItemDetails>
                 <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
                 <Settings.ItemDescription>

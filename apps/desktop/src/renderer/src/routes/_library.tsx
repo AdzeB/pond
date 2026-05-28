@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { Inspector } from "@/components/library/inspector";
 import { LibrarySidebar } from "@/components/library/sidebar";
 import { Shell } from "@/components/shell";
-import { Inspector } from "@/components/shell/inspector";
 import { LayoutMenuBridge } from "@/effects/layout-menu-bridge";
 
 function LibraryLayout() {

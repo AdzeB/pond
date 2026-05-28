@@ -23,7 +23,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { SourceBadge } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
 import { patchSearch } from "@/lib/navigate-path";
 import { usePrefs } from "@/pool/prefs";
@@ -512,7 +511,6 @@ export function IntegrationsSection() {
             return (
               <Fragment key={entry.id}>
                 <Settings.Item className={styles["app-row"]}>
-                  <SourceBadge source={entry.id} data-size="md" />
                   <Settings.ItemDetails>
                     <Settings.ItemTitle>{entry.label}</Settings.ItemTitle>
                     <Settings.ItemDescription>

@@ -1,14 +1,9 @@
 .header {
   z-index: 2;
-  display: flex;
   flex-shrink: 0;
-  gap: 12px;
-  align-items: center;
-  justify-content: space-between;
   height: 44px;
   padding-block: 0;
   padding-inline: 12px;
-
   border-bottom: 1px solid var(--ds-gray-a4);
   -webkit-app-region: drag;
 }
@@ -18,11 +13,8 @@
 }
 
 .header-lead {
-  display: flex;
   flex: 1;
   gap: 10px;
-  align-items: center;
-  min-width: 0;
   font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-11);
@@ -61,17 +53,8 @@
 }
 
 .header-actions {
-  display: flex;
   flex-shrink: 0;
   gap: 4px;
-  align-items: center;
-}
-
-.header-divider {
-  width: 1px;
-  height: 16px;
-  margin-inline: 4px;
-  background: var(--ds-gray-a5);
 }
 
 .status-pill {
@@ -141,37 +124,6 @@
 :global(html[data-reduce-motion="true"]) .status-dot {
   opacity: 1;
   animation: none;
-}
-
-.header-icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  color: var(--ds-gray-11);
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 4px;
-  transition:
-    color 80ms ease,
-    background 80ms ease;
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-8);
-    outline-offset: 1px;
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.4;
-  }
-
-  &:hover:not(:disabled) {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-a3);
-  }
 }
 
 .content {

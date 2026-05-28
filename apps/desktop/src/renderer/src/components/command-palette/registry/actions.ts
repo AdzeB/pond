@@ -1,5 +1,4 @@
-import { toggleInspector } from "@/lib/use-inspector";
-import { toggleSidebar } from "@/lib/use-sidebar";
+import { toggleInspector, toggleSidebar } from "@/lib/shell-state";
 import type { Command } from "./types";
 
 export const ACTION_COMMANDS: Command[] = [

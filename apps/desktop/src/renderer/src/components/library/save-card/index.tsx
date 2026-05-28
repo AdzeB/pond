@@ -1,6 +1,5 @@
 import { memo, useCallback, useMemo } from "react";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
-import { SourceBadge } from "@/components/_primitives/source-badge";
 import { LibraryGrid } from "@/components/library";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { useDisplayPrefs } from "@/lib/display-prefs";
@@ -152,11 +151,6 @@ const SaveCardBody = memo(function SaveCardBody({
           <LibraryGrid.Item.Count aria-label={`${mediaUnitCount} media files`}>
             {mediaUnitCount}
           </LibraryGrid.Item.Count>
-        ) : null}
-        {prefs.sourceBadge ? (
-          <LibraryGrid.Item.SourceBadge>
-            <SourceBadge source={save.source} data-size="sm" />
-          </LibraryGrid.Item.SourceBadge>
         ) : null}
       </LibraryGrid.Item.Media>
       {showMeta ? (

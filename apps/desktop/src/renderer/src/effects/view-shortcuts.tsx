@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { toggleInspector } from "@/lib/use-inspector";
-import { toggleSidebar } from "@/lib/use-sidebar";
+import { toggleInspector, toggleSidebar } from "@/lib/shell-state";
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;

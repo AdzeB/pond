@@ -1,4 +1,4 @@
-import { Toast, Tooltip, useToast } from "@pond/ui";
+import { Toast, Tooltip } from "@pond/ui";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -6,7 +6,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo } from "react";
 import type { PondApi } from "../../preload";
 import { Presentation } from "./components/save/presentation";
 import { DeveloperApplier } from "./effects/developer-applier";
@@ -17,48 +17,7 @@ import { ThemeApplier } from "./effects/theme-applier";
 import { ToastHost } from "./effects/toast-host";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { ViewShortcuts } from "./effects/view-shortcuts";
-import { getPrefsSnapshot } from "./pool/prefs";
 import { routeTree } from "./routeTree.gen";
-
-function ToastChime() {
-  const { toasts } = useToast();
-  const last = useRef(toasts.length);
-  useEffect(() => {
-    if (toasts.length > last.current) {
-      if (getPrefsSnapshot()?.notifications?.sound) playChime();
-    }
-    last.current = toasts.length;
-  }, [toasts.length]);
-  return null;
-}
-
-let chimeCtx: AudioContext | null = null;
-function playChime(): void {
-  try {
-    if (!chimeCtx) {
-      const Ctx =
-        (window as unknown as { AudioContext?: typeof AudioContext })
-          .AudioContext ??
-        (window as unknown as { webkitAudioContext?: typeof AudioContext })
-          .webkitAudioContext;
-      if (!Ctx) return;
-      chimeCtx = new Ctx();
-    }
-    const ctx = chimeCtx;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.frequency.value = 880;
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + 0.3);
-  } catch {
-    /* swallow: chime is decorative */
-  }
-}
 
 declare global {
   interface Window {
@@ -124,7 +83,6 @@ export function App() {
             <SaveShortcuts />
             <UndoRedoBridge />
             <MenuBridge />
-            <ToastChime />
             <SaveCompleteToast />
             <ToastHost />
             <RouterProvider router={router} />

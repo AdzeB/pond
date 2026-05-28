@@ -2,8 +2,8 @@ import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSourceLabel } from "@/components/_primitives/source-badge";
 import { Settings } from "@/components/settings";
+import { getSourceLabel } from "@/lib/source-labels";
 import { usePrefs } from "@/pool/prefs";
 import type {
   RefreshBackfillStatusWire,

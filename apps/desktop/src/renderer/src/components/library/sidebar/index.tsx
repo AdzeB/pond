@@ -15,10 +15,11 @@ import {
 } from "lucide-react";
 import type { ElementType, SVGProps } from "react";
 import { useCallback, useMemo, useState } from "react";
+import { Aside } from "@/components/shell/aside";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { navigateTo, patchSearch } from "@/lib/navigate-path";
-import { useSidebar } from "@/lib/use-sidebar";
+import { useSidebar } from "@/lib/shell-state";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
 import { useTags } from "@/pool/tags";
@@ -98,11 +99,7 @@ export function LibrarySidebar() {
   }
 
   return (
-    <div
-      className={styles.collapse}
-      data-open={open ? "true" : "false"}
-      aria-hidden={!open || undefined}
-    >
+    <Aside side="left" open={open}>
       <Sidebar.Root aria-label="Library navigation">
         <Sidebar.Scroll>
           <Sidebar.Toolbar>
@@ -151,7 +148,7 @@ export function LibrarySidebar() {
         </Sidebar.Scroll>
         <HelpButton openUrl={openUrl} navigate={navigate} />
       </Sidebar.Root>
-    </div>
+    </Aside>
   );
 }
 

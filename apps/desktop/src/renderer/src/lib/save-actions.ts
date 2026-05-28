@@ -1,8 +1,8 @@
 import type { Save as DbSave } from "@pond/schema/db";
 import type { useToast } from "@pond/ui";
 import { presentation } from "@/lib/presentation";
+import { setInspectorOpen } from "@/lib/shell-state";
 import { mergeUniqueTags, tagClipboard } from "@/lib/tag-clipboard";
-import { setInspectorOpen } from "@/lib/use-inspector";
 import { optimistic } from "@/pool/bootstrap";
 import { pool } from "@/pool/pool";
 import type { Save } from "@/pool/types";

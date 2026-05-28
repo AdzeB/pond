@@ -1,6 +1,6 @@
 import { Dialog } from "@pond/ui";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSourceLabel } from "@/components/_primitives/source-badge";
+import { getSourceLabel } from "@/lib/source-labels";
 import styles from "./styles.module.css";
 
 /* "Logging sucks" panel.

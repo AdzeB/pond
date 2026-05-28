@@ -13,10 +13,7 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  getSourceLabel,
-  SourceBadge,
-} from "@/components/_primitives/source-badge";
+import { getSourceLabel } from "@/lib/source-labels";
 import { optimistic } from "@/pool/bootstrap";
 import { pool, savesStore } from "@/pool/pool";
 import type {
@@ -565,7 +562,6 @@ export function ProcessingDialog({
             return (
               <RailRow
                 key={source}
-                badge={<SourceBadge source={source} data-size="sm" />}
                 label={getSourceLabel(source)}
                 count={entry.ingesting + entry.failed}
                 gate={pausedSourceReasons.get(source) ?? null}
@@ -740,7 +736,6 @@ export function ProcessingDialog({
                         className={styles.row}
                         data-status="ingesting"
                       >
-                        <SourceBadge source={row.source} data-size="sm" />
                         <div className={styles.body}>
                           <span className={styles.title} title={row.url}>
                             {row.title?.trim() || displayUrl(row.url)}
@@ -802,7 +797,6 @@ export function ProcessingDialog({
                         className={styles.row}
                         data-status="failed"
                       >
-                        <SourceBadge source={row.source} data-size="sm" />
                         <div className={styles.body}>
                           <span className={styles.title} title={row.url}>
                             {row.title?.trim() || displayUrl(row.url)}
@@ -908,7 +902,6 @@ interface RailRowProps {
   count: number;
   selected: boolean;
   onSelect: () => void;
-  badge?: React.ReactNode;
   icon?: React.ReactNode;
   tone?: "danger";
   gate?: "cooldown" | "breaker" | null;
@@ -919,7 +912,6 @@ function RailRow({
   count,
   selected,
   onSelect,
-  badge,
   icon,
   tone,
   gate,
@@ -940,7 +932,7 @@ function RailRow({
             : undefined
       }
     >
-      {badge ?? <span className={styles["rail-icon"]}>{icon}</span>}
+      {icon ? <span className={styles["rail-icon"]}>{icon}</span> : null}
       <span className={styles["rail-label"]}>{label}</span>
       <span className={styles["rail-count"]}>{count}</span>
     </button>

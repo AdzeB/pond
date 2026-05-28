@@ -1,26 +1,23 @@
 import { useSyncExternalStore } from "react";
 
-export type DisplayPrefKey = "name" | "date" | "fileCount" | "sourceBadge";
+export type DisplayPrefKey = "name" | "date" | "fileCount";
 
 export interface DisplayPrefs {
   name: boolean;
   date: boolean;
   fileCount: boolean;
-  sourceBadge: boolean;
 }
 
 const STORAGE_KEYS: Record<DisplayPrefKey, string> = {
   name: "pond.display.name",
   date: "pond.display.date",
   fileCount: "pond.display.fileCount",
-  sourceBadge: "pond.display.sourceBadge",
 };
 
 const DEFAULTS: DisplayPrefs = {
   name: true,
   date: true,
   fileCount: true,
-  sourceBadge: false,
 };
 
 function readKey(key: DisplayPrefKey): boolean {
@@ -39,7 +36,6 @@ function readAll(): DisplayPrefs {
     name: readKey("name"),
     date: readKey("date"),
     fileCount: readKey("fileCount"),
-    sourceBadge: readKey("sourceBadge"),
   };
 }
 
