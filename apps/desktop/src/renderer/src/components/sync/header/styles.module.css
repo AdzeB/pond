@@ -1,0 +1,23 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.title {
+  font: var(--font-display-md);
+  margin: 0;
+}
+
+.status {
+  color: var(--fg-2);
+  font: var(--font-body-sm);
+  margin: 0;
+}
