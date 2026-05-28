@@ -1,0 +1,72 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heading {
+  font: var(--font-heading-md);
+  margin: 0;
+}
+
+.empty {
+  color: var(--fg-2);
+  font: var(--font-body-sm);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 100px 80px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--ds-radius-md, 6px);
+  background: var(--ds-gray-3);
+  font: var(--font-body-sm);
+}
+
+.row[data-outcome="error"] {
+  background: var(--ds-red-a3, var(--ds-gray-3));
+}
+
+.source {
+  font-weight: 500;
+}
+
+.outcome {
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+  color: var(--ds-gray-11);
+}
+
+.outcome[data-outcome="error"] {
+  color: var(--ds-red-11, var(--ds-gray-12));
+}
+
+.outcome[data-outcome="ok"] {
+  color: var(--ds-green-11, var(--ds-gray-12));
+}
+
+.meta {
+  color: var(--ds-gray-11);
+}
+
+.trigger {
+  color: var(--ds-gray-10);
+  font-size: 0.85em;
+}
