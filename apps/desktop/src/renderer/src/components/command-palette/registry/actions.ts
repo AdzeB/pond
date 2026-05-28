@@ -148,6 +148,32 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
+    id: "action.sync.now",
+    label: "Sync all sources now",
+    description:
+      "Run an immediate background-style sync against every connected source",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["sync", "pull", "check", "refresh", "update", "fetch"],
+    perform: async ({ pond, toast, close }) => {
+      close();
+      await pond.syncRunAll();
+      toast.success("Sync started");
+    },
+  },
+  {
+    id: "action.sync.open",
+    label: "Open Sync",
+    description: "Open the sync page",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["sync", "sources", "schedule", "history"],
+    perform: ({ navigate, close }) => {
+      navigate("/sync", { viewTransition: true });
+      close();
+    },
+  },
+  {
     id: "action.trash.empty",
     label: "Empty Trash",
     description: "Permanently delete every item in Trash",
