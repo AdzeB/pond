@@ -36,6 +36,7 @@ type RouteKey =
   | "untagged"
   | "recents"
   | "random"
+  | "sync"
   | "all-tags"
   | "trash";
 
@@ -70,6 +71,12 @@ const routes: Route[] = [
     path: "/random",
     label: "Random",
     icon: Sparkles,
+  },
+  {
+    key: "sync",
+    path: "/sync",
+    label: "Sync",
+    icon: RefreshCw,
   },
   {
     key: "all-tags",

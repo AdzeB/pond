@@ -1,0 +1,17 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  max-width: 880px;
+  padding: 32px 28px 64px;
+  margin: 0 auto;
+}
+
+.title {
+  font: var(--font-display-md);
+  margin: 0;
+}
+
+.placeholder {
+  color: var(--fg-2);
+}
