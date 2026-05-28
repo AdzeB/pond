@@ -1,4 +1,3 @@
-import { ProcessingButton } from "@/components/capture/processing-button";
 import { LibraryGrid } from "@/components/library";
 import { LayoutSwitcher } from "@/components/library/layout-switcher";
 import { HeaderToolbar } from "@/components/library/toolbar";
@@ -20,7 +19,6 @@ export function LibraryView() {
       <Shell.Main>
         <Shell.Header>
           <HeaderToolbar />
-          <ProcessingButton />
         </Shell.Header>
         <LibraryGrid.Root
           view={data.viewMode === "list" ? "list" : "grid"}
