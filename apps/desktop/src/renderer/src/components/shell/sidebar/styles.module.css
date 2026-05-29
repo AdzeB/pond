@@ -151,6 +151,7 @@
   justify-content: center;
   width: var(--sidebar-icon-slot);
   height: var(--sidebar-icon-slot);
+  padding: 0.5px;
   color: inherit;
 }
 

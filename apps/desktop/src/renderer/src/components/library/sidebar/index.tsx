@@ -4,12 +4,10 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Archive,
   ArrowUpRight,
-  Hourglass,
   Network,
   Plus,
   RefreshCw,
   SlidersHorizontal,
-  Sparkles,
   Tags,
   Trash2,
 } from "lucide-react";
@@ -26,19 +24,9 @@ import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
 const REPO_URL = "https://github.com/raphaelsalaja/pond";
-const _DOCS_URL = `${REPO_URL}#readme`;
-const _ISSUES_URL = `${REPO_URL}/issues`;
-const _CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 const DISCUSSIONS_URL = `${REPO_URL}/discussions`;
 
-type RouteKey =
-  | "library"
-  | "untagged"
-  | "recents"
-  | "random"
-  | "sync"
-  | "all-tags"
-  | "trash";
+type RouteKey = "library" | "sync" | "tags" | "trash";
 
 interface Route {
   key: RouteKey;
@@ -48,48 +36,10 @@ interface Route {
 }
 
 const routes: Route[] = [
-  {
-    key: "library",
-    path: "/",
-    label: "Library",
-    icon: Archive,
-  },
-  {
-    key: "untagged",
-    path: "/untagged",
-    label: "Untagged",
-    icon: TagSlash,
-  },
-  {
-    key: "recents",
-    path: "/recents",
-    label: "Recents",
-    icon: Hourglass,
-  },
-  {
-    key: "random",
-    path: "/random",
-    label: "Random",
-    icon: Sparkles,
-  },
-  {
-    key: "sync",
-    path: "/sync",
-    label: "Sync",
-    icon: RefreshCw,
-  },
-  {
-    key: "all-tags",
-    path: "/tags",
-    label: "All Tags",
-    icon: Tags,
-  },
-  {
-    key: "trash",
-    path: "/trash",
-    label: "Trash",
-    icon: Trash2,
-  },
+  { key: "library", path: "/", label: "Library", icon: Archive },
+  { key: "sync", path: "/sync", label: "Sync", icon: RefreshCw },
+  { key: "tags", path: "/tags", label: "Tags", icon: Tags },
+  { key: "trash", path: "/trash", label: "Trash", icon: Trash2 },
 ];
 
 export function LibrarySidebar() {
@@ -166,7 +116,6 @@ function useRouteCounts(): RouteCounts {
   const tags = useTags();
   return useMemo(() => {
     let library = 0;
-    let untagged = 0;
     let trash = 0;
     for (const save of saves) {
       if (save.deletedAt) {
@@ -175,9 +124,8 @@ function useRouteCounts(): RouteCounts {
       }
       if (save.status && save.status !== "complete") continue;
       library++;
-      if (save.tags.length === 0) untagged++;
     }
-    return { library, untagged, trash, "all-tags": tags.length };
+    return { library, trash, tags: tags.length };
   }, [saves, tags]);
 }
 
@@ -371,28 +319,6 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
         </Menu.Portal>
       </Menu.Root>
     </div>
-  );
-}
-
-function TagSlash(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      role="img"
-      aria-label="Untagged"
-      {...props}
-    >
-      <title>Untagged</title>
-      <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z" />
-      <circle cx="7.5" cy="7.5" r=".5" fill="currentColor" />
-      <line x1="2" y1="2" x2="22" y2="22" />
-    </svg>
   );
 }
 
