@@ -24,8 +24,10 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.text}>
-        <span className={styles.eyebrow}>Dashboard</span>
         <h1 className={styles.title}>Sync</h1>
+        <p className={styles.subtitle}>
+          Pond keeps your library up to date with connected sources.
+        </p>
       </div>
       <Button
         size="md"

@@ -6,6 +6,7 @@ import {
   type SettingsSection,
 } from "@pond/schema";
 import {
+  Clock,
   Command,
   Layers,
   Palette,
@@ -65,6 +66,10 @@ const RENDERER_BY_ID: Record<
   saving: {
     icon: Zap,
     load: lazyComponent(() => import("./sections/saving"), "SavingSection"),
+  },
+  schedule: {
+    icon: Clock,
+    load: lazyComponent(() => import("./sections/schedule"), "ScheduleSection"),
   },
   components: {
     icon: Shapes,

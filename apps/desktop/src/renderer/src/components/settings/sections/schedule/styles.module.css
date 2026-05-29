@@ -1,24 +1,7 @@
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  background: var(--ds-gray-2);
-  border-radius: 12px;
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
-}
-
-.heading {
-  margin: 0;
-  font: var(--font-heading-md);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
 .footer {
-  margin: 0;
+  margin: 8px var(--settings-padding-inline-inset) 0;
   font-size: 12px;
+  font-weight: 450;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
 }

@@ -26,42 +26,6 @@ export const NAVIGATION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "nav.untagged",
-    label: "Go to Untagged",
-    group: "Navigation",
-    scope: "all",
-    keywords: ["needs tags", "no tags"],
-    chord: ["g", "u"],
-    perform: ({ navigate, close }) => {
-      navigate("/untagged", { viewTransition: true });
-      close();
-    },
-  },
-  {
-    id: "nav.recents",
-    label: "Go to Recents",
-    group: "Navigation",
-    scope: "all",
-    keywords: ["recent", "history"],
-    chord: ["g", "r"],
-    perform: ({ navigate, close }) => {
-      navigate("/recents", { viewTransition: true });
-      close();
-    },
-  },
-  {
-    id: "nav.random",
-    label: "Go to Random",
-    group: "Navigation",
-    scope: "all",
-    keywords: ["shuffle", "discover"],
-    chord: ["g", "x"],
-    perform: ({ navigate, close }) => {
-      navigate("/random", { viewTransition: true });
-      close();
-    },
-  },
-  {
     id: "nav.settings",
     label: "Go to Settings",
     group: "Navigation",

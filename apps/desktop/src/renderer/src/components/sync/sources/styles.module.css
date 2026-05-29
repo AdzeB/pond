@@ -1,26 +1,23 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  background: var(--ds-gray-2);
-  border-radius: 12px;
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  gap: 12px;
 }
 
 .head {
   display: flex;
+  gap: 12px;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
 }
 
 .heading {
   margin: 0;
-  font: var(--font-heading-md);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .summary {
@@ -31,16 +28,16 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px 12px 10px;
-  background: var(--ds-gray-3);
+  gap: 6px;
+  padding: 12px;
+  background: var(--ds-gray-2);
   border-radius: 10px;
   box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
   transition:
@@ -49,27 +46,25 @@
 }
 
 .card:hover {
-  background: var(--ds-gray-4);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+  background: var(--ds-gray-3);
 }
 
 .card[data-dot="off"] {
-  background: var(--ds-gray-a2);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+  background: transparent;
 }
 
 .card-head {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--ds-gray-7);
   flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--ds-gray-7);
+  border-radius: 999px;
 }
 
 .card[data-dot="ok"] .dot {
@@ -104,16 +99,16 @@
 }
 
 .status {
-  flex: 1;
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.4;
-  color: var(--ds-gray-11);
   display: -webkit-box;
+  flex: 1;
+  -webkit-box-orient: vertical;
+  margin: 0;
+  overflow: hidden;
   -webkit-line-clamp: 2;
   line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ds-gray-11);
 }
 
 .card[data-dot="error"] .status {
@@ -123,6 +118,6 @@
 .actions {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
   margin-top: 2px;
 }

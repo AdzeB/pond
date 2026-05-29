@@ -1,8 +1,8 @@
+import { Activity } from "@/components/capture/activity";
 import { Shell } from "@/components/shell";
 import { Header } from "./header";
-import { History } from "./history";
+import { Hero } from "./hero";
 import { RightNow } from "./right-now";
-import { Schedule } from "./schedule";
 import { Sources } from "./sources";
 import { Stats } from "./stats";
 import styles from "./styles.module.css";
@@ -11,18 +11,22 @@ export function SyncPage() {
   return (
     <Shell.Main>
       <div className={styles.page}>
-        <Header />
-        <Stats />
-        <RightNow />
-        <div className={styles.split}>
-          <div className={styles["split-main"]}>
-            <Sources />
-          </div>
-          <div className={styles["split-side"]}>
-            <Schedule />
-          </div>
+        <div className={styles["page-head"]}>
+          <Header />
+          <Stats />
         </div>
-        <History />
+        <div className={styles.section}>
+          <Hero />
+        </div>
+        <div className={styles.section}>
+          <RightNow />
+        </div>
+        <div className={styles.section}>
+          <Sources />
+        </div>
+        <div className={styles.section}>
+          <Activity />
+        </div>
       </div>
     </Shell.Main>
   );

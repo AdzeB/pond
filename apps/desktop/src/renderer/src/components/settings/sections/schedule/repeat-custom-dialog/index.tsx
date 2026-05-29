@@ -129,8 +129,7 @@ export function RepeatCustomDialog({
                   })}
                 </div>
                 <Field.Description>
-                  Sync runs at the time set on the main page, on the days you
-                  pick here.
+                  Sync runs at the time set above, on the days you pick here.
                 </Field.Description>
               </Field.Root>
             ) : null}

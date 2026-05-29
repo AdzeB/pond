@@ -1,30 +1,57 @@
-.dialog {
+.section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  width: min(960px, calc(100vw - 32px));
-  padding: 16px;
+  gap: 12px;
 }
 
 .header {
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 6px 12px;
+  gap: 8px 16px;
   align-items: start;
 }
 
-.header > :global(h2),
-.header > :global(p) {
-  grid-column: 1;
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.subtitle {
+  max-width: 72ch;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ds-gray-11);
+}
+
+.subtitle code {
+  padding: 1px 5px;
+  font-family:
+    "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+  border-radius: 4px;
 }
 
 .header-actions {
   display: inline-flex;
-  grid-row: 1 / span 2;
-  grid-column: 2;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   align-self: start;
+  justify-self: end;
 }
 
 .mode-toggle,
@@ -95,7 +122,7 @@
   flex-wrap: wrap;
   gap: 8px;
   align-items: end;
-  padding: 8px 10px;
+  padding: 10px 12px;
   background: var(--ds-gray-a2);
   border-radius: 8px;
 }
@@ -152,7 +179,6 @@
 }
 
 .scroll {
-  max-height: min(60vh, 540px);
   overflow: auto;
   background: var(--ds-gray-2);
   border-radius: 8px;
@@ -294,9 +320,19 @@
 }
 
 .empty {
-  padding: 16px;
+  padding: 24px;
   margin: 0;
   font-size: 12px;
   color: var(--ds-gray-11);
   text-align: center;
+}
+
+@media (max-width: 880px) {
+  .header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .header-actions {
+    justify-self: start;
+  }
 }

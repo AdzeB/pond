@@ -15,10 +15,9 @@ import styles from "./styles.module.css";
 
 type Tone = "default" | "muted" | "active" | "danger" | "success";
 
-interface TileProps {
+interface ItemProps {
   label: string;
   value: string;
-  hint?: string;
   tone?: Tone;
 }
 
@@ -77,26 +76,25 @@ export function Stats() {
   }
 
   return (
-    <div className={styles.row}>
-      <Tile label="Last sync" value={lastValue} tone={lastTone} />
-      <Tile label="Next sync" value={nextValue} tone={nextTone} />
-      <Tile
+    <dl className={styles.row}>
+      <Item label="Last sync" value={lastValue} tone={lastTone} />
+      <Item label="Next sync" value={nextValue} tone={nextTone} />
+      <Item
         label="Connected"
         value={`${connected} of ${ALL_SOURCES.length}`}
         tone={connectedTone}
       />
-      <Tile label="Queue" value={queueValue} tone={queueTone} />
-    </div>
+      <Item label="Queue" value={queueValue} tone={queueTone} />
+    </dl>
   );
 }
 
-function Tile({ label, value, hint, tone = "default" }: TileProps) {
+function Item({ label, value, tone = "default" }: ItemProps) {
   return (
-    <div className={styles.tile} data-tone={tone}>
-      <span className={styles.label}>{label}</span>
-      <span className={styles.value} title={hint}>
-        {value}
-      </span>
+    <div className={styles.item} data-tone={tone}>
+      <span className={styles.dot} aria-hidden />
+      <dt className={styles.label}>{label}</dt>
+      <dd className={styles.value}>{value}</dd>
     </div>
   );
 }
@@ -147,10 +145,7 @@ function useConnectedCount(): number {
       }));
     });
   }, []);
-  return useMemo(
-    () => Object.values(counts).filter(Boolean).length,
-    [counts],
-  );
+  return useMemo(() => Object.values(counts).filter(Boolean).length, [counts]);
 }
 
 function useQueueCounts() {

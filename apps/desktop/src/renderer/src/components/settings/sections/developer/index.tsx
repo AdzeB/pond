@@ -1,15 +1,7 @@
-import {
-  AlertDialog,
-  Button,
-  Dialog,
-  Input,
-  Select,
-  Switch,
-  useToast,
-} from "@pond/ui";
+import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { Link } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityDialog } from "@/components/capture/activity-dialog";
 import { Settings } from "@/components/settings";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
@@ -19,7 +11,6 @@ export function DeveloperSection() {
   const [apiPrefs, patchApi] = usePrefs("api");
   const [resetBusy, setResetBusy] = useState<string | null>(null);
   const [confirmFactory, setConfirmFactory] = useState(false);
-  const [activityOpen, setActivityOpen] = useState(false);
   const [apiBusy, setApiBusy] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
@@ -241,12 +232,9 @@ export function DeveloperSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Dialog.Root open={activityOpen} onOpenChange={setActivityOpen}>
-                <Dialog.Trigger
-                  render={<Button size="sm">Open Activity</Button>}
-                />
-                <ActivityDialog open={activityOpen} />
-              </Dialog.Root>
+              <Link to="/sync">
+                <Button size="sm">Open Sync</Button>
+              </Link>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>

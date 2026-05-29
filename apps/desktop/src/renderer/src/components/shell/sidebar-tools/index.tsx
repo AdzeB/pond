@@ -1,11 +1,6 @@
 import { Button, Menu, Tooltip } from "@pond/ui";
-import { useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
-import {
-  ChevronLeft,
-  ChevronRight,
-  History,
-  SlidersHorizontal,
-} from "lucide-react";
+import { useNavigate, useRouter } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import React from "react";
 import { useRecents } from "@/lib/recents";
 import { pool } from "@/pool/pool";
@@ -15,8 +10,6 @@ export function SidebarTools() {
   const navigate = useNavigate();
   const router = useRouter();
   const recents = useRecents();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const inSettings = pathname.startsWith("/settings");
 
   const rows = recents.flatMap((entry) => {
     const save = pool.get(entry.saveId);
@@ -94,21 +87,6 @@ export function SidebarTools() {
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
-      {inSettings ? null : (
-        <Tooltip label="Settings (⌘,)" side="bottom">
-          <Button
-            variant="ghost"
-            size="sm"
-            icon
-            aria-label="Settings"
-            onClick={() =>
-              void navigate({ to: "/settings", viewTransition: true })
-            }
-          >
-            <SlidersHorizontal />
-          </Button>
-        </Tooltip>
-      )}
     </React.Fragment>
   );
 }
