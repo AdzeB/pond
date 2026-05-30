@@ -1,7 +1,6 @@
 import { cn } from "@pond/ui";
 import { type HTMLMotionProps, motion } from "motion/react";
 import type { ReactNode } from "react";
-import { useItemGap } from "@/lib/density";
 import { drawerSpring } from "@/lib/motion";
 import styles from "./styles.module.css";
 
@@ -14,16 +13,11 @@ interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
 }
 
 function Root({ view, className, style, children, ...props }: RootProps) {
-  const itemGap = useItemGap();
-  const mergedStyle: React.CSSProperties = {
-    ["--library-item-gap" as never]: `${itemGap}px`,
-    ...style,
-  };
   return (
     <div
       data-view={view}
       className={cn(styles.root, className)}
-      style={mergedStyle}
+      style={style}
       {...props}
     >
       {children}

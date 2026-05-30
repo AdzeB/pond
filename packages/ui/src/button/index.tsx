@@ -2,7 +2,7 @@ import { Button as Base } from "@base-ui/react/button";
 import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
-interface ButtonProps extends Base.Props {
+export interface ButtonProps extends Base.Props {
   variant?:
     | "primary"
     | "secondary"

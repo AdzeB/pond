@@ -1,9 +1,8 @@
-import type { Predicate, Query } from "@pond/schema/filters/types";
+import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { readQuery, writeQuery } from "@pond/schema/filters/url";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { type ReactNode, useCallback, useMemo, useState } from "react";
-import { useDensity } from "@/lib/density";
 import {
   type DisplayPrefKey,
   useDisplayPrefs,
@@ -37,7 +36,6 @@ export function Root({ children, triggerRef }: RootProps) {
   const search = useSearch({ strict: false }) as Record<string, unknown>;
   const navigate = useNavigate();
   const displayPrefs = useDisplayPrefs();
-  const [density, setDensity] = useDensity();
   const [zoom, setZoom] = useZoom();
   const [pendingPredicates, setPendingPredicates] = useState<Predicate[]>([]);
 
@@ -180,19 +178,13 @@ export function Root({ children, triggerRef }: RootProps) {
     [commitQuery, query.clauses],
   );
 
-  const reorderPredicate = useCallback(
-    (from: number, to: number) => {
-      if (from === to) return;
-      const committedCount = query.clauses.length;
-      // Only reorder within the committed range for now. Pending rows are
-      // appended below committed rows and stay in insertion order until they
-      // graduate, so cross-range drag is left to the functional drag-and-drop
-      // pass.
-      if (from >= committedCount || to >= committedCount) return;
-      const clauses = [...query.clauses];
-      const [moved] = clauses.splice(from, 1);
-      if (!moved) return;
-      clauses.splice(to, 0, moved);
+  const setFieldPredicate = useCallback(
+    (field: FieldId, next: Predicate | null) => {
+      setPendingPredicates((prev) => prev.filter((p) => p.field !== field));
+      const clauses = query.clauses.filter(
+        (c) => c.kind !== "p" || c.field !== field,
+      );
+      if (next && predicateIsActive(next)) clauses.push(next);
       commitQuery({ kind: "and", clauses });
     },
     [commitQuery, query.clauses],
@@ -208,9 +200,8 @@ export function Root({ children, triggerRef }: RootProps) {
     commitQuery(EMPTY_QUERY);
     setLayout("waterfall");
     setSort({ key: "savedAt", dir: "desc" });
-    setDensity("comfortable");
     setZoom(130);
-  }, [commitQuery, setLayout, setSort, setDensity, setZoom]);
+  }, [commitQuery, setLayout, setSort, setZoom]);
 
   const value = useMemo<ViewContextValue>(
     () => ({
@@ -219,7 +210,6 @@ export function Root({ children, triggerRef }: RootProps) {
         pendingPredicates,
         layout,
         sort,
-        density,
         displayPrefs,
         zoom,
       },
@@ -227,11 +217,10 @@ export function Root({ children, triggerRef }: RootProps) {
         setQuery: commitQuery,
         addPredicate,
         updatePredicate,
-        reorderPredicate,
+        setFieldPredicate,
         resetFilters,
         setLayout,
         setSort,
-        setDensity,
         setDisplayPref,
         setZoom,
         restoreDefaults,
@@ -243,18 +232,16 @@ export function Root({ children, triggerRef }: RootProps) {
       pendingPredicates,
       layout,
       sort,
-      density,
       displayPrefs,
       zoom,
       triggerRef,
       commitQuery,
       addPredicate,
       updatePredicate,
-      reorderPredicate,
+      setFieldPredicate,
       resetFilters,
       setLayout,
       setSort,
-      setDensity,
       setDisplayPref,
       setZoom,
       restoreDefaults,

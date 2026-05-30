@@ -245,7 +245,7 @@ export function App() {
         <button
           type="button"
           className={styles["footer-link"]}
-          onClick={() => openDeepLink("pond://settings/shortcuts")}
+          onClick={() => openDeepLink("pond://settings/general")}
         >
           Settings
         </button>

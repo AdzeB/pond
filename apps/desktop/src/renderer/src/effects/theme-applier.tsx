@@ -59,19 +59,6 @@ export function ThemeApplier() {
 
   useEffect(() => {
     const root = document.documentElement;
-    const hue = prefs.tintHue;
-    const intensity = prefs.tintIntensity ?? 0;
-    if (hue === null || hue === undefined || intensity <= 0) {
-      root.style.removeProperty("--ds-tint-hue");
-      root.style.removeProperty("--ds-tint-intensity");
-      return;
-    }
-    root.style.setProperty("--ds-tint-hue", String(hue));
-    root.style.setProperty("--ds-tint-intensity", `${intensity}%`);
-  }, [prefs.tintHue, prefs.tintIntensity]);
-
-  useEffect(() => {
-    const root = document.documentElement;
     if (prefs.reduceTransparency) {
       root.setAttribute("data-reduce-transparency", "true");
     } else {
@@ -107,28 +94,6 @@ export function ThemeApplier() {
     root.style.setProperty("--ds-ui-font-size", `${ui}px`);
     root.style.setProperty("--ds-code-font-size", `${code}px`);
   }, [prefs.uiFontSize, prefs.codeFontSize]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (prefs.uiFontFamily && prefs.uiFontFamily.trim() !== "") {
-      root.style.setProperty("--ds-ui-font-family", prefs.uiFontFamily);
-    } else {
-      root.style.removeProperty("--ds-ui-font-family");
-    }
-    if (prefs.codeFontFamily && prefs.codeFontFamily.trim() !== "") {
-      root.style.setProperty("--ds-code-font-family", prefs.codeFontFamily);
-    } else {
-      root.style.removeProperty("--ds-code-font-family");
-    }
-  }, [prefs.uiFontFamily, prefs.codeFontFamily]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.setAttribute(
-      "data-font-smoothing",
-      prefs.fontSmoothing ? "antialiased" : "auto",
-    );
-  }, [prefs.fontSmoothing]);
 
   return null;
 }

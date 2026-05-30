@@ -8,6 +8,7 @@
   max-width: var(--settings-max-width);
   margin-block: var(--settings-margin-block);
   margin-inline: auto;
+  view-transition-name: settings-content;
 
   &[data-width="narrow"] {
     --settings-max-width: 384px;

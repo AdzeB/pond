@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
 import { IPC, type MenuActionId } from "../shared/constants";
-import type { SuggestionPayload, SuggestionResult } from "../shared/suggestion";
 
 export interface RefreshBackfillStatusWire {
   state: "idle" | "running" | "done" | "error" | "cancelled";
@@ -329,26 +328,6 @@ const api = {
     const listener = (_: unknown, status: ProcessingProgressWire) => cb(status);
     ipcRenderer.on(IPC.processingProgress, listener);
     return () => ipcRenderer.off(IPC.processingProgress, listener);
-  },
-
-  suggestions: {
-    onShow(cb: (payload: SuggestionPayload) => void): () => void {
-      const listener = (_: unknown, payload: SuggestionPayload) => cb(payload);
-      ipcRenderer.on(IPC.suggestionShow, listener);
-      return () => ipcRenderer.off(IPC.suggestionShow, listener);
-    },
-    ready(): void {
-      ipcRenderer.send(IPC.suggestionReady);
-    },
-    dismiss(): void {
-      ipcRenderer.send(IPC.suggestionDismiss);
-    },
-    act(actionId: string): void {
-      ipcRenderer.send(IPC.suggestionAct, actionId);
-    },
-    notify(payload: SuggestionPayload): Promise<SuggestionResult> {
-      return ipcRenderer.invoke(IPC.suggestionNotify, payload);
-    },
   },
 
   notifications: {

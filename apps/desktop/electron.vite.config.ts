@@ -91,7 +91,6 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
-          suggestion: resolve(__dirname, "src/renderer/suggestion.html"),
         },
         output: {
           // One chunk per npm package: bumping a dependency invalidates

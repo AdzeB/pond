@@ -240,28 +240,6 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "action.library.export-zip",
-    label: "Export library as ZIP",
-    group: "Actions",
-    scope: "actions",
-    keywords: ["export", "zip", "library", "backup"],
-    perform: async ({ pond, close }) => {
-      close();
-      await pond.query("library.exportZip", {});
-    },
-  },
-  {
-    id: "action.library.export-json",
-    label: "Export library as JSON",
-    group: "Actions",
-    scope: "actions",
-    keywords: ["export", "json", "library", "backup"],
-    perform: async ({ pond, close }) => {
-      close();
-      await pond.query("library.exportJson", {});
-    },
-  },
-  {
     id: "action.library.move",
     label: "Move library…",
     description: "Pick a new location for the on-disk library",
@@ -271,18 +249,6 @@ export const ACTION_COMMANDS: Command[] = [
     perform: async ({ pond, close }) => {
       close();
       await pond.query("library.move", {});
-    },
-  },
-  {
-    id: "action.backups.snapshot",
-    label: "Create backup snapshot",
-    group: "Actions",
-    scope: "actions",
-    keywords: ["backup", "snapshot", "save"],
-    perform: async ({ pond, toast, close }) => {
-      close();
-      await pond.query("backups.snapshotNow", {});
-      toast.success("Backup snapshot started");
     },
   },
   {

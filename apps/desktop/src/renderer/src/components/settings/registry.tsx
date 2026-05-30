@@ -7,13 +7,12 @@ import {
 } from "@pond/schema";
 import {
   Clock,
-  Command,
-  Layers,
+  Download,
+  FolderOpen,
+  HardDrive,
   Palette,
-  Shapes,
   SlidersHorizontal,
   Terminal,
-  Zap,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -52,31 +51,24 @@ const RENDERER_BY_ID: Record<
       "AppearanceSection",
     ),
   },
-  shortcuts: {
-    icon: Command,
+  storage: {
+    icon: HardDrive,
+    load: lazyComponent(() => import("./sections/storage"), "StorageSection"),
+  },
+  location: {
+    icon: FolderOpen,
+    load: lazyComponent(() => import("./sections/location"), "LocationSection"),
+  },
+  downloads: {
+    icon: Download,
     load: lazyComponent(
-      () => import("./sections/shortcuts"),
-      "ShortcutsSection",
+      () => import("./sections/downloads"),
+      "DownloadsSection",
     ),
-  },
-  library: {
-    icon: Layers,
-    load: lazyComponent(() => import("./sections/library"), "LibrarySection"),
-  },
-  saving: {
-    icon: Zap,
-    load: lazyComponent(() => import("./sections/saving"), "SavingSection"),
   },
   schedule: {
     icon: Clock,
     load: lazyComponent(() => import("./sections/schedule"), "ScheduleSection"),
-  },
-  components: {
-    icon: Shapes,
-    load: lazyComponent(
-      () => import("./sections/components"),
-      "ComponentsSection",
-    ),
   },
   developer: {
     icon: Terminal,

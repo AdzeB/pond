@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/main/index.ts",
+    "src/preload/index.ts",
+    "src/preload/scrape.cjs.ts",
+    "src/renderer/src/main.tsx",
+    "src/renderer/src/routes/**/*.tsx",
+    "electron.vite.config.ts",
+    "scripts/*.mjs"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+  "ignore": ["src/renderer/src/routeTree.gen.ts"],
+  "ignoreDependencies": ["ffmpeg-static", "drizzle-kit"]
+}

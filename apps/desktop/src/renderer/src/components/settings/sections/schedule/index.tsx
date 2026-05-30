@@ -1,19 +1,16 @@
 import { Input, Select, Switch } from "@pond/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Settings } from "@/components/settings";
 import {
   applyPreset,
   DEFAULT_GLOBAL_SYNC_PREFS,
   formatRepeatTrigger,
-  formatScheduleFooter,
   frequencyHasAnchor,
   type GlobalSyncPrefs,
   presetFromPrefs,
   REPEAT_PRESETS,
   type RepeatPreset,
-  type ScheduleStatus,
 } from "@/lib/sync-helpers";
 import { usePrefs } from "@/pool/prefs";
 import { RepeatCustomDialog } from "./repeat-custom-dialog";
@@ -24,16 +21,6 @@ export function ScheduleSection() {
   const [customDialogOpen, setCustomDialogOpen] = useState(false);
 
   const global = syncReady ? syncPrefs.global : DEFAULT_GLOBAL_SYNC_PREFS;
-  const scheduleKey = useMemo(
-    () =>
-      `${global.enabled}|${global.frequency}|${global.anchorTime}|${(
-        global.weekdays ?? []
-      ).join(
-        ",",
-      )}|${global.quietHours?.start ?? ""}-${global.quietHours?.end ?? ""}`,
-    [global],
-  );
-  const schedule = useScheduleStatus(scheduleKey);
 
   const patchGlobal = useCallback(
     (delta: Partial<GlobalSyncPrefs>) => {
@@ -241,9 +228,6 @@ export function ScheduleSection() {
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>
-        <p className={styles.footer}>
-          {formatScheduleFooter(schedule, global.enabled)}
-        </p>
       </Settings.Section>
 
       <RepeatCustomDialog
@@ -257,25 +241,4 @@ export function ScheduleSection() {
       />
     </Settings.Page>
   );
-}
-
-function useScheduleStatus(refreshKey: string): ScheduleStatus {
-  const qc = useQueryClient();
-  const { data } = useQuery<ScheduleStatus>({
-    queryKey: ["sync", "schedule", refreshKey],
-    queryFn: async () => {
-      const res = await window.pond.syncSchedulePeek();
-      if (!res.ok) return { lastFireAt: null, nextDueAt: null };
-      return { lastFireAt: res.lastFireAt, nextDueAt: res.nextDueAt };
-    },
-  });
-  useEffect(() => {
-    return window.pond.onSyncSchedule((u) => {
-      qc.setQueryData<ScheduleStatus>(["sync", "schedule", refreshKey], {
-        lastFireAt: u.lastFireAt,
-        nextDueAt: u.nextDueAt,
-      });
-    });
-  }, [qc, refreshKey]);
-  return data ?? { lastFireAt: null, nextDueAt: null };
 }

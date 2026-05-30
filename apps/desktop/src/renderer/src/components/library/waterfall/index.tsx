@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
-import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
 import { useGridWidth } from "@/lib/shell-state";
@@ -103,13 +102,13 @@ export function WaterfallView({
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
-  const itemGap = useItemGap();
+  const itemGap = 16;
   const aspectVersion = useAspectVersion();
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
     return packMasonry(saves, width, colMin, itemGap, chromeHeight);
-  }, [saves, width, colMin, itemGap, chromeHeight, aspectVersion]);
+  }, [saves, width, colMin, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),

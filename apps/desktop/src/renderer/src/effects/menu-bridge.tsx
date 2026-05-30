@@ -110,14 +110,6 @@ export function MenuBridge() {
           })();
           return;
 
-        case "library.export-zip":
-          void window.pond.query("library.exportZip", {});
-          return;
-
-        case "library.export-json":
-          void window.pond.query("library.exportJson", {});
-          return;
-
         case "library.move":
           void window.pond.query("library.move", {});
           return;

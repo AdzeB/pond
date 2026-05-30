@@ -2,8 +2,6 @@ import { app, BrowserWindow, dialog, shell } from "electron";
 import log from "electron-log/main.js";
 import {
   emptyTrashOlderThan,
-  exportLibraryJson,
-  exportLibraryZip,
   previewRelocate,
   purgeLibrarySubdir,
   type RelocateMode,
@@ -140,55 +138,6 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  async "library.exportZip"() {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOpts = {
-      title: "Save library export",
-      defaultPath: `pond-library-${new Date().toISOString().slice(0, 10)}.zip`,
-      filters: [{ name: "Zip", extensions: ["zip"] }],
-    };
-    const result = win
-      ? await dialog.showSaveDialog(win, dialogOpts)
-      : await dialog.showSaveDialog(dialogOpts);
-    if (result.canceled || !result.filePath) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
-    try {
-      const path = await exportLibraryZip(result.filePath);
-      return { ok: true as const, path };
-    } catch (err) {
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "export_failed",
-      };
-    }
-  },
-
-  async "library.exportJson"() {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOpts = {
-      title: "Pick a folder for the JSON export",
-      properties: ["openDirectory" as const, "createDirectory" as const],
-    };
-    const result = win
-      ? await dialog.showOpenDialog(win, dialogOpts)
-      : await dialog.showOpenDialog(dialogOpts);
-    if (result.canceled || result.filePaths.length === 0) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
-    const dest = result.filePaths[0];
-    if (!dest) return { ok: false as const, reason: "cancelled" as const };
-    try {
-      const out = await exportLibraryJson(dest);
-      return { ok: true as const, path: out };
-    } catch (err) {
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "export_failed",
-      };
-    }
-  },
-
   async "trash.emptyOlderThan"(params) {
     const days = Math.max(0, Number(params.days ?? 0));
     const purged = await emptyTrashOlderThan(days);
@@ -238,36 +187,6 @@ export const libraryQueries: QueryHandlerMap = {
   async "storage.guardState"() {
     const { getStorageGuardState } = await import("../../core/storage-watcher");
     return getStorageGuardState();
-  },
-
-  async "backups.snapshotNow"() {
-    const { snapshotNow } = await import("../../core/backups");
-    const snap = await snapshotNow();
-    return { ok: true as const, snapshot: snap };
-  },
-
-  async "backups.list"() {
-    const { listSnapshots } = await import("../../core/backups");
-    return { ok: true as const, snapshots: await listSnapshots() };
-  },
-
-  async "backups.reveal"(params) {
-    const { listSnapshots } = await import("../../core/backups");
-    const list = await listSnapshots();
-    const target = list.find((s) => s.filename === String(params.filename));
-    if (!target) return { ok: false as const, reason: "not_found" as const };
-    shell.showItemInFolder(target.path);
-    return { ok: true as const };
-  },
-
-  async "backups.delete"(params) {
-    const { listSnapshots } = await import("../../core/backups");
-    const list = await listSnapshots();
-    const target = list.find((s) => s.filename === String(params.filename));
-    if (!target) return { ok: false as const, reason: "not_found" as const };
-    const { rm } = await import("node:fs/promises");
-    await rm(target.path, { force: true });
-    return { ok: true as const };
   },
 
   async "api.restart"() {

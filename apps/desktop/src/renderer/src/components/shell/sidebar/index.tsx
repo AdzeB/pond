@@ -63,13 +63,15 @@ function Item({ ...props }: ItemProps) {
 
 interface LinkProps extends React.ComponentPropsWithoutRef<"a"> {
   to: string;
+  viewTransition?: boolean | { types?: string[] };
 }
 
-function Link({ to, children, ...props }: LinkProps) {
+function Link({ to, viewTransition, children, ...props }: LinkProps) {
   return (
     <TSLink
       className={styles.link}
       to={to as never}
+      viewTransition={viewTransition as never}
       activeProps={{ "data-active": "true" }}
       {...(props as React.ComponentPropsWithoutRef<"a">)}
     >

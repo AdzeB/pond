@@ -2,16 +2,13 @@ import { Menu } from "@pond/ui";
 import {
   ArrowDown,
   ArrowUp,
-  ArrowUpDown,
   CalendarDays,
   ChevronDown,
-  ChevronRight,
   HardDrive,
   type LucideIcon,
   Type,
 } from "lucide-react";
 import { type SortDir, type SortKey, useView } from "../context";
-import sectionStyles from "./section.module.css";
 import styles from "./sort.module.css";
 
 interface KeyOption {
@@ -44,7 +41,7 @@ const DIR_FALLBACK: DirOption = DIR_OPTIONS[0];
 
 const DEFAULT_SORT = { key: "savedAt", dir: "desc" } as const;
 
-export function Sort() {
+export function SortSection() {
   const { state, actions } = useView();
   const currentKey =
     KEY_OPTIONS.find((o) => o.value === state.sort.key) ?? KEY_FALLBACK;
@@ -54,46 +51,30 @@ export function Sort() {
     state.sort.key !== DEFAULT_SORT.key || state.sort.dir !== DEFAULT_SORT.dir;
 
   return (
-    <Menu.SubmenuRoot>
-      <Menu.SubmenuTrigger>
-        <Menu.ItemIcon>
-          <ArrowUpDown width="14" height="14" />
-        </Menu.ItemIcon>
-        <Menu.ItemLabel>Sort by</Menu.ItemLabel>
-        <span className={sectionStyles.badge}>{currentKey.label}</span>
-        <span className={sectionStyles.chevron} aria-hidden>
-          <ChevronRight width="12" height="12" />
-        </span>
-      </Menu.SubmenuTrigger>
-      <Menu.Portal>
-        <Menu.Positioner side="left" align="start" sideOffset={4}>
-          <Menu.Popup className={styles.panel}>
-            <header className={styles.header}>
-              <span className={styles.title}>Sort by</span>
-              {isModified ? (
-                <button
-                  type="button"
-                  className={styles.reset}
-                  onClick={() => actions.setSort({ ...DEFAULT_SORT })}
-                >
-                  Reset
-                </button>
-              ) : null}
-            </header>
-            <div className={styles.row}>
-              <KeyPicker
-                current={currentKey}
-                onPick={(key) => actions.setSort({ key, dir: state.sort.dir })}
-              />
-              <DirPicker
-                current={currentDir}
-                onPick={(dir) => actions.setSort({ key: state.sort.key, dir })}
-              />
-            </div>
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.SubmenuRoot>
+    <Menu.Group>
+      <header className={styles.header}>
+        <Menu.GroupLabel className={styles.title}>Sort by</Menu.GroupLabel>
+        {isModified ? (
+          <button
+            type="button"
+            className={styles.reset}
+            onClick={() => actions.setSort({ ...DEFAULT_SORT })}
+          >
+            Reset
+          </button>
+        ) : null}
+      </header>
+      <div className={styles.row}>
+        <KeyPicker
+          current={currentKey}
+          onPick={(key) => actions.setSort({ key, dir: state.sort.dir })}
+        />
+        <DirPicker
+          current={currentDir}
+          onPick={(dir) => actions.setSort({ key: state.sort.key, dir })}
+        />
+      </div>
+    </Menu.Group>
   );
 }
 
@@ -133,7 +114,11 @@ function KeyPicker({ current, onPick }: KeyPickerProps) {
               {KEY_OPTIONS.map((opt) => {
                 const OptIcon = opt.icon;
                 return (
-                  <Menu.RadioItem key={opt.value} value={opt.value}>
+                  <Menu.RadioItem
+                    key={opt.value}
+                    value={opt.value}
+                    closeOnClick={false}
+                  >
                     <Menu.ItemIcon>
                       <OptIcon width="14" height="14" />
                     </Menu.ItemIcon>
@@ -187,7 +172,11 @@ function DirPicker({ current, onPick }: DirPickerProps) {
               {DIR_OPTIONS.map((opt) => {
                 const OptIcon = opt.icon;
                 return (
-                  <Menu.RadioItem key={opt.value} value={opt.value}>
+                  <Menu.RadioItem
+                    key={opt.value}
+                    value={opt.value}
+                    closeOnClick={false}
+                  >
                     <Menu.ItemIcon>
                       <OptIcon width="14" height="14" />
                     </Menu.ItemIcon>

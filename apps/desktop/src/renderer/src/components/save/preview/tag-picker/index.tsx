@@ -553,17 +553,9 @@ function HeaderToolbar({
       </button>
       {layout === "grid" ? (
         <Menu.Root>
-          <Menu.Trigger
-            render={
-              <button
-                type="button"
-                className={styles["tag-picker-tool"]}
-                title="Grid size"
-              >
-                {gridSize.toUpperCase()}
-              </button>
-            }
-          />
+          <Menu.Trigger className={styles["tag-picker-tool"]} title="Grid size">
+            {gridSize.toUpperCase()}
+          </Menu.Trigger>
           <Menu.Portal>
             <Menu.Positioner sideOffset={6}>
               <Menu.Popup>
@@ -585,16 +577,11 @@ function HeaderToolbar({
       ) : null}
       <Menu.Root>
         <Menu.Trigger
-          render={
-            <button
-              type="button"
-              className={styles["tag-picker-tool"]}
-              title="Display options"
-            >
-              <Ellipsis width={14} height={14} />
-            </button>
-          }
-        />
+          className={styles["tag-picker-tool"]}
+          title="Display options"
+        >
+          <Ellipsis width={14} height={14} />
+        </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner sideOffset={6} align="end">
             <Menu.Popup>

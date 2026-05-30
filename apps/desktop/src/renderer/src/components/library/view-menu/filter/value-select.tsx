@@ -56,7 +56,7 @@ interface BodyProps {
   onChange: (next: Predicate) => void;
 }
 
-function Body({ predicate, onChange }: BodyProps) {
+export function Body({ predicate, onChange }: BodyProps) {
   const meta = FIELD_META[predicate.field];
   switch (meta.type) {
     case "stringArray":
@@ -599,7 +599,7 @@ function TagsBody({ predicate, onChange }: BodyProps) {
   );
 }
 
-function summariseValue(p: Predicate): string {
+export function summariseValue(p: Predicate): string {
   const v = p.value;
   if (p.cmp === "exists") return v === false ? "Without" : "With";
   if (Array.isArray(v)) {

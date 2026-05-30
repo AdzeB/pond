@@ -143,32 +143,5 @@ export interface ScheduleStatus {
   nextDueAt: string | null;
 }
 
-export function formatScheduleFooter(
-  status: ScheduleStatus,
-  enabled: boolean,
-): string {
-  const parts: string[] = [];
-  parts.push(
-    status.lastFireAt
-      ? `Last sync ${formatRelative(new Date(status.lastFireAt))}`
-      : "No syncs yet",
-  );
-  if (enabled) {
-    if (status.nextDueAt) {
-      const due = new Date(status.nextDueAt);
-      parts.push(
-        due.getTime() <= Date.now()
-          ? "Next sync due now"
-          : `Next sync ${formatRelative(due)}`,
-      );
-    } else {
-      parts.push("Schedule misconfigured");
-    }
-  } else {
-    parts.push("Background sync is off");
-  }
-  return parts.join(" \u00B7 ");
-}
-
 export type { GlobalSyncPrefs, SyncFrequency };
 export { DEFAULT_GLOBAL_SYNC_PREFS };

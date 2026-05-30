@@ -1,8 +1,17 @@
 import { Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
+import styles from "./styles.module.css";
+
+const REPO_URL = "https://github.com/raphaelsalaja/pond";
+
+interface VideoToolsStatus {
+  ytdlp: { available: boolean; path: string | null };
+  ffmpeg: { available: boolean; path: string | null };
+}
 
 export function GeneralSection() {
   const toast = useToast();
@@ -12,7 +21,65 @@ export function GeneralSection() {
   const [notifications, patchNotifications] = usePrefs("notifications");
   const [updates, patchUpdates] = usePrefs("updates");
   const [developer, patchDeveloper] = usePrefs("developer");
+  const [quick, patchQuick] = usePrefs("quickCapture");
+  const [trash, patchTrash] = usePrefs("trash");
+  const [apiPrefs] = usePrefs("api");
   const [checkBusy, setCheckBusy] = useState(false);
+  const [busyApply, setBusyApply] = useState(false);
+  const [reinstalling, setReinstalling] = useState(false);
+  const [ingestToken, setIngestToken] = useState<string | null>(null);
+
+  const { data: toolsStatus, refetch: refreshTools } =
+    useQuery<VideoToolsStatus | null>({
+      queryKey: ["videoTools", "status"],
+      queryFn: async () => {
+        const r = await window.pond.videoToolsStatus().catch(() => null);
+        if (!r?.ok) return null;
+        return { ytdlp: r.ytdlp, ffmpeg: r.ffmpeg };
+      },
+    });
+
+  const reinstallTools = useCallback(async () => {
+    setReinstalling(true);
+    try {
+      const r = await window.pond.videoToolsReinstall();
+      toast.add({
+        title: r.ok ? "yt-dlp ready" : "Couldn't install yt-dlp",
+        description: r.message,
+        type: r.ok ? "success" : "error",
+      });
+      await refreshTools();
+    } finally {
+      setReinstalling(false);
+    }
+  }, [refreshTools, toast]);
+
+  useEffect(() => {
+    void window.pond
+      .query("settings.ingestToken", {})
+      .then((t) => setIngestToken((t as { token?: string }).token ?? null));
+  }, []);
+
+  const pairingLink = useMemo(() => {
+    if (!ingestToken) return "";
+    const u = new URL("pond://pair");
+    u.searchParams.set("port", String(apiPrefs.port || 41610));
+    u.searchParams.set("token", ingestToken);
+    return u.toString();
+  }, [ingestToken, apiPrefs.port]);
+
+  function copyPairingLink() {
+    if (!pairingLink) return;
+    void navigator.clipboard.writeText(pairingLink);
+    toast.add({ title: "Pairing link copied", type: "success" });
+  }
+
+  function openRepo() {
+    void window.pond.openExternal(REPO_URL);
+  }
+
+  const trashValue =
+    trash.autoEmptyDays === null ? "never" : String(trash.autoEmptyDays);
 
   const applyWindowPrefs = useCallback(async () => {
     await window.pond.query("window.applyPrefs", {}).catch(() => {
@@ -20,6 +87,23 @@ export function GeneralSection() {
       // be missing in older main processes (fail open).
     });
   }, []);
+
+  const applyQuickPrefs = useCallback(async () => {
+    setBusyApply(true);
+    try {
+      await window.pond.query("quickCapture.applyPrefs", {});
+    } finally {
+      setBusyApply(false);
+    }
+  }, []);
+
+  const onQuickPatch = useCallback(
+    (delta: Partial<typeof quick>) => {
+      patchQuick(delta);
+      setTimeout(() => void applyQuickPrefs(), 50);
+    },
+    [patchQuick, applyQuickPrefs],
+  );
 
   const applyUpdatesPrefs = useCallback(async () => {
     await window.pond.query("updates.applyPrefs", {});
@@ -120,6 +204,43 @@ export function GeneralSection() {
               <Switch.Root
                 checked={windowPrefs.restorePosition}
                 onCheckedChange={(v) => patchWindow({ restorePosition: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Menu Bar</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Show Menu Bar Icon</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Keep Pond reachable from the system tray with the window hidden.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={quick.menuBarIcon}
+                onCheckedChange={(v) => onQuickPatch({ menuBarIcon: v })}
+                disabled={busyApply}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Launch at Login</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Start Pond when you sign in to your computer.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={quick.launchAtLogin}
+                onCheckedChange={(v) => onQuickPatch({ launchAtLogin: v })}
+                disabled={busyApply}
               />
             </Settings.ItemControl>
           </Settings.Item>
@@ -276,6 +397,163 @@ export function GeneralSection() {
                 {checkBusy ? "Checking…" : "Check Now"}
               </Button>
             </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Extension</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Pairing Link</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Copy this and paste it into the Pond extension to pair.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={!pairingLink}
+                onClick={copyPairingLink}
+              >
+                Copy Link
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Install Instructions</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Build from source.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button size="sm" onClick={openRepo}>
+                Open Repo
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Trash</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Auto-Empty Trash</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Permanently delete saves older than this window.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Select.Root
+                value={trashValue}
+                onValueChange={(v) =>
+                  patchTrash({
+                    autoEmptyDays: v === "never" ? null : Number(v),
+                  })
+                }
+              >
+                <Select.Trigger>
+                  <Select.Value />
+                  <Select.Icon>
+                    <ChevronsUpDown />
+                  </Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Positioner sideOffset={6}>
+                    <Select.Popup>
+                      <Select.Item value="never">Never</Select.Item>
+                      <Select.Item value="7">{"After 7\u00A0days"}</Select.Item>
+                      <Select.Item value="30">
+                        {"After 30\u00A0days"}
+                      </Select.Item>
+                      <Select.Item value="90">
+                        {"After 90\u00A0days"}
+                      </Select.Item>
+                    </Select.Popup>
+                  </Select.Positioner>
+                </Select.Portal>
+              </Select.Root>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Confirm Before Emptying</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Ask before Empty Trash deletes everything.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                checked={trash.confirmBeforeEmpty}
+                onCheckedChange={(v) => patchTrash({ confirmBeforeEmpty: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Dependencies</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>yt-dlp</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                {toolsStatus ? (
+                  <span
+                    className={
+                      toolsStatus.ytdlp.available
+                        ? styles["status-installed"]
+                        : styles["status-missing"]
+                    }
+                  >
+                    {toolsStatus.ytdlp.available ? "Installed" : "Missing"}
+                  </span>
+                ) : (
+                  "Checking…"
+                )}
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                disabled={reinstalling || !toolsStatus}
+                onClick={() => void reinstallTools()}
+              >
+                {reinstalling
+                  ? "Installing…"
+                  : toolsStatus?.ytdlp.available
+                    ? "Reinstall"
+                    : "Install"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>ffmpeg</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                {toolsStatus ? (
+                  <span
+                    className={
+                      toolsStatus.ffmpeg.available
+                        ? styles["status-installed"]
+                        : styles["status-missing"]
+                    }
+                  >
+                    {toolsStatus.ffmpeg.available ? "Installed" : "Missing"}
+                  </span>
+                ) : (
+                  "Checking…"
+                )}
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
           </Settings.Item>
         </Settings.List>
       </Settings.Section>

@@ -9,6 +9,52 @@
   white-space: nowrap;
 }
 
+/* Toolbar trigger shared by the Layout / Sort / Display / Zoom dropdowns. */
+.control {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
+}
+
+.control-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-10);
+}
+
+.control-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+}
+
 .chevron {
   display: inline-flex;
   flex-shrink: 0;

@@ -314,15 +314,9 @@ export interface Prefs {
     theme: "system" | "light" | "dark" | "high-contrast";
     pointerCursors: boolean;
     reduceMotion: "system" | "always" | "never";
-    density: "compact" | "comfortable" | "spacious";
-    tintHue: number | null;
-    tintIntensity: number;
     reduceTransparency: boolean;
     uiFontSize: number;
     codeFontSize: number;
-    uiFontFamily: string;
-    codeFontFamily: string;
-    fontSmoothing: boolean;
   };
   notifications: {
     saveComplete: boolean;
@@ -360,10 +354,6 @@ export interface Prefs {
   search: {
     resultLimit: number;
   };
-  backups: {
-    schedule: "never" | "daily" | "weekly" | "monthly";
-    retainCount: number;
-  };
   api: {
     port: number;
     bindAddress: "loopback" | "lan";
@@ -396,15 +386,9 @@ export const DEFAULT_PREFS: Prefs = {
     theme: "system",
     pointerCursors: false,
     reduceMotion: "system",
-    density: "comfortable",
-    tintHue: null,
-    tintIntensity: 0,
     reduceTransparency: false,
     uiFontSize: 13,
     codeFontSize: 12,
-    uiFontFamily: "",
-    codeFontFamily: "",
-    fontSmoothing: true,
   },
   notifications: {
     saveComplete: true,
@@ -441,10 +425,6 @@ export const DEFAULT_PREFS: Prefs = {
   },
   search: {
     resultLimit: 200,
-  },
-  backups: {
-    schedule: "never",
-    retainCount: 4,
   },
   api: {
     port: 41610,

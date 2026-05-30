@@ -1,7 +1,7 @@
-import { Button, Input, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
-import { Eye, Search as SearchIcon } from "lucide-react";
+import { Input, Toolbar } from "@pond/ui";
+import { Search as SearchIcon } from "lucide-react";
 import { useRef } from "react";
-import { QuickViews } from "@/components/library/quick-views";
+import { FilterBar } from "@/components/library/filter-bar";
 import { View } from "@/components/library/view-menu";
 import { usePlatform } from "@/lib/platform";
 import { useSidebar } from "@/lib/shell-state";
@@ -11,21 +11,28 @@ import styles from "./styles.module.css";
 
 export function HeaderToolbar() {
   const { open: sidebarOpen } = useSidebar();
+
   const platform = usePlatform();
+
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
 
   return (
-    <PondToolbar.Root
-      aria-label="Library toolbar"
+    <Toolbar.Root
       className={styles.toolbar}
       style={{ paddingInlineStart: trafficLightInset }}
     >
-      <QuickViews />
-      <div className={styles["right-group"]}>
-        <Search />
-        <ViewPicker />
-      </div>
-    </PondToolbar.Root>
+      <Toolbar.Row>
+        <Toolbar.Group fill={true}>
+          <Search />
+        </Toolbar.Group>
+        <Toolbar.Group>
+          <View.Menu />
+        </Toolbar.Group>
+      </Toolbar.Row>
+      <Toolbar.Row>
+        <FilterBar />
+      </Toolbar.Row>
+    </Toolbar.Root>
   );
 }
 
@@ -57,19 +64,5 @@ function Search() {
         aria-label="Search saves"
       />
     </Input.Root>
-  );
-}
-
-function ViewPicker() {
-  return (
-    <Tooltip label="View options" side="bottom">
-      <View.Picker
-        trigger={
-          <Button icon aria-label="View options">
-            <Eye style={{ width: "100%", height: "100%" }} />
-          </Button>
-        }
-      />
-    </Tooltip>
   );
 }

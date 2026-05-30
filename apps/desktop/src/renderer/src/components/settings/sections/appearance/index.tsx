@@ -1,5 +1,5 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
-import { Button, Input, Select, Slider, Switch } from "@pond/ui";
+import { Button, Input, Select, Switch } from "@pond/ui";
 import { ChevronsUpDown, Minus, Plus, RotateCcw } from "lucide-react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
@@ -15,15 +15,12 @@ const CODE_FONT_MAX = 18;
 export function AppearanceSection() {
   const [prefs, patch] = usePrefs("preferences");
 
-  const tintActive =
-    (prefs.tintHue ?? null) !== null && prefs.tintIntensity > 0;
-
   return (
     <Settings.Page>
       <Settings.Header>
         <Settings.Title>Appearance</Settings.Title>
         <Settings.Description>
-          Theme, density, motion, tint, and typography.
+          Theme, motion, and typography.
         </Settings.Description>
       </Settings.Header>
 
@@ -70,138 +67,6 @@ export function AppearanceSection() {
               </Select.Root>
             </Settings.ItemControl>
           </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Density</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                How tightly rows pack together. Larger means roomier.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Select.Root
-                value={prefs.density}
-                onValueChange={(v) =>
-                  patch({
-                    density: v as "compact" | "comfortable" | "spacious",
-                  })
-                }
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Icon>
-                    <ChevronsUpDown />
-                  </Select.Icon>
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Positioner sideOffset={6}>
-                    <Select.Popup>
-                      <Select.Item value="compact">Compact</Select.Item>
-                      <Select.Item value="comfortable">Comfortable</Select.Item>
-                      <Select.Item value="spacious">Spacious</Select.Item>
-                    </Select.Popup>
-                  </Select.Positioner>
-                </Select.Portal>
-              </Select.Root>
-            </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Tint</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item className={styles["slider-row"]}>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Hue</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Shifts accent colors. Takes effect when intensity is above zero.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl className={styles["slider-control"]}>
-              <Slider.Root
-                value={prefs.tintHue ?? 0}
-                min={0}
-                max={360}
-                step={1}
-                onValueChange={(v) =>
-                  patch({ tintHue: typeof v === "number" ? v : (v[0] ?? 0) })
-                }
-                className={styles.slider}
-              >
-                <Slider.Control className={styles["slider-track-wrap"]}>
-                  <Slider.Track className={styles["slider-track"]}>
-                    <Slider.Indicator className={styles["slider-indicator"]} />
-                    <Slider.Thumb className={styles["slider-thumb"]} />
-                  </Slider.Track>
-                </Slider.Control>
-              </Slider.Root>
-              <span className={styles["slider-value"]}>
-                {prefs.tintHue ?? 0}°
-              </span>
-              <Button
-                size="xs"
-                variant="ghost"
-                aria-label="Reset hue"
-                onClick={() => patch({ tintHue: null })}
-                disabled={(prefs.tintHue ?? null) === null}
-              >
-                <RotateCcw />
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item className={styles["slider-row"]}>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Intensity</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                How strongly the hue colors the UI. Zero means no tint.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl className={styles["slider-control"]}>
-              <Slider.Root
-                value={prefs.tintIntensity}
-                min={0}
-                max={100}
-                step={1}
-                onValueChange={(v) =>
-                  patch({
-                    tintIntensity: typeof v === "number" ? v : (v[0] ?? 0),
-                  })
-                }
-                className={styles.slider}
-              >
-                <Slider.Control className={styles["slider-track-wrap"]}>
-                  <Slider.Track className={styles["slider-track"]}>
-                    <Slider.Indicator className={styles["slider-indicator"]} />
-                    <Slider.Thumb className={styles["slider-thumb"]} />
-                  </Slider.Track>
-                </Slider.Control>
-              </Slider.Root>
-              <span className={styles["slider-value"]}>
-                {prefs.tintIntensity}%
-              </span>
-              <Button
-                size="xs"
-                variant="ghost"
-                aria-label="Reset intensity"
-                onClick={() => patch({ tintIntensity: 0 })}
-                disabled={prefs.tintIntensity === 0}
-              >
-                <RotateCcw />
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          {!tintActive ? (
-            <Settings.Item className={styles["hint-row"]}>
-              <Settings.ItemDetails>
-                <Settings.ItemDescription>
-                  Tint is off. Raise intensity above zero to apply the hue.
-                </Settings.ItemDescription>
-              </Settings.ItemDetails>
-            </Settings.Item>
-          ) : null}
         </Settings.List>
       </Settings.Section>
 
@@ -295,57 +160,6 @@ export function AppearanceSection() {
                 min={CODE_FONT_MIN}
                 max={CODE_FONT_MAX}
                 fallback={DEFAULTS.codeFontSize}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>UI Font Family</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Override the interface typeface. Empty falls back to system.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Input.Field
-                data-size="sm"
-                placeholder="System default"
-                value={prefs.uiFontFamily}
-                onChange={(e) => patch({ uiFontFamily: e.target.value })}
-                style={{ width: 200 }}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Code Font Family</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Override the monospace typeface. Empty falls back to system.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Input.Field
-                data-size="sm"
-                placeholder="System monospace"
-                value={prefs.codeFontFamily}
-                onChange={(e) => patch({ codeFontFamily: e.target.value })}
-                style={{ width: 200 }}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Font Smoothing</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Antialias text. Turn off for sharper pixel rendering.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={prefs.fontSmoothing}
-                onCheckedChange={(v) => patch({ fontSmoothing: v })}
               />
             </Settings.ItemControl>
           </Settings.Item>

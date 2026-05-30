@@ -1,4 +1,4 @@
-import { createReadStream, createWriteStream, existsSync } from "node:fs";
+import { createReadStream, existsSync } from "node:fs";
 import {
   cp,
   mkdir,
@@ -7,12 +7,10 @@ import {
   rename,
   rm,
   stat,
-  writeFile,
 } from "node:fs/promises";
-import { basename, dirname, join, relative } from "node:path";
+import { join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import archiver from "archiver";
 import { eq, isNotNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
@@ -183,58 +181,6 @@ export function previewRelocate(candidate: string): RelocatePreview {
     existing,
     suggestedMode: existing.looksLikePondLibrary ? "adopt" : "copy",
   };
-}
-
-export async function exportLibraryZip(outPath: string): Promise<string> {
-  const root = libraryRoot();
-  await mkdir(dirname(outPath), { recursive: true });
-
-  await new Promise<void>((resolve, reject) => {
-    const out = createWriteStream(outPath);
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    out.on("close", () => resolve());
-    out.on("error", reject);
-    archive.on("warning", (err) => log.warn("[pond export] archiver", err));
-    archive.on("error", reject);
-    archive.pipe(out);
-    archive.directory(root, basename(root));
-    void archive.finalize();
-  });
-
-  log.info("[pond library-ops] exported zip to", outPath);
-  return outPath;
-}
-
-export async function exportLibraryJson(destDir: string): Promise<string> {
-  const root = join(
-    destDir,
-    `pond-export-${new Date().toISOString().slice(0, 10)}`,
-  );
-  await mkdir(join(root, "items"), { recursive: true });
-
-  const db = await getDb();
-  const rows = await db.select().from(saves);
-
-  const manifest = {
-    exportedAt: new Date().toISOString(),
-    libraryRoot: libraryRoot(),
-    count: rows.length,
-    items: rows.map((r) => ({ id: r.id, source: r.source, url: r.url })),
-  };
-  await writeFile(
-    join(root, "manifest.json"),
-    JSON.stringify(manifest, null, 2),
-  );
-
-  for (const row of rows) {
-    await writeFile(
-      join(root, "items", `${row.id}.json`),
-      JSON.stringify(row, null, 2),
-    );
-  }
-
-  log.info("[pond library-ops] exported JSON to", root);
-  return root;
 }
 
 export async function emptyTrashOlderThan(days: number): Promise<number> {

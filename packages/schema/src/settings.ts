@@ -15,16 +15,10 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Appearance",
     group: "app",
   },
-  {
-    id: "shortcuts",
-    path: "shortcuts",
-    label: "Browser Extension",
-    group: "app",
-  },
-  { id: "library", path: "library", label: "Library", group: "library" },
-  { id: "saving", path: "saving", label: "Saving", group: "saving" },
+  { id: "storage", path: "storage", label: "Storage", group: "library" },
+  { id: "location", path: "location", label: "Location", group: "library" },
+  { id: "downloads", path: "downloads", label: "Downloads", group: "saving" },
   { id: "schedule", path: "schedule", label: "Schedule", group: "saving" },
-  { id: "components", path: "components", label: "Components", group: "dev" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ] as const;
 

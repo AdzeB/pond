@@ -12,39 +12,33 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ElementType, SVGProps } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { Aside } from "@/components/shell/aside";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { navigateTo, patchSearch } from "@/lib/navigate-path";
 import { useSidebar } from "@/lib/shell-state";
-import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
-import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
 const REPO_URL = "https://github.com/raphaelsalaja/pond";
 const DISCUSSIONS_URL = `${REPO_URL}/discussions`;
 
-type RouteKey = "library" | "sync" | "tags" | "trash";
-
 interface Route {
-  key: RouteKey;
   path: string;
   label: string;
   icon: ElementType;
 }
 
 const routes: Route[] = [
-  { key: "library", path: "/", label: "Library", icon: Archive },
-  { key: "sync", path: "/sync", label: "Sync", icon: RefreshCw },
-  { key: "tags", path: "/tags", label: "Tags", icon: Tags },
-  { key: "trash", path: "/trash", label: "Trash", icon: Trash2 },
+  { path: "/", label: "Library", icon: Archive },
+  { path: "/sync", label: "Sync", icon: RefreshCw },
+  { path: "/tags", label: "Tags", icon: Tags },
+  { path: "/trash", label: "Trash", icon: Trash2 },
 ];
 
 export function LibrarySidebar() {
   const navigate = useNavigate();
-  const counts = useRouteCounts();
   const { open } = useSidebar();
 
   const openQuickCapture = useCallback(() => {
@@ -85,11 +79,8 @@ export function LibrarySidebar() {
 
           <Sidebar.Group>
             {routes.map((route) => {
-              const count = counts[route.key];
               if (route.path === "/trash") {
-                return (
-                  <TrashLink key={route.path} route={route} count={count} />
-                );
+                return <TrashLink key={route.path} route={route} />;
               }
               return (
                 <Sidebar.Link key={route.path} to={route.path}>
@@ -97,7 +88,6 @@ export function LibrarySidebar() {
                     <route.icon />
                   </Sidebar.LinkIcon>
                   <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
-                  {count != null ? <Sidebar.LinkCount value={count} /> : null}
                 </Sidebar.Link>
               );
             })}
@@ -109,32 +99,11 @@ export function LibrarySidebar() {
   );
 }
 
-type RouteCounts = Partial<Record<RouteKey, number>>;
-
-function useRouteCounts(): RouteCounts {
-  const saves = useSaves();
-  const tags = useTags();
-  return useMemo(() => {
-    let library = 0;
-    let trash = 0;
-    for (const save of saves) {
-      if (save.deletedAt) {
-        trash++;
-        continue;
-      }
-      if (save.status && save.status !== "complete") continue;
-      library++;
-    }
-    return { library, trash, tags: tags.length };
-  }, [saves, tags]);
-}
-
 interface TrashLinkProps {
   route: Route;
-  count: number | undefined;
 }
 
-function TrashLink({ route, count }: TrashLinkProps) {
+function TrashLink({ route }: TrashLinkProps) {
   const toast = useToast();
   const [trashPrefs] = usePrefs("trash");
   const [confirmEmpty, setConfirmEmpty] = useState(false);
@@ -179,7 +148,6 @@ function TrashLink({ route, count }: TrashLinkProps) {
                 <route.icon />
               </Sidebar.LinkIcon>
               <Sidebar.LinkLabel>{route.label}</Sidebar.LinkLabel>
-              {count != null ? <Sidebar.LinkCount value={count} /> : null}
             </Sidebar.Link>
           }
         />
@@ -248,16 +216,11 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
     <div className={styles["help-footer"]}>
       <Menu.Root>
         <Menu.Trigger
-          render={
-            <button
-              type="button"
-              aria-label="Help and resources"
-              className={styles["help-trigger"]}
-            >
-              <QuestionMarkIcon />
-            </button>
-          }
-        />
+          aria-label="Help and resources"
+          className={styles["help-trigger"]}
+        >
+          <QuestionMarkIcon />
+        </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner side="top" align="start" sideOffset={6}>
             <Menu.Popup>

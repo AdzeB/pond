@@ -15,7 +15,6 @@ import {
   IPC,
   type MenuActionId,
 } from "../shared/constants";
-import { startBackupCron } from "./core/backups";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { startSaveCompleteNotifier } from "./core/notifications";
@@ -36,7 +35,6 @@ import {
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
-import { initSuggestions } from "./core/suggestions";
 import {
   getGlobalSync,
   patchGlobalSync,
@@ -140,7 +138,7 @@ function handleDeepLink(url: string): void {
       route = `/?capture=1${target ? `&url=${encodeURIComponent(target)}` : ""}`;
     } else if (parsed.hostname === "pair") {
       const token = parsed.searchParams.get("token") ?? "";
-      route = `/settings/shortcuts${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+      route = `/settings/general${token ? `?token=${encodeURIComponent(token)}` : ""}`;
     } else if (parsed.hostname === "settings") {
       const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
       route = sub ? `/settings/${sub}` : "/settings";
@@ -456,7 +454,6 @@ async function postLaunchInit(): Promise<void> {
 
   registerTrashCron();
   registerSyncCron();
-  startBackupCron();
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
   );
@@ -491,8 +488,6 @@ async function postLaunchInit(): Promise<void> {
   subscribeToSyncStatus(broadcastSyncStatus);
   subscribeRefreshBackfillStatus(broadcastRefreshBackfillStatus);
   subscribeProcessingBackfillStatus(broadcastProcessingProgress);
-
-  initSuggestions();
 }
 
 function registerTrashCron() {
@@ -687,27 +682,8 @@ function installAppMenu() {
           click: () => void shell.openPath(libraryRoot()),
         },
         {
-          label: "Export Library as ZIP…",
-          click: sendMenuAction("library.export-zip"),
-        },
-        {
-          label: "Export Library as JSON…",
-          click: sendMenuAction("library.export-json"),
-        },
-        {
           label: "Move Library…",
           click: sendMenuAction("library.move"),
-        },
-        {
-          label: "Create Backup Snapshot",
-          click: async () => {
-            try {
-              const { snapshotNow } = await import("./core/backups");
-              await snapshotNow();
-            } catch (err) {
-              log.warn("[pond menu] snapshotNow failed", err);
-            }
-          },
         },
         { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },

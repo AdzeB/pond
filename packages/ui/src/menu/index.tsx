@@ -1,14 +1,30 @@
 import { Menu as Base } from "@base-ui/react/menu";
 import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
+import { Button, type ButtonProps } from "../button";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
 }
 
-function Trigger({ className, ...props }: Base.Trigger.Props) {
-  return <Base.Trigger className={cn(styles.trigger, className)} {...props} />;
+type TriggerProps = Base.Trigger.Props &
+  Pick<ButtonProps, "variant" | "size" | "icon">;
+
+function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
+  return (
+    <Base.Trigger
+      render={
+        <Button
+          size={size}
+          icon={icon}
+          variant={variant}
+          className={cn(styles.trigger, className)}
+        />
+      }
+      {...props}
+    />
+  );
 }
 
 function Portal({ className, ...props }: Base.Portal.Props) {

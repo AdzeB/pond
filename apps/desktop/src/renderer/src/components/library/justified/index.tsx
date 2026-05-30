@@ -1,7 +1,6 @@
 import { useMemo, useRef } from "react";
 import { LibraryGrid } from "@/components/library";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
-import { useItemGap } from "@/lib/density";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
 import { useGridWidth } from "@/lib/shell-state";
@@ -96,13 +95,13 @@ export function JustifiedView({
   const width = useGridWidth();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
-  const itemGap = useItemGap();
+  const itemGap = 16;
   const aspectVersion = useAspectVersion();
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
     return packRows(saves, width, targetHeight, itemGap, chromeHeight);
-  }, [saves, width, targetHeight, itemGap, chromeHeight, aspectVersion]);
+  }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
 
   const style = useMemo<React.CSSProperties>(
     () => ({ height: `${totalHeight}px` }),

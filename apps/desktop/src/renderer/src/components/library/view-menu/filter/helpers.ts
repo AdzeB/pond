@@ -4,39 +4,7 @@ import {
   type ComparatorId,
   type FieldId,
   type Predicate,
-  type Query,
 } from "@pond/schema/filters/types";
-
-export interface AddCommitApi {
-  // Append a fully-formed predicate (used by search-result rows and recents).
-  commitOne: (predicate: Predicate) => void;
-  // First live commit from a builder submenu; returns the new predicate's
-  // index so subsequent picks can update the same chip in place.
-  liveAdd: (predicate: Predicate) => number;
-  // Update (or remove, when `predicate` is null) a live-committed predicate
-  // at its tracked index.
-  liveUpdate: (index: number, predicate: Predicate | null) => void;
-}
-
-export function topLevelPredicates(query: Query): Predicate[] {
-  return query.clauses.filter((c): c is Predicate => c.kind === "p");
-}
-
-export function replacePredicate(
-  query: Query,
-  index: number,
-  next: Predicate | null,
-): Query {
-  const clauses = [...query.clauses];
-  if (index < 0 || index >= clauses.length) return query;
-  if (next === null) clauses.splice(index, 1);
-  else clauses[index] = next;
-  return { kind: "and", clauses };
-}
-
-export function appendPredicate(query: Query, predicate: Predicate): Query {
-  return { kind: "and", clauses: [...query.clauses, predicate] };
-}
 
 export function defaultPredicateFor(field: FieldId): Predicate {
   const meta = FIELD_META[field];

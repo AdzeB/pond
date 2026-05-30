@@ -1,9 +1,8 @@
-import { Button, Select, Switch, useToast } from "@pond/ui";
+import { Select, Switch, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Settings } from "@/components/settings";
-import { usePrefs } from "@/pool/prefs";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
@@ -11,22 +10,12 @@ import {
   type SettingsRow,
   type VideoDownloadPrefs,
 } from "../_types";
-import styles from "./styles.module.css";
 
-interface VideoToolsStatus {
-  ytdlp: { available: boolean; path: string | null };
-  ffmpeg: { available: boolean; path: string | null };
-}
-
-export function SavingSection() {
+export function DownloadsSection() {
   const toast = useToast();
   const qc = useQueryClient();
-  const [quick, patchQuick] = usePrefs("quickCapture");
-  const [busyApply, setBusyApply] = useState(false);
-
   const [videoBusy, setVideoBusy] = useState(false);
   const [imageBusy, setImageBusy] = useState(false);
-  const [reinstalling, setReinstalling] = useState(false);
 
   const { data: settings } = useQuery<SettingsRow>({
     queryKey: ["settings", "get"],
@@ -39,48 +28,6 @@ export function SavingSection() {
       };
     },
   });
-
-  const { data: toolsStatus, refetch: refreshTools } =
-    useQuery<VideoToolsStatus | null>({
-      queryKey: ["videoTools", "status"],
-      queryFn: async () => {
-        const r = await window.pond.videoToolsStatus().catch(() => null);
-        if (!r?.ok) return null;
-        return { ytdlp: r.ytdlp, ffmpeg: r.ffmpeg };
-      },
-    });
-
-  const reinstallTools = useCallback(async () => {
-    setReinstalling(true);
-    try {
-      const r = await window.pond.videoToolsReinstall();
-      toast.add({
-        title: r.ok ? "yt-dlp ready" : "Couldn't install yt-dlp",
-        description: r.message,
-        type: r.ok ? "success" : "error",
-      });
-      await refreshTools();
-    } finally {
-      setReinstalling(false);
-    }
-  }, [refreshTools, toast]);
-
-  const applyQuickPrefs = useCallback(async () => {
-    setBusyApply(true);
-    try {
-      await window.pond.query("quickCapture.applyPrefs", {});
-    } finally {
-      setBusyApply(false);
-    }
-  }, []);
-
-  const onQuickPatch = useCallback(
-    (delta: Partial<typeof quick>) => {
-      patchQuick(delta);
-      setTimeout(() => void applyQuickPrefs(), 50);
-    },
-    [patchQuick, applyQuickPrefs],
-  );
 
   async function patchVideoDownload(patch: Partial<VideoDownloadPrefs>) {
     if (!settings) return;
@@ -145,7 +92,7 @@ export function SavingSection() {
   const videoPrefs = settings?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD;
   const heightValue =
     videoPrefs.maxHeight === null ? "any" : String(videoPrefs.maxHeight);
-  const sizeValue =
+  const videoSizeValue =
     videoPrefs.maxFileSizeMb === null
       ? "any"
       : String(videoPrefs.maxFileSizeMb);
@@ -161,49 +108,11 @@ export function SavingSection() {
   return (
     <Settings.Page>
       <Settings.Header>
-        <Settings.Title>Saving</Settings.Title>
+        <Settings.Title>Downloads</Settings.Title>
         <Settings.Description>
-          How Pond saves new things: quick capture, default tags, and video
-          downloads.
+          How Pond treats videos and images it saves.
         </Settings.Description>
       </Settings.Header>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Menu Bar</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Show Menu Bar Icon</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Keep Pond reachable from the system tray with the window hidden.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={quick.menuBarIcon}
-                onCheckedChange={(v) => onQuickPatch({ menuBarIcon: v })}
-                disabled={busyApply}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Launch at Login</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Start Pond when you sign in to your computer.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Switch.Root
-                checked={quick.launchAtLogin}
-                onCheckedChange={(v) => onQuickPatch({ launchAtLogin: v })}
-                disabled={busyApply}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
 
       <Settings.Section>
         <Settings.SectionTitle>Videos</Settings.SectionTitle>
@@ -280,7 +189,7 @@ export function SavingSection() {
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <Select.Root
-                value={sizeValue}
+                value={videoSizeValue}
                 disabled={videoBusy || !videoPrefs.enabled || !settings}
                 onValueChange={(v) => {
                   if (v === null || v === "any") {
@@ -406,66 +315,6 @@ export function SavingSection() {
                 </Select.Portal>
               </Select.Root>
             </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Video Tools</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>yt-dlp</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {toolsStatus ? (
-                  <span
-                    className={
-                      toolsStatus.ytdlp.available
-                        ? styles["status-installed"]
-                        : styles["status-missing"]
-                    }
-                  >
-                    {toolsStatus.ytdlp.available ? "Installed" : "Missing"}
-                  </span>
-                ) : (
-                  "Checking…"
-                )}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Button
-                size="sm"
-                disabled={reinstalling || !toolsStatus}
-                onClick={() => void reinstallTools()}
-              >
-                {reinstalling
-                  ? "Installing…"
-                  : toolsStatus?.ytdlp.available
-                    ? "Reinstall"
-                    : "Install"}
-              </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>ffmpeg</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                {toolsStatus ? (
-                  <span
-                    className={
-                      toolsStatus.ffmpeg.available
-                        ? styles["status-installed"]
-                        : styles["status-missing"]
-                    }
-                  >
-                    {toolsStatus.ffmpeg.available ? "Installed" : "Missing"}
-                  </span>
-                ) : (
-                  "Checking…"
-                )}
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
           </Settings.Item>
         </Settings.List>
       </Settings.Section>
