@@ -18,7 +18,7 @@ export async function libraryInfoHandler(c: Context) {
         libraryRoot()
           .split("/")
           .pop()
-          ?.replace(/\.library$/, "") ?? "Library",
+          ?.replace(/\.(pond|library)$/, "") ?? "Library",
       counts: {
         active: Number(total?.n ?? 0),
       },

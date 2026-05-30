@@ -23,7 +23,7 @@ function ensureDir(p: string): string {
 }
 
 export function defaultLibraryRoot(): string {
-  return join(app.getPath("home"), "Pond", "My Pond.library");
+  return join(app.getPath("home"), "Pond", "My Pond.pond");
 }
 
 // Bust the cache. Call this after writing a new pointer so the next

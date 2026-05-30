@@ -64,6 +64,26 @@ mac:
   notarize: false
   hardenedRuntime: true
   gatekeeperAssess: false
+  # Register `.pond` as a macOS package so Finder shows a library as a
+  # single bundle instead of a folder full of items/, trash/, metadata.
+  # LaunchServices only honors this in packaged builds, not `dev`.
+  extendInfo:
+    UTExportedTypeDeclarations:
+      - UTTypeIdentifier: so.pond.library
+        UTTypeDescription: Pond Library
+        UTTypeConformsTo:
+          - com.apple.package
+        UTTypeTagSpecification:
+          public.filename-extension:
+            - pond
+    CFBundleDocumentTypes:
+      - CFBundleTypeName: Pond Library
+        CFBundleTypeRole: Editor
+        LSTypeIsPackage: true
+        LSItemContentTypes:
+          - so.pond.library
+        CFBundleTypeExtensions:
+          - pond
 
 dmg:
   sign: false

@@ -114,7 +114,7 @@ function LibraryLocationStep() {
   return (
     <div className={styles["location-row"]}>
       <code className={styles["location-current"]}>
-        {currentPath ?? "~/Pond/My Pond.library/"}
+        {currentPath ?? "~/Pond/My Pond.pond"}
       </code>
       <Button size="sm" disabled={busy} onClick={() => void chooseLocation()}>
         Change…

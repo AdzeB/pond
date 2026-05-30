@@ -121,7 +121,7 @@ const BLOCKS = [
     title: "Library folder",
     body: (
       <>
-        Your saves live in <code>~/Pond/My Pond.library/</code>, owned by you.
+        Your saves live in <code>~/Pond/My Pond.pond</code>, owned by you.
       </>
     ),
   },

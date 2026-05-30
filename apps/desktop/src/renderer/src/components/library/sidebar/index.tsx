@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ElementType, SVGProps } from "react";
 import { useCallback, useState } from "react";
+import { LibrarySwitcher } from "@/components/library/library-switcher";
 import { Aside } from "@/components/shell/aside";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
@@ -58,12 +59,7 @@ export function LibrarySidebar() {
           </Sidebar.Toolbar>
 
           <Sidebar.Header>
-            <div className={styles["account-trigger"]}>
-              <span aria-hidden className={styles["account-logo"]}>
-                <PondLogo />
-              </span>
-              <span className={styles["account-name"]}>Pond</span>
-            </div>
+            <LibrarySwitcher logo={<PondLogo />} />
             <Sidebar.HeaderActions>
               <Button
                 variant="ghost"

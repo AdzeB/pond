@@ -20,7 +20,7 @@ const FAQS: FaqItem[] = [
     value: "where",
     question: "Where do my saves live?",
     answer:
-      "In ~/Pond/My Pond.library/ on your Mac. Move it, back it up, browse it in Finder. Pond reads the folder; the folder is the source of truth.",
+      "In ~/Pond/My Pond.pond on your Mac. Move it, back it up, browse it in Finder. Pond reads the bundle; the bundle is the source of truth.",
   },
   {
     value: "sync",

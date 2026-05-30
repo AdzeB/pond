@@ -17,7 +17,7 @@ the browser extension over `http://127.0.0.1:41610`.
 ## On disk
 
 - **App state** (rebuildable): `~/Library/Application Support/pond/` (`index.db`, `config.json`).
-- **Library** (source of truth): `~/Pond/My Pond.library/` (per-item `.info` folders, trash, library metadata).
+- **Library** (source of truth): `~/Pond/My Pond.pond/` (per-item `.info` folders, trash, library metadata).
 - **Secrets**: ingest token encrypted via Electron's `safeStorage`
   (macOS Keychain, Windows DPAPI, libsecret on Linux) and persisted to
   `secrets.json` in the app data directory.

@@ -46,6 +46,39 @@ export function LocationSection() {
     await window.pond.query("library.openInFinder", {});
   }
 
+  async function previewPath(path: string) {
+    const preview = (await window.pond.query("library.previewRelocate", {
+      path,
+    })) as
+      | { ok: true; preview: RelocatePreviewWire }
+      | { ok: false; reason: string };
+    if (!preview.ok) {
+      toast.add({
+        title: "Couldn't inspect library",
+        description: preview.reason,
+        type: "error",
+      });
+      return;
+    }
+    if (preview.preview.samePath) {
+      toast.add({
+        title: "Already there",
+        description: "That's the library you're already using.",
+        type: "info",
+      });
+      return;
+    }
+    if (!preview.preview.safety.ok) {
+      toast.add({
+        title: "Can't use that location",
+        description: explainSafety(preview.preview.safety.reason),
+        type: "error",
+      });
+      return;
+    }
+    setRelocatePreview(preview.preview);
+  }
+
   async function chooseLocation() {
     await withBusy("relocate", async () => {
       const pick = (await window.pond.query("library.pickFolder", {})) as
@@ -61,36 +94,26 @@ export function LocationSection() {
         }
         return;
       }
-      const preview = (await window.pond.query("library.previewRelocate", {
-        path: pick.path,
-      })) as
-        | { ok: true; preview: RelocatePreviewWire }
+      await previewPath(pick.path);
+    });
+  }
+
+  async function openExisting() {
+    await withBusy("open", async () => {
+      const pick = (await window.pond.query("library.pickExisting", {})) as
+        | { ok: true; path: string }
         | { ok: false; reason: string };
-      if (!preview.ok) {
-        toast.add({
-          title: "Couldn't inspect folder",
-          description: preview.reason,
-          type: "error",
-        });
+      if (!pick.ok) {
+        if (pick.reason !== "cancelled") {
+          toast.add({
+            title: "Couldn't open picker",
+            description: pick.reason,
+            type: "error",
+          });
+        }
         return;
       }
-      if (preview.preview.samePath) {
-        toast.add({
-          title: "Already there",
-          description: "That's the folder your library already uses.",
-          type: "info",
-        });
-        return;
-      }
-      if (!preview.preview.safety.ok) {
-        toast.add({
-          title: "Can't use that folder",
-          description: explainSafety(preview.preview.safety.reason),
-          type: "error",
-        });
-        return;
-      }
-      setRelocatePreview(preview.preview);
+      await previewPath(pick.path);
     });
   }
 
@@ -147,7 +170,7 @@ export function LocationSection() {
             <Settings.ItemDetails>
               <Settings.ItemTitle>Source of Truth</Settings.ItemTitle>
               <Settings.ItemDescription>
-                <code>{libraryRoot ?? "~/Pond/My Pond.library/"}</code>
+                <code>{libraryRoot ?? "~/Pond/My Pond.pond"}</code>
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
@@ -160,6 +183,13 @@ export function LocationSection() {
                 onClick={() => void rescan()}
               >
                 Rescan Library
+              </Button>
+              <Button
+                size="sm"
+                disabled={busy === "open"}
+                onClick={() => void openExisting()}
+              >
+                Open Existing Library…
               </Button>
               <Button
                 size="sm"
@@ -238,8 +268,8 @@ function RelocateConfirmDialog({
               <div className={styles["relocate-body"]}>
                 <p>
                   {mode === "adopt"
-                    ? `That folder already looks like a Pond library (${itemCount} item${itemCount === 1 ? "" : "s"}). Pond will use it directly without copying anything.`
-                    : "Pond will copy the files from your current library to the new location, then restart. The old folder stays put so you can verify everything looks right before deleting it yourself."}
+                    ? `That's already a Pond library (${itemCount} item${itemCount === 1 ? "" : "s"}). Pond will use it directly without copying anything.`
+                    : "Pond will copy your library into a new .pond bundle at this location, then restart. The old library stays put so you can verify everything looks right before deleting it yourself."}
                 </p>
                 <dl className={styles["relocate-paths"]}>
                   <div>

@@ -95,7 +95,7 @@ async function buildTooltip(): Promise<string> {
       libraryRoot()
         .split("/")
         .pop()
-        ?.replace(/\.library$/, "") ?? "Library";
+        ?.replace(/\.(pond|library)$/, "") ?? "Library";
     return `${libraryName} · ${row?.n ?? 0} saves`;
   } catch {
     return "Pond";
@@ -116,7 +116,7 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
     libraryRoot()
       .split("/")
       .pop()
-      ?.replace(/\.library$/, "") ?? "Library";
+      ?.replace(/\.(pond|library)$/, "") ?? "Library";
   const loginItem = app.getLoginItemSettings();
 
   return Menu.buildFromTemplate([

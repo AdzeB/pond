@@ -50,6 +50,7 @@ import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
+import { pruneMissingLibraries, rememberLibrary } from "./lib/library-recents";
 import { schedule } from "./lib/scheduler";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
@@ -434,6 +435,14 @@ app.whenReady().then(async () => {
 async function postLaunchInit(): Promise<void> {
   registerSummonHotkey();
   registerAutoUpdater();
+
+  try {
+    const active = libraryRoot();
+    rememberLibrary(active);
+    pruneMissingLibraries(active);
+  } catch (err) {
+    log.warn("[pond] recording active library failed", err);
+  }
 
   void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
   startReconciler();
