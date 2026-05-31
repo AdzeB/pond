@@ -227,25 +227,29 @@ export function useCardActions(
       const dt = e.dataTransfer;
       if (!dt) return;
 
-      const files = Array.from(dt.files ?? []) as Array<
-        File & { path?: string }
-      >;
-      const items = files
-        .map((f) => ({
-          path: f.path ?? "",
-          name: f.name,
-          type: f.type,
-        }))
-        .filter((it) => it.path);
-      if (items.length > 0) {
-        const result = (await window.pond.query("saves.dropFiles", {
-          items,
+      // Electron 41 removed File.path, so resolve dropped files to absolute
+      // paths via the preload bridge and let the main process read them.
+      const paths = Array.from(dt.files ?? [])
+        .map((f) => {
+          try {
+            return window.pond.pathForFile(f);
+          } catch {
+            return "";
+          }
+        })
+        .filter(Boolean);
+      if (paths.length > 0) {
+        const result = (await window.pond.query("saves.importFiles", {
+          paths,
         })) as { ok: boolean; ids?: string[] };
-        if (result.ok && (result.ids?.length ?? 0) > 0) {
+        const count = result.ids?.length ?? 0;
+        if (count > 0) {
           toast.add({
-            title: `Imported ${result.ids?.length} file${result.ids?.length === 1 ? "" : "s"}`,
+            title: `Imported ${count} file${count === 1 ? "" : "s"}`,
             type: "success",
           });
+        } else {
+          toast.add({ title: "Couldn't import those files", type: "error" });
         }
         return;
       }
