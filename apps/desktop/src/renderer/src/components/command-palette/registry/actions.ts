@@ -204,6 +204,18 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
+    id: "action.library.duplicates",
+    label: "Find duplicates",
+    description: "Review exact and visually similar saves",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["duplicate", "similar", "dedupe", "clean", "redundant"],
+    perform: ({ navigate, close }) => {
+      navigate("/duplicates", { viewTransition: true });
+      close();
+    },
+  },
+  {
     id: "action.library.rescan",
     label: "Rescan library",
     description: "Re-index every item from disk",
