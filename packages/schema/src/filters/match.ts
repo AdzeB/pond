@@ -1,4 +1,5 @@
 import type { RawJson } from "../raw";
+import { colorNear } from "./color";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
 export interface SaveLike {
@@ -14,6 +15,7 @@ export interface SaveLike {
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;
+  dominantColors?: string[];
   rawJson?: RawJson | null;
   savedAt?: string | Date | number | null;
   createdAt?: string | Date | number | null;
@@ -74,6 +76,8 @@ function project(field: FieldId, s: SaveLike): unknown {
       return (s.url ?? "").toLowerCase();
     case "note":
       return (s.notes ?? s.description ?? "").trim() ? true : null;
+    case "color":
+      return s.dominantColors ?? [];
     case "savedAt":
       return toMillis(s.savedAt);
     case "publishedAt":
@@ -174,6 +178,10 @@ function runComparator(
         : true;
     case "exists":
       return value ? projected != null : projected == null;
+    case "near":
+      return Array.isArray(projected) && typeof value === "string"
+        ? colorNear(value, projected as string[])
+        : false;
   }
 }
 

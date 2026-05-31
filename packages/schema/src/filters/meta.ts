@@ -112,6 +112,12 @@ export const FIELD_META: Readonly<Record<FieldId, FieldMeta>> = Object.freeze({
     label: "Note",
     group: "content",
   },
+  color: {
+    id: "color",
+    type: "color",
+    label: "Color",
+    group: "media",
+  },
   savedAt: {
     id: "savedAt",
     type: "date",

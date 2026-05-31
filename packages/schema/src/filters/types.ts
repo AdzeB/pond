@@ -34,7 +34,8 @@ export type FieldTypeId =
   | "number"
   | "boolean"
   | "date"
-  | "optional";
+  | "optional"
+  | "color";
 
 export type ComparatorId =
   | "eq"
@@ -52,7 +53,8 @@ export type ComparatorId =
   | "some"
   | "every"
   | "none"
-  | "exists";
+  | "exists"
+  | "near";
 
 export const COMPARATORS_BY_TYPE: Record<FieldTypeId, readonly ComparatorId[]> =
   {
@@ -63,6 +65,7 @@ export const COMPARATORS_BY_TYPE: Record<FieldTypeId, readonly ComparatorId[]> =
     boolean: ["eq"],
     date: ["lt", "lte", "gt", "gte", "between"],
     optional: ["exists"],
+    color: ["near"],
   };
 
 export type FieldId =
@@ -76,6 +79,7 @@ export type FieldId =
   | "creator"
   | "url"
   | "note"
+  | "color"
   | "savedAt"
   | "publishedAt"
   | "modifiedAt";
