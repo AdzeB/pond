@@ -72,6 +72,9 @@ export async function runFinalize(saveId: string): Promise<void> {
     });
   }
 
+  const { applyAutoTags } = await import("../../auto-tag");
+  await applyAutoTags(save);
+
   await applySavePatch(
     saveId,
     {
