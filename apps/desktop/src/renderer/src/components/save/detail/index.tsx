@@ -1,9 +1,10 @@
 import { Button, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { VideoPlayer } from "@/components/media/video-player";
 import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";
+import { VideoNotes } from "@/components/media/video-player/notes";
 import {
   SaveActionsMenu,
   SaveContextMenu,
@@ -89,6 +90,7 @@ function Content({ save }: ContentProps) {
   const theme = useResolvedTheme();
   const units = useMemo(() => buildMediaUnits(save, { theme }), [save, theme]);
   const useHero = units.length === 1 && units[0]?.isVideo === true;
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const chapters = useMemo(
     () =>
@@ -103,12 +105,13 @@ function Content({ save }: ContentProps) {
       <SaveContextMenu save={save}>
         <div className={styles.frame}>
           {useHero ? (
-            <HeroVideo save={save} chapters={chapters} />
+            <HeroVideo save={save} chapters={chapters} videoRef={videoRef} />
           ) : (
             <MediaViewer save={save} />
           )}
         </div>
       </SaveContextMenu>
+      {useHero ? <VideoNotes save={save} videoRef={videoRef} /> : null}
     </div>
   );
 }
@@ -116,9 +119,10 @@ function Content({ save }: ContentProps) {
 interface HeroVideoProps {
   save: Save;
   chapters?: readonly ChapterCue[];
+  videoRef: React.MutableRefObject<HTMLVideoElement | null>;
 }
 
-function HeroVideo({ save, chapters }: HeroVideoProps) {
+function HeroVideo({ save, chapters, videoRef }: HeroVideoProps) {
   const files = save.files ?? [];
   const video = files.find((f) => f.kind === "video");
   if (!video) return null;
@@ -134,6 +138,7 @@ function HeroVideo({ save, chapters }: HeroVideoProps) {
       poster={posterUrl}
       save={save}
       chapters={chapters}
+      videoRef={videoRef}
     />
   );
 }
