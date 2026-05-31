@@ -180,6 +180,43 @@ export const SAVE_CONTEXT_COMMANDS: Command[] = [
     },
   },
   {
+    id: "save.bulk-export-files",
+    label: "Export selected files",
+    description: "Copy each selected file into a folder",
+    group: "Save",
+    scope: "saves",
+    keywords: ["export", "files", "copy", "bulk", "selection"],
+    when: (ctx) => ctx.selectedIds.length > 0,
+    perform: async ({ pond, selectedIds, toast, close }) => {
+      close();
+      const res = (await pond.query("saves.exportFiles", {
+        ids: [...selectedIds],
+      })) as { ok: boolean; exported?: number };
+      if (res.ok) {
+        const n = res.exported ?? 0;
+        toast.success(`Exported ${n} file${n === 1 ? "" : "s"}`);
+      }
+    },
+  },
+  {
+    id: "save.export-csv",
+    label: "Export CSV",
+    description: "Export selected saves, or the whole library, as CSV",
+    group: "Save",
+    scope: "saves",
+    keywords: ["export", "csv", "catalog", "spreadsheet"],
+    perform: async ({ pond, selectedIds, toast, close }) => {
+      close();
+      const res = (await pond.query("saves.exportCsv", {
+        ids: [...selectedIds],
+      })) as { ok: boolean; count?: number };
+      if (res.ok) {
+        const n = res.count ?? 0;
+        toast.success(`Exported ${n} row${n === 1 ? "" : "s"} to CSV`);
+      }
+    },
+  },
+  {
     id: "save.bulk-refresh",
     label: "Refresh selected saves",
     group: "Save",
