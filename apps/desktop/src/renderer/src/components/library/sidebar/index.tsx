@@ -1,10 +1,15 @@
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
+import type { SmartFolder } from "@pond/schema/db";
+import { readQuery } from "@pond/schema/filters/url";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   Archive,
   ArrowUpRight,
+  Folder,
   Network,
+  Pin,
+  PinOff,
   Plus,
   RefreshCw,
   SlidersHorizontal,
@@ -12,13 +17,19 @@ import {
   Trash2,
 } from "lucide-react";
 import type { ElementType, SVGProps } from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { LibrarySwitcher } from "@/components/library/library-switcher";
 import { Aside } from "@/components/shell/aside";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { navigateTo, patchSearch } from "@/lib/navigate-path";
+import { searchToParams } from "@/lib/search-schemas";
 import { useSidebar } from "@/lib/shell-state";
+import {
+  queryEquals,
+  smartFolderSearch,
+  sortFolders,
+} from "@/lib/smart-folders";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 
@@ -41,6 +52,46 @@ const routes: Route[] = [
 export function LibrarySidebar() {
   const navigate = useNavigate();
   const { open } = useSidebar();
+  const [smartFolders, patchFolders] = usePrefs("smartFolders");
+  const search = useSearch({ strict: false }) as Record<string, unknown>;
+
+  const folders = useMemo(
+    () => sortFolders(smartFolders.items ?? []),
+    [smartFolders.items],
+  );
+  const currentQuery = useMemo(
+    () => readQuery(searchToParams(search)),
+    [search],
+  );
+  const pinned = folders.filter((f) => f.pinned);
+  const unpinned = folders.filter((f) => !f.pinned);
+
+  const goTo = useCallback(
+    (folder: SmartFolder) =>
+      navigateTo(navigate, "/", {
+        search: smartFolderSearch(folder),
+        viewTransition: true,
+      }),
+    [navigate],
+  );
+
+  const removeFolder = useCallback(
+    (id: string) =>
+      patchFolders({
+        items: (smartFolders.items ?? []).filter((f) => f.id !== id),
+      }),
+    [patchFolders, smartFolders.items],
+  );
+
+  const togglePin = useCallback(
+    (id: string) =>
+      patchFolders({
+        items: (smartFolders.items ?? []).map((f) =>
+          f.id === id ? { ...f, pinned: !f.pinned } : f,
+        ),
+      }),
+    [patchFolders, smartFolders.items],
+  );
 
   const openQuickCapture = useCallback(() => {
     patchSearch(navigate, (prev) => ({ ...prev, capture: "1" }));
@@ -88,10 +139,106 @@ export function LibrarySidebar() {
               );
             })}
           </Sidebar.Group>
+
+          {pinned.length > 0 ? (
+            <Sidebar.Group>
+              <Sidebar.GroupLabel>Quick Access</Sidebar.GroupLabel>
+              {pinned.map((f) => (
+                <SmartFolderLink
+                  key={f.id}
+                  folder={f}
+                  active={queryEquals(currentQuery, f.query)}
+                  onOpen={goTo}
+                  onUnpin={() => togglePin(f.id)}
+                  onRemove={() => removeFolder(f.id)}
+                />
+              ))}
+            </Sidebar.Group>
+          ) : null}
+
+          {unpinned.length > 0 ? (
+            <Sidebar.Group>
+              <Sidebar.GroupLabel>Smart Folders</Sidebar.GroupLabel>
+              {unpinned.map((f) => (
+                <SmartFolderLink
+                  key={f.id}
+                  folder={f}
+                  active={queryEquals(currentQuery, f.query)}
+                  onOpen={goTo}
+                  onPin={() => togglePin(f.id)}
+                  onRemove={() => removeFolder(f.id)}
+                />
+              ))}
+            </Sidebar.Group>
+          ) : null}
         </Sidebar.Scroll>
         <HelpButton openUrl={openUrl} navigate={navigate} />
       </Sidebar.Root>
     </Aside>
+  );
+}
+
+interface SmartFolderLinkProps {
+  folder: SmartFolder;
+  active: boolean;
+  onOpen: (folder: SmartFolder) => void;
+  onPin?: () => void;
+  onUnpin?: () => void;
+  onRemove: () => void;
+}
+
+function SmartFolderLink({
+  folder,
+  active,
+  onOpen,
+  onPin,
+  onUnpin,
+  onRemove,
+}: SmartFolderLinkProps) {
+  return (
+    <ContextMenu.Root>
+      <ContextMenu.Trigger
+        render={
+          <Sidebar.Anchor active={active} onClick={() => onOpen(folder)}>
+            <Sidebar.LinkIcon>
+              <Folder />
+            </Sidebar.LinkIcon>
+            <Sidebar.LinkLabel>{folder.name}</Sidebar.LinkLabel>
+          </Sidebar.Anchor>
+        }
+      />
+      <ContextMenu.Portal>
+        <ContextMenu.Backdrop />
+        <ContextMenu.Positioner>
+          <ContextMenu.Popup>
+            {onPin ? (
+              <ContextMenu.Item onClick={onPin}>
+                <ContextMenu.ItemIcon>
+                  <Pin width={14} height={14} />
+                </ContextMenu.ItemIcon>
+                <ContextMenu.ItemLabel>
+                  Pin to Quick Access
+                </ContextMenu.ItemLabel>
+              </ContextMenu.Item>
+            ) : null}
+            {onUnpin ? (
+              <ContextMenu.Item onClick={onUnpin}>
+                <ContextMenu.ItemIcon>
+                  <PinOff width={14} height={14} />
+                </ContextMenu.ItemIcon>
+                <ContextMenu.ItemLabel>Unpin</ContextMenu.ItemLabel>
+              </ContextMenu.Item>
+            ) : null}
+            <ContextMenu.Item onClick={onRemove}>
+              <ContextMenu.ItemIcon>
+                <Trash2 width={14} height={14} />
+              </ContextMenu.ItemIcon>
+              <ContextMenu.ItemLabel>Remove</ContextMenu.ItemLabel>
+            </ContextMenu.Item>
+          </ContextMenu.Popup>
+        </ContextMenu.Positioner>
+      </ContextMenu.Portal>
+    </ContextMenu.Root>
   );
 }
 
