@@ -177,10 +177,16 @@ function migrate(sqlite: Database.Database): void {
 			`);
 
   dropLegacyArtifacts(sqlite);
-  ensureSavesPipelineColumns(sqlite);
-  ensureSavesPhashColumn(sqlite);
-  ensureSavesVideoNotesColumn(sqlite);
-  ensureSavesColorColumn(sqlite);
+  // Table name comes from internal literals only, never user input.
+  ensureColumns(sqlite, "saves", [
+    { name: "status", ddl: "TEXT NOT NULL DEFAULT 'ingesting'" },
+    { name: "ingest_started_at", ddl: "INTEGER" },
+    { name: "ingest_completed_at", ddl: "INTEGER" },
+    { name: "phash", ddl: "TEXT" },
+    { name: "video_notes", ddl: "TEXT NOT NULL DEFAULT '[]'" },
+    { name: "dominant_colors", ddl: "TEXT NOT NULL DEFAULT '[]'" },
+  ]);
+  sqlite.exec("CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status)");
   ensureTagsLabelColumns(sqlite);
   dropArchivedAtColumn(sqlite);
   hardDeleteArticleSaves(sqlite);
@@ -219,57 +225,30 @@ function migrate(sqlite: Database.Database): void {
 			`);
 }
 
-// One-time forward-only cleanup. Drops AI-only tables from earlier
-// builds, plus the old FTS table + triggers so the CREATE IF NOT
-// EXISTS above rebuilds them with the current column set (the legacy
-// schema referenced ai_caption / ai_summary / ocr_text).
-function ensureSavesPipelineColumns(sqlite: Database.Database): void {
-  const cols = sqlite
-    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
-    .all() as { name: string }[];
-  const have = new Set(cols.map((c) => c.name));
-  if (!have.has("status")) {
-    sqlite.exec(
-      "ALTER TABLE saves ADD COLUMN status TEXT NOT NULL DEFAULT 'ingesting'",
-    );
-  }
-  if (!have.has("ingest_started_at")) {
-    sqlite.exec("ALTER TABLE saves ADD COLUMN ingest_started_at INTEGER");
-  }
-  if (!have.has("ingest_completed_at")) {
-    sqlite.exec("ALTER TABLE saves ADD COLUMN ingest_completed_at INTEGER");
-  }
-  sqlite.exec("CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status)");
+interface ColumnSpec {
+  name: string;
+  ddl: string;
 }
 
-function ensureSavesPhashColumn(sqlite: Database.Database): void {
-  const cols = sqlite
-    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
-    .all() as { name: string }[];
-  if (!cols.some((c) => c.name === "phash")) {
-    sqlite.exec("ALTER TABLE saves ADD COLUMN phash TEXT");
-  }
-}
-
-function ensureSavesVideoNotesColumn(sqlite: Database.Database): void {
-  const cols = sqlite
-    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
-    .all() as { name: string }[];
-  if (!cols.some((c) => c.name === "video_notes")) {
-    sqlite.exec(
-      "ALTER TABLE saves ADD COLUMN video_notes TEXT NOT NULL DEFAULT '[]'",
-    );
-  }
-}
-
-function ensureSavesColorColumn(sqlite: Database.Database): void {
-  const cols = sqlite
-    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
-    .all() as { name: string }[];
-  if (!cols.some((c) => c.name === "dominant_colors")) {
-    sqlite.exec(
-      "ALTER TABLE saves ADD COLUMN dominant_colors TEXT NOT NULL DEFAULT '[]'",
-    );
+// Forward-only column adds. Each spec is applied only when the column is
+// absent, so this is idempotent across boots. Table and DDL come from
+// internal string literals, never user input.
+function ensureColumns(
+  sqlite: Database.Database,
+  table: string,
+  specs: ColumnSpec[],
+): void {
+  const have = new Set(
+    (
+      sqlite
+        .prepare<unknown[], { name: string }>(`PRAGMA table_info(${table})`)
+        .all() as { name: string }[]
+    ).map((c) => c.name),
+  );
+  for (const spec of specs) {
+    if (!have.has(spec.name)) {
+      sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${spec.name} ${spec.ddl}`);
+    }
   }
 }
 
