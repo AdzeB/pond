@@ -133,6 +133,7 @@ function encodeValue(cmp: ComparatorId, value: unknown): string | null {
     case "contains":
     case "startsWith":
     case "endsWith":
+    case "near":
     case "eq":
     case "neq":
     case "lt":
@@ -168,6 +169,7 @@ function decodeValue(cmp: ComparatorId, raw: string): unknown {
     case "contains":
     case "startsWith":
     case "endsWith":
+    case "near":
       return decodeURIComponent(raw);
     case "eq":
     case "neq":
