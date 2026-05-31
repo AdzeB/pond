@@ -216,6 +216,25 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
+    id: "action.library.compute-colors",
+    label: "Compute colors for images",
+    description: "Extract dominant-color palettes for color search",
+    group: "Actions",
+    scope: "actions",
+    keywords: ["color", "palette", "swatch", "compute", "backfill"],
+    perform: async ({ pond, toast, close }) => {
+      close();
+      const res = (await pond.query("saves.backfillColors", {})) as {
+        ok: boolean;
+        updated?: number;
+      };
+      if (res.ok) {
+        const n = res.updated ?? 0;
+        toast.success(`Computed colors for ${n} image${n === 1 ? "" : "s"}`);
+      }
+    },
+  },
+  {
     id: "action.library.rescan",
     label: "Rescan library",
     description: "Re-index every item from disk",
