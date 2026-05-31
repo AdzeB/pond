@@ -12,7 +12,6 @@
 export { default as IconApple } from "./apple";
 export { default as IconArena } from "./are-na";
 export { default as IconCosmos } from "./cosmos";
-export { default as IconDribbble } from "./dribbble";
 export { default as IconGithub } from "./github";
 export { default as IconInstagram } from "./instagram";
 export { default as IconPinterest } from "./pinterest";

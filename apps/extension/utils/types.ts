@@ -91,7 +91,3 @@ export function libraryInfoUrl(port: number): string {
 export function sessionImportUrl(port: number): string {
   return `http://127.0.0.1:${port}/api/v2/session/import`;
 }
-
-export function appInfoUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/app/info`;
-}
