@@ -619,16 +619,17 @@ function sourcesSubmenu(): Electron.MenuItemConstructorOptions[] {
       click: navTo(`/source/${source}`),
     }),
   );
-  const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.map(
-    (source) => ({
-      label: `Sync ${SOURCE_LABELS[source]} Now`,
-      click: () => {
-        void syncSource(source, { trigger: "manual" }).catch((err) =>
-          log.warn(`[pond menu] sync ${source} failed`, err),
-        );
-      },
-    }),
-  );
+  const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
+    // Local imports have no remote to sync from.
+    (source) => source !== "local",
+  ).map((source) => ({
+    label: `Sync ${SOURCE_LABELS[source]} Now`,
+    click: () => {
+      void syncSource(source, { trigger: "manual" }).catch((err) =>
+        log.warn(`[pond menu] sync ${source} failed`, err),
+      );
+    },
+  }));
   return [...filterItems, { type: "separator" }, ...syncItems];
 }
 

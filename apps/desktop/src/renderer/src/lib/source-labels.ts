@@ -10,6 +10,7 @@ const SOURCE_LABELS: Record<string, string> = {
   tiktok: "TikTok",
   youtube: "YouTube",
   dribbble: "Dribbble",
+  local: "Local",
 };
 
 export function getSourceLabel(source: string): string {

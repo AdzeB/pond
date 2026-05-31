@@ -5,18 +5,22 @@ import type { Command } from "./types";
 export const SOURCE_COMMANDS: Command[] = SOURCES.flatMap(
   (source: Source): Command[] => {
     const label = getSourceLabel(source);
-    return [
-      {
-        id: `source.filter.${source}`,
-        label: `Filter by ${label}`,
-        group: "Sources",
-        scope: "sources",
-        keywords: [source, "source", "filter"],
-        perform: ({ navigate, close }) => {
-          navigate(`/source/${source}`, { viewTransition: true });
-          close();
-        },
+    const filter: Command = {
+      id: `source.filter.${source}`,
+      label: `Filter by ${label}`,
+      group: "Sources",
+      scope: "sources",
+      keywords: [source, "source", "filter"],
+      perform: ({ navigate, close }) => {
+        navigate(`/source/${source}`, { viewTransition: true });
+        close();
       },
+    };
+    // Local imports have no remote to sync from, so they get a filter
+    // command but no "Sync now".
+    if (source === "local") return [filter];
+    return [
+      filter,
       {
         id: `source.sync.${source}`,
         label: `Sync ${label} now`,
