@@ -39,6 +39,7 @@ export interface Save {
   fileSize?: number | null;
   phash?: string | null;
   videoNotes?: VideoNote[];
+  dominantColors?: string[];
   tags: string[];
   rawJson?: RawJson | null;
   status?: SaveStatus;

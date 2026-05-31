@@ -180,6 +180,7 @@ function migrate(sqlite: Database.Database): void {
   ensureSavesPipelineColumns(sqlite);
   ensureSavesPhashColumn(sqlite);
   ensureSavesVideoNotesColumn(sqlite);
+  ensureSavesColorColumn(sqlite);
   ensureTagsLabelColumns(sqlite);
   dropArchivedAtColumn(sqlite);
   hardDeleteArticleSaves(sqlite);
@@ -257,6 +258,17 @@ function ensureSavesVideoNotesColumn(sqlite: Database.Database): void {
   if (!cols.some((c) => c.name === "video_notes")) {
     sqlite.exec(
       "ALTER TABLE saves ADD COLUMN video_notes TEXT NOT NULL DEFAULT '[]'",
+    );
+  }
+}
+
+function ensureSavesColorColumn(sqlite: Database.Database): void {
+  const cols = sqlite
+    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
+    .all() as { name: string }[];
+  if (!cols.some((c) => c.name === "dominant_colors")) {
+    sqlite.exec(
+      "ALTER TABLE saves ADD COLUMN dominant_colors TEXT NOT NULL DEFAULT '[]'",
     );
   }
 }

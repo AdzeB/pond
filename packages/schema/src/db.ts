@@ -96,6 +96,10 @@ export const saves = sqliteTable(
       .$type<VideoNote[]>()
       .notNull()
       .default(sql`'[]'`),
+    dominantColors: text("dominant_colors", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
     status: text("status")
       .$type<SaveStatus>()
       .notNull()
