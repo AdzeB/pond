@@ -68,8 +68,8 @@ function TooltipWrapper({
   delay,
 }: TooltipProps) {
   return (
-    <Root delay={delay}>
-      <Trigger render={children} />
+    <Root>
+      <Trigger delay={delay} render={children} />
       <Portal>
         <Positioner side={side} align={align} sideOffset={sideOffset}>
           <Popup>{label}</Popup>
