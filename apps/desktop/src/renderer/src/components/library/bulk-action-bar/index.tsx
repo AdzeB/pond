@@ -49,6 +49,45 @@ function Root() {
     [ids, toast],
   );
 
+  const exportFiles = useCallback(async () => {
+    if (ids.length === 0) return;
+    setBusy(true);
+    try {
+      const res = (await window.pond.query("saves.exportFiles", { ids })) as {
+        ok: boolean;
+        exported?: number;
+      };
+      if (res.ok) {
+        const n = res.exported ?? 0;
+        toast.add({
+          title: `Exported ${n} file${n === 1 ? "" : "s"}`,
+          type: "success",
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, [ids, toast]);
+
+  const exportCsv = useCallback(async () => {
+    setBusy(true);
+    try {
+      const res = (await window.pond.query("saves.exportCsv", { ids })) as {
+        ok: boolean;
+        count?: number;
+      };
+      if (res.ok) {
+        const n = res.count ?? 0;
+        toast.add({
+          title: `Exported ${n} row${n === 1 ? "" : "s"} to CSV`,
+          type: "success",
+        });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }, [ids, toast]);
+
   const trash = useCallback(async () => {
     if (ids.length === 0) return;
     setBusy(true);
@@ -95,6 +134,26 @@ function Root() {
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
+      <Tooltip label="Copy each selected file into a folder">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => void exportFiles()}
+          disabled={busy}
+        >
+          Export files
+        </Button>
+      </Tooltip>
+      <Tooltip label="Export selected saves as a CSV catalog">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => void exportCsv()}
+          disabled={busy}
+        >
+          Export CSV
+        </Button>
+      </Tooltip>
       <Tooltip label="Move every selected save to trash">
         <Button
           size="sm"
