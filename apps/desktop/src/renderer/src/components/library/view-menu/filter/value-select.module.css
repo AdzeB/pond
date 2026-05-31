@@ -24,6 +24,33 @@
   color: var(--ds-gray-11);
 }
 
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a5);
+}
+
+.swatch:hover {
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a8);
+}
+
+.swatch[data-active="true"] {
+  box-shadow:
+    0 0 0 2px var(--ds-background-primary),
+    0 0 0 4px var(--ds-gray-12);
+}
+
 .body {
   display: flex;
   flex-direction: column;
