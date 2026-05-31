@@ -37,6 +37,7 @@ export interface Save {
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;
+  phash?: string | null;
   tags: string[];
   rawJson?: RawJson | null;
   status?: SaveStatus;

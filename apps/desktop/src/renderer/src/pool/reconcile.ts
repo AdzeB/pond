@@ -72,6 +72,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     width: raw.width ?? null,
     height: raw.height ?? null,
     fileSize: raw.fileSize ?? null,
+    phash: raw.phash ?? null,
     tags: raw.tags ?? [],
     rawJson: raw.rawJson ?? undefined,
     status: raw.status,

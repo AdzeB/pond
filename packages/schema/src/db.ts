@@ -85,6 +85,7 @@ export const saves = sqliteTable(
     width: integer("width"),
     height: integer("height"),
     fileSize: integer("file_size"),
+    phash: text("phash"),
     status: text("status")
       .$type<SaveStatus>()
       .notNull()

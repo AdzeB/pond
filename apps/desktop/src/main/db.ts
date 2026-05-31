@@ -178,6 +178,7 @@ function migrate(sqlite: Database.Database): void {
 
   dropLegacyArtifacts(sqlite);
   ensureSavesPipelineColumns(sqlite);
+  ensureSavesPhashColumn(sqlite);
   ensureTagsLabelColumns(sqlite);
   dropArchivedAtColumn(sqlite);
   hardDeleteArticleSaves(sqlite);
@@ -237,6 +238,15 @@ function ensureSavesPipelineColumns(sqlite: Database.Database): void {
     sqlite.exec("ALTER TABLE saves ADD COLUMN ingest_completed_at INTEGER");
   }
   sqlite.exec("CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status)");
+}
+
+function ensureSavesPhashColumn(sqlite: Database.Database): void {
+  const cols = sqlite
+    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
+    .all() as { name: string }[];
+  if (!cols.some((c) => c.name === "phash")) {
+    sqlite.exec("ALTER TABLE saves ADD COLUMN phash TEXT");
+  }
 }
 
 function ensureTagsLabelColumns(sqlite: Database.Database): void {
