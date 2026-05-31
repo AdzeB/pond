@@ -75,6 +75,23 @@ export async function runFinalize(saveId: string): Promise<void> {
   const { applyAutoTags } = await import("../../auto-tag");
   await applyAutoTags(save);
 
+  if (save.mediaType === "image" && (save.dominantColors ?? []).length === 0) {
+    const files = save.files ?? [];
+    const cover = files[save.coverIndex ?? 0] ?? files[0];
+    if (cover) {
+      const { extractPalette } = await import("../../../lib/palette");
+      const { itemFile } = await import("../../../paths");
+      const colors = await extractPalette(itemFile(saveId, cover.path));
+      if (colors.length > 0) {
+        await applySavePatch(
+          saveId,
+          { dominantColors: colors },
+          { actorReason: "color:extract" },
+        );
+      }
+    }
+  }
+
   await applySavePatch(
     saveId,
     {

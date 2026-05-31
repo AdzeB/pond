@@ -714,6 +714,35 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true as const, count: rows.length, path: picked.filePath };
   },
 
+  async "saves.backfillColors"() {
+    const { extractPalette } = await import("../../lib/palette");
+    const { itemFile } = await import("../../paths");
+
+    const db = await getDb();
+    const rows = await db
+      .select()
+      .from(saves)
+      .where(eq(saves.mediaType, "image"));
+
+    let updated = 0;
+    for (const row of rows) {
+      if ((row.dominantColors ?? []).length > 0) continue;
+      const files = row.files ?? [];
+      const cover = files[row.coverIndex ?? 0] ?? files[0];
+      if (!cover) continue;
+      const colors = await extractPalette(itemFile(row.id, cover.path));
+      if (colors.length > 0) {
+        await applySavePatch(
+          row.id,
+          { dominantColors: colors },
+          { actorReason: "color:backfill" },
+        );
+        updated++;
+      }
+    }
+    return { ok: true, updated };
+  },
+
   async "saves.publicImageUrl"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false as const, url: null };
