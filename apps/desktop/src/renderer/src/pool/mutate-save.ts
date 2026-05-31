@@ -1,0 +1,154 @@
+import { optimistic } from "./bootstrap";
+import { pool } from "./pool";
+import type { Save } from "./types";
+
+interface MutateOpts {
+  actorReason?: string;
+}
+
+function metaFor(opts: MutateOpts): { meta?: object } {
+  return opts.actorReason
+    ? { meta: { actor: "user", actorReason: opts.actorReason } }
+    : {};
+}
+
+function snapshotBefore(prev: Save, patch: Partial<Save>): Partial<Save> {
+  const source = prev as unknown as Record<string, unknown>;
+  const before: Record<string, unknown> = {};
+  for (const key of Object.keys(patch)) {
+    before[key] = source[key];
+  }
+  return before as Partial<Save>;
+}
+
+export async function mutateSave(
+  id: string,
+  patch: Partial<Save>,
+  opts: MutateOpts = {},
+): Promise<void> {
+  const prev = pool.get(id);
+  if (!prev) return;
+  const before = snapshotBefore(prev, patch);
+  await optimistic(
+    () => pool.upsert({ ...prev, ...patch }),
+    () => pool.upsert(prev),
+    async () =>
+      window.pond.tx({
+        kind: "update",
+        model: "save",
+        id,
+        patch,
+        before,
+        ...metaFor(opts),
+      }),
+  );
+}
+
+export async function setSaveTags(id: string, tags: string[]): Promise<void> {
+  const prev = pool.get(id);
+  if (!prev) return;
+  await optimistic(
+    () => pool.upsert({ ...prev, tags }),
+    () => pool.upsert(prev),
+    async () => window.pond.query("tags.setForSave", { saveId: id, tags }),
+  );
+}
+
+export async function trashSave(id: string): Promise<void> {
+  const prev = pool.get(id);
+  if (!prev) return;
+  await optimistic(
+    () => pool.upsert({ ...prev, deletedAt: Date.now() }),
+    () => pool.upsert(prev),
+    async () => window.pond.tx({ kind: "trash", model: "save", id }),
+  );
+}
+
+export async function untrashSave(id: string): Promise<void> {
+  const prev = pool.get(id);
+  if (!prev) return;
+  await optimistic(
+    () => pool.upsert({ ...prev, deletedAt: null }),
+    () => pool.upsert(prev),
+    async () => window.pond.tx({ kind: "untrash", model: "save", id }),
+  );
+}
+
+export async function purgeSave(id: string): Promise<void> {
+  const prev = pool.get(id);
+  if (!prev) return;
+  await optimistic(
+    () => pool.delete(id),
+    () => pool.upsert(prev),
+    async () =>
+      window.pond.tx({ kind: "purge", model: "save", id, before: prev }),
+  );
+}
+
+// Bulk patch update: one optimistic apply + rollback for all, one batch so
+// the whole change undoes as a single step. `patchFor` returns null to skip.
+export async function mutateSaves(
+  ids: readonly string[],
+  patchFor: (s: Save) => Partial<Save> | null,
+  opts: MutateOpts = {},
+): Promise<number> {
+  const changes: { prev: Save; next: Save; tx: unknown }[] = [];
+  for (const id of ids) {
+    const prev = pool.get(id);
+    if (!prev) continue;
+    const patch = patchFor(prev);
+    if (!patch || Object.keys(patch).length === 0) continue;
+    changes.push({
+      prev,
+      next: { ...prev, ...patch },
+      tx: {
+        kind: "update",
+        model: "save",
+        id,
+        patch,
+        before: snapshotBefore(prev, patch),
+        ...metaFor(opts),
+      },
+    });
+  }
+  if (changes.length === 0) return 0;
+  await optimistic(
+    () => {
+      for (const c of changes) pool.upsert(c.next);
+    },
+    () => {
+      for (const c of changes) pool.upsert(c.prev);
+    },
+    async () => window.pond.batch(changes.map((c) => c.tx)),
+  );
+  return changes.length;
+}
+
+// Bulk trash, batched so the whole set restores with a single undo.
+export async function trashSaves(
+  ids: readonly string[],
+  opts: MutateOpts = {},
+): Promise<number> {
+  const now = Date.now();
+  const changes: { prev: Save; next: Save; tx: unknown }[] = [];
+  for (const id of ids) {
+    const prev = pool.get(id);
+    if (!prev) continue;
+    changes.push({
+      prev,
+      next: { ...prev, deletedAt: now },
+      tx: { kind: "trash", model: "save", id, ...metaFor(opts) },
+    });
+  }
+  if (changes.length === 0) return 0;
+  await optimistic(
+    () => {
+      for (const c of changes) pool.upsert(c.next);
+    },
+    () => {
+      for (const c of changes) pool.upsert(c.prev);
+    },
+    async () => window.pond.batch(changes.map((c) => c.tx)),
+  );
+  return changes.length;
+}

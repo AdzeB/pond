@@ -1,6 +1,7 @@
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Button, cn, Input, Popover, Tooltip, useToast } from "@pond/ui";
 import { useCallback, useMemo, useState } from "react";
+import { setSaveTags, trashSaves } from "@/pool/mutate-save";
 import { pool } from "@/pool/pool";
 import { selection, useSelectedIds, useSelectionSize } from "@/pool/selection";
 import { useTags } from "@/pool/tags";
@@ -22,23 +23,19 @@ function Root() {
       const lowered = cleaned.toLowerCase();
       setBusy(true);
       try {
-        const txs: unknown[] = [];
-        for (const id of ids) {
+        const targets = ids.filter((id) => {
           const save = pool.get(id);
-          if (!save) continue;
-          if (save.tags.some((t) => t.toLowerCase() === lowered)) continue;
-          txs.push({
-            kind: "update",
-            model: "save",
-            id,
-            patch: { tags: [...save.tags, cleaned] },
-            before: { tags: save.tags },
-            meta: { actor: "user", actorReason: "bulk-tag-add" },
-          });
-        }
-        if (txs.length > 0) await window.pond.batch(txs);
+          return save && !save.tags.some((t) => t.toLowerCase() === lowered);
+        });
+        await Promise.all(
+          targets.map((id) => {
+            const save = pool.get(id);
+            if (!save) return Promise.resolve();
+            return setSaveTags(id, [...save.tags, cleaned]);
+          }),
+        );
         toast.add({
-          title: `Added "${cleaned}" to ${txs.length} save${txs.length === 1 ? "" : "s"}`,
+          title: `Added "${cleaned}" to ${targets.length} save${targets.length === 1 ? "" : "s"}`,
           type: "success",
         });
         setOpen(false);
@@ -92,15 +89,9 @@ function Root() {
     if (ids.length === 0) return;
     setBusy(true);
     try {
-      const txs = ids.map((id) => ({
-        kind: "trash",
-        model: "save",
-        id,
-        meta: { actor: "user", actorReason: "bulk-trash" },
-      }));
-      await window.pond.batch(txs as unknown[]);
+      const n = await trashSaves(ids, { actorReason: "bulk-trash" });
       toast.add({
-        title: `Moved ${ids.length} save${ids.length === 1 ? "" : "s"} to trash`,
+        title: `Moved ${n} save${n === 1 ? "" : "s"} to trash`,
         type: "success",
       });
       selection.clear();

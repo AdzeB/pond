@@ -10,9 +10,8 @@ import {
 import { Aside } from "@/components/shell/aside";
 import { useTrackVisit } from "@/lib/recents";
 import { useInspector } from "@/lib/shell-state";
-import { optimistic } from "@/pool/bootstrap";
 import { useSave } from "@/pool/hooks";
-import { pool } from "@/pool/pool";
+import { trashSave } from "@/pool/mutate-save";
 import styles from "./styles.module.css";
 
 export function Inspector() {
@@ -91,18 +90,7 @@ function KebabMenu({ save }: { save: ReturnType<typeof useSave> | null }) {
 
   const onDelete = useCallback(async () => {
     if (!save) return;
-    const prev = pool.get(save.id);
-    if (!prev) return;
-    const now = Date.now();
-    await optimistic(
-      () => {
-        pool.upsert({ ...prev, deletedAt: now } as typeof prev);
-      },
-      () => {
-        pool.upsert(prev);
-      },
-      async () => window.pond.tx({ kind: "trash", model: "save", id: save.id }),
-    );
+    await trashSave(save.id);
     toast.add({ title: "Moved to trash", type: "success" });
     router.history.back();
   }, [save, toast, router]);

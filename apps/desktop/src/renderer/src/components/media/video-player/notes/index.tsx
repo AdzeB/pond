@@ -2,8 +2,7 @@ import type { VideoNote } from "@pond/schema/db";
 import { X } from "lucide-react";
 import { type RefObject, useCallback, useState } from "react";
 import { ulid } from "ulid";
-import { optimistic } from "@/pool/bootstrap";
-import { pool } from "@/pool/pool";
+import { mutateSave } from "@/pool/mutate-save";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
@@ -20,27 +19,8 @@ export function VideoNotes({
   );
 
   const persist = useCallback(
-    async (next: VideoNote[]) => {
-      const prev = pool.get(save.id);
-      if (!prev) return;
-      await optimistic(
-        () => {
-          pool.upsert({ ...prev, videoNotes: next });
-        },
-        () => {
-          pool.upsert(prev);
-        },
-        async () =>
-          window.pond.tx({
-            kind: "update",
-            model: "save",
-            id: save.id,
-            patch: { videoNotes: next },
-            before: { videoNotes: save.videoNotes },
-          }),
-      );
-    },
-    [save.id, save.videoNotes],
+    (next: VideoNote[]) => mutateSave(save.id, { videoNotes: next }),
+    [save.id],
   );
 
   const addAtCurrent = useCallback(() => {

@@ -6,9 +6,8 @@ import {
   useMemo,
   useState,
 } from "react";
-import { optimistic } from "@/pool/bootstrap";
 import { pickPrimaryUnit } from "@/pool/media";
-import { pool } from "@/pool/pool";
+import { mutateSave, setSaveTags } from "@/pool/mutate-save";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save } from "@/pool/types";
 import { pickAuthorAvatarUrl } from "@/pool/url";
@@ -78,25 +77,7 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
         onBlur={async (e) => {
           const next = e.currentTarget.textContent?.trim() ?? "";
           if (next === (save.title ?? "")) return;
-          const prev = pool.get(save.id);
-          if (!prev) return;
-          const nextTitle = next || null;
-          await optimistic(
-            () => {
-              pool.upsert({ ...prev, title: nextTitle });
-            },
-            () => {
-              pool.upsert(prev);
-            },
-            async () =>
-              window.pond.tx({
-                kind: "update",
-                model: "save",
-                id: save.id,
-                patch: { title: nextTitle },
-                before: { title: save.title },
-              }),
-          );
+          await mutateSave(save.id, { title: next || null });
         }}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -254,24 +235,7 @@ function PaneNotes({ save }: { save: Save }) {
   const commit = useCallback(async () => {
     const next = draft.trim() || null;
     if (next === (save.notes ?? null)) return;
-    const prev = pool.get(save.id);
-    if (!prev) return;
-    await optimistic(
-      () => {
-        pool.upsert({ ...prev, notes: next });
-      },
-      () => {
-        pool.upsert(prev);
-      },
-      async () =>
-        window.pond.tx({
-          kind: "update",
-          model: "save",
-          id: save.id,
-          patch: { notes: next },
-          before: { notes: save.notes },
-        }),
-    );
+    await mutateSave(save.id, { notes: next });
   }, [draft, save.id, save.notes]);
 
   return (
@@ -293,10 +257,10 @@ function PaneTags({ save }: { save: Save }) {
     async (name: string) => {
       setBusy(true);
       try {
-        await window.pond.query("tags.setForSave", {
-          saveId: save.id,
-          tags: save.tags.filter((t) => t.toLowerCase() !== name.toLowerCase()),
-        });
+        await setSaveTags(
+          save.id,
+          save.tags.filter((t) => t.toLowerCase() !== name.toLowerCase()),
+        );
       } finally {
         setBusy(false);
       }

@@ -1,4 +1,3 @@
-import type { Save as DbSave } from "@pond/schema/db";
 import { ContextMenu, Kbd, Menu, useToast } from "@pond/ui";
 import {
   ClipboardPaste,
@@ -27,8 +26,7 @@ import {
   pasteTags as pasteTagsAction,
 } from "@/lib/save-actions";
 import { useTagClipboard } from "@/lib/tag-clipboard";
-import { optimistic } from "@/pool/bootstrap";
-import { pool } from "@/pool/pool";
+import { purgeSave, trashSave, untrashSave } from "@/pool/mutate-save";
 import type { Save } from "@/pool/types";
 
 const ICON_SIZE = 14;
@@ -185,55 +183,17 @@ function useSaveActions(save: Save): ActionDescriptor[] {
     };
 
     const trash = async () => {
-      const prev = pool.get(save.id);
-      if (!prev) return;
-      await optimistic(
-        () => {
-          pool.upsert({ ...prev, deletedAt: Date.now() } as typeof prev);
-        },
-        () => {
-          pool.upsert(prev);
-        },
-        async () =>
-          window.pond.tx({ kind: "trash", model: "save", id: save.id }),
-      );
+      await trashSave(save.id);
       toast.add({ title: "Moved to trash", type: "success" });
     };
 
     const untrash = async () => {
-      const prev = pool.get(save.id);
-      if (!prev) return;
-      await optimistic(
-        () => {
-          pool.upsert({ ...prev, deletedAt: null } as typeof prev);
-        },
-        () => {
-          pool.upsert(prev);
-        },
-        async () =>
-          window.pond.tx({ kind: "untrash", model: "save", id: save.id }),
-      );
+      await untrashSave(save.id);
       toast.add({ title: "Restored", type: "success" });
     };
 
     const purge = async () => {
-      const prev = pool.get(save.id);
-      if (!prev) return;
-      await optimistic(
-        () => {
-          pool.delete(save.id);
-        },
-        () => {
-          pool.upsert(prev);
-        },
-        async () =>
-          window.pond.tx({
-            kind: "purge",
-            model: "save",
-            id: save.id,
-            before: prev as unknown as DbSave,
-          }),
-      );
+      await purgeSave(save.id);
       toast.add({ title: "Deleted forever", type: "success" });
     };
 

@@ -1,6 +1,7 @@
 import { Dialog, Input } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import { categorize, useCategorize } from "@/lib/categorize";
+import { setSaveTags } from "@/pool/mutate-save";
 import { pool } from "@/pool/pool";
 import styles from "./styles.module.css";
 
@@ -29,10 +30,7 @@ export function Categorize() {
         for (const t of tags) {
           if (!merged.some((x) => x.toLowerCase() === t)) merged.push(t);
         }
-        return window.pond.query("tags.setForSave", {
-          saveId: id,
-          tags: merged,
-        });
+        return setSaveTags(id, merged);
       }),
     );
     categorize.close();

@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSourceLabel } from "@/lib/source-labels";
-import { optimistic } from "@/pool/bootstrap";
 import { useSaves } from "@/pool/hooks";
-import { pool, savesStore } from "@/pool/pool";
+import { trashSave } from "@/pool/mutate-save";
+import { savesStore } from "@/pool/pool";
 import type {
   PipelineMetricsWire,
   ProcessingProgressWire,
@@ -361,19 +361,9 @@ export function RightNow() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      const prev = pool.get(id);
-      if (!prev) return;
       setBusyId(id);
       try {
-        await optimistic(
-          () => {
-            pool.upsert({ ...prev, deletedAt: Date.now() } as typeof prev);
-          },
-          () => {
-            pool.upsert(prev);
-          },
-          async () => window.pond.tx({ kind: "trash", model: "save", id }),
-        );
+        await trashSave(id);
         toast.add({ title: "Moved to trash", type: "success" });
       } finally {
         setBusyId(null);

@@ -1,9 +1,13 @@
-import type { Save as DbSave } from "@pond/schema/db";
 import type { useToast } from "@pond/ui";
 import { presentation } from "@/lib/presentation";
 import { setInspectorOpen } from "@/lib/shell-state";
 import { mergeUniqueTags, tagClipboard } from "@/lib/tag-clipboard";
-import { optimistic } from "@/pool/bootstrap";
+import {
+  trashSave as applyTrash,
+  untrashSave as applyUntrash,
+  purgeSave,
+  setSaveTags,
+} from "@/pool/mutate-save";
 import { pool } from "@/pool/pool";
 import type { Save } from "@/pool/types";
 
@@ -13,23 +17,8 @@ export async function toggleTrash(save: Save, toast: Toast): Promise<void> {
   const prev = pool.get(save.id);
   if (!prev) return;
   const wasTrashed = Boolean(prev.deletedAt);
-  await optimistic(
-    () => {
-      pool.upsert({
-        ...prev,
-        deletedAt: wasTrashed ? null : Date.now(),
-      } as typeof prev);
-    },
-    () => {
-      pool.upsert(prev);
-    },
-    async () =>
-      window.pond.tx({
-        kind: wasTrashed ? "untrash" : "trash",
-        model: "save",
-        id: save.id,
-      }),
-  );
+  if (wasTrashed) await applyUntrash(save.id);
+  else await applyTrash(save.id);
   toast.add({
     title: wasTrashed ? "Restored" : "Moved to trash",
     type: "success",
@@ -102,23 +91,7 @@ export function openTagPicker(): void {
 }
 
 export async function purgeForever(save: Save, toast: Toast): Promise<void> {
-  const prev = pool.get(save.id);
-  if (!prev) return;
-  await optimistic(
-    () => {
-      pool.delete(save.id);
-    },
-    () => {
-      pool.upsert(prev);
-    },
-    async () =>
-      window.pond.tx({
-        kind: "purge",
-        model: "save",
-        id: save.id,
-        before: prev as unknown as DbSave,
-      }),
-  );
+  await purgeSave(save.id);
   toast.add({ title: "Deleted forever", type: "success" });
 }
 
@@ -178,21 +151,7 @@ export async function pasteTags(save: Save, toast: Toast): Promise<void> {
     toast.add({ title: "Tags already present", type: "success" });
     return;
   }
-  const prev = pool.get(save.id);
-  if (!prev) return;
-  await optimistic(
-    () => {
-      pool.upsert({ ...prev, tags: next } as typeof prev);
-    },
-    () => {
-      pool.upsert(prev);
-    },
-    async () =>
-      window.pond.query("tags.setForSave", {
-        saveId: save.id,
-        tags: next,
-      }),
-  );
+  await setSaveTags(save.id, next);
   toast.add({
     title: `Pasted ${added} tag${added === 1 ? "" : "s"}`,
     type: "success",
