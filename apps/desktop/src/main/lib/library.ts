@@ -95,6 +95,22 @@ export async function writeInfoFiles(
   );
 }
 
+// Write a save's `info.json` + `source.json` from its current row, deriving
+// the file manifest from `save.files`. The item dir is created if missing, so
+// this also covers saves with no blobs (a link, a text-only capture).
+export async function writeSaveInfo(save: Save): Promise<void> {
+  const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
+    kind: f.kind,
+    path: f.path,
+    sha256: f.sha256,
+    size: f.size,
+    ...(f.mimeType ? { mimeType: f.mimeType } : {}),
+    ...(f.width ? { width: f.width } : {}),
+    ...(f.height ? { height: f.height } : {}),
+  }));
+  await writeInfoFiles(save.id, infoDocFromSave(save, manifest), save.rawJson);
+}
+
 export async function writeItemFiles(
   id: string,
   save: Save,

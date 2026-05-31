@@ -2,8 +2,7 @@ import { type Save, type Task, tasks } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
-import { writeInfoFiles } from "../../../lib/library";
-import { type InfoFile, infoDocFromSave } from "../../../lib/library-format";
+import { writeSaveInfo } from "../../../lib/library";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
 import { CAPTURE_EXPECTATIONS } from "../specs";
 import { applySavePatch, readSave } from "./apply";
@@ -22,7 +21,7 @@ export async function runFinalize(saveId: string): Promise<void> {
   const taskRows = await fetchTaskRows(saveId);
   const report = computeCaptureReport(save);
 
-  await writeItemInfo(save);
+  await writeSaveInfo(save);
 
   if (report.required.missing.length > 0) {
     // If harvest_metadata still has retries left, kick it back to pending so
@@ -148,21 +147,4 @@ function hasMeaningfulValue(v: unknown): boolean {
   if (Array.isArray(v)) return v.length > 0;
   if (typeof v === "object") return Object.keys(v).length > 0;
   return true;
-}
-
-// Text-only tweets with no media + a failed screenshot capture leave
-// `save.files` empty, in which case no upstream worker ever created the
-// item dir (applySavePatch only mkdirs when files are written). Finalize
-// is the last step, so `writeInfoFiles` owns ensuring the dir exists.
-async function writeItemInfo(save: Save): Promise<void> {
-  const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
-    kind: f.kind,
-    path: f.path,
-    sha256: f.sha256,
-    size: f.size,
-    ...(f.mimeType ? { mimeType: f.mimeType } : {}),
-    ...(f.width ? { width: f.width } : {}),
-    ...(f.height ? { height: f.height } : {}),
-  }));
-  await writeInfoFiles(save.id, infoDocFromSave(save, manifest), save.rawJson);
 }
