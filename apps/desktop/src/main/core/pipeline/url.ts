@@ -49,5 +49,9 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
       const m = firstMatch(url, YOUTUBE_PATTERNS);
       return m?.[1] ?? null;
     }
+    case "local":
+      // Local saves mint their own id at import time; there is no upstream
+      // URL to canonicalize.
+      return null;
   }
 }

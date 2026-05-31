@@ -27,6 +27,9 @@ export function maxAttemptsFor(op: Op): number {
 }
 
 export function planOps(source: Source): readonly Op[] {
+  // Local saves carry their bytes and metadata at import time. There is
+  // nothing to scrape, fetch, or capture, so they run no pipeline ops.
+  if (source === "local") return [];
   // capture_tweet only runs for text-only X posts. For every other source
   // it would lease a hidden window, navigate to a non-tweet URL, and
   // produce nothing. Filter the op out of the spec for them so we don't
@@ -99,6 +102,9 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.author.avatarUrl",
     ],
   },
+  // Local imports supply their own metadata; nothing is scraped, so there
+  // are no capture expectations to grade against.
+  local: { required: [], recommended: [] },
 };
 
 // resolveYtDlpTarget: Capture.upstream is populated by the extractor when the

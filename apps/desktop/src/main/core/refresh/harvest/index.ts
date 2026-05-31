@@ -50,6 +50,16 @@ const REGISTRY: Record<Source, Harvester> = {
     adapt: cosmos.adapt,
     sourceIdFromUrl: cosmos.sourceIdFromUrl,
   },
+  // Local imports never enter the harvest pipeline (planOps returns no ops
+  // for them). The entry exists to keep the registry total; calling it is a
+  // programming error, so it throws rather than returning a silent no-op.
+  local: {
+    buildExpression: () => {
+      throw new Error("local source is not harvestable");
+    },
+    adapt: () => null,
+    sourceIdFromUrl: () => null,
+  },
 };
 
 export function harvesterFor(source: Source): Harvester {

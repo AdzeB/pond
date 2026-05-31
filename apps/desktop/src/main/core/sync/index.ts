@@ -67,6 +67,9 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   pinterest: 20 * 60_000,
   instagram: 20 * 60_000,
   tiktok: 20 * 60_000,
+  // Local imports never run a sync session; present only to keep the
+  // record total.
+  local: 20 * 60_000,
 };
 
 export function subscribeToSyncStatus(cb: StatusListener): () => void {

@@ -602,6 +602,7 @@ const SOURCE_LABELS: Record<Source, string> = {
   cosmos: "Cosmos",
   tiktok: "TikTok",
   youtube: "YouTube",
+  local: "Local",
 };
 
 function settingsSubmenu(): Electron.MenuItemConstructorOptions[] {

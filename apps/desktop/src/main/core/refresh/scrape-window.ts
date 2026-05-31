@@ -60,6 +60,9 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   cosmos: 2,
   pinterest: 2,
   arena: 2,
+  // Local imports never lease a scrape window; the budget is here only to
+  // keep the record total.
+  local: 0,
 };
 
 interface PoolSlot {
@@ -719,6 +722,8 @@ function listUrlForSource(
       return accountKey ? tiktokFavouritesUrl(accountKey) : null;
     case "twitter":
       return null;
+    case "local":
+      return null;
   }
 }
 
@@ -740,6 +745,8 @@ function buildListExpressionFor(
     case "tiktok":
       return buildTiktokListExpression(args);
     case "twitter":
+      return null;
+    case "local":
       return null;
   }
 }
@@ -1247,6 +1254,8 @@ function isAuthCookie(source: Source, cookie: Cookie): boolean {
         name === "next-auth.session-token" ||
         name === "cosmos.session-token"
       );
+    case "local":
+      return false;
   }
 }
 
@@ -1278,6 +1287,8 @@ export function primaryDomainForSource(source: Source): string | null {
       return ".are.na";
     case "youtube":
       return ".youtube.com";
+    case "local":
+      return null;
   }
 }
 

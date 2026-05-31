@@ -15,6 +15,7 @@ export const SOURCES = [
   "cosmos",
   "tiktok",
   "youtube",
+  "local",
 ] as const;
 export type Source = (typeof SOURCES)[number];
 

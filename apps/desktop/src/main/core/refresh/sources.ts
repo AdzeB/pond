@@ -65,6 +65,9 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.are.na/log-in";
     case "youtube":
       return "https://accounts.google.com/ServiceLogin?service=youtube";
+    case "local":
+      // Local imports have no remote account, so there is no login page.
+      return "";
   }
 }
 
@@ -79,6 +82,7 @@ export function supportsYtDlp(source: Source | null): boolean {
       return true;
     case "pinterest":
     case "arena":
+    case "local":
       return false;
   }
 }
@@ -99,5 +103,7 @@ export function sourceLabel(source: Source): string {
       return "TikTok";
     case "youtube":
       return "YouTube";
+    case "local":
+      return "Local";
   }
 }
