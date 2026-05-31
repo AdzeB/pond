@@ -1,3 +1,4 @@
+import { NotebookPen } from "lucide-react";
 import { memo, useCallback, useMemo } from "react";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { LibraryGrid } from "@/components/library";
@@ -151,6 +152,11 @@ const SaveCardBody = memo(function SaveCardBody({
           <LibraryGrid.Item.Count aria-label={`${mediaUnitCount} media files`}>
             {mediaUnitCount}
           </LibraryGrid.Item.Count>
+        ) : null}
+        {save.notes?.trim() ? (
+          <LibraryGrid.Item.Note aria-label="Has a note" title="Has a note">
+            <NotebookPen size={11} />
+          </LibraryGrid.Item.Note>
         ) : null}
       </LibraryGrid.Item.Media>
       {showMeta ? (

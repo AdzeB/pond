@@ -138,6 +138,26 @@
   white-space: nowrap;
 }
 
+.note {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  color: #fff;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+:global(html[data-reduce-transparency="true"]) .note {
+  background: rgb(0, 0, 0);
+}
+
 .count {
   position: absolute;
   top: 6px;

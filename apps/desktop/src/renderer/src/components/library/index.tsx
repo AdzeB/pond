@@ -126,6 +126,12 @@ function ItemCount({ className, role, ...props }: ItemCountProps) {
   );
 }
 
+interface ItemNoteProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemNote({ className, ...props }: ItemNoteProps) {
+  return <span className={cn(styles.note, className)} {...props} />;
+}
+
 interface ItemCheckboxProps
   extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
   checked: boolean;
@@ -158,6 +164,7 @@ const Item = Object.assign(ItemBase, {
   Title: ItemTitle,
   Time: ItemTime,
   Count: ItemCount,
+  Note: ItemNote,
   Checkbox: ItemCheckbox,
 });
 
