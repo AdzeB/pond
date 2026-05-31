@@ -1,4 +1,4 @@
-import type { Op, SaveStatus, TaskStatus } from "@pond/schema/db";
+import type { Op, SaveStatus, TaskStatus, VideoNote } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 
 export interface SaveFile {
@@ -38,6 +38,7 @@ export interface Save {
   height?: number | null;
   fileSize?: number | null;
   phash?: string | null;
+  videoNotes?: VideoNote[];
   tags: string[];
   rawJson?: RawJson | null;
   status?: SaveStatus;

@@ -179,6 +179,7 @@ function migrate(sqlite: Database.Database): void {
   dropLegacyArtifacts(sqlite);
   ensureSavesPipelineColumns(sqlite);
   ensureSavesPhashColumn(sqlite);
+  ensureSavesVideoNotesColumn(sqlite);
   ensureTagsLabelColumns(sqlite);
   dropArchivedAtColumn(sqlite);
   hardDeleteArticleSaves(sqlite);
@@ -246,6 +247,17 @@ function ensureSavesPhashColumn(sqlite: Database.Database): void {
     .all() as { name: string }[];
   if (!cols.some((c) => c.name === "phash")) {
     sqlite.exec("ALTER TABLE saves ADD COLUMN phash TEXT");
+  }
+}
+
+function ensureSavesVideoNotesColumn(sqlite: Database.Database): void {
+  const cols = sqlite
+    .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
+    .all() as { name: string }[];
+  if (!cols.some((c) => c.name === "video_notes")) {
+    sqlite.exec(
+      "ALTER TABLE saves ADD COLUMN video_notes TEXT NOT NULL DEFAULT '[]'",
+    );
   }
 }
 

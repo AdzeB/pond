@@ -56,6 +56,12 @@ export interface SaveFile {
   height?: number | null;
 }
 
+export interface VideoNote {
+  id: string;
+  timeSec: number;
+  text: string;
+}
+
 export const saves = sqliteTable(
   "saves",
   {
@@ -86,6 +92,10 @@ export const saves = sqliteTable(
     height: integer("height"),
     fileSize: integer("file_size"),
     phash: text("phash"),
+    videoNotes: text("video_notes", { mode: "json" })
+      .$type<VideoNote[]>()
+      .notNull()
+      .default(sql`'[]'`),
     status: text("status")
       .$type<SaveStatus>()
       .notNull()
