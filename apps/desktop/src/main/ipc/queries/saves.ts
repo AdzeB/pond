@@ -18,6 +18,10 @@ import { BrowserWindow, clipboard, dialog, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
 import {
+  createManualSave,
+  IMPORTABLE_EXTENSIONS,
+} from "../../core/manual-import";
+import {
   cancelProcessingBackfill,
   isProcessingBackfilling,
   retryFailedSave,
@@ -25,6 +29,8 @@ import {
 } from "../../core/pipeline/backfill-failed";
 import { enqueueSaveByUrl } from "../../core/pipeline/enqueue";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
+import { applySavePatch } from "../../core/pipeline/workers/apply";
+import { setSaveTags } from "../../core/tags";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
@@ -135,6 +141,19 @@ async function loadTasksFor(
   return grouped;
 }
 
+// Import each dropped/picked file as its own save so a multi-file drop
+// becomes a grid of individual items rather than one mixed bundle.
+async function importFilesImpl(
+  paths: string[],
+): Promise<{ ok: boolean; ids: string[] }> {
+  const ids: string[] = [];
+  for (const path of paths) {
+    const res = await createManualSave({ filePaths: [path] });
+    if (res.ok && res.id) ids.push(res.id);
+  }
+  return { ok: ids.length > 0, ids };
+}
+
 export const savesQueries: QueryHandlerMap = {
   async "saves.list"(params) {
     const db = await getDb();
@@ -224,11 +243,42 @@ export const savesQueries: QueryHandlerMap = {
     return resolveSaveFilePath(id, Number.isFinite(fileIndex) ? fileIndex : 0);
   },
 
-  async "saves.dropFiles"() {
-    // Local file drops aren't supported in the URL-first pipeline yet:
-    // every save now flows through enqueueSaveByUrl. Keep the IPC alive so
-    // the renderer's drop handler can no-op gracefully.
-    return { ok: false, error: "local_files_unsupported" };
+  async "saves.importFiles"(params) {
+    const paths = Array.isArray(params.paths)
+      ? (params.paths as unknown[]).map(String).filter(Boolean)
+      : [];
+    if (paths.length === 0) return { ok: false, error: "no_files" };
+    return importFilesImpl(paths);
+  },
+
+  // Back-compat alias for any stale renderer build still calling dropFiles.
+  async "saves.dropFiles"(params) {
+    const paths = Array.isArray(params.paths)
+      ? (params.paths as unknown[]).map(String).filter(Boolean)
+      : [];
+    if (paths.length === 0) return { ok: false, error: "no_files" };
+    return importFilesImpl(paths);
+  },
+
+  async "saves.createManual"(params) {
+    return createManualSave({
+      title: params.title != null ? String(params.title) : null,
+      url: params.url != null ? String(params.url) : null,
+      note: params.note != null ? String(params.note) : null,
+      tags: Array.isArray(params.tags) ? (params.tags as string[]) : [],
+      filePaths: Array.isArray(params.filePaths)
+        ? (params.filePaths as string[])
+        : [],
+    });
+  },
+
+  async "saves.pickFiles"() {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile", "multiSelections"],
+      filters: [{ name: "Media", extensions: [...IMPORTABLE_EXTENSIONS] }],
+    });
+    if (result.canceled) return { ok: false, paths: [] };
+    return { ok: true, paths: result.filePaths };
   },
 
   async "saves.startDrag"(params, event) {
@@ -253,15 +303,40 @@ export const savesQueries: QueryHandlerMap = {
 
   async "saves.quickAdd"(params) {
     const url = String(params.url ?? "").trim();
-    if (!url) return { ok: false, error: "no_url" };
+    const note =
+      params.note != null ? String(params.note).trim() || null : null;
+    const tags = Array.isArray(params.tags) ? (params.tags as string[]) : [];
+
+    if (!url) {
+      // No URL: treat as a manual note entry rather than rejecting it.
+      const res = await createManualSave({ title: note, note, tags });
+      return res.ok
+        ? { ok: true, id: res.id }
+        : { ok: false, error: res.error ?? "empty_input" };
+    }
     try {
-      const result = await enqueueSaveByUrl(url, {
-        trigger: "user:quickAdd",
-      });
+      const result = await enqueueSaveByUrl(url, { trigger: "user:quickAdd" });
+      if (tags.length > 0) await setSaveTags(result.id, tags);
+      if (note) {
+        await applySavePatch(
+          result.id,
+          { notes: note },
+          { actorReason: "user:quickAdd-note" },
+        );
+      }
       return { ok: true, id: result.id, created: result.created };
     } catch (err) {
       if (err instanceof UnsupportedError) {
-        return { ok: false, error: "unsupported_url" };
+        // Unsupported URL: keep it as a manual save instead of dropping it.
+        const res = await createManualSave({
+          url,
+          title: note ?? url,
+          note,
+          tags,
+        });
+        return res.ok
+          ? { ok: true, id: res.id }
+          : { ok: false, error: "unsupported_url" };
       }
       log.error("[pond ipc] quickAdd failed", err);
       return {
