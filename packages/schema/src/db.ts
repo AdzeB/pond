@@ -6,6 +6,7 @@ import {
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
+import type { Query } from "./filters/types";
 
 export const SOURCES = [
   "twitter",
@@ -310,6 +311,15 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
   lastError: null,
 };
 
+export interface SmartFolder {
+  id: string;
+  name: string;
+  query: Query;
+  icon?: string | null;
+  pinned: boolean;
+  sortOrder: number;
+}
+
 export interface Prefs {
   preferences: {
     theme: "system" | "light" | "dark" | "high-contrast";
@@ -379,6 +389,9 @@ export interface Prefs {
     warnAtPercent: number;
     action: "warn" | "pauseSync" | "pauseVideo";
     watchIntervalMinutes: number;
+  };
+  smartFolders: {
+    items: SmartFolder[];
   };
 }
 
@@ -451,6 +464,9 @@ export const DEFAULT_PREFS: Prefs = {
     warnAtPercent: 80,
     action: "warn",
     watchIntervalMinutes: 5,
+  },
+  smartFolders: {
+    items: [],
   },
 };
 
