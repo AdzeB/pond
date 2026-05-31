@@ -1,5 +1,5 @@
-import { copyFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { copyFile, writeFile } from "node:fs/promises";
+import { basename, extname, join } from "node:path";
 import { SOURCES, type Source, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
@@ -34,6 +34,7 @@ import { setSaveTags } from "../../core/tags";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
+import { toCsv } from "../../lib/csv";
 import {
   type QueryHandlerMap,
   resolveSaveFilePath,
@@ -139,6 +140,13 @@ async function loadTasksFor(
     else grouped.set(t.saveId, [t]);
   }
   return grouped;
+}
+
+function sanitizeName(s: string): string {
+  return s
+    .replace(/[/\\?%*:|"<>]/g, "_")
+    .trim()
+    .slice(0, 120);
 }
 
 // Import each dropped/picked file as its own save so a multi-file drop
@@ -620,6 +628,90 @@ export const savesQueries: QueryHandlerMap = {
       log.warn("[pond ipc] saves.exportFile failed", err);
       return { ok: false as const, reason: "internal_error" as const };
     }
+  },
+
+  async "saves.exportFiles"(params) {
+    const ids = Array.isArray(params.ids)
+      ? (params.ids as unknown[]).map(String).filter(Boolean)
+      : [];
+    if (ids.length === 0) return { ok: false as const, error: "no_selection" };
+
+    const picked = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"],
+    });
+    if (picked.canceled || !picked.filePaths[0]) {
+      return { ok: false as const, error: "canceled" };
+    }
+    const dir = picked.filePaths[0];
+
+    const db = await getDb();
+    const rows = await db.select().from(saves).where(inArray(saves.id, ids));
+
+    const used = new Set<string>();
+    let exported = 0;
+    for (const row of rows) {
+      const target = await resolveSaveFilePath(row.id, row.coverIndex ?? 0);
+      if (!target.ok) continue;
+      const ext = extname(target.path);
+      const base =
+        sanitizeName(row.title ?? basename(target.path, ext)) || row.id;
+      let name = `${base}${ext}`;
+      let n = 1;
+      while (used.has(name.toLowerCase())) name = `${base}-${n++}${ext}`;
+      used.add(name.toLowerCase());
+      await copyFile(target.path, join(dir, name));
+      exported++;
+    }
+    return { ok: true as const, exported, dir };
+  },
+
+  async "saves.exportCsv"(params) {
+    const ids = Array.isArray(params.ids)
+      ? (params.ids as unknown[]).map(String).filter(Boolean)
+      : null;
+
+    const db = await getDb();
+    const rows =
+      ids && ids.length > 0
+        ? await db.select().from(saves).where(inArray(saves.id, ids))
+        : await db
+            .select()
+            .from(saves)
+            .where(isNull(saves.deletedAt))
+            .orderBy(desc(saves.savedAt));
+
+    const columns = [
+      "id",
+      "source",
+      "url",
+      "title",
+      "author",
+      "description",
+      "notes",
+      "tags",
+      "mediaType",
+      "width",
+      "height",
+      "fileSize",
+      "status",
+      "savedAt",
+    ];
+    const records = rows.map((r) => ({
+      ...r,
+      tags: (r.tags ?? []).join("; "),
+      savedAt: r.savedAt ? new Date(r.savedAt).toISOString() : "",
+    }));
+    const csv = toCsv(records, columns);
+
+    const picked = await dialog.showSaveDialog({
+      defaultPath: "pond-export.csv",
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+    });
+    if (picked.canceled || !picked.filePath) {
+      return { ok: false as const, error: "canceled" };
+    }
+    await writeFile(picked.filePath, csv, "utf8");
+    return { ok: true as const, count: rows.length, path: picked.filePath };
   },
 
   async "saves.publicImageUrl"(params) {
