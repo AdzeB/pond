@@ -1,0 +1,111 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0;
+}
+
+.add {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  transition: box-shadow 80ms ease;
+}
+
+.input::placeholder {
+  color: var(--ds-gray-9);
+}
+
+.input:focus-visible {
+  box-shadow: 0 0 0 1px var(--ds-gray-a8);
+}
+
+.add-button {
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-12);
+  cursor: pointer;
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: 8px;
+}
+
+.add-button:hover {
+  background: var(--ds-gray-4);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 6px;
+  border-radius: 6px;
+}
+
+.item:hover {
+  background: var(--ds-gray-2);
+}
+
+.time {
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-blue-11);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--ds-gray-12);
+}
+
+.remove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: var(--ds-gray-9);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  opacity: 0;
+}
+
+.item:hover .remove {
+  opacity: 1;
+}
+
+.remove:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-4);
+}
