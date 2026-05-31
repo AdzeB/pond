@@ -1,3 +1,4 @@
+export * from "./color";
 export * from "./fields";
 export * from "./match";
 export * from "./meta";
