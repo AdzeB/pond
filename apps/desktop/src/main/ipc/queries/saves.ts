@@ -21,6 +21,7 @@ import {
   createManualSave,
   IMPORTABLE_EXTENSIONS,
 } from "../../core/manual-import";
+import { persistSave } from "../../core/persist-save";
 import {
   cancelProcessingBackfill,
   isProcessingBackfilling,
@@ -29,7 +30,6 @@ import {
 } from "../../core/pipeline/backfill-failed";
 import { enqueueSaveByUrl } from "../../core/pipeline/enqueue";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
-import { applySavePatch } from "../../core/pipeline/workers/apply";
 import { setSaveTags } from "../../core/tags";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
@@ -293,7 +293,7 @@ export const savesQueries: QueryHandlerMap = {
     const id = String(params.id ?? "");
     const phash = params.phash != null ? String(params.phash) : null;
     if (!id) return { ok: false };
-    await applySavePatch(id, { phash }, { actorReason: "duplicates:phash" });
+    await persistSave(id, { phash }, { actorReason: "duplicates:phash" });
     return { ok: true };
   },
 
@@ -334,7 +334,7 @@ export const savesQueries: QueryHandlerMap = {
       const result = await enqueueSaveByUrl(url, { trigger: "user:quickAdd" });
       if (tags.length > 0) await setSaveTags(result.id, tags);
       if (note) {
-        await applySavePatch(
+        await persistSave(
           result.id,
           { notes: note },
           { actorReason: "user:quickAdd-note" },
@@ -732,7 +732,7 @@ export const savesQueries: QueryHandlerMap = {
       if (!cover) continue;
       const colors = await extractPalette(itemFile(row.id, cover.path));
       if (colors.length > 0) {
-        await applySavePatch(
+        await persistSave(
           row.id,
           { dominantColors: colors },
           { actorReason: "color:backfill" },

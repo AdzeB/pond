@@ -1,8 +1,9 @@
 import type { MediaType, NewSave } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { persistSave } from "../../persist-save";
 import { resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
-import { applySavePatch, readSave } from "./apply";
+import { readSave } from "./apply";
 
 const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
 
@@ -44,7 +45,7 @@ export async function runHarvestMetadata(
   };
 
   const patch = buildSavePatch(capture, rawJson);
-  await applySavePatch(saveId, patch, {
+  await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
   });
   log.info("[pond pipeline:harvest] captured", {

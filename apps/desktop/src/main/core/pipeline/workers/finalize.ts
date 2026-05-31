@@ -2,10 +2,10 @@ import { type Save, type Task, tasks } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
-import { writeSaveInfo } from "../../../lib/library";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
+import { persistSave } from "../../persist-save";
 import { CAPTURE_EXPECTATIONS } from "../specs";
-import { applySavePatch, readSave } from "./apply";
+import { readSave } from "./apply";
 
 export class FinalizeIncompleteError extends Error {
   constructor(public readonly missing: string[]) {
@@ -20,8 +20,6 @@ export async function runFinalize(saveId: string): Promise<void> {
 
   const taskRows = await fetchTaskRows(saveId);
   const report = computeCaptureReport(save);
-
-  await writeSaveInfo(save);
 
   if (report.required.missing.length > 0) {
     // If harvest_metadata still has retries left, kick it back to pending so
@@ -83,7 +81,7 @@ export async function runFinalize(saveId: string): Promise<void> {
       const { itemFile } = await import("../../../paths");
       const colors = await extractPalette(itemFile(saveId, cover.path));
       if (colors.length > 0) {
-        await applySavePatch(
+        await persistSave(
           saveId,
           { dominantColors: colors },
           { actorReason: "color:extract" },
@@ -92,7 +90,11 @@ export async function runFinalize(saveId: string): Promise<void> {
     }
   }
 
-  await applySavePatch(
+  // Authoritative info.json write: by now auto-tags have updated the DB row
+  // and color extraction has run, so the shared projection captures the full
+  // exported shape. writeInfo forces it even though status/ingestCompletedAt
+  // are DB-only columns.
+  await persistSave(
     saveId,
     {
       status: "complete",
@@ -100,6 +102,7 @@ export async function runFinalize(saveId: string): Promise<void> {
     },
     {
       actorReason: "pipeline:finalize",
+      writeInfo: true,
     },
   );
   void commitSaveIngestEvent(saveId, { outcome: "complete" });

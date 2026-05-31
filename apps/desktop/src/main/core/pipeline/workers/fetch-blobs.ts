@@ -2,8 +2,9 @@ import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
+import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
-import { applySavePatch, readSave } from "./apply";
+import { readSave } from "./apply";
 
 export async function runFetchBlobs(saveId: string): Promise<void> {
   const save = await readSave(saveId);
@@ -60,7 +61,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     };
   });
 
-  await applySavePatch(
+  await persistSave(
     saveId,
     { fileSize: newFiles[0]?.bytes.byteLength ?? null },
     {

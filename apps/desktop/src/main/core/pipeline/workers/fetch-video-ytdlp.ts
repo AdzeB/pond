@@ -2,11 +2,12 @@ import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { persistSave } from "../../persist-save";
 import { getVideoDownloadPrefs } from "../../prefs";
 import { downloadVideo } from "../../refresh/yt-dlp";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { resolveYtDlpTarget } from "../specs";
-import { applySavePatch, readSave } from "./apply";
+import { readSave } from "./apply";
 
 export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
   const save = await readSave(saveId);
@@ -99,7 +100,7 @@ export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
       }
     }
 
-    await applySavePatch(
+    await persistSave(
       saveId,
       {
         mediaType: "video",

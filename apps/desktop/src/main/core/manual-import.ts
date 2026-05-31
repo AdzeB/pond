@@ -12,7 +12,7 @@ import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
 import { broadcastSyncAction } from "./executor";
-import { applySavePatch } from "./pipeline/workers/apply";
+import { persistSave } from "./persist-save";
 
 const IMAGE_EXT: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -166,7 +166,7 @@ export async function createManualSave(
       mimeType: file.mimeType,
     }));
     const fileSize = readable.reduce((sum, f) => sum + f.bytes.byteLength, 0);
-    await applySavePatch(
+    await persistSave(
       id,
       { status: "complete", ingestCompletedAt: new Date(), fileSize },
       { actorReason: "manual:import", newFiles },

@@ -82,3 +82,53 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
     files,
   };
 }
+
+// The Save columns that surface in info.json. DB-only columns (phash,
+// videoNotes, dominantColors, status, ingest timestamps, fileSize, mediaUrl,
+// rawJson, deletedAt) are excluded by construction, so they never leak to
+// disk. This list is the single source of truth for the export whitelist;
+// `infoDocFromSave` and `applyPatchToInfo` both project exactly these.
+export const EXPORTED_SAVE_FIELDS = [
+  "url",
+  "title",
+  "description",
+  "author",
+  "lang",
+  "siteName",
+  "notes",
+  "tags",
+  "mediaType",
+  "coverIndex",
+  "width",
+  "height",
+  "publishedAt",
+] as const;
+
+const EXPORTED_FIELD_SET = new Set<string>(EXPORTED_SAVE_FIELDS);
+
+export function patchTouchesInfo(patch: object): boolean {
+  return Object.keys(patch).some((key) => EXPORTED_FIELD_SET.has(key));
+}
+
+// Merge a Save patch onto an existing on-disk InfoDoc, honoring the export
+// whitelist. Used by the disk-edit path where the full DB row is not in hand;
+// `infoDocFromSave` is the equivalent projection from a full row.
+export function applyPatchToInfo(info: InfoDoc, patch: Partial<Save>): InfoDoc {
+  const next: InfoDoc = { ...info };
+  if (patch.url !== undefined) next.url = patch.url;
+  if (patch.title !== undefined) next.title = patch.title ?? null;
+  if (patch.description !== undefined)
+    next.description = patch.description ?? null;
+  if (patch.author !== undefined) next.author = patch.author ?? null;
+  if (patch.lang !== undefined) next.lang = patch.lang ?? null;
+  if (patch.siteName !== undefined) next.siteName = patch.siteName ?? null;
+  if (patch.notes !== undefined) next.notes = patch.notes ?? null;
+  if (patch.tags !== undefined) next.tags = patch.tags ?? [];
+  if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
+  if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;
+  if (patch.width !== undefined) next.width = patch.width ?? null;
+  if (patch.height !== undefined) next.height = patch.height ?? null;
+  if (patch.publishedAt !== undefined)
+    next.publishedAt = toIso(patch.publishedAt);
+  return next;
+}

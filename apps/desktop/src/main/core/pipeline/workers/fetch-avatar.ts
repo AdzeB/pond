@@ -1,6 +1,7 @@
 import log from "electron-log/main.js";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
-import { applySavePatch, readSave } from "./apply";
+import { persistSave } from "../../persist-save";
+import { readSave } from "./apply";
 
 export async function runFetchAvatar(saveId: string): Promise<void> {
   const save = await readSave(saveId);
@@ -21,7 +22,7 @@ export async function runFetchAvatar(saveId: string): Promise<void> {
   const tx = await fetchAvatarToTxFile(avatarUrl);
   if (!tx) return;
 
-  await applySavePatch(
+  await persistSave(
     saveId,
     {},
     {

@@ -1,9 +1,10 @@
 import log from "electron-log/main.js";
+import { persistSave } from "../../persist-save";
 import {
   screenshotTweet,
   type TweetScreenshotResult,
 } from "../../refresh/scrape-window";
-import { applySavePatch, readSave } from "./apply";
+import { readSave } from "./apply";
 
 // Distinct from `cover`/`media`/`video` so the renderer can show the
 // screenshot as a tweet's primary thumbnail while keeping the actual
@@ -82,7 +83,7 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
       );
       continue;
     }
-    await applySavePatch(
+    await persistSave(
       saveId,
       {},
       {

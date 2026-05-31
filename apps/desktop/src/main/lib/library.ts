@@ -15,6 +15,7 @@ import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import { itemDir, itemFile, resolvePaths } from "../paths";
 import {
+  applyPatchToInfo,
   INFO_FILE,
   INFO_SCHEMA,
   type InfoDoc,
@@ -150,20 +151,7 @@ export async function applyItemPatch(
     await writeFile(join(itemDir(id), filename), buf);
   }
 
-  const next: InfoDoc = { ...current.info };
-  if (patch.title !== undefined) next.title = patch.title ?? null;
-  if (patch.notes !== undefined) next.notes = patch.notes ?? null;
-  if (patch.tags !== undefined) next.tags = patch.tags ?? [];
-  if (patch.url !== undefined) next.url = patch.url;
-  if (patch.width !== undefined) next.width = patch.width ?? null;
-  if (patch.height !== undefined) next.height = patch.height ?? null;
-  if (patch.description !== undefined)
-    next.description = patch.description ?? null;
-  if (patch.author !== undefined) next.author = patch.author ?? null;
-  if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
-  if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;
-  if (patch.publishedAt !== undefined)
-    next.publishedAt = toIso(patch.publishedAt);
+  const next = applyPatchToInfo(current.info, patch);
   if (decoded.length > 0) {
     next.files = decoded.map((f) => ({
       kind: inferKindFromFilename(f.filename),

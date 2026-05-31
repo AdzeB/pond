@@ -3,7 +3,8 @@ import { extname, join } from "node:path";
 import log from "electron-log/main.js";
 import { extractFirstFrame } from "../../../lib/ffmpeg-frame";
 import { itemDir } from "../../../paths";
-import { applySavePatch, readSave } from "./apply";
+import { persistSave } from "../../persist-save";
+import { readSave } from "./apply";
 
 export async function runEnsurePoster(saveId: string): Promise<void> {
   const save = await readSave(saveId);
@@ -35,7 +36,7 @@ export async function runEnsurePoster(saveId: string): Promise<void> {
     const buf = await readFile(frame.path);
     if (buf.byteLength === 0) return;
     const ext = extname(frame.path).toLowerCase() || ".jpg";
-    await applySavePatch(
+    await persistSave(
       saveId,
       {},
       {
