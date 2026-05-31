@@ -59,7 +59,6 @@ export function Categorize() {
               {`Add tags to ${ids.length} item${ids.length === 1 ? "" : "s"}`}
             </div>
             <Input.Field
-              // biome-ignore lint/a11y/noAutofocus: overlay is opened explicitly via keyboard
               autoFocus
               value={value}
               placeholder="tags, comma separated"
