@@ -18,6 +18,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "storage", path: "storage", label: "Storage", group: "library" },
   { id: "location", path: "location", label: "Location", group: "library" },
   { id: "downloads", path: "downloads", label: "Downloads", group: "saving" },
+  { id: "auto-tags", path: "auto-tags", label: "Auto Tags", group: "saving" },
   { id: "schedule", path: "schedule", label: "Schedule", group: "saving" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ] as const;

@@ -12,6 +12,7 @@ import {
   HardDrive,
   Palette,
   SlidersHorizontal,
+  Tag,
   Terminal,
 } from "lucide-react";
 import type { ComponentType } from "react";
@@ -64,6 +65,13 @@ const RENDERER_BY_ID: Record<
     load: lazyComponent(
       () => import("./sections/downloads"),
       "DownloadsSection",
+    ),
+  },
+  "auto-tags": {
+    icon: Tag,
+    load: lazyComponent(
+      () => import("./sections/auto-tags"),
+      "AutoTagsSection",
     ),
   },
   schedule: {
