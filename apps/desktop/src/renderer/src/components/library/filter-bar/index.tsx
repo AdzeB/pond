@@ -4,11 +4,11 @@ import { Menu } from "@pond/ui";
 import { X } from "lucide-react";
 import { memo, useMemo } from "react";
 import { useView } from "@/components/library/view-menu";
+import { FIELD_UI } from "@/components/library/view-menu/filter/field-ui";
 import {
   defaultPredicateFor,
   predicateIsActive,
 } from "@/components/library/view-menu/filter/helpers";
-import { FIELD_ICONS } from "@/components/library/view-menu/filter/search-index";
 import {
   Body,
   summariseValue,
@@ -73,7 +73,7 @@ const FilterField = memo(function FilterField({
   onChange,
 }: FilterFieldProps) {
   const meta = FIELD_META[field];
-  const Icon = FIELD_ICONS[field];
+  const Icon = FIELD_UI[field].icon;
   const active = predicate != null && predicateIsActive(predicate);
   const draft = predicate ?? defaultPredicateFor(field);
 

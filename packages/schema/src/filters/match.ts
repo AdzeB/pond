@@ -1,26 +1,9 @@
-import type { RawJson } from "../raw";
 import { colorNear } from "./color";
-import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
+import { FIELD_DESCRIPTORS } from "./fields";
+import type { SaveLike } from "./fields/save-like";
+import type { Clause, ComparatorId, Predicate, Query } from "./types";
 
-export interface SaveLike {
-  id: string;
-  source: string | null;
-  url: string;
-  title?: string | null;
-  description?: string | null;
-  author?: string | null;
-  tags?: string[];
-  notes?: string | null;
-  mediaType?: string | null;
-  width?: number | null;
-  height?: number | null;
-  fileSize?: number | null;
-  dominantColors?: string[];
-  rawJson?: RawJson | null;
-  savedAt?: string | Date | number | null;
-  createdAt?: string | Date | number | null;
-  publishedAt?: string | Date | number | null;
-}
+export type { SaveLike } from "./fields/save-like";
 
 export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
@@ -40,83 +23,8 @@ function evalClause(c: Clause, s: SaveLike): boolean {
 }
 
 function evalPredicate(p: Predicate, s: SaveLike): boolean {
-  const projected = project(p.field, s);
+  const projected = FIELD_DESCRIPTORS[p.field].project(s);
   return runComparator(p.cmp, projected, p.value);
-}
-
-function project(field: FieldId, s: SaveLike): unknown {
-  switch (field) {
-    case "tags":
-      return (s.tags ?? []).map((t) => t.toLowerCase());
-    case "source":
-      return (s.source ?? "").toLowerCase();
-    case "type":
-      return (s.mediaType ?? s.source ?? "").toLowerCase();
-    case "shape": {
-      const w = s.width ?? 0;
-      const h = s.height ?? 0;
-      if (!w || !h) return null;
-      const ratio = w / h;
-      if (ratio > 0.9 && ratio < 1.1) return "square";
-      return ratio < 0.9 ? "portrait" : "landscape";
-    }
-    case "size":
-      return s.fileSize ?? null;
-    case "duration":
-      return durationSeconds(s);
-    case "dimensions": {
-      const w = s.width ?? 0;
-      const h = s.height ?? 0;
-      const longest = Math.max(w, h);
-      return longest || null;
-    }
-    case "creator":
-      return (s.author ?? "").toLowerCase();
-    case "url":
-      return (s.url ?? "").toLowerCase();
-    case "note":
-      return (s.notes ?? s.description ?? "").trim() ? true : null;
-    case "color":
-      return s.dominantColors ?? [];
-    case "savedAt":
-      return toMillis(s.savedAt);
-    case "publishedAt":
-      return toMillis(s.publishedAt);
-    case "modifiedAt":
-      return toMillis(s.createdAt ?? s.savedAt);
-  }
-}
-
-function durationSeconds(s: SaveLike): number | null {
-  const raw = s.rawJson;
-  if (!raw) return null;
-
-  const fromCapture = raw.capture?.duration;
-  if (typeof fromCapture === "number" && fromCapture > 0) return fromCapture;
-
-  for (const m of raw.capture?.media ?? []) {
-    if (typeof m.durationSec === "number" && m.durationSec > 0) {
-      return m.durationSec;
-    }
-  }
-
-  const ytdlpDuration = raw.ytdlp?.duration;
-  if (typeof ytdlpDuration === "number" && ytdlpDuration > 0) {
-    return ytdlpDuration;
-  }
-
-  return null;
-}
-
-function toMillis(v: string | Date | number | null | undefined): number | null {
-  if (v == null) return null;
-  if (v instanceof Date) {
-    const t = v.getTime();
-    return Number.isFinite(t) ? t : null;
-  }
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
 }
 
 function runComparator(

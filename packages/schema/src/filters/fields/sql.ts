@@ -1,31 +1,5 @@
 import { type SQL, sql } from "drizzle-orm";
-import { saves } from "../db";
-import type { FieldId } from "./types";
-
-export const SCALAR_PROJECTIONS: Partial<Record<FieldId, SQL>> = {
-  source: sql`lower(${saves.source})`,
-  type: sql`lower(coalesce(${saves.mediaType}, ${saves.source}))`,
-  shape: sql`case
-    when ${saves.width} is null or ${saves.height} is null
-      or ${saves.width} = 0 or ${saves.height} = 0 then null
-    when (cast(${saves.width} as real) / ${saves.height}) > 0.9
-      and (cast(${saves.width} as real) / ${saves.height}) < 1.1 then 'square'
-    when (cast(${saves.width} as real) / ${saves.height}) < 0.9 then 'portrait'
-    else 'landscape'
-  end`,
-  size: sql`${saves.fileSize}`,
-  dimensions: sql`max(${saves.width}, ${saves.height})`,
-  duration: durationProjection(),
-  creator: sql`lower(${saves.author})`,
-  url: sql`lower(${saves.url})`,
-  note: sql`nullif(
-    trim(coalesce(${saves.notes}, ${saves.description}, '')),
-    ''
-  )`,
-  savedAt: sql`${saves.savedAt}`,
-  publishedAt: sql`${saves.publishedAt}`,
-  modifiedAt: sql`coalesce(${saves.createdAt}, ${saves.savedAt})`,
-};
+import { saves } from "../../db";
 
 export function tagsExists(needle: SQL): SQL {
   return sql`exists (
@@ -40,7 +14,7 @@ export function tagsDistinctCount(needle: SQL): SQL {
   )`;
 }
 
-function durationProjection(): SQL {
+export function durationProjection(): SQL {
   return sql`coalesce(
     cast(json_extract(${saves.rawJson}, '$.capture.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.youtube.durationSec') as real),

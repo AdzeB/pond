@@ -1,5 +1,5 @@
 import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
-import { SCALAR_PROJECTIONS, tagsDistinctCount, tagsExists } from "./fields";
+import { FIELD_DESCRIPTORS, tagsDistinctCount, tagsExists } from "./fields";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 
 export function buildWhere(query: Query): SQL | undefined {
@@ -39,7 +39,7 @@ function compileForField(
 ): SQL | null {
   if (field === "tags") return tagsClause(cmp, raw);
 
-  const column = SCALAR_PROJECTIONS[field];
+  const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
 
   return scalarClause(column, field, cmp, raw);
