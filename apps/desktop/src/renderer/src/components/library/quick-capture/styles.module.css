@@ -18,6 +18,27 @@
   color: var(--ds-gray-11);
 }
 
+.pick-files {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ds-gray-11);
+  cursor: pointer;
+  background: transparent;
+  border: 1px dashed var(--ds-gray-6);
+  border-radius: 8px;
+  transition:
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.pick-files:hover {
+  color: var(--ds-gray-12);
+  border-color: var(--ds-gray-8);
+}
+
 .actions {
   display: flex;
   gap: 8px;

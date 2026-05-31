@@ -13,6 +13,7 @@ function Root() {
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
   const [tags, setTags] = useState("");
+  const [filePaths, setFilePaths] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -43,22 +44,40 @@ function Root() {
     setUrl("");
     setNote("");
     setTags("");
+    setFilePaths([]);
+  }, []);
+
+  const chooseFiles = useCallback(async () => {
+    const res = (await window.pond.query("saves.pickFiles", {})) as {
+      ok: boolean;
+      paths: string[];
+    };
+    if (res.ok && res.paths.length > 0) setFilePaths(res.paths);
   }, []);
 
   const submit = useCallback(async () => {
     const trimmed = url.trim();
-    if (!trimmed) return;
+    const trimmedNote = note.trim();
+    if (!trimmed && filePaths.length === 0 && !trimmedNote) return;
     setBusy(true);
     try {
       const tagList = tags
         .split(/[\s,]+/)
         .map((t) => t.replace(/^#+/, "").toLowerCase())
         .filter(Boolean);
-      const result = (await window.pond.query("saves.quickAdd", {
-        url: trimmed,
-        note: note.trim(),
-        tags: tagList,
-      })) as { ok: boolean; id?: string; error?: string };
+      const result =
+        filePaths.length > 0
+          ? ((await window.pond.query("saves.createManual", {
+              url: trimmed || null,
+              note: trimmedNote || null,
+              tags: tagList,
+              filePaths,
+            })) as { ok: boolean; id?: string; error?: string })
+          : ((await window.pond.query("saves.quickAdd", {
+              url: trimmed,
+              note: trimmedNote,
+              tags: tagList,
+            })) as { ok: boolean; id?: string; error?: string });
       if (!result.ok) {
         toast.add({
           title: "Couldn't save",
@@ -69,7 +88,10 @@ function Root() {
       }
       toast.add({
         title: "Saved to library",
-        description: "Pond is fetching the rich metadata in the background.",
+        description:
+          filePaths.length > 0
+            ? "Imported your files."
+            : "Pond is fetching the rich metadata in the background.",
         type: "success",
       });
       if (result.id) navigateTo(navigate, `/save/${result.id}`);
@@ -78,7 +100,7 @@ function Root() {
     } finally {
       setBusy(false);
     }
-  }, [url, note, tags, toast, navigate, reset]);
+  }, [url, note, tags, filePaths, toast, navigate, reset]);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
@@ -93,7 +115,8 @@ function Root() {
           >
             <Title>Quick save</Title>
             <Hint>
-              Paste a URL. Pond will fetch the rest in the background.
+              Paste a URL, choose files, or jot a note. Pond fills in the rest
+              in the background.
             </Hint>
             <Field.Root>
               <Field.Label>URL</Field.Label>
@@ -106,6 +129,15 @@ function Root() {
                 spellCheck={false}
               />
             </Field.Root>
+            <button
+              type="button"
+              className={styles["pick-files"]}
+              onClick={() => void chooseFiles()}
+            >
+              {filePaths.length > 0
+                ? `${filePaths.length} file${filePaths.length === 1 ? "" : "s"} selected`
+                : "Choose files"}
+            </button>
             <Field.Root>
               <Field.Label>Note (optional)</Field.Label>
               <Input.Field
@@ -136,7 +168,10 @@ function Root() {
               <Button
                 variant="primary"
                 type="submit"
-                disabled={busy || !url.trim()}
+                disabled={
+                  busy ||
+                  (!url.trim() && filePaths.length === 0 && !note.trim())
+                }
               >
                 {busy ? "Saving…" : "Save"}
               </Button>
