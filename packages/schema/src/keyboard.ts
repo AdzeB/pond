@@ -70,6 +70,12 @@ export const KEYBOARD_SHORTCUTS: readonly KeyboardShortcut[] = [
     label: "New save",
   },
   {
+    id: "categorize",
+    group: "saving",
+    binding: "F",
+    label: "Add tags to selection",
+  },
+  {
     id: "sync-all",
     group: "saving",
     binding: "Cmd+Shift+R",
