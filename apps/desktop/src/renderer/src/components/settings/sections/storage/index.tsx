@@ -496,7 +496,7 @@ export function StorageSection() {
               <Settings.ItemDescription>
                 {report
                   ? `Last run: ${report.totalIndexed} indexed, ${report.totalOnDisk} on disk · ${report.orphans.length} orphan, ${report.missing.length} missing`
-                  : "Compare metadata.json files against the SQLite index."}
+                  : "Compare on-disk library items against the SQLite index."}
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>

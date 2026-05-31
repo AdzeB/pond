@@ -17,6 +17,7 @@ import {
 } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
+import { migrateLibraryLayout } from "./core/migrate-layout";
 import { startSaveCompleteNotifier } from "./core/notifications";
 import {
   type ProcessingBackfillStatus,
@@ -444,7 +445,13 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] recording active library failed", err);
   }
 
-  void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
+  void migrateLibraryLayout()
+    .catch((err) => {
+      log.warn("[pond] layout migration failed", err);
+      return { migrated: 0 };
+    })
+    .then(() => reconcileLibrary())
+    .catch((err) => log.warn("[pond] scan failed", err));
   startReconciler();
 
   void enqueueCaptureTweetForExisting().catch((err) =>

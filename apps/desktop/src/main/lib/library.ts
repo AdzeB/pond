@@ -13,8 +13,17 @@ import { basename, dirname, extname, join } from "node:path";
 import type { Save } from "@pond/schema/db";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
-import { LIBRARY_SCHEMA_VERSION } from "../../shared/constants";
 import { itemDir, itemFile, resolvePaths } from "../paths";
+import {
+  INFO_FILE,
+  INFO_SCHEMA,
+  type InfoDoc,
+  type InfoFile,
+  infoDocFromSave,
+  LEGACY_METADATA_FILE,
+  SOURCE_FILE,
+  toIso,
+} from "./library-format";
 
 export interface ItemMetadata {
   id: string;
@@ -70,56 +79,27 @@ function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
   return { filename: file.filename, buf };
 }
 
-export async function buildItemMetadata(
-  save: Save,
-  writtenFiles: Array<{ filename: string; buf: Buffer; kind?: string }>,
-): Promise<ItemMetadata> {
-  const now = Date.now();
-  const files = writtenFiles.map((f) => ({
-    kind: f.kind ?? inferKindFromFilename(f.filename),
-    path: f.filename,
-    sha256: sha256(f.buf),
-    size: f.buf.length,
-  }));
-
-  return {
-    id: save.id,
-    source: save.source,
-    sourceId: save.sourceId,
-    url: save.url,
-    name: save.title,
-    annotation: save.notes ?? "",
-    tags: save.tags ?? [],
-    folders: [],
-    ext: files[0] ? extname(files[0].path).slice(1) || null : null,
-    size: save.fileSize ?? files[0]?.size ?? null,
-    width: save.width,
-    height: save.height,
-    btime: save.createdAt?.getTime?.() ?? now,
-    mtime: now,
-    importedAt: save.savedAt?.getTime?.() ?? now,
-    isDeleted: save.deletedAt !== null,
-    files,
-    pond: {
-      schemaVersion: LIBRARY_SCHEMA_VERSION,
-      rawSource: save.rawJson,
-      description: save.description,
-      author: save.author,
-      notes: save.notes,
-      mediaType: save.mediaType,
-      coverIndex: save.coverIndex,
-    },
-  };
+// Write `info.json` (clean human content) and `source.json` (raw
+// capture payload) into an item folder, creating it if needed.
+export async function writeInfoFiles(
+  id: string,
+  info: InfoDoc,
+  rawSource: unknown,
+): Promise<void> {
+  const dir = itemDir(id);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, INFO_FILE), JSON.stringify(info, null, 2));
+  await writeFile(
+    join(dir, SOURCE_FILE),
+    JSON.stringify(rawSource ?? null, null, 2),
+  );
 }
 
 export async function writeItemFiles(
   id: string,
   save: Save,
   files: TxSaveFile[] = [],
-): Promise<{
-  metadata: ItemMetadata;
-  written: Array<{ filename: string; buf: Buffer }>;
-}> {
+): Promise<{ written: Array<{ filename: string; buf: Buffer }> }> {
   const dir = itemDir(id);
   await mkdir(dir, { recursive: true });
 
@@ -128,22 +108,78 @@ export async function writeItemFiles(
     await writeFile(join(dir, filename), buf);
   }
 
-  const metadata = await buildItemMetadata(save, decoded);
-  await writeFile(
-    join(dir, "metadata.json"),
-    JSON.stringify(metadata, null, 2),
-  );
-  return { metadata, written: decoded };
+  const manifest: InfoFile[] = decoded.map((f) => ({
+    kind: inferKindFromFilename(f.filename),
+    path: f.filename,
+    sha256: sha256(f.buf),
+    size: f.buf.length,
+  }));
+  await writeInfoFiles(id, infoDocFromSave(save, manifest), save.rawJson);
+  return { written: decoded };
+}
+
+// Apply a save patch to an item's on-disk `info.json` (and `source.json`
+// if the raw payload changed), preserving fields the patch doesn't touch.
+// Returns false when the item folder has no readable info to patch.
+export async function applyItemPatch(
+  id: string,
+  patch: Partial<Save>,
+  files: TxSaveFile[] = [],
+): Promise<boolean> {
+  const current = await readInfoForEdit(id);
+  if (!current) return false;
+
+  const decoded = files.map(decodeFile);
+  for (const { filename, buf } of decoded) {
+    await writeFile(join(itemDir(id), filename), buf);
+  }
+
+  const next: InfoDoc = { ...current.info };
+  if (patch.title !== undefined) next.title = patch.title ?? null;
+  if (patch.notes !== undefined) next.notes = patch.notes ?? null;
+  if (patch.tags !== undefined) next.tags = patch.tags ?? [];
+  if (patch.url !== undefined) next.url = patch.url;
+  if (patch.width !== undefined) next.width = patch.width ?? null;
+  if (patch.height !== undefined) next.height = patch.height ?? null;
+  if (patch.description !== undefined)
+    next.description = patch.description ?? null;
+  if (patch.author !== undefined) next.author = patch.author ?? null;
+  if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
+  if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;
+  if (patch.publishedAt !== undefined)
+    next.publishedAt = toIso(patch.publishedAt);
+  if (decoded.length > 0) {
+    next.files = decoded.map((f) => ({
+      kind: inferKindFromFilename(f.filename),
+      path: f.filename,
+      sha256: sha256(f.buf),
+      size: f.buf.length,
+    }));
+  }
+
+  const rawSource =
+    patch.rawJson !== undefined ? patch.rawJson : current.rawSource;
+  await writeInfoFiles(id, next, rawSource);
+  return true;
 }
 
 export async function readItemMetadata(
   id: string,
 ): Promise<ItemMetadata | null> {
-  const file = itemFile(id, "metadata.json");
-  if (!existsSync(file)) return null;
+  const infoPath = itemFile(id, INFO_FILE);
+  if (existsSync(infoPath)) {
+    try {
+      const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+      return metadataFromInfo(id, info, await readSourceDoc(id));
+    } catch (err) {
+      log.warn("[pond library] corrupt info.json", id, err);
+      return null;
+    }
+  }
+  const legacy = itemFile(id, LEGACY_METADATA_FILE);
+  if (!existsSync(legacy)) return null;
   try {
-    const text = await readFile(file, "utf8");
-    const raw = JSON.parse(text) as unknown;
+    const raw = JSON.parse(await readFile(legacy, "utf8")) as unknown;
     return normalizeItemMetadata(id, raw);
   } catch (err) {
     log.warn("[pond library] corrupt metadata.json", id, err);
@@ -151,18 +187,173 @@ export async function readItemMetadata(
   }
 }
 
-/* The library has two on-disk metadata shapes:
- *  - Legacy flat (`buildItemMetadata`): fields like `source`, `url`,
- *    `name` live at the top level.
- *  - Schema 2 (`pipeline/workers/finalize.writeMetadataJson`): the
- *    serialized save row is nested under `pond.save`, with file and
- *    task manifests alongside it.
+async function readSourceDoc(id: string): Promise<unknown> {
+  const path = itemFile(id, SOURCE_FILE);
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(await readFile(path, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+// Read an item's `info.json` for editing, preferring the schema-3 file
+// and falling back to the legacy `metadata.json` (upgraded in place on
+// the next write). Carries `rawSource` alongside so an edit never drops
+// the raw capture payload.
+async function readInfoForEdit(
+  id: string,
+): Promise<{ info: InfoDoc; rawSource: unknown } | null> {
+  const infoPath = itemFile(id, INFO_FILE);
+  if (existsSync(infoPath)) {
+    try {
+      const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+      return { info, rawSource: await readSourceDoc(id) };
+    } catch (err) {
+      log.warn("[pond library] corrupt info.json", id, err);
+      return null;
+    }
+  }
+  const legacy = await readItemMetadata(id);
+  if (!legacy) return null;
+  return {
+    info: infoDocFromMetadata(legacy),
+    rawSource: legacy.pond.rawSource,
+  };
+}
+
+function metadataFromInfo(
+  id: string,
+  info: InfoDoc,
+  rawSource: unknown,
+): ItemMetadata {
+  const files = (info.files ?? []).map((f) => ({
+    kind: String(f.kind ?? "other"),
+    path: String(f.path ?? ""),
+    sha256: String(f.sha256 ?? ""),
+    size: Number(f.size ?? 0),
+  }));
+  const coverIndex = typeof info.coverIndex === "number" ? info.coverIndex : 0;
+  const coverFile = files[coverIndex] ?? files[0];
+  const createdMs = parseTimestamp(info.createdAt);
+  const savedMs = parseTimestamp(info.savedAt);
+  return {
+    id,
+    source: info.source,
+    sourceId: info.sourceId,
+    url: typeof info.url === "string" ? info.url : "",
+    name: info.title ?? null,
+    annotation: info.notes ?? "",
+    tags: Array.isArray(info.tags) ? info.tags.map(String) : [],
+    folders: [],
+    ext: files[0]?.path ? extname(files[0].path).slice(1) || null : null,
+    size: coverFile?.size ?? null,
+    width: typeof info.width === "number" ? info.width : null,
+    height: typeof info.height === "number" ? info.height : null,
+    btime: createdMs ?? Date.now(),
+    mtime: savedMs ?? createdMs ?? Date.now(),
+    importedAt: savedMs ?? Date.now(),
+    isDeleted: false,
+    files,
+    pond: {
+      schemaVersion: INFO_SCHEMA,
+      rawSource,
+      description: info.description ?? null,
+      author: info.author ?? null,
+      notes: info.notes ?? null,
+      mediaType: info.mediaType ?? null,
+      coverIndex,
+    },
+  };
+}
+
+function infoDocFromMetadata(m: ItemMetadata): InfoDoc {
+  return {
+    schema: INFO_SCHEMA,
+    id: m.id,
+    source: m.source,
+    sourceId: m.sourceId,
+    url: m.url,
+    title: m.name,
+    description: m.pond.description ?? null,
+    author: m.pond.author ?? null,
+    lang: null,
+    siteName: null,
+    notes: m.pond.notes ?? (m.annotation || null),
+    tags: m.tags,
+    mediaType: m.pond.mediaType ?? null,
+    coverIndex: m.pond.coverIndex ?? 0,
+    width: m.width,
+    height: m.height,
+    publishedAt: null,
+    savedAt: m.importedAt ? new Date(m.importedAt).toISOString() : null,
+    createdAt: m.btime ? new Date(m.btime).toISOString() : null,
+    files: m.files.map((f) => ({
+      kind: f.kind,
+      path: f.path,
+      sha256: f.sha256,
+      size: f.size,
+    })),
+  };
+}
+
+// Upgrade one item folder from legacy `metadata.json` to `info.json` +
+// `source.json`. Idempotent: a no-op once `info.json` exists. Path-based
+// so it works for both `items/` and `trash/` entries.
+export async function migrateItemDirToInfo(dir: string): Promise<boolean> {
+  if (existsSync(join(dir, INFO_FILE))) return false;
+  const legacyPath = join(dir, LEGACY_METADATA_FILE);
+  if (!existsSync(legacyPath)) return false;
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(await readFile(legacyPath, "utf8"));
+  } catch (err) {
+    log.warn("[pond migrate] unreadable metadata.json", dir, err);
+    return false;
+  }
+  const id = basename(dir).replace(/\.info$/, "");
+  const normalized = normalizeItemMetadata(id, raw);
+  if (!normalized) {
+    log.warn("[pond migrate] could not normalize metadata", dir);
+    return false;
+  }
+
+  const info = infoDocFromMetadata(normalized);
+  const published = extractPublishedAt(raw);
+  if (published) info.publishedAt = published;
+
+  await writeFile(join(dir, INFO_FILE), JSON.stringify(info, null, 2));
+  await writeFile(
+    join(dir, SOURCE_FILE),
+    JSON.stringify(normalized.pond.rawSource ?? null, null, 2),
+  );
+  await rm(legacyPath, { force: true });
+  return true;
+}
+
+function extractPublishedAt(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const doc = raw as Record<string, unknown>;
+  const pond = (doc.pond ?? {}) as Record<string, unknown>;
+  const save = (pond.save ?? {}) as Record<string, unknown>;
+  return toIso(
+    (save.publishedAt as string | undefined) ??
+      (doc.publishedAt as string | undefined) ??
+      null,
+  );
+}
+
+/* Legacy `metadata.json` came in two shapes:
+ *  - Flat: fields like `source`, `url`, `name` live at the top level.
+ *  - Schema 2: the serialized save row is nested under `pond.save`, with
+ *    file and task manifests alongside it.
  *
- * The scanner downstream of this function only understands the legacy
- * shape, so we collapse schema 2 docs back into it here. Without the
- * normalization, every pipeline-finalized item makes `reconcileLibrary`
- * insert `source: undefined` and trip the NOT NULL constraint on every
- * scan tick. */
+ * Both collapse to the same in-memory `ItemMetadata` here so the scanner
+ * (and the layout migration) sees one shape. Without the normalization,
+ * every pipeline-finalized item makes `reconcileLibrary` insert
+ * `source: undefined` and trip the NOT NULL constraint on every scan
+ * tick. */
 function normalizeItemMetadata(id: string, raw: unknown): ItemMetadata | null {
   if (!raw || typeof raw !== "object") return null;
   const doc = raw as Record<string, unknown>;
@@ -242,26 +433,15 @@ function parseTimestamp(value: unknown): number | null {
   return null;
 }
 
+// Trash membership is the folder's location plus SQLite `deletedAt`, so
+// moving in or out of `trash/` is just a rename. Nothing on disk records
+// the deleted flag.
 export async function moveToTrash(id: string): Promise<void> {
   const from = itemDir(id);
   if (!existsSync(from)) return;
   const to = join(resolvePaths().trashDir, basename(from));
   await mkdir(dirname(to), { recursive: true });
   await rename(from, to);
-
-  try {
-    const metaPath = join(to, "metadata.json");
-    if (existsSync(metaPath)) {
-      const current = JSON.parse(
-        await readFile(metaPath, "utf8"),
-      ) as ItemMetadata;
-      current.isDeleted = true;
-      current.mtime = Date.now();
-      await writeFile(metaPath, JSON.stringify(current, null, 2));
-    }
-  } catch (err) {
-    log.warn("[pond library] trash metadata stamp failed", id, err);
-  }
 }
 
 export async function restoreFromTrash(id: string): Promise<void> {
@@ -270,16 +450,6 @@ export async function restoreFromTrash(id: string): Promise<void> {
   const to = itemDir(id);
   await mkdir(dirname(to), { recursive: true });
   await rename(from, to);
-
-  const metaPath = join(to, "metadata.json");
-  if (existsSync(metaPath)) {
-    const current = JSON.parse(
-      await readFile(metaPath, "utf8"),
-    ) as ItemMetadata;
-    current.isDeleted = false;
-    current.mtime = Date.now();
-    await writeFile(metaPath, JSON.stringify(current, null, 2));
-  }
 }
 
 export async function removeItem(id: string): Promise<void> {

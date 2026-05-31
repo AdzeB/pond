@@ -58,7 +58,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
     if (!indexedSet.has(id)) {
       const meta = await readItemMetadata(id);
       if (!meta) {
-        errors[id] = "metadata.json missing or unreadable";
+        errors[id] = "info.json missing or unreadable";
         continue;
       }
       orphans.push(id);

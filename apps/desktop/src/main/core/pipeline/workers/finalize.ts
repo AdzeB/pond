@@ -1,16 +1,12 @@
-import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { type Op, type Save, type Task, tasks } from "@pond/schema/db";
+import { type Save, type Task, tasks } from "@pond/schema/db";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../../db";
+import { writeInfoFiles } from "../../../lib/library";
+import { type InfoFile, infoDocFromSave } from "../../../lib/library-format";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
-import { itemDir } from "../../../paths";
 import { CAPTURE_EXPECTATIONS } from "../specs";
 import { applySavePatch, readSave } from "./apply";
-
-const METADATA_FILENAME = "metadata.json";
 
 export class FinalizeIncompleteError extends Error {
   constructor(public readonly missing: string[]) {
@@ -26,7 +22,7 @@ export async function runFinalize(saveId: string): Promise<void> {
   const taskRows = await fetchTaskRows(saveId);
   const report = computeCaptureReport(save);
 
-  await writeMetadataJson(save, taskRows, report);
+  await writeItemInfo(save);
 
   if (report.required.missing.length > 0) {
     // If harvest_metadata still has retries left, kick it back to pending so
@@ -154,31 +150,12 @@ function hasMeaningfulValue(v: unknown): boolean {
   return true;
 }
 
-interface MetadataDoc {
-  pond: {
-    schema: 2;
-    save: Record<string, unknown>;
-    rawSource: unknown;
-    files: Array<Record<string, unknown>>;
-    tasks: Array<{
-      op: Op;
-      status: string;
-      attempts: number;
-      maxAttempts: number;
-      lastError: string | null;
-      completedAt: string | null;
-    }>;
-    captureReport: CaptureReport;
-  };
-}
-
-async function writeMetadataJson(
-  save: Save,
-  taskRows: Task[],
-  report: CaptureReport,
-): Promise<void> {
-  const { rawJson, ...rest } = save;
-  const filesManifest = (save.files ?? []).map((f) => ({
+// Text-only tweets with no media + a failed screenshot capture leave
+// `save.files` empty, in which case no upstream worker ever created the
+// item dir (applySavePatch only mkdirs when files are written). Finalize
+// is the last step, so `writeInfoFiles` owns ensuring the dir exists.
+async function writeItemInfo(save: Save): Promise<void> {
+  const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
     kind: f.kind,
     path: f.path,
     sha256: f.sha256,
@@ -187,41 +164,5 @@ async function writeMetadataJson(
     ...(f.width ? { width: f.width } : {}),
     ...(f.height ? { height: f.height } : {}),
   }));
-  const taskManifest = taskRows.map((t) => ({
-    op: t.op,
-    status: t.status,
-    attempts: t.attempts,
-    maxAttempts: t.maxAttempts,
-    lastError: t.lastError,
-    completedAt:
-      t.status === "done" ? new Date(t.updatedAt).toISOString() : null,
-  }));
-
-  const doc: MetadataDoc = {
-    pond: {
-      schema: 2,
-      save: serializeRow(rest),
-      rawSource: rawJson,
-      files: filesManifest,
-      tasks: taskManifest,
-      captureReport: report,
-    },
-  };
-
-  // Text-only tweets with no media + a failed screenshot capture leave
-  // `save.files` empty, in which case no upstream worker ever created
-  // the item dir (applySavePatch only mkdirs when files are written).
-  // Finalize is the last step so it owns ensuring the dir exists.
-  const dir = itemDir(save.id);
-  if (!existsSync(dir)) await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, METADATA_FILENAME), JSON.stringify(doc, null, 2));
-}
-
-function serializeRow(row: Record<string, unknown>): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(row)) {
-    if (v instanceof Date) out[k] = v.toISOString();
-    else out[k] = v;
-  }
-  return out;
+  await writeInfoFiles(save.id, infoDocFromSave(save, manifest), save.rawJson);
 }

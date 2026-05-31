@@ -15,9 +15,8 @@ import { IPC } from "../../shared/constants";
 import { getDb } from "../db";
 import { toWireSyncAction } from "../ipc/wire";
 import {
-  inferKindFromFilename,
+  applyItemPatch,
   moveToTrash,
-  readItemMetadata,
   removeItem,
   restoreFromTrash,
   writeItemFiles,
@@ -27,7 +26,6 @@ export interface ExecuteOptions {
   silent?: boolean;
 }
 
-type SaveRow = Save;
 type TagRow = Tag;
 
 function dataForSyncAction(tx: Transaction): unknown {
@@ -147,72 +145,39 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       return;
     }
     case "update": {
-      const existing = await readItemMetadata(tx.id);
-      if (!existing) {
-        if (tx.files && tx.files.length > 0) {
-          const db = await getDb();
-          const rows = await db
-            .select()
-            .from(savesTable)
-            .where(eq(savesTable.id, tx.id));
-          const current = rows[0];
-          if (!current) {
-            log.warn(
-              "[pond executor] update for unknown item (no DB row either)",
-              tx.id,
-            );
-            return;
-          }
-          const merged = { ...current, ...(tx.patch ?? {}) } as Save;
-          log.info(
-            "[pond executor] healing orphan: rebuilding items dir",
+      const patched = await applyItemPatch(
+        tx.id,
+        (tx.patch ?? {}) as Partial<Save>,
+        tx.files ?? [],
+      );
+      if (patched) return;
+
+      // No item folder to patch. If the update carries files, heal the
+      // orphan by rebuilding the folder from the current DB row.
+      if (tx.files && tx.files.length > 0) {
+        const db = await getDb();
+        const rows = await db
+          .select()
+          .from(savesTable)
+          .where(eq(savesTable.id, tx.id));
+        const current = rows[0];
+        if (!current) {
+          log.warn(
+            "[pond executor] update for unknown item (no DB row either)",
             tx.id,
-            tx.files.map((f) => f.filename),
           );
-          await writeItemFiles(tx.id, merged, tx.files);
           return;
         }
-        log.warn("[pond executor] update for unknown item", tx.id);
+        const merged = { ...current, ...(tx.patch ?? {}) } as Save;
+        log.info(
+          "[pond executor] healing orphan: rebuilding items dir",
+          tx.id,
+          tx.files.map((f) => f.filename),
+        );
+        await writeItemFiles(tx.id, merged, tx.files);
         return;
       }
-
-      const { writeFile } = await import("node:fs/promises");
-      const { join } = await import("node:path");
-      const { itemDir } = await import("../paths");
-
-      const writtenFiles: Array<{ filename: string; buf: Buffer }> = [];
-      if (tx.files && tx.files.length > 0) {
-        for (const file of tx.files) {
-          const buf = Buffer.isBuffer(file.bytes)
-            ? file.bytes
-            : Buffer.from(file.bytes);
-          await writeFile(join(itemDir(tx.id), file.filename), buf);
-          writtenFiles.push({ filename: file.filename, buf });
-        }
-      }
-
-      const patched = mapPatchToMetadata(tx.patch);
-      const merged: typeof existing = {
-        ...existing,
-        ...patched.top,
-        pond: { ...existing.pond, ...patched.pond },
-        mtime: Date.now(),
-      };
-
-      if (writtenFiles.length > 0) {
-        const { createHash } = await import("node:crypto");
-        merged.files = writtenFiles.map((f) => ({
-          kind: inferKindFromFilename(f.filename),
-          path: f.filename,
-          sha256: createHash("sha256").update(f.buf).digest("hex"),
-          size: f.buf.length,
-        }));
-      }
-
-      await writeFile(
-        join(itemDir(tx.id), "metadata.json"),
-        JSON.stringify(merged, null, 2),
-      );
+      log.warn("[pond executor] update for unknown item", tx.id);
       return;
     }
     case "delete":
@@ -226,30 +191,6 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       await restoreFromTrash(tx.id);
       return;
   }
-}
-
-function mapPatchToMetadata(patch: Partial<SaveRow>): {
-  top: Record<string, unknown>;
-  pond: Record<string, unknown>;
-} {
-  const top: Record<string, unknown> = {};
-  const pond: Record<string, unknown> = {};
-  if (patch.title !== undefined) top.name = patch.title;
-  if (patch.notes !== undefined) top.annotation = patch.notes ?? "";
-  if (patch.tags !== undefined) top.tags = patch.tags;
-  if (patch.url !== undefined) top.url = patch.url;
-  if (patch.width !== undefined) top.width = patch.width;
-  if (patch.height !== undefined) top.height = patch.height;
-  if (patch.fileSize !== undefined) top.size = patch.fileSize;
-  if (patch.deletedAt !== undefined) top.isDeleted = patch.deletedAt !== null;
-
-  if (patch.description !== undefined) pond.description = patch.description;
-  if (patch.author !== undefined) pond.author = patch.author;
-  if (patch.mediaType !== undefined) pond.mediaType = patch.mediaType;
-  if (patch.coverIndex !== undefined) pond.coverIndex = patch.coverIndex;
-  if (patch.rawJson !== undefined) pond.rawSource = patch.rawJson;
-
-  return { top, pond };
 }
 
 function applyToIndex(
