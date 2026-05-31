@@ -320,6 +320,18 @@ export interface SmartFolder {
   sortOrder: number;
 }
 
+export interface AutoTagRule {
+  id: string;
+  enabled: boolean;
+  // All provided conditions must match (AND). A rule with no conditions never
+  // matches, so it can't tag everything.
+  source?: Source | null;
+  urlContains?: string | null;
+  authorContains?: string | null;
+  titleContains?: string | null;
+  addTags: string[];
+}
+
 export interface Prefs {
   preferences: {
     theme: "system" | "light" | "dark" | "high-contrast";
@@ -392,6 +404,10 @@ export interface Prefs {
   };
   smartFolders: {
     items: SmartFolder[];
+  };
+  autoTag: {
+    enabled: boolean;
+    rules: AutoTagRule[];
   };
 }
 
@@ -467,6 +483,10 @@ export const DEFAULT_PREFS: Prefs = {
   },
   smartFolders: {
     items: [],
+  },
+  autoTag: {
+    enabled: true,
+    rules: [],
   },
 };
 
