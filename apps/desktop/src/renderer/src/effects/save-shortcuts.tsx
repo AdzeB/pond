@@ -1,6 +1,7 @@
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
 import { isChordPending } from "@/components/command-palette/use-chords";
+import { categorize } from "@/lib/categorize";
 import { presentation } from "@/lib/presentation";
 import {
   copyId,
@@ -19,7 +20,7 @@ import {
   toggleTrash,
 } from "@/lib/save-actions";
 import { pool } from "@/pool/pool";
-import { primarySelection } from "@/pool/selection";
+import { primarySelection, selection } from "@/pool/selection";
 
 // Linear's playbook: when one issue is focused, unmodified letter keys
 // fire the most-used action without ever leaving the keyboard. The
@@ -165,6 +166,13 @@ export function SaveShortcuts() {
         case "t": {
           e.preventDefault();
           openTagPicker();
+          return;
+        }
+        case "f": {
+          e.preventDefault();
+          const selected = selection.snapshot();
+          const ids = selected.length > 0 ? selected : [save.id];
+          categorize.open(ids);
           return;
         }
       }
