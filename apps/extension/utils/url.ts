@@ -8,6 +8,7 @@ const HOST_LABELS: Record<Source, string> = {
   cosmos: "Cosmos",
   tiktok: "TikTok",
   youtube: "YouTube",
+  local: "Local",
 };
 
 export function sourceLabel(source: Source): string {
@@ -30,6 +31,8 @@ export function cookieDomainForSource(source: Source): string | null {
       return ".cosmos.so";
     case "arena":
       return ".are.na";
+    case "local":
+      return null;
   }
 }
 

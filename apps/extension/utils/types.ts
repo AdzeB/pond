@@ -31,16 +31,7 @@ export type PushSessionResult =
 export interface PondSettings {
   port: number;
   apiKey: string;
-  enabled: Record<
-    | "twitter"
-    | "instagram"
-    | "pinterest"
-    | "arena"
-    | "cosmos"
-    | "tiktok"
-    | "youtube",
-    boolean
-  >;
+  enabled: Record<Source, boolean>;
 }
 
 export const DEFAULT_SETTINGS: PondSettings = {
@@ -54,6 +45,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
     cosmos: true,
     tiktok: true,
     youtube: true,
+    local: false,
   },
 };
 
