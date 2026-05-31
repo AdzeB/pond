@@ -4,12 +4,7 @@ packages:
   - "icons"
 
 allowBuilds:
-  better-sqlite3: set this to true or false
-  electron-winstaller: set this to true or false
-  esbuild: set this to true or false
-  ffmpeg-static: set this to true or false
-  sharp: set this to true or false
-  spawn-sync: set this to true or false
+  sharp: true
 
 onlyBuiltDependencies:
   - better-sqlite3
