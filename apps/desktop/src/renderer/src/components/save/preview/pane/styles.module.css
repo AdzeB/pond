@@ -312,6 +312,34 @@
   }
 }
 
+.notes-input {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 10px;
+  font: inherit;
+  line-height: 1.4;
+  color: var(--ds-gray-12);
+  resize: vertical;
+  outline: none;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  transition: box-shadow 80ms ease;
+
+  &::placeholder {
+    color: var(--ds-gray-9);
+  }
+
+  &:hover {
+    box-shadow: 0 0 0 1px var(--ds-gray-a6);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 1px var(--ds-gray-a8);
+  }
+}
+
 .pane-row-list {
   display: flex;
   flex-direction: column;

@@ -1,5 +1,11 @@
 import { ChevronDown, Plus, X } from "lucide-react";
-import { type ReactNode, useCallback, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { optimistic } from "@/pool/bootstrap";
 import { pickPrimaryUnit } from "@/pool/media";
 import { pool } from "@/pool/pool";
@@ -156,6 +162,10 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
         <PaneTags save={save} />
       </PaneSection>
 
+      <PaneSection label="Notes">
+        <PaneNotes save={save} />
+      </PaneSection>
+
       {stats.length > 0 ? (
         <PaneSection label="Metadata">
           <PaneRowList rows={stats} />
@@ -229,6 +239,50 @@ function PaneRowList({ rows }: { rows: PaneRow[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function PaneNotes({ save }: { save: Save }) {
+  const [draft, setDraft] = useState(save.notes ?? "");
+
+  // Resync the local draft when the selection changes or notes update from
+  // elsewhere (e.g. an undo).
+  useEffect(() => {
+    setDraft(save.notes ?? "");
+  }, [save.notes]);
+
+  const commit = useCallback(async () => {
+    const next = draft.trim() || null;
+    if (next === (save.notes ?? null)) return;
+    const prev = pool.get(save.id);
+    if (!prev) return;
+    await optimistic(
+      () => {
+        pool.upsert({ ...prev, notes: next });
+      },
+      () => {
+        pool.upsert(prev);
+      },
+      async () =>
+        window.pond.tx({
+          kind: "update",
+          model: "save",
+          id: save.id,
+          patch: { notes: next },
+          before: { notes: save.notes },
+        }),
+    );
+  }, [draft, save.id, save.notes]);
+
+  return (
+    <textarea
+      className={styles["notes-input"]}
+      value={draft}
+      placeholder="Add a note"
+      spellCheck={false}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => void commit()}
+    />
   );
 }
 
