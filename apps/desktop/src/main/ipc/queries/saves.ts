@@ -281,6 +281,14 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true, paths: result.filePaths };
   },
 
+  async "saves.setPhash"(params) {
+    const id = String(params.id ?? "");
+    const phash = params.phash != null ? String(params.phash) : null;
+    if (!id) return { ok: false };
+    await applySavePatch(id, { phash }, { actorReason: "duplicates:phash" });
+    return { ok: true };
+  },
+
   async "saves.startDrag"(params, event) {
     const id = String(params.id ?? "");
     const fileIndex = Number(params.fileIndex ?? 0);
