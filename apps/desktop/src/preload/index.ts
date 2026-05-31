@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { IPC, type MenuActionId } from "../shared/constants";
 
 export interface RefreshBackfillStatusWire {
@@ -100,6 +100,13 @@ const api = {
 
   query(name: string, params?: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.query, name, params);
+  },
+
+  // Electron 41 removed File.path. Resolve a dropped/picked File to its
+  // absolute path here so the main process can read it without the bytes
+  // ever crossing IPC.
+  pathForFile(file: File): string {
+    return webUtils.getPathForFile(file);
   },
 
   onSyncAction(cb: (action: unknown) => void): () => void {
