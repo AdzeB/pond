@@ -3,25 +3,20 @@ import { Button, Field, Input } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { parsePairingLink } from "@/utils/pairing";
-import {
-  libraryInfoUrl,
-  normalizeStoredSettings,
-  type PondMessage,
-  type PondSettings,
-  type PushSessionResult,
+import type {
+  PondMessage,
+  PondSettings,
+  PushSessionResult,
 } from "@/utils/types";
 import { cookieDomainForSource, hostToSource, sourceLabel } from "@/utils/url";
 import styles from "./popup.module.css";
-
-interface LibraryInfo {
-  name: string;
-  counts: { active: number };
-}
-
-type ProbeResult =
-  | { state: "unpaired" }
-  | { state: "offline" }
-  | { state: "connected"; library: LibraryInfo };
+import {
+  getActiveTabUrl,
+  loadSettings,
+  type ProbeResult,
+  probe,
+  saveSettings,
+} from "./probe";
 
 type PushResult =
   | { tone: "ok"; label: string }
@@ -29,40 +24,6 @@ type PushResult =
   | null;
 
 const BRAND_ICON = chrome.runtime.getURL("icons/128.png");
-
-async function loadSettings(): Promise<PondSettings> {
-  const stored = await chrome.storage.local.get("settings");
-  return normalizeStoredSettings(stored.settings);
-}
-
-async function saveSettings(next: PondSettings): Promise<void> {
-  await chrome.storage.local.set({ settings: next });
-}
-
-async function probe(settings: PondSettings): Promise<ProbeResult> {
-  if (!settings.apiKey) return { state: "unpaired" };
-  try {
-    const res = await fetch(libraryInfoUrl(settings.port), {
-      headers: { authorization: `Bearer ${settings.apiKey}` },
-      signal: AbortSignal.timeout(1500),
-    });
-    if (res.status === 401) return { state: "unpaired" };
-    if (!res.ok) return { state: "offline" };
-    const body = (await res.json()) as {
-      status?: string;
-      data?: LibraryInfo;
-    };
-    if (body.status !== "success" || !body.data) return { state: "offline" };
-    return { state: "connected", library: body.data };
-  } catch {
-    return { state: "offline" };
-  }
-}
-
-async function getActiveTabUrl(): Promise<string | null> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  return tab?.url ?? null;
-}
 
 export function App() {
   const [probeResult, setProbeResult] = useState<ProbeResult | null>(null);
