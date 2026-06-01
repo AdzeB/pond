@@ -40,7 +40,7 @@ export function Footer() {
             </a>
             <a
               className={styles.link}
-              href="https://github.com/raphaelsalaja/pond/blob/main/SECURITY.md"
+              href="https://github.com/raphaelsalaja/pond/security"
               target="_blank"
               rel="noreferrer"
             >

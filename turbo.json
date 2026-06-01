@@ -36,9 +36,6 @@
     "db:generate": {
       "cache": false
     },
-    "db:migrate": {
-      "cache": false
-    },
     "dist": {
       "dependsOn": ["build"],
       "inputs": [

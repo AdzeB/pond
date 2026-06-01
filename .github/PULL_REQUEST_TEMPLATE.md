@@ -48,6 +48,5 @@ Add manual repro steps for the desktop app or extension where relevant.
 ## Checklist
 
 - [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-- [ ] `CHANGELOG.md` updated under `## [Unreleased]` if behavior changed
 - [ ] Docs/README updated if user-visible behavior changed
 - [ ] If this changes the ingest API contract, the extension still works against it

@@ -19,7 +19,4 @@ pnpm dev
 
 ## Documentation
 
-- [Contributing](CONTRIBUTING.md)
-- [Security](SECURITY.md)
-- [Changelog](CHANGELOG.md)
 - [License](LICENSE)
