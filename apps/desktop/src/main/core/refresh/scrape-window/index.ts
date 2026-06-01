@@ -36,10 +36,8 @@ import {
   YOUTUBE_LIST_URLS,
 } from "../harvest/youtube";
 import { homeUrlForSource } from "../sources";
-
-const PARTITION = "persist:pond-scrapers";
-const NAV_TIMEOUT_MS = 25_000;
-const HARVEST_TIMEOUT_MS = 20_000;
+import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS, PARTITION } from "./constants";
+import { sleep } from "./util";
 
 // Hard ceiling on total scrape windows alive at once. Each hidden
 // window is ~150 MB resident; six is the comfortable upper bound on a
@@ -1021,10 +1019,6 @@ async function navigateWithTimeout(
     return false;
   }
   return result === true;
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
