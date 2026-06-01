@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
-import { inPageScrollCollect } from "../lib/scroll";
+import { buildScrollListExpression } from "../lib/expression";
+import type { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageArenaNormalize } from "./normalize";
 
@@ -10,16 +11,7 @@ export function arenaProfileUrl(slug: string): string {
 }
 
 export function buildArenaListExpression(args: ListHarvestArgs): string {
-  const scrollSrc = `(${inPageScrollCollect.toString()})()`;
-  const normSrc = `(${inPageArenaNormalize.toString()})()`;
-  const fnSrc = `(${inPageArenaList.toString()})`;
-  return `(async () => {
-    const scroll = ${scrollSrc};
-    const norm = ${normSrc};
-    const args = ${JSON.stringify(args)};
-    try { return await ${fnSrc}(args, scroll, norm); }
-    catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
-  })()`;
+  return buildScrollListExpression(inPageArenaNormalize, inPageArenaList, args);
 }
 
 async function inPageArenaList(

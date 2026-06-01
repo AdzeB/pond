@@ -1,16 +1,15 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPageInstagramNormalize } from "./normalize";
 
 export function buildExpression(shortcode: string): string {
-  const normSrc = `(${inPageInstagramNormalize.toString()})()`;
-  const fnSrc = `(${inPageInstagramHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const sc = ${JSON.stringify(shortcode)};
-    try { return await ${fnSrc}(sc, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(
+    inPageInstagramNormalize,
+    inPageInstagramHarvest,
+    shortcode,
+  );
 }
 
 async function inPageInstagramHarvest(

@@ -1,16 +1,15 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPageCosmosNormalize } from "./normalize";
 
 export function buildExpression(elementId: string): string {
-  const normSrc = `(${inPageCosmosNormalize.toString()})()`;
-  const fnSrc = `(${inPageCosmosHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const elementId = ${JSON.stringify(elementId)};
-    try { return await ${fnSrc}(elementId, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(
+    inPageCosmosNormalize,
+    inPageCosmosHarvest,
+    elementId,
+  );
 }
 
 async function inPageCosmosHarvest(

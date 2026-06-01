@@ -1,16 +1,11 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPageArenaNormalize } from "./normalize";
 
 export function buildExpression(blockId: string): string {
-  const normSrc = `(${inPageArenaNormalize.toString()})()`;
-  const fnSrc = `(${inPageArenaHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const blockId = ${JSON.stringify(blockId)};
-    try { return await ${fnSrc}(blockId, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(inPageArenaNormalize, inPageArenaHarvest, blockId);
 }
 
 async function inPageArenaHarvest(

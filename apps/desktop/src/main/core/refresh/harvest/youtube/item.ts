@@ -1,16 +1,15 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPageYoutubeNormalize } from "./normalize";
 
 export function buildExpression(videoId: string): string {
-  const normSrc = `(${inPageYoutubeNormalize.toString()})()`;
-  const fnSrc = `(${inPageYoutubeHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const videoId = ${JSON.stringify(videoId)};
-    try { return await ${fnSrc}(videoId, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(
+    inPageYoutubeNormalize,
+    inPageYoutubeHarvest,
+    videoId,
+  );
 }
 
 async function inPageYoutubeHarvest(

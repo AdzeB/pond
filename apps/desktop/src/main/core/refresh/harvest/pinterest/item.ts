@@ -1,16 +1,15 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPagePinterestNormalize } from "./normalize";
 
 export function buildExpression(pinId: string): string {
-  const normSrc = `(${inPagePinterestNormalize.toString()})()`;
-  const fnSrc = `(${inPagePinterestHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const pinId = ${JSON.stringify(pinId)};
-    try { return await ${fnSrc}(pinId, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(
+    inPagePinterestNormalize,
+    inPagePinterestHarvest,
+    pinId,
+  );
 }
 
 async function inPagePinterestHarvest(

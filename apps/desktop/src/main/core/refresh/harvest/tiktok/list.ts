@@ -1,7 +1,8 @@
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
-import { inPageScrollCollect } from "../lib/scroll";
+import { buildScrollListExpression } from "../lib/expression";
+import type { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageTiktokNormalize } from "./normalize";
 
@@ -10,16 +11,11 @@ export function tiktokFavouritesUrl(handle: string): string {
 }
 
 export function buildTiktokListExpression(args: ListHarvestArgs): string {
-  const scrollSrc = `(${inPageScrollCollect.toString()})()`;
-  const normSrc = `(${inPageTiktokNormalize.toString()})()`;
-  const fnSrc = `(${inPageTiktokList.toString()})`;
-  return `(async () => {
-    const scroll = ${scrollSrc};
-    const norm = ${normSrc};
-    const args = ${JSON.stringify(args)};
-    try { return await ${fnSrc}(args, scroll, norm); }
-    catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
-  })()`;
+  return buildScrollListExpression(
+    inPageTiktokNormalize,
+    inPageTiktokList,
+    args,
+  );
 }
 
 async function inPageTiktokList(

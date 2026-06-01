@@ -1,16 +1,15 @@
 /// <reference lib="dom" />
 
+import { buildItemExpression } from "../lib/expression";
 import type { ScrapedHarvest } from "../types";
 import { inPageTiktokNormalize } from "./normalize";
 
 export function buildExpression(videoId: string): string {
-  const normSrc = `(${inPageTiktokNormalize.toString()})()`;
-  const fnSrc = `(${inPageTiktokHarvest.toString()})`;
-  return `(async () => {
-    const norm = ${normSrc};
-    const videoId = ${JSON.stringify(videoId)};
-    try { return await ${fnSrc}(videoId, norm); } catch (e) { return null; }
-  })()`;
+  return buildItemExpression(
+    inPageTiktokNormalize,
+    inPageTiktokHarvest,
+    videoId,
+  );
 }
 
 async function inPageTiktokHarvest(

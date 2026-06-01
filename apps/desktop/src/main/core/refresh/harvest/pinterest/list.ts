@@ -1,6 +1,7 @@
 /// <reference lib="dom" />
 
-import { inPageScrollCollect } from "../lib/scroll";
+import { buildScrollListExpression } from "../lib/expression";
+import type { inPageScrollCollect } from "../lib/scroll";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPagePinterestNormalize } from "./normalize";
 
@@ -9,16 +10,11 @@ export function pinterestProfileUrl(_handle: string): string {
 }
 
 export function buildPinterestListExpression(args: ListHarvestArgs): string {
-  const scrollSrc = `(${inPageScrollCollect.toString()})()`;
-  const normSrc = `(${inPagePinterestNormalize.toString()})()`;
-  const fnSrc = `(${inPagePinterestList.toString()})`;
-  return `(async () => {
-    const scroll = ${scrollSrc};
-    const norm = ${normSrc};
-    const args = ${JSON.stringify(args)};
-    try { return await ${fnSrc}(args, scroll, norm); }
-    catch (e) { return { ok: false, reason: 'timeout', error: String(e) }; }
-  })()`;
+  return buildScrollListExpression(
+    inPagePinterestNormalize,
+    inPagePinterestList,
+    args,
+  );
 }
 
 async function inPagePinterestList(
