@@ -1,5 +1,3 @@
-import { copyFile, writeFile } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
 import { SOURCES, type Source, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, type Query } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
@@ -14,13 +12,9 @@ import {
   isNull,
   or,
 } from "drizzle-orm";
-import { BrowserWindow, clipboard, dialog, nativeImage } from "electron";
+import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
-import {
-  createManualSave,
-  IMPORTABLE_EXTENSIONS,
-} from "../../core/manual-import";
 import { persistSave } from "../../core/persist-save";
 import {
   cancelProcessingBackfill,
@@ -28,19 +22,17 @@ import {
   retryFailedSave,
   startProcessingBackfill,
 } from "../../core/pipeline/backfill-failed";
-import { enqueueSaveByUrl } from "../../core/pipeline/enqueue";
-import { UnsupportedError } from "../../core/pipeline/extractors/errors";
-import { setSaveTags } from "../../core/tags";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
-import { toCsv } from "../../lib/csv";
 import {
   type QueryHandlerMap,
   resolveSaveFilePath,
   sanitizeFtsQuery,
 } from "../helpers";
 import { toWireSave, toWireSaves } from "../wire";
+import { savesExportQueries } from "./saves-export";
+import { savesImportQueries } from "./saves-import";
 
 export interface ProcessingDetailWire {
   id: string;
@@ -142,27 +134,10 @@ async function loadTasksFor(
   return grouped;
 }
 
-function sanitizeName(s: string): string {
-  return s
-    .replace(/[/\\?%*:|"<>]/g, "_")
-    .trim()
-    .slice(0, 120);
-}
-
-// Import each dropped/picked file as its own save so a multi-file drop
-// becomes a grid of individual items rather than one mixed bundle.
-async function importFilesImpl(
-  paths: string[],
-): Promise<{ ok: boolean; ids: string[] }> {
-  const ids: string[] = [];
-  for (const path of paths) {
-    const res = await createManualSave({ filePaths: [path] });
-    if (res.ok && res.id) ids.push(res.id);
-  }
-  return { ok: ids.length > 0, ids };
-}
-
 export const savesQueries: QueryHandlerMap = {
+  ...savesImportQueries,
+  ...savesExportQueries,
+
   async "saves.list"(params) {
     const db = await getDb();
     const hasExplicitLimit = params.limit != null;
@@ -251,115 +226,12 @@ export const savesQueries: QueryHandlerMap = {
     return resolveSaveFilePath(id, Number.isFinite(fileIndex) ? fileIndex : 0);
   },
 
-  async "saves.importFiles"(params) {
-    const paths = Array.isArray(params.paths)
-      ? (params.paths as unknown[]).map(String).filter(Boolean)
-      : [];
-    if (paths.length === 0) return { ok: false, error: "no_files" };
-    return importFilesImpl(paths);
-  },
-
-  // Back-compat alias for any stale renderer build still calling dropFiles.
-  async "saves.dropFiles"(params) {
-    const paths = Array.isArray(params.paths)
-      ? (params.paths as unknown[]).map(String).filter(Boolean)
-      : [];
-    if (paths.length === 0) return { ok: false, error: "no_files" };
-    return importFilesImpl(paths);
-  },
-
-  async "saves.createManual"(params) {
-    return createManualSave({
-      title: params.title != null ? String(params.title) : null,
-      url: params.url != null ? String(params.url) : null,
-      note: params.note != null ? String(params.note) : null,
-      tags: Array.isArray(params.tags) ? (params.tags as string[]) : [],
-      filePaths: Array.isArray(params.filePaths)
-        ? (params.filePaths as string[])
-        : [],
-    });
-  },
-
-  async "saves.pickFiles"() {
-    const result = await dialog.showOpenDialog({
-      properties: ["openFile", "multiSelections"],
-      filters: [{ name: "Media", extensions: [...IMPORTABLE_EXTENSIONS] }],
-    });
-    if (result.canceled) return { ok: false, paths: [] };
-    return { ok: true, paths: result.filePaths };
-  },
-
   async "saves.setPhash"(params) {
     const id = String(params.id ?? "");
     const phash = params.phash != null ? String(params.phash) : null;
     if (!id) return { ok: false };
     await persistSave(id, { phash }, { actorReason: "duplicates:phash" });
     return { ok: true };
-  },
-
-  async "saves.startDrag"(params, event) {
-    const id = String(params.id ?? "");
-    const fileIndex = Number(params.fileIndex ?? 0);
-    if (!id || !event) return { ok: false };
-    const target = await resolveSaveFilePath(
-      id,
-      Number.isFinite(fileIndex) ? fileIndex : 0,
-    );
-    if (!target.ok) return { ok: false };
-    try {
-      const { nativeImage } = await import("electron");
-      const icon = nativeImage.createEmpty();
-      event.sender.startDrag({ file: target.path, icon });
-      return { ok: true };
-    } catch (err) {
-      log.warn("[pond ipc] startDrag failed", err);
-      return { ok: false };
-    }
-  },
-
-  async "saves.quickAdd"(params) {
-    const url = String(params.url ?? "").trim();
-    const note =
-      params.note != null ? String(params.note).trim() || null : null;
-    const tags = Array.isArray(params.tags) ? (params.tags as string[]) : [];
-
-    if (!url) {
-      // No URL: treat as a manual note entry rather than rejecting it.
-      const res = await createManualSave({ title: note, note, tags });
-      return res.ok
-        ? { ok: true, id: res.id }
-        : { ok: false, error: res.error ?? "empty_input" };
-    }
-    try {
-      const result = await enqueueSaveByUrl(url, { trigger: "user:quickAdd" });
-      if (tags.length > 0) await setSaveTags(result.id, tags);
-      if (note) {
-        await persistSave(
-          result.id,
-          { notes: note },
-          { actorReason: "user:quickAdd-note" },
-        );
-      }
-      return { ok: true, id: result.id, created: result.created };
-    } catch (err) {
-      if (err instanceof UnsupportedError) {
-        // Unsupported URL: keep it as a manual save instead of dropping it.
-        const res = await createManualSave({
-          url,
-          title: note ?? url,
-          note,
-          tags,
-        });
-        return res.ok
-          ? { ok: true, id: res.id }
-          : { ok: false, error: "unsupported_url" };
-      }
-      log.error("[pond ipc] quickAdd failed", err);
-      return {
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      };
-    }
   },
 
   async "saves.search"(params) {
@@ -588,130 +460,6 @@ export const savesQueries: QueryHandlerMap = {
       log.warn("[pond ipc] saves.copyImage failed", err);
       return { ok: false as const, reason: "internal_error" as const };
     }
-  },
-
-  async "saves.exportFile"(params, event) {
-    const id = String(params.id ?? "");
-    const fileIndex = Number(params.fileIndex ?? 0);
-    if (!id) return { ok: false as const, reason: "not_found" as const };
-    const target = await resolveSaveFilePath(
-      id,
-      Number.isFinite(fileIndex) ? fileIndex : 0,
-    );
-    if (!target.ok) return target;
-
-    const db = await getDb();
-    const rows = await db.select().from(saves).where(eq(saves.id, id));
-    const row = rows[0];
-    const ext = extname(target.path);
-    const base = (row?.title ?? row?.id ?? "save")
-      .replace(/[\\/:*?"<>|]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120);
-    const defaultName = `${base || "save"}${ext}`;
-
-    const win = event
-      ? (BrowserWindow.fromWebContents(event.sender) ?? undefined)
-      : undefined;
-    try {
-      const result = await dialog.showSaveDialog({
-        ...(win ? { browserWindow: win } : {}),
-        defaultPath: defaultName,
-      } as Electron.SaveDialogOptions);
-      if (result.canceled || !result.filePath) {
-        return { ok: false as const, reason: "cancelled" as const };
-      }
-      await copyFile(target.path, result.filePath);
-      return { ok: true as const, path: result.filePath };
-    } catch (err) {
-      log.warn("[pond ipc] saves.exportFile failed", err);
-      return { ok: false as const, reason: "internal_error" as const };
-    }
-  },
-
-  async "saves.exportFiles"(params) {
-    const ids = Array.isArray(params.ids)
-      ? (params.ids as unknown[]).map(String).filter(Boolean)
-      : [];
-    if (ids.length === 0) return { ok: false as const, error: "no_selection" };
-
-    const picked = await dialog.showOpenDialog({
-      properties: ["openDirectory", "createDirectory"],
-    });
-    if (picked.canceled || !picked.filePaths[0]) {
-      return { ok: false as const, error: "canceled" };
-    }
-    const dir = picked.filePaths[0];
-
-    const db = await getDb();
-    const rows = await db.select().from(saves).where(inArray(saves.id, ids));
-
-    const used = new Set<string>();
-    let exported = 0;
-    for (const row of rows) {
-      const target = await resolveSaveFilePath(row.id, row.coverIndex ?? 0);
-      if (!target.ok) continue;
-      const ext = extname(target.path);
-      const base =
-        sanitizeName(row.title ?? basename(target.path, ext)) || row.id;
-      let name = `${base}${ext}`;
-      let n = 1;
-      while (used.has(name.toLowerCase())) name = `${base}-${n++}${ext}`;
-      used.add(name.toLowerCase());
-      await copyFile(target.path, join(dir, name));
-      exported++;
-    }
-    return { ok: true as const, exported, dir };
-  },
-
-  async "saves.exportCsv"(params) {
-    const ids = Array.isArray(params.ids)
-      ? (params.ids as unknown[]).map(String).filter(Boolean)
-      : null;
-
-    const db = await getDb();
-    const rows =
-      ids && ids.length > 0
-        ? await db.select().from(saves).where(inArray(saves.id, ids))
-        : await db
-            .select()
-            .from(saves)
-            .where(isNull(saves.deletedAt))
-            .orderBy(desc(saves.savedAt));
-
-    const columns = [
-      "id",
-      "source",
-      "url",
-      "title",
-      "author",
-      "description",
-      "notes",
-      "tags",
-      "mediaType",
-      "width",
-      "height",
-      "fileSize",
-      "status",
-      "savedAt",
-    ];
-    const records = rows.map((r) => ({
-      ...r,
-      tags: (r.tags ?? []).join("; "),
-      savedAt: r.savedAt ? new Date(r.savedAt).toISOString() : "",
-    }));
-    const csv = toCsv(records, columns);
-
-    const picked = await dialog.showSaveDialog({
-      defaultPath: "pond-export.csv",
-      filters: [{ name: "CSV", extensions: ["csv"] }],
-    });
-    if (picked.canceled || !picked.filePath) {
-      return { ok: false as const, error: "canceled" };
-    }
-    await writeFile(picked.filePath, csv, "utf8");
-    return { ok: true as const, count: rows.length, path: picked.filePath };
   },
 
   async "saves.backfillColors"() {
