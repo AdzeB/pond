@@ -56,13 +56,16 @@ function write(libraries: KnownLibrary[]): void {
   writeFileSync(file, JSON.stringify(body, null, 2));
 }
 
-// Most-recently-opened first.
+// Stored order is the source of truth so the user's drag-reordering in
+// the switcher survives restarts. New libraries land at the top.
 export function readKnownLibraries(): KnownLibrary[] {
-  return [...read()].sort((a, b) => b.lastOpenedAt - a.lastOpenedAt);
+  return read();
 }
 
 // Upsert a library and stamp it as just-opened. Called on boot for the
-// active library and whenever the user switches or creates one.
+// active library and whenever the user switches or creates one. An
+// existing entry keeps its position so a switch never reshuffles the
+// list the user arranged by hand.
 export function rememberLibrary(path: string): KnownLibrary {
   const abs = normalize(path);
   const now = Date.now();
@@ -80,9 +83,29 @@ export function rememberLibrary(path: string): KnownLibrary {
     addedAt: now,
     lastOpenedAt: now,
   };
-  libraries.push(entry);
+  libraries.unshift(entry);
   write(libraries);
   return entry;
+}
+
+// Persist the explicit order the user dragged the libraries into. Paths
+// not present in `order` keep their prior relative order at the end, so
+// a stale list from the renderer can't drop entries.
+export function setLibraryOrder(order: string[]): void {
+  const libraries = read();
+  const byPath = new Map(libraries.map((l) => [normalize(l.path), l]));
+  const next: KnownLibrary[] = [];
+  for (const path of order) {
+    const lib = byPath.get(normalize(path));
+    if (lib) {
+      next.push(lib);
+      byPath.delete(normalize(path));
+    }
+  }
+  for (const lib of libraries) {
+    if (byPath.has(normalize(lib.path))) next.push(lib);
+  }
+  write(next);
 }
 
 export function forgetLibrary(path: string): void {

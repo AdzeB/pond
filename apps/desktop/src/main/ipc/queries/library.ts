@@ -16,8 +16,9 @@ import {
   forgetLibrary,
   readKnownLibraries,
   rememberLibrary,
+  setLibraryOrder,
 } from "../../lib/library-recents";
-import { libraryRoot as libraryRootDir } from "../../paths";
+import { invalidatePaths, libraryRoot as libraryRootDir } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryQueries: QueryHandlerMap = {
@@ -25,9 +26,20 @@ export const libraryQueries: QueryHandlerMap = {
     return await reconcileLibrary();
   },
 
-  async "library.openInFinder"() {
-    const root = libraryRootDir();
-    const err = await shell.openPath(root);
+  // Reveal a library bundle in Finder. Defaults to the active library;
+  // the switcher passes a `path` to reveal any known library. Only paths
+  // we already track are honored so the renderer can't open arbitrary
+  // locations.
+  async "library.openInFinder"(params) {
+    const requested = typeof params.path === "string" ? params.path.trim() : "";
+    let target = libraryRootDir();
+    if (requested) {
+      const known = readKnownLibraries().some(
+        (l) => l.path.replace(/\/+$/, "") === requested.replace(/\/+$/, ""),
+      );
+      if (known && existsSync(requested)) target = requested;
+    }
+    const err = await shell.openPath(target);
     if (err) return { ok: false as const, reason: err };
     return { ok: true as const };
   },
@@ -206,6 +218,38 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
+  // Persist the drag-reordered library list from the switcher.
+  async "library.reorder"(params) {
+    const paths = Array.isArray(params.paths)
+      ? params.paths.filter((p): p is string => typeof p === "string")
+      : [];
+    if (paths.length === 0) {
+      return { ok: false as const, reason: "no_paths" as const };
+    }
+    setLibraryOrder(paths);
+    return { ok: true as const };
+  },
+
+  // Eagle's "Empty cache and reload": drop the derived caches for the
+  // active library (thumbnails, transcoded video) and reload every
+  // window so they regenerate. Never touches items or the index.
+  async "library.emptyCacheAndReload"() {
+    let removed = 0;
+    for (const dir of ["_thumbs", "_video_cache"] as const) {
+      try {
+        removed += await purgeLibrarySubdir(dir);
+      } catch (err) {
+        log.warn("[pond library-ops] cache purge failed", dir, err);
+      }
+    }
+    setTimeout(() => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) win.webContents.reload();
+      }
+    }, 50);
+    return { ok: true as const, removed };
+  },
+
   // Back-compat: old "Move Library…" calls funnel through here. New
   // UI uses pickFolder + previewRelocate + relocate.
   async "library.move"(params) {
@@ -363,10 +407,39 @@ function ensurePondSuffix(path: string): string {
 // the process. The renderer's `await` resolves with the success
 // payload, then the app vanishes and comes back pointing at the new
 // library.
+// Apply a library change so the app reflects the new pointer.
+//
+// In production we relaunch the process: many subsystems captured the old
+// paths at boot and a clean restart is the simplest way to re-point them.
+//
+// In `electron-vite` dev, `app.exit(0)` tears down the renderer dev server,
+// so the relaunched window can't reach the dev URL (ERR_CONNECTION_REFUSED)
+// and is left blank while holding the single-instance lock. The SQLite index
+// lives in userData (shared across libraries); only the on-disk paths change,
+// so we bust the path cache and reload the window in place instead.
 function relaunchSoon(): void {
+  if (process.env.ELECTRON_RENDERER_URL) {
+    setTimeout(() => {
+      void softRepointInDev();
+    }, 150);
+    return;
+  }
   setTimeout(() => {
     log.info("[pond library-ops] relaunching into new library");
     app.relaunch();
     app.exit(0);
   }, 150);
+}
+
+async function softRepointInDev(): Promise<void> {
+  log.info("[pond library-ops] dev re-point into new library (no relaunch)");
+  invalidatePaths();
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.reload();
+  }
+  try {
+    await reconcileLibrary();
+  } catch (err) {
+    log.warn("[pond library-ops] dev re-point reconcile failed", err);
+  }
 }
