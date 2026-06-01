@@ -1,20 +1,13 @@
-const SOURCE_LABELS: Record<string, string> = {
-  twitter: "X / Twitter",
-  x: "X / Twitter",
-  cosmos: "Cosmos",
-  arena: "Are.na",
-  "are.na": "Are.na",
-  facebook: "Facebook",
-  instagram: "Instagram",
-  pinterest: "Pinterest",
-  tiktok: "TikTok",
-  youtube: "YouTube",
-  dribbble: "Dribbble",
-  local: "Local",
+import { isSource, sourceLabel } from "@pond/schema/sources";
+
+const ALIASES: Record<string, string> = {
+  x: "twitter",
+  "are.na": "arena",
 };
 
 export function getSourceLabel(source: string): string {
-  const known = SOURCE_LABELS[source.toLowerCase()];
-  if (known) return known;
+  const key = source.toLowerCase();
+  const normalized = ALIASES[key] ?? key;
+  if (isSource(normalized)) return sourceLabel(normalized);
   return source.charAt(0).toUpperCase() + source.slice(1);
 }

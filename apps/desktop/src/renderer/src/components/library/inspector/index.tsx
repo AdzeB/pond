@@ -3,11 +3,9 @@ import { useParams, useRouter } from "@tanstack/react-router";
 import { Ellipsis, Folder, Globe, RefreshCw, Trash } from "lucide-react";
 import { useCallback } from "react";
 import { SavePreview } from "@/components/save/preview";
-import {
-  humaniseRefreshReason,
-  REVEAL_LABEL,
-} from "@/components/save/preview/helpers";
+import { humaniseRefreshReason } from "@/components/save/preview/helpers";
 import { Aside } from "@/components/shell/aside";
+import { REVEAL_LABEL } from "@/lib/platform";
 import { useTrackVisit } from "@/lib/recents";
 import { useInspector } from "@/lib/shell-state";
 import { useSave } from "@/pool/hooks";

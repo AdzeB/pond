@@ -18,14 +18,6 @@ export function getYouTubeChapters(save: Save): ChapterCue[] | undefined {
   return out.length > 0 ? out : undefined;
 }
 
-export const REVEAL_LABEL: string = (() => {
-  if (typeof navigator === "undefined") return "Reveal in Finder";
-  const p = navigator.platform?.toLowerCase() ?? "";
-  if (p.includes("win")) return "Show in Explorer";
-  if (p.includes("linux")) return "Show in File Manager";
-  return "Reveal in Finder";
-})();
-
 export function descriptionMatchesTitle(save: Save): boolean {
   if (!save.title || !save.description) return false;
   const norm = (s: string) =>

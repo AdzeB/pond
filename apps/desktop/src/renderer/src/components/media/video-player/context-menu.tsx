@@ -15,7 +15,7 @@ import {
   Play,
 } from "lucide-react";
 import { useCallback } from "react";
-import { REVEAL_LABEL } from "@/components/save/preview/helpers";
+import { REVEAL_LABEL } from "@/lib/platform";
 import {
   enterPresentation,
   exportFile,

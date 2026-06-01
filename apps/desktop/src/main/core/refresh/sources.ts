@@ -1,52 +1,25 @@
 import type { Source } from "@pond/schema/db";
+import { hostToSource } from "@pond/schema/sources";
+
+export { sourceLabel } from "@pond/schema/sources";
+
+const AUTH_WALLED: Record<Source, boolean> = {
+  twitter: true,
+  instagram: true,
+  cosmos: true,
+  tiktok: true,
+  pinterest: false,
+  arena: false,
+  youtube: false,
+  local: false,
+};
 
 export function classifyUrl(rawUrl: string): {
   source: Source | null;
   authWalled: boolean;
 } {
-  let u: URL;
-  try {
-    u = new URL(rawUrl);
-  } catch {
-    return { source: null, authWalled: false };
-  }
-  const host = u.hostname.toLowerCase();
-
-  if (host === "x.com" || host === "twitter.com" || host.endsWith(".x.com")) {
-    return { source: "twitter", authWalled: true };
-  }
-  if (
-    host === "instagram.com" ||
-    host === "www.instagram.com" ||
-    host.endsWith(".instagram.com")
-  ) {
-    return { source: "instagram", authWalled: true };
-  }
-  if (
-    host === "pinterest.com" ||
-    host.endsWith(".pinterest.com") ||
-    host === "pin.it"
-  ) {
-    return { source: "pinterest", authWalled: false };
-  }
-  if (host === "are.na" || host === "www.are.na") {
-    return { source: "arena", authWalled: false };
-  }
-  if (host === "cosmos.so" || host === "www.cosmos.so") {
-    return { source: "cosmos", authWalled: true };
-  }
-  if (host === "tiktok.com" || host.endsWith(".tiktok.com")) {
-    return { source: "tiktok", authWalled: true };
-  }
-  if (
-    host === "youtube.com" ||
-    host === "www.youtube.com" ||
-    host === "m.youtube.com" ||
-    host === "youtu.be"
-  ) {
-    return { source: "youtube", authWalled: false };
-  }
-  return { source: null, authWalled: false };
+  const source = hostToSource(rawUrl);
+  return { source, authWalled: source ? AUTH_WALLED[source] : false };
 }
 
 export function homeUrlForSource(source: Source): string {
@@ -84,26 +57,5 @@ export function supportsYtDlp(source: Source | null): boolean {
     case "arena":
     case "local":
       return false;
-  }
-}
-
-export function sourceLabel(source: Source): string {
-  switch (source) {
-    case "twitter":
-      return "X / Twitter";
-    case "instagram":
-      return "Instagram";
-    case "pinterest":
-      return "Pinterest";
-    case "arena":
-      return "Are.na";
-    case "cosmos":
-      return "Cosmos";
-    case "tiktok":
-      return "TikTok";
-    case "youtube":
-      return "YouTube";
-    case "local":
-      return "Local";
   }
 }

@@ -1,5 +1,15 @@
 import { useSyncExternalStore } from "react";
 
+// `navigator.platform` is stable for the lifetime of the renderer process,
+// so resolve the reveal-in-file-manager label once at module load.
+export const REVEAL_LABEL: string = (() => {
+  if (typeof navigator === "undefined") return "Reveal in Finder";
+  const p = navigator.platform?.toLowerCase() ?? "";
+  if (p.includes("win")) return "Show in Explorer";
+  if (p.includes("linux")) return "Show in File Manager";
+  return "Reveal in Finder";
+})();
+
 type Platform = "mac" | "other";
 
 let platform: Platform | null = null;

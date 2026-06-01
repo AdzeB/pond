@@ -17,6 +17,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { type ReactElement, type ReactNode, useMemo } from "react";
+import { REVEAL_LABEL } from "@/lib/platform";
 import {
   copyImage as copyImageAction,
   copyTags as copyTagsAction,
@@ -71,16 +72,6 @@ type ActionDescriptor =
   | ItemDescriptor
   | SubmenuDescriptor
   | SeparatorDescriptor;
-
-// Mirrors macOS conventions; Windows / Linux get the right label without a
-// per-call branch at each callsite.
-const REVEAL_LABEL = (() => {
-  if (typeof navigator === "undefined") return "Reveal in Finder";
-  const p = navigator.platform.toLowerCase();
-  if (p.includes("mac")) return "Reveal in Finder";
-  if (p.includes("win")) return "Show in Explorer";
-  return "Show in File Manager";
-})();
 
 // Reverse image search engines. Each takes a public image URL and
 // returns a search URL the engine can fetch server-side. Local-only
