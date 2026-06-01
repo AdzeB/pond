@@ -3,39 +3,39 @@ import { join } from "node:path";
 import { SOURCES, type Source } from "@pond/schema/db";
 import { app, BrowserWindow, type Cookie, session, shell } from "electron";
 import log from "electron-log/main.js";
-import { sourcePausedUntil } from "../pipeline/source-gate";
-import { getPrefs, setPrefs } from "../prefs";
-import { harvesterFor } from "./harvest";
-import { arenaProfileUrl, buildArenaListExpression } from "./harvest/arena";
-import { harvestArenaListViaApi } from "./harvest/arena/api";
+import { sourcePausedUntil } from "../../pipeline/source-gate";
+import { getPrefs, setPrefs } from "../../prefs";
+import { harvesterFor } from "../harvest";
+import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
+import { harvestArenaListViaApi } from "../harvest/arena/api";
 import {
   buildCosmosListExpression,
   COSMOS_LIST_URL,
   cosmosProfileUrl,
-} from "./harvest/cosmos";
-import { buildInstagramListExpression } from "./harvest/instagram";
-import type { ListHarvestArgs, ListHarvestResult } from "./harvest/list-types";
+} from "../harvest/cosmos";
+import { buildInstagramListExpression } from "../harvest/instagram";
+import type { ListHarvestArgs, ListHarvestResult } from "../harvest/list-types";
 import {
   buildPinterestListExpression,
   pinterestProfileUrl,
-} from "./harvest/pinterest";
+} from "../harvest/pinterest";
 import {
   buildTiktokListExpression,
   tiktokFavouritesUrl,
-} from "./harvest/tiktok";
+} from "../harvest/tiktok";
 import {
   type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
   buildBookmarksExpression,
   parseBookmarksResponses,
-} from "./harvest/twitter";
-import type { ScrapedHarvest } from "./harvest/types";
+} from "../harvest/twitter";
+import type { ScrapedHarvest } from "../harvest/types";
 import {
   buildYoutubeListExpression,
   YOUTUBE_LIST_URLS,
-} from "./harvest/youtube";
-import { homeUrlForSource } from "./sources";
+} from "../harvest/youtube";
+import { homeUrlForSource } from "../sources";
 
 const PARTITION = "persist:pond-scrapers";
 const NAV_TIMEOUT_MS = 25_000;
