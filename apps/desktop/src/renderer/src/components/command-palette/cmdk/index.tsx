@@ -1,3 +1,14 @@
+/**
+ * Vendored from `cmdk` (https://github.com/pacocoursey/cmdk), MIT licensed.
+ *
+ * Kept in-tree rather than as a dependency so the palette can be trimmed to
+ * what Pond uses and styled with our own CSS. This is third-party code: it
+ * predates the repo's React 19 conventions (it uses `forwardRef` and
+ * `useContext` instead of `ref` props and `use()`), so `biome.json` carves
+ * out a lint override for this folder. Prefer upstreaming fixes over
+ * rewriting it to match house style.
+ */
+
 import * as React from "react";
 import { commandScore } from "./score";
 

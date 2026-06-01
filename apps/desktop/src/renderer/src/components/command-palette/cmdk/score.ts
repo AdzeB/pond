@@ -1,3 +1,6 @@
+// Vendored from `cmdk` (https://github.com/pacocoursey/cmdk), MIT licensed.
+// Fuzzy-match scoring used by the command palette. See ./index.tsx.
+
 const SCORE_CONTINUE_MATCH = 1;
 const SCORE_SPACE_WORD_JUMP = 0.9;
 const SCORE_NON_SPACE_WORD_JUMP = 0.8;
