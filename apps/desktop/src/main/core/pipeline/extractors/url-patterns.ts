@@ -1,7 +1,3 @@
-// Centralized URL patterns. Each extractor exposes its own validUrl array,
-// but classifyUrlToSource() in pipeline/url.ts uses the union so that
-// /enqueue can mint a `source` for the save row before any extractor runs.
-
 export const TWITTER_PATTERNS: readonly RegExp[] = [
   /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/i,
   /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)/i,

@@ -1,12 +1,12 @@
 import type { Source } from "@pond/schema/db";
 import { UnsupportedError } from "./errors";
-import { ArenaBlockExtractor } from "./sources/arena-block";
-import { CosmosTileExtractor } from "./sources/cosmos-tile";
-import { InstagramPostExtractor } from "./sources/instagram-post";
-import { PinterestPinExtractor } from "./sources/pinterest-pin";
-import { TikTokVideoExtractor } from "./sources/tiktok-video";
-import { TwitterTweetExtractor } from "./sources/twitter-tweet";
-import { YouTubeWatchExtractor } from "./sources/youtube-watch";
+import { ArenaBlockExtractor } from "./sources/arena";
+import { CosmosTileExtractor } from "./sources/cosmos";
+import { InstagramPostExtractor } from "./sources/instagram";
+import { PinterestPinExtractor } from "./sources/pinterest";
+import { TikTokVideoExtractor } from "./sources/tiktok";
+import { TwitterTweetExtractor } from "./sources/twitter";
+import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
 export const EXTRACTORS: readonly Extractor[] = [
