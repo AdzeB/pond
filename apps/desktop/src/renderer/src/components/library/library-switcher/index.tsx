@@ -1,4 +1,4 @@
-import { Menu, Popover, ScrollArea, useToast } from "@pond/ui";
+import { AlertDialog, Button, Menu, Popover, useToast } from "@pond/ui";
 import {
   Check,
   ChevronsUpDown,
@@ -10,10 +10,11 @@ import {
   Library,
   RotateCcw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import type { DragEvent, ReactNode } from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
 
 interface KnownLibraryWire {
@@ -47,6 +48,9 @@ export function LibrarySwitcher({ logo }: { logo: ReactNode }) {
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<KnownLibraryWire | null>(
+    null,
+  );
 
   // Latest order, read on drop so persistence doesn't see a stale
   // closure from the render where the drag started.
@@ -59,6 +63,12 @@ export function LibrarySwitcher({ logo }: { logo: ReactNode }) {
       .catch(() => null)) as ListKnownResult | null;
     if (res) setLibraries(res.libraries);
   }, []);
+
+  // Load once on mount so the trigger shows the active library's name
+  // before the popover is ever opened.
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const active = libraries.find((l) => l.active);
 
@@ -157,6 +167,22 @@ export function LibrarySwitcher({ logo }: { logo: ReactNode }) {
     await refresh();
   }
 
+  async function deleteFromDisk(path: string, name: string) {
+    const res = (await window.pond.query("library.delete", {
+      path,
+    })) as ActionResult;
+    if (!res.ok) {
+      toast.add({
+        title: "Couldn't delete library",
+        description: res.reason,
+        type: "error",
+      });
+      return;
+    }
+    toast.add({ title: `Moved "${name}" to Trash`, type: "success" });
+    await refresh();
+  }
+
   async function emptyCacheAndReload() {
     if (busy) return;
     setBusy(true);
@@ -194,218 +220,264 @@ export function LibrarySwitcher({ logo }: { logo: ReactNode }) {
   }
 
   return (
-    <Popover.Root
-      onOpenChange={(open) => {
-        if (open) void refresh();
-        else setQuery("");
-      }}
-    >
-      <Popover.Trigger
-        render={
-          <button
-            type="button"
-            className={styles.trigger}
-            aria-label="Switch library"
-          />
-        }
+    <>
+      <Popover.Root
+        onOpenChange={(open) => {
+          if (open) void refresh();
+          else setQuery("");
+        }}
       >
-        <span aria-hidden className={styles.logo}>
-          {logo}
-        </span>
-        <span className={styles.name}>{active?.name ?? "Pond"}</span>
-        <ChevronsUpDown className={styles.chevron} aria-hidden />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Positioner align="start" sideOffset={6}>
-          <Popover.Popup className={styles.popup}>
-            <div className={styles.search}>
-              <Search className={styles["search-icon"]} aria-hidden />
-              <input
-                className={styles["search-field"]}
-                type="text"
-                placeholder="Search libraries…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                spellCheck={false}
-                autoCorrect="off"
-                autoCapitalize="off"
-              />
-              {query ? (
-                <button
-                  type="button"
-                  className={styles["search-clear"]}
-                  aria-label="Clear search"
-                  onClick={() => setQuery("")}
-                >
-                  <X width={13} height={13} />
-                </button>
-              ) : null}
-            </div>
+        <Popover.Trigger
+          render={
+            <button
+              type="button"
+              className={styles.trigger}
+              aria-label="Switch library"
+            />
+          }
+        >
+          <span aria-hidden className={styles.logo}>
+            {logo}
+          </span>
+          <span className={styles.name}>{active?.name ?? "Pond"}</span>
+          <ChevronsUpDown className={styles.chevron} aria-hidden />
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner align="start" sideOffset={6}>
+            <Popover.Popup className={styles.popup}>
+              <div className={styles.search}>
+                <Search className={styles["search-icon"]} aria-hidden />
+                <input
+                  className={styles["search-field"]}
+                  type="text"
+                  placeholder="Search libraries…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  spellCheck={false}
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                />
+                {query ? (
+                  <button
+                    type="button"
+                    className={styles["search-clear"]}
+                    aria-label="Clear search"
+                    onClick={() => setQuery("")}
+                  >
+                    <X width={13} height={13} />
+                  </button>
+                ) : null}
+              </div>
 
-            <ScrollArea.Root className={styles.list}>
-              <ScrollArea.Viewport className={styles["list-viewport"]}>
-                <ScrollArea.Content>
-                  {visible.map((lib, index) => {
-                    const dragging =
-                      canReorder &&
-                      dragIndex !== null &&
-                      libraries[dragIndex]?.path === lib.path;
-                    const interactive = !busy && !lib.active && lib.exists;
-                    return (
-                      // biome-ignore lint/a11y/noStaticElementInteractions: drop target for drag-reorder; the row's actions live on real buttons inside it
-                      <div
-                        key={lib.path}
-                        className={styles.row}
-                        data-active={lib.active || undefined}
-                        data-dragging={dragging || undefined}
-                        data-disabled={
-                          busy || (!lib.exists && !lib.active) || undefined
-                        }
-                        onDragOver={(e) => onDragOver(e, index)}
-                        onDrop={(e) => {
-                          if (canReorder) e.preventDefault();
+              <div className={styles.list}>
+                {visible.map((lib, index) => {
+                  const dragging =
+                    canReorder &&
+                    dragIndex !== null &&
+                    libraries[dragIndex]?.path === lib.path;
+                  const interactive = !busy && !lib.active && lib.exists;
+                  return (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: drop target for drag-reorder; the row's actions live on real buttons inside it
+                    <div
+                      key={lib.path}
+                      className={styles.row}
+                      data-active={lib.active || undefined}
+                      data-dragging={dragging || undefined}
+                      data-disabled={
+                        busy || (!lib.exists && !lib.active) || undefined
+                      }
+                      onDragOver={(e) => onDragOver(e, index)}
+                      onDrop={(e) => {
+                        if (canReorder) e.preventDefault();
+                      }}
+                    >
+                      {canReorder ? (
+                        <span
+                          className={styles.handle}
+                          aria-hidden
+                          draggable
+                          onDragStart={(e) => onDragStart(e, index)}
+                          onDragEnd={onDragEnd}
+                        >
+                          <GripVertical width={14} height={14} />
+                        </span>
+                      ) : (
+                        <span className={styles["handle-spacer"]} aria-hidden />
+                      )}
+
+                      <button
+                        type="button"
+                        className={styles["row-main"]}
+                        disabled={busy || (!lib.exists && !lib.active)}
+                        onClick={() => {
+                          if (interactive) void switchTo(lib.path);
                         }}
                       >
-                        {canReorder ? (
-                          <span
-                            className={styles.handle}
-                            aria-hidden
-                            draggable
-                            onDragStart={(e) => onDragStart(e, index)}
-                            onDragEnd={onDragEnd}
-                          >
-                            <GripVertical width={14} height={14} />
-                          </span>
-                        ) : (
-                          <span
-                            className={styles["handle-spacer"]}
-                            aria-hidden
-                          />
-                        )}
+                        <span className={styles["row-icon"]} aria-hidden>
+                          <Library width={16} height={16} />
+                        </span>
 
-                        <button
-                          type="button"
-                          className={styles["row-main"]}
-                          disabled={busy || (!lib.exists && !lib.active)}
-                          onClick={() => {
-                            if (interactive) void switchTo(lib.path);
-                          }}
+                        <span className={styles["row-text"]}>
+                          <span className={styles["row-name"]}>{lib.name}</span>
+                          <span className={styles["row-path"]}>
+                            {parentDir(lib.path)}
+                            {lib.exists ? "" : " (missing)"}
+                          </span>
+                        </span>
+
+                        <span className={styles["row-check"]} aria-hidden>
+                          {lib.active ? <Check width={15} height={15} /> : null}
+                        </span>
+                      </button>
+
+                      <Menu.Root>
+                        <Menu.Trigger
+                          variant="ghost"
+                          size="sm"
+                          icon
+                          className={styles["row-menu-trigger"]}
+                          aria-label={`More actions for ${lib.name}`}
                         >
-                          <span className={styles["row-icon"]} aria-hidden>
-                            <Library width={16} height={16} />
-                          </span>
-
-                          <span className={styles["row-text"]}>
-                            <span className={styles["row-name"]}>
-                              {lib.name}
-                            </span>
-                            <span className={styles["row-path"]}>
-                              {parentDir(lib.path)}
-                              {lib.exists ? "" : " (missing)"}
-                            </span>
-                          </span>
-
-                          <span className={styles["row-check"]} aria-hidden>
-                            {lib.active ? (
-                              <Check width={15} height={15} />
-                            ) : null}
-                          </span>
-                        </button>
-
-                        <Menu.Root>
-                          <Menu.Trigger
-                            variant="ghost"
-                            size="sm"
-                            icon
-                            className={styles["row-menu-trigger"]}
-                            aria-label={`More actions for ${lib.name}`}
-                          >
-                            <Ellipsis width={15} height={15} />
-                          </Menu.Trigger>
-                          <Menu.Portal>
-                            <Menu.Positioner align="end" sideOffset={4}>
-                              <Menu.Popup>
-                                <Menu.Item onClick={() => reveal(lib.path)}>
-                                  <Menu.ItemIcon>
-                                    <FolderSearch width={14} height={14} />
-                                  </Menu.ItemIcon>
-                                  <Menu.ItemLabel>
-                                    Reveal in Finder
-                                  </Menu.ItemLabel>
-                                </Menu.Item>
-                                <Menu.Item
-                                  disabled={lib.active}
-                                  onClick={() => void forget(lib.path)}
-                                >
-                                  <Menu.ItemIcon>
-                                    <X width={14} height={14} />
-                                  </Menu.ItemIcon>
-                                  <Menu.ItemLabel>
-                                    Remove from list
-                                  </Menu.ItemLabel>
-                                </Menu.Item>
-                              </Menu.Popup>
-                            </Menu.Positioner>
-                          </Menu.Portal>
-                        </Menu.Root>
-                      </div>
-                    );
-                  })}
-
-                  {visible.length === 0 ? (
-                    <div className={styles.empty}>
-                      {libraries.length === 0
-                        ? "No libraries yet."
-                        : "No libraries match your search."}
+                          <Ellipsis width={15} height={15} />
+                        </Menu.Trigger>
+                        <Menu.Portal>
+                          <Menu.Positioner align="end" sideOffset={4}>
+                            <Menu.Popup>
+                              <Menu.Item onClick={() => reveal(lib.path)}>
+                                <Menu.ItemIcon>
+                                  <FolderSearch width={14} height={14} />
+                                </Menu.ItemIcon>
+                                <Menu.ItemLabel>
+                                  Reveal in Finder
+                                </Menu.ItemLabel>
+                              </Menu.Item>
+                              <Menu.Separator />
+                              <Menu.Item
+                                className={styles["row-menu-danger"]}
+                                disabled={lib.active}
+                                onClick={() => setPendingDelete(lib)}
+                              >
+                                <Menu.ItemIcon>
+                                  <Trash2 width={14} height={14} />
+                                </Menu.ItemIcon>
+                                <Menu.ItemLabel>Delete Library…</Menu.ItemLabel>
+                              </Menu.Item>
+                            </Menu.Popup>
+                          </Menu.Positioner>
+                        </Menu.Portal>
+                      </Menu.Root>
                     </div>
-                  ) : null}
-                </ScrollArea.Content>
-              </ScrollArea.Viewport>
-              <ScrollArea.Scrollbar>
-                <ScrollArea.Thumb />
-              </ScrollArea.Scrollbar>
-            </ScrollArea.Root>
+                  );
+                })}
 
-            <div className={styles.footer}>
-              <button
-                type="button"
-                className={styles.action}
-                onClick={() => void create()}
-                disabled={busy}
-              >
-                <span className={styles["action-icon"]} aria-hidden>
-                  <FolderPlus width={15} height={15} />
-                </span>
-                <span className={styles["action-label"]}>Create Library…</span>
-              </button>
-              <button
-                type="button"
-                className={styles.action}
-                onClick={() => void openExisting()}
-                disabled={busy}
-              >
-                <span className={styles["action-icon"]} aria-hidden>
-                  <FolderOpen width={15} height={15} />
-                </span>
-                <span className={styles["action-label"]}>Switch Library…</span>
-              </button>
-              <button
-                type="button"
-                className={styles.action}
-                onClick={() => void emptyCacheAndReload()}
-                disabled={busy}
-              >
-                <span className={styles["action-icon"]} aria-hidden>
-                  <RotateCcw width={15} height={15} />
-                </span>
-                <span className={styles["action-label"]}>
-                  Empty cache and reload
-                </span>
-              </button>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+                {visible.length === 0 ? (
+                  <div className={styles.empty}>
+                    {libraries.length === 0
+                      ? "No libraries yet."
+                      : "No libraries match your search."}
+                  </div>
+                ) : null}
+              </div>
+
+              <div className={styles.footer}>
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => void create()}
+                  disabled={busy}
+                >
+                  <span className={styles["action-icon"]} aria-hidden>
+                    <FolderPlus width={15} height={15} />
+                  </span>
+                  <span className={styles["action-label"]}>
+                    Create Library…
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => void openExisting()}
+                  disabled={busy}
+                >
+                  <span className={styles["action-icon"]} aria-hidden>
+                    <FolderOpen width={15} height={15} />
+                  </span>
+                  <span className={styles["action-label"]}>
+                    Switch Library…
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.action}
+                  onClick={() => void emptyCacheAndReload()}
+                  disabled={busy}
+                >
+                  <span className={styles["action-icon"]} aria-hidden>
+                    <RotateCcw width={15} height={15} />
+                  </span>
+                  <span className={styles["action-label"]}>
+                    Empty cache and reload
+                  </span>
+                </button>
+              </div>
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
+
+      <AlertDialog.Root
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop />
+          <AlertDialog.Popup>
+            <AlertDialog.Title>
+              Delete “{pendingDelete?.name}”?
+            </AlertDialog.Title>
+            <AlertDialog.Description>
+              Remove it from this list (your files stay on disk), or delete the
+              whole library by moving it to the Trash.
+            </AlertDialog.Description>
+            <AlertDialog.Actions>
+              <AlertDialog.Close
+                render={<Button variant="ghost">Cancel</Button>}
+              />
+              <AlertDialog.Close
+                render={
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      if (pendingDelete) void forget(pendingDelete.path);
+                    }}
+                  >
+                    Remove from List
+                  </Button>
+                }
+              />
+              <AlertDialog.Close
+                render={
+                  <Button
+                    variant="danger"
+                    onClick={() => {
+                      if (pendingDelete) {
+                        void deleteFromDisk(
+                          pendingDelete.path,
+                          pendingDelete.name,
+                        );
+                      }
+                    }}
+                  >
+                    Delete from Disk
+                  </Button>
+                }
+              />
+            </AlertDialog.Actions>
+          </AlertDialog.Popup>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+    </>
   );
 }

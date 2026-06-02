@@ -12,18 +12,32 @@ import {
 } from "../../core/library-ops";
 import { setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import { closeDb } from "../../db";
 import {
   forgetLibrary,
   readKnownLibraries,
   rememberLibrary,
   setLibraryOrder,
 } from "../../lib/library-recents";
-import { invalidatePaths, libraryRoot as libraryRootDir } from "../../paths";
+import {
+  invalidatePaths,
+  libraryRoot as libraryRootDir,
+  materializeLibrary,
+} from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryQueries: QueryHandlerMap = {
   async "library.rescan"() {
     return await reconcileLibrary();
+  },
+
+  // Create the default (or pointed-at) library bundle on disk and add it
+  // to the switcher list. Onboarding calls this when the user keeps the
+  // default and proceeds, so the `.pond` is created then, not at boot.
+  async "library.ensureDefault"() {
+    const path = materializeLibrary();
+    rememberLibrary(path);
+    return { ok: true as const, path };
   },
 
   // Reveal a library bundle in Finder. Defaults to the active library;
@@ -68,8 +82,8 @@ export const libraryQueries: QueryHandlerMap = {
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Create a new Pond library",
-      nameFieldLabel: "Library Name:",
+      title: "Create a new pond",
+      nameFieldLabel: "Pond Name:",
       buttonLabel: "Create",
       defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
       properties: ["createDirectory" as const],
@@ -83,13 +97,35 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, path: ensurePondSuffix(result.filePath) };
   },
 
+  // Onboarding's "Create pond" step: the user types the name in-app, so
+  // here we only let them choose the parent folder, then compose
+  // `<dir>/<name>.pond`. Using an open dialog (not a save dialog) means
+  // they never see a pre-existing default bundle's contents.
+  async "library.pickNewLocation"(params) {
+    const raw = typeof params.name === "string" ? params.name.trim() : "";
+    const name = sanitizePondName(raw) || "My Pond";
+    const win = BrowserWindow.getFocusedWindow() ?? undefined;
+    const dialogOpts = {
+      title: "Choose where to keep this pond",
+      buttonLabel: "Choose",
+      defaultPath: join(app.getPath("home"), "Pond"),
+      properties: ["openDirectory" as const, "createDirectory" as const],
+    };
+    const result = win
+      ? await dialog.showOpenDialog(win, dialogOpts)
+      : await dialog.showOpenDialog(dialogOpts);
+    const dir = result.canceled ? undefined : result.filePaths[0];
+    if (!dir) return { ok: false as const, reason: "cancelled" as const };
+    return { ok: true as const, path: ensurePondSuffix(join(dir, name)) };
+  },
+
   // Adopt an existing library. Lets the user point at a `.pond` bundle
   // that already exists (e.g. one synced from another Mac via iCloud).
   // `previewRelocate` will suggest "adopt" for it so nothing is copied.
   async "library.pickExisting"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Open an existing Pond library",
+      title: "Open an existing pond",
       buttonLabel: "Open",
       properties: ["openFile" as const, "openDirectory" as const],
     };
@@ -180,8 +216,8 @@ export const libraryQueries: QueryHandlerMap = {
   async "library.create"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Create a new Pond library",
-      nameFieldLabel: "Library Name:",
+      title: "Create a new pond",
+      nameFieldLabel: "Pond Name:",
       buttonLabel: "Create",
       defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
       properties: ["createDirectory" as const],
@@ -213,6 +249,38 @@ export const libraryQueries: QueryHandlerMap = {
     if (!target) return { ok: false as const, reason: "no_path" as const };
     if (target.replace(/\/+$/, "") === libraryRootDir().replace(/\/+$/, "")) {
       return { ok: false as const, reason: "active" as const };
+    }
+    forgetLibrary(target);
+    return { ok: true as const };
+  },
+
+  // Delete a library from disk: move the whole `.pond` bundle to the OS
+  // Trash (recoverable), then drop it from the switcher list. The
+  // confirmation lives in the renderer (it offers "remove from list" vs
+  // "delete from disk"), so this just does the work. The active library
+  // can't be deleted: switch away first so nothing holds its files open.
+  async "library.delete"(params) {
+    const target = String(params.path ?? "").trim();
+    if (!target) return { ok: false as const, reason: "no_path" as const };
+    const norm = target.replace(/\/+$/, "");
+    if (norm === libraryRootDir().replace(/\/+$/, "")) {
+      return { ok: false as const, reason: "active" as const };
+    }
+    const known = readKnownLibraries().some(
+      (l) => l.path.replace(/\/+$/, "") === norm,
+    );
+    if (!known) return { ok: false as const, reason: "unknown" as const };
+
+    if (existsSync(target)) {
+      try {
+        await shell.trashItem(target);
+      } catch (err) {
+        log.warn("[pond library-ops] trash failed", target, err);
+        return {
+          ok: false as const,
+          reason: err instanceof Error ? err.message : "delete_failed",
+        };
+      }
     }
     forgetLibrary(target);
     return { ok: true as const };
@@ -259,8 +327,8 @@ export const libraryQueries: QueryHandlerMap = {
     if (!dest) {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const dialogOpts = {
-        title: "Create a new Pond library",
-        nameFieldLabel: "Library Name:",
+        title: "Create a new pond",
+        nameFieldLabel: "Pond Name:",
         buttonLabel: "Create",
         defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
         properties: ["createDirectory" as const],
@@ -308,6 +376,9 @@ export const libraryQueries: QueryHandlerMap = {
 
   async "reset.factory"() {
     const dbPath = (await import("../../paths")).resolvePaths().indexDb;
+    // Close the handle first so we delete the file, not just unlink an
+    // inode the open connection keeps writing to.
+    closeDb();
     try {
       const { rm } = await import("node:fs/promises");
       await rm(dbPath, { force: true });
@@ -403,6 +474,16 @@ function ensurePondSuffix(path: string): string {
   return trimmed.endsWith(".pond") ? trimmed : `${trimmed}.pond`;
 }
 
+// The user types a pond name we then turn into a folder name. Strip path
+// separators and characters that don't belong in a filename, and drop any
+// `.pond` they typed so `ensurePondSuffix` adds exactly one.
+function sanitizePondName(name: string): string {
+  return name
+    .replace(/\.pond$/i, "")
+    .replace(/[/\\:*?"<>|]/g, "")
+    .trim();
+}
+
 // Defer the relaunch so the IPC response can land before we tear down
 // the process. The renderer's `await` resolves with the success
 // payload, then the app vanishes and comes back pointing at the new
@@ -433,6 +514,10 @@ function relaunchSoon(): void {
 
 async function softRepointInDev(): Promise<void> {
   log.info("[pond library-ops] dev re-point into new library (no relaunch)");
+  // Drop the old pond index handle and path cache so the next getDb()
+  // resolves and opens the new pond's `indexes/<id>.db`. Without this the
+  // window would reload against the previous pond's index.
+  closeDb();
   invalidatePaths();
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) win.webContents.reload();

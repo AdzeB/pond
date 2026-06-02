@@ -122,13 +122,16 @@
 }
 
 .list {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 1px;
   min-height: 0;
-}
-
-.list-viewport {
   max-height: 320px;
   padding: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .row {
@@ -136,6 +139,7 @@
   display: flex;
   gap: 6px;
   align-items: center;
+  width: 100%;
   height: 46px;
   padding: 0 4px 0 0;
   cursor: pointer;
@@ -285,6 +289,14 @@
 .row:focus-within .row-menu-trigger,
 .row-menu-trigger[data-popup-open] {
   opacity: 1;
+}
+
+.row-menu-danger {
+  color: var(--ds-red-11, var(--ds-gray-12));
+
+  & svg {
+    color: currentcolor;
+  }
 }
 
 .empty {
