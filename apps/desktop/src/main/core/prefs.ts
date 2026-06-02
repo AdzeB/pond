@@ -9,7 +9,7 @@ import {
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { getDb } from "../db";
+import { getGlobalDb } from "../db";
 
 interface SettingsCache {
   prefs: Prefs;
@@ -42,7 +42,7 @@ async function loadSettings(): Promise<SettingsCache> {
   if (inflight) return inflight;
   inflight = (async () => {
     try {
-      const db = await getDb();
+      const db = await getGlobalDb();
       const rows = await db
         .select({
           prefs: settingsTable.prefs,
@@ -91,7 +91,7 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const current = await loadSettings();
   const merged = mergePrefs(current.prefs, patch);
-  const db = await getDb();
+  const db = await getGlobalDb();
   await db
     .insert(settingsTable)
     .values({
@@ -112,7 +112,7 @@ export async function setVideoDownloadPrefs(
 ): Promise<VideoDownloadSettings> {
   const current = await loadSettings();
   const merged = normalizeVideo({ ...current.videoDownload, ...next });
-  const db = await getDb();
+  const db = await getGlobalDb();
   await db
     .insert(settingsTable)
     .values({
@@ -133,7 +133,7 @@ export async function setImageDownloadPrefs(
 ): Promise<ImageDownloadSettings> {
   const current = await loadSettings();
   const merged = normalizeImage({ ...current.imageDownload, ...next });
-  const db = await getDb();
+  const db = await getGlobalDb();
   await db
     .insert(settingsTable)
     .values({

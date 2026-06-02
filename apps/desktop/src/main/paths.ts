@@ -2,12 +2,19 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { app } from "electron";
 import { readLibraryPointer } from "./lib/library-pointer";
+import { resolvePondId } from "./lib/pond-identity";
 
 export interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
+  // App-global state (settings, prefs, onboarded). One file, shared by
+  // every pond.
+  globalDb: string;
+  // The active pond's index cache: `indexes/<pondId>.db`. Switching ponds
+  // switches this file, so a fresh pond starts empty.
   indexDb: string;
+  indexesDir: string;
   config: string;
   libraryRoot: string;
   itemsDir: string;
@@ -40,27 +47,53 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const appData = ensureDir(app.getPath("userData"));
   const cache = ensureDir(join(appData, "cache"));
   const logs = ensureDir(app.getPath("logs"));
+  const indexesDir = ensureDir(join(appData, "indexes"));
 
-  const libraryRoot = ensureDir(
-    libraryRootOverride ?? readLibraryPointer() ?? defaultLibraryRoot(),
-  );
-  const itemsDir = ensureDir(join(libraryRoot, "items"));
-  const trashDir = ensureDir(join(libraryRoot, "trash"));
+  const pointer = readLibraryPointer();
+  const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
+  // Only materialize the bundle once the user has committed to a library:
+  // an explicit override, a saved pointer, or a root that already exists.
+  // A fresh, not-yet-onboarded user gets the path without us creating
+  // `~/Pond/My Pond.pond` on disk. Onboarding (or the first write) creates
+  // it via materializeLibrary() when the user actually proceeds.
+  const committed =
+    libraryRootOverride != null || pointer != null || existsSync(root);
+  if (committed) ensureLibraryDirs(root);
+
+  const pondId = resolvePondId(root, committed);
 
   const paths: PondPaths = {
     appData,
     cache,
     logs,
-    indexDb: join(appData, "index.db"),
+    globalDb: join(appData, "global.db"),
+    indexDb: join(indexesDir, `${pondId}.db`),
+    indexesDir,
     config: join(appData, "config.json"),
-    libraryRoot,
-    itemsDir,
-    trashDir,
-    libraryMetadata: join(libraryRoot, "metadata.json"),
+    libraryRoot: root,
+    itemsDir: join(root, "items"),
+    trashDir: join(root, "trash"),
+    libraryMetadata: join(root, "metadata.json"),
   };
 
   cached = paths;
   return paths;
+}
+
+function ensureLibraryDirs(root: string): void {
+  ensureDir(root);
+  ensureDir(join(root, "items"));
+  ensureDir(join(root, "trash"));
+}
+
+// Create the active library's bundle on disk (root + items/ + trash/).
+// Onboarding calls this when the user proceeds so the pond appears only
+// then, not at boot. Writers (writeItemFiles, moveToTrash) also mkdir on
+// demand, so this is about making the folder show up promptly.
+export function materializeLibrary(): string {
+  const root = resolvePaths().libraryRoot;
+  ensureLibraryDirs(root);
+  return root;
 }
 
 export function itemDir(id: string): string {

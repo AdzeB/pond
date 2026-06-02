@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { writeFile } from "node:fs/promises";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { dirname, join } from "node:path";
 import * as schema from "@pond/schema/db";
 import * as eventsSchema from "@pond/schema/events";
 import Database from "better-sqlite3";
@@ -9,10 +9,7 @@ import {
   drizzle,
 } from "drizzle-orm/better-sqlite3";
 import log from "electron-log/main.js";
-import {
-  DEFAULT_LIBRARY_NAME,
-  LIBRARY_SCHEMA_VERSION,
-} from "../shared/constants";
+import { readOrCreatePondId } from "./lib/pond-identity";
 import { resolvePaths } from "./paths";
 
 const combinedSchema = { ...schema, ...eventsSchema };
@@ -21,33 +18,127 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
-let cached: Db | null = null;
+// The pond index (saves, tags, tasks, scan, events) is per-pond and swaps
+// on a library switch. The global DB (settings, prefs, onboarded) is shared
+// by every pond and never swaps.
+let cachedPond: Db | null = null;
+let cachedGlobal: Db | null = null;
 
-export async function getDb(): Promise<Db> {
-  if (cached) return cached;
-
-  const paths = resolvePaths();
-  log.info("[pond db] opening", paths.indexDb);
-
-  const sqlite = new Database(paths.indexDb);
+function openSqlite(file: string): Database.Database {
+  const sqlite = new Database(file);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("synchronous = NORMAL");
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("temp_store = MEMORY");
   sqlite.pragma("mmap_size = 268435456"); // 256 MiB
-
-  migrate(sqlite);
-
-  const drizzled = drizzle(sqlite, { schema: combinedSchema });
-  const db = Object.assign(drizzled, { $raw: sqlite }) as Db;
-  cached = db;
-
-  await ensureLibraryMetadata();
-
-  return db;
+  return sqlite;
 }
 
-function migrate(sqlite: Database.Database): void {
+function wrap(sqlite: Database.Database): Db {
+  const drizzled = drizzle(sqlite, { schema: combinedSchema });
+  return Object.assign(drizzled, { $raw: sqlite }) as Db;
+}
+
+// App-global state: settings, prefs, onboarded flag. Lives in one file so a
+// pond switch never loses it and the boot path (theme/onboarded) can read it
+// before any pond is resolved.
+export async function getGlobalDb(): Promise<Db> {
+  ensureStorageMigrated();
+  if (cachedGlobal) return cachedGlobal;
+  const paths = resolvePaths();
+  log.info("[pond db] opening global", paths.globalDb);
+  const sqlite = openSqlite(paths.globalDb);
+  migrateGlobal(sqlite);
+  cachedGlobal = wrap(sqlite);
+  return cachedGlobal;
+}
+
+// The active pond's index cache. Keyed by pond id, so switching ponds opens
+// a different file and a fresh pond starts empty. `closeDb()` drops the
+// handle on a switch so the next call reopens against the new pond.
+export async function getDb(): Promise<Db> {
+  ensureStorageMigrated();
+  if (cachedPond) return cachedPond;
+
+  const paths = resolvePaths();
+  log.info("[pond db] opening pond index", paths.indexDb);
+
+  const sqlite = openSqlite(paths.indexDb);
+  migratePond(sqlite);
+  cachedPond = wrap(sqlite);
+
+  ensureLibraryMetadata();
+
+  return cachedPond;
+}
+
+// Drop the active pond's handle so the next `getDb()` reopens against the
+// pointer's new pond. Pair with `invalidatePaths()` on a library switch.
+export function closeDb(): void {
+  if (!cachedPond) return;
+  try {
+    cachedPond.$raw.close();
+  } catch (err) {
+    log.warn("[pond db] close failed", err);
+  }
+  cachedPond = null;
+}
+
+// One-time split of the legacy single `index.db`. The old file held both
+// app-global settings AND pond rows for *every* library it ever opened (the
+// index used to be shared). We seed only `global.db` from it so settings,
+// prefs and the onboarded flag carry over. We deliberately do NOT seed the
+// per-pond index: the bundle on disk is the source of truth, and
+// `reconcileLibrary` rebuilds each pond's index from its own items. Copying
+// the legacy rows would drag another pond's stale saves into whichever pond
+// is active, which is exactly the bug this split fixes.
+let migrated = false;
+function ensureStorageMigrated(): void {
+  if (migrated) return;
+  migrated = true;
+  const paths = resolvePaths();
+  const legacy = join(paths.appData, "index.db");
+  if (existsSync(paths.globalDb) || !existsSync(legacy)) return;
+  try {
+    // Flush the WAL into the main file so a plain copy captures recent writes.
+    const flush = new Database(legacy);
+    flush.pragma("wal_checkpoint(TRUNCATE)");
+    flush.close();
+  } catch (err) {
+    log.warn("[pond db] legacy checkpoint failed", err);
+  }
+  try {
+    mkdirSync(dirname(paths.globalDb), { recursive: true });
+    copyFileSync(legacy, paths.globalDb);
+    log.info("[pond db] seeded global.db from legacy index.db");
+  } catch (err) {
+    log.warn("[pond db] legacy migration failed", err);
+  }
+}
+
+function migrateGlobal(sqlite: Database.Database): void {
+  sqlite.exec(`
+				CREATE TABLE IF NOT EXISTS settings (
+					id TEXT PRIMARY KEY DEFAULT 'singleton',
+					video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}',
+					image_download TEXT,
+					prefs TEXT,
+					library_root TEXT,
+					onboarded INTEGER NOT NULL DEFAULT 0,
+					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+			`);
+  // Forward-only adds for global DBs migrated from the legacy single index
+  // that predate these columns.
+  ensureColumns(sqlite, "settings", [
+    { name: "image_download", ddl: "TEXT" },
+    { name: "prefs", ddl: "TEXT" },
+    { name: "library_root", ddl: "TEXT" },
+    { name: "onboarded", ddl: "INTEGER NOT NULL DEFAULT 0" },
+  ]);
+}
+
+function migratePond(sqlite: Database.Database): void {
   sqlite.exec(`
 				CREATE TABLE IF NOT EXISTS saves (
 					id TEXT PRIMARY KEY,
@@ -165,15 +256,6 @@ function migrate(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS pipeline_events_save_idx ON pipeline_events(save_id, ts);
 				CREATE INDEX IF NOT EXISTS pipeline_events_kind_outcome_idx ON pipeline_events(kind, outcome, ts);
 				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
-
-				CREATE TABLE IF NOT EXISTS settings (
-					id TEXT PRIMARY KEY DEFAULT 'singleton',
-					video_download TEXT NOT NULL DEFAULT '{"enabled":true,"maxHeight":1080,"maxFileSizeMb":500}',
-					prefs TEXT,
-					library_root TEXT,
-					onboarded INTEGER NOT NULL DEFAULT 0,
-					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
-				);
 			`);
 
   dropLegacyArtifacts(sqlite);
@@ -408,18 +490,15 @@ function dropArchivedAtColumn(sqlite: Database.Database): void {
   }
 }
 
-async function ensureLibraryMetadata(): Promise<void> {
+function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
+  // No bundle on disk yet (fresh, not-yet-onboarded user): don't create one
+  // from here. Onboarding materializes the bundle, and `resolvePondId` writes
+  // its metadata. This keeps the index key (pond id) and the metadata file in
+  // sync via a single writer.
+  if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;
-  const body = {
-    id: cryptoRandomId(),
-    name: DEFAULT_LIBRARY_NAME,
-    createdAt: Date.now(),
-    schemaVersion: LIBRARY_SCHEMA_VERSION,
-    appVersion: process.env.npm_package_version ?? "0.1.0",
-  };
-  await writeFile(paths.libraryMetadata, JSON.stringify(body, null, 2));
-  log.info("[pond] library metadata written", paths.libraryMetadata);
+  readOrCreatePondId(paths.libraryRoot);
 }
 
 function cryptoRandomId(): string {

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import {
   app,
@@ -39,7 +40,7 @@ import {
 } from "./core/sync";
 import { isOnWifi } from "./core/sync/network-type";
 import { computeNextDueAt, isInQuietHours } from "./core/sync/schedule";
-import { getDb } from "./db";
+import { getDb, getGlobalDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
@@ -241,7 +242,7 @@ async function readOnboarded(): Promise<boolean> {
   try {
     const { settings: settingsTable } = await import("@pond/schema/db");
     const { eq } = await import("drizzle-orm");
-    const db = await getDb();
+    const db = await getGlobalDb();
     const rows = await db
       .select({ onboarded: settingsTable.onboarded })
       .from(settingsTable)
@@ -436,7 +437,9 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     const active = libraryRoot();
-    rememberLibrary(active);
+    // Don't list a library that doesn't exist yet (a fresh, not-yet-
+    // onboarded user). Onboarding remembers it once the user proceeds.
+    if (existsSync(active)) rememberLibrary(active);
     pruneMissingLibraries(active);
   } catch (err) {
     log.warn("[pond] recording active library failed", err);

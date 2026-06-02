@@ -12,13 +12,13 @@ import {
   setPrefs,
   setVideoDownloadPrefs,
 } from "../../core/prefs";
-import { getDb } from "../../db";
+import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
 import type { QueryHandlerMap } from "../helpers";
 
 export const settingsQueries: QueryHandlerMap = {
   async "settings.get"() {
-    const db = await getDb();
+    const db = await getGlobalDb();
     const rows = await db
       .select()
       .from(settingsTable)
@@ -67,7 +67,7 @@ export const settingsQueries: QueryHandlerMap = {
   },
 
   async "settings.onboarded"() {
-    const db = await getDb();
+    const db = await getGlobalDb();
     const rows = await db
       .select({ onboarded: settingsTable.onboarded })
       .from(settingsTable)
@@ -76,7 +76,7 @@ export const settingsQueries: QueryHandlerMap = {
   },
 
   async "settings.markOnboarded"(params) {
-    const db = await getDb();
+    const db = await getGlobalDb();
     await db
       .insert(settingsTable)
       .values({

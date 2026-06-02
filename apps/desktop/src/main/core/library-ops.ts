@@ -11,9 +11,9 @@ import {
 import { join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import { eq, isNotNull } from "drizzle-orm";
+import { isNotNull } from "drizzle-orm";
 import log from "electron-log/main.js";
-import { getDb } from "../db";
+import { getDb, getGlobalDb } from "../db";
 import { readItemMetadata } from "../lib/library";
 import {
   checkPointerSafety,
@@ -135,11 +135,16 @@ export async function relocateLibrary(
 
   writeLibraryPointer(destResolved);
 
-  const db = await getDb();
-  await db
-    .update(settingsTable)
-    .set({ libraryRoot: destResolved, updatedAt: new Date() })
-    .where(eq(settingsTable.id, "singleton"))
+  // The active-pond pointer is app-global, so it lives in the global DB,
+  // not the per-pond index we're about to switch away from.
+  const globalDb = await getGlobalDb();
+  await globalDb
+    .insert(settingsTable)
+    .values({ id: "singleton", libraryRoot: destResolved })
+    .onConflictDoUpdate({
+      target: settingsTable.id,
+      set: { libraryRoot: destResolved, updatedAt: new Date() },
+    })
     .run();
 
   log.info(
