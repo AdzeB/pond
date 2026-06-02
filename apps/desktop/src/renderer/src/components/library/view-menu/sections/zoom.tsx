@@ -3,7 +3,7 @@ import { Minus, Plus } from "lucide-react";
 import { useCallback } from "react";
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
 import { useView } from "../context";
-import sectionStyles from "./section.module.css";
+import styles from "./zoom.module.css";
 
 export function ZoomSection() {
   const { state, actions } = useView();
@@ -16,8 +16,8 @@ export function ZoomSection() {
   return (
     <Menu.Group>
       <Menu.GroupLabel>Zoom</Menu.GroupLabel>
-      <fieldset className={sectionStyles.zoom}>
-        <legend className={sectionStyles["sr-only"]}>Grid zoom</legend>
+      <fieldset className={styles.zoom}>
+        <legend className={styles["sr-only"]}>Grid zoom</legend>
         <Button
           icon
           variant="ghost"
@@ -37,16 +37,14 @@ export function ZoomSection() {
             const n = typeof next === "number" ? next : next[0];
             if (n !== undefined) actions.setZoom(n);
           }}
-          className={sectionStyles["zoom-slider"]}
+          className={styles["zoom-slider"]}
         >
-          <Slider.Control className={sectionStyles["zoom-slider-control"]}>
-            <Slider.Track className={sectionStyles["zoom-slider-track"]}>
-              <Slider.Indicator
-                className={sectionStyles["zoom-slider-indicator"]}
-              />
+          <Slider.Control className={styles["zoom-slider-control"]}>
+            <Slider.Track className={styles["zoom-slider-track"]}>
+              <Slider.Indicator className={styles["zoom-slider-indicator"]} />
               <Slider.Thumb
                 aria-label="Grid zoom"
-                className={sectionStyles["zoom-slider-thumb"]}
+                className={styles["zoom-slider-thumb"]}
               />
             </Slider.Track>
           </Slider.Control>

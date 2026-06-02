@@ -18,6 +18,7 @@ import { JustifiedView } from "@/components/library/justified";
 import { formatAbsolute, SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
+import { formatBytes } from "@/lib/format";
 import { patchSearch } from "@/lib/navigate-path";
 import { readViewPref, writeViewPref } from "@/lib/view-prefs";
 import type { Save } from "@/pool/types";
@@ -468,14 +469,6 @@ function ListView({
       </tbody>
     </table>
   );
-}
-
-function formatBytes(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "-";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
-  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
 function extensionFor(save: Save): string {

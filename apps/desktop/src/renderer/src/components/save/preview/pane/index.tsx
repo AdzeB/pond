@@ -35,17 +35,6 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
   const description = save.description?.trim() ?? "";
   const showDescription =
     description.length > 0 && !descriptionMatchesTitle(save);
-  const hasLocalFile = save.files.length > 0;
-
-  const _openOriginal = useCallback(() => {
-    if (!save.url) return;
-    void window.pond.openExternal(save.url);
-  }, [save.url]);
-
-  const _revealLocal = useCallback(() => {
-    if (!hasLocalFile) return;
-    void window.pond.revealSave(save.id);
-  }, [save.id, hasLocalFile]);
 
   return (
     <article

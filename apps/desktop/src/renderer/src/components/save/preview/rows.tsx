@@ -9,9 +9,9 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { formatBytes } from "@/lib/format";
 import type { Save } from "@/pool/types";
 import {
-  formatBytes,
   formatCount,
   formatDuration,
   formatShortDate,

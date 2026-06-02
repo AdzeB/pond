@@ -3,9 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Settings } from "@/components/settings";
+import { formatBytes } from "@/lib/format";
 import { usePrefs } from "@/pool/prefs";
 import type { StorageGuardStatusWire } from "../../../../../../preload";
-import { formatBytes } from "../_helpers";
 import styles from "./styles.module.css";
 
 interface IntegrityReport {

@@ -64,16 +64,6 @@ export function formatShortDate(value: string | number): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
-export function formatBytes(bytes: number): string {
-  if (!Number.isFinite(bytes) || bytes <= 0) return "-";
-  if (bytes < 1024) return `${bytes} B`;
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(2)} KB`;
-  const mb = kb / 1024;
-  if (mb < 1024) return `${mb.toFixed(2)} MB`;
-  return `${(mb / 1024).toFixed(2)} GB`;
-}
-
 export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
   if (lower === "video") return "MP4";

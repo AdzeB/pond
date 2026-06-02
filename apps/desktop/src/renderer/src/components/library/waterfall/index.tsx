@@ -1,29 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { LibraryGrid } from "@/components/library";
+import { useEffect, useMemo, useState } from "react";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
 import { useGridWidth } from "@/lib/shell-state";
-import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
+import {
+  PackedGrid,
+  type PackedItem,
+  type PackedPosition,
+  type PackResult,
+} from "../packed-grid";
 
 const DEFAULT_COL_MIN = 130;
-
-interface PackedPosition {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
-interface PackedItem extends PackedPosition {
-  save: Save;
-}
-
-interface PackResult {
-  items: PackedItem[];
-  totalHeight: number;
-}
 
 function packMasonry(
   saves: ReadonlyArray<Save>,
@@ -97,7 +85,6 @@ export function WaterfallView({
   renderCard,
   multiSelectActive,
 }: WaterfallViewProps) {
-  const ref = useRef<HTMLUListElement>(null);
   const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
@@ -110,34 +97,13 @@ export function WaterfallView({
     return packMasonry(saves, width, colMin, itemGap, chromeHeight);
   }, [saves, width, colMin, chromeHeight, aspectVersion]);
 
-  const style = useMemo<React.CSSProperties>(
-    () => ({ height: `${totalHeight}px` }),
-    [totalHeight],
-  );
-
-  // Only render items whose absolute position intersects the
-  // viewport (plus an overscan band). The grid keeps its full
-  // `totalHeight` so the scrollbar stays accurate, but off-screen
-  // cards never reach React reconciliation, image decode, or paint.
-  const visible = useVisibleIndices(ref, items);
-
   return (
-    <LibraryGrid.Grid
-      ref={ref}
+    <PackedGrid
       layout="waterfall"
-      multiSelect={multiSelectActive}
-      style={style}
-    >
-      {visible.map((i) => {
-        const it = items[i];
-        if (!it) return null;
-        return renderCard(it.save, {
-          top: it.top,
-          left: it.left,
-          width: it.width,
-          height: it.height,
-        });
-      })}
-    </LibraryGrid.Grid>
+      items={items}
+      totalHeight={totalHeight}
+      multiSelectActive={multiSelectActive}
+      renderCard={renderCard}
+    />
   );
 }

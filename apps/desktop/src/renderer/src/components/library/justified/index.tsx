@@ -1,26 +1,17 @@
-import { useMemo, useRef } from "react";
-import { LibraryGrid } from "@/components/library";
+import { useMemo } from "react";
 import { aspectFor, useAspectVersion } from "@/lib/aspect";
 import { useDisplayPrefs } from "@/lib/display-prefs";
 import { chromeHeightFor } from "@/lib/library-chrome";
 import { useGridWidth } from "@/lib/shell-state";
-import { useVisibleIndices } from "@/lib/use-visible-indices";
 import type { Save } from "@/pool/types";
+import {
+  PackedGrid,
+  type PackedItem,
+  type PackedPosition,
+  type PackResult,
+} from "../packed-grid";
 
 const TARGET_ROW_HEIGHT = 180;
-
-interface PackedItem {
-  save: Save;
-  width: number;
-  height: number;
-  top: number;
-  left: number;
-}
-
-interface PackResult {
-  items: PackedItem[];
-  totalHeight: number;
-}
 
 function packRows(
   saves: ReadonlyArray<Save>,
@@ -77,10 +68,7 @@ function packRows(
 
 interface JustifiedViewProps {
   saves: ReadonlyArray<Save>;
-  renderCard: (
-    save: Save,
-    packed: { top: number; left: number; width: number; height: number },
-  ) => React.ReactNode;
+  renderCard: (save: Save, packed: PackedPosition) => React.ReactNode;
   multiSelectActive: boolean;
   targetHeight?: number;
 }
@@ -91,7 +79,6 @@ export function JustifiedView({
   multiSelectActive,
   targetHeight = TARGET_ROW_HEIGHT,
 }: JustifiedViewProps) {
-  const ref = useRef<HTMLUListElement>(null);
   const width = useGridWidth();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
@@ -103,30 +90,13 @@ export function JustifiedView({
     return packRows(saves, width, targetHeight, itemGap, chromeHeight);
   }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
 
-  const style = useMemo<React.CSSProperties>(
-    () => ({ height: `${totalHeight}px` }),
-    [totalHeight],
-  );
-
-  const visible = useVisibleIndices(ref, items);
-
   return (
-    <LibraryGrid.Grid
-      ref={ref}
+    <PackedGrid
       layout="justified"
-      multiSelect={multiSelectActive}
-      style={style}
-    >
-      {visible.map((i) => {
-        const it = items[i];
-        if (!it) return null;
-        return renderCard(it.save, {
-          top: it.top,
-          left: it.left,
-          width: it.width,
-          height: it.height,
-        });
-      })}
-    </LibraryGrid.Grid>
+      items={items}
+      totalHeight={totalHeight}
+      multiSelectActive={multiSelectActive}
+      renderCard={renderCard}
+    />
   );
 }

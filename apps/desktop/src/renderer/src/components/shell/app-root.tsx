@@ -7,7 +7,7 @@ import { QuickCapture } from "@/components/library/quick-capture";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { HistoryHotkey } from "@/effects/history-hotkey";
 import { PreferencesHotkey } from "@/effects/preferences-hotkey";
-import styles from "./styles.module.css";
+import styles from "./app-root.module.css";
 
 interface AppRootProps {
   children: ReactNode;

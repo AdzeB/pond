@@ -2,9 +2,9 @@ import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { createContext, use } from "react";
 import type { DisplayPrefKey, DisplayPrefs } from "@/lib/display-prefs";
 import type { LayoutValue } from "@/lib/view-prefs";
+import type { SortDir, SortKey } from "@/pool/use-filtered-saves";
 
-export type SortKey = "savedAt" | "title" | "fileSize";
-export type SortDir = "asc" | "desc";
+export type { SortDir, SortKey };
 
 export interface ViewState {
   query: Query;

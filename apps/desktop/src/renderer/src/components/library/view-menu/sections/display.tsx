@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 import type { DisplayPrefKey } from "@/lib/display-prefs";
 import { useInspector, useSidebar } from "@/lib/shell-state";
 import { useView } from "../context";
-import sectionStyles from "./section.module.css";
+import styles from "./display.module.css";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "name", label: "Show name" },
@@ -52,7 +52,7 @@ export function DisplaySection() {
 
 function Indicator({ on }: { on: boolean }) {
   return (
-    <span className={sectionStyles["check-cell"]} aria-hidden>
+    <span className={styles["check-cell"]} aria-hidden>
       {on ? <Check width="0.85em" height="0.85em" /> : null}
     </span>
   );
