@@ -5,11 +5,16 @@ import {
   redirect,
 } from "@tanstack/react-router";
 import { AppRoot } from "@/components/shell/app-root";
+import { wasOnboardedLocally } from "@/lib/onboarded";
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {
     const onboarded = window.__pondShell?.onboarded;
-    if (onboarded === false && location.pathname !== "/welcome") {
+    if (
+      onboarded === false &&
+      !wasOnboardedLocally() &&
+      location.pathname !== "/welcome"
+    ) {
       throw redirect({ to: "/welcome" });
     }
   },

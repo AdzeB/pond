@@ -1,153 +1,182 @@
-import { Button, Collapsible, Field, Input, useToast } from "@pond/ui";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { NumberFieldStepper } from "@/components/_primitives/number-field-stepper";
+import { Button } from "@pond/ui";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
+import type { ReactNode } from "react";
+import { useState } from "react";
 import { Onboarding } from "@/components/onboarding";
+import { markOnboardedLocally, wasOnboardedLocally } from "@/lib/onboarded";
 import styles from "./welcome.module.css";
+
+interface Step {
+  id: string;
+  title: string;
+  description?: string;
+  optional?: boolean;
+}
+
+const variants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 28 : -28 }),
+  center: { opacity: 1, x: 0 },
+  exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -28 : 28 }),
+};
 
 function Welcome() {
   const nav = useNavigate();
-  const toast = useToast();
-  const [token, setToken] = useState<string | null>(null);
-  const [pairing, setPairing] = useState<string | null>(null);
-  const [port, setPort] = useState<number>(41610);
+  const [step, setStep] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [libraryPath, setLibraryPath] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      const t = (await window.pond.query("settings.ingestToken")) as {
-        token: string | null;
-      };
-      setToken(t.token ?? null);
-      if (t.token) {
-        const url = new URL("pond://pair");
-        url.searchParams.set("port", String(port));
-        url.searchParams.set("token", t.token);
-        setPairing(url.toString());
-      }
-    })();
-  }, [port]);
+  const steps: ReadonlyArray<Step & { body: ReactNode }> = [
+    {
+      id: "intro",
+      title: "Welcome to Pond",
+      body: <Onboarding.Intro />,
+    },
+    {
+      id: "library",
+      title: "Pick where your pond lives",
+      description: "Pond stores your saves on disk so you keep full control.",
+      body: (
+        <Onboarding.LibraryLocationStep
+          chosenPath={libraryPath}
+          onChoose={setLibraryPath}
+        />
+      ),
+    },
+    {
+      id: "extension",
+      title: "Install the browser extension",
+      description: "This is how pages get into Pond.",
+      body: <Onboarding.ExtensionStep />,
+    },
+    {
+      id: "pair",
+      title: "Pair it with this app",
+      description: "Connect the extension to this Mac.",
+      body: <Onboarding.PairingStep />,
+    },
+    {
+      id: "sync",
+      title: "Sync your connected apps",
+      description:
+        "Already have bookmarks elsewhere? Pull your history into your pond.",
+      optional: true,
+      body: <Onboarding.SyncPanel />,
+    },
+  ];
 
-  async function copy(text: string, what: string) {
-    await navigator.clipboard.writeText(text);
-    toast.add({ title: `Copied ${what}`, type: "success" });
+  const total = steps.length;
+  const current = steps[step];
+  const isFirst = step === 0;
+  const isLast = step === total - 1;
+  // The library step requires a created or adopted pond before moving on.
+  const canAdvance = current?.id !== "library" || libraryPath !== null;
+
+  function go(next: number) {
+    const clamped = Math.max(0, Math.min(total - 1, next));
+    setDirection(clamped >= step ? 1 : -1);
+    setStep(clamped);
   }
 
-  async function markOnboarded() {
-    await window.pond.query("settings.markOnboarded", { value: true });
-    void nav({ to: "/" });
+  function finish() {
+    // Record completion first (sync): the boot-time shell hint is frozen
+    // by contextBridge so we can't flip it in place. The root + welcome
+    // guards read this to stop sending us back to /welcome.
+    markOnboardedLocally();
+    // Persist to the DB in the background so nothing here can block or
+    // throw before we navigate.
+    void window.pond.query("settings.markOnboarded", { value: true });
+    // Apply the chosen pond last, so picking a spot never relaunched the
+    // app mid-wizard. `switchTo` (custom location) or `ensureDefault`
+    // (default) both resolve before we leave the wizard. Always navigate to
+    // the library afterwards: in dev the switch soft-reloads the window,
+    // which lands back on /welcome, and only this nav (plus the welcome
+    // guard) moves us into the library.
+    const open = libraryPath
+      ? window.pond.query("library.switchTo", { path: libraryPath })
+      : window.pond.query("library.ensureDefault", {});
+    void open.finally(() => void nav({ to: "/" }));
   }
+
+  if (!current) return null;
 
   return (
-    <div className={styles.welcome}>
-      <h2>Welcome to Pond</h2>
-      <p className={styles.lead}>
-        A local archive for the stuff you save. Everything lives on your
-        machine: no cloud, no accounts.
-      </p>
+    <div className={styles.wizard}>
+      <header className={styles.header}>
+        <div className={styles.progress} aria-hidden>
+          <span
+            className={styles["progress-fill"]}
+            style={{ transform: `scaleX(${(step + 1) / total})` }}
+          />
+        </div>
+        <span className={styles.count}>
+          Step {step + 1} of {total}
+        </span>
+      </header>
 
-      <ol className={styles.steps}>
-        <li>
-          <h3>Pick where your library lives</h3>
-          <p>
-            Pond stores your saves on disk so you keep full control. Default is
-            a folder in your home directory. Pick somewhere in iCloud Drive (or
-            Dropbox, Google Drive…) if you want your saves to sync across
-            machines.
-          </p>
-          <Onboarding.LibraryLocationStep />
-        </li>
-
-        <li>
-          <h3>Install the browser extension</h3>
-          <p>
-            Install from the Chrome / Firefox store. If you're a developer, load{" "}
-            <code>apps/extension</code> as an unpacked extension.
-          </p>
-        </li>
-
-        <li>
-          <h3>Pair it with this app</h3>
-          <p>Click the Pond icon in your browser, paste the pairing link:</p>
-          <Field.Root>
-            <Field.Label className={styles["sr-only"]}>
-              Pairing link
-            </Field.Label>
-            <div className={styles.row}>
-              <Input.Field
-                data-variant="code"
-                readOnly
-                value={pairing ?? "generating…"}
-                onFocus={(e) => e.currentTarget.select()}
-              />
-              <Button
-                disabled={!pairing}
-                onClick={() => pairing && copy(pairing, "pairing link")}
-              >
-                Copy link
-              </Button>
-            </div>
-          </Field.Root>
-
-          <Collapsible.Root>
-            <Collapsible.Trigger>Or copy token manually</Collapsible.Trigger>
-            <Collapsible.Panel>
-              <div className={styles["token-row"]}>
-                <code>{token ?? "…"}</code>
-                <Button
-                  size="sm"
-                  disabled={!token}
-                  onClick={() => token && copy(token, "token")}
-                >
-                  Copy token
-                </Button>
-              </div>
-              <p className={styles.hint}>
-                Endpoint: <code>http://127.0.0.1:{port}/api/v2/item/add</code>
-              </p>
-              <Field.Root>
-                <Field.Label>Port</Field.Label>
-                <NumberFieldStepper
-                  value={port}
-                  onValueChange={(v) => setPort(v ?? 41610)}
-                  min={1024}
-                  max={65535}
-                />
-                <Field.Description>
-                  Change only if 41610 is taken on your machine.
-                </Field.Description>
-              </Field.Root>
-            </Collapsible.Panel>
-          </Collapsible.Root>
-        </li>
-
-        <li>
-          <h3>Save something</h3>
-          <p>
-            Right-click any page and pick "Save this page to Pond". It'll appear
-            in your library within a second.
-          </p>
-        </li>
-
-        <li>
-          <h3>Sync your connected apps</h3>
-          <p>
-            Already have bookmarks elsewhere? Connect an app from{" "}
-            <strong>Settings → Connected Apps</strong> and Pond will scrape your
-            full history into the local library.
-          </p>
-          <Onboarding.SyncPanel />
-        </li>
-      </ol>
-
-      <div className={styles.done}>
-        <Button variant="primary" size="lg" onClick={markOnboarded}>
-          I'm set up → Open library
-        </Button>
+      <div className={styles.viewport}>
+        <AnimatePresence initial={false} mode="wait" custom={direction}>
+          <motion.section
+            key={current.id}
+            className={styles.step}
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <h2 className={styles.title}>{current.title}</h2>
+            {current.description ? (
+              <p className={styles.lead}>{current.description}</p>
+            ) : null}
+            <div className={styles.body}>{current.body}</div>
+          </motion.section>
+        </AnimatePresence>
       </div>
+
+      <footer className={styles.footer}>
+        <Button
+          variant="ghost"
+          onClick={() => go(step - 1)}
+          data-hidden={isFirst || undefined}
+        >
+          Back
+        </Button>
+        <div className={styles["footer-right"]}>
+          {current.optional && !isLast ? (
+            <Button variant="ghost" onClick={() => go(step + 1)}>
+              Skip
+            </Button>
+          ) : null}
+          {isLast ? (
+            <Button variant="primary" onClick={finish}>
+              Open library
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              disabled={!canAdvance}
+              onClick={() => go(step + 1)}
+            >
+              Continue
+            </Button>
+          )}
+        </div>
+      </footer>
     </div>
   );
 }
 
 export const Route = createFileRoute("/_standalone/welcome")({
+  // Once onboarding is done, don't sit on /welcome. The library switch at
+  // finish soft-reloads the window (dev) onto this route; this forwards an
+  // onboarded user into the library. A fresh, not-yet-onboarded user falls
+  // through and sees the wizard.
+  beforeLoad: () => {
+    if (window.__pondShell?.onboarded || wasOnboardedLocally()) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: Welcome,
 });

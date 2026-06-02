@@ -1,6 +1,6 @@
-import { AlertDialog, Button, useToast } from "@pond/ui";
+import { Button, Collapsible, Field, Input, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import type { RelocatePreviewWire } from "../../../../preload";
+import { NumberFieldStepper } from "@/components/_primitives/number-field-stepper";
 import styles from "./styles.module.css";
 
 type SyncSource = "twitter";
@@ -16,172 +16,205 @@ const SYNC_SOURCES: ReadonlyArray<{ id: SyncSource; label: string }> = [
   { id: "twitter", label: "Twitter / X bookmarks" },
 ];
 
-function LibraryLocationStep() {
+type PickResult = { ok: true; path: string } | { ok: false; reason: string };
+
+function Intro() {
+  return (
+    <p className={styles.prose}>
+      Pond keeps everything you save on your own machine: no cloud, no accounts,
+      no lock-in. Save a page from your browser and it lands in a pond you fully
+      control. This setup takes about a minute.
+    </p>
+  );
+}
+
+interface LibraryLocationStepProps {
+  chosenPath: string | null;
+  onChoose: (path: string) => void;
+}
+
+// Onboarding only *picks* a target here; it never creates or switches
+// mid-wizard. The pickers just return a path with no side effects, so
+// choosing a spot can't relaunch the app and bounce the user back to step
+// one. The wizard applies the choice on finish (`switchTo` creates the
+// bundle at a fresh path, or adopts an existing one).
+function LibraryLocationStep({
+  chosenPath,
+  onChoose,
+}: LibraryLocationStepProps) {
   const toast = useToast();
-  const [currentPath, setCurrentPath] = useState<string | null>(null);
-  const [preview, setPreview] = useState<RelocatePreviewWire | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [name, setName] = useState("My Pond");
+  const [mode, setMode] = useState<"create" | "open" | null>(null);
+
+  async function createNew() {
+    const pick = (await window.pond.query("library.pickNewLocation", {
+      name,
+    })) as PickResult;
+    if (pick.ok) {
+      setMode("create");
+      onChoose(pick.path);
+    } else if (pick.reason !== "cancelled") {
+      toast.add({
+        title: "Couldn't open picker",
+        description: pick.reason,
+        type: "error",
+      });
+    }
+  }
+
+  async function openExisting() {
+    const pick = (await window.pond.query(
+      "library.pickExisting",
+      {},
+    )) as PickResult;
+    if (pick.ok) {
+      setMode("open");
+      onChoose(pick.path);
+    } else if (pick.reason !== "cancelled") {
+      toast.add({
+        title: "Couldn't open picker",
+        description: pick.reason,
+        type: "error",
+      });
+    }
+  }
+
+  return (
+    <div className={styles.location}>
+      <Field.Root>
+        <Field.Label>Pond name</Field.Label>
+        <Input.Field
+          value={name}
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="My Pond"
+        />
+      </Field.Root>
+
+      {chosenPath ? (
+        <>
+          <code className={styles["location-current"]}>{chosenPath}</code>
+          <p className={styles["location-note"]}>
+            {mode === "open"
+              ? "Pond will open this when you finish setup."
+              : "Pond will be created here when you finish setup."}
+          </p>
+        </>
+      ) : (
+        <p className={styles["location-note"]}>
+          Name your pond, then choose where it lives. Pick a folder in iCloud
+          Drive (or Dropbox, Google Drive) to sync your saves across machines.
+        </p>
+      )}
+
+      <div className={styles["location-actions"]}>
+        <Button
+          size="sm"
+          variant="primary"
+          disabled={!name.trim()}
+          onClick={() => void createNew()}
+        >
+          Create pond…
+        </Button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => void openExisting()}
+        >
+          Open an existing pond…
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function ExtensionStep() {
+  return (
+    <p className={styles.prose}>
+      Install Pond from the Chrome or Firefox store. If you're a developer, load{" "}
+      <code>apps/extension</code> as an unpacked extension.
+    </p>
+  );
+}
+
+function PairingStep() {
+  const toast = useToast();
+  const [token, setToken] = useState<string | null>(null);
+  const [pairing, setPairing] = useState<string | null>(null);
+  const [port, setPort] = useState<number>(41610);
 
   useEffect(() => {
     void (async () => {
-      const snap = (await window.pond
-        .query("storage.snapshot", {})
-        .catch(() => null)) as { libraryRoot?: string } | null;
-      if (snap?.libraryRoot) setCurrentPath(snap.libraryRoot);
+      const t = (await window.pond.query("settings.ingestToken")) as {
+        token: string | null;
+      };
+      setToken(t.token ?? null);
+      if (t.token) {
+        const url = new URL("pond://pair");
+        url.searchParams.set("port", String(port));
+        url.searchParams.set("token", t.token);
+        setPairing(url.toString());
+      }
     })();
-  }, []);
+  }, [port]);
 
-  async function chooseLocation() {
-    setBusy(true);
-    try {
-      const pick = (await window.pond.query("library.pickFolder", {})) as
-        | { ok: true; path: string }
-        | { ok: false; reason: string };
-      if (!pick.ok) {
-        if (pick.reason !== "cancelled") {
-          toast.add({
-            title: "Couldn't open picker",
-            description: pick.reason,
-            type: "error",
-          });
-        }
-        return;
-      }
-      const res = (await window.pond.query("library.previewRelocate", {
-        path: pick.path,
-      })) as
-        | { ok: true; preview: RelocatePreviewWire }
-        | { ok: false; reason: string };
-      if (!res.ok) {
-        toast.add({
-          title: "Couldn't inspect folder",
-          description: res.reason,
-          type: "error",
-        });
-        return;
-      }
-      if (res.preview.samePath) {
-        toast.add({
-          title: "Already there",
-          description: "That's the folder your library already uses.",
-          type: "info",
-        });
-        return;
-      }
-      if (!res.preview.safety.ok) {
-        toast.add({
-          title: "Can't use that folder",
-          description:
-            res.preview.safety.reason === "inside_user_data"
-              ? "That folder lives inside Pond's own data directory."
-              : "Pond can't write to that folder.",
-          type: "error",
-        });
-        return;
-      }
-      setPreview(res.preview);
-    } finally {
-      setBusy(false);
-    }
+  async function copy(text: string, what: string) {
+    await navigator.clipboard.writeText(text);
+    toast.add({ title: `Copied ${what}`, type: "success" });
   }
-
-  async function confirm() {
-    if (!preview) return;
-    setBusy(true);
-    const res = (await window.pond.query("library.relocate", {
-      path: preview.candidatePath,
-      mode: preview.suggestedMode,
-      restart: true,
-    })) as { ok: true; path: string } | { ok: false; reason: string };
-    if (!res.ok) {
-      setBusy(false);
-      toast.add({
-        title: "Couldn't change location",
-        description: res.reason,
-        type: "error",
-      });
-      return;
-    }
-    toast.add({
-      title: "Switching libraries",
-      description: "Pond is restarting…",
-      type: "success",
-    });
-  }
-
-  const mode = preview?.suggestedMode ?? "copy";
 
   return (
-    <div className={styles["location-row"]}>
-      <code className={styles["location-current"]}>
-        {currentPath ?? "~/Pond/My Pond.pond"}
-      </code>
-      <Button size="sm" disabled={busy} onClick={() => void chooseLocation()}>
-        Change…
-      </Button>
+    <div className={styles.pairing}>
+      <p className={styles.prose}>
+        Click the Pond icon in your browser, then paste this pairing link:
+      </p>
+      <Field.Root>
+        <Field.Label className={styles["sr-only"]}>Pairing link</Field.Label>
+        <div className={styles.row}>
+          <Input.Field
+            data-variant="code"
+            readOnly
+            value={pairing ?? "generating…"}
+            onFocus={(e) => e.currentTarget.select()}
+          />
+          <Button
+            disabled={!pairing}
+            onClick={() => pairing && copy(pairing, "pairing link")}
+          >
+            Copy link
+          </Button>
+        </div>
+      </Field.Root>
 
-      <AlertDialog.Root
-        open={preview !== null}
-        onOpenChange={(o) => {
-          if (!o && !busy) setPreview(null);
-        }}
-      >
-        <AlertDialog.Portal>
-          <AlertDialog.Backdrop />
-          <AlertDialog.Popup>
-            <AlertDialog.Title>
-              {mode === "adopt"
-                ? "Use this Pond library?"
-                : "Move your library here?"}
-            </AlertDialog.Title>
-            <AlertDialog.Description>
-              {preview ? (
-                <div>
-                  <p className={styles["dialog-intro"]}>
-                    {mode === "adopt"
-                      ? `That folder already looks like a Pond library (${preview.existing.itemCount} item${preview.existing.itemCount === 1 ? "" : "s"}). Pond will use it directly.`
-                      : "Pond will move your library to the new location and restart. Your current folder stays put so you can confirm everything before removing it yourself."}
-                  </p>
-                  <p className={styles["dialog-paths"]}>
-                    <strong>From</strong> <code>{preview.currentPath}</code>
-                    <br />
-                    <strong>To</strong> <code>{preview.candidatePath}</code>
-                  </p>
-                  {preview.cloudKind ? (
-                    <p className={styles["cloud-warning"]}>
-                      This folder is inside {preview.cloudKind}. Files will sync
-                      across devices; Pond's index stays per-Mac.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-            </AlertDialog.Description>
-            <div className={styles["dialog-actions"]}>
-              <AlertDialog.Close
-                render={
-                  <Button variant="ghost" disabled={busy}>
-                    Cancel
-                  </Button>
-                }
-              />
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={(e) => {
-                  e.preventDefault();
-                  void confirm();
-                }}
-              >
-                {busy
-                  ? "Relaunching…"
-                  : mode === "adopt"
-                    ? "Switch and Relaunch"
-                    : "Move and Relaunch"}
-              </Button>
-            </div>
-          </AlertDialog.Popup>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
+      <Collapsible.Root>
+        <Collapsible.Trigger>Or copy token manually</Collapsible.Trigger>
+        <Collapsible.Panel>
+          <div className={styles["token-row"]}>
+            <code>{token ?? "…"}</code>
+            <Button
+              size="sm"
+              disabled={!token}
+              onClick={() => token && copy(token, "token")}
+            >
+              Copy token
+            </Button>
+          </div>
+          <p className={styles.hint}>
+            Endpoint: <code>http://127.0.0.1:{port}/api/v2/item/add</code>
+          </p>
+          <Field.Root>
+            <Field.Label>Port</Field.Label>
+            <NumberFieldStepper
+              value={port}
+              onValueChange={(v) => setPort(v ?? 41610)}
+              min={1024}
+              max={65535}
+            />
+            <Field.Description>
+              Change only if 41610 is taken on your machine.
+            </Field.Description>
+          </Field.Root>
+        </Collapsible.Panel>
+      </Collapsible.Root>
     </div>
   );
 }
@@ -327,4 +360,10 @@ function SyncPanel() {
   );
 }
 
-export const Onboarding = { LibraryLocationStep, SyncPanel };
+export const Onboarding = {
+  Intro,
+  LibraryLocationStep,
+  ExtensionStep,
+  PairingStep,
+  SyncPanel,
+};
