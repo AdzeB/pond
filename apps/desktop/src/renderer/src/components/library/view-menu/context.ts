@@ -1,7 +1,24 @@
 import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
-import { createContext, use } from "react";
-import type { DisplayPrefKey, DisplayPrefs } from "@/lib/display-prefs";
+import { useMemo } from "react";
+import {
+  type DisplayPrefKey,
+  type DisplayPrefs,
+  setDisplayPref,
+  useDisplayPrefs,
+} from "@/lib/display-prefs";
 import type { LayoutValue } from "@/lib/view-prefs";
+import {
+  addPredicate,
+  resetFilters,
+  restoreDefaults,
+  setFieldPredicate,
+  setLayout,
+  setQuery,
+  setSort,
+  setZoom,
+  updatePredicate,
+  useViewStore,
+} from "@/lib/view-store";
 import type { SortDir, SortKey } from "@/pool/use-filtered-saves";
 
 export type { SortDir, SortKey };
@@ -28,22 +45,39 @@ export interface ViewActions {
   restoreDefaults: () => void;
 }
 
-export interface ViewMeta {
-  triggerRef?: React.Ref<HTMLButtonElement>;
-}
-
 export interface ViewContextValue {
   state: ViewState;
   actions: ViewActions;
-  meta: ViewMeta;
 }
 
-export const ViewContext = createContext<ViewContextValue | null>(null);
+const actions: ViewActions = {
+  setQuery,
+  addPredicate,
+  updatePredicate,
+  setFieldPredicate,
+  resetFilters,
+  setLayout,
+  setSort,
+  setDisplayPref,
+  setZoom,
+  restoreDefaults,
+};
 
 export function useView(): ViewContextValue {
-  const ctx = use(ViewContext);
-  if (!ctx) {
-    throw new Error("View sub-component used outside View.Root");
-  }
-  return ctx;
+  const view = useViewStore();
+  const displayPrefs = useDisplayPrefs();
+  return useMemo(
+    () => ({
+      state: {
+        query: view.query,
+        pendingPredicates: view.pendingPredicates,
+        layout: view.layout,
+        sort: { key: view.sortKey as SortKey, dir: view.sortDir },
+        displayPrefs,
+        zoom: view.zoom,
+      },
+      actions,
+    }),
+    [view, displayPrefs],
+  );
 }

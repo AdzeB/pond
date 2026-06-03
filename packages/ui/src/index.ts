@@ -30,6 +30,7 @@ export { RadioGroup } from "./radio-group";
 export { ScrollArea } from "./scroll-area";
 export { Select } from "./select";
 export { Separator } from "./separator";
+export { Shell } from "./shell";
 export { Slider } from "./slider";
 export { Switch } from "./switch";
 export { Tabs } from "./tabs";

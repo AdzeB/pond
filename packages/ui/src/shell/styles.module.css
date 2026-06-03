@@ -1,0 +1,29 @@
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.main {
+  padding: 12px;
+}
+
+.aside {
+  display: flex;
+  padding: 12px;
+}
+
+.drag {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 99999;
+  height: 38px;
+  pointer-events: none;
+}
+
+:global(html):not(:global(.electron-disable-drag)) .drag {
+  -webkit-app-region: drag;
+}

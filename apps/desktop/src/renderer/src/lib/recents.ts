@@ -1,4 +1,6 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
+import { useEffect } from "react";
 
 const STORAGE_KEY = "pond.recents.saves";
 const RECENTS_CAP = 20;
@@ -7,10 +9,6 @@ interface RecentEntry {
   saveId: string;
   visitedAt: number;
 }
-
-const listeners = new Set<() => void>();
-
-let state: RecentEntry[] = hydrate();
 
 function hydrate(): RecentEntry[] {
   if (typeof window === "undefined") return [];
@@ -48,37 +46,24 @@ function persist(next: RecentEntry[]): void {
   }
 }
 
-function emit(): void {
-  for (const cb of listeners) cb();
-}
+const store = new Store<RecentEntry[]>(hydrate());
 
 function recordVisit(saveId: string): void {
-  const top = state[0];
-  if (top?.saveId === saveId) {
-    state = [{ saveId, visitedAt: Date.now() }, ...state.slice(1)];
-  } else {
-    state = [
+  store.setState((state) => {
+    const top = state[0];
+    if (top?.saveId === saveId) {
+      return [{ saveId, visitedAt: Date.now() }, ...state.slice(1)];
+    }
+    return [
       { saveId, visitedAt: Date.now() },
       ...state.filter((e) => e.saveId !== saveId),
     ].slice(0, RECENTS_CAP);
-  }
-  persist(state);
-  emit();
-}
-
-function getSnapshot(): RecentEntry[] {
-  return state;
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => {
-    listeners.delete(cb);
-  };
+  });
+  persist(store.state);
 }
 
 export function useRecents(): RecentEntry[] {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useStore(store, (s) => s);
 }
 
 export function useTrackVisit(saveId: string | null | undefined): void {

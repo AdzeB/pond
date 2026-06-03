@@ -1,8 +1,7 @@
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import type { SmartFolder } from "@pond/schema/db";
-import { readQuery } from "@pond/schema/filters/url";
 import { AlertDialog, Button, ContextMenu, Menu, useToast } from "@pond/ui";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import {
   Archive,
   ArrowUpRight,
@@ -22,14 +21,10 @@ import { LibrarySwitcher } from "@/components/library/library-switcher";
 import { Aside } from "@/components/shell/aside";
 import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
-import { navigateTo, patchSearch } from "@/lib/navigate-path";
-import { searchToParams } from "@/lib/search-schemas";
+import { navigateTo } from "@/lib/navigate-path";
 import { useSidebar } from "@/lib/shell-state";
-import {
-  queryEquals,
-  smartFolderSearch,
-  sortFolders,
-} from "@/lib/smart-folders";
+import { queryEquals, sortFolders } from "@/lib/smart-folders";
+import { openCapture, setQuery, useFilterQuery } from "@/lib/view-store";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 
@@ -44,7 +39,6 @@ interface Route {
 
 const routes: Route[] = [
   { path: "/", label: "Library", icon: Archive },
-  { path: "/sync", label: "Sync", icon: RefreshCw },
   { path: "/tags", label: "Tags", icon: Tags },
   { path: "/trash", label: "Trash", icon: Trash2 },
 ];
@@ -53,25 +47,20 @@ export function LibrarySidebar() {
   const navigate = useNavigate();
   const { open } = useSidebar();
   const [smartFolders, patchFolders] = usePrefs("smartFolders");
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const currentQuery = useFilterQuery();
 
   const folders = useMemo(
     () => sortFolders(smartFolders.items ?? []),
     [smartFolders.items],
   );
-  const currentQuery = useMemo(
-    () => readQuery(searchToParams(search)),
-    [search],
-  );
   const pinned = folders.filter((f) => f.pinned);
   const unpinned = folders.filter((f) => !f.pinned);
 
   const goTo = useCallback(
-    (folder: SmartFolder) =>
-      navigateTo(navigate, "/", {
-        search: smartFolderSearch(folder),
-        viewTransition: true,
-      }),
+    (folder: SmartFolder) => {
+      setQuery(folder.query);
+      navigateTo(navigate, "/", { viewTransition: true });
+    },
     [navigate],
   );
 
@@ -94,8 +83,8 @@ export function LibrarySidebar() {
   );
 
   const openQuickCapture = useCallback(() => {
-    patchSearch(navigate, (prev) => ({ ...prev, capture: "1" }));
-  }, [navigate]);
+    openCapture();
+  }, []);
 
   function openUrl(url: string) {
     void window.pond.openExternal(url);

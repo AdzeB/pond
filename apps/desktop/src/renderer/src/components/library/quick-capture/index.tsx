@@ -1,12 +1,13 @@
 import { Button, cn, Dialog, Field, Input, useToast } from "@pond/ui";
-import { useNavigate, useSearch } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { navigateTo, patchSearch } from "@/lib/navigate-path";
+import { navigateTo } from "@/lib/navigate-path";
+import { closeCapture, useCapture } from "@/lib/view-store";
 import styles from "./styles.module.css";
 
 function Root() {
   const [open, setOpen] = useState(false);
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
+  const capture = useCapture();
   const navigate = useNavigate();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -17,22 +18,13 @@ function Root() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (search.capture === "1") {
-      void primeFromClipboard().then((seed) => {
-        if (seed) setUrl(seed);
-        setOpen(true);
-      });
-      patchSearch(
-        navigate,
-        (prev) => {
-          const out = { ...prev };
-          delete out.capture;
-          return out;
-        },
-        { replace: true },
-      );
-    }
-  }, [search.capture, navigate]);
+    if (!capture) return;
+    void primeFromClipboard().then((seed) => {
+      if (seed) setUrl(seed);
+      setOpen(true);
+    });
+    closeCapture();
+  }, [capture]);
 
   useEffect(() => {
     if (!open) return;

@@ -3,7 +3,6 @@ import { FolderPlus, RotateCcw, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 import { SaveSmartFolderDialog } from "../smart-folders/save-dialog";
 import { useView } from "./context";
-import { Root as Provider } from "./provider";
 import { DisplaySection } from "./sections/display";
 import { LayoutSection } from "./sections/layout";
 import { SortSection } from "./sections/sort";
@@ -65,5 +64,5 @@ function RestoreDefaults() {
   );
 }
 
-export const View = { Provider, Menu: ViewMenu };
+export const View = { Menu: ViewMenu };
 export { useView } from "./context";

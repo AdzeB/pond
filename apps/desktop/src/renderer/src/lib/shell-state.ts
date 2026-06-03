@@ -13,8 +13,8 @@ import {
 // the packers from running every frame while the CSS width animates;
 // `motion.li layout="position"` interpolates the cards.
 
-const SIDEBAR_PANE_WIDTH = 224;
-const INSPECTOR_PANE_WIDTH = 224;
+const SIDEBAR_PANE_WIDTH = 256;
+const INSPECTOR_PANE_WIDTH = 256;
 const SHELL_MAIN_PADDING = 12;
 
 type PanePrefKey = Extract<ViewPrefKey, "sidebar" | "inspector">;

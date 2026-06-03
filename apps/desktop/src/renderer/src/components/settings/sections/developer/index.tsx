@@ -1,5 +1,4 @@
 import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
-import { Link } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Settings } from "@/components/settings";
@@ -220,21 +219,6 @@ export function DeveloperSection() {
               <Button size="sm" onClick={() => void openInspector()}>
                 Open Inspector
               </Button>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Activity</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Query the pipeline event stream: one row per task, sync, and
-                save lifecycle. Filter by source, outcome, or error.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Link to="/sync">
-                <Button size="sm">Open Sync</Button>
-              </Link>
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>

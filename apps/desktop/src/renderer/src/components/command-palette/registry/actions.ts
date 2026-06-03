@@ -162,18 +162,6 @@ export const ACTION_COMMANDS: Command[] = [
     },
   },
   {
-    id: "action.sync.open",
-    label: "Open Sync",
-    description: "Open the sync page",
-    group: "Actions",
-    scope: "actions",
-    keywords: ["sync", "sources", "schedule", "history"],
-    perform: ({ navigate, close }) => {
-      navigate("/sync", { viewTransition: true });
-      close();
-    },
-  },
-  {
     id: "action.trash.empty",
     label: "Empty Trash",
     description: "Permanently delete every item in Trash",

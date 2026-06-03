@@ -1,52 +1,39 @@
-import { useSyncExternalStore } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 
-type Listener = () => void;
-
-let activeSaveId: string | null = null;
-const listeners = new Set<Listener>();
-
-function notify(): void {
-  for (const l of listeners) l();
+interface PresentationState {
+  readonly activeSaveId: string | null;
 }
+
+const store = new Store<PresentationState>({ activeSaveId: null });
 
 export const presentation = {
   get(): string | null {
-    return activeSaveId;
+    return store.state.activeSaveId;
   },
   isOpen(): boolean {
-    return activeSaveId !== null;
+    return store.state.activeSaveId !== null;
   },
   open(saveId: string): void {
     if (!saveId) return;
-    if (activeSaveId === saveId) return;
-    activeSaveId = saveId;
-    notify();
+    store.setState((s) =>
+      s.activeSaveId === saveId ? s : { activeSaveId: saveId },
+    );
   },
   close(): void {
-    if (activeSaveId === null) return;
-    activeSaveId = null;
-    notify();
+    store.setState((s) =>
+      s.activeSaveId === null ? s : { activeSaveId: null },
+    );
   },
   toggle(saveId: string): void {
-    if (activeSaveId === saveId) {
-      activeSaveId = null;
-    } else if (saveId) {
-      activeSaveId = saveId;
-    }
-    notify();
-  },
-  subscribe(cb: Listener): () => void {
-    listeners.add(cb);
-    return () => {
-      listeners.delete(cb);
-    };
+    store.setState((s) => {
+      if (s.activeSaveId === saveId) return { activeSaveId: null };
+      if (saveId) return { activeSaveId: saveId };
+      return s;
+    });
   },
 };
 
 export function usePresentationId(): string | null {
-  return useSyncExternalStore(
-    presentation.subscribe,
-    presentation.get,
-    presentation.get,
-  );
+  return useStore(store, (s) => s.activeSaveId);
 }

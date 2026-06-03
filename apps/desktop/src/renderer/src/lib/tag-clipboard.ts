@@ -1,44 +1,29 @@
-import { useSyncExternalStore } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 
-type Listener = () => void;
-
-let buffer: readonly string[] = [];
-const listeners = new Set<Listener>();
-
-function notify(): void {
-  for (const l of listeners) l();
+interface TagClipboardState {
+  readonly tags: readonly string[];
 }
+
+const store = new Store<TagClipboardState>({ tags: [] });
 
 export const tagClipboard = {
   get(): readonly string[] {
-    return buffer;
+    return store.state.tags;
   },
   set(next: readonly string[]): void {
     const cleaned = Array.from(
       new Set(next.map((t) => t.trim()).filter(Boolean)),
     );
-    buffer = cleaned;
-    notify();
+    store.setState(() => ({ tags: cleaned }));
   },
   clear(): void {
-    if (buffer.length === 0) return;
-    buffer = [];
-    notify();
-  },
-  subscribe(cb: Listener): () => void {
-    listeners.add(cb);
-    return () => {
-      listeners.delete(cb);
-    };
+    store.setState((s) => (s.tags.length === 0 ? s : { tags: [] }));
   },
 };
 
 export function useTagClipboard(): readonly string[] {
-  return useSyncExternalStore(
-    tagClipboard.subscribe,
-    tagClipboard.get,
-    tagClipboard.get,
-  );
+  return useStore(store, (s) => s.tags);
 }
 
 export function mergeUniqueTags(

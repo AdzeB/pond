@@ -2,16 +2,10 @@ import { useToast } from "@pond/ui";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 import { isChordPending } from "@/components/command-palette/use-chords";
-import { navigateTo, patchSearch } from "@/lib/navigate-path";
+import { navigateTo } from "@/lib/navigate-path";
 import { listBaseFromPath } from "@/lib/search-schemas";
 import type { SavesMode } from "@/lib/use-library-state";
-import {
-  isLayoutValue,
-  type LayoutValue,
-  nextLayout,
-  readViewPref,
-  writeViewPref,
-} from "@/lib/view-prefs";
+import { cycleLayout } from "@/lib/view-store";
 import {
   primarySelection,
   selection,
@@ -87,26 +81,6 @@ export function useCardActions(
     },
     [filteredIds, multiSelectActive, select],
   );
-
-  const cycleLayout = useCallback(() => {
-    patchSearch(
-      navigate,
-      (prev) => {
-        const raw =
-          (prev.view as string | undefined) ??
-          readViewPref("view") ??
-          "waterfall";
-        const current: LayoutValue = isLayoutValue(raw) ? raw : "waterfall";
-        const next = nextLayout(current);
-        writeViewPref("view", next);
-        const out = { ...prev };
-        if (next === "waterfall") delete out.view;
-        else out.view = next;
-        return out;
-      },
-      { replace: true },
-    );
-  }, [navigate]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -200,7 +174,7 @@ export function useCardActions(
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [filteredIds, selectionSize, select, focus, cycleLayout]);
+  }, [filteredIds, selectionSize, select, focus]);
 
   useEffect(() => {
     void mode;

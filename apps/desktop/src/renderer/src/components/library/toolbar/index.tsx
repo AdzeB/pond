@@ -40,7 +40,7 @@ const SEARCH_DEBOUNCE_MS = 150;
 
 function Search() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useDebouncedSearch("q", SEARCH_DEBOUNCE_MS);
+  const [value, setValue] = useDebouncedSearch(SEARCH_DEBOUNCE_MS);
 
   useSearchHotkey(() => {
     const el = inputRef.current;

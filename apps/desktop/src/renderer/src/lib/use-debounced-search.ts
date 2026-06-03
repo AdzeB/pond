@@ -1,40 +1,22 @@
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { patchSearch } from "@/lib/navigate-path";
+import { setSearchText, useSearchText } from "@/lib/view-store";
 
-// URL is the source of truth; the local mirror keeps typing snappy and
-// coalesces writes to one history entry every `delayMs`. Setting an
-// empty string removes the param entirely.
+// The view store is the source of truth; the local mirror keeps typing
+// snappy and coalesces writes to one store update every `delayMs`.
 export function useDebouncedSearch(
-  key: string,
   delayMs: number,
 ): [string, (next: string) => void] {
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
-  const navigate = useNavigate();
-  const raw = search[key];
-  const urlValue = typeof raw === "string" ? raw : "";
-  const [value, setValue] = useState(urlValue);
+  const stored = useSearchText();
+  const [value, setValue] = useState(stored);
 
   useEffect(() => {
-    setValue(urlValue);
-  }, [urlValue]);
+    setValue(stored);
+  }, [stored]);
 
-  const flush = useDebouncedCallback(
-    (next: string) => {
-      patchSearch(
-        navigate,
-        (prev) => {
-          const out = { ...prev };
-          if (next) out[key] = next;
-          else delete out[key];
-          return out;
-        },
-        { replace: true },
-      );
-    },
-    { wait: delayMs },
-  );
+  const flush = useDebouncedCallback((next: string) => setSearchText(next), {
+    wait: delayMs,
+  });
 
   const set = useCallback(
     (next: string) => {

@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 
 export type DisplayPrefKey = "name" | "date" | "fileCount";
 
@@ -39,34 +40,19 @@ function readAll(): DisplayPrefs {
   };
 }
 
-const listeners = new Set<() => void>();
-let snapshot: DisplayPrefs = readAll();
-
-function emit() {
-  snapshot = readAll();
-  for (const fn of listeners) fn();
-}
-
-function subscribe(fn: () => void) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-function getSnapshot(): DisplayPrefs {
-  return snapshot;
-}
+const store = new Store<DisplayPrefs>(readAll());
 
 export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(STORAGE_KEYS[key], value ? "1" : "0");
     } catch {
-      /* storage denied: keep the in-memory snapshot in sync anyway */
+      /* storage denied: keep the in-memory store in sync anyway */
     }
   }
-  emit();
+  store.setState((s) => (s[key] === value ? s : { ...s, [key]: value }));
 }
 
 export function useDisplayPrefs(): DisplayPrefs {
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+  return useStore(store, (s) => s);
 }

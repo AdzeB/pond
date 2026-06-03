@@ -1,4 +1,3 @@
-import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
   createColumnHelper,
   flexRender,
@@ -19,8 +18,7 @@ import { formatAbsolute, SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { formatBytes } from "@/lib/format";
-import { patchSearch } from "@/lib/navigate-path";
-import { readViewPref, writeViewPref } from "@/lib/view-prefs";
+import { setSort, useSortDir, useSortKey } from "@/lib/view-store";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 
@@ -174,15 +172,12 @@ function ListView({
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }) {
-  const search = useSearch({ strict: false }) as Record<string, unknown>;
-  const navigate = useNavigate();
-  const rawSort =
-    (search.sort as string | undefined) ?? readViewPref("sort") ?? "savedAt";
-  const sortKey: SortKey = SORT_KEYS.has(rawSort as SortKey)
-    ? (rawSort as SortKey)
+  const rawSortKey = useSortKey();
+  const rawSortDir = useSortDir();
+  const sortKey: SortKey = SORT_KEYS.has(rawSortKey as SortKey)
+    ? (rawSortKey as SortKey)
     : "savedAt";
-  const rawDir = (search.dir as string | undefined) ?? readViewPref("dir");
-  const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
+  const sortDir: "asc" | "desc" = rawSortDir === "asc" ? "asc" : "desc";
 
   const sorting = useMemo<SortingState>(
     () => [{ id: sortKey, desc: sortDir === "desc" }],
@@ -190,26 +185,16 @@ function ListView({
   );
 
   // First-click direction policy lives on each column's `sortDescFirst`.
-  // We just mirror TanStack's state back into the URL.
+  // We just mirror TanStack's state back into the view store.
   const handleSortingChange = useCallback(
     (updater: Updater<SortingState>) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
       const item = next[0] ?? sorting[0];
       if (!item) return;
       const dir: "asc" | "desc" = item.desc ? "desc" : "asc";
-      writeViewPref("sort", item.id);
-      writeViewPref("dir", dir);
-      patchSearch(
-        navigate,
-        (prev) => ({
-          ...prev,
-          sort: item.id,
-          dir,
-        }),
-        { replace: true },
-      );
+      setSort({ key: item.id, dir });
     },
-    [navigate, sorting],
+    [sorting],
   );
 
   const columns = useMemo(() => {

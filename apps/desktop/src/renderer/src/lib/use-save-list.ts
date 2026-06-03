@@ -1,5 +1,4 @@
-import { readQuery } from "@pond/schema/filters/url";
-import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import { useRecents } from "@/lib/recents";
 import {
@@ -10,16 +9,16 @@ import {
   parseMode,
   type SaveListMode,
 } from "@/lib/save-list";
-import {
-  type LibrarySearch,
-  listBaseFromPath,
-  searchToParams,
-} from "@/lib/search-schemas";
+import { listBaseFromPath } from "@/lib/search-schemas";
 import { useStableById } from "@/lib/use-stable-array";
-import { readViewPref } from "@/lib/view-prefs";
+import { useViewStore } from "@/lib/view-store";
 import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
-import { useFilteredSaves } from "@/pool/use-filtered-saves";
+import {
+  type SortDir,
+  type SortKey,
+  useFilteredSaves,
+} from "@/pool/use-filtered-saves";
 
 export interface SaveList {
   mode: SaveListMode;
@@ -43,17 +42,16 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
   const saves = useSaves();
   const recents = useRecents();
   const location = useLocation();
-  const search = useSearch({ strict: false }) as LibrarySearch;
+  const view = useViewStore();
   const navigate = useNavigate();
 
   const parentBase = listBaseFromPath(location.pathname);
   const mode = parseMode(parentBase) ?? "library";
   const sourceFilter = mode === "source" ? extractSource(parentBase) : "";
 
-  const q = search.q ?? "";
+  const q = view.q;
   const searchHits = useSearchResults(q);
-  const params0 = useMemo(() => searchToParams(search), [search]);
-  const query = useMemo(() => readQuery(params0), [params0]);
+  const query = view.query;
 
   const recentsOrder = useMemo(() => {
     if (mode !== "recents") return null;
@@ -83,13 +81,13 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
     if (mode === "recents" || mode === "random" || mode === "trash") {
       return undefined;
     }
-    const rawSort = search.sort ?? readViewPref("sort") ?? "savedAt";
-    const sortKey: "savedAt" | "title" | "fileSize" =
-      rawSort === "title" || rawSort === "fileSize" ? rawSort : "savedAt";
-    const rawDir = search.dir ?? readViewPref("dir");
-    const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
+    const sortKey: SortKey =
+      view.sortKey === "title" || view.sortKey === "fileSize"
+        ? view.sortKey
+        : "savedAt";
+    const sortDir: SortDir = view.sortDir === "asc" ? "asc" : "desc";
     return { sortKey, sortDir };
-  }, [mode, search.sort, search.dir]);
+  }, [mode, view.sortKey, view.sortDir]);
 
   const filteredFresh = useFilteredSaves(
     narrowed,
@@ -106,14 +104,10 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
       index >= 0 && index < ids.length - 1 ? (ids[index + 1] ?? null) : null;
 
     const parentLabel = labelForMode(mode, sourceFilter);
-    const queryString = params0.toString();
-    const parentTo = queryString ? `${parentBase}?${queryString}` : parentBase;
+    const parentTo = parentBase;
 
-    const buildDetailPath = (id: string) => {
-      const tail =
-        parentBase === "/" ? `/detail/${id}` : `${parentBase}/detail/${id}`;
-      return queryString ? `${tail}?${queryString}` : tail;
-    };
+    const buildDetailPath = (id: string) =>
+      parentBase === "/" ? `/detail/${id}` : `${parentBase}/detail/${id}`;
 
     return {
       mode,
@@ -126,7 +120,7 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
       prevId,
       nextId,
     };
-  }, [filtered, activeId, mode, sourceFilter, params0, parentBase]);
+  }, [filtered, activeId, mode, sourceFilter, parentBase]);
 
   const goPrev = useCallback(() => {
     if (!base.prevId) return;

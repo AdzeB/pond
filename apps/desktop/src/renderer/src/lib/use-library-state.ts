@@ -1,5 +1,4 @@
-import { readQuery } from "@pond/schema/filters/url";
-import { useLocation, useParams, useSearch } from "@tanstack/react-router";
+import { useLocation, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import type { ViewMode } from "@/components/library/layout-switcher";
 import { useRecents } from "@/lib/recents";
@@ -9,18 +8,18 @@ import {
   parseMode,
   type SaveListMode,
 } from "@/lib/save-list";
-import {
-  type LibrarySearch,
-  listBaseFromPath,
-  searchToParams,
-} from "@/lib/search-schemas";
+import { listBaseFromPath } from "@/lib/search-schemas";
 import { useStableById, useStableStrings } from "@/lib/use-stable-array";
-import { readViewPref } from "@/lib/view-prefs";
+import { useViewStore } from "@/lib/view-store";
 import { useBootReady, useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import { primarySelection } from "@/pool/selection";
 import type { Save } from "@/pool/types";
-import { useFilteredSaves } from "@/pool/use-filtered-saves";
+import {
+  type SortDir,
+  type SortKey,
+  useFilteredSaves,
+} from "@/pool/use-filtered-saves";
 
 export type SavesMode = SaveListMode;
 
@@ -46,10 +45,9 @@ export function useLibraryState(): LibraryState {
     id?: string;
   };
   const location = useLocation();
-  const search = useSearch({ strict: false }) as LibrarySearch;
-  const params0 = useMemo(() => searchToParams(search), [search]);
-  const query = useMemo(() => readQuery(params0), [params0]);
-  const q = search.q ?? "";
+  const view = useViewStore();
+  const query = view.query;
+  const q = view.q;
 
   const parentBase = listBaseFromPath(location.pathname);
   const recognized = parseMode(parentBase);
@@ -78,9 +76,7 @@ export function useLibraryState(): LibraryState {
   }, [mode, recents]);
 
   const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
-  const viewMode = (search.view ??
-    readViewPref("view") ??
-    "waterfall") as ViewMode;
+  const viewMode = view.layout as ViewMode;
 
   const searchHits = useSearchResults(q);
 
@@ -100,13 +96,13 @@ export function useLibraryState(): LibraryState {
     if (mode === "recents" || mode === "random" || mode === "trash") {
       return undefined;
     }
-    const rawSort = search.sort ?? readViewPref("sort") ?? "savedAt";
-    const sortKey: "savedAt" | "title" | "fileSize" =
-      rawSort === "title" || rawSort === "fileSize" ? rawSort : "savedAt";
-    const rawDir = search.dir ?? readViewPref("dir");
-    const sortDir: "asc" | "desc" = rawDir === "asc" ? "asc" : "desc";
+    const sortKey: SortKey =
+      view.sortKey === "title" || view.sortKey === "fileSize"
+        ? view.sortKey
+        : "savedAt";
+    const sortDir: SortDir = view.sortDir === "asc" ? "asc" : "desc";
     return { sortKey, sortDir };
-  }, [mode, search.sort, search.dir]);
+  }, [mode, view.sortKey, view.sortDir]);
 
   const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
   const filtered = useStableById(filteredFresh);

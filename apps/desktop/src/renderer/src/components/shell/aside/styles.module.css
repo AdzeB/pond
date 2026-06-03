@@ -1,4 +1,4 @@
-/* Collapsible side pane. The wrapper animates width 0 → 224 with
+/* Collapsible side pane. The wrapper animates width 0 → 256 with
  * `overflow:hidden`; the inner pane is absolutely positioned so its
  * own width never changes as the wrapper grows. The pane stays
  * anchored to the shell edge (left or right) so content reveals
@@ -13,7 +13,7 @@
 }
 
 .collapse[data-open="true"] {
-  width: var(--aside-width, 224px);
+  width: var(--aside-width, 256px);
 }
 
 .pane {
@@ -21,7 +21,7 @@
   top: 0;
   display: flex;
   flex-direction: column;
-  width: var(--aside-width, 224px);
+  width: var(--aside-width, 256px);
   height: 100%;
 }
 

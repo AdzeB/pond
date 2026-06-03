@@ -1,47 +1,28 @@
-import { useSyncExternalStore } from "react";
-
-type Listener = () => void;
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 
 interface CategorizeState {
-  open: boolean;
-  ids: ReadonlyArray<string>;
+  readonly open: boolean;
+  readonly ids: ReadonlyArray<string>;
 }
 
 const CLOSED: CategorizeState = { open: false, ids: [] };
 
-let state: CategorizeState = CLOSED;
-const listeners = new Set<Listener>();
-
-function notify(): void {
-  for (const l of listeners) l();
-}
+const store = new Store<CategorizeState>(CLOSED);
 
 export const categorize = {
   get(): CategorizeState {
-    return state;
+    return store.state;
   },
   open(ids: ReadonlyArray<string>): void {
     if (ids.length === 0) return;
-    state = { open: true, ids: [...ids] };
-    notify();
+    store.setState(() => ({ open: true, ids: [...ids] }));
   },
   close(): void {
-    if (!state.open) return;
-    state = CLOSED;
-    notify();
-  },
-  subscribe(cb: Listener): () => void {
-    listeners.add(cb);
-    return () => {
-      listeners.delete(cb);
-    };
+    store.setState((s) => (s.open ? CLOSED : s));
   },
 };
 
 export function useCategorize(): CategorizeState {
-  return useSyncExternalStore(
-    categorize.subscribe,
-    categorize.get,
-    categorize.get,
-  );
+  return useStore(store, (s) => s);
 }
