@@ -1,6 +1,5 @@
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
-import { resetTasksForSave } from "../../core/pipeline/enqueue";
 import {
   binariesAvailable,
   invalidateBinariesCache,
@@ -8,16 +7,6 @@ import {
 import { safeHandle } from "../helpers";
 
 export function registerVideoHandlers(): void {
-  safeHandle(IPC.videoRedownload, async (_, id: string) => {
-    try {
-      await resetTasksForSave(String(id), "user:videoRedownload");
-      return { ok: true as const };
-    } catch (err) {
-      log.warn("[pond ipc] videoRedownload failed", err);
-      return { ok: false as const, reason: "internal_error" as const };
-    }
-  });
-
   safeHandle(IPC.videoToolsStatus, async () => {
     const { ytdlp, ffmpeg } = binariesAvailable();
     return {

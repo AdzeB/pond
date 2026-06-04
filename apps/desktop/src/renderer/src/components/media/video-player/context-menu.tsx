@@ -1,19 +1,19 @@
+import {
+  IconCamera2Outline18 as Camera,
+  IconCheckOutline18 as Check,
+  IconClipboardArrowInOutline18 as ClipboardCopy,
+  IconCopyOutline18 as Copy,
+  IconDownloadOutline18 as Download,
+  IconOpenExternalOutline18 as ExternalLink,
+  IconFinderOutline18 as FolderOpen,
+  IconGaugeOutline18 as Gauge,
+  IconImageOutline18 as ImageIcon,
+  IconExpand2Outline18 as Maximize2,
+  IconWindowBottomRightOutline18 as PictureInPicture2,
+  IconMediaPlayOutline18 as Play,
+} from "@pond/icons/outline/18";
 import { ContextMenu, useToast } from "@pond/ui";
 import { usePlayer } from "@videojs/react";
-import {
-  Camera,
-  Check,
-  ClipboardCopy,
-  Copy,
-  Download,
-  ExternalLink,
-  FolderOpen,
-  Gauge,
-  Image as ImageIcon,
-  Maximize2,
-  PictureInPicture2,
-  Play,
-} from "lucide-react";
 import { useCallback } from "react";
 import { REVEAL_LABEL } from "@/lib/platform";
 import {

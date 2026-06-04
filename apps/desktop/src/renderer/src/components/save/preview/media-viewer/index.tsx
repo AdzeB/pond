@@ -1,6 +1,9 @@
+import {
+  IconArrowLeftOutline18 as ArrowLeft,
+  IconArrowRightOutline18 as ArrowRight,
+} from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
 import useEmblaCarousel from "embla-carousel-react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VideoPlayer } from "@/components/media/video-player";
 import { buildMediaUnits } from "@/pool/media";

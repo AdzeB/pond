@@ -19,7 +19,6 @@ export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase === "/untagged") return "untagged";
   if (parentBase === "/recents") return "recents";
   if (parentBase === "/random") return "random";
-  if (parentBase === "/trash") return "trash";
   return null;
 }
 
@@ -47,12 +46,6 @@ export function labelForMode(mode: SaveListMode, sourceFilter: string): string {
     default:
       return "All Saves";
   }
-}
-
-export function deletedAtMs(save: Save): number {
-  if (!save.deletedAt) return 0;
-  const t = new Date(save.deletedAt).getTime();
-  return Number.isFinite(t) ? t : 0;
 }
 
 export function hashShuffleKey(id: string, seed: string): number {
@@ -103,9 +96,6 @@ export function applyModeSort(
   saves: Save[],
   { mode, recentsOrder, randomSeed }: ModeSortOptions,
 ): Save[] {
-  if (mode === "trash") {
-    return saves.sort((a, b) => deletedAtMs(b) - deletedAtMs(a));
-  }
   if (mode === "recents" && recentsOrder) {
     return saves.sort(
       (a, b) =>

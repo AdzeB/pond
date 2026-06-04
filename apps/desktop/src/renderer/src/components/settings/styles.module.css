@@ -55,7 +55,7 @@
 }
 
 .list {
-  background-color: var(--ds-background-primary);
+  background-color: var(--ds-gray-1);
   border-radius: 12px;
   box-shadow: var(--ds-shadow-2);
 }

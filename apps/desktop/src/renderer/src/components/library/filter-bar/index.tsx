@@ -1,7 +1,7 @@
+import { IconXmarkOutline18 as X } from "@pond/icons/outline/18";
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
-import { X } from "lucide-react";
 import { memo, useMemo } from "react";
 import { useView } from "@/components/library/view-menu";
 import { FIELD_UI } from "@/components/library/view-menu/filter/field-ui";

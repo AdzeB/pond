@@ -1,8 +1,9 @@
+import { IconStarFill18 as Star } from "@pond/icons/fill/18";
+import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { COLOR_PRESETS } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { Predicate } from "@pond/schema/filters/types";
 import { Input, Menu } from "@pond/ui";
-import { Check, Star } from "lucide-react";
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { useSaves } from "@/pool/hooks";
 import { useTagGroups } from "@/pool/tag-groups";
@@ -447,7 +448,6 @@ interface TagEntry {
   name: string;
   count: number;
   starred: boolean;
-  description: string | null;
 }
 
 interface TagSection {
@@ -496,7 +496,6 @@ function TagsBody({ predicate, onChange }: BodyProps) {
         name,
         count: counts.get(lower) ?? 0,
         starred: Boolean(meta?.starred),
-        description: meta?.description ?? null,
       };
     },
     [tagByLower, counts],
@@ -607,7 +606,6 @@ function TagsBody({ predicate, onChange }: BodyProps) {
                   closeOnClick={false}
                   checked={checked}
                   onCheckedChange={() => toggle(entry.name)}
-                  title={entry.description ?? undefined}
                 >
                   <span className={styles.check} aria-hidden>
                     {checked ? <Check width="0.85em" height="0.85em" /> : null}

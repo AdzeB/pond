@@ -1,6 +1,10 @@
+import {
+  IconChevronLeftOutline18 as ChevronLeft,
+  IconChevronRightOutline18 as ChevronRight,
+  IconClockRotateAnticlockwiseOutline18 as History,
+} from "@pond/icons/outline/18";
 import { Button, Menu, Tooltip } from "@pond/ui";
 import { useNavigate, useRouter } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import React from "react";
 import { useRecents } from "@/lib/recents";
 import { pool } from "@/pool/pool";

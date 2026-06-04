@@ -14,17 +14,9 @@ import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { migrateLibraryLayout } from "./core/migrate-layout";
 import { startSaveCompleteNotifier } from "./core/notifications";
-import {
-  type ProcessingBackfillStatus,
-  subscribeProcessingBackfillStatus,
-} from "./core/pipeline/backfill-failed";
 import { enqueueCaptureTweetForExisting } from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
-import {
-  type RefreshBackfillStatus,
-  subscribeRefreshBackfillStatus,
-} from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { reconcileLibrary } from "./core/scan";
 import {
@@ -94,10 +86,6 @@ function queueTrayRefresh() {
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
-const broadcastRefreshBackfillStatus = (status: RefreshBackfillStatus): void =>
-  broadcast(IPC.refreshBackfillStatus, status);
-const broadcastProcessingProgress = (status: ProcessingBackfillStatus): void =>
-  broadcast(IPC.processingProgress, status);
 
 registerScheme();
 
@@ -219,6 +207,11 @@ function configureSessionDefaults(): void {
 
 interface ShellHint {
   theme?: "light" | "dark" | "high-contrast";
+  accentHue?: string;
+  customHue?: number;
+  neutralHue?: string;
+  radius?: number;
+  accentIntensity?: number;
   pointerCursors?: boolean;
   onboarded?: boolean;
 }
@@ -230,6 +223,11 @@ async function resolveShellHint(): Promise<ShellHint> {
     const onboarded = await readOnboarded();
     return {
       theme: themePref === "system" ? undefined : themePref,
+      accentHue: prefs.preferences.accentHue,
+      customHue: prefs.preferences.customHue,
+      neutralHue: prefs.preferences.neutralHue,
+      radius: prefs.preferences.radius,
+      accentIntensity: prefs.preferences.accentIntensity,
       pointerCursors: prefs.preferences.pointerCursors === true,
       onboarded,
     };
@@ -502,8 +500,6 @@ async function postLaunchInit(): Promise<void> {
   );
 
   subscribeToSyncStatus(broadcastSyncStatus);
-  subscribeRefreshBackfillStatus(broadcastRefreshBackfillStatus);
-  subscribeProcessingBackfillStatus(broadcastProcessingProgress);
 }
 
 function registerTrashCron() {
@@ -523,19 +519,6 @@ function registerTrashCron() {
       }
     },
   });
-}
-
-async function broadcastSyncSchedule(): Promise<void> {
-  try {
-    const prefs = await getGlobalSync();
-    const due = computeNextDueAt(prefs, new Date());
-    broadcast(IPC.syncSchedulePush, {
-      lastFireAt: prefs.lastFireAt,
-      nextDueAt: due ? due.toISOString() : null,
-    });
-  } catch (err) {
-    log.warn("[pond sync-cron] schedule broadcast failed", err);
-  }
 }
 
 function registerSyncCron() {
@@ -559,7 +542,6 @@ function registerSyncCron() {
       }
 
       await patchGlobalSync({ lastFireAt: now.toISOString() });
-      void broadcastSyncSchedule();
       void syncAllSources({ trigger: "cron" });
     },
   });
@@ -594,10 +576,14 @@ export async function applyPrefsAtRuntime() {
   invalidatePrefs();
   const prefs = await getPrefs();
   await setTrayVisible(prefs.quickCapture.menuBarIcon);
-  app.setLoginItemSettings({
-    openAtLogin: prefs.quickCapture.launchAtLogin,
-    openAsHidden: true,
-  });
+  // Unpackaged dev binaries can't register a login item; macOS rejects it
+  // with "Operation not permitted" and logs natively (uncatchable here).
+  if (app.isPackaged) {
+    app.setLoginItemSettings({
+      openAtLogin: prefs.quickCapture.launchAtLogin,
+      openAsHidden: true,
+    });
+  }
   closeToTrayEnabled = prefs.window.closeToTray === true;
 }
 

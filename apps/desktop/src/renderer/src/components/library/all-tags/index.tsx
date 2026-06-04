@@ -1,4 +1,7 @@
-import { Bookmark, CircleQuestionMark } from "lucide-react";
+import {
+  IconBookmarkOutline18 as Bookmark,
+  IconCircleQuestionOutline18 as CircleQuestionMark,
+} from "@pond/icons/outline/18";
 import { Rail } from "./rail";
 import styles from "./styles.module.css";
 import { TagItem } from "./tag-item";

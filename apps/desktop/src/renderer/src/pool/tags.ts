@@ -5,7 +5,6 @@ import { useEffect } from "react";
 export interface TagRow {
   id: string;
   name: string;
-  description: string | null;
   starred: boolean;
   lastUsedAt: number | null;
   usageCount: number;
@@ -45,7 +44,6 @@ function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
   return {
     id: raw.id,
     name: raw.name,
-    description: raw.description ?? null,
     starred: Boolean(raw.starred),
     lastUsedAt: toMs(raw.lastUsedAt as unknown),
     usageCount: typeof raw.usageCount === "number" ? raw.usageCount : 0,
@@ -131,11 +129,6 @@ export function useTags(): ReadonlyArray<TagRow> {
     void load();
   }, []);
   return useStore(tagsStore, (s) => s.rows);
-}
-
-export function useStarredTags(): ReadonlyArray<TagRow> {
-  const all = useTags();
-  return all.filter((t) => t.starred);
 }
 
 export function useRecentTags(limit = 12): ReadonlyArray<TagRow> {

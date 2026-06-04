@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Pond's local brand marks for the sources we capture from. Lucide icons are imported directly from `lucide-react` at the call site.",
+  "description": "Pond's icon barrel. Re-exports the Nucleo React packages by family (fill / fill-duo / outline / social-media) plus a small set of local-only brand marks for sources Nucleo doesn't ship.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -19,6 +19,11 @@
     "directory": "icons"
   },
   "exports": {
+    "./fill/12": "./fill/12/index.ts",
+    "./fill/18": "./fill/18/index.ts",
+    "./fill-duo": "./fill-duo/index.ts",
+    "./outline/12": "./outline/12/index.ts",
+    "./outline/18": "./outline/18/index.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
@@ -30,5 +35,13 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.14"
+  },
+  "dependencies": {
+    "nucleo-social-media": "^1.0.2",
+    "nucleo-ui-fill-12": "^1.4.0",
+    "nucleo-ui-fill-18": "^1.4.0",
+    "nucleo-ui-fill-duo-18": "^1.4.0",
+    "nucleo-ui-outline-12": "^1.4.0",
+    "nucleo-ui-outline-18": "^1.4.0"
   }
 }

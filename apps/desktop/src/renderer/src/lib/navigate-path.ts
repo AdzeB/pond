@@ -1,5 +1,5 @@
 import type { useNavigate } from "@tanstack/react-router";
-import { applyViewStateFromParams } from "@/lib/view-store";
+import { applyViewStateFromParams, setTrashView } from "@/lib/view-store";
 
 type TSNavigate = ReturnType<typeof useNavigate>;
 type NavigateArg = Parameters<TSNavigate>[0];
@@ -53,7 +53,17 @@ export type PathNavigate = (path: string, opts?: NavigateOpts) => void;
 
 export function adaptNavigate(tsNav: TSNavigate): PathNavigate {
   return (path, opts) => {
-    const [to, qs] = path.split("?", 2);
+    const [rawTo, qs] = path.split("?", 2);
+    // `/trash` is no longer a route: it's a flag on the library surface.
+    // Funnel every path-string navigation (palette, app menu, deep links)
+    // through here so they keep working without per-callsite edits.
+    let to = rawTo;
+    if (to === "/trash") {
+      setTrashView(true);
+      to = "/";
+    } else {
+      setTrashView(false);
+    }
     const params = new URLSearchParams(qs ?? "");
     if (opts?.search) {
       for (const [key, value] of Object.entries(opts.search)) {

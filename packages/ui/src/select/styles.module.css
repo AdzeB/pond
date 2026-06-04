@@ -13,7 +13,7 @@
   text-wrap: nowrap;
   user-select: none;
   background-color: transparent;
-  border-radius: 6px;
+  border-radius: calc(6px * var(--radius-scale));
   box-shadow: var(--ds-shadow-1);
   transition: all var(--ds-duration-medium) var(--ds-easing-standard);
 
@@ -36,7 +36,7 @@
     inset: -4px;
     pointer-events: none;
     content: "";
-    border-radius: calc(6px + 4px);
+    border-radius: calc(6px * var(--radius-scale) + 4px);
     box-shadow: var(--ds-shadow-focus-halo);
     opacity: 0;
     transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);

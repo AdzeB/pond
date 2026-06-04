@@ -80,7 +80,7 @@
 }
 
 .button-primary {
-  color: var(--ds-background-primary);
+  color: var(--ds-gray-1);
   background: var(--ds-gray-12);
 
   &:hover {

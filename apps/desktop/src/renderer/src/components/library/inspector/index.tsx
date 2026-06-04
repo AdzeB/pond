@@ -1,6 +1,12 @@
+import {
+  IconDotsOutline18 as Ellipsis,
+  IconFolder5Outline18 as Folder,
+  IconGlobe2Outline18 as Globe,
+  IconRefreshClockwiseOutline18 as RefreshCw,
+  IconTrashOutline18 as Trash,
+} from "@pond/icons/outline/18";
 import { Menu, useToast } from "@pond/ui";
 import { useParams, useRouter } from "@tanstack/react-router";
-import { Ellipsis, Folder, Globe, RefreshCw, Trash } from "lucide-react";
 import { useCallback } from "react";
 import { SavePreview } from "@/components/save/preview";
 import { humaniseRefreshReason } from "@/components/save/preview/helpers";

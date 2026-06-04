@@ -98,7 +98,7 @@ body,
 #root {
   height: 100%;
   color: var(--ds-gray-12);
-  background: var(--ds-background-tertiary);
+  background: var(--ds-gray-3);
 }
 
 html,

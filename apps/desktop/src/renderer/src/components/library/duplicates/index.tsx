@@ -1,5 +1,5 @@
+import { IconTrash2Outline18 as Trash2 } from "@pond/icons/outline/18";
 import { Button, useToast } from "@pond/ui";
-import { Trash2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import {
   clusterSimilar,

@@ -1,5 +1,8 @@
+import {
+  IconMinusOutline18 as Minus,
+  IconPlusOutline18 as Plus,
+} from "@pond/icons/outline/18";
 import { Button, Menu, Slider } from "@pond/ui";
-import { Minus, Plus } from "lucide-react";
 import { useCallback } from "react";
 import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
 import { useView } from "../context";

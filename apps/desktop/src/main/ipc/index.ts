@@ -1,5 +1,4 @@
 import { registerAppHandlers } from "./handlers/app";
-import { registerNotificationHandlers } from "./handlers/notification";
 import { registerRefreshHandlers } from "./handlers/refresh";
 import { registerSyncHandlers } from "./handlers/sync";
 import { registerVideoHandlers } from "./handlers/video";
@@ -10,6 +9,5 @@ export function registerIpc(): void {
   registerRefreshHandlers();
   registerSyncHandlers();
   registerVideoHandlers();
-  registerNotificationHandlers();
   registerQueryHandler();
 }

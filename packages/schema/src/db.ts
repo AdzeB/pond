@@ -173,7 +173,6 @@ export const tasks = sqliteTable(
 export const tags = sqliteTable("tags", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
-  description: text("description"),
   starred: integer("starred", { mode: "boolean" }).notNull().default(false),
   lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
   usageCount: integer("usage_count").notNull().default(0),

@@ -1,5 +1,5 @@
+import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
-import { Check } from "lucide-react";
 import type { DisplayPrefKey } from "@/lib/display-prefs";
 import { useInspector, useSidebar } from "@/lib/shell-state";
 import { useView } from "../context";

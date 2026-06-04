@@ -1,6 +1,10 @@
+import { IconStarFill18 as StarFill } from "@pond/icons/fill/18";
+import {
+  IconStarOutline18 as Star,
+  IconTrash2Outline18 as Trash2,
+} from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { AlertDialog, Button, ContextMenu, Input } from "@pond/ui";
-import { Star, Trash2 } from "lucide-react";
 import { useState } from "react";
 import styles from "./styles.module.css";
 
@@ -107,7 +111,7 @@ export function TagItem({
                 }}
               >
                 {item.starred ? (
-                  <Star fill="currentColor" width={12} height={12} />
+                  <StarFill width={12} height={12} />
                 ) : (
                   <Star width={12} height={12} />
                 )}
@@ -122,7 +126,7 @@ export function TagItem({
               <ContextMenu.Item onClick={() => void toggleStar()}>
                 <ContextMenu.ItemIcon>
                   {item.starred ? (
-                    <Star fill="currentColor" width={14} height={14} />
+                    <StarFill width={14} height={14} />
                   ) : (
                     <Star width={14} height={14} />
                   )}

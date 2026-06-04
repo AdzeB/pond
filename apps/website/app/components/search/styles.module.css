@@ -4,7 +4,7 @@
   justify-content: center;
   min-height: 320px;
   padding: 40px 28px;
-  background: var(--ds-background-tertiary);
+  background: var(--ds-gray-3);
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 

@@ -1,3 +1,13 @@
+import {
+  IconClockOutline18 as Clock,
+  IconDownloadOutline18 as Download,
+  IconFinderOutline18 as FolderOpen,
+  IconStorageOutline18 as HardDrive,
+  IconColorPaletteOutline18 as Palette,
+  IconSliderOutline18 as SlidersHorizontal,
+  IconTagOutline18 as Tag,
+  IconTerminalOutline18 as Terminal,
+} from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import {
   SETTINGS_DEV_GROUPS,
@@ -5,16 +15,6 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import {
-  Clock,
-  Download,
-  FolderOpen,
-  HardDrive,
-  Palette,
-  SlidersHorizontal,
-  Tag,
-  Terminal,
-} from "lucide-react";
 import type { ComponentType } from "react";
 
 type SectionGroup = SettingsGroup;

@@ -1,18 +1,18 @@
-import { AlertDialog, Button, Menu, Popover, useToast } from "@pond/ui";
 import {
-  Check,
-  ChevronsUpDown,
-  Ellipsis,
-  FolderOpen,
-  FolderPlus,
-  FolderSearch,
-  GripVertical,
-  Library,
-  RotateCcw,
-  Search,
-  Trash2,
-  X,
-} from "lucide-react";
+  IconCheckOutline18 as Check,
+  IconChevronExpandYOutline18 as ChevronsUpDown,
+  IconDotsOutline18 as Ellipsis,
+  IconFinderOutline18 as FolderOpen,
+  IconFolderPlusOutline18 as FolderPlus,
+  IconFolderSearchOutline18 as FolderSearch,
+  IconGripDotsVerticalOutline18 as GripVertical,
+  IconBooksOutline18 as Library,
+  IconArrowRotateAnticlockwiseOutline18 as RotateCcw,
+  IconMagnifierOutline18 as Search,
+  IconTrash2Outline18 as Trash2,
+  IconXmarkOutline18 as X,
+} from "@pond/icons/outline/18";
+import { AlertDialog, Button, Menu, Popover, useToast } from "@pond/ui";
 import type { DragEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";

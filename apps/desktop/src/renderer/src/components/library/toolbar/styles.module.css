@@ -29,11 +29,7 @@
   max-width: 256px;
 
   .field {
-    background: color-mix(
-      in srgb,
-      var(--ds-background-primary) 80%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--ds-gray-1) 80%, transparent);
     border-radius: 100px;
     backdrop-filter: blur(var(--backdrop-blur));
   }
@@ -47,7 +43,7 @@
   font-weight: 500;
   color: var(--ds-gray-11);
   outline: none;
-  background: color-mix(in srgb, var(--ds-background-primary) 80%, transparent);
+  background: color-mix(in srgb, var(--ds-gray-1) 80%, transparent);
   border-radius: 999px;
   box-shadow: var(--ds-shadow-2);
   backdrop-filter: blur(var(--backdrop-blur));

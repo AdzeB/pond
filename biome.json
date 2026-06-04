@@ -7,7 +7,13 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!**/dist", "!**/node_modules/**/*"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules/**/*",
+      "!packages/ui/src/colors/colors.css",
+      "!packages/ui/src/theme/aliases.css"
+    ]
   },
   "formatter": {
     "enabled": true,

@@ -1,5 +1,5 @@
+import { IconXmarkOutline18 as X } from "@pond/icons/outline/18";
 import type { VideoNote } from "@pond/schema/db";
-import { X } from "lucide-react";
 import { type RefObject, useCallback, useState } from "react";
 import { ulid } from "ulid";
 import { mutateSave } from "@/pool/mutate-save";

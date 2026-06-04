@@ -46,11 +46,14 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
   const navigate = useNavigate();
 
   const parentBase = listBaseFromPath(location.pathname);
-  const mode = parseMode(parentBase) ?? "library";
+  const mode: SaveListMode =
+    view.trash && parentBase === "/"
+      ? "trash"
+      : (parseMode(parentBase) ?? "library");
   const sourceFilter = mode === "source" ? extractSource(parentBase) : "";
 
   const q = view.q;
-  const searchHits = useSearchResults(q);
+  const searchHits = useSearchResults(q, { deletedOnly: mode === "trash" });
   const query = view.query;
 
   const recentsOrder = useMemo(() => {
@@ -66,7 +69,7 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
   const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
 
   const narrowedFresh = useMemo(() => {
-    const base = mode === "trash" ? saves : (searchHits.results ?? saves);
+    const base = searchHits.results ?? saves;
     const filteredList = applyModeFilter(base, {
       mode,
       sourceFilter,
@@ -78,7 +81,7 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
   const narrowed = useStableById(narrowedFresh);
 
   const sortOpts = useMemo(() => {
-    if (mode === "recents" || mode === "random" || mode === "trash") {
+    if (mode === "recents" || mode === "random") {
       return undefined;
     }
     const sortKey: SortKey =
@@ -89,11 +92,7 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
     return { sortKey, sortDir };
   }, [mode, view.sortKey, view.sortDir]);
 
-  const filteredFresh = useFilteredSaves(
-    narrowed,
-    mode === "trash" ? null : query,
-    sortOpts,
-  );
+  const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
   const filtered = useStableById(filteredFresh);
 
   const base = useMemo(() => {

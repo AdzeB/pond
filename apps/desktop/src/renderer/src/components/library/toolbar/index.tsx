@@ -1,5 +1,5 @@
+import { IconMagnifierOutline18 as SearchIcon } from "@pond/icons/outline/18";
 import { Input, Toolbar } from "@pond/ui";
-import { Search as SearchIcon } from "lucide-react";
 import { useRef } from "react";
 import { FilterBar } from "@/components/library/filter-bar";
 import { View } from "@/components/library/view-menu";

@@ -1,18 +1,18 @@
-import type { FieldId } from "@pond/schema/filters/types";
 import {
-  Calendar,
-  File as FileIcon,
-  Link as LinkIcon,
-  Palette,
-  Pencil,
-  Ruler,
-  Scale,
-  Shapes,
-  Tag,
-  Timer,
-  Upload,
-  User,
-} from "lucide-react";
+  IconCalendarOutline18 as Calendar,
+  IconFileOutline18 as FileIcon,
+  IconLinkOutline18 as LinkIcon,
+  IconColorPaletteOutline18 as Palette,
+  IconPencilOutline18 as Pencil,
+  IconRulerOutline18 as Ruler,
+  IconScaleOutline18 as Scale,
+  IconShapesOutline18 as Shapes,
+  IconTagOutline18 as Tag,
+  IconStopwatchOutline18 as Timer,
+  IconUploadOutline18 as Upload,
+  IconUserOutline18 as User,
+} from "@pond/icons/outline/18";
+import type { FieldId } from "@pond/schema/filters/types";
 import type { ComponentType } from "react";
 
 type IconType = ComponentType<{

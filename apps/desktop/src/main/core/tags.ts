@@ -14,7 +14,6 @@ import { executeBatch, executeTransaction } from "./executor";
 
 export interface CreateTagInput {
   name: string;
-  description?: string | null;
 }
 
 async function tagByLowerName(db: Db, lowered: string) {
@@ -38,7 +37,6 @@ export async function createTag(
   const data: NewTag = {
     id: ulid(),
     name,
-    description: input.description?.trim() || null,
     usageCount: 0,
   };
   await executeTransaction({
@@ -176,20 +174,6 @@ export async function mergeTags(
       before: fromRow,
       meta: { actor: "user", actorReason: "tag-merge" },
     });
-    const patch: Partial<NewTag> = {};
-    if (!toRow.description?.trim() && fromRow.description?.trim()) {
-      patch.description = fromRow.description;
-    }
-    if (Object.keys(patch).length > 0) {
-      txs.push({
-        kind: "update",
-        model: "tag",
-        id: toRow.id,
-        patch,
-        before: toRow,
-        meta: { actor: "user", actorReason: "tag-merge" },
-      });
-    }
   } else if (fromRow && !toRow) {
     txs.push({
       kind: "update",

@@ -1,6 +1,10 @@
+import {
+  IconChevronLeftOutline18 as ChevronLeft,
+  IconChevronRightOutline18 as ChevronRight,
+  IconDotsOutline18 as Ellipsis,
+} from "@pond/icons/outline/18";
 import { Button, Toolbar as PondToolbar, Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { VideoPlayer } from "@/components/media/video-player";
 import type { ChapterCue } from "@/components/media/video-player/chapters-vtt";

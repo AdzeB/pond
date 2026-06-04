@@ -1,20 +1,20 @@
-import { Menu } from "@pond/ui";
 import {
-  ArrowDown,
-  ArrowUp,
-  CalendarDays,
-  ChevronDown,
-  HardDrive,
-  type LucideIcon,
-  Type,
-} from "lucide-react";
+  IconArrowDownOutline18 as ArrowDown,
+  IconArrowUpOutline18 as ArrowUp,
+  IconCalendarDaysOutline18 as CalendarDays,
+  IconChevronDownOutline18 as ChevronDown,
+  IconStorageOutline18 as HardDrive,
+  IconTextOutline18 as Type,
+} from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
+import { Menu } from "@pond/ui";
 import { type SortDir, type SortKey, useView } from "../context";
 import styles from "./sort.module.css";
 
 interface KeyOption {
   value: SortKey;
   label: string;
-  icon: LucideIcon;
+  icon: IconComponent;
 }
 
 const KEY_OPTIONS = [
@@ -29,7 +29,7 @@ const KEY_SET = new Set<SortKey>(KEY_OPTIONS.map((o) => o.value));
 interface DirOption {
   value: SortDir;
   label: string;
-  icon: LucideIcon;
+  icon: IconComponent;
 }
 
 const DIR_OPTIONS = [

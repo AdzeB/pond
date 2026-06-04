@@ -44,6 +44,7 @@ export interface ViewStoreState {
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
+  trash: boolean;
 }
 
 function readInitialLayout(): LayoutValue {
@@ -71,6 +72,7 @@ const store = new Store<ViewStoreState>({
   sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
   zoom: readInitialZoom(),
   capture: false,
+  trash: false,
 });
 
 applyZoomVar(store.state.zoom);
@@ -97,6 +99,10 @@ export function useSortDir(): SortDir {
 
 export function useCapture(): boolean {
   return useStore(store, (s) => s.capture);
+}
+
+export function useTrashView(): boolean {
+  return useStore(store, (s) => s.trash);
 }
 
 export function setSearchText(q: string): void {
@@ -239,6 +245,10 @@ export function openCapture(): void {
 
 export function closeCapture(): void {
   store.setState((s) => (s.capture ? { ...s, capture: false } : s));
+}
+
+export function setTrashView(on: boolean): void {
+  store.setState((s) => (s.trash === on ? s : { ...s, trash: on }));
 }
 
 // Translate an inbound URL search payload (deep links, command palette,

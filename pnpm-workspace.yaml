@@ -4,6 +4,11 @@ packages:
   - "icons"
 
 allowBuilds:
+  nucleo-ui-fill-12: true
+  nucleo-ui-fill-18: true
+  nucleo-ui-fill-duo-18: true
+  nucleo-ui-outline-12: true
+  nucleo-ui-outline-18: true
   sharp: true
 
 onlyBuiltDependencies:

@@ -1,17 +1,18 @@
+import { IconStarFill18 as StarFill } from "@pond/icons/fill/18";
+import {
+  IconCheckOutline18 as Check,
+  IconChevronDownOutline18 as ChevronDown,
+  IconChevronRightOutline18 as ChevronRight,
+  IconDotsOutline18 as Ellipsis,
+  IconGridOutline18 as LayoutGrid,
+  IconListCheckboxOutline18 as ListChecks,
+  IconPinOutline18 as Pin,
+  IconMagnifierOutline18 as Search,
+  IconSparkleOutline18 as Sparkles,
+  IconStarOutline18 as Star,
+} from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Input, Kbd, Menu, Popover } from "@pond/ui";
-import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Ellipsis,
-  LayoutGrid,
-  ListChecks,
-  Pin,
-  Search,
-  Sparkles,
-  Star,
-} from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -717,7 +718,7 @@ function Section({
                 }}
               >
                 {item.starred ? (
-                  <Star fill="currentColor" width={11} height={11} />
+                  <StarFill width={11} height={11} />
                 ) : (
                   <Star width={11} height={11} />
                 )}

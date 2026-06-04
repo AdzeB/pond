@@ -1,5 +1,15 @@
 import "@videojs/react/video/skin.css";
 
+import {
+  IconFullScreenOutline18 as Maximize,
+  IconMediaPauseOutline18 as Pause,
+  IconWindowBottomRightOutline18 as PictureInPicture2,
+  IconMediaPlayOutline18 as Play,
+  IconMediaPreviousOutline18 as SkipBack,
+  IconMediaNextOutline18 as SkipForward,
+  IconVolumeOutline18 as Volume2,
+  IconVolumeOffOutline18 as VolumeX,
+} from "@pond/icons/outline/18";
 import { ContextMenu } from "@pond/ui";
 import {
   Controls,
@@ -19,16 +29,6 @@ import {
   VolumeSlider,
 } from "@videojs/react";
 import { Video, videoFeatures } from "@videojs/react/video";
-import {
-  Maximize,
-  Pause,
-  PictureInPicture2,
-  Play,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";

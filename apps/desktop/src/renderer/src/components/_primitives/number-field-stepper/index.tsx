@@ -1,6 +1,9 @@
+import {
+  IconMinusOutline18 as Minus,
+  IconPlusOutline18 as Plus,
+} from "@pond/icons/outline/18";
 import { NumberField } from "@pond/ui";
 import { Calligraph } from "calligraph";
-import { Minus, Plus } from "lucide-react";
 import type { ComponentProps } from "react";
 import styles from "./styles.module.css";
 

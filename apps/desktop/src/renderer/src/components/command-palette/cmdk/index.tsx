@@ -882,10 +882,6 @@ export const Command = Object.assign(Root, {
   Empty,
 });
 
-export function useCommandState<T = unknown>(selector: (state: State) => T): T {
-  return useCmdk(selector);
-}
-
 function findNextSibling(el: Element, selector: string): Element | null {
   let sibling = el.nextElementSibling;
   while (sibling) {

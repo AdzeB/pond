@@ -1,4 +1,4 @@
-import { NotebookPen } from "lucide-react";
+import { IconNotepadOutline18 as NotebookPen } from "@pond/icons/outline/18";
 import { memo, useCallback, useMemo } from "react";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { LibraryGrid } from "@/components/library";

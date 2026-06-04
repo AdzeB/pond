@@ -1,16 +1,25 @@
+import {
+  IconGridLayoutCols3Outline18 as Columns3,
+  IconGrid2x2Outline18 as Grid2x2,
+  IconBulletListOutline18 as List,
+  IconGridLayoutRows3Outline18 as Rows3,
+} from "@pond/icons/outline/18";
+import type { IconComponent } from "@pond/icons/types";
 import { Menu } from "@pond/ui";
-import { Columns3, Grid2x2, List, type LucideIcon, Rows3 } from "lucide-react";
 import type { LayoutValue } from "@/lib/view-prefs";
 import { useView } from "../context";
 import styles from "./layout.module.css";
 
-const OPTIONS: Array<{ value: LayoutValue; label: string; icon: LucideIcon }> =
-  [
-    { value: "waterfall", label: "Waterfall", icon: Columns3 },
-    { value: "grid", label: "Grid", icon: Grid2x2 },
-    { value: "justified", label: "Justified", icon: Rows3 },
-    { value: "list", label: "List", icon: List },
-  ];
+const OPTIONS: Array<{
+  value: LayoutValue;
+  label: string;
+  icon: IconComponent;
+}> = [
+  { value: "waterfall", label: "Waterfall", icon: Columns3 },
+  { value: "grid", label: "Grid", icon: Grid2x2 },
+  { value: "justified", label: "Justified", icon: Rows3 },
+  { value: "list", label: "List", icon: List },
+];
 
 export function LayoutSection() {
   const { state, actions } = useView();

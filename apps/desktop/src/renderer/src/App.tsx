@@ -24,6 +24,11 @@ declare global {
     pond: PondApi;
     __pondShell?: {
       theme?: "light" | "dark" | "high-contrast";
+      accentHue?: string;
+      customHue?: number;
+      neutralHue?: string;
+      radius?: number;
+      accentIntensity?: number;
       pointerCursors?: boolean;
       onboarded?: boolean;
     };

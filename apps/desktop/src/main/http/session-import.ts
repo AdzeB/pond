@@ -3,10 +3,8 @@ import {
   type SessionImportResponse,
   sessionImportPayloadSchema,
 } from "@pond/schema/session";
-import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import type { Context } from "hono";
-import { IPC } from "../../shared/constants";
 import {
   isSourceConnected,
   primaryDomainForSource,
@@ -67,11 +65,6 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
   );
 
   const connected = await isSourceConnected(source).catch(() => false);
-
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (win.isDestroyed()) continue;
-    win.webContents.send(IPC.sourceStatus, { source, connected });
-  }
 
   if (connected) {
     void syncSource(source, { trigger: "manual" }).catch((err) =>

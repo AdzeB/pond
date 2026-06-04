@@ -47,7 +47,7 @@
 
 .swatch[data-active="true"] {
   box-shadow:
-    0 0 0 2px var(--ds-background-primary),
+    0 0 0 2px var(--ds-gray-1),
     0 0 0 4px var(--ds-gray-12);
 }
 

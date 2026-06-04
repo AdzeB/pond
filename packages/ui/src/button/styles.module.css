@@ -47,25 +47,25 @@
   --button-height-xs: 24px;
   --button-padding-xs: 0 10px;
   --button-font-size-xs: 10px;
-  --button-radius-xs: 8px;
+  --button-radius-xs: var(--ds-radius-xs);
 
   /* sm */
   --button-height-sm: 28px;
   --button-padding-sm: 0 11px;
   --button-font-size-sm: 11px;
-  --button-radius-sm: 10px;
+  --button-radius-sm: var(--ds-radius-sm);
 
   /* md */
   --button-height-md: 32px;
   --button-padding-md: 0 13px;
   --button-font-size-md: 13px;
-  --button-radius-md: 12px;
+  --button-radius-md: var(--ds-radius-md);
 
   /* lg */
   --button-height-lg: 36px;
   --button-padding-lg: 0 15px;
   --button-font-size-lg: 15px;
-  --button-radius-lg: 14px;
+  --button-radius-lg: var(--ds-radius-lg);
 
   &[data-size="xs"] {
     height: var(--button-height-xs);
@@ -122,7 +122,7 @@
   /* primary */
   &[data-variant="primary"] {
     color: var(--ds-gray-11);
-    background-color: var(--ds-background-primary);
+    background-color: var(--ds-gray-1);
     box-shadow:
       0 0 0 1px var(--ds-gray-3),
       0 1px 2px 0 var(--ds-gray-3);
@@ -169,7 +169,7 @@
 
   /* accent */
   &[data-variant="accent"] {
-    color: var(--ds-background-primary);
+    color: var(--ds-gray-1);
     background-color: var(--ds-accent-a9);
 
     &:hover {

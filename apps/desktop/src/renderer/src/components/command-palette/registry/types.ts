@@ -28,8 +28,11 @@ export interface PaletteCtx {
   focusedSaveId: string | null;
   focusedSave: Save | null;
   // Current route pathname so `when` clauses can scope commands to
-  // specific surfaces (e.g. "Empty trash" only when /trash is visible).
+  // specific surfaces.
   pathname: string;
+  // Whether the library is showing the Trash view (a view-store flag,
+  // not a route). Trash-scoped commands gate on this.
+  trash: boolean;
   // Multi-select count from the selection store; commands branching on
   // bulk-vs-single read this instead of selectedIds.length.
   selectionSize: number;

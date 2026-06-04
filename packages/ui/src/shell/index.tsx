@@ -1,9 +1,9 @@
 import styles from "./styles.module.css";
 
-interface BodyProps extends React.ComponentPropsWithoutRef<"body"> {}
+interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Body({ ...props }: BodyProps) {
-  return <body className={styles.root} {...props} />;
+  return <div className={styles.body} {...props} />;
 }
 
 interface MainProps extends React.ComponentPropsWithoutRef<"main"> {}

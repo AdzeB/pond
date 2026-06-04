@@ -76,6 +76,20 @@
 					doc.setAttribute("data-theme", theme);
 					doc.classList.add(theme);
 
+					if (typeof shell.accentHue === "string")
+						doc.setAttribute("data-hue", shell.accentHue);
+					if (typeof shell.customHue === "number")
+						doc.style.setProperty("--ds-custom-hue", String(shell.customHue));
+					if (typeof shell.neutralHue === "string")
+						doc.setAttribute("data-neutral", shell.neutralHue);
+					if (typeof shell.radius === "number")
+						doc.style.setProperty("--radius-scale", String(shell.radius / 14));
+					if (typeof shell.accentIntensity === "number")
+						doc.style.setProperty(
+							"--ds-accent-saturation",
+							`${shell.accentIntensity}%`,
+						);
+
 					if (shell.pointerCursors)
 						doc.setAttribute("data-pointer-cursors", "true");
 

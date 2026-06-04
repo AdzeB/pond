@@ -339,8 +339,12 @@ function ensureTagsLabelColumns(sqlite: Database.Database): void {
     .prepare<unknown[], { name: string }>("PRAGMA table_info(tags)")
     .all() as { name: string }[];
   const have = new Set(cols.map((c) => c.name));
-  if (!have.has("description")) {
-    sqlite.exec("ALTER TABLE tags ADD COLUMN description TEXT");
+  if (have.has("description")) {
+    try {
+      sqlite.exec('ALTER TABLE tags DROP COLUMN "description";');
+    } catch (err) {
+      log.warn("[pond db] failed to drop legacy tags.description column", err);
+    }
   }
   if (!have.has("starred")) {
     sqlite.exec(

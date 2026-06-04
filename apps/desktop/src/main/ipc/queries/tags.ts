@@ -1,5 +1,3 @@
-import { saves, type tags } from "@pond/schema/db";
-import { getDb } from "../../db";
 import type { QueryHandlerMap } from "../helpers";
 
 export const tagsQueries: QueryHandlerMap = {
@@ -12,15 +10,7 @@ export const tagsQueries: QueryHandlerMap = {
     const { createTag } = await import("../../core/tags");
     return await createTag({
       name: String(params.name ?? ""),
-      description: params.description ? String(params.description) : null,
     });
-  },
-
-  async "tags.update"(params) {
-    const { updateTag } = await import("../../core/tags");
-    const name = String(params.name ?? "");
-    const patch = (params.patch as Record<string, unknown>) ?? {};
-    return await updateTag(name, patch as Partial<typeof tags.$inferInsert>);
   },
 
   async "tags.rename"(params) {
@@ -46,43 +36,11 @@ export const tagsQueries: QueryHandlerMap = {
     );
   },
 
-  async "tags.allFromSaves"() {
-    const db = await getDb();
-    const all = await db.select().from(saves);
-    const counts = new Map<string, number>();
-    const display = new Map<string, string>();
-    for (const row of all) {
-      if (row.deletedAt) continue;
-      for (const raw of row.tags ?? []) {
-        const t = String(raw);
-        const key = t.toLowerCase();
-        counts.set(key, (counts.get(key) ?? 0) + 1);
-        if (!display.has(key)) display.set(key, t);
-      }
-    }
-    return Array.from(counts.entries()).map(([key, count]) => ({
-      name: display.get(key) ?? key,
-      userCount: count,
-      aiCount: 0,
-    }));
-  },
-
   async "tags.setStarred"(params) {
     const { setStarred } = await import("../../core/tags");
     return await setStarred(
       String(params.name ?? ""),
       Boolean(params.starred ?? false),
     );
-  },
-
-  async "tags.recents"(params) {
-    const { listRecent } = await import("../../core/tags");
-    const limit = typeof params.limit === "number" ? params.limit : 12;
-    return await listRecent(limit);
-  },
-
-  async "tags.starred"() {
-    const { listStarred } = await import("../../core/tags");
-    return await listStarred();
   },
 };

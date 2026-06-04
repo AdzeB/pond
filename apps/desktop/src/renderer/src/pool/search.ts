@@ -8,11 +8,15 @@ import type { Save } from "./types";
 
 const MAX_RESULTS = 500;
 
-export function useSearchResults(query: string): {
+export function useSearchResults(
+  query: string,
+  opts?: { deletedOnly?: boolean },
+): {
   results: Save[] | null;
   searching: boolean;
 } {
   const saves = useSaves();
+  const deletedOnly = opts?.deletedOnly ?? false;
   const results = useMemo<Save[] | null>(() => {
     const trimmed = query.trim().toLowerCase();
     if (!trimmed) return null;
@@ -21,13 +25,13 @@ export function useSearchResults(query: string): {
 
     const scored: Array<{ save: Save; score: number }> = [];
     for (const save of saves) {
-      if (save.deletedAt) continue;
+      if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
       const s = scoreMatch(save, terms);
       if (s > 0) scored.push({ save, score: s });
     }
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, MAX_RESULTS).map((row) => row.save);
-  }, [saves, query]);
+  }, [saves, query, deletedOnly]);
 
   return { results, searching: false };
 }

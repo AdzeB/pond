@@ -4,6 +4,11 @@ import { getPrefs } from "../core/prefs";
 
 interface ShellHint {
   theme?: "light" | "dark" | "high-contrast";
+  accentHue?: string;
+  customHue?: number;
+  neutralHue?: string;
+  radius?: number;
+  accentIntensity?: number;
   pointerCursors?: boolean;
 }
 
@@ -13,6 +18,11 @@ async function resolveShellHint(): Promise<ShellHint> {
     const themePref = prefs.preferences.theme;
     return {
       theme: themePref === "system" ? undefined : themePref,
+      accentHue: prefs.preferences.accentHue,
+      customHue: prefs.preferences.customHue,
+      neutralHue: prefs.preferences.neutralHue,
+      radius: prefs.preferences.radius,
+      accentIntensity: prefs.preferences.accentIntensity,
       pointerCursors: prefs.preferences.pointerCursors === true,
     };
   } catch {

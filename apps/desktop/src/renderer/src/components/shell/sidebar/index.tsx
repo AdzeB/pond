@@ -1,5 +1,5 @@
+import { IconChevronLeftOutline18 as ChevronLeft } from "@pond/icons/outline/18";
 import { Link as TSLink } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
 import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"aside"> {}

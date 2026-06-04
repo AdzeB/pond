@@ -21,7 +21,7 @@
   color: var(--ds-gray-11);
   cursor: pointer;
   outline: none;
-  background: var(--ds-background-primary);
+  background: var(--ds-gray-1);
   border-radius: 2147483647px;
   box-shadow: var(--ds-shadow-1);
   transition:

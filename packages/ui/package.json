@@ -26,6 +26,7 @@
     "./theme.css": "./src/theme.css"
   },
   "scripts": {
+    "gen:colors": "node src/colors/gen.ts",
     "lint": "biome check --fix --unsafe .",
     "typecheck": "tsc --noEmit"
   },

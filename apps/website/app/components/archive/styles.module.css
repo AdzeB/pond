@@ -3,7 +3,7 @@
   flex-direction: column;
   gap: 16px;
   padding: 28px;
-  background: var(--ds-background-tertiary);
+  background: var(--ds-gray-3);
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 
@@ -13,7 +13,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 16px 18px;
-  background: var(--ds-background-primary);
+  background: var(--ds-gray-1);
   border: 1px solid var(--ds-gray-a4);
   border-radius: 12px;
 }

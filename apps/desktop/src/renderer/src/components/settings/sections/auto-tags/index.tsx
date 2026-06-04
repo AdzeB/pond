@@ -1,7 +1,10 @@
+import {
+  IconChevronExpandYOutline18 as ChevronsUpDown,
+  IconTrash2Outline18 as Trash2,
+} from "@pond/icons/outline/18";
 import type { AutoTagRule, Source } from "@pond/schema/db";
 import { SOURCES } from "@pond/schema/db";
 import { Button, Input, Select, Switch } from "@pond/ui";
-import { ChevronsUpDown, Trash2 } from "lucide-react";
 import { ulid } from "ulid";
 import { Settings } from "@/components/settings";
 import { getSourceLabel } from "@/lib/source-labels";

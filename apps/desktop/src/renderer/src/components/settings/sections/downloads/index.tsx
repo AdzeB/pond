@@ -1,6 +1,6 @@
+import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
 import { Select, Switch, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import { Settings } from "@/components/settings";
 import {

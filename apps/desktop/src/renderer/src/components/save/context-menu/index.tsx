@@ -1,21 +1,21 @@
-import { ContextMenu, Kbd, Menu, useToast } from "@pond/ui";
 import {
-  ClipboardPaste,
-  Copy,
-  Download,
-  ExternalLink,
-  FolderOpen,
-  Globe,
-  Image as ImageIcon,
-  Link as LinkIcon,
-  LogOut,
-  Maximize2,
-  Play,
-  RefreshCw,
-  Search,
-  Tags,
-  Trash2,
-} from "lucide-react";
+  IconClipboardArrowOutOutline18 as ClipboardPaste,
+  IconCopyOutline18 as Copy,
+  IconDownloadOutline18 as Download,
+  IconOpenExternalOutline18 as ExternalLink,
+  IconFinderOutline18 as FolderOpen,
+  IconGlobe2Outline18 as Globe,
+  IconImageOutline18 as ImageIcon,
+  IconLinkOutline18 as LinkIcon,
+  IconArrowDoorOutOutline18 as LogOut,
+  IconExpand2Outline18 as Maximize2,
+  IconMediaPlayOutline18 as Play,
+  IconRefreshClockwiseOutline18 as RefreshCw,
+  IconMagnifierOutline18 as Search,
+  IconTagsOutline18 as Tags,
+  IconTrash2Outline18 as Trash2,
+} from "@pond/icons/outline/18";
+import { ContextMenu, Kbd, Menu, useToast } from "@pond/ui";
 import { type ReactElement, type ReactNode, useMemo } from "react";
 import { REVEAL_LABEL } from "@/lib/platform";
 import {

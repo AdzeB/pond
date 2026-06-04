@@ -66,15 +66,6 @@ export const settingsQueries: QueryHandlerMap = {
     return { token: await getIngestToken() };
   },
 
-  async "settings.onboarded"() {
-    const db = await getGlobalDb();
-    const rows = await db
-      .select({ onboarded: settingsTable.onboarded })
-      .from(settingsTable)
-      .where(eq(settingsTable.id, "singleton"));
-    return Boolean(rows[0]?.onboarded);
-  },
-
   async "settings.markOnboarded"(params) {
     const db = await getGlobalDb();
     await db

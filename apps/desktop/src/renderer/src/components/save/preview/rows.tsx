@@ -1,13 +1,17 @@
 import {
-  Calendar,
-  Clock,
-  Eye,
-  HardDrive,
-  Maximize2,
-  MessageCircle,
-  MoveVertical,
-  ThumbsUp,
-} from "lucide-react";
+  IconBookmarkOutline18 as Bookmark,
+  IconCalendarOutline18 as Calendar,
+  IconClockOutline18 as Clock,
+  IconEyeOutline18 as Eye,
+  IconStorageOutline18 as HardDrive,
+  IconExpand2Outline18 as Maximize2,
+  IconMsgOutline18 as MessageCircle,
+  IconHeightMaxOutline18 as MoveVertical,
+  IconQuoteOutline18 as Quote,
+  IconRepeatOutline18 as Repeat,
+  IconShareRightOutline18 as Share,
+  IconThumbsUpOutline18 as ThumbsUp,
+} from "@pond/icons/outline/18";
 import type { ReactNode } from "react";
 import { formatBytes } from "@/lib/format";
 import type { Save } from "@/pool/types";
@@ -76,6 +80,43 @@ export function collectMetadataRows(save: Save): PaneRow[] {
       icon: <MessageCircle width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Comments",
       value: formatCount(comments),
+    });
+  }
+
+  if (metrics.retweets !== null && metrics.retweets !== undefined) {
+    out.push({
+      id: "retweets",
+      icon: <Repeat width={ICON_SIZE} height={ICON_SIZE} />,
+      label: "Reposts",
+      value: formatCount(metrics.retweets),
+    });
+  }
+
+  if (metrics.quotes !== null && metrics.quotes !== undefined) {
+    out.push({
+      id: "quotes",
+      icon: <Quote width={ICON_SIZE} height={ICON_SIZE} />,
+      label: "Quotes",
+      value: formatCount(metrics.quotes),
+    });
+  }
+
+  const bookmarks = metrics.bookmarks ?? metrics.saves ?? null;
+  if (bookmarks !== null && bookmarks !== undefined) {
+    out.push({
+      id: "bookmarks",
+      icon: <Bookmark width={ICON_SIZE} height={ICON_SIZE} />,
+      label: "Bookmarks",
+      value: formatCount(bookmarks),
+    });
+  }
+
+  if (metrics.shares !== null && metrics.shares !== undefined) {
+    out.push({
+      id: "shares",
+      icon: <Share width={ICON_SIZE} height={ICON_SIZE} />,
+      label: "Shares",
+      value: formatCount(metrics.shares),
     });
   }
 

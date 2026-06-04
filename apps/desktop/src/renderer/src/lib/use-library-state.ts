@@ -51,7 +51,8 @@ export function useLibraryState(): LibraryState {
 
   const parentBase = listBaseFromPath(location.pathname);
   const recognized = parseMode(parentBase);
-  const mode: SaveListMode = recognized ?? "library";
+  const mode: SaveListMode =
+    view.trash && parentBase === "/" ? "trash" : (recognized ?? "library");
   const unknown = recognized === null;
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
@@ -78,10 +79,10 @@ export function useLibraryState(): LibraryState {
   const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
   const viewMode = view.layout as ViewMode;
 
-  const searchHits = useSearchResults(q);
+  const searchHits = useSearchResults(q, { deletedOnly: mode === "trash" });
 
   const narrowedFresh = useMemo(() => {
-    const base = mode === "trash" ? saves : (searchHits.results ?? saves);
+    const base = searchHits.results ?? saves;
     const filteredList = applyModeFilter(base, {
       mode,
       sourceFilter,
@@ -93,7 +94,7 @@ export function useLibraryState(): LibraryState {
   const narrowed = useStableById(narrowedFresh);
 
   const sortOpts = useMemo(() => {
-    if (mode === "recents" || mode === "random" || mode === "trash") {
+    if (mode === "recents" || mode === "random") {
       return undefined;
     }
     const sortKey: SortKey =

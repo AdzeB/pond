@@ -2,6 +2,7 @@ import { Dialog, Kbd, useToast } from "@pond/ui";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { adaptNavigate } from "@/lib/navigate-path";
+import { useTrashView } from "@/lib/view-store";
 import { useSave } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
 import { useSelectedIds } from "@/pool/selection";
@@ -47,6 +48,7 @@ export function CommandPalette() {
   const focusedSaveId: string | null =
     selectedIds.length === 1 ? (selectedIds[0] ?? null) : focusedFromUrl;
   const focusedSave = useSave(focusedSaveId) ?? null;
+  const trash = useTrashView();
   const [, patchPreferences] = usePrefs("preferences");
   const toastManager = useToast();
 
@@ -61,6 +63,7 @@ export function CommandPalette() {
       focusedSaveId,
       focusedSave: (focusedSave as Save | null) ?? null,
       pathname: location.pathname,
+      trash,
       selectionSize: selectedIds.length,
       setTheme: (theme) => patchPreferences({ theme }),
       toast: {
@@ -75,6 +78,7 @@ export function CommandPalette() {
       focusedSaveId,
       focusedSave,
       location.pathname,
+      trash,
       patchPreferences,
       toastManager,
     ],

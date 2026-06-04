@@ -1,100 +1,20 @@
-@import "@radix-ui/themes/tokens/colors/slate.css";
-@import "@radix-ui/themes/tokens/colors/gray.css";
-@import "@radix-ui/themes/tokens/colors/tomato.css";
-@import "@radix-ui/themes/tokens/colors/grass.css";
-@import "@radix-ui/themes/tokens/colors/blue.css";
-@import "@radix-ui/colors/black-alpha.css";
+@import "./colors/colors.css";
+@import "./theme/aliases.css";
+@import "./theme/tokens.css";
 
 :root {
-  --ds-gray-1: var(--gray-1);
-  --ds-gray-2: var(--gray-2);
-  --ds-gray-3: var(--gray-3);
-  --ds-gray-4: var(--gray-4);
-  --ds-gray-5: var(--gray-5);
-  --ds-gray-6: var(--gray-6);
-  --ds-gray-7: var(--gray-7);
-  --ds-gray-8: var(--gray-8);
-  --ds-gray-9: var(--gray-9);
-  --ds-gray-10: var(--gray-10);
-  --ds-gray-11: var(--gray-11);
-  --ds-gray-12: var(--gray-12);
-  --ds-gray-a1: var(--gray-a1);
-  --ds-gray-a2: var(--gray-a2);
-  --ds-gray-a3: var(--gray-a3);
-  --ds-gray-a4: var(--gray-a4);
-  --ds-gray-a5: var(--gray-a5);
-  --ds-gray-a6: var(--gray-a6);
-  --ds-gray-a7: var(--gray-a7);
-  --ds-gray-a8: var(--gray-a8);
-  --ds-gray-a9: var(--gray-a9);
-  --ds-gray-a10: var(--slate-a10);
-  --ds-gray-a11: var(--gray-a11);
-  --ds-gray-a12: var(--gray-a12);
-  --ds-gray-surface: var(--gray-surface);
-  --ds-gray-indicator: var(--gray-indicator);
-  --ds-gray-track: var(--gray-track);
-
-  --ds-accent-1: var(--blue-1);
-  --ds-accent-2: var(--blue-2);
-  --ds-accent-3: var(--blue-3);
-  --ds-accent-4: var(--blue-4);
-  --ds-accent-5: var(--blue-5);
-  --ds-accent-6: var(--blue-6);
-  --ds-accent-7: var(--blue-7);
-  --ds-accent-8: var(--blue-8);
-  --ds-accent-9: var(--blue-9);
-  --ds-accent-10: var(--blue-10);
-  --ds-accent-11: var(--blue-11);
-  --ds-accent-12: var(--blue-12);
-  --ds-accent-a1: var(--blue-a1);
-  --ds-accent-a2: var(--blue-a2);
-  --ds-accent-a3: var(--blue-a3);
-  --ds-accent-a4: var(--blue-a4);
-  --ds-accent-a5: var(--blue-a5);
-  --ds-accent-a6: var(--blue-a6);
-  --ds-accent-a7: var(--blue-a7);
-  --ds-accent-a8: var(--blue-a8);
-  --ds-accent-a9: var(--blue-a9);
-  --ds-accent-a10: var(--blue-a10);
-  --ds-accent-a11: var(--blue-a11);
-  --ds-accent-a12: var(--blue-a12);
-
-  --ds-tomato-1: var(--tomato-1);
-  --ds-tomato-2: var(--tomato-2);
-  --ds-tomato-3: var(--tomato-3);
-  --ds-tomato-4: var(--tomato-4);
-  --ds-tomato-5: var(--tomato-5);
-  --ds-tomato-6: var(--tomato-6);
-  --ds-tomato-7: var(--tomato-7);
-  --ds-tomato-8: var(--tomato-8);
-  --ds-tomato-9: var(--tomato-9);
-  --ds-tomato-10: var(--tomato-10);
-  --ds-tomato-11: var(--tomato-11);
-  --ds-tomato-12: var(--tomato-12);
-  --ds-tomato-a3: var(--tomato-a3);
-  --ds-tomato-a6: var(--tomato-a6);
-
-  --ds-grass-3: var(--grass-3);
-  --ds-grass-6: var(--grass-6);
-  --ds-grass-9: var(--grass-9);
-  --ds-grass-11: var(--grass-11);
-  --ds-grass-a6: var(--grass-a6);
-}
-
-:root {
-  --ds-background-primary: light-dark(white, black);
-  --ds-background-secondary: var(--ds-gray-1);
-  --ds-background-tertiary: var(--ds-gray-2);
-
-  --ds-shadow-1: 0 0 0 1px var(--gray-a3), 0 1px 2px 0 var(--black-a1);
-  --ds-shadow-2: 0 0 0 1px var(--gray-a3), 0 2px 4px 0 var(--black-a1);
-  --ds-filter-shadow-2: drop-shadow(1px 0 0 var(--gray-a3))
-    drop-shadow(-1px 0 0 var(--gray-a3)) drop-shadow(0 1px 0 var(--gray-a3))
-    drop-shadow(0 -1px 0 var(--gray-a3)) drop-shadow(0 2px 4px var(--black-a1));
+  --ds-shadow-1: 0 0 0 1px var(--ds-gray-a3), 0 1px 2px 0 var(--black-alpha-75);
+  --ds-shadow-2: 0 0 0 1px var(--ds-gray-a3), 0 2px 4px 0 var(--black-alpha-75);
+  --ds-filter-shadow-2: drop-shadow(1px 0 0 var(--ds-gray-a3))
+    drop-shadow(-1px 0 0 var(--ds-gray-a3))
+    drop-shadow(0 1px 0 var(--ds-gray-a3))
+    drop-shadow(0 -1px 0 var(--ds-gray-a3))
+    drop-shadow(0 2px 4px var(--black-alpha-100));
   --ds-shadow-2-focused:
-    0 0 0 1px var(--ds-accent-9), 0 2px 4px 0 var(--black-a1),
+    0 0 0 1px var(--ds-accent-9), 0 2px 4px 0 var(--black-alpha-75),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
-  --ds-shadow-3: 0 0 0 1px var(--gray-a3), 0 4px 8px 0 var(--black-a1);
+  --ds-shadow-3:
+    0 0 0 1px var(--ds-gray-a3), 0 4px 8px 0 var(--black-alpha-100);
   --ds-shadow-focus-halo:
     0 0 0 1px var(--ds-accent-9),
     0 0 0 3px color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
@@ -118,37 +38,4 @@
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
 
   --ds-mac-inset: 16px;
-}
-
-html[style*="--ds-tint-hue"] {
-  --ds-accent-3: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 70% 88%) var(--ds-tint-intensity),
-    var(--blue-3)
-  );
-  --ds-accent-6: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 75% 65%) var(--ds-tint-intensity),
-    var(--blue-6)
-  );
-  --ds-accent-8: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 70% 50%) var(--ds-tint-intensity),
-    var(--blue-8)
-  );
-  --ds-accent-9: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
-    var(--blue-9)
-  );
-  --ds-accent-10: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 75% 50%) var(--ds-tint-intensity),
-    var(--blue-10)
-  );
-  --ds-accent-a9: color-mix(
-    in oklch,
-    hsl(var(--ds-tint-hue) 75% 55%) var(--ds-tint-intensity),
-    var(--blue-a9)
-  );
 }

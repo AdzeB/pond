@@ -1,4 +1,8 @@
-import { ChevronDown, Plus, X } from "lucide-react";
+import {
+  IconChevronDownOutline18 as ChevronDown,
+  IconPlusOutline18 as Plus,
+  IconXmarkOutline18 as X,
+} from "@pond/icons/outline/18";
 import {
   type ReactNode,
   useCallback,

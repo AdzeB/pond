@@ -1,14 +1,12 @@
 import type { Source } from "@pond/schema/db";
 import { IPC } from "../../../shared/constants";
 import {
-  cancelSync,
   getGlobalSync,
   getSourceSync,
   isSyncing,
   syncAllSources,
   syncSource,
 } from "../../core/sync";
-import { computeNextDueAt } from "../../core/sync/schedule";
 import { safeHandle } from "../helpers";
 
 export function registerSyncHandlers(): void {
@@ -18,11 +16,6 @@ export function registerSyncHandlers(): void {
       return { ok: false as const, reason: "already_running" as const };
     }
     void syncSource(src, { trigger: "manual" });
-    return { ok: true as const };
-  });
-
-  safeHandle(IPC.syncCancel, async (_, source: string) => {
-    cancelSync(source as Source);
     return { ok: true as const };
   });
 
@@ -45,15 +38,5 @@ export function registerSyncHandlers(): void {
   safeHandle(IPC.syncRunAll, async () => {
     void syncAllSources({ trigger: "manual" });
     return { ok: true as const };
-  });
-
-  safeHandle(IPC.syncSchedulePeek, async () => {
-    const prefs = await getGlobalSync();
-    const due = computeNextDueAt(prefs, new Date());
-    return {
-      ok: true as const,
-      lastFireAt: prefs.lastFireAt,
-      nextDueAt: due ? due.toISOString() : null,
-    };
   });
 }

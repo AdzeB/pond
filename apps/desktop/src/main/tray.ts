@@ -164,6 +164,7 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
       type: "checkbox",
       checked: loginItem.openAtLogin,
       click: (menuItem) => {
+        if (!app.isPackaged) return;
         app.setLoginItemSettings({
           openAtLogin: menuItem.checked,
           openAsHidden: true,

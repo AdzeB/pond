@@ -1,5 +1,4 @@
 import type { Source } from "./db";
-import type { Query } from "./filters/types";
 
 export interface VideoDownloadSettings {
   enabled: boolean;
@@ -63,15 +62,6 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
   lastError: null,
 };
 
-export interface SmartFolder {
-  id: string;
-  name: string;
-  query: Query;
-  icon?: string | null;
-  pinned: boolean;
-  sortOrder: number;
-}
-
 export interface AutoTagRule {
   id: string;
   enabled: boolean;
@@ -84,9 +74,68 @@ export interface AutoTagRule {
   addTags: string[];
 }
 
+// Accent ramps users can assign to the theme's primary slot. Mirrors the
+// chromatic ramps in packages/ui/src/colors/ramps.ts.
+export const ACCENT_HUES = [
+  "ruby",
+  "red",
+  "orange",
+  "gold",
+  "yellow",
+  "lime",
+  "green",
+  "jade",
+  "teal",
+  "cyan",
+  "blue",
+  "navy",
+  "indigo",
+  "violet",
+  "purple",
+  "magenta",
+  "pink",
+] as const;
+export type AccentHue = (typeof ACCENT_HUES)[number];
+
+// "custom" drives the accent ramp from a user-picked hue angle instead of
+// a named ramp. See [data-hue="custom"] in packages/ui/src/theme/aliases.css.
+export type AccentChoice = AccentHue | "custom";
+
+export const CUSTOM_HUE_MIN = 0;
+export const CUSTOM_HUE_MAX = 360;
+export const CUSTOM_HUE_DEFAULT = 250;
+
+// Neutral ramps for chrome temperature. Mirrors the neutral ramps in
+// packages/ui/src/colors/ramps.ts.
+export const NEUTRAL_HUES = [
+  "gray",
+  "zinc",
+  "ash",
+  "sage",
+  "sand",
+  "plum",
+  "steel",
+  "black",
+] as const;
+export type NeutralHue = (typeof NEUTRAL_HUES)[number];
+
+// Corner radius bounds (px). 14 keeps the design system's default look.
+export const RADIUS_MIN = 0;
+export const RADIUS_MAX = 28;
+export const RADIUS_DEFAULT = 14;
+
+// Accent saturation as a percentage of the ramp's chroma.
+export const ACCENT_INTENSITY_MIN = 0;
+export const ACCENT_INTENSITY_MAX = 100;
+
 export interface Prefs {
   preferences: {
     theme: "system" | "light" | "dark" | "high-contrast";
+    accentHue: AccentChoice;
+    customHue: number;
+    neutralHue: NeutralHue;
+    radius: number;
+    accentIntensity: number;
     pointerCursors: boolean;
     reduceMotion: "system" | "always" | "never";
     reduceTransparency: boolean;
@@ -126,9 +175,6 @@ export interface Prefs {
     showCounts: boolean;
     sort: "name" | "count" | "recent";
   };
-  search: {
-    resultLimit: number;
-  };
   api: {
     port: number;
     bindAddress: "loopback" | "lan";
@@ -154,9 +200,6 @@ export interface Prefs {
     action: "warn" | "pauseSync" | "pauseVideo";
     watchIntervalMinutes: number;
   };
-  smartFolders: {
-    items: SmartFolder[];
-  };
   autoTag: {
     enabled: boolean;
     rules: AutoTagRule[];
@@ -166,6 +209,11 @@ export interface Prefs {
 export const DEFAULT_PREFS: Prefs = {
   preferences: {
     theme: "system",
+    accentHue: "blue",
+    customHue: CUSTOM_HUE_DEFAULT,
+    neutralHue: "gray",
+    radius: RADIUS_DEFAULT,
+    accentIntensity: 100,
     pointerCursors: false,
     reduceMotion: "system",
     reduceTransparency: false,
@@ -205,9 +253,6 @@ export const DEFAULT_PREFS: Prefs = {
     showCounts: true,
     sort: "name",
   },
-  search: {
-    resultLimit: 200,
-  },
   api: {
     port: 41610,
     bindAddress: "loopback",
@@ -232,9 +277,6 @@ export const DEFAULT_PREFS: Prefs = {
     warnAtPercent: 80,
     action: "warn",
     watchIntervalMinutes: 5,
-  },
-  smartFolders: {
-    items: [],
   },
   autoTag: {
     enabled: true,

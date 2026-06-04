@@ -6,8 +6,8 @@
   max-width: var(--available-width);
   padding: 6px;
   outline: none;
-  background: var(--ds-background-primary);
-  border-radius: 12px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-2);
   transform-origin: var(--transform-origin);
   transition:

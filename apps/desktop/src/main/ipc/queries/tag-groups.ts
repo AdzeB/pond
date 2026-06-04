@@ -47,10 +47,4 @@ export const tagGroupsQueries: QueryHandlerMap = {
       String(params.group ?? ""),
     );
   },
-
-  async "tagGroups.reorder"(params) {
-    const { reorderGroups } = await import("../../core/tag-groups");
-    const order = Array.isArray(params.order) ? (params.order as string[]) : [];
-    return await reorderGroups(order);
-  },
 };

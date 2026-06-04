@@ -1,5 +1,5 @@
+import { IconDotsOutline18 as Ellipsis } from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
-import { Ellipsis } from "lucide-react";
 import styles from "./styles.module.css";
 
 interface DisplayMenuProps {

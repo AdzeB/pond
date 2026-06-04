@@ -1,19 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import { IPC, type MenuActionId } from "../shared/constants";
 
-export interface RefreshBackfillStatusWire {
-  state: "idle" | "running" | "done" | "error" | "cancelled";
-  total: number;
-  current: number;
-  succeeded: number;
-  failed: number;
-  authRequired: string[];
-  startedAt: string | null;
-  finishedAt: string | null;
-  options: { source?: string | null; onlyMissing?: boolean };
-  message?: string;
-}
-
 export interface RelocatePreviewWire {
   currentPath: string;
   candidatePath: string;
@@ -37,48 +24,6 @@ export interface StorageGuardStatusWire {
   warnBytes: number | null;
   action: "warn" | "pauseSync" | "pauseVideo";
   appliedAt: string;
-}
-
-export interface ProcessingProgressWire {
-  state: "idle" | "running" | "done" | "error" | "cancelled";
-  total: number;
-  current: number;
-  recovered: number;
-  stillFailed: number;
-  startedAt: string | null;
-  finishedAt: string | null;
-  currentSaveId: string | null;
-  message?: string;
-}
-
-export type OpWire =
-  | "harvest_metadata"
-  | "capture_tweet"
-  | "fetch_blobs"
-  | "fetch_video_ytdlp"
-  | "ensure_poster"
-  | "fetch_avatar"
-  | "finalize";
-
-export interface PipelineMetricsWire {
-  started: boolean;
-  paused: boolean;
-  inflightGlobal: number;
-  inflightByOp: Record<OpWire, number>;
-  runningTaskIds: string[];
-  pausedSources: Array<{
-    source: string;
-    until: number;
-    reason: "cooldown" | "breaker";
-  }>;
-  counters: {
-    tasksDispatched: number;
-    tasksCompleted: number;
-    tasksFailed: number;
-    tasksBlocked: number;
-    watchdogTrips: number;
-    cascadeEvents: number;
-  };
 }
 
 const api = {
@@ -202,42 +147,14 @@ const api = {
     return ipcRenderer.invoke(IPC.refreshBackfillCancel);
   },
 
-  refreshBackfillStatus(): Promise<RefreshBackfillStatusWire> {
-    return ipcRenderer.invoke(IPC.refreshBackfillStatus);
-  },
-
-  onRefreshBackfillStatus(
-    cb: (status: RefreshBackfillStatusWire) => void,
-  ): () => void {
-    const listener = (_: unknown, status: RefreshBackfillStatusWire) =>
-      cb(status);
-    ipcRenderer.on(IPC.refreshBackfillStatus, listener);
-    return () => ipcRenderer.off(IPC.refreshBackfillStatus, listener);
-  },
-
   connectSource(
     source: string,
   ): Promise<{ ok: boolean; mode: "external" | "skipped" }> {
     return ipcRenderer.invoke(IPC.sourceConnect, source);
   },
 
-  disconnectSource(source: string): Promise<{ ok: boolean }> {
-    return ipcRenderer.invoke(IPC.sourceDisconnect, source);
-  },
-
   sourceStatus(source: string): Promise<{ ok: boolean; connected: boolean }> {
     return ipcRenderer.invoke(IPC.sourceStatus, source);
-  },
-
-  onSourceStatus(
-    cb: (update: { source: string; connected: boolean }) => void,
-  ): () => void {
-    const listener = (
-      _: unknown,
-      update: { source: string; connected: boolean },
-    ) => cb(update);
-    ipcRenderer.on(IPC.sourceStatus, listener);
-    return () => ipcRenderer.off(IPC.sourceStatus, listener);
   },
 
   videoToolsStatus(): Promise<{
@@ -252,24 +169,10 @@ const api = {
     return ipcRenderer.invoke(IPC.videoToolsReinstall);
   },
 
-  redownloadVideo(id: string): Promise<
-    | { ok: true }
-    | {
-        ok: false;
-        reason: "not_found" | "no_url" | "unsupported" | "internal_error";
-      }
-  > {
-    return ipcRenderer.invoke(IPC.videoRedownload, id);
-  },
-
   syncRunNow(
     source: string,
   ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
     return ipcRenderer.invoke(IPC.syncRunNow, source);
-  },
-
-  syncCancel(source: string): Promise<{ ok: boolean }> {
-    return ipcRenderer.invoke(IPC.syncCancel, source);
   },
 
   syncStatus(source: string): Promise<{
@@ -285,26 +188,6 @@ const api = {
 
   syncRunAll(): Promise<{ ok: true }> {
     return ipcRenderer.invoke(IPC.syncRunAll);
-  },
-
-  syncSchedulePeek(): Promise<{
-    ok: boolean;
-    lastFireAt: string | null;
-    nextDueAt: string | null;
-  }> {
-    return ipcRenderer.invoke(IPC.syncSchedulePeek);
-  },
-
-  onSyncSchedule(
-    cb: (update: {
-      lastFireAt: string | null;
-      nextDueAt: string | null;
-    }) => void,
-  ): () => void {
-    const listener = (_: unknown, update: Parameters<typeof cb>[0]) =>
-      cb(update);
-    ipcRenderer.on(IPC.syncSchedulePush, listener);
-    return () => ipcRenderer.off(IPC.syncSchedulePush, listener);
   },
 
   onSyncStatus(
@@ -328,28 +211,15 @@ const api = {
     ipcRenderer.on(IPC.storageStatus, listener);
     return () => ipcRenderer.off(IPC.storageStatus, listener);
   },
-
-  onProcessingProgress(
-    cb: (status: ProcessingProgressWire) => void,
-  ): () => void {
-    const listener = (_: unknown, status: ProcessingProgressWire) => cb(status);
-    ipcRenderer.on(IPC.processingProgress, listener);
-    return () => ipcRenderer.off(IPC.processingProgress, listener);
-  },
-
-  notifications: {
-    show(opts: {
-      title: string;
-      body?: string;
-      silent?: boolean;
-    }): Promise<{ ok: boolean; reason?: "unsupported" | "invalid" }> {
-      return ipcRenderer.invoke(IPC.notificationShow, opts);
-    },
-  },
 };
 
 interface ShellHint {
   theme?: "light" | "dark";
+  accentHue?: string;
+  customHue?: number;
+  neutralHue?: string;
+  radius?: number;
+  accentIntensity?: number;
   pointerCursors?: boolean;
   onboarded?: boolean;
 }

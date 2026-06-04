@@ -2,14 +2,12 @@ import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import {
-  disconnectSource,
   isSourceConnected,
   refreshSave,
   signInToSource,
 } from "../../core/refresh";
 import {
   cancelRefreshBackfill,
-  getRefreshBackfillStatus,
   startRefreshBackfill,
 } from "../../core/refresh/backfill";
 import { safeHandle } from "../helpers";
@@ -44,10 +42,6 @@ export function registerRefreshHandlers(): void {
     return { ok: true as const };
   });
 
-  safeHandle(IPC.refreshBackfillStatus, async () => {
-    return getRefreshBackfillStatus();
-  });
-
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
       return await signInToSource(
@@ -55,17 +49,6 @@ export function registerRefreshHandlers(): void {
       );
     } catch (err) {
       log.warn("[pond ipc] sourceConnect failed", err);
-      return { ok: false as const };
-    }
-  });
-
-  safeHandle(IPC.sourceDisconnect, async (_, source: string) => {
-    try {
-      return await disconnectSource(
-        source as Parameters<typeof disconnectSource>[0],
-      );
-    } catch (err) {
-      log.warn("[pond ipc] sourceDisconnect failed", err);
       return { ok: false as const };
     }
   });

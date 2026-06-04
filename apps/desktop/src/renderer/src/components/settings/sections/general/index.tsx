@@ -1,6 +1,6 @@
-import { Button, Input, Select, Switch, useToast } from "@pond/ui";
+import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
+import { Button, Select, Switch, useToast } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronsUpDown } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Settings } from "@/components/settings";
 import { usePrefs } from "@/pool/prefs";
@@ -17,7 +17,6 @@ export function GeneralSection() {
   const toast = useToast();
   const [prefs, patch] = usePrefs("preferences");
   const [windowPrefs, patchWindow] = usePrefs("window");
-  const [search, patchSearch] = usePrefs("search");
   const [notifications, patchNotifications] = usePrefs("notifications");
   const [updates, patchUpdates] = usePrefs("updates");
   const [developer, patchDeveloper] = usePrefs("developer");
@@ -150,7 +149,7 @@ export function GeneralSection() {
       <Settings.Header>
         <Settings.Title>General</Settings.Title>
         <Settings.Description>
-          Window behavior, input, search, notifications, and updates.
+          Window behavior, input, notifications, and updates.
         </Settings.Description>
       </Settings.Header>
 
@@ -261,35 +260,6 @@ export function GeneralSection() {
               <Switch.Root
                 checked={prefs.pointerCursors}
                 onCheckedChange={(v) => patch({ pointerCursors: v })}
-              />
-            </Settings.ItemControl>
-          </Settings.Item>
-        </Settings.List>
-      </Settings.Section>
-
-      <Settings.Section>
-        <Settings.SectionTitle>Search</Settings.SectionTitle>
-        <Settings.List>
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Max Search Results</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                How many matches Pond returns per query. 50 to 1000.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <Input.Field
-                data-size="sm"
-                type="number"
-                min={50}
-                max={1000}
-                value={String(search.resultLimit)}
-                onChange={(e) =>
-                  patchSearch({
-                    resultLimit: clamp(Number(e.target.value) || 200, 50, 1000),
-                  })
-                }
-                style={{ width: 96 }}
               />
             </Settings.ItemControl>
           </Settings.Item>
@@ -579,9 +549,4 @@ export function GeneralSection() {
       </Settings.Section>
     </Settings.Page>
   );
-}
-
-function clamp(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min;
-  return Math.max(min, Math.min(max, Math.floor(value)));
 }

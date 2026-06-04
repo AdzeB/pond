@@ -3,7 +3,6 @@ import { join } from "node:path";
 import { app, BrowserWindow, dialog, shell } from "electron";
 import log from "electron-log/main.js";
 import {
-  emptyTrashOlderThan,
   previewRelocate,
   purgeLibrarySubdir,
   type RelocateMode,
@@ -350,12 +349,6 @@ export const libraryQueries: QueryHandlerMap = {
         reason: err instanceof Error ? err.message : "move_failed",
       };
     }
-  },
-
-  async "trash.emptyOlderThan"(params) {
-    const days = Math.max(0, Number(params.days ?? 0));
-    const purged = await emptyTrashOlderThan(days);
-    return { ok: true as const, purged };
   },
 
   async "reset.preferences"() {

@@ -1,5 +1,5 @@
+import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
 import { Button, Dialog, Field, Select } from "@pond/ui";
-import { ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   ALL_DAYS,

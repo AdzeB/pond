@@ -216,7 +216,7 @@ All theme tokens live in `packages/ui/src/theme.css` (re-exported as `@pond/ui/t
 
 - **Color scales.** Backed by Radix Themes: `--ds-gray-1`…`--ds-gray-12` plus alpha (`--ds-gray-a1`…`--ds-gray-a12`), and `--ds-accent-1`…`--ds-accent-12` (sky-based) plus alpha. Same scale, same semantics in light and dark.
 - **Semantic.** `--ds-tomato-{1..12,a3,a6}` for danger / required / error. `--ds-grass-{3,6,9,11,a6}` for success.
-- **Surface.** `--ds-background-primary` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
+- **Surface.** `--ds-gray-1` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
 - **Radius.** `--ds-radius-xs` (8px), `--ds-radius-sm` (10px), `--ds-radius-md` (12px), `--ds-radius-lg` (14px), `--ds-radius-xl` (16px), `--ds-radius-full` (9999px).
 - **Shadows (structural ring).** `--ds-shadow-1`, `--ds-shadow-2`, `--ds-shadow-2-focused`, `--ds-shadow-3`. Resting elements.
 - **Shadows (floating popup).** `--ds-shadow-popover`, `--ds-shadow-dialog`, `--ds-shadow-toast`, `--ds-shadow-tooltip`.

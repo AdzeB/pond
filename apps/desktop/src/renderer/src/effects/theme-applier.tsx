@@ -6,11 +6,18 @@ import { usePrefs } from "@/pool/prefs";
 // the FOUC. Read by `<script>` in apps/desktop/src/renderer/index.html.
 const SHELL_KEY = "pondShell";
 
+const RADIUS_ANCHOR = 14;
+
 type ResolvedTheme = "light" | "dark" | "high-contrast";
 
 function persistShell(patch: {
   theme?: ResolvedTheme;
   pointerCursors?: boolean;
+  accentHue?: string;
+  customHue?: number;
+  neutralHue?: string;
+  radius?: number;
+  accentIntensity?: number;
 }) {
   try {
     const raw = localStorage.getItem(SHELL_KEY);
@@ -46,6 +53,41 @@ export function ThemeApplier() {
 
     apply(prefs.theme);
   }, [prefs.theme]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-hue", prefs.accentHue);
+    persistShell({ accentHue: prefs.accentHue });
+  }, [prefs.accentHue]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const hue = Number.isFinite(prefs.customHue) ? prefs.customHue : 250;
+    root.style.setProperty("--ds-custom-hue", String(hue));
+    persistShell({ customHue: hue });
+  }, [prefs.customHue]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-neutral", prefs.neutralHue);
+    persistShell({ neutralHue: prefs.neutralHue });
+  }, [prefs.neutralHue]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const radius = Number.isFinite(prefs.radius) ? prefs.radius : RADIUS_ANCHOR;
+    root.style.setProperty("--radius-scale", String(radius / RADIUS_ANCHOR));
+    persistShell({ radius });
+  }, [prefs.radius]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const intensity = Number.isFinite(prefs.accentIntensity)
+      ? prefs.accentIntensity
+      : 100;
+    root.style.setProperty("--ds-accent-saturation", `${intensity}%`);
+    persistShell({ accentIntensity: intensity });
+  }, [prefs.accentIntensity]);
 
   useEffect(() => {
     const root = document.documentElement;

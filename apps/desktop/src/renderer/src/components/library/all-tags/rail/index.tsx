@@ -1,5 +1,11 @@
+import {
+  IconBookmarkOutline18 as Bookmark,
+  IconCircleQuestionOutline18 as CircleQuestionMark,
+  IconPlusOutline18 as Plus,
+  IconStarOutline18 as Star,
+  IconTrash2Outline18 as Trash2,
+} from "@pond/icons/outline/18";
 import { AlertDialog, Button, ContextMenu, Input } from "@pond/ui";
-import { Bookmark, CircleQuestionMark, Plus, Star, Trash2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { useTagGroups } from "@/pool/tag-groups";
 import type { TagRow } from "@/pool/tags";
