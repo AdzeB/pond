@@ -12,15 +12,10 @@ import {
   untrashSave,
 } from "@/lib/save-actions";
 import { toggleInspector, toggleSidebar } from "@/lib/shell-state";
+import { cycleLayout } from "@/lib/view-store";
 import { pool } from "@/pool/pool";
 import { usePrefs } from "@/pool/prefs";
 import { primarySelection, selection } from "@/pool/selection";
-
-function dispatchKey(init: KeyboardEventInit): void {
-  window.dispatchEvent(
-    new KeyboardEvent("keydown", { bubbles: true, ...init }),
-  );
-}
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
@@ -29,18 +24,6 @@ export function MenuBridge() {
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
       switch (id) {
-        case "palette.open":
-          dispatchKey({ key: "k", metaKey: true, ctrlKey: true });
-          return;
-
-        case "find.search":
-          dispatchKey({ key: "/" });
-          return;
-
-        case "find.filter":
-          dispatchKey({ key: "f" });
-          return;
-
         case "view.sidebar.toggle":
           toggleSidebar();
           return;
@@ -50,7 +33,7 @@ export function MenuBridge() {
           return;
 
         case "view.layout.cycle":
-          dispatchKey({ key: "b", code: "KeyB", metaKey: true });
+          cycleLayout();
           return;
 
         case "view.layout.waterfall":
@@ -128,13 +111,6 @@ export function MenuBridge() {
         case "developer.ipc-inspector":
           void window.pond.query("developer.openIpcInspector", {});
           return;
-
-        case "save.open-detail": {
-          const sid = primarySelection.get();
-          if (!sid) return;
-          dispatchKey({ key: "Enter" });
-          return;
-        }
 
         case "save.open-with-default": {
           const save = currentSave();

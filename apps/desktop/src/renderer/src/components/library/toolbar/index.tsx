@@ -1,12 +1,10 @@
 import { IconMagnifierOutline18 as SearchIcon } from "@pond/icons/outline/18";
 import { Input, Toolbar } from "@pond/ui";
-import { useRef } from "react";
 import { FilterBar } from "@/components/library/filter-bar";
 import { View } from "@/components/library/view-menu";
 import { usePlatform } from "@/lib/platform";
 import { useSidebar } from "@/lib/shell-state";
 import { useDebouncedSearch } from "@/lib/use-debounced-search";
-import { useSearchHotkey } from "@/lib/use-hotkeys";
 import styles from "./styles.module.css";
 
 export function HeaderToolbar() {
@@ -39,15 +37,7 @@ export function HeaderToolbar() {
 const SEARCH_DEBOUNCE_MS = 150;
 
 function Search() {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useDebouncedSearch(SEARCH_DEBOUNCE_MS);
-
-  useSearchHotkey(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.focus();
-    el.select();
-  });
 
   return (
     <Input.Root className={styles.search}>
@@ -56,7 +46,6 @@ function Search() {
       </Input.Icon>
       <Input.Field
         className={styles.field}
-        ref={inputRef}
         type="search"
         placeholder="Search"
         value={value}

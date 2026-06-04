@@ -58,7 +58,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
 
   const preferencesItem: Electron.MenuItemConstructorOptions = {
     label: "Preferences…",
-    accelerator: isMac ? "Command+," : "Control+,",
     click: navTo("/settings"),
   };
 
@@ -94,14 +93,12 @@ export function installAppMenu(deps: AppMenuDeps): void {
       submenu: [
         {
           label: "New Save…",
-          accelerator: "CommandOrControl+N",
           click: navTo("/?capture=1"),
         },
         { type: "separator" },
         { label: "Sources", submenu: sourcesSubmenu() },
         {
           label: "Sync All Sources",
-          accelerator: "CommandOrControl+Shift+R",
           click: () => void syncAllSources({ trigger: "manual" }),
         },
         { type: "separator" },
@@ -116,7 +113,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           label: "Reveal Library in Finder",
-          accelerator: "CommandOrControl+Shift+O",
           click: () => void shell.openPath(libraryRoot()),
         },
         {
@@ -132,7 +128,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
       submenu: [
         {
           label: "Undo",
-          accelerator: "CommandOrControl+Z",
           click: () => {
             const win = BrowserWindow.getFocusedWindow();
             if (!win || win.isDestroyed()) return;
@@ -142,7 +137,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         },
         {
           label: "Redo",
-          accelerator: isMac ? "Command+Shift+Z" : "Control+Y",
           click: () => {
             const win = BrowserWindow.getFocusedWindow();
             if (!win || win.isDestroyed()) return;
@@ -159,37 +153,19 @@ export function installAppMenu(deps: AppMenuDeps): void {
       ],
     },
     {
-      label: "Find",
+      label: "Go",
       submenu: [
-        {
-          label: "Command Palette…",
-          accelerator: "CommandOrControl+K",
-          click: sendMenuAction("palette.open"),
-        },
-        { type: "separator" },
-        { label: "Search", click: sendMenuAction("find.search") },
-        { label: "Filter", click: sendMenuAction("find.filter") },
-        { type: "separator" },
-        {
-          label: "Go to",
-          submenu: [
-            { label: "Library", click: navTo("/") },
-            { label: "Recents", click: navTo("/recents") },
-            { label: "Random", click: navTo("/random") },
-            { label: "Untagged", click: navTo("/untagged") },
-            { label: "Trash", click: navTo("/trash") },
-            { label: "Settings", click: navTo("/settings") },
-          ],
-        },
+        { label: "Library", click: navTo("/") },
+        { label: "Recents", click: navTo("/recents") },
+        { label: "Random", click: navTo("/random") },
+        { label: "Untagged", click: navTo("/untagged") },
+        { label: "Trash", click: navTo("/trash") },
+        { label: "Settings", click: navTo("/settings") },
       ],
     },
     {
       label: "Save",
       submenu: [
-        {
-          label: "Open in Detail View",
-          click: sendMenuAction("save.open-detail"),
-        },
         {
           label: "Open with Default App",
           click: sendMenuAction("save.open-with-default"),
@@ -205,12 +181,10 @@ export function installAppMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           label: "Copy URL",
-          accelerator: "CommandOrControl+Shift+,",
           click: sendMenuAction("save.copy-url"),
         },
         {
           label: "Copy Save ID",
-          accelerator: "CommandOrControl+.",
           click: sendMenuAction("save.copy-id"),
         },
         { type: "separator" },
@@ -237,7 +211,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         },
         {
           label: "Delete Forever",
-          accelerator: "CommandOrControl+Backspace",
           click: sendMenuAction("save.delete-forever"),
         },
         { type: "separator" },
@@ -261,27 +234,22 @@ export function installAppMenu(deps: AppMenuDeps): void {
       submenu: [
         {
           label: "All Saves",
-          accelerator: "Control+CommandOrControl+1",
           click: navTo("/"),
         },
         {
           label: "Recents",
-          accelerator: "Control+CommandOrControl+2",
           click: navTo("/recents"),
         },
         {
           label: "Random",
-          accelerator: "Control+CommandOrControl+3",
           click: navTo("/random"),
         },
         {
           label: "Untagged",
-          accelerator: "Control+CommandOrControl+4",
           click: navTo("/untagged"),
         },
         {
           label: "Trash",
-          accelerator: "Control+CommandOrControl+5",
           click: navTo("/trash"),
         },
         { type: "separator" },
@@ -322,18 +290,15 @@ export function installAppMenu(deps: AppMenuDeps): void {
       submenu: [
         {
           label: "Toggle Sidebar",
-          accelerator: isMac ? "Alt+Command+1" : "Alt+Control+1",
           click: sendMenuAction("view.sidebar.toggle"),
         },
         {
           label: "Toggle Inspector",
-          accelerator: isMac ? "Alt+Command+2" : "Alt+Control+2",
           click: sendMenuAction("view.inspector.toggle"),
         },
         { type: "separator" },
         {
           label: "Cycle Layout",
-          accelerator: "CommandOrControl+B",
           click: sendMenuAction("view.layout.cycle"),
         },
         {
@@ -388,7 +353,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
               { type: "separator" },
               {
                 label: "Library",
-                accelerator: "CommandOrControl+Shift+P",
                 click: () => openLibraryWindow(),
               },
             ] satisfies Electron.MenuItemConstructorOptions[])

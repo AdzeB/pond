@@ -76,28 +76,6 @@
           }
         }
       }
-    },
-    {
-      "includes": [
-        "apps/desktop/src/renderer/src/components/command-palette/cmdk/**"
-      ],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "useExhaustiveDependencies": "off"
-          },
-          "suspicious": {
-            "useIterableCallbackReturn": "off"
-          },
-          "a11y": {
-            "noStaticElementInteractions": "off",
-            "useFocusableInteractive": "off",
-            "useKeyWithClickEvents": "off",
-            "useSemanticElements": "off",
-            "useAriaPropsForRole": "off"
-          }
-        }
-      }
     }
   ]
 }

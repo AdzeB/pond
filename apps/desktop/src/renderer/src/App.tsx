@@ -12,11 +12,9 @@ import { Presentation } from "./components/save/presentation";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
-import { SaveShortcuts } from "./effects/save-shortcuts";
 import { ThemeApplier } from "./effects/theme-applier";
 import { ToastHost } from "./effects/toast-host";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
-import { ViewShortcuts } from "./effects/view-shortcuts";
 import { routeTree } from "./routeTree.gen";
 
 declare global {
@@ -84,8 +82,6 @@ export function App() {
           <Toast.Provider>
             <ThemeApplier />
             <DeveloperApplier />
-            <ViewShortcuts />
-            <SaveShortcuts />
             <UndoRedoBridge />
             <MenuBridge />
             <SaveCompleteToast />

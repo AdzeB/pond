@@ -40,9 +40,6 @@ export const IPC = {
 } as const;
 
 export type MenuActionId =
-  | "palette.open"
-  | "find.search"
-  | "find.filter"
   | "view.sidebar.toggle"
   | "view.inspector.toggle"
   | "view.layout.cycle"
@@ -55,7 +52,6 @@ export type MenuActionId =
   | "theme.system"
   | "refresh.all"
   | "refresh.cancel"
-  | "save.open-detail"
   | "save.reveal"
   | "save.open-with-default"
   | "save.open-original"

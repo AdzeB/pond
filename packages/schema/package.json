@@ -30,7 +30,6 @@
     "./session": "./src/session.ts",
     "./settings": "./src/settings.ts",
     "./sources": "./src/sources.ts",
-    "./keyboard": "./src/keyboard.ts",
     "./filters": "./src/filters/index.ts",
     "./filters/types": "./src/filters/types.ts",
     "./filters/meta": "./src/filters/meta.ts",

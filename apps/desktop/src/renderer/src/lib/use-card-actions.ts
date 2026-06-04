@@ -1,16 +1,10 @@
 import { useToast } from "@pond/ui";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { isChordPending } from "@/components/command-palette/use-chords";
 import { navigateTo } from "@/lib/navigate-path";
 import { listBaseFromPath } from "@/lib/search-schemas";
 import type { SavesMode } from "@/lib/use-library-state";
-import { cycleLayout } from "@/lib/view-store";
-import {
-  primarySelection,
-  selection,
-  useSelectionSize,
-} from "@/pool/selection";
+import { selection, useSelectionSize } from "@/pool/selection";
 
 interface CardActions {
   selectionSize: number;
@@ -81,100 +75,6 @@ export function useCardActions(
     },
     [filteredIds, multiSelectActive, select],
   );
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const isInput =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        target?.isContentEditable === true;
-      if (isInput) return;
-
-      // Dialogs / menus / listboxes own their own roving focus. Base UI
-      // doesn't stop arrow keys from bubbling so we have to.
-      const inOverlay = target?.closest(
-        '[role="dialog"],[role="menu"],[role="listbox"],[role="combobox"]',
-      );
-      if (inOverlay) return;
-
-      const meta = e.metaKey || e.ctrlKey;
-
-      if (meta && e.key.toLowerCase() === "a") {
-        if (filteredIds.length === 0) return;
-        e.preventDefault();
-        selection.set(filteredIds);
-        return;
-      }
-
-      if (meta && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "b") {
-        e.preventDefault();
-        cycleLayout();
-        return;
-      }
-
-      if (e.key === "Escape" && selectionSize > 0) {
-        selection.clear();
-        return;
-      }
-
-      // Bare-key grid nav from here on: defer to chord matcher so `g a`
-      // etc. wins over single-letter actions.
-      if (meta || e.altKey) return;
-      if (isChordPending()) return;
-      if (filteredIds.length === 0) return;
-
-      const id = primarySelection.get();
-      const idx = id ? filteredIds.indexOf(id) : -1;
-
-      const isUp =
-        e.key === "ArrowUp" ||
-        (!e.shiftKey && (e.key === "k" || e.key === "K"));
-      const isDown =
-        e.key === "ArrowDown" ||
-        (!e.shiftKey && (e.key === "j" || e.key === "J"));
-      const isLeft = e.key === "ArrowLeft";
-      const isRight = e.key === "ArrowRight";
-
-      if (isUp || isDown || isLeft || isRight) {
-        e.preventDefault();
-        let nextIdx: number;
-        if (idx < 0) {
-          nextIdx = isUp || isLeft ? filteredIds.length - 1 : 0;
-        } else if (isUp || isLeft) {
-          nextIdx = Math.max(0, idx - 1);
-        } else {
-          nextIdx = Math.min(filteredIds.length - 1, idx + 1);
-        }
-        const nextId = filteredIds[nextIdx];
-        if (nextId) select(nextId);
-        return;
-      }
-
-      if (idx < 0) return;
-      const focusedId = filteredIds[idx];
-      if (!focusedId) return;
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        focus(focusedId);
-        return;
-      }
-      if (e.key === " ") {
-        e.preventDefault();
-        select(focusedId);
-        return;
-      }
-      if (!e.shiftKey && (e.key === "x" || e.key === "X")) {
-        e.preventDefault();
-        selection.toggle(focusedId);
-        if (selection.has(focusedId)) selection.setAnchor(focusedId);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [filteredIds, selectionSize, select, focus]);
 
   useEffect(() => {
     void mode;

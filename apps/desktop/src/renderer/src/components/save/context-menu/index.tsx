@@ -49,7 +49,6 @@ interface ItemDescriptor {
   icon: React.ComponentType<{ width: number; height: number }>;
   disabled?: boolean;
   variant?: "danger";
-  // Mirrors the keys in `effects/save-shortcuts.tsx`.
   shortcut?: string[];
   onSelect: () => void | Promise<void>;
 }
