@@ -1,17 +1,20 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { useWindowSize } from "rooks";
 import {
   readViewPref,
   type ViewPrefKey,
   writeViewPref,
-} from "@/lib/view-prefs";
+} from "@/lib/utils/view-prefs";
 
 // Single source of truth for shell-level state: aside open/closed
-// prefs (persisted), the live window width (resize-driven), and the
-// derived grid width that the layout packers consume. Snapping the
-// grid width to a discrete value the moment an aside toggles keeps
-// the packers from running every frame while the CSS width animates;
-// `motion.li layout="position"` interpolates the cards.
+// prefs (persisted) plus the derived grid width that the layout
+// packers consume. The live window width comes from `useWindowSize`
+// (a `useSyncExternalStore`-backed resize listener) rather than a
+// hand-rolled listener. Snapping the grid width to a discrete value
+// the moment an aside toggles keeps the packers from running every
+// frame while the CSS width animates; `motion.li layout="position"`
+// interpolates the cards.
 
 const SIDEBAR_PANE_WIDTH = 256;
 const INSPECTOR_PANE_WIDTH = 256;
@@ -22,7 +25,6 @@ type PanePrefKey = Extract<ViewPrefKey, "sidebar" | "inspector">;
 interface ShellState {
   readonly sidebarOpen: boolean;
   readonly inspectorOpen: boolean;
-  readonly windowWidth: number;
 }
 
 function readOpen(key: PanePrefKey): boolean {
@@ -35,14 +37,6 @@ function readOpen(key: PanePrefKey): boolean {
 const store = new Store<ShellState>({
   sidebarOpen: readOpen("sidebar"),
   inspectorOpen: readOpen("inspector"),
-  windowWidth: window.innerWidth,
-});
-
-window.addEventListener("resize", () => {
-  const next = window.innerWidth;
-  store.setState((s) =>
-    s.windowWidth === next ? s : { ...s, windowWidth: next },
-  );
 });
 
 function setPane(
@@ -87,10 +81,13 @@ export function useInspector(): PanePref {
 }
 
 export function useGridWidth(): number {
-  const windowWidth = useStore(store, (s) => s.windowWidth);
+  const { innerWidth } = useWindowSize();
   const sidebarOpen = useStore(store, (s) => s.sidebarOpen);
   const inspectorOpen = useStore(store, (s) => s.inspectorOpen);
 
+  // `innerWidth` is null only during SSR snapshots; the Electron
+  // renderer always has a real value on first client paint.
+  const windowWidth = innerWidth ?? window.innerWidth;
   const sidebarW = sidebarOpen ? SIDEBAR_PANE_WIDTH : 0;
   const inspectorW = inspectorOpen ? INSPECTOR_PANE_WIDTH : 0;
 

@@ -1,9 +1,9 @@
 import { useToast } from "@pond/ui";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { navigateTo } from "@/lib/navigate-path";
-import { listBaseFromPath } from "@/lib/search-schemas";
-import type { SavesMode } from "@/lib/use-library-state";
+import type { SavesMode } from "@/lib/hooks/use-library-state";
+import { navigateTo } from "@/lib/utils/navigate-path";
+import { listBaseFromPath } from "@/lib/utils/search-schemas";
 import { selection, useSelectionSize } from "@/pool/selection";
 
 interface CardActions {

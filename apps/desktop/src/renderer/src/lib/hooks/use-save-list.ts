@@ -1,6 +1,8 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
-import { useRecents } from "@/lib/recents";
+import { useStableById } from "@/lib/hooks/use-stable-array";
+import { useRecents } from "@/lib/stores/recents";
+import { useViewStore } from "@/lib/stores/view-store";
 import {
   applyModeFilter,
   applyModeSort,
@@ -8,10 +10,8 @@ import {
   labelForMode,
   parseMode,
   type SaveListMode,
-} from "@/lib/save-list";
-import { listBaseFromPath } from "@/lib/search-schemas";
-import { useStableById } from "@/lib/use-stable-array";
-import { useViewStore } from "@/lib/view-store";
+} from "@/lib/utils/save-list";
+import { listBaseFromPath } from "@/lib/utils/search-schemas";
 import { useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import {
@@ -46,10 +46,7 @@ export function useSaveList({ activeId }: SaveListOptions): SaveList {
   const navigate = useNavigate();
 
   const parentBase = listBaseFromPath(location.pathname);
-  const mode: SaveListMode =
-    view.trash && parentBase === "/"
-      ? "trash"
-      : (parseMode(parentBase) ?? "library");
+  const mode: SaveListMode = parseMode(parentBase) ?? "library";
   const sourceFilter = mode === "source" ? extractSource(parentBase) : "";
 
   const q = view.q;

@@ -4,14 +4,14 @@ import { readQuery } from "@pond/schema/filters/url";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { predicateIsActive } from "@/components/library/view-menu/filter/helpers";
-import { ZOOM_MAX, ZOOM_MIN } from "@/lib/use-zoom";
 import {
   isLayoutValue,
   type LayoutValue,
   nextLayout,
   readViewPref,
   writeViewPref,
-} from "@/lib/view-prefs";
+} from "@/lib/utils/view-prefs";
+import { clampZoom, ZOOM_DEFAULT, ZOOM_STORAGE_KEY } from "@/lib/utils/zoom";
 import type { SortDir } from "@/pool/use-filtered-saves";
 
 // Single source of truth for the library's view state. Lives in a store
@@ -20,13 +20,6 @@ import type { SortDir } from "@/pool/use-filtered-saves";
 // duplicate derivation (grid vs controls). Durable bits (layout, sort,
 // zoom) persist to localStorage via `view-prefs`; `q`, `query`, and
 // `capture` are session-only.
-
-const ZOOM_DEFAULT = 130;
-const ZOOM_STORAGE_KEY = "pond.gridZoom";
-
-function clampZoom(n: number): number {
-  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, n));
-}
 
 function applyZoomVar(zoom: number): void {
   if (typeof document === "undefined") return;
@@ -44,7 +37,6 @@ export interface ViewStoreState {
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
-  trash: boolean;
 }
 
 function readInitialLayout(): LayoutValue {
@@ -72,7 +64,6 @@ const store = new Store<ViewStoreState>({
   sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
   zoom: readInitialZoom(),
   capture: false,
-  trash: false,
 });
 
 applyZoomVar(store.state.zoom);
@@ -85,10 +76,6 @@ export function useSearchText(): string {
   return useStore(store, (s) => s.q);
 }
 
-export function useFilterQuery(): Query {
-  return useStore(store, (s) => s.query);
-}
-
 export function useSortKey(): string {
   return useStore(store, (s) => s.sortKey);
 }
@@ -99,10 +86,6 @@ export function useSortDir(): SortDir {
 
 export function useCapture(): boolean {
   return useStore(store, (s) => s.capture);
-}
-
-export function useTrashView(): boolean {
-  return useStore(store, (s) => s.trash);
 }
 
 export function setSearchText(q: string): void {
@@ -245,10 +228,6 @@ export function openCapture(): void {
 
 export function closeCapture(): void {
   store.setState((s) => (s.capture ? { ...s, capture: false } : s));
-}
-
-export function setTrashView(on: boolean): void {
-  store.setState((s) => (s.trash === on ? s : { ...s, trash: on }));
 }
 
 // Translate an inbound URL search payload (deep links, command palette,

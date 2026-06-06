@@ -113,35 +113,5 @@ export function frequencyHasAnchor(frequency: SyncFrequency): boolean {
   return frequency === "daily" || frequency === "weekly";
 }
 
-const RELATIVE_FMT = new Intl.RelativeTimeFormat(undefined, {
-  numeric: "auto",
-});
-
-const RELATIVE_UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
-  ["year", 365 * 24 * 60 * 60_000],
-  ["month", 30 * 24 * 60 * 60_000],
-  ["week", 7 * 24 * 60 * 60_000],
-  ["day", 24 * 60 * 60_000],
-  ["hour", 60 * 60_000],
-  ["minute", 60_000],
-];
-
-export function formatRelative(at: Date): string {
-  const diff = at.getTime() - Date.now();
-  const abs = Math.abs(diff);
-  for (const [unit, ms] of RELATIVE_UNITS) {
-    if (abs >= ms) {
-      const value = Math.round(diff / ms);
-      return RELATIVE_FMT.format(value, unit);
-    }
-  }
-  return RELATIVE_FMT.format(Math.round(diff / 1000), "second");
-}
-
-export interface ScheduleStatus {
-  lastFireAt: string | null;
-  nextDueAt: string | null;
-}
-
 export type { GlobalSyncPrefs, SyncFrequency };
 export { DEFAULT_GLOBAL_SYNC_PREFS };

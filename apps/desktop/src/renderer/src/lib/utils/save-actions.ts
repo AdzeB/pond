@@ -1,7 +1,7 @@
 import type { useToast } from "@pond/ui";
-import { presentation } from "@/lib/presentation";
-import { setInspectorOpen } from "@/lib/shell-state";
-import { mergeUniqueTags, tagClipboard } from "@/lib/tag-clipboard";
+import { presentation } from "@/lib/stores/presentation";
+import { setInspectorOpen } from "@/lib/stores/shell-state";
+import { mergeUniqueTags, tagClipboard } from "@/lib/stores/tag-clipboard";
 import {
   trashSave as applyTrash,
   untrashSave as applyUntrash,

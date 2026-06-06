@@ -1,16 +1,16 @@
 import { useLocation, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import type { ViewMode } from "@/components/library/layout-switcher";
-import { useRecents } from "@/lib/recents";
+import { useStableById, useStableStrings } from "@/lib/hooks/use-stable-array";
+import { useRecents } from "@/lib/stores/recents";
+import { useViewStore } from "@/lib/stores/view-store";
 import {
   applyModeFilter,
   applyModeSort,
   parseMode,
   type SaveListMode,
-} from "@/lib/save-list";
-import { listBaseFromPath } from "@/lib/search-schemas";
-import { useStableById, useStableStrings } from "@/lib/use-stable-array";
-import { useViewStore } from "@/lib/view-store";
+} from "@/lib/utils/save-list";
+import { listBaseFromPath } from "@/lib/utils/search-schemas";
 import { useBootReady, useSaves } from "@/pool/hooks";
 import { useSearchResults } from "@/pool/search";
 import { primarySelection } from "@/pool/selection";
@@ -51,8 +51,7 @@ export function useLibraryState(): LibraryState {
 
   const parentBase = listBaseFromPath(location.pathname);
   const recognized = parseMode(parentBase);
-  const mode: SaveListMode =
-    view.trash && parentBase === "/" ? "trash" : (recognized ?? "library");
+  const mode: SaveListMode = recognized ?? "library";
   const unknown = recognized === null;
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";

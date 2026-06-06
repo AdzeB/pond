@@ -19,6 +19,7 @@ export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase === "/untagged") return "untagged";
   if (parentBase === "/recents") return "recents";
   if (parentBase === "/random") return "random";
+  if (parentBase === "/trash") return "trash";
   return null;
 }
 

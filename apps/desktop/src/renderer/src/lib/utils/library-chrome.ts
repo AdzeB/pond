@@ -1,4 +1,4 @@
-import type { DisplayPrefs } from "@/lib/display-prefs";
+import type { DisplayPrefs } from "@/lib/stores/display-prefs";
 
 /* `.item` has `flex-direction: column; gap: 12px`. The 12px sits
  * between the media slot and the meta block (when meta is rendered

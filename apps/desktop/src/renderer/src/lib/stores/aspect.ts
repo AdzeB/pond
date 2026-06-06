@@ -1,4 +1,5 @@
-import { useSyncExternalStore } from "react";
+import { useStore } from "@tanstack/react-store";
+import { Store } from "@tanstack/store";
 import { pickPrimaryFile } from "@/pool/media";
 import type { Save } from "@/pool/types";
 
@@ -73,14 +74,17 @@ export function aspectFor(save: Save): number {
   return ratio;
 }
 
+// A monotonically-increasing version that bumps once per animation
+// frame in which any aspect changed. `recordAspect` fires from `<img>`
+// / `<video>` load handlers (outside React), so the coalescing has to
+// live at module scope; a single on-demand rAF collapses a burst of
+// measurements into one re-pack instead of one per loaded cover.
+const versionStore = new Store(0);
 let scheduled = 0;
-let version = 0;
-const subs = new Set<() => void>();
 
 function flush() {
   scheduled = 0;
-  version++;
-  for (const cb of subs) cb();
+  versionStore.setState((v) => v + 1);
 }
 
 function schedule() {
@@ -102,17 +106,6 @@ export function recordAspect(saveId: string, w: number, h: number): void {
   schedule();
 }
 
-function subscribe(cb: () => void): () => void {
-  subs.add(cb);
-  return () => {
-    subs.delete(cb);
-  };
-}
-
-function getVersion(): number {
-  return version;
-}
-
 export function useAspectVersion(): number {
-  return useSyncExternalStore(subscribe, getVersion, getVersion);
+  return useStore(versionStore, (v) => v);
 }
