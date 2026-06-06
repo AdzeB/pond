@@ -33,37 +33,6 @@ export function descriptionMatchesTitle(save: Save): boolean {
   return false;
 }
 
-export function formatCount(n: number): string {
-  if (!Number.isFinite(n)) return "-";
-  if (n >= 1_000_000) return `${trimZero(n / 1_000_000)}M`;
-  if (n >= 1_000) return `${trimZero(n / 1_000)}k`;
-  return String(Math.round(n));
-}
-
-function trimZero(n: number): string {
-  return n.toFixed(1).replace(/\.0$/, "");
-}
-
-export function formatDuration(sec: number): string {
-  const total = Math.max(0, Math.floor(sec));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-export function formatShortDate(value: string | number): string {
-  const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) return String(value);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
 export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
   if (lower === "video") return "MP4";

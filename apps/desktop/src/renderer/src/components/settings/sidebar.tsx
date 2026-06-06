@@ -1,3 +1,4 @@
+import { Sidebar } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
 import {
   DEV_GROUPS,
@@ -5,7 +6,6 @@ import {
   GROUP_ORDER,
   sectionsByGroup,
 } from "@/components/settings/registry";
-import { Sidebar } from "@/components/shell/sidebar";
 import { SidebarTools } from "@/components/shell/sidebar-tools";
 import { usePrefs } from "@/pool/prefs";
 

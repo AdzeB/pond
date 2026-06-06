@@ -272,9 +272,8 @@
   --ds-grass-a6: color-mix(in oklch, var(--green-500) 26%, transparent);
 }
 
-/* User-controllable corner radius. The named steps keep the design
-   system's documented values at --radius-scale: 1, and ThemeApplier
-   overrides --radius-scale inline (radius px / 14). */
+/* Corner radius scale. Fixed at 1; the named steps are the design
+   system's documented values. */
 :root {
   --radius-scale: 1;
   --ds-radius-xs: calc(8px * var(--radius-scale));

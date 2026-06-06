@@ -255,9 +255,8 @@ const STATUS_TOKENS = `
   --ds-grass-11: light-dark(var(--green-600), var(--green-300));
   --ds-grass-a6: color-mix(in oklch, var(--green-500) 26%, transparent);`;
 
-const RADIUS_BLOCK = `/* User-controllable corner radius. The named steps keep the design
-   system's documented values at --radius-scale: 1, and ThemeApplier
-   overrides --radius-scale inline (radius px / 14). */
+const RADIUS_BLOCK = `/* Corner radius scale. Fixed at 1; the named steps are the design
+   system's documented values. */
 :root {
   --radius-scale: 1;
   --ds-radius-xs: calc(8px * var(--radius-scale));

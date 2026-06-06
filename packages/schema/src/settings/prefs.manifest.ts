@@ -4,7 +4,6 @@ import {
   DEFAULT_PRESET_ID,
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
-  RADIUS_DEFAULT,
 } from "../prefs.types";
 import type { PrefsManifest } from "./types";
 
@@ -28,7 +27,6 @@ export const SETTINGS_PREFS = {
         type: { ts: "ThemeDef", import: TYPES },
         default: CUSTOM_THEME_DEFAULT,
       },
-      radius: { type: "number", default: RADIUS_DEFAULT },
       pointerCursors: { type: "boolean", default: false },
       reduceMotion: {
         type: { enum: ["system", "always", "never"] },

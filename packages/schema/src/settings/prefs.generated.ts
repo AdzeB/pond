@@ -17,7 +17,6 @@ export interface Prefs {
     systemLightId: string;
     systemDarkId: string;
     custom: ThemeDef;
-    radius: number;
     pointerCursors: boolean;
     reduceMotion: "system" | "always" | "never";
     reduceTransparency: boolean;
@@ -90,7 +89,6 @@ export const DEFAULT_PREFS: Prefs = {
     systemLightId: "light",
     systemDarkId: "dark",
     custom: { base: "#fcfcfd", accent: "#3b82f6", contrast: 30 },
-    radius: 14,
     pointerCursors: false,
     reduceMotion: "system",
     reduceTransparency: false,

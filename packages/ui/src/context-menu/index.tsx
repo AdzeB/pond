@@ -26,12 +26,7 @@ function Positioner(props: Base.Positioner.Props) {
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup
-      {...props}
-      className={cn(popupStyles.popup, popupStyles["popup-compact"], className)}
-    />
-  );
+  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {
@@ -39,12 +34,7 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
 }
 
 function Item({ className, ...props }: Base.Item.Props) {
-  return (
-    <Base.Item
-      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
-      {...props}
-    />
-  );
+  return <Base.Item className={cn(popupStyles.item, className)} {...props} />;
 }
 
 function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
@@ -90,10 +80,7 @@ function RadioGroup(props: Base.RadioGroup.Props) {
 
 function RadioItem({ className, ...props }: Base.RadioItem.Props) {
   return (
-    <Base.RadioItem
-      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
-      {...props}
-    />
+    <Base.RadioItem className={cn(popupStyles.item, className)} {...props} />
   );
 }
 
@@ -111,10 +98,7 @@ function RadioItemIndicator({
 
 function CheckboxItem({ className, ...props }: Base.CheckboxItem.Props) {
   return (
-    <Base.CheckboxItem
-      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
-      {...props}
-    />
+    <Base.CheckboxItem className={cn(popupStyles.item, className)} {...props} />
   );
 }
 
@@ -137,7 +121,7 @@ function SubmenuRoot(props: Base.SubmenuRoot.Props) {
 function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger
-      className={cn(popupStyles.item, popupStyles["item-compact"], className)}
+      className={cn(popupStyles.item, className)}
       {...props}
     />
   );

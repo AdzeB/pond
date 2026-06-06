@@ -4,6 +4,8 @@ import {
 } from "@pond/schema/db";
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
+import { toggleInspector, toggleSidebar } from "@/lib/stores/shell-state";
+import { cycleLayout } from "@/lib/stores/view-store";
 import {
   copyId,
   copyUrl,
@@ -14,9 +16,7 @@ import {
   refreshSaveMetadata,
   trashSave,
   untrashSave,
-} from "@/lib/save-actions";
-import { toggleInspector, toggleSidebar } from "@/lib/shell-state";
-import { cycleLayout } from "@/lib/view-store";
+} from "@/lib/utils/save-actions";
 import { pool } from "@/pool/pool";
 import { usePrefs } from "@/pool/prefs";
 import { primarySelection, selection } from "@/pool/selection";

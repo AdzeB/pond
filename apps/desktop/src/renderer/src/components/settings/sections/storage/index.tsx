@@ -4,7 +4,7 @@ import { Button, Select, Settings, Switch, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Binding } from "@/components/settings/engine";
-import { formatBytes } from "@/lib/format";
+import { formatBytes } from "@/lib/utils/format";
 import type { StorageGuardStatusWire } from "../../../../../../preload";
 import styles from "./styles.module.css";
 

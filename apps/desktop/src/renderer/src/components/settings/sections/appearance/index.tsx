@@ -153,7 +153,7 @@ export function ResetThemeRow({ binding }: { binding: Binding }) {
       <Settings.ItemDetails>
         <Settings.ItemTitle>Reset Theme</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Restore the default theme, custom colors, and radius.
+          Restore the default theme and custom colors.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
@@ -167,7 +167,6 @@ export function ResetThemeRow({ binding }: { binding: Binding }) {
               systemLightId: DEFAULTS.systemLightId,
               systemDarkId: DEFAULTS.systemDarkId,
               custom: DEFAULTS.custom,
-              radius: DEFAULTS.radius,
             })
           }
         >

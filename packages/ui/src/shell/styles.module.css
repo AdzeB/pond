@@ -1,16 +1,18 @@
 .body {
   display: flex;
-  flex: 1;
   min-height: 0;
 }
 
 .main {
-  padding: 12px;
+  flex: 1;
+  padding: var(--ds-mac-inset);
 }
 
 .aside {
   display: flex;
-  padding: 12px;
+  width: 250px;
+  padding-block: 16px;
+  padding-inline: 8px;
 }
 
 .drag {

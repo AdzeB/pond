@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { isLayoutValue, type LayoutValue } from "@/lib/view-prefs";
-import { setLayout } from "@/lib/view-store";
+import { setLayout } from "@/lib/stores/view-store";
+import { isLayoutValue, type LayoutValue } from "@/lib/utils/view-prefs";
 
 export function LayoutMenuBridge() {
   useEffect(() => {

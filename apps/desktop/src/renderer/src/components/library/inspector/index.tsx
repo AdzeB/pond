@@ -5,15 +5,15 @@ import {
   IconRefreshClockwiseOutline18 as RefreshCw,
   IconTrashOutline18 as Trash,
 } from "@pond/icons/outline/18";
-import { Menu, useToast } from "@pond/ui";
+import { Menu, Shell, useToast } from "@pond/ui";
 import { useParams, useRouter } from "@tanstack/react-router";
 import { useCallback } from "react";
 import { SavePreview } from "@/components/save/preview";
 import { humaniseRefreshReason } from "@/components/save/preview/helpers";
-import { Aside } from "@/components/shell/aside";
-import { REVEAL_LABEL } from "@/lib/platform";
-import { useTrackVisit } from "@/lib/recents";
-import { useInspector } from "@/lib/shell-state";
+
+import { REVEAL_LABEL } from "@/lib/hooks/platform";
+import { useTrackVisit } from "@/lib/stores/recents";
+import { useInspector } from "@/lib/stores/shell-state";
 import { useSave } from "@/pool/hooks";
 import { trashSave } from "@/pool/mutate-save";
 import styles from "./styles.module.css";
@@ -27,7 +27,7 @@ export function Inspector() {
   useTrackVisit(id);
 
   return (
-    <Aside side="right" open={open}>
+    <Shell.Aside side="right" open={open}>
       <aside id="inspector-pane" aria-label="Inspector" className={styles.pane}>
         <div className={styles.toolbar}>
           {save ? <KebabMenu save={save} /> : null}
@@ -42,7 +42,7 @@ export function Inspector() {
           )}
         </div>
       </aside>
-    </Aside>
+    </Shell.Aside>
   );
 }
 

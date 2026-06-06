@@ -17,7 +17,8 @@ import {
 } from "@pond/icons/outline/18";
 import { ContextMenu, Kbd, Menu, useToast } from "@pond/ui";
 import { type ReactElement, type ReactNode, useMemo } from "react";
-import { REVEAL_LABEL } from "@/lib/platform";
+import { REVEAL_LABEL } from "@/lib/hooks/platform";
+import { useTagClipboard } from "@/lib/stores/tag-clipboard";
 import {
   copyImage as copyImageAction,
   copyTags as copyTagsAction,
@@ -25,8 +26,7 @@ import {
   exportFile as exportFileAction,
   openInNewWindow as openInNewWindowAction,
   pasteTags as pasteTagsAction,
-} from "@/lib/save-actions";
-import { useTagClipboard } from "@/lib/tag-clipboard";
+} from "@/lib/utils/save-actions";
 import { purgeSave, trashSave, untrashSave } from "@/pool/mutate-save";
 import type { Save } from "@/pool/types";
 

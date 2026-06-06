@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { aspectFor, useAspectVersion } from "@/lib/aspect";
-import { useDisplayPrefs } from "@/lib/display-prefs";
-import { chromeHeightFor } from "@/lib/library-chrome";
-import { useGridWidth } from "@/lib/shell-state";
+import { aspectFor, useAspectVersion } from "@/lib/stores/aspect";
+import { useDisplayPrefs } from "@/lib/stores/display-prefs";
+import { useGridWidth } from "@/lib/stores/shell-state";
+import { chromeHeightFor } from "@/lib/utils/library-chrome";
 import type { Save } from "@/pool/types";
 import {
   PackedGrid,
@@ -54,8 +54,8 @@ function readGridMin(): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_COL_MIN;
 }
 
-/* `useZoom()` (in `library/toolbar/index.tsx`) writes the current zoom
- * to `document.documentElement.style.--grid-min`. The CSS layouts pick
+/* The view store's `setZoom` writes the current zoom to
+ * `document.documentElement.style.--grid-min`. The CSS layouts pick
  * the change up reactively; the JS packer can't, so we observe the
  * root style attribute and re-read on every mutation. Cheap: runs
  * once per zoom step, gated by an equality check. */

@@ -92,11 +92,6 @@ export const DEFAULT_PRESET_ID = "light";
 export const DEFAULT_SYSTEM_LIGHT_ID = "light";
 export const DEFAULT_SYSTEM_DARK_ID = "dark";
 
-// Corner radius bounds (px). 14 keeps the design system's default look.
-export const RADIUS_MIN = 0;
-export const RADIUS_MAX = 28;
-export const RADIUS_DEFAULT = 14;
-
 // Window bounds persisted for restore-position.
 export interface WindowBounds {
   x: number;

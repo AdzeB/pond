@@ -11,8 +11,6 @@ import { usePrefs } from "@/pool/prefs";
 // by `<script>` in apps/desktop/src/renderer/index.html.
 const SHELL_KEY = "pondShell";
 
-const RADIUS_ANCHOR = 14;
-
 interface ShellPatch {
   theme?: "light" | "dark";
   baseL?: number;
@@ -23,7 +21,6 @@ interface ShellPatch {
   accentH?: number;
   contrast?: number;
   fgDir?: number;
-  radius?: number;
   pointerCursors?: boolean;
 }
 
@@ -94,13 +91,6 @@ export function ThemeApplier() {
     prefs.custom,
     prefs,
   ]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const radius = Number.isFinite(prefs.radius) ? prefs.radius : RADIUS_ANCHOR;
-    root.style.setProperty("--radius-scale", String(radius / RADIUS_ANCHOR));
-    persistShell({ radius });
-  }, [prefs.radius]);
 
   useEffect(() => {
     const root = document.documentElement;

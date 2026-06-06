@@ -10,7 +10,7 @@ import {
   presetFromPrefs,
   REPEAT_PRESETS,
   type RepeatPreset,
-} from "@/lib/sync-helpers";
+} from "@/lib/utils/sync-helpers";
 import { usePrefs } from "@/pool/prefs";
 import { RepeatCustomDialog } from "./repeat-custom-dialog";
 import styles from "./styles.module.css";

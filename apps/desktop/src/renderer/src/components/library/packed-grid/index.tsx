@@ -1,6 +1,6 @@
 import { useMemo, useRef } from "react";
 import { type GridLayout, LibraryGrid } from "@/components/library";
-import { useVisibleIndices } from "@/lib/use-visible-indices";
+import { useVisibleIndices } from "@/lib/hooks/use-visible-indices";
 import type { Save } from "@/pool/types";
 
 export interface PackedPosition {

@@ -14,6 +14,9 @@ export interface KnownLibrary {
   name: string;
   addedAt: number;
   lastOpenedAt: number;
+  // A user-chosen avatar (an emoji) shown in the switcher. `null` means
+  // fall back to the name's initials.
+  avatar: string | null;
 }
 
 interface RecentsFile {
@@ -40,10 +43,15 @@ function read(): KnownLibrary[] {
     const raw = readFileSync(recentsPath(), "utf-8");
     const parsed = JSON.parse(raw) as Partial<RecentsFile>;
     if (!Array.isArray(parsed.libraries)) return [];
-    return parsed.libraries.filter(
-      (l): l is KnownLibrary =>
-        typeof l?.path === "string" && l.path.length > 0,
-    );
+    return parsed.libraries
+      .filter(
+        (l): l is KnownLibrary =>
+          typeof l?.path === "string" && l.path.length > 0,
+      )
+      .map((l) => ({
+        ...l,
+        avatar: typeof l.avatar === "string" ? l.avatar : null,
+      }));
   } catch {
     return [];
   }
@@ -82,6 +90,7 @@ export function rememberLibrary(path: string): KnownLibrary {
     name: libraryNameFromPath(abs),
     addedAt: now,
     lastOpenedAt: now,
+    avatar: null,
   };
   libraries.unshift(entry);
   write(libraries);
@@ -106,6 +115,18 @@ export function setLibraryOrder(order: string[]): void {
     if (byPath.has(normalize(lib.path))) next.push(lib);
   }
   write(next);
+}
+
+// Set (or clear, with `null`) the avatar for a known library. A blank
+// string clears it so the switcher falls back to the name's initials.
+export function setLibraryAvatar(path: string, avatar: string | null): void {
+  const abs = normalize(path);
+  const libraries = read();
+  const lib = libraries.find((l) => normalize(l.path) === abs);
+  if (!lib) return;
+  const trimmed = avatar?.trim() ?? "";
+  lib.avatar = trimmed.length > 0 ? trimmed : null;
+  write(libraries);
 }
 
 export function forgetLibrary(path: string): void {

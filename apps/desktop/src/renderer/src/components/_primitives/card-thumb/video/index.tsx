@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { recordAspect } from "@/lib/aspect";
-import { useInView } from "@/lib/use-in-view";
+import { useInViewRef, useMergeRefs } from "rooks";
+import { recordAspect } from "@/lib/stores/aspect";
 import { useCardContext } from "../context";
 import styles from "./styles.module.css";
 
@@ -33,7 +33,13 @@ function HoverVideo({
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
-  const inView = useInView(internalRef);
+  // `useInViewRef` hands back a callback ref; merge it with the
+  // controllable `internalRef` (used for play/pause/seek) so a single
+  // `<video>` element feeds both. `rootMargin` primes media slightly
+  // before it scrolls into view.
+  const [inViewRef, inView] = useInViewRef({ rootMargin: "200px" });
+  const setVideoRef = useMergeRefs<HTMLVideoElement>(internalRef, inViewRef);
+
   const [primed, setPrimed] = useState(false);
   useEffect(() => {
     if (inView && !primed) setPrimed(true);
@@ -72,7 +78,7 @@ function HoverVideo({
 
   return (
     <video
-      ref={internalRef}
+      ref={setVideoRef}
       {...(primed ? { src } : {})}
       poster={posterUrl}
       muted

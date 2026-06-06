@@ -87,7 +87,7 @@ body,
 #root {
   height: 100%;
   color: var(--ds-gray-12);
-  background: var(--ds-gray-2);
+  background: var(--ds-gray-1);
 }
 
 html,

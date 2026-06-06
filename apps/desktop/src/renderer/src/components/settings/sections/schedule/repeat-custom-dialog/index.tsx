@@ -7,7 +7,7 @@ import {
   type GlobalSyncPrefs,
   type SyncFrequency,
   WEEKDAYS,
-} from "@/lib/sync-helpers";
+} from "@/lib/utils/sync-helpers";
 import styles from "./styles.module.css";
 
 interface Props {

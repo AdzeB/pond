@@ -1,8 +1,14 @@
-import { AlertDialog, Button, Settings, useToast } from "@pond/ui";
+import { AlertDialog, Button, Input, Settings, useToast } from "@pond/ui";
 import { useEffect, useState } from "react";
+import { initials } from "@/lib/utils/initials";
 import type { RelocatePreviewWire } from "../../../../../../preload";
 import type { SettingsRow } from "../_types";
 import styles from "./styles.module.css";
+
+interface ListKnownWire {
+  active: string;
+  libraries: Array<{ name: string; active: boolean; avatar: string | null }>;
+}
 
 export function LocationSection() {
   const toast = useToast();
@@ -11,12 +17,26 @@ export function LocationSection() {
   const [relocatePreview, setRelocatePreview] =
     useState<RelocatePreviewWire | null>(null);
   const [relocating, setRelocating] = useState(false);
+  const [libraryName, setLibraryName] = useState("Library");
+  const [avatar, setAvatar] = useState("");
 
   useEffect(() => {
     void window.pond.query("settings.get", {}).then((s) => {
       setLibraryRoot((s as SettingsRow).libraryRoot ?? null);
     });
+    void window.pond.query("library.listKnown", {}).then((res) => {
+      const active = (res as ListKnownWire).libraries.find((l) => l.active);
+      if (active) {
+        setLibraryName(active.name);
+        setAvatar(active.avatar ?? "");
+      }
+    });
   }, []);
+
+  async function persistAvatar(next: string) {
+    setAvatar(next);
+    await window.pond.query("library.setAvatar", { avatar: next });
+  }
 
   async function withBusy(key: string, fn: () => Promise<void>) {
     setBusy(key);
@@ -161,6 +181,49 @@ export function LocationSection() {
           Where your library lives on disk and how to move it.
         </Settings.Description>
       </Settings.Header>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Switcher Icon</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Library Icon</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                An emoji shown next to this library in the switcher. Leave it
+                empty to use the name's initials.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <span
+                aria-hidden
+                className={styles.avatar}
+                data-emoji={avatar ? true : undefined}
+              >
+                {avatar || initials(libraryName)}
+              </span>
+              <Input.Root>
+                <Input.Field
+                  className={styles["avatar-input"]}
+                  aria-label="Library icon emoji"
+                  placeholder="🐸"
+                  maxLength={8}
+                  value={avatar}
+                  onChange={(e) => setAvatar(e.target.value)}
+                  onBlur={() => void persistAvatar(avatar)}
+                />
+              </Input.Root>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!avatar}
+                onClick={() => void persistAvatar("")}
+              >
+                Clear
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
 
       <Settings.Section>
         <Settings.SectionTitle>Library Location</Settings.SectionTitle>

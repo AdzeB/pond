@@ -14,11 +14,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { type GridLayout, LibraryGrid } from "@/components/library";
 import { JustifiedView } from "@/components/library/justified";
-import { formatAbsolute, SaveCard } from "@/components/library/save-card";
+import { SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
 import { SaveContextMenu } from "@/components/save/context-menu";
-import { formatBytes } from "@/lib/format";
-import { setSort, useSortDir, useSortKey } from "@/lib/view-store";
+import { setSort, useSortDir, useSortKey } from "@/lib/stores/view-store";
+import { formatAbsolute, formatBytes } from "@/lib/utils/format";
 import type { Save } from "@/pool/types";
 import styles from "./styles.module.css";
 

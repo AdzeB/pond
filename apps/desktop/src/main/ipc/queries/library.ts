@@ -16,6 +16,7 @@ import {
   forgetLibrary,
   readKnownLibraries,
   rememberLibrary,
+  setLibraryAvatar,
   setLibraryOrder,
 } from "../../lib/library-recents";
 import {
@@ -186,6 +187,24 @@ export const libraryQueries: QueryHandlerMap = {
       exists: existsSync(lib.path),
     }));
     return { active, libraries };
+  },
+
+  // Set the avatar (an emoji) shown for a library in the switcher.
+  // Defaults to the active library; an empty string clears it back to
+  // initials. Only paths we already track are honored.
+  async "library.setAvatar"(params) {
+    const requested =
+      typeof params.path === "string" && params.path.trim()
+        ? params.path.trim()
+        : libraryRootDir();
+    const norm = requested.replace(/\/+$/, "");
+    const known = readKnownLibraries().some(
+      (l) => l.path.replace(/\/+$/, "") === norm,
+    );
+    if (!known) return { ok: false as const, reason: "unknown" as const };
+    const avatar = typeof params.avatar === "string" ? params.avatar : null;
+    setLibraryAvatar(requested, avatar);
+    return { ok: true as const };
   },
 
   // Jump to a library that already exists on disk (no copy): write the

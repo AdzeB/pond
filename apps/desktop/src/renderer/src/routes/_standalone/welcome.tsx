@@ -4,7 +4,10 @@ import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { Onboarding } from "@/components/onboarding";
-import { markOnboardedLocally, wasOnboardedLocally } from "@/lib/onboarded";
+import {
+  markOnboardedLocally,
+  wasOnboardedLocally,
+} from "@/lib/utils/onboarded";
 import styles from "./welcome.module.css";
 
 interface Step {

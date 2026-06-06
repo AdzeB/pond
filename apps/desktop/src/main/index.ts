@@ -217,7 +217,6 @@ interface ShellHint {
   accentH?: number;
   contrast?: number;
   fgDir?: number;
-  radius?: number;
   pointerCursors?: boolean;
   onboarded?: boolean;
 }
@@ -241,7 +240,6 @@ async function resolveShellHint(): Promise<ShellHint> {
       accentH: v.accentH,
       contrast: v.contrast,
       fgDir: v.fgDir,
-      radius: prefs.preferences.radius,
       pointerCursors: prefs.preferences.pointerCursors === true,
       onboarded,
     };

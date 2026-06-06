@@ -13,14 +13,14 @@ import {
   IconThumbsUpOutline18 as ThumbsUp,
 } from "@pond/icons/outline/18";
 import type { ReactNode } from "react";
-import { formatBytes } from "@/lib/format";
-import type { Save } from "@/pool/types";
 import {
+  formatBytes,
   formatCount,
   formatDuration,
   formatShortDate,
-  prettifyType,
-} from "./helpers";
+} from "@/lib/utils/format";
+import type { Save } from "@/pool/types";
+import { prettifyType } from "./helpers";
 
 export interface PaneRow {
   id: string;

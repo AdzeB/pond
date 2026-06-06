@@ -22,10 +22,6 @@
   }
 }
 
-.popup-compact {
-  min-width: 160px;
-}
-
 .arrow {
   display: flex;
   color: var(--ds-gray-2);
@@ -98,11 +94,6 @@
   }
 }
 
-.item-compact {
-  gap: 8px;
-  height: 28px;
-}
-
 .item-icon {
   display: inline-flex;
   flex-shrink: 0;
@@ -111,11 +102,6 @@
   width: 16px;
   height: 16px;
   color: var(--ds-gray-11);
-}
-
-.item-compact .item-icon {
-  width: 14px;
-  height: 14px;
 }
 
 .item-label {

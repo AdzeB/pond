@@ -1,8 +1,7 @@
 .provider {
   --sidebar-height-lg: 32px;
   --sidebar-height-md: 28px;
-
-  display: block;
+  width: 100%;
 }
 
 .root {
@@ -12,24 +11,20 @@
 
 .toolbar {
   display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
   gap: 8px;
-  align-self: stretch;
+  align-items: center;
   justify-content: flex-end;
-  height: var(--sidebar-height-lg);
-  padding: 0 8px;
+  height: 32px;
 }
 
 .header {
   display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  align-items: flex-start;
-  align-self: stretch;
-  justify-content: flex-end;
-  height: var(--sidebar-height-lg);
-  padding: 0 8px;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 32px;
+  margin-top: 12px;
 }
 
 .group {
@@ -53,7 +48,7 @@
 .group-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: px;
   align-items: flex-start;
   align-self: stretch;
   padding: 0 2px;
@@ -62,8 +57,28 @@
 .item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  width: 172px;
-  height: 32px;
+  width: 100%;
+  height: var(--sidebar-height-md);
   padding: 0 6px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-10);
+  border-radius: 8px;
+  transition: all var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+
+  &[data-status="active"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-2);
+  }
+
+  .icon {
+    width: 18px;
+    height: 18px;
+    padding: 0.5px;
+    margin-right: 6px;
+  }
 }

@@ -30,7 +30,6 @@ declare global {
       accentH?: number;
       contrast?: number;
       fgDir?: number;
-      radius?: number;
       pointerCursors?: boolean;
       onboarded?: boolean;
     };

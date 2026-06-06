@@ -15,7 +15,6 @@ export const PrefsSchema = z
           .catch(DEFAULT_PREFS.preferences.systemLightId),
         systemDarkId: z.string().catch(DEFAULT_PREFS.preferences.systemDarkId),
         custom: z.any().default(DEFAULT_PREFS.preferences.custom),
-        radius: z.number().catch(DEFAULT_PREFS.preferences.radius),
         pointerCursors: z
           .boolean()
           .catch(DEFAULT_PREFS.preferences.pointerCursors),

@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { adaptNavigate } from "@/lib/navigate-path";
+import { adaptNavigate } from "@/lib/utils/navigate-path";
 
 export function DeepLinkBridge() {
   const navigate = useNavigate();

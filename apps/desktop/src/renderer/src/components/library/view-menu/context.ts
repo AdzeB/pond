@@ -5,8 +5,7 @@ import {
   type DisplayPrefs,
   setDisplayPref,
   useDisplayPrefs,
-} from "@/lib/display-prefs";
-import type { LayoutValue } from "@/lib/view-prefs";
+} from "@/lib/stores/display-prefs";
 import {
   addPredicate,
   resetFilters,
@@ -18,7 +17,8 @@ import {
   setZoom,
   updatePredicate,
   useViewStore,
-} from "@/lib/view-store";
+} from "@/lib/stores/view-store";
+import type { LayoutValue } from "@/lib/utils/view-prefs";
 import type { SortDir, SortKey } from "@/pool/use-filtered-saves";
 
 export type { SortDir, SortKey };

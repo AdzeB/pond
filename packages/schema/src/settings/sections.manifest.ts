@@ -223,16 +223,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             visible: "isCustomMode",
           },
           {
-            control: "range",
-            key: "radius",
-            title: "Corner Radius",
-            description: "Roundness of various elements.",
-            min: 0,
-            max: 28,
-            step: 1,
-            suffix: "px",
-          },
-          {
             control: "stepper",
             key: "uiFontSize",
             title: "Font Size",

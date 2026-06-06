@@ -1,7 +1,7 @@
 import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
-import type { DisplayPrefKey } from "@/lib/display-prefs";
-import { useInspector, useSidebar } from "@/lib/shell-state";
+import type { DisplayPrefKey } from "@/lib/stores/display-prefs";
+import { useInspector, useSidebar } from "@/lib/stores/shell-state";
 import { useView } from "../context";
 import styles from "./display.module.css";
 

@@ -1,8 +1,8 @@
 import { Button, cn, Dialog, Field, Input, useToast } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { navigateTo } from "@/lib/navigate-path";
-import { closeCapture, useCapture } from "@/lib/view-store";
+import { closeCapture, useCapture } from "@/lib/stores/view-store";
+import { navigateTo } from "@/lib/utils/navigate-path";
 import styles from "./styles.module.css";
 
 function Root() {

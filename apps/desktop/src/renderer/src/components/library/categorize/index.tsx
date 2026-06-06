@@ -1,6 +1,6 @@
 import { Dialog, Input } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { categorize, useCategorize } from "@/lib/categorize";
+import { categorize, useCategorize } from "@/lib/stores/categorize";
 import { setSaveTags } from "@/pool/mutate-save";
 import { pool } from "@/pool/pool";
 import styles from "./styles.module.css";

@@ -231,16 +231,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             visible: predicates.isCustomMode,
           },
           {
-            control: "range",
-            key: "radius",
-            title: "Corner Radius",
-            description: "Roundness of various elements.",
-            min: 0,
-            max: 28,
-            step: 1,
-            suffix: "px",
-          },
-          {
             control: "stepper",
             key: "uiFontSize",
             title: "Font Size",

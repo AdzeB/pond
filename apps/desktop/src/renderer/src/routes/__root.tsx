@@ -9,7 +9,7 @@ import { BulkActionBar } from "@/components/library/bulk-action-bar";
 import { Categorize } from "@/components/library/categorize";
 import { QuickCapture } from "@/components/library/quick-capture";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
-import { wasOnboardedLocally } from "@/lib/onboarded";
+import { wasOnboardedLocally } from "@/lib/utils/onboarded";
 
 export const Route = createRootRoute({
   beforeLoad: ({ location }) => {

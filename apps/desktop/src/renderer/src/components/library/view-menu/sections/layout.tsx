@@ -6,7 +6,7 @@ import {
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import { Menu } from "@pond/ui";
-import type { LayoutValue } from "@/lib/view-prefs";
+import type { LayoutValue } from "@/lib/utils/view-prefs";
 import { useView } from "../context";
 import styles from "./layout.module.css";
 

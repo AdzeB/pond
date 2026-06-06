@@ -4,7 +4,7 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Menu, Slider } from "@pond/ui";
 import { useCallback } from "react";
-import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/use-zoom";
+import { ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from "@/lib/utils/zoom";
 import { useView } from "../context";
 import styles from "./zoom.module.css";
 

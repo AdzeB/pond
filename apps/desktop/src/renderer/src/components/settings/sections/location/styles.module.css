@@ -1,3 +1,28 @@
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-a3);
+  border-radius: 7px;
+
+  &[data-emoji] {
+    font-size: 18px;
+    background: transparent;
+  }
+}
+
+.avatar-input {
+  width: 72px;
+  text-align: center;
+}
+
 .relocate-body {
   display: flex;
   flex-direction: column;

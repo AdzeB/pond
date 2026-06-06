@@ -2,9 +2,9 @@ import { IconMagnifierOutline18 as SearchIcon } from "@pond/icons/outline/18";
 import { Input, Toolbar } from "@pond/ui";
 import { FilterBar } from "@/components/library/filter-bar";
 import { View } from "@/components/library/view-menu";
-import { usePlatform } from "@/lib/platform";
-import { useSidebar } from "@/lib/shell-state";
-import { useDebouncedSearch } from "@/lib/use-debounced-search";
+import { usePlatform } from "@/lib/hooks/platform";
+import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
+import { useSidebar } from "@/lib/stores/shell-state";
 import styles from "./styles.module.css";
 
 export function HeaderToolbar() {

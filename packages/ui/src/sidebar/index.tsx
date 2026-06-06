@@ -1,5 +1,7 @@
 import { Button } from "@base-ui/react/button";
 import { Collapsible } from "@base-ui/react/collapsible";
+import { Link, type LinkProps } from "@tanstack/react-router";
+
 import styles from "./styles.module.css";
 
 interface ProviderProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -32,10 +34,30 @@ function Item({ ...props }: ItemProps) {
   return <Button className={styles.item} {...props} />;
 }
 
-interface GroupProps extends Collapsible.Root.Props {}
+interface AnchorProps extends LinkProps {}
+
+function Anchor({ ...props }: AnchorProps) {
+  return <Link className={styles.item} {...props} />;
+}
+
+interface IconProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Icon({ ...props }: IconProps) {
+  return <span className={styles.icon} {...props} />;
+}
+
+interface GroupProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Group({ ...props }: GroupProps) {
-  return <Collapsible.Root className={styles.group} {...props} />;
+  return <div className={styles.group} {...props} />;
+}
+
+interface CollapsibleGroupProps extends Collapsible.Root.Props {}
+
+function CollapsibleGroup({ ...props }: CollapsibleGroupProps) {
+  return (
+    <Collapsible.Root defaultOpen={true} className={styles.group} {...props} />
+  );
 }
 
 interface GroupHeaderProps extends Collapsible.Trigger.Props {}
@@ -50,13 +72,23 @@ function GroupContent({ ...props }: GroupContentProps) {
   return <Collapsible.Panel className={styles["group-content"]} {...props} />;
 }
 
+interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Footer({ ...props }: FooterProps) {
+  return <div className={styles.footer} {...props} />;
+}
+
 export const Sidebar = {
   Provider,
   Root,
   Toolbar,
   Header,
   Item,
+  Icon,
+  Anchor,
   Group,
+  CollapsibleGroup,
   GroupHeader,
   GroupContent,
+  Footer,
 };

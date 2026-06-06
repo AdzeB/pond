@@ -34,6 +34,7 @@ export { Select } from "./select";
 export { Separator } from "./separator";
 export { Settings } from "./settings";
 export { Shell } from "./shell";
+export { Sidebar } from "./sidebar";
 export { Slider } from "./slider";
 export { Stepper } from "./stepper";
 export { Switch } from "./switch";

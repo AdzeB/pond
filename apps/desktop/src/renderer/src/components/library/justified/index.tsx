@@ -1,8 +1,8 @@
 import { useMemo } from "react";
-import { aspectFor, useAspectVersion } from "@/lib/aspect";
-import { useDisplayPrefs } from "@/lib/display-prefs";
-import { chromeHeightFor } from "@/lib/library-chrome";
-import { useGridWidth } from "@/lib/shell-state";
+import { aspectFor, useAspectVersion } from "@/lib/stores/aspect";
+import { useDisplayPrefs } from "@/lib/stores/display-prefs";
+import { useGridWidth } from "@/lib/stores/shell-state";
+import { chromeHeightFor } from "@/lib/utils/library-chrome";
 import type { Save } from "@/pool/types";
 import {
   PackedGrid,

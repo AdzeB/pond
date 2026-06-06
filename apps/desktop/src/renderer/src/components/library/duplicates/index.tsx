@@ -5,9 +5,9 @@ import {
   clusterSimilar,
   type DuplicateGroup,
   groupExactDuplicates,
-} from "@/lib/duplicates";
-import { computeAHash } from "@/lib/phash";
-import { trashSave } from "@/lib/save-actions";
+} from "@/lib/utils/duplicates";
+import { computeAHash } from "@/lib/utils/phash";
+import { trashSave } from "@/lib/utils/save-actions";
 import { useSaves } from "@/pool/hooks";
 import { pickPrimaryFile } from "@/pool/media";
 import type { Save } from "@/pool/types";

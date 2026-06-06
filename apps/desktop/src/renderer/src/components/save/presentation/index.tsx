@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MediaViewer } from "@/components/save/preview/media-viewer";
-import { presentation, usePresentationId } from "@/lib/presentation";
+import { presentation, usePresentationId } from "@/lib/stores/presentation";
 import { useSave } from "@/pool/hooks";
 import styles from "./styles.module.css";
 

@@ -15,12 +15,12 @@ import {
 import { ContextMenu, useToast } from "@pond/ui";
 import { usePlayer } from "@videojs/react";
 import { useCallback } from "react";
-import { REVEAL_LABEL } from "@/lib/platform";
+import { REVEAL_LABEL } from "@/lib/hooks/platform";
 import {
   enterPresentation,
   exportFile,
   openInNewWindow,
-} from "@/lib/save-actions";
+} from "@/lib/utils/save-actions";
 import type { Save } from "@/pool/types";
 import { SPEED_OPTIONS } from "./speed-options";
 

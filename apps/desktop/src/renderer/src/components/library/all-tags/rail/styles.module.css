@@ -1,12 +1,11 @@
 .rail {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 1px;
   min-height: 0;
-  padding: 12px 8px;
+  padding: 4px 8px 12px;
   overflow-y: auto;
-  background: var(--ds-gray-a1);
-  border-right: 1px solid var(--ds-gray-a4);
 }
 
 .rail-row {

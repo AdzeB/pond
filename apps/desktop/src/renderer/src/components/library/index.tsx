@@ -1,7 +1,7 @@
 import { cn } from "@pond/ui";
 import { type HTMLMotionProps, motion } from "motion/react";
 import type { ReactNode } from "react";
-import { drawerSpring } from "@/lib/motion";
+import { drawerSpring } from "@/lib/utils/motion";
 import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";

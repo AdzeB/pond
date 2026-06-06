@@ -15,7 +15,7 @@ import {
 } from "@/components/save/context-menu";
 import { getYouTubeChapters } from "@/components/save/preview/helpers";
 import { MediaViewer } from "@/components/save/preview/media-viewer";
-import type { SaveList } from "@/lib/use-save-list";
+import type { SaveList } from "@/lib/hooks/use-save-list";
 import { buildMediaUnits } from "@/pool/media";
 import { useResolvedTheme } from "@/pool/theme";
 import type { Save, SaveFile } from "@/pool/types";
