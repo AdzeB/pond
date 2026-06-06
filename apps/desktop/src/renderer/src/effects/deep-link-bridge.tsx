@@ -7,9 +7,7 @@ export function DeepLinkBridge() {
 
   useEffect(() => {
     const nav = adaptNavigate(navigate);
-    const off = window.pond.onNavigate((path) =>
-      nav(path, { viewTransition: true }),
-    );
+    const off = window.pond.onNavigate((path) => nav(path));
     return off;
   }, [navigate]);
 

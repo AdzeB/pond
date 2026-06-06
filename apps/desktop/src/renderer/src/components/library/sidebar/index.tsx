@@ -293,11 +293,7 @@ function HelpButton({ openUrl, navigate }: HelpButtonProps) {
                 <Menu.ItemKbd>⌘ /</Menu.ItemKbd>
               </Menu.Item>
 
-              <Menu.Item
-                onClick={() =>
-                  navigateTo(navigate, "/settings", { viewTransition: true })
-                }
-              >
+              <Menu.Item onClick={() => navigateTo(navigate, "/settings")}>
                 <Menu.ItemIcon>
                   <IconSliderFillDuo18 />
                 </Menu.ItemIcon>

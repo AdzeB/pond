@@ -26,7 +26,6 @@ export function navigateTo(
   navigate: TSNavigate,
   to: string,
   opts: {
-    viewTransition?: boolean;
     replace?: boolean;
     search?: Record<string, unknown>;
   } = {},
@@ -34,13 +33,11 @@ export function navigateTo(
   void navigate({
     to,
     search: opts.search,
-    viewTransition: opts.viewTransition,
     replace: opts.replace,
   } as unknown as NavigateArg);
 }
 
 export interface NavigateOpts {
-  viewTransition?: boolean;
   search?: Record<string, unknown>;
   replace?: boolean;
 }
@@ -77,7 +74,6 @@ export function adaptNavigate(tsNav: TSNavigate): PathNavigate {
     applyViewStateFromParams(params);
     void tsNav({
       to: to || "/",
-      viewTransition: opts?.viewTransition,
       replace: opts?.replace,
     } as unknown as NavigateArg);
   };

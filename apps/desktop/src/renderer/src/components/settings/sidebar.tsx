@@ -21,9 +21,7 @@ export function SettingsSidebar() {
           <SidebarTools />
         </Sidebar.Toolbar>
 
-        <Sidebar.Back
-          onClick={() => void navigate({ to: "/", viewTransition: true })}
-        >
+        <Sidebar.Back onClick={() => void navigate({ to: "/" })}>
           Back to App
         </Sidebar.Back>
 
@@ -36,11 +34,7 @@ export function SettingsSidebar() {
             <Sidebar.Group key={group}>
               {label ? <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel> : null}
               {items.map((section) => (
-                <Sidebar.Link
-                  key={section.id}
-                  to={`/settings/${section.path}`}
-                  viewTransition={{ types: ["settings-section"] }}
-                >
+                <Sidebar.Link key={section.id} to={`/settings/${section.path}`}>
                   <Sidebar.LinkIcon>
                     <section.icon width={14} height={14} />
                   </Sidebar.LinkIcon>

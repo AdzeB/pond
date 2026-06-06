@@ -7,7 +7,6 @@ export const Route = createFileRoute("/settings/")({
       to: "/settings/$section",
       params: { section: DEFAULT_SECTION.path },
       replace: true,
-      viewTransition: true,
     });
   },
 });

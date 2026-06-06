@@ -158,7 +158,7 @@ function AllTagsPage() {
   }, [selectedRail, selectedGroupName]);
 
   function openTag(name: string) {
-    navigate(`/?${tagFilterSearch(name)}`, { viewTransition: true });
+    navigate(`/?${tagFilterSearch(name)}`);
   }
 
   const layout = prefs.layout ?? "grid";

@@ -15,7 +15,6 @@
   flex-direction: column;
   width: var(--sidebar-width);
   height: 100%;
-  view-transition-name: app-sidebar;
 }
 
 .scroll {
