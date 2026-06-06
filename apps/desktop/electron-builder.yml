@@ -25,15 +25,11 @@ files:
 # them from `process.resourcesPath` which lands inside `Contents/Resources`
 # on macOS / `resources/` on Windows+Linux.
 #
-# `resources/bin/yt-dlp` is the standalone yt-dlp binary, downloaded by
-# `scripts/download-yt-dlp.mjs` during `pnpm install`. We ship it via
-# extraResources rather than asarUnpack because we need to spawn it as
-# a separate process (asar paths aren't executable).
-#
 # `node_modules/ffmpeg-static/ffmpeg` is the static ffmpeg yt-dlp uses
 # to mux adaptive streams (most TikTok / IG Reels / YT downloads need
-# it). `extraResources` flattens it next to the yt-dlp binary so the
-# in-app `binariesAvailable` lookup can find both with the same root.
+# it). `extraResources` flattens it into `bin/` so `binariesAvailable`
+# can spawn it as a separate process (asar paths aren't executable).
+# yt-dlp is not bundled: it's fetched at runtime into userData.
 extraResources:
   - from: resources
     to: .
@@ -44,6 +40,10 @@ extraResources:
 
 extraMetadata:
   main: ./out/main/index.js
+
+# Fail the pack if the bundled ffmpeg is missing, so a release never goes
+# out unable to mux downloaded video.
+afterPack: scripts/verify-binaries.cjs
 
 # electron-builder rebuilds native modules against the packaged Electron
 # ABI before bundling. Combined with the `postinstall` script in
@@ -64,6 +64,11 @@ mac:
   notarize: false
   hardenedRuntime: true
   gatekeeperAssess: false
+  # The inherit entitlements are applied to the bundled ffmpeg binary (and
+  # any child process Pond spawns, e.g. the runtime yt-dlp) so they survive
+  # the hardened runtime after notarization.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.inherit.plist
   # Register `.pond` as a macOS package so Finder shows a library as a
   # single bundle instead of a folder full of items/, trash/, metadata.
   # LaunchServices only honors this in packaged builds, not `dev`.

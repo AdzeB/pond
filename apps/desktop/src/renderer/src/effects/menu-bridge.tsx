@@ -1,3 +1,7 @@
+import {
+  DEFAULT_SYSTEM_DARK_ID,
+  DEFAULT_SYSTEM_LIGHT_ID,
+} from "@pond/schema/db";
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
 import {
@@ -44,15 +48,21 @@ export function MenuBridge() {
           return;
 
         case "theme.light":
-          patchPreferences({ theme: "light" });
+          patchPreferences({
+            themeMode: "preset",
+            presetId: DEFAULT_SYSTEM_LIGHT_ID,
+          });
           return;
 
         case "theme.dark":
-          patchPreferences({ theme: "dark" });
+          patchPreferences({
+            themeMode: "preset",
+            presetId: DEFAULT_SYSTEM_DARK_ID,
+          });
           return;
 
         case "theme.system":
-          patchPreferences({ theme: "system" });
+          patchPreferences({ themeMode: "system" });
           return;
 
         case "refresh.all":

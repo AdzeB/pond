@@ -4,6 +4,7 @@ import {
   app,
   BrowserWindow,
   globalShortcut,
+  nativeTheme,
   powerMonitor,
   session,
   shell,
@@ -18,6 +19,7 @@ import { enqueueCaptureTweetForExisting } from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
+import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
 import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
@@ -206,28 +208,40 @@ function configureSessionDefaults(): void {
 }
 
 interface ShellHint {
-  theme?: "light" | "dark" | "high-contrast";
-  accentHue?: string;
-  customHue?: number;
-  neutralHue?: string;
+  theme?: "light" | "dark";
+  baseL?: number;
+  baseC?: number;
+  baseH?: number;
+  accentL?: number;
+  accentC?: number;
+  accentH?: number;
+  contrast?: number;
+  fgDir?: number;
   radius?: number;
-  accentIntensity?: number;
   pointerCursors?: boolean;
   onboarded?: boolean;
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
   try {
+    const { resolveActiveTheme, themeEngineVars } = await import(
+      "@pond/schema/db"
+    );
     const prefs = await getPrefs();
-    const themePref = prefs.preferences.theme;
     const onboarded = await readOnboarded();
+    const def = resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors);
+    const v = themeEngineVars(def);
     return {
-      theme: themePref === "system" ? undefined : themePref,
-      accentHue: prefs.preferences.accentHue,
-      customHue: prefs.preferences.customHue,
-      neutralHue: prefs.preferences.neutralHue,
+      theme: v.isDark ? "dark" : "light",
+      baseL: v.baseL,
+      baseC: v.baseC,
+      baseH: v.baseH,
+      accentL: v.accentL,
+      accentC: v.accentC,
+      accentH: v.accentH,
+      contrast: v.contrast,
+      fgDir: v.fgDir,
       radius: prefs.preferences.radius,
-      accentIntensity: prefs.preferences.accentIntensity,
       pointerCursors: prefs.preferences.pointerCursors === true,
       onboarded,
     };
@@ -468,6 +482,7 @@ async function postLaunchInit(): Promise<void> {
 
   registerTrashCron();
   registerSyncCron();
+  registerYtDlpUpdateCron();
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
   );
@@ -544,6 +559,17 @@ function registerSyncCron() {
       await patchGlobalSync({ lastFireAt: now.toISOString() });
       void syncAllSources({ trigger: "cron" });
     },
+  });
+}
+
+function registerYtDlpUpdateCron() {
+  schedule({
+    name: "yt-dlp-update",
+    every: 24 * 60 * 60 * 1000,
+    // yt-dlp isn't bundled, so a fresh install has none until this runs.
+    // Check soon after launch, then daily.
+    initialDelay: 5_000,
+    fn: () => maybeUpdateYtDlp(),
   });
 }
 

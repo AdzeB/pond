@@ -1,7 +1,6 @@
 import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
-import { Input, Select, Switch } from "@pond/ui";
+import { Input, Select, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
-import { Settings } from "@/components/settings";
 import {
   applyPreset,
   DEFAULT_GLOBAL_SYNC_PREFS,

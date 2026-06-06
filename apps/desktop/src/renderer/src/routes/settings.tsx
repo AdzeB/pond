@@ -1,16 +1,16 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import styles from "@/components/settings/layout.module.css";
-import { SECTIONS } from "@/components/settings/registry";
+import { preloadSections } from "@/components/settings/registry.runtime";
 import { SettingsSidebar } from "@/components/settings/sidebar";
 import { Shell } from "@/components/shell";
 
 function SettingsLayout() {
-  // Warm every section chunk once Settings is open so switching pages
+  // Warm the lazy section chunks once Settings is open so switching pages
   // resolves from the module cache instead of a cold dynamic import.
   useEffect(() => {
     const warm = () => {
-      for (const section of SECTIONS) void section.load();
+      preloadSections();
     };
     if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(warm);

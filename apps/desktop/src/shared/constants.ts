@@ -28,8 +28,6 @@ export const IPC = {
   refreshBackfillCancel: "pond:refresh-backfill-cancel",
   sourceConnect: "pond:source-connect",
   sourceStatus: "pond:source-status",
-  videoToolsStatus: "pond:video-tools-status",
-  videoToolsReinstall: "pond:video-tools-reinstall",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",

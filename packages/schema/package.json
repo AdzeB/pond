@@ -22,6 +22,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./color": "./src/color.ts",
     "./db": "./src/db.ts",
     "./events": "./src/events.ts",
     "./tx": "./src/tx.ts",
@@ -39,6 +40,8 @@
     "./label-name": "./src/label-name.ts"
   },
   "scripts": {
+    "generate": "tsx scripts/generate-settings.ts",
+    "generate:watch": "tsx watch scripts/generate-settings.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -47,6 +50,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
+    "tsx": "^4.20.6",
     "typescript": "^6.0.3"
   }
 }

@@ -1,6 +1,5 @@
-import { AlertDialog, Button, useToast } from "@pond/ui";
+import { AlertDialog, Button, Settings, useToast } from "@pond/ui";
 import { useEffect, useState } from "react";
-import { Settings } from "@/components/settings";
 import type { RelocatePreviewWire } from "../../../../../../preload";
 import type { SettingsRow } from "../_types";
 import styles from "./styles.module.css";

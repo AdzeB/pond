@@ -20,6 +20,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "generate": "turbo run generate",
     "lint": "biome check . --write --unsafe",
     "lint:check": "biome ci .",
     "typecheck": "turbo run typecheck",

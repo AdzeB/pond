@@ -70,9 +70,6 @@ export async function runFinalize(saveId: string): Promise<void> {
     });
   }
 
-  const { applyAutoTags } = await import("../../auto-tag");
-  await applyAutoTags(save);
-
   if (save.mediaType === "image" && (save.dominantColors ?? []).length === 0) {
     const files = save.files ?? [];
     const cover = files[save.coverIndex ?? 0] ?? files[0];
@@ -90,10 +87,9 @@ export async function runFinalize(saveId: string): Promise<void> {
     }
   }
 
-  // Authoritative info.json write: by now auto-tags have updated the DB row
-  // and color extraction has run, so the shared projection captures the full
-  // exported shape. writeInfo forces it even though status/ingestCompletedAt
-  // are DB-only columns.
+  // Authoritative info.json write: by now color extraction has run, so the
+  // shared projection captures the full exported shape. writeInfo forces it
+  // even though status/ingestCompletedAt are DB-only columns.
   await persistSave(
     saveId,
     {

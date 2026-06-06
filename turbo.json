@@ -3,14 +3,18 @@
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml", ".env"],
   "tasks": {
+    "generate": {
+      "cache": false
+    },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^generate"],
       "inputs": [
         "src/**",
         "public/**",
         "entrypoints/**",
         "sources/**",
         "utils/**",
+        "scripts/**",
         "package.json",
         "tsconfig.json",
         "electron.vite.config.ts",
@@ -20,16 +24,17 @@
       "outputs": ["out/**", ".output/**"]
     },
     "dev": {
+      "dependsOn": ["^generate"],
       "cache": false,
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^generate"],
       "inputs": ["src/**", "../../biome.json"],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "^generate"],
       "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },

@@ -15,7 +15,9 @@ import {
   type VideoDownloadSettings,
 } from "./prefs";
 
+export * from "./color";
 export * from "./prefs";
+export * from "./theme-presets";
 
 export const SOURCES = [
   "twitter",

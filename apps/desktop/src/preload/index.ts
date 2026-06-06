@@ -157,18 +157,6 @@ const api = {
     return ipcRenderer.invoke(IPC.sourceStatus, source);
   },
 
-  videoToolsStatus(): Promise<{
-    ok: boolean;
-    ytdlp: { available: boolean; path: string | null };
-    ffmpeg: { available: boolean; path: string | null };
-  }> {
-    return ipcRenderer.invoke(IPC.videoToolsStatus);
-  },
-
-  videoToolsReinstall(): Promise<{ ok: boolean; message: string }> {
-    return ipcRenderer.invoke(IPC.videoToolsReinstall);
-  },
-
   syncRunNow(
     source: string,
   ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
@@ -215,11 +203,15 @@ const api = {
 
 interface ShellHint {
   theme?: "light" | "dark";
-  accentHue?: string;
-  customHue?: number;
-  neutralHue?: string;
+  baseL?: number;
+  baseC?: number;
+  baseH?: number;
+  accentL?: number;
+  accentC?: number;
+  accentH?: number;
+  contrast?: number;
+  fgDir?: number;
   radius?: number;
-  accentIntensity?: number;
   pointerCursors?: boolean;
   onboarded?: boolean;
 }

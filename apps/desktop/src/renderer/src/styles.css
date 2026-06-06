@@ -70,19 +70,8 @@ html[data-theme="light"] {
   color-scheme: light;
 }
 
-html[data-theme="dark"],
-html[data-theme="high-contrast"] {
+html[data-theme="dark"] {
   color-scheme: dark;
-}
-
-html[data-theme="high-contrast"] {
-  --ds-gray-12: #ffffff;
-  --ds-gray-11: #e6e6e6;
-  --ds-gray-a3: rgba(255, 255, 255, 0.18);
-  --ds-gray-a4: rgba(255, 255, 255, 0.28);
-  --ds-shadow-focus-halo:
-    0 0 0 2px var(--ds-accent-9),
-    0 0 0 4px color-mix(in srgb, var(--ds-accent-9) 35%, transparent);
 }
 
 html[data-pointer-cursors="true"] button,
@@ -98,7 +87,7 @@ body,
 #root {
   height: 100%;
   color: var(--ds-gray-12);
-  background: var(--ds-gray-3);
+  background: var(--ds-gray-2);
 }
 
 html,

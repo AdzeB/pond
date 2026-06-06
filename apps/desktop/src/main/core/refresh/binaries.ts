@@ -8,8 +8,16 @@ export interface ResolvedBinaries {
   ffmpeg: string | null;
 }
 
-const YTDLP_FILENAME = process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
+export const YTDLP_FILENAME =
+  process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
 const FFMPEG_FILENAME = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
+
+// Writable home for the runtime-managed yt-dlp. Lives outside the (signed,
+// read-only) app bundle so the updater can swap it without breaking the
+// code signature.
+export function userBinDir(): string {
+  return join(app.getPath("userData"), "bin");
+}
 
 let cached: ResolvedBinaries | null = null;
 
@@ -27,24 +35,13 @@ export function invalidateBinariesCache(): void {
   cached = null;
 }
 
+// yt-dlp is not bundled: it's fetched at runtime into userBinDir by the
+// updater. Fall back to a system yt-dlp on PATH (handy in dev and for
+// power users) when the managed copy isn't there yet.
 function resolveYtDlp(): string | null {
-  const candidates: string[] = [];
-  if (app.isPackaged) {
-    candidates.push(join(process.resourcesPath, "bin", YTDLP_FILENAME));
-  }
-  candidates.push(
-    resolve(__dirname, "../../../../resources/bin", YTDLP_FILENAME),
-  );
-  candidates.push(
-    resolve(process.cwd(), "apps/desktop/resources/bin", YTDLP_FILENAME),
-  );
-  candidates.push(resolve(process.cwd(), "resources/bin", YTDLP_FILENAME));
-
-  for (const c of candidates) {
-    if (existsSync(c)) return c;
-  }
-  const onPath = lookupOnPath(YTDLP_FILENAME);
-  return onPath;
+  const managed = join(userBinDir(), YTDLP_FILENAME);
+  if (existsSync(managed)) return managed;
+  return lookupOnPath(YTDLP_FILENAME);
 }
 
 function resolveFfmpeg(): string | null {

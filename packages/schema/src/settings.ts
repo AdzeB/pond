@@ -7,20 +7,7 @@ export interface SettingsSection {
   group: SettingsGroup;
 }
 
-export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "general", path: "general", label: "General", group: "app" },
-  {
-    id: "appearance",
-    path: "appearance",
-    label: "Appearance",
-    group: "app",
-  },
-  { id: "storage", path: "storage", label: "Storage", group: "library" },
-  { id: "location", path: "location", label: "Location", group: "library" },
-  { id: "downloads", path: "downloads", label: "Downloads", group: "saving" },
-  { id: "auto-tags", path: "auto-tags", label: "Auto Tags", group: "saving" },
-  { id: "schedule", path: "schedule", label: "Schedule", group: "saving" },
-  { id: "developer", path: "developer", label: "Developer", group: "dev" },
-] as const;
-
-export const SETTINGS_DEV_GROUPS: readonly SettingsGroup[] = ["dev"] as const;
+// Nav metadata (SETTINGS_SECTIONS, SETTINGS_DEV_GROUPS, SETTINGS_SECTION_ICONS)
+// is generated from the settings manifest. See
+// packages/schema/scripts/generate-settings.ts.
+export * from "./settings/nav.generated";

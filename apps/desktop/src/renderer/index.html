@@ -30,8 +30,7 @@
 				color-scheme: light;
 				background: #ffffff;
 			}
-			html[data-theme="dark"],
-			html[data-theme="high-contrast"] {
+			html[data-theme="dark"] {
 				color: #ededed;
 				color-scheme: dark;
 				background: #000000;
@@ -64,11 +63,7 @@
 					const doc = document.documentElement;
 
 					let theme = shell.theme;
-					if (
-						theme !== "light" &&
-						theme !== "dark" &&
-						theme !== "high-contrast"
-					) {
+					if (theme !== "light" && theme !== "dark") {
 						theme = window.matchMedia("(prefers-color-scheme: dark)").matches
 							? "dark"
 							: "light";
@@ -76,19 +71,20 @@
 					doc.setAttribute("data-theme", theme);
 					doc.classList.add(theme);
 
-					if (typeof shell.accentHue === "string")
-						doc.setAttribute("data-hue", shell.accentHue);
-					if (typeof shell.customHue === "number")
-						doc.style.setProperty("--ds-custom-hue", String(shell.customHue));
-					if (typeof shell.neutralHue === "string")
-						doc.setAttribute("data-neutral", shell.neutralHue);
+					const setNum = (key, prop) => {
+						if (typeof shell[key] === "number")
+							doc.style.setProperty(prop, String(shell[key]));
+					};
+					setNum("baseL", "--ds-base-l");
+					setNum("baseC", "--ds-base-c");
+					setNum("baseH", "--ds-base-h");
+					setNum("accentL", "--ds-accent-l");
+					setNum("accentC", "--ds-accent-c");
+					setNum("accentH", "--ds-accent-h");
+					setNum("contrast", "--ds-contrast");
+					setNum("fgDir", "--ds-fg-dir");
 					if (typeof shell.radius === "number")
 						doc.style.setProperty("--radius-scale", String(shell.radius / 14));
-					if (typeof shell.accentIntensity === "number")
-						doc.style.setProperty(
-							"--ds-accent-saturation",
-							`${shell.accentIntensity}%`,
-						);
 
 					if (shell.pointerCursors)
 						doc.setAttribute("data-pointer-cursors", "true");

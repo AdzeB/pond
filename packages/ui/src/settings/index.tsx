@@ -1,4 +1,4 @@
-import { cn } from "@pond/ui";
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {

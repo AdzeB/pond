@@ -114,17 +114,16 @@ export const NEUTRAL_RAMPS = {
   sand: { hue: 80, chroma: 0.014 },
   plum: { hue: 12, chroma: 0.012 },
   steel: { hue: 245, chroma: 0.016 },
+  slate: { hue: 230, chroma: 0.01 },
+  mauve: { hue: 310, chroma: 0.01 },
+  olive: { hue: 115, chroma: 0.013 },
+  cocoa: { hue: 45, chroma: 0.015 },
+  rose: { hue: 350, chroma: 0.012 },
+  marine: { hue: 195, chroma: 0.011 },
 } as const satisfies Record<string, Ramp>;
 
 export type HueName = keyof typeof HUE_RAMPS;
 export type NeutralName = keyof typeof NEUTRAL_RAMPS;
-
-// Reference peak chroma for the custom hue ramp. Vivid but broadly in
-// gamut; the browser clamps any hue that can't reach it at a given step.
-const CUSTOM_REF_CHROMA = 0.15;
-
-// Fallback hue angle if --ds-custom-hue is never set (matches blue).
-const CUSTOM_FALLBACK_HUE = 250;
 
 function round(value: number, places: number): number {
   const f = 10 ** places;
@@ -178,42 +177,137 @@ export function buildColorsCss(): string {
   return `${HEADER}\n:root {\n${hues}\n\n${neutrals}\n\n${blackAlpha}\n\n${whiteAlpha}\n\n${grayAlpha}\n}\n`;
 }
 
-function aliasOverride(
-  attr: string,
-  alias: string,
-  source: string,
-  steps: readonly Step[],
-): string {
-  const lines = steps
-    .map((step) => `  --${alias}-${step}: var(--${source}-${step});`)
-    .join("\n");
-  return `[data-${attr}="${source}"] {\n${lines}\n}`;
+// --- Theme engine -----------------------------------------------------------
+//
+// The whole --ds-* token contract is derived at runtime from one theme:
+// --ds-base-* (background okLCH), --ds-accent-* (accent okLCH), --ds-contrast
+// (lightness-spread multiplier), and --ds-fg-dir (+1 dark, -1 light). The
+// applier sets those four inputs; every step below is pure CSS math so a theme
+// change never needs a rebuild. See packages/schema/src/color.ts.
+
+// 12-step design-system scale. Per step: aL is the contrast-scaled lightness
+// delta from the base (surfaces, borders), bL is a fixed delta that guarantees
+// solids and text stay readable regardless of contrast, cT tapers the base
+// chroma so backgrounds carry the tint and text mostly drops it.
+const GRAY_AL = [
+  0, 0.022, 0.05, 0.078, 0.11, 0.145, 0.19, 0.24, 0.27, 0.3, 0.3, 0.3,
+];
+const GRAY_BL = [0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.16, 0.34, 0.52];
+const GRAY_CT = [1, 1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.5, 0.42, 0.3, 0.22];
+
+// Accent steps mix the solid accent toward the matching gray step. Step 9 is
+// the pure accent; text steps lean on the gray lightness for contrast.
+const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
+const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
+
+// Maps --ds-gray-a* / accent-a* indices to the alpha ramp steps in colors.css.
+const ALPHA_STEPS = [25, 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 950];
+
+function grayLightness(i: number): string {
+  const a = GRAY_AL[i];
+  const b = GRAY_BL[i];
+  const spread = `${a} * var(--ds-contrast) + ${b}`;
+  const value = `calc(var(--ds-base-l) + var(--ds-fg-dir) * (${spread}))`;
+  return `clamp(0.03, ${value}, 0.985)`;
 }
 
-export function buildAliasesCss(): string {
-  // Defaults: --hue-* points at blue (current accent), --neutral-* at gray.
-  const hueDefault = HUE_STEPS.map(
-    (step) => `  --hue-${step}: var(--blue-${step});`,
-  ).join("\n");
-  const neutralDefault = NEUTRAL_STEPS.map(
-    (step) => `  --neutral-${step}: var(--gray-${step});`,
-  ).join("\n");
+function grayStep(i: number): string {
+  const l = grayLightness(i);
+  const c = `calc(var(--ds-base-c) * ${GRAY_CT[i]})`;
+  return `  --ds-gray-${i + 1}: oklch(${l} ${c} var(--ds-base-h));`;
+}
 
-  const hueOverrides = (Object.keys(HUE_RAMPS) as HueName[])
-    .map((name) => aliasOverride("hue", "hue", name, HUE_STEPS))
-    .join("\n\n");
-  const neutralOverrides = (Object.keys(NEUTRAL_RAMPS) as NeutralName[])
-    .map((name) => aliasOverride("neutral", "neutral", name, NEUTRAL_STEPS))
-    .join("\n\n");
+function accentStep(i: number): string {
+  const mix = ACCENT_MIX[i];
+  return `  --ds-accent-${i + 1}: color-mix(in oklch, var(--ds-accent-solid) ${mix}%, var(--ds-gray-${i + 1}));`;
+}
 
-  // Custom accent: same locked lightness/chroma curve as every ramp, with
-  // the hue angle driven by --ds-custom-hue (set inline by ThemeApplier).
-  const customLines = HUE_STEPS.map((step) => {
-    const l = round(LIGHTNESS[step], 4);
-    const c = round(CUSTOM_REF_CHROMA * CHROMA_SCALE[step], 4);
-    return `  --hue-${step}: oklch(${l} ${c} var(--ds-custom-hue, ${CUSTOM_FALLBACK_HUE}));`;
-  }).join("\n");
-  const customOverride = `[data-hue="custom"] {\n${customLines}\n}`;
+function accentAlpha(i: number): string {
+  return `  --ds-accent-a${i + 1}: color-mix(in oklch, var(--ds-accent-solid) ${ACCENT_ALPHA[i]}%, transparent);`;
+}
 
-  return `${HEADER}\n:root {\n${hueDefault}\n\n${neutralDefault}\n}\n\n${hueOverrides}\n\n${customOverride}\n\n${neutralOverrides}\n`;
+function grayAlpha(i: number): string {
+  const step = ALPHA_STEPS[i];
+  return `  --ds-gray-a${i + 1}: light-dark(var(--black-alpha-${step}), var(--white-alpha-${step}));`;
+}
+
+// Status colors are fixed slots, independent of the user's theme. light-dark()
+// resolves against color-scheme, which styles.css sets from data-theme.
+const STATUS_TOKENS = `
+  --ds-tomato-1: light-dark(var(--red-25), var(--red-975));
+  --ds-tomato-2: light-dark(var(--red-50), var(--red-950));
+  --ds-tomato-3: light-dark(var(--red-100), var(--red-900));
+  --ds-tomato-4: light-dark(var(--red-200), var(--red-800));
+  --ds-tomato-5: light-dark(var(--red-300), var(--red-800));
+  --ds-tomato-6: light-dark(var(--red-300), var(--red-700));
+  --ds-tomato-7: light-dark(var(--red-400), var(--red-600));
+  --ds-tomato-8: light-dark(var(--red-400), var(--red-600));
+  --ds-tomato-9: light-dark(var(--red-500), var(--red-500));
+  --ds-tomato-10: light-dark(var(--red-600), var(--red-400));
+  --ds-tomato-11: light-dark(var(--red-600), var(--red-300));
+  --ds-tomato-12: light-dark(var(--red-800), var(--red-200));
+  --ds-tomato-a3: color-mix(in oklch, var(--red-500) 8%, transparent);
+  --ds-tomato-a6: color-mix(in oklch, var(--red-500) 26%, transparent);
+
+  --ds-grass-3: light-dark(var(--green-100), var(--green-900));
+  --ds-grass-6: light-dark(var(--green-300), var(--green-700));
+  --ds-grass-9: light-dark(var(--green-500), var(--green-500));
+  --ds-grass-11: light-dark(var(--green-600), var(--green-300));
+  --ds-grass-a6: color-mix(in oklch, var(--green-500) 26%, transparent);`;
+
+const RADIUS_BLOCK = `/* User-controllable corner radius. The named steps keep the design
+   system's documented values at --radius-scale: 1, and ThemeApplier
+   overrides --radius-scale inline (radius px / 14). */
+:root {
+  --radius-scale: 1;
+  --ds-radius-xs: calc(8px * var(--radius-scale));
+  --ds-radius-sm: calc(10px * var(--radius-scale));
+  --ds-radius-md: calc(12px * var(--radius-scale));
+  --ds-radius-lg: calc(14px * var(--radius-scale));
+  --ds-radius-xl: calc(16px * var(--radius-scale));
+  --ds-radius-2xl: calc(20px * var(--radius-scale));
+  --ds-radius-full: 9999px;
+}`;
+
+export function buildTokensCss(): string {
+  const idx = Array.from({ length: 12 }, (_, i) => i);
+  const grays = idx.map(grayStep).join("\n");
+  const grayAlphas = idx.map(grayAlpha).join("\n");
+  const accents = idx.map(accentStep).join("\n");
+  const accentAlphas = idx.map(accentAlpha).join("\n");
+
+  const defaults = [
+    "  --ds-base-l: 0.99;",
+    "  --ds-base-c: 0;",
+    "  --ds-base-h: 0;",
+    "  --ds-accent-l: 0.62;",
+    "  --ds-accent-c: 0.19;",
+    "  --ds-accent-h: 250;",
+    "  --ds-contrast: 0.84;",
+    "  --ds-fg-dir: -1;",
+    "  --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));",
+  ].join("\n");
+
+  const surface = [
+    "  --ds-gray-surface: color-mix(in oklch, var(--ds-gray-2) 85%, transparent);",
+    "  --ds-gray-indicator: var(--ds-gray-9);",
+    "  --ds-gray-track: var(--ds-gray-a3);",
+  ].join("\n");
+
+  const root = [
+    defaults,
+    "",
+    grays,
+    "",
+    grayAlphas,
+    "",
+    surface,
+    "",
+    accents,
+    "",
+    accentAlphas,
+    STATUS_TOKENS,
+  ].join("\n");
+
+  return `${HEADER}\n:root {\n${root}\n}\n\n${RADIUS_BLOCK}\n`;
 }

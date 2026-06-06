@@ -21,12 +21,16 @@ declare global {
   interface Window {
     pond: PondApi;
     __pondShell?: {
-      theme?: "light" | "dark" | "high-contrast";
-      accentHue?: string;
-      customHue?: number;
-      neutralHue?: string;
+      theme?: "light" | "dark";
+      baseL?: number;
+      baseC?: number;
+      baseH?: number;
+      accentL?: number;
+      accentC?: number;
+      accentH?: number;
+      contrast?: number;
+      fgDir?: number;
       radius?: number;
-      accentIntensity?: number;
       pointerCursors?: boolean;
       onboarded?: boolean;
     };

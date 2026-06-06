@@ -4,6 +4,7 @@ import {
   DEFAULT_VIDEO_DOWNLOAD,
   type ImageDownloadSettings,
   type Prefs,
+  PrefsSchema,
   settings as settingsTable,
   type VideoDownloadSettings,
 } from "@pond/schema/db";
@@ -53,7 +54,7 @@ async function loadSettings(): Promise<SettingsCache> {
         .where(eq(settingsTable.id, "singleton"));
       const row = rows[0];
       cache = {
-        prefs: mergePrefs(DEFAULT_PREFS, row?.prefs),
+        prefs: loadPrefs(row?.prefs),
         videoDownload: normalizeVideo(
           row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
         ),
@@ -217,6 +218,15 @@ function clampFilesize(
 type DeepPartial<T> = T extends object
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : T;
+
+// Read path: validate the stored blob. PrefsSchema fills missing or corrupt
+// slices and fields from DEFAULT_PREFS (per-field `.catch` plus a top-level
+// `.catch`), so parsing never throws and an older or damaged prefs.json
+// degrades to defaults per slice instead of wiping everything.
+function loadPrefs(stored: unknown): Prefs {
+  const parsed = PrefsSchema.safeParse(stored);
+  return (parsed.success ? parsed.data : DEFAULT_PREFS) as Prefs;
+}
 
 function mergePrefs(
   base: Prefs,

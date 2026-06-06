@@ -1,98 +1,29 @@
-import {
-  IconClockOutline18 as Clock,
-  IconDownloadOutline18 as Download,
-  IconFinderOutline18 as FolderOpen,
-  IconStorageOutline18 as HardDrive,
-  IconColorPaletteOutline18 as Palette,
-  IconSliderOutline18 as SlidersHorizontal,
-  IconTagOutline18 as Tag,
-  IconTerminalOutline18 as Terminal,
-} from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";
 import {
   SETTINGS_DEV_GROUPS,
+  SETTINGS_SECTION_ICONS,
   SETTINGS_SECTIONS,
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import type { ComponentType } from "react";
+import type { SectionConfig } from "./engine";
+import { icons } from "./registry.runtime";
+import { SECTION_CONFIGS } from "./sections.generated";
 
 type SectionGroup = SettingsGroup;
 
 interface SectionDef extends SettingsSection {
   icon: IconComponent;
-  // Dynamic import so settings sections stay out of the initial bundle.
-  // Each section ships as its own vendor-* chunk (see manualChunks in
-  // electron.vite.config.ts).
-  load: () => Promise<{ Component: ComponentType }>;
+  config: SectionConfig;
 }
-
-function lazyComponent<K extends string>(
-  loader: () => Promise<Record<K, ComponentType>>,
-  key: K,
-): () => Promise<{ Component: ComponentType }> {
-  return async () => ({ Component: (await loader())[key] });
-}
-
-const RENDERER_BY_ID: Record<
-  string,
-  {
-    icon: IconComponent;
-    load: () => Promise<{ Component: ComponentType }>;
-  }
-> = {
-  general: {
-    icon: SlidersHorizontal,
-    load: lazyComponent(() => import("./sections/general"), "GeneralSection"),
-  },
-  appearance: {
-    icon: Palette,
-    load: lazyComponent(
-      () => import("./sections/appearance"),
-      "AppearanceSection",
-    ),
-  },
-  storage: {
-    icon: HardDrive,
-    load: lazyComponent(() => import("./sections/storage"), "StorageSection"),
-  },
-  location: {
-    icon: FolderOpen,
-    load: lazyComponent(() => import("./sections/location"), "LocationSection"),
-  },
-  downloads: {
-    icon: Download,
-    load: lazyComponent(
-      () => import("./sections/downloads"),
-      "DownloadsSection",
-    ),
-  },
-  "auto-tags": {
-    icon: Tag,
-    load: lazyComponent(
-      () => import("./sections/auto-tags"),
-      "AutoTagsSection",
-    ),
-  },
-  schedule: {
-    icon: Clock,
-    load: lazyComponent(() => import("./sections/schedule"), "ScheduleSection"),
-  },
-  developer: {
-    icon: Terminal,
-    load: lazyComponent(
-      () => import("./sections/developer"),
-      "DeveloperSection",
-    ),
-  },
-};
 
 export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
-  const renderer = RENDERER_BY_ID[section.id];
-  if (!renderer) {
+  const icon = icons[SETTINGS_SECTION_ICONS[section.id] ?? ""];
+  const config = SECTION_CONFIGS[section.id];
+  if (!icon || !config) {
     throw new Error(`settings registry missing renderer for "${section.id}"`);
   }
-  return { ...section, ...renderer };
+  return { ...section, icon, config };
 });
 
 export const GROUP_ORDER: readonly SectionGroup[] = [

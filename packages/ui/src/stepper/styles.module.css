@@ -1,0 +1,11 @@
+.root {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.input {
+  width: 56px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

@@ -1,7 +1,14 @@
 import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
-import { AlertDialog, Button, Input, Select, Switch, useToast } from "@pond/ui";
+import {
+  AlertDialog,
+  Button,
+  Input,
+  Select,
+  Settings,
+  Switch,
+  useToast,
+} from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { Settings } from "@/components/settings";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
 export function DeveloperSection() {

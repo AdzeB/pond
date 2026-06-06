@@ -1,5 +1,4 @@
 @import "./colors/colors.css";
-@import "./theme/aliases.css";
 @import "./theme/tokens.css";
 
 :root {

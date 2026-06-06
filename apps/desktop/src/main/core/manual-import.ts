@@ -176,8 +176,6 @@ export async function createManualSave(
   const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
   if (finalRow) {
     await writeSaveInfo(finalRow);
-    const { applyAutoTags } = await import("./auto-tag");
-    await applyAutoTags(finalRow);
   }
 
   return { ok: true, id };
