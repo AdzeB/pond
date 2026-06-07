@@ -2,14 +2,11 @@ import type { FieldId } from "../types";
 import { color } from "./color";
 import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
-import { dimensions } from "./dimensions";
 import { duration } from "./duration";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
 import { publishedAt } from "./published-at";
 import { savedAt } from "./saved-at";
-import { shape } from "./shape";
-import { size } from "./size";
 import { source } from "./source";
 import { tags } from "./tags";
 import { typeField } from "./type";
@@ -26,10 +23,7 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   tags,
   source,
   type: typeField,
-  shape,
-  size,
   duration,
-  dimensions,
   creator,
   note,
   color,

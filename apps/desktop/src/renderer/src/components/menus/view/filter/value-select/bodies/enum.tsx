@@ -1,4 +1,3 @@
-import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
@@ -73,9 +72,7 @@ export function EnumBody({ predicate, onChange }: BodyProps) {
             checked={checked}
             onCheckedChange={() => toggle(p.value)}
           >
-            <span className={styles.check} aria-hidden>
-              {checked ? <Check width="0.85em" height="0.85em" /> : null}
-            </span>
+            <Menu.CheckboxItemIndicator />
             <Menu.ItemLabel>{p.label}</Menu.ItemLabel>
           </Menu.CheckboxItem>
         );

@@ -6,7 +6,6 @@
   width: var(--anchor-width);
   max-width: var(--available-width);
   padding-block: 4px;
-
   outline: none;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-md);
@@ -57,7 +56,7 @@
   font: inherit;
   font-size: 13px;
   font-weight: 500;
-  color: var(--ds-gray-11);
+  color: var(--ds-gray-10);
   text-align: left;
   touch-action: manipulation;
   cursor: default;
@@ -76,6 +75,10 @@
     border-radius: inherit;
     opacity: 0;
     transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  &[data-checked] {
+    color: var(--ds-gray-12);
   }
 
   &:hover::before,
@@ -121,13 +124,9 @@
 }
 
 .indicator {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  color: var(--ds-gray-12);
+  &:first-child {
+    margin-right: 6px;
+  }
 }
 
 .group-label {

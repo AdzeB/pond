@@ -1,4 +1,4 @@
-import { IconWrenchScrewdriverFill18 } from "@pond/icons/fill/18";
+import { IconNut2Fill18 } from "@pond/icons/fill/18";
 import { Menu } from "@pond/ui";
 import { DisplaySection } from "./sections/display";
 import { LayoutSection } from "./sections/layout";
@@ -9,7 +9,7 @@ function ViewMenu() {
   return (
     <Menu.Root>
       <Menu.Trigger icon aria-label="View options">
-        <IconWrenchScrewdriverFill18 width="16" height="16" />
+        <IconNut2Fill18 width="16" height="16" />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner side="bottom" align="end" sideOffset={6}>

@@ -1,10 +1,9 @@
 .tabs {
   display: flex;
   flex-shrink: 1;
-  gap: 2px;
+  gap: 8px;
   align-items: center;
   min-width: 0;
-  overflow-x: auto;
   scrollbar-width: none;
 }
 
@@ -13,26 +12,7 @@
 }
 
 .tab {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 6px;
-  align-items: center;
-  height: 28px;
-  padding: 0 10px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
   color: var(--ds-gray-9);
-  white-space: nowrap;
-  cursor: default;
-  user-select: none;
-  outline: none;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  transition:
-    color var(--ds-duration-fast) var(--ds-easing-standard),
-    background-color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     color: var(--ds-gray-11);
@@ -41,7 +21,6 @@
 
   &[data-active="true"] {
     color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
   }
 }
 

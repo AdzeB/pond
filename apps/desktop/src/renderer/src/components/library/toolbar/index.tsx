@@ -1,13 +1,16 @@
 import {
-  IconBarsFilterOutline18 as Filter,
-  IconMagnifierOutline18 as SearchIcon,
-} from "@pond/icons/outline/18";
-import { Button, Input, Toolbar } from "@pond/ui";
-import { useEffect, useState } from "react";
+  IconBarsFilterFill18 as Funnel,
+  IconMagnifierFill18 as Magnifier,
+  IconSliders2VerticalFill18 as Sliders,
+} from "@pond/icons/fill/18";
+import { Button, Input, Menu, Toolbar } from "@pond/ui";
 import { FilterBar } from "@/components/library/filter-bar";
 import { SavedViews } from "@/components/library/saved-views";
 import { AddFilterMenu } from "@/components/menus/add-filter";
-import { View } from "@/components/menus/view";
+import { DisplaySection } from "@/components/menus/view/sections/display";
+import { LayoutSection } from "@/components/menus/view/sections/layout";
+import { SortSection } from "@/components/menus/view/sections/sort";
+import { ZoomSection } from "@/components/menus/view/sections/zoom";
 import { usePlatform } from "@/lib/hooks/platform";
 import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
 import { useSidebar } from "@/lib/stores/shell-state";
@@ -19,38 +22,32 @@ export function HeaderToolbar() {
   const platform = usePlatform();
 
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
-
   return (
     <Toolbar.Root
       className={styles.toolbar}
       style={{ paddingInlineStart: trafficLightInset }}
     >
-      <Toolbar.Row>
-        <Toolbar.Group fill={true}>
+      <Toolbar.Row className={styles.row}>
+        <Toolbar.Group fill={true} className={styles.group}>
           <SavedViews />
         </Toolbar.Group>
-        <Toolbar.Group>
+        <Toolbar.Group className={styles.group}>
           <Search />
-          <FilterButton />
-          <View.Menu />
+          <Filter />
+          <Options />
         </Toolbar.Group>
       </Toolbar.Row>
-      <Toolbar.Row>
-        <FilterBar />
-      </Toolbar.Row>
+      <FilterBar />
     </Toolbar.Root>
   );
 }
 
-const SEARCH_DEBOUNCE_MS = 150;
-
 function Search() {
-  const [value, setValue] = useDebouncedSearch(SEARCH_DEBOUNCE_MS);
-
+  const [value, setValue] = useDebouncedSearch(200);
   return (
     <Input.Root className={styles.search}>
       <Input.Icon>
-        <SearchIcon />
+        <Magnifier />
       </Input.Icon>
       <Input.Field
         className={styles.field}
@@ -64,36 +61,35 @@ function Search() {
   );
 }
 
-// The funnel button mirrors the filter-bar's "+": it opens the same
-// nested field picker. Pressing "F" (outside a text field) opens it too.
-function FilterButton() {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "f" && e.key !== "F") return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const el = document.activeElement;
-      if (
-        el instanceof HTMLElement &&
-        (el.tagName === "INPUT" ||
-          el.tagName === "TEXTAREA" ||
-          el.isContentEditable)
-      ) {
-        return;
-      }
-      e.preventDefault();
-      setOpen(true);
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
+function Filter() {
   return (
-    <AddFilterMenu open={open} onOpenChange={setOpen}>
-      <Button icon size="sm" variant="ghost" aria-label="Filter">
-        <Filter width={16} height={16} />
+    <AddFilterMenu align="end">
+      <Button className={styles.button} icon aria-label="Filter">
+        <Funnel />
       </Button>
     </AddFilterMenu>
+  );
+}
+
+function Options() {
+  return (
+    <Menu.Root>
+      <Menu.Trigger className={styles.button} icon aria-label="View options">
+        <Sliders />
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+          <Menu.Popup style={{ width: "256px" }}>
+            <LayoutSection />
+            <Menu.Separator />
+            <SortSection />
+            <Menu.Separator />
+            <DisplaySection />
+            <Menu.Separator />
+            <ZoomSection />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
   );
 }

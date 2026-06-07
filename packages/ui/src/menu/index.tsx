@@ -1,7 +1,7 @@
 import { Input as BaseInput } from "@base-ui/react/input";
 import { Menu as Base } from "@base-ui/react/menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
-import { IconCheckOutline12 as Check } from "@pond/icons/outline/12";
+import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
 import { Button, type ButtonProps } from "../button";
@@ -150,17 +150,15 @@ function SwitchItemIndicator({
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}
-      className={cn(className)}
+      className={cn(popupStyles.indicator, className)}
       render={(renderProps, state) => (
-        <span {...renderProps}>
-          <Switch.Root
-            checked={state.checked}
-            readOnly
-            tabIndex={-1}
-            aria-hidden
-            render={<span />}
-          />
-        </span>
+        <Switch.Root
+          checked={state.checked}
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+          {...renderProps}
+        />
       )}
       {...props}
     />
@@ -175,20 +173,19 @@ function CheckboxItemIndicator({
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}
-      className={cn(className)}
+      className={cn(popupStyles.indicator, className)}
       render={(renderProps, state) => (
-        <span {...renderProps}>
-          <Checkbox.Root
-            checked={state.checked}
-            readOnly
-            tabIndex={-1}
-            aria-hidden
-          >
-            <Checkbox.Indicator>
-              <Check width={12} height={12} />
-            </Checkbox.Indicator>
-          </Checkbox.Root>
-        </span>
+        <Checkbox.Root
+          checked={state.checked}
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+          {...renderProps}
+        >
+          <Checkbox.Indicator>
+            <Check strokeWidth={2} />
+          </Checkbox.Indicator>
+        </Checkbox.Root>
       )}
       {...props}
     />

@@ -3,7 +3,6 @@ import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { memo } from "react";
-import { FIELD_UI } from "@/components/menus/view/filter/field-ui";
 import { defaultPredicateFor } from "@/components/menus/view/filter/helpers";
 import {
   changeComparator,
@@ -16,23 +15,15 @@ import {
 } from "@/components/menus/view/filter/value-select";
 import styles from "./styles.module.css";
 
-// Comparators that need no operand (e.g. "Tags is empty"): the chip omits the
-// value segment entirely.
 const VALUELESS = new Set<Predicate["operator"]>(["empty"]);
 
 interface FilterChipProps {
   field: FieldId;
   predicate: Predicate | null;
   onChange: (field: FieldId, next: Predicate | null) => void;
-  // Open the value editor on mount — used right after the chip is added so
-  // the user lands straight on value selection (Linear-style).
   autoOpenValue?: boolean;
 }
 
-// A Linear-style segmented filter chip: [Field] | [operator] | [value] | ×.
-// The field segment is static; the operator and value segments each open a
-// menu; × removes the filter. Memoized so unrelated view-state changes (zoom,
-// sort, …) don't re-render every chip.
 export const FilterChip = memo(function FilterChip({
   field,
   predicate,
@@ -40,7 +31,6 @@ export const FilterChip = memo(function FilterChip({
   autoOpenValue,
 }: FilterChipProps) {
   const meta = FIELD_META[field];
-  const Icon = FIELD_UI[field].icon;
   const draft = predicate ?? defaultPredicateFor(field);
   const opOptions = operatorOptions(draft);
   const summary = summariseValue(draft);
@@ -50,9 +40,6 @@ export const FilterChip = memo(function FilterChip({
   return (
     <div className={styles.chip}>
       <span className={styles.field}>
-        <span className={styles.icon} aria-hidden>
-          <Icon width="1em" height="1em" />
-        </span>
         <span className={styles.label}>{meta.label}</span>
       </span>
 

@@ -20,7 +20,7 @@
 .field {
   flex: 1 1 auto;
   min-width: 0;
-  height: 32px;
+  height: 100%;
   padding: 0 8px;
   font-size: 13px;
   font-weight: 500;
@@ -28,7 +28,7 @@
   outline: none;
   background: var(--ds-gray-1);
   border-radius: 6px;
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-1);
   transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 
   &::placeholder {

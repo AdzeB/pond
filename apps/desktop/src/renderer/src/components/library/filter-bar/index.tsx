@@ -1,8 +1,8 @@
 import { IconPlusOutline12 as Plus } from "@pond/icons/outline/12";
-import { IconTrash2Outline18 as Trash } from "@pond/icons/outline/18";
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { isPredicate } from "@pond/schema/filters/types";
+import { Button } from "@pond/ui";
 import { useMemo, useState } from "react";
 import { PromptDialog } from "@/components/dialogs/prompt";
 import { AddFilterMenu } from "@/components/menus/add-filter";
@@ -25,8 +25,6 @@ export function FilterBar() {
   const [promptOpen, setPromptOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
 
-  // One predicate per field: committed clauses first, then any pending
-  // (empty, mid-edit) drafts, rendered in canonical field order.
   const byField = useMemo(() => {
     const map = new Map<FieldId, Predicate>();
     for (const clause of state.query.rules) {
@@ -52,9 +50,10 @@ export function FilterBar() {
     (JSON.stringify(activeView.query) !== JSON.stringify(state.query) ||
       activeView.sortKey !== state.sort.key ||
       activeView.sortDir !== state.sort.dir);
-  // Show Save when there's something worth persisting: unsaved filters, or a
-  // modified active view.
+
   const showSave = (hasFilters && activeView == null) || dirty;
+
+  if (activeFields.length === 0) return null;
 
   const saveView = () => {
     if (activeView && dirty) {
@@ -94,41 +93,44 @@ export function FilterBar() {
   };
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: a fieldset's default form semantics and layout don't fit this filter toolbar
-    <div className={styles.bar} role="group" aria-label="Filters">
-      {activeFields.map((field) => (
-        <FilterChip
-          key={field}
-          field={field}
-          predicate={byField.get(field) ?? null}
-          onChange={setFieldPredicate}
-        />
-      ))}
+    <div className={styles.bar}>
+      <div className={styles.chips}>
+        {activeFields.map((field) => (
+          <FilterChip
+            key={field}
+            field={field}
+            predicate={byField.get(field) ?? null}
+            onChange={setFieldPredicate}
+          />
+        ))}
 
-      <AddFilterMenu>
-        <button type="button" className={styles.add} aria-label="Add filter">
-          <Plus width="0.9em" height="0.9em" />
-          {activeFields.length === 0 ? <span>Filter</span> : null}
-        </button>
-      </AddFilterMenu>
+        <AddFilterMenu>
+          <Button size="sm" className={styles.add} icon aria-label="Add filter">
+            <Plus width={10} height={10} />
+          </Button>
+        </AddFilterMenu>
+      </div>
 
-      {hasFilters ? (
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.clear}
-            onClick={() => resetFilters()}
-            aria-label="Clear all filters"
+      <div className={styles.actions}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => resetFilters()}
+          aria-label="Clear all filters"
+        >
+          Trash
+        </Button>
+        {showSave ? (
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={saveView}
+            aria-label="Save view"
           >
-            <Trash width="0.9em" height="0.9em" />
-          </button>
-          {showSave ? (
-            <button type="button" className={styles.save} onClick={saveView}>
-              {activeView && dirty ? "Save changes" : "Save"}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+            Save
+          </Button>
+        ) : null}
+      </div>
 
       <PromptDialog
         open={promptOpen}

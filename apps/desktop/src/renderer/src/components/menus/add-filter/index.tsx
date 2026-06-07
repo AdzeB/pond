@@ -27,6 +27,7 @@ interface Section {
 
 interface AddFilterMenuProps {
   open?: boolean;
+  align?: "start" | "end";
   children: ReactElement;
   onOpenChange?: (open: boolean) => void;
 }
@@ -34,6 +35,7 @@ interface AddFilterMenuProps {
 export function AddFilterMenu({
   children,
   open: controlledOpen,
+  align = "start",
   onOpenChange,
 }: AddFilterMenuProps) {
   const { state, actions } = useView();
@@ -82,7 +84,7 @@ export function AddFilterMenu({
     >
       <Menu.Trigger render={children} />
       <Menu.Portal>
-        <Menu.Positioner side="bottom" align="start" sideOffset={6}>
+        <Menu.Positioner side="bottom" align={align} sideOffset={6}>
           <Menu.Popup>
             <Menu.Input
               value={query}

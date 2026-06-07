@@ -1,9 +1,6 @@
 .toolbar {
   --backdrop-blur: 6px;
-
   display: flex;
-  flex-shrink: 0;
-  gap: 8px;
   align-items: center;
   min-width: 0;
   -webkit-app-region: drag;
@@ -13,12 +10,12 @@
   }
 }
 
-.right-group {
-  display: flex;
-  flex-shrink: 0;
-  gap: 4px;
-  align-items: center;
-  margin-inline-start: auto;
+.row {
+  height: 32px;
+}
+
+.group {
+  height: 28px;
 }
 
 .search {
@@ -27,6 +24,7 @@
   flex-shrink: 0;
   align-items: center;
   max-width: 256px;
+  height: 100%;
 
   .field {
     background: color-mix(in srgb, var(--ds-gray-1) 80%, transparent);
@@ -35,26 +33,11 @@
   }
 }
 
-.trigger {
-  flex: 1 1 auto;
-  width: 32px;
-  height: 32px;
-  padding: 8px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-  outline: none;
-  background: color-mix(in srgb, var(--ds-gray-1) 80%, transparent);
-  border-radius: 999px;
-  box-shadow: var(--ds-shadow-2);
-  backdrop-filter: blur(var(--backdrop-blur));
-  transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+.button {
+  height: 100%;
 
-  &:hover {
-    background: var(--ds-gray-2);
-  }
-
-  &:active {
-    background: var(--ds-gray-3);
-    transform: scale(0.98);
+  > svg {
+    width: 16px;
+    height: 16px;
   }
 }

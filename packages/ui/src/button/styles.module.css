@@ -41,7 +41,8 @@
 }
 
 .root {
-  --button-radius-full: 100%;
+  --button-radius-full: var(--ds-radius-full);
+
   /* xs */
   --button-height-xs: 24px;
   --button-padding-xs: 0 10px;

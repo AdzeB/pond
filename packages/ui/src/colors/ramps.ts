@@ -258,12 +258,12 @@ const STATUS_TOKENS = `
 const RADIUS_BLOCK = `/* Corner radius scale. The named steps are the design system's
    documented values. */
 :root {
-  --ds-radius-xs: 8px;
-  --ds-radius-sm: 10px;
-  --ds-radius-md: 12px;
-  --ds-radius-lg: 14px;
-  --ds-radius-xl: 16px;
-  --ds-radius-2xl: 20px;
+  --ds-radius-xs: 6px;
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 10px;
+  --ds-radius-lg: 12px;
+  --ds-radius-xl: 14px;
+  --ds-radius-2xl: 16px;
   --ds-radius-full: 9999px;
 }`;
 

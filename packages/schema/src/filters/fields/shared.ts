@@ -33,15 +33,3 @@ export function durationSeconds(s: SaveLike): number | null {
 
   return null;
 }
-
-export function shapeOf(
-  width: number | null | undefined,
-  height: number | null | undefined,
-): "square" | "portrait" | "landscape" | null {
-  const w = width ?? 0;
-  const h = height ?? 0;
-  if (!w || !h) return null;
-  const ratio = w / h;
-  if (ratio > 0.9 && ratio < 1.1) return "square";
-  return ratio < 0.9 ? "portrait" : "landscape";
-}
