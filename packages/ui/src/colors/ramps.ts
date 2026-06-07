@@ -255,16 +255,15 @@ const STATUS_TOKENS = `
   --ds-grass-11: light-dark(var(--green-600), var(--green-300));
   --ds-grass-a6: color-mix(in oklch, var(--green-500) 26%, transparent);`;
 
-const RADIUS_BLOCK = `/* Corner radius scale. Fixed at 1; the named steps are the design
-   system's documented values. */
+const RADIUS_BLOCK = `/* Corner radius scale. The named steps are the design system's
+   documented values. */
 :root {
-  --radius-scale: 1;
-  --ds-radius-xs: calc(8px * var(--radius-scale));
-  --ds-radius-sm: calc(10px * var(--radius-scale));
-  --ds-radius-md: calc(12px * var(--radius-scale));
-  --ds-radius-lg: calc(14px * var(--radius-scale));
-  --ds-radius-xl: calc(16px * var(--radius-scale));
-  --ds-radius-2xl: calc(20px * var(--radius-scale));
+  --ds-radius-xs: 8px;
+  --ds-radius-sm: 10px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 14px;
+  --ds-radius-xl: 16px;
+  --ds-radius-2xl: 20px;
   --ds-radius-full: 9999px;
 }`;
 

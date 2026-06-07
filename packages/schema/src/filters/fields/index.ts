@@ -13,14 +13,13 @@ import { size } from "./size";
 import { source } from "./source";
 import { tags } from "./tags";
 import { typeField } from "./type";
-import { url } from "./url";
 
 export type {
   FieldDescriptor,
   FieldGroup,
   FieldPreset,
 } from "./descriptor";
-export { tagsDistinctCount, tagsExists } from "./sql";
+export { tagsDistinctCount, tagsEmpty, tagsExists } from "./sql";
 
 // Insertion order is the field display order (FIELD_IDS, filter bar chips).
 export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
@@ -32,7 +31,6 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   duration,
   dimensions,
   creator,
-  url,
   note,
   color,
   savedAt,

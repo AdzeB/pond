@@ -5,7 +5,6 @@ import {
   IconListCheckboxOutline18 as ListChecks,
   IconPlusOutline18 as Plus,
 } from "@pond/icons/outline/18";
-import { tagFilterSearch } from "@pond/schema/filters/url";
 import { Button, Input, Tooltip } from "@pond/ui";
 import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -16,6 +15,7 @@ import {
 } from "@/components/library/all-tags";
 import { DisplayMenu } from "@/components/menus/display";
 import { TagPicker } from "@/components/popovers/tag-picker";
+import { setQuery } from "@/lib/stores/view-store";
 import { adaptNavigate } from "@/lib/utils/navigate-path";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";
@@ -195,7 +195,11 @@ export function Tags() {
   }, [selectedRail, selectedGroupName]);
 
   function openTag(name: string) {
-    navigate(`/?${tagFilterSearch(name)}`);
+    setQuery({
+      combinator: "and",
+      rules: [{ field: "tags", operator: "some", value: [name] }],
+    });
+    navigate("/");
   }
 
   const layout = prefs.layout ?? "grid";

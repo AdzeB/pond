@@ -6,6 +6,7 @@ import {
   text,
   unique,
 } from "drizzle-orm/sqlite-core";
+import type { Query } from "./filters/types";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
@@ -212,6 +213,25 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
+// A persisted, user-named filter view shown as a tab in the library toolbar.
+// Stores the filter query plus the sort/layout to restore when applied. Scoped
+// per-pond (lives in the pond index DB) like tag groups.
+export const savedViews = sqliteTable("saved_views", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  query: text("query", { mode: "json" })
+    .$type<Query>()
+    .notNull()
+    .default(sql`'{"kind":"and","clauses":[]}'`),
+  sortKey: text("sort_key").notNull().default("savedAt"),
+  sortDir: text("sort_dir").notNull().default("desc"),
+  layout: text("layout"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
 export const SYNC_ACTIONS = ["I", "U", "D", "A"] as const;
 export type SyncActionKind = (typeof SYNC_ACTIONS)[number];
 
@@ -220,6 +240,7 @@ export const SYNC_MODELS = [
   "tag",
   "tag_group",
   "tag_group_member",
+  "saved_view",
   "settings",
 ] as const;
 export type SyncModel = (typeof SYNC_MODELS)[number];
@@ -303,6 +324,8 @@ export type TagGroup = typeof tagGroups.$inferSelect;
 export type NewTagGroup = typeof tagGroups.$inferInsert;
 export type TagGroupMember = typeof tagGroupMembers.$inferSelect;
 export type NewTagGroupMember = typeof tagGroupMembers.$inferInsert;
+export type SavedView = typeof savedViews.$inferSelect;
+export type NewSavedView = typeof savedViews.$inferInsert;
 export type SyncAction = typeof syncActions.$inferSelect;
 export type NewSyncAction = typeof syncActions.$inferInsert;
 export type TransactionRow = typeof transactionsLog.$inferSelect;

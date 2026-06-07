@@ -27,7 +27,7 @@
   color: var(--ds-gray-12);
   outline: none;
   background: var(--ds-gray-1);
-  border-radius: calc(6px * var(--radius-scale));
+  border-radius: 6px;
   box-shadow: var(--ds-shadow-2);
   transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 

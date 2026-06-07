@@ -1,4 +1,4 @@
-import { IconFinderOutline18 as LocalIcon } from "@pond/icons/outline/18";
+import { IconFolderFill18 as LocalIcon } from "@pond/icons/fill/18";
 import {
   IconBrandArena,
   IconBrandCosmos,

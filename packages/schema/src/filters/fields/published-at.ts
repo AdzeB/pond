@@ -6,7 +6,7 @@ import { toMillis } from "./shared";
 export const publishedAt = defineField({
   id: "publishedAt",
   type: "date",
-  label: "Published",
+  label: "Date Published",
   group: "time",
   project: (s) => toMillis(s.publishedAt),
   sqlProjection: () => sql`${saves.publishedAt}`,

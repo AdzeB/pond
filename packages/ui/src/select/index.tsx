@@ -1,4 +1,6 @@
 import { Select as Base } from "@base-ui/react/select";
+import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
+import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
 import styles from "./styles.module.css";
@@ -12,7 +14,14 @@ function Label({ className, ...props }: Base.Label.Props) {
 }
 
 function Trigger({ className, ...props }: Base.Trigger.Props) {
-  return <Base.Trigger className={cn(styles.trigger, className)} {...props} />;
+  return (
+    <Base.Trigger className={cn(styles.trigger, className)} {...props}>
+      {props.children}
+      <Icon>
+        <Expand size={10} />
+      </Icon>
+    </Base.Trigger>
+  );
 }
 
 function Value({ className, ...props }: Base.Value.Props) {
@@ -35,17 +44,18 @@ function Portal(props: Base.Portal.Props) {
 
 function Positioner({ className, ...props }: Base.Positioner.Props) {
   return (
-    <Base.Positioner className={cn(styles.positioner, className)} {...props} />
+    <Base.Positioner
+      sideOffset={6}
+      align="end"
+      side="bottom"
+      className={cn(popupStyles.positioner, className)}
+      {...props}
+    />
   );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup
-      {...props}
-      className={cn(popupStyles.popup, styles.popup, className)}
-    />
-  );
+  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
 }
 
 function List({ className, ...props }: Base.List.Props) {
@@ -74,7 +84,9 @@ function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
     <Base.ItemIndicator
       className={cn(popupStyles.indicator, className)}
       {...props}
-    />
+    >
+      <Check width={14} height={14} />
+    </Base.ItemIndicator>
   );
 }
 

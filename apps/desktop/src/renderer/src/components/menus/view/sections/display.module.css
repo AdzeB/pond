@@ -1,9 +1,0 @@
-.check-cell {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
-  color: var(--ds-gray-12);
-}

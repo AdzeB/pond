@@ -51,14 +51,6 @@
     0 0 0 4px var(--ds-gray-12);
 }
 
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  width: 240px;
-  padding: 6px;
-}
-
 .body[data-variant="narrow"] {
   width: 200px;
 }
@@ -72,12 +64,6 @@
 
 .body[data-variant="wide"] {
   width: 260px;
-}
-
-.search {
-  padding-block-end: 6px;
-  margin-block-end: 4px;
-  border-bottom: 1px solid var(--ds-gray-a3);
 }
 
 .empty {

@@ -34,7 +34,7 @@ export interface ViewState {
 
 export interface ViewActions {
   setQuery: (next: Query) => void;
-  addPredicate: () => void;
+  addPredicate: (draft: Predicate) => void;
   updatePredicate: (idx: number, next: Predicate | null) => void;
   setFieldPredicate: (field: FieldId, next: Predicate | null) => void;
   resetFilters: () => void;

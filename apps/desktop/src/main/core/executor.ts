@@ -1,5 +1,6 @@
 import type { Save, SyncAction, Tag } from "@pond/schema/db";
 import {
+  savedViews as savedViewsTable,
   saves as savesTable,
   syncActions as syncActionsTable,
   tagGroupMembers as tagGroupMembersTable,
@@ -278,6 +279,22 @@ function applyToIndex(
             ),
           )
           .run();
+        return;
+    }
+  }
+  if (tx.model === "saved_view") {
+    switch (tx.kind) {
+      case "create":
+        db.insert(savedViewsTable).values(tx.data).onConflictDoNothing().run();
+        return;
+      case "update":
+        db.update(savedViewsTable)
+          .set(tx.patch)
+          .where(eq(savedViewsTable.id, tx.id))
+          .run();
+        return;
+      case "delete":
+        db.delete(savedViewsTable).where(eq(savedViewsTable.id, tx.id)).run();
         return;
     }
   }

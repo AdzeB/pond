@@ -41,29 +41,30 @@
 }
 
 .root {
+  --button-radius-full: 100%;
   /* xs */
   --button-height-xs: 24px;
   --button-padding-xs: 0 10px;
   --button-font-size-xs: 10px;
-  --button-radius-xs: var(--ds-radius-xs);
+  --button-radius-xs: var(--button-radius-full);
 
   /* sm */
   --button-height-sm: 28px;
   --button-padding-sm: 0 11px;
   --button-font-size-sm: 11px;
-  --button-radius-sm: var(--ds-radius-sm);
+  --button-radius-sm: var(--button-radius-full);
 
   /* md */
   --button-height-md: 32px;
   --button-padding-md: 0 13px;
   --button-font-size-md: 13px;
-  --button-radius-md: var(--ds-radius-md);
+  --button-radius-md: var(--button-radius-full);
 
   /* lg */
   --button-height-lg: 36px;
   --button-padding-lg: 0 15px;
   --button-font-size-lg: 15px;
-  --button-radius-lg: var(--ds-radius-lg);
+  --button-radius-lg: var(--button-radius-full);
 
   &:where([data-size="xs"]) {
     height: var(--button-height-xs);

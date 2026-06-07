@@ -1,0 +1,36 @@
+.button {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  aspect-ratio: 1 / 1;
+  padding: 2px;
+  margin-left: 6px;
+  color: var(--ds-gray-12);
+  background-color: transparent;
+  border-radius: 6px;
+  box-shadow: var(--ds-shadow-1);
+
+  @media (hover: hover) {
+    &:hover:not([data-disabled]) {
+      background-color: var(--ds-gray-2);
+    }
+  }
+
+  &:active:not([data-disabled], [data-pressed]) {
+    background-color: var(--ds-gray-3);
+  }
+
+  &[data-pressed] {
+    color: var(--ds-gray-12);
+    background-color: var(--ds-gray-1);
+  }
+
+  @media (hover: hover) {
+    &[data-pressed]:hover:not([data-disabled]) {
+      color: var(--ds-gray-12);
+      background-color: var(--ds-gray-1);
+    }
+  }
+}

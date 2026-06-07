@@ -1,51 +1,62 @@
+import { formatQuery, type RuleGroupProcessor } from "@react-querybuilder/core";
 import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
-import { FIELD_DESCRIPTORS, tagsDistinctCount, tagsExists } from "./fields";
+import {
+  FIELD_DESCRIPTORS,
+  tagsDistinctCount,
+  tagsEmpty,
+  tagsExists,
+} from "./fields";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
+import { isGroup } from "./types";
 
+// react-querybuilder owns the tree traversal: `formatQuery` prepares the query
+// and hands it to our custom `ruleGroupProcessor`, which compiles each clause
+// to a drizzle `SQL` fragment. Using `ruleGroupProcessor` (rather than the
+// default `drizzle` processor) sidesteps both the column-mapping limitation
+// (our fields are computed projections, not plain columns) and the built-in
+// in/between value validation that assumes default operator names.
 export function buildWhere(query: Query): SQL | undefined {
-  return compileClause(query) ?? undefined;
+  return formatQuery(query, { ruleGroupProcessor: compileGroup }) ?? undefined;
 }
 
+const compileGroup: RuleGroupProcessor<SQL | null> = (ruleGroup) =>
+  compileClause(ruleGroup as Query);
+
 function compileClause(c: Clause): SQL | null {
-  if (c.kind === "and") {
-    const parts = c.clauses
+  if (isGroup(c)) {
+    const parts = c.rules
       .map((child) => compileClause(child))
       .filter((p): p is SQL => p !== null);
     if (parts.length === 0) return null;
     if (parts.length === 1) return parts[0] ?? null;
-    return drizzleAnd(...parts) ?? null;
-  }
-  if (c.kind === "or") {
-    const parts = c.clauses
-      .map((child) => compileClause(child))
-      .filter((p): p is SQL => p !== null);
-    if (parts.length === 0) return null;
-    if (parts.length === 1) return parts[0] ?? null;
-    return drizzleOr(...parts) ?? null;
+    const combined =
+      c.combinator === "or" ? drizzleOr(...parts) : drizzleAnd(...parts);
+    return combined ?? null;
   }
   return compilePredicate(c);
 }
 
 function compilePredicate(p: Predicate): SQL | null {
-  const sqlExpr = compileForField(p.field, p.cmp, p.value);
+  const sqlExpr = compileForField(p.field, p.operator, p.value);
   if (!sqlExpr) return null;
   return p.negate ? sql`not (${sqlExpr})` : sqlExpr;
 }
 
 function compileForField(
   field: FieldId,
-  cmp: ComparatorId,
+  operator: ComparatorId,
   raw: unknown,
 ): SQL | null {
-  if (field === "tags") return tagsClause(cmp, raw);
+  if (field === "tags") return tagsClause(operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
 
-  return scalarClause(column, field, cmp, raw);
+  return scalarClause(column, field, operator, raw);
 }
 
-function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
+function tagsClause(operator: ComparatorId, raw: unknown): SQL | null {
+  if (operator === "empty") return tagsEmpty();
   if (!Array.isArray(raw) || raw.length === 0) return null;
   const lowered = raw
     .map((v) => String(v).toLowerCase())
@@ -56,7 +67,7 @@ function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
     sql`, `,
   );
   const matchExpr = sql`lower(value) in (${inList})`;
-  switch (cmp) {
+  switch (operator) {
     case "some":
       return tagsExists(matchExpr);
     case "every":
@@ -71,10 +82,10 @@ function tagsClause(cmp: ComparatorId, raw: unknown): SQL | null {
 function scalarClause(
   column: SQL,
   field: FieldId,
-  cmp: ComparatorId,
+  operator: ComparatorId,
   raw: unknown,
 ): SQL | null {
-  switch (cmp) {
+  switch (operator) {
     case "eq": {
       const v = scalarValue(field, raw);
       if (v === null) return null;
@@ -116,7 +127,13 @@ function scalarClause(
       const v = numericValue(field, raw);
       if (v === null) return null;
       const op = sql.raw(
-        cmp === "lt" ? "<" : cmp === "lte" ? "<=" : cmp === "gt" ? ">" : ">=",
+        operator === "lt"
+          ? "<"
+          : operator === "lte"
+            ? "<="
+            : operator === "gt"
+              ? ">"
+              : ">=",
       );
       return sql`${column} ${op} ${v}`;
     }

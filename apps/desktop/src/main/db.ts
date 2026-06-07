@@ -215,6 +215,17 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS tag_group_members_tag_idx ON tag_group_members(tag_id);
 				CREATE INDEX IF NOT EXISTS tag_group_members_group_idx ON tag_group_members(group_id);
 
+				CREATE TABLE IF NOT EXISTS saved_views (
+					id TEXT PRIMARY KEY,
+					name TEXT NOT NULL,
+					query TEXT NOT NULL DEFAULT '{"kind":"and","clauses":[]}',
+					sort_key TEXT NOT NULL DEFAULT 'savedAt',
+					sort_dir TEXT NOT NULL DEFAULT 'desc',
+					layout TEXT,
+					sort_order INTEGER NOT NULL DEFAULT 0,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+
 				CREATE TABLE IF NOT EXISTS sync_actions (
 					id INTEGER PRIMARY KEY AUTOINCREMENT,
 					batch_id TEXT,

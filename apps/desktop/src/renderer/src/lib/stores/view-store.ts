@@ -1,6 +1,5 @@
 import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
-import { EMPTY_QUERY, isEmptyQuery } from "@pond/schema/filters/types";
-import { readQuery } from "@pond/schema/filters/url";
+import { EMPTY_QUERY, isPredicate } from "@pond/schema/filters/types";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { predicateIsActive } from "@/components/menus/view/filter/helpers";
@@ -37,6 +36,9 @@ export interface ViewStoreState {
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
+  // The saved view currently applied, if any. Tabs compare the live query/
+  // sort against the view's stored values to surface a "modified" state.
+  activeViewId: string | null;
 }
 
 function readInitialLayout(): LayoutValue {
@@ -64,6 +66,7 @@ const store = new Store<ViewStoreState>({
   sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
   zoom: readInitialZoom(),
   capture: false,
+  activeViewId: null,
 });
 
 applyZoomVar(store.state.zoom);
@@ -88,6 +91,10 @@ export function useCapture(): boolean {
   return useStore(store, (s) => s.capture);
 }
 
+export function useActiveViewId(): string | null {
+  return useStore(store, (s) => s.activeViewId);
+}
+
 export function setSearchText(q: string): void {
   store.setState((s) => (s.q === q ? s : { ...s, q }));
 }
@@ -100,12 +107,48 @@ export function resetFilters(): void {
   store.setState((s) => ({ ...s, pendingPredicates: [], query: EMPTY_QUERY }));
 }
 
-export function addPredicate(): void {
-  const draft: Predicate = { kind: "p", field: "tags", cmp: "some", value: [] };
+// Apply a saved view: load its query + sort (+ layout) and mark it active.
+export function applySavedView(view: {
+  id: string;
+  query: Query;
+  sortKey: string;
+  sortDir: SortDir;
+  layout?: string | null;
+}): void {
+  const layout =
+    view.layout && isLayoutValue(view.layout) ? view.layout : undefined;
+  if (layout) writeViewPref("view", layout);
+  writeViewPref("sort", view.sortKey);
+  writeViewPref("dir", view.sortDir);
   store.setState((s) => ({
     ...s,
-    pendingPredicates: [...s.pendingPredicates, draft],
+    query: view.query,
+    pendingPredicates: [],
+    sortKey: view.sortKey,
+    sortDir: view.sortDir,
+    layout: layout ?? s.layout,
+    activeViewId: view.id,
   }));
+}
+
+export function clearActiveView(): void {
+  store.setState((s) =>
+    s.activeViewId === null ? s : { ...s, activeViewId: null },
+  );
+}
+
+// Add a draft filter for a field. No-op if that field already has a filter
+// (active or pending) — the bar keeps one predicate per field. The draft
+// starts inactive and lives in `pendingPredicates` so its chip stays visible
+// while the user picks a value.
+export function addPredicate(draft: Predicate): void {
+  store.setState((s) => {
+    const exists =
+      s.query.rules.some((c) => isPredicate(c) && c.field === draft.field) ||
+      s.pendingPredicates.some((p) => p.field === draft.field);
+    if (exists) return s;
+    return { ...s, pendingPredicates: [...s.pendingPredicates, draft] };
+  });
 }
 
 export function setFieldPredicate(
@@ -116,34 +159,39 @@ export function setFieldPredicate(
     const pendingPredicates = s.pendingPredicates.filter(
       (p) => p.field !== field,
     );
-    const clauses = s.query.clauses.filter(
-      (c) => c.kind !== "p" || c.field !== field,
+    const rules = s.query.rules.filter(
+      (c) => !isPredicate(c) || c.field !== field,
     );
-    if (next && predicateIsActive(next)) clauses.push(next);
-    return { ...s, pendingPredicates, query: { kind: "and", clauses } };
+    if (next) {
+      // Active predicates commit to the query; inactive ones (e.g. an empty
+      // value mid-edit) park as pending so the chip doesn't disappear.
+      if (predicateIsActive(next)) rules.push(next);
+      else pendingPredicates.push(next);
+    }
+    return { ...s, pendingPredicates, query: { combinator: "and", rules } };
   });
 }
 
 export function updatePredicate(idx: number, next: Predicate | null): void {
   store.setState((s) => {
-    const committedCount = s.query.clauses.length;
+    const committedCount = s.query.rules.length;
 
     if (idx < committedCount) {
-      const clauses = [...s.query.clauses];
+      const rules = [...s.query.rules];
       if (next === null) {
-        clauses.splice(idx, 1);
-        return { ...s, query: { kind: "and", clauses } };
+        rules.splice(idx, 1);
+        return { ...s, query: { combinator: "and", rules } };
       }
       if (predicateIsActive(next)) {
-        clauses[idx] = next;
-        return { ...s, query: { kind: "and", clauses } };
+        rules[idx] = next;
+        return { ...s, query: { combinator: "and", rules } };
       }
       // Newly-inactive: drop from the query and park as pending so the
       // row stays visible while the user re-picks a value.
-      clauses.splice(idx, 1);
+      rules.splice(idx, 1);
       return {
         ...s,
-        query: { kind: "and", clauses },
+        query: { combinator: "and", rules },
         pendingPredicates: [next, ...s.pendingPredicates],
       };
     }
@@ -162,7 +210,7 @@ export function updatePredicate(idx: number, next: Predicate | null): void {
       return {
         ...s,
         pendingPredicates: out,
-        query: { kind: "and", clauses: [...s.query.clauses, next] },
+        query: { combinator: "and", rules: [...s.query.rules, next] },
       };
     }
     const out = [...s.pendingPredicates];
@@ -230,16 +278,11 @@ export function closeCapture(): void {
   store.setState((s) => (s.capture ? { ...s, capture: false } : s));
 }
 
-// Translate an inbound URL search payload (deep links, command palette,
-// tag filters) into store state. Keeps external entry points working now
-// that the router no longer drives view state.
+// Translate an inbound URL search payload (deep links, command palette) into
+// store state. Filters are no longer serialized through the URL — callers that
+// want to apply a filter call `setQuery` directly.
 export function applyViewStateFromParams(params: URLSearchParams): void {
   if (params.get("capture") === "1") openCapture();
-  const query = readQuery(params);
-  if (!isEmptyQuery(query)) {
-    setQuery(query);
-    return;
-  }
   const q = params.get("q");
   if (q) setSearchText(q);
 }

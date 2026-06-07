@@ -7,6 +7,12 @@ export function tagsExists(needle: SQL): SQL {
   )`;
 }
 
+export function tagsEmpty(): SQL {
+  return sql`not exists (
+    select 1 from json_each(${saves.tags})
+  )`;
+}
+
 export function tagsDistinctCount(needle: SQL): SQL {
   return sql`(
     select count(distinct lower(value)) from json_each(${saves.tags})

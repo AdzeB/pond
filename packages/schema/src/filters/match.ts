@@ -2,6 +2,7 @@ import { colorNear } from "./color";
 import { FIELD_DESCRIPTORS } from "./fields";
 import type { SaveLike } from "./fields/save-like";
 import type { Clause, ComparatorId, Predicate, Query } from "./types";
+import { isGroup } from "./types";
 
 export type { SaveLike } from "./fields/save-like";
 
@@ -9,14 +10,17 @@ export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
 }
 
+// Direct walk over the react-querybuilder tree. The flat UI only produces a
+// single AND group of predicates, but we still handle nested groups, "or", and
+// per-rule `negate` so the model stays general.
 function evalClause(c: Clause, s: SaveLike): boolean {
-  if (c.kind === "and") {
-    if (c.clauses.length === 0) return true;
-    return c.clauses.every((child) => evalClause(child, s));
-  }
-  if (c.kind === "or") {
-    if (c.clauses.length === 0) return true;
-    return c.clauses.some((child) => evalClause(child, s));
+  if (isGroup(c)) {
+    if (c.rules.length === 0) return true;
+    const ok =
+      c.combinator === "or"
+        ? c.rules.some((child) => evalClause(child, s))
+        : c.rules.every((child) => evalClause(child, s));
+    return c.not ? !ok : ok;
   }
   const ok = evalPredicate(c, s);
   return c.negate ? !ok : ok;
@@ -24,15 +28,15 @@ function evalClause(c: Clause, s: SaveLike): boolean {
 
 function evalPredicate(p: Predicate, s: SaveLike): boolean {
   const projected = FIELD_DESCRIPTORS[p.field].project(s);
-  return runComparator(p.cmp, projected, p.value);
+  return runComparator(p.operator, projected, p.value);
 }
 
 function runComparator(
-  cmp: ComparatorId,
+  operator: ComparatorId,
   projected: unknown,
   value: unknown,
 ): boolean {
-  switch (cmp) {
+  switch (operator) {
     case "eq":
       return scalarEqual(projected, value);
     case "neq":
@@ -86,6 +90,10 @@ function runComparator(
         : true;
     case "exists":
       return value ? projected != null : projected == null;
+    case "empty":
+      return Array.isArray(projected)
+        ? projected.length === 0
+        : projected == null;
     case "near":
       return Array.isArray(projected) && typeof value === "string"
         ? colorNear(value, projected as string[])

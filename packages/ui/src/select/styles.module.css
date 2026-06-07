@@ -1,19 +1,18 @@
 .trigger {
   display: inline-flex;
-  align-items: center;
+  gap: 8px;
   justify-content: space-between;
   width: fit-content;
-  min-width: 128px;
-  height: 36px;
-  padding: 13px;
-  font-size: 13px;
+  max-height: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1;
   color: var(--ds-gray-12);
   text-wrap: nowrap;
   user-select: none;
   background-color: transparent;
-  border-radius: calc(6px * var(--radius-scale));
+  border-radius: 6px;
   box-shadow: var(--ds-shadow-1);
   transition: all var(--ds-duration-medium) var(--ds-easing-standard);
 
@@ -36,7 +35,7 @@
     inset: -4px;
     pointer-events: none;
     content: "";
-    border-radius: calc(6px * var(--radius-scale) + 4px);
+    border-radius: 10px;
     box-shadow: var(--ds-shadow-focus-halo);
     opacity: 0;
     transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
@@ -60,31 +59,17 @@
 }
 
 .icon {
-  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
   color: var(--ds-gray-11);
-}
-
-.positioner {
-  z-index: 1100;
-  -webkit-user-select: none;
-  user-select: none;
-  outline: none;
-}
-
-.popup {
-  min-width: var(--anchor-width);
 }
 
 .label {
   font-size: 12px;
   font-weight: 550;
   color: var(--ds-gray-11);
-}
-
-.backdrop {
-  position: fixed;
-  inset: 0;
-  background: transparent;
 }
 
 .list {

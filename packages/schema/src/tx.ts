@@ -1,9 +1,11 @@
 import type {
   NewSave,
+  NewSavedView,
   NewTag,
   NewTagGroup,
   NewTagGroupMember,
   Save,
+  SavedView,
   SyncAction,
   Tag,
   TagGroup,
@@ -126,6 +128,28 @@ export type Transaction =
       id: string;
       before: TagGroupMember;
       meta?: TxMeta;
+    }
+  | {
+      kind: "create";
+      model: "saved_view";
+      id: string;
+      data: NewSavedView;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "update";
+      model: "saved_view";
+      id: string;
+      patch: Partial<NewSavedView>;
+      before: Partial<SavedView>;
+      meta?: TxMeta;
+    }
+  | {
+      kind: "delete";
+      model: "saved_view";
+      id: string;
+      before: SavedView;
+      meta?: TxMeta;
     };
 
 export type TransactionKind = Transaction["kind"];
@@ -172,6 +196,14 @@ export function inverse(tx: Transaction): Transaction {
             before: tx.data as TagGroupMember,
             meta: tx.meta,
           };
+        case "saved_view":
+          return {
+            kind: "delete",
+            model: "saved_view",
+            id: tx.id,
+            before: tx.data as SavedView,
+            meta: tx.meta,
+          };
       }
       break;
     case "update":
@@ -201,6 +233,15 @@ export function inverse(tx: Transaction): Transaction {
             id: tx.id,
             patch: tx.before,
             before: tx.patch as Partial<TagGroup>,
+            meta: tx.meta,
+          };
+        case "saved_view":
+          return {
+            kind: "update",
+            model: "saved_view",
+            id: tx.id,
+            patch: tx.before,
+            before: tx.patch as Partial<SavedView>,
             meta: tx.meta,
           };
       }
@@ -237,6 +278,14 @@ export function inverse(tx: Transaction): Transaction {
             model: "tag_group_member",
             id: tx.id,
             data: tx.before as NewTagGroupMember,
+            meta: tx.meta,
+          };
+        case "saved_view":
+          return {
+            kind: "create",
+            model: "saved_view",
+            id: tx.id,
+            data: tx.before as NewSavedView,
             meta: tx.meta,
           };
       }

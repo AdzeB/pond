@@ -6,7 +6,7 @@ import { toMillis } from "./shared";
 export const modifiedAt = defineField({
   id: "modifiedAt",
   type: "date",
-  label: "Modified",
+  label: "Date Modified",
   group: "time",
   project: (s) => toMillis(s.createdAt ?? s.savedAt),
   sqlProjection: () => sql`coalesce(${saves.createdAt}, ${saves.savedAt})`,

@@ -1,14 +1,14 @@
 import {
+  IconArchiveContent2Fill18 as Archive,
+  IconArchivePlusFill18 as Plus,
+  IconWindowSettingsFill18 as Settings,
+  IconTagsFill18 as Tags,
+  IconTrash2Fill18 as Trash2,
+} from "@pond/icons/fill/18";
+import {
   IconChevronLeftOutline12 as ChevronLeft,
   IconChevronRightOutline12 as ChevronRight,
 } from "@pond/icons/outline/12";
-import {
-  IconArchiveContent2Outline18 as Archive,
-  IconArchivePlusOutline18 as Plus,
-  IconWindowSettingsOutline18 as Settings,
-  IconTagsOutline18 as Tags,
-  IconTrash2Outline18 as Trash2,
-} from "@pond/icons/outline/18";
 import { Button, Shell, Sidebar, Tooltip } from "@pond/ui";
 import { Outlet, useRouter } from "@tanstack/react-router";
 import React from "react";
@@ -62,6 +62,38 @@ function New() {
   );
 }
 
+interface Route {
+  path: string;
+  params?: Record<string, string>;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const routes: Route[] = [
+  {
+    path: "/",
+    icon: <Archive />,
+    label: "Library",
+  },
+  {
+    path: "/tags",
+    icon: <Tags />,
+    label: "Tags",
+  },
+  {
+    path: "/$mode",
+    params: { mode: "trash" },
+    icon: <Trash2 />,
+    label: "Trash",
+  },
+  {
+    path: "/settings",
+
+    icon: <Settings />,
+    label: "Settings",
+  },
+];
+
 export function Library() {
   return (
     <React.Fragment>
@@ -72,39 +104,22 @@ export function Library() {
               <Backwards />
               <Forwards />
             </Sidebar.Toolbar>
-
             <Sidebar.Header>
               <PondSwitcher />
               <New />
             </Sidebar.Header>
-
             <Sidebar.Group>
-              <Sidebar.Anchor to="/">
-                <Sidebar.Icon>
-                  <Archive />
-                </Sidebar.Icon>
-                Library
-              </Sidebar.Anchor>
-              <Sidebar.Anchor to="/tags">
-                <Sidebar.Icon>
-                  <Tags />
-                </Sidebar.Icon>
-                Tags
-              </Sidebar.Anchor>
-              <Sidebar.Anchor to="/$mode" params={{ mode: "trash" }}>
-                <Sidebar.Icon>
-                  <Trash2 />
-                </Sidebar.Icon>
-                Trash
-              </Sidebar.Anchor>
-              <Sidebar.Anchor to="/settings">
-                <Sidebar.Icon>
-                  <Settings />
-                </Sidebar.Icon>
-                Settings
-              </Sidebar.Anchor>
+              {routes.map((route) => (
+                <Sidebar.Anchor
+                  key={route.path}
+                  to={route.path}
+                  params={route.params}
+                >
+                  <Sidebar.Icon>{route.icon}</Sidebar.Icon>
+                  {route.label}
+                </Sidebar.Anchor>
+              ))}
             </Sidebar.Group>
-
             <SidebarSources />
           </Sidebar.Root>
         </Sidebar.Provider>

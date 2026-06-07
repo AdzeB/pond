@@ -8,17 +8,16 @@ import {
 
 export function defaultPredicateFor(field: FieldId): Predicate {
   const meta = FIELD_META[field];
-  const cmp = (COMPARATORS_BY_TYPE[meta.type][0] ?? "eq") as ComparatorId;
+  const operator = (COMPARATORS_BY_TYPE[meta.type][0] ?? "eq") as ComparatorId;
   return {
-    kind: "p",
     field,
-    cmp,
-    value: emptyValueFor(cmp),
+    operator,
+    value: emptyValueFor(operator),
   };
 }
 
-function emptyValueFor(cmp: ComparatorId): unknown {
-  switch (cmp) {
+function emptyValueFor(operator: ComparatorId): unknown {
+  switch (operator) {
     case "in":
     case "nin":
     case "some":
@@ -35,7 +34,7 @@ function emptyValueFor(cmp: ComparatorId): unknown {
 }
 
 export function predicateIsActive(p: Predicate): boolean {
-  if (p.cmp === "exists") return true;
+  if (p.operator === "exists" || p.operator === "empty") return true;
   const v = p.value;
   if (v == null) return false;
   if (Array.isArray(v)) {
