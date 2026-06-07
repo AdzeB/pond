@@ -3,6 +3,7 @@
 // settings manifests (prefs.manifest.ts / sections.manifest.ts).
 import type {
   GlobalSyncPrefs,
+  SidebarSourcesConfig,
   SyncHandles,
   SyncSources,
   ThemeDef,
@@ -54,6 +55,9 @@ export interface Prefs {
     gridSize: "sm" | "md" | "lg";
     showCounts: boolean;
     sort: "name" | "count" | "recent";
+  };
+  sidebar: {
+    sources: SidebarSourcesConfig;
   };
   api: {
     port: number;
@@ -113,6 +117,18 @@ export const DEFAULT_PREFS: Prefs = {
     pinned: false,
   },
   allTags: { layout: "grid", gridSize: "md", showCounts: true, sort: "name" },
+  sidebar: {
+    sources: [
+      { source: "twitter", visibility: "always" },
+      { source: "pinterest", visibility: "always" },
+      { source: "arena", visibility: "always" },
+      { source: "instagram", visibility: "always" },
+      { source: "cosmos", visibility: "hidden" },
+      { source: "tiktok", visibility: "hidden" },
+      { source: "youtube", visibility: "hidden" },
+      { source: "local", visibility: "hidden" },
+    ],
+  },
   api: { port: 41610, bindAddress: "loopback", allowedOrigins: [] },
   updates: { channel: "stable", autoInstall: true },
   developer: { developerMode: false, verboseLogging: false },

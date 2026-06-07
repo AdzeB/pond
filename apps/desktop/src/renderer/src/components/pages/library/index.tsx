@@ -17,6 +17,7 @@ import { Button, Menu, Shell, Sidebar, Tooltip } from "@pond/ui";
 import { Outlet, useRouter } from "@tanstack/react-router";
 import React from "react";
 import { Inspector } from "@/components/library/inspector";
+import { SidebarSources } from "@/components/library/sidebar-sources";
 import { HeaderToolbar } from "@/components/library/toolbar";
 import { LayoutMenuBridge } from "@/effects/layout-menu-bridge";
 import { usePonds } from "@/lib/hooks/use-ponds";
@@ -197,6 +198,8 @@ export function Library() {
                 Settings
               </Sidebar.Anchor>
             </Sidebar.Group>
+
+            <SidebarSources />
           </Sidebar.Root>
         </Sidebar.Provider>
       </Shell.Aside>

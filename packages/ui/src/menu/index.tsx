@@ -18,10 +18,14 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
         props.render ? (
           props.render
         ) : (
-          <Button size={size} icon={icon} variant={variant} />
+          <Button
+            size={size}
+            icon={icon}
+            variant={variant}
+            className={cn(styles.trigger, className)}
+          />
         )
       }
-      className={cn(styles.trigger, className)}
       {...props}
     />
   );

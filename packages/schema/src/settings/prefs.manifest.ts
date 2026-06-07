@@ -2,6 +2,7 @@ import {
   CUSTOM_THEME_DEFAULT,
   DEFAULT_GLOBAL_SYNC_PREFS,
   DEFAULT_PRESET_ID,
+  DEFAULT_SIDEBAR_SOURCES,
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
 } from "../prefs.types";
@@ -89,6 +90,15 @@ export const SETTINGS_PREFS = {
       gridSize: { type: { enum: ["sm", "md", "lg"] }, default: "md" },
       showCounts: { type: "boolean", default: true },
       sort: { type: { enum: ["name", "count", "recent"] }, default: "name" },
+    },
+  },
+  sidebar: {
+    kind: "fields",
+    fields: {
+      sources: {
+        type: { ts: "SidebarSourcesConfig", import: TYPES },
+        default: DEFAULT_SIDEBAR_SOURCES,
+      },
     },
   },
   api: {

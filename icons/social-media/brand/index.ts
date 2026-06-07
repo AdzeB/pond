@@ -1,0 +1,10 @@
+export { default as IconBrandArena } from "./arena";
+export { default as IconBrandCosmos } from "./cosmos";
+export { default as IconBrandFacebook } from "./facebook";
+export { default as IconBrandInstagram } from "./instagram";
+export { default as IconBrandPinterest } from "./pinterest";
+export { default as IconBrandSnapchat } from "./snapchat";
+export { default as IconBrandThreads } from "./threads";
+export { default as IconBrandTikTok } from "./tiktok";
+export { default as IconBrandTwitter } from "./twitter";
+export { default as IconBrandYoutube } from "./youtube";

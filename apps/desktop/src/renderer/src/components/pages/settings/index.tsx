@@ -136,7 +136,7 @@ export function Settings() {
               return [
                 <Sidebar.Group key={group}>
                   {label ? (
-                    <Sidebar.GroupHeader>{label}</Sidebar.GroupHeader>
+                    <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel>
                   ) : null}
                   {items.map((section) => (
                     <Sidebar.Anchor

@@ -1,6 +1,8 @@
 import { Button } from "@base-ui/react/button";
-import { Collapsible } from "@base-ui/react/collapsible";
+import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { Link, type LinkProps } from "@tanstack/react-router";
+import { type HTMLMotionProps, motion } from "motion/react";
+import { createContext, use, useId, useState } from "react";
 
 import styles from "./styles.module.css";
 
@@ -40,10 +42,12 @@ function Anchor({ ...props }: AnchorProps) {
   return <Link className={styles.item} {...props} />;
 }
 
-interface IconProps extends React.ComponentPropsWithoutRef<"span"> {}
+interface IconProps extends React.ComponentPropsWithoutRef<"span"> {
+  source?: boolean | undefined;
+}
 
 function Icon({ ...props }: IconProps) {
-  return <span className={styles.icon} {...props} />;
+  return <span data-source={props.source} className={styles.icon} {...props} />;
 }
 
 interface GroupProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -52,30 +56,128 @@ function Group({ ...props }: GroupProps) {
   return <div className={styles.group} {...props} />;
 }
 
-interface CollapsibleGroupProps extends Collapsible.Root.Props {}
+interface GroupLabelProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function CollapsibleGroup({ ...props }: CollapsibleGroupProps) {
-  return (
-    <Collapsible.Root defaultOpen={true} className={styles.group} {...props} />
-  );
+function GroupLabel({ ...props }: GroupLabelProps) {
+  return <div className={styles.label} {...props} />;
 }
 
-interface GroupHeaderProps extends Collapsible.Trigger.Props {}
-
-function GroupHeader({ ...props }: GroupHeaderProps) {
-  return <Collapsible.Trigger className={styles["group-header"]} {...props} />;
-}
-
-interface GroupContentProps extends Collapsible.Panel.Props {}
+interface GroupContentProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function GroupContent({ ...props }: GroupContentProps) {
-  return <Collapsible.Panel className={styles["group-content"]} {...props} />;
+  return <div className={styles.panel} {...props} />;
 }
 
 interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Footer({ ...props }: FooterProps) {
   return <div className={styles.footer} {...props} />;
+}
+
+interface CollapsibleContextValue {
+  id: string;
+  open: boolean;
+  toggle: () => void;
+}
+
+const CollapsibleContext = createContext<CollapsibleContextValue | null>(null);
+
+function useCollapsibleGroup() {
+  const context = use(CollapsibleContext);
+  if (!context) {
+    throw new Error(
+      "Sidebar.CollapsibleGroup* must be used within <Sidebar.CollapsibleGroup>",
+    );
+  }
+  return context;
+}
+
+interface CollapsibleGroupProps extends React.ComponentPropsWithoutRef<"div"> {
+  defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+function CollapsibleGroup({
+  defaultOpen = true,
+  open: openProp,
+  onOpenChange,
+  ...props
+}: CollapsibleGroupProps) {
+  const [openState, setOpenState] = useState(defaultOpen);
+  const open = openProp ?? openState;
+  const id = useId();
+
+  const toggle = () => {
+    const next = !open;
+    setOpenState(next);
+    onOpenChange?.(next);
+  };
+
+  return (
+    <CollapsibleContext value={{ id, open, toggle }}>
+      <div className={styles.group} {...props} />
+    </CollapsibleContext>
+  );
+}
+
+interface CollapsibleGroupLabelProps
+  extends React.ComponentPropsWithoutRef<"button"> {}
+
+function CollapsibleGroupLabel({
+  children,
+  onClick,
+  ...props
+}: CollapsibleGroupLabelProps) {
+  const { open, toggle, id } = useCollapsibleGroup();
+
+  return (
+    <button
+      type="button"
+      className={styles.label}
+      data-panel-open={open || undefined}
+      aria-expanded={open}
+      aria-controls={id}
+      onClick={(event) => {
+        onClick?.(event);
+        toggle();
+      }}
+      {...props}
+    >
+      {children}
+      <CaretRight className={styles.caret} />
+    </button>
+  );
+}
+
+interface CollapsibleGroupContentProps extends HTMLMotionProps<"div"> {
+  children: React.ReactNode;
+}
+
+function CollapsibleGroupContent({
+  children,
+  ...props
+}: CollapsibleGroupContentProps) {
+  const { open, id } = useCollapsibleGroup();
+
+  return (
+    <motion.div
+      id={id}
+      className={styles.panel}
+      transition={{
+        duration: 0.18,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
+      animate={{
+        height: open ? "auto" : 0,
+        opacity: open ? 1 : 0,
+        filter: open ? "blur(0px)" : "blur(2px)",
+      }}
+      {...props}
+    >
+      {children}
+    </motion.div>
+  );
 }
 
 export const Sidebar = {
@@ -86,9 +188,15 @@ export const Sidebar = {
   Item,
   Icon,
   Anchor,
-  Group,
-  CollapsibleGroup,
-  GroupHeader,
-  GroupContent,
   Footer,
+
+  /* Group */
+  Group,
+  GroupLabel,
+  GroupContent,
+
+  /* Collapsible Group */
+  CollapsibleGroup,
+  CollapsibleGroupLabel,
+  CollapsibleGroupContent,
 };

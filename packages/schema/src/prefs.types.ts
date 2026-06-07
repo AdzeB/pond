@@ -99,3 +99,23 @@ export interface WindowBounds {
   width: number;
   height: number;
 }
+
+export type SourceVisibility = "always" | "when-count" | "hidden";
+
+export interface SidebarSourceEntry {
+  source: Source;
+  visibility: SourceVisibility;
+}
+
+export type SidebarSourcesConfig = SidebarSourceEntry[];
+
+export const DEFAULT_SIDEBAR_SOURCES: SidebarSourceEntry[] = [
+  { source: "twitter", visibility: "always" },
+  { source: "pinterest", visibility: "always" },
+  { source: "arena", visibility: "always" },
+  { source: "instagram", visibility: "always" },
+  { source: "cosmos", visibility: "hidden" },
+  { source: "tiktok", visibility: "hidden" },
+  { source: "youtube", visibility: "hidden" },
+  { source: "local", visibility: "hidden" },
+];

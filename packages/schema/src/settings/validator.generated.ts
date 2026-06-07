@@ -91,6 +91,11 @@ export const PrefsSchema = z
           .catch(DEFAULT_PREFS.allTags.sort),
       })
       .catch(DEFAULT_PREFS.allTags),
+    sidebar: z
+      .object({
+        sources: z.any().default(DEFAULT_PREFS.sidebar.sources),
+      })
+      .catch(DEFAULT_PREFS.sidebar),
     api: z
       .object({
         port: z.number().catch(DEFAULT_PREFS.api.port),
