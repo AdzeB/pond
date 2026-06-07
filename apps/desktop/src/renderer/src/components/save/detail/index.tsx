@@ -12,7 +12,7 @@ import { VideoNotes } from "@/components/media/video-player/notes";
 import {
   SaveActionsMenu,
   SaveContextMenu,
-} from "@/components/save/context-menu";
+} from "@/components/menus/save-context";
 import { getYouTubeChapters } from "@/components/save/preview/helpers";
 import { MediaViewer } from "@/components/save/preview/media-viewer";
 import type { SaveList } from "@/lib/hooks/use-save-list";

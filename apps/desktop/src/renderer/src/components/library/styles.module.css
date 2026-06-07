@@ -54,7 +54,7 @@
   padding: 0;
   font: inherit;
   color: inherit;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: 6px;
@@ -195,7 +195,7 @@
   height: 20px;
   padding: 0;
   font: inherit;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: light-dark(rgba(255, 255, 255, 0.92), rgba(0, 0, 0, 0.6));
   border: 1px solid var(--ds-gray-a4);
   border-radius: 6px;

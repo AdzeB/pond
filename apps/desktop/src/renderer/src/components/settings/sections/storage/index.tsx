@@ -1,8 +1,11 @@
-import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
 import type { Prefs } from "@pond/schema/db";
-import { Button, Select, Settings, Switch, useToast } from "@pond/ui";
+import { Button, Settings, Switch, useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type EnumOption,
+  EnumSelect,
+} from "@/components/selects/_shared/enum-select";
 import type { Binding } from "@/components/settings/engine";
 import { formatBytes } from "@/lib/utils/format";
 import type { StorageGuardStatusWire } from "../../../../../../preload";
@@ -30,6 +33,10 @@ const ACTION_LABELS: Record<
     description: "Skip yt-dlp until usage drops.",
   },
 };
+
+const ACTION_OPTIONS: readonly EnumOption<StorageAction>[] = (
+  Object.keys(ACTION_LABELS) as StorageAction[]
+).map((value) => ({ value, label: ACTION_LABELS[value].label }));
 
 export function NoHardCapRow({ binding }: { binding: Binding }) {
   const values = binding.values as Partial<StoragePrefs>;
@@ -68,35 +75,14 @@ export function ActionRow({ binding }: { binding: Binding }) {
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <Select.Root
+        <EnumSelect<StorageAction>
           value={action}
           onValueChange={(v) => {
-            patch({ action: v as StorageAction });
+            patch({ action: v });
             applyGuard();
           }}
-        >
-          <Select.Trigger>
-            <Select.Value>{ACTION_LABELS[action].label}</Select.Value>
-            <Select.Icon>
-              <ChevronsUpDown />
-            </Select.Icon>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Positioner sideOffset={6}>
-              <Select.Popup>
-                <Select.Item value="warn">
-                  {ACTION_LABELS.warn.label}
-                </Select.Item>
-                <Select.Item value="pauseSync">
-                  {ACTION_LABELS.pauseSync.label}
-                </Select.Item>
-                <Select.Item value="pauseVideo">
-                  {ACTION_LABELS.pauseVideo.label}
-                </Select.Item>
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
+          options={ACTION_OPTIONS}
+        />
       </Settings.ItemControl>
     </>
   );

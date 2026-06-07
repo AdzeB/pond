@@ -11,8 +11,8 @@ import {
   type ThemeDef,
 } from "@pond/schema/db";
 import { Button, ColorField, RangeField, Settings } from "@pond/ui";
+import { PresetSelect, ThemeSelect } from "@/components/selects/theme";
 import type { Binding } from "@/components/settings/engine";
-import { PresetSelect, ThemeSelect } from "./theme-select";
 
 const DEFAULTS = DEFAULT_PREFS.preferences;
 

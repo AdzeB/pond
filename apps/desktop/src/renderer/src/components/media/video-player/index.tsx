@@ -7,8 +7,6 @@ import {
   IconMediaPlayOutline18 as Play,
   IconMediaPreviousOutline18 as SkipBack,
   IconMediaNextOutline18 as SkipForward,
-  IconVolumeOutline18 as Volume2,
-  IconVolumeOffOutline18 as VolumeX,
 } from "@pond/icons/outline/18";
 import { ContextMenu } from "@pond/ui";
 import {
@@ -16,23 +14,22 @@ import {
   createPlayer,
   FullscreenButton,
   Hotkey,
-  MuteButton,
   PiPButton,
   PlayButton,
-  Popover,
   SeekButton,
   Slider,
   Time,
   TimeSlider,
   useHotkey,
   usePlayer,
-  VolumeSlider,
 } from "@videojs/react";
 import { Video, videoFeatures } from "@videojs/react/video";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { VideoContextMenu } from "@/components/menus/video-context";
+import { VolumeControl } from "@/components/popovers/video-volume";
+import { VideoSpeedSelect } from "@/components/selects/video-speed";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
-import { VideoContextMenu } from "./context-menu";
 import { ScrubPreview } from "./scrub-preview";
 import { SPEED_OPTIONS } from "./speed-options";
 import styles from "./styles.module.css";
@@ -233,13 +230,6 @@ function PlayerControls({ src }: { src: string }) {
     usePlayer(select("fullscreenAvailability")) === "available";
   const seekSliderRef = useRef<HTMLDivElement | null>(null);
 
-  const onSpeedChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setPlaybackRate(Number(e.currentTarget.value));
-    },
-    [setPlaybackRate],
-  );
-
   return (
     <Controls.Root className={styles.controls}>
       <Controls.Group
@@ -316,18 +306,11 @@ function PlayerControls({ src }: { src: string }) {
 
         <Time.Value type="duration" className={styles.time} />
 
-        <select
-          className={styles["speed-select"]}
-          aria-label="Change playback rate (keyboard shortcut > or <)"
+        <VideoSpeedSelect
           value={playbackRate}
-          onChange={onSpeedChange}
-        >
-          {SPEED_OPTIONS.map((rate) => (
-            <option key={rate} value={rate}>
-              {rate}×
-            </option>
-          ))}
-        </select>
+          onValueChange={setPlaybackRate}
+          className={styles["speed-select"]}
+        />
 
         {pipAvailable ? (
           <PiPButton
@@ -360,56 +343,5 @@ function PlayerControls({ src }: { src: string }) {
         ) : null}
       </Controls.Group>
     </Controls.Root>
-  );
-}
-
-function VolumeControl({ unsupported }: { unsupported: boolean }) {
-  const muted = usePlayer(select("muted"));
-  const volume = usePlayer(select("volume"));
-
-  const trigger = (
-    <MuteButton
-      className={styles.btn}
-      render={(props, state) => {
-        const isMuted = unsupported || state.muted || volume === 0;
-        return (
-          <button
-            {...props}
-            type="button"
-            disabled={unsupported || undefined}
-            aria-label={
-              isMuted
-                ? "Unmute (keyboard shortcut m)"
-                : "Mute (keyboard shortcut m)"
-            }
-          >
-            {muted || volume === 0 ? (
-              <VolumeX width={14} height={14} />
-            ) : (
-              <Volume2 width={14} height={14} />
-            )}
-          </button>
-        );
-      }}
-    />
-  );
-
-  if (unsupported) return trigger;
-
-  return (
-    <Popover.Root openOnHover delay={200} closeDelay={120} side="top">
-      <Popover.Trigger render={trigger} />
-      <Popover.Popup className={styles["volume-popup"]}>
-        <VolumeSlider.Root
-          orientation="vertical"
-          className={styles["volume-slider"]}
-        >
-          <VolumeSlider.Track className={styles["slider-track"]}>
-            <VolumeSlider.Fill className={styles["slider-fill"]} />
-          </VolumeSlider.Track>
-          <VolumeSlider.Thumb className={styles["slider-thumb"]} />
-        </VolumeSlider.Root>
-      </Popover.Popup>
-    </Popover.Root>
   );
 }

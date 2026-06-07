@@ -148,7 +148,7 @@
   height: 40px;
   padding: 0;
   overflow: hidden;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: 1px solid var(--ds-gray-a5);
   outline-offset: -1px;
   background: var(--ds-gray-a3);

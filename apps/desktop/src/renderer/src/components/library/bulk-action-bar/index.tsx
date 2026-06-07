@@ -1,10 +1,10 @@
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Button, cn, Input, Popover, Tooltip, useToast } from "@pond/ui";
-import { useCallback, useMemo, useState } from "react";
+import { Button, cn, Tooltip, useToast } from "@pond/ui";
+import { useCallback, useState } from "react";
+import { BulkTagsCombobox } from "@/components/comboboxes/bulk-tags";
 import { setSaveTags, trashSaves } from "@/pool/mutate-save";
 import { pool } from "@/pool/pool";
 import { selection, useSelectedIds, useSelectionSize } from "@/pool/selection";
-import { useTags } from "@/pool/tags";
 import styles from "./styles.module.css";
 
 function Root() {
@@ -12,7 +12,6 @@ function Root() {
   const ids = useSelectedIds();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
-  const [open, setOpen] = useState(false);
 
   const close = useCallback(() => selection.clear(), []);
 
@@ -38,7 +37,6 @@ function Root() {
           title: `Added "${cleaned}" to ${targets.length} save${targets.length === 1 ? "" : "s"}`,
           type: "success",
         });
-        setOpen(false);
       } finally {
         setBusy(false);
       }
@@ -106,25 +104,7 @@ function Root() {
     <Bar>
       <Count>{size} selected</Count>
       <Divider />
-      <Popover.Root open={open} onOpenChange={setOpen}>
-        <Popover.Trigger
-          render={
-            <Button size="sm" disabled={busy}>
-              Add tag…
-            </Button>
-          }
-        />
-        <Popover.Portal>
-          <Popover.Positioner sideOffset={6} align="start">
-            <Popover.Popup className={styles["bulk-tag-popup"]}>
-              <BulkTagPicker
-                onPick={(name) => void addTag(name)}
-                disabled={busy}
-              />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
+      <BulkTagsCombobox onPick={(name) => void addTag(name)} disabled={busy} />
       <Tooltip label="Copy each selected file into a folder">
         <Button
           size="sm"
@@ -162,73 +142,6 @@ function Root() {
         </Button>
       </Tooltip>
     </Bar>
-  );
-}
-
-function BulkTagPicker({
-  onPick,
-  disabled,
-}: {
-  onPick: (name: string) => void;
-  disabled: boolean;
-}) {
-  const [q, setQ] = useState("");
-  const tags = useTags();
-  const filtered = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    const list = needle
-      ? tags.filter((t) => t.name.toLowerCase().includes(needle))
-      : tags;
-    return list
-      .slice()
-      .sort(
-        (a, b) =>
-          Number(b.starred) - Number(a.starred) || a.name.localeCompare(b.name),
-      )
-      .slice(0, 20);
-  }, [q, tags]);
-  const needle = q.trim();
-  const exact =
-    needle && tags.some((t) => t.name.toLowerCase() === needle.toLowerCase());
-  return (
-    <div className={styles["bulk-tag-body"]}>
-      <Input.Field
-        autoFocus
-        data-size="sm"
-        placeholder="Add tag…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            const target = filtered[0]?.name ?? q;
-            if (target.trim()) onPick(target);
-          }
-        }}
-        disabled={disabled}
-      />
-      <div className={styles["bulk-tag-list"]}>
-        {filtered.map((t) => (
-          <button
-            key={t.name}
-            type="button"
-            className={styles["bulk-tag-item"]}
-            onClick={() => onPick(t.name)}
-          >
-            <span>{t.name}</span>
-          </button>
-        ))}
-        {needle && !exact ? (
-          <button
-            type="button"
-            className={styles["bulk-tag-item"]}
-            data-create
-            onClick={() => onPick(q)}
-          >
-            Create "{normalizeLabelName(q) || q}"
-          </button>
-        ) : null}
-      </div>
-    </div>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { TagPicker } from "@/components/popovers/tag-picker";
 import { pickPrimaryUnit } from "@/pool/media";
 import { mutateSave, setSaveTags } from "@/pool/mutate-save";
 import { useResolvedTheme } from "@/pool/theme";
@@ -21,7 +22,6 @@ import {
   collectPropertyRows,
   type PaneRow,
 } from "../rows";
-import { TagPicker } from "../tag-picker";
 import styles from "./styles.module.css";
 
 interface SavePreviewProps extends React.ComponentPropsWithoutRef<"article"> {

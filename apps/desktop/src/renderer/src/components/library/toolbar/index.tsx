@@ -1,7 +1,7 @@
 import { IconMagnifierOutline18 as SearchIcon } from "@pond/icons/outline/18";
 import { Input, Toolbar } from "@pond/ui";
 import { FilterBar } from "@/components/library/filter-bar";
-import { View } from "@/components/library/view-menu";
+import { View } from "@/components/menus/view";
 import { usePlatform } from "@/lib/hooks/platform";
 import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
 import { useSidebar } from "@/lib/stores/shell-state";

@@ -177,7 +177,7 @@
     "tnum" 1;
   color: var(--ds-gray-12);
   letter-spacing: 0.01px;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: none;
   border: 0;
@@ -250,7 +250,7 @@
   overflow: hidden;
   color: var(--ds-gray-11);
   pointer-events: none;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: none;
   border: 0;
@@ -291,7 +291,7 @@
   height: 24px;
   padding: 0;
   color: var(--ds-gray-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: var(--ds-gray-1);
   border: 0;

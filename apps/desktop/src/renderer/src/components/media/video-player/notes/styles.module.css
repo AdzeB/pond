@@ -38,7 +38,7 @@
   font: inherit;
   font-size: 13px;
   color: var(--ds-gray-12);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: var(--ds-gray-3);
   border: 0;
   border-radius: 8px;
@@ -75,7 +75,7 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--ds-blue-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
 }
@@ -94,7 +94,7 @@
   justify-content: center;
   padding: 2px;
   color: var(--ds-gray-9);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
   border-radius: 4px;

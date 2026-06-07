@@ -80,7 +80,7 @@
   width: 22px;
   height: 22px;
   color: var(--ds-gray-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: 4px;
@@ -107,7 +107,7 @@
   width: 28px;
   height: 28px;
   color: var(--ds-gray-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: 4px;

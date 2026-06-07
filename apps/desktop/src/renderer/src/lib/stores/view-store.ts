@@ -3,7 +3,7 @@ import { EMPTY_QUERY, isEmptyQuery } from "@pond/schema/filters/types";
 import { readQuery } from "@pond/schema/filters/url";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { predicateIsActive } from "@/components/library/view-menu/filter/helpers";
+import { predicateIsActive } from "@/components/menus/view/filter/helpers";
 import {
   isLayoutValue,
   type LayoutValue,

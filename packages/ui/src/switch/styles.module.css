@@ -6,7 +6,7 @@
   width: 30px;
   height: 18px;
   padding: 0;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: var(--ds-gray-a6);
   border: 0;

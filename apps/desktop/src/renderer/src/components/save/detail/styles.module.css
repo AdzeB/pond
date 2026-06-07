@@ -79,7 +79,7 @@
 
 .status-pill:where([data-state="failed"]) {
   color: #fff;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: light-dark(#dc2626, #ef4444);
 
   &:disabled {

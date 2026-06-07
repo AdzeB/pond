@@ -1,14 +1,10 @@
-import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
-import {
-  AlertDialog,
-  Button,
-  Input,
-  Select,
-  Settings,
-  Switch,
-  useToast,
-} from "@pond/ui";
+import { Button, Input, Settings, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/dialogs/confirm";
+import {
+  type BindAddress,
+  BindAddressSelect,
+} from "@/components/selects/bind-address";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
 export function DeveloperSection() {
@@ -310,29 +306,10 @@ export function DeveloperSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Select.Root
-                value={apiPrefs.bindAddress}
-                onValueChange={(v) =>
-                  patchApi({ bindAddress: v as "loopback" | "lan" })
-                }
-              >
-                <Select.Trigger>
-                  <Select.Value />
-                  <Select.Icon>
-                    <ChevronsUpDown />
-                  </Select.Icon>
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Positioner sideOffset={6}>
-                    <Select.Popup>
-                      <Select.Item value="loopback">
-                        Loopback (127.0.0.1)
-                      </Select.Item>
-                      <Select.Item value="lan">LAN (0.0.0.0)</Select.Item>
-                    </Select.Popup>
-                  </Select.Positioner>
-                </Select.Portal>
-              </Select.Root>
+              <BindAddressSelect
+                value={apiPrefs.bindAddress as BindAddress}
+                onValueChange={(v) => patchApi({ bindAddress: v })}
+              />
             </Settings.ItemControl>
           </Settings.Item>
 
@@ -475,45 +452,20 @@ export function DeveloperSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <AlertDialog.Root
+              <Button variant="danger" onClick={() => setConfirmFactory(true)}>
+                Factory Reset…
+              </Button>
+              <ConfirmDialog
                 open={confirmFactory}
                 onOpenChange={setConfirmFactory}
-              >
-                <AlertDialog.Trigger
-                  render={<Button variant="danger">Factory Reset…</Button>}
-                />
-                <AlertDialog.Portal>
-                  <AlertDialog.Backdrop />
-                  <AlertDialog.Popup>
-                    <AlertDialog.Title>Factory Reset?</AlertDialog.Title>
-                    <AlertDialog.Description>
-                      This wipes the SQLite index and prefs. Saves on disk stay
-                      put. You'll see onboarding on next launch.
-                    </AlertDialog.Description>
-                    <AlertDialog.Actions>
-                      <AlertDialog.Close
-                        render={<Button variant="ghost">Cancel</Button>}
-                      />
-                      <AlertDialog.Close
-                        render={
-                          <Button
-                            variant="danger"
-                            disabled={resetBusy === "factory"}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              void factoryReset();
-                            }}
-                          >
-                            {resetBusy === "factory"
-                              ? "Resetting…"
-                              : "Wipe & Restart"}
-                          </Button>
-                        }
-                      />
-                    </AlertDialog.Actions>
-                  </AlertDialog.Popup>
-                </AlertDialog.Portal>
-              </AlertDialog.Root>
+                title="Factory Reset?"
+                description="This wipes the SQLite index and prefs. Saves on disk stay put. You'll see onboarding on next launch."
+                confirmLabel={
+                  resetBusy === "factory" ? "Resetting…" : "Wipe & Restart"
+                }
+                busy={resetBusy === "factory"}
+                onConfirm={() => void factoryReset()}
+              />
             </Settings.ItemControl>
           </Settings.Item>
         </Settings.List>

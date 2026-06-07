@@ -14,8 +14,8 @@ import {
   type DisplayItem,
   type RailKey,
 } from "@/components/library/all-tags";
-import { DisplayMenu } from "@/components/library/menus/display";
-import { TagPicker } from "@/components/save/preview/tag-picker";
+import { DisplayMenu } from "@/components/menus/display";
+import { TagPicker } from "@/components/popovers/tag-picker";
 import { adaptNavigate } from "@/lib/utils/navigate-path";
 import { useSaves } from "@/pool/hooks";
 import { usePrefs } from "@/pool/prefs";

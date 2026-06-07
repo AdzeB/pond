@@ -19,7 +19,7 @@
   aspect-ratio: 1;
   padding: 8px;
   color: var(--ds-gray-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: var(--ds-gray-1);
   border-radius: 2147483647px;

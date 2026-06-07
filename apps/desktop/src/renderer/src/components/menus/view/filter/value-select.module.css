@@ -1,0 +1,144 @@
+.popover-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: 4px;
+}
+
+.popover-trigger:hover {
+  background: var(--ds-gray-a4);
+}
+
+.popover-trigger[data-empty="true"] {
+  color: var(--ds-gray-11);
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  padding: 8px;
+}
+
+.swatch {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  cursor: var(--ds-cursor-interactive, pointer);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a5);
+}
+
+.swatch:hover {
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a8);
+}
+
+.swatch[data-active="true"] {
+  box-shadow:
+    0 0 0 2px var(--ds-gray-1),
+    0 0 0 4px var(--ds-gray-12);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 240px;
+  padding: 6px;
+}
+
+.body[data-variant="narrow"] {
+  width: 200px;
+}
+
+.body[data-variant="scroll"] {
+  max-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 0.5rem;
+}
+
+.body[data-variant="wide"] {
+  width: 260px;
+}
+
+.search {
+  padding-block-end: 6px;
+  margin-block-end: 4px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.empty {
+  padding: 12px 10px;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+.range {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 4px 4px;
+}
+
+.range > * {
+  flex: 1;
+}
+
+.dash {
+  font-size: 12px;
+  color: var(--ds-gray-11);
+}
+
+.check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--ds-gray-12);
+}
+
+.section-header {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 6px 6px 2px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.star-flag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  color: var(--ds-amber-9, #f5a524);
+}
+
+.count {
+  flex-shrink: 0;
+  padding-inline-start: 8px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}

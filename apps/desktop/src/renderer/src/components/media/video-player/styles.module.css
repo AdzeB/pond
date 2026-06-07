@@ -52,7 +52,7 @@
   height: 28px;
   padding: 0;
   color: var(--ds-gray-12);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: 4px;
@@ -94,7 +94,7 @@
   align-items: center;
   min-width: 0;
   height: 24px;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
 }
 
 .slider-track {
@@ -180,7 +180,7 @@
   text-align: center;
   text-align-last: center;
   appearance: none;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
   border-radius: 4px;
@@ -222,7 +222,7 @@
   justify-content: center;
   width: 24px;
   height: 90px;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
 }
 
 .volume-slider .slider-track {

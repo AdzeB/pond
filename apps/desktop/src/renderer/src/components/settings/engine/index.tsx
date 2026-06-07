@@ -1,5 +1,4 @@
 import {
-  IconChevronExpandYOutline18 as ChevronsUpDown,
   IconMinusOutline18 as Minus,
   IconPlusOutline18 as Plus,
   IconArrowRotateAnticlockwiseOutline18 as RotateCcw,
@@ -9,12 +8,15 @@ import {
   ColorField,
   Input,
   RangeField,
-  Select,
   Settings,
   Stepper,
   Switch,
 } from "@pond/ui";
 import type { ReactNode } from "react";
+import {
+  type EnumOption,
+  EnumSelect,
+} from "@/components/selects/_shared/enum-select";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 import type {
@@ -25,6 +27,7 @@ import type {
   GroupConfig,
   Item,
   SectionConfig,
+  SelectOption,
 } from "./types";
 
 export type {
@@ -265,41 +268,19 @@ function FieldControl({
         />
       );
 
-    case "select": {
-      const index = item.options.findIndex((o) => Object.is(o.value, current));
-      const selected = index >= 0 ? item.options[index] : undefined;
+    case "select":
       return (
-        <Select.Root
-          value={index >= 0 ? String(index) : ""}
+        <EnumSelect<SelectOption["value"]>
+          value={current as SelectOption["value"]}
           disabled={disabled}
-          onValueChange={(v) => {
-            if (v === null || v === "") return;
-            const option = item.options[Number(v)];
-            if (!option) return;
-            patch({ [item.key]: option.value });
+          onValueChange={(next) => {
+            patch({ [item.key]: next });
             runApply(item);
           }}
-        >
-          <Select.Trigger>
-            <Select.Value>{selected?.label ?? item.placeholder}</Select.Value>
-            <Select.Icon>
-              <ChevronsUpDown />
-            </Select.Icon>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Positioner sideOffset={6}>
-              <Select.Popup>
-                {item.options.map((option, i) => (
-                  <Select.Item key={String(i)} value={String(i)}>
-                    {option.label}
-                  </Select.Item>
-                ))}
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
+          options={item.options as readonly EnumOption<SelectOption["value"]>[]}
+          placeholder={item.placeholder}
+        />
       );
-    }
 
     case "range":
       return (

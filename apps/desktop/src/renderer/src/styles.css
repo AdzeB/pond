@@ -74,12 +74,27 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-html[data-pointer-cursors="true"] button,
-html[data-pointer-cursors="true"] a,
-html[data-pointer-cursors="true"] [role="button"],
-html[data-pointer-cursors="true"] [role="menuitem"],
-html[data-pointer-cursors="true"] [role="option"] {
-  cursor: pointer;
+:root {
+  --ds-cursor-interactive: default;
+}
+
+html[data-pointer-cursors="true"] {
+  --ds-cursor-interactive: pointer;
+}
+
+button,
+a,
+label[for],
+summary,
+[role="button"],
+[role="menuitem"],
+[role="menuitemradio"],
+[role="menuitemcheckbox"],
+[role="option"],
+[role="tab"],
+[role="switch"],
+[role="link"] {
+  cursor: var(--ds-cursor-interactive);
 }
 
 html,

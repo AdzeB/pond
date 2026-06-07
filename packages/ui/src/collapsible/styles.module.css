@@ -6,7 +6,7 @@
   font: inherit;
   font-size: 12px;
   color: var(--ds-gray-11);
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: transparent;
   border: 0;

@@ -67,7 +67,7 @@
   width: 26px;
   height: 26px;
   color: #fff;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: rgba(0, 0, 0, 0.55);
   border: 0;
   border-radius: 8px;

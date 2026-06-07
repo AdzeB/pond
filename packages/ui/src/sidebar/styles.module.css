@@ -43,7 +43,7 @@
   height: var(--sidebar-height-md);
   padding: 0 6px;
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ds-gray-10);
   border-radius: 8px;
   transition:
@@ -74,7 +74,7 @@
   padding: 0 6px;
   margin-block: 1px;
   font-size: 13px;
-  font-weight: 450;
+  font-weight: 500;
   color: var(--ds-gray-10);
   border-radius: 8px;
   transition:
@@ -86,7 +86,9 @@
     background: var(--ds-gray-2);
   }
 
-  &[data-status="active"] {
+  &[data-pressed],
+  &[data-status="active"],
+  &[data-popup-open] {
     color: var(--ds-gray-12);
     background: var(--ds-gray-3);
   }
@@ -116,6 +118,7 @@
       width: 16px;
       height: 16px;
       padding: 0;
+      margin-right: 8px;
       border-radius: 4px;
       box-shadow: var(--ds-shadow-2);
     }

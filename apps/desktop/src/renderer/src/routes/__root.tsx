@@ -5,9 +5,9 @@ import {
   Outlet,
   redirect,
 } from "@tanstack/react-router";
+import { Categorize } from "@/components/dialogs/categorize";
+import { QuickCapture } from "@/components/dialogs/quick-capture";
 import { BulkActionBar } from "@/components/library/bulk-action-bar";
-import { Categorize } from "@/components/library/categorize";
-import { QuickCapture } from "@/components/library/quick-capture";
 import { DeepLinkBridge } from "@/effects/deep-link-bridge";
 import { wasOnboardedLocally } from "@/lib/utils/onboarded";
 

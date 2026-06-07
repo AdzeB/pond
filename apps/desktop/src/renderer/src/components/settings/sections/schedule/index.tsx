@@ -1,6 +1,7 @@
 import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
 import { Input, Select, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
+import { RepeatCustomDialog } from "@/components/dialogs/repeat-custom";
 import {
   applyPreset,
   DEFAULT_GLOBAL_SYNC_PREFS,
@@ -12,7 +13,6 @@ import {
   type RepeatPreset,
 } from "@/lib/utils/sync-helpers";
 import { usePrefs } from "@/pool/prefs";
-import { RepeatCustomDialog } from "./repeat-custom-dialog";
 import styles from "./styles.module.css";
 
 export function ScheduleSection() {

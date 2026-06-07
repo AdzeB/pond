@@ -16,7 +16,7 @@ import { type GridLayout, LibraryGrid } from "@/components/library";
 import { JustifiedView } from "@/components/library/justified";
 import { SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
-import { SaveContextMenu } from "@/components/save/context-menu";
+import { SaveContextMenu } from "@/components/menus/save-context";
 import { setSort, useSortDir, useSortKey } from "@/lib/stores/view-store";
 import { formatAbsolute, formatBytes } from "@/lib/utils/format";
 import type { Save } from "@/pool/types";

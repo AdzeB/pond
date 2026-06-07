@@ -27,7 +27,7 @@
   font: inherit;
   color: inherit;
   text-align: inherit;
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
 }
@@ -42,7 +42,7 @@
 }
 
 .table tbody tr {
-  cursor: pointer;
+  cursor: var(--ds-cursor-interactive, pointer);
   border-bottom: 1px solid var(--ds-gray-a4);
 }
 
