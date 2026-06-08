@@ -11,12 +11,12 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Card, type CardLayout } from "@/components/_primitives/card-thumb";
 import { type GridLayout, LibraryGrid } from "@/components/library";
 import { JustifiedView } from "@/components/library/justified";
 import { SaveCard } from "@/components/library/save-card";
 import { WaterfallView } from "@/components/library/waterfall";
-import { SaveContextMenu } from "@/components/menus/save-context";
+import { Card, type CardLayout } from "@/components/primitives/card-thumb";
+import { SaveContextMenu } from "@/components/primitives/menus/save-context";
 import { setSort, useSortDir, useSortKey } from "@/lib/stores/view-store";
 import { formatAbsolute, formatBytes } from "@/lib/utils/format";
 import type { Save } from "@/pool/types";

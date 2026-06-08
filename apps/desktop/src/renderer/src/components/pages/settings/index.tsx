@@ -1,7 +1,7 @@
 import { Shell } from "@pond/ui";
 import { Outlet } from "@tanstack/react-router";
 import React from "react";
-import { Settings as Sidebar } from "@/components/sidebars/settings";
+import { Settings as Sidebar } from "@/components/primitives/sidebars/settings";
 
 export function Settings() {
   return (

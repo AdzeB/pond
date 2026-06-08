@@ -1,10 +1,10 @@
 import type { Source, SourceVisibility } from "@pond/schema/db";
 import { Sidebar } from "@pond/ui";
 import React from "react";
-import { CustomizeSourcesDialog } from "@/components/dialogs/customize-sources";
-import { MoreSourcesMenu } from "@/components/menus/more-sources";
-import { SourceContextMenu } from "@/components/menus/source-context";
-import { SourcesGroupMenu } from "@/components/menus/sources-group";
+import { CustomizeSourcesDialog } from "@/components/primitives/dialogs/customize-sources";
+import { MoreSourcesMenu } from "@/components/primitives/menus/more-sources";
+import { SourceContextMenu } from "@/components/primitives/menus/source-context";
+import { SourcesGroupMenu } from "@/components/primitives/menus/sources-group";
 import { useSidebarSources } from "@/lib/hooks/use-sidebar-sources";
 import { getSourceDef } from "@/lib/sources/registry";
 

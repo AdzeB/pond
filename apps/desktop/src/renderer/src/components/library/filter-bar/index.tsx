@@ -4,10 +4,10 @@ import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { isPredicate } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useMemo, useState } from "react";
-import { PromptDialog } from "@/components/dialogs/prompt";
-import { AddFilterMenu } from "@/components/menus/add-filter";
-import { FilterChip } from "@/components/menus/filter-field";
-import { useView } from "@/components/menus/view";
+import { PromptDialog } from "@/components/primitives/dialogs/prompt";
+import { AddFilterMenu } from "@/components/primitives/menus/add-filter";
+import { FilterChip } from "@/components/primitives/menus/filter-field";
+import { useView } from "@/lib/hooks/use-view";
 import { applySavedView, useActiveViewId } from "@/lib/stores/view-store";
 import {
   createSavedView,

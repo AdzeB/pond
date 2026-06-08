@@ -1,11 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
+import { SETTINGS_SECTION_ALIASES } from "@pond/schema";
 import { SettingsSectionView } from "@/components/settings/engine";
 import { DEFAULT_SECTION, SECTIONS } from "@/components/settings/registry";
 
 const CONFIG_BY_PATH = new Map(
   SECTIONS.map((section) => [section.path, section.config]),
 );
+
+function resolveSectionPath(path: string): string {
+  return SETTINGS_SECTION_ALIASES[path] ?? path;
+}
 
 function SectionRoute() {
   const { section } = Route.useParams();
@@ -20,7 +25,15 @@ function SectionRoute() {
 
 export const Route = createFileRoute("/settings/$section")({
   beforeLoad: ({ params }) => {
-    if (!CONFIG_BY_PATH.has(params.section)) {
+    const section = resolveSectionPath(params.section);
+    if (section !== params.section) {
+      throw redirect({
+        to: "/settings/$section",
+        params: { section },
+        replace: true,
+      });
+    }
+    if (!CONFIG_BY_PATH.has(section)) {
       throw redirect({
         to: "/settings/$section",
         params: { section: DEFAULT_SECTION.path },

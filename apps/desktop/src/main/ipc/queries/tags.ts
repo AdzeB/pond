@@ -35,12 +35,4 @@ export const tagsQueries: QueryHandlerMap = {
       Array.isArray(params.tags) ? (params.tags as string[]) : [],
     );
   },
-
-  async "tags.setStarred"(params) {
-    const { setStarred } = await import("../../core/tags");
-    return await setStarred(
-      String(params.name ?? ""),
-      Boolean(params.starred ?? false),
-    );
-  },
 };

@@ -2,7 +2,7 @@ import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { EMPTY_QUERY, isPredicate } from "@pond/schema/filters/types";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { predicateIsActive } from "@/components/menus/view/filter/helpers";
+import { predicateIsActive } from "@/components/primitives/menus/view/filter/helpers";
 import {
   isLayoutValue,
   type LayoutValue,

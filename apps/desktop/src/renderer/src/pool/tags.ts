@@ -5,7 +5,6 @@ import { useEffect } from "react";
 export interface TagRow {
   id: string;
   name: string;
-  starred: boolean;
   lastUsedAt: number | null;
   usageCount: number;
   createdAt: number | null;
@@ -44,7 +43,6 @@ function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
   return {
     id: raw.id,
     name: raw.name,
-    starred: Boolean(raw.starred),
     lastUsedAt: toMs(raw.lastUsedAt as unknown),
     usageCount: typeof raw.usageCount === "number" ? raw.usageCount : 0,
     createdAt: toMs(raw.createdAt as unknown),

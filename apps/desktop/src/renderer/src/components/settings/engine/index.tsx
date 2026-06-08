@@ -16,7 +16,7 @@ import type { ReactNode } from "react";
 import {
   type EnumOption,
   EnumSelect,
-} from "@/components/selects/_shared/enum-select";
+} from "@/components/primitives/selects/_shared/enum-select";
 import { usePrefs } from "@/pool/prefs";
 import styles from "./styles.module.css";
 import type {

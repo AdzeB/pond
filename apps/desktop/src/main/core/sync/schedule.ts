@@ -58,36 +58,6 @@ export function parseHHmm(value: string): ParsedTime | null {
   return { hours, minutes };
 }
 
-export function isInQuietHours(
-  at: Date,
-  quiet: { start: string; end: string },
-): boolean {
-  const start = parseHHmm(quiet.start);
-  const end = parseHHmm(quiet.end);
-  if (!start || !end) return false;
-  const minutes = at.getHours() * 60 + at.getMinutes();
-  const startMins = start.hours * 60 + start.minutes;
-  const endMins = end.hours * 60 + end.minutes;
-  if (startMins === endMins) return false;
-  if (startMins < endMins) return minutes >= startMins && minutes < endMins;
-  return minutes >= startMins || minutes < endMins;
-}
-
-export function nextQuietHoursEnd(
-  at: Date,
-  quiet: { start: string; end: string },
-): Date {
-  if (!isInQuietHours(at, quiet)) return at;
-  const end = parseHHmm(quiet.end);
-  if (!end) return at;
-  const out = new Date(at);
-  out.setHours(end.hours, end.minutes, 0, 0);
-  if (out.getTime() <= at.getTime()) {
-    out.setDate(out.getDate() + 1);
-  }
-  return out;
-}
-
 function nextAnchored(
   from: Date,
   anchorTime: string,
@@ -153,10 +123,6 @@ export function computeNextDueAt(
     }
     default:
       return null;
-  }
-
-  if (prefs.quietHours) {
-    due = nextQuietHoursEnd(due, prefs.quietHours);
   }
 
   return due;

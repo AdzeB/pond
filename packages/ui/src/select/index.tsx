@@ -5,7 +5,9 @@ import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
 import styles from "./styles.module.css";
 
-function Root<Value>(props: Base.Root.Props<Value>) {
+function Root<Value, Multiple extends boolean | undefined = false>(
+  props: Base.Root.Props<Value, Multiple>,
+) {
   return <Base.Root {...props} />;
 }
 
@@ -55,7 +57,13 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
+  return (
+    <Base.Popup
+      {...props}
+      data-type="select"
+      className={cn(popupStyles.popup, className)}
+    />
+  );
 }
 
 function List({ className, ...props }: Base.List.Props) {

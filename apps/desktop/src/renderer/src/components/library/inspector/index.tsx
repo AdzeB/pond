@@ -1,6 +1,6 @@
 import { Shell } from "@pond/ui";
 import { useParams } from "@tanstack/react-router";
-import { KebabMenu } from "@/components/menus/inspector-kebab";
+import { KebabMenu } from "@/components/primitives/menus/inspector-kebab";
 import { SavePreview } from "@/components/save/preview";
 import { useTrackVisit } from "@/lib/stores/recents";
 import { useInspector } from "@/lib/stores/shell-state";

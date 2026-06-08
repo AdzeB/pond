@@ -3,7 +3,7 @@ import { Outlet } from "@tanstack/react-router";
 import React from "react";
 import { Inspector } from "@/components/library/inspector";
 import { Toolbar } from "@/components/library/toolbar";
-import { Library as Sidebar } from "@/components/sidebars/library";
+import { Library as Sidebar } from "@/components/primitives/sidebars/library";
 
 export function Library() {
   return (

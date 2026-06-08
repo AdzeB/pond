@@ -25,9 +25,9 @@ import {
 } from "@videojs/react";
 import { Video, videoFeatures } from "@videojs/react/video";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { VideoContextMenu } from "@/components/menus/video-context";
-import { VolumeControl } from "@/components/popovers/video-volume";
-import { VideoSpeedSelect } from "@/components/selects/video-speed";
+import { VideoContextMenu } from "@/components/primitives/menus/video-context";
+import { VolumeControl } from "@/components/primitives/popovers/video-volume";
+import { VideoSpeedSelect } from "@/components/primitives/selects/video-speed";
 import type { Save } from "@/pool/types";
 import { type ChapterCue, chaptersToVttUrl } from "./chapters-vtt";
 import { ScrubPreview } from "./scrub-preview";

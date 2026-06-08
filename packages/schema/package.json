@@ -39,8 +39,6 @@
     "./label-name": "./src/label-name.ts"
   },
   "scripts": {
-    "generate": "tsx scripts/generate-settings.ts",
-    "generate:watch": "tsx watch scripts/generate-settings.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

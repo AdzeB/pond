@@ -6,8 +6,8 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
-import { ConfirmDialog } from "@/components/dialogs/confirm";
-import { PromptDialog } from "@/components/dialogs/prompt";
+import { ConfirmDialog } from "@/components/primitives/dialogs/confirm";
+import { PromptDialog } from "@/components/primitives/dialogs/prompt";
 import { findActiveQuickFilterId, QUICK_FILTERS } from "@/lib/quick-filters";
 import {
   applySavedView,

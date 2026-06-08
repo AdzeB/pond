@@ -6,11 +6,11 @@ import {
 import { Button, Input, Menu, Toolbar as PondToolbar } from "@pond/ui";
 import { FilterBar } from "@/components/library/filter-bar";
 import { SavedViews } from "@/components/library/saved-views";
-import { AddFilterMenu } from "@/components/menus/add-filter";
-import { DisplaySection } from "@/components/menus/view/sections/display";
-import { LayoutSection } from "@/components/menus/view/sections/layout";
-import { SortSection } from "@/components/menus/view/sections/sort";
-import { ZoomSection } from "@/components/menus/view/sections/zoom";
+import { AddFilterMenu } from "@/components/primitives/menus/add-filter";
+import { DisplaySection } from "@/components/primitives/menus/view/sections/display";
+import { LayoutSection } from "@/components/primitives/menus/view/sections/layout";
+import { SortSection } from "@/components/primitives/menus/view/sections/sort";
+import { ZoomSection } from "@/components/primitives/menus/view/sections/zoom";
 import { usePlatform } from "@/lib/hooks/platform";
 import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
 import { useSidebar } from "@/lib/stores/shell-state";

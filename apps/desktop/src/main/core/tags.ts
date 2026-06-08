@@ -283,39 +283,6 @@ export async function setSaveTags(
   return { ok: true };
 }
 
-export async function setStarred(
-  name: string,
-  starred: boolean,
-): Promise<{ ok: boolean }> {
-  const key = labelKey(name);
-  if (!key) return { ok: false };
-  const db = await getDb();
-  const row = await tagByLowerName(db, key);
-  if (!row) {
-    const id = ulid();
-    const stored = normalizeLabelName(name);
-    if (!stored) return { ok: false };
-    await executeTransaction({
-      kind: "create",
-      model: "tag",
-      id,
-      data: { id, name: stored, starred, usageCount: 0 },
-      meta: { actor: "user", actorReason: "tag-star" },
-    });
-    return { ok: true };
-  }
-  if (Boolean(row.starred) === starred) return { ok: true };
-  await executeTransaction({
-    kind: "update",
-    model: "tag",
-    id: row.id,
-    patch: { starred },
-    before: row,
-    meta: { actor: "user", actorReason: "tag-star" },
-  });
-  return { ok: true };
-}
-
 export async function bumpLastUsedAt(names: string[]): Promise<void> {
   if (names.length === 0) return;
   const db = await getDb();
@@ -348,9 +315,4 @@ export async function listRecent(limit = 12): Promise<Tag[]> {
     .where(isNotNull(tagsTable.lastUsedAt))
     .orderBy(desc(tagsTable.lastUsedAt))
     .limit(limit);
-}
-
-export async function listStarred(): Promise<Tag[]> {
-  const db = await getDb();
-  return await db.select().from(tagsTable).where(eq(tagsTable.starred, true));
 }

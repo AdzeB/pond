@@ -1,10 +1,10 @@
 import { Button, Input, Settings, Switch, useToast } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { ConfirmDialog } from "@/components/dialogs/confirm";
+import { ConfirmDialog } from "@/components/primitives/dialogs/confirm";
 import {
   type BindAddress,
   BindAddressSelect,
-} from "@/components/selects/bind-address";
+} from "@/components/primitives/selects/bind-address";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
 interface IntegrityReport {

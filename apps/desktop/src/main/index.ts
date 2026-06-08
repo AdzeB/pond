@@ -33,7 +33,7 @@ import {
   syncAllSources,
 } from "./core/sync";
 import { isOnWifi } from "./core/sync/network-type";
-import { computeNextDueAt, isInQuietHours } from "./core/sync/schedule";
+import { computeNextDueAt } from "./core/sync/schedule";
 import { getDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
@@ -529,7 +529,6 @@ function registerSyncCron() {
       if (!due) return;
       if (due.getTime() > now.getTime()) return;
 
-      if (prefs.quietHours && isInQuietHours(now, prefs.quietHours)) return;
       if (prefs.onlyOnAcPower && powerMonitor.isOnBatteryPower()) return;
       if (prefs.onlyOnWifi) {
         const wifi = await isOnWifi();

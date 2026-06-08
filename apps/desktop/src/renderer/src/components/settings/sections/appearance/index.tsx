@@ -10,7 +10,10 @@ import {
   type ThemeDef,
 } from "@pond/schema/db";
 import { ColorField, RangeField, Settings } from "@pond/ui";
-import { PresetSelect, ThemeSelect } from "@/components/selects/theme";
+import {
+  PresetSelect,
+  ThemeSelect,
+} from "@/components/primitives/selects/theme";
 import type { Binding } from "@/components/settings/engine";
 
 const DEFAULTS = DEFAULT_PREFS.preferences;
@@ -144,4 +147,3 @@ export function ContrastRow({ binding }: { binding: Binding }) {
     </>
   );
 }
-

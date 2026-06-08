@@ -6,16 +6,10 @@ import {
 
 export type RepeatPreset =
   | "every_hour"
-  | "every_6h"
   | "every_day"
   | "every_weekday"
   | "every_weekend"
   | "custom";
-
-export const DEFAULT_QUIET_HOURS: { start: string; end: string } = {
-  start: "22:00",
-  end: "08:00",
-};
 
 export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const WEEKDAY_INDICES = [1, 2, 3, 4, 5];
@@ -31,23 +25,12 @@ export const WEEKDAYS: Array<{ index: number; short: string; full: string }> = [
   { index: 6, short: "S", full: "Saturday" },
 ];
 
-export const FREQUENCY_OPTIONS: Array<{
-  value: SyncFrequency;
-  label: string;
-}> = [
-  { value: "hourly", label: "Hourly" },
-  { value: "every6h", label: "Every 6\u00A0hours" },
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-];
-
 export const REPEAT_PRESETS: Array<{
   value: Exclude<RepeatPreset, "custom">;
   label: string;
   secondary?: string;
 }> = [
   { value: "every_hour", label: "Every hour" },
-  { value: "every_6h", label: "Every 6\u00A0hours" },
   { value: "every_day", label: "Every day" },
   { value: "every_weekday", label: "Every weekday", secondary: "Mon\u2013Fri" },
   { value: "every_weekend", label: "Every weekend", secondary: "Sat\u2013Sun" },
@@ -64,8 +47,6 @@ export function presetFromPrefs(prefs: GlobalSyncPrefs): RepeatPreset {
   switch (prefs.frequency) {
     case "hourly":
       return "every_hour";
-    case "every6h":
-      return "every_6h";
     case "daily":
       return setEqual(prefs.weekdays, ALL_DAYS) ? "every_day" : "custom";
     case "weekly":
@@ -84,8 +65,6 @@ export function applyPreset(
   switch (preset) {
     case "every_hour":
       return { frequency: "hourly", weekdays: ALL_DAYS };
-    case "every_6h":
-      return { frequency: "every6h", weekdays: ALL_DAYS };
     case "every_day":
       return { frequency: "daily", weekdays: ALL_DAYS };
     case "every_weekday":

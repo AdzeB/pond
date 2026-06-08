@@ -10,7 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import { TagPicker } from "@/components/popovers/tag-picker";
+import { TagPicker } from "@/components/primitives/popovers/tag-picker";
 import { pickPrimaryUnit } from "@/pool/media";
 import { mutateSave, setSaveTags } from "@/pool/mutate-save";
 import { useResolvedTheme } from "@/pool/theme";
