@@ -1,6 +1,6 @@
+import { SETTINGS_SECTION_ALIASES } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { SETTINGS_SECTION_ALIASES } from "@pond/schema";
 import { SettingsSectionView } from "@/components/settings/engine";
 import { DEFAULT_SECTION, SECTIONS } from "@/components/settings/registry";
 
