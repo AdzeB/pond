@@ -212,7 +212,6 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
-  onboarded?: boolean;
 }
 
 function readShellHint(): ShellHint {

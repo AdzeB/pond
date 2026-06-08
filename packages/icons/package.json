@@ -16,7 +16,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/raphaelsalaja/pond.git",
-    "directory": "icons"
+    "directory": "packages/icons"
   },
   "exports": {
     "./fill/12": "./fill/12/index.ts",

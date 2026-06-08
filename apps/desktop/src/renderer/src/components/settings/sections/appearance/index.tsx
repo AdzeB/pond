@@ -1,4 +1,3 @@
-import { IconArrowRotateAnticlockwiseOutline18 as RotateCcw } from "@pond/icons/outline/18";
 import {
   CONTRAST_MAX,
   CONTRAST_MIN,
@@ -10,7 +9,7 @@ import {
   type Prefs,
   type ThemeDef,
 } from "@pond/schema/db";
-import { Button, ColorField, RangeField, Settings } from "@pond/ui";
+import { ColorField, RangeField, Settings } from "@pond/ui";
 import { PresetSelect, ThemeSelect } from "@/components/selects/theme";
 import type { Binding } from "@/components/settings/engine";
 
@@ -146,34 +145,3 @@ export function ContrastRow({ binding }: { binding: Binding }) {
   );
 }
 
-export function ResetThemeRow({ binding }: { binding: Binding }) {
-  const { patch } = readTheme(binding);
-  return (
-    <>
-      <Settings.ItemDetails>
-        <Settings.ItemTitle>Reset Theme</Settings.ItemTitle>
-        <Settings.ItemDescription>
-          Restore the default theme and custom colors.
-        </Settings.ItemDescription>
-      </Settings.ItemDetails>
-      <Settings.ItemControl>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() =>
-            patch({
-              themeMode: DEFAULTS.themeMode,
-              presetId: DEFAULTS.presetId,
-              systemLightId: DEFAULTS.systemLightId,
-              systemDarkId: DEFAULTS.systemDarkId,
-              custom: DEFAULTS.custom,
-            })
-          }
-        >
-          <RotateCcw />
-          Reset
-        </Button>
-      </Settings.ItemControl>
-    </>
-  );
-}

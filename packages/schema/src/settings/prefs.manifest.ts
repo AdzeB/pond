@@ -34,7 +34,6 @@ export const SETTINGS_PREFS = {
         default: "system",
       },
       reduceTransparency: { type: "boolean", default: false },
-      uiFontSize: { type: "number", default: 13 },
     },
   },
   notifications: {
@@ -112,7 +111,6 @@ export const SETTINGS_PREFS = {
   updates: {
     kind: "fields",
     fields: {
-      channel: { type: { enum: ["stable", "beta"] }, default: "stable" },
       autoInstall: { type: "boolean", default: true },
     },
   },

@@ -32,8 +32,8 @@ export const libraryQueries: QueryHandlerMap = {
   },
 
   // Create the default (or pointed-at) library bundle on disk and add it
-  // to the switcher list. Onboarding calls this when the user keeps the
-  // default and proceeds, so the `.pond` is created then, not at boot.
+  // to the switcher list, so the `.pond` is created on demand rather than
+  // at boot.
   async "library.ensureDefault"() {
     const path = materializeLibrary();
     rememberLibrary(path);
@@ -78,7 +78,7 @@ export const libraryQueries: QueryHandlerMap = {
   // folder. The renderer passes the path to `library.previewRelocate`
   // and `library.relocate`, which create the bundle. We keep "pick"
   // and "preview" separate so the renderer is free to call preview
-  // against a hard-coded path too (used during onboarding tests).
+  // against a hard-coded path too (used in tests).
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -97,10 +97,10 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, path: ensurePondSuffix(result.filePath) };
   },
 
-  // Onboarding's "Create pond" step: the user types the name in-app, so
-  // here we only let them choose the parent folder, then compose
-  // `<dir>/<name>.pond`. Using an open dialog (not a save dialog) means
-  // they never see a pre-existing default bundle's contents.
+  // "Create pond" flow: the user types the name in-app, so here we only
+  // let them choose the parent folder, then compose `<dir>/<name>.pond`.
+  // Using an open dialog (not a save dialog) means they never see a
+  // pre-existing default bundle's contents.
   async "library.pickNewLocation"(params) {
     const raw = typeof params.name === "string" ? params.name.trim() : "";
     const name = sanitizePondName(raw) || "My Pond";

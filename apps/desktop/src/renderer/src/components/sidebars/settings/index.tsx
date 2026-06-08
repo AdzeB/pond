@@ -4,12 +4,7 @@ import {
 } from "@pond/icons/outline/12";
 import { Button, Sidebar, Tooltip } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
-import {
-  DEV_GROUPS,
-  GROUP_LABELS,
-  GROUP_ORDER,
-  sectionsByGroup,
-} from "@/components/settings/registry";
+import { DEV_GROUPS, SECTIONS } from "@/components/settings/registry";
 import { usePrefs } from "@/pool/prefs";
 
 function Backwards() {
@@ -51,6 +46,9 @@ function Forwards() {
 export function Settings() {
   const [developer] = usePrefs("developer");
   const developerMode = developer.developerMode === true;
+  const sections = SECTIONS.filter(
+    (section) => !DEV_GROUPS.includes(section.group) || developerMode,
+  );
   return (
     <Sidebar.Provider>
       <Sidebar.Root>
@@ -67,29 +65,20 @@ export function Settings() {
           </Sidebar.Anchor>
         </Sidebar.Header>
 
-        {GROUP_ORDER.flatMap((group) => {
-          if (DEV_GROUPS.includes(group) && !developerMode) return [];
-          const items = sectionsByGroup(group);
-          if (items.length === 0) return [];
-          const label = GROUP_LABELS[group];
-          return [
-            <Sidebar.Group key={group}>
-              {label ? <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel> : null}
-              {items.map((section) => (
-                <Sidebar.Anchor
-                  key={section.id}
-                  to={`/settings/$section`}
-                  params={{ section: section.path }}
-                >
-                  <Sidebar.Icon>
-                    <section.icon width={14} height={14} />
-                  </Sidebar.Icon>
-                  {section.label}
-                </Sidebar.Anchor>
-              ))}
-            </Sidebar.Group>,
-          ];
-        })}
+        <Sidebar.Group>
+          {sections.map((section) => (
+            <Sidebar.Anchor
+              key={section.id}
+              to={`/settings/$section`}
+              params={{ section: section.path }}
+            >
+              <Sidebar.Icon>
+                <section.icon width={14} height={14} />
+              </Sidebar.Icon>
+              {section.label}
+            </Sidebar.Anchor>
+          ))}
+        </Sidebar.Group>
       </Sidebar.Root>
     </Sidebar.Provider>
   );

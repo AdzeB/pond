@@ -3,7 +3,6 @@ import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
-import { getVideoDownloadPrefs } from "../../prefs";
 import { downloadVideo } from "../../refresh/yt-dlp";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { resolveYtDlpTarget } from "../specs";
@@ -45,11 +44,6 @@ export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
       "[pond pipeline:fetch-video-ytdlp] storage guard blocking; will retry",
       saveId,
     );
-    return;
-  }
-  const prefs = await getVideoDownloadPrefs();
-  if (!prefs.enabled) {
-    log.debug("[pond pipeline:fetch-video-ytdlp] disabled in prefs", saveId);
     return;
   }
 
@@ -96,6 +90,18 @@ export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
           filename: `poster${posterExt}`,
           bytes: posterBuf,
           mimeType: dl.posterMimeType ?? "image/jpeg",
+        });
+      }
+    }
+
+    for (const sub of dl.subtitles) {
+      const subBuf = await readPath(sub.path);
+      if (subBuf) {
+        newFiles.push({
+          kind: "subtitle",
+          filename: sub.filename,
+          bytes: subBuf,
+          mimeType: sub.mimeType,
         });
       }
     }

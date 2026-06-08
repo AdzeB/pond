@@ -1,10 +1,10 @@
-import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
 import { Input, Select, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { RepeatCustomDialog } from "@/components/dialogs/repeat-custom";
 import {
   applyPreset,
   DEFAULT_GLOBAL_SYNC_PREFS,
+  DEFAULT_QUIET_HOURS,
   formatRepeatTrigger,
   frequencyHasAnchor,
   type GlobalSyncPrefs,
@@ -29,10 +29,6 @@ export function ScheduleSection() {
     [patchSync, syncReady, syncPrefs.global],
   );
 
-  function toggleQuietHours(on: boolean) {
-    patchGlobal({ quietHours: on ? { start: "22:00", end: "07:00" } : null });
-  }
-
   function handlePresetChange(value: RepeatPreset) {
     if (value === "custom") {
       setCustomDialogOpen(true);
@@ -44,6 +40,9 @@ export function ScheduleSection() {
   const activePreset = presetFromPrefs(global);
   const showAnchor = frequencyHasAnchor(global.frequency);
   const controlsDisabled = !syncReady || !global.enabled;
+
+  const quietHoursOn = global.quietHours !== null;
+  const quietHours = global.quietHours ?? DEFAULT_QUIET_HOURS;
 
   return (
     <Settings.Page>
@@ -83,9 +82,6 @@ export function ScheduleSection() {
               >
                 <Select.Trigger>
                   <Select.Value>{formatRepeatTrigger(global)}</Select.Value>
-                  <Select.Icon>
-                    <ChevronsUpDown />
-                  </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
                   <Select.Positioner sideOffset={6}>
@@ -137,85 +133,83 @@ export function ScheduleSection() {
               </Settings.ItemControl>
             </Settings.Item>
           ) : null}
+        </Settings.List>
+      </Settings.Section>
 
+      <Settings.Section>
+        <Settings.SectionTitle>Conditions</Settings.SectionTitle>
+        <Settings.List>
           <Settings.Item>
             <Settings.ItemDetails>
               <Settings.ItemTitle>Quiet hours</Settings.ItemTitle>
               <Settings.ItemDescription>
-                Don't sync between these hours, even when due.
-              </Settings.ItemDescription>
-            </Settings.ItemDetails>
-            <Settings.ItemControl>
-              <div className={styles["quiet-hours-row"]}>
-                <Switch.Root
-                  disabled={controlsDisabled}
-                  checked={Boolean(global.quietHours)}
-                  onCheckedChange={(v) => toggleQuietHours(v)}
-                />
-                {global.quietHours ? (
-                  <>
-                    <Input.Field
-                      type="time"
-                      data-size="sm"
-                      className={styles["inline-time"]}
-                      disabled={controlsDisabled}
-                      value={global.quietHours.start}
-                      onChange={(e) =>
-                        patchGlobal({
-                          quietHours: {
-                            start: e.currentTarget.value,
-                            end:
-                              global.quietHours?.end ??
-                              DEFAULT_GLOBAL_SYNC_PREFS.anchorTime,
-                          },
-                        })
-                      }
-                    />
-                    <span className={styles["quiet-hours-sep"]}>to</span>
-                    <Input.Field
-                      type="time"
-                      data-size="sm"
-                      className={styles["inline-time"]}
-                      disabled={controlsDisabled}
-                      value={global.quietHours.end}
-                      onChange={(e) =>
-                        patchGlobal({
-                          quietHours: {
-                            start:
-                              global.quietHours?.start ??
-                              DEFAULT_GLOBAL_SYNC_PREFS.anchorTime,
-                            end: e.currentTarget.value,
-                          },
-                        })
-                      }
-                    />
-                  </>
-                ) : null}
-              </div>
-            </Settings.ItemControl>
-          </Settings.Item>
-
-          <Settings.Item>
-            <Settings.ItemDetails>
-              <Settings.ItemTitle>Only when plugged in</Settings.ItemTitle>
-              <Settings.ItemDescription>
-                Skip scheduled syncs while running on battery.
+                Skip syncing during these hours.
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
               <Switch.Root
                 disabled={controlsDisabled}
-                checked={global.onlyOnAcPower}
-                onCheckedChange={(v) => patchGlobal({ onlyOnAcPower: v })}
+                checked={quietHoursOn}
+                onCheckedChange={(v) =>
+                  patchGlobal({ quietHours: v ? DEFAULT_QUIET_HOURS : null })
+                }
               />
             </Settings.ItemControl>
           </Settings.Item>
+
+          {quietHoursOn ? (
+            <Settings.Item>
+              <Settings.ItemDetails>
+                <Settings.ItemTitle>Quiet window</Settings.ItemTitle>
+                <Settings.ItemDescription>
+                  Local start and end of the no-sync window.
+                </Settings.ItemDescription>
+              </Settings.ItemDetails>
+              <Settings.ItemControl>
+                <div className={styles["quiet-hours-row"]}>
+                  <Input.Field
+                    type="time"
+                    data-size="sm"
+                    aria-label="Quiet hours start"
+                    className={styles["inline-time"]}
+                    disabled={controlsDisabled}
+                    value={quietHours.start}
+                    onChange={(e) =>
+                      patchGlobal({
+                        quietHours: {
+                          ...quietHours,
+                          start: e.currentTarget.value,
+                        },
+                      })
+                    }
+                  />
+                  <span className={styles["quiet-hours-sep"]}>to</span>
+                  <Input.Field
+                    type="time"
+                    data-size="sm"
+                    aria-label="Quiet hours end"
+                    className={styles["inline-time"]}
+                    disabled={controlsDisabled}
+                    value={quietHours.end}
+                    onChange={(e) =>
+                      patchGlobal({
+                        quietHours: {
+                          ...quietHours,
+                          end: e.currentTarget.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </Settings.ItemControl>
+            </Settings.Item>
+          ) : null}
 
           <Settings.Item>
             <Settings.ItemDetails>
               <Settings.ItemTitle>Only on Wi-Fi</Settings.ItemTitle>
               <Settings.ItemDescription>
-                Skip scheduled syncs on cellular or tethered networks.
+                Don&apos;t sync over metered or cellular connections.
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
@@ -223,6 +217,22 @@ export function ScheduleSection() {
                 disabled={controlsDisabled}
                 checked={global.onlyOnWifi}
                 onCheckedChange={(v) => patchGlobal({ onlyOnWifi: v })}
+              />
+            </Settings.ItemControl>
+          </Settings.Item>
+
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Only on power</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Pause background sync while running on battery.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Switch.Root
+                disabled={controlsDisabled}
+                checked={global.onlyOnAcPower}
+                onCheckedChange={(v) => patchGlobal({ onlyOnAcPower: v })}
               />
             </Settings.ItemControl>
           </Settings.Item>

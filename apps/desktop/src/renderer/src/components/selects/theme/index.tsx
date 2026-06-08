@@ -1,11 +1,25 @@
-import { IconChevronExpandYOutline18 as ChevronsUpDown } from "@pond/icons/outline/18";
-import { darkPresets, lightPresets, type ThemeDef } from "@pond/schema/db";
+import {
+  darkPresets,
+  getPreset,
+  lightPresets,
+  type ThemeDef,
+} from "@pond/schema/db";
 import { Select } from "@pond/ui";
 import styles from "./styles.module.css";
 
 const THEME_VALUE_SYSTEM = "system";
 const THEME_VALUE_CUSTOM = "custom";
 const PRESET_PREFIX = "preset:";
+
+function themeValueLabel(value: string): string {
+  if (value === THEME_VALUE_SYSTEM) return "System";
+  if (value === THEME_VALUE_CUSTOM) return "Custom";
+  if (value.startsWith(PRESET_PREFIX)) {
+    const id = value.slice(PRESET_PREFIX.length);
+    return getPreset(id)?.name ?? id;
+  }
+  return value;
+}
 
 type ThemeChange =
   | { themeMode: "system" }
@@ -50,10 +64,7 @@ export function ThemeSelect({
   return (
     <Select.Root value={value} onValueChange={onValueChange}>
       <Select.Trigger>
-        <Select.Value />
-        <Select.Icon>
-          <ChevronsUpDown />
-        </Select.Icon>
+        <Select.Value>{(v: string) => themeValueLabel(v)}</Select.Value>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner sideOffset={6}>
@@ -105,10 +116,9 @@ export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
       }}
     >
       <Select.Trigger>
-        <Select.Value />
-        <Select.Icon>
-          <ChevronsUpDown />
-        </Select.Icon>
+        <Select.Value>
+          {(v: string) => presets.find((p) => p.id === v)?.name ?? v}
+        </Select.Value>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner sideOffset={6}>

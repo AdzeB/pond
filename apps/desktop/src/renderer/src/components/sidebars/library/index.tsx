@@ -142,7 +142,7 @@ export function Library() {
   const app = [
     {
       icon: <OpenBrowser />,
-      label: "Open Website",
+      label: "Visit Homepage",
       secondaryLabel: "G then A",
       action: () => {
         window.open("https://www.pond.so", "_blank");
@@ -150,7 +150,7 @@ export function Library() {
     },
     {
       icon: <Download />,
-      label: "Download Extension",
+      label: "Install Extension",
       secondaryLabel: "G then H",
       action: () => {
         window.open("https://www.pond.so/extension", "_blank");
@@ -161,7 +161,7 @@ export function Library() {
   const help = [
     {
       icon: <Keyboard />,
-      label: "Keyboard Shortcuts",
+      label: "Shortcuts",
       secondaryLabel: "G then K",
       action: () => {
         window.open("https://www.pond.so/keyboard-shortcuts", "_blank");

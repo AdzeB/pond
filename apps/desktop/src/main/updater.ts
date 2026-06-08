@@ -67,8 +67,8 @@ export function registerAutoUpdater() {
 export async function applyUpdaterPrefs(): Promise<void> {
   if (!app.isPackaged) return;
   const prefs = await getPrefs();
-  autoUpdater.allowPrerelease = prefs.updates.channel === "beta";
-  autoUpdater.channel = prefs.updates.channel;
+  autoUpdater.allowPrerelease = false;
+  autoUpdater.channel = "stable";
   autoUpdater.autoDownload = prefs.updates.autoInstall;
 }
 

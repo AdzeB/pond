@@ -1,6 +1,46 @@
 import type { GlobalSyncPrefs } from "@pond/schema/db";
+import { RRule, type Weekday } from "rrule";
 
 const HOUR_MS = 60 * 60 * 1000;
+
+// JS `Date.getDay()` (0 = Sunday … 6 = Saturday) → RRule weekday constants.
+const RRULE_WEEKDAYS: Weekday[] = [
+  RRule.SU,
+  RRule.MO,
+  RRule.TU,
+  RRule.WE,
+  RRule.TH,
+  RRule.FR,
+  RRule.SA,
+];
+
+// RRule evaluates everything in UTC. We want a "floating" local wall-clock
+// schedule ("09:00 on these weekdays" in the user's timezone, regardless of
+// DST), so we shift the local fields into UTC, let RRule do the calendar
+// math, then read the UTC fields back out as local time.
+function toFloating(d: Date): Date {
+  return new Date(
+    Date.UTC(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate(),
+      d.getHours(),
+      d.getMinutes(),
+      d.getSeconds(),
+    ),
+  );
+}
+
+function fromFloating(d: Date): Date {
+  return new Date(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+  );
+}
 
 export interface ParsedTime {
   hours: number;
@@ -55,17 +95,34 @@ function nextAnchored(
 ): Date | null {
   const parsed = parseHHmm(anchorTime);
   if (!parsed) return null;
-  const allowed = new Set(weekdays.filter((d) => d >= 0 && d <= 6));
-  if (allowed.size === 0) return null;
-  for (let i = 0; i < 14; i++) {
-    const day = new Date(from);
-    day.setDate(day.getDate() + i);
-    day.setHours(parsed.hours, parsed.minutes, 0, 0);
-    if (day.getTime() > from.getTime() && allowed.has(day.getDay())) {
-      return day;
-    }
-  }
-  return null;
+  const byweekday = weekdays
+    .filter((d) => d >= 0 && d <= 6)
+    .map((d) => RRULE_WEEKDAYS[d] as Weekday);
+  if (byweekday.length === 0) return null;
+
+  const floatingFrom = toFloating(from);
+  const rule = new RRule({
+    freq: RRule.WEEKLY,
+    byweekday,
+    byhour: parsed.hours,
+    byminute: parsed.minutes,
+    bysecond: 0,
+    // dtstart must precede `from` so the first matching occurrence is found.
+    dtstart: new Date(
+      Date.UTC(
+        floatingFrom.getUTCFullYear() - 1,
+        0,
+        1,
+        parsed.hours,
+        parsed.minutes,
+        0,
+      ),
+    ),
+  });
+
+  // `after(date, false)` returns the first occurrence strictly after `from`.
+  const occ = rule.after(floatingFrom, false);
+  return occ ? fromFloating(occ) : null;
 }
 
 export function computeNextDueAt(

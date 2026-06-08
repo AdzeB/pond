@@ -21,7 +21,6 @@ export interface Prefs {
     pointerCursors: boolean;
     reduceMotion: "system" | "always" | "never";
     reduceTransparency: boolean;
-    uiFontSize: number;
   };
   notifications: {
     saveComplete: boolean;
@@ -65,7 +64,6 @@ export interface Prefs {
     allowedOrigins: string[];
   };
   updates: {
-    channel: "stable" | "beta";
     autoInstall: boolean;
   };
   developer: {
@@ -96,7 +94,6 @@ export const DEFAULT_PREFS: Prefs = {
     pointerCursors: false,
     reduceMotion: "system",
     reduceTransparency: false,
-    uiFontSize: 13,
   },
   notifications: { saveComplete: true, sound: false },
   trash: { autoEmptyDays: null, confirmBeforeEmpty: true },
@@ -130,7 +127,7 @@ export const DEFAULT_PREFS: Prefs = {
     ],
   },
   api: { port: 41610, bindAddress: "loopback", allowedOrigins: [] },
-  updates: { channel: "stable", autoInstall: true },
+  updates: { autoInstall: true },
   developer: { developerMode: false, verboseLogging: false },
   sync: {
     global: {

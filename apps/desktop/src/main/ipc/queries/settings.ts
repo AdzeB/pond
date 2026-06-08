@@ -7,7 +7,9 @@ import {
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import {
+  getImageDownloadPrefs,
   getPrefs,
+  getVideoDownloadPrefs,
   setImageDownloadPrefs,
   setPrefs,
   setVideoDownloadPrefs,
@@ -23,12 +25,13 @@ export const settingsQueries: QueryHandlerMap = {
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
+    // Read through the normalizing getters so every field falls back to its
+    // original default. A partially-stored blob (an older schema, a stale
+    // write) would otherwise leave individual controls blank in the UI.
+    const videoDownload = await getVideoDownloadPrefs();
+    const imageDownload = await getImageDownloadPrefs();
     if (rows[0]) {
-      return {
-        ...rows[0],
-        videoDownload: rows[0].videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
-        imageDownload: rows[0].imageDownload ?? DEFAULT_IMAGE_DOWNLOAD,
-      };
+      return { ...rows[0], videoDownload, imageDownload };
     }
     await db
       .insert(settingsTable)
@@ -41,8 +44,8 @@ export const settingsQueries: QueryHandlerMap = {
       .run();
     return {
       id: "singleton",
-      videoDownload: DEFAULT_VIDEO_DOWNLOAD,
-      imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+      videoDownload,
+      imageDownload,
       libraryRoot: null,
       updatedAt: new Date(),
     };
@@ -64,22 +67,6 @@ export const settingsQueries: QueryHandlerMap = {
 
   async "settings.ingestToken"() {
     return { token: await getIngestToken() };
-  },
-
-  async "settings.markOnboarded"(params) {
-    const db = await getGlobalDb();
-    await db
-      .insert(settingsTable)
-      .values({
-        id: "singleton",
-        onboarded: Boolean(params.value ?? true),
-      })
-      .onConflictDoUpdate({
-        target: settingsTable.id,
-        set: { onboarded: Boolean(params.value ?? true) },
-      })
-      .run();
-    return { ok: true };
   },
 
   async "settings.rotateIngestToken"() {

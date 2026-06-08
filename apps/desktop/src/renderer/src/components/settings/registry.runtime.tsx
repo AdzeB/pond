@@ -1,8 +1,6 @@
 import {
   IconClockOutline18 as Clock,
   IconDownloadOutline18 as Download,
-  IconFinderOutline18 as FolderOpen,
-  IconStorageOutline18 as HardDrive,
   IconColorPaletteOutline18 as Palette,
   IconSliderOutline18 as SlidersHorizontal,
   IconTerminalOutline18 as Terminal,
@@ -13,7 +11,6 @@ import type { Binding } from "./engine";
 import {
   ContrastRow,
   CustomColorRow,
-  ResetThemeRow,
   SystemPresetRow,
   ThemeRow,
 } from "./sections/appearance";
@@ -21,17 +18,7 @@ import {
   useImageDownloadBinding,
   useVideoDownloadBinding,
 } from "./sections/downloads";
-import {
-  CheckNowRow,
-  InstallInstructionsRow,
-  PairingLinkRow,
-} from "./sections/general";
-import {
-  ActionRow,
-  DiskUsage,
-  NoHardCapRow,
-  VerifyRow,
-} from "./sections/storage";
+import { CheckNowRow } from "./sections/general";
 
 // The escape hatch for the generated settings configs. The manifest holds
 // only names; this module resolves them to the runtime values that can't be
@@ -56,8 +43,6 @@ function BackgroundRow({ binding }: { binding: Binding }) {
 export const icons: Record<string, IconComponent> = {
   SlidersHorizontal,
   Palette,
-  HardDrive,
-  FolderOpen,
   Download,
   Clock,
   Terminal,
@@ -71,26 +56,16 @@ const control = (c: ComponentType<{ binding: Binding }>) => c;
 // Custom controls and group bodies. Each receives the group binding.
 export const components = {
   CheckNowRow: control(CheckNowRow),
-  PairingLinkRow: control(PairingLinkRow),
-  InstallInstructionsRow: control(InstallInstructionsRow),
   ThemeRow: control(ThemeRow),
   SystemLightRow: control(SystemLightRow),
   SystemDarkRow: control(SystemDarkRow),
   AccentRow: control(AccentRow),
   BackgroundRow: control(BackgroundRow),
   ContrastRow: control(ContrastRow),
-  ResetThemeRow: control(ResetThemeRow),
-  DiskUsage: control(DiskUsage),
-  NoHardCapRow: control(NoHardCapRow),
-  ActionRow: control(ActionRow),
-  VerifyRow: control(VerifyRow),
 };
 
 // Fully bespoke sections, lazy so each stays in its own chunk.
 export const sections: Record<string, ComponentType> = {
-  LocationSection: lazy(() =>
-    import("./sections/location").then((m) => ({ default: m.LocationSection })),
-  ),
   ScheduleSection: lazy(() =>
     import("./sections/schedule").then((m) => ({ default: m.ScheduleSection })),
   ),
@@ -106,9 +81,13 @@ type Values = Record<string, unknown>;
 export const predicates: Record<string, (values: Values) => boolean> = {
   isSystemMode: (v) => (v.themeMode ?? "system") === "system",
   isCustomMode: (v) => (v.themeMode ?? "system") === "custom",
-  guardsEnabled: (v) => Boolean(v.guardsEnabled),
-  hasCap: (v) => Boolean(v.guardsEnabled) && v.maxLibraryGb !== null,
-  videoDisabled: (v) => !v.enabled,
+  subtitlesEnabled: (v) => v.subtitles !== "off",
+  imageReencode: (v) => v.format !== "original",
+  imageQuality: (v) =>
+    (v.format === "jpeg" || v.format === "webp" || v.format === "avif") &&
+    !v.lossless,
+  imageLossless: (v) => v.format === "webp" || v.format === "avif",
+  imageProgressive: (v) => v.format === "jpeg" || v.format === "png",
 };
 
 export const bindings: Record<string, () => Binding> = {
@@ -124,7 +103,6 @@ export function runApply(channel: string): void {
 
 // Warm the lazy section chunks so switching pages resolves from cache.
 export function preloadSections(): void {
-  void import("./sections/location");
   void import("./sections/schedule");
   void import("./sections/developer");
 }

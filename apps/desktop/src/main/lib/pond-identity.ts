@@ -13,11 +13,10 @@ import {
 // Dropbox. The id lets us name the cache deterministically without
 // hashing a path that can move.
 
-// Used before a pond is committed (fresh, not-yet-onboarded user). The
-// app still needs *a* pond handle for empty-state queries; this throwaway
-// id gives it one without touching a real bundle. Onboarding writes the
-// real bundle and relaunches, after which the stable metadata id takes
-// over.
+// Used before a pond is committed (fresh user). The app still needs *a*
+// pond handle for empty-state queries; this throwaway id gives it one
+// without touching a real bundle. The first write materializes the real
+// bundle, after which the stable metadata id takes over.
 export const UNBOUND_POND_ID = "unbound";
 
 interface LibraryMetadata {

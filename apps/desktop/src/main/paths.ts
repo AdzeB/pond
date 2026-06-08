@@ -53,9 +53,8 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
   const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
   // Only materialize the bundle once the user has committed to a library:
   // an explicit override, a saved pointer, or a root that already exists.
-  // A fresh, not-yet-onboarded user gets the path without us creating
-  // `~/Pond/My Pond.pond` on disk. Onboarding (or the first write) creates
-  // it via materializeLibrary() when the user actually proceeds.
+  // A fresh user gets the path without us creating `~/Pond/My Pond.pond`
+  // on disk. The first write creates it via materializeLibrary().
   const committed =
     libraryRootOverride != null || pointer != null || existsSync(root);
   if (committed) ensureLibraryDirs(root);
@@ -87,9 +86,8 @@ function ensureLibraryDirs(root: string): void {
 }
 
 // Create the active library's bundle on disk (root + items/ + trash/).
-// Onboarding calls this when the user proceeds so the pond appears only
-// then, not at boot. Writers (writeItemFiles, moveToTrash) also mkdir on
-// demand, so this is about making the folder show up promptly.
+// Called when committing to a library so the pond folder shows up
+// promptly. Writers (writeItemFiles, moveToTrash) also mkdir on demand.
 export function materializeLibrary(): string {
   const root = resolvePaths().libraryRoot;
   ensureLibraryDirs(root);

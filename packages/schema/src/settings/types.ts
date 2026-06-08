@@ -10,7 +10,7 @@
 // effects, bindings) is referenced by name and resolved at runtime through
 // a hand-written registry in the desktop app.
 
-export type SettingsGroupId = "app" | "library" | "saving" | "dev";
+export type SettingsGroupId = "app" | "saving" | "dev";
 
 // ----- Data model (generates Prefs / DEFAULT_PREFS / validator) -----
 

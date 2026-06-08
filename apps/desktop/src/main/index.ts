@@ -34,7 +34,7 @@ import {
 } from "./core/sync";
 import { isOnWifi } from "./core/sync/network-type";
 import { computeNextDueAt, isInQuietHours } from "./core/sync/schedule";
-import { getDb, getGlobalDb } from "./db";
+import { getDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
@@ -218,7 +218,6 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
-  onboarded?: boolean;
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
@@ -227,7 +226,6 @@ async function resolveShellHint(): Promise<ShellHint> {
       "@pond/schema/db"
     );
     const prefs = await getPrefs();
-    const onboarded = await readOnboarded();
     const def = resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors);
     const v = themeEngineVars(def);
     return {
@@ -241,25 +239,9 @@ async function resolveShellHint(): Promise<ShellHint> {
       contrast: v.contrast,
       fgDir: v.fgDir,
       pointerCursors: prefs.preferences.pointerCursors === true,
-      onboarded,
     };
   } catch {
     return {};
-  }
-}
-
-async function readOnboarded(): Promise<boolean> {
-  try {
-    const { settings: settingsTable } = await import("@pond/schema/db");
-    const { eq } = await import("drizzle-orm");
-    const db = await getGlobalDb();
-    const rows = await db
-      .select({ onboarded: settingsTable.onboarded })
-      .from(settingsTable)
-      .where(eq(settingsTable.id, "singleton"));
-    return Boolean(rows[0]?.onboarded);
-  } catch {
-    return false;
   }
 }
 
@@ -447,8 +429,8 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     const active = libraryRoot();
-    // Don't list a library that doesn't exist yet (a fresh, not-yet-
-    // onboarded user). Onboarding remembers it once the user proceeds.
+    // Don't list a library that doesn't exist yet (a fresh user). The
+    // first write materializes the bundle, and we remember it then.
     if (existsSync(active)) rememberLibrary(active);
     pruneMissingLibraries(active);
   } catch (err) {

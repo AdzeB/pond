@@ -150,24 +150,42 @@ export async function setImageDownloadPrefs(
   return merged;
 }
 
-const ALLOWED_HEIGHTS = new Set([480, 720, 1080, 1440, 2160]);
+const ALLOWED_HEIGHTS = new Set([
+  144, 240, 360, 480, 720, 1080, 1440, 2160, 4320,
+]);
+const ALLOWED_FPS = new Set([24, 30, 60]);
+const ALLOWED_LONG_EDGES = new Set([1024, 2048, 4096, 8192]);
 
-function normalizeVideo(value: VideoDownloadSettings): VideoDownloadSettings {
-  return {
-    enabled: Boolean(value.enabled),
-    maxHeight: clampHeight(value.maxHeight),
-    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 10_000),
-  };
+const VIDEO_CODECS = ["h264", "hevc", "av1", "vp9", "any"] as const;
+const AUDIO_CODECS = ["aac", "opus", "any"] as const;
+const VIDEO_CONTAINERS = ["auto", "mp4", "mkv", "webm", "mov"] as const;
+const SUBTITLE_MODES = ["off", "download", "embed"] as const;
+const IMAGE_FORMATS = ["original", "jpeg", "png", "webp", "avif"] as const;
+
+function oneOf<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+  fallback: T,
+): T {
+  return allowed.includes(value as T) ? (value as T) : fallback;
 }
 
-function clampHeight(h: VideoDownloadSettings["maxHeight"]): number | null {
-  if (h === null || h === undefined) return null;
-  const n = Math.floor(Number(h));
+function bool(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function snapToSet(
+  value: number | null | undefined,
+  set: Set<number>,
+  fallback: number,
+): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Math.floor(Number(value));
   if (!Number.isFinite(n) || n <= 0) return null;
-  if (ALLOWED_HEIGHTS.has(n)) return n;
-  let best = 1080;
+  if (set.has(n)) return n;
+  let best = fallback;
   let bestDelta = Math.abs(best - n);
-  for (const bucket of ALLOWED_HEIGHTS) {
+  for (const bucket of set) {
     const d = Math.abs(bucket - n);
     if (d < bestDelta) {
       best = bucket;
@@ -177,32 +195,46 @@ function clampHeight(h: VideoDownloadSettings["maxHeight"]): number | null {
   return best;
 }
 
-const ALLOWED_LONG_EDGES = new Set([1024, 2048, 4096]);
+function normalizeVideo(value: VideoDownloadSettings): VideoDownloadSettings {
+  return {
+    enabled: bool(value.enabled, true),
+    maxHeight: snapToSet(value.maxHeight, ALLOWED_HEIGHTS, 1080),
+    maxFps: snapToSet(value.maxFps, ALLOWED_FPS, 60),
+    videoCodec: oneOf(value.videoCodec, VIDEO_CODECS, "h264"),
+    audioCodec: oneOf(value.audioCodec, AUDIO_CODECS, "aac"),
+    container: oneOf(value.container, VIDEO_CONTAINERS, "auto"),
+    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 10_000),
+    subtitles: oneOf(value.subtitles, SUBTITLE_MODES, "off"),
+    subtitleLang: sanitizeLang(value.subtitleLang),
+    embedMetadata: bool(value.embedMetadata, true),
+    embedThumbnail: bool(value.embedThumbnail, false),
+    embedChapters: bool(value.embedChapters, false),
+    sponsorblockRemove: bool(value.sponsorblockRemove, false),
+  };
+}
 
 function normalizeImage(value: ImageDownloadSettings): ImageDownloadSettings {
   return {
-    maxLongEdge: clampLongEdge(value.maxLongEdge),
+    maxLongEdge: snapToSet(value.maxLongEdge, ALLOWED_LONG_EDGES, 2048),
+    format: oneOf(value.format, IMAGE_FORMATS, "original"),
+    quality: clampQuality(value.quality),
+    lossless: bool(value.lossless, false),
+    progressive: bool(value.progressive, false),
+    preserveMetadata: bool(value.preserveMetadata, false),
     maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 1_000),
   };
 }
 
-function clampLongEdge(
-  edge: ImageDownloadSettings["maxLongEdge"],
-): number | null {
-  if (edge === null || edge === undefined) return null;
-  const n = Math.floor(Number(edge));
-  if (!Number.isFinite(n) || n <= 0) return null;
-  if (ALLOWED_LONG_EDGES.has(n)) return n;
-  let best = 2048;
-  let bestDelta = Math.abs(best - n);
-  for (const bucket of ALLOWED_LONG_EDGES) {
-    const d = Math.abs(bucket - n);
-    if (d < bestDelta) {
-      best = bucket;
-      bestDelta = d;
-    }
-  }
-  return best;
+function clampQuality(q: number | null | undefined): number {
+  const n = Math.floor(Number(q));
+  if (!Number.isFinite(n)) return 80;
+  return Math.min(100, Math.max(1, n));
+}
+
+function sanitizeLang(value: unknown): string {
+  if (typeof value !== "string") return "en";
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : "en";
 }
 
 function clampFilesize(

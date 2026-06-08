@@ -132,11 +132,5 @@ export function ThemeApplier() {
     return () => mq.removeEventListener("change", sync);
   }, [prefs.reduceMotion]);
 
-  useEffect(() => {
-    const root = document.documentElement;
-    const ui = Number.isFinite(prefs.uiFontSize) ? prefs.uiFontSize : 13;
-    root.style.setProperty("--ds-ui-font-size", `${ui}px`);
-  }, [prefs.uiFontSize]);
-
   return null;
 }

@@ -10,7 +10,7 @@
   padding: 0;
   cursor: var(--ds-cursor-interactive, pointer);
   border: 1px solid var(--ds-gray-a6);
-  border-radius: var(--ds-radius-sm);
+  border-radius: var(--ds-radius-xs);
   box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
 
   &:focus-visible {
@@ -20,20 +20,102 @@
 }
 
 .popup {
+  width: auto;
+  min-width: 0;
   padding: 0;
   overflow: hidden;
   border-radius: var(--ds-radius-md);
 }
 
-/* @uiw/react-color-sketch ships its own light surface and shadow; blend it
-   into the popup so the picker reads as part of the theme. */
-.sketch {
-  background: var(--ds-gray-2);
-  box-shadow: none;
-}
-
 .input {
   width: 120px;
+  height: 28px;
   font-variant-numeric: tabular-nums;
   text-transform: uppercase;
+}
+
+/* Linear-style picker -------------------------------------------------- */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 248px;
+  padding: 12px;
+}
+
+.header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dot {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a6);
+}
+
+.hexLabel {
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+  text-transform: uppercase;
+  letter-spacing: 0.02px;
+}
+
+.hexValue {
+  margin-left: auto;
+  font-family: var(--ds-font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+  text-transform: uppercase;
+}
+
+.body {
+  display: flex;
+  gap: 12px;
+}
+
+.saturation {
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+
+.hue {
+  flex: none;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+.satHandle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  border-radius: var(--ds-radius-full);
+  transform: translate(-50%, -50%);
+}
+.hueHandle {
+  position: absolute;
+  width: 14px;
+  height: 4px;
+  pointer-events: none;
+  border-radius: var(--ds-radius-full);
+  transform: translate(-50%, -50%);
+}
+
+.satHandle {
+  background: transparent;
+  border: 2px solid #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 25%),
+    0 1px 3px rgb(0 0 0 / 40%);
+}
+
+.hueHandle {
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 20%),
+    0 1px 3px rgb(0 0 0 / 35%);
 }

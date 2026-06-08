@@ -13,6 +13,12 @@ export interface DownloadVideoArgs {
   source: Source | null;
 }
 
+export interface SubtitleFile {
+  path: string;
+  filename: string;
+  mimeType: string;
+}
+
 export interface DownloadedVideo {
   path: string;
   mimeType: string;
@@ -20,42 +26,63 @@ export interface DownloadedVideo {
   infoJson: Record<string, unknown> | null;
   posterPath: string | null;
   posterMimeType: string | null;
+  subtitles: SubtitleFile[];
   cleanup: () => Promise<void>;
 }
 
 const HARD_TIMEOUT_MS = 90_000;
 
+// yt-dlp format filters. `~=` is a regex match, used to accept the several
+// codec name variants a platform may report (e.g. avc1/h264, vp09/vp9).
+function videoCodecFilter(codec: VideoDownloadSettings["videoCodec"]): string {
+  switch (codec) {
+    case "h264":
+      return "[vcodec~='^(avc1|h264)']";
+    case "hevc":
+      return "[vcodec~='^(hev1|hvc1|h265)']";
+    case "av1":
+      return "[vcodec~='^(av01|av1)']";
+    case "vp9":
+      return "[vcodec~='^(vp09|vp9)']";
+    default:
+      return "";
+  }
+}
+
+function audioCodecFilter(codec: VideoDownloadSettings["audioCodec"]): string {
+  switch (codec) {
+    case "aac":
+      return "[acodec~='^(mp4a|aac)']";
+    case "opus":
+      return "[acodec^=opus]";
+    default:
+      return "";
+  }
+}
+
 function formatSelector(
   source: Source | null,
-  maxHeight: number | null,
+  prefs: VideoDownloadSettings,
 ): string {
-  const h = maxHeight ? `[height<=${maxHeight}]` : "";
-  switch (source) {
-    case "tiktok":
-      return [
-        `bv*[ext=mp4][vcodec^=avc1][format_note*=play]${h}+ba[acodec^=mp4a]`,
-        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
-        `b[ext=mp4][vcodec^=avc1]${h}`,
-        `b[ext=mp4]${h}`,
-        `b${h}`,
-      ].join("/");
-    case "youtube":
-      return [
-        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[ext=m4a][acodec^=mp4a]`,
-        `b[ext=mp4][vcodec^=avc1]${h}`,
-        `bv*[vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
-        `b[ext=mp4]${h}`,
-        `b${h}`,
-      ].join("/");
-    default:
-      return [
-        `bv*[ext=mp4][vcodec^=avc1]${h}+ba[ext=m4a][acodec^=mp4a]`,
-        `b[ext=mp4][vcodec^=avc1]${h}`,
-        `bv*[vcodec^=avc1]${h}+ba[acodec^=mp4a]`,
-        `b[ext=mp4]${h}`,
-        `b${h}`,
-      ].join("/");
+  const h = prefs.maxHeight ? `[height<=${prefs.maxHeight}]` : "";
+  const f = prefs.maxFps ? `[fps<=${prefs.maxFps}]` : "";
+  const limits = `${h}${f}`;
+  const vf = videoCodecFilter(prefs.videoCodec);
+  const af = audioCodecFilter(prefs.audioCodec);
+
+  const chain: string[] = [];
+  // TikTok exposes a higher-bitrate "play" rendition; prefer it first.
+  if (source === "tiktok") {
+    chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
   }
+  chain.push(
+    `bv*${vf}${limits}+ba${af}`,
+    `bv*${limits}+ba`,
+    `b${vf}${limits}`,
+    `b${limits}`,
+    "b",
+  );
+  return chain.join("/");
 }
 
 function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
@@ -109,7 +136,7 @@ export async function downloadVideo(
       "--retries",
       "3",
       "-f",
-      formatSelector(args.source, prefs.maxHeight),
+      formatSelector(args.source, prefs),
       "--cookies",
       cookies.path,
       "-o",
@@ -117,11 +144,35 @@ export async function downloadVideo(
     ];
     const filesize = maxFilesizeArg(prefs);
     if (filesize) argv.unshift("--max-filesize", filesize);
+
+    // Muxing, embedding, SponsorBlock and subtitle-embed all need ffmpeg.
+    // Without it, fall back to a single progressive mp4.
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
+      if (prefs.container !== "auto") {
+        argv.push("--merge-output-format", prefs.container);
+      }
+      if (prefs.embedMetadata) argv.push("--embed-metadata");
+      if (prefs.embedThumbnail) argv.push("--embed-thumbnail");
+      if (prefs.embedChapters) argv.push("--embed-chapters");
+      if (prefs.sponsorblockRemove) argv.push("--sponsorblock-remove", "all");
+      if (prefs.subtitles === "embed") {
+        argv.push("--embed-subs", "--sub-langs", prefs.subtitleLang);
+      }
     } else {
       argv.push("-f", "b[ext=mp4]/b");
     }
+
+    if (prefs.subtitles === "download") {
+      argv.push(
+        "--write-subs",
+        "--write-auto-subs",
+        "--sub-langs",
+        prefs.subtitleLang,
+      );
+      if (ffmpeg) argv.push("--convert-subs", "srt");
+    }
+
     argv.push(args.url);
 
     log.info(
@@ -150,6 +201,8 @@ export async function downloadVideo(
 
     const infoJson = await readInfoJson(outputDir, produced.path);
     const poster = await pickProducedPoster(outputDir, produced.path);
+    const subtitles =
+      prefs.subtitles === "download" ? await pickSubtitleFiles(outputDir) : [];
     log.info("[pond yt-dlp] wrote", produced.path, `(${produced.size} bytes)`);
     return {
       path: produced.path,
@@ -158,6 +211,7 @@ export async function downloadVideo(
       infoJson,
       posterPath: poster?.path ?? null,
       posterMimeType: poster?.mimeType ?? null,
+      subtitles,
       cleanup,
     };
   } catch (err) {
@@ -310,6 +364,7 @@ async function pickProducedFile(
     entries
       .filter((name) => !/\.info\.json$/i.test(name))
       .filter((name) => !isThumbnail(name))
+      .filter((name) => !isSubtitle(name))
       .map(async (name) => {
         const full = join(dir, name);
         try {
@@ -339,6 +394,38 @@ function isThumbnail(name: string): boolean {
     ext === ".webp" ||
     ext === ".avif"
   );
+}
+
+function isSubtitle(name: string): boolean {
+  const ext = extname(name).toLowerCase();
+  return ext === ".srt" || ext === ".vtt";
+}
+
+// yt-dlp writes subtitles as `<id>.<lang>.<ext>`. Collect them and derive a
+// stable `subtitle.<lang>.<ext>` filename for persistence.
+async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
+  const entries = await readdir(dir);
+  const out: SubtitleFile[] = [];
+  for (const name of entries) {
+    if (!isSubtitle(name)) continue;
+    const full = join(dir, name);
+    try {
+      const s = await stat(full);
+      if (s.size === 0) continue;
+    } catch {
+      continue;
+    }
+    const ext = extname(name).toLowerCase();
+    const stem = basename(name, ext);
+    const dot = stem.lastIndexOf(".");
+    const lang = dot >= 0 ? stem.slice(dot + 1) : "";
+    out.push({
+      path: full,
+      filename: lang ? `subtitle.${lang}${ext}` : `subtitle${ext}`,
+      mimeType: ext === ".vtt" ? "text/vtt" : "application/x-subrip",
+    });
+  }
+  return out;
 }
 
 async function pickProducedPoster(

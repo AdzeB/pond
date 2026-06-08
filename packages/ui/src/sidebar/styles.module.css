@@ -37,6 +37,13 @@
   padding: 12px 2px 0 2px;
 }
 
+.caret {
+  width: 8px;
+  height: 8px;
+  margin-left: 4px;
+  transition: transform var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
 .label {
   display: flex;
   gap: 4px;
@@ -133,13 +140,6 @@
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
-}
-
-.caret {
-  width: 8px;
-  height: 8px;
-  margin-left: 4px;
-  transition: transform var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .footer {

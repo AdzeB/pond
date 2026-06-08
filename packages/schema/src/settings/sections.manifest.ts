@@ -10,7 +10,7 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
     label: "General",
     group: "app",
     icon: "SlidersHorizontal",
-    description: "Window behavior, input, notifications, and updates.",
+    description: "Window behavior, notifications, and updates.",
     groups: [
       {
         title: "Window",
@@ -23,20 +23,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             description:
               "Hide Pond when you close the window instead of quitting.",
             apply: "window.applyPrefs",
-          },
-          {
-            control: "switch",
-            key: "launchHidden",
-            title: "Launch Hidden",
-            description: "Start in the tray on login without opening a window.",
-            apply: "window.applyPrefs",
-          },
-          {
-            control: "switch",
-            key: "restorePosition",
-            title: "Remember Window Position",
-            description:
-              "Restore the last window size and screen position on launch.",
           },
         ],
       },
@@ -62,19 +48,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
         ],
       },
       {
-        title: "Input",
-        slice: "preferences",
-        items: [
-          {
-            control: "switch",
-            key: "pointerCursors",
-            title: "Use Pointer Cursors",
-            description:
-              "Show a hand cursor on hover instead of the default text caret.",
-          },
-        ],
-      },
-      {
         title: "Notifications",
         slice: "notifications",
         items: [
@@ -84,12 +57,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             title: "Save Completed",
             description: "Notify when a save finishes ingesting.",
           },
-          {
-            control: "switch",
-            key: "sound",
-            title: "Chime on Toast",
-            description: "Plays a short 880\u00A0Hz tick when a toast lands.",
-          },
         ],
       },
       {
@@ -97,21 +64,9 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
         slice: "updates",
         items: [
           {
-            control: "select",
-            key: "channel",
-            title: "Channel",
-            description:
-              "Stable ships every few weeks. Beta gets fixes sooner.",
-            apply: "updates.applyPrefs",
-            options: [
-              { value: "stable", label: "Stable" },
-              { value: "beta", label: "Beta" },
-            ],
-          },
-          {
             control: "switch",
             key: "autoInstall",
-            title: "Auto-Install Updates",
+            title: "Automatic Updates",
             description:
               "Download updates as they appear. Apply on next launch.",
             apply: "updates.applyPrefs",
@@ -120,45 +75,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             control: "custom",
             key: "check-now",
             component: "CheckNowRow",
-          },
-        ],
-      },
-      {
-        title: "Extension",
-        items: [
-          {
-            control: "custom",
-            key: "pairing-link",
-            component: "PairingLinkRow",
-          },
-          {
-            control: "custom",
-            key: "install-instructions",
-            component: "InstallInstructionsRow",
-          },
-        ],
-      },
-      {
-        title: "Trash",
-        slice: "trash",
-        items: [
-          {
-            control: "select",
-            key: "autoEmptyDays",
-            title: "Auto-Empty Trash",
-            description: "Permanently delete saves older than this window.",
-            options: [
-              { value: null, label: "Never" },
-              { value: 7, label: "After 7\u00A0days" },
-              { value: 30, label: "After 30\u00A0days" },
-              { value: 90, label: "After 90\u00A0days" },
-            ],
-          },
-          {
-            control: "switch",
-            key: "confirmBeforeEmpty",
-            title: "Confirm Before Emptying",
-            description: "Ask before Empty Trash deletes everything.",
           },
         ],
       },
@@ -222,19 +138,17 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             component: "ContrastRow",
             visible: "isCustomMode",
           },
+        ],
+      },
+      {
+        title: "Input",
+        items: [
           {
-            control: "stepper",
-            key: "uiFontSize",
-            title: "Font Size",
-            description: "Adjust the size of the text in the interface.",
-            min: 11,
-            max: 18,
-            fallback: 13,
-          },
-          {
-            control: "custom",
-            key: "reset-theme",
-            component: "ResetThemeRow",
+            control: "switch",
+            key: "pointerCursors",
+            title: "Use Pointer Cursors",
+            description:
+              "Show a hand cursor on hover instead of the default text caret.",
           },
         ],
       },
@@ -263,87 +177,6 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
     ],
   },
   {
-    id: "storage",
-    label: "Storage",
-    group: "library",
-    icon: "HardDrive",
-    description:
-      "How much disk your library uses, your storage cap, and integrity checks.",
-    groups: [
-      { title: "Disk Usage", body: "DiskUsage" },
-      {
-        title: "Storage Limits",
-        slice: "storage",
-        items: [
-          {
-            control: "switch",
-            key: "guardsEnabled",
-            title: "Enforce a Storage Limit",
-            description: "Apply an action when the library crosses your cap.",
-            apply: "storage.applyGuardPrefs",
-          },
-          {
-            control: "custom",
-            key: "no-hard-cap",
-            component: "NoHardCapRow",
-            visible: "guardsEnabled",
-          },
-          {
-            control: "number",
-            key: "maxLibraryGb",
-            title: "Max Library Size",
-            description: "The action fires once usage hits this many GB.",
-            visible: "hasCap",
-            min: 1,
-            max: 1000,
-            unit: "GB",
-            apply: "storage.applyGuardPrefs",
-          },
-          {
-            control: "number",
-            key: "warnAtPercent",
-            title: "Warn At",
-            description: "Warn once usage crosses this percentage of the cap.",
-            visible: "hasCap",
-            min: 50,
-            max: 100,
-            unit: "%",
-            apply: "storage.applyGuardPrefs",
-          },
-          {
-            control: "custom",
-            key: "action",
-            component: "ActionRow",
-            visible: "guardsEnabled",
-          },
-          {
-            control: "number",
-            key: "watchIntervalMinutes",
-            title: "Watch Interval",
-            description:
-              "How often Pond recomputes usage. 1 to 60\u00A0minutes.",
-            visible: "guardsEnabled",
-            min: 1,
-            max: 60,
-            unit: "min",
-            apply: "storage.applyGuardPrefs",
-          },
-        ],
-      },
-      {
-        title: "Integrity",
-        items: [{ control: "custom", key: "verify", component: "VerifyRow" }],
-      },
-    ],
-  },
-  {
-    id: "location",
-    label: "Location",
-    group: "library",
-    icon: "FolderOpen",
-    custom: "LocationSection",
-  },
-  {
     id: "downloads",
     label: "Downloads",
     group: "saving",
@@ -351,30 +184,88 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
     description: "How Pond treats videos and images it saves.",
     groups: [
       {
-        title: "Videos",
+        title: "Video Quality",
         binding: "downloads.video",
         items: [
-          {
-            control: "switch",
-            key: "enabled",
-            title: "Download Videos",
-            description:
-              "Fetch the MP4 alongside the poster for offline playback.",
-          },
           {
             control: "select",
             key: "maxHeight",
             title: "Maximum Resolution",
             description:
               "Higher resolutions mean bigger files. 1080p suits most clips.",
-            disabled: "videoDisabled",
             options: [
-              { value: 480, label: "480p (Small Files)" },
-              { value: 720, label: "720p" },
-              { value: 1080, label: "1080p (Recommended)" },
+              { value: 4320, label: "4320p (8K)" },
+              { value: 2160, label: "2160p (4K)" },
               { value: 1440, label: "1440p" },
-              { value: 2160, label: "2160p / 4K" },
-              { value: null, label: "Original (No Cap)" },
+              { value: 1080, label: "1080p" },
+              { value: 720, label: "720p" },
+              { value: 480, label: "480p" },
+              { value: 360, label: "360p" },
+              { value: 240, label: "240p" },
+              { value: 144, label: "144p" },
+              { value: null, label: "Original" },
+            ],
+          },
+          {
+            control: "select",
+            key: "maxFps",
+            title: "Maximum Frame Rate",
+            description: "Cap the frame rate to keep files smaller.",
+            options: [
+              { value: null, label: "Unlimited" },
+              { value: 60, label: "60\u00A0fps" },
+              { value: 30, label: "30\u00A0fps" },
+              { value: 24, label: "24\u00A0fps" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Video Codecs",
+        binding: "downloads.video",
+        items: [
+          {
+            control: "select",
+            key: "videoCodec",
+            title: "Preferred Video Codec",
+            description:
+              "H.264 is most compatible; AV1 and VP9 are smaller but newer.",
+            options: [
+              { value: "h264", label: "H.264 (AVC)" },
+              { value: "hevc", label: "H.265 (HEVC)" },
+              { value: "av1", label: "AV1" },
+              { value: "vp9", label: "VP9" },
+              { value: "any", label: "Any / Best" },
+            ],
+          },
+          {
+            control: "select",
+            key: "audioCodec",
+            title: "Preferred Audio Codec",
+            description: "Falls back to the next best when unavailable.",
+            options: [
+              { value: "aac", label: "AAC" },
+              { value: "opus", label: "Opus" },
+              { value: "any", label: "Any / Best" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Video Container & Size",
+        binding: "downloads.video",
+        items: [
+          {
+            control: "select",
+            key: "container",
+            title: "Container",
+            description: "Auto picks the best wrapper for the chosen codecs.",
+            options: [
+              { value: "auto", label: "Auto" },
+              { value: "mp4", label: "MP4" },
+              { value: "mkv", label: "MKV" },
+              { value: "webm", label: "WebM" },
+              { value: "mov", label: "MOV" },
             ],
           },
           {
@@ -383,10 +274,10 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             title: "Maximum File Size",
             description:
               "Cap each download so a long stream can't fill the disk.",
-            disabled: "videoDisabled",
             options: [
+              { value: 100, label: "100\u00A0MB" },
               { value: 200, label: "200\u00A0MB" },
-              { value: 500, label: "500\u00A0MB (Recommended)" },
+              { value: 500, label: "500\u00A0MB" },
               { value: 1000, label: "1\u00A0GB" },
               { value: 2000, label: "2\u00A0GB" },
               { value: 5000, label: "5\u00A0GB" },
@@ -396,7 +287,77 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
         ],
       },
       {
-        title: "Images",
+        title: "Video Subtitles",
+        binding: "downloads.video",
+        items: [
+          {
+            control: "select",
+            key: "subtitles",
+            title: "Subtitles",
+            description:
+              "Download saves a sidecar file; Embed muxes them into the video.",
+            options: [
+              { value: "off", label: "Off" },
+              { value: "download", label: "Download Sidecar" },
+              { value: "embed", label: "Embed in Video" },
+            ],
+          },
+          {
+            control: "select",
+            key: "subtitleLang",
+            title: "Subtitle Language",
+            description: "Preferred language to fetch when available.",
+            visible: "subtitlesEnabled",
+            options: [
+              { value: "en", label: "English" },
+              { value: "es", label: "Spanish" },
+              { value: "fr", label: "French" },
+              { value: "de", label: "German" },
+              { value: "it", label: "Italian" },
+              { value: "pt", label: "Portuguese" },
+              { value: "ja", label: "Japanese" },
+              { value: "ko", label: "Korean" },
+              { value: "zh", label: "Chinese" },
+              { value: "ru", label: "Russian" },
+              { value: "ar", label: "Arabic" },
+              { value: "hi", label: "Hindi" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Video Extras",
+        binding: "downloads.video",
+        items: [
+          {
+            control: "switch",
+            key: "embedMetadata",
+            title: "Embed Metadata",
+            description: "Write title, uploader, and date into the file.",
+          },
+          {
+            control: "switch",
+            key: "embedThumbnail",
+            title: "Embed Thumbnail",
+            description: "Attach the poster image as cover art.",
+          },
+          {
+            control: "switch",
+            key: "embedChapters",
+            title: "Embed Chapters",
+            description: "Include chapter markers when the source has them.",
+          },
+          {
+            control: "switch",
+            key: "sponsorblockRemove",
+            title: "Remove Sponsors",
+            description:
+              "Use SponsorBlock to cut sponsor segments (YouTube only).",
+          },
+        ],
+      },
+      {
+        title: "Image Resize & Format",
         binding: "downloads.image",
         items: [
           {
@@ -405,10 +366,24 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             title: "Maximum Resolution",
             description: "Long edge in pixels. Pond resizes anything larger.",
             options: [
-              { value: 1024, label: "1024 px" },
-              { value: 2048, label: "2048 px (Recommended)" },
-              { value: 4096, label: "4096 px / 4K" },
-              { value: null, label: "Original (No Cap)" },
+              { value: 1024, label: "1024\u00A0px" },
+              { value: 2048, label: "2048\u00A0px" },
+              { value: 4096, label: "4096\u00A0px" },
+              { value: 8192, label: "8192\u00A0px" },
+              { value: null, label: "Original" },
+            ],
+          },
+          {
+            control: "select",
+            key: "format",
+            title: "Format",
+            description: "Convert saved images, or keep the original encoding.",
+            options: [
+              { value: "original", label: "Original" },
+              { value: "jpeg", label: "JPEG" },
+              { value: "png", label: "PNG" },
+              { value: "webp", label: "WebP" },
+              { value: "avif", label: "AVIF" },
             ],
           },
           {
@@ -417,12 +392,56 @@ export const SETTINGS_SECTIONS_MANIFEST: SectionsManifest = [
             title: "Maximum File Size",
             description: "Skip downloads bigger than the cap.",
             options: [
+              { value: 2, label: "2\u00A0MB" },
               { value: 5, label: "5\u00A0MB" },
-              { value: 10, label: "10\u00A0MB (Recommended)" },
+              { value: 10, label: "10\u00A0MB" },
               { value: 25, label: "25\u00A0MB" },
               { value: 50, label: "50\u00A0MB" },
               { value: null, label: "No Cap" },
             ],
+          },
+        ],
+      },
+      {
+        title: "Image Encoding",
+        binding: "downloads.image",
+        items: [
+          {
+            control: "select",
+            key: "quality",
+            title: "Quality",
+            description: "Higher keeps more detail at the cost of size.",
+            visible: "imageQuality",
+            options: [
+              { value: 50, label: "50%" },
+              { value: 60, label: "60%" },
+              { value: 70, label: "70%" },
+              { value: 80, label: "80%" },
+              { value: 90, label: "90%" },
+              { value: 95, label: "95%" },
+              { value: 100, label: "100%" },
+            ],
+          },
+          {
+            control: "switch",
+            key: "lossless",
+            title: "Lossless",
+            description: "Encode WebP/AVIF without quality loss.",
+            visible: "imageLossless",
+          },
+          {
+            control: "switch",
+            key: "progressive",
+            title: "Progressive",
+            description: "Render JPEG/PNG in passes as they load.",
+            visible: "imageProgressive",
+          },
+          {
+            control: "switch",
+            key: "preserveMetadata",
+            title: "Preserve Metadata",
+            description: "Keep EXIF and color profile when re-encoding.",
+            visible: "imageReencode",
           },
         ],
       },

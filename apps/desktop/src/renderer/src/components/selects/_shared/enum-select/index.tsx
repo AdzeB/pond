@@ -39,14 +39,18 @@ export function EnumSelect<T>({
   "aria-label": ariaLabel,
 }: EnumSelectProps<T>) {
   const selected = options.find((option) => Object.is(option.value, value));
+  // `null` is a legitimate value for some option sets ("Original",
+  // "Unlimited", "No Cap"). Only swallow a stray null when no option uses it,
+  // so base-ui's clear-on-close can't wipe an otherwise non-nullable select.
+  const hasNullOption = options.some((option) => option.value === null);
 
   return (
     <Select.Root<T>
       value={value}
       disabled={disabled}
       onValueChange={(next) => {
-        if (next === null) return;
-        onValueChange(next);
+        if (next === null && !hasNullOption) return;
+        onValueChange(next as T);
       }}
     >
       <Select.Trigger className={className} aria-label={ariaLabel}>

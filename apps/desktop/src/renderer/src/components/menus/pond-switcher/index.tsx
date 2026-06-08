@@ -49,14 +49,9 @@ export function PondSwitcher() {
                   <Switch />
                 </Menu.ItemIcon>
                 <Menu.ItemLabel>Switch Pond</Menu.ItemLabel>
-                <CaretRight
-                  width={8}
-                  height={8}
-                  style={{ marginLeft: "auto" }}
-                />
               </Menu.SubmenuTrigger>
               <Menu.Portal>
-                <Menu.Positioner align="start" sideOffset={4}>
+                <Menu.Positioner align="start" sideOffset={-4}>
                   <Menu.Popup>
                     {ponds.map((pond) => (
                       <Menu.Item

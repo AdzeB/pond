@@ -45,7 +45,10 @@ export default defineConfig({
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
-        external: ["electron", "better-sqlite3"],
+        // Native modules must stay external so they resolve their
+        // platform-specific .node binaries from node_modules at runtime
+        // instead of being inlined into the bundle.
+        external: ["electron", "better-sqlite3", "sharp"],
       },
     },
   },
@@ -79,7 +82,7 @@ export default defineConfig({
       alias: {
         "@": resolve(__dirname, "src/renderer/src"),
         "@shared": resolve(__dirname, "src/shared"),
-        "@pond/icons": resolve(__dirname, "../../icons"),
+        "@pond/icons": resolve(__dirname, "../../packages/icons"),
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },

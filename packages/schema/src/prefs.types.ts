@@ -1,24 +1,61 @@
 import type { Source } from "./db";
 
+export type VideoCodec = "h264" | "hevc" | "av1" | "vp9" | "any";
+export type AudioCodec = "aac" | "opus" | "any";
+export type VideoContainer = "auto" | "mp4" | "mkv" | "webm" | "mov";
+export type SubtitleMode = "off" | "download" | "embed";
+
 export interface VideoDownloadSettings {
   enabled: boolean;
   maxHeight: number | null;
+  maxFps: number | null;
+  videoCodec: VideoCodec;
+  audioCodec: AudioCodec;
+  container: VideoContainer;
   maxFileSizeMb: number | null;
+  subtitles: SubtitleMode;
+  subtitleLang: string;
+  embedMetadata: boolean;
+  embedThumbnail: boolean;
+  embedChapters: boolean;
+  sponsorblockRemove: boolean;
 }
 
 export const DEFAULT_VIDEO_DOWNLOAD: VideoDownloadSettings = {
   enabled: true,
   maxHeight: 1080,
+  maxFps: null,
+  videoCodec: "h264",
+  audioCodec: "aac",
+  container: "auto",
   maxFileSizeMb: 500,
+  subtitles: "off",
+  subtitleLang: "en",
+  embedMetadata: true,
+  embedThumbnail: false,
+  embedChapters: false,
+  sponsorblockRemove: false,
 };
+
+export type ImageFormat = "original" | "jpeg" | "png" | "webp" | "avif";
 
 export interface ImageDownloadSettings {
   maxLongEdge: number | null;
+  format: ImageFormat;
+  quality: number;
+  lossless: boolean;
+  progressive: boolean;
+  preserveMetadata: boolean;
   maxFileSizeMb: number | null;
 }
 
 export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   maxLongEdge: 2048,
+  format: "original",
+  quality: 80,
+  lossless: false,
+  progressive: false,
+  preserveMetadata: false,
   maxFileSizeMb: 10,
 };
 

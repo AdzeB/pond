@@ -26,25 +26,7 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
   return { ...section, icon, config };
 });
 
-export const GROUP_ORDER: readonly SectionGroup[] = [
-  "app",
-  "library",
-  "saving",
-  "dev",
-] as const;
-
-export const GROUP_LABELS: Record<SectionGroup, string | null> = {
-  app: null,
-  library: "Library",
-  saving: "Saving",
-  dev: "Development",
-};
-
 export const DEV_GROUPS: readonly SectionGroup[] = SETTINGS_DEV_GROUPS;
-
-export function sectionsByGroup(group: SectionGroup): SectionDef[] {
-  return SECTIONS.filter((s) => s.group === group);
-}
 
 function pickDefault(): SectionDef {
   const first = SECTIONS[0];

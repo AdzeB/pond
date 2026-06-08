@@ -49,7 +49,7 @@ importers:
         version: 2.0.2(hono@4.12.18)
       '@pond/icons':
         specifier: workspace:*
-        version: link:../../icons
+        version: link:../../packages/icons
       '@pond/schema':
         specifier: workspace:*
         version: link:../../packages/schema
@@ -116,6 +116,9 @@ importers:
       rooks:
         specifier: ^9.8.0
         version: 9.8.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      rrule:
+        specifier: ^2.8.1
+        version: 2.8.1
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
@@ -213,7 +216,7 @@ importers:
     dependencies:
       '@pond/icons':
         specifier: workspace:*
-        version: link:../../icons
+        version: link:../../packages/icons
       '@pond/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -240,7 +243,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
-  icons:
+  packages/icons:
     dependencies:
       nucleo-social-media:
         specifier: ^1.0.2
@@ -297,7 +300,7 @@ importers:
         version: 1.4.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@pond/icons':
         specifier: workspace:*
-        version: link:../../icons
+        version: link:../icons
       '@radix-ui/colors':
         specifier: ^3.0.0
         version: 3.0.0
@@ -307,7 +310,13 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.8
         version: 1.170.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-sketch':
+      '@uiw/color-convert':
+        specifier: ^2.10.3
+        version: 2.10.3(@babel/runtime@7.29.2)
+      '@uiw/react-color-hue':
+        specifier: ^2.10.3
+        version: 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@uiw/react-color-saturation':
         specifier: ^2.10.3
         version: 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx:
@@ -2774,20 +2783,6 @@ packages:
       react: '>=16.9.0'
       react-dom: '>=16.9.0'
 
-  '@uiw/react-color-editable-input-rgba@2.10.3':
-    resolution: {integrity: sha512-n0kyNTNicRKASJNWYJexfwwfbbwvOJEYGQO8tX4PivmZYQVuYZq/vqsgYG5y+VGrBYZsHFfY+0LtPS4AXlz+Aw==}
-    peerDependencies:
-      '@babel/runtime': '>=7.19.0'
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
-  '@uiw/react-color-editable-input@2.10.3':
-    resolution: {integrity: sha512-QnYNpFI0p8pssYbWxIJwfmUdPwzzX0IXOAl4mU8q1HQNYoXFBGFJ4rXkJSOdauumAfOr4C8RKZlTB4/83EBBPQ==}
-    peerDependencies:
-      '@babel/runtime': '>=7.19.0'
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
   '@uiw/react-color-hue@2.10.3':
     resolution: {integrity: sha512-dlaLaQEPXvaywc8xS8DgiYIbq4qUuI8fyERR7/bRsRXCTA9x4tFAD+lWenXcZBEhQh8HfZd1MhbvjcLzs7xpFg==}
     peerDependencies:
@@ -2797,20 +2792,6 @@ packages:
 
   '@uiw/react-color-saturation@2.10.3':
     resolution: {integrity: sha512-iRIwNx3UTZrpV5hoQ5mcsZ8ahTXcMaGNvg8iS9JUByg+1PljwWcnqq5RNrRZJXPx+vryavefMkJLKHcPb9BLvQ==}
-    peerDependencies:
-      '@babel/runtime': '>=7.19.0'
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
-  '@uiw/react-color-sketch@2.10.3':
-    resolution: {integrity: sha512-4Vua0Ti1K/uOx0E3RV0xdOfLbpc4K8zXfWZtqyjJZ7jIZpB5KNgcai+b4R47VoUpyCYf2B30iCvBuFpN3cfqYA==}
-    peerDependencies:
-      '@babel/runtime': '>=7.19.0'
-      react: '>=16.9.0'
-      react-dom: '>=16.9.0'
-
-  '@uiw/react-color-swatch@2.10.3':
-    resolution: {integrity: sha512-7Q/h9RTeloFnrIo/k6U5g+D/abSIT62FiAQZLaEC34O2eOtu1LQReTXAgx39b1HSQ8piCgBYaQc7oM9WhRTPow==}
     peerDependencies:
       '@babel/runtime': '>=7.19.0'
       react: '>=16.9.0'
@@ -5081,6 +5062,9 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
+
+  rrule@2.8.1:
+    resolution: {integrity: sha512-hM3dHSBMeaJ0Ktp7W38BJZ7O1zOgaFEsn41PDk+yHoEtfLV+PoJt9E9xAlZiWgf/iqEqionN0ebHFZIDAp+iGw==}
 
   run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}
@@ -7887,20 +7871,6 @@ snapshots:
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
-  '@uiw/react-color-editable-input-rgba@2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
-    dependencies:
-      '@babel/runtime': 7.29.2
-      '@uiw/color-convert': 2.10.3(@babel/runtime@7.29.2)
-      '@uiw/react-color-editable-input': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-
-  '@uiw/react-color-editable-input@2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
-    dependencies:
-      '@babel/runtime': 7.29.2
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-
   '@uiw/react-color-hue@2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@babel/runtime': 7.29.2
@@ -7914,26 +7884,6 @@ snapshots:
       '@babel/runtime': 7.29.2
       '@uiw/color-convert': 2.10.3(@babel/runtime@7.29.2)
       '@uiw/react-drag-event-interactive': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-
-  '@uiw/react-color-sketch@2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
-    dependencies:
-      '@babel/runtime': 7.29.2
-      '@uiw/color-convert': 2.10.3(@babel/runtime@7.29.2)
-      '@uiw/react-color-alpha': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-editable-input': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-editable-input-rgba': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-hue': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-saturation': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@uiw/react-color-swatch': 2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      react: 19.2.5
-      react-dom: 19.2.5(react@19.2.5)
-
-  '@uiw/react-color-swatch@2.10.3(@babel/runtime@7.29.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
-    dependencies:
-      '@babel/runtime': 7.29.2
-      '@uiw/color-convert': 2.10.3(@babel/runtime@7.29.2)
       react: 19.2.5
       react-dom: 19.2.5(react@19.2.5)
 
@@ -10347,6 +10297,10 @@ snapshots:
       use-sync-external-store: 1.6.0(react@19.2.5)
     optionalDependencies:
       '@js-temporal/polyfill': 0.5.1
+
+  rrule@2.8.1:
+    dependencies:
+      tslib: 2.8.1
 
   run-applescript@7.1.0: {}
 

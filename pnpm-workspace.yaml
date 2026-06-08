@@ -1,7 +1,6 @@
 packages:
   - "apps/*"
   - "packages/*"
-  - "icons"
 
 allowBuilds:
   nucleo-ui-fill-12: true

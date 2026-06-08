@@ -7,6 +7,73 @@ import {
 } from "@/components/selects/bind-address";
 import { reloadPrefs, usePrefs } from "@/pool/prefs";
 
+interface IntegrityReport {
+  orphans: string[];
+  missing: string[];
+  errors: Record<string, string>;
+  totalIndexed: number;
+  totalOnDisk: number;
+}
+
+function VerifyRow() {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const [report, setReport] = useState<IntegrityReport | null>(null);
+
+  async function verify() {
+    setBusy(true);
+    try {
+      const res = (await window.pond.query("library.verifyIntegrity", {})) as
+        | (IntegrityReport & { ok: true })
+        | { ok: false; reason: string };
+      if (!res.ok) {
+        toast.add({
+          title: "Verification failed",
+          description: res.reason,
+          type: "error",
+        });
+        return;
+      }
+      setReport({
+        orphans: res.orphans,
+        missing: res.missing,
+        errors: res.errors,
+        totalIndexed: res.totalIndexed,
+        totalOnDisk: res.totalOnDisk,
+      });
+      const drift = res.orphans.length + res.missing.length;
+      toast.add({
+        title: drift === 0 ? "Library is clean" : "Drift detected",
+        description:
+          drift === 0
+            ? `${res.totalIndexed}\u00A0items match on disk and in the index.`
+            : `${res.orphans.length} on disk only · ${res.missing.length} indexed only.`,
+        type: drift === 0 ? "success" : "warning",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <Settings.ItemDetails>
+        <Settings.ItemTitle>Verify Integrity</Settings.ItemTitle>
+        <Settings.ItemDescription>
+          {report
+            ? `Last run: ${report.totalIndexed} indexed, ${report.totalOnDisk} on disk · ${report.orphans.length} orphan, ${report.missing.length} missing`
+            : "Compare on-disk library items against the SQLite index."}
+        </Settings.ItemDescription>
+      </Settings.ItemDetails>
+      <Settings.ItemControl>
+        <Button size="sm" disabled={busy} onClick={() => void verify()}>
+          {busy ? "Checking…" : "Run Check"}
+        </Button>
+      </Settings.ItemControl>
+    </>
+  );
+}
+
 export function DeveloperSection() {
   const toast = useToast();
   const [prefs, patch] = usePrefs("developer");
@@ -93,6 +160,23 @@ export function DeveloperSection() {
 
   async function openLogs() {
     await window.pond.query("developer.openLogs", {});
+  }
+
+  async function rescan() {
+    setResetBusy("rescan");
+    try {
+      const res = (await window.pond.query("library.rescan", {})) as {
+        updated: number;
+        total: number;
+      };
+      toast.add({
+        title: "Library rescanned",
+        description: `${res.total}\u00A0items, ${res.updated}\u00A0updated.`,
+        type: "success",
+      });
+    } finally {
+      setResetBusy(null);
+    }
   }
 
   async function openInspector() {
@@ -223,6 +307,32 @@ export function DeveloperSection() {
                 Open Inspector
               </Button>
             </Settings.ItemControl>
+          </Settings.Item>
+        </Settings.List>
+      </Settings.Section>
+
+      <Settings.Section>
+        <Settings.SectionTitle>Maintenance</Settings.SectionTitle>
+        <Settings.List>
+          <Settings.Item>
+            <Settings.ItemDetails>
+              <Settings.ItemTitle>Rescan Library</Settings.ItemTitle>
+              <Settings.ItemDescription>
+                Re-read library files from disk and refresh the index.
+              </Settings.ItemDescription>
+            </Settings.ItemDetails>
+            <Settings.ItemControl>
+              <Button
+                size="sm"
+                onClick={() => void rescan()}
+                disabled={resetBusy === "rescan"}
+              >
+                {resetBusy === "rescan" ? "Rescanning…" : "Rescan"}
+              </Button>
+            </Settings.ItemControl>
+          </Settings.Item>
+          <Settings.Item>
+            <VerifyRow />
           </Settings.Item>
         </Settings.List>
       </Settings.Section>
@@ -459,7 +569,7 @@ export function DeveloperSection() {
                 open={confirmFactory}
                 onOpenChange={setConfirmFactory}
                 title="Factory Reset?"
-                description="This wipes the SQLite index and prefs. Saves on disk stay put. You'll see onboarding on next launch."
+                description="This wipes the SQLite index and prefs. Saves on disk stay put."
                 confirmLabel={
                   resetBusy === "factory" ? "Resetting…" : "Wipe & Restart"
                 }

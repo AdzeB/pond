@@ -14,7 +14,7 @@ import {
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   general: {
     title: "General",
-    description: "Window behavior, input, notifications, and updates.",
+    description: "Window behavior, notifications, and updates.",
     groups: [
       {
         title: "Window",
@@ -27,20 +27,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             description:
               "Hide Pond when you close the window instead of quitting.",
             apply: () => runApply("window.applyPrefs"),
-          },
-          {
-            control: "switch",
-            key: "launchHidden",
-            title: "Launch Hidden",
-            description: "Start in the tray on login without opening a window.",
-            apply: () => runApply("window.applyPrefs"),
-          },
-          {
-            control: "switch",
-            key: "restorePosition",
-            title: "Remember Window Position",
-            description:
-              "Restore the last window size and screen position on launch.",
           },
         ],
       },
@@ -66,19 +52,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
         ],
       },
       {
-        title: "Input",
-        prefsKey: "preferences",
-        items: [
-          {
-            control: "switch",
-            key: "pointerCursors",
-            title: "Use Pointer Cursors",
-            description:
-              "Show a hand cursor on hover instead of the default text caret.",
-          },
-        ],
-      },
-      {
         title: "Notifications",
         prefsKey: "notifications",
         items: [
@@ -88,12 +61,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             title: "Save Completed",
             description: "Notify when a save finishes ingesting.",
           },
-          {
-            control: "switch",
-            key: "sound",
-            title: "Chime on Toast",
-            description: "Plays a short 880 Hz tick when a toast lands.",
-          },
         ],
       },
       {
@@ -101,21 +68,9 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
         prefsKey: "updates",
         items: [
           {
-            control: "select",
-            key: "channel",
-            title: "Channel",
-            description:
-              "Stable ships every few weeks. Beta gets fixes sooner.",
-            options: [
-              { value: "stable", label: "Stable" },
-              { value: "beta", label: "Beta" },
-            ],
-            apply: () => runApply("updates.applyPrefs"),
-          },
-          {
             control: "switch",
             key: "autoInstall",
-            title: "Auto-Install Updates",
+            title: "Automatic Updates",
             description:
               "Download updates as they appear. Apply on next launch.",
             apply: () => runApply("updates.applyPrefs"),
@@ -125,47 +80,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             key: "check-now",
             render: (b) =>
               createElement(components.CheckNowRow, { binding: b }),
-          },
-        ],
-      },
-      {
-        title: "Extension",
-        items: [
-          {
-            control: "custom",
-            key: "pairing-link",
-            render: (b) =>
-              createElement(components.PairingLinkRow, { binding: b }),
-          },
-          {
-            control: "custom",
-            key: "install-instructions",
-            render: (b) =>
-              createElement(components.InstallInstructionsRow, { binding: b }),
-          },
-        ],
-      },
-      {
-        title: "Trash",
-        prefsKey: "trash",
-        items: [
-          {
-            control: "select",
-            key: "autoEmptyDays",
-            title: "Auto-Empty Trash",
-            description: "Permanently delete saves older than this window.",
-            options: [
-              { value: null, label: "Never" },
-              { value: 7, label: "After 7 days" },
-              { value: 30, label: "After 30 days" },
-              { value: 90, label: "After 90 days" },
-            ],
-          },
-          {
-            control: "switch",
-            key: "confirmBeforeEmpty",
-            title: "Confirm Before Emptying",
-            description: "Ask before Empty Trash deletes everything.",
           },
         ],
       },
@@ -230,20 +144,17 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
               createElement(components.ContrastRow, { binding: b }),
             visible: predicates.isCustomMode,
           },
+        ],
+      },
+      {
+        title: "Input",
+        items: [
           {
-            control: "stepper",
-            key: "uiFontSize",
-            title: "Font Size",
-            description: "Adjust the size of the text in the interface.",
-            min: 11,
-            max: 18,
-            fallback: 13,
-          },
-          {
-            control: "custom",
-            key: "reset-theme",
-            render: (b) =>
-              createElement(components.ResetThemeRow, { binding: b }),
+            control: "switch",
+            key: "pointerCursors",
+            title: "Use Pointer Cursors",
+            description:
+              "Show a hand cursor on hover instead of the default text caret.",
           },
         ],
       },
@@ -271,102 +182,14 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       },
     ],
   },
-  storage: {
-    title: "Storage",
-    description:
-      "How much disk your library uses, your storage cap, and integrity checks.",
-    groups: [
-      {
-        title: "Disk Usage",
-        render: (b) => createElement(components.DiskUsage, { binding: b }),
-      },
-      {
-        title: "Storage Limits",
-        prefsKey: "storage",
-        items: [
-          {
-            control: "switch",
-            key: "guardsEnabled",
-            title: "Enforce a Storage Limit",
-            description: "Apply an action when the library crosses your cap.",
-            apply: () => runApply("storage.applyGuardPrefs"),
-          },
-          {
-            control: "custom",
-            key: "no-hard-cap",
-            render: (b) =>
-              createElement(components.NoHardCapRow, { binding: b }),
-            visible: predicates.guardsEnabled,
-          },
-          {
-            control: "number",
-            key: "maxLibraryGb",
-            title: "Max Library Size",
-            description: "The action fires once usage hits this many GB.",
-            min: 1,
-            max: 1000,
-            unit: "GB",
-            visible: predicates.hasCap,
-            apply: () => runApply("storage.applyGuardPrefs"),
-          },
-          {
-            control: "number",
-            key: "warnAtPercent",
-            title: "Warn At",
-            description: "Warn once usage crosses this percentage of the cap.",
-            min: 50,
-            max: 100,
-            unit: "%",
-            visible: predicates.hasCap,
-            apply: () => runApply("storage.applyGuardPrefs"),
-          },
-          {
-            control: "custom",
-            key: "action",
-            render: (b) => createElement(components.ActionRow, { binding: b }),
-            visible: predicates.guardsEnabled,
-          },
-          {
-            control: "number",
-            key: "watchIntervalMinutes",
-            title: "Watch Interval",
-            description: "How often Pond recomputes usage. 1 to 60 minutes.",
-            min: 1,
-            max: 60,
-            unit: "min",
-            visible: predicates.guardsEnabled,
-            apply: () => runApply("storage.applyGuardPrefs"),
-          },
-        ],
-      },
-      {
-        title: "Integrity",
-        items: [
-          {
-            control: "custom",
-            key: "verify",
-            render: (b) => createElement(components.VerifyRow, { binding: b }),
-          },
-        ],
-      },
-    ],
-  },
-  location: { component: sections.LocationSection },
   downloads: {
     title: "Downloads",
     description: "How Pond treats videos and images it saves.",
     groups: [
       {
-        title: "Videos",
+        title: "Video Quality",
         useBinding: bindings["downloads.video"],
         items: [
-          {
-            control: "switch",
-            key: "enabled",
-            title: "Download Videos",
-            description:
-              "Fetch the MP4 alongside the poster for offline playback.",
-          },
           {
             control: "select",
             key: "maxHeight",
@@ -374,14 +197,79 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             description:
               "Higher resolutions mean bigger files. 1080p suits most clips.",
             options: [
-              { value: 480, label: "480p (Small Files)" },
-              { value: 720, label: "720p" },
-              { value: 1080, label: "1080p (Recommended)" },
+              { value: 4320, label: "4320p (8K)" },
+              { value: 2160, label: "2160p (4K)" },
               { value: 1440, label: "1440p" },
-              { value: 2160, label: "2160p / 4K" },
-              { value: null, label: "Original (No Cap)" },
+              { value: 1080, label: "1080p" },
+              { value: 720, label: "720p" },
+              { value: 480, label: "480p" },
+              { value: 360, label: "360p" },
+              { value: 240, label: "240p" },
+              { value: 144, label: "144p" },
+              { value: null, label: "Original" },
             ],
-            disabled: predicates.videoDisabled,
+          },
+          {
+            control: "select",
+            key: "maxFps",
+            title: "Maximum Frame Rate",
+            description: "Cap the frame rate to keep files smaller.",
+            options: [
+              { value: null, label: "Unlimited" },
+              { value: 60, label: "60 fps" },
+              { value: 30, label: "30 fps" },
+              { value: 24, label: "24 fps" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Video Codecs",
+        useBinding: bindings["downloads.video"],
+        items: [
+          {
+            control: "select",
+            key: "videoCodec",
+            title: "Preferred Video Codec",
+            description:
+              "H.264 is most compatible; AV1 and VP9 are smaller but newer.",
+            options: [
+              { value: "h264", label: "H.264 (AVC)" },
+              { value: "hevc", label: "H.265 (HEVC)" },
+              { value: "av1", label: "AV1" },
+              { value: "vp9", label: "VP9" },
+              { value: "any", label: "Any / Best" },
+            ],
+          },
+          {
+            control: "select",
+            key: "audioCodec",
+            title: "Preferred Audio Codec",
+            description: "Falls back to the next best when unavailable.",
+            options: [
+              { value: "aac", label: "AAC" },
+              { value: "opus", label: "Opus" },
+              { value: "any", label: "Any / Best" },
+            ],
+          },
+        ],
+      },
+      {
+        title: "Video Container & Size",
+        useBinding: bindings["downloads.video"],
+        items: [
+          {
+            control: "select",
+            key: "container",
+            title: "Container",
+            description: "Auto picks the best wrapper for the chosen codecs.",
+            options: [
+              { value: "auto", label: "Auto" },
+              { value: "mp4", label: "MP4" },
+              { value: "mkv", label: "MKV" },
+              { value: "webm", label: "WebM" },
+              { value: "mov", label: "MOV" },
+            ],
           },
           {
             control: "select",
@@ -390,19 +278,89 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             description:
               "Cap each download so a long stream can't fill the disk.",
             options: [
+              { value: 100, label: "100 MB" },
               { value: 200, label: "200 MB" },
-              { value: 500, label: "500 MB (Recommended)" },
+              { value: 500, label: "500 MB" },
               { value: 1000, label: "1 GB" },
               { value: 2000, label: "2 GB" },
               { value: 5000, label: "5 GB" },
               { value: null, label: "No Cap" },
             ],
-            disabled: predicates.videoDisabled,
           },
         ],
       },
       {
-        title: "Images",
+        title: "Video Subtitles",
+        useBinding: bindings["downloads.video"],
+        items: [
+          {
+            control: "select",
+            key: "subtitles",
+            title: "Subtitles",
+            description:
+              "Download saves a sidecar file; Embed muxes them into the video.",
+            options: [
+              { value: "off", label: "Off" },
+              { value: "download", label: "Download Sidecar" },
+              { value: "embed", label: "Embed in Video" },
+            ],
+          },
+          {
+            control: "select",
+            key: "subtitleLang",
+            title: "Subtitle Language",
+            description: "Preferred language to fetch when available.",
+            options: [
+              { value: "en", label: "English" },
+              { value: "es", label: "Spanish" },
+              { value: "fr", label: "French" },
+              { value: "de", label: "German" },
+              { value: "it", label: "Italian" },
+              { value: "pt", label: "Portuguese" },
+              { value: "ja", label: "Japanese" },
+              { value: "ko", label: "Korean" },
+              { value: "zh", label: "Chinese" },
+              { value: "ru", label: "Russian" },
+              { value: "ar", label: "Arabic" },
+              { value: "hi", label: "Hindi" },
+            ],
+            visible: predicates.subtitlesEnabled,
+          },
+        ],
+      },
+      {
+        title: "Video Extras",
+        useBinding: bindings["downloads.video"],
+        items: [
+          {
+            control: "switch",
+            key: "embedMetadata",
+            title: "Embed Metadata",
+            description: "Write title, uploader, and date into the file.",
+          },
+          {
+            control: "switch",
+            key: "embedThumbnail",
+            title: "Embed Thumbnail",
+            description: "Attach the poster image as cover art.",
+          },
+          {
+            control: "switch",
+            key: "embedChapters",
+            title: "Embed Chapters",
+            description: "Include chapter markers when the source has them.",
+          },
+          {
+            control: "switch",
+            key: "sponsorblockRemove",
+            title: "Remove Sponsors",
+            description:
+              "Use SponsorBlock to cut sponsor segments (YouTube only).",
+          },
+        ],
+      },
+      {
+        title: "Image Resize & Format",
         useBinding: bindings["downloads.image"],
         items: [
           {
@@ -411,10 +369,24 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             title: "Maximum Resolution",
             description: "Long edge in pixels. Pond resizes anything larger.",
             options: [
-              { value: 1024, label: "1024 px" },
-              { value: 2048, label: "2048 px (Recommended)" },
-              { value: 4096, label: "4096 px / 4K" },
-              { value: null, label: "Original (No Cap)" },
+              { value: 1024, label: "1024 px" },
+              { value: 2048, label: "2048 px" },
+              { value: 4096, label: "4096 px" },
+              { value: 8192, label: "8192 px" },
+              { value: null, label: "Original" },
+            ],
+          },
+          {
+            control: "select",
+            key: "format",
+            title: "Format",
+            description: "Convert saved images, or keep the original encoding.",
+            options: [
+              { value: "original", label: "Original" },
+              { value: "jpeg", label: "JPEG" },
+              { value: "png", label: "PNG" },
+              { value: "webp", label: "WebP" },
+              { value: "avif", label: "AVIF" },
             ],
           },
           {
@@ -423,12 +395,56 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
             title: "Maximum File Size",
             description: "Skip downloads bigger than the cap.",
             options: [
+              { value: 2, label: "2 MB" },
               { value: 5, label: "5 MB" },
-              { value: 10, label: "10 MB (Recommended)" },
+              { value: 10, label: "10 MB" },
               { value: 25, label: "25 MB" },
               { value: 50, label: "50 MB" },
               { value: null, label: "No Cap" },
             ],
+          },
+        ],
+      },
+      {
+        title: "Image Encoding",
+        useBinding: bindings["downloads.image"],
+        items: [
+          {
+            control: "select",
+            key: "quality",
+            title: "Quality",
+            description: "Higher keeps more detail at the cost of size.",
+            options: [
+              { value: 50, label: "50%" },
+              { value: 60, label: "60%" },
+              { value: 70, label: "70%" },
+              { value: 80, label: "80%" },
+              { value: 90, label: "90%" },
+              { value: 95, label: "95%" },
+              { value: 100, label: "100%" },
+            ],
+            visible: predicates.imageQuality,
+          },
+          {
+            control: "switch",
+            key: "lossless",
+            title: "Lossless",
+            description: "Encode WebP/AVIF without quality loss.",
+            visible: predicates.imageLossless,
+          },
+          {
+            control: "switch",
+            key: "progressive",
+            title: "Progressive",
+            description: "Render JPEG/PNG in passes as they load.",
+            visible: predicates.imageProgressive,
+          },
+          {
+            control: "switch",
+            key: "preserveMetadata",
+            title: "Preserve Metadata",
+            description: "Keep EXIF and color profile when re-encoding.",
+            visible: predicates.imageReencode,
           },
         ],
       },

@@ -24,7 +24,6 @@ export const PrefsSchema = z
         reduceTransparency: z
           .boolean()
           .catch(DEFAULT_PREFS.preferences.reduceTransparency),
-        uiFontSize: z.number().catch(DEFAULT_PREFS.preferences.uiFontSize),
       })
       .catch(DEFAULT_PREFS.preferences),
     notifications: z
@@ -107,9 +106,6 @@ export const PrefsSchema = z
       .catch(DEFAULT_PREFS.api),
     updates: z
       .object({
-        channel: z
-          .enum(["stable", "beta"])
-          .catch(DEFAULT_PREFS.updates.channel),
         autoInstall: z.boolean().catch(DEFAULT_PREFS.updates.autoInstall),
       })
       .catch(DEFAULT_PREFS.updates),

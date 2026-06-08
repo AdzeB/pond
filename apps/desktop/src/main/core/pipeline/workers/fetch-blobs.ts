@@ -2,6 +2,7 @@ import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
+import { processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
 import { readSave } from "./apply";
@@ -28,15 +29,6 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
   }
 
   const imagePrefs = await getImageDownloadPrefs();
-  // maxLongEdge is read but not yet enforced: downscaling needs an image
-  // library (e.g. sharp) that is not yet a dependency. The file-size cap
-  // alone keeps disks bounded today.
-  if (imagePrefs.maxLongEdge !== null) {
-    log.debug(
-      "[pond pipeline:fetch-blobs] image maxLongEdge set but not enforced",
-      { saveId, maxLongEdge: imagePrefs.maxLongEdge },
-    );
-  }
   const imageMaxBytes = imagePrefs.maxFileSizeMb
     ? imagePrefs.maxFileSizeMb * 1024 * 1024
     : null;
@@ -47,19 +39,37 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     return;
   }
 
-  const newFiles = fetched.map((tx) => {
-    const kind: SaveFile["kind"] = tx.filename.startsWith("video")
-      ? "video"
-      : tx.filename.startsWith("cover")
-        ? "cover"
-        : "media";
-    return {
-      kind,
-      filename: tx.filename,
-      bytes: Buffer.from(tx.bytes),
-      ...(tx.mimeType ? { mimeType: tx.mimeType } : {}),
-    };
-  });
+  const newFiles = await Promise.all(
+    fetched.map(async (tx) => {
+      const kind: SaveFile["kind"] = tx.filename.startsWith("video")
+        ? "video"
+        : tx.filename.startsWith("cover")
+          ? "cover"
+          : "media";
+      let bytes: Buffer = Buffer.from(tx.bytes);
+      let filename = tx.filename;
+      let mimeType = tx.mimeType;
+      if (kind !== "video") {
+        const processed = await processImage(
+          bytes,
+          filename,
+          mimeType ?? undefined,
+          imagePrefs,
+        );
+        if (processed) {
+          bytes = processed.bytes;
+          filename = processed.filename;
+          mimeType = processed.mimeType;
+        }
+      }
+      return {
+        kind,
+        filename,
+        bytes,
+        ...(mimeType ? { mimeType } : {}),
+      };
+    }),
+  );
 
   await persistSave(
     saveId,

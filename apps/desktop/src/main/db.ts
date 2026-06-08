@@ -507,9 +507,9 @@ function dropArchivedAtColumn(sqlite: Database.Database): void {
 
 function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
-  // No bundle on disk yet (fresh, not-yet-onboarded user): don't create one
-  // from here. Onboarding materializes the bundle, and `resolvePondId` writes
-  // its metadata. This keeps the index key (pond id) and the metadata file in
+  // No bundle on disk yet (fresh user): don't create one from here. The
+  // first write materializes the bundle, and `resolvePondId` writes its
+  // metadata. This keeps the index key (pond id) and the metadata file in
   // sync via a single writer.
   if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;

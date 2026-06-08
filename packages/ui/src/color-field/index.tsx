@@ -1,4 +1,11 @@
-import Sketch from "@uiw/react-color-sketch";
+import {
+  type HsvaColor,
+  hexToHsva,
+  hsvaToHex,
+  validHex,
+} from "@uiw/color-convert";
+import Hue from "@uiw/react-color-hue";
+import Saturation from "@uiw/react-color-saturation";
 import { useEffect, useState } from "react";
 import { cn } from "../_shared/cn";
 import { Input } from "../input";
@@ -61,12 +68,7 @@ export function ColorField({
         <Popover.Portal>
           <Popover.Positioner sideOffset={6} align="end">
             <Popover.Popup className={styles.popup}>
-              <Sketch
-                disableAlpha
-                color={swatch}
-                className={styles.sketch}
-                onChange={(result) => onChange(result.hex)}
-              />
+              <ColorPicker value={swatch} onChange={onChange} />
             </Popover.Popup>
           </Popover.Positioner>
         </Popover.Portal>
@@ -87,4 +89,62 @@ export function ColorField({
       />
     </div>
   );
+}
+
+function ColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (hex: string) => void;
+}) {
+  const [hsva, setHsva] = useState<HsvaColor>(() => hexToHsva(value));
+
+  useEffect(() => {
+    if (!validHex(value)) return;
+    setHsva((prev) => (hsvaToHex(prev) === value ? prev : hexToHsva(value)));
+  }, [value]);
+
+  const apply = (next: HsvaColor) => {
+    setHsva(next);
+    onChange(hsvaToHex(next));
+  };
+
+  return (
+    <div className={styles.picker}>
+      <div className={styles.body}>
+        <Saturation
+          hsva={hsva}
+          radius="8px"
+          style={{ flex: 1, height: 156 }}
+          className={styles.saturation}
+          pointer={SaturationHandle}
+          onChange={(next) => apply({ ...hsva, ...next })}
+        />
+        <Hue
+          hue={hsva.h}
+          direction="vertical"
+          width="12px"
+          height="156px"
+          radius="6px"
+          className={styles.hue}
+          pointer={HueHandle}
+          onChange={({ h }) => apply({ ...hsva, h })}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface HandleProps {
+  left?: string | number;
+  top?: string | number;
+}
+
+function SaturationHandle({ left, top }: HandleProps) {
+  return <div className={styles.satHandle} style={{ left, top }} />;
+}
+
+function HueHandle({ top }: HandleProps) {
+  return <div className={styles.hueHandle} style={{ left: "50%", top }} />;
 }

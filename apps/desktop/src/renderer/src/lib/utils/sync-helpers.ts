@@ -12,6 +12,11 @@ export type RepeatPreset =
   | "every_weekend"
   | "custom";
 
+export const DEFAULT_QUIET_HOURS: { start: string; end: string } = {
+  start: "22:00",
+  end: "08:00",
+};
+
 export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 export const WEEKDAY_INDICES = [1, 2, 3, 4, 5];
 export const WEEKEND_INDICES = [0, 6];
