@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { parseMode } from "@/lib/utils/save-list";
-import { librarySearchSchema } from "@/lib/utils/search-schemas";
+import { librarySearchSchema } from "@/core/lib/search-schemas";
+import { parseMode } from "@/features/library/lib/save-list";
 import { LibraryView } from "./-library-view";
 
 export const Route = createFileRoute("/_library/$mode/save/$id")({

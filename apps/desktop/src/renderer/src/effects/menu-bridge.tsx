@@ -4,8 +4,15 @@ import {
 } from "@pond/schema/db";
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
-import { toggleInspector, toggleSidebar } from "@/lib/stores/shell-state";
-import { cycleLayout, setLayout } from "@/lib/stores/view-store";
+import { pool } from "@/core/data/pool";
+import { usePrefs } from "@/core/data/prefs";
+import { primarySelection, selection } from "@/core/data/selection";
+import type { LayoutValue } from "@/features/library/lib/view-prefs";
+import {
+  toggleInspector,
+  toggleSidebar,
+} from "@/features/library/stores/shell-state";
+import { cycleLayout, setLayout } from "@/features/library/stores/view-store";
 import {
   copyId,
   copyUrl,
@@ -16,11 +23,7 @@ import {
   refreshSaveMetadata,
   trashSave,
   untrashSave,
-} from "@/lib/utils/save-actions";
-import type { LayoutValue } from "@/lib/utils/view-prefs";
-import { pool } from "@/pool/pool";
-import { usePrefs } from "@/pool/prefs";
-import { primarySelection, selection } from "@/pool/selection";
+} from "@/features/save/save-actions";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");

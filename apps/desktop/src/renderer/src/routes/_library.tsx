@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { Library } from "@/components/pages/library";
+import { Library } from "@/features/library/page";
 
 export const Route = createFileRoute("/_library")({
   component: () => <Library />,

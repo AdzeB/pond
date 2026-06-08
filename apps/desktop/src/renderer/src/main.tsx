@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
-import { bootPool } from "./pool/bootstrap";
+import { bootPool } from "./core/data/bootstrap";
 import "./styles.css";
 
 void bootPool();

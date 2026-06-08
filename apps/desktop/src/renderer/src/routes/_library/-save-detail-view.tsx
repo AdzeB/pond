@@ -1,13 +1,13 @@
+import { Shell } from "@pond/ui";
 import { useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { SaveDetail } from "@/components/save/detail";
-import { Shell } from "@/components/shell";
-import { useSaveList } from "@/lib/hooks/use-save-list";
-import { useTrackVisit } from "@/lib/stores/recents";
-import { useSave } from "@/pool/hooks";
-import { pickPrimaryUnit } from "@/pool/media";
-import { pool } from "@/pool/pool";
-import { useResolvedTheme } from "@/pool/theme";
+import { useSave } from "@/core/data/hooks";
+import { pickPrimaryUnit } from "@/core/data/media";
+import { pool } from "@/core/data/pool";
+import { useResolvedTheme } from "@/core/data/theme";
+import { useSaveList } from "@/features/library/hooks/use-save-list";
+import { useTrackVisit } from "@/features/library/stores/recents";
+import { SaveDetail } from "@/features/save/detail";
 import styles from "./detail.$id.module.css";
 
 export function SaveDetailView() {

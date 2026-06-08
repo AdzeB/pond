@@ -1,9 +1,9 @@
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
-import { getSourceLabel } from "@/lib/utils/source-labels";
-import { getPrefsSnapshot } from "@/pool/prefs";
-import type { SyncActionEvent } from "@/pool/reconcile";
-import type { Save } from "@/pool/types";
+import { getPrefsSnapshot } from "@/core/data/prefs";
+import type { SyncActionEvent } from "@/core/data/reconcile";
+import type { Save } from "@/core/data/types";
+import { getSourceLabel } from "@/features/sources/source-labels";
 
 export function SaveCompleteToast() {
   const toast = useToast();

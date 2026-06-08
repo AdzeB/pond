@@ -1,7 +1,7 @@
+import { Shell } from "@pond/ui";
 import { createFileRoute } from "@tanstack/react-router";
-import { MediaViewer } from "@/components/save/preview/media-viewer";
-import { Shell } from "@/components/shell";
-import { useBootReady, useSave } from "@/pool/hooks";
+import { useBootReady, useSave } from "@/core/data/hooks";
+import { MediaViewer } from "@/features/save/preview/media-viewer";
 import styles from "./standalone.save.$id.module.css";
 
 function StandaloneSave() {

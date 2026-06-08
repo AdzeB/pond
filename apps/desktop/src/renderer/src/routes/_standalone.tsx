@@ -1,13 +1,13 @@
+import { Shell } from "@pond/ui";
 import { createFileRoute, Outlet } from "@tanstack/react-router";
-import { Shell } from "@/components/shell";
 
 function StandaloneLayout() {
   return (
-    <Shell>
+    <Shell.Body>
       <Shell.Main>
         <Outlet />
       </Shell.Main>
-    </Shell>
+    </Shell.Body>
   );
 }
 

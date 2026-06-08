@@ -1,8 +1,8 @@
 import { SETTINGS_SECTION_ALIASES } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
-import { SettingsSectionView } from "@/components/settings/engine";
-import { DEFAULT_SECTION, SECTIONS } from "@/components/settings/registry";
+import { SettingsSectionView } from "@/features/settings/engine";
+import { DEFAULT_SECTION, SECTIONS } from "@/features/settings/registry";
 
 const CONFIG_BY_PATH = new Map(
   SECTIONS.map((section) => [section.path, section.config]),

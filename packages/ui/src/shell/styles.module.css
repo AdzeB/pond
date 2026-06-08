@@ -35,6 +35,15 @@
   min-height: 32px;
 }
 
+.empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ds-text-secondary, currentColor);
+}
+
 :global(html):not(:global(.electron-disable-drag)) .drag {
   -webkit-app-region: drag;
 }

@@ -1,3 +1,4 @@
+import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -30,10 +31,17 @@ function Drag({ ...props }: DragProps) {
   return <div className={styles.drag} {...props} />;
 }
 
+interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function Empty({ className, ...props }: EmptyProps) {
+  return <p className={cn(styles.empty, className)} {...props} />;
+}
+
 export const Shell = {
   Body,
   Main,
   Header,
   Aside,
   Drag,
+  Empty,
 };

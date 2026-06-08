@@ -4,7 +4,7 @@ import {
   themeEngineVars,
 } from "@pond/schema/db";
 import { useEffect } from "react";
-import { usePrefs } from "@/pool/prefs";
+import { usePrefs } from "@/core/data/prefs";
 
 // Shadowed in localStorage so the inline boot script in index.html can
 // restore the right theme before the bundle parses, killing the FOUC. Read
