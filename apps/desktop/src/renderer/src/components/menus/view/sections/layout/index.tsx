@@ -1,6 +1,6 @@
 import { Menu, Select } from "@pond/ui";
 import type { LayoutValue } from "@/lib/utils/view-prefs";
-import { useView } from "../../context";
+import { useView } from "../../../../../lib/hooks/use-view";
 
 const options: Array<{
   value: LayoutValue;

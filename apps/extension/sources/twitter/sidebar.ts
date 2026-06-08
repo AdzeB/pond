@@ -1,0 +1,65 @@
+import type { PondMessage } from "@/utils/types";
+
+const BOOKMARKS_SELECTOR = 'a[href="/i/bookmarks"], a[href="/i/bookmarks/all"]';
+const RELABELED_ATTR = "data-pond-relabeled";
+const NEW_LABEL = "Open Pond";
+
+// X renders its sidebar with React and re-applies its own text on navigation,
+// so we can't relabel once and walk away. We tag the anchor, swap the visible
+// label, and re-assert it whenever the DOM mutates.
+export function mountPondSidebarLink() {
+  function openPond() {
+    const message: PondMessage = { kind: "openPond" };
+    chrome.runtime.sendMessage(message).catch(() => {});
+  }
+
+  function relabel(anchor: HTMLAnchorElement) {
+    // The label lives in a span whose textContent is the menu copy. Grab the
+    // deepest span that still reads "Bookmarks" so we don't clobber icons.
+    const spans = Array.from(anchor.querySelectorAll("span"));
+    const labelSpan = spans.find(
+      (span) =>
+        span.childElementCount === 0 &&
+        span.textContent?.trim().toLowerCase() === "bookmarks",
+    );
+    if (labelSpan && labelSpan.textContent !== NEW_LABEL) {
+      labelSpan.textContent = NEW_LABEL;
+    }
+
+    if (anchor.getAttribute(RELABELED_ATTR) === "true") return;
+    anchor.setAttribute(RELABELED_ATTR, "true");
+    anchor.setAttribute("aria-label", NEW_LABEL);
+
+    anchor.addEventListener(
+      "click",
+      (event) => {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        openPond();
+      },
+      { capture: true },
+    );
+  }
+
+  function scan() {
+    const anchors =
+      document.querySelectorAll<HTMLAnchorElement>(BOOKMARKS_SELECTOR);
+    anchors.forEach(relabel);
+  }
+
+  function start() {
+    scan();
+    const observer = new MutationObserver(() => scan());
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
+}

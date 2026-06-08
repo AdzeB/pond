@@ -1,3 +1,4 @@
+import { pickPrimaryUnit } from "@/pool/media";
 import type { Save } from "@/pool/types";
 
 export type SaveListMode =
@@ -66,7 +67,10 @@ interface ModeFilterOptions {
 
 // Shared between the grid and the detail-page navigator so j/k can't
 // step onto a save the grid hides. Ingesting / failed saves live
-// behind the ProcessingButton dialog, not in the list.
+// behind the ProcessingButton dialog, not in the list. Complete saves
+// with nothing to render (no extracted media and no tweet screenshot)
+// would only ever paint the empty placeholder, so they're hidden too —
+// except in trash, where they stay visible so they can be cleaned up.
 export function applyModeFilter(
   saves: readonly Save[],
   { mode, sourceFilter, recentsOrder }: ModeFilterOptions,
@@ -77,6 +81,7 @@ export function applyModeFilter(
     } else {
       if (save.deletedAt) return false;
       if (save.status !== "complete") return false;
+      if (!pickPrimaryUnit(save)) return false;
     }
     if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
       return false;

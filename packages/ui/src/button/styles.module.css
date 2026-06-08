@@ -203,7 +203,7 @@
     &:hover,
     &[data-pressed] {
       color: var(--ds-gray-12);
-      background-color: var(--ds-gray-a2);
+      background-color: var(--ds-gray-a3);
     }
   }
 }

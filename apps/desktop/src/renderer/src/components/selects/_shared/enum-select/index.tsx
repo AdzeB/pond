@@ -1,7 +1,4 @@
-import {
-  IconCheckOutline18 as Check,
-  IconChevronExpandYOutline18 as ChevronsUpDown,
-} from "@pond/icons/outline/18";
+import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { Select } from "@pond/ui";
 import type { ReactNode } from "react";
 
@@ -54,9 +51,6 @@ export function EnumSelect<T>({
     >
       <Select.Trigger className={className} aria-label={ariaLabel}>
         <Select.Value>{selected?.label ?? placeholder}</Select.Value>
-        <Select.Icon>
-          <ChevronsUpDown width={14} height={14} />
-        </Select.Icon>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner sideOffset={sideOffset} align={align} side={side}>

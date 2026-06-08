@@ -216,9 +216,11 @@ function isAuthCookie(source: Source, cookie: Cookie): boolean {
         name === "__Secure-3PSID"
       );
     case "arena":
-      // are.na (Rails) sets `_arena_session` when logged in; the
-      // `remember_user_token` cookie marks long-lived auth.
+      // are.na's web app is now a Next.js frontend that stores auth in an
+      // iron-session cookie (`sander-iron-session`). The legacy Rails names
+      // (`_arena_session`, `remember_user_token`) are kept for compatibility.
       return (
+        name === "sander-iron-session" ||
         name === "_arena_session" ||
         name === "remember_user_token" ||
         name === "cf_clearance" // not auth on its own; tolerated so the

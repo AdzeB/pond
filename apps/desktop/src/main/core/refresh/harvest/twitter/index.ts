@@ -1,4 +1,10 @@
 export {
+  type BookmarksApiDebug,
+  type BookmarksApiResult,
+  type BookmarksRequestTemplate,
+  buildBookmarksApiExpression,
+} from "./api";
+export {
   type BookmarksCapture,
   parseBookmarksResponses,
   type RichTweet,

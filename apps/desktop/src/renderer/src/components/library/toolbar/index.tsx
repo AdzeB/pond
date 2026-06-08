@@ -3,7 +3,7 @@ import {
   IconMagnifierFill18 as Magnifier,
   IconSliders2VerticalFill18 as Sliders,
 } from "@pond/icons/fill/18";
-import { Button, Input, Menu, Toolbar } from "@pond/ui";
+import { Button, Input, Menu, Toolbar as PondToolbar } from "@pond/ui";
 import { FilterBar } from "@/components/library/filter-bar";
 import { SavedViews } from "@/components/library/saved-views";
 import { AddFilterMenu } from "@/components/menus/add-filter";
@@ -16,29 +16,28 @@ import { useDebouncedSearch } from "@/lib/hooks/use-debounced-search";
 import { useSidebar } from "@/lib/stores/shell-state";
 import styles from "./styles.module.css";
 
-export function HeaderToolbar() {
+export function Toolbar() {
   const { open: sidebarOpen } = useSidebar();
-
   const platform = usePlatform();
-
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
+
   return (
-    <Toolbar.Root
+    <PondToolbar.Root
       className={styles.toolbar}
       style={{ paddingInlineStart: trafficLightInset }}
     >
-      <Toolbar.Row className={styles.row}>
-        <Toolbar.Group fill={true} className={styles.group}>
+      <PondToolbar.Row className={styles.row}>
+        <PondToolbar.Group fill={true} className={styles.group}>
           <SavedViews />
-        </Toolbar.Group>
-        <Toolbar.Group className={styles.group}>
+        </PondToolbar.Group>
+        <PondToolbar.Group className={styles.group}>
           <Search />
           <Filter />
           <Options />
-        </Toolbar.Group>
-      </Toolbar.Row>
+        </PondToolbar.Group>
+      </PondToolbar.Row>
       <FilterBar />
-    </Toolbar.Root>
+    </PondToolbar.Root>
   );
 }
 

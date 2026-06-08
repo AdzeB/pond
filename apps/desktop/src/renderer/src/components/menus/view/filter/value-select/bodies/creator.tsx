@@ -1,9 +1,7 @@
-import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
-import { Menu } from "@pond/ui";
 import { useCallback, useMemo, useState } from "react";
 import { useSaves } from "@/pool/hooks";
-import styles from "../styles.module.css";
 import type { BodyProps } from "../types";
+import { LivePicker, useSelectionSet } from "./_picker";
 
 // The distinct authors across the library, picked like an enum. Unlike the
 // static enum presets, the option list is derived from live save data.
@@ -24,12 +22,7 @@ export function CreatorBody({ predicate, onChange }: BodyProps) {
     );
   }, [saves]);
 
-  const selected = useMemo(() => {
-    const v = predicate.value;
-    if (Array.isArray(v)) return new Set(v.map(String));
-    if (typeof v === "string" && v) return new Set([v]);
-    return new Set<string>();
-  }, [predicate.value]);
+  const selected = useSelectionSet(predicate.value);
 
   const needle = q.trim().toLowerCase();
   const filtered = creators.filter((c) =>
@@ -62,36 +55,19 @@ export function CreatorBody({ predicate, onChange }: BodyProps) {
   );
 
   return (
-    <div className={styles.body} data-variant="scroll">
-      <Menu.Input
-        value={q}
-        placeholder="Filter creators…"
-        autoFocus
-        onChange={(e) => setQ(e.target.value)}
-      />
-      {filtered.length === 0 ? (
-        <div className={styles.empty}>
-          {creators.length === 0 ? "No creators yet." : "No matches."}
-        </div>
-      ) : (
-        filtered.map((c) => {
-          const checked = selected.has(c.name);
-          return (
-            <Menu.CheckboxItem
-              key={c.name}
-              closeOnClick={false}
-              checked={checked}
-              onCheckedChange={() => toggle(c.name)}
-            >
-              <span className={styles.check} aria-hidden>
-                {checked ? <Check width="0.85em" height="0.85em" /> : null}
-              </span>
-              <Menu.ItemLabel>{c.name}</Menu.ItemLabel>
-              <span className={styles.count}>{c.count}</span>
-            </Menu.CheckboxItem>
-          );
-        })
-      )}
-    </div>
+    <LivePicker
+      query={q}
+      onQueryChange={setQ}
+      placeholder="Filter creators…"
+      sections={[
+        {
+          key: "creators",
+          items: filtered.map((c) => ({ value: c.name, count: c.count })),
+        },
+      ]}
+      selected={selected}
+      onToggle={toggle}
+      emptyLabel="No creators yet."
+    />
   );
 }

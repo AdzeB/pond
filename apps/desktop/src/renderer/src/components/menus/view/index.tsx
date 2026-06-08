@@ -30,4 +30,4 @@ function ViewMenu() {
 
 export const View = { Menu: ViewMenu };
 
-export { useView } from "./context";
+export { useView } from "../../../lib/hooks/use-view";

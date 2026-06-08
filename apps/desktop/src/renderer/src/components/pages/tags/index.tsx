@@ -1,13 +1,11 @@
 import {
-  IconChevronLeftOutline18 as ChevronLeft,
-  IconChevronRightOutline18 as ChevronRight,
   IconGridOutline18 as LayoutGrid,
   IconListCheckboxOutline18 as ListChecks,
   IconPlusOutline18 as Plus,
 } from "@pond/icons/outline/18";
-import { Button, Input, Tooltip } from "@pond/ui";
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Input, Shell } from "@pond/ui";
+import { useNavigate } from "@tanstack/react-router";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AllTags,
   type DisplayItem,
@@ -15,6 +13,7 @@ import {
 } from "@/components/library/all-tags";
 import { DisplayMenu } from "@/components/menus/display";
 import { TagPicker } from "@/components/popovers/tag-picker";
+import { Library as Sidebar } from "@/components/sidebars/library";
 import { setQuery } from "@/lib/stores/view-store";
 import { adaptNavigate } from "@/lib/utils/navigate-path";
 import { useSaves } from "@/pool/hooks";
@@ -26,42 +25,6 @@ import styles from "./styles.module.css";
 interface AlphaSection {
   letter: string;
   items: DisplayItem[];
-}
-
-function Backwards() {
-  const router = useRouter();
-
-  return (
-    <Tooltip label="Back" side="bottom">
-      <Button
-        icon
-        size="sm"
-        variant="ghost"
-        aria-label="Back"
-        onClick={() => router.history.back()}
-      >
-        <ChevronLeft />
-      </Button>
-    </Tooltip>
-  );
-}
-
-function Forwards() {
-  const router = useRouter();
-
-  return (
-    <Tooltip label="Forward" side="bottom">
-      <Button
-        icon
-        size="sm"
-        variant="ghost"
-        aria-label="Forward"
-        onClick={() => router.history.forward()}
-      >
-        <ChevronRight />
-      </Button>
-    </Tooltip>
-  );
 }
 
 export function Tags() {
@@ -206,128 +169,135 @@ export function Tags() {
   const gridSize = prefs.gridSize ?? "md";
 
   return (
-    <div className={styles.page}>
-      <div className={styles.sidebar}>
-        <div className={styles.toolbar}>
-          <Backwards />
-          <Forwards />
-        </div>
-        <Link to="/" className={styles["nav-back"]}>
-          <ChevronLeft width={14} height={14} />
-          Library
-        </Link>
-        <AllTags.Rail
-          tags={tags}
-          groups={groups}
-          counts={counts}
-          uncategorisedCount={uncategorisedTags.length}
-          starredCount={starredTags.length}
-          selected={selectedRail}
-          onSelect={setSelectedRail}
-        />
-      </div>
-      <section className={styles.pane}>
-        <div className={styles["pane-toolbar"]}>
-          <h1 className={styles["pane-title"]}>
-            {paneTitle}{" "}
-            <span className={styles["pane-count"]}>
-              ({visibleItems.length})
-            </span>
-          </h1>
-          {selectedGroup ? (
-            <TagPicker.Root target={{ kind: "group", group: selectedGroup }}>
-              <TagPicker.Trigger
-                render={
-                  <button
-                    type="button"
-                    className={styles["pane-add"]}
-                    aria-label={`Add tag to ${selectedGroup.name}`}
-                    title={`Add tag to ${selectedGroup.name}`}
-                  >
-                    <Plus width={14} height={14} />
-                  </button>
-                }
-              />
-              <TagPicker.Content side="bottom" align="start" sideOffset={6} />
-            </TagPicker.Root>
-          ) : null}
-          <div className={styles.spacer} />
-          <div className={styles["pane-search"]}>
-            <Input.Field
-              data-size="sm"
-              type="search"
-              placeholder="Search…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              spellCheck={false}
+    <React.Fragment>
+      <Shell.Aside>
+        <Sidebar />
+      </Shell.Aside>
+      <Shell.Main>
+        <div className={styles.page}>
+          <div className={styles.rail}>
+            <AllTags.Rail
+              tags={tags}
+              groups={groups}
+              counts={counts}
+              uncategorisedCount={uncategorisedTags.length}
+              starredCount={starredTags.length}
+              selected={selectedRail}
+              onSelect={setSelectedRail}
             />
           </div>
-          <button
-            type="button"
-            className={styles.tool}
-            data-active={layout === "list" || undefined}
-            title="List layout"
-            onClick={() => patchPrefs({ layout: "list" })}
-          >
-            <ListChecks width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.tool}
-            data-active={layout === "grid" || undefined}
-            title="Grid layout"
-            onClick={() => patchPrefs({ layout: "grid" })}
-          >
-            <LayoutGrid width={16} height={16} />
-          </button>
-          <DisplayMenu prefs={prefs} patch={patchPrefs} />
-        </div>
-
-        <div
-          className={styles["pane-body"]}
-          data-layout={layout}
-          data-grid-size={gridSize}
-        >
-          {visibleItems.length === 0 ? (
-            <AllTags.EmptyState
-              hasAnyTags={tags.length > 0}
-              needle={needle}
-              query={q}
-            />
-          ) : (
-            <div className={styles.sections}>
-              {sections.map((section) => (
-                <section
-                  key={section.letter}
-                  className={styles.section}
-                  aria-label={`Tags starting with ${section.letter}`}
+          <section className={styles.pane}>
+            <div className={styles["pane-toolbar"]}>
+              <h1 className={styles["pane-title"]}>
+                {paneTitle}{" "}
+                <span className={styles["pane-count"]}>
+                  ({visibleItems.length})
+                </span>
+              </h1>
+              {selectedGroup ? (
+                <TagPicker.Root
+                  target={{ kind: "group", group: selectedGroup }}
                 >
-                  <h2 className={styles["section-header"]}>
-                    {section.letter}{" "}
-                    <span className={styles["section-count"]}>
-                      ({section.items.length})
-                    </span>
-                  </h2>
-                  <div
-                    className={layout === "grid" ? styles.grid : styles.list}
-                  >
-                    {section.items.map((item) => (
-                      <AllTags.TagItem
-                        key={item.id}
-                        item={item}
-                        showCounts={prefs.showCounts ?? true}
-                        groups={groups.map((g) => g.name)}
-                        inGroup={selectedGroupName}
-                        onPick={openTag}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ))}
+                  <TagPicker.Trigger
+                    render={
+                      <button
+                        type="button"
+                        className={styles["pane-add"]}
+                        aria-label={`Add tag to ${selectedGroup.name}`}
+                        title={`Add tag to ${selectedGroup.name}`}
+                      >
+                        <Plus width={14} height={14} />
+                      </button>
+                    }
+                  />
+                  <TagPicker.Content
+                    side="bottom"
+                    align="start"
+                    sideOffset={6}
+                  />
+                </TagPicker.Root>
+              ) : null}
+              <div className={styles.spacer} />
+              <div className={styles["pane-search"]}>
+                <Input.Field
+                  data-size="sm"
+                  type="search"
+                  placeholder="Search…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  spellCheck={false}
+                />
+              </div>
+              <button
+                type="button"
+                className={styles.tool}
+                data-active={layout === "list" || undefined}
+                title="List layout"
+                onClick={() => patchPrefs({ layout: "list" })}
+              >
+                <ListChecks width={16} height={16} />
+              </button>
+              <button
+                type="button"
+                className={styles.tool}
+                data-active={layout === "grid" || undefined}
+                title="Grid layout"
+                onClick={() => patchPrefs({ layout: "grid" })}
+              >
+                <LayoutGrid width={16} height={16} />
+              </button>
+              <DisplayMenu prefs={prefs} patch={patchPrefs} />
             </div>
-          )}
+
+            <div
+              className={styles["pane-body"]}
+              data-layout={layout}
+              data-grid-size={gridSize}
+            >
+              {visibleItems.length === 0 ? (
+                <AllTags.EmptyState
+                  hasAnyTags={tags.length > 0}
+                  needle={needle}
+                  query={q}
+                />
+              ) : (
+                <div className={styles.sections}>
+                  {sections.map((section) => (
+                    <section
+                      key={section.letter}
+                      className={styles.section}
+                      aria-label={`Tags starting with ${section.letter}`}
+                    >
+                      <h2 className={styles["section-header"]}>
+                        {section.letter}{" "}
+                        <span className={styles["section-count"]}>
+                          ({section.items.length})
+                        </span>
+                      </h2>
+                      <div
+                        className={
+                          layout === "grid" ? styles.grid : styles.list
+                        }
+                      >
+                        {section.items.map((item) => (
+                          <AllTags.TagItem
+                            key={item.id}
+                            item={item}
+                            showCounts={prefs.showCounts ?? true}
+                            groups={groups.map((g) => g.name)}
+                            inGroup={selectedGroupName}
+                            onPick={openTag}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
-      </section>
-    </div>
+      </Shell.Main>
+    </React.Fragment>
   );
 }

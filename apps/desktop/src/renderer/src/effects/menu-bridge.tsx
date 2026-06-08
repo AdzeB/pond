@@ -5,7 +5,7 @@ import {
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
 import { toggleInspector, toggleSidebar } from "@/lib/stores/shell-state";
-import { cycleLayout } from "@/lib/stores/view-store";
+import { cycleLayout, setLayout } from "@/lib/stores/view-store";
 import {
   copyId,
   copyUrl,
@@ -17,6 +17,7 @@ import {
   trashSave,
   untrashSave,
 } from "@/lib/utils/save-actions";
+import type { LayoutValue } from "@/lib/utils/view-prefs";
 import { pool } from "@/pool/pool";
 import { usePrefs } from "@/pool/prefs";
 import { primarySelection, selection } from "@/pool/selection";
@@ -44,7 +45,7 @@ export function MenuBridge() {
         case "view.layout.grid":
         case "view.layout.justified":
         case "view.layout.list":
-          // Handled by LayoutMenuBridge (router-scoped sibling).
+          setLayout(id.slice("view.layout.".length) as LayoutValue);
           return;
 
         case "theme.light":

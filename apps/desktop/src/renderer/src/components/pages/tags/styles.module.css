@@ -6,42 +6,12 @@
   min-height: 0;
 }
 
-.sidebar {
+.rail {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--ds-gray-a1);
+  overflow-y: auto;
   border-right: 1px solid var(--ds-gray-a4);
-}
-
-.toolbar {
-  display: flex;
-  flex-shrink: 0;
-  gap: 8px;
-  align-items: center;
-  justify-content: flex-end;
-  height: 38px;
-  padding: 0 8px;
-}
-
-.nav-back {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 8px;
-  align-items: center;
-  height: 28px;
-  padding: 0 8px;
-  margin: 0 8px;
-  font-size: 13px;
-  font-weight: 450;
-  color: var(--ds-gray-11);
-  text-decoration: none;
-  border-radius: 6px;
-}
-
-.nav-back:hover {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a3);
 }
 
 .pane {

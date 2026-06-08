@@ -22,9 +22,11 @@ import {
   tiktokFavouritesUrl,
 } from "../harvest/tiktok";
 import {
+  type BookmarksApiResult,
   type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
+  buildBookmarksApiExpression,
   buildBookmarksExpression,
   parseBookmarksResponses,
 } from "../harvest/twitter";
@@ -308,7 +310,6 @@ export async function harvestTwitterBookmarks(
     if (looksLikeAuthWall(lease.win.webContents.getURL())) {
       return { ok: false, reason: "auth_required" };
     }
-    const expr = buildBookmarksExpression(args);
 
     let lastSeen = -1;
     let lastPhase: BookmarksHarvestProgress["phase"] | null = null;
@@ -347,22 +348,58 @@ export async function harvestTwitterBookmarks(
         .catch(() => {});
     }, 1500);
 
-    const raw = await Promise.race([
-      lease.win.webContents.executeJavaScript(expr, true),
-      sleep(6 * 60_000).then(() => "__pond_bookmarks_timeout__"),
-    ]).finally(() => {
+    const runExpr = (expr: string): Promise<unknown> =>
+      Promise.race([
+        lease.win.webContents.executeJavaScript(expr, true),
+        sleep(6 * 60_000).then(() => "__pond_bookmarks_timeout__"),
+      ]);
+
+    let result: Extract<BookmarksHarvestResult, { ok: true }>;
+    try {
+      // Preferred path: replay the page's own Bookmarks GraphQL request with
+      // our own pagination cursor, walking every page deterministically.
+      // Falls back to scroll-and-scrape if the page never exposes a usable
+      // request or the first replay is rejected (stale transaction id, etc.).
+      const apiRaw = await runExpr(buildBookmarksApiExpression(args));
+      if (apiRaw === "__pond_bookmarks_timeout__") {
+        log.warn("[pond bookmarks] api harvest timed out; falling back");
+      }
+      const api = (
+        apiRaw && typeof apiRaw === "object" ? apiRaw : null
+      ) as BookmarksApiResult | null;
+
+      if (api?.ok) {
+        log.info(
+          `[pond bookmarks] api ok pages=${api.apiDebug?.pages ?? "?"} tweets=${api.apiDebug?.tweets ?? "?"} reason=${api.apiDebug?.reason ?? "?"}`,
+        );
+        result = {
+          ok: true,
+          entries: api.entries,
+          captures: api.captures,
+          reachedEnd: api.reachedEnd,
+        };
+      } else if (api && api.reason === "auth_required") {
+        return { ok: false, reason: "auth_required" };
+      } else {
+        log.info(
+          `[pond bookmarks] api fallback (${api && "detail" in api ? api.detail : "timeout"}); scrolling`,
+        );
+        const scrollRaw = await runExpr(buildBookmarksExpression(args));
+        if (scrollRaw === "__pond_bookmarks_timeout__") {
+          log.warn("[pond bookmarks] harvest timed out");
+          return { ok: false, reason: "timeout" };
+        }
+        if (!scrollRaw || typeof scrollRaw !== "object") {
+          return { ok: false, reason: "no_match" };
+        }
+        const scrollResult = scrollRaw as BookmarksHarvestResult;
+        if (!scrollResult.ok) return scrollResult;
+        result = scrollResult;
+      }
+    } finally {
       stopPolling = true;
       clearInterval(pollInterval);
-    });
-    if (raw === "__pond_bookmarks_timeout__") {
-      log.warn("[pond bookmarks] harvest timed out");
-      return { ok: false, reason: "timeout" };
     }
-    if (!raw || typeof raw !== "object") {
-      return { ok: false, reason: "no_match" };
-    }
-    const result = raw as BookmarksHarvestResult;
-    if (!result.ok) return result;
 
     const rich = parseBookmarksResponses(result.captures);
     const seenTweetIds = new Set<string>();

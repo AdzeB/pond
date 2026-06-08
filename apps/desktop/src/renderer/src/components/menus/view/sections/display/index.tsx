@@ -2,7 +2,7 @@ import { Menu } from "@pond/ui";
 import React from "react";
 import type { DisplayPrefKey } from "@/lib/stores/display-prefs";
 import { useInspector, useSidebar } from "@/lib/stores/shell-state";
-import { useView } from "../../context";
+import { useView } from "../../../../../lib/hooks/use-view";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "name", label: "Show name" },

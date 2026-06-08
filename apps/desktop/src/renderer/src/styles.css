@@ -100,7 +100,7 @@ summary,
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100dvh;
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
 }

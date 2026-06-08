@@ -1,14 +1,10 @@
 import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
-interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
-  width?: "narrow" | "medium" | "wide";
-}
+interface PageProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Page({ width = "medium", className, ...props }: PageProps) {
-  return (
-    <div data-width={width} className={cn(styles.page, className)} {...props} />
-  );
+function Page({ className, ...props }: PageProps) {
+  return <div className={cn(styles.page, className)} {...props} />;
 }
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}

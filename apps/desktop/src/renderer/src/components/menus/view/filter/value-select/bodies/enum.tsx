@@ -1,6 +1,7 @@
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { Menu } from "@pond/ui";
 import { useMemo, useState } from "react";
+import { useFieldValueCounts } from "@/lib/hooks/use-field-counts";
 import styles from "../styles.module.css";
 import type { BodyProps } from "../types";
 
@@ -8,6 +9,7 @@ export function EnumBody({ predicate, onChange }: BodyProps) {
   const [q, setQ] = useState("");
   const meta = FIELD_META[predicate.field];
   const presets = meta.presets ?? [];
+  const counts = useFieldValueCounts(predicate.field);
 
   const selected = useMemo(() => {
     const v = predicate.value;
@@ -65,6 +67,7 @@ export function EnumBody({ predicate, onChange }: BodyProps) {
       />
       {filtered.map((p) => {
         const checked = selected.has(String(p.value));
+        const count = counts.get(String(p.value).toLowerCase());
         return (
           <Menu.CheckboxItem
             key={p.id}
@@ -74,6 +77,11 @@ export function EnumBody({ predicate, onChange }: BodyProps) {
           >
             <Menu.CheckboxItemIndicator />
             <Menu.ItemLabel>{p.label}</Menu.ItemLabel>
+            {count != null ? (
+              <Menu.SecondaryLabel className={styles.count}>
+                {count}
+              </Menu.SecondaryLabel>
+            ) : null}
           </Menu.CheckboxItem>
         );
       })}

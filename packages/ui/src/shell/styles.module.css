@@ -1,11 +1,15 @@
 .body {
   display: flex;
-  min-height: 0;
+  height: 100%;
 }
 
 .main {
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: 12px;
   padding: var(--ds-mac-inset);
+  overflow-y: auto;
 }
 
 .aside {
@@ -23,6 +27,12 @@
   z-index: 99999;
   height: 38px;
   pointer-events: none;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
 }
 
 :global(html):not(:global(.electron-disable-drag)) .drag {

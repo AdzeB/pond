@@ -47,6 +47,7 @@ function SourceItem({
           <SourceIcon source={source} />
         </Sidebar.Icon>
         {def.label}
+        {count > 0 ? <Sidebar.Count>{count}</Sidebar.Count> : null}
       </Sidebar.Anchor>
     </SourceContextMenu>
   );

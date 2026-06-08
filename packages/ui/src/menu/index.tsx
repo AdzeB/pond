@@ -63,9 +63,9 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={cn(popupStyles.arrow, className)} {...props} />;
 }
 
-interface ItemProps extends React.ComponentProps<"div"> {
+type ItemProps = Base.Item.Props & {
   stale?: boolean;
-}
+};
 
 function Item({ className, stale = false, ...props }: ItemProps) {
   return (

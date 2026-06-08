@@ -5,7 +5,11 @@ import {
 } from "@pond/icons/fill/18";
 import { Menu, Select } from "@pond/ui";
 import { AnimatePresence, motion } from "motion/react";
-import { type SortDir, type SortKey, useView } from "../../context";
+import {
+  type SortDir,
+  type SortKey,
+  useView,
+} from "../../../../../lib/hooks/use-view";
 import styles from "./styles.module.css";
 
 const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [

@@ -62,6 +62,18 @@ export default defineBackground(() => {
         return true;
       }
 
+      if (msg.kind === "openPond") {
+        const target = msg.path ? `pond://${msg.path}` : "pond://";
+        chrome.tabs
+          .create({ url: target, active: true })
+          .then(() => sendResponse({ ok: true }))
+          .catch((err) => {
+            console.error("[pond] openPond failed", err);
+            sendResponse({ ok: false, error: String(err) });
+          });
+        return true;
+      }
+
       if (msg.kind === "pushSession") {
         pushSession(msg.source)
           .then((result) => sendResponse(result))

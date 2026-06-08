@@ -13,6 +13,7 @@ export interface PondCapturePayload {
 export type PondMessage =
   | { kind: "capture"; payload: PondCapturePayload }
   | { kind: "pushSession"; source: Source }
+  | { kind: "openPond"; path?: string }
   | {
       kind: "log";
       level: "info" | "warn" | "error";

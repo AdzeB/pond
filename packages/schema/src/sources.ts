@@ -1,7 +1,7 @@
 import { SOURCES, type Source } from "./db";
 
 const SOURCE_LABELS: Record<Source, string> = {
-  twitter: "X / Twitter",
+  twitter: "Twitter",
   instagram: "Instagram",
   pinterest: "Pinterest",
   arena: "Are.na",

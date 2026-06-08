@@ -5,20 +5,9 @@
   display: flex;
   flex-direction: column;
   gap: 40px;
+  width: 640px;
   margin-block: var(--settings-margin-block);
   margin-inline: auto;
-
-  &[data-width="narrow"] {
-    --settings-max-width: 384px;
-  }
-
-  &[data-width="medium"] {
-    --settings-max-width: 640px;
-  }
-
-  &[data-width="wide"] {
-    --settings-max-width: 1024px;
-  }
 }
 
 .header {

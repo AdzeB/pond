@@ -19,7 +19,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     id: "pure-light",
     name: "Pure Light",
     appearance: "light",
-    def: { base: "#ffffff", accent: "#3b82f6", contrast: 40 },
+    def: { base: "#ffffff", accent: "#3b82f6", contrast: 50 },
   },
   {
     id: "light",
@@ -49,7 +49,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     id: "pure-dark",
     name: "Pure Dark",
     appearance: "dark",
-    def: { base: "#000000", accent: "#6e95ff", contrast: 45 },
+    def: { base: "#000000", accent: "#6e95ff", contrast: 50 },
   },
   {
     id: "tide",

@@ -290,12 +290,7 @@ function PaneTags({ save }: { save: Save }) {
             </button>
           }
         />
-        <TagPicker.Content
-          anchor={() => document.getElementById("inspector-pane")}
-          side="left"
-          align="start"
-          sideOffset={12}
-        />
+        <TagPicker.Content side="left" align="start" sideOffset={6} />
       </TagPicker.Root>
     </div>
   );

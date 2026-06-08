@@ -50,6 +50,12 @@ function Icon({ ...props }: IconProps) {
   return <span data-source={props.source} className={styles.icon} {...props} />;
 }
 
+interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function Count({ ...props }: CountProps) {
+  return <span className={styles.count} {...props} />;
+}
+
 interface GroupProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Group({ ...props }: GroupProps) {
@@ -187,6 +193,7 @@ export const Sidebar = {
   Header,
   Item,
   Icon,
+  Count,
   Anchor,
   Footer,
 

@@ -2,7 +2,7 @@ import { FIELD_META } from "@pond/schema/filters/meta";
 import type { Predicate } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import { useCallback } from "react";
-import { useView } from "../../context";
+import { useView } from "../../../../../lib/hooks/use-view";
 import { Body } from "./body";
 import styles from "./styles.module.css";
 import { summariseValue } from "./summarise";

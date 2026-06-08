@@ -1,6 +1,6 @@
 import { Menu, Select } from "@pond/ui";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/utils/zoom";
-import { useView } from "../../context";
+import { useView } from "../../../../../lib/hooks/use-view";
 
 const options: Array<{
   value: number;

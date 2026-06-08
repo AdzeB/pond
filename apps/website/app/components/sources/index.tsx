@@ -1,6 +1,6 @@
 import {
-  IconArena,
-  IconCosmos,
+  IconBrandArena,
+  IconBrandCosmos,
   IconInstagram,
   IconPinterest,
   IconTikTok,
@@ -32,13 +32,13 @@ const SOURCES = [
   },
   {
     name: "Are.na",
-    icon: IconArena,
+    icon: IconBrandArena,
     description: "Blocks and channels.",
     hex: "#171717",
   },
   {
     name: "Cosmos",
-    icon: IconCosmos,
+    icon: IconBrandCosmos,
     description: "Clusters and tiles.",
     hex: "#1b1b1b",
   },

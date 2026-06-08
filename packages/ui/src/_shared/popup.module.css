@@ -101,7 +101,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  margin-right: 6px;
+  margin-right: 8px;
   color: var(--ds-gray-11);
 }
 
@@ -125,7 +125,7 @@
 
 .indicator {
   &:first-child {
-    margin-right: 6px;
+    margin-right: 8px;
   }
 }
 
