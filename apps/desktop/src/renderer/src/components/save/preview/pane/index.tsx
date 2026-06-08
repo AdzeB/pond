@@ -205,9 +205,6 @@ function PaneRowList({ rows }: { rows: PaneRow[] }) {
     <div className={styles["pane-row-list"]}>
       {rows.map((row) => (
         <div key={row.id} className={styles["pane-row"]}>
-          <span className={styles["pane-row-icon"]} aria-hidden>
-            {row.icon}
-          </span>
           <span className={styles["pane-row-label"]}>{row.label}</span>
           <span className={styles["pane-row-value"]}>{row.value}</span>
         </div>

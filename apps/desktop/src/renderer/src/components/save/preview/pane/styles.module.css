@@ -363,16 +363,6 @@
   letter-spacing: 0.01px;
 }
 
-.pane-row-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 12px;
-  height: 12px;
-  color: var(--ds-gray-10);
-}
-
 .pane-row-label {
   flex: 1;
   overflow: hidden;

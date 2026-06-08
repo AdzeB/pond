@@ -208,7 +208,7 @@ export function TagMenu({
       ) : (
         <>
           {visibleGroups.map((group) => (
-            <Menu.Group key={group.id}>
+            <Menu.Group key={group.id} className={styles.section}>
               <Menu.GroupLabel>{group.name}</Menu.GroupLabel>
               {group.items.map(renderRow)}
             </Menu.Group>

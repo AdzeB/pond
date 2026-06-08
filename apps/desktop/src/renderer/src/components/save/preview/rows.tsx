@@ -1,19 +1,4 @@
 import {
-  IconBookmarkOutline18 as Bookmark,
-  IconCalendarOutline18 as Calendar,
-  IconClockOutline18 as Clock,
-  IconEyeOutline18 as Eye,
-  IconStorageOutline18 as HardDrive,
-  IconExpand2Outline18 as Maximize2,
-  IconMsgOutline18 as MessageCircle,
-  IconHeightMaxOutline18 as MoveVertical,
-  IconQuoteOutline18 as Quote,
-  IconRepeatOutline18 as Repeat,
-  IconShareRightOutline18 as Share,
-  IconThumbsUpOutline18 as ThumbsUp,
-} from "@pond/icons/outline/18";
-import type { ReactNode } from "react";
-import {
   formatBytes,
   formatCount,
   formatDuration,
@@ -24,12 +9,9 @@ import { prettifyType } from "./helpers";
 
 export interface PaneRow {
   id: string;
-  icon: ReactNode;
   label: string;
   value: string;
 }
-
-const ICON_SIZE = 12;
 
 export function collectMetadataRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
@@ -45,7 +27,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (durationSec && Number.isFinite(durationSec)) {
     out.push({
       id: "duration",
-      icon: <Clock width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Duration",
       value: formatDuration(durationSec),
     });
@@ -56,7 +37,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (views !== null && views !== undefined) {
     out.push({
       id: "views",
-      icon: <Eye width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Views",
       value: formatCount(views),
     });
@@ -66,7 +46,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (likes !== null && likes !== undefined) {
     out.push({
       id: "likes",
-      icon: <ThumbsUp width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Likes",
       value: formatCount(likes),
     });
@@ -77,7 +56,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (comments !== null && comments !== undefined) {
     out.push({
       id: "comments",
-      icon: <MessageCircle width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Comments",
       value: formatCount(comments),
     });
@@ -86,7 +64,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (metrics.retweets !== null && metrics.retweets !== undefined) {
     out.push({
       id: "retweets",
-      icon: <Repeat width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Reposts",
       value: formatCount(metrics.retweets),
     });
@@ -95,7 +72,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (metrics.quotes !== null && metrics.quotes !== undefined) {
     out.push({
       id: "quotes",
-      icon: <Quote width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Quotes",
       value: formatCount(metrics.quotes),
     });
@@ -105,7 +81,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (bookmarks !== null && bookmarks !== undefined) {
     out.push({
       id: "bookmarks",
-      icon: <Bookmark width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Bookmarks",
       value: formatCount(bookmarks),
     });
@@ -114,7 +89,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (metrics.shares !== null && metrics.shares !== undefined) {
     out.push({
       id: "shares",
-      icon: <Share width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Shares",
       value: formatCount(metrics.shares),
     });
@@ -123,7 +97,6 @@ export function collectMetadataRows(save: Save): PaneRow[] {
   if (capture.publishedAt) {
     out.push({
       id: "published",
-      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Published",
       value: formatShortDate(capture.publishedAt),
     });
@@ -139,7 +112,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (type) {
     out.push({
       id: "type",
-      icon: <HardDrive width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Type",
       value: prettifyType(type),
     });
@@ -148,7 +120,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.savedAt) {
     out.push({
       id: "imported",
-      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Imported",
       value: formatShortDate(save.savedAt),
     });
@@ -157,7 +128,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.createdAt) {
     out.push({
       id: "modified",
-      icon: <Calendar width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Modified",
       value: formatShortDate(save.createdAt),
     });
@@ -166,7 +136,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.fileSize) {
     out.push({
       id: "size",
-      icon: <Maximize2 width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Size",
       value: formatBytes(save.fileSize),
     });
@@ -175,7 +144,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
   if (save.width && save.height) {
     out.push({
       id: "dimensions",
-      icon: <MoveVertical width={ICON_SIZE} height={ICON_SIZE} />,
       label: "Dimensions",
       value: `${save.width} × ${save.height}`,
     });

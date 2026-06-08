@@ -5,6 +5,11 @@
   text-align: center;
 }
 
+.section [role="menuitemcheckbox"],
+.section [role="menuitem"] {
+  padding-inline-start: 22px;
+}
+
 .count {
   flex-shrink: 0;
   padding-inline-start: 8px;
