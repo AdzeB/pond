@@ -36,11 +36,7 @@ const store = new Store<ShellState>({
   sidebarOpen: readOpen("sidebar"),
 });
 
-function setPane(
-  key: PanePrefKey,
-  field: "sidebarOpen",
-  next: boolean,
-): void {
+function setPane(key: PanePrefKey, field: "sidebarOpen", next: boolean): void {
   writeViewPref(key, next ? "open" : "closed");
   store.setState((s) => (s[field] === next ? s : { ...s, [field]: next }));
 }

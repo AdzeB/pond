@@ -119,12 +119,7 @@ export function SaveDrawer() {
                 {save ? <KebabMenu save={save} /> : null}
                 <Drawer.Close
                   render={
-                    <Button
-                      icon
-                      size="sm"
-                      variant="ghost"
-                      aria-label="Close"
-                    />
+                    <Button icon size="sm" variant="ghost" aria-label="Close" />
                   }
                 >
                   <X />

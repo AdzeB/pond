@@ -21,7 +21,9 @@ function Backdrop({ className, ...props }: Base.Backdrop.Props) {
 }
 
 function Viewport({ className, ...props }: Base.Viewport.Props) {
-  return <Base.Viewport className={cn(styles.viewport, className)} {...props} />;
+  return (
+    <Base.Viewport className={cn(styles.viewport, className)} {...props} />
+  );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
@@ -51,7 +53,10 @@ function Close(props: Base.Close.Props) {
 
 function SwipeArea({ className, ...props }: Base.SwipeArea.Props) {
   return (
-    <Base.SwipeArea className={cn(styles["swipe-area"], className)} {...props} />
+    <Base.SwipeArea
+      className={cn(styles["swipe-area"], className)}
+      {...props}
+    />
   );
 }
 

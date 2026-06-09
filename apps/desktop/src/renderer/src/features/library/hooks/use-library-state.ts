@@ -1,7 +1,7 @@
 import { useLocation, useParams } from "@tanstack/react-router";
+import { useStore } from "@tanstack/react-store";
 import { useMemo } from "react";
 import { useBootReady, useSaves } from "@/core/data/hooks";
-import { useStore } from "@tanstack/react-store";
 import { primarySelectionStore } from "@/core/data/selection";
 import type { Save } from "@/core/data/types";
 import { listBaseFromPath } from "@/core/lib/search-schemas";

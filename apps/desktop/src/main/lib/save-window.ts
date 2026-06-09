@@ -92,7 +92,10 @@ function viewerBounds(opener?: BrowserWindow | null): Rectangle {
     // Keep the panel fully within the display it lands on.
     height = Math.min(height, workArea.height - inset * 2);
     x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - width);
-    y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - height);
+    y = Math.min(
+      Math.max(y, workArea.y),
+      workArea.y + workArea.height - height,
+    );
     const result = {
       x: Math.round(x),
       y: Math.round(y),
