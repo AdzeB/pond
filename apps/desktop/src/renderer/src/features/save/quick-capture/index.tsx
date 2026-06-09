@@ -1,14 +1,12 @@
 import { Button, cn, Dialog, Field, Input, useToast } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { navigateTo } from "@/features/library/lib/navigate-path";
+import { primarySelection } from "@/core/data/selection";
 import { closeCapture, useCapture } from "@/features/library/stores/view-store";
 import styles from "./styles.module.css";
 
 function Root() {
   const [open, setOpen] = useState(false);
   const capture = useCapture();
-  const navigate = useNavigate();
   const toast = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [url, setUrl] = useState("");
@@ -86,13 +84,13 @@ function Root() {
             : "Pond is fetching the rich metadata in the background.",
         type: "success",
       });
-      if (result.id) navigateTo(navigate, `/save/${result.id}`);
+      if (result.id) primarySelection.set(result.id);
       reset();
       setOpen(false);
     } finally {
       setBusy(false);
     }
-  }, [url, note, tags, filePaths, toast, navigate, reset]);
+  }, [url, note, tags, filePaths, toast, reset]);
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>

@@ -293,7 +293,7 @@ export function installAppMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("view.sidebar.toggle"),
         },
         {
-          label: "Toggle Inspector",
+          label: "Toggle Details",
           click: sendMenuAction("view.inspector.toggle"),
         },
         { type: "separator" },

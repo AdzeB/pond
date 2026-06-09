@@ -219,7 +219,22 @@ export async function syncSource(
       ev.error = { name: "Unsupported", message: "source has no sync runner" };
       return;
     }
-    if (controller.signal.aborted) ev.outcome = "aborted";
+    if (controller.signal.aborted) {
+      ev.outcome = "aborted";
+      /* Aborts unwind via early returns inside the runners without a
+       * terminal emit, leaving the renderer stuck on the last "running"
+       * frame. Push an explicit idle so the UI clears its spinner. The
+       * watchdog path is reported as an error instead (the user didn't
+       * ask for it). */
+      const cfg = await getSourceSync(source);
+      emit({
+        source,
+        state: watchdogTripped ? "error" : "idle",
+        message: watchdogTripped ? "Sync timed out." : "Sync stopped.",
+        lastSyncedAt: cfg.lastSyncedAt,
+        lastError: watchdogTripped ? "watchdog_timeout" : cfg.lastError,
+      });
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log.error("[pond sync] fatal error", source, err);
@@ -246,7 +261,13 @@ export async function syncSource(
 
 export function cancelSync(source: Source): void {
   const entry = inFlight.get(source);
-  if (entry) entry.controller.abort();
+  if (!entry) return;
+  entry.controller.abort();
+  /* The signal is only polled between harvest/enqueue steps, so the run
+   * may take a moment to actually wind down (a harvest in flight has to
+   * return first). Surface a "Stopping…" beat immediately so the UI
+   * reflects intent; the terminal `idle` emit lands once the run unwinds. */
+  emit({ source, state: "running", message: "Stopping…" });
 }
 
 export function isSyncing(source: Source): boolean {

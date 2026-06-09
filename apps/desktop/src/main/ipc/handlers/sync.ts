@@ -1,6 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import { IPC } from "../../../shared/constants";
 import {
+  cancelSync,
   getGlobalSync,
   getSourceSync,
   isSyncing,
@@ -38,5 +39,12 @@ export function registerSyncHandlers(): void {
   safeHandle(IPC.syncRunAll, async () => {
     void syncAllSources({ trigger: "manual" });
     return { ok: true as const };
+  });
+
+  safeHandle(IPC.syncCancel, async (_, source: string) => {
+    const src = source as Source;
+    const running = isSyncing(src);
+    cancelSync(src);
+    return { ok: true as const, running };
   });
 }

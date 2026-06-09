@@ -10,6 +10,7 @@ import { libraryQueries } from "./library";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
+import { syncHistoryQueries } from "./sync-history";
 import { tagGroupsQueries } from "./tag-groups";
 import { tagsQueries } from "./tags";
 import { videoQueries } from "./video";
@@ -23,6 +24,7 @@ const queryRegistry: QueryHandlerMap = {
   ...libraryQueries,
   ...developerQueries,
   ...videoQueries,
+  ...syncHistoryQueries,
 };
 
 export function registerQueryHandler(): void {

@@ -10,13 +10,12 @@ import {
   useMemo,
   useState,
 } from "react";
-import { pickPrimaryUnit } from "@/core/data/media";
 import { mutateSave, setSaveTags } from "@/core/data/mutate-save";
-import { useResolvedTheme } from "@/core/data/theme";
 import type { Save } from "@/core/data/types";
 import { pickAuthorAvatarUrl } from "@/core/data/url";
 import { TagPicker } from "@/features/tags/tag-picker";
 import { descriptionMatchesTitle, pickAuthorColor } from "../helpers";
+import { MediaViewer } from "../media-viewer";
 import {
   collectMetadataRows,
   collectPropertyRows,
@@ -29,10 +28,27 @@ interface SavePreviewProps extends React.ComponentPropsWithoutRef<"article"> {
 }
 
 export function SavePreview({ save, className, ...props }: SavePreviewProps) {
+  return (
+    <article
+      className={[styles.preview, styles.pane, className ?? ""]
+        .filter(Boolean)
+        .join(" ")}
+      {...props}
+    >
+      <div className={styles["pane-media"]}>
+        <MediaViewer save={save} />
+      </div>
+      <SaveInfo save={save} />
+    </article>
+  );
+}
+
+// The metadata column (title, author, description, tags, notes, stats). Shared
+// by the docked drawer (single column) and the standalone window (info sidebar
+// alongside a full-height media viewer).
+export function SaveInfo({ save }: { save: Save }) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
-  const theme = useResolvedTheme();
-  const cover = useMemo(() => pickPrimaryUnit(save, { theme }), [save, theme]);
   const stats = useMemo(() => collectMetadataRows(save), [save]);
   const props2 = useMemo(() => collectPropertyRows(save), [save]);
   const avatarUrl = useMemo(() => pickAuthorAvatarUrl(save), [save]);
@@ -41,26 +57,7 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
     description.length > 0 && !descriptionMatchesTitle(save);
 
   return (
-    <article
-      className={[styles.preview, styles.pane, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    >
-      {cover ? (
-        <div className={styles["pane-cover"]}>
-          {cover.isVideo ? (
-            <PaneCoverVideo
-              key={cover.url}
-              src={cover.url}
-              posterUrl={cover.posterUrl}
-            />
-          ) : (
-            <img src={cover.url} alt="" className={styles["pane-cover-img"]} />
-          )}
-        </div>
-      ) : null}
-
+    <>
       <h2
         className={styles["pane-title"]}
         contentEditable
@@ -151,37 +148,7 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
           <PaneRowList rows={props2} />
         </PaneSection>
       ) : null}
-    </article>
-  );
-}
-
-function PaneCoverVideo({
-  src,
-  posterUrl,
-}: {
-  src: string;
-  posterUrl?: string;
-}) {
-  const [failed, setFailed] = useState(false);
-
-  if (failed && posterUrl) {
-    return <img src={posterUrl} alt="" className={styles["pane-cover-img"]} />;
-  }
-
-  return (
-    <video
-      src={src}
-      poster={posterUrl}
-      className={styles["pane-cover-video"]}
-      autoPlay
-      muted
-      loop
-      playsInline
-      preload="metadata"
-      onError={() => setFailed(true)}
-    >
-      <track kind="captions" />
-    </video>
+    </>
   );
 }
 

@@ -17,14 +17,12 @@ import {
 // interpolates the cards.
 
 const SIDEBAR_PANE_WIDTH = 256;
-const INSPECTOR_PANE_WIDTH = 256;
 const SHELL_MAIN_PADDING = 12;
 
-type PanePrefKey = Extract<ViewPrefKey, "sidebar" | "inspector">;
+type PanePrefKey = Extract<ViewPrefKey, "sidebar">;
 
 interface ShellState {
   readonly sidebarOpen: boolean;
-  readonly inspectorOpen: boolean;
 }
 
 function readOpen(key: PanePrefKey): boolean {
@@ -36,12 +34,11 @@ function readOpen(key: PanePrefKey): boolean {
 
 const store = new Store<ShellState>({
   sidebarOpen: readOpen("sidebar"),
-  inspectorOpen: readOpen("inspector"),
 });
 
 function setPane(
   key: PanePrefKey,
-  field: "sidebarOpen" | "inspectorOpen",
+  field: "sidebarOpen",
   next: boolean,
 ): void {
   writeViewPref(key, next ? "open" : "closed");
@@ -52,16 +49,8 @@ export function setSidebarOpen(next: boolean): void {
   setPane("sidebar", "sidebarOpen", next);
 }
 
-export function setInspectorOpen(next: boolean): void {
-  setPane("inspector", "inspectorOpen", next);
-}
-
 export function toggleSidebar(): void {
   setSidebarOpen(!store.state.sidebarOpen);
-}
-
-export function toggleInspector(): void {
-  setInspectorOpen(!store.state.inspectorOpen);
 }
 
 export interface PanePref {
@@ -75,24 +64,16 @@ export function useSidebar(): PanePref {
   return { open, toggle: toggleSidebar, setOpen: setSidebarOpen };
 }
 
-export function useInspector(): PanePref {
-  const open = useStore(store, (s) => s.inspectorOpen);
-  return { open, toggle: toggleInspector, setOpen: setInspectorOpen };
-}
-
 export function useGridWidth(): number {
   const { innerWidth } = useWindowSize();
   const sidebarOpen = useStore(store, (s) => s.sidebarOpen);
-  const inspectorOpen = useStore(store, (s) => s.inspectorOpen);
 
+  // The save drawer is a floating overlay and no longer reserves grid
+  // space, so only the sidebar affects the packed grid width.
   // `innerWidth` is null only during SSR snapshots; the Electron
   // renderer always has a real value on first client paint.
   const windowWidth = innerWidth ?? window.innerWidth;
   const sidebarW = sidebarOpen ? SIDEBAR_PANE_WIDTH : 0;
-  const inspectorW = inspectorOpen ? INSPECTOR_PANE_WIDTH : 0;
 
-  return Math.max(
-    0,
-    windowWidth - sidebarW - inspectorW - SHELL_MAIN_PADDING * 2,
-  );
+  return Math.max(0, windowWidth - sidebarW - SHELL_MAIN_PADDING * 2);
 }

@@ -7,7 +7,6 @@ import {
 } from "@/core/data/mutate-save";
 import { pool } from "@/core/data/pool";
 import type { Save } from "@/core/data/types";
-import { setInspectorOpen } from "@/features/library/stores/shell-state";
 import { presentation } from "@/features/save/stores/presentation";
 import {
   mergeUniqueTags,
@@ -57,9 +56,8 @@ export async function copyId(id: string, toast: Toast): Promise<void> {
 }
 
 export function focusPaneTitle(): void {
-  setInspectorOpen(true);
-  // Inspector may have just been toggled open; wait a couple of frames
-  // for the title to mount before giving up.
+  // The save drawer is already open whenever a save is selected; wait a
+  // couple of frames for the title to mount before giving up.
   let tries = 0;
   const tick = () => {
     const el = document.querySelector<HTMLElement>("[data-pane-title]");
@@ -80,7 +78,6 @@ export function focusPaneTitle(): void {
 }
 
 export function openTagPicker(): void {
-  setInspectorOpen(true);
   let tries = 0;
   const tick = () => {
     const el = document.querySelector<HTMLButtonElement>("[data-tag-add]");

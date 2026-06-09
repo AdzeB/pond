@@ -58,9 +58,7 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup {...props} className={cn(popupStyles.popup, className)} />
-  );
+  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
 }
 
 function List({ className, ...props }: Base.List.Props) {

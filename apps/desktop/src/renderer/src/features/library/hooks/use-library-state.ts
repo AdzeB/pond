@@ -1,7 +1,8 @@
 import { useLocation, useParams } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useBootReady, useSaves } from "@/core/data/hooks";
-import { primarySelection } from "@/core/data/selection";
+import { useStore } from "@tanstack/react-store";
+import { primarySelectionStore } from "@/core/data/selection";
 import type { Save } from "@/core/data/types";
 import { listBaseFromPath } from "@/core/lib/search-schemas";
 import { useStableStrings } from "@/core/lib/use-stable-array";
@@ -31,7 +32,6 @@ export function useLibraryState(): LibraryState {
   const bootReady = useBootReady();
   const params = useParams({ strict: false }) as {
     source?: string;
-    id?: string;
   };
   const location = useLocation();
   const view = useViewStore();
@@ -42,14 +42,10 @@ export function useLibraryState(): LibraryState {
   const unknown = recognized === null;
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
-  const selectedId = params.id ?? null;
 
-  // Mirror the URL `selectedId` into the primary-selection store so
-  // `useIsPrimary(id)` consumers (each `SaveCard`) re-render only
-  // when their own primary state changes.
-  useEffect(() => {
-    primarySelection.set(selectedId);
-  }, [selectedId]);
+  // The open save is now pure client state (drives the side drawer); cards
+  // read it through `useIsPrimary`.
+  const selectedId = useStore(primarySelectionStore, (s) => s.id);
 
   const viewMode = view.layout as ViewMode;
 

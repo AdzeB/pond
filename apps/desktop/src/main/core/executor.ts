@@ -17,9 +17,8 @@ import { getDb } from "../db";
 import { toWireSyncAction } from "../ipc/wire";
 import {
   applyItemPatch,
-  moveToTrash,
   removeItem,
-  restoreFromTrash,
+  setItemDeleted,
   writeItemFiles,
 } from "../lib/library";
 
@@ -186,10 +185,10 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       await removeItem(tx.id);
       return;
     case "trash":
-      await moveToTrash(tx.id);
+      await setItemDeleted(tx.id, new Date());
       return;
     case "untrash":
-      await restoreFromTrash(tx.id);
+      await setItemDeleted(tx.id, null);
       return;
   }
 }

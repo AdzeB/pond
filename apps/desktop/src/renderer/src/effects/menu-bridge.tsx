@@ -8,10 +8,7 @@ import { pool } from "@/core/data/pool";
 import { usePrefs } from "@/core/data/prefs";
 import { primarySelection, selection } from "@/core/data/selection";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import {
-  toggleInspector,
-  toggleSidebar,
-} from "@/features/library/stores/shell-state";
+import { toggleSidebar } from "@/features/library/stores/shell-state";
 import { cycleLayout, setLayout } from "@/features/library/stores/view-store";
 import {
   copyId,
@@ -36,9 +33,17 @@ export function MenuBridge() {
           toggleSidebar();
           return;
 
-        case "view.inspector.toggle":
-          toggleInspector();
+        case "view.inspector.toggle": {
+          // Toggles the save drawer: close it if open, otherwise reopen the
+          // anchored/selected save if there is one.
+          if (primarySelection.get()) {
+            primarySelection.set(null);
+          } else {
+            const anchor = selection.getAnchor();
+            if (anchor) primarySelection.set(anchor);
+          }
           return;
+        }
 
         case "view.layout.cycle":
           cycleLayout();

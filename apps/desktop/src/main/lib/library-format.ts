@@ -40,6 +40,7 @@ export interface InfoDoc {
   publishedAt: string | null;
   savedAt: string | null;
   createdAt: string | null;
+  deletedAt: string | null;
   files: InfoFile[];
 }
 
@@ -79,15 +80,19 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
     publishedAt: toIso(save.publishedAt),
     savedAt: toIso(save.savedAt),
     createdAt: toIso(save.createdAt),
+    deletedAt: toIso(save.deletedAt),
     files,
   };
 }
 
 // The Save columns that surface in info.json. DB-only columns (phash,
 // videoNotes, dominantColors, status, ingest timestamps, fileSize, mediaUrl,
-// rawJson, deletedAt) are excluded by construction, so they never leak to
-// disk. This list is the single source of truth for the export whitelist;
-// `infoDocFromSave` and `applyPatchToInfo` both project exactly these.
+// rawJson) are excluded by construction, so they never leak to disk.
+// `deletedAt` is intentionally included: trash is an in-place flag, so the
+// item folder stays in `items/` and the deleted state is recorded here so
+// it survives an index rebuild. This list is the single source of truth for
+// the export whitelist; `infoDocFromSave` and `applyPatchToInfo` both
+// project exactly these.
 export const EXPORTED_SAVE_FIELDS = [
   "url",
   "title",
@@ -102,6 +107,7 @@ export const EXPORTED_SAVE_FIELDS = [
   "width",
   "height",
   "publishedAt",
+  "deletedAt",
 ] as const;
 
 const EXPORTED_FIELD_SET = new Set<string>(EXPORTED_SAVE_FIELDS);
@@ -130,5 +136,6 @@ export function applyPatchToInfo(info: InfoDoc, patch: Partial<Save>): InfoDoc {
   if (patch.height !== undefined) next.height = patch.height ?? null;
   if (patch.publishedAt !== undefined)
     next.publishedAt = toIso(patch.publishedAt);
+  if (patch.deletedAt !== undefined) next.deletedAt = toIso(patch.deletedAt);
   return next;
 }

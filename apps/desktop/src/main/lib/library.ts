@@ -4,12 +4,11 @@ import {
   mkdir,
   readdir,
   readFile,
-  rename,
   rm,
   stat,
   writeFile,
 } from "node:fs/promises";
-import { basename, dirname, extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import type { Save } from "@pond/schema/db";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
@@ -43,6 +42,7 @@ export interface ItemMetadata {
   mtime: number;
   importedAt: number;
   isDeleted: boolean;
+  deletedAt: number | null;
   files: Array<{
     kind: string;
     path: string;
@@ -241,6 +241,7 @@ function metadataFromInfo(
   const coverFile = files[coverIndex] ?? files[0];
   const createdMs = parseTimestamp(info.createdAt);
   const savedMs = parseTimestamp(info.savedAt);
+  const deletedMs = parseTimestamp(info.deletedAt);
   return {
     id,
     source: info.source,
@@ -257,7 +258,8 @@ function metadataFromInfo(
     btime: createdMs ?? Date.now(),
     mtime: savedMs ?? createdMs ?? Date.now(),
     importedAt: savedMs ?? Date.now(),
-    isDeleted: false,
+    isDeleted: deletedMs != null,
+    deletedAt: deletedMs,
     files,
     pond: {
       schemaVersion: INFO_SCHEMA,
@@ -292,6 +294,7 @@ function infoDocFromMetadata(m: ItemMetadata): InfoDoc {
     publishedAt: null,
     savedAt: m.importedAt ? new Date(m.importedAt).toISOString() : null,
     createdAt: m.btime ? new Date(m.btime).toISOString() : null,
+    deletedAt: m.deletedAt ? new Date(m.deletedAt).toISOString() : null,
     files: m.files.map((f) => ({
       kind: f.kind,
       path: f.path,
@@ -413,6 +416,7 @@ function adaptSchema2(
         : Date.now(),
     importedAt: parsedSavedAt ?? Date.now(),
     isDeleted: parsedDeletedAt != null,
+    deletedAt: parsedDeletedAt,
     files,
     pond: {
       schemaVersion: 2,
@@ -437,23 +441,16 @@ function parseTimestamp(value: unknown): number | null {
   return null;
 }
 
-// Trash membership is the folder's location plus SQLite `deletedAt`, so
-// moving in or out of `trash/` is just a rename. Nothing on disk records
-// the deleted flag.
-export async function moveToTrash(id: string): Promise<void> {
-  const from = itemDir(id);
-  if (!existsSync(from)) return;
-  const to = join(resolvePaths().trashDir, basename(from));
-  await mkdir(dirname(to), { recursive: true });
-  await rename(from, to);
-}
-
-export async function restoreFromTrash(id: string): Promise<void> {
-  const from = join(resolvePaths().trashDir, `${id}.info`);
-  if (!existsSync(from)) return;
-  const to = itemDir(id);
-  await mkdir(dirname(to), { recursive: true });
-  await rename(from, to);
+// Trash is an in-place flag. The item folder always stays in `items/`;
+// only `deletedAt` in info.json records the deleted state. Keeping files
+// put means pond:// keeps resolving trashed media, and stamping the flag
+// on disk lets it survive an index rebuild. Pass a Date to trash, `null`
+// to restore. No-op when the item has no readable info folder.
+export async function setItemDeleted(
+  id: string,
+  deletedAt: Date | null,
+): Promise<void> {
+  await applyItemPatch(id, { deletedAt });
 }
 
 export async function removeItem(id: string): Promise<void> {

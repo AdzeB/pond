@@ -1,12 +1,8 @@
 import {
-  IconArchiveContent2Fill18 as Archive,
   IconUserFill18 as Contact,
   IconWindowDownloadFill18 as Download,
-  IconKeyboardFill18 as Keyboard,
   IconOpenInBrowserFill18 as OpenBrowser,
   IconArchivePlusFill18 as Plus,
-  IconGearFill18 as Settings,
-  IconTrash2Fill18 as Trash2,
 } from "@pond/icons/fill/18";
 import {
   IconChevronLeftOutline12 as ChevronLeft,
@@ -20,11 +16,8 @@ import {
 } from "@pond/icons/social-media";
 import { Button, Menu, Sidebar, Tooltip } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
-import type React from "react";
-import { useMemo } from "react";
-import { useSaves } from "@/core/data/hooks";
 import { PondSwitcher } from "@/features/library/menus/pond-switcher";
-import { SidebarSources } from "@/features/sources/sidebar-sources";
+import { routes } from "./data";
 
 function Backwards() {
   const router = useRouter();
@@ -70,27 +63,6 @@ function New() {
   );
 }
 
-interface Route {
-  path: string;
-  params?: Record<string, string>;
-  icon: React.ReactNode;
-  label: string;
-}
-
-const routes: Route[] = [
-  {
-    path: "/",
-    icon: <Archive />,
-    label: "Library",
-  },
-  {
-    path: "/$mode",
-    params: { mode: "trash" },
-    icon: <Trash2 />,
-    label: "Trash",
-  },
-];
-
 const social = [
   {
     icon: <Twitter />,
@@ -107,29 +79,14 @@ const social = [
     label: "Discord",
     secondaryLabel: "G then D",
   },
+  {
+    icon: <Contact />,
+    label: "Contact Us",
+    secondaryLabel: "G then H",
+  },
 ];
 
 export function Library() {
-  const router = useRouter();
-  const saves = useSaves();
-
-  const routeCounts = useMemo<Record<string, number>>(() => {
-    let library = 0;
-    let trash = 0;
-    for (const save of saves) {
-      if (save.deletedAt) {
-        trash++;
-        continue;
-      }
-      if (save.status !== "complete") continue;
-      library++;
-    }
-    return {
-      Library: library,
-      Trash: trash,
-    };
-  }, [saves]);
-
   const app = [
     {
       icon: <OpenBrowser />,
@@ -149,30 +106,6 @@ export function Library() {
     },
   ];
 
-  const help = [
-    {
-      icon: <Keyboard />,
-      label: "Shortcuts",
-      secondaryLabel: "G then K",
-      action: () => {
-        window.open("https://www.pond.so/keyboard-shortcuts", "_blank");
-      },
-    },
-    {
-      icon: <Settings />,
-      label: "Settings",
-      secondaryLabel: "G then S",
-      action: () => {
-        router.navigate({ to: "/settings" });
-      },
-    },
-    {
-      icon: <Contact />,
-      label: "Contact Us",
-      secondaryLabel: "G then H",
-    },
-  ];
-
   return (
     <Sidebar.Provider>
       <Sidebar.Root>
@@ -184,10 +117,10 @@ export function Library() {
           <PondSwitcher />
           <New />
         </Sidebar.Header>
-        <Sidebar.Group>
-          {routes.map((route) => {
-            const count = routeCounts[route.label] ?? 0;
-            return (
+
+        {Object.values(routes).map((group) => (
+          <Sidebar.Group key={group.id}>
+            {group.routes.map((route) => (
               <Sidebar.Anchor
                 key={route.path}
                 to={route.path}
@@ -195,12 +128,10 @@ export function Library() {
               >
                 <Sidebar.Icon>{route.icon}</Sidebar.Icon>
                 {route.label}
-                {count > 0 ? <Sidebar.Count>{count}</Sidebar.Count> : null}
               </Sidebar.Anchor>
-            );
-          })}
-        </Sidebar.Group>
-        <SidebarSources />
+            ))}
+          </Sidebar.Group>
+        ))}
 
         <Sidebar.Footer>
           <Menu.Root>
@@ -211,7 +142,7 @@ export function Library() {
               <Menu.Positioner side="bottom" align="start" sideOffset={6}>
                 <Menu.Popup style={{ width: "250px" }}>
                   {social.map((item) => (
-                    <Menu.Item key={item.label} onClick={item.action}>
+                    <Menu.Item key={item.label} onClick={() => void null}>
                       <Menu.ItemIcon>{item.icon}</Menu.ItemIcon>
                       <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
                       <Menu.SecondaryLabel>
@@ -230,15 +161,6 @@ export function Library() {
                     </Menu.Item>
                   ))}
                   <Menu.Separator />
-                  {help.map((item) => (
-                    <Menu.Item key={item.label} onClick={item.action}>
-                      <Menu.ItemIcon>{item.icon}</Menu.ItemIcon>
-                      <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-                      <Menu.SecondaryLabel>
-                        {item.secondaryLabel}
-                      </Menu.SecondaryLabel>
-                    </Menu.Item>
-                  ))}
                 </Menu.Popup>
               </Menu.Positioner>
             </Menu.Portal>

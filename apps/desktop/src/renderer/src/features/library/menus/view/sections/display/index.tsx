@@ -1,11 +1,14 @@
 import { Menu } from "@pond/ui";
+import { useStore } from "@tanstack/react-store";
 import React from "react";
+import {
+  primarySelection,
+  primarySelectionStore,
+  selection,
+} from "@/core/data/selection";
 import { useView } from "@/features/library/hooks/use-view";
 import type { DisplayPrefKey } from "@/features/library/stores/display-prefs";
-import {
-  useInspector,
-  useSidebar,
-} from "@/features/library/stores/shell-state";
+import { useSidebar } from "@/features/library/stores/shell-state";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "name", label: "Show name" },
@@ -18,7 +21,15 @@ export function DisplaySection() {
 
   const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar();
 
-  const { open: inspectorOpen, setOpen: setInspectorOpen } = useInspector();
+  const drawerOpen = useStore(primarySelectionStore, (s) => s.id != null);
+  const setDrawerOpen = (open: boolean) => {
+    if (open) {
+      const anchor = selection.getAnchor();
+      if (anchor) primarySelection.set(anchor);
+    } else {
+      primarySelection.set(null);
+    }
+  };
 
   return (
     <React.Fragment>
@@ -47,10 +58,10 @@ export function DisplaySection() {
         </Menu.CheckboxItem>
         <Menu.CheckboxItem
           closeOnClick={false}
-          checked={inspectorOpen}
-          onCheckedChange={(v) => setInspectorOpen(Boolean(v))}
+          checked={drawerOpen}
+          onCheckedChange={(v) => setDrawerOpen(Boolean(v))}
         >
-          <Menu.ItemLabel>Show inspector</Menu.ItemLabel>
+          <Menu.ItemLabel>Show details</Menu.ItemLabel>
           <Menu.SwitchItemIndicator />
         </Menu.CheckboxItem>
       </Menu.Group>

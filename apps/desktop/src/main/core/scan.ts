@@ -76,7 +76,8 @@ export async function reconcileLibrary(): Promise<{
         width: metadata.width,
         height: metadata.height,
         fileSize: metadata.size,
-        deletedAt: metadata.isDeleted ? new Date(metadata.mtime) : null,
+        deletedAt:
+          metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
         savedAt: new Date(metadata.importedAt),
         createdAt: new Date(metadata.btime),
       };
@@ -90,6 +91,8 @@ export async function reconcileLibrary(): Promise<{
         width: metadata.width,
         height: metadata.height,
         fileSize: metadata.size,
+        deletedAt:
+          metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
       };
 
       // Check row presence first so we know whether to emit an `I` or

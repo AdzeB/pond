@@ -1,6 +1,14 @@
 import { join } from "node:path";
-import { BrowserWindow, nativeTheme, shell } from "electron";
+import {
+  BrowserWindow,
+  nativeTheme,
+  type Rectangle,
+  screen,
+  shell,
+} from "electron";
+import { IPC } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
+import { broadcast } from "./broadcast";
 
 interface ShellHint {
   theme?: "light" | "dark";
@@ -40,29 +48,102 @@ async function resolveShellHint(): Promise<ShellHint> {
   }
 }
 
-const saveWindows = new Map<string, BrowserWindow>();
+// A single reusable viewer window plays the role the side drawer used to:
+// clicking a save in the grid navigates this one window instead of spawning a
+// new one per save, so browsing the library never floods the screen.
+let viewerWindow: BrowserWindow | null = null;
 
-export async function openSaveWindow(saveId: string): Promise<void> {
+// The main library window is the source of truth for the current ordered list
+// (it reflects the active filter/sort/search/route). The viewer snapshots it on
+// open via `getNavOrder` and stays live-synced via the broadcast below, so j/k
+// navigation in the window matches exactly what the grid shows.
+let navOrder: string[] = [];
+
+export function setNavOrder(ids: string[]): void {
+  navOrder = ids;
+  broadcast(IPC.navOrderChanged, ids);
+}
+
+export function getNavOrder(): string[] {
+  return navOrder;
+}
+
+// The viewer behaves like an inset panel docked inside the library window:
+// anchored to the opener's right edge with a uniform gutter, spanning its height
+// minus the gutter. With no opener (rare) fall back to the top-right of the
+// cursor's display. Geometry is derived fresh on every open rather than
+// persisted, so it always tracks the current library window.
+const VIEWER_INSET = 24;
+const VIEWER_MAX_WIDTH = 440;
+
+function viewerBounds(opener?: BrowserWindow | null): Rectangle {
+  const inset = VIEWER_INSET;
+
+  if (opener && !opener.isDestroyed()) {
+    const o = opener.getBounds();
+    const { workArea } = screen.getDisplayMatching(o);
+    const width = Math.max(
+      360,
+      Math.min(VIEWER_MAX_WIDTH, o.width - inset * 2),
+    );
+    let height = o.height - inset * 2;
+    let x = o.x + o.width - width - inset;
+    let y = o.y + inset;
+    // Keep the panel fully within the display it lands on.
+    height = Math.min(height, workArea.height - inset * 2);
+    x = Math.min(Math.max(x, workArea.x), workArea.x + workArea.width - width);
+    y = Math.min(Math.max(y, workArea.y), workArea.y + workArea.height - height);
+    const result = {
+      x: Math.round(x),
+      y: Math.round(y),
+      width: Math.round(width),
+      height: Math.round(height),
+    };
+    return result;
+  }
+
+  const { workArea } = screen.getDisplayNearestPoint(
+    screen.getCursorScreenPoint(),
+  );
+  const width = Math.min(VIEWER_MAX_WIDTH, workArea.width - inset * 2);
+  const height = Math.min(800, workArea.height - inset * 2);
+  const result = {
+    x: Math.round(workArea.x + workArea.width - width - inset),
+    y: Math.round(workArea.y + inset),
+    width,
+    height,
+  };
+  return result;
+}
+
+export async function openSaveWindow(
+  saveId: string,
+  opener?: BrowserWindow | null,
+): Promise<void> {
   if (!saveId) return;
 
-  const existing = saveWindows.get(saveId);
-  if (existing && !existing.isDestroyed()) {
-    if (existing.isMinimized()) existing.restore();
-    existing.show();
-    existing.focus();
+  // Already open: tell the viewer to navigate and surface it without stealing
+  // focus, so the user can keep clicking through the grid.
+  if (viewerWindow && !viewerWindow.isDestroyed()) {
+    if (viewerWindow.isMinimized()) viewerWindow.restore();
+    viewerWindow.webContents.send(IPC.viewerNavigate, { id: saveId });
+    viewerWindow.showInactive();
     return;
   }
 
   const isMac = process.platform === "darwin";
   const shellHint = await resolveShellHint();
 
+  // Derive geometry from the current library window every open so the viewer
+  // always sits inside it as an inset panel.
+  const bounds = viewerBounds(opener);
+
   const win = new BrowserWindow({
-    width: 900,
-    height: 700,
+    ...bounds,
+    minWidth: 360,
     show: false,
     autoHideMenuBar: true,
-    titleBarStyle: isMac ? "hiddenInset" : "default",
-    trafficLightPosition: isMac ? { x: 16, y: 16 } : undefined,
+    titleBarStyle: isMac ? "hidden" : "default",
     webPreferences: {
       preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
@@ -72,9 +153,14 @@ export async function openSaveWindow(saveId: string): Promise<void> {
     },
   });
 
-  saveWindows.set(saveId, win);
+  // Hide the macOS traffic-light buttons; the window is dragged via the custom
+  // header and closed with Esc / Cmd+W.
+  if (isMac) win.setWindowButtonVisibility(false);
+
+  viewerWindow = win;
+
   win.on("closed", () => {
-    if (saveWindows.get(saveId) === win) saveWindows.delete(saveId);
+    if (viewerWindow === win) viewerWindow = null;
   });
   win.on("ready-to-show", () => win.show());
 

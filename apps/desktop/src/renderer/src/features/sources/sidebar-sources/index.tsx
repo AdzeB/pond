@@ -2,7 +2,6 @@ import type { Source, SourceVisibility } from "@pond/schema/db";
 import { Sidebar } from "@pond/ui";
 import React from "react";
 import { CustomizeSourcesDialog } from "@/features/sources/customize-sources";
-import { MoreSourcesMenu } from "@/features/sources/menus/more-sources";
 import { SourceContextMenu } from "@/features/sources/menus/source-context";
 import { SourcesGroupMenu } from "@/features/sources/menus/sources-group";
 import { getSourceDef } from "@/features/sources/registry";
@@ -54,15 +53,8 @@ function SourceItem({
 }
 
 export function SidebarSources() {
-  const {
-    entries,
-    pinnedSources,
-    moreSources,
-    showMore,
-    counts,
-    setVisibility,
-    reorderSources,
-  } = useSidebarSources();
+  const { entries, pinnedSources, counts, setVisibility, reorderSources } =
+    useSidebarSources();
   const [customizeOpen, setCustomizeOpen] = React.useState(false);
 
   const visibilityBySource = React.useMemo(
@@ -91,12 +83,6 @@ export function SidebarSources() {
               onCustomize={openCustomize}
             />
           ))}
-          {showMore ? (
-            <MoreSourcesMenu
-              sources={moreSources}
-              onCustomize={openCustomize}
-            />
-          ) : null}
         </Sidebar.CollapsibleGroupContent>
       </Sidebar.CollapsibleGroup>
 

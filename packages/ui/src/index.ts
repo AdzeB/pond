@@ -6,6 +6,7 @@ export { Checkbox } from "./checkbox";
 export { ColorField } from "./color-field";
 export { ContextMenu } from "./context-menu";
 export { Dialog } from "./dialog";
+export { Drawer } from "./drawer";
 export { Field } from "./field";
 export { Input } from "./input";
 export { Kbd } from "./kbd";

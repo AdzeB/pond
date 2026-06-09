@@ -87,7 +87,7 @@ function ensureLibraryDirs(root: string): void {
 
 // Create the active library's bundle on disk (root + items/ + trash/).
 // Called when committing to a library so the pond folder shows up
-// promptly. Writers (writeItemFiles, moveToTrash) also mkdir on demand.
+// promptly. Writers (writeItemFiles, writeInfoFiles) also mkdir on demand.
 export function materializeLibrary(): string {
   const root = resolvePaths().libraryRoot;
   ensureLibraryDirs(root);

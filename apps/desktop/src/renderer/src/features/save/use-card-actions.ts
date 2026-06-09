@@ -1,10 +1,11 @@
 import { useToast } from "@pond/ui";
-import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { selection, useSelectionSize } from "@/core/data/selection";
-import { listBaseFromPath } from "@/core/lib/search-schemas";
+import {
+  primarySelection,
+  selection,
+  useSelectionSize,
+} from "@/core/data/selection";
 import type { SavesMode } from "@/features/library/hooks/use-library-state";
-import { navigateTo } from "@/features/library/lib/navigate-path";
 
 interface CardActions {
   selectionSize: number;
@@ -20,38 +21,23 @@ export function useCardActions(
   mode: SavesMode,
   sourceFilter: string,
 ): CardActions {
-  const navigate = useNavigate();
-  const location = useLocation();
   const toast = useToast();
 
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  const listBase = listBaseFromPath(location.pathname);
-  const buildSavePath = useCallback(
-    (id: string) =>
-      listBase === "/" ? `/save/${id}` : `${listBase}/save/${id}`,
-    [listBase],
-  );
-  const buildDetailPath = useCallback(
-    (id: string) =>
-      listBase === "/" ? `/detail/${id}` : `${listBase}/detail/${id}`,
-    [listBase],
-  );
+  // Opening a save highlights it in the grid and shows it in the reusable
+  // viewer window (which replaced the side drawer). The window navigates in
+  // place rather than spawning a new window per save.
+  const select = useCallback((id: string) => {
+    primarySelection.set(id);
+    void window.pond.openSaveWindow(id);
+  }, []);
 
-  const select = useCallback(
-    (id: string) => {
-      navigateTo(navigate, buildSavePath(id));
-    },
-    [buildSavePath, navigate],
-  );
-
-  const focus = useCallback(
-    (id: string) => {
-      navigateTo(navigate, buildDetailPath(id));
-    },
-    [buildDetailPath, navigate],
-  );
+  const focus = useCallback((id: string) => {
+    primarySelection.set(id);
+    void window.pond.openSaveWindow(id);
+  }, []);
 
   const handleCardClick = useCallback(
     (id: string, e: React.MouseEvent) => {
@@ -80,6 +66,7 @@ export function useCardActions(
     void mode;
     void sourceFilter;
     selection.clear();
+    primarySelection.set(null);
   }, [mode, sourceFilter]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
