@@ -37,8 +37,8 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
   );
 }
 
-function Portal({ className, ...props }: Base.Portal.Props) {
-  return <Base.Portal className={cn(styles.portal, className)} {...props} />;
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
 }
 
 function Positioner({
@@ -49,7 +49,8 @@ function Positioner({
   return (
     <Base.Positioner
       sideOffset={sideOffset}
-      className={cn(styles.positioner, className)}
+      data-type="menu"
+      className={cn(popupStyles.positioner, className)}
       {...props}
     />
   );

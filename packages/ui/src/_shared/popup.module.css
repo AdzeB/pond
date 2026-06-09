@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  min-width: 200px;
-  width: var(--anchor-width);
+  min-width: var(--popup-min-width, 200px);
+  width: var(--popup-width, var(--anchor-width));
   max-width: var(--available-width);
-  padding-block: 4px;
+  padding-block: var(--popup-padding-block, 4px);
   outline: none;
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-md);
+  border-radius: var(--popup-radius, var(--ds-radius-md));
   box-shadow: var(--ds-shadow-3);
   transform-origin: var(--transform-origin);
   transition:
@@ -51,8 +51,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  height: 32px;
-  padding-inline: 12px;
+  height: var(--popup-item-height, 32px);
+  padding-inline: var(--popup-item-padding-inline, 12px);
   font: inherit;
   font-size: 13px;
   font-weight: 500;
@@ -159,8 +159,28 @@
 }
 
 .positioner {
-  z-index: 9999999999;
+  z-index: var(--popup-z, 9999999999);
   -webkit-user-select: none;
   user-select: none;
   outline: none;
+
+  &[data-type="combobox"],
+  &[data-type="autocomplete"] {
+    --popup-min-width: var(--anchor-width);
+  }
+
+  &[data-type="context-menu"] {
+    --popup-width: max-content;
+  }
+
+  &[data-type="menu"] {
+    --popup-z: 1100;
+  }
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  -webkit-app-region: no-drag;
 }

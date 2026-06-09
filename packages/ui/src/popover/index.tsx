@@ -1,7 +1,6 @@
 import { Popover as Base } from "@base-ui/react/popover";
 import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
-import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
@@ -23,7 +22,8 @@ function Positioner({
   return (
     <Base.Positioner
       sideOffset={sideOffset}
-      className={cn(styles.positioner, className)}
+      data-type="popover"
+      className={cn(popupStyles.positioner, className)}
       {...props}
     />
   );
@@ -39,7 +39,7 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
+    <Base.Backdrop className={cn(popupStyles.backdrop, className)} {...props} />
   );
 }
 

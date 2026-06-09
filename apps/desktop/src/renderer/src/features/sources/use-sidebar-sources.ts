@@ -39,8 +39,8 @@ function promotionIndex(
   if (sourceIndex < 0) return pinned.length;
 
   let insertAt = 0;
-  for (let i = 0; i < sourceIndex; i++) {
-    if (pinned.includes(order[i]!)) insertAt++;
+  for (const entry of order.slice(0, sourceIndex)) {
+    if (pinned.includes(entry)) insertAt++;
   }
   return insertAt;
 }

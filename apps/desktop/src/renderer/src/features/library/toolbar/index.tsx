@@ -22,10 +22,7 @@ export function Toolbar() {
   const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
 
   return (
-    <PondToolbar.Root
-      className={styles.toolbar}
-      style={{ paddingInlineStart: trafficLightInset }}
-    >
+    <PondToolbar.Root style={{ paddingInlineStart: trafficLightInset }}>
       <PondToolbar.Row className={styles.row}>
         <PondToolbar.Group fill={true} className={styles.group}>
           <SavedViews />

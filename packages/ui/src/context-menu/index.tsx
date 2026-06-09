@@ -1,7 +1,6 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
 import { cn } from "../_shared/cn";
 import popupStyles from "../_shared/popup.module.css";
-import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
@@ -17,12 +16,18 @@ function Portal(props: Base.Portal.Props) {
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
+    <Base.Backdrop className={cn(popupStyles.backdrop, className)} {...props} />
   );
 }
 
-function Positioner(props: Base.Positioner.Props) {
-  return <Base.Positioner {...props} />;
+function Positioner({ className, ...props }: Base.Positioner.Props) {
+  return (
+    <Base.Positioner
+      data-type="context-menu"
+      className={cn(popupStyles.positioner, className)}
+      {...props}
+    />
+  );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {

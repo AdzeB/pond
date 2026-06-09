@@ -32,7 +32,8 @@
 .header {
   display: flex;
   align-items: center;
-  min-height: 32px;
+  height: auto;
+  min-height: fit-content;
 }
 
 .empty {

@@ -36,7 +36,7 @@ function Icon({ className, ...props }: Base.Icon.Props) {
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
+    <Base.Backdrop className={cn(popupStyles.backdrop, className)} {...props} />
   );
 }
 
@@ -50,6 +50,7 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
       sideOffset={6}
       align="end"
       side="bottom"
+      data-type="select"
       className={cn(popupStyles.positioner, className)}
       {...props}
     />
@@ -58,11 +59,7 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
 
 function Popup({ className, ...props }: Base.Popup.Props) {
   return (
-    <Base.Popup
-      {...props}
-      data-type="select"
-      className={cn(popupStyles.popup, className)}
-    />
+    <Base.Popup {...props} className={cn(popupStyles.popup, className)} />
   );
 }
 
