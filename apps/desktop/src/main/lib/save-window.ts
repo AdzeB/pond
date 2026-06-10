@@ -165,7 +165,9 @@ export async function openSaveWindow(
   win.on("closed", () => {
     if (viewerWindow === win) viewerWindow = null;
   });
-  win.on("ready-to-show", () => win.show());
+  // Show only after first paint (no visual flash); the entrance animation itself
+  // is a GPU-composited CSS transition in the renderer, which stays smooth.
+  win.once("ready-to-show", () => win.show());
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);
