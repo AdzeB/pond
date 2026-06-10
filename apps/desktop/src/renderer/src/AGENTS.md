@@ -22,8 +22,8 @@ renderer/src/
                  visibility select
     save/        detail, preview, presentation, save-context menu, categorize + quick-capture
                  dialogs, save-actions, card actions, stores/
-    media/       video-player (+ helpers), video-context menu, video-volume popover,
-                 video-speed select
+    media/       video-player: a thin skin that composes the @pond/ui `Video`
+                 compound component (Root/Media/Controls/parts), plus a chapters-vtt helper
     tags/        tag menus (tag-context, tag-group-context, tag-menu), tag-picker,
                  tag-clipboard store, the Tags settings section
     settings/    engine, registry, sections.tsx + sections/*, theme + bind-address selects,

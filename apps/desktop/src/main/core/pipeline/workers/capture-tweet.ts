@@ -16,6 +16,15 @@ export const TWEET_SCREENSHOT_KIND = "tweet_screenshot";
 export const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
+export interface CaptureTweetResult {
+  // Number of screenshot variants written this run (0-2).
+  captured: number;
+  // True when at least one variant failed specifically because the
+  // scrape session hit X's auth wall. Lets a backfill bail early when
+  // the session isn't actually logged in instead of hammering X.
+  authWall: boolean;
+}
+
 // runCaptureTweet: runs for every twitter save, regardless of whether
 // the extractor pulled real media off the tweet. The screenshot is the
 // canonical visual identity for a tweet in the grid / preview pane; the
@@ -31,11 +40,13 @@ export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 // network) so a screenshot miss never marks the save as failed; the
 // placeholder gradient is a fine interim state until the next refresh
 // tries again.
-export async function runCaptureTweet(saveId: string): Promise<void> {
+export async function runCaptureTweet(
+  saveId: string,
+): Promise<CaptureTweetResult> {
   const save = await readSave(saveId);
-  if (!save) return;
-  if (save.source !== "twitter") return;
-  if (!save.sourceId) return;
+  if (!save) return { captured: 0, authWall: false };
+  if (save.source !== "twitter") return { captured: 0, authWall: false };
+  if (!save.sourceId) return { captured: 0, authWall: false };
 
   const files = save.files ?? [];
   const hasLight = files.some((f) => f.kind === TWEET_SCREENSHOT_LIGHT_KIND);
@@ -45,7 +56,7 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
       "[pond pipeline:capture-tweet] both variants present, skipping",
       saveId,
     );
-    return;
+    return { captured: 0, authWall: false };
   }
 
   const targets: Array<{
@@ -68,6 +79,8 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
     });
   }
 
+  let captured = 0;
+  let authWall = false;
   for (const target of targets) {
     const result: TweetScreenshotResult = await screenshotTweet({
       url: save.url,
@@ -75,6 +88,7 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
       colorScheme: target.scheme,
     });
     if (!result.ok || !result.png) {
+      if (result.reason === "auth_required") authWall = true;
       log.info(
         "[pond pipeline:capture-tweet] no screenshot",
         saveId,
@@ -100,6 +114,7 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
         ],
       },
     );
+    captured += 1;
     log.info(
       "[pond pipeline:capture-tweet] wrote",
       saveId,
@@ -107,4 +122,5 @@ export async function runCaptureTweet(saveId: string): Promise<void> {
       `${result.png.width}x${result.png.height}`,
     );
   }
+  return { captured, authWall };
 }

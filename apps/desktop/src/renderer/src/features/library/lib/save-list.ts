@@ -6,7 +6,6 @@ export type SaveListMode =
   | "source"
   | "untagged"
   | "recents"
-  | "random"
   | "trash";
 
 // Returns `null` for unrecognized URLs so callers can decide whether
@@ -19,7 +18,6 @@ export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase.startsWith("/source/")) return "source";
   if (parentBase === "/untagged") return "untagged";
   if (parentBase === "/recents") return "recents";
-  if (parentBase === "/random") return "random";
   if (parentBase === "/trash") return "trash";
   return null;
 }
@@ -41,22 +39,11 @@ export function labelForMode(mode: SaveListMode, sourceFilter: string): string {
       return "Untagged";
     case "recents":
       return "Recents";
-    case "random":
-      return "Random";
     case "trash":
       return "Trash";
     default:
       return "All Saves";
   }
-}
-
-export function hashShuffleKey(id: string, seed: string): number {
-  const s = `${id}:${seed}`;
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h = Math.imul(h ^ s.charCodeAt(i), 16777619);
-  }
-  return h >>> 0;
 }
 
 interface ModeFilterOptions {
@@ -95,24 +82,17 @@ export function applyModeFilter(
 interface ModeSortOptions {
   mode: SaveListMode;
   recentsOrder: ReadonlyMap<string, number> | null;
-  randomSeed: string;
 }
 
 export function applyModeSort(
   saves: Save[],
-  { mode, recentsOrder, randomSeed }: ModeSortOptions,
+  { mode, recentsOrder }: ModeSortOptions,
 ): Save[] {
   if (mode === "recents" && recentsOrder) {
     return saves.sort(
       (a, b) =>
         (recentsOrder.get(a.id) ?? Infinity) -
         (recentsOrder.get(b.id) ?? Infinity),
-    );
-  }
-  if (mode === "random") {
-    return saves.sort(
-      (a, b) =>
-        hashShuffleKey(a.id, randomSeed) - hashShuffleKey(b.id, randomSeed),
     );
   }
   return saves;

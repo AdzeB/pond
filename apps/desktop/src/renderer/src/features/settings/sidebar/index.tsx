@@ -66,26 +66,11 @@ function SectionLink({ section }: { section: SectionDef }) {
 function SectionGroup({
   label,
   sections,
-  collapsible = false,
 }: {
   label?: string;
   sections: SectionDef[];
-  collapsible?: boolean;
 }) {
   if (sections.length === 0) return null;
-
-  if (collapsible && label) {
-    return (
-      <Sidebar.CollapsibleGroup defaultOpen>
-        <Sidebar.CollapsibleGroupLabel>{label}</Sidebar.CollapsibleGroupLabel>
-        <Sidebar.CollapsibleGroupContent>
-          {sections.map((section) => (
-            <SectionLink key={section.id} section={section} />
-          ))}
-        </Sidebar.CollapsibleGroupContent>
-      </Sidebar.CollapsibleGroup>
-    );
-  }
 
   return (
     <Sidebar.Group>
@@ -134,7 +119,6 @@ export function Settings() {
             key={group}
             label={SETTINGS_GROUP_LABELS[group]}
             sections={sectionsByGroup[group] ?? []}
-            collapsible={group === "saving"}
           />
         ))}
       </Sidebar.Root>

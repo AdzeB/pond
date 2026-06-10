@@ -14,12 +14,14 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { broadcastSyncAction } from "../executor";
+import { isSourceConnected } from "../refresh/scrape-window";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
 import { kickReconciler } from "./reconciler";
 import { maxAttemptsFor, planOps } from "./specs";
 import { sourceIdFromUrl } from "./url";
 import {
+  runCaptureTweet,
   TWEET_SCREENSHOT_DARK_KIND,
   TWEET_SCREENSHOT_LIGHT_KIND,
 } from "./workers/capture-tweet";
@@ -189,16 +191,40 @@ export async function enqueueSaveByUrl(
   return { id, created: true };
 }
 
-// enqueueCaptureTweetForExisting: idempotent backfill that schedules a
-// `capture_tweet` task for every twitter save that doesn't already have
-// both the light and dark screenshot variants on disk. Runs for tweets
-// with media too: the screenshot is the canonical thumbnail, the
-// extracted media is the detail-carousel content. Safe to call on every
-// app start. Existing tasks for the same `(saveId, op)` pair are left
-// alone, so re-running never duplicates work.
-export async function enqueueCaptureTweetForExisting(): Promise<{
-  scheduled: number;
+// Recapture concurrency. The scrape pool caps twitter windows at 3
+// (PER_SOURCE_CAP), so matching that keeps every lease busy without
+// queueing a thousand idle promises behind the pool.
+const SCREENSHOT_BACKFILL_CONCURRENCY = 3;
+
+// Consecutive auth-wall misses that trip the early abort. The startup
+// check confirms an `auth_token` cookie exists, but a stale/expired
+// session can still bounce to the login flow; bail rather than walking
+// the whole library hammering X for nothing.
+const SCREENSHOT_AUTH_WALL_ABORT = 6;
+
+// backfillTweetScreenshots: out-of-band recapture for every twitter save
+// that's missing a light/dark screenshot variant on disk. Unlike a
+// task-based backfill, this never flips saves back to `ingesting` (so
+// nothing disappears from the grid) and works for `complete`/`failed`
+// saves the reconciler's `ingesting`-only gate would otherwise skip.
+//
+// `runCaptureTweet` is idempotent (it only captures the variants a save
+// is missing and leases windows through the same self-throttling pool),
+// so re-running on every launch is safe; it stops touching a save once
+// both variants exist. Gated on the X session being connected, with an
+// auth-wall circuit breaker so a dead session can't grind the whole
+// library.
+export async function backfillTweetScreenshots(): Promise<{
+  attempted: number;
+  captured: number;
+  aborted: boolean;
 }> {
+  const connected = await isSourceConnected("twitter").catch(() => false);
+  if (!connected) {
+    log.info("[pond pipeline:capture-tweet] backfill skipped, X not connected");
+    return { attempted: 0, captured: 0, aborted: false };
+  }
+
   const db = await getDb();
   const rows = db
     .select()
@@ -208,6 +234,9 @@ export async function enqueueCaptureTweetForExisting(): Promise<{
 
   const needCapture: string[] = [];
   for (const row of rows) {
+    // Saves mid-ingest already have a `capture_tweet` task the reconciler
+    // owns; leave them to the pipeline so we don't double-lease windows.
+    if (row.status === "ingesting") continue;
     const files = (row.files ?? []) as SaveFile[];
     const hasLight = files.some((f) => f.kind === TWEET_SCREENSHOT_LIGHT_KIND);
     const hasDark = files.some((f) => f.kind === TWEET_SCREENSHOT_DARK_KIND);
@@ -215,44 +244,58 @@ export async function enqueueCaptureTweetForExisting(): Promise<{
     needCapture.push(row.id);
   }
   if (needCapture.length === 0) {
-    return { scheduled: 0 };
+    return { attempted: 0, captured: 0, aborted: false };
   }
 
-  const existing = db
-    .select({ saveId: tasks.saveId })
-    .from(tasks)
-    .where(eq(tasks.op, "capture_tweet"))
-    .all();
-  const alreadyQueued = new Set(existing.map((r) => r.saveId));
-
-  const now = new Date();
-  const toInsert: NewTask[] = [];
-  for (const saveId of needCapture) {
-    if (alreadyQueued.has(saveId)) continue;
-    toInsert.push({
-      id: ulid(),
-      saveId,
-      op: "capture_tweet",
-      status: "pending",
-      attempts: 0,
-      maxAttempts: maxAttemptsFor("capture_tweet"),
-      nextRunAt: now,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
-
-  if (toInsert.length === 0) {
-    return { scheduled: 0 };
-  }
-  db.insert(tasks).values(toInsert).run();
   log.info(
-    "[pond pipeline:capture-tweet] backfill scheduled",
-    toInsert.length,
+    "[pond pipeline:capture-tweet] backfill starting",
+    needCapture.length,
     "saves",
   );
-  kickReconciler();
-  return { scheduled: toInsert.length };
+
+  let cursor = 0;
+  let captured = 0;
+  let authWallStreak = 0;
+  let aborted = false;
+
+  const worker = async (): Promise<void> => {
+    while (!aborted) {
+      const saveId = needCapture[cursor];
+      if (saveId === undefined) break;
+      cursor += 1;
+      try {
+        const result = await runCaptureTweet(saveId);
+        captured += result.captured;
+        if (result.captured === 0 && result.authWall) {
+          authWallStreak += 1;
+          if (authWallStreak >= SCREENSHOT_AUTH_WALL_ABORT) {
+            aborted = true;
+            log.warn(
+              "[pond pipeline:capture-tweet] backfill aborted, repeated auth walls",
+            );
+          }
+        } else if (result.captured > 0) {
+          authWallStreak = 0;
+        }
+      } catch (err) {
+        log.warn(
+          "[pond pipeline:capture-tweet] backfill capture failed",
+          saveId,
+          err,
+        );
+      }
+    }
+  };
+
+  const lanes = Math.min(SCREENSHOT_BACKFILL_CONCURRENCY, needCapture.length);
+  await Promise.all(Array.from({ length: lanes }, () => worker()));
+
+  log.info("[pond pipeline:capture-tweet] backfill done", {
+    attempted: cursor,
+    captured,
+    aborted,
+  });
+  return { attempted: cursor, captured, aborted };
 }
 
 export async function resetTasksForSave(

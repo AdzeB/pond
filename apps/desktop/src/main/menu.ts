@@ -157,7 +157,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
       submenu: [
         { label: "Library", click: navTo("/") },
         { label: "Recents", click: navTo("/recents") },
-        { label: "Random", click: navTo("/random") },
         { label: "Untagged", click: navTo("/untagged") },
         { label: "Trash", click: navTo("/trash") },
         { label: "Settings", click: navTo("/settings") },
@@ -239,10 +238,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         {
           label: "Recents",
           click: navTo("/recents"),
-        },
-        {
-          label: "Random",
-          click: navTo("/random"),
         },
         {
           label: "Untagged",

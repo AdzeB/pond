@@ -101,12 +101,8 @@
 .pane-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
   margin-bottom: 12px;
-  background-color: var(--ds-gray-1);
-  border-radius: 12px;
-  box-shadow: var(--ds-shadow-2);
 }
 
 .pane-section-header {

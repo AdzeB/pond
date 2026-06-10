@@ -1,5 +1,16 @@
 const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
 
+const numberFormatter = new Intl.NumberFormat(undefined, {
+  useGrouping: true,
+  maximumFractionDigits: 0,
+});
+
+// Locale-aware integer with grouping separators: 1254 -> "1,254".
+export function formatNumber(n: number): string {
+  if (!Number.isFinite(n)) return "-";
+  return numberFormatter.format(n);
+}
+
 export function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "-";
   if (bytes < 1024) return `${Math.round(bytes)}\u00A0B`;

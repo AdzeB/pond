@@ -86,6 +86,13 @@ export default defineConfig({
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },
+    // Pre-bundle the sensitive-media detector deps. nsfwjs + tfjs pull in
+    // CommonJS packages (buffer, long, seedrandom, …) that only expose proper
+    // ESM named exports once esbuild has optimized them; excluding them makes
+    // imports like `{ Buffer } from "buffer"` fail in dev.
+    optimizeDeps: {
+      include: ["nsfwjs", "@tensorflow/tfjs"],
+    },
     build: {
       // Electron ships a recent Chromium; skip legacy transforms and
       // module-preload polyfills.
@@ -101,6 +108,12 @@ export default defineConfig({
           // parallel on cold start.
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
+            // nsfwjs ships each model (MobileNetV2/Mid, InceptionV3) as
+            // separately dynamic-imported weight bundles. Leave them out of
+            // the lumped vendor chunk so Rollup keeps them as standalone lazy
+            // chunks — only the model actually loaded at runtime is fetched,
+            // instead of pulling all three (~40MB) in one chunk.
+            if (id.includes("/nsfwjs/dist/models/")) return;
             const match = id.match(
               /node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(@[^/]+\/[^/]+|[^/]+)/,
             );

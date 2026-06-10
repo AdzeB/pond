@@ -1,0 +1,172 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { bufferedEnd, clamp, FRAME_STEP_SECONDS } from "./lib";
+
+export interface MediaState {
+  playing: boolean;
+  currentTime: number;
+  duration: number;
+  buffered: number;
+  volume: number;
+  muted: boolean;
+  rate: number;
+  fullscreen: boolean;
+  fullscreenSupported: boolean;
+}
+
+export interface MediaActions {
+  togglePlay: () => void;
+  play: () => void;
+  pause: () => void;
+  seek: (time: number) => void;
+  seekBy: (delta: number) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
+  setRate: (rate: number) => void;
+  toggleFullscreen: () => void;
+  stepFrame: (delta: number) => void;
+}
+
+const MEDIA_EVENTS = [
+  "play",
+  "pause",
+  "timeupdate",
+  "durationchange",
+  "loadedmetadata",
+  "progress",
+  "volumechange",
+  "ratechange",
+] as const;
+
+const INITIAL: MediaState = {
+  playing: false,
+  currentTime: 0,
+  duration: 0,
+  buffered: 0,
+  volume: 1,
+  muted: false,
+  rate: 1,
+  fullscreen: false,
+  fullscreenSupported: false,
+};
+
+// Owns the <video> element and derives a snapshot of its state from media
+// events. This is the single place that knows how playback is implemented;
+// parts only see `state` + `actions`.
+export function useMediaState(): {
+  state: MediaState;
+  actions: MediaActions;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  rootRef: React.RefObject<HTMLDivElement | null>;
+  registerVideo: (el: HTMLVideoElement | null) => void;
+} {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
+  const [state, setState] = useState<MediaState>(INITIAL);
+
+  const registerVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    setVideoEl(el);
+  }, []);
+
+  useEffect(() => {
+    const v = videoEl;
+    if (!v) return;
+    const sync = () => {
+      setState((s) => ({
+        ...s,
+        playing: !v.paused,
+        currentTime: v.currentTime,
+        duration: Number.isFinite(v.duration) ? v.duration : 0,
+        volume: v.volume,
+        muted: v.muted,
+        rate: v.playbackRate,
+        buffered: bufferedEnd(v),
+      }));
+    };
+    for (const event of MEDIA_EVENTS) v.addEventListener(event, sync);
+    sync();
+    return () => {
+      for (const event of MEDIA_EVENTS) v.removeEventListener(event, sync);
+    };
+  }, [videoEl]);
+
+  useEffect(() => {
+    setState((s) => ({
+      ...s,
+      fullscreenSupported: document.fullscreenEnabled,
+    }));
+  }, []);
+
+  useEffect(() => {
+    const onFullscreen = () => {
+      setState((s) => ({
+        ...s,
+        fullscreen: document.fullscreenElement === rootRef.current,
+      }));
+    };
+    document.addEventListener("fullscreenchange", onFullscreen);
+    onFullscreen();
+    return () => document.removeEventListener("fullscreenchange", onFullscreen);
+  }, []);
+
+  const seek = useCallback((time: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const d = v.duration;
+    v.currentTime = Number.isFinite(d) ? clamp(time, 0, d) : Math.max(0, time);
+  }, []);
+
+  const setVolume = useCallback((volume: number) => {
+    const v = videoRef.current;
+    if (!v) return;
+    const next = clamp(volume, 0, 1);
+    v.volume = next;
+    if (next > 0 && v.muted) v.muted = false;
+  }, []);
+
+  const actions = useMemo<MediaActions>(
+    () => ({
+      togglePlay: () => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (v.paused) void v.play().catch(() => {});
+        else v.pause();
+      },
+      play: () => void videoRef.current?.play().catch(() => {}),
+      pause: () => videoRef.current?.pause(),
+      seek,
+      seekBy: (delta: number) => {
+        const v = videoRef.current;
+        if (v) seek(v.currentTime + delta);
+      },
+      setVolume,
+      toggleMute: () => {
+        const v = videoRef.current;
+        if (v) v.muted = !v.muted;
+      },
+      setRate: (rate: number) => {
+        const v = videoRef.current;
+        if (v) v.playbackRate = rate;
+      },
+      toggleFullscreen: () => {
+        const root = rootRef.current;
+        if (!root) return;
+        if (document.fullscreenElement === root) {
+          void document.exitFullscreen().catch(() => {});
+        } else {
+          void root.requestFullscreen().catch(() => {});
+        }
+      },
+      stepFrame: (delta: number) => {
+        const v = videoRef.current;
+        if (!v) return;
+        if (!v.paused) v.pause();
+        v.currentTime = Math.max(0, v.currentTime + delta * FRAME_STEP_SECONDS);
+      },
+    }),
+    [seek, setVolume],
+  );
+
+  return { state, actions, videoRef, rootRef, registerVideo };
+}

@@ -25,6 +25,14 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
+  // Blur media that on-device detection flags as sensitive (NSFW). Off by
+  // default; opt-in. When on, media stays blurred until classified safe.
+  blurSensitiveMedia: z.boolean().catch(false),
+  // What a Twitter save uses as its grid/preview cover. "media" prefers
+  // attached media (screenshot only as the fallback for text-only
+  // tweets); "screenshot" always renders the tweet card. See
+  // core/data/media.ts.
+  tweetCover: z.enum(["media", "screenshot"]).catch("media"),
 });
 
 const notifications = z.object({

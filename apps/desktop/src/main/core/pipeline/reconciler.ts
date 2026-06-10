@@ -99,7 +99,9 @@ type Worker = (
 const WORKERS: Record<Op, Worker> = {
   harvest_metadata: (saveId, payload) =>
     runHarvestMetadata(saveId, payload as { force?: boolean }),
-  capture_tweet: (saveId) => runCaptureTweet(saveId),
+  capture_tweet: async (saveId) => {
+    await runCaptureTweet(saveId);
+  },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
   fetch_video_ytdlp: (saveId) => runFetchVideoYtdlp(saveId),
   ensure_poster: (saveId) => runEnsurePoster(saveId),

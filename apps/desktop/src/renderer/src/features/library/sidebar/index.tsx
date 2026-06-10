@@ -16,8 +16,10 @@ import {
 } from "@pond/icons/social-media";
 import { Button, Menu, Sidebar, Tooltip } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
+import { formatNumber } from "@/core/lib/format";
 import { PondSwitcher } from "@/features/library/menus/pond-switcher";
-import { routes } from "./data";
+import { extraRoutes } from "./data";
+import { useSidebarNav } from "./use-sidebar-nav";
 
 function Backwards() {
   const router = useRouter();
@@ -87,6 +89,8 @@ const social = [
 ];
 
 export function Library() {
+  const { visibleItems } = useSidebarNav();
+
   const app = [
     {
       icon: <OpenBrowser />,
@@ -118,20 +122,30 @@ export function Library() {
           <New />
         </Sidebar.Header>
 
-        {Object.values(routes).map((group) => (
-          <Sidebar.Group key={group.id}>
-            {group.routes.map((route) => (
-              <Sidebar.Anchor
-                key={route.path}
-                to={route.path}
-                params={route.params}
-              >
-                <Sidebar.Icon>{route.icon}</Sidebar.Icon>
-                {route.label}
-              </Sidebar.Anchor>
-            ))}
-          </Sidebar.Group>
-        ))}
+        <Sidebar.Group>
+          {visibleItems.map(({ item, count }) => (
+            <Sidebar.Anchor key={item.key} to={item.path} params={item.params}>
+              <Sidebar.Icon>{item.icon}</Sidebar.Icon>
+              {item.label}
+              {count > 0 ? (
+                <Sidebar.Count>{formatNumber(count)}</Sidebar.Count>
+              ) : null}
+            </Sidebar.Anchor>
+          ))}
+        </Sidebar.Group>
+
+        <Sidebar.Group key={extraRoutes.id}>
+          {extraRoutes.routes.map((route) => (
+            <Sidebar.Anchor
+              key={route.path}
+              to={route.path}
+              params={route.params}
+            >
+              <Sidebar.Icon>{route.icon}</Sidebar.Icon>
+              {route.label}
+            </Sidebar.Anchor>
+          ))}
+        </Sidebar.Group>
 
         <Sidebar.Footer>
           <Menu.Root>

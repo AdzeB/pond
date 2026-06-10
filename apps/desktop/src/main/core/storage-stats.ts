@@ -1,6 +1,7 @@
 import { readdir, stat, statfs } from "node:fs/promises";
 import { join, sep } from "node:path";
 import log from "electron-log/main.js";
+import { createMemoCache } from "../lib/memo-cache";
 import { itemsRoot, libraryRoot, resolvePaths } from "../paths";
 
 export interface LibraryBreakdown {
@@ -41,51 +42,41 @@ const KNOWN_BUCKETS: ReadonlyArray<{
 
 const CACHE_TTL_MS = 30_000;
 
-let cached: { snapshot: StorageSnapshot; computedAtMs: number } | null = null;
-let inflight: Promise<StorageSnapshot> | null = null;
+const snapshotCache = createMemoCache<StorageSnapshot>(computeSnapshot, {
+  ttlMs: CACHE_TTL_MS,
+});
 
 export function invalidateStorageSnapshot(): void {
-  cached = null;
-  inflight = null;
+  snapshotCache.invalidate();
 }
 
 export async function getStorageSnapshot(): Promise<StorageSnapshot> {
-  const now = Date.now();
-  if (cached && now - cached.computedAtMs < CACHE_TTL_MS) {
-    return cached.snapshot;
-  }
-  if (inflight) return inflight;
-  inflight = (async () => {
-    const root = libraryRoot();
-    const breakdown = await computeLibraryBreakdown();
-    const device = await getDeviceDiskInfo(root);
-    const snapshot: StorageSnapshot = {
-      pondBytes: breakdown.total,
-      breakdown: {
-        items: breakdown.items,
-        videoCache: breakdown.videoCache,
-        thumbs: breakdown.thumbs,
-        meta: breakdown.meta,
-        db: breakdown.db,
-        other: breakdown.other,
-      },
-      deviceTotalBytes: device.totalBytes,
-      deviceFreeBytes: device.freeBytes,
-      deviceUsedByOthersBytes: Math.max(
-        0,
-        device.totalBytes - device.freeBytes - breakdown.total,
-      ),
-      libraryRoot: root,
-      computedAt: new Date().toISOString(),
-    };
-    cached = { snapshot, computedAtMs: Date.now() };
-    return snapshot;
-  })();
-  try {
-    return await inflight;
-  } finally {
-    inflight = null;
-  }
+  return snapshotCache.get();
+}
+
+async function computeSnapshot(): Promise<StorageSnapshot> {
+  const root = libraryRoot();
+  const breakdown = await computeLibraryBreakdown();
+  const device = await getDeviceDiskInfo(root);
+  return {
+    pondBytes: breakdown.total,
+    breakdown: {
+      items: breakdown.items,
+      videoCache: breakdown.videoCache,
+      thumbs: breakdown.thumbs,
+      meta: breakdown.meta,
+      db: breakdown.db,
+      other: breakdown.other,
+    },
+    deviceTotalBytes: device.totalBytes,
+    deviceFreeBytes: device.freeBytes,
+    deviceUsedByOthersBytes: Math.max(
+      0,
+      device.totalBytes - device.freeBytes - breakdown.total,
+    ),
+    libraryRoot: root,
+    computedAt: new Date().toISOString(),
+  };
 }
 
 export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {

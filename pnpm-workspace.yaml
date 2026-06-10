@@ -3,6 +3,7 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  core-js: false
   nucleo-ui-fill-12: true
   nucleo-ui-fill-18: true
   nucleo-ui-fill-duo-18: true

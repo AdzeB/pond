@@ -2,6 +2,7 @@ import { IconNotepadOutline18 as NotebookPen } from "@pond/icons/outline/18";
 import { memo, useCallback, useMemo } from "react";
 import { useSave } from "@/core/data/hooks";
 import { buildMediaUnits, pickPrimaryFile } from "@/core/data/media";
+import { usePrefs } from "@/core/data/prefs";
 import { selection, useIsPrimary, useIsSelected } from "@/core/data/selection";
 import { useResolvedTheme } from "@/core/data/theme";
 import type { Save } from "@/core/data/types";
@@ -122,7 +123,11 @@ const SaveCardBody = memo(function SaveCardBody({
   layout?: CardLayout;
 }) {
   const theme = useResolvedTheme();
-  const primary = pickPrimaryFile(save, { theme });
+  const [preferences] = usePrefs("preferences");
+  const primary = pickPrimaryFile(save, {
+    theme,
+    tweetCover: preferences?.tweetCover,
+  });
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
   // Clamp to a sane range so panoramas / extreme portraits don't stretch

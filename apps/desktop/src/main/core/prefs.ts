@@ -11,6 +11,7 @@ import {
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getGlobalDb } from "../db";
+import { createMemoCache } from "../lib/memo-cache";
 
 interface SettingsCache {
   prefs: Prefs;
@@ -18,63 +19,52 @@ interface SettingsCache {
   imageDownload: ImageDownloadSettings;
 }
 
-let cache: SettingsCache | null = null;
-let inflight: Promise<SettingsCache> | null = null;
-
-function invalidate(): void {
-  cache = null;
-  inflight = null;
-}
+// Cache the parsed settings until an explicit invalidate()/set(). The
+// memo dedupes concurrent reads; a DB failure rejects (and so is never
+// cached), letting loadSettings() fall back to defaults and retry later.
+const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
 
 export function invalidatePrefs(): void {
-  invalidate();
+  settingsCache.invalidate();
 }
 
 export function invalidateVideoDownloadPrefs(): void {
-  invalidate();
+  settingsCache.invalidate();
 }
 
 export function invalidateImageDownloadPrefs(): void {
-  invalidate();
+  settingsCache.invalidate();
+}
+
+async function fetchSettings(): Promise<SettingsCache> {
+  const db = await getGlobalDb();
+  const rows = await db
+    .select({
+      prefs: settingsTable.prefs,
+      videoDownload: settingsTable.videoDownload,
+      imageDownload: settingsTable.imageDownload,
+    })
+    .from(settingsTable)
+    .where(eq(settingsTable.id, "singleton"));
+  const row = rows[0];
+  return {
+    prefs: loadPrefs(row?.prefs),
+    videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
+    imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
+  };
 }
 
 async function loadSettings(): Promise<SettingsCache> {
-  if (cache) return cache;
-  if (inflight) return inflight;
-  inflight = (async () => {
-    try {
-      const db = await getGlobalDb();
-      const rows = await db
-        .select({
-          prefs: settingsTable.prefs,
-          videoDownload: settingsTable.videoDownload,
-          imageDownload: settingsTable.imageDownload,
-        })
-        .from(settingsTable)
-        .where(eq(settingsTable.id, "singleton"));
-      const row = rows[0];
-      cache = {
-        prefs: loadPrefs(row?.prefs),
-        videoDownload: normalizeVideo(
-          row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD,
-        ),
-        imageDownload: normalizeImage(
-          row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD,
-        ),
-      };
-      return cache;
-    } catch (err) {
-      log.warn("[pond prefs] failed to read settings, using defaults", err);
-      return {
-        prefs: DEFAULT_PREFS,
-        videoDownload: DEFAULT_VIDEO_DOWNLOAD,
-        imageDownload: DEFAULT_IMAGE_DOWNLOAD,
-      };
-    } finally {
-      inflight = null;
-    }
-  })();
-  return inflight;
+  try {
+    return await settingsCache.get();
+  } catch (err) {
+    log.warn("[pond prefs] failed to read settings, using defaults", err);
+    return {
+      prefs: DEFAULT_PREFS,
+      videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+      imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+    };
+  }
 }
 
 export async function getPrefs(): Promise<Prefs> {
@@ -104,7 +94,8 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
       set: { prefs: merged, updatedAt: new Date() },
     })
     .run();
-  if (cache) cache = { ...cache, prefs: merged };
+  const cached = settingsCache.peek();
+  if (cached) settingsCache.set({ ...cached, prefs: merged });
   return merged;
 }
 
@@ -125,7 +116,8 @@ export async function setVideoDownloadPrefs(
       set: { videoDownload: merged, updatedAt: new Date() },
     })
     .run();
-  if (cache) cache = { ...cache, videoDownload: merged };
+  const cached = settingsCache.peek();
+  if (cached) settingsCache.set({ ...cached, videoDownload: merged });
   return merged;
 }
 
@@ -146,7 +138,8 @@ export async function setImageDownloadPrefs(
       set: { imageDownload: merged, updatedAt: new Date() },
     })
     .run();
-  if (cache) cache = { ...cache, imageDownload: merged };
+  const cached = settingsCache.peek();
+  if (cached) settingsCache.set({ ...cached, imageDownload: merged });
   return merged;
 }
 

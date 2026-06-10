@@ -2,29 +2,22 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { net } from "electron";
 import log from "electron-log/main.js";
+import { createMemoCache } from "../../lib/memo-cache";
 
 const execAsync = promisify(exec);
 
 const CACHE_TTL_MS = 15_000;
 
-interface CacheEntry {
-  value: boolean | null;
-  expiresAt: number;
-}
-
-let cache: CacheEntry | null = null;
+const wifiCache = createMemoCache<boolean | null>(detect, {
+  ttlMs: CACHE_TTL_MS,
+});
 
 export async function isOnWifi(): Promise<boolean | null> {
-  const now = Date.now();
-  if (cache && cache.expiresAt > now) return cache.value;
-
-  const value = await detect();
-  cache = { value, expiresAt: now + CACHE_TTL_MS };
-  return value;
+  return wifiCache.get();
 }
 
 export function clearNetworkTypeCache(): void {
-  cache = null;
+  wifiCache.invalidate();
 }
 
 async function detect(): Promise<boolean | null> {

@@ -54,17 +54,29 @@ export const appearanceSection: SectionConfig = {
           render: (b) => <ContrastRow binding={b} />,
           visible: isCustomMode,
         },
-      ],
-    },
-    {
-      title: "Input",
-      items: [
+
         {
           control: "switch",
           key: "pointerCursors",
           title: "Use Pointer Cursors",
           description:
             "Show a hand cursor on hover instead of the default text caret.",
+        },
+      ],
+    },
+    {
+      title: "Library",
+      items: [
+        {
+          control: "select",
+          key: "tweetCover",
+          title: "Tweet Cover",
+          description:
+            "Show a tweet's attached media, or the rendered tweet card.",
+          options: [
+            { value: "media", label: "Attached Media" },
+            { value: "screenshot", label: "Tweet Screenshot" },
+          ],
         },
       ],
     },
@@ -87,6 +99,18 @@ export const appearanceSection: SectionConfig = {
           key: "reduceTransparency",
           title: "Reduce Transparency",
           description: "Swap blurred surfaces for opaque fills.",
+        },
+      ],
+    },
+    {
+      title: "Privacy",
+      items: [
+        {
+          control: "switch",
+          key: "blurSensitiveMedia",
+          title: "Blur Sensitive Media",
+          description:
+            "Detect explicit media on-device and blur it until you click to reveal.",
         },
       ],
     },

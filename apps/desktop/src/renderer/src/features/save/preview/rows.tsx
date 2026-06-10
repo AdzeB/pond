@@ -13,15 +13,24 @@ export interface PaneRow {
   value: string;
 }
 
-export function collectMetadataRows(save: Save): PaneRow[] {
+export function collectInfoRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
+
+  const type = save.mediaType ?? (save.url ? "Link" : null);
+  if (type) {
+    out.push({
+      id: "type",
+      label: "Type",
+      value: prettifyType(type),
+    });
+  }
+
   const capture = save.rawJson?.capture;
   const ytdlp = save.rawJson?.ytdlp;
-  if (!capture) return out;
 
   const durationSec =
-    capture.duration ??
-    capture.media.find((m) => m.type === "video")?.durationSec ??
+    capture?.duration ??
+    capture?.media.find((m) => m.type === "video")?.durationSec ??
     ytdlp?.duration ??
     null;
   if (durationSec && Number.isFinite(durationSec)) {
@@ -32,7 +41,7 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     });
   }
 
-  const metrics = capture.metrics ?? {};
+  const metrics = capture?.metrics ?? {};
   const views = metrics.views ?? metrics.plays ?? ytdlp?.view_count ?? null;
   if (views !== null && views !== undefined) {
     out.push({
@@ -94,26 +103,27 @@ export function collectMetadataRows(save: Save): PaneRow[] {
     });
   }
 
-  if (capture.publishedAt) {
+  if (save.width && save.height) {
+    out.push({
+      id: "dimensions",
+      label: "Dimensions",
+      value: `${save.width} × ${save.height}`,
+    });
+  }
+
+  if (save.fileSize) {
+    out.push({
+      id: "size",
+      label: "Size",
+      value: formatBytes(save.fileSize),
+    });
+  }
+
+  if (capture?.publishedAt) {
     out.push({
       id: "published",
       label: "Published",
       value: formatShortDate(capture.publishedAt),
-    });
-  }
-
-  return out;
-}
-
-export function collectPropertyRows(save: Save): PaneRow[] {
-  const out: PaneRow[] = [];
-
-  const type = save.mediaType ?? (save.url ? "Link" : null);
-  if (type) {
-    out.push({
-      id: "type",
-      label: "Type",
-      value: prettifyType(type),
     });
   }
 
@@ -130,22 +140,6 @@ export function collectPropertyRows(save: Save): PaneRow[] {
       id: "modified",
       label: "Modified",
       value: formatShortDate(save.createdAt),
-    });
-  }
-
-  if (save.fileSize) {
-    out.push({
-      id: "size",
-      label: "Size",
-      value: formatBytes(save.fileSize),
-    });
-  }
-
-  if (save.width && save.height) {
-    out.push({
-      id: "dimensions",
-      label: "Dimensions",
-      value: `${save.width} × ${save.height}`,
     });
   }
 

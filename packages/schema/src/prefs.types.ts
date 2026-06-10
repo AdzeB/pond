@@ -106,6 +106,9 @@ export interface ThemeDef {
 
 export type ThemeMode = "preset" | "system" | "custom";
 
+// Cover source for Twitter saves in the grid / preview pane.
+export type TweetCover = "media" | "screenshot";
+
 // Contrast widens the separation between backgrounds, borders, and text.
 export const CONTRAST_MIN = 0;
 export const CONTRAST_MAX = 100;

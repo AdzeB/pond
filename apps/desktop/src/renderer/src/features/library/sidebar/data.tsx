@@ -1,56 +1,76 @@
 import {
   IconArchiveContent2Fill18 as Archive,
+  IconClockFill18 as Clock,
   IconPuzzlePieceFill18 as Extension,
   IconGearFill18 as Settings,
-  IconInboxStackFill18 as Sources,
+  IconTagSlashFill18 as TagSlash,
   IconTrash2Fill18 as Trash2,
 } from "@pond/icons/fill/18";
+import type { ReactNode } from "react";
+import type { SaveListMode } from "@/features/library/lib/save-list";
 
-const routes = {
-  main: {
-    id: "main",
-    routes: [
-      {
-        path: "/",
-        params: undefined,
-        icon: <Archive />,
-        label: "Library",
-      },
-      {
-        path: "/$mode",
-        params: { mode: "recents" },
-        icon: <Sources />,
-        label: "Recents",
-      },
-      {
-        path: "/$mode",
-        params: { mode: "trash" },
-        icon: <Trash2 />,
-        label: "Trash",
-      },
-    ],
+interface NavItem {
+  key: "library" | "untagged" | "recents" | "trash";
+  mode: Extract<SaveListMode, "library" | "untagged" | "recents" | "trash">;
+  path: "/" | "/$mode";
+  params: { mode: string } | undefined;
+  icon: ReactNode;
+  label: string;
+}
+
+const navItems: readonly NavItem[] = [
+  {
+    key: "library",
+    mode: "library",
+    path: "/",
+    params: undefined,
+    icon: <Archive />,
+    label: "Library",
   },
-  extra: {
-    id: "extra",
-    routes: [
-      {
-        path: "/extension",
-        params: undefined,
-        icon: <Extension />,
-        label: "Extension",
-      },
-      {
-        path: "/settings",
-        params: undefined,
-        icon: <Settings />,
-        label: "Settings",
-      },
-    ],
+  {
+    key: "untagged",
+    mode: "untagged",
+    path: "/$mode",
+    params: { mode: "untagged" },
+    icon: <TagSlash />,
+    label: "Untagged",
   },
+  {
+    key: "recents",
+    mode: "recents",
+    path: "/$mode",
+    params: { mode: "recents" },
+    icon: <Clock />,
+    label: "Recently Used",
+  },
+  {
+    key: "trash",
+    mode: "trash",
+    path: "/$mode",
+    params: { mode: "trash" },
+    icon: <Trash2 />,
+    label: "Trash",
+  },
+] as const;
+
+const extraRoutes = {
+  id: "extra",
+  routes: [
+    {
+      path: "/extension",
+      params: undefined,
+      icon: <Extension />,
+      label: "Extension",
+    },
+    {
+      path: "/settings",
+      params: undefined,
+      icon: <Settings />,
+      label: "Settings",
+    },
+  ],
 } as const;
 
-type SidebarRoutes = typeof routes;
+export type { NavItem };
 
-export type { SidebarRoutes };
-
-export { routes };
+export { extraRoutes, navItems };

@@ -15,7 +15,7 @@ import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { migrateLibraryLayout } from "./core/migrate-layout";
 import { startSaveCompleteNotifier } from "./core/notifications";
-import { enqueueCaptureTweetForExisting } from "./core/pipeline/enqueue";
+import { backfillTweetScreenshots } from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
@@ -446,8 +446,8 @@ async function postLaunchInit(): Promise<void> {
     .catch((err) => log.warn("[pond] scan failed", err));
   startReconciler();
 
-  void enqueueCaptureTweetForExisting().catch((err) =>
-    log.warn("[pond] capture_tweet backfill failed", err),
+  void backfillTweetScreenshots().catch((err) =>
+    log.warn("[pond] tweet screenshot backfill failed", err),
   );
 
   try {

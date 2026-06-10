@@ -1,6 +1,7 @@
 import type { Source, SourceVisibility } from "@pond/schema/db";
 import { Sidebar } from "@pond/ui";
 import React from "react";
+import { formatNumber } from "@/core/lib/format";
 import { CustomizeSourcesDialog } from "@/features/sources/customize-sources";
 import { SourceContextMenu } from "@/features/sources/menus/source-context";
 import { SourcesGroupMenu } from "@/features/sources/menus/sources-group";
@@ -46,7 +47,9 @@ function SourceItem({
           <SourceIcon source={source} />
         </Sidebar.Icon>
         {def.label}
-        {count > 0 ? <Sidebar.Count>{count}</Sidebar.Count> : null}
+        {count > 0 ? (
+          <Sidebar.Count>{formatNumber(count)}</Sidebar.Count>
+        ) : null}
       </Sidebar.Anchor>
     </SourceContextMenu>
   );

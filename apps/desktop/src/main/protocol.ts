@@ -3,7 +3,14 @@ import { extname, join, normalize, resolve } from "node:path";
 import { net, protocol } from "electron";
 import log from "electron-log/main.js";
 import { POND_PROTOCOL } from "../shared/constants";
+import {
+  clampThumbWidth,
+  getOrCreateThumbnail,
+  isThumbnailable,
+} from "./lib/thumbnail";
 import { itemFile, libraryRoot, resolvePaths } from "./paths";
+
+const ONE_YEAR_SECONDS = 31_536_000;
 
 const META_HOST = "_meta";
 const META_DIR = "_meta";
@@ -33,6 +40,11 @@ export function registerScheme() {
         secure: true,
         supportFetchAPI: true,
         stream: true,
+        // Allow cross-origin reads (with the ACAO header below) so the
+        // renderer can fetch item bytes for on-device work like
+        // sensitive-media classification. Chromium otherwise refuses CORS for
+        // custom schemes entirely.
+        corsEnabled: true,
       },
     },
   ]);
@@ -53,18 +65,62 @@ export function registerProtocol() {
         return new Response("forbidden", { status: 403 });
       }
 
-      const info = await stat(resolved);
+      // Pick what we actually serve. When the client asks for a
+      // downscaled width (`?w=`) on a still raster image, hand back a
+      // generated WebP thumbnail from `_thumbs/`; otherwise the original.
+      const version = url.searchParams.get("v");
+      let target = resolved;
+      let immutable = version !== null;
+
+      const widthParam = url.searchParams.get("w");
+      if (
+        host !== META_HOST &&
+        widthParam &&
+        isThumbnailable(extname(resolved).toLowerCase())
+      ) {
+        const width = clampThumbWidth(Number(widthParam));
+        if (width !== null) {
+          const thumb = await getOrCreateThumbnail({
+            saveId: host,
+            sourcePath: resolved,
+            width,
+            version,
+          });
+          if (thumb) {
+            // Keyed by both content version and width, so the bytes for
+            // a given URL never change: safe to cache forever.
+            target = thumb.path;
+            immutable = true;
+          }
+        }
+      }
+
+      const info = await stat(target);
       if (!info.isFile()) {
         return new Response("not found", { status: 404 });
       }
 
       const total = info.size;
-      const ext = extname(resolved).toLowerCase();
+      const ext = extname(target).toLowerCase();
       const contentType = MIME[ext] ?? "application/octet-stream";
 
       const headers = new Headers();
       headers.set("content-type", contentType);
       headers.set("accept-ranges", "bytes");
+      // Let the renderer read these bytes back into a canvas/tensor for
+      // on-device work (e.g. sensitive-content classification). Without an
+      // ACAO header a `crossOrigin` <img> from this scheme taints the canvas
+      // and pixel reads throw. The data is local files the renderer already
+      // renders, so exposing read access carries no new risk.
+      headers.set("access-control-allow-origin", "*");
+      // Content-addressed URLs (`?v=<sha>`) and thumbnails are immutable;
+      // everything else gets a short window so edits still surface.
+      headers.set(
+        "cache-control",
+        immutable
+          ? `public, max-age=${ONE_YEAR_SECONDS}, immutable`
+          : "public, max-age=600",
+      );
 
       const rangeHeader = request.headers.get("range");
       if (rangeHeader) {
@@ -93,7 +149,7 @@ export function registerProtocol() {
         }
         const length = end - start + 1;
         const buf = Buffer.alloc(length);
-        const fh = await open(resolved, "r");
+        const fh = await open(target, "r");
         try {
           await fh.read(buf, 0, length, start);
         } finally {
@@ -105,7 +161,7 @@ export function registerProtocol() {
       }
 
       const fullBuf = Buffer.alloc(total);
-      const fh = await open(resolved, "r");
+      const fh = await open(target, "r");
       try {
         await fh.read(fullBuf, 0, total, 0);
       } finally {

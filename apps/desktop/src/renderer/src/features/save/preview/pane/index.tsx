@@ -16,11 +16,7 @@ import { pickAuthorAvatarUrl } from "@/core/data/url";
 import { TagPicker } from "@/features/tags/tag-picker";
 import { descriptionMatchesTitle, pickAuthorColor } from "../helpers";
 import { MediaViewer } from "../media-viewer";
-import {
-  collectMetadataRows,
-  collectPropertyRows,
-  type PaneRow,
-} from "../rows";
+import { collectInfoRows, type PaneRow } from "../rows";
 import styles from "./styles.module.css";
 
 interface SavePreviewProps extends React.ComponentPropsWithoutRef<"article"> {
@@ -49,8 +45,7 @@ export function SavePreview({ save, className, ...props }: SavePreviewProps) {
 export function SaveInfo({ save }: { save: Save }) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
-  const stats = useMemo(() => collectMetadataRows(save), [save]);
-  const props2 = useMemo(() => collectPropertyRows(save), [save]);
+  const info = useMemo(() => collectInfoRows(save), [save]);
   const avatarUrl = useMemo(() => pickAuthorAvatarUrl(save), [save]);
   const description = save.description?.trim() ?? "";
   const showDescription =
@@ -137,15 +132,9 @@ export function SaveInfo({ save }: { save: Save }) {
         <PaneNotes save={save} />
       </PaneSection>
 
-      {stats.length > 0 ? (
-        <PaneSection label="Metadata">
-          <PaneRowList rows={stats} />
-        </PaneSection>
-      ) : null}
-
-      {props2.length > 0 ? (
-        <PaneSection label="Properties">
-          <PaneRowList rows={props2} />
+      {info.length > 0 ? (
+        <PaneSection label="Details">
+          <PaneRowList rows={info} />
         </PaneSection>
       ) : null}
     </>

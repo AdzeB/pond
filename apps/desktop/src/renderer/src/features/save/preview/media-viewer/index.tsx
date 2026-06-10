@@ -1,11 +1,13 @@
 import {
   IconArrowLeftOutline18 as ArrowLeft,
   IconArrowRightOutline18 as ArrowRight,
+  IconEyeOutline18 as Eye,
 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildMediaUnits } from "@/core/data/media";
+import { useSensitiveMedia } from "@/core/data/nsfw";
 import { useResolvedTheme } from "@/core/data/theme";
 import type { Save } from "@/core/data/types";
 import { VideoPlayer } from "@/features/media/video-player";
@@ -21,6 +23,7 @@ interface MediaSlide {
 
 export function MediaViewer({ save }: { save: Save }) {
   const theme = useResolvedTheme();
+  const { blurred, reveal } = useSensitiveMedia(save);
   const allSlides = useMemo<MediaSlide[]>(
     () =>
       buildMediaUnits(save, { theme }).map((u) => {
@@ -146,8 +149,25 @@ export function MediaViewer({ save }: { save: Save }) {
   const hasMany = slides.length > 1;
 
   return (
-    <div className={styles.carousel}>
+    <div
+      className={styles.carousel}
+      data-blurred={blurred ? "true" : undefined}
+    >
       <div className={styles.stage}>
+        {blurred ? (
+          <button
+            type="button"
+            className={styles.sensitive}
+            aria-label="Reveal sensitive media"
+            title="Sensitive media — click to reveal"
+            onClick={reveal}
+          >
+            <span className={styles["sensitive-badge"]}>
+              <Eye width={18} height={18} aria-hidden />
+              Reveal sensitive media
+            </span>
+          </button>
+        ) : null}
         <div className={styles.viewport} ref={emblaRef}>
           <div className={styles.container}>
             {slides.map((s, i) => {
@@ -160,7 +180,6 @@ export function MediaViewer({ save }: { save: Save }) {
                       <VideoPlayer
                         src={s.src}
                         poster={s.posterUrl}
-                        save={save}
                         onError={() => markBroken(s.src)}
                       />
                     ) : (

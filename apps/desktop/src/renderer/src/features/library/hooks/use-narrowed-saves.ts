@@ -43,8 +43,6 @@ export function useNarrowedSaves(
     return map;
   }, [mode, recents]);
 
-  const randomSeed = useMemo(() => Math.random().toString(36).slice(2), []);
-
   const narrowedFresh = useMemo(() => {
     const base = searchHits.results ?? saves;
     const filteredList = applyModeFilter(base, {
@@ -52,13 +50,13 @@ export function useNarrowedSaves(
       sourceFilter,
       recentsOrder,
     });
-    return applyModeSort(filteredList, { mode, recentsOrder, randomSeed });
-  }, [saves, searchHits.results, sourceFilter, mode, recentsOrder, randomSeed]);
+    return applyModeSort(filteredList, { mode, recentsOrder });
+  }, [saves, searchHits.results, sourceFilter, mode, recentsOrder]);
 
   const narrowed = useStableById(narrowedFresh);
 
   const sortOpts = useMemo(() => {
-    if (mode === "recents" || mode === "random") {
+    if (mode === "recents") {
       return undefined;
     }
     const sortKey: SortKey =

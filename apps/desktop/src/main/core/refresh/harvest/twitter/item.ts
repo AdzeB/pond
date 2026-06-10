@@ -383,12 +383,28 @@ export function buildExpression(tweetId: string): string {
       await new Promise(r => setTimeout(r, 250));
     }
     if (article) {
-      const mediaDeadline = Date.now() + 5_000;
+      // Twitter lazy-loads each image in a multi-image grid/carousel, so the
+      // first <img> can appear well before the rest. Bailing on the first
+      // match would capture only one image. Instead, wait until the media
+      // element count stops growing (stable for a short window) or we time out.
+      const countMedia = () => article.querySelectorAll(
+        '[data-testid="tweetPhoto"] img, video, [data-testid="videoPlayer"] img, [data-testid="videoComponent"] img'
+      ).length;
+      const mediaDeadline = Date.now() + 8_000;
+      const stableMs = 800;
+      let lastCount = 0;
+      let stableSince = 0;
       while (Date.now() < mediaDeadline) {
-        const hasMedia = !!article.querySelector(
-          '[data-testid="tweetPhoto"] img, video, [data-testid="videoPlayer"] img, [data-testid="videoComponent"] img'
-        );
-        if (hasMedia) break;
+        const count = countMedia();
+        if (count > 0) {
+          if (count === lastCount) {
+            if (stableSince === 0) stableSince = Date.now();
+            if (Date.now() - stableSince >= stableMs) break;
+          } else {
+            lastCount = count;
+            stableSince = 0;
+          }
+        }
         await new Promise(r => setTimeout(r, 200));
       }
     }

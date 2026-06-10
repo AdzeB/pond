@@ -1,3 +1,4 @@
+import { IconEyeOutline18 as Eye } from "@pond/icons/outline/18";
 import {
   createContext,
   type ReactNode,
@@ -11,22 +12,32 @@ import {
 import { useInViewRef, useMergeRefs } from "rooks";
 import { useIsVideoDownloading } from "@/core/data/downloads";
 import { type MediaUnit, pickPrimaryUnit } from "@/core/data/media";
+import { useSensitiveMedia } from "@/core/data/nsfw";
+import { usePrefs } from "@/core/data/prefs";
 import { useResolvedTheme } from "@/core/data/theme";
 import type { Save } from "@/core/data/types";
+import { withThumbWidth } from "@/core/data/url";
 import { recordAspect } from "@/features/library/stores/aspect";
 import styles from "./styles.module.css";
 
 export type CardLayout = "waterfall" | "grid" | "justified";
+
+// Device-pixel width for grid/card thumbnails. A single bucket keeps the
+// on-disk cache key stable (no per-DPR or per-cell variance) while still
+// being crisp for typical card sizes; the detail view loads originals.
+const CARD_THUMB_WIDTH = 768;
 
 interface CardState {
   save: Save;
   unit: MediaUnit | null;
   isBroken: boolean;
   isDownloading: boolean;
+  blurred: boolean;
 }
 
 interface CardActions {
   setBroken: (broken: boolean) => void;
+  reveal: () => void;
 }
 
 interface CardContextValue {
@@ -52,9 +63,15 @@ interface RootProps {
 
 function Root({ save, layout, children }: RootProps) {
   const theme = useResolvedTheme();
-  const unit = useMemo(() => pickPrimaryUnit(save, { theme }), [save, theme]);
+  const [preferences] = usePrefs("preferences");
+  const tweetCover = preferences?.tweetCover;
+  const unit = useMemo(
+    () => pickPrimaryUnit(save, { theme, tweetCover }),
+    [save, theme, tweetCover],
+  );
   const isDownloading = useIsVideoDownloading(save);
   const pickedSrc = unit?.url ?? null;
+  const { blurred, reveal } = useSensitiveMedia(save);
 
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
@@ -68,18 +85,44 @@ function Root({ save, layout, children }: RootProps) {
 
   const value = useMemo<CardContextValue>(
     () => ({
-      state: { save, unit, isBroken: broken, isDownloading },
-      actions: { setBroken },
+      state: { save, unit, isBroken: broken, isDownloading, blurred },
+      actions: { setBroken, reveal },
     }),
-    [save, unit, broken, isDownloading, setBroken],
+    [save, unit, broken, isDownloading, blurred, setBroken, reveal],
   );
 
   return (
     <CardContext value={value}>
-      <div className={styles.thumb} data-layout={layout}>
+      <div
+        className={styles.thumb}
+        data-layout={layout}
+        data-blurred={blurred ? "true" : undefined}
+      >
         {children}
+        <SensitiveOverlay />
       </div>
     </CardContext>
+  );
+}
+
+function SensitiveOverlay() {
+  const { state, actions } = useCardContext();
+  if (!state.blurred || state.isBroken || !state.unit) return null;
+  return (
+    <button
+      type="button"
+      className={styles.sensitive}
+      aria-label="Reveal sensitive media"
+      title="Sensitive media — click to reveal"
+      onClick={(e) => {
+        // Reveal in place instead of opening the save.
+        e.preventDefault();
+        e.stopPropagation();
+        actions.reveal();
+      }}
+    >
+      <Eye width={16} height={16} aria-hidden />
+    </button>
   );
 }
 
@@ -111,7 +154,7 @@ function ImageInner() {
   return (
     <img
       ref={ref}
-      src={url}
+      src={withThumbWidth(url, CARD_THUMB_WIDTH)}
       alt=""
       loading="lazy"
       decoding="async"
@@ -140,7 +183,11 @@ function Video() {
     <HoverVideo
       saveId={state.save.id}
       src={state.unit.url}
-      posterUrl={state.unit.posterUrl}
+      posterUrl={
+        state.unit.posterUrl
+          ? withThumbWidth(state.unit.posterUrl, CARD_THUMB_WIDTH)
+          : undefined
+      }
       label={state.save.title ?? "video"}
       onBroken={() => actions.setBroken(true)}
     />
@@ -284,4 +331,5 @@ export const Card = {
   Video,
   Placeholder,
   DownloadingBadge,
+  SensitiveOverlay,
 };

@@ -1,3 +1,5 @@
+import type { TweetCover } from "@pond/schema/db";
+import { getPrefsSnapshot } from "./prefs";
 import { type ResolvedTheme, resolveCurrentTheme } from "./theme";
 import type { Save, SaveFile } from "./types";
 import { buildPondUrl } from "./url";
@@ -25,6 +27,15 @@ export interface MediaUnit {
 
 interface MediaPickOptions {
   theme?: ResolvedTheme;
+  tweetCover?: TweetCover;
+}
+
+// Read the current tweet-cover mode for callers outside React (the
+// library list filter, aspect store, NSFW classifier). React callers
+// should pass `tweetCover` explicitly so the UI re-picks when the
+// setting changes. Mirrors `resolveCurrentTheme()`.
+function resolveCurrentTweetCover(): TweetCover {
+  return getPrefsSnapshot()?.preferences?.tweetCover ?? "media";
 }
 
 export function buildMediaUnits(
@@ -102,14 +113,23 @@ export function buildMediaUnits(
 }
 
 // pickPrimaryUnit: returns the unit that should drive thumbnails and
-// pane covers. Twitter saves prefer the theme-matched tweet screenshot
-// (see `capture-tweet.ts`); every other source uses extracted media.
+// pane covers. For Twitter saves the `tweetCover` mode decides between
+// the theme-matched tweet screenshot (see `capture-tweet.ts`) and the
+// extracted media; every other source always uses extracted media.
+//
+// - "screenshot": always the rendered tweet card.
+// - "media": prefer extracted media; the screenshot only surfaces as
+//   `buildMediaUnits`' last-resort fallback for text-only tweets.
 export function pickPrimaryUnit(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit | null {
+  const mode = opts.tweetCover ?? resolveCurrentTweetCover();
   const screenshot = pickTweetScreenshot(save, opts.theme);
-  if (screenshot) {
+  // "screenshot" forces the tweet card; "media" falls through to
+  // `buildMediaUnits`, which still returns the screenshot as the
+  // last-resort fallback for text-only tweets.
+  if (screenshot && mode === "screenshot") {
     return {
       key: screenshot.path,
       url: buildPondUrl(save.id, screenshot),
