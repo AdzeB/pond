@@ -77,7 +77,8 @@ export function useVisibleIndices<T extends PositionedItem>(
   ref: React.RefObject<HTMLElement | null>,
   items: T[],
 ): number[] {
-  const estViewportH = typeof window !== "undefined" ? window.innerHeight : 1000;
+  const estViewportH =
+    typeof window !== "undefined" ? window.innerHeight : 1000;
   // Live scroll geometry, kept in a ref so the render-time recompute and
   // the scroll/resize handlers share one source of truth without extra
   // renders.
@@ -101,7 +102,11 @@ export function useVisibleIndices<T extends PositionedItem>(
   if (lastItemsRef.current !== items) {
     lastItemsRef.current = items;
     const m = metricsRef.current;
-    const next = computeVisible(items, m.scrollTop - m.gridOffsetTop, m.viewportH);
+    const next = computeVisible(
+      items,
+      m.scrollTop - m.gridOffsetTop,
+      m.viewportH,
+    );
     if (!sameIndices(visibleRef.current, next)) {
       visibleRef.current = next;
       setVisible(next);
