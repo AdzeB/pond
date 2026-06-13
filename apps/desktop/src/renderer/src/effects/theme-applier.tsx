@@ -4,7 +4,7 @@ import {
   themeEngineVars,
 } from "@pond/schema/db";
 import { useEffect } from "react";
-import { usePrefs } from "@/core/data/prefs";
+import { usePrefs } from "@/stores/prefs";
 
 // Shadowed in localStorage so the index.html boot script can restore the theme before the bundle parses (kills FOUC).
 const SHELL_KEY = "pondShell";

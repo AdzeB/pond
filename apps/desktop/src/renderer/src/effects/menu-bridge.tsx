@@ -4,11 +4,6 @@ import {
 } from "@pond/schema/db";
 import { useToast } from "@pond/ui";
 import { useEffect } from "react";
-import { pool } from "@/core/data/pool";
-import { usePrefs } from "@/core/data/prefs";
-import { primarySelection, selection } from "@/core/data/selection";
-import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import { cycleLayout, setLayout } from "@/features/library/stores/view-store";
 import {
   copyId,
   copyUrl,
@@ -19,7 +14,12 @@ import {
   refreshSaveMetadata,
   trashSave,
   untrashSave,
-} from "@/features/save/save-actions";
+} from "@/lib/save-actions";
+import type { LayoutValue } from "@/lib/view-prefs";
+import { pool } from "@/stores/pool";
+import { usePrefs } from "@/stores/prefs";
+import { primarySelection, selection } from "@/stores/selection";
+import { cycleLayout, setLayout } from "@/stores/view-store";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");

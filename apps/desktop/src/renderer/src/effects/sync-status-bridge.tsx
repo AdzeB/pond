@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { syncMonitor } from "@/features/library/sync-monitor/store";
+import { syncMonitor } from "@/stores/sync-monitor";
 
 // Pipes the main-process sync-status channel into the sync-monitor store.
 export function SyncStatusBridge() {

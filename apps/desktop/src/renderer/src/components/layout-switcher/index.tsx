@@ -1,0 +1,59 @@
+import { useMemo } from "react";
+import { LibraryGridProvider } from "@/components/grid-context";
+import { GridView } from "@/components/library-grid-view";
+import { JustifiedView } from "@/components/library-justified";
+import { ListView } from "@/components/library-list-view";
+import { WaterfallView } from "@/components/library-waterfall";
+import type { ViewMode } from "@/lib/library-types";
+import type { Save } from "@/lib/types";
+
+interface LayoutSwitcherProps {
+  viewMode: ViewMode;
+  saves: ReadonlyArray<Save>;
+  selectedId: string | null;
+  multiSelectActive: boolean;
+  onClick: (id: string, e: React.MouseEvent) => void;
+  onDoubleClick: (id: string) => void;
+}
+
+export function LayoutSwitcher(props: LayoutSwitcherProps) {
+  const {
+    viewMode,
+    saves,
+    selectedId,
+    multiSelectActive,
+    onClick,
+    onDoubleClick,
+  } = props;
+
+  const callbacks = useMemo(
+    () => ({ onClick, onDoubleClick }),
+    [onClick, onDoubleClick],
+  );
+
+  if (viewMode === "list") {
+    return (
+      <ListView
+        saves={saves}
+        selectedId={selectedId}
+        onClick={onClick}
+        onDoubleClick={onDoubleClick}
+      />
+    );
+  }
+
+  return (
+    <LibraryGridProvider
+      callbacks={callbacks}
+      multiSelectActive={multiSelectActive}
+    >
+      {viewMode === "justified" ? (
+        <JustifiedView saves={saves} />
+      ) : viewMode === "waterfall" ? (
+        <WaterfallView saves={saves} />
+      ) : (
+        <GridView saves={saves} />
+      )}
+    </LibraryGridProvider>
+  );
+}

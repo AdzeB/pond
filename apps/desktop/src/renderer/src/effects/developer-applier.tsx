@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { usePrefs } from "@/core/data/prefs";
+import { usePrefs } from "@/stores/prefs";
 
 export function DeveloperApplier() {
   const [prefs, , ready] = usePrefs("developer");

@@ -1,7 +1,7 @@
-import { LibraryGrid } from "@/features/library/grid";
-import { useLibraryState } from "@/features/library/hooks/use-library-state";
-import { LayoutSwitcher } from "@/features/library/layout-switcher";
-import { useCardActions } from "@/features/save/use-card-actions";
+import { LayoutSwitcher } from "@/components/layout-switcher";
+import { LibraryGrid } from "@/components/library-grid";
+import { useCardActions } from "@/hooks/use-card-actions";
+import { useLibraryState } from "@/hooks/use-library-state";
 
 export function LibraryView() {
   const data = useLibraryState();
