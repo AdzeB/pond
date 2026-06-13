@@ -12,6 +12,20 @@ export class YouTubeWatchExtractor implements Extractor {
   readonly id = "youtube-watch";
   readonly source = "youtube" as const;
   readonly validUrl = YOUTUBE_PATTERNS;
+  readonly cookieDomain = ".youtube.com";
+
+  authCookies(name: string): boolean {
+    return (
+      name === "LOGIN_INFO" ||
+      name === "SID" ||
+      name === "__Secure-1PSID" ||
+      name === "__Secure-3PSID"
+    );
+  }
+
+  readonly tests = [
+    { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", id: "dQw4w9WgXcQ" },
+  ];
 
   suitable(url: URL): boolean {
     return this.validUrl.some((rx) => rx.test(url.href));

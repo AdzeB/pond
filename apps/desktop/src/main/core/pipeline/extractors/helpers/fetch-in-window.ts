@@ -1,5 +1,4 @@
 import type { Source } from "@pond/schema/db";
-import { harvestUrl } from "../../../refresh/scrape-window";
 import { AuthRequiredError, TerminalError, TransientError } from "../errors";
 
 export interface InWindowResult {
@@ -20,6 +19,10 @@ export async function fetchHtmlInWindow(
   source: Source,
   sourceId?: string,
 ): Promise<InWindowResult> {
+  // Loaded lazily so importing an extractor does not pull the Electron-bound
+  // scrape-window graph (keeps extractors importable in plain Node tests and
+  // avoids a session <-> extractors import cycle).
+  const { harvestUrl } = await import("../../../refresh/scrape-window");
   const result = await harvestUrl({ url, source, sourceId });
   if (result.ok) {
     return { ...result.harvest, ok: true, sourceId: result.sourceId };

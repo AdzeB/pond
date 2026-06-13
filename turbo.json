@@ -38,6 +38,10 @@
       "inputs": ["src/**", "tsconfig.json"],
       "outputs": []
     },
+    "test": {
+      "inputs": ["src/**", "test/**", "vitest.config.ts"],
+      "outputs": []
+    },
     "db:generate": {
       "cache": false
     },

@@ -39,6 +39,7 @@
     "./label-name": "./src/label-name.ts"
   },
   "scripts": {
+    "generate": "node --experimental-strip-types scripts/generate-supported-sources.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

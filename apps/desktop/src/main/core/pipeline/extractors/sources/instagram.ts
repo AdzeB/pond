@@ -12,6 +12,23 @@ export class InstagramPostExtractor implements Extractor {
   readonly id = "instagram-post";
   readonly source = "instagram" as const;
   readonly validUrl = INSTAGRAM_PATTERNS;
+  readonly cookieDomain = ".instagram.com";
+
+  authCookies(name: string): boolean {
+    return name === "sessionid";
+  }
+
+  handleFromPath(segments: string[]): string | null {
+    return segments[0] ?? null;
+  }
+
+  readonly tests = [
+    {
+      url: "https://www.instagram.com/p/CExample01/",
+      id: "CExample01",
+      profile: { url: "https://www.instagram.com/nasa/", handle: "nasa" },
+    },
+  ];
 
   suitable(url: URL): boolean {
     return this.validUrl.some((rx) => rx.test(url.href));

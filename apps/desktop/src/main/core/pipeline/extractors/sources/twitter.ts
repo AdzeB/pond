@@ -12,6 +12,13 @@ export class TwitterTweetExtractor implements Extractor {
   readonly id = "twitter-tweet";
   readonly source = "twitter" as const;
   readonly validUrl = TWITTER_PATTERNS;
+  readonly cookieDomain = ".x.com";
+
+  authCookies(name: string): boolean {
+    return name === "auth_token";
+  }
+
+  readonly tests = [{ url: "https://x.com/jack/status/20", id: "20" }];
 
   suitable(url: URL): boolean {
     return this.validUrl.some((rx) => rx.test(url.href));

@@ -12,6 +12,27 @@ export class TikTokVideoExtractor implements Extractor {
   readonly id = "tiktok-video";
   readonly source = "tiktok" as const;
   readonly validUrl = TIKTOK_PATTERNS;
+  readonly cookieDomain = ".tiktok.com";
+
+  authCookies(name: string): boolean {
+    return name === "sessionid" || name === "sid_tt";
+  }
+
+  handleFromPath(segments: string[]): string | null {
+    const handle = segments[0];
+    return handle?.startsWith("@") ? handle.slice(1) : (handle ?? null);
+  }
+
+  readonly tests = [
+    {
+      url: "https://www.tiktok.com/@scout2015/video/6718335390845095173",
+      id: "6718335390845095173",
+      profile: {
+        url: "https://www.tiktok.com/@scout2015",
+        handle: "scout2015",
+      },
+    },
+  ];
 
   suitable(url: URL): boolean {
     return this.validUrl.some((rx) => rx.test(url.href));

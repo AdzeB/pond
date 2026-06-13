@@ -1,36 +1,14 @@
-export const TWITTER_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/i,
-  /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)/i,
-];
+import { descriptorFor } from "@pond/schema/sources";
 
-export const INSTAGRAM_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/i,
-];
-
-export const PINTEREST_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:[a-z]+\.)?pinterest\.[a-z.]+\/pin\/(\d+)/i,
-  /^https?:\/\/pin\.it\/[A-Za-z0-9]+/i,
-];
-
-export const ARENA_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.)?are\.na\/block\/(\d+)/i,
-  /^https?:\/\/(?:www\.)?are\.na\/[^/]+\/[^/]+-(\d+)/i,
-];
-
-export const COSMOS_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.)?cosmos\.so\/[^/]+\/?/i,
-];
-
-export const TIKTOK_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:[a-z]+\.)?tiktok\.com\/[^/]+\/video\/(\d+)/i,
-  /^https?:\/\/(?:vm|vt)\.tiktok\.com\/[A-Za-z0-9]+/i,
-];
-
-export const YOUTUBE_PATTERNS: readonly RegExp[] = [
-  /^https?:\/\/(?:www\.|m\.)?youtube\.com\/watch\?[^#]*v=([A-Za-z0-9_-]+)/i,
-  /^https?:\/\/(?:www\.|m\.)?youtube\.com\/shorts\/([A-Za-z0-9_-]+)/i,
-  /^https?:\/\/youtu\.be\/([A-Za-z0-9_-]+)/i,
-];
+// URL patterns live on the cross-runtime descriptors (the single source of
+// truth). These named re-exports keep existing call sites stable.
+export const TWITTER_PATTERNS = descriptorFor("twitter").urlPatterns;
+export const INSTAGRAM_PATTERNS = descriptorFor("instagram").urlPatterns;
+export const PINTEREST_PATTERNS = descriptorFor("pinterest").urlPatterns;
+export const ARENA_PATTERNS = descriptorFor("arena").urlPatterns;
+export const COSMOS_PATTERNS = descriptorFor("cosmos").urlPatterns;
+export const TIKTOK_PATTERNS = descriptorFor("tiktok").urlPatterns;
+export const YOUTUBE_PATTERNS = descriptorFor("youtube").urlPatterns;
 
 export function firstMatch(
   url: URL,

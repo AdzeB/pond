@@ -10,6 +10,26 @@ export class PinterestPinExtractor implements Extractor {
   readonly id = "pinterest-pin";
   readonly source = "pinterest" as const;
   readonly validUrl = PINTEREST_PATTERNS;
+  readonly cookieDomain = ".pinterest.com";
+
+  authCookies(name: string): boolean {
+    return name === "_pinterest_sess" || name === "_auth";
+  }
+
+  handleFromPath(segments: string[]): string | null {
+    return segments[0] ?? null;
+  }
+
+  readonly tests = [
+    {
+      url: "https://www.pinterest.com/pin/12345/",
+      id: "12345",
+      profile: {
+        url: "https://www.pinterest.com/someuser/",
+        handle: "someuser",
+      },
+    },
+  ];
 
   suitable(url: URL): boolean {
     return this.validUrl.some((rx) => rx.test(url.href));

@@ -15,21 +15,16 @@ import {
   type Prefs,
   type VideoDownloadSettings,
 } from "./prefs";
+import { EXTERNAL_SOURCE_IDS } from "./sources/registry";
 
 export * from "./color";
 export * from "./prefs";
 export * from "./theme-presets";
 
-export const SOURCES = [
-  "twitter",
-  "instagram",
-  "pinterest",
-  "arena",
-  "cosmos",
-  "tiktok",
-  "youtube",
-  "local",
-] as const;
+// Derived from the cross-runtime descriptors (the single source of truth for
+// external sources) plus the special-cased `local` import. Adding an entry to
+// `SOURCE_DESCRIPTORS` widens `Source` automatically.
+export const SOURCES = [...EXTERNAL_SOURCE_IDS, "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;

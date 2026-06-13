@@ -1,0 +1,33 @@
+name: Sources (live)
+
+# Live source canary: hits the network to confirm each source's sample URLs
+# are still reachable. Kept off PR CI (flaky / auth-walled) and run on a
+# schedule instead, mirroring yt-dlp's offline/live test split.
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Live source checks
+        run: pnpm --filter @pond/desktop test:live

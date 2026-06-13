@@ -24,6 +24,8 @@
     "lint": "biome check . --write --unsafe",
     "lint:check": "biome ci .",
     "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "new-source": "node ./scripts/new-source.mjs",
     "dist": "turbo run dist",
     "dist:mac": "pnpm --filter @pond/desktop dist:mac",
     "dist:win": "pnpm --filter @pond/desktop dist:win",

@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import type { ExternalSource } from "@pond/schema/sources";
 import { UnsupportedError } from "./errors";
 import { ArenaBlockExtractor } from "./sources/arena";
 import { CosmosTileExtractor } from "./sources/cosmos";
@@ -9,15 +10,26 @@ import { TwitterTweetExtractor } from "./sources/twitter";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
-const EXTRACTORS: readonly Extractor[] = [
-  new TwitterTweetExtractor(),
-  new InstagramPostExtractor(),
-  new TikTokVideoExtractor(),
-  new YouTubeWatchExtractor(),
-  new PinterestPinExtractor(),
-  new ArenaBlockExtractor(),
-  new CosmosTileExtractor(),
-] as const;
+// One extractor per external source. The `satisfies Record<ExternalSource, …>`
+// makes a missing source a compile error - the typed equivalent of yt-dlp's
+// `_extractors.py` import line. Insertion order is the URL resolution order.
+const EXTRACTORS = {
+  twitter: new TwitterTweetExtractor(),
+  instagram: new InstagramPostExtractor(),
+  tiktok: new TikTokVideoExtractor(),
+  youtube: new YouTubeWatchExtractor(),
+  pinterest: new PinterestPinExtractor(),
+  arena: new ArenaBlockExtractor(),
+  cosmos: new CosmosTileExtractor(),
+} as const satisfies Record<ExternalSource, Extractor>;
+
+/** All extractors in URL-resolution order. Exported for the test runner. */
+export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(EXTRACTORS);
+
+/** The extractor for a source, or `null` for `local` (which has none). */
+export function extractorFor(source: Source): Extractor | null {
+  return source === "local" ? null : EXTRACTORS[source];
+}
 
 export function resolveExtractor(rawUrl: string): Extractor {
   let url: URL;
@@ -26,7 +38,7 @@ export function resolveExtractor(rawUrl: string): Extractor {
   } catch {
     throw new UnsupportedError(`invalid url: ${rawUrl}`);
   }
-  for (const ex of EXTRACTORS) {
+  for (const ex of EXTRACTOR_LIST) {
     if (ex.suitable(url)) return ex;
   }
   throw new UnsupportedError(`no extractor for ${rawUrl}`);
@@ -42,7 +54,7 @@ export function classifyUrlToSource(rawUrl: string): {
   } catch {
     return { source: null, extractorId: null };
   }
-  for (const ex of EXTRACTORS) {
+  for (const ex of EXTRACTOR_LIST) {
     if (ex.suitable(url)) {
       return { source: ex.source, extractorId: ex.id };
     }

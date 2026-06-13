@@ -13,6 +13,7 @@ import pLimit from "p-limit";
 import { getDb } from "../../db";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { enqueueSaveByUrl } from "../pipeline/enqueue";
+import { extractorFor } from "../pipeline/extractors";
 import { getPrefs, setPrefs } from "../prefs";
 import {
   harvestSourceList,
@@ -334,23 +335,11 @@ async function persistAccountKey(
   }
 }
 
+// Per-source handle parsing lives on each extractor (handleFromPath).
 function handleFromUrl(source: Source, url: string): string | null {
   try {
-    const u = new URL(url);
-    const segs = u.pathname.split("/").filter(Boolean);
-    switch (source) {
-      case "tiktok": {
-        const handle = segs[0];
-        return handle?.startsWith("@") ? handle.slice(1) : (handle ?? null);
-      }
-      case "instagram":
-      case "pinterest":
-        return segs[0] ?? null;
-      case "arena":
-        return segs[0] ?? null;
-      default:
-        return null;
-    }
+    const segments = new URL(url).pathname.split("/").filter(Boolean);
+    return extractorFor(source)?.handleFromPath?.(segments) ?? null;
   } catch {
     return null;
   }

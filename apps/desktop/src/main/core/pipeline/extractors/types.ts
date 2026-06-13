@@ -19,10 +19,40 @@ export interface ExtractInput {
   fetch?: typeof fetch;
 }
 
+// Embedded test cases (yt-dlp `_TESTS` style). They travel with the extractor
+// and are exercised generically by the test runner.
+export interface ExtractorTest {
+  /** An item URL this extractor must claim via `suitable`. */
+  readonly url: string;
+  /** Expected `source_id` parsed from `url` (checked offline). */
+  readonly id?: string;
+  /** A profile URL plus the handle `handleFromPath` should return from it. */
+  readonly profile?: { readonly url: string; readonly handle: string };
+}
+
 export interface Extractor {
   readonly id: string;
   readonly source: Source;
   readonly validUrl: readonly RegExp[];
+  /**
+   * The cookie domain (leading-dot form, e.g. ".x.com") whose auth cookies
+   * gate this source's scraping. `null` only for sources with no login.
+   */
+  readonly cookieDomain: string | null;
+  /** True when a cookie of this name proves the user is signed in. */
+  authCookies(name: string): boolean;
+  /**
+   * Parse the account handle from a profile URL's path segments, when the
+   * source's list sync needs it. Omit for sources without account sync.
+   */
+  handleFromPath?(segments: string[]): string | null;
+  /**
+   * In-page JS expression (string) that returns the signed-in user's handle,
+   * evaluated in a scrape window during account probing. Omit when unsupported.
+   */
+  readonly probeExpression?: string;
+  /** Embedded test cases used by the extractor test runner. */
+  readonly tests?: readonly ExtractorTest[];
   suitable(url: URL): boolean;
   extract(input: ExtractInput): Promise<Capture>;
 }
