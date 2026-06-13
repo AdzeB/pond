@@ -1,9 +1,4 @@
-import {
-  EMPTY_QUERY,
-  isLegacyQuery,
-  legacyToRuleGroup,
-  type Query,
-} from "@pond/schema/filters/types";
+import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
@@ -41,11 +36,10 @@ function setRows(rows: ReadonlyArray<SavedViewRow>): void {
   savedViewsStore.setState(() => ({ rows: sortViews(rows), loaded: true }));
 }
 
-// Persisted views may still carry the pre-react-querybuilder `kind`/`clauses`
-// shape; convert those to the RQB `RuleGroupType` at read time.
+// Guard a persisted query value, falling back to the empty query when it is
+// missing or not an object.
 function coerceQuery(raw: unknown): Query {
   if (!raw || typeof raw !== "object") return EMPTY_QUERY;
-  if (isLegacyQuery(raw)) return legacyToRuleGroup(raw);
   return raw as Query;
 }
 

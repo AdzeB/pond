@@ -3,12 +3,7 @@ import {
   type SavedView,
   savedViews as savedViewsTable,
 } from "@pond/schema/db";
-import {
-  EMPTY_QUERY,
-  isLegacyQuery,
-  legacyToRuleGroup,
-  type Query,
-} from "@pond/schema/filters/types";
+import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import { asc, eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -16,11 +11,10 @@ import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-// Saved views written before the react-querybuilder migration store the
-// legacy `kind`/`clauses` query shape; convert those to `RuleGroupType` on read.
+// Guard a persisted query value, falling back to the empty query when it is
+// missing or not an object.
 function coerceQuery(raw: unknown): Query {
   if (!raw || typeof raw !== "object") return EMPTY_QUERY;
-  if (isLegacyQuery(raw)) return legacyToRuleGroup(raw);
   return raw as Query;
 }
 

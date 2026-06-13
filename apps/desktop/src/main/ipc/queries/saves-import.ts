@@ -32,15 +32,6 @@ export const savesImportQueries: QueryHandlerMap = {
     return importFilesImpl(paths);
   },
 
-  // Back-compat alias for any stale renderer build still calling dropFiles.
-  async "saves.dropFiles"(params) {
-    const paths = Array.isArray(params.paths)
-      ? (params.paths as unknown[]).map(String).filter(Boolean)
-      : [];
-    if (paths.length === 0) return { ok: false, error: "no_files" };
-    return importFilesImpl(paths);
-  },
-
   async "saves.createManual"(params) {
     return createManualSave({
       title: params.title != null ? String(params.title) : null,

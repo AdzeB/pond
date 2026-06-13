@@ -8,7 +8,7 @@ import {
   stat,
   writeFile,
 } from "node:fs/promises";
-import { basename, extname, join } from "node:path";
+import { extname, join } from "node:path";
 import type { Save } from "@pond/schema/db";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
@@ -20,9 +20,7 @@ import {
   type InfoDoc,
   type InfoFile,
   infoDocFromSave,
-  LEGACY_METADATA_FILE,
   SOURCE_FILE,
-  toIso,
 } from "./library-format";
 
 export interface ItemMetadata {
@@ -171,22 +169,12 @@ export async function readItemMetadata(
   id: string,
 ): Promise<ItemMetadata | null> {
   const infoPath = itemFile(id, INFO_FILE);
-  if (existsSync(infoPath)) {
-    try {
-      const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
-      return metadataFromInfo(id, info, await readSourceDoc(id));
-    } catch (err) {
-      log.warn("[pond library] corrupt info.json", id, err);
-      return null;
-    }
-  }
-  const legacy = itemFile(id, LEGACY_METADATA_FILE);
-  if (!existsSync(legacy)) return null;
+  if (!existsSync(infoPath)) return null;
   try {
-    const raw = JSON.parse(await readFile(legacy, "utf8")) as unknown;
-    return normalizeItemMetadata(id, raw);
+    const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+    return metadataFromInfo(id, info, await readSourceDoc(id));
   } catch (err) {
-    log.warn("[pond library] corrupt metadata.json", id, err);
+    log.warn("[pond library] corrupt info.json", id, err);
     return null;
   }
 }
@@ -201,29 +189,20 @@ async function readSourceDoc(id: string): Promise<unknown> {
   }
 }
 
-// Read an item's `info.json` for editing, preferring the schema-3 file
-// and falling back to the legacy `metadata.json` (upgraded in place on
-// the next write). Carries `rawSource` alongside so an edit never drops
-// the raw capture payload.
+// Read an item's `info.json` for editing. Carries `rawSource` alongside so
+// an edit never drops the raw capture payload.
 async function readInfoForEdit(
   id: string,
 ): Promise<{ info: InfoDoc; rawSource: unknown } | null> {
   const infoPath = itemFile(id, INFO_FILE);
-  if (existsSync(infoPath)) {
-    try {
-      const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
-      return { info, rawSource: await readSourceDoc(id) };
-    } catch (err) {
-      log.warn("[pond library] corrupt info.json", id, err);
-      return null;
-    }
+  if (!existsSync(infoPath)) return null;
+  try {
+    const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+    return { info, rawSource: await readSourceDoc(id) };
+  } catch (err) {
+    log.warn("[pond library] corrupt info.json", id, err);
+    return null;
   }
-  const legacy = await readItemMetadata(id);
-  if (!legacy) return null;
-  return {
-    info: infoDocFromMetadata(legacy),
-    rawSource: legacy.pond.rawSource,
-  };
 }
 
 function metadataFromInfo(
@@ -269,164 +248,6 @@ function metadataFromInfo(
       notes: info.notes ?? null,
       mediaType: info.mediaType ?? null,
       coverIndex,
-    },
-  };
-}
-
-function infoDocFromMetadata(m: ItemMetadata): InfoDoc {
-  return {
-    schema: INFO_SCHEMA,
-    id: m.id,
-    source: m.source,
-    sourceId: m.sourceId,
-    url: m.url,
-    title: m.name,
-    description: m.pond.description ?? null,
-    author: m.pond.author ?? null,
-    lang: null,
-    siteName: null,
-    notes: m.pond.notes ?? (m.annotation || null),
-    tags: m.tags,
-    mediaType: m.pond.mediaType ?? null,
-    coverIndex: m.pond.coverIndex ?? 0,
-    width: m.width,
-    height: m.height,
-    publishedAt: null,
-    savedAt: m.importedAt ? new Date(m.importedAt).toISOString() : null,
-    createdAt: m.btime ? new Date(m.btime).toISOString() : null,
-    deletedAt: m.deletedAt ? new Date(m.deletedAt).toISOString() : null,
-    files: m.files.map((f) => ({
-      kind: f.kind,
-      path: f.path,
-      sha256: f.sha256,
-      size: f.size,
-    })),
-  };
-}
-
-// Upgrade one item folder from legacy `metadata.json` to `info.json` +
-// `source.json`. Idempotent: a no-op once `info.json` exists. Path-based
-// so it works for both `items/` and `trash/` entries.
-export async function migrateItemDirToInfo(dir: string): Promise<boolean> {
-  if (existsSync(join(dir, INFO_FILE))) return false;
-  const legacyPath = join(dir, LEGACY_METADATA_FILE);
-  if (!existsSync(legacyPath)) return false;
-
-  let raw: unknown;
-  try {
-    raw = JSON.parse(await readFile(legacyPath, "utf8"));
-  } catch (err) {
-    log.warn("[pond migrate] unreadable metadata.json", dir, err);
-    return false;
-  }
-  const id = basename(dir).replace(/\.info$/, "");
-  const normalized = normalizeItemMetadata(id, raw);
-  if (!normalized) {
-    log.warn("[pond migrate] could not normalize metadata", dir);
-    return false;
-  }
-
-  const info = infoDocFromMetadata(normalized);
-  const published = extractPublishedAt(raw);
-  if (published) info.publishedAt = published;
-
-  await writeFile(join(dir, INFO_FILE), JSON.stringify(info, null, 2));
-  await writeFile(
-    join(dir, SOURCE_FILE),
-    JSON.stringify(normalized.pond.rawSource ?? null, null, 2),
-  );
-  await rm(legacyPath, { force: true });
-  return true;
-}
-
-function extractPublishedAt(raw: unknown): string | null {
-  if (!raw || typeof raw !== "object") return null;
-  const doc = raw as Record<string, unknown>;
-  const pond = (doc.pond ?? {}) as Record<string, unknown>;
-  const save = (pond.save ?? {}) as Record<string, unknown>;
-  return toIso(
-    (save.publishedAt as string | undefined) ??
-      (doc.publishedAt as string | undefined) ??
-      null,
-  );
-}
-
-/* Legacy `metadata.json` came in two shapes:
- *  - Flat: fields like `source`, `url`, `name` live at the top level.
- *  - Schema 2: the serialized save row is nested under `pond.save`, with
- *    file and task manifests alongside it.
- *
- * Both collapse to the same in-memory `ItemMetadata` here so the scanner
- * (and the layout migration) sees one shape. Without the normalization,
- * every pipeline-finalized item makes `reconcileLibrary` insert
- * `source: undefined` and trip the NOT NULL constraint on every scan
- * tick. */
-function normalizeItemMetadata(id: string, raw: unknown): ItemMetadata | null {
-  if (!raw || typeof raw !== "object") return null;
-  const doc = raw as Record<string, unknown>;
-  const pond = (doc.pond ?? {}) as Record<string, unknown>;
-  if (pond.schema === 2 && pond.save && typeof pond.save === "object") {
-    return adaptSchema2(id, doc, pond);
-  }
-  return doc as unknown as ItemMetadata;
-}
-
-function adaptSchema2(
-  id: string,
-  doc: Record<string, unknown>,
-  pond: Record<string, unknown>,
-): ItemMetadata | null {
-  const save = pond.save as Record<string, unknown>;
-  const source = typeof save.source === "string" ? save.source : null;
-  const sourceId = typeof save.sourceId === "string" ? save.sourceId : null;
-  if (!source || !sourceId) return null;
-
-  const files = Array.isArray(pond.files)
-    ? (pond.files as Array<Record<string, unknown>>).map((f) => ({
-        kind: String(f.kind ?? "other"),
-        path: String(f.path ?? ""),
-        sha256: String(f.sha256 ?? ""),
-        size: Number(f.size ?? 0),
-      }))
-    : [];
-  const parsedSavedAt = parseTimestamp(save.savedAt);
-  const parsedCreatedAt = parseTimestamp(save.createdAt);
-  const parsedDeletedAt = parseTimestamp(save.deletedAt);
-
-  return {
-    id,
-    source,
-    sourceId,
-    url: typeof save.url === "string" ? save.url : "",
-    name: typeof save.title === "string" ? save.title : null,
-    annotation: typeof save.notes === "string" ? save.notes : "",
-    tags: Array.isArray(save.tags) ? (save.tags as unknown[]).map(String) : [],
-    folders: [],
-    ext: files[0]?.path ? extname(files[0].path).slice(1) || null : null,
-    size:
-      typeof save.fileSize === "number"
-        ? save.fileSize
-        : (files[0]?.size ?? null),
-    width: typeof save.width === "number" ? save.width : null,
-    height: typeof save.height === "number" ? save.height : null,
-    btime: parsedCreatedAt ?? Date.now(),
-    mtime:
-      typeof (doc.mtime as unknown) === "number"
-        ? (doc.mtime as number)
-        : Date.now(),
-    importedAt: parsedSavedAt ?? Date.now(),
-    isDeleted: parsedDeletedAt != null,
-    deletedAt: parsedDeletedAt,
-    files,
-    pond: {
-      schemaVersion: 2,
-      rawSource: pond.rawSource,
-      description:
-        typeof save.description === "string" ? save.description : null,
-      author: typeof save.author === "string" ? save.author : null,
-      notes: typeof save.notes === "string" ? save.notes : null,
-      mediaType: typeof save.mediaType === "string" ? save.mediaType : null,
-      coverIndex: typeof save.coverIndex === "number" ? save.coverIndex : 0,
     },
   };
 }

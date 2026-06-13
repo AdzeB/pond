@@ -336,8 +336,8 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, removed };
   },
 
-  // Back-compat: old "Move Library…" calls funnel through here. New
-  // UI uses pickFolder + previewRelocate + relocate.
+  // Backs the "Move Library…" / "Create a new pond" menu action. With no
+  // explicit path it prompts for a destination, then copies the library there.
   async "library.move"(params) {
     const explicitDest =
       typeof params.path === "string" ? params.path.trim() : "";

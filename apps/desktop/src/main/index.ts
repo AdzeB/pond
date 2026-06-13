@@ -13,7 +13,6 @@ import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
-import { migrateLibraryLayout } from "./core/migrate-layout";
 import { startSaveCompleteNotifier } from "./core/notifications";
 import { backfillTweetScreenshots } from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
@@ -456,13 +455,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] recording active library failed", err);
   }
 
-  void migrateLibraryLayout()
-    .catch((err) => {
-      log.warn("[pond] layout migration failed", err);
-      return { migrated: 0 };
-    })
-    .then(() => reconcileLibrary())
-    .catch((err) => log.warn("[pond] scan failed", err));
+  void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
   startReconciler();
 
   void backfillTweetScreenshots().catch((err) =>

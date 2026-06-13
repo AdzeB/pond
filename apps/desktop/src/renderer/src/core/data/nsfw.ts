@@ -202,38 +202,6 @@ function scan(): void {
   }
 }
 
-const LEGACY_STORAGE_KEY = "pond.nsfw.verdicts.v1";
-
-// One-time backfill: migrate verdicts cached in the old localStorage map onto
-// the DB column for saves that are still unclassified, then drop the key.
-function migrateLegacyVerdicts(): void {
-  if (typeof window === "undefined") return;
-  let raw: string | null;
-  try {
-    raw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-  } catch {
-    return;
-  }
-  if (!raw) return;
-  try {
-    const obj = JSON.parse(raw) as Record<string, number>;
-    for (const [id, v] of Object.entries(obj)) {
-      const save = pool.get(id);
-      if (save && save.sensitivity == null) {
-        // Stamp as legacy so the sweep still re-classifies it with the ViT.
-        void persistVerdict(id, v === 1 ? "sensitive" : "safe", "legacy");
-      }
-    }
-  } catch {
-    // Corrupt payload: nothing to migrate.
-  }
-  try {
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-  } catch {
-    // Ignore: removal will retry next launch (migration is idempotent).
-  }
-}
-
 let sweepStarted = false;
 let scanScheduled = false;
 
@@ -253,7 +221,6 @@ function scheduleScan(): void {
 export function startSensitiveSweep(): () => void {
   if (sweepStarted) return () => {};
   sweepStarted = true;
-  migrateLegacyVerdicts();
   scheduleScan();
   const sub = savesStore.subscribe(scheduleScan);
   return () => sub.unsubscribe();

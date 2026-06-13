@@ -1,5 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 import * as schema from "@pond/schema/db";
 import * as eventsSchema from "@pond/schema/events";
 import Database from "better-sqlite3";
@@ -42,7 +41,6 @@ function wrap(sqlite: Database.Database): Db {
 // pond switch never loses it and the boot path (theme/onboarded) can read it
 // before any pond is resolved.
 export async function getGlobalDb(): Promise<Db> {
-  ensureStorageMigrated();
   if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
   log.info("[pond db] opening global", paths.globalDb);
@@ -56,7 +54,6 @@ export async function getGlobalDb(): Promise<Db> {
 // a different file and a fresh pond starts empty. `closeDb()` drops the
 // handle on a switch so the next call reopens against the new pond.
 export async function getDb(): Promise<Db> {
-  ensureStorageMigrated();
   if (cachedPond) return cachedPond;
 
   const paths = resolvePaths();
@@ -83,38 +80,6 @@ export function closeDb(): void {
   cachedPond = null;
 }
 
-// One-time split of the legacy single `index.db`. The old file held both
-// app-global settings AND pond rows for *every* library it ever opened (the
-// index used to be shared). We seed only `global.db` from it so settings,
-// prefs and the onboarded flag carry over. We deliberately do NOT seed the
-// per-pond index: the bundle on disk is the source of truth, and
-// `reconcileLibrary` rebuilds each pond's index from its own items. Copying
-// the legacy rows would drag another pond's stale saves into whichever pond
-// is active, which is exactly the bug this split fixes.
-let migrated = false;
-function ensureStorageMigrated(): void {
-  if (migrated) return;
-  migrated = true;
-  const paths = resolvePaths();
-  const legacy = join(paths.appData, "index.db");
-  if (existsSync(paths.globalDb) || !existsSync(legacy)) return;
-  try {
-    // Flush the WAL into the main file so a plain copy captures recent writes.
-    const flush = new Database(legacy);
-    flush.pragma("wal_checkpoint(TRUNCATE)");
-    flush.close();
-  } catch (err) {
-    log.warn("[pond db] legacy checkpoint failed", err);
-  }
-  try {
-    mkdirSync(dirname(paths.globalDb), { recursive: true });
-    copyFileSync(legacy, paths.globalDb);
-    log.info("[pond db] seeded global.db from legacy index.db");
-  } catch (err) {
-    log.warn("[pond db] legacy migration failed", err);
-  }
-}
-
 function migrateGlobal(sqlite: Database.Database): void {
   sqlite.exec(`
 				CREATE TABLE IF NOT EXISTS settings (
@@ -127,14 +92,6 @@ function migrateGlobal(sqlite: Database.Database): void {
 					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
 			`);
-  // Forward-only adds for global DBs migrated from the legacy single index
-  // that predate these columns.
-  ensureColumns(sqlite, "settings", [
-    { name: "image_download", ddl: "TEXT" },
-    { name: "prefs", ddl: "TEXT" },
-    { name: "library_root", ddl: "TEXT" },
-    { name: "onboarded", ddl: "INTEGER NOT NULL DEFAULT 0" },
-  ]);
 }
 
 function migratePond(sqlite: Database.Database): void {
@@ -160,6 +117,14 @@ function migratePond(sqlite: Database.Database): void {
 					width INTEGER,
 					height INTEGER,
 					file_size INTEGER,
+					phash TEXT,
+					sensitivity TEXT,
+					sensitivity_model TEXT,
+					video_notes TEXT NOT NULL DEFAULT '[]',
+					dominant_colors TEXT NOT NULL DEFAULT '[]',
+					status TEXT NOT NULL DEFAULT 'ingesting',
+					ingest_started_at INTEGER,
+					ingest_completed_at INTEGER,
 					deleted_at INTEGER,
 					saved_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
@@ -171,6 +136,8 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS saves_size_idx ON saves(file_size);
 				CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);
 				CREATE INDEX IF NOT EXISTS saves_deleted_idx ON saves(deleted_at);
+				CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status);
+				CREATE INDEX IF NOT EXISTS saves_sensitivity_idx ON saves(sensitivity);
 
 				CREATE TABLE IF NOT EXISTS tasks (
 					id TEXT PRIMARY KEY,
@@ -192,6 +159,8 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS tags (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
+					starred INTEGER NOT NULL DEFAULT 0,
+					last_used_at INTEGER,
 					usage_count INTEGER NOT NULL DEFAULT 0,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
@@ -268,27 +237,6 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
 			`);
 
-  dropLegacyArtifacts(sqlite);
-  // Table name comes from internal literals only, never user input.
-  ensureColumns(sqlite, "saves", [
-    { name: "status", ddl: "TEXT NOT NULL DEFAULT 'ingesting'" },
-    { name: "ingest_started_at", ddl: "INTEGER" },
-    { name: "ingest_completed_at", ddl: "INTEGER" },
-    { name: "phash", ddl: "TEXT" },
-    { name: "video_notes", ddl: "TEXT NOT NULL DEFAULT '[]'" },
-    { name: "dominant_colors", ddl: "TEXT NOT NULL DEFAULT '[]'" },
-    { name: "sensitivity", ddl: "TEXT" },
-    { name: "sensitivity_model", ddl: "TEXT" },
-  ]);
-  sqlite.exec("CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status)");
-  sqlite.exec(
-    "CREATE INDEX IF NOT EXISTS saves_sensitivity_idx ON saves(sensitivity)",
-  );
-  ensureTagsLabelColumns(sqlite);
-  dropArchivedAtColumn(sqlite);
-  hardDeleteArticleSaves(sqlite);
-  backfillCompleteStatusForExistingSaves(sqlite);
-
   sqlite.exec(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 					id UNINDEXED,
@@ -322,193 +270,6 @@ function migratePond(sqlite: Database.Database): void {
 			`);
 }
 
-interface ColumnSpec {
-  name: string;
-  ddl: string;
-}
-
-// Forward-only column adds. Each spec is applied only when the column is
-// absent, so this is idempotent across boots. Table and DDL come from
-// internal string literals, never user input.
-function ensureColumns(
-  sqlite: Database.Database,
-  table: string,
-  specs: ColumnSpec[],
-): void {
-  const have = new Set(
-    (
-      sqlite
-        .prepare<unknown[], { name: string }>(`PRAGMA table_info(${table})`)
-        .all() as { name: string }[]
-    ).map((c) => c.name),
-  );
-  for (const spec of specs) {
-    if (!have.has(spec.name)) {
-      sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${spec.name} ${spec.ddl}`);
-    }
-  }
-}
-
-function ensureTagsLabelColumns(sqlite: Database.Database): void {
-  const cols = sqlite
-    .prepare<unknown[], { name: string }>("PRAGMA table_info(tags)")
-    .all() as { name: string }[];
-  const have = new Set(cols.map((c) => c.name));
-  if (have.has("description")) {
-    try {
-      sqlite.exec('ALTER TABLE tags DROP COLUMN "description";');
-    } catch (err) {
-      log.warn("[pond db] failed to drop legacy tags.description column", err);
-    }
-  }
-  if (!have.has("starred")) {
-    sqlite.exec(
-      "ALTER TABLE tags ADD COLUMN starred INTEGER NOT NULL DEFAULT 0",
-    );
-  }
-  if (!have.has("last_used_at")) {
-    sqlite.exec("ALTER TABLE tags ADD COLUMN last_used_at INTEGER");
-  }
-  if (have.has("group")) {
-    migrateLegacyTagGroupColumn(sqlite);
-  }
-  if (have.has("color")) {
-    try {
-      sqlite.exec('ALTER TABLE tags DROP COLUMN "color";');
-    } catch (err) {
-      log.warn("[pond db] failed to drop legacy tags.color column", err);
-    }
-  }
-}
-
-// Backfill `tag_groups` + `tag_group_members` from the legacy single-string
-// `tags.group` column, then drop the column. Idempotent: safe to run on a
-// DB that already has tag_groups rows (the upserts won't duplicate names).
-function migrateLegacyTagGroupColumn(sqlite: Database.Database): void {
-  try {
-    const rows = sqlite
-      .prepare<unknown[], { id: string; group: string | null }>(
-        'SELECT id, "group" FROM tags WHERE "group" IS NOT NULL AND TRIM("group") != \'\'',
-      )
-      .all() as Array<{ id: string; group: string | null }>;
-
-    const tx = sqlite.transaction((items: typeof rows) => {
-      const insertGroup = sqlite.prepare(
-        "INSERT OR IGNORE INTO tag_groups (id, name) VALUES (?, ?)",
-      );
-      const findGroup = sqlite.prepare(
-        "SELECT id FROM tag_groups WHERE name = ?",
-      );
-      const insertMember = sqlite.prepare(
-        "INSERT OR IGNORE INTO tag_group_members (tag_id, group_id) VALUES (?, ?)",
-      );
-      for (const row of items) {
-        const groupName = row.group?.trim();
-        if (!groupName) continue;
-        const groupId = cryptoRandomId();
-        insertGroup.run(groupId, groupName);
-        const resolved = findGroup.get(groupName) as { id: string } | undefined;
-        if (!resolved) continue;
-        insertMember.run(row.id, resolved.id);
-      }
-    });
-    tx(rows);
-
-    sqlite.exec(
-      'DROP INDEX IF EXISTS tags_group_idx; ALTER TABLE tags DROP COLUMN "group";',
-    );
-    log.info(
-      `[pond db] migration: moved ${rows.length} tag/group memberships into tag_group_members`,
-    );
-  } catch (err) {
-    log.warn("[pond db] legacy tag group migration failed", err);
-  }
-}
-
-// hardDeleteArticleSaves: the article source has been removed from the
-// URL-first pipeline. Any legacy rows tagged `article` are unreachable
-// from the new code path; drop them so the renderer never has to render
-// an unknown source.
-function hardDeleteArticleSaves(sqlite: Database.Database): void {
-  try {
-    const info = sqlite
-      .prepare("DELETE FROM saves WHERE source = 'article'")
-      .run();
-    if (info.changes > 0) {
-      log.info(
-        `[pond db] migration: hard-deleted ${info.changes} article saves`,
-      );
-    }
-  } catch (err) {
-    log.warn("[pond db] article cleanup failed", err);
-  }
-}
-
-// backfillCompleteStatusForExistingSaves: saves created before the
-// status column existed default to `ingesting`. If they already have at
-// least one file on disk we know ingest finished long ago, so mark them
-// `complete` and stamp ingestCompletedAt to silence the in-progress UI.
-function backfillCompleteStatusForExistingSaves(
-  sqlite: Database.Database,
-): void {
-  try {
-    const info = sqlite
-      .prepare(
-        `UPDATE saves
-         SET status = 'complete',
-             ingest_completed_at = COALESCE(ingest_completed_at, saved_at)
-         WHERE status = 'ingesting'
-           AND files IS NOT NULL
-           AND files != '[]'
-           AND id NOT IN (SELECT save_id FROM tasks)`,
-      )
-      .run();
-    if (info.changes > 0) {
-      log.info(
-        `[pond db] migration: marked ${info.changes} legacy saves as complete`,
-      );
-    }
-  } catch (err) {
-    log.warn("[pond db] complete-status backfill failed", err);
-  }
-}
-
-function dropLegacyArtifacts(sqlite: Database.Database): void {
-  try {
-    sqlite.exec(`
-			DROP TABLE IF EXISTS enrich_jobs;
-			DROP TABLE IF EXISTS saves_vec;
-			DROP TABLE IF EXISTS pond_meta;
-			DROP TRIGGER IF EXISTS saves_ai;
-			DROP TRIGGER IF EXISTS saves_ad;
-			DROP TRIGGER IF EXISTS saves_au;
-			DROP TABLE IF EXISTS saves_fts;
-			`);
-  } catch (err) {
-    log.warn("[pond db] legacy artifact drop failed", err);
-  }
-}
-
-// The archive concept is gone. Trash is the only soft-delete state.
-// Drop the column from existing databases. SQLite 3.35+ supports
-// `ALTER TABLE … DROP COLUMN`, which is what better-sqlite3 ships with.
-function dropArchivedAtColumn(sqlite: Database.Database): void {
-  try {
-    const cols = sqlite
-      .prepare<unknown[], { name: string }>("PRAGMA table_info(saves)")
-      .all() as { name: string }[];
-    const have = new Set(cols.map((c) => c.name));
-    if (!have.has("archived_at")) return;
-    sqlite.exec(`
-			DROP INDEX IF EXISTS saves_archived_idx;
-			ALTER TABLE saves DROP COLUMN archived_at;
-		`);
-    log.info("[pond db] migration: dropped archived_at column");
-  } catch (err) {
-    log.warn("[pond db] archived_at drop failed", err);
-  }
-}
-
 function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
   // No bundle on disk yet (fresh user): don't create one from here. The
@@ -518,9 +279,4 @@ function ensureLibraryMetadata(): void {
   if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;
   readOrCreatePondId(paths.libraryRoot);
-}
-
-function cryptoRandomId(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }

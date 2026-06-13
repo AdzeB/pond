@@ -3,11 +3,9 @@ import type { Save } from "@pond/schema/db";
 // A saved item is one `items/<id>.info/` folder. The clean, human-facing
 // content lives in `info.json`; the verbose raw capture payload lives in
 // `source.json`. Pipeline machinery (tasks, capture reports, ingest
-// status) stays in SQLite and never touches disk. `metadata.json` is the
-// legacy name we still read for back-compat and migrate away from.
+// status) stays in SQLite and never touches disk.
 export const INFO_FILE = "info.json";
 export const SOURCE_FILE = "source.json";
-export const LEGACY_METADATA_FILE = "metadata.json";
 export const INFO_SCHEMA = 3 as const;
 
 export interface InfoFile {
@@ -44,7 +42,7 @@ export interface InfoDoc {
   files: InfoFile[];
 }
 
-export function toIso(
+function toIso(
   value: Date | string | number | null | undefined,
 ): string | null {
   if (value == null) return null;
