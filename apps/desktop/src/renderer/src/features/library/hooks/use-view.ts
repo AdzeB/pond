@@ -26,7 +26,7 @@ import {
 
 export type { SortDir, SortKey };
 
-export interface ViewState {
+interface ViewState {
   query: Query;
   rows: Predicate[];
   combinator: Combinator;
@@ -36,7 +36,7 @@ export interface ViewState {
   zoom: number;
 }
 
-export interface ViewActions {
+interface ViewActions {
   setQuery: (next: Query) => void;
   addCondition: (field?: FieldId) => void;
   updateRow: (idx: number, next: Predicate | null) => void;

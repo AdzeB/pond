@@ -107,17 +107,3 @@ export function classifyError(
     lastError,
   };
 }
-
-export interface BlockReason {
-  reason: string;
-  retryAfterMs: number;
-}
-
-export function blockDecision(reason: BlockReason): RetryDecision {
-  return {
-    status: "blocked",
-    nextRunAt: new Date(Date.now() + reason.retryAfterMs),
-    recordAttempt: false,
-    lastError: reason.reason,
-  };
-}

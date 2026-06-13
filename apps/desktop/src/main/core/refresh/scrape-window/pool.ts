@@ -171,32 +171,6 @@ function drainQueues(): void {
   }
 }
 
-export interface PoolStatus {
-  totalBusy: number;
-  totalWindows: number;
-  globalCap: number;
-  perSource: Record<Source, { busy: number; cap: number; queued: number }>;
-}
-
-export function getPoolStatus(): PoolStatus {
-  let totalBusy = 0;
-  const perSource = {} as PoolStatus["perSource"];
-  for (const source of SOURCES) {
-    totalBusy += busyBySource[source];
-    perSource[source] = {
-      busy: busyBySource[source],
-      cap: PER_SOURCE_CAP[source],
-      queued: waitQueues[source].length,
-    };
-  }
-  return {
-    totalBusy,
-    totalWindows: pool.length,
-    globalCap: GLOBAL_POOL_CAP,
-    perSource,
-  };
-}
-
 export function disposeHiddenWindow(): void {
   for (const slot of pool) {
     if (!slot.win.isDestroyed()) slot.win.destroy();

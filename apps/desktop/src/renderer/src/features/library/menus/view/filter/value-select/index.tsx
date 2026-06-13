@@ -1,3 +1,2 @@
 export { Body } from "./body";
 export { summariseValue } from "./summarise";
-export type { BodyProps } from "./types";

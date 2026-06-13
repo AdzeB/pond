@@ -110,7 +110,7 @@ const WORKERS: Record<Op, Worker> = {
 };
 
 let started = false;
-let paused = false;
+const paused = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
 let nextOrphanSweepAt = 0;
@@ -136,45 +136,6 @@ const metrics = {
   cascadeEvents: 0,
 };
 
-export interface PipelineMetricsSnapshot {
-  started: boolean;
-  paused: boolean;
-  inflightGlobal: number;
-  inflightByOp: Record<Op, number>;
-  runningTaskIds: string[];
-  pausedSources: ReturnType<typeof snapshotSourceGate>;
-  counters: typeof metrics;
-}
-
-export function getPipelineMetrics(): PipelineMetricsSnapshot {
-  return {
-    started,
-    paused,
-    inflightGlobal,
-    inflightByOp: { ...inflightByOp },
-    runningTaskIds: [...runningTaskIds],
-    pausedSources: snapshotSourceGate(),
-    counters: { ...metrics },
-  };
-}
-
-export function isPipelinePaused(): boolean {
-  return paused;
-}
-
-export function pausePipeline(): void {
-  if (paused) return;
-  paused = true;
-  log.info("[pond pipeline:reconciler] paused");
-}
-
-export function resumePipeline(): void {
-  if (!paused) return;
-  paused = false;
-  log.info("[pond pipeline:reconciler] resumed");
-  kickReconciler();
-}
-
 export function startReconciler(): void {
   if (started) return;
   started = true;
@@ -190,24 +151,6 @@ export function startReconciler(): void {
   void tick();
 }
 
-export function stopReconciler(): void {
-  started = false;
-  if (pollTimer) {
-    clearTimeout(pollTimer);
-    pollTimer = null;
-  }
-  // Abort anything in flight so workers that honour the signal can
-  // bail rather than racing the process exit.
-  for (const controller of runningTasks.values()) {
-    try {
-      controller.abort();
-    } catch {
-      /* aborts can throw if the controller is already torn down */
-    }
-  }
-  runningTasks.clear();
-}
-
 export function kickReconciler(): void {
   if (!started) return;
   if (kickPending) return;
@@ -216,75 +159,6 @@ export function kickReconciler(): void {
     kickPending = false;
     void tick();
   });
-}
-
-// User-driven "skip the stuck op". Marks the named task `failed` and
-// fans the failure out via the same cascade `handleFailure` uses, so
-// the save flips to `failed` and the dialog updates. Used from the
-// renderer when a user wants to abandon a save that's wedged on, say,
-// a 600 MB video download.
-export async function skipTask(
-  taskId: string,
-  reason: string,
-): Promise<{ ok: boolean; reason?: string }> {
-  const db = await getDb();
-  const row = db.select().from(tasks).where(eq(tasks.id, taskId)).get() as
-    | Task
-    | undefined;
-  if (!row) return { ok: false, reason: "not_found" };
-  if (row.status === "done") return { ok: false, reason: "already_done" };
-
-  const now = new Date();
-  db.update(tasks)
-    .set({
-      status: "failed",
-      lastError: `skipped: ${reason}`,
-      updatedAt: now,
-    })
-    .where(eq(tasks.id, taskId))
-    .run();
-
-  // Cascade: mirror the failed-task path in `handleFailure` so the
-  // save row and downstream siblings move together.
-  const current = db
-    .select({ status: saves.status })
-    .from(saves)
-    .where(eq(saves.id, row.saveId))
-    .get();
-  if (current?.status === "ingesting") {
-    db.update(saves)
-      .set({ status: "failed" })
-      .where(eq(saves.id, row.saveId))
-      .run();
-    db.update(tasks)
-      .set({
-        status: "failed",
-        lastError: `blocked by skipped ${row.op}`,
-        updatedAt: now,
-      })
-      .where(and(eq(tasks.saveId, row.saveId), eq(tasks.status, "pending")))
-      .run();
-  }
-
-  // If a worker is actively running this task, abort it. The signal
-  // doesn't preempt arbitrary Promises but workers that opt in
-  // (child_process spawns, fetch with signal) will bail.
-  const controller = runningTasks.get(taskId);
-  if (controller) {
-    try {
-      controller.abort();
-    } catch {
-      /* worker may have just completed; ignore */
-    }
-  }
-
-  log.info("[pond pipeline:reconciler] task skipped", {
-    task: taskId,
-    op: row.op,
-    saveId: row.saveId,
-    reason,
-  });
-  return { ok: true };
 }
 
 // Startup cleanup #1: any `running` task whose dispatcher promise no

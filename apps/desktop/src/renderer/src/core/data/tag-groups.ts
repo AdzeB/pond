@@ -17,7 +17,7 @@ interface TagGroupsState {
   readonly loaded: boolean;
 }
 
-export const tagGroupsStore = new Store<TagGroupsState>({
+const tagGroupsStore = new Store<TagGroupsState>({
   rows: [],
   loaded: false,
 });
@@ -145,14 +145,4 @@ export function useTagGroups(): ReadonlyArray<TagGroupRow> {
     void load();
   }, []);
   return useStore(tagGroupsStore, (s) => s.rows);
-}
-
-export function getTagGroupsSnapshot(): ReadonlyArray<TagGroupRow> {
-  return tagGroupsStore.state.rows;
-}
-
-export async function reloadTagGroups(): Promise<ReadonlyArray<TagGroupRow>> {
-  tagGroupsStore.setState(() => ({ rows: [], loaded: false }));
-  inflight = null;
-  return load();
 }

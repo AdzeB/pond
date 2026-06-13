@@ -3,7 +3,6 @@
 // store and the zoom UI agree on the same range and storage key.
 export const ZOOM_MIN = 80;
 export const ZOOM_MAX = 240;
-export const ZOOM_STEP = 10;
 export const ZOOM_DEFAULT = 130;
 export const ZOOM_STORAGE_KEY = "pond.gridZoom";
 

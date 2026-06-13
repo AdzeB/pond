@@ -30,7 +30,7 @@ import { useTagClipboard } from "@/features/tags/stores/tag-clipboard";
 
 type Toast = ReturnType<typeof useToast>;
 
-export interface ItemDescriptor {
+interface ItemDescriptor {
   type: "item";
   key: string;
   label: string;
@@ -41,7 +41,7 @@ export interface ItemDescriptor {
   onSelect: () => void | Promise<void>;
 }
 
-export interface SubmenuDescriptor {
+interface SubmenuDescriptor {
   type: "submenu";
   key: string;
   label: string;
@@ -50,7 +50,7 @@ export interface SubmenuDescriptor {
   items: ActionDescriptor[];
 }
 
-export interface SeparatorDescriptor {
+interface SeparatorDescriptor {
   type: "separator";
   key: string;
 }

@@ -7,7 +7,7 @@ interface PrefsState {
   readonly value: Prefs | null;
 }
 
-export const prefsStore = new Store<PrefsState>({ value: null });
+const prefsStore = new Store<PrefsState>({ value: null });
 
 let inflight: Promise<Prefs> | null = null;
 

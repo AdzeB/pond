@@ -9,7 +9,7 @@ import { TwitterTweetExtractor } from "./sources/twitter";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
-export const EXTRACTORS: readonly Extractor[] = [
+const EXTRACTORS: readonly Extractor[] = [
   new TwitterTweetExtractor(),
   new InstagramPostExtractor(),
   new TikTokVideoExtractor(),
@@ -51,12 +51,3 @@ export function classifyUrlToSource(rawUrl: string): {
 }
 
 export * from "./errors";
-export type {
-  Capture,
-  CaptureAuthor,
-  CaptureMetrics,
-  CaptureUpstream,
-  ExtractInput,
-  MediaCandidate,
-  RawJson,
-} from "./types";

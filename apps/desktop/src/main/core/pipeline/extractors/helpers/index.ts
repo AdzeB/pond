@@ -1,1 +1,1 @@
-export { fetchHtmlInWindow, type InWindowResult } from "./fetch-in-window";
+export { fetchHtmlInWindow } from "./fetch-in-window";

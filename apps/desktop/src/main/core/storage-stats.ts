@@ -2,9 +2,9 @@ import { readdir, stat, statfs } from "node:fs/promises";
 import { join, sep } from "node:path";
 import log from "electron-log/main.js";
 import { createMemoCache } from "../lib/memo-cache";
-import { itemsRoot, libraryRoot, resolvePaths } from "../paths";
+import { itemsRoot, libraryRoot } from "../paths";
 
-export interface LibraryBreakdown {
+interface LibraryBreakdown {
   items: number;
   videoCache: number;
   thumbs: number;
@@ -14,7 +14,7 @@ export interface LibraryBreakdown {
   total: number;
 }
 
-export interface DeviceDiskInfo {
+interface DeviceDiskInfo {
   totalBytes: number;
   freeBytes: number;
   usedByOthers: number;
@@ -46,10 +46,6 @@ const snapshotCache = createMemoCache<StorageSnapshot>(computeSnapshot, {
   ttlMs: CACHE_TTL_MS,
 });
 
-export function invalidateStorageSnapshot(): void {
-  snapshotCache.invalidate();
-}
-
 export async function getStorageSnapshot(): Promise<StorageSnapshot> {
   return snapshotCache.get();
 }
@@ -79,7 +75,7 @@ async function computeSnapshot(): Promise<StorageSnapshot> {
   };
 }
 
-export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
+async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   const root = libraryRoot();
   const itemsAbs = itemsRoot();
   const buckets: Omit<LibraryBreakdown, "total"> = {
@@ -137,7 +133,7 @@ export async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
   return { ...buckets, total };
 }
 
-export async function getDeviceDiskInfo(path: string): Promise<DeviceDiskInfo> {
+async function getDeviceDiskInfo(path: string): Promise<DeviceDiskInfo> {
   try {
     const stats = await statfs(path);
     const totalBytes = Number(stats.blocks) * Number(stats.bsize);
@@ -185,5 +181,3 @@ async function safeFileSize(path: string): Promise<number> {
     return 0;
   }
 }
-
-export { resolvePaths };

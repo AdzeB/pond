@@ -6,7 +6,7 @@ import { useMultiSelectActive } from "@/features/library/grid-context";
 import { useVisibleIndices } from "@/features/library/hooks/use-visible-indices";
 import { SaveCard } from "@/features/library/save-card";
 
-export interface PackedPosition {
+interface PackedPosition {
   top: number;
   left: number;
   width: number;

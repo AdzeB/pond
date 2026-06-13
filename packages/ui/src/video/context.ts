@@ -1,6 +1,6 @@
 import { createContext, use } from "react";
 
-export interface VideoState {
+interface VideoState {
   playing: boolean;
   currentTime: number;
   duration: number;
@@ -30,7 +30,7 @@ export interface VideoActions {
   showControls: () => void;
 }
 
-export interface VideoMeta {
+interface VideoMeta {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   rootRef: React.RefObject<HTMLDivElement | null>;
   registerVideo: (el: HTMLVideoElement | null) => void;

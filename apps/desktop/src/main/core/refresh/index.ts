@@ -38,8 +38,4 @@ export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   }
 }
 
-export {
-  disconnectSource,
-  isSourceConnected,
-  signInToSource,
-} from "./scrape-window";
+export { isSourceConnected, signInToSource } from "./scrape-window";

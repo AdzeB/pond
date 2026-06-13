@@ -70,7 +70,7 @@ export async function getIngestToken(): Promise<string | null> {
   return decrypt(value);
 }
 
-export async function setIngestToken(token: string): Promise<void> {
+async function setIngestToken(token: string): Promise<void> {
   const all = await readAll();
   all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN)] = encrypt(token);
   await writeAll(all);

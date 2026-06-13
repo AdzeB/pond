@@ -64,7 +64,7 @@ function sha256(bytes: Buffer): string {
   return createHash("sha256").update(bytes).digest("hex");
 }
 
-export function inferKindFromFilename(filename: string): string {
+function inferKindFromFilename(filename: string): string {
   if (filename.startsWith("poster")) return "poster";
   if (filename.startsWith("cover")) return "cover";
   if (filename.startsWith("video")) return "video";
@@ -82,7 +82,7 @@ function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
 
 // Write `info.json` (clean human content) and `source.json` (raw
 // capture payload) into an item folder, creating it if needed.
-export async function writeInfoFiles(
+async function writeInfoFiles(
   id: string,
   info: InfoDoc,
   rawSource: unknown,

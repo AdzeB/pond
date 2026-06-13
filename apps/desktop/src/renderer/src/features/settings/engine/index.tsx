@@ -27,16 +27,7 @@ import type {
   SelectOption,
 } from "./types";
 
-export type {
-  Binding,
-  ButtonItem,
-  CustomItem,
-  FieldItem,
-  GroupConfig,
-  Item,
-  SectionConfig,
-  SelectOption,
-} from "./types";
+export type { Binding, SectionConfig } from "./types";
 
 const EMPTY_BINDING: Binding = {
   values: {},

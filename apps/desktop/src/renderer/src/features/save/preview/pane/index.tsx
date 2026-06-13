@@ -15,29 +15,8 @@ import type { Save } from "@/core/data/types";
 import { pickAuthorAvatarUrl } from "@/core/data/url";
 import { TagPicker } from "@/features/tags/tag-picker";
 import { descriptionMatchesTitle, pickAuthorColor } from "../helpers";
-import { MediaViewer } from "../media-viewer";
 import { collectInfoRows, type PaneRow } from "../rows";
 import styles from "./styles.module.css";
-
-interface SavePreviewProps extends React.ComponentPropsWithoutRef<"article"> {
-  save: Save;
-}
-
-export function SavePreview({ save, className, ...props }: SavePreviewProps) {
-  return (
-    <article
-      className={[styles.preview, styles.pane, className ?? ""]
-        .filter(Boolean)
-        .join(" ")}
-      {...props}
-    >
-      <div className={styles["pane-media"]}>
-        <MediaViewer save={save} />
-      </div>
-      <SaveInfo save={save} />
-    </article>
-  );
-}
 
 // The metadata column (title, author, description, tags, notes, stats). Shared
 // by the docked drawer (single column) and the standalone window (info sidebar

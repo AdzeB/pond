@@ -4,7 +4,7 @@ import { pickPrimaryUnit } from "@/core/data/media";
 import { useRecents } from "@/features/library/stores/recents";
 import { type NavItem, navItems } from "./data";
 
-export interface SidebarNavEntry {
+interface SidebarNavEntry {
   item: NavItem;
   count: number;
 }

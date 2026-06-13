@@ -6,14 +6,7 @@ import type { Capture, CaptureMedia } from "@pond/schema/raw";
 // here, which let them silently drift out of sync with the schema
 // (e.g. `CaptureMetrics` lost the new metric keys). Re-export the
 // canonical types so there is exactly one definition.
-export type {
-  Capture,
-  CaptureAuthor,
-  CaptureMedia,
-  CaptureMetrics,
-  CaptureUpstream,
-  RawJson,
-} from "@pond/schema/raw";
+export type { Capture, RawJson } from "@pond/schema/raw";
 
 // Historic alias: extractors still import `MediaCandidate` from this
 // module. `CaptureMedia` IS the same shape (both use

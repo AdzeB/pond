@@ -23,7 +23,7 @@ export interface BookmarksEntry {
   rich?: RichTweet;
 }
 
-export interface BookmarksHarvestDebug {
+interface BookmarksHarvestDebug {
   hydrateSawArticle: boolean;
   hydrateMs: number;
   scrollIterations: number;

@@ -8,17 +8,17 @@
 // per-step chroma taper pulls saturation down at the light/dark ends to
 // stay inside the sRGB gamut.
 
-export const HUE_STEPS = [
+const HUE_STEPS = [
   25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 975,
 ] as const;
 
 // Neutrals add a 75 step so component backgrounds can match the
 // saturated ramps' 50 step (see the article's note on the extra step).
-export const NEUTRAL_STEPS = [
+const NEUTRAL_STEPS = [
   25, 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 975,
 ] as const;
 
-export type Step = (typeof NEUTRAL_STEPS)[number];
+type Step = (typeof NEUTRAL_STEPS)[number];
 
 // Lightness per step. Step 0 would be white oklch(1 0 0); 1000 near
 // black. 500 lands around a 5:1 contrast vs white (the workhorse).
@@ -76,14 +76,14 @@ const ALPHA: Record<Step, number> = {
   975: 0.81,
 };
 
-export interface Ramp {
+interface Ramp {
   hue: number;
   chroma: number;
 }
 
 // 17 chromatic ramps spanning the spectrum. Hue angles in oklch
 // degrees; chroma is the peak (at the 500 step) before the taper.
-export const HUE_RAMPS = {
+const HUE_RAMPS = {
   ruby: { hue: 12, chroma: 0.2 },
   red: { hue: 25, chroma: 0.21 },
   orange: { hue: 50, chroma: 0.19 },
@@ -105,7 +105,7 @@ export const HUE_RAMPS = {
 
 // 8 neutral ramps: pure black plus subtly tinted grays. Chroma is tiny
 // so they stay monochromatic, with a hint of temperature.
-export const NEUTRAL_RAMPS = {
+const NEUTRAL_RAMPS = {
   black: { hue: 0, chroma: 0 },
   gray: { hue: 264, chroma: 0.006 },
   zinc: { hue: 90, chroma: 0.005 },
@@ -122,8 +122,8 @@ export const NEUTRAL_RAMPS = {
   marine: { hue: 195, chroma: 0.011 },
 } as const satisfies Record<string, Ramp>;
 
-export type HueName = keyof typeof HUE_RAMPS;
-export type NeutralName = keyof typeof NEUTRAL_RAMPS;
+type HueName = keyof typeof HUE_RAMPS;
+type NeutralName = keyof typeof NEUTRAL_RAMPS;
 
 function round(value: number, places: number): number {
   const f = 10 ** places;

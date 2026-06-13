@@ -15,7 +15,7 @@ import {
 
 type Toast = ReturnType<typeof useToast>;
 
-export async function toggleTrash(save: Save, toast: Toast): Promise<void> {
+async function toggleTrash(save: Save, toast: Toast): Promise<void> {
   const prev = pool.get(save.id);
   if (!prev) return;
   const wasTrashed = Boolean(prev.deletedAt);

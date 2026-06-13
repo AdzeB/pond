@@ -3,7 +3,7 @@
 import type { ScrapedHarvest } from "../types";
 import { inPageTwitterNormalize } from "./normalize";
 
-export function harvestSource(): string {
+function harvestSource(): string {
   function inPage(
     tweetId: string,
     norm: ReturnType<typeof inPageTwitterNormalize>,

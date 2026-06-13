@@ -1,1 +1,1 @@
-export { SaveInfo, SavePreview } from "./pane";
+export { SaveInfo } from "./pane";

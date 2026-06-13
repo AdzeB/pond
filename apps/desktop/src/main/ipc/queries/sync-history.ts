@@ -4,7 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../db";
 import type { QueryHandlerMap } from "../helpers";
 
-export interface SyncRunHistoryEntry {
+interface SyncRunHistoryEntry {
   id: number;
   ts: number;
   source: Source;

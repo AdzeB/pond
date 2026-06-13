@@ -26,7 +26,7 @@ const BREAKER_WINDOW_MS = 60_000;
 const BREAKER_THRESHOLD = 3;
 const BREAKER_TRIP_MS = 10 * 60_000;
 
-export type PausedReason = "cooldown" | "breaker";
+type PausedReason = "cooldown" | "breaker";
 
 export interface PausedState {
   source: Source;
@@ -45,15 +45,6 @@ export function sourcePausedUntil(source: Source): number {
   const until = maxOrNull(cooldown, breaker);
   if (until <= now) return 0;
   return until;
-}
-
-export function sourcePausedReason(source: Source): PausedReason | null {
-  const now = Date.now();
-  const cooldown = cooldownUntil.get(source) ?? 0;
-  const breaker = breakerUntil.get(source) ?? 0;
-  if (breaker > now && breaker >= cooldown) return "breaker";
-  if (cooldown > now) return "cooldown";
-  return null;
 }
 
 export function setSourceCooldown(source: Source, ms: number): void {
@@ -97,12 +88,6 @@ export function noteSuccess(source: Source): void {
   // Cooldowns set by explicit RateLimitedError signals stay because
   // the host is asking us to wait regardless of whether the last call
   // happened to slip through.
-  breakerCounters.delete(source);
-}
-
-export function clearSourceGate(source: Source): void {
-  cooldownUntil.delete(source);
-  breakerUntil.delete(source);
   breakerCounters.delete(source);
 }
 

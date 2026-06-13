@@ -50,10 +50,6 @@ export function bootPool(): Promise<void> {
   return bootPromise;
 }
 
-export function isBootReady(): boolean {
-  return bootStore.state.ready;
-}
-
 async function hydrateFromMain(): Promise<void> {
   const rows = (await window.pond.query("saves.list", {})) as Array<
     Partial<Save>

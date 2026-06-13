@@ -3,7 +3,6 @@ import { dirname, join } from "node:path";
 import * as schema from "@pond/schema/db";
 import * as eventsSchema from "@pond/schema/events";
 import Database from "better-sqlite3";
-import { sql } from "drizzle-orm";
 import {
   type BetterSQLite3Database,
   drizzle,
@@ -525,5 +524,3 @@ function cryptoRandomId(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
-
-export { sql };

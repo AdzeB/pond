@@ -6,42 +6,6 @@ import { registerSyncActionListener } from "./executor";
 import { getPrefs } from "./prefs";
 import { sourceLabel } from "./refresh/sources";
 
-export interface ShowNotificationOptions {
-  title: string;
-  body?: string;
-  silent?: boolean;
-  /** Optional renderer route to open when the user clicks the notification. */
-  onClickRoute?: string;
-  /** Provide a focus callback to honor `onClickRoute`. */
-  focusMainWindow?: () => Promise<BrowserWindow | null> | BrowserWindow | null;
-}
-
-export function showNotification(opts: ShowNotificationOptions): boolean {
-  if (!Notification.isSupported()) return false;
-  const notification = new Notification({
-    title: opts.title,
-    body: opts.body ?? "",
-    silent: opts.silent ?? false,
-  });
-  if (opts.onClickRoute && opts.focusMainWindow) {
-    const route = opts.onClickRoute;
-    const focus = opts.focusMainWindow;
-    notification.on("click", () => {
-      void (async () => {
-        try {
-          const win = await focus();
-          if (!win || win.isDestroyed()) return;
-          win.webContents.send(IPC.nav, route);
-        } catch (err) {
-          log.warn("[pond notifications] click handler failed", err);
-        }
-      })();
-    });
-  }
-  notification.show();
-  return true;
-}
-
 export interface SaveCompleteNotifierOptions {
   focusMainWindow: () => Promise<BrowserWindow | null> | BrowserWindow | null;
 }

@@ -1,12 +1,11 @@
 import {
   type NewTag,
   saves as savesTable,
-  type Tag,
   tags as tagsTable,
 } from "@pond/schema/db";
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
-import { desc, eq, isNotNull, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import type { Db } from "../db";
 import { getDb } from "../db";
@@ -45,25 +44,6 @@ export async function createTag(
     id: data.id,
     data,
     meta: { actor: "user", actorReason: "tag-create" },
-  });
-  return { ok: true };
-}
-
-export async function updateTag(
-  name: string,
-  patch: Partial<NewTag>,
-): Promise<{ ok: boolean }> {
-  const db = await getDb();
-  const lowered = name.trim().toLowerCase();
-  const row = await tagByLowerName(db, lowered);
-  if (!row) return { ok: false };
-  await executeTransaction({
-    kind: "update",
-    model: "tag",
-    id: row.id,
-    patch,
-    before: row,
-    meta: { actor: "user", actorReason: "tag-update" },
   });
   return { ok: true };
 }
@@ -283,7 +263,7 @@ export async function setSaveTags(
   return { ok: true };
 }
 
-export async function bumpLastUsedAt(names: string[]): Promise<void> {
+async function bumpLastUsedAt(names: string[]): Promise<void> {
   if (names.length === 0) return;
   const db = await getDb();
   const now = new Date();
@@ -305,14 +285,4 @@ export async function bumpLastUsedAt(names: string[]): Promise<void> {
       { silent: true },
     );
   }
-}
-
-export async function listRecent(limit = 12): Promise<Tag[]> {
-  const db = await getDb();
-  return await db
-    .select()
-    .from(tagsTable)
-    .where(isNotNull(tagsTable.lastUsedAt))
-    .orderBy(desc(tagsTable.lastUsedAt))
-    .limit(limit);
 }

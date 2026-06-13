@@ -3,13 +3,13 @@
 import type { BookmarksCapture } from "./graphql";
 import type { BookmarksHarvestArgs, BookmarksHarvestResult } from "./list";
 
-export interface BookmarksRequestTemplate {
+interface BookmarksRequestTemplate {
   url: string;
   method: string;
   headers: Record<string, string>;
 }
 
-export interface BookmarksApiDebug {
+interface BookmarksApiDebug {
   pages: number;
   tweets: number;
   reason:

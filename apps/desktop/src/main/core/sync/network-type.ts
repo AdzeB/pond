@@ -16,10 +16,6 @@ export async function isOnWifi(): Promise<boolean | null> {
   return wifiCache.get();
 }
 
-export function clearNetworkTypeCache(): void {
-  wifiCache.invalidate();
-}
-
 async function detect(): Promise<boolean | null> {
   if (!net.isOnline()) return false;
 

@@ -19,13 +19,13 @@ export interface BookmarksCapture {
   status?: number;
 }
 
-export interface RichTweetMedia {
+interface RichTweetMedia {
   url: string;
   type: "image" | "video";
   poster?: string;
 }
 
-export interface RichTweetMetrics {
+interface RichTweetMetrics {
   likes: number;
   retweets: number;
   replies: number;

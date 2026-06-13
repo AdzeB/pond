@@ -11,7 +11,7 @@ export interface RefreshBackfillOptions {
   onlyMissing?: boolean;
 }
 
-export interface RefreshBackfillStatus {
+interface RefreshBackfillStatus {
   state: "idle" | "running" | "done" | "error" | "cancelled";
   total: number;
   current: number;
@@ -53,21 +53,6 @@ function emit(next: RefreshBackfillStatus): void {
       log.warn("[pond refresh-backfill] listener threw", err);
     }
   }
-}
-
-export function subscribeRefreshBackfillStatus(cb: StatusListener): () => void {
-  listeners.add(cb);
-  return () => {
-    listeners.delete(cb);
-  };
-}
-
-export function getRefreshBackfillStatus(): RefreshBackfillStatus {
-  return lastStatus;
-}
-
-export function isRefreshBackfilling(): boolean {
-  return inFlight !== null;
 }
 
 export type RefreshBackfillStartResult =

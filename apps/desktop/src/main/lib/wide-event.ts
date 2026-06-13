@@ -71,7 +71,7 @@ export function startSyncEvent(
   };
 }
 
-export function startIngestEvent(
+function startIngestEvent(
   base: Partial<WithoutKind<SaveIngestEvent>>,
 ): SaveIngestEvent {
   return {

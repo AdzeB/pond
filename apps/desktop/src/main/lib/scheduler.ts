@@ -44,7 +44,7 @@ export function schedule(opts: ScheduleOpts): void {
   }
 }
 
-export function cancel(name: string): void {
+function cancel(name: string): void {
   const job = jobs.get(name);
   if (!job) return;
   if (job.initial) clearTimeout(job.initial);
@@ -52,7 +52,7 @@ export function cancel(name: string): void {
   jobs.delete(name);
 }
 
-export function stopAll(): void {
+function stopAll(): void {
   for (const job of jobs.values()) {
     if (job.initial) clearTimeout(job.initial);
     if (job.timer) clearInterval(job.timer);

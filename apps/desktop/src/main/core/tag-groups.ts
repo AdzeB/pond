@@ -249,31 +249,6 @@ export async function removeTagFromGroup(
   return { ok: true };
 }
 
-export async function reorderGroups(
-  orderedNames: string[],
-): Promise<{ ok: boolean }> {
-  const db = await getDb();
-  const txs: Transaction[] = [];
-  for (let i = 0; i < orderedNames.length; i++) {
-    const name = orderedNames[i];
-    if (!name) continue;
-    const row = await groupByLowerName(db, name.trim().toLowerCase());
-    if (!row) continue;
-    if (row.sortOrder === i) continue;
-    txs.push({
-      kind: "update",
-      model: "tag_group",
-      id: row.id,
-      patch: { sortOrder: i },
-      before: row,
-      meta: { actor: "user", actorReason: "tag-group-reorder" },
-    });
-  }
-  if (txs.length === 0) return { ok: true };
-  await executeBatch(txs);
-  return { ok: true };
-}
-
 async function nextSortOrder(db: Db): Promise<number> {
   const rows = await db
     .select({

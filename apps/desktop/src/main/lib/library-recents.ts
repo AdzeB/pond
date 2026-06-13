@@ -33,7 +33,7 @@ function normalize(path: string): string {
   return abs.replace(/\/+$/, "");
 }
 
-export function libraryNameFromPath(path: string): string {
+function libraryNameFromPath(path: string): string {
   const base = basename(normalize(path)).replace(/\.(pond|library)$/, "");
   return base.length > 0 ? base : "Library";
 }

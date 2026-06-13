@@ -1,7 +1,7 @@
 import { useToast } from "@pond/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export interface Pond {
+interface Pond {
   path: string;
   name: string;
   active: boolean;
@@ -16,7 +16,7 @@ interface ListKnownResult {
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
-export const pondsQueryKey = ["ponds"] as const;
+const pondsQueryKey = ["ponds"] as const;
 
 export function usePonds() {
   const toast = useToast();

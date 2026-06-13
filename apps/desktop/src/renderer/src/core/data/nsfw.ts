@@ -23,9 +23,7 @@ import type { Save } from "./types";
 // for the Sensitivity filter; the result is persisted via a system write that
 // syncs across devices and survives restarts.
 
-export type { Sensitivity };
-
-export type SensitivityState = "pending" | "safe" | "sensitive";
+type SensitivityState = "pending" | "safe" | "sensitive";
 
 // The HF Hub model id. A ViT binary classifier ("sfw" / "nsfw") that's
 // markedly more accurate than the legacy MobileNet CNN.
@@ -261,7 +259,7 @@ export function startSensitiveSweep(): () => void {
   return () => sub.unsubscribe();
 }
 
-export function reveal(id: string): void {
+function reveal(id: string): void {
   revealStore.setState((s) => {
     if (s.ids.has(id)) return s;
     const ids = new Set(s.ids);

@@ -78,7 +78,7 @@ export function deleteSave(id: string): void {
   });
 }
 
-export function clearSaves(): void {
+function clearSaves(): void {
   savesStore.setState((s) =>
     s.byId.size === 0 ? s : { byId: new Map(), sorted: [] },
   );

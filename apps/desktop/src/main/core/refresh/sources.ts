@@ -1,26 +1,6 @@
 import type { Source } from "@pond/schema/db";
-import { hostToSource } from "@pond/schema/sources";
 
 export { sourceLabel } from "@pond/schema/sources";
-
-const AUTH_WALLED: Record<Source, boolean> = {
-  twitter: true,
-  instagram: true,
-  cosmos: true,
-  tiktok: true,
-  pinterest: false,
-  arena: false,
-  youtube: false,
-  local: false,
-};
-
-export function classifyUrl(rawUrl: string): {
-  source: Source | null;
-  authWalled: boolean;
-} {
-  const source = hostToSource(rawUrl);
-  return { source, authWalled: source ? AUTH_WALLED[source] : false };
-}
 
 export function homeUrlForSource(source: Source): string {
   switch (source) {
@@ -41,21 +21,5 @@ export function homeUrlForSource(source: Source): string {
     case "local":
       // Local imports have no remote account, so there is no login page.
       return "";
-  }
-}
-
-export function supportsYtDlp(source: Source | null): boolean {
-  if (!source) return false;
-  switch (source) {
-    case "twitter":
-    case "instagram":
-    case "cosmos":
-    case "tiktok":
-    case "youtube":
-      return true;
-    case "pinterest":
-    case "arena":
-    case "local":
-      return false;
   }
 }

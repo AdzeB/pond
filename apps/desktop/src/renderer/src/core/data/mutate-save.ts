@@ -85,45 +85,6 @@ export async function purgeSave(id: string): Promise<void> {
   );
 }
 
-// Bulk patch update: one optimistic apply + rollback for all, one batch so
-// the whole change undoes as a single step. `patchFor` returns null to skip.
-export async function mutateSaves(
-  ids: readonly string[],
-  patchFor: (s: Save) => Partial<Save> | null,
-  opts: MutateOpts = {},
-): Promise<number> {
-  const changes: { prev: Save; next: Save; tx: unknown }[] = [];
-  for (const id of ids) {
-    const prev = pool.get(id);
-    if (!prev) continue;
-    const patch = patchFor(prev);
-    if (!patch || Object.keys(patch).length === 0) continue;
-    changes.push({
-      prev,
-      next: { ...prev, ...patch },
-      tx: {
-        kind: "update",
-        model: "save",
-        id,
-        patch,
-        before: snapshotBefore(prev, patch),
-        ...metaFor(opts),
-      },
-    });
-  }
-  if (changes.length === 0) return 0;
-  await optimistic(
-    () => {
-      for (const c of changes) pool.upsert(c.next);
-    },
-    () => {
-      for (const c of changes) pool.upsert(c.prev);
-    },
-    async () => window.pond.batch(changes.map((c) => c.tx)),
-  );
-  return changes.length;
-}
-
 // Bulk trash, batched so the whole set restores with a single undo.
 export async function trashSaves(
   ids: readonly string[],

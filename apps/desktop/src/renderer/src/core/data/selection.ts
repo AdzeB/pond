@@ -13,7 +13,7 @@ const initialSelection: SelectionState = {
   snapshot: [],
 };
 
-export const selectionStore = new Store<SelectionState>(initialSelection);
+const selectionStore = new Store<SelectionState>(initialSelection);
 
 function withIds(
   state: SelectionState,
@@ -27,11 +27,11 @@ function withIds(
   };
 }
 
-export function setSelection(ids: Iterable<string>): void {
+function setSelection(ids: Iterable<string>): void {
   selectionStore.setState((s) => withIds(s, new Set(ids)));
 }
 
-export function addToSelection(id: string): void {
+function addToSelection(id: string): void {
   selectionStore.setState((s) => {
     if (s.ids.has(id)) return s;
     const next = new Set(s.ids);
@@ -40,7 +40,7 @@ export function addToSelection(id: string): void {
   });
 }
 
-export function toggleSelection(id: string): void {
+function toggleSelection(id: string): void {
   selectionStore.setState((s) => {
     const next = new Set(s.ids);
     if (next.has(id)) next.delete(id);
@@ -49,18 +49,18 @@ export function toggleSelection(id: string): void {
   });
 }
 
-export function clearSelection(): void {
+function clearSelection(): void {
   selectionStore.setState((s) => {
     if (s.ids.size === 0 && s.anchor === null) return s;
     return { ids: new Set(), anchor: null, snapshot: [] };
   });
 }
 
-export function setSelectionAnchor(id: string): void {
+function setSelectionAnchor(id: string): void {
   selectionStore.setState((s) => (s.anchor === id ? s : { ...s, anchor: id }));
 }
 
-export function setSelectionRange(
+function setSelectionRange(
   allIds: ReadonlyArray<string>,
   from: string,
   to: string,

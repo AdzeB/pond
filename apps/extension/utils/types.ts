@@ -3,9 +3,9 @@ import type { SessionImportResponse } from "@pond/schema/session";
 
 export const POND_EVENT = "pond:capture";
 
-export const DEFAULT_PORT = 41610;
+const DEFAULT_PORT = 41610;
 
-export interface PondCapturePayload {
+interface PondCapturePayload {
   url: string;
   trigger?: string;
 }

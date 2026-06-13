@@ -9,7 +9,7 @@ import { getDb } from "../db";
 import { itemFile, itemsRoot } from "../paths";
 import { toWireSave } from "./wire";
 
-export function isTrustedSender(event: IpcMainInvokeEvent): boolean {
+function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   const url = event.senderFrame?.url ?? "";
   if (!url) return false;
   const devUrl = process.env.ELECTRON_RENDERER_URL;
@@ -79,16 +79,7 @@ export async function resolveSaveFilePath(
   }
 }
 
-export function sanitizeFtsQuery(q: string): string {
-  const tokens = q
-    .split(/\s+/)
-    .map((t) => t.replace(/[^\p{L}\p{N}_-]/gu, ""))
-    .filter((t) => t.length > 0);
-  if (tokens.length === 0) return q.replace(/["()*]/g, "");
-  return tokens.map((t) => `${t}*`).join(" AND ");
-}
-
-export type QueryParams = Record<string, unknown>;
+type QueryParams = Record<string, unknown>;
 export type QueryHandler = (
   params: QueryParams,
   event?: IpcMainInvokeEvent,

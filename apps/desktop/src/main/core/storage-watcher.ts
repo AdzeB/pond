@@ -7,8 +7,8 @@ import { getPrefs } from "./prefs";
 import { getStorageSnapshot } from "./storage-stats";
 import { cancelSync } from "./sync";
 
-export type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
-export type StorageGuardState = "ok" | "warn" | "exceeded";
+type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
+type StorageGuardState = "ok" | "warn" | "exceeded";
 
 export interface StorageGuardStatus {
   state: StorageGuardState;

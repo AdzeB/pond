@@ -24,10 +24,6 @@ interface TrayOptions {
 
 let handle: TrayHandle | null = null;
 
-export function currentTray(): TrayHandle | null {
-  return handle;
-}
-
 let lastOpts: TrayOptions | null = null;
 
 export async function setTrayVisible(visible: boolean): Promise<void> {

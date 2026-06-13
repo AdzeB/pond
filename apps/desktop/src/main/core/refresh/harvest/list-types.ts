@@ -1,4 +1,4 @@
-import type { MediaType, Source } from "@pond/schema/db";
+import type { MediaType } from "@pond/schema/db";
 
 export interface ListHarvestArgs {
   knownIds: string[];
@@ -25,5 +25,3 @@ export interface ListEntry {
 export type ListHarvestResult =
   | { ok: true; entries: ListEntry[]; reachedEnd: boolean }
   | { ok: false; reason: "auth_required" | "no_match" | "timeout" | "unknown" };
-
-export type ListSource = Source;

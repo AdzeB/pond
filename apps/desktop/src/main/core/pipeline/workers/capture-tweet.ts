@@ -12,10 +12,7 @@ import { readSave } from "./apply";
 // Distinct from `cover`/`media`/`video` so the renderer can show the
 // screenshot as a tweet's primary thumbnail while keeping the actual
 // extracted media available in the detail carousel. The light/dark
-// variants are the live targets; `TWEET_SCREENSHOT_KIND` is the
-// pre-dual-theme kind kept around as a fallback when re-capture for an
-// existing save hasn't run yet.
-export const TWEET_SCREENSHOT_KIND = "tweet_screenshot";
+// variants are the live targets.
 export const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
@@ -23,10 +20,7 @@ export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 // quoted tweet in the chain, e.g. `tweet_screenshot_quote1_light` is the
 // tweet the save directly quotes. The renderer matches these by prefix
 // (see core/data/media.ts).
-export function quoteScreenshotKind(
-  depth: number,
-  scheme: "light" | "dark",
-): string {
+function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 

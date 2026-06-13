@@ -42,11 +42,3 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
 });
 
 export const DEV_GROUPS: readonly SettingsGroup[] = SETTINGS_DEV_GROUPS;
-
-function pickDefault(): SectionDef {
-  const first = SECTIONS[0];
-  if (!first) throw new Error("settings registry is empty");
-  return first;
-}
-
-export const DEFAULT_SECTION: SectionDef = pickDefault();

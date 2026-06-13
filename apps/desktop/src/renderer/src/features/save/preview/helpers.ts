@@ -1,22 +1,4 @@
 import type { Save } from "@/core/data/types";
-import type { ChapterCue } from "@/features/media/video-player/chapters-vtt";
-
-export function getYouTubeChapters(save: Save): ChapterCue[] | undefined {
-  const ytdlp = save.rawJson?.ytdlp?.chapters;
-  if (!ytdlp || ytdlp.length === 0) return undefined;
-  const out: ChapterCue[] = [];
-  for (const c of ytdlp) {
-    const title = (c.title ?? "").trim();
-    if (!title) continue;
-    if (typeof c.start_time !== "number") continue;
-    out.push({
-      title,
-      startSec: c.start_time,
-      endSec: typeof c.end_time === "number" ? c.end_time : undefined,
-    });
-  }
-  return out.length > 0 ? out : undefined;
-}
 
 export function descriptionMatchesTitle(save: Save): boolean {
   if (!save.title || !save.description) return false;

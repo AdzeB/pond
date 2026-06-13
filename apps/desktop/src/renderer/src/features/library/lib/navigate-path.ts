@@ -6,27 +6,7 @@ import { applyViewStateFromParams } from "@/features/library/stores/view-store";
 type TSNavigate = ReturnType<typeof useNavigate>;
 type NavigateArg = Parameters<TSNavigate>[0];
 
-// TSR types the search reducer against the current route's schema,
-// which is too narrow when the same helper has to run from any route.
-// `to:` strings that don't match any route literal type (e.g.
-// user-supplied paths) go through this wrapper; callers that already
-// know the literal route should use `navigate({ to, params })` directly.
-export function navigateTo(
-  navigate: TSNavigate,
-  to: string,
-  opts: {
-    replace?: boolean;
-    search?: Record<string, unknown>;
-  } = {},
-): void {
-  void navigate({
-    to,
-    search: opts.search,
-    replace: opts.replace,
-  } as unknown as NavigateArg);
-}
-
-export interface NavigateOpts {
+interface NavigateOpts {
   search?: Record<string, unknown>;
   replace?: boolean;
 }

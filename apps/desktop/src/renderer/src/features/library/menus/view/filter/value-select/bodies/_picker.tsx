@@ -2,7 +2,7 @@ import { Menu } from "@pond/ui";
 import { Fragment, type ReactNode, useMemo } from "react";
 import styles from "../styles.module.css";
 
-export interface PickerItem {
+interface PickerItem {
   /** Canonical value used for selection state and as the React key. */
   value: string;
   /** Display label; falls back to `value`. */
@@ -13,7 +13,7 @@ export interface PickerItem {
   flag?: ReactNode;
 }
 
-export interface PickerSection {
+interface PickerSection {
   key: string;
   /** A header is rendered only when a label is provided. */
   label?: ReactNode;

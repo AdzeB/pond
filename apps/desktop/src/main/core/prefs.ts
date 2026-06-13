@@ -28,14 +28,6 @@ export function invalidatePrefs(): void {
   settingsCache.invalidate();
 }
 
-export function invalidateVideoDownloadPrefs(): void {
-  settingsCache.invalidate();
-}
-
-export function invalidateImageDownloadPrefs(): void {
-  settingsCache.invalidate();
-}
-
 async function fetchSettings(): Promise<SettingsCache> {
   const db = await getGlobalDb();
   const rows = await db

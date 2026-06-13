@@ -93,7 +93,7 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
 // it survives an index rebuild. This list is the single source of truth for
 // the export whitelist; `infoDocFromSave` and `applyPatchToInfo` both
 // project exactly these.
-export const EXPORTED_SAVE_FIELDS = [
+const EXPORTED_SAVE_FIELDS = [
   "url",
   "title",
   "description",

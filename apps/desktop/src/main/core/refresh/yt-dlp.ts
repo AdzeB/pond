@@ -13,7 +13,7 @@ export interface DownloadVideoArgs {
   source: Source | null;
 }
 
-export interface SubtitleFile {
+interface SubtitleFile {
   path: string;
   filename: string;
   mimeType: string;

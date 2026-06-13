@@ -2,7 +2,7 @@ import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
 
 export type { Op };
 
-export const UNIVERSAL_SPEC: readonly Op[] = OPS;
+const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
 // Per-op attempt budget. Tuned against each worker's wall-clock cost
 // and recoverability. yt-dlp downloads are the most expensive (10-min

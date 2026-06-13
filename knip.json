@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    "apps/desktop": {
+      "entry": [
+        "electron.vite.config.ts",
+        "src/main/index.ts",
+        "src/preload/index.ts",
+        "src/preload/scrape.cjs.ts",
+        "src/renderer/src/main.tsx",
+        "src/renderer/src/routes/**/*.{ts,tsx}",
+        "scripts/*.{mjs,cjs,ts}"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"]
+    },
+    "apps/website": {
+      "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],
+      "project": ["**/*.{ts,tsx}"]
+    },
+    "apps/extension": {
+      "entry": ["entrypoints/**/*.{ts,tsx}", "scripts/*.mjs"],
+      "project": ["**/*.{ts,tsx}"]
+    }
+  }
+}

@@ -38,7 +38,7 @@ export interface EnqueueResult {
   reseeded?: boolean;
 }
 
-export interface EnqueueSeed {
+interface EnqueueSeed {
   rawJson: RawJson;
   title?: string | null;
   description?: string | null;

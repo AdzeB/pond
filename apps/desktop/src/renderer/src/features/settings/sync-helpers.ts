@@ -4,16 +4,7 @@ import {
   type SyncFrequency,
 } from "@pond/schema/db";
 
-export type RepeatPreset =
-  | "every_hour"
-  | "every_day"
-  | "every_weekday"
-  | "every_weekend"
-  | "custom";
-
 export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
-export const WEEKDAY_INDICES = [1, 2, 3, 4, 5];
-export const WEEKEND_INDICES = [0, 6];
 
 export const WEEKDAYS: Array<{ index: number; short: string; full: string }> = [
   { index: 0, short: "S", full: "Sunday" },
@@ -24,74 +15,6 @@ export const WEEKDAYS: Array<{ index: number; short: string; full: string }> = [
   { index: 5, short: "F", full: "Friday" },
   { index: 6, short: "S", full: "Saturday" },
 ];
-
-export const REPEAT_PRESETS: Array<{
-  value: Exclude<RepeatPreset, "custom">;
-  label: string;
-  secondary?: string;
-}> = [
-  { value: "every_hour", label: "Every hour" },
-  { value: "every_day", label: "Every day" },
-  { value: "every_weekday", label: "Every weekday", secondary: "Mon\u2013Fri" },
-  { value: "every_weekend", label: "Every weekend", secondary: "Sat\u2013Sun" },
-];
-
-export function setEqual(a: number[], b: number[]): boolean {
-  if (a.length !== b.length) return false;
-  const sa = new Set(a);
-  for (const n of b) if (!sa.has(n)) return false;
-  return true;
-}
-
-export function presetFromPrefs(prefs: GlobalSyncPrefs): RepeatPreset {
-  switch (prefs.frequency) {
-    case "hourly":
-      return "every_hour";
-    case "daily":
-      return setEqual(prefs.weekdays, ALL_DAYS) ? "every_day" : "custom";
-    case "weekly":
-      if (setEqual(prefs.weekdays, ALL_DAYS)) return "every_day";
-      if (setEqual(prefs.weekdays, WEEKDAY_INDICES)) return "every_weekday";
-      if (setEqual(prefs.weekdays, WEEKEND_INDICES)) return "every_weekend";
-      return "custom";
-    default:
-      return "custom";
-  }
-}
-
-export function applyPreset(
-  preset: Exclude<RepeatPreset, "custom">,
-): Partial<GlobalSyncPrefs> {
-  switch (preset) {
-    case "every_hour":
-      return { frequency: "hourly", weekdays: ALL_DAYS };
-    case "every_day":
-      return { frequency: "daily", weekdays: ALL_DAYS };
-    case "every_weekday":
-      return { frequency: "weekly", weekdays: WEEKDAY_INDICES };
-    case "every_weekend":
-      return { frequency: "weekly", weekdays: WEEKEND_INDICES };
-  }
-}
-
-export function formatRepeatTrigger(prefs: GlobalSyncPrefs): string {
-  const preset = presetFromPrefs(prefs);
-  if (preset !== "custom") {
-    return REPEAT_PRESETS.find((p) => p.value === preset)?.label ?? "Custom";
-  }
-  if (prefs.frequency === "weekly") {
-    const days = [...prefs.weekdays].sort((a, b) => a - b);
-    if (days.length === 1) {
-      const w = WEEKDAYS[days[0] as number];
-      return w ? `Every ${w.full}` : "Custom";
-    }
-    return days
-      .map((d) => WEEKDAYS[d]?.full.slice(0, 3))
-      .filter(Boolean)
-      .join(", ");
-  }
-  return "Custom";
-}
 
 export function frequencyHasAnchor(frequency: SyncFrequency): boolean {
   return frequency === "daily" || frequency === "weekly";

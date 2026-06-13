@@ -23,7 +23,7 @@ interface SavedViewsState {
   readonly loaded: boolean;
 }
 
-export const savedViewsStore = new Store<SavedViewsState>({
+const savedViewsStore = new Store<SavedViewsState>({
   rows: [],
   loaded: false,
 });
@@ -128,16 +128,6 @@ export function useSavedViews(): ReadonlyArray<SavedViewRow> {
   return useStore(savedViewsStore, (s) => s.rows);
 }
 
-export function getSavedViewsSnapshot(): ReadonlyArray<SavedViewRow> {
-  return savedViewsStore.state.rows;
-}
-
-export async function reloadSavedViews(): Promise<ReadonlyArray<SavedViewRow>> {
-  savedViewsStore.setState(() => ({ rows: [], loaded: false }));
-  inflight = null;
-  return load();
-}
-
 export interface CreateSavedViewInput {
   name: string;
   query?: Query;
@@ -169,8 +159,4 @@ export async function updateSavedView(
 
 export async function deleteSavedView(id: string): Promise<void> {
   await window.pond.query("savedViews.delete", { id });
-}
-
-export async function reorderSavedViews(ids: string[]): Promise<void> {
-  await window.pond.query("savedViews.reorder", { ids });
 }

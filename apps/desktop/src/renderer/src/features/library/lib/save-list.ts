@@ -27,7 +27,7 @@ export function extractSource(parentBase: string): string {
   return match?.[1]?.toLowerCase() ?? "";
 }
 
-export function capitalise(s: string): string {
+function capitalise(s: string): string {
   return s.length === 0 ? s : s[0]?.toUpperCase() + s.slice(1);
 }
 

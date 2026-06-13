@@ -8,7 +8,7 @@ import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 // hammering X for pathological chains.
 const QUOTE_DEPTH_CAP = 3;
 
-export interface QuotedTweetRef {
+interface QuotedTweetRef {
   tweetId: string;
   url: string;
 }

@@ -192,4 +192,4 @@ export const LibraryGrid = {
   Empty,
 };
 
-export type { GridLayout, LibraryView };
+export type { GridLayout };

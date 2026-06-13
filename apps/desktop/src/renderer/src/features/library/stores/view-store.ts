@@ -112,10 +112,6 @@ export function useSortDir(): SortDir {
   return useStore(store, (s) => s.sortDir);
 }
 
-export function useCapture(): boolean {
-  return useStore(store, (s) => s.capture);
-}
-
 export function useActiveViewId(): string | null {
   return useStore(store, (s) => s.activeViewId);
 }
@@ -275,12 +271,8 @@ export function restoreDefaults(): void {
   }));
 }
 
-export function openCapture(): void {
+function openCapture(): void {
   store.setState((s) => (s.capture ? s : { ...s, capture: true }));
-}
-
-export function closeCapture(): void {
-  store.setState((s) => (s.capture ? { ...s, capture: false } : s));
 }
 
 // Translate an inbound URL search payload (deep links, command palette) into

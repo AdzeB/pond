@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import {
   type NewSave,
@@ -122,24 +122,6 @@ export async function readSave(saveId: string): Promise<Save | null> {
   const db = await getDb();
   const rows = await db.select().from(saves).where(eq(saves.id, saveId));
   return rows[0] ?? null;
-}
-
-export async function fileExistsOnDisk(
-  saveId: string,
-  filename: string,
-): Promise<boolean> {
-  return existsSync(join(itemDir(saveId), filename));
-}
-
-export async function readFileBytes(
-  saveId: string,
-  filename: string,
-): Promise<Buffer | null> {
-  try {
-    return await readFile(join(itemDir(saveId), filename));
-  } catch {
-    return null;
-  }
 }
 
 function pickPrev(current: Save, patch: Partial<NewSave>): unknown {

@@ -7,7 +7,7 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
-import { and, eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import { getDb } from "../../db";
@@ -94,7 +94,7 @@ export async function getSourceSync(source: Source): Promise<SourceSyncPrefs> {
   return { ...DEFAULT_SOURCE_SYNC_PREFS, ...prefs.sync.sources[source] };
 }
 
-export async function patchSourceSync(
+async function patchSourceSync(
   source: Source,
   patch: Partial<SourceSyncPrefs>,
 ): Promise<SourceSyncPrefs> {
@@ -274,7 +274,7 @@ export function isSyncing(source: Source): boolean {
   return inFlight.has(source);
 }
 
-export const LIST_HARVEST_SOURCES = new Set<Source>([
+const LIST_HARVEST_SOURCES = new Set<Source>([
   "youtube",
   "cosmos",
   "arena",
@@ -730,26 +730,4 @@ async function syncTwitter(
     lastSyncedAt,
     lastError: null,
   });
-}
-
-export async function countSavesForSource(source: Source): Promise<number> {
-  const db = await getDb();
-  const rows = await db
-    .select({ id: saves.id })
-    .from(saves)
-    .where(eq(saves.source, source));
-  return rows.length;
-}
-
-export async function existingSourceIds(
-  source: Source,
-  ids: string[],
-): Promise<Set<string>> {
-  if (ids.length === 0) return new Set();
-  const db = await getDb();
-  const rows = await db
-    .select({ sourceId: saves.sourceId })
-    .from(saves)
-    .where(and(eq(saves.source, source), inArray(saves.sourceId, ids)));
-  return new Set(rows.map((r) => r.sourceId));
 }

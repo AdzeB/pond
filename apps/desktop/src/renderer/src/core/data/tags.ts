@@ -15,7 +15,7 @@ interface TagsState {
   readonly loaded: boolean;
 }
 
-export const tagsStore = new Store<TagsState>({ rows: [], loaded: false });
+const tagsStore = new Store<TagsState>({ rows: [], loaded: false });
 
 let inflight: Promise<ReadonlyArray<TagRow>> | null = null;
 let subscribed = false;
@@ -127,22 +127,4 @@ export function useTags(): ReadonlyArray<TagRow> {
     void load();
   }, []);
   return useStore(tagsStore, (s) => s.rows);
-}
-
-export function useRecentTags(limit = 12): ReadonlyArray<TagRow> {
-  const all = useTags();
-  return all
-    .filter((t) => t.lastUsedAt != null)
-    .sort((a, b) => (b.lastUsedAt ?? 0) - (a.lastUsedAt ?? 0))
-    .slice(0, limit);
-}
-
-export function getTagsSnapshot(): ReadonlyArray<TagRow> {
-  return tagsStore.state.rows;
-}
-
-export async function reloadTags(): Promise<ReadonlyArray<TagRow>> {
-  inflight = null;
-  tagsStore.setState(() => ({ rows: [], loaded: false }));
-  return load();
 }

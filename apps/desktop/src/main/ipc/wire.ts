@@ -21,7 +21,7 @@ function toMs(v: Stampable): number | null {
   return null;
 }
 
-export interface WireTask {
+interface WireTask {
   op: Op;
   status: TaskStatus;
   attempts: number;
@@ -117,7 +117,7 @@ export function toWireSaves(
   return rows.map((row) => toWireSave(row, tasksBySave?.get(row.id), opts));
 }
 
-export function toWireTask(task: Task): WireTask {
+function toWireTask(task: Task): WireTask {
   return {
     op: task.op,
     status: task.status,

@@ -42,12 +42,12 @@ function fromFloating(d: Date): Date {
   );
 }
 
-export interface ParsedTime {
+interface ParsedTime {
   hours: number;
   minutes: number;
 }
 
-export function parseHHmm(value: string): ParsedTime | null {
+function parseHHmm(value: string): ParsedTime | null {
   const m = /^(\d{1,2}):(\d{2})$/.exec(value);
   if (!m) return null;
   const hours = Number(m[1]);

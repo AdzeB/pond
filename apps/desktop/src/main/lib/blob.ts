@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
@@ -34,7 +33,7 @@ function kindFor(mimeType: string | null): "cover" | "video" | "other" {
   return "other";
 }
 
-export async function fetchMediaToTxFile(
+async function fetchMediaToTxFile(
   mediaUrl: string,
   index = 0,
   options: FetchMediaOptions = {},
@@ -194,112 +193,4 @@ function renumberCovers(files: TxSaveFile[]): TxSaveFile[] {
     }
     return { ...f, filename: `media-${mediaIndex++}${ext}` };
   });
-}
-
-export function pondUri(itemId: string, filename: string): string {
-  return `pond://${itemId}/${filename}`;
-}
-
-export async function readLocalToTxFile(
-  path: string,
-  options: { mimeType?: string; index?: number } = {},
-): Promise<TxSaveFile | null> {
-  let buf: Buffer;
-  try {
-    buf = await readFile(path);
-  } catch (err) {
-    log.warn("[pond blob] readLocal failed", path, err);
-    return null;
-  }
-
-  if (buf.byteLength === 0) {
-    log.warn("[pond blob] readLocal empty file", path);
-    return null;
-  }
-  if (buf.byteLength > MAX_DOWNLOAD_BYTES) {
-    log.warn("[pond blob] readLocal too big, skipping", buf.byteLength, path);
-    return null;
-  }
-
-  const ext = extname(path).toLowerCase() || ".bin";
-  const mime = options.mimeType ?? mimeFromExt(ext);
-  const kind: "cover" | "video" = mime.startsWith("video/") ? "video" : "cover";
-  const index = options.index ?? 0;
-  const filename =
-    kind === "video"
-      ? index === 0
-        ? `video${ext}`
-        : `video-${index}${ext}`
-      : index === 0
-        ? `cover${ext}`
-        : `media-${index}${ext}`;
-
-  return {
-    filename,
-    bytes: buf,
-    mimeType: mime,
-  };
-}
-
-export async function readLocalPosterToTxFile(
-  path: string,
-  options: { mimeType?: string; index?: number } = {},
-): Promise<TxSaveFile | null> {
-  let buf: Buffer;
-  try {
-    buf = await readFile(path);
-  } catch (err) {
-    log.warn("[pond blob] readLocalPoster failed", path, err);
-    return null;
-  }
-  if (buf.byteLength === 0) {
-    log.warn("[pond blob] readLocalPoster empty file", path);
-    return null;
-  }
-  if (buf.byteLength > MAX_DOWNLOAD_BYTES) {
-    log.warn(
-      "[pond blob] readLocalPoster too big, skipping",
-      buf.byteLength,
-      path,
-    );
-    return null;
-  }
-
-  const ext = extname(path).toLowerCase() || ".jpg";
-  const mime = options.mimeType ?? mimeFromExt(ext);
-  const index = options.index ?? 0;
-  const filename = index === 0 ? `poster${ext}` : `poster-${index}${ext}`;
-
-  return {
-    filename,
-    bytes: buf,
-    mimeType: mime,
-  };
-}
-
-function mimeFromExt(ext: string): string {
-  switch (ext) {
-    case ".mp4":
-    case ".m4v":
-      return "video/mp4";
-    case ".webm":
-      return "video/webm";
-    case ".mov":
-      return "video/quicktime";
-    case ".mkv":
-      return "video/x-matroska";
-    case ".jpg":
-    case ".jpeg":
-      return "image/jpeg";
-    case ".png":
-      return "image/png";
-    case ".gif":
-      return "image/gif";
-    case ".webp":
-      return "image/webp";
-    case ".avif":
-      return "image/avif";
-    default:
-      return "application/octet-stream";
-  }
 }

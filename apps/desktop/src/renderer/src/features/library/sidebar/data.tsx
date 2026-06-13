@@ -1,8 +1,6 @@
 import {
   IconArchiveContent2Fill18 as Archive,
   IconClockFill18 as Clock,
-  IconPuzzlePieceFill18 as Extension,
-  IconGearFill18 as Settings,
   IconTagSlashFill18 as TagSlash,
   IconTrash2Fill18 as Trash2,
 } from "@pond/icons/fill/18";
@@ -53,24 +51,6 @@ const navItems: readonly NavItem[] = [
   },
 ] as const;
 
-const extraRoutes = {
-  id: "extra",
-  routes: [
-    {
-      path: "/extension",
-      params: undefined,
-      icon: <Extension />,
-      label: "Extension",
-    },
-    {
-      path: "/settings",
-      params: undefined,
-      icon: <Settings />,
-      label: "Settings",
-    },
-  ],
-} as const;
-
 export type { NavItem };
 
-export { extraRoutes, navItems };
+export { navItems };

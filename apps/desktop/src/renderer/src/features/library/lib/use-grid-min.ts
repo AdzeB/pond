@@ -30,5 +30,3 @@ export function useGridMin(): number {
   }, []);
   return value;
 }
-
-export { DEFAULT_COL_MIN };

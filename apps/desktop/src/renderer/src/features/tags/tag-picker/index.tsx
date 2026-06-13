@@ -7,7 +7,7 @@ import { TagMenu } from "@/features/tags/menus/tag-menu";
 
 type PopoverAnchor = Element | null | (() => Element | null) | undefined;
 
-export type TagPickerTarget =
+type TagPickerTarget =
   | { kind: "save"; save: Save }
   | { kind: "group"; group: TagGroupRow };
 

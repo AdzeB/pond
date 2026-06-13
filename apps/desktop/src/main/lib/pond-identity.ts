@@ -17,7 +17,7 @@ import {
 // pond handle for empty-state queries; this throwaway id gives it one
 // without touching a real bundle. The first write materializes the real
 // bundle, after which the stable metadata id takes over.
-export const UNBOUND_POND_ID = "unbound";
+const UNBOUND_POND_ID = "unbound";
 
 interface LibraryMetadata {
   id: string;

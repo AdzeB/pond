@@ -30,13 +30,13 @@ async function acquireToken(): Promise<void> {
   }
 }
 
-export interface ArenaApiFailure {
+interface ArenaApiFailure {
   ok: false;
   status: number;
   reason: "not_found" | "rate_limited" | "unauthorized" | "network" | "timeout";
 }
 
-export type ArenaApiResult<T> = { ok: true; value: T } | ArenaApiFailure;
+type ArenaApiResult<T> = { ok: true; value: T } | ArenaApiFailure;
 
 async function fetchJson<T>(
   url: string,
@@ -138,7 +138,7 @@ interface ArenaChannelLite {
   href?: string | null;
 }
 
-export interface ArenaBlock {
+interface ArenaBlock {
   id?: number | string | null;
   class?: string | null;
   title?: string | null;
@@ -158,9 +158,7 @@ export interface ArenaBlock {
   channels?: ArenaChannelLite[] | null;
 }
 
-export function fetchArenaBlock(
-  blockId: string,
-): Promise<ArenaApiResult<ArenaBlock>> {
+function fetchArenaBlock(blockId: string): Promise<ArenaApiResult<ArenaBlock>> {
   const url = `${API_BASE}/blocks/${encodeURIComponent(blockId)}`;
   return fetchJson<ArenaBlock>(url);
 }

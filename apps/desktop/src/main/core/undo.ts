@@ -55,8 +55,3 @@ export function canUndo(): boolean {
 export function canRedo(): boolean {
   return redoStack.length > 0;
 }
-
-export function clearHistory(): void {
-  undoStack.length = 0;
-  redoStack.length = 0;
-}
