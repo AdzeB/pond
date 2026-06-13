@@ -88,6 +88,10 @@ export const saves = sqliteTable(
     mediaUrl: text("media_url"),
     mediaType: text("media_type").$type<MediaType>(),
     rawJson: text("raw_json", { mode: "json" }),
+    // Precomputed slim projection of rawJson (media/duration/avatar/extractor) so
+    // `saves.list` never reads or parses the heavy rawJson blob. Kept in sync on
+    // every write that touches rawJson; rebuildable from rawJson on reconcile.
+    rawSlim: text("raw_slim", { mode: "json" }),
     tags: text("tags", { mode: "json" })
       .$type<string[]>()
       .notNull()

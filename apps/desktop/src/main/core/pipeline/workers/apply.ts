@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../../db";
+import { withRawSlim } from "../../../lib/raw-slim";
 import { itemDir } from "../../../paths";
 import { broadcastSyncAction } from "../../executor";
 
@@ -91,7 +92,10 @@ export async function applySavePatch(
     ...(written.length > 0 ? { files: nextFiles } : {}),
   };
 
-  db.update(saves).set(fullPatch).where(eq(saves.id, saveId)).run();
+  db.update(saves)
+    .set(withRawSlim(fullPatch))
+    .where(eq(saves.id, saveId))
+    .run();
   const updated = (
     await db.select().from(saves).where(eq(saves.id, saveId))
   )[0];

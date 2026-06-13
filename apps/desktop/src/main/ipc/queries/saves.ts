@@ -1,7 +1,7 @@
-import { saves, type Task, tasks } from "@pond/schema/db";
+import { type Save, saves, type Task, tasks } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
-import { desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { desc, eq, getTableColumns, inArray, isNotNull } from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
@@ -39,20 +39,34 @@ function derivePublicImageUrl(raw: RawJson | null): string | null {
   return ogImage;
 }
 
+// SQLite caps bound parameters (~32k), so chunk the IN list; without a limit on
+// saves.list this would otherwise throw "too many SQL variables" on large libraries.
+const TASK_ID_CHUNK = 10_000;
+
 async function loadTasksFor(
   db: Db,
   ids: string[],
 ): Promise<Map<string, Task[]>> {
   if (ids.length === 0) return new Map();
-  const rows = await db.select().from(tasks).where(inArray(tasks.saveId, ids));
   const grouped = new Map<string, Task[]>();
-  for (const t of rows) {
-    const existing = grouped.get(t.saveId);
-    if (existing) existing.push(t);
-    else grouped.set(t.saveId, [t]);
+  for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
+    const slice = ids.slice(i, i + TASK_ID_CHUNK);
+    const rows = await db
+      .select()
+      .from(tasks)
+      .where(inArray(tasks.saveId, slice));
+    for (const t of rows) {
+      const existing = grouped.get(t.saveId);
+      if (existing) existing.push(t);
+      else grouped.set(t.saveId, [t]);
+    }
   }
   return grouped;
 }
+
+// Every saves column except the heavy rawJson blob; raw_slim carries the projection
+// the grid needs, so saves.list never reads or parses rawJson.
+const { rawJson: _omitRawJson, ...SAVE_LIST_COLUMNS } = getTableColumns(saves);
 
 export const savesQueries: QueryHandlerMap = {
   ...savesImportQueries,
@@ -61,7 +75,10 @@ export const savesQueries: QueryHandlerMap = {
   async "saves.list"(params) {
     const db = await getDb();
     const hasExplicitLimit = params.limit != null;
-    const baseQuery = db.select().from(saves).orderBy(desc(saves.savedAt));
+    const baseQuery = db
+      .select(SAVE_LIST_COLUMNS)
+      .from(saves)
+      .orderBy(desc(saves.savedAt));
     const rows = hasExplicitLimit
       ? await baseQuery.limit(Math.min(Number(params.limit), 100_000))
       : await baseQuery;
@@ -69,7 +86,13 @@ export const savesQueries: QueryHandlerMap = {
       db,
       rows.map((r) => r.id),
     );
-    return toWireSaves(rows, grouped, { slim: true });
+    // raw_slim already holds the slim projection, so present it as rawJson directly
+    // instead of re-slimming the (unselected) full blob.
+    const listRows = rows.map(({ rawSlim, ...rest }) => ({
+      ...rest,
+      rawJson: rawSlim,
+    })) as Save[];
+    return toWireSaves(listRows, grouped);
   },
 
   // Full rawJson for one save; the detail view hydrates it lazily.

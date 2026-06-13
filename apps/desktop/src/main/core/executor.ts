@@ -21,6 +21,7 @@ import {
   setItemDeleted,
   writeItemFiles,
 } from "../lib/library";
+import { withRawSlim } from "../lib/raw-slim";
 
 export interface ExecuteOptions {
   silent?: boolean;
@@ -198,18 +199,20 @@ function applyToIndex(
 ): void {
   if (tx.model === "save") {
     switch (tx.kind) {
-      case "create":
+      case "create": {
+        const values = withRawSlim(tx.data);
         db.insert(savesTable)
-          .values(tx.data)
+          .values(values)
           .onConflictDoUpdate({
             target: [savesTable.source, savesTable.sourceId],
-            set: tx.data,
+            set: values,
           })
           .run();
         return;
+      }
       case "update":
         db.update(savesTable)
-          .set(tx.patch)
+          .set(withRawSlim(tx.patch))
           .where(eq(savesTable.id, tx.id))
           .run();
         return;

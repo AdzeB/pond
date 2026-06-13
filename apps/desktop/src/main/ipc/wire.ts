@@ -1,5 +1,6 @@
 import type { Op, Save, SyncAction, Task, TaskStatus } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
+import { slimRawJson } from "../lib/raw-slim";
 
 type Stampable = Date | string | number | null | undefined;
 
@@ -52,33 +53,6 @@ export type WireSave = Omit<
 export interface WireSaveOptions {
   // Replace rawJson with a tiny projection; the grid never reads the full blob.
   slim?: boolean;
-}
-
-// Keep only the rawJson fields the grid/filter/search read (duration, media type, avatar).
-function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
-  if (!raw) return null;
-  const cap = raw.capture;
-  return {
-    capture: {
-      id: cap.id,
-      source: cap.source,
-      url: cap.url,
-      ...(cap.author?.avatarUrl
-        ? { author: { avatarUrl: cap.author.avatarUrl } }
-        : {}),
-      media: (cap.media ?? []).map((m) => ({
-        url: m.url,
-        type: m.type,
-        ...(m.durationSec != null ? { durationSec: m.durationSec } : {}),
-      })),
-      ...(cap.duration != null ? { duration: cap.duration } : {}),
-    },
-    extractorId: raw.extractorId,
-    extractedAt: raw.extractedAt,
-    ...(raw.ytdlp?.duration != null
-      ? { ytdlp: { duration: raw.ytdlp.duration } }
-      : {}),
-  };
 }
 
 export function toWireSave(

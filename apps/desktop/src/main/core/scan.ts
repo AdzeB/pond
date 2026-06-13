@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { scanLibrary } from "../lib/library";
+import { withRawSlim } from "../lib/raw-slim";
 import { broadcastSyncAction } from "./executor";
 
 export async function reconcileLibrary(): Promise<{
@@ -103,7 +104,7 @@ export async function reconcileLibrary(): Promise<{
 
       await db
         .insert(saves)
-        .values(insertValues)
+        .values(withRawSlim(insertValues))
         .onConflictDoUpdate({ target: saves.id, set: updateSet })
         .run();
 

@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/better-sqlite3";
 import log from "electron-log/main.js";
 import { readOrCreatePondId } from "./lib/pond-identity";
+import { backfillRawSlim } from "./lib/raw-slim";
 import { resolvePaths } from "./paths";
 
 const combinedSchema = { ...schema, ...eventsSchema };
@@ -55,6 +56,7 @@ export async function getDb(): Promise<Db> {
 
   const sqlite = openSqlite(paths.indexDb);
   migratePond(sqlite);
+  backfillRawSlim(sqlite);
   cachedPond = wrap(sqlite);
 
   ensureLibraryMetadata();
@@ -104,6 +106,7 @@ function migratePond(sqlite: Database.Database): void {
 					media_url TEXT,
 					media_type TEXT,
 					raw_json TEXT,
+					raw_slim TEXT,
 					tags TEXT NOT NULL DEFAULT '[]',
 					files TEXT NOT NULL DEFAULT '[]',
 					cover_index INTEGER NOT NULL DEFAULT 0,
@@ -261,6 +264,22 @@ function migratePond(sqlite: Database.Database): void {
 					);
 				END;
 			`);
+
+  addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
+}
+
+// SQLite has no `ADD COLUMN IF NOT EXISTS`; guard against re-adding on upgrade.
+function addColumnIfMissing(
+  sqlite: Database.Database,
+  table: string,
+  column: string,
+  type: string,
+): void {
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  if (cols.some((c) => c.name === column)) return;
+  sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
 
 function ensureLibraryMetadata(): void {
