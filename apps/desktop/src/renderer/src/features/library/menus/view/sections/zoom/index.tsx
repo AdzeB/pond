@@ -14,7 +14,7 @@ const options: Array<{
 ];
 
 function closest(value: number): number {
-  let best = options[0]?.value;
+  let best = options[0]?.value ?? ZOOM_DEFAULT;
   let bestDelta = Math.abs(value - best);
   for (const { value: option } of options) {
     const delta = Math.abs(value - option);

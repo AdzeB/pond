@@ -108,9 +108,6 @@ export function computeNextDueAt(
     case "hourly":
       due = lastFireValid ? new Date(lastFire.getTime() + HOUR_MS) : now;
       break;
-    case "every6h":
-      due = lastFireValid ? new Date(lastFire.getTime() + 6 * HOUR_MS) : now;
-      break;
     case "daily":
     case "weekly": {
       const from = lastFireValid

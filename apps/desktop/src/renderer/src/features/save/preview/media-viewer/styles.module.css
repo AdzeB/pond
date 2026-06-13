@@ -69,13 +69,10 @@
 }
 
 /* Sensitive media: blur the whole viewport (covers images and the video
-   player alike) and the thumbnail strip until the viewer reveals it. */
+   player alike) until the viewer reveals it. The matching thumbnail blur
+   lives after the base `.thumbnail` rule so specificity ascends in source. */
 .carousel[data-blurred="true"] .viewport {
   filter: blur(40px);
-}
-
-.carousel[data-blurred="true"] .thumbnail .image {
-  filter: blur(10px);
 }
 
 .sensitive {
@@ -234,4 +231,9 @@
     height: 100%;
     background: var(--ds-gray-a4);
   }
+}
+
+/* Blur the thumbnail previews of sensitive media until revealed. */
+.carousel[data-blurred="true"] .thumbnail .image {
+  filter: blur(10px);
 }

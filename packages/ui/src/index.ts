@@ -1,7 +1,7 @@
 export { cn } from "./_shared/cn";
 export { Accordion } from "./accordion";
 export { AlertDialog } from "./alert-dialog";
-export { Button } from "./button";
+export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
 export { ColorField } from "./color-field";
 export { ContextMenu } from "./context-menu";

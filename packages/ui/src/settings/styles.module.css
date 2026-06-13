@@ -1,13 +1,26 @@
 .page {
   --settings-padding-inline-inset: 16px;
   --settings-margin-block: 64px;
+  --settings-max-width: 640px;
 
   display: flex;
   flex-direction: column;
   gap: 40px;
-  width: 640px;
+  width: var(--settings-max-width);
   margin-block: var(--settings-margin-block);
   margin-inline: auto;
+}
+
+.page[data-width="narrow"] {
+  --settings-max-width: 384px;
+}
+
+.page[data-width="medium"] {
+  --settings-max-width: 640px;
+}
+
+.page[data-width="wide"] {
+  --settings-max-width: 1024px;
 }
 
 .header {
