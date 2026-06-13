@@ -6,17 +6,10 @@ import { sourcePausedUntil } from "../../pipeline/source-gate";
 import { PARTITION } from "./constants";
 import { sleep } from "./util";
 
-// Hard ceiling on total scrape windows alive at once. Each hidden
-// window is ~150 MB resident; six is the comfortable upper bound on a
-// laptop without leaning on swap.
+// Hard ceiling on live scrape windows (~150 MB each).
 export const GLOBAL_POOL_CAP = 6;
 
-// Per-source concurrency budget. Caps sum to more than GLOBAL_POOL_CAP
-// on purpose: the global cap clamps memory while these per-source
-// budgets prevent head-of-line blocking when a host stalls (X under
-// soft-block can pin its slots until the nav timeout). Twitter gets
-// the largest slice because `harvest_metadata` + `capture_tweet` both
-// target it.
+// Per-source budgets (sum > global cap on purpose) to prevent head-of-line blocking.
 const PER_SOURCE_CAP: Record<Source, number> = {
   twitter: 3,
   instagram: 2,
@@ -25,8 +18,7 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   cosmos: 2,
   pinterest: 2,
   arena: 2,
-  // Local imports never lease a scrape window; the budget is here only to
-  // keep the record total.
+  // Local never leases a window; present only to complete the record.
   local: 0,
 };
 
@@ -47,8 +39,7 @@ const busyBySource: Record<Source, number> = Object.fromEntries(
 const waitQueues: Record<Source, Waiter[]> = Object.fromEntries(
   SOURCES.map((s) => [s, [] as Waiter[]]),
 ) as Record<Source, Waiter[]>;
-// Cursor for round-robin drain order. Advances past the source we just
-// served so a hot queue can't monopolise freshly released slots.
+// Round-robin cursor so a hot queue can't monopolise released slots.
 let roundRobinCursor = 0;
 
 function createHiddenWindow(): BrowserWindow {
@@ -106,12 +97,7 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
 }
 
 export async function leaseWindow(source: Source): Promise<Lease> {
-  // Honour an active per-source cooldown / circuit-breaker. Without
-  // this gate, a soft-blocked host keeps re-leasing windows the moment
-  // the previous task fails, and every call burns its full nav timeout
-  // before the reconciler can even classify the error. Sleep until the
-  // gate clears, then fall through to the normal claim path. The gate
-  // is in-memory and clears whenever the source recovers.
+  // Honour an active cooldown/breaker: sleep until it clears before claiming.
   const pausedUntil = sourcePausedUntil(source);
   if (pausedUntil > 0) {
     const waitMs = Math.max(0, pausedUntil - Date.now());
@@ -148,9 +134,7 @@ export async function leaseWindow(source: Source): Promise<Lease> {
 }
 
 function drainQueues(): void {
-  // Round-robin across sources, one grant per source per pass. Loop
-  // until no source can be served: either everyone with a waiter is
-  // already at cap or no windows are idle.
+  // Round-robin, one grant per source per pass, until nothing can be served.
   let progress = true;
   while (progress) {
     progress = false;

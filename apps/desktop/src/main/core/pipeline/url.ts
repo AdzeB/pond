@@ -9,9 +9,7 @@ import {
   YOUTUBE_PATTERNS,
 } from "./extractors/url-patterns";
 
-// sourceIdFromUrl: canonical id used in `saves.source_id`. Matches the
-// extractor's regex capture so a given (source, sourceId) pair is unique per
-// post regardless of which URL form the user pasted in.
+// Canonical id for `saves.source_id`, matching the extractor's regex capture.
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
   let url: URL;
   try {
@@ -50,8 +48,7 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
       return m?.[1] ?? null;
     }
     case "local":
-      // Local saves mint their own id at import time; there is no upstream
-      // URL to canonicalize.
+      // Local saves mint their own id; no upstream URL.
       return null;
   }
 }

@@ -9,8 +9,7 @@ import styles from "./styles.module.css";
 
 export function Toolbar() {
   const platform = usePlatform();
-  // No sidebar covers the top-left anymore, so on macOS the toolbar always
-  // needs to clear the traffic-light buttons.
+  // On macOS the toolbar must clear the traffic-light buttons.
   const trafficLightInset = platform === "mac" ? 72 : 0;
 
   return (
@@ -23,8 +22,7 @@ export function Toolbar() {
         <PondToolbar.Group className={styles.center}>
           <Search />
         </PondToolbar.Group>
-        {/* Balances the left group so the search field stays centred. Filter,
-            view options, and sync now live in the bottom dock. */}
+        {/* Balances the left group so search stays centred. */}
         <PondToolbar.Group fill={true} className={styles.sideEnd} />
       </PondToolbar.Row>
     </PondToolbar.Root>

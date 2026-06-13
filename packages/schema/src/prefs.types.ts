@@ -95,9 +95,7 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
 export type SyncSources = Partial<Record<Source, SourceSyncPrefs>>;
 export type SyncHandles = Partial<Record<Source, string>>;
 
-// A theme is a base background color, an accent color, and a contrast
-// amount. The base color's lightness decides light vs dark; contrast
-// spreads the derived ramp. Mirrors Linear's interface theme model.
+// Base color (its lightness picks light/dark), accent, and contrast spread for the ramp.
 export interface ThemeDef {
   base: string;
   accent: string;
@@ -114,8 +112,7 @@ export const CONTRAST_MIN = 0;
 export const CONTRAST_MAX = 100;
 export const CONTRAST_DEFAULT = 30;
 
-// Fallback custom theme and the preset ids used by default. Preset ids
-// live in packages/schema/src/theme-presets.ts.
+// Fallback custom theme and default preset ids (presets in theme-presets.ts).
 export const CUSTOM_THEME_DEFAULT: ThemeDef = {
   base: "#fcfcfd",
   accent: "#3b82f6",

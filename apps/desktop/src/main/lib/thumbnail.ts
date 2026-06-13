@@ -10,21 +10,17 @@ const THUMBS_DIRNAME = "_thumbs";
 const MIN_WIDTH = 64;
 const MAX_WIDTH = 2048;
 const WEBP_QUALITY = 78;
-// Cap concurrent sharp jobs so a fast grid scroll can't peg every core
-// at once. libvips already parallelizes a single resize internally.
+// Cap concurrent sharp jobs so a fast scroll can't peg every core.
 const MAX_CONCURRENT = 4;
 
-// Still raster formats we can safely downscale. Animated (multi-page)
-// inputs are detected per-file via metadata; vector (svg) and unknown
-// types are excluded so the protocol serves the original untouched.
+// Raster formats safe to downscale; animated/vector are served as the original.
 const THUMBNAILABLE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
 export function isThumbnailable(ext: string): boolean {
   return THUMBNAILABLE_EXT.has(ext.toLowerCase());
 }
 
-// Clamp a requested width into a sane range. Returns null for garbage
-// input so the caller falls back to the original file.
+// Clamp a requested width; null on garbage so the caller uses the original.
 export function clampThumbWidth(raw: number): number | null {
   if (!Number.isFinite(raw)) return null;
   const w = Math.round(raw);
@@ -32,12 +28,10 @@ export function clampThumbWidth(raw: number): number | null {
   return Math.min(Math.max(w, MIN_WIDTH), MAX_WIDTH);
 }
 
-// Per-output in-flight dedupe: concurrent requests for the same thumb
-// (common on first grid paint) share one generation.
+// Per-output in-flight dedupe so concurrent requests share one generation.
 const inflight = new Map<string, Promise<string | null>>();
 
-// Tiny FIFO semaphore. `active` stays pinned at the cap while work is
-// queued because release() hands the slot directly to the next waiter.
+// FIFO semaphore; release() hands the slot straight to the next waiter.
 let active = 0;
 const waiters: Array<() => void> = [];
 
@@ -59,22 +53,17 @@ function release(): void {
 }
 
 interface ThumbnailRequest {
-  // The save id is the protocol host; used only to partition the cache
-  // on disk so a deleted save's thumbs can be dropped as a unit.
+  // Protocol host; partitions the cache so a deleted save's thumbs drop as a unit.
   saveId: string;
-  // Absolute path to the source file, already validated to live inside
-  // the library's items directory by the caller.
+  // Absolute source path, already validated to live in the items dir.
   sourcePath: string;
   // Target width in device pixels, already clamped.
   width: number;
-  // Content version (file sha256 prefix) when known; null falls back to
-  // mtime+size so the thumb regenerates if the source changes.
+  // Content version (sha256 prefix); null falls back to mtime+size.
   version: string | null;
 }
 
-// Resolve a cached thumbnail for the request, generating it on demand.
-// Returns the absolute path to a WebP under `_thumbs/`, or null when the
-// source is animated/unreadable and the caller should serve the original.
+// Resolve a cached WebP thumb (generating on demand); null = serve the original.
 export async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
@@ -128,13 +117,11 @@ async function generate(
 
     const pipeline = sharp(sourcePath, { failOn: "none" });
     const meta = await pipeline.metadata();
-    // Multi-page = animated GIF/WebP. Resizing would flatten to one
-    // frame, so leave it to the caller to serve the original.
+    // Multi-page = animated; resizing would flatten it, so serve the original.
     if ((meta.pages ?? 1) > 1) return null;
 
     await mkdir(dir, { recursive: true });
-    // Write to a unique temp path then rename so a crash mid-encode can
-    // never leave a truncated file that looks like a valid cache hit.
+    // Write to a temp path then rename so a crash can't leave a truncated cache hit.
     const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
     await pipeline
       .resize({ width, fit: "inside", withoutEnlargement: true })

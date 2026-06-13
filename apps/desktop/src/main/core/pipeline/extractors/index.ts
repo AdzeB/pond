@@ -10,9 +10,7 @@ import { TwitterTweetExtractor } from "./sources/twitter";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
-// One extractor per external source. The `satisfies Record<ExternalSource, …>`
-// makes a missing source a compile error - the typed equivalent of yt-dlp's
-// `_extractors.py` import line. Insertion order is the URL resolution order.
+// One extractor per source; missing one = compile error. Order = URL match order.
 const EXTRACTORS = {
   twitter: new TwitterTweetExtractor(),
   instagram: new InstagramPostExtractor(),

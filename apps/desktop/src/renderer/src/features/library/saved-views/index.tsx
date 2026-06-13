@@ -36,8 +36,7 @@ export function SavedViews() {
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<SavedViewRow | null>(null);
 
-  // The active view is "modified" when the live query/sort diverge from what
-  // was saved — Save then updates the view in place.
+  // Active view is "modified" when the live query/sort diverge from what was saved.
   const activeDirty = useMemo(() => {
     const active = views.find((v) => v.id === activeViewId);
     if (!active) return false;
@@ -48,14 +47,11 @@ export function SavedViews() {
     );
   }, [views, activeViewId, query, sortKey, sortDir]);
 
-  // When no saved view is explicitly active, fall back to matching the live
-  // state against a quick filter so e.g. "Recently Saved" shows selected on
-  // load.
+  // With no active saved view, match live state against a quick filter (e.g. "Recently Saved" shows selected).
   const activeQuickId =
     activeViewId ?? findActiveQuickFilterId(query, sortKey, sortDir);
 
-  // The currently selected saved view surfaces as its own tab in the row, next
-  // to the quick filters; the rest stay tucked inside the overflow menu.
+  // The selected saved view gets its own tab next to the quick filters; the rest live in the overflow menu.
   const activeView = views.find((v) => v.id === activeViewId) ?? null;
 
   return (

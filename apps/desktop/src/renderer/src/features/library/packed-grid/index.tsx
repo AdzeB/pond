@@ -36,10 +36,7 @@ export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
     [totalHeight],
   );
 
-  // Only render items whose absolute position intersects the viewport
-  // (plus an overscan band). The grid keeps its full `totalHeight` so the
-  // scrollbar stays accurate, but off-screen cards never reach React
-  // reconciliation, image decode, or paint.
+  // Only render items intersecting the overscanned viewport; full `totalHeight` keeps the scrollbar accurate.
   const visible = useVisibleIndices(ref, items);
 
   return (

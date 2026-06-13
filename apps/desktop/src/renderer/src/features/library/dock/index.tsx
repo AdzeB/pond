@@ -26,10 +26,7 @@ import {
 import { focusSearchInput } from "@/features/library/toolbar/constants";
 import styles from "./styles.module.css";
 
-// Floating bottom navigation, modelled on the visitors.now dock: a small
-// centred pill of icon-only actions that replaces the old left sidebar. The
-// pill is grouped left-to-right into navigation, view tools, app actions, and
-// a contextual selection cluster that only appears when cards are selected.
+// Floating bottom nav pill, grouped into navigation, view tools, app actions, and a selection cluster shown when cards are selected.
 const DOCK_NAV_KEYS = new Set(["library", "untagged", "recents", "trash"]);
 
 export function Dock() {

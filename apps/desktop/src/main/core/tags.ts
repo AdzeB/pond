@@ -61,8 +61,7 @@ export async function renameTag(
   const db = await getDb();
   const fromCanon = await tagByLowerName(db, fromKey);
 
-  // Only treat as a merge when the canonical keys actually differ.
-  // Same-key renames (e.g. "meme" → "Meme") just restyle the casing.
+  // Only merge when canonical keys differ; same-key renames just restyle casing.
   if (fromKey !== toKey) {
     const toCanon = await tagByLowerName(db, toKey);
     if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {

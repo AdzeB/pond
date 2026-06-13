@@ -24,10 +24,7 @@ const BACKOFF_SCHEDULE_MS = [
   6 * 60 * 60_000,
 ];
 
-// ±20% jitter. Without it, a synchronised failure burst (e.g. 30 saves
-// hit the same host blip) all retry on the exact same tick and stampede
-// the host again. Spreading the herd across a window avoids the
-// thundering-retry pattern.
+// ±20% jitter so a synchronised failure burst doesn't retry in lockstep.
 const JITTER_FRACTION = 0.2;
 
 function backoffFor(attempts: number): number {
@@ -79,8 +76,7 @@ export function classifyError(
       lastError,
     };
   }
-  // Treat plain Errors and ExtractorError->TransientError as transient
-  // (network blips, 5xx, timeouts). Give up after maxAttempts.
+  // Plain Errors and TransientError are transient; give up after maxAttempts.
   const isTransient =
     err instanceof TransientError || !(err instanceof ExtractorError);
   if (isTransient) {

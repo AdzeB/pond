@@ -36,9 +36,7 @@ function packRows(
       });
       cursorLeft += width + gap;
     }
-    // Advance past the media slot AND the meta block underneath it
-    // (title / date). Without `chromeHeight` the next row would draw
-    // its media on top of the previous row's meta block.
+    // Advance past media + the meta block; without chromeHeight the next row overlaps it.
     cursorTop += height + chromeHeight + gap;
     current = [];
     aspectSum = 0;
@@ -54,8 +52,7 @@ function packRows(
       flushRow(available / aspectSum);
     }
   }
-  /* Last partial row keeps target height; cards retain natural widths
-   * and trail off rather than over-stretching. Matches Eagle. */
+  // Last partial row keeps target height so cards trail off rather than over-stretch.
   if (current.length > 0) flushRow(targetHeight);
   const totalHeight = Math.max(0, cursorTop - gap);
   return { items, totalHeight };

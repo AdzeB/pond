@@ -66,12 +66,7 @@ export function operatorPhrase(predicate: Predicate): string {
   }
 }
 
-// The comparators offered in the operator menu for a predicate. Set-like
-// types collapse the eq/in (and neq/nin) pair into a single positive /
-// negative choice phrased for the current value count; the underlying
-// comparator is resolved by `changeComparator`. Returns [] for fields that
-// have no meaningful operator choice (optional, color), so the chip can hide
-// the operator segment.
+// Comparators offered in the operator menu. Set-like types collapse eq/in into one positive/negative choice. Returns [] when there's no meaningful choice.
 export function operatorOptions(predicate: Predicate): OperatorOption[] {
   const type = FIELD_META[predicate.field].type;
   const multi = isMulti(predicate.value);
@@ -123,9 +118,7 @@ const ARRAY_CMPS: ReadonlySet<ComparatorId> = new Set([
   "none",
 ]);
 
-// Swap a predicate's comparator while coercing its value into the shape the
-// new comparator expects (scalar <-> array, scalar -> [min,max] range, etc.),
-// preserving as much of the existing selection as possible.
+// Swap comparator, coercing the value into the new shape (scalar <-> array, range) while preserving the selection.
 export function changeComparator(
   predicate: Predicate,
   operator: ComparatorId,

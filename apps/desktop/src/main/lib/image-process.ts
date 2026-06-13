@@ -23,10 +23,7 @@ const TARGET_MIME: Record<Exclude<ImageFormat, "original">, string> = {
   avif: "image/avif",
 };
 
-// Resize and/or transcode a still image per the user's download prefs.
-// Returns null when there is nothing to do (passthrough) or the input is not a
-// processable still image (non-image, or an animated GIF/WebP we leave intact
-// so the animation survives).
+// Resize/transcode a still image per download prefs; null on passthrough or non-still input.
 export async function processImage(
   bytes: Buffer,
   filename: string,

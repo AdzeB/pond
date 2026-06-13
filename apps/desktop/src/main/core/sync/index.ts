@@ -28,9 +28,7 @@ import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export interface SyncOptions {
   trigger?: "manual" | "cron";
-  // Caps the number of *new* (not-yet-in-library) items enqueued per source.
-  // The list-harvest pass still walks the full list, but only the first
-  // `maxItems` fresh entries get queued into the pipeline.
+  // Cap on new items enqueued per source; the full list is still walked.
   maxItems?: number;
 }
 
@@ -54,12 +52,7 @@ interface InFlight {
 
 const inFlight = new Map<Source, InFlight>();
 
-/* If a sync hasn't resolved within this window it's almost certainly
- * stuck (usually `harvestTwitterBookmarks` waiting on a hidden window
- * navigation that never finishes). Abort via the controller so the
- * `finally` clears the slot and the next cron tick can try again
- * instead of being permanently shadowed by a ghost. Twitter has to
- * harvest+enqueue hundreds of bookmarks so it gets the loosest cap. */
+// Watchdog: abort a stuck sync so the slot clears; Twitter gets the loosest cap.
 const SYNC_WATCHDOG_MS: Record<Source, number> = {
   twitter: 30 * 60_000,
   youtube: 20 * 60_000,
@@ -68,8 +61,7 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   pinterest: 20 * 60_000,
   instagram: 20 * 60_000,
   tiktok: 20 * 60_000,
-  // Local imports never run a sync session; present only to keep the
-  // record total.
+  // Local never syncs; present only for the record total.
   local: 20 * 60_000,
 };
 
@@ -192,11 +184,7 @@ export async function syncSource(
     startedAt,
     watchdog,
   });
-  /* One wide event per sync run, mutated as the run proceeds and
-   * committed unconditionally in the finally. Replaces the trio of
-   * "[pond sync:<source>] starting / enqueueing / done" lines that
-   * used to drift apart and force you to grep two timestamps to know
-   * how long anything took. */
+  // One wide event per sync run, mutated then committed in the finally.
   const ev: SyncRunEvent = startSyncEvent({
     source,
     trigger: opts.trigger ?? "manual",
@@ -222,11 +210,7 @@ export async function syncSource(
     }
     if (controller.signal.aborted) {
       ev.outcome = "aborted";
-      /* Aborts unwind via early returns inside the runners without a
-       * terminal emit, leaving the renderer stuck on the last "running"
-       * frame. Push an explicit idle so the UI clears its spinner. The
-       * watchdog path is reported as an error instead (the user didn't
-       * ask for it). */
+      // Push an explicit idle so the UI clears its spinner; watchdog reports an error.
       const cfg = await getSourceSync(source);
       emit({
         source,
@@ -264,10 +248,7 @@ export function cancelSync(source: Source): void {
   const entry = inFlight.get(source);
   if (!entry) return;
   entry.controller.abort();
-  /* The signal is only polled between harvest/enqueue steps, so the run
-   * may take a moment to actually wind down (a harvest in flight has to
-   * return first). Surface a "Stopping…" beat immediately so the UI
-   * reflects intent; the terminal `idle` emit lands once the run unwinds. */
+  // Surface "Stopping…" immediately; the run winds down between steps.
   emit({ source, state: "running", message: "Stopping…" });
 }
 
@@ -298,10 +279,7 @@ async function inferAccountKey(source: Source): Promise<string | null> {
   return null;
 }
 
-// Resolve the logged-in user's handle for sites where the list URL is
-// `/<handle>` (cosmos, arena). Cache → DB inference → hidden-window
-// probe → cache. The probe is the slow path; we only hit it the first
-// time after the user pushes their session.
+// Resolve the user's handle (cosmos/arena): cache → DB inference → hidden-window probe.
 async function resolveAccountKey(source: Source): Promise<string | null> {
   const cached = await readStoredHandle(source);
   if (cached) return cached;
@@ -556,12 +534,7 @@ async function syncTwitter(
     .from(saves)
     .where(eq(saves.source, source));
   const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
-  // Tweets we already created a save for but whose pipeline blew up
-  // (typically: harvest_metadata returned `scrape returned no data` after
-  // X.com rate-limited the partition). When the same tweet shows up in
-  // the bookmark capture again we can lift it back out of `failed` and
-  // reseed its row from the GraphQL data we already have, instead of
-  // letting it sit dead forever.
+  // Previously-failed tweets we can reseed from GraphQL data when they reappear.
   const failedSourceIds = new Set<string>(
     knownRows.filter((r) => r.status === "failed").map((r) => r.sourceId),
   );
@@ -620,10 +593,7 @@ async function syncTwitter(
     return;
   }
 
-  // Two batches:
-  //   `fresh`:     tweets we haven't seen yet (creates new saves).
-  //   `recovery`:  tweets we have but in `failed` status; seeding lets
-  //                the pipeline restart with metadata already populated.
+  // fresh: unseen tweets (new saves). recovery: failed tweets reseeded with metadata.
   const allFresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
   const recovery = harvest.entries.filter((e) =>
     failedSourceIds.has(e.tweetId),

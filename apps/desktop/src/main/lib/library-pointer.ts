@@ -9,11 +9,7 @@ import {
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
 
-// Tiny side-car that holds the user's chosen library folder. Lives in
-// userData so we can read it synchronously before the DB opens, and so
-// it survives a corrupted index.db. Same pattern Lightroom/Photos use:
-// the app data folder holds a pointer to wherever the user wants their
-// actual library to sit.
+// Side-car in userData pointing at the user's library folder; read before the DB opens.
 const POINTER_FILE = "library-location.json";
 
 interface PointerFile {
@@ -33,8 +29,7 @@ export function readLibraryPointer(): string | null {
     const candidate = parsed?.path;
     if (typeof candidate !== "string" || candidate.length === 0) return null;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    // Refuse to honor a pointer into our own userData. That would
-    // create infinite recursion (library inside its own metadata dir).
+    // Refuse a pointer into userData: it would recurse (library inside its metadata).
     if (abs.startsWith(`${app.getPath("userData")}/`)) return null;
     return abs;
   } catch {
@@ -56,11 +51,7 @@ export function writeLibraryPointer(absPath: string): void {
   writeFileSync(file, JSON.stringify(body, null, 2));
 }
 
-// Returns true if `target` looks safe to use as a library root:
-// - the folder exists or can be created
-// - it sits outside userData
-// - it's not equal to the current resolution (caller decides what to
-//   do with that; we just report)
+// Reports whether `target` is safe as a library root (exists/creatable, outside userData).
 export interface PointerSafetyReport {
   ok: boolean;
   reason?:
@@ -104,10 +95,7 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
   }
 }
 
-// Marker substrings let us spot when a user has parked their library
-// in a synced folder. We surface this in the relocate dialog so people
-// understand the trade-off (files sync across devices; the SQLite
-// index stays per-machine).
+// Path markers for synced folders; surfaced in the relocate dialog.
 const CLOUD_MARKERS: ReadonlyArray<{
   kind: CloudKind;
   patterns: ReadonlyArray<string>;
@@ -146,11 +134,7 @@ export function detectCloudKind(absPath: string): CloudKind | null {
   return null;
 }
 
-// "Does this folder already look like a Pond library?" Used so we
-// can default the relocate dialog to "adopt" (skip the copy) when the
-// user is pointing at, say, an iCloud folder that's already synced
-// from another Mac. Pond libraries have `items/` and `metadata.json`
-// at the root; either is a strong signal.
+// Detect an existing Pond library (`items/` or `metadata.json`) to default to "adopt".
 export interface ExistingLibraryProbe {
   exists: boolean;
   hasItemsDir: boolean;
@@ -178,8 +162,7 @@ export function probeExistingLibrary(absPath: string): ExistingLibraryProbe {
       const entries = readdirSync(itemsDir).filter((e) => e.endsWith(".info"));
       out.itemCount = entries.length;
     } catch {
-      // Best-effort: a permission error here is the same outcome as
-      // an empty folder for our purposes.
+      // Best-effort; a permission error reads the same as an empty folder.
     }
   }
   out.looksLikePondLibrary = out.hasItemsDir || out.hasMetadataFile;

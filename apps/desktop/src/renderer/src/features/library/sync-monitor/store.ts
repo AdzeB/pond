@@ -4,9 +4,7 @@ import { Store } from "@tanstack/store";
 
 export type SyncState = "idle" | "running" | "done" | "error" | "auth_required";
 
-// The live wire shape pushed over `window.pond.onSyncStatus`. Mirrors
-// `SyncStatusUpdate` in the main process; kept local so the renderer doesn't
-// reach across the IPC boundary for a type.
+// Live wire shape pushed over onSyncStatus; mirrors the main process type, kept local to avoid crossing IPC.
 export interface SyncStatusUpdate {
   source: string;
   state: SyncState;
@@ -46,8 +44,7 @@ export const syncMonitor = {
   close(): void {
     store.setState((s) => {
       if (!s.open) return s;
-      // Drop per-run transient fields so a reopen doesn't flash a stale
-      // message/progress before the next snapshot lands.
+      // Drop transient fields so a reopen doesn't flash stale message/progress.
       const bySource: SyncMonitorState["bySource"] = {};
       for (const [key, value] of Object.entries(s.bySource)) {
         if (!value) continue;
@@ -63,9 +60,7 @@ export const syncMonitor = {
   toggle(): void {
     store.setState((s) => ({ ...s, open: !s.open }));
   },
-  // Apply a live status push. Optional fields fall back to the last known
-  // value when omitted (running updates rarely carry `lastSyncedAt`), but an
-  // explicit `null` is honored so a fresh run can clear a stale error.
+  // Apply a live status push; omitted fields keep the last value, but explicit null clears a stale error.
   ingest(update: SyncStatusUpdate): void {
     const source = update.source as Source;
     store.setState((s) => {

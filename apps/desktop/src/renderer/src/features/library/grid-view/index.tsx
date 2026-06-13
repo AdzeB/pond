@@ -8,12 +8,7 @@ import { PackedGrid, type PackedItem, type PackResult } from "../packed-grid";
 
 const ITEM_GAP = 16;
 
-// Uniform square-cell grid. Unlike waterfall/justified this ignores each
-// item's aspect ratio (the media slot is forced square by `.grid-grid .media`),
-// so every cell is the same size and the layout is a plain flow. Packing it
-// ourselves — instead of leaning on CSS `display: grid` auto-placement — lets
-// it ride the same `PackedGrid` viewport-windowing path as the other layouts
-// rather than mounting a DOM node for every save.
+// Uniform square-cell grid (ignores aspect ratio). Packed manually so it rides the same PackedGrid windowing path.
 function packUniform(
   saves: ReadonlyArray<Save>,
   containerWidth: number,
@@ -26,8 +21,7 @@ function packUniform(
   }
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
-  // Media is square (aspect-ratio: 1/1), so media height == column width; the
-  // full cell adds the meta chrome underneath.
+  // Square media: height == column width, plus the meta chrome underneath.
   const cellH = colW + chromeHeight;
   const items: PackedItem[] = saves.map((save, idx) => {
     const col = idx % cols;
@@ -35,8 +29,7 @@ function packUniform(
     return {
       save,
       width: colW,
-      // `height` feeds viewport windowing, so it must span the whole cell
-      // (media + chrome), not just the media slot.
+      // `height` feeds viewport windowing, so it spans the whole cell, not just media.
       height: cellH,
       top: row * (cellH + gap),
       left: col * (colW + gap),

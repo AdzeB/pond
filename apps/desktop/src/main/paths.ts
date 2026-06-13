@@ -8,11 +8,9 @@ export interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
-  // App-global state (settings, prefs, onboarded). One file, shared by
-  // every pond.
+  // App-global state (settings, prefs, onboarded); one file shared by every pond.
   globalDb: string;
-  // The active pond's index cache: `indexes/<pondId>.db`. Switching ponds
-  // switches this file, so a fresh pond starts empty.
+  // Active pond's index cache; switching ponds swaps this file.
   indexDb: string;
   indexesDir: string;
   config: string;
@@ -33,10 +31,7 @@ export function defaultLibraryRoot(): string {
   return join(app.getPath("home"), "Pond", "My Pond.pond");
 }
 
-// Bust the cache. Call this after writing a new pointer so the next
-// call to resolvePaths() picks up the user's choice. In practice we
-// always pair this with `app.relaunch(); app.exit(0)`; live re-pointing
-// is hard because many modules captured the old paths at boot.
+// Bust the cache after writing a new pointer; usually paired with a relaunch.
 export function invalidatePaths(): void {
   cached = null;
 }
@@ -51,10 +46,7 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
 
   const pointer = readLibraryPointer();
   const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
-  // Only materialize the bundle once the user has committed to a library:
-  // an explicit override, a saved pointer, or a root that already exists.
-  // A fresh user gets the path without us creating `~/Pond/My Pond.pond`
-  // on disk. The first write creates it via materializeLibrary().
+  // Only materialize the bundle once committed (override, pointer, or existing root).
   const committed =
     libraryRootOverride != null || pointer != null || existsSync(root);
   if (committed) ensureLibraryDirs(root);
@@ -86,8 +78,6 @@ function ensureLibraryDirs(root: string): void {
 }
 
 // Create the active library's bundle on disk (root + items/ + trash/).
-// Called when committing to a library so the pond folder shows up
-// promptly. Writers (writeItemFiles, writeInfoFiles) also mkdir on demand.
 export function materializeLibrary(): string {
   const root = resolvePaths().libraryRoot;
   ensureLibraryDirs(root);

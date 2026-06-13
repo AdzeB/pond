@@ -13,7 +13,7 @@ export interface SelectOption {
 }
 
 interface ItemBase {
-  // React key plus, for field controls, the bound key in the section slice.
+  // React key, and for field controls the bound key in the section slice.
   key: string;
   title: string;
   description?: ReactNode;
@@ -79,8 +79,7 @@ export interface GroupConfig {
   items?: Item[];
   // Bespoke group body rendered in place of the item list (e.g. usage bar).
   render?: (binding: Binding) => ReactNode;
-  // Override the section binding for this group (lets one section span
-  // multiple prefs slices). Falls back to the section binding when unset.
+  // Override the section binding (lets one section span multiple prefs slices).
   prefsKey?: keyof Prefs;
   useBinding?: () => Binding;
 }

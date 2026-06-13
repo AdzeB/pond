@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-// Native HTMLVideoElement Picture-in-Picture — the OS-drawn floating overlay
-// (macOS "Back to Tab"/Close, center pause, ±15s skips). The Document
-// Picture-in-Picture API (custom window contents) is not supported by Electron
-// (electron/electron#39633), so native PiP is the player's pop-out.
+// Native HTMLVideoElement PiP; Document PiP is unsupported in Electron (electron#39633).
 export function usePip(opts: {
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }): { pipSupported: boolean; pipActive: boolean; requestPip: () => void } {

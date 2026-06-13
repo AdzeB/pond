@@ -67,11 +67,7 @@ function normaliseRow(
   };
 }
 
-// tag_group_member rows always trigger a refetch; they don't have
-// stable IDs in the sync log (we encode tagId:groupId) and the
-// membership lists in cache need both names + sort order resolved
-// from a join, which the in-memory store can't reconstruct on its
-// own.
+// tag_group_member rows always refetch: no stable sync-log IDs and membership lists need a join the store can't rebuild.
 let refetchScheduled = false;
 function scheduleRefetch(): void {
   if (refetchScheduled) return;

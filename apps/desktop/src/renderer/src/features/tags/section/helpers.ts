@@ -1,7 +1,6 @@
 export type SortDir = "asc" | "desc";
 
-// Deterministic, pleasant dot color from a label name so the table reads
-// like Linear's even though Pond tags don't store their own color.
+// Deterministic dot color hashed from a label name (tags don't store their own).
 export function colorForName(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i += 1)

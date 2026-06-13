@@ -63,9 +63,7 @@ export class TwitterTweetExtractor implements Extractor {
       "bookmarks",
     ]);
 
-    // The DOM only renders one inline quote level. Record it so the chain
-    // is visible in rawJson; the screenshot walker discovers deeper
-    // levels live by navigating to each quoted tweet.
+    // DOM renders only one quote level; record it, the walker discovers deeper ones live.
     const quotedRaw = (meta.quotedTweet ?? {}) as Record<string, unknown>;
     const quotedTweets =
       typeof quotedRaw.tweetId === "string" && typeof quotedRaw.url === "string"

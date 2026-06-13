@@ -9,8 +9,7 @@ export const librarySearchSchema = z.looseObject({
   url: z.string().optional(),
 });
 
-// Strip the trailing /detail/:id or /save/:id from a list URL so callers
-// can derive the "parent" list base.
+// Strip a trailing /detail/:id or /save/:id to get the parent list base.
 export function listBaseFromPath(pathname: string): string {
   return (
     pathname.replace(/\/(?:detail|save)\/[^/]+\/?$/, "").replace(/\/+$/, "") ||

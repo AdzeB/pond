@@ -17,10 +17,7 @@ interface PromptDialogProps {
   placeholder?: string;
 }
 
-/**
- * The shared single-text-field prompt (rename, merge, …). Submits on Enter or
- * via the primary button; closing is left to the caller's `onConfirm`.
- */
+// Shared single-text-field prompt; submits on Enter, leaves closing to the caller's `onConfirm`.
 export function PromptDialog({
   open,
   onOpenChange,

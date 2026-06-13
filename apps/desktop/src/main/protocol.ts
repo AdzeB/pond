@@ -40,10 +40,7 @@ export function registerScheme() {
         secure: true,
         supportFetchAPI: true,
         stream: true,
-        // Allow cross-origin reads (with the ACAO header below) so the
-        // renderer can fetch item bytes for on-device work like
-        // sensitive-media classification. Chromium otherwise refuses CORS for
-        // custom schemes entirely.
+        // Allow cross-origin reads (ACAO header below) so the renderer can fetch item bytes.
         corsEnabled: true,
       },
     },
@@ -65,9 +62,7 @@ export function registerProtocol() {
         return new Response("forbidden", { status: 403 });
       }
 
-      // Pick what we actually serve. When the client asks for a
-      // downscaled width (`?w=`) on a still raster image, hand back a
-      // generated WebP thumbnail from `_thumbs/`; otherwise the original.
+      // Serve a generated WebP thumb when `?w=` is set on a still raster; else the original.
       const version = url.searchParams.get("v");
       let target = resolved;
       let immutable = version !== null;
@@ -87,8 +82,7 @@ export function registerProtocol() {
             version,
           });
           if (thumb) {
-            // Keyed by both content version and width, so the bytes for
-            // a given URL never change: safe to cache forever.
+            // Keyed by version + width, so the bytes never change: cache forever.
             target = thumb.path;
             immutable = true;
           }
@@ -107,14 +101,9 @@ export function registerProtocol() {
       const headers = new Headers();
       headers.set("content-type", contentType);
       headers.set("accept-ranges", "bytes");
-      // Let the renderer read these bytes back into a canvas/tensor for
-      // on-device work (e.g. sensitive-content classification). Without an
-      // ACAO header a `crossOrigin` <img> from this scheme taints the canvas
-      // and pixel reads throw. The data is local files the renderer already
-      // renders, so exposing read access carries no new risk.
+      // ACAO header so the renderer can read bytes into a canvas without tainting it.
       headers.set("access-control-allow-origin", "*");
-      // Content-addressed URLs (`?v=<sha>`) and thumbnails are immutable;
-      // everything else gets a short window so edits still surface.
+      // Content-addressed (`?v=`) URLs and thumbs are immutable; others get a short window.
       headers.set(
         "cache-control",
         immutable

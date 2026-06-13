@@ -1,15 +1,6 @@
 import type { Source } from "./db";
 
-// Raw shapes written into `saves.rawJson`.
-//
-// Everything flows through the universal `RawJson` below: one
-// well-known shape regardless of source, so consumers never have to
-// branch on `source` to read a field.
-//
-// `RawYtdlp` is the only other shape we model directly, because it
-// mirrors the upstream yt-dlp JSON dump 1:1; that schema is owned by
-// yt-dlp, not us, and we want every field it gives us.
-
+// Raw shapes written into `saves.rawJson`. `RawYtdlp` mirrors yt-dlp's JSON dump 1:1.
 export interface RawYtdlp {
   id?: string;
   title?: string;
@@ -80,10 +71,7 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-// v1 capture schema: the universal shape written to `saves.rawJson` by
-// the URL-first pipeline. Mirrors the `Capture` interface produced by
-// `apps/desktop/src/main/core/pipeline/extractors/types.ts` so the
-// renderer can read it without depending on main-process code.
+// v1 capture schema; mirrors the main-process `Capture` so the renderer can read it.
 export interface CaptureAuthor {
   name?: string;
   handle?: string;
@@ -102,18 +90,7 @@ export interface CaptureMedia {
   mimeType?: string;
 }
 
-// Universal superset of public per-item metrics across the supported
-// platforms. Each extractor populates the subset its source exposes; the
-// renderer iterates over whatever is present.
-//
-// Mapping per source:
-//   twitter:   likes, retweets, replies, views, bookmarks, quotes
-//   instagram: likes, comments, plays
-//   tiktok:    likes, comments, shares, plays, bookmarks (collects)
-//   youtube:   views, likes
-//   pinterest: saves, repins, reactions, comments, shares
-//   arena:     connections, comments
-//   cosmos:    (none publicly exposed)
+// Superset of public per-item metrics; each extractor fills the subset its source exposes.
 export interface CaptureMetrics {
   likes?: number;
   views?: number;

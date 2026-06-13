@@ -32,9 +32,7 @@ import { runFetchBlobs } from "./workers/fetch-blobs";
 export interface EnqueueResult {
   id: string;
   created: boolean;
-  // True when an existing save was reset because it was previously failed
-  // and a fresh seed was supplied. Distinguishes the "no-op" case from
-  // the "recovered a failed save" case at the call site.
+  // Set when a previously-failed save was reset with a fresh seed.
   reseeded?: boolean;
 }
 
@@ -52,12 +50,7 @@ interface EnqueueSeed {
 export interface EnqueueOptions {
   trigger?: string;
   force?: boolean;
-  // Pre-extracted capture data from an upstream source (e.g. the Twitter
-  // bookmarks GraphQL response). When provided, the save row is populated
-  // immediately and `harvest_metadata` skips its scrape via
-  // `isFreshHarvest()`, saving a round-trip and dodging X.com's
-  // per-partition rate limiter when syncing dozens of new bookmarks at
-  // once.
+  // Pre-extracted capture data; lets harvest_metadata skip its scrape via isFreshHarvest().
   seed?: EnqueueSeed;
 }
 
@@ -86,10 +79,7 @@ export async function enqueueSaveByUrl(
   const current = existing[0];
 
   if (current) {
-    // Existing failed save + a usable seed = recovery path. Reset tasks
-    // back to pending, write the seed onto the row, and the next
-    // reconciler tick will run harvest_metadata (which short-circuits via
-    // `isFreshHarvest`), then capture_tweet / fetch_blobs / finalize.
+    // Failed save + seed = recovery: reset tasks to pending and write the seed.
     if (opts.seed && current.status === "failed") {
       await resetTasksForSave(
         current.id,
@@ -107,12 +97,7 @@ export async function enqueueSaveByUrl(
     if (opts.force) {
       await resetTasksForSave(current.id, opts.trigger ?? "enqueue:force");
     } else if (opts.seed) {
-      // Additive enrichment: an existing (non-failed) save predates the
-      // parser update that started extracting a field the sync now hands us
-      // (most commonly `capture.author.avatarUrl`). Merge anything new from
-      // the seed into `rawJson` without touching values the save already
-      // has, and re-pend the downstream worker so the new field actually
-      // lands as a file on disk.
+      // Additive enrichment: merge new seed fields into rawJson without overwriting existing.
       const merge = mergeSeedIntoExistingSave(current, opts.seed);
       if (merge.changed) {
         await persistEnrichment(current.id, merge);
@@ -194,29 +179,13 @@ export async function enqueueSaveByUrl(
   return { id, created: true };
 }
 
-// Recapture concurrency. The scrape pool caps twitter windows at 3
-// (PER_SOURCE_CAP), so matching that keeps every lease busy without
-// queueing a thousand idle promises behind the pool.
+// Match the pool's twitter cap (3) so every lease stays busy.
 const SCREENSHOT_BACKFILL_CONCURRENCY = 3;
 
-// Consecutive auth-wall misses that trip the early abort. The startup
-// check confirms an `auth_token` cookie exists, but a stale/expired
-// session can still bounce to the login flow; bail rather than walking
-// the whole library hammering X for nothing.
+// Consecutive auth-wall misses that trip the early abort (stale session).
 const SCREENSHOT_AUTH_WALL_ABORT = 6;
 
-// backfillTweetScreenshots: out-of-band recapture for every twitter save
-// that's missing a light/dark screenshot variant on disk. Unlike a
-// task-based backfill, this never flips saves back to `ingesting` (so
-// nothing disappears from the grid) and works for `complete`/`failed`
-// saves the reconciler's `ingesting`-only gate would otherwise skip.
-//
-// `runCaptureTweet` is idempotent (it only captures the variants a save
-// is missing and leases windows through the same self-throttling pool),
-// so re-running on every launch is safe; it stops touching a save once
-// both variants exist. Gated on the X session being connected, with an
-// auth-wall circuit breaker so a dead session can't grind the whole
-// library.
+// Out-of-band recapture for twitter saves missing a screenshot variant; never re-ingests.
 export async function backfillTweetScreenshots(): Promise<{
   attempted: number;
   captured: number;
@@ -237,12 +206,9 @@ export async function backfillTweetScreenshots(): Promise<{
 
   const needCapture: string[] = [];
   for (const row of rows) {
-    // Saves mid-ingest already have a `capture_tweet` task the reconciler
-    // owns; leave them to the pipeline so we don't double-lease windows.
+    // Mid-ingest saves are owned by the reconciler; skip to avoid double-leasing.
     if (row.status === "ingesting") continue;
-    // Out-of-date saves are recaptured even when both main variants
-    // exist, so a version bump regenerates them with the latest
-    // trim/padding and backfills quote screenshots + quoted media.
+    // Recapture out-of-date saves even if both variants exist (version bump).
     if (readCaptureTweetVersion(row.rawJson) < CAPTURE_TWEET_VERSION) {
       needCapture.push(row.id);
       continue;
@@ -276,10 +242,7 @@ export async function backfillTweetScreenshots(): Promise<{
       try {
         const result = await runCaptureTweet(saveId);
         captured += result.captured;
-        // The backfill runs out-of-band (no pipeline), so quoted media
-        // merged into capture.media won't be downloaded unless we kick
-        // fetch_blobs ourselves. The normal ingest path runs fetch_blobs
-        // right after capture_tweet, so it needs nothing extra.
+        // Out-of-band, so kick fetch_blobs ourselves for any merged quoted media.
         if (result.mediaAdded) {
           await runFetchBlobs(saveId).catch((err) =>
             log.warn(
@@ -386,10 +349,7 @@ interface SeedMerge {
   rawJson: RawJson | null;
 }
 
-// Additive merge: for each field the seed provides, fill it in only if
-// the existing save doesn't already have a value. Never overwrites.
-// Currently scoped to `capture.author.*`: that's where new extractor
-// fields (avatarUrl, profileUrl) tend to show up first; widen as needed.
+// Additive merge, scoped to `capture.author.*`: fills missing fields, never overwrites.
 function mergeSeedIntoExistingSave(
   current: Save,
   seed: EnqueueSeed,
@@ -461,11 +421,7 @@ async function persistEnrichment(
   if (inserted) broadcastSyncAction(inserted);
 }
 
-// Newly-filled avatar URL only lands on disk if `fetch_avatar` runs
-// again. Its prior pass for this save was a no-op (rawJson had no URL).
-// Only re-pend `done` rows: `pending`/`running` will pick up the new
-// rawJson on their natural run, and reviving `failed`/`blocked` here
-// would step on whatever signal pushed them there.
+// Re-pend only `done` fetch_avatar rows so the newly-filled URL lands on disk.
 async function rependFetchAvatar(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();

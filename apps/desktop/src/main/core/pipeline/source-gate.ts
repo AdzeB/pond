@@ -1,22 +1,9 @@
 import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 
-// Process-wide, in-memory gate for per-source pacing. Two independent
-// reasons a source can be "paused":
-//
-// 1. Cooldown: set when a worker observes an explicit rate-limit
-//    signal (e.g. `RateLimitedError(retryAfterSec)`). Affects every
-//    queued task for that source, not just the one that failed.
-// 2. Circuit breaker: set when N consecutive transient failures land
-//    against a source within a short window. Trips the source off for
-//    ~10 minutes so we don't burn the pool on a dead-on-arrival host.
-//
-// Both reasons are unioned into a single "next allowed" timestamp per
-// source. Consumers (scrape-window lease, reconciler `pullDueTasks`)
-// check `sourcePausedUntil(s)` and either skip or queue-with-delay.
-// Nothing here persists across restarts, by design. Soft-blocks clear
-// on their own and the user shouldn't have to wait through them after
-// quitting and relaunching.
+// In-memory per-source pacing gate. A source pauses on a cooldown (explicit
+// rate-limit signal) or a circuit breaker (N transient failures in a window),
+// unioned into one "next allowed" timestamp. Not persisted across restarts.
 
 const cooldownUntil = new Map<Source, number>();
 const breakerUntil = new Map<Source, number>();
@@ -84,10 +71,7 @@ export function noteTransientFailure(source: Source): void {
 }
 
 export function noteSuccess(source: Source): void {
-  // A success closes the breaker window: the host is healthy again.
-  // Cooldowns set by explicit RateLimitedError signals stay because
-  // the host is asking us to wait regardless of whether the last call
-  // happened to slip through.
+  // Success closes the breaker window, but explicit rate-limit cooldowns stay.
   breakerCounters.delete(source);
 }
 

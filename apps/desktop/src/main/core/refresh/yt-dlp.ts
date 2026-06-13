@@ -32,8 +32,7 @@ export interface DownloadedVideo {
 
 const HARD_TIMEOUT_MS = 90_000;
 
-// yt-dlp format filters. `~=` is a regex match, used to accept the several
-// codec name variants a platform may report (e.g. avc1/h264, vp09/vp9).
+// yt-dlp format filters; `~=` regex-matches the codec name variants a platform reports.
 function videoCodecFilter(codec: VideoDownloadSettings["videoCodec"]): string {
   switch (codec) {
     case "h264":
@@ -145,8 +144,7 @@ export async function downloadVideo(
     const filesize = maxFilesizeArg(prefs);
     if (filesize) argv.unshift("--max-filesize", filesize);
 
-    // Muxing, embedding, SponsorBlock and subtitle-embed all need ffmpeg.
-    // Without it, fall back to a single progressive mp4.
+    // Muxing/embedding/SponsorBlock need ffmpeg; without it, fall back to progressive mp4.
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
       if (prefs.container !== "auto") {
@@ -401,8 +399,7 @@ function isSubtitle(name: string): boolean {
   return ext === ".srt" || ext === ".vtt";
 }
 
-// yt-dlp writes subtitles as `<id>.<lang>.<ext>`. Collect them and derive a
-// stable `subtitle.<lang>.<ext>` filename for persistence.
+// Collect subtitles, deriving a stable `subtitle.<lang>.<ext>` filename.
 async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
   const entries = await readdir(dir);
   const out: SubtitleFile[] = [];

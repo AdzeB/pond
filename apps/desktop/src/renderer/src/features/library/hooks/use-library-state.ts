@@ -22,8 +22,7 @@ interface LibraryState {
   sourceFilter: string;
   selectedId: string | null;
   viewMode: ViewMode;
-  // True when the URL's mode segment wasn't recognized. Callers can
-  // <Navigate /> away rather than silently rendering the library.
+  // True when the URL's mode segment wasn't recognized, so callers can <Navigate /> away.
   unknown: boolean;
 }
 
@@ -43,8 +42,7 @@ export function useLibraryState(): LibraryState {
 
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
 
-  // The open save is now pure client state (drives the side drawer); cards
-  // read it through `useIsPrimary`.
+  // The open save is pure client state (drives the drawer); cards read it via `useIsPrimary`.
   const selectedId = useStore(primarySelectionStore, (s) => s.id);
 
   const viewMode = layout as ViewMode;

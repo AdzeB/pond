@@ -25,9 +25,7 @@ export const settingsQueries: QueryHandlerMap = {
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
-    // Read through the normalizing getters so every field falls back to its
-    // original default. A partially-stored blob (an older schema, a stale
-    // write) would otherwise leave individual controls blank in the UI.
+    // Read through normalizing getters so a partial blob doesn't blank UI controls.
     const videoDownload = await getVideoDownloadPrefs();
     const imageDownload = await getImageDownloadPrefs();
     if (rows[0]) {

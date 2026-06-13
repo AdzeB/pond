@@ -7,18 +7,11 @@ export interface PersistSaveOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
   replaceFilesWithKind?: WriteFileArgs["kind"];
-  // Force an info.json refresh even when the patch only touches DB-only
-  // columns. The pipeline's finalize step uses this for its authoritative
-  // post-ingest write.
+  // Force an info.json refresh even for DB-only patches; used by finalize.
   writeInfo?: boolean;
 }
 
-// persistSave: the single main-process write path for a save. It updates the
-// SQLite row (via applySavePatch, which also emits the sync_actions row and
-// writes any new files), then refreshes info.json from the updated row
-// whenever the patch touches an exported field, adds files, or the caller
-// asks for it. DB-only columns never reach disk because the shared projection
-// (infoDocFromSave) excludes them.
+// Single write path for a save: update the row, then refresh info.json when needed.
 export async function persistSave(
   id: string,
   patch: Partial<NewSave>,

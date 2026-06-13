@@ -1,7 +1,6 @@
 import sharp from "sharp";
 
-// Top-N dominant colors as #rrggbb, most frequent first. Returns [] when the
-// image can't be decoded.
+// Top-N dominant colors as #rrggbb, most frequent first; [] if undecodable.
 export async function extractPalette(
   path: string,
   count = 5,

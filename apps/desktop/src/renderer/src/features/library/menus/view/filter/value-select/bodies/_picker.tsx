@@ -35,12 +35,7 @@ interface LivePickerProps {
   noMatchLabel?: ReactNode;
 }
 
-/**
- * The shared scaffold for filter bodies whose options come from live save data
- * rather than static presets (creators, tags, …): a search input over a
- * scrollable, optionally-sectioned list of toggleable checkbox rows. Callers
- * own how options are derived and what toggling a row does to the predicate.
- */
+/** Scaffold for filter bodies with live-data options: a search input over a scrollable list of checkbox rows. */
 export function LivePicker({
   query,
   onQueryChange,
@@ -101,10 +96,7 @@ export function LivePicker({
   );
 }
 
-/**
- * Normalises a predicate value (scalar, list, or empty) into the membership set
- * the picker uses to mark rows as checked. Shared by every live-data body.
- */
+/** Normalise a predicate value (scalar/list/empty) into the membership set the picker checks against. */
 export function useSelectionSet(value: unknown): Set<string> {
   return useMemo(() => {
     if (Array.isArray(value)) return new Set(value.map(String));

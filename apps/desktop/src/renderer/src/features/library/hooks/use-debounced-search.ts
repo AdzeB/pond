@@ -5,8 +5,7 @@ import {
   useSearchText,
 } from "@/features/library/stores/view-store";
 
-// The view store is the source of truth; the local mirror keeps typing
-// snappy and coalesces writes to one store update every `delayMs`.
+// View store is the source of truth; the local mirror keeps typing snappy, coalescing writes every `delayMs`.
 export function useDebouncedSearch(
   delayMs: number,
 ): [string, (next: string) => void] {

@@ -46,14 +46,7 @@ export async function navigateWithTimeout(
     wc.once("did-fail-load", onFail);
   });
 
-  // `wc.loadURL` can hang indefinitely on stalled hosts (X under
-  // rate-limit / soft-block stops emitting both did-finish-load and
-  // did-fail-load, and the loadURL promise never settles). Previously
-  // we awaited loadURL before racing the load events against the
-  // timeout. A hang there leaked the pool window forever, eventually
-  // pinning the reconciler at MAX_GLOBAL_INFLIGHT. Race the entire
-  // navigation against a wall-clock budget and forcibly stop the
-  // WebContents on miss so the pool slot can be reused.
+  // loadURL can hang on stalled hosts; race the whole nav against a timeout and stop on miss.
   const navPromise = wc.loadURL(url).then(
     () => finished,
     () => false as const,

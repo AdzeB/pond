@@ -38,9 +38,7 @@ function encrypt(plain: string): string {
   if (safeStorage.isEncryptionAvailable()) {
     return `enc:${safeStorage.encryptString(plain).toString("base64")}`;
   }
-  // Linux without libsecret, or first-run before Electron has wired up
-  // a keychain backend. Tag the value so future reads don't try to
-  // decrypt plaintext as a Buffer.
+  // No keychain backend (Linux/first-run); tag the value so reads don't decrypt plaintext.
   log.warn(
     "[pond] safeStorage encryption unavailable, persisting secret in plaintext",
   );

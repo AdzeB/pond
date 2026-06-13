@@ -1,11 +1,6 @@
 import { createContext, type ReactNode, use } from "react";
 
-/**
- * Card interaction callbacks, shared by every grid layout so individual
- * `SaveCard`s no longer receive `onClick`/`onDoubleClick` as drilled
- * props. Kept separate from grid-level state below so toggling
- * multi-select never re-renders the (memoized) cards.
- */
+// Shared card callbacks, kept separate from grid state so toggling multi-select doesn't re-render memoized cards.
 export interface LibraryCardCallbacks {
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;

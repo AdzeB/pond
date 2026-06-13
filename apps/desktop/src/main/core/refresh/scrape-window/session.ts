@@ -103,14 +103,7 @@ async function _writeStoredHandle(
   }
 }
 
-// Opens the hidden window logged in via the partition cookies and reads
-// the user's own handle from the rendered DOM. We pick the handle off
-// the profile link in the top nav: it's the one stable, public-facing
-// identifier every social site exposes once you're authenticated.
-//
-// Returns `null` if the session isn't authenticated or the DOM probe
-// doesn't match (site redesign, sign-out, etc.). The caller should
-// surface that as `auth_required`.
+// Probe the hidden window for the user's handle off the top-nav profile link; null when unauth.
 export async function probeUserHandle(source: Source): Promise<string | null> {
   const lease = await leaseWindow(source);
   try {

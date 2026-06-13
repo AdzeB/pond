@@ -6,11 +6,7 @@ import {
   BindAddressSelect,
 } from "@/features/settings/bind-address";
 
-/**
- * Local API server configuration: port, bind address, restart, ingest
- * token, and the CORS allow-list. Owns all `api` prefs state so the main
- * developer section stays focused on diagnostics and resets.
- */
+// Local API server config (port, bind address, token, CORS allow-list); owns all `api` prefs state.
 export function DeveloperApiSection() {
   const toast = useToast();
   const [apiPrefs, patchApi] = usePrefs("api");

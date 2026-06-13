@@ -80,9 +80,7 @@ function harvestSource(): string {
       if (dt) meta.publishedAt = dt;
     }
 
-    // Fall back to any <time datetime> inside the article. Newer Twitter
-    // renders the timestamp outside the User-Name block on the /i/web/status/
-    // route, so the User-Name-scoped selector above can miss it.
+    // Fall back to any <time datetime>; newer X renders it outside User-Name.
     if (!meta.publishedAt) {
       const time = Array.from(
         article.querySelectorAll<HTMLTimeElement>("time[datetime]"),
@@ -193,9 +191,7 @@ function harvestSource(): string {
     }
     if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
 
-    // X exposes quote count via the "Quotes" link on the tweet detail page
-    // (`/quotes` or `/retweets/with_comments`). There is no stable testid,
-    // so parse the aria-label / text.
+    // No stable testid for quote count; parse the "Quotes" link aria-label/text.
     let quotes: number | undefined;
     {
       const quoteCandidates = Array.from(
@@ -296,11 +292,7 @@ function harvestSource(): string {
       }
     }
 
-    // Quoted tweets render as a nested <article>. The collectors above
-    // deliberately skip it via notInNested so the parent's media isn't
-    // polluted by the quote's; here we make a second pass scoped to the
-    // nested article and append its media after the parent's, so the
-    // quote's images/videos flow into the same carousel.
+    // Second pass over the nested quote <article> to append its media after the parent's.
     if (innerArticle) {
       const quotedVideos = Array.from(
         innerArticle.querySelectorAll<HTMLVideoElement>("video"),
@@ -369,10 +361,7 @@ function harvestSource(): string {
         'meta[property="og:image"], meta[name="og:image"]',
       );
       const ogSrc = ogMeta?.content?.trim();
-      // X serves abs.twimg.com/rweb/ssr/default/v2/og/image.png as the
-      // og:image for any tweet without media; picking it up here would
-      // mark every text-only tweet as having an image and stop the
-      // text-tweet card from rendering.
+      // Skip X's default SSR og:image; it would mark every text tweet as having media.
       const isSsrDefault =
         typeof ogSrc === "string" &&
         /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);

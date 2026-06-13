@@ -4,10 +4,7 @@ import { type ResolvedTheme, resolveCurrentTheme } from "./theme";
 import type { Save, SaveFile } from "./types";
 import { buildPondUrl } from "./url";
 
-// Mirrors the kind constants exported from
-// `apps/desktop/src/main/core/pipeline/workers/capture-tweet.ts`. Kept
-// inline because the renderer can't reach into the main bundle and the
-// schema types are intentionally `kind: string`.
+// Mirrors capture-tweet.ts kind constants, inlined since the renderer can't reach the main bundle.
 const TWEET_SCREENSHOT_LEGACY_KIND = "tweet_screenshot";
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
@@ -18,9 +15,7 @@ const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
   TWEET_SCREENSHOT_DARK_KIND,
 ]);
 
-// Standalone screenshots of quoted tweets, suffixed with their 1-based
-// depth in the quote chain (see capture-tweet.ts `quoteScreenshotKind`).
-// e.g. `tweet_screenshot_quote1_light`.
+// Quote-tweet screenshots, suffixed with 1-based depth, e.g. tweet_screenshot_quote1_light.
 const QUOTE_SCREENSHOT_KIND = /^tweet_screenshot_quote(\d+)_(light|dark)$/;
 
 function isQuoteScreenshotKind(kind: string): boolean {
@@ -39,10 +34,7 @@ interface MediaPickOptions {
   tweetCover?: TweetCover;
 }
 
-// Read the current tweet-cover mode for callers outside React (the
-// library list filter, aspect store, NSFW classifier). React callers
-// should pass `tweetCover` explicitly so the UI re-picks when the
-// setting changes. Mirrors `resolveCurrentTheme()`.
+// Tweet-cover mode for callers outside React; React callers should pass `tweetCover` so the UI re-picks on change.
 function resolveCurrentTweetCover(): TweetCover {
   return getPrefsSnapshot()?.preferences?.tweetCover ?? "media";
 }
@@ -51,10 +43,7 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  // Tweet screenshots are a thumbnail asset, not a carousel slide; drop
-  // the main ones when there's real extracted media to walk. Quote
-  // screenshots are handled separately (appended after extracted media).
-  // Avatars are author metadata and never belong in the carousel.
+  // Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), and avatars.
   const files = (save.files ?? []).filter(
     (f) =>
       f.kind !== "avatar" &&
@@ -64,17 +53,13 @@ export function buildMediaUnits(
   const posters = files.filter((f) => f.kind === "poster");
   const slides = files.filter((f) => f.kind !== "poster");
 
-  // Standalone screenshots of each quoted tweet, theme-matched and in
-  // chain order, appended after the parent's extracted media.
+  // Theme-matched quote-tweet screenshots, appended after the parent's extracted media.
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
   const videos = slides.filter(isVideoFile);
   const images = slides.filter((f) => !isVideoFile(f));
 
-  // Single-stream save (YouTube, TikTok, single IG reel, Twitter video):
-  // one video plus optionally one cover image acting as the poster: emit
-  // a single unit and use the cover as the poster instead of a standalone
-  // slide. Anything else is a carousel and gets walked in declared order.
+  // Single-stream save: one video + optional cover; emit one unit with the cover as poster.
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
     const video = videos[0];
     if (!video) return [];
@@ -112,11 +97,7 @@ export function buildMediaUnits(
   units.push(...quoteUnits);
   if (units.length > 0) return units;
 
-  // Twitter saves with no extracted media (text-only tweets, or tweets
-  // whose blobs haven't downloaded yet) fall back to the captured tweet
-  // screenshot so the detail carousel and pane cover both render
-  // something. Without this the detail page's media frame would be
-  // blank for every text-only tweet.
+  // Twitter saves with no extracted media fall back to the tweet screenshot so the frame isn't blank.
   const screenshot = pickTweetScreenshot(save, opts.theme);
   if (screenshot) {
     return [
@@ -131,9 +112,7 @@ export function buildMediaUnits(
   return units;
 }
 
-// buildQuoteScreenshotUnits: one slide per quoted tweet in the chain,
-// picking the theme-matched variant (falling back to the other theme),
-// ordered by depth.
+// One slide per quoted tweet, theme-matched (falling back to the other theme), ordered by depth.
 function buildQuoteScreenshotUnits(
   save: Save,
   theme: ResolvedTheme | undefined,
@@ -170,23 +149,14 @@ function buildQuoteScreenshotUnits(
   return units;
 }
 
-// pickPrimaryUnit: returns the unit that should drive thumbnails and
-// pane covers. For Twitter saves the `tweetCover` mode decides between
-// the theme-matched tweet screenshot (see `capture-tweet.ts`) and the
-// extracted media; every other source always uses extracted media.
-//
-// - "screenshot": always the rendered tweet card.
-// - "media": prefer extracted media; the screenshot only surfaces as
-//   `buildMediaUnits`' last-resort fallback for text-only tweets.
+// The unit driving thumbnails/pane covers. For Twitter, `tweetCover` picks screenshot vs extracted media.
 export function pickPrimaryUnit(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit | null {
   const mode = opts.tweetCover ?? resolveCurrentTweetCover();
   const screenshot = pickTweetScreenshot(save, opts.theme);
-  // "screenshot" forces the tweet card; "media" falls through to
-  // `buildMediaUnits`, which still returns the screenshot as the
-  // last-resort fallback for text-only tweets.
+  // "screenshot" forces the tweet card; "media" falls through (screenshot is still the text-only fallback).
   if (screenshot && mode === "screenshot") {
     return {
       key: screenshot.path,
@@ -201,9 +171,7 @@ export function pickPrimaryUnit(
   return units[0] ?? null;
 }
 
-// Companion to pickPrimaryUnit: returns the underlying SaveFile so
-// callers can read dimensions for aspect-ratio fallbacks. Matches by
-// path because `MediaUnit.key` is the file's path on disk.
+// Like pickPrimaryUnit but returns the SaveFile (for dimensions); matches by path since key is the disk path.
 export function pickPrimaryFile(
   save: Save,
   opts: MediaPickOptions = {},
@@ -213,10 +181,7 @@ export function pickPrimaryFile(
   return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
 }
 
-// pickTweetScreenshot: resolves the theme-appropriate screenshot
-// variant. Prefers the matching theme, then the other theme, then the
-// legacy single-variant file. Returns null for non-twitter saves or
-// when no screenshot exists yet.
+// Theme-appropriate screenshot: matching theme, then the other, then legacy; null for non-twitter.
 function pickTweetScreenshot(
   save: Save,
   theme: ResolvedTheme | undefined,

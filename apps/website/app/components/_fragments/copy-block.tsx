@@ -17,8 +17,7 @@ export function CopyBlock({ command, label = "Copy" }: CopyBlockProps) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
     } catch {
-      // clipboard access can fail under HTTP or restricted contexts; we
-      // intentionally swallow because the command is plainly visible.
+      // Clipboard can fail under HTTP/restricted contexts; command is visible anyway.
     }
   }
 

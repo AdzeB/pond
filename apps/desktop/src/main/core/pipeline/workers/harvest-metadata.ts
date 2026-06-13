@@ -18,8 +18,7 @@ export async function runHarvestMetadata(
   const save = await readSave(saveId);
   if (!save) return;
 
-  // Self-gate: skip when a fresh capture already lives in rawJson and the
-  // task wasn't triggered with force (e.g. by the refresh button).
+  // Self-gate: skip when a fresh capture exists and force wasn't set.
   if (!payload.force && isFreshHarvest(save.rawJson)) {
     log.debug(
       "[pond pipeline:harvest] fresh capture present, skipping",
@@ -86,9 +85,7 @@ function safeDate(value: string): Date | null {
   return Number.isFinite(ms) ? new Date(ms) : null;
 }
 
-// "mixed" when the capture is a carousel with both videos and images
-// (Instagram interleaved posts, Twitter threads with mixed media). Falls
-// back to image/video by majority for single-type carousels.
+// "mixed" for carousels with both videos and images; else majority type.
 function pickMediaType(capture: Capture): MediaType | null {
   const media = capture.media ?? [];
   if (media.length === 0) return null;

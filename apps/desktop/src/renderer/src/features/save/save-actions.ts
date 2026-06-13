@@ -56,8 +56,7 @@ export async function copyId(id: string, toast: Toast): Promise<void> {
 }
 
 export function focusPaneTitle(): void {
-  // The save drawer is already open whenever a save is selected; wait a
-  // couple of frames for the title to mount before giving up.
+  // Drawer is already open; wait a couple of frames for the title to mount before giving up.
   let tries = 0;
   const tick = () => {
     const el = document.querySelector<HTMLElement>("[data-pane-title]");

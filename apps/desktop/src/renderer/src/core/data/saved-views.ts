@@ -36,8 +36,7 @@ function setRows(rows: ReadonlyArray<SavedViewRow>): void {
   savedViewsStore.setState(() => ({ rows: sortViews(rows), loaded: true }));
 }
 
-// Guard a persisted query value, falling back to the empty query when it is
-// missing or not an object.
+// Guard a persisted query value, falling back to the empty query.
 function coerceQuery(raw: unknown): Query {
   if (!raw || typeof raw !== "object") return EMPTY_QUERY;
   return raw as Query;

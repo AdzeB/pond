@@ -2,10 +2,7 @@ import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
-// How far down a quote-of-a-quote chain we follow. The GraphQL response
-// nests `quoted_status_result` recursively; we cap to keep media merges
-// and the screenshot walker bounded (see capture-tweet.ts) and to avoid
-// hammering X for pathological chains.
+// Cap on quote-chain depth to keep media merges and the screenshot walker bounded.
 const QUOTE_DEPTH_CAP = 3;
 
 interface QuotedTweetRef {
@@ -24,13 +21,7 @@ export interface SaveSeed {
   lang?: string | null;
 }
 
-// When the bookmarks sync gives us a rich tweet from the GraphQL response
-// we already have everything `harvest_metadata` would otherwise re-scrape
-// (title, body, author, media, metrics). Hand the seed to the pipeline so
-// `isFreshHarvest` short-circuits the navigate step. X rate-limits hard
-// once a partition starts loading ~hundreds of individual tweet pages back
-// to back, which is what made every freshly-synced bookmark land as
-// `failed`.
+// Build a seed from GraphQL data so the pipeline skips the rate-limited re-scrape.
 export function buildTwitterBookmarkSeed(
   entry: BookmarksEntry,
 ): SaveSeed | null {
@@ -57,9 +48,7 @@ export function buildTwitterBookmarkSeed(
   };
   pushMedia(rich.media);
 
-  // Walk the quote chain, merging each quoted tweet's media into the
-  // parent save's carousel and recording the chain so the screenshot
-  // walker (capture-tweet.ts) has a starting list.
+  // Walk the quote chain, merging media and recording it for the screenshot walker.
   const quotedTweets: QuotedTweetRef[] = [];
   let quoted = rich.quoted;
   for (let depth = 0; quoted && depth < QUOTE_DEPTH_CAP; depth += 1) {

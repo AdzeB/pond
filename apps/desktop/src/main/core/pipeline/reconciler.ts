@@ -27,12 +27,7 @@ import { FinalizeIncompleteError, runFinalize } from "./workers/finalize";
 import { runHarvestMetadata } from "./workers/harvest-metadata";
 
 const POLL_INTERVAL_MS = 5_000;
-// Tuned against the scrape-window budgets (see `GLOBAL_POOL_CAP` and
-// `PER_SOURCE_CAP` in scrape-window.ts). The two pool-bound ops
-// (harvest_metadata, capture_tweet) share the per-source cap for
-// whichever source dominates (currently Twitter at 3), so per-op
-// caps below act as a second-order limit; the per-source pool budget
-// is the binding constraint.
+// Per-op caps are a second-order limit; the per-source pool budget binds.
 const MAX_GLOBAL_INFLIGHT = 8;
 const PER_OP_CONCURRENCY: Record<Op, number> = {
   harvest_metadata: 3,
@@ -44,13 +39,7 @@ const PER_OP_CONCURRENCY: Record<Op, number> = {
   finalize: 3,
 };
 
-// Wall-clock budget for a single worker invocation. If a worker exceeds
-// this, the dispatcher treats it as a transient failure, releases the
-// inflight counter, and lets the reconciler move on. The worker
-// promise keeps running in the background (we can't cancel arbitrary
-// Promises), but the reconciler is no longer pinned. Without this
-// safety net a single hung worker would silently freeze the entire
-// queue (see: stalled `wc.loadURL` against X under soft-block).
+// Per-invocation wall-clock budget; a hung worker would otherwise freeze the queue.
 const TASK_WATCHDOG_MS: Record<Op, number> = {
   harvest_metadata: 90_000,
   capture_tweet: 120_000,
@@ -61,11 +50,7 @@ const TASK_WATCHDOG_MS: Record<Op, number> = {
   finalize: 30_000,
 };
 
-// Time after which a `running` task whose dispatcher promise vanished
-// (process crash, force-quit, OS sleep mid-await) is treated as
-// abandoned and reset to `pending`. Anything older than 2x its
-// watchdog has either finished (and failed to update the row) or
-// died with the process.
+// A `running` task older than 2x its watchdog is abandoned, reset to pending.
 const STALE_RUNNING_GRACE_FACTOR = 2;
 const MAX_WATCHDOG_MS = Object.values(TASK_WATCHDOG_MS).reduce(
   (a, b) => Math.max(a, b),
@@ -73,10 +58,7 @@ const MAX_WATCHDOG_MS = Object.values(TASK_WATCHDOG_MS).reduce(
 );
 const STALE_RUNNING_MS = MAX_WATCHDOG_MS * STALE_RUNNING_GRACE_FACTOR;
 
-// Orphan sweep cadence after startup. The startup sweep covers tasks
-// stranded by a previous run; the periodic sweep catches anything that
-// flips into the same shape mid-runtime (e.g. a failed save's pending
-// siblings if a future caller forgets to cascade).
+// Periodic orphan-sweep cadence (catches strays that appear mid-runtime).
 const ORPHAN_SWEEP_INTERVAL_MS = 60_000;
 
 class WorkerWatchdogError extends Error {
@@ -161,13 +143,7 @@ export function kickReconciler(): void {
   });
 }
 
-// Startup cleanup #1: any `running` task whose dispatcher promise no
-// longer exists in memory either died with the previous process or
-// updated the row but failed to flip status. Reset to `pending` so the
-// reconciler picks it up again on the next tick. We give it 2x the
-// largest watchdog as breathing room in case the app launched while
-// the previous run was still draining (unlikely with single-instance
-// lock, but cheap to be defensive).
+// Startup: reset `running` tasks orphaned by a dead process back to pending.
 async function recoverStaleRunningTasks(): Promise<void> {
   const db = await getDb();
   const cutoff = new Date(Date.now() - STALE_RUNNING_MS);
@@ -196,13 +172,7 @@ async function recoverStaleRunningTasks(): Promise<void> {
   });
 }
 
-// Startup cleanup #2 (also run periodically): any `pending` task whose
-// save is no longer `ingesting` (failed, blocked, deleted, complete)
-// can never run; it's gated behind an op that's already failed or
-// moot. Left in place these rows occupy the oldest slots of the
-// `next_run_at ASC LIMIT 20` window and starve healthy ingesting
-// saves. Mark them failed so the runtime view of the queue matches
-// the user-facing state.
+// Fail `pending` tasks on non-ingesting saves; they can't run and starve the window.
 async function sweepOrphanTasks(): Promise<void> {
   const db = await getDb();
   const orphans = db
@@ -262,20 +232,8 @@ interface DueTask extends Task {
   source: string;
 }
 
-// Scope the queue to runnable tasks: ingesting save AND every earlier-idx
-// op for the same save is already `done`. The NOT EXISTS subquery moves the
-// sequential gate into SQL so the `next_run_at ASC LIMIT 20` window can't
-// fill with tasks that `isOpReady` will reject. Earlier this was JS-only,
-// which let an unattempted later op (its `next_run_at` still pinned at the
-// original enqueue time) crowd out its own deferred leading op (pushed
-// forward by a watchdog/backoff) at the head of the queue. The reconciler
-// would then pull 20 blocked rows, dispatch none, and starve every other
-// ingesting save behind them. The save-status filter further keeps tasks
-// belonging to failed/blocked/deleted saves out of the window.
-//
-// We pull 3x the dispatch window so the per-save round-robin interleave
-// below has enough material to truly spread across saves; otherwise a
-// single save with 7 pending ops would dominate every window pull.
+// NOT EXISTS enforces the sequential op gate in SQL so the window isn't
+// filled with non-runnable tasks. Pull 3x the dispatch window for round-robin.
 async function pullDueTasks(): Promise<DueTask[]> {
   const db = await getDb();
   const now = new Date();
@@ -314,14 +272,8 @@ async function pullDueTasks(): Promise<DueTask[]> {
 
   if (rows.length === 0) return rows;
 
-  // Per-save round-robin: bucket the candidates by saveId, then drain
-  // one task per save per pass. The first 20 emitted will hit at most
-  // 20 distinct saves before any save gets a second task: visible
-  // progress is shared across the queue instead of monopolised by
-  // whichever save happens to be at the head of the time-ordered
-  // window. Also skip tasks whose source is currently paused
-  // (cooldown / circuit-breaker) so we don't pin inflight slots on
-  // work that the scrape-window lease would just stall on anyway.
+  // Per-save round-robin so progress is shared, not monopolised by one save.
+  // Skip paused sources so we don't pin inflight slots on stalled work.
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
     if (isSourceTask(row.op) && sourcePausedUntil(row.source as never) > 0) {
@@ -346,17 +298,12 @@ async function pullDueTasks(): Promise<DueTask[]> {
   return interleaved;
 }
 
-// Ops that lease a hidden scrape window. Used to gate dispatch on the
-// per-source pause state so we don't fill inflight slots with tasks
-// that the scrape pool would just queue behind a cooldown.
+// Ops that lease a hidden scrape window; gated on per-source pause state.
 function isSourceTask(op: Op): boolean {
   return op === "harvest_metadata" || op === "capture_tweet";
 }
 
-// CASE expression mapping each op to its position in the universal spec.
-// Kept in sync with the order in `@pond/schema/db`'s `OPS`. The two
-// variants are needed because the inner query uses a `peers` alias
-// (raw column name) while the outer uses Drizzle's column reference.
+// Maps op to its `OPS` spec position; two variants for raw alias vs Drizzle column.
 function opOrderCase(opCol: typeof tasks.op) {
   return sql`(CASE ${opCol}
     WHEN 'harvest_metadata' THEN 0
@@ -388,10 +335,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   metrics.tasksDispatched++;
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
-  /* One wide event per task attempt: populated as the work proceeds,
-   * committed in the finally. Replaces the scattered "[pond pipeline:
-   * reconciler] dispatching/done/failed" trio that used to require
-   * three greps to reconstruct one outcome. */
+  // One wide event per task attempt, committed in the finally.
   const ev: PipelineTaskEvent = startTaskEvent({
     saveId: task.saveId,
     source: task.source as PipelineTaskEvent["source"],
@@ -470,8 +414,7 @@ async function enrichTaskEventWithSave(ev: PipelineTaskEvent): Promise<void> {
       ev.url = row.url ?? null;
     }
   } catch {
-    /* enrichment is best-effort; the rest of the event still goes
-     * through unaffected if the lookup explodes. */
+    /* enrichment is best-effort */
   }
 }
 
@@ -513,8 +456,7 @@ async function handleFailure(
   err: unknown,
 ): Promise<FailureResult> {
   if (err instanceof FinalizeIncompleteError) {
-    // finalize already reset harvest_metadata for us; mark finalize as
-    // pending again so it re-runs after the next harvest cycle.
+    // finalize reset harvest_metadata; re-pend finalize for the next harvest cycle.
     const db = await getDb();
     const nextRun = new Date(Date.now() + 30_000);
     db.update(tasks)
@@ -533,13 +475,8 @@ async function handleFailure(
     };
   }
 
-  // Signal the source gate. Explicit rate-limit errors set a hard
-  // cooldown: every queued task on that source defers, not just the
-  // failed one. Only `TransientError` and watchdog trips advance the
-  // breaker counter; everything else is per-URL or per-auth and isn't
-  // a host-health signal. (Earlier this also counted `TerminalError`,
-  // which made the breaker trip whenever a user retried a backlog of
-  // dead-URL Twitter saves: the host was fine, the URLs weren't.)
+  // Rate-limit errors set a source-wide cooldown; only transient/watchdog
+  // trips advance the breaker (other errors are per-URL, not host health).
   if (isSourceTask(task.op)) {
     const source = task.source as never;
     if (err instanceof RateLimitedError) {
@@ -575,10 +512,7 @@ async function handleFailure(
     : task.attempts;
   if (decision.status === "failed") {
     metrics.tasksFailed++;
-    // Status only moves forward: once a save is `complete` (data on disk,
-    // raw_json captured) a re-harvest failure shouldn't blow away the
-    // user-visible state. The failed task row stays around so we can retry
-    // later; the save itself keeps its previous status.
+    // Status only moves forward: a re-harvest failure won't downgrade a complete save.
     const current = db
       .select({ status: saves.status })
       .from(saves)
@@ -589,11 +523,7 @@ async function handleFailure(
         .set({ status: "failed" })
         .where(eq(saves.id, task.saveId))
         .run();
-      // Cascade: this task's failure blocks every later op in the
-      // sequential spec via the per-save NOT EXISTS gate in
-      // `pullDueTasks`. Mark still-pending siblings as failed too so
-      // they don't linger as the oldest rows in the `next_run_at ASC`
-      // window and starve healthy saves.
+      // Fail still-pending siblings too: this failure blocks them and they'd starve the window.
       db.update(tasks)
         .set({
           status: "failed",
@@ -604,13 +534,8 @@ async function handleFailure(
         .run();
       metrics.cascadeEvents += 1;
     }
-    /* The save's terminal-failure event is owned by `maybeFinalizeSave`/
-     * `finalize`; from here we just emit the per-task event in the
-     * dispatcher's finally. */
     if (current?.status === "ingesting") {
-      // Save just transitioned to failed because of this task. Emit
-      // the save-level ingest event right here. `maybeFinalizeSave`
-      // only handles the success path.
+      // Save just failed; emit the save-level ingest event (finalize handles success).
       void commitSaveIngestEvent(task.saveId, {
         outcome: "failed",
         failedOp: task.op,
@@ -630,11 +555,7 @@ async function handleFailure(
   };
 }
 
-// Event-driven replacement for the old whole-table `sweepCompleteSaves`
-// pass. Called from `dispatchTask` after a successful run; flips the
-// save to `complete` iff every one of its tasks is now `done`. The
-// failed-task path already downgrades the save in `handleFailure`, so
-// the only thing left for this helper to do is the success transition.
+// Flips the save to `complete` once all its tasks are `done`.
 async function maybeFinalizeSave(saveId: string): Promise<void> {
   const db = await getDb();
   const save = db

@@ -223,11 +223,8 @@ function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
       className={cn(styles.input, className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
-        // Base UI's Menu typeahead listens for keydown on the popup and calls
-        // preventDefault() on every printable key while the menu is open,
-        // which otherwise blocks typing in this field. Stop character keys
-        // from bubbling so they land in the input; let navigation keys
-        // (arrows/Enter/Escape) still reach the menu.
+        // Stop printable keys bubbling so Base UI's menu typeahead doesn't eat them;
+        // navigation keys still reach the menu.
         if (
           event.key.length === 1 &&
           !event.ctrlKey &&

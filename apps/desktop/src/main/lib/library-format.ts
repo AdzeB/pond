@@ -1,9 +1,6 @@
 import type { Save } from "@pond/schema/db";
 
-// A saved item is one `items/<id>.info/` folder. The clean, human-facing
-// content lives in `info.json`; the verbose raw capture payload lives in
-// `source.json`. Pipeline machinery (tasks, capture reports, ingest
-// status) stays in SQLite and never touches disk.
+// Each item is an `items/<id>.info/` folder: clean info.json + raw source.json.
 export const INFO_FILE = "info.json";
 export const SOURCE_FILE = "source.json";
 export const INFO_SCHEMA = 3 as const;
@@ -83,14 +80,7 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
   };
 }
 
-// The Save columns that surface in info.json. DB-only columns (phash,
-// videoNotes, dominantColors, status, ingest timestamps, fileSize, mediaUrl,
-// rawJson) are excluded by construction, so they never leak to disk.
-// `deletedAt` is intentionally included: trash is an in-place flag, so the
-// item folder stays in `items/` and the deleted state is recorded here so
-// it survives an index rebuild. This list is the single source of truth for
-// the export whitelist; `infoDocFromSave` and `applyPatchToInfo` both
-// project exactly these.
+// Export whitelist: Save columns that surface in info.json (deletedAt included for trash state).
 const EXPORTED_SAVE_FIELDS = [
   "url",
   "title",
@@ -114,9 +104,7 @@ export function patchTouchesInfo(patch: object): boolean {
   return Object.keys(patch).some((key) => EXPORTED_FIELD_SET.has(key));
 }
 
-// Merge a Save patch onto an existing on-disk InfoDoc, honoring the export
-// whitelist. Used by the disk-edit path where the full DB row is not in hand;
-// `infoDocFromSave` is the equivalent projection from a full row.
+// Merge a Save patch onto an existing InfoDoc, honoring the export whitelist.
 export function applyPatchToInfo(info: InfoDoc, patch: Partial<Save>): InfoDoc {
   const next: InfoDoc = { ...info };
   if (patch.url !== undefined) next.url = patch.url;

@@ -24,12 +24,7 @@ export interface TagMenuProps {
   emptyLabel?: ReactNode;
 }
 
-/**
- * The shared, Menu-primitive tag list used by the tag picker and the filter
- * value-select tags body. Renders the *contents* of a `Menu.Popup` (search +
- * Labels + groups + create), so each consumer owns its own container and
- * trigger. Always multi-select; `groupsAs` picks submenu vs inline sections.
- */
+/** Shared multi-select tag list; renders the contents of a `Menu.Popup` (search + labels + groups + create). */
 export function TagMenu({
   appliedKeys,
   counts,

@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const HIDE_DELAY_MS = 2500;
 
-// Reveals the controls on pointer activity and hides them again after a beat of
-// inactivity while playing. Paused video always keeps the controls visible.
+// Shows controls on pointer activity, hides after inactivity while playing; paused keeps them.
 export function useAutoHide(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;

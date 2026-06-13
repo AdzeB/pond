@@ -20,8 +20,7 @@ export const savesStore = new Store<SavesState>({
   sorted: [],
 });
 
-// `pool.X` is the non-React read facade. Mutations go through the
-// flat helpers below so React consumers wake via `useStore`.
+// Non-React read facade; mutations go through the helpers below so React consumers wake via `useStore`.
 export const pool = {
   get(id: string): Save | undefined {
     return savesStore.state.byId.get(id);
@@ -84,10 +83,7 @@ function clearSaves(): void {
   );
 }
 
-// Merge a lazily-fetched full `rawJson` into a pooled save. `rawJson` doesn't
-// affect ordering or any grid/list rendering (those read top-level columns and
-// the slim duration projection), so we deliberately keep the `sorted` array
-// identity stable — only `useSave(id)` consumers (the open detail view) wake.
+// Merge a lazily-fetched full `rawJson` into a pooled save; keeps `sorted` identity stable so only useSave(id) consumers wake.
 export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   savesStore.setState((s) => {
     const prev = s.byId.get(id);

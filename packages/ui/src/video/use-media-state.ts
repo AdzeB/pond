@@ -49,9 +49,7 @@ const INITIAL: MediaState = {
   fullscreenSupported: false,
 };
 
-// Owns the <video> element and derives a snapshot of its state from media
-// events. This is the single place that knows how playback is implemented;
-// parts only see `state` + `actions`.
+// Owns the <video> element and derives a state snapshot from media events.
 export function useMediaState(): {
   state: MediaState;
   actions: MediaActions;

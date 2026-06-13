@@ -3,8 +3,7 @@ import { describe, expect, it } from "vitest";
 import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
 
-// Set POND_LIVE=1 (via `pnpm test:live`) to additionally hit the network and
-// confirm each sample URL is still reachable. PR CI runs offline only.
+// POND_LIVE=1 also hits the network to confirm sample URLs are reachable.
 const LIVE = process.env.POND_LIVE === "1";
 
 describe("extractor registry", () => {

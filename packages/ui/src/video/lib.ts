@@ -20,8 +20,7 @@ export function formatTime(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-// End of the buffered range that contains (or most recently preceded) the
-// playhead, used to paint the loaded portion of the scrubber.
+// End of the buffered range around the playhead, for painting the scrubber.
 export function bufferedEnd(video: HTMLVideoElement): number {
   const { buffered, currentTime } = video;
   let end = 0;

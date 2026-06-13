@@ -21,8 +21,7 @@ import {
 } from "./store";
 import styles from "./styles.module.css";
 
-// Sources that participate in a sync run. `local` only ever holds manual
-// imports, so it never appears in the monitor.
+// Sources in a sync run; `local` holds only manual imports, so it's excluded.
 const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
 
 const STATE_LABELS: Record<SyncState, string> = {
@@ -33,12 +32,9 @@ const STATE_LABELS: Record<SyncState, string> = {
   auth_required: "Sign in needed",
 };
 
-// The fluid container morph — a lightly sprung resize so the dialog "breathes"
-// as rows regroup or progress appears, à la Family's account modal.
 const MORPH_SPRING = { type: "spring" as const, bounce: 0.18, duration: 0.45 };
 
-// Lower sorts first: attention-worthy rows float to the top, disconnected
-// sources sink to a group at the bottom.
+// Lower sorts first: attention rows float up, disconnected sinks to the bottom group.
 function priority(status: SyncSourceStatus | undefined): number {
   const state = status?.state ?? "idle";
   if (state === "error" || state === "auth_required") return 0;
@@ -47,8 +43,7 @@ function priority(status: SyncSourceStatus | undefined): number {
   return 3;
 }
 
-// Track a node's natural height so we can animate the container toward it. The
-// rows themselves snap to their final layout; only the wrapper morphs.
+// Measure natural height so only the wrapper morphs while rows snap to final layout.
 function useMeasuredHeight<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [height, setHeight] = useState<number | "auto">("auto");
@@ -63,10 +58,7 @@ function useMeasuredHeight<T extends HTMLElement>() {
   return [ref, height] as const;
 }
 
-// Subscribes only to `open`. The data-heavy body (which re-renders on every
-// live sync push) lives in `SyncMonitorBody`, which the dialog portal mounts
-// only while open — so background sync activity never re-renders this subtree
-// when the monitor is closed.
+// Subscribes only to `open`; the data-heavy body mounts only while open, so background sync never re-renders here.
 export function SyncMonitor() {
   const open = useSyncOpen();
   return (
@@ -90,8 +82,7 @@ function SyncMonitorBody() {
   const reduceMotion = useReducedMotion();
   const [bodyRef, bodyHeight] = useMeasuredHeight<HTMLDivElement>();
 
-  // Seed each source with a one-shot snapshot on open (this body only mounts
-  // while open), so the list isn't blank before the next live push arrives.
+  // Seed each source with a one-shot snapshot on open so the list isn't blank before the first live push.
   useEffect(() => {
     let cancelled = false;
     for (const source of SYNCABLE) {
@@ -251,8 +242,7 @@ function SourceRow({
   const failed = state === "error";
   const disconnected = !connected && !running && !needsAuth;
 
-  // Only surface a badge when it adds signal — a calm connected/idle row reads
-  // its status from the meta line instead of a redundant "Idle" tag.
+  // Only show a badge when it adds signal; a calm idle row reads status from the meta line.
   const badge = running
     ? { text: STATE_LABELS.running, state: "running" as SyncState }
     : failed

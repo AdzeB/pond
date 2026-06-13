@@ -16,9 +16,7 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
-// The pond index (saves, tags, tasks, scan, events) is per-pond and swaps
-// on a library switch. The global DB (settings, prefs, onboarded) is shared
-// by every pond and never swaps.
+// The pond index is per-pond and swaps on a library switch; the global DB is shared.
 let cachedPond: Db | null = null;
 let cachedGlobal: Db | null = null;
 
@@ -37,9 +35,7 @@ function wrap(sqlite: Database.Database): Db {
   return Object.assign(drizzled, { $raw: sqlite }) as Db;
 }
 
-// App-global state: settings, prefs, onboarded flag. Lives in one file so a
-// pond switch never loses it and the boot path (theme/onboarded) can read it
-// before any pond is resolved.
+// App-global state in one file; readable at boot before any pond is resolved.
 export async function getGlobalDb(): Promise<Db> {
   if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
@@ -50,9 +46,7 @@ export async function getGlobalDb(): Promise<Db> {
   return cachedGlobal;
 }
 
-// The active pond's index cache. Keyed by pond id, so switching ponds opens
-// a different file and a fresh pond starts empty. `closeDb()` drops the
-// handle on a switch so the next call reopens against the new pond.
+// Active pond's index cache, keyed by pond id; closeDb() drops it on a switch.
 export async function getDb(): Promise<Db> {
   if (cachedPond) return cachedPond;
 
@@ -68,8 +62,7 @@ export async function getDb(): Promise<Db> {
   return cachedPond;
 }
 
-// Drop the active pond's handle so the next `getDb()` reopens against the
-// pointer's new pond. Pair with `invalidatePaths()` on a library switch.
+// Drop the pond handle so the next getDb() reopens; pair with invalidatePaths().
 export function closeDb(): void {
   if (!cachedPond) return;
   try {
@@ -272,10 +265,7 @@ function migratePond(sqlite: Database.Database): void {
 
 function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
-  // No bundle on disk yet (fresh user): don't create one from here. The
-  // first write materializes the bundle, and `resolvePondId` writes its
-  // metadata. This keeps the index key (pond id) and the metadata file in
-  // sync via a single writer.
+  // No bundle yet: the first write materializes it and writes metadata via one writer.
   if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;
   readOrCreatePondId(paths.libraryRoot);

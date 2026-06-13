@@ -1,27 +1,17 @@
-// Source of truth for the okLCH color system. `gen.ts` turns these
-// definitions into `colors.css` (raw ramps) and `aliases.css`
-// (--hue-* / --neutral-* indirection). Tune values here, then run
-// `pnpm gen:colors`. Do not edit the generated CSS by hand.
-//
-// Model follows https://bob.fyi/oklch-colors: a shared luminance scale
-// keeps every ramp aligned by step for predictable contrast, and a
-// per-step chroma taper pulls saturation down at the light/dark ends to
-// stay inside the sRGB gamut.
-
+// Source of truth for the okLCH color system; edit here, then run `pnpm gen:colors`.
+// Shared luminance scale aligns ramps by step; per-step chroma taper keeps sRGB gamut.
 const HUE_STEPS = [
   25, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 975,
 ] as const;
 
-// Neutrals add a 75 step so component backgrounds can match the
-// saturated ramps' 50 step (see the article's note on the extra step).
+// Neutrals add a 75 step so component backgrounds can match the ramps' 50 step.
 const NEUTRAL_STEPS = [
   25, 50, 75, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950, 975,
 ] as const;
 
 type Step = (typeof NEUTRAL_STEPS)[number];
 
-// Lightness per step. Step 0 would be white oklch(1 0 0); 1000 near
-// black. 500 lands around a 5:1 contrast vs white (the workhorse).
+// Lightness per step; 500 lands around 5:1 contrast vs white.
 const LIGHTNESS: Record<Step, number> = {
   25: 0.985,
   50: 0.97,
@@ -57,8 +47,7 @@ const CHROMA_SCALE: Record<Step, number> = {
   975: 0.34,
 };
 
-// Alpha per step for the transparent ramps, derived from the lightness
-// curve so overlays read like their opaque counterparts.
+// Alpha per step for transparent ramps, derived from the lightness curve.
 const ALPHA: Record<Step, number> = {
   25: 0.015,
   50: 0.03,
@@ -81,8 +70,7 @@ interface Ramp {
   chroma: number;
 }
 
-// 17 chromatic ramps spanning the spectrum. Hue angles in oklch
-// degrees; chroma is the peak (at the 500 step) before the taper.
+// 17 chromatic ramps; hue in oklch degrees, chroma is the peak (500 step) before taper.
 const HUE_RAMPS = {
   ruby: { hue: 12, chroma: 0.2 },
   red: { hue: 25, chroma: 0.21 },
@@ -103,8 +91,7 @@ const HUE_RAMPS = {
   pink: { hue: 350, chroma: 0.22 },
 } as const satisfies Record<string, Ramp>;
 
-// 8 neutral ramps: pure black plus subtly tinted grays. Chroma is tiny
-// so they stay monochromatic, with a hint of temperature.
+// Neutral ramps: black plus tiny-chroma tinted grays.
 const NEUTRAL_RAMPS = {
   black: { hue: 0, chroma: 0 },
   gray: { hue: 264, chroma: 0.006 },
@@ -178,25 +165,18 @@ export function buildColorsCss(): string {
 }
 
 // --- Theme engine -----------------------------------------------------------
-//
-// The whole --ds-* token contract is derived at runtime from one theme:
-// --ds-base-* (background okLCH), --ds-accent-* (accent okLCH), --ds-contrast
-// (lightness-spread multiplier), and --ds-fg-dir (+1 dark, -1 light). The
-// applier sets those four inputs; every step below is pure CSS math so a theme
-// change never needs a rebuild. See packages/schema/src/color.ts.
+// All --ds-* tokens are derived at runtime via CSS math from four theme inputs
+// (--ds-base-*, --ds-accent-*, --ds-contrast, --ds-fg-dir). See schema/src/color.ts.
 
-// 12-step design-system scale. Per step: aL is the contrast-scaled lightness
-// delta from the base (surfaces, borders), bL is a fixed delta that guarantees
-// solids and text stay readable regardless of contrast, cT tapers the base
-// chroma so backgrounds carry the tint and text mostly drops it.
+// 12-step scale: aL = contrast-scaled lightness delta, bL = fixed readability delta,
+// cT = base-chroma taper (backgrounds keep tint, text drops it).
 const GRAY_AL = [
   0, 0.022, 0.05, 0.078, 0.11, 0.145, 0.19, 0.24, 0.27, 0.3, 0.3, 0.3,
 ];
 const GRAY_BL = [0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.16, 0.34, 0.52];
 const GRAY_CT = [1, 1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.5, 0.42, 0.3, 0.22];
 
-// Accent steps mix the solid accent toward the matching gray step. Step 9 is
-// the pure accent; text steps lean on the gray lightness for contrast.
+// Accent steps mix solid accent toward the matching gray step; step 9 is pure accent.
 const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
 const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
 
@@ -231,8 +211,7 @@ function grayAlpha(i: number): string {
   return `  --ds-gray-a${i + 1}: light-dark(var(--black-alpha-${step}), var(--white-alpha-${step}));`;
 }
 
-// Status colors are fixed slots, independent of the user's theme. light-dark()
-// resolves against color-scheme, which styles.css sets from data-theme.
+// Fixed status colors, theme-independent; light-dark() resolves against color-scheme.
 const STATUS_TOKENS = `
   --ds-tomato-1: light-dark(var(--red-25), var(--red-975));
   --ds-tomato-2: light-dark(var(--red-50), var(--red-950));

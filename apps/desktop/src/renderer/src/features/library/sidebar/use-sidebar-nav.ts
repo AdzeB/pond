@@ -27,11 +27,7 @@ export function useSidebarNav(): SidebarNav {
     return map;
   }, [recents]);
 
-  // Single pass over the pool instead of one `applyModeFilter` per mode: the
-  // dock is always mounted and recomputes on every save mutation, and the
-  // non-trash modes share the same "complete + renderable" gate (the
-  // `pickPrimaryUnit` call is the expensive part), so untagged/recents are
-  // just sub-counts of library. Mirrors `applyModeFilter` semantics.
+  // Single pass over the pool (not one applyModeFilter per mode): untagged/recents are sub-counts of library's renderable gate.
   const counts = React.useMemo<Record<NavItem["mode"], number>>(() => {
     let library = 0;
     let untagged = 0;

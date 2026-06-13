@@ -3,19 +3,13 @@ import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { ARENA_PATTERNS, firstMatch } from "../url-patterns";
 
-// Thin wrapper over `fetchArenaCapture`. The Arena adapter hits the
-// REST API and returns a fully-shaped `Capture`; this class just plugs
-// it into the URL-first extractor registry.
+// Thin wrapper over `fetchArenaCapture` for the extractor registry.
 export class ArenaBlockExtractor implements Extractor {
   readonly id = "arena-block";
   readonly source = "arena" as const;
   readonly validUrl = ARENA_PATTERNS;
   readonly cookieDomain = ".are.na";
-  // are.na's web app is now a Next.js frontend that stores auth in an
-  // iron-session cookie (`sander-iron-session`). The legacy Rails names
-  // (`_arena_session`, `remember_user_token`) are kept for compatibility.
-  // `cf_clearance` is not auth on its own; it is tolerated so the first sync
-  // probes, and refined elsewhere if it is the only cookie present.
+  // Accept iron-session and legacy Rails cookies; cf_clearance tolerated for first sync.
   readonly probeExpression = `(() => {
         try {
           // Are.na's user nav has a "Profile" link to /<slug>.

@@ -19,11 +19,7 @@ interface ConfirmDialogProps {
   extraActions?: ReactNode;
 }
 
-/**
- * The shared destructive/confirm prompt. Cancel dismisses the dialog; the
- * primary button calls `onConfirm` and leaves closing to the caller so async
- * work can keep the dialog open (drive it via `busy` + `onOpenChange`).
- */
+// Shared confirm prompt; `onConfirm` leaves closing to the caller so async work can keep it open via `busy`.
 export function ConfirmDialog({
   open,
   onOpenChange,

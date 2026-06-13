@@ -9,12 +9,8 @@ import {
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 import { isGroup } from "./types";
 
-// react-querybuilder owns the tree traversal: `formatQuery` prepares the query
-// and hands it to our custom `ruleGroupProcessor`, which compiles each clause
-// to a drizzle `SQL` fragment. Using `ruleGroupProcessor` (rather than the
-// default `drizzle` processor) sidesteps both the column-mapping limitation
-// (our fields are computed projections, not plain columns) and the built-in
-// in/between value validation that assumes default operator names.
+// Custom `ruleGroupProcessor` compiles each clause to a drizzle `SQL` fragment;
+// the default `drizzle` processor can't handle our computed projections.
 export function buildWhere(query: Query): SQL | undefined {
   return formatQuery(query, { ruleGroupProcessor: compileGroup }) ?? undefined;
 }

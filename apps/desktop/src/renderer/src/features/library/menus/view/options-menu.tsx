@@ -11,8 +11,7 @@ interface ViewOptionsMenuProps {
   align?: "start" | "end";
 }
 
-// Layout / sort / display / zoom controls. Shared so the top toolbar and the
-// bottom dock render the exact same menu, just anchored to different edges.
+// Layout/sort/display/zoom controls, shared by the toolbar and dock (just anchored to different edges).
 export function ViewOptionsMenu({
   trigger,
   side = "bottom",

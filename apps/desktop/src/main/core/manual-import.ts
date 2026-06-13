@@ -79,16 +79,13 @@ interface ReadableFile {
   bytes: Buffer;
 }
 
-// Build a complete save from local input without touching the URL pipeline.
-// Local saves carry their bytes and metadata at import time, so they are
-// created already `complete` and never enqueue any pipeline ops.
+// Build a complete local save without the URL pipeline; no ops enqueued.
 export async function createManualSave(
   input: ManualSaveInput,
 ): Promise<ManualSaveResult> {
   const db = await getDb();
   const id = ulid();
-  // ulid is collision-safe, so it doubles as the unique sourceId within
-  // the (source="local") namespace.
+  // ulid doubles as the unique sourceId in the local namespace.
   const sourceId = id;
   const now = new Date();
 

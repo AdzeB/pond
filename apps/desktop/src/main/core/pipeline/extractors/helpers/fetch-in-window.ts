@@ -19,9 +19,7 @@ export async function fetchHtmlInWindow(
   source: Source,
   sourceId?: string,
 ): Promise<InWindowResult> {
-  // Loaded lazily so importing an extractor does not pull the Electron-bound
-  // scrape-window graph (keeps extractors importable in plain Node tests and
-  // avoids a session <-> extractors import cycle).
+  // Lazy import: keeps extractors Node-importable and avoids an import cycle.
   const { harvestUrl } = await import("../../../refresh/scrape-window");
   const result = await harvestUrl({ url, source, sourceId });
   if (result.ok) {

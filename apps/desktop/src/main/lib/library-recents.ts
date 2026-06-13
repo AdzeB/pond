@@ -2,11 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
 
-// A small registry of every library the user has opened, so the
-// switcher can list them (Eagle-style) and jump between them without
-// re-picking from disk each time. Lives next to the library pointer in
-// userData so it survives a corrupted index and is readable before the
-// DB opens.
+// Registry of opened libraries for the switcher; in userData, readable before the DB opens.
 const RECENTS_FILE = "library-recents.json";
 
 export interface KnownLibrary {
@@ -14,8 +10,7 @@ export interface KnownLibrary {
   name: string;
   addedAt: number;
   lastOpenedAt: number;
-  // A user-chosen avatar (an emoji) shown in the switcher. `null` means
-  // fall back to the name's initials.
+  // Emoji avatar for the switcher; `null` falls back to initials.
   avatar: string | null;
 }
 
@@ -64,16 +59,12 @@ function write(libraries: KnownLibrary[]): void {
   writeFileSync(file, JSON.stringify(body, null, 2));
 }
 
-// Stored order is the source of truth so the user's drag-reordering in
-// the switcher survives restarts. New libraries land at the top.
+// Stored order survives restarts; new libraries land at the top.
 export function readKnownLibraries(): KnownLibrary[] {
   return read();
 }
 
-// Upsert a library and stamp it as just-opened. Called on boot for the
-// active library and whenever the user switches or creates one. An
-// existing entry keeps its position so a switch never reshuffles the
-// list the user arranged by hand.
+// Upsert a library, stamp it just-opened; existing entries keep their position.
 export function rememberLibrary(path: string): KnownLibrary {
   const abs = normalize(path);
   const now = Date.now();
@@ -97,9 +88,7 @@ export function rememberLibrary(path: string): KnownLibrary {
   return entry;
 }
 
-// Persist the explicit order the user dragged the libraries into. Paths
-// not present in `order` keep their prior relative order at the end, so
-// a stale list from the renderer can't drop entries.
+// Persist drag order; paths missing from `order` keep their prior order at the end.
 export function setLibraryOrder(order: string[]): void {
   const libraries = read();
   const byPath = new Map(libraries.map((l) => [normalize(l.path), l]));
@@ -117,8 +106,7 @@ export function setLibraryOrder(order: string[]): void {
   write(next);
 }
 
-// Set (or clear, with `null`) the avatar for a known library. A blank
-// string clears it so the switcher falls back to the name's initials.
+// Set or clear (null/blank) a library's avatar.
 export function setLibraryAvatar(path: string, avatar: string | null): void {
   const abs = normalize(path);
   const libraries = read();
@@ -134,8 +122,7 @@ export function forgetLibrary(path: string): void {
   write(read().filter((l) => normalize(l.path) !== abs));
 }
 
-// Drop entries whose folder no longer exists so the switcher doesn't
-// list dead paths forever. Keeps the active path regardless.
+// Drop entries whose folder is gone; always keeps the active path.
 export function pruneMissingLibraries(keep: string): void {
   const keepAbs = normalize(keep);
   write(

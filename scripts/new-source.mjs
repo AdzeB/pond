@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-// Scaffolds a new source: a descriptor entry, an extractor file (with a stub
-// test block), and the typed registration. Everything else a contributor must
-// supply (the brand icon, the real URL patterns, auth cookies) is either a
-// printed checklist item or a TypeScript error that guides them. Plain Node
-// ESM - no extra toolchain.
+// Scaffolds a new source: descriptor entry, extractor file, and typed registration.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

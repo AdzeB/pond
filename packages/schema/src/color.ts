@@ -22,8 +22,7 @@ function parseHex(hex: string): [number, number, number] | null {
   return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
 }
 
-// Returns a `#rrggbb` lowercase hex, accepting 3- or 6-digit input with or
-// without a leading "#". Null when the input isn't a valid hex color.
+// Normalize 3/6-digit hex (with or without "#") to lowercase `#rrggbb`; null if invalid.
 export function normalizeHex(input: string): string | null {
   if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");
@@ -72,9 +71,7 @@ function round(value: number, places: number): number {
   return Math.round(value * f) / f;
 }
 
-// The runtime inputs the CSS engine (packages/ui/src/theme/tokens.css) reads
-// to derive the whole --ds-* scale from a single theme. Set on <html> by
-// ThemeApplier and the index.html boot script.
+// Runtime inputs the CSS engine reads to derive the --ds-* scale; set on <html>.
 export interface ThemeEngineVars {
   baseL: number;
   baseC: number;
@@ -82,11 +79,9 @@ export interface ThemeEngineVars {
   accentL: number;
   accentC: number;
   accentH: number;
-  // CSS contrast multiplier (0.6..1.4) applied to the per-step lightness
-  // spread; higher pushes backgrounds, borders, and text further apart.
+  // CSS contrast multiplier (0.6..1.4) applied to the per-step lightness spread.
   contrast: number;
-  // +1 when the foreground (text) is lighter than the base (dark theme),
-  // -1 when it is darker (light theme).
+  // +1 when foreground is lighter than base (dark theme), -1 otherwise.
   fgDir: 1 | -1;
   isDark: boolean;
 }
@@ -104,9 +99,7 @@ export function contrastMultiplier(contrast: number): number {
 export function themeEngineVars(def: ThemeDef): ThemeEngineVars {
   const base = hexToOklch(def?.base ?? "") ?? FALLBACK_BASE;
   const accent = hexToOklch(def?.accent ?? "") ?? FALLBACK_ACCENT;
-  // A base lighter than ~0.6 reads as a light theme (dark text); below that
-  // we flip to light text. The threshold sits above 0.5 so saturated mid
-  // colors (e.g. a vivid pink) still get white text.
+  // Threshold above 0.5 so saturated mid colors (e.g. vivid pink) still get white text.
   const isDark = base.l < 0.6;
   return {
     baseL: round(base.l, 4),

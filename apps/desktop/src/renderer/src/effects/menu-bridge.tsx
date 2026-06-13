@@ -29,8 +29,7 @@ export function MenuBridge() {
     return window.pond.onMenuAction((id) => {
       switch (id) {
         case "view.inspector.toggle": {
-          // Toggles the save drawer: close it if open, otherwise reopen the
-          // anchored/selected save if there is one.
+          // Toggle the drawer: close if open, else reopen the anchored save.
           if (primarySelection.get()) {
             primarySelection.set(null);
           } else {

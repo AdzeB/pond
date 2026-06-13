@@ -2,9 +2,7 @@ import { useSyncExternalStore } from "react";
 
 export type ResolvedTheme = "light" | "dark";
 
-// Source of truth is `<html data-theme="...">`, written by `ThemeApplier`
-// from the user's preference (incl. resolving "system"). Reading the
-// attribute keeps a single resolver for both React and ad-hoc callers.
+// Source of truth is `<html data-theme>` (written by ThemeApplier); one resolver for React and ad-hoc callers.
 export function resolveCurrentTheme(): ResolvedTheme {
   if (typeof document === "undefined") return "dark";
   const attr = document.documentElement.dataset.theme;

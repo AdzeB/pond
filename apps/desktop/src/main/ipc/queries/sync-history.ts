@@ -24,8 +24,7 @@ function isSource(value: unknown): value is Source {
 }
 
 export const syncHistoryQueries: QueryHandlerMap = {
-  // Past sync runs for one source, newest first. Reads the
-  // `sync.run.completed` wide events committed by `core/sync`.
+  // Past sync runs for one source, newest first.
   async "sync.history"(params) {
     const source = params.source;
     if (!isSource(source)) return { runs: [] as SyncRunHistoryEntry[] };

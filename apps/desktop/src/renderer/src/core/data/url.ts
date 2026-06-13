@@ -6,11 +6,7 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
-// Ask the pond:// protocol for a downscaled raster preview instead of
-// the full-resolution original. `width` is in device pixels; the main
-// process generates and caches a WebP under `_thumbs/`, and falls back
-// to the original for vector/animated sources. Use this for grid cards;
-// the detail view should keep loading the original via `buildPondUrl`.
+// Request a downscaled WebP preview (width in device px) for grid cards; the detail view keeps the original via `buildPondUrl`.
 export function withThumbWidth(url: string, width: number): string {
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}w=${Math.round(width)}`;

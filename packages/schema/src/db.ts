@@ -21,19 +21,14 @@ export * from "./color";
 export * from "./prefs";
 export * from "./theme-presets";
 
-// Derived from the cross-runtime descriptors (the single source of truth for
-// external sources) plus the special-cased `local` import. Adding an entry to
-// `SOURCE_DESCRIPTORS` widens `Source` automatically.
+// External source descriptors plus the special-cased `local`.
 export const SOURCES = [...EXTERNAL_SOURCE_IDS, "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-// On-device NSFW verdict. Null = not yet classified. Derived in the renderer
-// (TensorFlow.js + nsfwjs), persisted here so it survives restarts, syncs
-// across devices, and is filterable. DB-only (excluded from info.json), like
-// `dominantColors`/`phash`; a full library reconcile just re-classifies.
+// On-device NSFW verdict; null = not yet classified. DB-only, re-derivable on reconcile.
 export const SENSITIVITIES = ["safe", "sensitive"] as const;
 export type Sensitivity = (typeof SENSITIVITIES)[number];
 
@@ -107,8 +102,7 @@ export const saves = sqliteTable(
     fileSize: integer("file_size"),
     phash: text("phash"),
     sensitivity: text("sensitivity").$type<Sensitivity>(),
-    // Stamp of the classifier that produced `sensitivity`. Lets the sweep
-    // re-classify saves when the model is upgraded.
+    // Classifier that produced `sensitivity`; lets the sweep re-run on model upgrades.
     sensitivityModel: text("sensitivity_model"),
     videoNotes: text("video_notes", { mode: "json" })
       .$type<VideoNote[]>()
@@ -220,9 +214,7 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
-// A persisted, user-named filter view shown as a tab in the library toolbar.
-// Stores the filter query plus the sort/layout to restore when applied. Scoped
-// per-pond (lives in the pond index DB) like tag groups.
+// A persisted, user-named filter view (query + sort/layout), scoped per-pond.
 export const savedViews = sqliteTable("saved_views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),

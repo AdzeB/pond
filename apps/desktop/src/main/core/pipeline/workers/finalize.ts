@@ -22,12 +22,7 @@ export async function runFinalize(saveId: string): Promise<void> {
   const report = computeCaptureReport(save);
 
   if (report.required.missing.length > 0) {
-    // If harvest_metadata still has retries left, kick it back to pending so
-    // it can take another swing at filling in the missing field. If it has
-    // already failed (e.g. Twitter's hidden-window scrape can't render the
-    // /i/web/status URL), don't re-pend it. That just churns the reconciler
-    // forever. Accept the partial capture and move on; the save still lands
-    // as `complete` with whatever the extractor managed to grab.
+    // Re-pend harvest_metadata if it has retries left; otherwise accept the partial capture.
     const harvestRow = taskRows.find((t) => t.op === "harvest_metadata");
     const harvestExhausted =
       !harvestRow ||
@@ -87,9 +82,7 @@ export async function runFinalize(saveId: string): Promise<void> {
     }
   }
 
-  // Authoritative info.json write: by now color extraction has run, so the
-  // shared projection captures the full exported shape. writeInfo forces it
-  // even though status/ingestCompletedAt are DB-only columns.
+  // Authoritative info.json write after color extraction; writeInfo forces it.
   await persistSave(
     saveId,
     {

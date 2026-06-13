@@ -1,8 +1,7 @@
 import type { SectionConfig } from "../engine";
 import { CheckNowRow } from "./general";
 
-// Post-patch side effect: tell main to apply the freshly saved prefs. Handlers
-// may be missing in older main processes, so fail open.
+// Post-patch side effect telling main to apply saved prefs; fails open if the handler is missing.
 function runApply(channel: string): void {
   void window.pond.query(channel, {}).catch(() => {});
 }

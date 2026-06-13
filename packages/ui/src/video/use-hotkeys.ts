@@ -9,8 +9,7 @@ function stepRate(current: number, delta: 1 | -1): number {
   return SPEED_OPTIONS[next] ?? 1;
 }
 
-// Keyboard shortcuts scoped to the focused player. Mirrors the common video
-// hotkey set: play/seek/volume/speed/frame-step plus PiP and fullscreen.
+// Keyboard shortcuts scoped to the focused player.
 export function useVideoHotkeys(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;

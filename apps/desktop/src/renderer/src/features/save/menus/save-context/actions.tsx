@@ -60,9 +60,7 @@ export type ActionDescriptor =
   | SubmenuDescriptor
   | SeparatorDescriptor;
 
-// Reverse image search engines. Each takes a public image URL and
-// returns a search URL the engine can fetch server-side. Local-only
-// saves are gated upstream because engines can't reach `pond://` URLs.
+// Reverse image search engines, each mapping a public image URL to a search URL (local saves gated upstream).
 const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
   key: string;
   label: string;

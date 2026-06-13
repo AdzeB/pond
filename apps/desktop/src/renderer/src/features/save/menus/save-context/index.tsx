@@ -61,9 +61,7 @@ interface SaveContextMenuProps {
   children: ReactElement;
 }
 
-// The library mounts one of these per visible card, so building the action
-// list (and the `useTagClipboard` subscription inside `useSaveActions`) only
-// once the menu opens keeps a clipboard change from re-rendering every card.
+// One per visible card, so build the action list only once the menu opens — a clipboard change won't re-render every card.
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
   const [open, setOpen] = useState(false);
 

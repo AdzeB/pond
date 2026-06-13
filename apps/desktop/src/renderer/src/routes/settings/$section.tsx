@@ -4,10 +4,7 @@ import { Suspense } from "react";
 import { SettingsSectionView } from "@/features/settings/engine";
 import { SECTIONS } from "@/features/settings/registry";
 
-// Path validation depends on the lightweight schema list, not the registry,
-// so resolving/redirecting a settings URL (e.g. an alias or unknown section)
-// doesn't have to pull in the registry chunk and the section configs it
-// imports. Only the component below references the registry.
+// Path validation uses the lightweight schema list so redirects don't pull in the registry chunk; only the component below does.
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
 const DEFAULT_PATH = SETTINGS_SECTIONS[0]?.path ?? "general";
 

@@ -1,7 +1,6 @@
 import { defineField } from "./descriptor";
 
-// In-memory only: matching runs the `near` comparator over the stored
-// palette, so there is no SQL projection.
+// In-memory only: `near` comparator runs over the stored palette, no SQL projection.
 export const color = defineField({
   id: "color",
   type: "color",

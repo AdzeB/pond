@@ -1,18 +1,12 @@
 interface MemoCacheOptions {
-  // Time-to-live in ms before a cached value is treated as stale and
-  // recomputed on the next get(). Omit (or Infinity) to cache until an
-  // explicit invalidate()/set().
+  // Staleness TTL in ms; omit to cache until an explicit invalidate()/set().
   ttlMs?: number;
 }
 
 export interface MemoCache<T> {
-  // Return the cached value when fresh, otherwise compute it. Concurrent
-  // callers during a compute share the same in-flight promise, so the
-  // work runs once.
+  // Return the cached value or compute it; concurrent callers share one compute.
   get(): Promise<T>;
-  // The current cached value without triggering a compute. Returns null
-  // when empty or stale. Handy for read-modify-write callers that want
-  // to patch the cache only when it was already populated.
+  // Current cached value without computing; null when empty or stale.
   peek(): T | null;
   // Overwrite the cached value and reset its freshness window.
   set(value: T): void;
@@ -20,10 +14,7 @@ export interface MemoCache<T> {
   invalidate(): void;
 }
 
-// A tiny single-value async memo: TTL freshness plus in-flight dedupe.
-// Replaces the hand-rolled `cached`/`inflight` pairs that were copied
-// across several main-process modules. A rejected compute is never
-// cached, so transient failures retry on the next get().
+// Single-value async memo: TTL freshness plus in-flight dedupe; rejections aren't cached.
 export function createMemoCache<T>(
   compute: () => Promise<T>,
   options: MemoCacheOptions = {},

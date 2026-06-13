@@ -2,8 +2,7 @@ import { sql } from "drizzle-orm";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
-// On-device NSFW verdict. Unclassified saves project to `null`, so they match
-// neither "Sensitive" nor "Safe" (the background classifier fills them in).
+// Unclassified saves project to `null`, so they match neither "Sensitive" nor "Safe".
 const SENSITIVITY_PRESETS = [
   { id: "sensitive", label: "Sensitive", value: "sensitive" },
   { id: "safe", label: "Safe", value: "safe" },

@@ -85,10 +85,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
   });
 }
 
-// Pull every URL we can fetch with a plain GET. For video items that means
-// only direct media files (Instagram /Pinterest /Twitter CDNs that serve a
-// signed .mp4). Page URLs like youtube.com/watch or tiktok.com/@x/video/123
-// have no usable extension and stay reserved for fetch_video_ytdlp.
+// URLs fetchable with a plain GET; non-direct video page URLs stay for fetch_video_ytdlp.
 function collectMediaUrls(rawJson: unknown): string[] {
   if (!rawJson || typeof rawJson !== "object") return [];
   const v = rawJson as {
@@ -125,8 +122,7 @@ function mediaUrlsCovered(
   files: ReadonlyArray<SaveFile>,
 ): boolean {
   if (urls.length === 0) return true;
-  // We don't preserve the URL→file mapping. Use file count as a coarse signal:
-  // if we have at least one cover + as many media-* as URLs, assume covered.
+  // No URL→file mapping kept; use file count as a coarse "covered" signal.
   const coverCount = files.filter(
     (f) => f.kind === "cover" || f.kind === "media",
   ).length;

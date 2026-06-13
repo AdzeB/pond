@@ -1,10 +1,7 @@
 import type { RawJson } from "@pond/schema/raw";
 import { patchSaveRawJson, pool } from "./pool";
 
-// The list payload (`saves.list`) ships only a slim `rawJson` projection to
-// keep boot small. The detail view needs the full blob (metrics, chapters,
-// description, …), so it calls `ensureRawJson(id)` on open to hydrate the
-// pooled save once. Guarded so repeated opens / re-renders don't re-fetch.
+// The list ships a slim rawJson; the detail view calls ensureRawJson(id) once on open to hydrate the full blob.
 const inflight = new Set<string>();
 const loaded = new Set<string>();
 
@@ -19,8 +16,7 @@ export async function ensureRawJson(id: string): Promise<void> {
     loaded.add(id);
     if (pool.get(id)) patchSaveRawJson(id, res.rawJson);
   } catch {
-    // Best-effort hydration: the slim projection already covers duration and
-    // media type, so a failure just means a few detail rows stay hidden.
+    // Best-effort: a failure just hides a few detail rows the slim projection doesn't cover.
   } finally {
     inflight.delete(id);
   }

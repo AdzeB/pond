@@ -14,10 +14,7 @@ const RRULE_WEEKDAYS: Weekday[] = [
   RRule.SA,
 ];
 
-// RRule evaluates everything in UTC. We want a "floating" local wall-clock
-// schedule ("09:00 on these weekdays" in the user's timezone, regardless of
-// DST), so we shift the local fields into UTC, let RRule do the calendar
-// math, then read the UTC fields back out as local time.
+// RRule runs in UTC; shift local wall-clock fields through UTC for a floating DST-safe schedule.
 function toFloating(d: Date): Date {
   return new Date(
     Date.UTC(

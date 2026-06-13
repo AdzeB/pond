@@ -38,8 +38,7 @@ export function usePonds() {
       const res = (await window.pond.query("library.switchTo", {
         path,
       })) as ActionResult;
-      // Switching repoints the active library and relaunches (or reloads
-      // in dev), so there's no success state to settle back into here.
+      // Switching relaunches (or reloads in dev), so there's no success state to settle into.
       if (!res.ok) throw new Error(res.reason);
     },
     onError: (err) => {

@@ -10,8 +10,7 @@ import { usePonds } from "@/features/library/hooks/use-ponds";
 import styles from "./styles.module.css";
 
 interface PondSwitcherProps {
-  // `compact` renders an icon-only avatar trigger (used by the bottom dock)
-  // instead of the full-width name + chevron row (used in larger surfaces).
+  // `compact` renders an icon-only avatar trigger instead of the full name + chevron row.
   compact?: boolean;
   className?: string;
 }

@@ -3,13 +3,7 @@ import type { FieldId } from "@pond/schema/filters/types";
 import { useMemo } from "react";
 import { useSaves } from "@/core/data/hooks";
 
-/**
- * Counts the complete, non-deleted saves that project to each distinct value of
- * a filter field, keyed by the lowercased projection. Mirrors the projection
- * used when the predicate actually runs, so the numbers shown next to a filter
- * option match the results selecting it would yield. Array projections (e.g.
- * tags) contribute one increment per element.
- */
+// Count complete, non-deleted saves per distinct field value, using the predicate's projection so counts match results.
 export function useFieldValueCounts(
   field: FieldId,
 ): ReadonlyMap<string, number> {

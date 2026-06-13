@@ -2,10 +2,7 @@ import { useMemo } from "react";
 import { useSaves } from "./hooks";
 import type { Save } from "./types";
 
-// Client-side scorer over the in-memory pool. Every term has to hit
-// at least one field; title prefix beats title substring beats tag
-// beats URL/author/description/notes.
-
+// Client-side scorer over the pool; every term must hit a field, ranked title prefix > substring > tag > url/author/desc/notes.
 const MAX_RESULTS = 500;
 
 export function useSearchResults(

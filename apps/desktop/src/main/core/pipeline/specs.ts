@@ -4,14 +4,7 @@ export type { Op };
 
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
-// Per-op attempt budget. Tuned against each worker's wall-clock cost
-// and recoverability. yt-dlp downloads are the most expensive (10-min
-// watchdog) and the least likely to recover on retry: videos that
-// errored once usually error every time. Avatar fetches are cheap but
-// likely to be served from a CDN that's either available or it isn't.
-// Anything pool-bound (harvest, capture, finalize) keeps the historical
-// 5-attempt budget because flaky scrapes do often clear on the next
-// run.
+// Per-op attempt budget, tuned to each worker's cost and recoverability.
 const MAX_ATTEMPTS: Record<Op, number> = {
   harvest_metadata: 5,
   capture_tweet: 4,
@@ -27,13 +20,9 @@ export function maxAttemptsFor(op: Op): number {
 }
 
 export function planOps(source: Source): readonly Op[] {
-  // Local saves carry their bytes and metadata at import time. There is
-  // nothing to scrape, fetch, or capture, so they run no pipeline ops.
+  // Local saves carry everything at import time; no pipeline ops.
   if (source === "local") return [];
-  // capture_tweet only runs for text-only X posts. For every other source
-  // it would lease a hidden window, navigate to a non-tweet URL, and
-  // produce nothing. Filter the op out of the spec for them so we don't
-  // create dead tasks at enqueue time.
+  // capture_tweet is twitter-only; filter it out elsewhere to avoid dead tasks.
   if (source === "twitter") return UNIVERSAL_SPEC;
   return UNIVERSAL_SPEC.filter((op) => op !== "capture_tweet");
 }
@@ -102,17 +91,11 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.author.avatarUrl",
     ],
   },
-  // Local imports supply their own metadata; nothing is scraped, so there
-  // are no capture expectations to grade against.
+  // Local imports supply their own metadata; nothing to grade.
   local: { required: [], recommended: [] },
 };
 
-// resolveYtDlpTarget: Capture.upstream is populated by the extractor when the
-// save wraps content hosted elsewhere (Arena embed of YouTube, Cosmos tile of
-// Vimeo). yt-dlp's existing extractor list handles those hosts directly so we
-// just hand it the upstream URL. Pinterest pin URLs aren't yt-dlp-able on
-// their own (no extractor); when a pin has a video, fetch_blobs grabs the
-// direct .mp4 from Pinterest's CDN before this worker runs.
+// Returns the upstream URL when set (embedded host yt-dlp handles); null for pinterest.
 export function resolveYtDlpTarget(save: Save): string | null {
   const raw = save.rawJson as {
     capture?: { upstream?: { url?: string } };

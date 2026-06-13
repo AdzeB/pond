@@ -85,18 +85,8 @@ export interface RelocateResult {
   skipped: number;
 }
 
-// Two modes of "switch library folder":
-//
-//  - copy:  copy contents of the current library into `dest`, then
-//           switch. Leaves the source intact so it's a safe operation:
-//           users can verify the destination then delete the source
-//           themselves. This is the right default when moving the
-//           library somewhere new (e.g. opting into iCloud).
-//
-//  - adopt: don't copy anything; just switch to `dest`. This is the
-//           right move when `dest` already contains a Pond library
-//           (e.g. iCloud has it synced from another Mac, or the user
-//           is rolling back to an old location).
+// copy: clone the current library into dest then switch (source left intact).
+// adopt: just switch to dest, which already holds a Pond library.
 export async function relocateLibrary(
   dest: string,
   mode: RelocateMode,
@@ -135,8 +125,7 @@ export async function relocateLibrary(
 
   writeLibraryPointer(destResolved);
 
-  // The active-pond pointer is app-global, so it lives in the global DB,
-  // not the per-pond index we're about to switch away from.
+  // The active-pond pointer is app-global, so it lives in the global DB.
   const globalDb = await getGlobalDb();
   await globalDb
     .insert(settingsTable)
@@ -153,9 +142,7 @@ export async function relocateLibrary(
   return { path: destResolved, mode, copied, skipped };
 }
 
-// Inspect a candidate folder so the renderer can show a confirm
-// dialog with all the relevant context (cloud-storage notice, "looks
-// like a Pond library already" hint, suggested mode).
+// Inspect a candidate folder for the relocate confirm dialog.
 export interface RelocatePreview {
   currentPath: string;
   candidatePath: string;

@@ -1,16 +1,11 @@
 import type { RuleGroupType, RuleType } from "@react-querybuilder/core";
 
-// A single filter rule. Structurally an react-querybuilder `RuleType`, narrowed
-// to our `FieldId`/`ComparatorId` unions, plus an optional per-rule `negate`
-// (react-querybuilder only models group-level `not`; we carry per-rule negation
-// through our own SQL/match processors).
+// RQB `RuleType` narrowed to our unions, plus per-rule `negate` (RQB only has group `not`).
 export interface Predicate extends RuleType<FieldId, ComparatorId, unknown> {
   negate?: boolean;
 }
 
-// A group of clauses. Structurally an react-querybuilder `RuleGroupType`. The UI
-// keeps the root flat (one predicate per field, AND-only), but the type permits
-// nested groups and "or" so the model stays forward-compatible with RQB.
+// RQB `RuleGroupType`; UI keeps root flat but the type allows nested/or for forward-compat.
 export type Group = RuleGroupType<Predicate, "and" | "or">;
 
 export type Clause = Predicate | Group;
@@ -24,8 +19,7 @@ export function isEmptyQuery(q: Query | null | undefined): boolean {
   return q.rules.length === 0;
 }
 
-// Runtime discriminators between predicates and groups (RQB has no `kind` tag;
-// a group is identified by its `rules` array / `combinator`).
+// RQB has no `kind` tag; a group is identified by its `rules` array.
 export function isGroup(clause: Clause): clause is Group {
   return "rules" in clause;
 }

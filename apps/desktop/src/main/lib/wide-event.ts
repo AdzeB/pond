@@ -12,20 +12,7 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 
-/* The wide-event substrate.
- *
- * `startEvent` returns a typed builder you can mutate over the life of
- * a unit of work (populating fields as the request flows), then
- * `commitEvent` writes one row to `pipeline_events` and emits a single
- * human-readable line to `electron-log`. The scattered "[pond ...]"
- * narration that used to live around the producer dies as a side
- * effect: one canonical record per unit of work replaces the journal
- * of half-thoughts it used to take to reconstruct the same story.
- *
- * Storage layer is SQLite (queryable from the Activity panel + bug
- * reports). The summary line keeps `tail -f main.log` legible without
- * us paying for it twice.
- */
+// Wide-event substrate: one row per unit of work in SQLite plus a summary log line.
 
 type WithoutKind<E extends WideEvent> = Omit<E, "kind">;
 
@@ -91,10 +78,7 @@ function startIngestEvent(
   };
 }
 
-/* Convenience for the two save-terminal call sites (finalize success
- * + reconciler cascade-failure). Builds and commits a single
- * `save.ingest.completed` row by reading the current save + tasks
- * state. Best-effort: if the save vanished we just no-op. */
+// Build and commit a save.ingest.completed row from current state; no-op if the save vanished.
 export async function commitSaveIngestEvent(
   saveId: string,
   override: {
@@ -163,16 +147,13 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
       })
       .run();
   } catch (err) {
-    // A failing event write must never break the producer. Worst case
-    // we lose visibility, not data.
+    // A failing event write must never break the producer.
     log.warn("[pond events] commit failed", err);
   }
   log.info(formatSummary(ev));
 }
 
-/* One-line summary tuned for `tail -f main.log`. Designed so a
- * human reading the stream can see the same outcome the panel sees,
- * without reading 30 narration lines to assemble it. */
+// One-line summary for `tail -f main.log`.
 function formatSummary(ev: WideEvent): string {
   switch (ev.kind) {
     case "pipeline.task.completed": {

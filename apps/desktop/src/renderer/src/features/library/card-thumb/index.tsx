@@ -13,9 +13,7 @@ import styles from "./styles.module.css";
 
 export type CardLayout = "waterfall" | "grid" | "justified";
 
-// Device-pixel width for grid/card thumbnails. A single bucket keeps the
-// on-disk cache key stable (no per-DPR or per-cell variance) while still
-// being crisp for typical card sizes; the detail view loads originals.
+// Single thumbnail width bucket keeps the on-disk cache key stable; detail view loads originals.
 const CARD_THUMB_WIDTH = 768;
 
 export const CardThumb = memo(function CardThumb({
@@ -34,8 +32,7 @@ export const CardThumb = memo(function CardThumb({
   const isDownloading = useIsVideoDownloading(save);
   const { blurred, reveal } = useSensitiveMedia(save);
 
-  // Track the broken src (not a boolean) so swapping to a new unit URL
-  // clears the broken state automatically.
+  // Track broken src (not a boolean) so swapping unit URL auto-clears the broken state.
   const pickedSrc = unit?.url ?? null;
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
@@ -102,9 +99,7 @@ function CardImage({
       alt=""
       loading="lazy"
       decoding="async"
-      // Grid thumbs are background work; never starve the foreground
-      // detail image or first-paint hero by competing on the same
-      // connection.
+      // Grid thumbs are background work; don't starve the foreground detail image.
       fetchPriority="low"
       width={w}
       height={h}
@@ -135,10 +130,7 @@ function HoverVideo({
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
-  // `useInViewRef` hands back a callback ref; merge it with the
-  // controllable `internalRef` (used for play/pause/seek) so a single
-  // `<video>` element feeds both. `rootMargin` primes media slightly
-  // before it scrolls into view.
+  // Merge the in-view callback ref with the controllable ref; rootMargin primes media before it scrolls in.
   const [inViewRef, inView] = useInViewRef({ rootMargin: "200px" });
   const setVideoRef = useMergeRefs<HTMLVideoElement>(internalRef, inViewRef);
 

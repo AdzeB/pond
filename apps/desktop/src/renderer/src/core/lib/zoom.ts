@@ -1,6 +1,4 @@
-// Grid zoom bounds and persistence key. The live zoom state lives in
-// `stores/view-store`; this module is just the shared constants so the
-// store and the zoom UI agree on the same range and storage key.
+// Shared grid zoom bounds and storage key; live state lives in stores/view-store.
 export const ZOOM_MIN = 80;
 export const ZOOM_MAX = 240;
 export const ZOOM_DEFAULT = 130;

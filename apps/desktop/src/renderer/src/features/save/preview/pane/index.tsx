@@ -18,9 +18,7 @@ import { descriptionMatchesTitle, pickAuthorColor } from "../helpers";
 import { collectInfoRows, type PaneRow } from "../rows";
 import styles from "./styles.module.css";
 
-// The metadata column (title, author, description, tags, notes, stats). Shared
-// by the docked drawer (single column) and the standalone window (info sidebar
-// alongside a full-height media viewer).
+// The metadata column (title, author, description, tags, notes, stats), shared by the drawer and standalone window.
 export function SaveInfo({ save }: { save: Save }) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
@@ -151,8 +149,7 @@ function PaneRowList({ rows }: { rows: PaneRow[] }) {
 function PaneNotes({ save }: { save: Save }) {
   const [draft, setDraft] = useState(save.notes ?? "");
 
-  // Resync the local draft when the selection changes or notes update from
-  // elsewhere (e.g. an undo).
+  // Resync the draft when selection changes or notes update elsewhere (e.g. an undo).
   useEffect(() => {
     setDraft(save.notes ?? "");
   }, [save.notes]);

@@ -261,10 +261,7 @@ export type ArenaCaptureResult =
   | { ok: true; capture: Capture }
   | { ok: false; reason: string };
 
-// Fetches a single Are.na block by source id and shapes it into the
-// universal `Capture`. Used by the URL-first pipeline extractor; the
-// list-refresh path (`harvestArenaListViaApi`) only needs sourceId+url
-// per entry and is wired separately.
+// Fetches one Are.na block by id and shapes it into a `Capture`.
 export async function fetchArenaCapture(args: {
   sourceId: string;
 }): Promise<ArenaCaptureResult> {
@@ -326,10 +323,7 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  // Upstream: prefer the embed (iframe target like YouTube/Vimeo/etc.),
-  // then the attachment, then the original `source.url`. The first one
-  // that parses as a valid URL wins. yt-dlp targets this host rather
-  // than the are.na permalink for video blocks.
+  // Upstream URL for yt-dlp: first valid of embed, attachment, source.url.
   const upstream = ((): Capture["upstream"] => {
     const candidates = [
       pickNonEmpty(block.embed?.url),
@@ -355,9 +349,7 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  // The block's outward URL is the upstream `source.url` when present
-  // (so video embeds route to the real host), otherwise the are.na
-  // permalink.
+  // Outward URL is source.url when present (route embeds to the real host), else the permalink.
   const url =
     typeof block.source?.url === "string" && block.source.url
       ? block.source.url
@@ -537,10 +529,7 @@ function adaptV3ContentItem(item: V3ContentItem): ListEntry | null {
         ]
       : undefined;
 
-  // List entries flow into `enqueueSaveByUrl(entry.url)` and the
-  // per-URL pipeline rebuilds the full Capture from scratch. The other
-  // fields are kept for the in-flight progress UI / future use, but no
-  // source-specific blob needs to ride along.
+  // Only url+sourceId are consumed downstream; other fields are for the progress UI.
   const entry: ListEntry = {
     sourceId: id,
     url,
@@ -598,9 +587,7 @@ export async function harvestArenaListViaApi(
       }
     }
 
-    // Stop early once we've crossed into the already-imported tail. v3
-    // contents is ordered newest-first, so two solid pages of known IDs in a
-    // row is a strong signal that the rest is older than our cutoff.
+    // Stop early after two full pages of known IDs (contents is newest-first).
     if (allKnownThisPage) {
       knownStreakPages += 1;
       if (knownStreakPages >= 2) break;

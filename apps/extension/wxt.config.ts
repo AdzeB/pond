@@ -2,9 +2,7 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
-  // WXT defaults to the first free port in 3000..3010 and silently falls back,
-  // which collides with @pond/website's Next dev server and leaves the IPv4/IPv6
-  // listeners split across the two apps. Pin to 3001 and fail loud instead.
+  // Pin to 3001 (fail loud) to avoid colliding with the website's Next dev server.
   dev: {
     server: {
       port: 3001,

@@ -31,19 +31,14 @@ export const libraryQueries: QueryHandlerMap = {
     return await reconcileLibrary();
   },
 
-  // Create the default (or pointed-at) library bundle on disk and add it
-  // to the switcher list, so the `.pond` is created on demand rather than
-  // at boot.
+  // Create the default library bundle on demand and add it to the switcher.
   async "library.ensureDefault"() {
     const path = materializeLibrary();
     rememberLibrary(path);
     return { ok: true as const, path };
   },
 
-  // Reveal a library bundle in Finder. Defaults to the active library;
-  // the switcher passes a `path` to reveal any known library. Only paths
-  // we already track are honored so the renderer can't open arbitrary
-  // locations.
+  // Reveal a library in Finder; only tracked paths are honored.
   async "library.openInFinder"(params) {
     const requested = typeof params.path === "string" ? params.path.trim() : "";
     let target = libraryRootDir();
@@ -71,14 +66,7 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  // Eagle-style "New Library" picker: the user types a name and picks
-  // a parent folder, and we hand back a full `<parent>/<name>.pond`
-  // path. The library lives inside that single bundle rather than
-  // scattering items/, trash/, metadata.json loose into the chosen
-  // folder. The renderer passes the path to `library.previewRelocate`
-  // and `library.relocate`, which create the bundle. We keep "pick"
-  // and "preview" separate so the renderer is free to call preview
-  // against a hard-coded path too (used in tests).
+  // New-library picker; returns a `<parent>/<name>.pond` path for relocate to create.
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -97,10 +85,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, path: ensurePondSuffix(result.filePath) };
   },
 
-  // "Create pond" flow: the user types the name in-app, so here we only
-  // let them choose the parent folder, then compose `<dir>/<name>.pond`.
-  // Using an open dialog (not a save dialog) means they never see a
-  // pre-existing default bundle's contents.
+  // Pick a parent folder only (name comes from the app), then compose `<dir>/<name>.pond`.
   async "library.pickNewLocation"(params) {
     const raw = typeof params.name === "string" ? params.name.trim() : "";
     const name = sanitizePondName(raw) || "My Pond";
@@ -119,9 +104,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, path: ensurePondSuffix(join(dir, name)) };
   },
 
-  // Adopt an existing library. Lets the user point at a `.pond` bundle
-  // that already exists (e.g. one synced from another Mac via iCloud).
-  // `previewRelocate` will suggest "adopt" for it so nothing is copied.
+  // Adopt an existing `.pond` bundle; previewRelocate suggests "adopt" so nothing is copied.
   async "library.pickExisting"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -176,8 +159,7 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  // The switcher's known-library list, most-recently-opened first,
-  // with the currently-active path flagged.
+  // Known libraries, most-recently-opened first, with the active path flagged.
   async "library.listKnown"() {
     const active = libraryRootDir().replace(/\/+$/, "");
     rememberLibrary(active);
@@ -189,9 +171,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { active, libraries };
   },
 
-  // Set the avatar (an emoji) shown for a library in the switcher.
-  // Defaults to the active library; an empty string clears it back to
-  // initials. Only paths we already track are honored.
+  // Set a library's emoji avatar; empty clears to initials, tracked paths only.
   async "library.setAvatar"(params) {
     const requested =
       typeof params.path === "string" && params.path.trim()
@@ -207,8 +187,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
-  // Jump to a library that already exists on disk (no copy): write the
-  // pointer, remember it, relaunch into it.
+  // Switch to an existing library (no copy): write pointer, relaunch.
   async "library.switchTo"(params) {
     const dest = String(params.path ?? "").trim();
     if (!dest) return { ok: false as const, reason: "no_path" as const };
@@ -228,9 +207,7 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  // Create a brand-new, empty library: name it via the save dialog,
-  // point at it, relaunch. The fresh `.pond` bundle is materialized on
-  // next boot (items/, trash/, metadata.json) and the index starts empty.
+  // Create an empty library via the save dialog, then relaunch into it.
   async "library.create"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -260,8 +237,7 @@ export const libraryQueries: QueryHandlerMap = {
     }
   },
 
-  // Remove a library from the switcher list. Never touches files; the
-  // active library can't be forgotten.
+  // Remove a library from the switcher; never touches files, active can't be forgotten.
   async "library.forget"(params) {
     const target = String(params.path ?? "").trim();
     if (!target) return { ok: false as const, reason: "no_path" as const };
@@ -272,11 +248,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
-  // Delete a library from disk: move the whole `.pond` bundle to the OS
-  // Trash (recoverable), then drop it from the switcher list. The
-  // confirmation lives in the renderer (it offers "remove from list" vs
-  // "delete from disk"), so this just does the work. The active library
-  // can't be deleted: switch away first so nothing holds its files open.
+  // Trash the `.pond` bundle and drop it from the switcher; active can't be deleted.
   async "library.delete"(params) {
     const target = String(params.path ?? "").trim();
     if (!target) return { ok: false as const, reason: "no_path" as const };
@@ -316,9 +288,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const };
   },
 
-  // Eagle's "Empty cache and reload": drop the derived caches for the
-  // active library (thumbnails, transcoded video) and reload every
-  // window so they regenerate. Never touches items or the index.
+  // Drop derived caches (thumbnails, video) and reload windows to regenerate them.
   async "library.emptyCacheAndReload"() {
     let removed = 0;
     for (const dir of ["_thumbs", "_video_cache"] as const) {
@@ -336,8 +306,7 @@ export const libraryQueries: QueryHandlerMap = {
     return { ok: true as const, removed };
   },
 
-  // Backs the "Move Library…" / "Create a new pond" menu action. With no
-  // explicit path it prompts for a destination, then copies the library there.
+  // Backs "Move Library…"; prompts for a destination then copies the library there.
   async "library.move"(params) {
     const explicitDest =
       typeof params.path === "string" ? params.path.trim() : "";
@@ -388,8 +357,7 @@ export const libraryQueries: QueryHandlerMap = {
 
   async "reset.factory"() {
     const dbPath = (await import("../../paths")).resolvePaths().indexDb;
-    // Close the handle first so we delete the file, not just unlink an
-    // inode the open connection keeps writing to.
+    // Close the handle first so we delete the file, not an inode still being written.
     closeDb();
     try {
       const { rm } = await import("node:fs/promises");
@@ -478,17 +446,13 @@ export const libraryQueries: QueryHandlerMap = {
   },
 };
 
-// A Pond library is a single `<name>.pond` bundle. The save dialog can
-// hand back a path the user typed without the extension, so normalize
-// to exactly one `.pond` suffix.
+// Normalize to exactly one `.pond` suffix.
 function ensurePondSuffix(path: string): string {
   const trimmed = path.replace(/\/+$/, "");
   return trimmed.endsWith(".pond") ? trimmed : `${trimmed}.pond`;
 }
 
-// The user types a pond name we then turn into a folder name. Strip path
-// separators and characters that don't belong in a filename, and drop any
-// `.pond` they typed so `ensurePondSuffix` adds exactly one.
+// Strip filename-illegal chars and any `.pond` suffix from a typed pond name.
 function sanitizePondName(name: string): string {
   return name
     .replace(/\.pond$/i, "")
@@ -496,20 +460,8 @@ function sanitizePondName(name: string): string {
     .trim();
 }
 
-// Defer the relaunch so the IPC response can land before we tear down
-// the process. The renderer's `await` resolves with the success
-// payload, then the app vanishes and comes back pointing at the new
-// library.
-// Apply a library change so the app reflects the new pointer.
-//
-// In production we relaunch the process: many subsystems captured the old
-// paths at boot and a clean restart is the simplest way to re-point them.
-//
-// In `electron-vite` dev, `app.exit(0)` tears down the renderer dev server,
-// so the relaunched window can't reach the dev URL (ERR_CONNECTION_REFUSED)
-// and is left blank while holding the single-instance lock. The SQLite index
-// lives in userData (shared across libraries); only the on-disk paths change,
-// so we bust the path cache and reload the window in place instead.
+// Defer relaunch so the IPC response lands first. Prod relaunches the process;
+// dev soft-repoints in place because app.exit would kill the renderer dev server.
 function relaunchSoon(): void {
   if (process.env.ELECTRON_RENDERER_URL) {
     setTimeout(() => {
@@ -526,9 +478,7 @@ function relaunchSoon(): void {
 
 async function softRepointInDev(): Promise<void> {
   log.info("[pond library-ops] dev re-point into new library (no relaunch)");
-  // Drop the old pond index handle and path cache so the next getDb()
-  // resolves and opens the new pond's `indexes/<id>.db`. Without this the
-  // window would reload against the previous pond's index.
+  // Drop the old index handle and path cache so getDb() opens the new pond's index.
   closeDb();
   invalidatePaths();
   for (const win of BrowserWindow.getAllWindows()) {

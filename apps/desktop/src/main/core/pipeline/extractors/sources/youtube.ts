@@ -40,9 +40,7 @@ export class YouTubeWatchExtractor implements Extractor {
     const dom = await fetchHtmlInWindow(canonical, "youtube", videoId);
     const meta = (dom.meta ?? {}) as Record<string, unknown>;
 
-    // fetch_video_ytdlp gates on `type: "video"` in capture.media, so make
-    // sure we always emit one for a watch page. Falls back to the canonical
-    // i.ytimg.com thumbnail when the DOM scrape didn't surface a poster.
+    // Always emit a video candidate (fetch_video_ytdlp gates on it); fall back to the ytimg thumbnail.
     const posterUrl =
       typeof dom.mediaUrl === "string" && dom.mediaUrl.length > 0
         ? dom.mediaUrl

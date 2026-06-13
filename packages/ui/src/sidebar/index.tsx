@@ -197,12 +197,10 @@ export const Sidebar = {
   Anchor,
   Footer,
 
-  /* Group */
   Group,
   GroupLabel,
   GroupContent,
 
-  /* Collapsible Group */
   CollapsibleGroup,
   CollapsibleGroupLabel,
   CollapsibleGroupContent,

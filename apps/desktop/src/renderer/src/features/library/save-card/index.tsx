@@ -15,9 +15,7 @@ import { SaveContextMenu } from "@/features/save/menus/save-context";
 import { getSourceIcon } from "@/features/sources/registry";
 import { getSourceLabel } from "@/features/sources/source-labels";
 
-// Short, badge-friendly label for the save's primary asset. Prefers the
-// file extension (PNG, MP4, GIF…), then its mime subtype, then the
-// coarse mediaType, falling back to "Link" for URL-only saves.
+// Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link".
 function deriveTypeLabel(file: SaveFile | null, save: Save): string | null {
   const ext = file?.path.split(".").pop()?.toLowerCase();
   if (ext && /^[a-z0-9]{1,4}$/.test(ext)) return ext.toUpperCase();
@@ -48,12 +46,9 @@ export const SaveCard = memo(function SaveCard({
   packedTop,
   packedLeft,
 }: SaveCardProps) {
-  // Interaction callbacks come from the grid context so this memoized
-  // card never re-renders just because a sibling's selection changed.
+  // Callbacks from grid context so this memoized card doesn't re-render on a sibling's selection change.
   const { onClick, onDoubleClick } = useLibraryCardCallbacks();
-  // Per-id subscription: title / status / files edits to *this* save
-  // wake only this card via notifyId; the parent grid keeps a stable
-  // snapshot from useSaves() and never re-renders for field changes.
+  // Per-id subscription: edits to this save wake only this card; the parent grid keeps a stable snapshot.
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
@@ -149,8 +144,7 @@ const SaveCardBody = memo(function SaveCardBody({
   );
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
-  // Clamp to a sane range so panoramas / extreme portraits don't stretch
-  // a justified row into a single tile or shrink a waterfall card.
+  // Clamp so panoramas / extreme portraits don't distort justified rows or waterfall cards.
   const ratio = w && h ? Math.min(2.5, Math.max(0.4, w / h)) : 1;
   const mediaStyle = useMemo<React.CSSProperties>(
     () =>
@@ -169,9 +163,7 @@ const SaveCardBody = memo(function SaveCardBody({
   const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
   const showMeta = prefs.name || prefs.date;
   const dateLabel = useMemo(() => formatAbsolute(save.savedAt), [save.savedAt]);
-  // Carousel count = displayable media units only. Avatars are author
-  // metadata, and posters are paired with their video, so neither should
-  // pad the badge.
+  // Count displayable media units only (avatars and paired posters don't pad the badge).
   const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
   return (
     <>

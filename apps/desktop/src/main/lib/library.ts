@@ -78,8 +78,7 @@ function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
   return { filename: file.filename, buf };
 }
 
-// Write `info.json` (clean human content) and `source.json` (raw
-// capture payload) into an item folder, creating it if needed.
+// Write info.json (clean content) and source.json (raw payload) into an item folder.
 async function writeInfoFiles(
   id: string,
   info: InfoDoc,
@@ -94,9 +93,7 @@ async function writeInfoFiles(
   );
 }
 
-// Write a save's `info.json` + `source.json` from its current row, deriving
-// the file manifest from `save.files`. The item dir is created if missing, so
-// this also covers saves with no blobs (a link, a text-only capture).
+// Write a save's info.json + source.json from its row; covers blob-less saves too.
 export async function writeSaveInfo(save: Save): Promise<void> {
   const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
     kind: f.kind,
@@ -133,9 +130,7 @@ export async function writeItemFiles(
   return { written: decoded };
 }
 
-// Apply a save patch to an item's on-disk `info.json` (and `source.json`
-// if the raw payload changed), preserving fields the patch doesn't touch.
-// Returns false when the item folder has no readable info to patch.
+// Apply a patch to an item's on-disk info.json; false when no readable info exists.
 export async function applyItemPatch(
   id: string,
   patch: Partial<Save>,
@@ -189,8 +184,7 @@ async function readSourceDoc(id: string): Promise<unknown> {
   }
 }
 
-// Read an item's `info.json` for editing. Carries `rawSource` alongside so
-// an edit never drops the raw capture payload.
+// Read an item's info.json for editing, carrying rawSource so it isn't dropped.
 async function readInfoForEdit(
   id: string,
 ): Promise<{ info: InfoDoc; rawSource: unknown } | null> {
@@ -262,11 +256,7 @@ function parseTimestamp(value: unknown): number | null {
   return null;
 }
 
-// Trash is an in-place flag. The item folder always stays in `items/`;
-// only `deletedAt` in info.json records the deleted state. Keeping files
-// put means pond:// keeps resolving trashed media, and stamping the flag
-// on disk lets it survive an index rebuild. Pass a Date to trash, `null`
-// to restore. No-op when the item has no readable info folder.
+// Trash is an in-place `deletedAt` flag; Date trashes, null restores.
 export async function setItemDeleted(
   id: string,
   deletedAt: Date | null,

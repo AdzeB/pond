@@ -1,10 +1,2 @@
-/**
- * 18px outline icons. Re-exports the Nucleo `nucleo-ui-outline-18`
- * family verbatim. Every icon ships as `Icon<Name>Outline18` and
- * accepts `IconProps` (`size`, `strokeWidth`, `corners`, plus
- * standard SVG attrs).
- *
- * See https://nucleoapp.com/app?library=ui for the full catalogue.
- */
-
+// 18px outline icons, re-exported from `nucleo-ui-outline-18`.
 export * from "nucleo-ui-outline-18";

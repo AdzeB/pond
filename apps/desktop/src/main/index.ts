@@ -46,10 +46,7 @@ import { registerProtocol, registerScheme } from "./protocol";
 import { ensureTray, setTrayVisible, type TrayHandle } from "./tray";
 import { registerAutoUpdater } from "./updater";
 
-// macOS reads the app menu's title and the About / Hide / Quit labels
-// from `app.name`, which in dev falls back to the Electron binary's
-// own `name` ("Electron") instead of our `productName`. Force it
-// before any menu, dock, or about-panel work.
+// Force app.name before any menu/dock work; dev falls back to "Electron" otherwise.
 app.setName("Pond");
 if (process.platform === "darwin") {
   app.setAboutPanelOptions({
@@ -69,9 +66,7 @@ let httpServer: RunningServer | null = null;
 let mainWindow: BrowserWindow | null = null;
 let tray: TrayHandle | null = null;
 let trayRefreshQueued = false;
-// `close` events fire synchronously; reading prefs from disk would race the
-// window destruction. We mirror the user-facing toggle into this flag every
-// time prefs change (boot + window.applyPrefs).
+// Mirror the close-to-tray toggle here; close events fire synchronously.
 let closeToTrayEnabled = false;
 // Set during graceful quit so the close handler stops swallowing the event.
 let isQuitting = false;
@@ -185,10 +180,7 @@ function configureSessionDefaults(): void {
       "img-src 'self' data: blob: pond: https:",
       "media-src 'self' data: blob: pond: https:",
       "style-src 'self' 'unsafe-inline'",
-      // onnxruntime-web (the sensitive-media ViT backend) needs:
-      //  - 'wasm-unsafe-eval' to instantiate its WebAssembly module
-      //  - blob: in script-src/worker-src to dynamically import its backend
-      //    module and spawn its wasm worker from a Blob URL
+      // onnxruntime-web needs wasm-unsafe-eval and blob: for its wasm module/worker.
       "script-src 'self' 'wasm-unsafe-eval' blob:",
       "worker-src 'self' blob:",
       "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
@@ -252,9 +244,7 @@ async function resolveShellHint(): Promise<ShellHint> {
 async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
-  // Resolved before the BrowserWindow exists so the preload can hand
-  // these tokens to the inline boot script in index.html. The very
-  // first paint is themed without waiting for the renderer bundle.
+  // Resolve before the window exists so the first paint is themed.
   const shellHint = await resolveShellHint();
   const prefs = await getPrefs().catch(() => null);
   const restored =
@@ -282,8 +272,7 @@ async function createWindow(): Promise<BrowserWindow> {
 
   win.on("ready-to-show", () => win.show());
 
-  // Persist bounds on resize/move so the next launch can restore them.
-  // Saves are debounced because the events fire on every pixel change.
+  // Persist bounds on resize/move (debounced) so the next launch restores them.
   let saveBoundsTimer: NodeJS.Timeout | null = null;
   const saveBounds = () => {
     if (win.isDestroyed()) return;
@@ -299,10 +288,7 @@ async function createWindow(): Promise<BrowserWindow> {
   win.on("resize", saveBounds);
   win.on("move", saveBounds);
 
-  // Close-to-tray: keep the renderer process alive and just hide the
-  // window. The tray menu provides a Quit affordance for users who
-  // want the old behavior. The flag mirrors `prefs.window.closeToTray`
-  // so we can decide synchronously inside the close event.
+  // Close-to-tray: hide the window instead of quitting; tray menu still has Quit.
   win.on("close", (event) => {
     if (isQuitting) return;
     if (!closeToTrayEnabled) return;
@@ -324,11 +310,7 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    // Never let the renderer spawn in-app windows. Only http(s) URLs are
-    // handed to the OS; forwarding arbitrary schemes (file:, custom
-    // protocol handlers) to shell.openExternal is a known RCE vector, so
-    // anything else is dropped — matching the openExternal IPC handler and
-    // the will-navigate guard below.
+    // Only hand http(s) to the OS; other schemes via openExternal are an RCE vector.
     const isHttp = (() => {
       try {
         const u = new URL(url);
@@ -447,8 +429,7 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     const active = libraryRoot();
-    // Don't list a library that doesn't exist yet (a fresh user). The
-    // first write materializes the bundle, and we remember it then.
+    // Don't list a not-yet-created library; we remember it on first write.
     if (existsSync(active)) rememberLibrary(active);
     pruneMissingLibraries(active);
   } catch (err) {
@@ -557,8 +538,7 @@ function registerYtDlpUpdateCron() {
   schedule({
     name: "yt-dlp-update",
     every: 24 * 60 * 60 * 1000,
-    // yt-dlp isn't bundled, so a fresh install has none until this runs.
-    // Check soon after launch, then daily.
+    // yt-dlp isn't bundled; check soon after launch, then daily.
     initialDelay: 5_000,
     fn: () => maybeUpdateYtDlp(),
   });
@@ -593,8 +573,7 @@ export async function applyPrefsAtRuntime() {
   invalidatePrefs();
   const prefs = await getPrefs();
   await setTrayVisible(prefs.quickCapture.menuBarIcon);
-  // Unpackaged dev binaries can't register a login item; macOS rejects it
-  // with "Operation not permitted" and logs natively (uncatchable here).
+  // Dev binaries can't register a login item; macOS rejects it.
   if (app.isPackaged) {
     app.setLoginItemSettings({
       openAtLogin: prefs.quickCapture.launchAtLogin,

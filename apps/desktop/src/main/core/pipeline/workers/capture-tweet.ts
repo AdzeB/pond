@@ -9,47 +9,31 @@ import {
 } from "../../refresh/scrape-window";
 import { readSave } from "./apply";
 
-// Distinct from `cover`/`media`/`video` so the renderer can show the
-// screenshot as a tweet's primary thumbnail while keeping the actual
-// extracted media available in the detail carousel. The light/dark
-// variants are the live targets.
+// Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel.
 export const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
-// Quote-screenshot kinds are suffixed with the 1-based depth of the
-// quoted tweet in the chain, e.g. `tweet_screenshot_quote1_light` is the
-// tweet the save directly quotes. The renderer matches these by prefix
-// (see core/data/media.ts).
+// Suffixed with 1-based quote depth; renderer matches by prefix.
 function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 
-// Bump when the capture output changes (new trim/padding, quote walking)
-// so the startup backfill re-runs once per save to regenerate stale
-// screenshots and backfill quoted media. Stored on each save at
-// `rawJson.capture.extras.captureTweetVersion`.
+// Bump when capture output changes so the backfill regenerates stale screenshots.
 export const CAPTURE_TWEET_VERSION = 3;
 
-// How far down a quote-of-a-quote chain the walker follows. Matches the
-// merge cap in twitter-seed.ts; keeps navigation bounded and avoids
-// hammering X for pathological chains.
+// Quote-chain walk depth cap; keeps navigation bounded.
 const QUOTE_DEPTH_CAP = 3;
 
 export interface CaptureTweetResult {
   // Number of screenshot variants written this run.
   captured: number;
-  // True when at least one variant failed specifically because the
-  // scrape session hit X's auth wall. Lets a backfill bail early when
-  // the session isn't actually logged in instead of hammering X.
+  // At least one variant hit X's auth wall; lets the backfill bail early.
   authWall: boolean;
-  // True when quoted media was merged into `capture.media` this run, so
-  // an out-of-band caller (the backfill) knows to run `fetch_blobs`.
+  // Quoted media merged into `capture.media`; signals the backfill to run fetch_blobs.
   mediaAdded: boolean;
 }
 
-// readCaptureTweetVersion: the capture version a save was last processed
-// at. Absent on saves captured before quote walking / the version stamp,
-// which read as 0 so the backfill picks them up.
+// Capture version a save was last processed at; absent reads as 0.
 export function readCaptureTweetVersion(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
   const extras = (rawJson as RawJson).capture?.extras as
@@ -59,23 +43,9 @@ export function readCaptureTweetVersion(rawJson: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
-// runCaptureTweet: runs for every twitter save, regardless of whether the
-// extractor pulled real media off the tweet. Captures a light + dark
-// screenshot of the tweet (the canonical visual identity in the grid /
-// preview), then walks the quote chain: each quoted tweet gets its own
-// standalone light/dark screenshot and its media merged into
-// `capture.media` (downloaded by the subsequent `fetch_blobs`).
-//
-// Idempotent via `CAPTURE_TWEET_VERSION`: a save already stamped at the
-// current version is skipped entirely; otherwise the full capture runs
-// and stamps the version on completion. Re-captures replace existing
-// screenshot files so a version bump regenerates them with the latest
-// trim/padding.
-//
-// Returns silently on every failure mode (auth wall, no article,
-// network) so a screenshot miss never marks the save as failed; the
-// placeholder gradient is a fine interim state until the next refresh
-// tries again.
+// Captures light+dark screenshots of a twitter save and walks its quote chain.
+// Idempotent via `CAPTURE_TWEET_VERSION`. Returns silently on any failure so
+// a screenshot miss never fails the save.
 export async function runCaptureTweet(
   saveId: string,
 ): Promise<CaptureTweetResult> {
@@ -89,8 +59,7 @@ export async function runCaptureTweet(
   if (save.source !== "twitter") return idle;
   if (!save.sourceId) return idle;
 
-  // Already processed at the current version: both main variants exist
-  // and the quote chain was walked. Nothing to do.
+  // Already processed at the current version.
   if (readCaptureTweetVersion(save.rawJson) >= CAPTURE_TWEET_VERSION) {
     log.debug("[pond pipeline:capture-tweet] up to date, skipping", saveId);
     return idle;
@@ -100,8 +69,7 @@ export async function runCaptureTweet(
   let authWall = false;
   const harvested: NonNullable<ScrapedHarvest["mediaUrls"]> = [];
 
-  // Main tweet (light + dark). Replace existing files so a version bump
-  // regenerates them with the latest trim/padding.
+  // Main tweet; replace existing files so a version bump regenerates them.
   const main = await captureVariants(saveId, {
     url: save.url,
     sourceId: save.sourceId,
@@ -114,16 +82,12 @@ export async function runCaptureTweet(
   captured += main.captured;
   if (main.authWall) authWall = true;
 
-  // The session is dead - bail before walking the chain so we don't
-  // hammer X, and leave the version unstamped so the next run retries.
+  // Session dead: bail before walking the chain, leave unstamped to retry.
   if (main.authWall && main.captured === 0) {
     return { captured, authWall: true, mediaAdded: false };
   }
 
-  // Only stamp the version once both main variants exist. A single-variant
-  // capture (one scheme flaked on a cold navigation) stays unstamped so the
-  // next refresh retries and backfills the missing variant instead of being
-  // skipped forever, leaving the renderer to fall back to the wrong theme.
+  // Only stamp once both variants exist; a single-variant capture stays unstamped to retry.
   let completed = main.complete;
   let nextUrl = main.quotedUrl;
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
@@ -145,15 +109,12 @@ export async function runCaptureTweet(
       completed = false;
       break;
     }
-    // A quoted tweet that only captured one scheme keeps the save
-    // unstamped too, so its missing variant is retried on the next run.
+    // A one-scheme quote capture keeps the save unstamped to retry.
     if (!quote.complete) completed = false;
     nextUrl = quote.quotedUrl;
   }
 
-  // Merge any quoted media into capture.media and stamp the version in a
-  // single rawJson write. Stamp only when the walk completed (an auth
-  // wall mid-walk leaves it unstamped so the next run retries).
+  // Merge quoted media and stamp the version in one write; only stamp if the walk completed.
   const mediaAdded = await finalizeRawJson(saveId, save.rawJson, harvested, {
     stampVersion: completed,
   });
@@ -179,20 +140,14 @@ interface CaptureVariantsArgs {
 
 interface CaptureVariantsResult {
   captured: number;
-  // Both the light and dark variant were written this run. Drives the
-  // version stamp: a single-variant capture (one scheme flaked on a cold
-  // navigation) must stay unstamped so the next refresh retries and
-  // backfills the missing variant instead of being skipped forever.
+  // Both variants written this run; drives the version stamp.
   complete: boolean;
   authWall: boolean;
   quotedUrl?: string;
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// captureVariants: screenshot one tweet in both color schemes and persist
-// each variant (replacing any prior file of that kind). Harvests media
-// off the page on the light pass when requested. Returns the quoted-tweet
-// URL discovered on the page so the caller can walk the chain.
+// Screenshots one tweet in both schemes; returns the quoted-tweet URL for chain walking.
 async function captureVariants(
   saveId: string,
   args: CaptureVariantsArgs,
@@ -268,10 +223,7 @@ async function writeScreenshot(
   );
 }
 
-// finalizeRawJson: append harvested quoted media to capture.media (deduped
-// by URL) and/or stamp the capture version, in one write. Returns whether
-// any new media was added so the out-of-band backfill can trigger a
-// download.
+// Appends deduped quoted media and/or stamps the version in one write; returns whether media was added.
 async function finalizeRawJson(
   saveId: string,
   rawJsonRaw: unknown,

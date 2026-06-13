@@ -50,19 +50,11 @@ export type WireSave = Omit<
 };
 
 export interface WireSaveOptions {
-  // When true, replace `rawJson` with a tiny projection (see `slimRawJson`).
-  // The list payload is the single biggest IPC transfer at boot — a
-  // Twitter-heavy library carries tens of KB of tweet text / entities /
-  // yt-dlp dumps per save that the grid never reads. The detail view pulls
-  // the full blob on demand via `saves.rawJson`.
+  // Replace rawJson with a tiny projection; the grid never reads the full blob.
   slim?: boolean;
 }
 
-// The only `rawJson` fields the grid / filter / search paths read are the
-// duration sources (so the duration filter keeps working) and media `type`
-// (video-in-progress badge), plus the author avatar URL as an early hint.
-// Everything else — metrics, descriptions, extras, the full yt-dlp dump — is
-// detail-only and fetched lazily, so we strip it from the list payload.
+// Keep only the rawJson fields the grid/filter/search read (duration, media type, avatar).
 function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   if (!raw) return null;
   const cap = raw.capture;

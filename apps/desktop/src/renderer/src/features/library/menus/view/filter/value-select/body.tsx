@@ -10,8 +10,7 @@ import { TagsBody } from "./bodies/tags";
 import type { BodyProps } from "./types";
 
 export function Body({ predicate, onChange }: BodyProps) {
-  // Creator is an enum field but its options come from live data, not static
-  // presets, so it gets a dedicated picker instead of EnumBody.
+  // Creator is enum but its options come from live data, so it gets a dedicated picker.
   if (predicate.field === "creator") {
     return <CreatorBody predicate={predicate} onChange={onChange} />;
   }

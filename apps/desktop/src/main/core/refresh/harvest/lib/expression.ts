@@ -1,11 +1,7 @@
 import type { ListHarvestArgs } from "../list-types";
 import { inPageScrollCollect } from "./scroll";
 
-// A harvest expression is a self-contained IIFE string evaluated inside the
-// scrape window. It inlines the normalize helper and the in-page harvest
-// function via `.toString()`, then calls the harvest function with the
-// serialized argument. Per-source files only differ in which functions they
-// inline, so the IIFE scaffolding lives here once.
+// Builds the self-contained IIFE string (inlined via `.toString()`) run in the scrape window.
 
 export function buildItemExpression<Norm>(
   normalizeFactory: () => Norm,

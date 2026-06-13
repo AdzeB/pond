@@ -50,9 +50,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
   },
 };
 
-// Forward-only migration. Old installs stored an `endpoint` URL string;
-// new installs store the port and derive the URL at call time. Strip any
-// legacy `endpoint` field, salvage the port from it when possible.
+// Migrate legacy `endpoint` URL to the stored `port`, salvaging the port when possible.
 export function normalizeStoredSettings(stored: unknown): PondSettings {
   const base = (stored ?? {}) as Partial<PondSettings> & {
     endpoint?: string;

@@ -45,9 +45,7 @@ const SORT_KEYS = new Set<SortKey>([
   "savedAt",
 ]);
 
-// Locale-aware string comparator. TanStack's built-in `text` sorting fn
-// uses an alphanumeric chunked comparison that diverges from plain
-// localeCompare; this preserves the old ordering.
+// Locale-aware comparator; TanStack's `text` fn uses chunked alphanumeric comparison that diverges from localeCompare.
 const localeSort: SortingFn<Save> = (a, b, columnId) => {
   const va = a.getValue<string>(columnId);
   const vb = b.getValue<string>(columnId);
@@ -90,8 +88,7 @@ export function ListView({
     [sortKey, sortDir],
   );
 
-  // First-click direction policy lives on each column's `sortDescFirst`.
-  // We just mirror TanStack's state back into the view store.
+  // First-click direction is per-column `sortDescFirst`; just mirror TanStack's state into the view store.
   const handleSortingChange = useCallback(
     (updater: Updater<SortingState>) => {
       const next = typeof updater === "function" ? updater(sorting) : updater;
@@ -257,9 +254,7 @@ export function ListView({
 
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    // Row height = thumbnail (24) + vertical padding (6 + 6) + 1px
-    // border. Used as the initial estimate; real heights are
-    // measured per row to handle wrapping titles or tag chips.
+    // Initial estimate (thumb 24 + padding 12 + 1px border); real heights are measured per row.
     estimateSize: () => 37,
     getScrollElement: () => scrollParent,
     overscan: 8,

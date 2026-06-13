@@ -19,19 +19,12 @@ import {
 
 export type Combinator = "and" | "or";
 
-// The committed query is derived from the editable draft rows: only active
-// predicates (those with a usable value) participate in filtering and get
-// persisted into saved views. Inactive rows stay in the panel mid-edit.
+// Committed query derived from draft rows: only active predicates filter; inactive rows stay mid-edit.
 function deriveQuery(rows: Predicate[], combinator: Combinator): Query {
   return { combinator, rules: rows.filter(predicateIsActive) };
 }
 
-// Single source of truth for the library's view state. Lives in a store
-// rather than the URL: this is a desktop app, so shareable URLs buy us
-// nothing and the round-trip through search params was the source of a
-// duplicate derivation (grid vs controls). Durable bits (layout, sort,
-// zoom) persist to localStorage via `view-prefs`; `q`, `query`, and
-// `capture` are session-only.
+// Library view state. In a store, not the URL (desktop app). Layout/sort/zoom persist via `view-prefs`; q/query/capture are session-only.
 
 function applyZoomVar(zoom: number): void {
   if (typeof document === "undefined") return;
@@ -40,20 +33,17 @@ function applyZoomVar(zoom: number): void {
 
 export interface ViewStoreState {
   q: string;
-  // Ordered draft conditions, including incomplete rows still being edited.
-  // Allows duplicate fields. `query` below is the derived, committed view.
+  // Ordered draft conditions (incomplete rows allowed); `query` is the committed view.
   rows: Predicate[];
   combinator: Combinator;
   query: Query;
   layout: LayoutValue;
-  // Broad string: the list view sorts by columns (tags, dimensions, …)
-  // the grid filter doesn't model. Grid consumers narrow before use.
+  // Broad string: list view sorts by columns the grid filter doesn't model; grid consumers narrow first.
   sortKey: string;
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
-  // The saved view currently applied, if any. Tabs compare the live query/
-  // sort against the view's stored values to surface a "modified" state.
+  // Applied saved view; tabs compare live query/sort against it to show a "modified" state.
   activeViewId: string | null;
 }
 
@@ -165,9 +155,7 @@ export function clearActiveView(): void {
   );
 }
 
-// Append a fresh draft condition. Defaults to the first available field; the
-// user changes the field/operator/value from the panel. Duplicate fields are
-// allowed, so this never no-ops.
+// Append a fresh draft condition, defaulting to the first field; duplicates allowed, so never no-ops.
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
   if (!next) return;
@@ -275,9 +263,7 @@ function openCapture(): void {
   store.setState((s) => (s.capture ? s : { ...s, capture: true }));
 }
 
-// Translate an inbound URL search payload (deep links, command palette) into
-// store state. Filters are no longer serialized through the URL — callers that
-// want to apply a filter call `setQuery` directly.
+// Translate an inbound URL search payload into store state; filters aren't URL-serialized (use setQuery).
 export function applyViewStateFromParams(params: URLSearchParams): void {
   if (params.get("capture") === "1") openCapture();
   const q = params.get("q");

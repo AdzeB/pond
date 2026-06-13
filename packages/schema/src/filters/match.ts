@@ -10,9 +10,7 @@ export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
 }
 
-// Direct walk over the react-querybuilder tree. The flat UI only produces a
-// single AND group of predicates, but we still handle nested groups, "or", and
-// per-rule `negate` so the model stays general.
+// Walk the RQB tree; handles nested groups, "or", and per-rule `negate` for generality.
 function evalClause(c: Clause, s: SaveLike): boolean {
   if (isGroup(c)) {
     if (c.rules.length === 0) return true;

@@ -25,13 +25,9 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
-  // Blur media that on-device detection flags as sensitive (NSFW). Off by
-  // default; opt-in. When on, media stays blurred until classified safe.
+  // Blur sensitive (NSFW) media until classified safe; opt-in.
   blurSensitiveMedia: z.boolean().catch(false),
-  // What a Twitter save uses as its grid/preview cover. "media" prefers
-  // attached media (screenshot only as the fallback for text-only
-  // tweets); "screenshot" always renders the tweet card. See
-  // core/data/media.ts.
+  // Twitter cover: "media" prefers attached media, "screenshot" always renders the card.
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
 });
 
@@ -107,8 +103,7 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
-// Each slice catches to its own defaults (parse({}) fills every field from its
-// `.catch`/`.default`), so a corrupt slice resets in isolation.
+// Each slice catches to its own defaults so a corrupt slice resets in isolation.
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
   notifications: notifications.catch(notifications.parse({})),

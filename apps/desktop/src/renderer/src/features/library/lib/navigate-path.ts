@@ -11,17 +11,10 @@ interface NavigateOpts {
   replace?: boolean;
 }
 
-// Thin RR-style adapter so callsites (and external deep links) can keep
-// passing a path string (`/foo/bar?baz=1`). The router no longer holds
-// view state, so any query string is translated into the view store and
-// dropped from the navigation itself.
+// Adapter so callsites keep passing a path string; the query string is translated into the view store, not the route.
 export type PathNavigate = (path: string, opts?: NavigateOpts) => void;
 
-// Matches the legacy selection deep links (`/save/:id`, `/detail/:id`, and
-// their `/:mode/...` variants) that the main process and notifications still
-// emit. There's no detail route anymore: opening a save is client state, so we
-// translate these into a primary-selection change (which opens the drawer) and
-// navigate to the underlying list base instead.
+// Legacy selection deep links (/save/:id, /detail/:id); translated to a primary-selection change plus a navigate to the list base.
 const SELECTION_PATH = /\/(?:save|detail)\/([^/]+)\/?$/;
 
 export function adaptNavigate(tsNav: TSNavigate): PathNavigate {

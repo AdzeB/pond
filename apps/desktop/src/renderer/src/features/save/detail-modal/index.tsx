@@ -16,14 +16,7 @@ import { SaveInfo } from "@/features/save/preview";
 import { MediaViewer } from "@/features/save/preview/media-viewer";
 import styles from "./styles.module.css";
 
-// The inline, Mobbin-style detail view. Opening a save sets the primary
-// selection; this dialog renders whenever something is selected and steps the
-// selection (rather than the route) for j/k navigation, so browsing the
-// library never spawns a separate window.
-//
-// Only `SaveModalContent` runs `useSaveList` (and therefore the O(n) narrowing
-// pipeline for prev/next), and it mounts only while a save is open — so simply
-// browsing the library never pays for a second copy of the filter/sort work.
+// Inline detail view: opening a save sets the primary selection; j/k step it. SaveModalContent mounts only while open, so browsing skips the narrowing work.
 export function SaveModal() {
   const id = useStore(primarySelectionStore, (s) => s.id);
   return (
@@ -47,8 +40,7 @@ function SaveModalContent({ id }: { id: string }) {
 
   useTrackVisit(id);
 
-  // The list payload only carries a slim `rawJson`; pull the full blob (metrics,
-  // chapters, description) now that the detail view is actually open.
+  // The list carries only slim `rawJson`; pull the full blob now the detail view is open.
   useEffect(() => {
     void ensureRawJson(id);
   }, [id]);

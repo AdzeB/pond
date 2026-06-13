@@ -356,10 +356,7 @@ export async function harvestTwitterBookmarks(
 
     let result: Extract<BookmarksHarvestResult, { ok: true }>;
     try {
-      // Preferred path: replay the page's own Bookmarks GraphQL request with
-      // our own pagination cursor, walking every page deterministically.
-      // Falls back to scroll-and-scrape if the page never exposes a usable
-      // request or the first replay is rejected (stale transaction id, etc.).
+      // Replay the page's own Bookmarks GraphQL request; fall back to scroll-and-scrape.
       const apiRaw = await runExpr(buildBookmarksApiExpression(args));
       if (apiRaw === "__pond_bookmarks_timeout__") {
         log.warn("[pond bookmarks] api harvest timed out; falling back");

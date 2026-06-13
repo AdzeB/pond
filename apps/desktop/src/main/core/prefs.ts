@@ -19,9 +19,7 @@ interface SettingsCache {
   imageDownload: ImageDownloadSettings;
 }
 
-// Cache the parsed settings until an explicit invalidate()/set(). The
-// memo dedupes concurrent reads; a DB failure rejects (and so is never
-// cached), letting loadSettings() fall back to defaults and retry later.
+// Cache parsed settings until invalidate()/set(); a DB failure isn't cached, so it retries.
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
 
 export function invalidatePrefs(): void {
@@ -236,10 +234,7 @@ type DeepPartial<T> = T extends object
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : T;
 
-// Read path: validate the stored blob. PrefsSchema fills missing or corrupt
-// slices and fields from DEFAULT_PREFS (per-field `.catch` plus a top-level
-// `.catch`), so parsing never throws and an older or damaged prefs.json
-// degrades to defaults per slice instead of wiping everything.
+// Validate stored prefs; PrefsSchema fills missing/corrupt fields from defaults per slice.
 function loadPrefs(stored: unknown): Prefs {
   const parsed = PrefsSchema.safeParse(stored);
   return (parsed.success ? parsed.data : DEFAULT_PREFS) as Prefs;

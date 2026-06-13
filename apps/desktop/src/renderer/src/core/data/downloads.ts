@@ -1,12 +1,6 @@
 import type { Save } from "./types";
 
-// useIsVideoDownloading: pre-pipeline this listened to a separate IPC.
-// In the URL-first world the task rows live on the save itself, so we
-// just inspect the save's pipeline state. A save is "downloading" while
-// the fetch_video_ytdlp task is running or pending AND we have evidence
-// the save actually has video to fetch. Without the video-evidence gate
-// every text tweet, article, or image-only post would flash "Queued"
-// until the worker runs and bails out.
+// "Downloading" while fetch_video_ytdlp is pending/running AND there's video evidence — the gate stops text/image saves flashing "Queued".
 export function useIsVideoDownloading(save: Save | null | undefined): boolean {
   if (!save) return false;
   if (save.status === "complete" || save.status === "failed") return false;

@@ -1,12 +1,7 @@
 import type { SourceDescriptor } from "./types";
 
-// The single source of truth for the cross-runtime facts about every external
-// source. `Source`/`SOURCES` (db.ts), `sourceLabel`/`isSource`/`hostToSource`
-// (sources.ts), and the desktop extractor URL matching all derive from this.
-//
-// To add a source, append one entry here (or run `pnpm new-source <id>`); the
-// `Source` union widens automatically and TypeScript will then require the
-// matching extractor, icon, and per-source registry entries elsewhere.
+// Source of truth for cross-runtime source facts. Add an entry (or run
+// `pnpm new-source <id>`); the `Source` union then widens automatically.
 export const SOURCE_DESCRIPTORS = [
   {
     id: "twitter",

@@ -11,13 +11,9 @@ import { sleep } from "./util";
 export interface TweetScreenshotArgs {
   url: string;
   sourceId: string;
-  // Forces the captured tweet's color scheme. Defaults to "dark" so the
-  // pre-dual-theme behaviour is preserved for any caller that hasn't
-  // been updated.
+  // Forces color scheme; defaults to "dark" for callers predating dual-theme.
   colorScheme?: "light" | "dark";
-  // When true, also harvest the tweet's media off the loaded page and
-  // return it. Used by the quote walker to pick up media from quoted
-  // tweets deeper in the chain without a second navigation.
+  // Also harvest media off the loaded page; used by the quote walker.
   harvestMedia?: boolean;
 }
 
@@ -25,53 +21,33 @@ export interface TweetScreenshotResult {
   ok: boolean;
   png?: { bytes: Buffer; width: number; height: number };
   reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
-  // When the captured tweet quotes another tweet, the quoted tweet's
-  // canonical URL, so the caller can walk the quote chain.
+  // Quoted tweet's canonical URL, for walking the quote chain.
   quotedUrl?: string;
   // Media harvested off the page when `harvestMedia` was requested.
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// Uniform breathing room added around the captured card, in CSS pixels.
-// Scaled by the capture device factor below so the visual padding is the
-// same regardless of how sharp the PNG is rendered.
+// Padding around the card in CSS pixels; scaled by the device factor.
 const SCREENSHOT_PADDING_CSS = 24;
 
 const SCREENSHOT_ARTICLE_TIMEOUT_MS = 12_000;
 
-// 3x of the article's CSS-pixel rect. Electron's `capturePage` captures
-// at the WebContents' device scale factor, and the hidden pool window
-// inherits the primary display's DPR (typically 1 or 2). Override it via
-// CDP so captures look sharp regardless of the host display.
+// Override DPR via CDP so captures stay sharp regardless of host display.
 const CAPTURE_DEVICE_SCALE_FACTOR = 3;
 
-// Vertical breathing room added below the article when we resize the
-// window to fit it. Without padding, lazy-loaded media in the last image
-// row can poke into the bottom edge.
+// Bottom padding so lazy-loaded media in the last row isn't clipped.
 const SCREENSHOT_VERTICAL_PADDING = 40;
 
-// Absolute cap on hidden-window content height. Tweets with huge
-// embedded carousels can otherwise drive the window past safe limits;
-// anything beyond this just gets cropped at the bottom (rare).
+// Hard cap on hidden-window height; anything beyond is cropped (rare).
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
-// screenshotTweet: opens the tweet in a hidden window, finds the
-// rendered <article>, and captures just that element via
-// `webContents.capturePage(rect)`. Reuses the same window pool / cookies
-// as `harvestUrl`, so logged-in tweets work when the X integration is
-// connected. Returns `ok: false` for any failure; callers should treat
-// misses as a no-op and fall back to whatever they were rendering
-// before (we never want a screenshot miss to mark a save as failed).
+// Captures the tweet's <article> from a hidden window; returns ok:false on any miss.
 export async function screenshotTweet(
   args: TweetScreenshotArgs,
 ): Promise<TweetScreenshotResult> {
   const colorScheme = args.colorScheme ?? "dark";
   const lease = await leaseWindow("twitter");
-  // CDP's `Emulation.setEmulatedMedia` has to be in place before the
-  // navigation commits. X reads `prefers-color-scheme` once on mount
-  // and never reacts to a mid-life flip, so flipping it after the page
-  // has rendered would only repaint the platform chrome and leave the
-  // article unchanged.
+  // Emulate color scheme before navigation: X reads prefers-color-scheme once on mount.
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
     restoreEmulation = await emulateColorScheme(lease.win, colorScheme);
@@ -90,14 +66,9 @@ export async function screenshotTweet(
       return { ok: false, reason: "auth_required" };
     }
 
-    // Belt-and-braces alongside the CDP emulated media: hide X's sticky
-    // sign-up chrome and pin the html background to match the requested
-    // scheme so any rounding in the article rect doesn't leak the host
-    // window's default color through the screenshot's edges.
+    // Pin html background to the scheme so rect rounding doesn't leak edge color.
     const htmlBg = colorScheme === "light" ? "#fff" : "#000";
-    // Belt-and-braces alongside the action-bar rect trim below: hide the
-    // "View quotes" link and strip borders on the focal article so a
-    // trailing hairline divider can't leak into the trimmed edge.
+    // Hide "View quotes" and strip article borders so a divider can't leak into the trim.
     await lease.win.webContents
       .insertCSS(
         `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
@@ -113,12 +84,7 @@ export async function screenshotTweet(
       return { ok: false, reason: "no_article" };
     }
 
-    // Resize the hidden window tall enough to fit the entire article in
-    // a single viewport before capturing. `capturePage` only captures
-    // content that's been laid out within the live viewport; if the
-    // article overflows, the bottom is silently cropped. After the
-    // resize we re-measure because lazy media / sticky chrome can shift
-    // the article's rect when more vertical space becomes available.
+    // Resize to fit the whole article (capturePage crops overflow), then re-measure.
     const [contentWidthRaw, originalContentHeightRaw] =
       lease.win.getContentSize();
     const contentWidth = contentWidthRaw ?? 1280;
@@ -190,10 +156,7 @@ export async function screenshotTweet(
   }
 }
 
-// harvestPageMedia: reuse the in-page tweet harvester to pull media off
-// the already-loaded screenshot page. Lets the quote walker collect a
-// quoted tweet's media without a second navigation. Best-effort: returns
-// undefined on any failure so a media miss never blocks the screenshot.
+// Harvest media off the already-loaded page; best-effort, returns undefined on failure.
 async function harvestPageMedia(
   win: BrowserWindow,
   tweetId: string,
@@ -211,10 +174,7 @@ async function harvestPageMedia(
   }
 }
 
-// padScreenshot: wrap the captured card in a uniform margin filled with
-// the scheme background so the screenshot has breathing room and any
-// rounding at the trimmed edges blends in. The capture is rendered at
-// CAPTURE_DEVICE_SCALE_FACTOR, so the CSS padding is scaled to match.
+// Wrap the card in scheme-colored padding, scaled to the capture device factor.
 async function padScreenshot(
   bytes: Buffer,
   raw: { width: number; height: number },
@@ -283,10 +243,7 @@ async function emulateColorScheme(
   };
 }
 
-// Override Chromium's device scale factor for the duration of `fn` via
-// the DevTools Protocol. `capturePage` writes back a NativeImage sized at
-// `cssRect × deviceScaleFactor`, so this is the lever for sharper PNGs
-// without changing the page's CSS-pixel layout.
+// Override device scale factor for `fn` via CDP; the lever for sharper PNGs.
 async function withDeviceScaleFactor<T>(
   win: BrowserWindow,
   factor: number,
@@ -365,13 +322,7 @@ async function readArticleRect(
 }
 
 function buildArticleRectExpression(tweetId: string): string {
-  // Scroll to the very top of the document instead of centering the
-  // article. Centering produces a negative top when the article is
-  // taller than the viewport, which the capture path used to clamp to
-  // 0, pulling in X's "Post" header above the article and clipping the
-  // bottom. With scrollTo(0, 0), `rect.y` is the article's natural
-  // distance below X's chrome (positive), and the caller resizes the
-  // window so `rect.y + rect.height` still fits inside the viewport.
+  // Scroll to top, not center: centering yields a negative top that clips the article.
   return `(async () => {
     try {
       const tweetId = ${JSON.stringify(tweetId)};

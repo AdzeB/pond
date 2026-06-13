@@ -26,16 +26,11 @@ interface BookmarksApiDebug {
 export type BookmarksApiResult =
   | (BookmarksHarvestResult & { ok: true; apiDebug?: BookmarksApiDebug })
   | { ok: false; reason: "auth_required" }
-  // The page never produced a usable Bookmarks request, or the very first
-  // replay failed (stale transaction id, schema drift, …). Caller should
-  // fall back to the scroll harvester.
+  // No usable Bookmarks request or first replay failed; caller falls back to scroll.
   | { ok: false; reason: "fallback"; detail: string };
 
 const API_DEADLINE_MS = 5 * 60_000;
-// X tolerates the bookmark timeline being read quickly, but back-to-back
-// requests with no gap is the fastest way to trip a rate limit. A short,
-// jittered pause keeps us comfortably under the per-window budget while
-// still draining thousands of bookmarks in well under a minute.
+// Throttle between pages; back-to-back requests with no gap trip a rate limit.
 const PAGE_THROTTLE_MS = 350;
 const MAX_PAGES = 2000;
 
@@ -86,8 +81,7 @@ async function inPageBookmarksApi(
     return req;
   };
 
-  // The page fires its first Bookmarks request on mount. Wait for the
-  // preload hook to capture it; nudge with a tiny scroll if it is slow.
+  // Wait for the preload hook to capture the first Bookmarks request; nudge if slow.
   let template = getRequest();
   const waitDeadline = Date.now() + 20_000;
   let nudged = false;
@@ -124,10 +118,7 @@ async function inPageBookmarksApi(
 
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(template.headers ?? {})) {
-    // The browser silently drops forbidden request headers (host, origin,
-    // user-agent, content-length, …); copying them is harmless, and the
-    // ones X actually checks (authorization, x-csrf-token,
-    // x-client-transaction-id, x-twitter-*) are all settable.
+    // Browser drops forbidden headers; the ones X checks are all settable.
     headers[k] = v;
   }
   if (!("accept" in headers)) headers.accept = "*/*";
@@ -280,9 +271,7 @@ async function inPageBookmarksApi(
 
   if (Date.now() >= deadline) reason = "deadline";
 
-  // First page returned zero tweets via the API but the account may simply
-  // have rendered everything client-side already; hand off to the scroll
-  // harvester rather than reporting an empty library.
+  // Zero tweets on first page may just be client-side rendered; fall back to scroll.
   if (pages === 1 && tweetTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };
   }

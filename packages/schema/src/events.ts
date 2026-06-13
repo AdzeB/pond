@@ -1,10 +1,4 @@
-/* Wide-event shapes for the pipeline. One row per *unit of work*
- * (task attempt, sync run, save lifecycle), denormalised on purpose so
- * a single `SELECT ... WHERE save_id = ?` reconstructs the whole story
- * without grep-archeology across scattered log lines.
- *
- * The on-disk row lives in `pipeline_events` (see `db.ts`); these are
- * the typed views the producers and the Activity panel use. */
+/* Wide-event shapes: one denormalised row per unit of work (persisted in `pipeline_events`). */
 
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
@@ -44,9 +38,7 @@ export interface ErrorInfo {
   message: string;
 }
 
-/* Lightweight snapshot of the pipeline at the moment the event fired.
- * Lets a single event row answer "was the queue under pressure when
- * this happened?" without joining against runtime metrics. */
+/* Pipeline state when the event fired, captured to avoid a metrics join. */
 export interface PipelineSnapshot {
   inflight: number;
   paused: boolean;
@@ -91,13 +83,9 @@ export interface SyncRunEvent {
     failed: number;
   } | null;
   error: ErrorInfo | null;
-  /* The mutex-age we now print in `[pond sync] already running`,
-   * captured here so retrospectives can spot ghost holds. */
+  /* Mutex age at run start; captured so retrospectives can spot ghost holds. */
   lockHeldMs: number | null;
-  /* True if the watchdog aborted the run instead of it completing
-   * normally. Sets `outcome=aborted` too. Kept separate so a future
-   * panel can filter "show me watchdog-aborted runs" without parsing
-   * outcome strings. */
+  /* True if the watchdog aborted the run (also sets `outcome=aborted`). */
   watchdogTripped: boolean;
 }
 
@@ -122,10 +110,7 @@ export interface SaveIngestEvent {
 
 export type WideEvent = PipelineTaskEvent | SyncRunEvent | SaveIngestEvent;
 
-/* SQLite row. Common columns are pulled out for indexing; the full
- * typed event lives in `payload`. Drizzle keeps the columnar view
- * thin so panel queries are fast (`GROUP BY error_name`, etc.) without
- * paying the price of fully normalising every event. */
+/* SQLite row: common columns pulled out for indexing; full event in `payload`. */
 export const pipelineEvents = sqliteTable(
   "pipeline_events",
   {

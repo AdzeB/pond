@@ -9,13 +9,7 @@ const MAX_RATIO = 2.5;
 const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, number>();
 
-/* Aspect ratios persist across sessions so the masonry doesn't shift
- * the second time you scroll through a card. Without this, every fresh
- * launch re-measures dim-less covers as their `<img>` lazy-loads,
- * triggering a re-pack cascade that's especially visible during fast
- * scrolling. The serialized blob is small (~30 bytes per save) and
- * tolerant of stale entries: if the cover changes, the next image
- * load updates the map and persists the corrected value. */
+// Persist aspect ratios so the masonry doesn't re-pack as dim-less covers lazy-load; stale entries self-correct on next load.
 const STORAGE_KEY = "pond:aspects:v1";
 const PERSIST_DEBOUNCE_MS = 800;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -74,11 +68,7 @@ export function aspectFor(save: Save): number {
   return ratio;
 }
 
-// A monotonically-increasing version that bumps once per animation
-// frame in which any aspect changed. `recordAspect` fires from `<img>`
-// / `<video>` load handlers (outside React), so the coalescing has to
-// live at module scope; a single on-demand rAF collapses a burst of
-// measurements into one re-pack instead of one per loaded cover.
+// Version bumped once per rAF in which any aspect changed; coalesces a burst of measurements into one re-pack.
 const versionStore = new Store(0);
 let scheduled = 0;
 

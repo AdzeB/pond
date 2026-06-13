@@ -24,8 +24,7 @@ export interface FieldDescriptor {
   comparators: readonly ComparatorId[];
   // In-memory projection used by match.ts.
   project(save: SaveLike): unknown;
-  // SQL projection used by to-sql.ts. Absent => the field is in-memory only
-  // (e.g. color) and contributes no WHERE clause.
+  // SQL projection for to-sql.ts; absent => in-memory only, no WHERE clause.
   sqlProjection?: () => SQL | null;
 }
 
@@ -33,8 +32,7 @@ type FieldDescriptorInput = Omit<FieldDescriptor, "comparators"> & {
   comparators?: readonly ComparatorId[];
 };
 
-// Comparators default to the set allowed for the field's type, so a field
-// only restates them when it diverges.
+// Comparators default to the field type's allowed set unless overridden.
 export function defineField(input: FieldDescriptorInput): FieldDescriptor {
   return {
     ...input,

@@ -3,9 +3,7 @@ import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { firstMatch, PINTEREST_PATTERNS } from "../url-patterns";
 
-// Thin wrapper over `fetchPinterestCapture`. The Pinterest adapter
-// scrapes the Relay payload (full title, creator avatar, full-res
-// image, metrics) and produces a `Capture` directly.
+// Thin wrapper over `fetchPinterestCapture` (scrapes the Relay payload).
 export class PinterestPinExtractor implements Extractor {
   readonly id = "pinterest-pin";
   readonly source = "pinterest" as const;

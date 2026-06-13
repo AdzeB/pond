@@ -1,7 +1,6 @@
 import { descriptorFor } from "@pond/schema/sources";
 
-// URL patterns live on the cross-runtime descriptors (the single source of
-// truth). These named re-exports keep existing call sites stable.
+// Re-export descriptor URL patterns to keep call sites stable.
 export const TWITTER_PATTERNS = descriptorFor("twitter").urlPatterns;
 export const INSTAGRAM_PATTERNS = descriptorFor("instagram").urlPatterns;
 export const PINTEREST_PATTERNS = descriptorFor("pinterest").urlPatterns;

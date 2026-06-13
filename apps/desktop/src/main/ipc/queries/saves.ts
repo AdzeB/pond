@@ -19,9 +19,7 @@ function isHttpUrl(u: string | undefined | null): u is string {
   return u.startsWith("http://") || u.startsWith("https://");
 }
 
-// Best-effort public URL for the save's primary image, used by reverse
-// image search. Engines like Google Lens fetch the URL server-side, so
-// only http(s) URLs work: local-only library files are skipped.
+// Public http(s) URL for the save's primary image, for reverse image search.
 function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (!raw) return null;
   const media = raw.capture?.media ?? [];
@@ -74,9 +72,7 @@ export const savesQueries: QueryHandlerMap = {
     return toWireSaves(rows, grouped, { slim: true });
   },
 
-  // Full `rawJson` for a single save. The list payload ships only a slim
-  // projection (see `slimRawJson`); the detail view calls this on open to
-  // hydrate metrics, chapters, description, etc. without bloating boot.
+  // Full rawJson for one save; the detail view hydrates it lazily.
   async "saves.rawJson"(params) {
     const db = await getDb();
     const id = String(params.id ?? "");
@@ -140,9 +136,7 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  // Persist an on-device NSFW verdict computed in the renderer. A system
-  // write (no undo), DB-only column, emits a sync action so the pool and
-  // other devices pick it up.
+  // Persist an on-device NSFW verdict; system write, DB-only, emits a sync action.
   async "saves.setSensitivity"(params) {
     const id = String(params.id ?? "");
     const raw = params.sensitivity;

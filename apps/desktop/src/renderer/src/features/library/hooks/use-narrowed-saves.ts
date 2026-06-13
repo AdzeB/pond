@@ -21,11 +21,7 @@ import {
   useSortKey,
 } from "@/features/library/stores/view-store";
 
-/**
- * Shared library narrowing pipeline: full-text search hits -> route-mode
- * filter/sort -> declarative view query/sort. Both `useLibraryState` and
- * `useSaveList` build on this so the two views can never diverge.
- */
+/** Shared narrowing pipeline (search hits -> mode filter/sort -> view query/sort) so the two views can't diverge. */
 export function useNarrowedSaves(
   mode: SaveListMode,
   sourceFilter: string,

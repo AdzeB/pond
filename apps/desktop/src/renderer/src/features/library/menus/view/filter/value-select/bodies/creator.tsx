@@ -3,8 +3,7 @@ import { useSaves } from "@/core/data/hooks";
 import type { BodyProps } from "../types";
 import { LivePicker, useSelectionSet } from "./_picker";
 
-// The distinct authors across the library, picked like an enum. Unlike the
-// static enum presets, the option list is derived from live save data.
+// Distinct authors across the library, picked like an enum but derived from live save data.
 export function CreatorBody({ predicate, onChange }: BodyProps) {
   const [q, setQ] = useState("");
   const saves = useSaves();

@@ -235,10 +235,7 @@ function pickAuthorName(tweet: TweetLike): string | null {
   return legacy ?? null;
 }
 
-// X serves a 48x48 `_normal` crop by default. Bookmark cards render the
-// avatar at ~32 CSS-pixels but on retina that's still 64+, so the
-// normal crop blurs. Promote to `_400x400` which is the largest fixed
-// size X exposes; the file dimensions/cdn are otherwise identical.
+// Promote the default `_normal` avatar crop to `_400x400` so it isn't blurry on retina.
 function pickAuthorAvatar(tweet: TweetLike): string | null {
   const user = tweet.core?.user_results?.result;
   const raw = user?.avatar?.image_url ?? user?.legacy?.profile_image_url_https;

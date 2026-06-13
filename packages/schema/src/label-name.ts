@@ -1,9 +1,5 @@
-// Returns the user-facing label: trims, strips a leading `#`, collapses
-// whitespace runs to a single space, and drops anything outside the
-// allowed character set (which includes spaces). Casing is preserved so
-// "Funny" stays "Funny" in the UI and on the save. Match / dedup against
-// the canonical form via `labelKey` below; every comparison in the
-// system goes through it.
+// User-facing label: trim, strip leading `#`, collapse whitespace, drop
+// disallowed chars. Casing preserved; dedup via `labelKey` below.
 export function normalizeLabelName(raw: string): string {
   return raw
     .trim()

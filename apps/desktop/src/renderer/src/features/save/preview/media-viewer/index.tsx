@@ -75,9 +75,7 @@ export function MediaViewer({ save }: { save: Save }) {
   const [inViewSnaps, setInViewSnaps] = useState<readonly number[]>([0]);
   const prevIndexRef = useRef(0);
 
-  // Sync the thumb strip to the main carousel. Wrap-around (last <-> first)
-  // jumps instantly so the strip doesn't smooth-scroll the entire length
-  // backwards.
+  // Sync the thumb strip to the carousel; wrap-around jumps instantly to avoid scrolling the whole length.
   useEffect(() => {
     if (!emblaApi) return;
     const onSelect = () => {
@@ -97,10 +95,7 @@ export function MediaViewer({ save }: { save: Save }) {
     };
   }, [emblaApi, thumbsApi]);
 
-  // Keep `<VideoPlayer>` mounted while its slide is anywhere in the viewport,
-  // not just when it's the selected snap. Otherwise the player unmounts the
-  // moment Embla commits to the next snap mid-drag and the video flashes off
-  // before the slide has finished sliding away.
+  // Keep VideoPlayer mounted while its slide is anywhere in view, else it flashes off mid-drag.
   useEffect(() => {
     if (!emblaApi) return;
     const update = () => setInViewSnaps(emblaApi.slidesInView());
@@ -113,8 +108,7 @@ export function MediaViewer({ save }: { save: Save }) {
     };
   }, [emblaApi]);
 
-  // Drive the thumb-strip edge fades from the actual scroll position so the
-  // gradient only hints at content you can still scroll to.
+  // Drive thumb-strip edge fades from scroll position so the gradient only hints at scrollable content.
   useEffect(() => {
     if (!thumbsApi) return;
     const update = () => {

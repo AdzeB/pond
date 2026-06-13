@@ -39,9 +39,7 @@ export class CosmosTileExtractor implements Extractor {
         } catch { return ''; }
       })()`;
 
-  // cosmos.so uses Supabase/NextAuth-style session tokens. Their cookie name
-  // has changed before, so accept the standard auth-token shapes rather than
-  // pinning to one literal.
+  // Accept standard auth-token shapes; cosmos's cookie name has changed before.
   authCookies(name: string): boolean {
     return (
       /^sb-[a-z0-9-]+-auth-token(\.\d+)?$/.test(name) ||
@@ -100,10 +98,7 @@ export class CosmosTileExtractor implements Extractor {
       }
     })();
 
-    // Cosmos tiles often wrap iframe embeds (YouTube/Vimeo). The DOM
-    // normalizer picks up the poster image but not the underlying video.
-    // If we have an upstream URL, synthesize a video candidate so the
-    // fetch_video_ytdlp gate fires.
+    // Synthesize a video candidate from the upstream URL so fetch_video_ytdlp fires.
     if (upstream && !media.some((m) => m.type === "video")) {
       media.push({
         url: upstream.url,

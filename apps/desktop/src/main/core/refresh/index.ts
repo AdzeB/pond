@@ -11,10 +11,7 @@ export type RefreshOutcome =
       reason: "not_found" | "no_url" | "internal_error";
     };
 
-// refreshSave: in the URL-first world there is no distinct "refresh"
-// pipeline. Refreshing a save means resetting its task rows back to
-// `pending` and bumping the reconciler; the harvest_metadata worker will
-// re-run with `force: true` so even fresh captures get re-harvested.
+// Refresh = reset task rows to pending and force harvest_metadata to re-run.
 export async function refreshSave(saveId: string): Promise<RefreshOutcome> {
   const db = await getDb();
   const rows = await db.select().from(saves).where(eq(saves.id, saveId));

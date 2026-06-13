@@ -1,10 +1,7 @@
 import { pool } from "./pool";
 import type { Save } from "./types";
 
-// Cold-start cache so the grid can paint before the SQLite IPC hydrate
-// returns. Best-effort: failures fall back to IPC, and `bootstrap.ts`
-// always reconciles against `saves.list` so stale rows are corrected.
-
+// Cold-start cache so the grid paints before the SQLite hydrate returns; best-effort, reconciled against `saves.list`.
 const DB_NAME = "pond-pool";
 const STORE = "snapshot";
 const VERSION = 1;

@@ -12,8 +12,7 @@ import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";
 
-// Accepts 3- or 6-digit hex with or without a leading "#", returns
-// `#rrggbb` lowercase. Null when the input isn't a valid hex color.
+// Normalize 3/6-digit hex (with or without "#") to lowercase `#rrggbb`; null if invalid.
 function defaultNormalize(input: string): string | null {
   if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");

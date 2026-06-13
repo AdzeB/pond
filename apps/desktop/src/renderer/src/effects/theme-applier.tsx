@@ -6,9 +6,7 @@ import {
 import { useEffect } from "react";
 import { usePrefs } from "@/core/data/prefs";
 
-// Shadowed in localStorage so the inline boot script in index.html can
-// restore the right theme before the bundle parses, killing the FOUC. Read
-// by `<script>` in apps/desktop/src/renderer/index.html.
+// Shadowed in localStorage so the index.html boot script can restore the theme before the bundle parses (kills FOUC).
 const SHELL_KEY = "pondShell";
 
 interface ShellPatch {
@@ -30,8 +28,7 @@ function persistShell(patch: ShellPatch) {
     const prev = raw ? JSON.parse(raw) : {};
     localStorage.setItem(SHELL_KEY, JSON.stringify({ ...prev, ...patch }));
   } catch {
-    // localStorage can throw in private modes; the shell still works,
-    // it just won't remember across launches.
+    // localStorage can throw in private modes; the shell just won't remember across launches.
   }
 }
 

@@ -9,8 +9,7 @@ interface VideoPlayerProps {
   onError?: () => void;
 }
 
-// Builds an object-URL WebVTT chapters track and revokes it when the chapters
-// change or the player unmounts.
+// Build an object-URL WebVTT chapters track, revoked when chapters change or the player unmounts.
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -24,8 +23,7 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   return url;
 }
 
-// The desktop "skin": composes the @pond/ui Video compound parts into the
-// player layout. All playback/controls/hotkeys live in @pond/ui.
+// Desktop skin composing the @pond/ui Video compound parts; playback/controls/hotkeys live in @pond/ui.
 export function VideoPlayer({
   src,
   poster,

@@ -152,8 +152,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       );
       if (patched) return;
 
-      // No item folder to patch. If the update carries files, heal the
-      // orphan by rebuilding the folder from the current DB row.
+      // No item folder; if the update carries files, rebuild it from the DB row.
       if (tx.files && tx.files.length > 0) {
         const db = await getDb();
         const rows = await db

@@ -27,8 +27,7 @@ export async function reconcileLibrary(): Promise<{
 
     if (existing[0] && existing[0].mtimeMs === mtimeMs) continue;
     if (!metadata) {
-      // Stamp the scan row anyway so we don't re-read this file every
-      // tick when its metadata is missing or unreadable.
+      // Stamp the scan row so we don't re-read unreadable metadata every tick.
       await stampScan(db, id, mtimeMs);
       continue;
     }
@@ -95,10 +94,7 @@ export async function reconcileLibrary(): Promise<{
           metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
       };
 
-      // Check row presence first so we know whether to emit an `I` or
-      // `U` action. One extra select per save isn't free, but it's
-      // dwarfed by the metadata read; this lets the renderer pool
-      // reconcile without a full re-hydrate after a rescan.
+      // Check row presence to emit I vs U so the renderer reconciles without re-hydrating.
       const prior = await db
         .select({ id: saves.id })
         .from(saves)
@@ -130,8 +126,7 @@ export async function reconcileLibrary(): Promise<{
       await stampScan(db, id, mtimeMs);
       updated++;
     } catch (err) {
-      // One bad row shouldn't abort the whole reconciliation. Log and
-      // keep going; stamp the scan row so we don't retry it forever.
+      // One bad row shouldn't abort reconciliation; stamp it so we don't retry forever.
       log.warn("[pond scan] upsert failed", { id, err });
       await stampScan(db, id, mtimeMs);
     }

@@ -5,9 +5,7 @@ import { generalSection } from "./sections/general.config";
 import { imagesSection } from "./sections/images.config";
 import { videosSection } from "./sections/videos.config";
 
-// Each declarative section config lives next to the rows it renders
-// (`*.config.tsx`); the fully bespoke sections are lazy so each ships in
-// its own chunk. This file only assembles the registry.
+// Registry of section configs; bespoke sections are lazy so each ships in its own chunk.
 const ScheduleSection = lazy(() =>
   import("./sections/schedule").then((m) => ({ default: m.ScheduleSection })),
 );

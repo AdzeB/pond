@@ -26,9 +26,7 @@ export function useCardActions(
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  // Opening a save highlights it in the grid and shows it in the inline detail
-  // modal (`SaveModal`), which renders whenever a save is selected. Stepping the
-  // selection navigates the modal in place.
+  // Opening a save sets the primary selection, which the inline SaveModal renders.
   const select = useCallback((id: string) => {
     primarySelection.set(id);
   }, []);
@@ -86,8 +84,7 @@ export function useCardActions(
       const dt = e.dataTransfer;
       if (!dt) return;
 
-      // Electron 41 removed File.path, so resolve dropped files to absolute
-      // paths via the preload bridge and let the main process read them.
+      // Electron 41 removed File.path; resolve absolute paths via the preload bridge.
       const paths = Array.from(dt.files ?? [])
         .map((f) => {
           try {

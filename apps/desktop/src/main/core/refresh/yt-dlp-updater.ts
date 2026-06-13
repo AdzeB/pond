@@ -17,10 +17,7 @@ import {
   YTDLP_FILENAME,
 } from "./binaries";
 
-// Keeps yt-dlp current between app releases. yt-dlp breaks often as sites
-// change, so we download newer stable builds into the writable user-data
-// bin (see userBinDir), keeping one previous version for rollback. Every
-// step fails open: any error leaves the existing binary untouched.
+// Keeps yt-dlp current between releases, with one-version rollback; fails open.
 
 const REPO = "yt-dlp/yt-dlp";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -112,10 +109,7 @@ async function runUpdate(force: boolean): Promise<void> {
   }
 }
 
-// Restore the one-version backup when the active binary stops working (a
-// botched build, corruption, or an OS change). Only the launch-time
-// --version smoke test can detect this; a binary that runs but whose
-// extraction silently broke needs a newer release, not a rollback.
+// Roll back to the backup when the active binary fails the --version smoke test.
 async function healthCheckAndRollback(
   dir: string,
   active: string,
@@ -145,8 +139,7 @@ async function healthCheckAndRollback(
   });
 }
 
-// Move the current active binary aside as the single rollback backup
-// before a new version is installed over it.
+// Move the active binary aside as the rollback backup before installing.
 async function rotateToPrevious(
   dir: string,
   active: string,

@@ -44,9 +44,7 @@ const SOURCE_ALIASES: Record<string, Source> = {
   "are.na": "arena",
 };
 
-// Resolve a brand icon from an arbitrary `save.source` string (which is
-// typed loosely). Returns null for unknown sources so callers can fall
-// back to a text-only label.
+// Resolve a brand icon from a loosely-typed `save.source`; null for unknown sources (callers use a text label).
 export function getSourceIcon(source: string): BrandIcon | null {
   const key = source.toLowerCase();
   const normalized = SOURCE_ALIASES[key] ?? key;

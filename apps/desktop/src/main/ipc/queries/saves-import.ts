@@ -10,8 +10,7 @@ import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
 
-// Import each dropped/picked file as its own save so a multi-file drop
-// becomes a grid of individual items rather than one mixed bundle.
+// Import each file as its own save so a multi-file drop becomes individual items.
 async function importFilesImpl(
   paths: string[],
 ): Promise<{ ok: boolean; ids: string[] }> {
