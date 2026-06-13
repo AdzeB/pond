@@ -14,7 +14,7 @@ import {
   SOURCES,
   type Source,
 } from "@pond/schema/db";
-import { sourceLabel } from "@pond/schema/sources";
+import { isSource, sourceLabel } from "@pond/schema/sources";
 import type React from "react";
 
 type BrandIcon = React.ComponentType<{ width?: number; height?: number }>;
@@ -42,6 +42,21 @@ export function getSourceDef(source: Source): SourceDef {
     label: sourceLabel(source),
     icon: SOURCE_ICONS[source],
   };
+}
+
+const SOURCE_ALIASES: Record<string, Source> = {
+  x: "twitter",
+  "are.na": "arena",
+};
+
+// Resolve a brand icon from an arbitrary `save.source` string (which is
+// typed loosely). Returns null for unknown sources so callers can fall
+// back to a text-only label.
+export function getSourceIcon(source: string): BrandIcon | null {
+  const key = source.toLowerCase();
+  const normalized = SOURCE_ALIASES[key] ?? key;
+  if (isSource(normalized)) return SOURCE_ICONS[normalized];
+  return null;
 }
 
 export function defaultSidebarSources(): SidebarSourceEntry[] {

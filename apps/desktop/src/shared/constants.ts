@@ -22,11 +22,6 @@ export const IPC = {
   openExternal: "pond:open-external",
   revealSave: "pond:reveal-save",
   openSaveFile: "pond:open-save-file",
-  openSaveWindow: "pond:open-save-window",
-  viewerNavigate: "pond:viewer-navigate",
-  publishNavOrder: "pond:publish-nav-order",
-  getViewerContext: "pond:get-viewer-context",
-  navOrderChanged: "pond:nav-order-changed",
   refreshSave: "pond:refresh-save",
   refreshBackfillStart: "pond:refresh-backfill-start",
   refreshBackfillCancel: "pond:refresh-backfill-cancel",
@@ -43,7 +38,6 @@ export const IPC = {
 } as const;
 
 export type MenuActionId =
-  | "view.sidebar.toggle"
   | "view.inspector.toggle"
   | "view.layout.cycle"
   | "view.layout.waterfall"

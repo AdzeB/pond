@@ -9,15 +9,18 @@ import {
   useDisplayPrefs,
 } from "@/features/library/stores/display-prefs";
 import {
-  addPredicate,
+  addCondition,
+  type Combinator,
+  removeRow,
+  reorderRows,
   resetFilters,
   restoreDefaults,
-  setFieldPredicate,
+  setCombinator,
   setLayout,
   setQuery,
   setSort,
   setZoom,
-  updatePredicate,
+  updateRow,
   useViewStore,
 } from "@/features/library/stores/view-store";
 
@@ -25,7 +28,8 @@ export type { SortDir, SortKey };
 
 export interface ViewState {
   query: Query;
-  pendingPredicates: Predicate[];
+  rows: Predicate[];
+  combinator: Combinator;
   layout: LayoutValue;
   sort: { key: SortKey; dir: SortDir };
   displayPrefs: DisplayPrefs;
@@ -34,9 +38,11 @@ export interface ViewState {
 
 export interface ViewActions {
   setQuery: (next: Query) => void;
-  addPredicate: (draft: Predicate) => void;
-  updatePredicate: (idx: number, next: Predicate | null) => void;
-  setFieldPredicate: (field: FieldId, next: Predicate | null) => void;
+  addCondition: (field?: FieldId) => void;
+  updateRow: (idx: number, next: Predicate | null) => void;
+  removeRow: (idx: number) => void;
+  reorderRows: (from: number, to: number) => void;
+  setCombinator: (next: Combinator) => void;
   resetFilters: () => void;
   setLayout: (next: LayoutValue) => void;
   setSort: (next: { key: SortKey; dir: SortDir }) => void;
@@ -52,9 +58,11 @@ export interface ViewContextValue {
 
 const actions: ViewActions = {
   setQuery,
-  addPredicate,
-  updatePredicate,
-  setFieldPredicate,
+  addCondition,
+  updateRow,
+  removeRow,
+  reorderRows,
+  setCombinator,
   resetFilters,
   setLayout,
   setSort,
@@ -70,7 +78,8 @@ export function useView(): ViewContextValue {
     () => ({
       state: {
         query: view.query,
-        pendingPredicates: view.pendingPredicates,
+        rows: view.rows,
+        combinator: view.combinator,
         layout: view.layout,
         sort: { key: view.sortKey as SortKey, dir: view.sortDir },
         displayPrefs,

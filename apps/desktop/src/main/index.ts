@@ -186,8 +186,13 @@ function configureSessionDefaults(): void {
       "img-src 'self' data: blob: pond: https:",
       "media-src 'self' data: blob: pond: https:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self'",
-      "connect-src 'self' http://127.0.0.1:* pond: https:",
+      // onnxruntime-web (the sensitive-media ViT backend) needs:
+      //  - 'wasm-unsafe-eval' to instantiate its WebAssembly module
+      //  - blob: in script-src/worker-src to dynamically import its backend
+      //    module and spawn its wasm worker from a Blob URL
+      "script-src 'self' 'wasm-unsafe-eval' blob:",
+      "worker-src 'self' blob:",
+      "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
       "font-src 'self' data:",
       "frame-src https://www.youtube-nocookie.com",
       "object-src 'none'",

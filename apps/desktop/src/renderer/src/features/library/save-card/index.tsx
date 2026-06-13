@@ -5,13 +5,31 @@ import { buildMediaUnits, pickPrimaryFile } from "@/core/data/media";
 import { usePrefs } from "@/core/data/prefs";
 import { selection, useIsPrimary, useIsSelected } from "@/core/data/selection";
 import { useResolvedTheme } from "@/core/data/theme";
-import type { Save } from "@/core/data/types";
+import type { Save, SaveFile } from "@/core/data/types";
 import { formatAbsolute } from "@/core/lib/format";
-import { Card, type CardLayout } from "@/features/library/card-thumb";
+import { type CardLayout, CardThumb } from "@/features/library/card-thumb";
 import { LibraryGrid } from "@/features/library/grid";
 import { useLibraryCardCallbacks } from "@/features/library/grid-context";
 import { useDisplayPrefs } from "@/features/library/stores/display-prefs";
 import { SaveContextMenu } from "@/features/save/menus/save-context";
+import { getSourceIcon } from "@/features/sources/registry";
+import { getSourceLabel } from "@/features/sources/source-labels";
+
+// Short, badge-friendly label for the save's primary asset. Prefers the
+// file extension (PNG, MP4, GIF…), then its mime subtype, then the
+// coarse mediaType, falling back to "Link" for URL-only saves.
+function deriveTypeLabel(file: SaveFile | null, save: Save): string | null {
+  const ext = file?.path.split(".").pop()?.toLowerCase();
+  if (ext && /^[a-z0-9]{1,4}$/.test(ext)) return ext.toUpperCase();
+  const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];
+  if (subtype) return subtype.toUpperCase();
+  const media = save.mediaType?.toLowerCase();
+  if (media === "video") return "Video";
+  if (media === "image") return "Image";
+  if (media === "link") return "Link";
+  if (save.mediaType) return save.mediaType.toUpperCase();
+  return save.url ? "Link" : null;
+}
 
 interface SaveCardProps {
   id: string;
@@ -142,6 +160,9 @@ const SaveCardBody = memo(function SaveCardBody({
     [w, h, ratio],
   );
   const prefs = useDisplayPrefs();
+  const typeLabel = prefs.type ? deriveTypeLabel(primary, save) : null;
+  const sourceLabel = prefs.source ? getSourceLabel(save.source) : null;
+  const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
   const showMeta = prefs.name || prefs.date;
   // Carousel count = displayable media units only. Avatars are author
   // metadata, and posters are paired with their video, so neither should
@@ -150,10 +171,20 @@ const SaveCardBody = memo(function SaveCardBody({
   return (
     <>
       <LibraryGrid.Item.Media style={mediaStyle}>
-        <Card.Root save={save} layout={layout}>
-          <Card.Media />
-          <Card.DownloadingBadge />
-        </Card.Root>
+        <CardThumb save={save} layout={layout} />
+        {typeLabel ? (
+          <LibraryGrid.Item.Type aria-label={`Type: ${typeLabel}`}>
+            {typeLabel}
+          </LibraryGrid.Item.Type>
+        ) : null}
+        {sourceLabel ? (
+          <LibraryGrid.Item.Source
+            aria-label={`Saved from ${sourceLabel}`}
+            title={`Saved from ${sourceLabel}`}
+          >
+            {SourceIcon ? <SourceIcon width={11} height={11} /> : sourceLabel}
+          </LibraryGrid.Item.Source>
+        ) : null}
         {prefs.fileCount && mediaUnitCount > 1 ? (
           <LibraryGrid.Item.Count aria-label={`${mediaUnitCount} media files`}>
             {mediaUnitCount}

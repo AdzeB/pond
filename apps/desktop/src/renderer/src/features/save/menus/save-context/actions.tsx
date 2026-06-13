@@ -8,7 +8,6 @@ import {
   IconImageOutline18 as ImageIcon,
   IconLinkOutline18 as LinkIcon,
   IconArrowDoorOutOutline18 as LogOut,
-  IconExpand2Outline18 as Maximize2,
   IconMediaPlayOutline18 as Play,
   IconRefreshClockwiseOutline18 as RefreshCw,
   IconMagnifierOutline18 as Search,
@@ -25,7 +24,6 @@ import {
   copyTags as copyTagsAction,
   enterPresentation,
   exportFile as exportFileAction,
-  openInNewWindow as openInNewWindowAction,
   pasteTags as pasteTagsAction,
 } from "@/features/save/save-actions";
 import { useTagClipboard } from "@/features/tags/stores/tag-clipboard";
@@ -213,14 +211,6 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         disabled: !hasFiles,
         shortcut: ["O"],
         onSelect: openFile,
-      },
-      {
-        type: "item",
-        key: "open-window",
-        label: "Open in New Window",
-        icon: Maximize2,
-        shortcut: ["⌘", "O"],
-        onSelect: () => openInNewWindowAction(save),
       },
       {
         type: "item",

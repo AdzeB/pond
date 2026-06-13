@@ -5,6 +5,7 @@
   justify-content: stretch;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   isolation: isolate;
 }
 
@@ -38,15 +39,8 @@
   opacity: 1;
 }
 
-/* Sensitive media: blur the pixels and scale up slightly so the blur
-   doesn't reveal a sharp transparent edge. The image stays mounted so a
-   reveal is instant. */
-.thumb[data-blurred="true"] .media {
-  filter: blur(22px);
-  transform: scale(1.12);
-  transition: filter 200ms ease;
-}
-
+/* Sensitive media: the image stays sharp and mounted so a reveal is
+   instant; the overlay above blurs it with a backdrop filter instead. */
 .sensitive {
   position: absolute;
   inset: 0;
@@ -62,6 +56,8 @@
   background: transparent;
   border: 0;
   border-radius: 4px;
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
 }
 
 .sensitive > svg {

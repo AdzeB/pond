@@ -112,30 +112,6 @@ const api = {
     return ipcRenderer.invoke(IPC.openSaveFile, id, fileIndex);
   },
 
-  openSaveWindow(id: string): Promise<{ ok: boolean; reason?: string }> {
-    return ipcRenderer.invoke(IPC.openSaveWindow, id);
-  },
-
-  onViewerNavigate(cb: (payload: { id: string }) => void): () => void {
-    const listener = (_: unknown, payload: { id: string }) => cb(payload);
-    ipcRenderer.on(IPC.viewerNavigate, listener);
-    return () => ipcRenderer.off(IPC.viewerNavigate, listener);
-  },
-
-  publishNavOrder(ids: string[]): Promise<{ ok: boolean }> {
-    return ipcRenderer.invoke(IPC.publishNavOrder, ids);
-  },
-
-  getViewerContext(): Promise<{ ids: string[] }> {
-    return ipcRenderer.invoke(IPC.getViewerContext);
-  },
-
-  onNavOrderChanged(cb: (ids: string[]) => void): () => void {
-    const listener = (_: unknown, ids: string[]) => cb(ids);
-    ipcRenderer.on(IPC.navOrderChanged, listener);
-    return () => ipcRenderer.off(IPC.navOrderChanged, listener);
-  },
-
   refreshSave(id: string): Promise<
     | { ok: true; method: "og" | "hidden-window"; created: boolean }
     | {

@@ -109,10 +109,6 @@ export async function refreshSaveMetadata(
   toast.add({ title: "Refreshing metadata…", type: "success" });
 }
 
-export async function openInNewWindow(save: Save): Promise<void> {
-  await window.pond.openSaveWindow(save.id);
-}
-
 export async function copyImage(save: Save, toast: Toast): Promise<void> {
   if (save.files.length === 0) return;
   const result = (await window.pond.query("saves.copyImage", {

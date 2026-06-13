@@ -11,6 +11,8 @@ import type { PondApi } from "../../preload";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SaveCompleteToast } from "./effects/save-complete-toast";
+import { SensitiveSweep } from "./effects/sensitive-sweep";
+import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { ToastHost } from "./effects/toast-host";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
@@ -41,23 +43,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-function resolveInitialEntries(): string[] {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("standalone") === "save") {
-      const id = params.get("id");
-      if (id) return [`/standalone/save/${encodeURIComponent(id)}`];
-    }
-  } catch {
-    /* falls through to library home */
-  }
-  return ["/"];
-}
-
 function buildRouter() {
   return createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: resolveInitialEntries() }),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultPreload: "intent",
   });
 }
@@ -86,7 +75,9 @@ export function App() {
             <DeveloperApplier />
             <UndoRedoBridge />
             <MenuBridge />
+            <SyncStatusBridge />
             <SaveCompleteToast />
+            <SensitiveSweep />
             <ToastHost />
             <RouterProvider router={router} />
             <Presentation />

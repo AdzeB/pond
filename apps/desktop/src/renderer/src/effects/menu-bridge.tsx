@@ -8,7 +8,6 @@ import { pool } from "@/core/data/pool";
 import { usePrefs } from "@/core/data/prefs";
 import { primarySelection, selection } from "@/core/data/selection";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
-import { toggleSidebar } from "@/features/library/stores/shell-state";
 import { cycleLayout, setLayout } from "@/features/library/stores/view-store";
 import {
   copyId,
@@ -29,10 +28,6 @@ export function MenuBridge() {
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
       switch (id) {
-        case "view.sidebar.toggle":
-          toggleSidebar();
-          return;
-
         case "view.inspector.toggle": {
           // Toggles the save drawer: close it if open, otherwise reopen the
           // anchored/selected save if there is one.

@@ -1,52 +1,53 @@
+import { env, pipeline, RawImage } from "@huggingface/transformers";
+import type { Sensitivity } from "@pond/schema/db";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import type { NSFWJS, PredictionType } from "nsfwjs";
 import pLimit from "p-limit";
-import { useEffect } from "react";
 import { pickPrimaryUnit } from "./media";
+import { pool, savesStore, upsertSave } from "./pool";
 import { usePrefs } from "./prefs";
 import type { Save } from "./types";
 
 // On-device sensitive-media (NSFW) detection.
 //
-// Classification runs entirely in the renderer via TensorFlow.js + nsfwjs
-// (the model ships inside the npm package, so it works offline). Both
-// libraries are dynamically imported the first time a classification is
-// requested, so users who never enable the blur setting pay nothing.
+// Classification runs entirely in the renderer via a Vision Transformer
+// (AdamCodd/vit-base-nsfw-detector) executed with transformers.js on WebGPU
+// (falling back to WASM). transformers.js is dynamically imported the first
+// time a save is classified, so users who never trigger the sweep pay nothing.
+// The model weights download from the Hugging Face Hub on first use and are
+// cached by the browser afterwards (the app is online for sync anyway).
 //
-// A save's verdict is computed once and cached in localStorage, keyed by id,
-// so each image is only ever classified a single time across launches.
-//
-// Only media the model confirms as sensitive is blurred. Unclassified media
-// renders normally (the trade-off: a sensitive item may show briefly before
-// its verdict lands), so a slow or broken classifier never mass-blurs the
-// library. The model load state is tracked purely for diagnostics.
+// A save's verdict lives on the DB-backed `save.sensitivity` column (a derived
+// value, like dominantColors/phash). A throttled background sweep classifies
+// every unclassified save so the verdict is available both for blurring and
+// for the Sensitivity filter; the result is persisted via a system write that
+// syncs across devices and survives restarts.
 
-export type Sensitivity = "pending" | "safe" | "sensitive";
+export type { Sensitivity };
 
-type Verdict = 0 | 1; // 0 = safe, 1 = sensitive
+export type SensitivityState = "pending" | "safe" | "sensitive";
 
-const STORAGE_KEY = "pond.nsfw.verdicts.v1";
+// The HF Hub model id. A ViT binary classifier ("sfw" / "nsfw") that's
+// markedly more accurate than the legacy MobileNet CNN.
+const MODEL_ID = "AdamCodd/vit-base-nsfw-detector";
 
-function loadPersisted(): Map<string, Verdict> {
-  if (typeof window === "undefined") return new Map();
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return new Map();
-    const obj = JSON.parse(raw) as Record<string, number>;
-    const map = new Map<string, Verdict>();
-    for (const [id, v] of Object.entries(obj)) {
-      map.set(id, v === 1 ? 1 : 0);
-    }
-    return map;
-  } catch {
-    return new Map();
-  }
+// Stamp recorded alongside each verdict (save.sensitivityModel). The sweep
+// re-classifies any save whose stamp differs, so bumping this re-runs the whole
+// library against a new model — saves classified by the old MobileNet CNN have
+// no stamp (null) and are picked up automatically.
+const SENSITIVITY_MODEL_VERSION = "vit-base-nsfw-detector@2";
+
+// nsfw probability at/above which a save is flagged sensitive.
+const SENSITIVE_THRESHOLD = 0.5;
+
+interface Prediction {
+  label: string;
+  score: number;
 }
-
-const verdictStore = new Store<{ map: ReadonlyMap<string, Verdict> }>({
-  map: loadPersisted(),
-});
+type ImageClassifier = (
+  input: RawImage,
+  opts?: { top_k?: number },
+) => Promise<Prediction[] | Prediction[][]>;
 
 // Per-session reveal state. Revealing a save in the grid keeps it revealed in
 // the detail view (and vice versa) until the app restarts.
@@ -54,59 +55,49 @@ const revealStore = new Store<{ ids: ReadonlySet<string> }>({
   ids: new Set<string>(),
 });
 
-let persistTimer: ReturnType<typeof setTimeout> | null = null;
-function schedulePersist(): void {
-  if (typeof window === "undefined") return;
-  if (persistTimer) return;
-  persistTimer = setTimeout(() => {
-    persistTimer = null;
-    try {
-      const obj: Record<string, Verdict> = {};
-      for (const [id, v] of verdictStore.state.map) obj[id] = v;
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-    } catch {
-      // Storage denied or over quota: keep the in-memory cache and retry on
-      // the next verdict. Worst case we reclassify next launch.
-    }
-  }, 500);
-}
-
-function setVerdict(id: string, verdict: Verdict): void {
-  verdictStore.setState((s) => {
-    if (s.map.get(id) === verdict) return s;
-    const map = new Map(s.map);
-    map.set(id, verdict);
-    return { map };
-  });
-  schedulePersist();
-}
-
-// Lazy, shared model handle. Dynamic import keeps tfjs + nsfwjs out of the
-// initial bundle; they only download when the first save is classified.
-let modelPromise: Promise<NSFWJS> | null = null;
-function getModel(): Promise<NSFWJS> {
-  if (!modelPromise) {
-    modelPromise = (async () => {
-      const [tf, nsfwjs] = await Promise.all([
-        import("@tensorflow/tfjs"),
-        import("nsfwjs"),
-      ]);
-      await tf.ready();
-      const model = await nsfwjs.load();
-      console.info(
-        `[nsfw] sensitive-media model ready (tfjs backend: ${tf.getBackend()})`,
-      );
-      return model;
+// Lazy, shared classifier handle. The dynamic import keeps transformers.js +
+// onnxruntime-web out of the initial bundle; they only load when the first
+// save is classified. Prefers WebGPU; falls back to WASM. Always uses the
+// quantized (q8) weights — fp16 produces a broken constant output for this ViT
+// on WebGPU (every image scores identically), and q8 matches fp32 accuracy at
+// ~1/4 the download.
+let classifierPromise: Promise<ImageClassifier> | null = null;
+function getClassifier(): Promise<ImageClassifier> {
+  if (!classifierPromise) {
+    classifierPromise = (async () => {
+      env.allowLocalModels = false;
+      const tryBuild = async (device: "webgpu" | "wasm") => {
+        const pipe = await pipeline("image-classification", MODEL_ID, {
+          device,
+          dtype: "q8",
+        });
+        console.info(`[nsfw] ViT classifier ready (${device}/q8)`);
+        return pipe as unknown as ImageClassifier;
+      };
+      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+        try {
+          return await tryBuild("webgpu");
+        } catch (err) {
+          console.warn("[nsfw] WebGPU unavailable; falling back to WASM", err);
+        }
+      }
+      return tryBuild("wasm");
     })();
-    modelPromise.catch((err) => {
-      console.error("[nsfw] failed to load sensitive-media model", err);
+    classifierPromise.catch((err) => {
+      console.error("[nsfw] failed to load classifier", err);
+      // Allow a later retry if the model failed to load (e.g. offline).
+      classifierPromise = null;
     });
   }
-  return modelPromise;
+  return classifierPromise;
 }
 
 const limit = pLimit(2);
 const inflight = new Set<string>();
+// Saves whose image failed to decode/classify this session. We deliberately do
+// NOT mark them "safe" (that would hide genuinely sensitive media behind a
+// false negative); instead we skip them until the next launch.
+const failed = new Set<string>();
 
 // The frame that best represents a save: the primary image, or a video's
 // poster. Returns null when there's nothing classifiable yet (e.g. a video
@@ -117,74 +108,157 @@ function representativeImageUrl(save: Save): string | null {
   return unit.isVideo ? (unit.posterUrl ?? null) : unit.url;
 }
 
-// Longest-side cap for the canvas handed to the model. nsfwjs resizes to its
-// own input internally, so a smaller source just saves memory/time.
-const MAX_CLASSIFY_DIM = 1024;
-
-// Decode a save's image into an origin-clean canvas the model can read.
-//
-// A plain `<img crossOrigin>` is rejected here: Chromium refuses CORS for
-// custom schemes regardless of response headers. Instead we `fetch` the bytes
-// (the pond:// scheme is corsEnabled + sends ACAO) and decode through a
-// Blob → ImageBitmap, which produces a canvas that is NOT tainted, so
-// `tf.browser.fromPixels` can read its pixels.
-async function loadClassifiable(url: string): Promise<HTMLCanvasElement> {
+// Fetch a save's image and decode it for the model. A plain `<img crossOrigin>`
+// is rejected for custom schemes, so we `fetch` the bytes (the pond:// scheme
+// is corsEnabled + sends ACAO) and hand the Blob to transformers.js, which
+// resizes to the model's input internally.
+async function loadImage(url: string): Promise<RawImage> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
-  const bitmap = await createImageBitmap(await res.blob());
-  try {
-    const scale = Math.min(
-      1,
-      MAX_CLASSIFY_DIM / Math.max(bitmap.width, bitmap.height),
-    );
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("2d context unavailable");
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    return canvas;
-  } finally {
-    bitmap.close();
-  }
+  return RawImage.fromBlob(await res.blob());
 }
 
-function verdictFromPredictions(predictions: PredictionType[]): Verdict {
-  const score = (name: PredictionType["className"]) =>
-    predictions.find((p) => p.className === name)?.probability ?? 0;
-  const explicit = score("Porn") + score("Hentai");
-  const sexy = score("Sexy");
-  return explicit >= 0.5 || sexy >= 0.8 ? 1 : 0;
+function verdictFromPredictions(predictions: Prediction[]): Sensitivity {
+  const nsfw =
+    predictions.find((p) => p.label.toLowerCase() === "nsfw")?.score ?? 0;
+  return nsfw >= SENSITIVE_THRESHOLD ? "sensitive" : "safe";
+}
+
+// Persist a verdict: update the pool immediately (so blur/filter react now)
+// then write it through to the DB as a system action (syncs + survives
+// restarts). A failed write just leaves the column null to retry later.
+async function persistVerdict(
+  id: string,
+  verdict: Sensitivity,
+  model: string = SENSITIVITY_MODEL_VERSION,
+): Promise<void> {
+  const current = pool.get(id);
+  if (
+    current &&
+    (current.sensitivity !== verdict || current.sensitivityModel !== model)
+  ) {
+    upsertSave({ ...current, sensitivity: verdict, sensitivityModel: model });
+  }
+  try {
+    await window.pond.query("saves.setSensitivity", {
+      id,
+      sensitivity: verdict,
+      sensitivityModel: model,
+    });
+  } catch (err) {
+    console.warn(`[nsfw] failed to persist verdict for ${id}`, err);
+  }
 }
 
 function classify(save: Save): void {
   const id = save.id;
-  if (verdictStore.state.map.has(id) || inflight.has(id)) return;
+  if (inflight.has(id) || failed.has(id)) return;
   const url = representativeImageUrl(save);
-  if (!url) return; // nothing to classify yet; stays pending (blurred)
+  if (!url) return; // nothing to classify yet; stays unclassified
   inflight.add(id);
   void limit(async () => {
-    let model: NSFWJS;
+    let classifier: ImageClassifier;
     try {
-      model = await getModel();
+      classifier = await getClassifier();
     } catch {
-      // Model couldn't load. `getModel` flips the shared state to "error",
-      // which makes the hook fail open (stop blurring unclassified media), so
-      // there's nothing to do here but bail.
+      // Model couldn't load; bail without persisting so the save stays
+      // unclassified and a later sweep retries.
       inflight.delete(id);
       return;
     }
     try {
-      const canvas = await loadClassifiable(url);
-      setVerdict(id, verdictFromPredictions(await model.classify(canvas)));
-    } catch {
-      // A single image failed to decode/classify: treat as safe so it isn't
-      // blurred forever for an unrelated reason.
-      setVerdict(id, 0);
+      const image = await loadImage(url);
+      // The model has two labels (sfw/nsfw); top_k must be > 0 — `top_k: 0`
+      // returns an empty array in transformers.js, which would read as "safe".
+      const out = await classifier(image, { top_k: 2 });
+      const predictions = (
+        Array.isArray(out[0]) ? out[0] : out
+      ) as Prediction[];
+      await persistVerdict(id, verdictFromPredictions(predictions));
+    } catch (err) {
+      // Don't persist on failure — marking "safe" here would falsely un-blur
+      // sensitive media. Skip for the session and retry on next launch.
+      failed.add(id);
+      console.warn(`[nsfw] classify failed for ${id}`, err);
     } finally {
       inflight.delete(id);
     }
   });
+}
+
+function isSweepEligible(save: Save): boolean {
+  if (save.status !== "complete" || save.deletedAt != null) return false;
+  // Unclassified, or classified by an older model — re-run with the current one.
+  return (
+    save.sensitivity == null ||
+    save.sensitivityModel !== SENSITIVITY_MODEL_VERSION
+  );
+}
+
+// Walk the pool and enqueue every unclassified save. Cheap to re-run: classify
+// dedupes by id, completed saves carry a verdict so they're skipped, and
+// `pLimit` caps concurrency regardless of how many are enqueued at once.
+function scan(): void {
+  for (const save of pool.snapshot()) {
+    if (isSweepEligible(save)) classify(save);
+  }
+}
+
+const LEGACY_STORAGE_KEY = "pond.nsfw.verdicts.v1";
+
+// One-time backfill: migrate verdicts cached in the old localStorage map onto
+// the DB column for saves that are still unclassified, then drop the key.
+function migrateLegacyVerdicts(): void {
+  if (typeof window === "undefined") return;
+  let raw: string | null;
+  try {
+    raw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+  } catch {
+    return;
+  }
+  if (!raw) return;
+  try {
+    const obj = JSON.parse(raw) as Record<string, number>;
+    for (const [id, v] of Object.entries(obj)) {
+      const save = pool.get(id);
+      if (save && save.sensitivity == null) {
+        // Stamp as legacy so the sweep still re-classifies it with the ViT.
+        void persistVerdict(id, v === 1 ? "sensitive" : "safe", "legacy");
+      }
+    }
+  } catch {
+    // Corrupt payload: nothing to migrate.
+  }
+  try {
+    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+  } catch {
+    // Ignore: removal will retry next launch (migration is idempotent).
+  }
+}
+
+let sweepStarted = false;
+let scanScheduled = false;
+
+function scheduleScan(): void {
+  if (scanScheduled) return;
+  scanScheduled = true;
+  // Coalesce bursts of pool updates (bulk hydration, sync batches) into a
+  // single scan and keep it off the synchronous store-update path.
+  setTimeout(() => {
+    scanScheduled = false;
+    scan();
+  }, 250);
+}
+
+// Begin the background classification sweep. Idempotent; returns an unsubscribe
+// for symmetry with the mounting effect (the sweep runs for the app lifetime).
+export function startSensitiveSweep(): () => void {
+  if (sweepStarted) return () => {};
+  sweepStarted = true;
+  migrateLegacyVerdicts();
+  scheduleScan();
+  const sub = savesStore.subscribe(scheduleScan);
+  return () => sub.unsubscribe();
 }
 
 export function reveal(id: string): void {
@@ -200,7 +274,7 @@ export interface SensitiveMedia {
   /** True when the media should be rendered blurred right now. */
   blurred: boolean;
   /** Classification state for this save. */
-  sensitivity: Sensitivity;
+  sensitivity: SensitivityState;
   /** Reveal this save for the rest of the session. */
   reveal: () => void;
 }
@@ -209,21 +283,12 @@ export function useSensitiveMedia(save: Save): SensitiveMedia {
   const [preferences] = usePrefs("preferences");
   const enabled = preferences?.blurSensitiveMedia === true;
 
-  const verdict = useStore(verdictStore, (s) => s.map.get(save.id));
   const revealed = useStore(revealStore, (s) => s.ids.has(save.id));
 
-  useEffect(() => {
-    // `save` is a fresh object whenever its row updates (the data pool
-    // replaces it immutably), so this re-attempts when media lands for a
-    // still-ingesting save. `classify` dedupes by id, so re-runs are cheap.
-    if (enabled) classify(save);
-  }, [enabled, save]);
-
-  const sensitivity: Sensitivity = !enabled
-    ? "safe"
-    : verdict === 1
+  const sensitivity: SensitivityState =
+    save.sensitivity === "sensitive"
       ? "sensitive"
-      : verdict === 0
+      : save.sensitivity === "safe"
         ? "safe"
         : "pending";
 

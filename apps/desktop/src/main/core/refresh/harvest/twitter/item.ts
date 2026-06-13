@@ -296,6 +296,74 @@ export function harvestSource(): string {
       }
     }
 
+    // Quoted tweets render as a nested <article>. The collectors above
+    // deliberately skip it via notInNested so the parent's media isn't
+    // polluted by the quote's; here we make a second pass scoped to the
+    // nested article and append its media after the parent's, so the
+    // quote's images/videos flow into the same carousel.
+    if (innerArticle) {
+      const quotedVideos = Array.from(
+        innerArticle.querySelectorAll<HTMLVideoElement>("video"),
+      );
+      let capturedQuotedVideo = false;
+      for (const v of quotedVideos) {
+        if (!v.poster) continue;
+        push({ url: v.poster, type: "video", poster: v.poster });
+        const dur = norm.readDuration(v);
+        const w = v.videoWidth;
+        const h = v.videoHeight;
+        mediaItems.push({
+          url: v.poster,
+          type: "video",
+          poster: v.poster,
+          ...(dur ? { durationSec: dur } : {}),
+          ...(w ? { width: w } : {}),
+          ...(h ? { height: h } : {}),
+        });
+        capturedQuotedVideo = true;
+      }
+      if (!capturedQuotedVideo) {
+        const quotedVideoPosters = Array.from(
+          innerArticle.querySelectorAll<HTMLImageElement>(
+            '[data-testid="videoPlayer"] img, [data-testid="videoComponent"] img',
+          ),
+        );
+        for (const img of quotedVideoPosters) {
+          const best = img.srcset
+            ? norm.pickLargestSrcset(img.srcset)
+            : undefined;
+          const src = best ?? img.currentSrc ?? img.src;
+          if (!src) continue;
+          const upgraded = norm.upgradeTwimgUrl(src);
+          push({ url: upgraded, type: "video", poster: upgraded });
+          mediaItems.push({ url: upgraded, type: "video", poster: upgraded });
+        }
+      }
+
+      const quotedPhotos = Array.from(
+        innerArticle.querySelectorAll<HTMLImageElement>(
+          '[data-testid="tweetPhoto"] img',
+        ),
+      );
+      for (const img of quotedPhotos) {
+        const best = img.srcset
+          ? norm.pickLargestSrcset(img.srcset)
+          : undefined;
+        const src = best ?? img.currentSrc ?? img.src;
+        if (!src) continue;
+        const upgraded = norm.upgradeTwimgUrl(src);
+        push({ url: upgraded, type: "image" });
+        const item: Record<string, unknown> = { url: upgraded, type: "image" };
+        const alt = img.getAttribute("alt")?.trim();
+        if (alt) item.altText = alt;
+        const w = img.naturalWidth;
+        const h = img.naturalHeight;
+        if (w) item.width = w;
+        if (h) item.height = h;
+        mediaItems.push(item);
+      }
+    }
+
     if (media.length === 0) {
       const ogMeta = document.querySelector<HTMLMetaElement>(
         'meta[property="og:image"], meta[name="og:image"]',

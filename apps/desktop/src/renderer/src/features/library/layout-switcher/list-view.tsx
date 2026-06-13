@@ -13,7 +13,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Save } from "@/core/data/types";
 import { formatAbsolute, formatBytes } from "@/core/lib/format";
-import { Card } from "@/features/library/card-thumb";
+import { CardThumb } from "@/features/library/card-thumb";
 import {
   setSort,
   useSortDir,
@@ -111,10 +111,7 @@ export function ListView({
         header: () => null,
         cell: ({ row }) => (
           <span className={styles["list-thumb"]}>
-            <Card.Root save={row.original}>
-              <Card.Media />
-              <Card.DownloadingBadge />
-            </Card.Root>
+            <CardThumb save={row.original} />
           </span>
         ),
         enableSorting: false,

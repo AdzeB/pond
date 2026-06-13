@@ -1,14 +1,5 @@
 import { IconEyeOutline18 as Eye } from "@pond/icons/outline/18";
-import {
-  createContext,
-  type ReactNode,
-  use,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInViewRef, useMergeRefs } from "rooks";
 import { useIsVideoDownloading } from "@/core/data/downloads";
 import { type MediaUnit, pickPrimaryUnit } from "@/core/data/media";
@@ -27,134 +18,87 @@ export type CardLayout = "waterfall" | "grid" | "justified";
 // being crisp for typical card sizes; the detail view loads originals.
 const CARD_THUMB_WIDTH = 768;
 
-interface CardState {
-  save: Save;
-  unit: MediaUnit | null;
-  isBroken: boolean;
-  isDownloading: boolean;
-  blurred: boolean;
-}
-
-interface CardActions {
-  setBroken: (broken: boolean) => void;
-  reveal: () => void;
-}
-
-interface CardContextValue {
-  state: CardState;
-  actions: CardActions;
-}
-
-const CardContext = createContext<CardContextValue | null>(null);
-
-function useCardContext(): CardContextValue {
-  const ctx = use(CardContext);
-  if (!ctx) {
-    throw new Error("Card.* components must be rendered inside <Card.Root>");
-  }
-  return ctx;
-}
-
-interface RootProps {
+export function CardThumb({
+  save,
+  layout,
+}: {
   save: Save;
   layout?: CardLayout;
-  children: ReactNode;
-}
-
-function Root({ save, layout, children }: RootProps) {
+}) {
   const theme = useResolvedTheme();
   const [preferences] = usePrefs("preferences");
-  const tweetCover = preferences?.tweetCover;
   const unit = useMemo(
-    () => pickPrimaryUnit(save, { theme, tweetCover }),
-    [save, theme, tweetCover],
+    () => pickPrimaryUnit(save, { theme, tweetCover: preferences?.tweetCover }),
+    [save, theme, preferences?.tweetCover],
   );
   const isDownloading = useIsVideoDownloading(save);
-  const pickedSrc = unit?.url ?? null;
   const { blurred, reveal } = useSensitiveMedia(save);
 
+  // Track the broken src (not a boolean) so swapping to a new unit URL
+  // clears the broken state automatically.
+  const pickedSrc = unit?.url ?? null;
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
-
-  const setBroken = useCallback(
-    (next: boolean) => {
-      setBrokenSrc(next ? pickedSrc : null);
-    },
-    [pickedSrc],
-  );
-
-  const value = useMemo<CardContextValue>(
-    () => ({
-      state: { save, unit, isBroken: broken, isDownloading, blurred },
-      actions: { setBroken, reveal },
-    }),
-    [save, unit, broken, isDownloading, blurred, setBroken, reveal],
-  );
+  const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
   return (
-    <CardContext value={value}>
-      <div
-        className={styles.thumb}
-        data-layout={layout}
-        data-blurred={blurred ? "true" : undefined}
-      >
-        {children}
-        <SensitiveOverlay />
-      </div>
-    </CardContext>
+    <div className={styles.thumb} data-layout={layout}>
+      {unit && !broken && !unit.isVideo ? (
+        <CardImage key={unit.url} save={save} unit={unit} onBroken={onBroken} />
+      ) : null}
+      {unit?.isVideo && !broken ? (
+        <HoverVideo
+          saveId={save.id}
+          src={unit.url}
+          posterUrl={
+            unit.posterUrl
+              ? withThumbWidth(unit.posterUrl, CARD_THUMB_WIDTH)
+              : undefined
+          }
+          label={save.title ?? "video"}
+          onBroken={onBroken}
+        />
+      ) : null}
+      {!unit || broken ? (
+        <div className={styles.placeholder} aria-hidden />
+      ) : null}
+      <DownloadingBadge save={save} isDownloading={isDownloading} />
+      {blurred && !broken && unit ? (
+        <SensitiveOverlay onReveal={reveal} />
+      ) : null}
+    </div>
   );
 }
 
-function SensitiveOverlay() {
-  const { state, actions } = useCardContext();
-  if (!state.blurred || state.isBroken || !state.unit) return null;
-  return (
-    <button
-      type="button"
-      className={styles.sensitive}
-      aria-label="Reveal sensitive media"
-      title="Sensitive media — click to reveal"
-      onClick={(e) => {
-        // Reveal in place instead of opening the save.
-        e.preventDefault();
-        e.stopPropagation();
-        actions.reveal();
-      }}
-    >
-      <Eye width={16} height={16} aria-hidden />
-    </button>
-  );
-}
-
-function Image() {
-  const { state } = useCardContext();
-  if (!state.unit || state.unit.isVideo || state.isBroken) return null;
-  return <ImageInner key={state.unit.url} />;
-}
-
-function ImageInner() {
-  const { state, actions } = useCardContext();
+function CardImage({
+  save,
+  unit,
+  onBroken,
+}: {
+  save: Save;
+  unit: MediaUnit;
+  onBroken: () => void;
+}) {
   const ref = useRef<HTMLImageElement>(null);
   const [loaded, setLoaded] = useState(false);
 
-  const url = state.unit?.url ?? "";
-  const file = state.save.files.find((f) => f.path === state.unit?.key);
-  const w = file?.width ?? state.save.width ?? undefined;
-  const h = file?.height ?? state.save.height ?? undefined;
+  const file = save.files.find((f) => f.path === unit.key);
+  const w = file?.width ?? save.width ?? undefined;
+  const h = file?.height ?? save.height ?? undefined;
 
   useEffect(() => {
     const img = ref.current;
     if (!img) return;
     if (img.complete && img.naturalWidth > 0) {
-      recordAspect(state.save.id, img.naturalWidth, img.naturalHeight);
+      recordAspect(save.id, img.naturalWidth, img.naturalHeight);
       setLoaded(true);
     }
-  }, [state.save.id]);
+  }, [save.id]);
 
   return (
     <img
       ref={ref}
-      src={withThumbWidth(url, CARD_THUMB_WIDTH)}
+      src={withThumbWidth(unit.url, CARD_THUMB_WIDTH)}
       alt=""
       loading="lazy"
       decoding="async"
@@ -168,28 +112,10 @@ function ImageInner() {
       data-loaded={loaded ? "true" : "false"}
       onLoad={(e) => {
         const img = e.currentTarget;
-        recordAspect(state.save.id, img.naturalWidth, img.naturalHeight);
+        recordAspect(save.id, img.naturalWidth, img.naturalHeight);
         setLoaded(true);
       }}
-      onError={() => actions.setBroken(true)}
-    />
-  );
-}
-
-function Video() {
-  const { state, actions } = useCardContext();
-  if (!state.unit?.isVideo || state.isBroken) return null;
-  return (
-    <HoverVideo
-      saveId={state.save.id}
-      src={state.unit.url}
-      posterUrl={
-        state.unit.posterUrl
-          ? withThumbWidth(state.unit.posterUrl, CARD_THUMB_WIDTH)
-          : undefined
-      }
-      label={state.save.title ?? "video"}
-      onBroken={() => actions.setBroken(true)}
+      onError={onBroken}
     />
   );
 }
@@ -205,7 +131,7 @@ function HoverVideo({
   src: string;
   posterUrl?: string;
   label: string;
-  onBroken: (videoSrc?: string) => void;
+  onBroken: () => void;
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
@@ -246,11 +172,11 @@ function HoverVideo({
     if (!el) return;
     if (el.readyState < HTMLMediaElement.HAVE_METADATA) return;
     if (el.videoWidth === 0 && el.videoHeight === 0) {
-      onBroken(src);
+      onBroken();
       return;
     }
     recordAspect(saveId, el.videoWidth, el.videoHeight);
-  }, [onBroken, saveId, src]);
+  }, [onBroken, saveId]);
 
   return (
     <video
@@ -267,7 +193,7 @@ function HoverVideo({
       onMouseLeave={onLeave}
       onFocus={onEnter}
       onBlur={onLeave}
-      onError={() => onBroken(src)}
+      onError={onBroken}
       onLoadedMetadata={onLoadedMetadata}
     >
       <track kind="captions" />
@@ -275,15 +201,13 @@ function HoverVideo({
   );
 }
 
-function Placeholder() {
-  const { state } = useCardContext();
-  if (state.unit && !state.isBroken) return null;
-  return <div className={styles.placeholder} aria-hidden />;
-}
-
-function DownloadingBadge() {
-  const { state } = useCardContext();
-  const save = state.save;
+function DownloadingBadge({
+  save,
+  isDownloading,
+}: {
+  save: Save;
+  isDownloading: boolean;
+}) {
   if (save.status === "failed") {
     const lastError =
       save.tasks?.find((t) => t.status === "failed")?.lastError ?? "Failed";
@@ -298,7 +222,7 @@ function DownloadingBadge() {
       </span>
     );
   }
-  if (!state.isDownloading) return null;
+  if (!isDownloading) return null;
   const fetchVideo = save.tasks?.find((t) => t.op === "fetch_video_ytdlp");
   const label = fetchVideo?.status === "running" ? "Downloading" : "Queued";
   return (
@@ -314,22 +238,21 @@ function DownloadingBadge() {
   );
 }
 
-function Media() {
+function SensitiveOverlay({ onReveal }: { onReveal: () => void }) {
   return (
-    <>
-      <Image />
-      <Video />
-      <Placeholder />
-    </>
+    <button
+      type="button"
+      className={styles.sensitive}
+      aria-label="Reveal sensitive media"
+      title="Sensitive media — click to reveal"
+      onClick={(e) => {
+        // Reveal in place instead of opening the save.
+        e.preventDefault();
+        e.stopPropagation();
+        onReveal();
+      }}
+    >
+      <Eye width={16} height={16} aria-hidden />
+    </button>
   );
 }
-
-export const Card = {
-  Root,
-  Media,
-  Image,
-  Video,
-  Placeholder,
-  DownloadingBadge,
-  SensitiveOverlay,
-};

@@ -1,39 +1,32 @@
-import {
-  IconBarsFilterFill18 as Funnel,
-  IconMagnifierFill18 as Magnifier,
-  IconSliders2VerticalFill18 as Sliders,
-} from "@pond/icons/fill/18";
-import { Button, Input, Menu, Toolbar as PondToolbar } from "@pond/ui";
+import { IconMagnifierFill18 as Magnifier } from "@pond/icons/fill/18";
+import { Input, Toolbar as PondToolbar } from "@pond/ui";
 import { usePlatform } from "@/core/lib/platform";
-import { FilterBar } from "@/features/library/filter-bar";
 import { useDebouncedSearch } from "@/features/library/hooks/use-debounced-search";
-import { AddFilterMenu } from "@/features/library/menus/add-filter";
-import { DisplaySection } from "@/features/library/menus/view/sections/display";
-import { LayoutSection } from "@/features/library/menus/view/sections/layout";
-import { SortSection } from "@/features/library/menus/view/sections/sort";
-import { ZoomSection } from "@/features/library/menus/view/sections/zoom";
+import { PondSwitcher } from "@/features/library/menus/pond-switcher";
 import { SavedViews } from "@/features/library/saved-views";
-import { useSidebar } from "@/features/library/stores/shell-state";
+import { SEARCH_INPUT_ID } from "@/features/library/toolbar/constants";
 import styles from "./styles.module.css";
 
 export function Toolbar() {
-  const { open: sidebarOpen } = useSidebar();
   const platform = usePlatform();
-  const trafficLightInset = platform === "mac" && !sidebarOpen ? 72 : 0;
+  // No sidebar covers the top-left anymore, so on macOS the toolbar always
+  // needs to clear the traffic-light buttons.
+  const trafficLightInset = platform === "mac" ? 72 : 0;
 
   return (
     <PondToolbar.Root style={{ paddingInlineStart: trafficLightInset }}>
       <PondToolbar.Row className={styles.row}>
-        <PondToolbar.Group fill={true} className={styles.group}>
+        <PondToolbar.Group fill={true} className={styles.side}>
+          <PondSwitcher compact className={styles.switcher} />
           <SavedViews />
         </PondToolbar.Group>
-        <PondToolbar.Group className={styles.group}>
+        <PondToolbar.Group className={styles.center}>
           <Search />
-          <Filter />
-          <Options />
         </PondToolbar.Group>
+        {/* Balances the left group so the search field stays centred. Filter,
+            view options, and sync now live in the bottom dock. */}
+        <PondToolbar.Group fill={true} className={styles.sideEnd} />
       </PondToolbar.Row>
-      <FilterBar />
     </PondToolbar.Root>
   );
 }
@@ -46,46 +39,14 @@ function Search() {
         <Magnifier />
       </Input.Icon>
       <Input.Field
+        id={SEARCH_INPUT_ID}
         className={styles.field}
         type="search"
-        placeholder="Explore…"
+        placeholder="Search..."
         value={value}
         onChange={(e) => setValue(e.target.value)}
         aria-label="Search saves"
       />
     </Input.Root>
-  );
-}
-
-function Filter() {
-  return (
-    <AddFilterMenu align="end">
-      <Button className={styles.button} icon aria-label="Filter">
-        <Funnel />
-      </Button>
-    </AddFilterMenu>
-  );
-}
-
-function Options() {
-  return (
-    <Menu.Root>
-      <Menu.Trigger className={styles.button} icon aria-label="View options">
-        <Sliders />
-      </Menu.Trigger>
-      <Menu.Portal>
-        <Menu.Positioner side="bottom" align="end" sideOffset={6}>
-          <Menu.Popup style={{ width: "256px" }}>
-            <LayoutSection />
-            <Menu.Separator />
-            <SortSection />
-            <Menu.Separator />
-            <DisplaySection />
-            <Menu.Separator />
-            <ZoomSection />
-          </Menu.Popup>
-        </Menu.Positioner>
-      </Menu.Portal>
-    </Menu.Root>
   );
 }

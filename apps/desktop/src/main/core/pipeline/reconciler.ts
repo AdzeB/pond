@@ -768,7 +768,7 @@ async function maybeFinalizeSave(saveId: string): Promise<void> {
     .from(saves)
     .where(eq(saves.id, saveId))
     .get();
-  if (!save || save.status !== "ingesting") return;
+  if (save?.status !== "ingesting") return;
   const rows = db
     .select({ status: tasks.status })
     .from(tasks)

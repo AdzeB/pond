@@ -1,24 +1,30 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type DisplayPrefKey = "name" | "date" | "fileCount";
+export type DisplayPrefKey = "name" | "date" | "fileCount" | "source" | "type";
 
 export interface DisplayPrefs {
   name: boolean;
   date: boolean;
   fileCount: boolean;
+  source: boolean;
+  type: boolean;
 }
 
 const STORAGE_KEYS: Record<DisplayPrefKey, string> = {
   name: "pond.display.name",
   date: "pond.display.date",
   fileCount: "pond.display.fileCount",
+  source: "pond.display.source",
+  type: "pond.display.type",
 };
 
 const DEFAULTS: DisplayPrefs = {
   name: true,
   date: true,
   fileCount: true,
+  source: true,
+  type: true,
 };
 
 function readKey(key: DisplayPrefKey): boolean {
@@ -37,6 +43,8 @@ function readAll(): DisplayPrefs {
     name: readKey("name"),
     date: readKey("date"),
     fileCount: readKey("fileCount"),
+    source: readKey("source"),
+    type: readKey("type"),
   };
 }
 

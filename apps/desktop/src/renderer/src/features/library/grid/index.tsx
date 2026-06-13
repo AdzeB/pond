@@ -132,6 +132,18 @@ function ItemNote({ className, ...props }: ItemNoteProps) {
   return <span className={cn(styles.note, className)} {...props} />;
 }
 
+interface ItemTypeProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemType({ className, ...props }: ItemTypeProps) {
+  return <span className={cn(styles.type, className)} {...props} />;
+}
+
+interface ItemSourceProps extends React.ComponentPropsWithoutRef<"span"> {}
+
+function ItemSource({ className, ...props }: ItemSourceProps) {
+  return <span className={cn(styles.source, className)} {...props} />;
+}
+
 interface ItemCheckboxProps
   extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
   checked: boolean;
@@ -165,6 +177,8 @@ const Item = Object.assign(ItemBase, {
   Time: ItemTime,
   Count: ItemCount,
   Note: ItemNote,
+  Type: ItemType,
+  Source: ItemSource,
   Checkbox: ItemCheckbox,
 });
 

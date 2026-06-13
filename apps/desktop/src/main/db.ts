@@ -278,8 +278,13 @@ function migratePond(sqlite: Database.Database): void {
     { name: "phash", ddl: "TEXT" },
     { name: "video_notes", ddl: "TEXT NOT NULL DEFAULT '[]'" },
     { name: "dominant_colors", ddl: "TEXT NOT NULL DEFAULT '[]'" },
+    { name: "sensitivity", ddl: "TEXT" },
+    { name: "sensitivity_model", ddl: "TEXT" },
   ]);
   sqlite.exec("CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status)");
+  sqlite.exec(
+    "CREATE INDEX IF NOT EXISTS saves_sensitivity_idx ON saves(sensitivity)",
+  );
   ensureTagsLabelColumns(sqlite);
   dropArchivedAtColumn(sqlite);
   hardDeleteArticleSaves(sqlite);

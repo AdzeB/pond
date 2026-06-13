@@ -35,6 +35,13 @@ export type Source = (typeof SOURCES)[number];
 export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
+// On-device NSFW verdict. Null = not yet classified. Derived in the renderer
+// (TensorFlow.js + nsfwjs), persisted here so it survives restarts, syncs
+// across devices, and is filterable. DB-only (excluded from info.json), like
+// `dominantColors`/`phash`; a full library reconcile just re-classifies.
+export const SENSITIVITIES = ["safe", "sensitive"] as const;
+export type Sensitivity = (typeof SENSITIVITIES)[number];
+
 export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
 export type SaveStatus = (typeof SAVE_STATUSES)[number];
 
@@ -104,6 +111,10 @@ export const saves = sqliteTable(
     height: integer("height"),
     fileSize: integer("file_size"),
     phash: text("phash"),
+    sensitivity: text("sensitivity").$type<Sensitivity>(),
+    // Stamp of the classifier that produced `sensitivity`. Lets the sweep
+    // re-classify saves when the model is upgraded.
+    sensitivityModel: text("sensitivity_model"),
     videoNotes: text("video_notes", { mode: "json" })
       .$type<VideoNote[]>()
       .notNull()
@@ -137,6 +148,7 @@ export const saves = sqliteTable(
     dimsIdx: index("saves_dims_idx").on(t.width, t.height),
     deletedIdx: index("saves_deleted_idx").on(t.deletedAt),
     statusIdx: index("saves_status_idx").on(t.status),
+    sensitivityIdx: index("saves_sensitivity_idx").on(t.sensitivity),
   }),
 );
 

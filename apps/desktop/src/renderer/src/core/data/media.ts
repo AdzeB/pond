@@ -18,6 +18,15 @@ const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
   TWEET_SCREENSHOT_DARK_KIND,
 ]);
 
+// Standalone screenshots of quoted tweets, suffixed with their 1-based
+// depth in the quote chain (see capture-tweet.ts `quoteScreenshotKind`).
+// e.g. `tweet_screenshot_quote1_light`.
+const QUOTE_SCREENSHOT_KIND = /^tweet_screenshot_quote(\d+)_(light|dark)$/;
+
+function isQuoteScreenshotKind(kind: string): boolean {
+  return QUOTE_SCREENSHOT_KIND.test(kind);
+}
+
 export interface MediaUnit {
   key: string;
   url: string;
@@ -43,13 +52,21 @@ export function buildMediaUnits(
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
   // Tweet screenshots are a thumbnail asset, not a carousel slide; drop
-  // them when there's real extracted media to walk. Avatars are author
-  // metadata and never belong in the carousel.
+  // the main ones when there's real extracted media to walk. Quote
+  // screenshots are handled separately (appended after extracted media).
+  // Avatars are author metadata and never belong in the carousel.
   const files = (save.files ?? []).filter(
-    (f) => f.kind !== "avatar" && !TWEET_SCREENSHOT_KINDS.has(f.kind),
+    (f) =>
+      f.kind !== "avatar" &&
+      !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
+      !isQuoteScreenshotKind(f.kind),
   );
   const posters = files.filter((f) => f.kind === "poster");
   const slides = files.filter((f) => f.kind !== "poster");
+
+  // Standalone screenshots of each quoted tweet, theme-matched and in
+  // chain order, appended after the parent's extracted media.
+  const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
   const videos = slides.filter(isVideoFile);
   const images = slides.filter((f) => !isVideoFile(f));
@@ -58,7 +75,7 @@ export function buildMediaUnits(
   // one video plus optionally one cover image acting as the poster: emit
   // a single unit and use the cover as the poster instead of a standalone
   // slide. Anything else is a carousel and gets walked in declared order.
-  if (videos.length === 1 && images.length <= 1) {
+  if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
     const video = videos[0];
     if (!video) return [];
     const poster = posters[0] ?? images[0];
@@ -92,6 +109,7 @@ export function buildMediaUnits(
       });
     }
   }
+  units.push(...quoteUnits);
   if (units.length > 0) return units;
 
   // Twitter saves with no extracted media (text-only tweets, or tweets
@@ -107,7 +125,47 @@ export function buildMediaUnits(
         url: buildPondUrl(save.id, screenshot),
         isVideo: false,
       },
+      ...quoteUnits,
     ];
+  }
+  return units;
+}
+
+// buildQuoteScreenshotUnits: one slide per quoted tweet in the chain,
+// picking the theme-matched variant (falling back to the other theme),
+// ordered by depth.
+function buildQuoteScreenshotUnits(
+  save: Save,
+  theme: ResolvedTheme | undefined,
+): MediaUnit[] {
+  if (save.source !== "twitter") return [];
+  const files = save.files ?? [];
+  const resolved = theme ?? resolveCurrentTheme();
+
+  const byDepth = new Map<number, { light?: SaveFile; dark?: SaveFile }>();
+  for (const f of files) {
+    const m = QUOTE_SCREENSHOT_KIND.exec(f.kind);
+    if (!m) continue;
+    const depth = Number.parseInt(m[1] ?? "", 10);
+    if (!Number.isFinite(depth)) continue;
+    const slot = byDepth.get(depth) ?? {};
+    if (m[2] === "light") slot.light = f;
+    else slot.dark = f;
+    byDepth.set(depth, slot);
+  }
+
+  const units: MediaUnit[] = [];
+  for (const depth of Array.from(byDepth.keys()).sort((a, b) => a - b)) {
+    const slot = byDepth.get(depth);
+    if (!slot) continue;
+    const preferred = resolved === "light" ? slot.light : slot.dark;
+    const file = preferred ?? slot.light ?? slot.dark;
+    if (!file) continue;
+    units.push({
+      key: file.path,
+      url: buildPondUrl(save.id, file),
+      isVideo: false,
+    });
   }
   return units;
 }

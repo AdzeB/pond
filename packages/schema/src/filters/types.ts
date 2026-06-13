@@ -148,6 +148,7 @@ export type FieldId =
   | "creator"
   | "note"
   | "color"
+  | "sensitivity"
   | "savedAt"
   | "publishedAt"
   | "modifiedAt";

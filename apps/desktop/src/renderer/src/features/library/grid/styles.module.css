@@ -140,7 +140,7 @@
 
 .note {
   position: absolute;
-  top: 6px;
+  bottom: 6px;
   left: 6px;
   display: inline-flex;
   align-items: center;
@@ -156,6 +156,61 @@
 
 :global(html[data-reduce-transparency="true"]) .note {
   background: rgb(0, 0, 0);
+}
+
+.type {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+:global(html[data-reduce-transparency="true"]) .type {
+  background: rgb(0, 0, 0);
+  backdrop-filter: none;
+}
+
+.source {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 9px;
+  backdrop-filter: blur(6px);
+}
+
+:global(html[data-reduce-transparency="true"]) .source {
+  background: rgb(0, 0, 0);
+  backdrop-filter: none;
+}
+
+.source svg {
+  width: 11px;
+  height: 11px;
 }
 
 .count {

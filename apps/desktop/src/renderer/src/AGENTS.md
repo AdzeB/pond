@@ -16,7 +16,7 @@ renderer/src/
                  search-schemas, use-stable-array, zoom
   features/
     library/     grid/list/justified/waterfall views, layout-switcher, save-card, toolbar,
-                 filter-bar, inspector, saved-views, card-thumb, sidebar, view menus, plus its
+                 filter-panel, inspector, saved-views, card-thumb, sidebar, view menus, plus its
                  own stores/ hooks/ lib/
     sources/     sources registry, sidebar-sources, source menus, customize-sources dialog,
                  visibility select

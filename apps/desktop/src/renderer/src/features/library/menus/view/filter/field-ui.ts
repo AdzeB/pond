@@ -1,5 +1,6 @@
 import {
   IconCalendarFill18 as Calendar,
+  IconEyeSlashFill18 as EyeSlash,
   IconFileFill18 as FileIcon,
   IconLinkFill18 as LinkIcon,
   IconColorPaletteFill18 as Palette,
@@ -29,6 +30,7 @@ export const FIELD_UI: Record<FieldId, FieldUi> = {
   creator: { icon: User },
   note: { icon: Pencil },
   color: { icon: Palette },
+  sensitivity: { icon: EyeSlash },
   savedAt: { icon: Upload },
   publishedAt: { icon: Calendar },
   modifiedAt: { icon: Calendar },

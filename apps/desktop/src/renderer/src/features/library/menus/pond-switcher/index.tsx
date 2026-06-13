@@ -9,7 +9,14 @@ import { initials } from "@/core/lib/initials";
 import { usePonds } from "@/features/library/hooks/use-ponds";
 import styles from "./styles.module.css";
 
-export function PondSwitcher() {
+interface PondSwitcherProps {
+  // `compact` renders an icon-only avatar trigger (used by the bottom dock)
+  // instead of the full-width name + chevron row (used in larger surfaces).
+  compact?: boolean;
+  className?: string;
+}
+
+export function PondSwitcher({ compact, className }: PondSwitcherProps) {
   const { ponds, active, switching, switchTo, refresh } = usePonds();
 
   return (
@@ -18,11 +25,31 @@ export function PondSwitcher() {
         if (open) refresh();
       }}
     >
-      <Menu.Trigger variant="ghost" className={styles.switcher}>
-        <span className={styles.logo} />
-        {active?.name ?? "Pond"}
-        <ChevronDown style={{ marginLeft: "auto" }} />
-      </Menu.Trigger>
+      {compact ? (
+        <Menu.Trigger
+          render={
+            <button
+              type="button"
+              className={className}
+              aria-label={`Switch pond (${active?.name ?? "Pond"})`}
+            />
+          }
+        >
+          <span
+            className={styles.avatar}
+            data-emoji={active?.avatar ? true : undefined}
+            aria-hidden
+          >
+            {active?.avatar ?? (active ? initials(active.name) : "")}
+          </span>
+        </Menu.Trigger>
+      ) : (
+        <Menu.Trigger variant="ghost" className={styles.switcher}>
+          <span className={styles.logo} />
+          {active?.name ?? "Pond"}
+          <ChevronDown style={{ marginLeft: "auto" }} />
+        </Menu.Trigger>
+      )}
       <Menu.Portal>
         <Menu.Positioner sideOffset={8}>
           <Menu.Popup>

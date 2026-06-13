@@ -284,10 +284,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
       label: "View",
       submenu: [
         {
-          label: "Toggle Sidebar",
-          click: sendMenuAction("view.sidebar.toggle"),
-        },
-        {
           label: "Toggle Details",
           click: sendMenuAction("view.inspector.toggle"),
         },

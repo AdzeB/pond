@@ -21,17 +21,12 @@
   position: relative;
   width: 100%;
   height: 100%;
-  contain: paint;
-  /* `overflow: hidden` alone leaks ~1px of the neighbouring slide on the
-     right edge: Embla translates the strip with sub-pixel offsets and the
-     compositor rounds outward. `contain: paint` enforces a hard paint
-     boundary so the slide can't bleed past the viewport's content box. */
-  overflow: clip;
 }
 
 .container {
   display: flex;
   height: 100%;
+  overflow: visible;
   touch-action: pan-y pinch-zoom;
   will-change: transform;
 }
@@ -44,6 +39,7 @@
   justify-content: center;
   min-width: 0;
   height: 100%;
+  overflow: visible;
 }
 
 .nav {
@@ -68,6 +64,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  overflow: visible;
   background: transparent;
 }
 
@@ -75,7 +72,6 @@
    player alike) and the thumbnail strip until the viewer reveals it. */
 .carousel[data-blurred="true"] .viewport {
   filter: blur(40px);
-  transform: scale(1.1);
 }
 
 .carousel[data-blurred="true"] .thumbnail .image {

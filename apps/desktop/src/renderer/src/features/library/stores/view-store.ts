@@ -1,5 +1,6 @@
+import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
-import { EMPTY_QUERY, isPredicate } from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { SortDir } from "@/core/data/use-filtered-saves";
@@ -11,7 +12,19 @@ import {
   readViewPref,
   writeViewPref,
 } from "@/features/library/lib/view-prefs";
-import { predicateIsActive } from "@/features/library/menus/view/filter/helpers";
+import {
+  defaultPredicateFor,
+  predicateIsActive,
+} from "@/features/library/menus/view/filter/helpers";
+
+export type Combinator = "and" | "or";
+
+// The committed query is derived from the editable draft rows: only active
+// predicates (those with a usable value) participate in filtering and get
+// persisted into saved views. Inactive rows stay in the panel mid-edit.
+function deriveQuery(rows: Predicate[], combinator: Combinator): Query {
+  return { combinator, rules: rows.filter(predicateIsActive) };
+}
 
 // Single source of truth for the library's view state. Lives in a store
 // rather than the URL: this is a desktop app, so shareable URLs buy us
@@ -27,8 +40,11 @@ function applyZoomVar(zoom: number): void {
 
 export interface ViewStoreState {
   q: string;
+  // Ordered draft conditions, including incomplete rows still being edited.
+  // Allows duplicate fields. `query` below is the derived, committed view.
+  rows: Predicate[];
+  combinator: Combinator;
   query: Query;
-  pendingPredicates: Predicate[];
   layout: LayoutValue;
   // Broad string: the list view sorts by columns (tags, dimensions, …)
   // the grid filter doesn't model. Grid consumers narrow before use.
@@ -59,8 +75,9 @@ function readInitialZoom(): number {
 
 const store = new Store<ViewStoreState>({
   q: "",
+  rows: [],
+  combinator: "and",
   query: EMPTY_QUERY,
-  pendingPredicates: [],
   layout: readInitialLayout(),
   sortKey: readViewPref("sort") ?? "savedAt",
   sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
@@ -100,11 +117,15 @@ export function setSearchText(q: string): void {
 }
 
 export function setQuery(query: Query): void {
-  store.setState((s) => ({ ...s, query }));
+  store.setState((s) => {
+    const rows = query.rules.filter((c): c is Predicate => !("rules" in c));
+    const combinator: Combinator = query.combinator === "or" ? "or" : "and";
+    return { ...s, rows, combinator, query: deriveQuery(rows, combinator) };
+  });
 }
 
 export function resetFilters(): void {
-  store.setState((s) => ({ ...s, pendingPredicates: [], query: EMPTY_QUERY }));
+  store.setState((s) => ({ ...s, rows: [], query: EMPTY_QUERY }));
 }
 
 // Apply a saved view: load its query + sort (+ layout) and mark it active.
@@ -120,10 +141,13 @@ export function applySavedView(view: {
   if (layout) writeViewPref("view", layout);
   writeViewPref("sort", view.sortKey);
   writeViewPref("dir", view.sortDir);
+  const rows = view.query.rules.filter((c): c is Predicate => !("rules" in c));
+  const combinator: Combinator = view.query.combinator === "or" ? "or" : "and";
   store.setState((s) => ({
     ...s,
-    query: view.query,
-    pendingPredicates: [],
+    rows,
+    combinator,
+    query: deriveQuery(rows, combinator),
     sortKey: view.sortKey,
     sortDir: view.sortDir,
     layout: layout ?? s.layout,
@@ -137,86 +161,58 @@ export function clearActiveView(): void {
   );
 }
 
-// Add a draft filter for a field. No-op if that field already has a filter
-// (active or pending) — the bar keeps one predicate per field. The draft
-// starts inactive and lives in `pendingPredicates` so its chip stays visible
-// while the user picks a value.
-export function addPredicate(draft: Predicate): void {
+// Append a fresh draft condition. Defaults to the first available field; the
+// user changes the field/operator/value from the panel. Duplicate fields are
+// allowed, so this never no-ops.
+export function addCondition(field?: FieldId): void {
+  const next = field ?? FIELD_IDS[0];
+  if (!next) return;
   store.setState((s) => {
-    const exists =
-      s.query.rules.some((c) => isPredicate(c) && c.field === draft.field) ||
-      s.pendingPredicates.some((p) => p.field === draft.field);
-    if (exists) return s;
-    return { ...s, pendingPredicates: [...s.pendingPredicates, draft] };
+    const rows = [...s.rows, defaultPredicateFor(next)];
+    return { ...s, rows, query: deriveQuery(rows, s.combinator) };
   });
 }
 
-export function setFieldPredicate(
-  field: FieldId,
-  next: Predicate | null,
-): void {
+// Replace (or remove, when `next` is null) the row at `idx`.
+export function updateRow(idx: number, next: Predicate | null): void {
   store.setState((s) => {
-    const pendingPredicates = s.pendingPredicates.filter(
-      (p) => p.field !== field,
-    );
-    const rules = s.query.rules.filter(
-      (c) => !isPredicate(c) || c.field !== field,
-    );
-    if (next) {
-      // Active predicates commit to the query; inactive ones (e.g. an empty
-      // value mid-edit) park as pending so the chip doesn't disappear.
-      if (predicateIsActive(next)) rules.push(next);
-      else pendingPredicates.push(next);
-    }
-    return { ...s, pendingPredicates, query: { combinator: "and", rules } };
+    if (idx < 0 || idx >= s.rows.length) return s;
+    const rows = [...s.rows];
+    if (next === null) rows.splice(idx, 1);
+    else rows[idx] = next;
+    return { ...s, rows, query: deriveQuery(rows, s.combinator) };
   });
 }
 
-export function updatePredicate(idx: number, next: Predicate | null): void {
+export function removeRow(idx: number): void {
+  updateRow(idx, null);
+}
+
+export function reorderRows(from: number, to: number): void {
   store.setState((s) => {
-    const committedCount = s.query.rules.length;
-
-    if (idx < committedCount) {
-      const rules = [...s.query.rules];
-      if (next === null) {
-        rules.splice(idx, 1);
-        return { ...s, query: { combinator: "and", rules } };
-      }
-      if (predicateIsActive(next)) {
-        rules[idx] = next;
-        return { ...s, query: { combinator: "and", rules } };
-      }
-      // Newly-inactive: drop from the query and park as pending so the
-      // row stays visible while the user re-picks a value.
-      rules.splice(idx, 1);
-      return {
-        ...s,
-        query: { combinator: "and", rules },
-        pendingPredicates: [next, ...s.pendingPredicates],
-      };
+    if (
+      from === to ||
+      from < 0 ||
+      to < 0 ||
+      from >= s.rows.length ||
+      to >= s.rows.length
+    ) {
+      return s;
     }
-
-    const pendingIdx = idx - committedCount;
-    if (pendingIdx < 0 || pendingIdx >= s.pendingPredicates.length) return s;
-
-    if (next === null) {
-      const out = [...s.pendingPredicates];
-      out.splice(pendingIdx, 1);
-      return { ...s, pendingPredicates: out };
-    }
-    if (predicateIsActive(next)) {
-      const out = [...s.pendingPredicates];
-      out.splice(pendingIdx, 1);
-      return {
-        ...s,
-        pendingPredicates: out,
-        query: { combinator: "and", rules: [...s.query.rules, next] },
-      };
-    }
-    const out = [...s.pendingPredicates];
-    out[pendingIdx] = next;
-    return { ...s, pendingPredicates: out };
+    const rows = [...s.rows];
+    const [moved] = rows.splice(from, 1);
+    if (!moved) return s;
+    rows.splice(to, 0, moved);
+    return { ...s, rows, query: deriveQuery(rows, s.combinator) };
   });
+}
+
+export function setCombinator(combinator: Combinator): void {
+  store.setState((s) =>
+    s.combinator === combinator
+      ? s
+      : { ...s, combinator, query: deriveQuery(s.rows, combinator) },
+  );
 }
 
 export function setLayout(layout: LayoutValue): void {
@@ -261,7 +257,8 @@ export function restoreDefaults(): void {
   applyZoomVar(ZOOM_DEFAULT);
   store.setState((s) => ({
     ...s,
-    pendingPredicates: [],
+    rows: [],
+    combinator: "and",
     query: EMPTY_QUERY,
     layout: "waterfall",
     sortKey: "savedAt",

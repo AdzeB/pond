@@ -26,17 +26,15 @@ export function useCardActions(
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  // Opening a save highlights it in the grid and shows it in the reusable
-  // viewer window (which replaced the side drawer). The window navigates in
-  // place rather than spawning a new window per save.
+  // Opening a save highlights it in the grid and shows it in the inline detail
+  // modal (`SaveModal`), which renders whenever a save is selected. Stepping the
+  // selection navigates the modal in place.
   const select = useCallback((id: string) => {
     primarySelection.set(id);
-    void window.pond.openSaveWindow(id);
   }, []);
 
   const focus = useCallback((id: string) => {
     primarySelection.set(id);
-    void window.pond.openSaveWindow(id);
   }, []);
 
   const handleCardClick = useCallback(

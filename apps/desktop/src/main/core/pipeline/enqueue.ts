@@ -21,10 +21,13 @@ import { kickReconciler } from "./reconciler";
 import { maxAttemptsFor, planOps } from "./specs";
 import { sourceIdFromUrl } from "./url";
 import {
+  CAPTURE_TWEET_VERSION,
+  readCaptureTweetVersion,
   runCaptureTweet,
   TWEET_SCREENSHOT_DARK_KIND,
   TWEET_SCREENSHOT_LIGHT_KIND,
 } from "./workers/capture-tweet";
+import { runFetchBlobs } from "./workers/fetch-blobs";
 
 export interface EnqueueResult {
   id: string;
@@ -237,6 +240,13 @@ export async function backfillTweetScreenshots(): Promise<{
     // Saves mid-ingest already have a `capture_tweet` task the reconciler
     // owns; leave them to the pipeline so we don't double-lease windows.
     if (row.status === "ingesting") continue;
+    // Out-of-date saves are recaptured even when both main variants
+    // exist, so a version bump regenerates them with the latest
+    // trim/padding and backfills quote screenshots + quoted media.
+    if (readCaptureTweetVersion(row.rawJson) < CAPTURE_TWEET_VERSION) {
+      needCapture.push(row.id);
+      continue;
+    }
     const files = (row.files ?? []) as SaveFile[];
     const hasLight = files.some((f) => f.kind === TWEET_SCREENSHOT_LIGHT_KIND);
     const hasDark = files.some((f) => f.kind === TWEET_SCREENSHOT_DARK_KIND);
@@ -266,6 +276,19 @@ export async function backfillTweetScreenshots(): Promise<{
       try {
         const result = await runCaptureTweet(saveId);
         captured += result.captured;
+        // The backfill runs out-of-band (no pipeline), so quoted media
+        // merged into capture.media won't be downloaded unless we kick
+        // fetch_blobs ourselves. The normal ingest path runs fetch_blobs
+        // right after capture_tweet, so it needs nothing extra.
+        if (result.mediaAdded) {
+          await runFetchBlobs(saveId).catch((err) =>
+            log.warn(
+              "[pond pipeline:capture-tweet] backfill fetch-blobs failed",
+              saveId,
+              err,
+            ),
+          );
+        }
         if (result.captured === 0 && result.authWall) {
           authWallStreak += 1;
           if (authWallStreak >= SCREENSHOT_AUTH_WALL_ABORT) {

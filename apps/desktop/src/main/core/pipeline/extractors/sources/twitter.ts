@@ -56,6 +56,22 @@ export class TwitterTweetExtractor implements Extractor {
       "bookmarks",
     ]);
 
+    // The DOM only renders one inline quote level. Record it so the chain
+    // is visible in rawJson; the screenshot walker discovers deeper
+    // levels live by navigating to each quoted tweet.
+    const quotedRaw = (meta.quotedTweet ?? {}) as Record<string, unknown>;
+    const quotedTweets =
+      typeof quotedRaw.tweetId === "string" && typeof quotedRaw.url === "string"
+        ? [{ tweetId: quotedRaw.tweetId, url: quotedRaw.url }]
+        : [];
+
+    const extras: Record<string, unknown> = {
+      ...(typeof meta.conversationId === "string"
+        ? { conversationId: meta.conversationId }
+        : {}),
+      ...(quotedTweets.length > 0 ? { quotedTweets } : {}),
+    };
+
     return {
       id: tweetId,
       source: "twitter",
@@ -69,9 +85,7 @@ export class TwitterTweetExtractor implements Extractor {
       ...(typeof result.lang === "string" ? { lang: result.lang } : {}),
       media,
       ...(Object.keys(metrics).length > 0 ? { metrics } : {}),
-      ...(typeof meta.conversationId === "string"
-        ? { extras: { conversationId: meta.conversationId } }
-        : {}),
+      ...(Object.keys(extras).length > 0 ? { extras } : {}),
     };
   }
 }

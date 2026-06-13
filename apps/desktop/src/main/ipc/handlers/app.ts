@@ -1,15 +1,10 @@
 import { userInfo } from "node:os";
 import type { Transaction } from "@pond/schema/tx";
-import { app, BrowserWindow, shell } from "electron";
+import { app, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
 import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
-import {
-  getNavOrder,
-  openSaveWindow,
-  setNavOrder,
-} from "../../lib/save-window";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
@@ -89,22 +84,4 @@ export function registerAppHandlers(): void {
     }
     return { ok: true as const };
   });
-
-  safeHandle(IPC.openSaveWindow, async (event, id: string) => {
-    try {
-      const opener = BrowserWindow.fromWebContents(event.sender);
-      await openSaveWindow(String(id), opener);
-      return { ok: true as const };
-    } catch (err) {
-      log.warn("[pond ipc] openSaveWindow failed", err);
-      return { ok: false as const, reason: "internal_error" as const };
-    }
-  });
-
-  safeHandle(IPC.publishNavOrder, (_event, ids: string[]) => {
-    setNavOrder(Array.isArray(ids) ? ids.map(String) : []);
-    return { ok: true as const };
-  });
-
-  safeHandle(IPC.getViewerContext, () => ({ ids: getNavOrder() }));
 }

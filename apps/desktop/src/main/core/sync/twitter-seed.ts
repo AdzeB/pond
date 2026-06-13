@@ -1,6 +1,17 @@
 import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
-import type { BookmarksEntry } from "../refresh/harvest/twitter";
+import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
+
+// How far down a quote-of-a-quote chain we follow. The GraphQL response
+// nests `quoted_status_result` recursively; we cap to keep media merges
+// and the screenshot walker bounded (see capture-tweet.ts) and to avoid
+// hammering X for pathological chains.
+const QUOTE_DEPTH_CAP = 3;
+
+export interface QuotedTweetRef {
+  tweetId: string;
+  url: string;
+}
 
 export interface SaveSeed {
   rawJson: RawJson;
@@ -31,11 +42,31 @@ export function buildTwitterBookmarkSeed(
   const name = rich.author.name || handle || null;
   const avatarUrl = rich.author.avatarUrl ?? null;
 
-  const media: CaptureMedia[] = rich.media.map((m) => ({
-    url: m.url,
-    type: m.type === "video" ? "video" : "image",
-    ...(m.poster ? { posterUrl: m.poster } : {}),
-  }));
+  const media: CaptureMedia[] = [];
+  const seenMedia = new Set<string>();
+  const pushMedia = (list: RichTweet["media"]): void => {
+    for (const m of list) {
+      if (seenMedia.has(m.url)) continue;
+      seenMedia.add(m.url);
+      media.push({
+        url: m.url,
+        type: m.type === "video" ? "video" : "image",
+        ...(m.poster ? { posterUrl: m.poster } : {}),
+      });
+    }
+  };
+  pushMedia(rich.media);
+
+  // Walk the quote chain, merging each quoted tweet's media into the
+  // parent save's carousel and recording the chain so the screenshot
+  // walker (capture-tweet.ts) has a starting list.
+  const quotedTweets: QuotedTweetRef[] = [];
+  let quoted = rich.quoted;
+  for (let depth = 0; quoted && depth < QUOTE_DEPTH_CAP; depth += 1) {
+    quotedTweets.push({ tweetId: quoted.tweetId, url: quoted.url });
+    pushMedia(quoted.media);
+    quoted = quoted.quoted;
+  }
 
   const publishedAt = readLegacyCreatedAt(rich.raw);
 
@@ -62,6 +93,7 @@ export function buildTwitterBookmarkSeed(
     ...(rich.metrics && Object.keys(rich.metrics).length > 0
       ? { metrics: { ...rich.metrics } }
       : {}),
+    ...(quotedTweets.length > 0 ? { extras: { quotedTweets } } : {}),
   };
 
   const rawJson: RawJson = {

@@ -1,5 +1,8 @@
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
+import sharp from "sharp";
+import { adapt, buildExpression } from "../harvest/twitter";
+import type { ScrapedHarvest } from "../harvest/types";
 import { NAV_TIMEOUT_MS } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
@@ -12,13 +15,27 @@ export interface TweetScreenshotArgs {
   // pre-dual-theme behaviour is preserved for any caller that hasn't
   // been updated.
   colorScheme?: "light" | "dark";
+  // When true, also harvest the tweet's media off the loaded page and
+  // return it. Used by the quote walker to pick up media from quoted
+  // tweets deeper in the chain without a second navigation.
+  harvestMedia?: boolean;
 }
 
 export interface TweetScreenshotResult {
   ok: boolean;
   png?: { bytes: Buffer; width: number; height: number };
   reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
+  // When the captured tweet quotes another tweet, the quoted tweet's
+  // canonical URL, so the caller can walk the quote chain.
+  quotedUrl?: string;
+  // Media harvested off the page when `harvestMedia` was requested.
+  media?: ScrapedHarvest["mediaUrls"];
 }
+
+// Uniform breathing room added around the captured card, in CSS pixels.
+// Scaled by the capture device factor below so the visual padding is the
+// same regardless of how sharp the PNG is rendered.
+const SCREENSHOT_PADDING_CSS = 24;
 
 const SCREENSHOT_ARTICLE_TIMEOUT_MS = 12_000;
 
@@ -78,9 +95,14 @@ export async function screenshotTweet(
     // scheme so any rounding in the article rect doesn't leak the host
     // window's default color through the screenshot's edges.
     const htmlBg = colorScheme === "light" ? "#fff" : "#000";
+    // Belt-and-braces alongside the action-bar rect trim below: hide the
+    // "View quotes" link and strip borders on the focal article so a
+    // trailing hairline divider can't leak into the trimmed edge.
     await lease.win.webContents
       .insertCSS(
         `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
+         a[href$="/quotes"], a[href$="/retweets/with_comments"] { display: none !important; }
+         article { border: 0 !important; }
          html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`,
       )
       .catch(() => {});
@@ -116,7 +138,7 @@ export async function screenshotTweet(
     }
 
     try {
-      return await withDeviceScaleFactor(
+      const shot = await withDeviceScaleFactor(
         lease.win,
         CAPTURE_DEVICE_SCALE_FACTOR,
         async () => {
@@ -126,18 +148,30 @@ export async function screenshotTweet(
             width: Math.max(1, Math.ceil(rect.width)),
             height: Math.max(1, Math.ceil(rect.height)),
           });
-          const bytes = image.toPNG();
+          const rawBytes = image.toPNG();
           const size = image.getSize();
-          if (bytes.byteLength === 0 || size.width === 0 || size.height === 0) {
+          if (
+            rawBytes.byteLength === 0 ||
+            size.width === 0 ||
+            size.height === 0
+          ) {
             log.warn("[pond screenshot:tweet] empty capture", args.url);
             return { ok: false, reason: "no_article" } as const;
           }
+          const padded = await padScreenshot(rawBytes, size, colorScheme);
           return {
             ok: true,
-            png: { bytes, width: size.width, height: size.height },
+            png: padded,
+            ...(rect.quotedUrl ? { quotedUrl: rect.quotedUrl } : {}),
           } as const;
         },
       );
+
+      if (shot.ok && args.harvestMedia) {
+        const media = await harvestPageMedia(lease.win, args.sourceId);
+        if (media && media.length > 0) return { ...shot, media };
+      }
+      return shot;
     } finally {
       if (resized) {
         try {
@@ -153,6 +187,53 @@ export async function screenshotTweet(
   } finally {
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     lease.release();
+  }
+}
+
+// harvestPageMedia: reuse the in-page tweet harvester to pull media off
+// the already-loaded screenshot page. Lets the quote walker collect a
+// quoted tweet's media without a second navigation. Best-effort: returns
+// undefined on any failure so a media miss never blocks the screenshot.
+async function harvestPageMedia(
+  win: BrowserWindow,
+  tweetId: string,
+): Promise<ScrapedHarvest["mediaUrls"]> {
+  try {
+    const raw = await Promise.race([
+      win.webContents.executeJavaScript(buildExpression(tweetId), true),
+      sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(() => null),
+    ]);
+    const harvested = adapt(raw);
+    return harvested?.mediaUrls;
+  } catch (err) {
+    log.warn("[pond screenshot:tweet] media harvest failed", err);
+    return undefined;
+  }
+}
+
+// padScreenshot: wrap the captured card in a uniform margin filled with
+// the scheme background so the screenshot has breathing room and any
+// rounding at the trimmed edges blends in. The capture is rendered at
+// CAPTURE_DEVICE_SCALE_FACTOR, so the CSS padding is scaled to match.
+async function padScreenshot(
+  bytes: Buffer,
+  raw: { width: number; height: number },
+  scheme: "light" | "dark",
+): Promise<{ bytes: Buffer; width: number; height: number }> {
+  const pad = SCREENSHOT_PADDING_CSS * CAPTURE_DEVICE_SCALE_FACTOR;
+  const background =
+    scheme === "light"
+      ? { r: 255, g: 255, b: 255, alpha: 1 }
+      : { r: 0, g: 0, b: 0, alpha: 1 };
+  try {
+    const out = await sharp(bytes)
+      .extend({ top: pad, bottom: pad, left: pad, right: pad, background })
+      .png()
+      .toBuffer({ resolveWithObject: true });
+    return { bytes: out.data, width: out.info.width, height: out.info.height };
+  } catch (err) {
+    log.warn("[pond screenshot:tweet] padding failed, using raw", err);
+    return { bytes, width: raw.width, height: raw.height };
   }
 }
 
@@ -248,6 +329,7 @@ interface ArticleRect {
   y: number;
   width: number;
   height: number;
+  quotedUrl?: string;
 }
 
 async function readArticleRect(
@@ -273,7 +355,13 @@ async function readArticleRect(
     return null;
   }
   if (r.width < 8 || r.height < 8) return null;
-  return r as ArticleRect;
+  return {
+    x: r.x,
+    y: r.y,
+    width: r.width,
+    height: r.height,
+    ...(typeof r.quotedUrl === "string" ? { quotedUrl: r.quotedUrl } : {}),
+  };
 }
 
 function buildArticleRectExpression(tweetId: string): string {
@@ -305,7 +393,70 @@ function buildArticleRectExpression(tweetId: string): string {
       await new Promise(r => setTimeout(r, 150));
 
       const r = article.getBoundingClientRect();
-      return { x: r.left, y: r.top, width: r.width, height: r.height };
+
+      // The raw article box includes the conversation thread spine / left
+      // gutter and the footer chrome below the action bar ("Relevant"
+      // reply-sort, "View quotes"). Derive a tight box from the tweet's
+      // actual content instead: left/top/right from the content union and
+      // bottom from the action bar. In-between rows (timestamp, "N Views")
+      // fall inside the rectangle automatically.
+      const inner = Array.from(article.querySelectorAll('article'))
+        .find((a) => a !== article);
+      const focal = (el) => !!el && el.closest('article') === article;
+      const rects = [];
+      const add = (el) => { if (focal(el)) rects.push(el.getBoundingClientRect()); };
+      add(article.querySelector('[data-testid^="UserAvatar-Container"]'));
+      add(article.querySelector('[data-testid="User-Name"]'));
+      for (const sel of ['[data-testid="tweetText"]','[data-testid="tweetPhoto"]','[data-testid="card.wrapper"]','[data-testid="videoPlayer"]','[data-testid="videoComponent"]','video']) {
+        for (const el of article.querySelectorAll(sel)) add(el);
+      }
+      if (inner) rects.push(inner.getBoundingClientRect());
+
+      let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+      if (rects.length) {
+        left = Math.max(r.left, Math.min(...rects.map((b) => b.left)));
+        top = Math.max(r.top, Math.min(...rects.map((b) => b.top)));
+        right = Math.min(r.right, Math.max(...rects.map((b) => b.right)));
+      }
+
+      // Bottom: prefer the action-bar buttons, then the [role="group"]
+      // that wraps them, then the content union, finally the full article
+      // rect. Each fallback is content-safe.
+      let actionBottom = 0;
+      for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
+        if (focal(b)) actionBottom = Math.max(actionBottom, b.getBoundingClientRect().bottom);
+      }
+      if (actionBottom === 0) {
+        const group = Array.from(article.querySelectorAll('[role="group"]'))
+          .filter((g) => g.closest('article') === article)
+          .find((g) => g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"]'));
+        if (group) actionBottom = group.getBoundingClientRect().bottom;
+      }
+      if (actionBottom > top && actionBottom <= r.bottom) {
+        bottom = actionBottom + 6;
+      } else if (rects.length) {
+        bottom = Math.max(...rects.map((b) => b.bottom));
+      }
+
+      // Discover the quoted tweet (the inline nested <article>) so the
+      // caller can walk the quote chain by navigating to it.
+      let quotedUrl;
+      try {
+        const link = inner && inner.querySelector('a[href*="/status/"]');
+        if (link) {
+          const u = new URL(link.href, 'https://x.com');
+          const m = u.pathname.match(/\\/status\\/(\\d+)/);
+          if (m) quotedUrl = 'https://x.com' + u.pathname;
+        }
+      } catch (_) {}
+
+      return {
+        x: left,
+        y: top,
+        width: Math.max(8, right - left),
+        height: Math.max(8, bottom - top),
+        ...(quotedUrl ? { quotedUrl } : {}),
+      };
     } catch (_) {
       return null;
     }

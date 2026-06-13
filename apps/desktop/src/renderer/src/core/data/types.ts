@@ -1,4 +1,10 @@
-import type { Op, SaveStatus, TaskStatus, VideoNote } from "@pond/schema/db";
+import type {
+  Op,
+  SaveStatus,
+  Sensitivity,
+  TaskStatus,
+  VideoNote,
+} from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 
 export interface SaveFile {
@@ -38,6 +44,8 @@ export interface Save {
   height?: number | null;
   fileSize?: number | null;
   phash?: string | null;
+  sensitivity?: Sensitivity | null;
+  sensitivityModel?: string | null;
   videoNotes?: VideoNote[];
   dominantColors?: string[];
   tags: string[];

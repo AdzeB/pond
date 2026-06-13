@@ -126,6 +126,24 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
+  // Persist an on-device NSFW verdict computed in the renderer. A system
+  // write (no undo), DB-only column, emits a sync action so the pool and
+  // other devices pick it up.
+  async "saves.setSensitivity"(params) {
+    const id = String(params.id ?? "");
+    const raw = params.sensitivity;
+    const sensitivity = raw === "safe" || raw === "sensitive" ? raw : null;
+    const sensitivityModel =
+      params.sensitivityModel != null ? String(params.sensitivityModel) : null;
+    if (!id) return { ok: false };
+    await persistSave(
+      id,
+      { sensitivity, sensitivityModel },
+      { actorReason: "nsfw:classify" },
+    );
+    return { ok: true };
+  },
+
   async "saves.copyImage"(params) {
     const id = String(params.id ?? "");
     const fileIndex = Number(params.fileIndex ?? 0);
