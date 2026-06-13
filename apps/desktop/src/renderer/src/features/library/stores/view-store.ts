@@ -92,6 +92,14 @@ export function useViewStore(): ViewStoreState {
   return useStore(store, (s) => s);
 }
 
+export function useFilterQuery(): Query {
+  return useStore(store, (s) => s.query);
+}
+
+export function useLayout(): LayoutValue {
+  return useStore(store, (s) => s.layout);
+}
+
 export function useSearchText(): string {
   return useStore(store, (s) => s.q);
 }

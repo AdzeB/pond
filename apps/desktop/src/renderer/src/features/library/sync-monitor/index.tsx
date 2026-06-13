@@ -16,7 +16,8 @@ import {
   type SyncSourceStatus,
   type SyncState,
   syncMonitor,
-  useSyncMonitor,
+  useSyncBySource,
+  useSyncOpen,
 } from "./store";
 import styles from "./styles.module.css";
 
@@ -62,16 +63,36 @@ function useMeasuredHeight<T extends HTMLElement>() {
   return [ref, height] as const;
 }
 
+// Subscribes only to `open`. The data-heavy body (which re-renders on every
+// live sync push) lives in `SyncMonitorBody`, which the dialog portal mounts
+// only while open — so background sync activity never re-renders this subtree
+// when the monitor is closed.
 export function SyncMonitor() {
-  const { open, bySource } = useSyncMonitor();
+  const open = useSyncOpen();
+  return (
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) syncMonitor.close();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <SyncMonitorBody />
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function SyncMonitorBody() {
+  const bySource = useSyncBySource();
   const popupRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [bodyRef, bodyHeight] = useMeasuredHeight<HTMLDivElement>();
 
-  // Seed each source with a one-shot snapshot whenever the modal opens, so the
-  // list isn't blank before the next live push arrives.
+  // Seed each source with a one-shot snapshot on open (this body only mounts
+  // while open), so the list isn't blank before the next live push arrives.
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     for (const source of SYNCABLE) {
       void (async () => {
@@ -95,15 +116,14 @@ export function SyncMonitor() {
     return () => {
       cancelled = true;
     };
-  }, [open]);
+  }, []);
 
   // Keep relative timestamps ("3 days ago") honest while the dialog sits open.
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (!open) return;
     const id = setInterval(() => setTick((t) => t + 1), 30_000);
     return () => clearInterval(id);
-  }, [open]);
+  }, []);
 
   const ordered = useMemo(
     () =>
@@ -129,97 +149,86 @@ export function SyncMonitor() {
       : "No sources connected";
 
   return (
-    <Dialog.Root
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) syncMonitor.close();
-      }}
+    <Dialog.Popup
+      ref={popupRef}
+      tabIndex={-1}
+      initialFocus={popupRef}
+      className={`${styles.popup} ${styles.modal}`}
     >
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup
-          ref={popupRef}
-          tabIndex={-1}
-          initialFocus={popupRef}
-          className={`${styles.popup} ${styles.modal}`}
-        >
-          <div className={styles.header}>
-            <div className={styles.heading}>
-              <Dialog.Title className={styles.title}>Sync</Dialog.Title>
-              <span className={styles.summary} aria-live="polite">
-                {summary}
-              </span>
-            </div>
-            <div className={styles.actions}>
-              {anyRunning ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    for (const s of runningSources)
-                      void window.pond.syncCancel(s);
-                  }}
-                >
-                  Cancel all
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={connectedCount === 0}
-                  onClick={() => void window.pond.syncRunAll()}
-                >
-                  Sync all
-                </Button>
-              )}
-              <Dialog.Close
-                render={
-                  <Button icon size="sm" variant="ghost" aria-label="Close" />
-                }
-              >
-                <X />
-              </Dialog.Close>
-            </div>
-          </div>
-
-          <motion.div
-            className={styles.bodyMorph}
-            initial={false}
-            animate={{ height: bodyHeight }}
-            transition={reduceMotion ? { duration: 0 } : MORPH_SPRING}
+      <div className={styles.header}>
+        <div className={styles.heading}>
+          <Dialog.Title className={styles.title}>Sync</Dialog.Title>
+          <span className={styles.summary} aria-live="polite">
+            {summary}
+          </span>
+        </div>
+        <div className={styles.actions}>
+          {anyRunning ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                for (const s of runningSources) void window.pond.syncCancel(s);
+              }}
+            >
+              Cancel all
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={connectedCount === 0}
+              onClick={() => void window.pond.syncRunAll()}
+            >
+              Sync all
+            </Button>
+          )}
+          <Dialog.Close
+            render={
+              <Button icon size="sm" variant="ghost" aria-label="Close" />
+            }
           >
-            <div ref={bodyRef} className={styles.body}>
-              {ordered.map((source, i) => {
-                const isDisconnected = priority(bySource[source]) === 3;
-                const prev = i > 0 ? ordered[i - 1] : undefined;
-                const startsGroup =
-                  isDisconnected && (!prev || priority(bySource[prev]) !== 3);
-                return (
-                  <Fragment key={source}>
-                    <AnimatePresence initial={false}>
-                      {startsGroup ? (
-                        <motion.div
-                          key="group-label"
-                          layout="position"
-                          className={styles.groupLabel}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={drawerSpring}
-                        >
-                          Not connected
-                        </motion.div>
-                      ) : null}
-                    </AnimatePresence>
-                    <SourceRow source={source} status={bySource[source]} />
-                  </Fragment>
-                );
-              })}
-            </div>
-          </motion.div>
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+            <X />
+          </Dialog.Close>
+        </div>
+      </div>
+
+      <motion.div
+        className={styles.bodyMorph}
+        initial={false}
+        animate={{ height: bodyHeight }}
+        transition={reduceMotion ? { duration: 0 } : MORPH_SPRING}
+      >
+        <div ref={bodyRef} className={styles.body}>
+          {ordered.map((source, i) => {
+            const isDisconnected = priority(bySource[source]) === 3;
+            const prev = i > 0 ? ordered[i - 1] : undefined;
+            const startsGroup =
+              isDisconnected && (!prev || priority(bySource[prev]) !== 3);
+            return (
+              <Fragment key={source}>
+                <AnimatePresence initial={false}>
+                  {startsGroup ? (
+                    <motion.div
+                      key="group-label"
+                      layout="position"
+                      className={styles.groupLabel}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={drawerSpring}
+                    >
+                      Not connected
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+                <SourceRow source={source} status={bySource[source]} />
+              </Fragment>
+            );
+          })}
+        </div>
+      </motion.div>
+    </Dialog.Popup>
   );
 }
 

@@ -1,10 +1,8 @@
 import { useMemo } from "react";
 import type { Save } from "@/core/data/types";
-import type { CardLayout } from "@/features/library/card-thumb";
-import { type GridLayout, LibraryGrid } from "@/features/library/grid";
 import { LibraryGridProvider } from "@/features/library/grid-context";
+import { GridView } from "@/features/library/grid-view";
 import { JustifiedView } from "@/features/library/justified";
-import { SaveCard } from "@/features/library/save-card";
 import type { ViewMode } from "@/features/library/types";
 import { WaterfallView } from "@/features/library/waterfall";
 import { ListView } from "./list-view";
@@ -54,18 +52,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       ) : viewMode === "waterfall" ? (
         <WaterfallView saves={saves} />
       ) : (
-        <LibraryGrid.Grid
-          layout={viewMode as GridLayout}
-          multiSelect={multiSelectActive}
-        >
-          {saves.map((save) => (
-            <SaveCard
-              key={save.id}
-              id={save.id}
-              layout={viewMode as CardLayout}
-            />
-          ))}
-        </LibraryGrid.Grid>
+        <GridView saves={saves} />
       )}
     </LibraryGridProvider>
   );

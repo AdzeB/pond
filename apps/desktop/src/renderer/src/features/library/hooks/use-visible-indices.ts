@@ -32,71 +32,104 @@ function sameIndices(a: number[], b: number[]): boolean {
   return true;
 }
 
+// Pure windowing: which item indices overlap `[offset - overscan,
+// offset + viewport + overscan]`. The waterfall packer interleaves
+// columns so item ordering is not monotonic by `top`; we scan every
+// item, but the per-item comparison is two numeric checks and stays
+// well under a millisecond for thousands of items.
+function computeVisible<T extends PositionedItem>(
+  items: T[],
+  offsetWithinGrid: number,
+  viewportH: number,
+): number[] {
+  const viewMin = offsetWithinGrid - OVERSCAN_PX;
+  const viewMax = offsetWithinGrid + viewportH + OVERSCAN_PX;
+  const out: number[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item) continue;
+    if (item.top + item.height < viewMin) continue;
+    if (item.top > viewMax) continue;
+    out.push(i);
+  }
+  return out;
+}
+
 // Returns the subset of indices into `items` whose vertical extent
-// overlaps the scroll viewport (plus an overscan band). The waterfall
-// packer interleaves columns so item ordering is not monotonic by
-// `top`. We scan every item, but the per-item comparison is two
-// numeric checks and stays well under a millisecond for thousands
-// of items.
+// overlaps the scroll viewport (plus an overscan band).
 //
-// Two things keep scrolling smooth here:
-//   1. The grid's offset within the scroll content and the viewport
-//      height are measured once (and on resize / data change), not on
-//      every frame — reading `getBoundingClientRect` per scroll event
-//      forces a synchronous reflow and is what made scrolling choppy.
-//   2. We only push a new array into React state when the visible set
-//      actually changes, so a scroll that doesn't reveal/hide any card
-//      is zero React work.
+// Three things keep this fast and avoid jank:
+//   1. The initial state is the *windowed* set computed from an
+//      estimated viewport (scrollTop 0, `window.innerHeight`), NOT every
+//      index. Seeding with all indices mounts the entire library on the
+//      first paint of every grid, then throws ~99% away one frame later
+//      — the single worst spike when navigating into a large library.
+//   2. When the item set changes (filter / sort / repack), we recompute
+//      synchronously *during render* from the last known scroll metrics,
+//      so a data swap never momentarily mounts everything either.
+//   3. The grid's offset within the scroll content and the viewport
+//      height are measured once (and on resize), not on every frame —
+//      reading `getBoundingClientRect` per scroll event forces a
+//      synchronous reflow and is what made scrolling choppy. We also
+//      only push a new array into React state when the visible set
+//      actually changes.
 export function useVisibleIndices<T extends PositionedItem>(
   ref: React.RefObject<HTMLElement | null>,
   items: T[],
 ): number[] {
+  const estViewportH = typeof window !== "undefined" ? window.innerHeight : 1000;
+  // Live scroll geometry, kept in a ref so the render-time recompute and
+  // the scroll/resize handlers share one source of truth without extra
+  // renders.
+  const metricsRef = useRef({
+    gridOffsetTop: 0,
+    scrollTop: 0,
+    viewportH: estViewportH,
+  });
+
   const [visible, setVisible] = useState<number[]>(() =>
-    items.map((_, i) => i),
+    computeVisible(items, 0, estViewportH),
   );
   const visibleRef = useRef<number[]>(visible);
+  visibleRef.current = visible;
+
+  // Re-window synchronously when the item set identity changes. Scroll
+  // position hasn't moved, so the cached metrics are still valid; this
+  // keeps the mounted set small across navigation / filtering without
+  // waiting for the effect to run after commit.
+  const lastItemsRef = useRef<T[]>(items);
+  if (lastItemsRef.current !== items) {
+    lastItemsRef.current = items;
+    const m = metricsRef.current;
+    const next = computeVisible(items, m.scrollTop - m.gridOffsetTop, m.viewportH);
+    if (!sameIndices(visibleRef.current, next)) {
+      visibleRef.current = next;
+      setVisible(next);
+    }
+  }
 
   useEffect(() => {
     const node = ref.current;
     const parent = findScrollParent(node);
-    if (!node || !parent) {
-      const all = items.map((_, i) => i);
-      visibleRef.current = all;
-      setVisible(all);
-      return;
-    }
-
-    // Cached geometry. `gridOffsetTop` is the grid's distance from the
-    // top of the scroll container's content; combined with the live
-    // `scrollTop` it reproduces the per-frame measurement without
-    // touching layout on every frame.
-    let gridOffsetTop = 0;
-    let viewportH = parent.clientHeight;
+    if (!node || !parent) return;
 
     const measure = () => {
       const parentRect = parent.getBoundingClientRect();
       const gridRect = node.getBoundingClientRect();
-      gridOffsetTop = parent.scrollTop + (gridRect.top - parentRect.top);
-      viewportH = parent.clientHeight;
-    };
-
-    const compute = (): number[] => {
-      const offsetWithinGrid = parent.scrollTop - gridOffsetTop;
-      const viewMin = offsetWithinGrid - OVERSCAN_PX;
-      const viewMax = offsetWithinGrid + viewportH + OVERSCAN_PX;
-      const out: number[] = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (!item) continue;
-        if (item.top + item.height < viewMin) continue;
-        if (item.top > viewMax) continue;
-        out.push(i);
-      }
-      return out;
+      const m = metricsRef.current;
+      m.gridOffsetTop = parent.scrollTop + (gridRect.top - parentRect.top);
+      m.viewportH = parent.clientHeight;
+      m.scrollTop = parent.scrollTop;
     };
 
     const apply = () => {
-      const next = compute();
+      const m = metricsRef.current;
+      m.scrollTop = parent.scrollTop;
+      const next = computeVisible(
+        items,
+        m.scrollTop - m.gridOffsetTop,
+        m.viewportH,
+      );
       if (sameIndices(visibleRef.current, next)) return;
       visibleRef.current = next;
       setVisible(next);

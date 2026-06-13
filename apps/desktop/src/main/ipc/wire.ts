@@ -1,4 +1,5 @@
 import type { Op, Save, SyncAction, Task, TaskStatus } from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
 
 type Stampable = Date | string | number | null | undefined;
 
@@ -48,9 +49,56 @@ export type WireSave = Omit<
   tasks?: WireTask[];
 };
 
-export function toWireSave(row: Save, taskRows?: Task[]): WireSave {
+export interface WireSaveOptions {
+  // When true, replace `rawJson` with a tiny projection (see `slimRawJson`).
+  // The list payload is the single biggest IPC transfer at boot — a
+  // Twitter-heavy library carries tens of KB of tweet text / entities /
+  // yt-dlp dumps per save that the grid never reads. The detail view pulls
+  // the full blob on demand via `saves.rawJson`.
+  slim?: boolean;
+}
+
+// The only `rawJson` fields the grid / filter / search paths read are the
+// duration sources (so the duration filter keeps working) and media `type`
+// (video-in-progress badge), plus the author avatar URL as an early hint.
+// Everything else — metrics, descriptions, extras, the full yt-dlp dump — is
+// detail-only and fetched lazily, so we strip it from the list payload.
+function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
+  if (!raw) return null;
+  const cap = raw.capture;
+  return {
+    capture: {
+      id: cap.id,
+      source: cap.source,
+      url: cap.url,
+      ...(cap.author?.avatarUrl
+        ? { author: { avatarUrl: cap.author.avatarUrl } }
+        : {}),
+      media: (cap.media ?? []).map((m) => ({
+        url: m.url,
+        type: m.type,
+        ...(m.durationSec != null ? { durationSec: m.durationSec } : {}),
+      })),
+      ...(cap.duration != null ? { duration: cap.duration } : {}),
+    },
+    extractorId: raw.extractorId,
+    extractedAt: raw.extractedAt,
+    ...(raw.ytdlp?.duration != null
+      ? { ytdlp: { duration: raw.ytdlp.duration } }
+      : {}),
+  };
+}
+
+export function toWireSave(
+  row: Save,
+  taskRows?: Task[],
+  opts?: WireSaveOptions,
+): WireSave {
   return {
     ...row,
+    rawJson: opts?.slim
+      ? slimRawJson(row.rawJson as RawJson | null)
+      : row.rawJson,
     savedAt: toMs(row.savedAt) ?? 0,
     createdAt: toMs(row.createdAt) ?? 0,
     deletedAt: toMs(row.deletedAt),
@@ -64,8 +112,9 @@ export function toWireSave(row: Save, taskRows?: Task[]): WireSave {
 export function toWireSaves(
   rows: Save[],
   tasksBySave?: Map<string, Task[]>,
+  opts?: WireSaveOptions,
 ): WireSave[] {
-  return rows.map((row) => toWireSave(row, tasksBySave?.get(row.id)));
+  return rows.map((row) => toWireSave(row, tasksBySave?.get(row.id), opts));
 }
 
 export function toWireTask(task: Task): WireTask {

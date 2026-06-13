@@ -7,6 +7,7 @@ import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 import { useSave } from "@/core/data/hooks";
+import { ensureRawJson } from "@/core/data/raw-json";
 import { primarySelection, primarySelectionStore } from "@/core/data/selection";
 import { useSaveList } from "@/features/library/hooks/use-save-list";
 import { KebabMenu } from "@/features/library/menus/inspector-kebab";
@@ -19,15 +20,40 @@ import styles from "./styles.module.css";
 // selection; this dialog renders whenever something is selected and steps the
 // selection (rather than the route) for j/k navigation, so browsing the
 // library never spawns a separate window.
+//
+// Only `SaveModalContent` runs `useSaveList` (and therefore the O(n) narrowing
+// pipeline for prev/next), and it mounts only while a save is open — so simply
+// browsing the library never pays for a second copy of the filter/sort work.
 export function SaveModal() {
   const id = useStore(primarySelectionStore, (s) => s.id);
-  const save = useSave(id ?? undefined);
-  const list = useSaveList({ activeId: id ?? null });
+  return (
+    <Dialog.Root
+      open={id != null}
+      onOpenChange={(open) => {
+        if (!open) primarySelection.set(null);
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        {id != null ? <SaveModalContent id={id} /> : null}
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+function SaveModalContent({ id }: { id: string }) {
+  const save = useSave(id);
+  const list = useSaveList({ activeId: id });
 
   useTrackVisit(id);
 
+  // The list payload only carries a slim `rawJson`; pull the full blob (metrics,
+  // chapters, description) now that the detail view is actually open.
   useEffect(() => {
-    if (id == null) return;
+    void ensureRawJson(id);
+  }, [id]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
@@ -49,89 +75,75 @@ export function SaveModal() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [id, list.nextId, list.prevId]);
+  }, [list.nextId, list.prevId]);
 
   const counter =
     list.index >= 0 ? `${list.index + 1} / ${list.total}` : `- / ${list.total}`;
 
   return (
-    <Dialog.Root
-      open={id != null}
-      onOpenChange={(open) => {
-        if (!open) primarySelection.set(null);
-      }}
-    >
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup className={`${styles.popup} ${styles.modal}`}>
-          <div className={styles.header}>
-            <div className={styles.lead}>
-              <Tooltip label="Previous (K)" side="bottom">
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Previous save"
-                  disabled={!list.prevId}
-                  onClick={() =>
-                    list.prevId && primarySelection.set(list.prevId)
-                  }
-                >
-                  <ChevronLeft />
-                </Button>
-              </Tooltip>
-              <Tooltip label="Next (J)" side="bottom">
-                <Button
-                  icon
-                  size="sm"
-                  variant="ghost"
-                  aria-label="Next save"
-                  disabled={!list.nextId}
-                  onClick={() =>
-                    list.nextId && primarySelection.set(list.nextId)
-                  }
-                >
-                  <ChevronRight />
-                </Button>
-              </Tooltip>
-              <span
-                className={styles.counter}
-                role="status"
-                aria-label="Position in list"
-              >
-                {counter}
-              </span>
-            </div>
-            <div className={styles.actions}>
-              {save ? <KebabMenu save={save} /> : null}
-              <Dialog.Close
-                render={
-                  <Button icon size="sm" variant="ghost" aria-label="Close" />
-                }
-              >
-                <X />
-              </Dialog.Close>
-            </div>
+    <Dialog.Popup className={`${styles.popup} ${styles.modal}`}>
+      <div className={styles.header}>
+        <div className={styles.lead}>
+          <Tooltip label="Previous (K)" side="bottom">
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label="Previous save"
+              disabled={!list.prevId}
+              onClick={() => list.prevId && primarySelection.set(list.prevId)}
+            >
+              <ChevronLeft />
+            </Button>
+          </Tooltip>
+          <Tooltip label="Next (J)" side="bottom">
+            <Button
+              icon
+              size="sm"
+              variant="ghost"
+              aria-label="Next save"
+              disabled={!list.nextId}
+              onClick={() => list.nextId && primarySelection.set(list.nextId)}
+            >
+              <ChevronRight />
+            </Button>
+          </Tooltip>
+          <span
+            className={styles.counter}
+            role="status"
+            aria-label="Position in list"
+          >
+            {counter}
+          </span>
+        </div>
+        <div className={styles.actions}>
+          {save ? <KebabMenu save={save} /> : null}
+          <Dialog.Close
+            render={
+              <Button icon size="sm" variant="ghost" aria-label="Close" />
+            }
+          >
+            <X />
+          </Dialog.Close>
+        </div>
+      </div>
+
+      <Dialog.Title className={styles.srOnly}>
+        {save?.title ?? "Save details"}
+      </Dialog.Title>
+
+      {save ? (
+        <div className={styles.body}>
+          <div className={styles.media}>
+            <MediaViewer save={save} />
           </div>
-
-          <Dialog.Title className={styles.srOnly}>
-            {save?.title ?? "Save details"}
-          </Dialog.Title>
-
-          {save ? (
-            <div className={styles.body}>
-              <div className={styles.media}>
-                <MediaViewer save={save} />
-              </div>
-              <div className={styles.info}>
-                <SaveInfo save={save} />
-              </div>
-            </div>
-          ) : (
-            <p className={styles.empty}>Save not found.</p>
-          )}
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
+          <div className={styles.info}>
+            <SaveInfo save={save} />
+          </div>
+        </div>
+      ) : (
+        <p className={styles.empty}>Save not found.</p>
+      )}
+    </Dialog.Popup>
   );
 }

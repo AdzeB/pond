@@ -26,10 +26,11 @@
   position: relative;
 }
 
+/* Cards are positioned absolutely by the uniform packer (see
+ * features/library/grid-view), matching waterfall/justified so the grid
+ * rides the same viewport-windowing path instead of mounting every save. */
 .grid-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 130px), 1fr));
-  gap: var(--library-item-gap, 16px);
+  position: relative;
 }
 
 .grid-justified {
@@ -149,9 +150,8 @@
   height: 18px;
   color: #fff;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   border-radius: 9px;
-  backdrop-filter: blur(6px);
 }
 
 :global(html[data-reduce-transparency="true"]) .note {
@@ -173,9 +173,8 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   border-radius: 9px;
-  backdrop-filter: blur(6px);
 }
 
 :global(html[data-reduce-transparency="true"]) .type {
@@ -198,9 +197,8 @@
   color: #fff;
   letter-spacing: 0.02em;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   border-radius: 9px;
-  backdrop-filter: blur(6px);
 }
 
 :global(html[data-reduce-transparency="true"]) .source {
@@ -228,9 +226,8 @@
   color: #fff;
   letter-spacing: 0.02em;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.62);
   border-radius: 9px;
-  backdrop-filter: blur(6px);
 }
 
 :global(html[data-reduce-transparency="true"]) .count {
@@ -251,12 +248,11 @@
   padding: 0;
   font: inherit;
   cursor: var(--ds-cursor-interactive, pointer);
-  background: light-dark(rgba(255, 255, 255, 0.92), rgba(0, 0, 0, 0.6));
+  background: light-dark(rgba(255, 255, 255, 0.98), rgba(0, 0, 0, 0.78));
   border: 1px solid var(--ds-gray-a4);
   border-radius: 6px;
   box-shadow: var(--ds-shadow-search);
   opacity: 0;
-  backdrop-filter: blur(8px);
   transition:
     opacity 120ms ease,
     background 120ms ease,

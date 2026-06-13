@@ -1,5 +1,5 @@
 import { IconEyeOutline18 as Eye } from "@pond/icons/outline/18";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInViewRef, useMergeRefs } from "rooks";
 import { useIsVideoDownloading } from "@/core/data/downloads";
 import { type MediaUnit, pickPrimaryUnit } from "@/core/data/media";
@@ -18,7 +18,7 @@ export type CardLayout = "waterfall" | "grid" | "justified";
 // being crisp for typical card sizes; the detail view loads originals.
 const CARD_THUMB_WIDTH = 768;
 
-export function CardThumb({
+export const CardThumb = memo(function CardThumb({
   save,
   layout,
 }: {
@@ -68,7 +68,7 @@ export function CardThumb({
       ) : null}
     </div>
   );
-}
+});
 
 function CardImage({
   save,

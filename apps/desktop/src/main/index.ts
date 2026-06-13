@@ -325,7 +325,21 @@ async function createWindow(): Promise<BrowserWindow> {
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    void shell.openExternal(url);
+    // Never let the renderer spawn in-app windows. Only http(s) URLs are
+    // handed to the OS; forwarding arbitrary schemes (file:, custom
+    // protocol handlers) to shell.openExternal is a known RCE vector, so
+    // anything else is dropped — matching the openExternal IPC handler and
+    // the will-navigate guard below.
+    const isHttp = (() => {
+      try {
+        const u = new URL(url);
+        return u.protocol === "http:" || u.protocol === "https:";
+      } catch {
+        return false;
+      }
+    })();
+    if (isHttp) void shell.openExternal(url);
+    else log.warn("[pond] blocked window.open for non-http(s) URL", url);
     return { action: "deny" };
   });
 

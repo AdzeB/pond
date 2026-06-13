@@ -142,10 +142,11 @@ const SaveCardBody = memo(function SaveCardBody({
 }) {
   const theme = useResolvedTheme();
   const [preferences] = usePrefs("preferences");
-  const primary = pickPrimaryFile(save, {
-    theme,
-    tweetCover: preferences?.tweetCover,
-  });
+  const tweetCover = preferences?.tweetCover;
+  const primary = useMemo(
+    () => pickPrimaryFile(save, { theme, tweetCover }),
+    [save, theme, tweetCover],
+  );
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
   // Clamp to a sane range so panoramas / extreme portraits don't stretch
@@ -160,10 +161,14 @@ const SaveCardBody = memo(function SaveCardBody({
     [w, h, ratio],
   );
   const prefs = useDisplayPrefs();
-  const typeLabel = prefs.type ? deriveTypeLabel(primary, save) : null;
+  const typeLabel = useMemo(
+    () => (prefs.type ? deriveTypeLabel(primary, save) : null),
+    [prefs.type, primary, save],
+  );
   const sourceLabel = prefs.source ? getSourceLabel(save.source) : null;
   const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
   const showMeta = prefs.name || prefs.date;
+  const dateLabel = useMemo(() => formatAbsolute(save.savedAt), [save.savedAt]);
   // Carousel count = displayable media units only. Avatars are author
   // metadata, and posters are paired with their video, so neither should
   // pad the badge.
@@ -204,9 +209,7 @@ const SaveCardBody = memo(function SaveCardBody({
             </LibraryGrid.Item.Title>
           ) : null}
           {prefs.date ? (
-            <LibraryGrid.Item.Time>
-              {formatAbsolute(save.savedAt)}
-            </LibraryGrid.Item.Time>
+            <LibraryGrid.Item.Time>{dateLabel}</LibraryGrid.Item.Time>
           ) : null}
         </LibraryGrid.Item.Meta>
       ) : null}

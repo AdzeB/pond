@@ -83,3 +83,17 @@ export function clearSaves(): void {
     s.byId.size === 0 ? s : { byId: new Map(), sorted: [] },
   );
 }
+
+// Merge a lazily-fetched full `rawJson` into a pooled save. `rawJson` doesn't
+// affect ordering or any grid/list rendering (those read top-level columns and
+// the slim duration projection), so we deliberately keep the `sorted` array
+// identity stable — only `useSave(id)` consumers (the open detail view) wake.
+export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
+  savesStore.setState((s) => {
+    const prev = s.byId.get(id);
+    if (!prev) return s;
+    const byId = new Map(s.byId);
+    byId.set(id, { ...prev, rawJson });
+    return { byId, sorted: s.sorted };
+  });
+}

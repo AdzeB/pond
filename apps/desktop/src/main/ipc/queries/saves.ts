@@ -71,7 +71,21 @@ export const savesQueries: QueryHandlerMap = {
       db,
       rows.map((r) => r.id),
     );
-    return toWireSaves(rows, grouped);
+    return toWireSaves(rows, grouped, { slim: true });
+  },
+
+  // Full `rawJson` for a single save. The list payload ships only a slim
+  // projection (see `slimRawJson`); the detail view calls this on open to
+  // hydrate metrics, chapters, description, etc. without bloating boot.
+  async "saves.rawJson"(params) {
+    const db = await getDb();
+    const id = String(params.id ?? "");
+    if (!id) return { id: "", rawJson: null };
+    const rows = await db
+      .select({ rawJson: saves.rawJson })
+      .from(saves)
+      .where(eq(saves.id, id));
+    return { id, rawJson: rows[0]?.rawJson ?? null };
   },
 
   async "saves.emptyTrash"() {

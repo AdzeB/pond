@@ -1,5 +1,5 @@
 import { ContextMenu, Kbd, Menu } from "@pond/ui";
-import type { ReactElement, ReactNode } from "react";
+import { type ReactElement, type ReactNode, useState } from "react";
 import type { Save } from "@/core/data/types";
 import { type ActionDescriptor, useSaveActions } from "./actions";
 
@@ -102,21 +102,31 @@ interface SaveContextMenuProps {
   children: ReactElement;
 }
 
+// The library mounts one of these per visible card, so building the action
+// list (and the `useTagClipboard` subscription inside `useSaveActions`) only
+// once the menu opens keeps a clipboard change from re-rendering every card.
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
-  const actions = useSaveActions(save);
+  const [open, setOpen] = useState(false);
 
   return (
-    <ContextMenu.Root>
+    <ContextMenu.Root open={open} onOpenChange={setOpen}>
       <ContextMenu.Trigger render={children} />
-      <ContextMenu.Portal>
-        <ContextMenu.Backdrop />
-        <ContextMenu.Positioner>
-          <ContextMenu.Popup>
-            {actions.map(renderContextAction)}
-          </ContextMenu.Popup>
-        </ContextMenu.Positioner>
-      </ContextMenu.Portal>
+      {open ? <SaveContextMenuContent save={save} /> : null}
     </ContextMenu.Root>
+  );
+}
+
+function SaveContextMenuContent({ save }: { save: Save }) {
+  const actions = useSaveActions(save);
+  return (
+    <ContextMenu.Portal>
+      <ContextMenu.Backdrop />
+      <ContextMenu.Positioner>
+        <ContextMenu.Popup>
+          {actions.map(renderContextAction)}
+        </ContextMenu.Popup>
+      </ContextMenu.Positioner>
+    </ContextMenu.Portal>
   );
 }
 

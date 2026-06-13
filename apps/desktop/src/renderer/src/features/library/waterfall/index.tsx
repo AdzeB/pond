@@ -1,12 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { Save } from "@/core/data/types";
 import { chromeHeightFor } from "@/features/library/lib/library-chrome";
+import { useGridMin } from "@/features/library/lib/use-grid-min";
 import { aspectFor, useAspectVersion } from "@/features/library/stores/aspect";
 import { useDisplayPrefs } from "@/features/library/stores/display-prefs";
 import { useGridWidth } from "@/features/library/stores/shell-state";
 import { PackedGrid, type PackedItem, type PackResult } from "../packed-grid";
-
-const DEFAULT_COL_MIN = 130;
 
 function packMasonry(
   saves: ReadonlyArray<Save>,
@@ -38,35 +37,6 @@ function packMasonry(
   let max = 0;
   for (const h of heights) if (h > max) max = h;
   return { items, totalHeight: Math.max(0, max - gap) };
-}
-
-function readGridMin(): number {
-  if (typeof document === "undefined") return DEFAULT_COL_MIN;
-  const raw = getComputedStyle(document.documentElement)
-    .getPropertyValue("--grid-min")
-    .trim();
-  const n = Number.parseInt(raw, 10);
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_COL_MIN;
-}
-
-/* The view store's `setZoom` writes the current zoom to
- * `document.documentElement.style.--grid-min`. The CSS layouts pick
- * the change up reactively; the JS packer can't, so we observe the
- * root style attribute and re-read on every mutation. Cheap: runs
- * once per zoom step, gated by an equality check. */
-function useGridMin(): number {
-  const [value, setValue] = useState<number>(readGridMin);
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const target = document.documentElement;
-    const obs = new MutationObserver(() => {
-      const next = readGridMin();
-      setValue((prev) => (prev === next ? prev : next));
-    });
-    obs.observe(target, { attributes: true, attributeFilter: ["style"] });
-    return () => obs.disconnect();
-  }, []);
-  return value;
 }
 
 interface WaterfallViewProps {

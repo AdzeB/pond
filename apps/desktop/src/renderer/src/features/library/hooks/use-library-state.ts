@@ -7,7 +7,7 @@ import type { Save } from "@/core/data/types";
 import { listBaseFromPath } from "@/core/lib/search-schemas";
 import { useStableStrings } from "@/core/lib/use-stable-array";
 import { parseMode, type SaveListMode } from "@/features/library/lib/save-list";
-import { useViewStore } from "@/features/library/stores/view-store";
+import { useLayout } from "@/features/library/stores/view-store";
 import type { ViewMode } from "@/features/library/types";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
@@ -34,7 +34,7 @@ export function useLibraryState(): LibraryState {
     source?: string;
   };
   const location = useLocation();
-  const view = useViewStore();
+  const layout = useLayout();
 
   const parentBase = listBaseFromPath(location.pathname);
   const recognized = parseMode(parentBase);
@@ -47,7 +47,7 @@ export function useLibraryState(): LibraryState {
   // read it through `useIsPrimary`.
   const selectedId = useStore(primarySelectionStore, (s) => s.id);
 
-  const viewMode = view.layout as ViewMode;
+  const viewMode = layout as ViewMode;
 
   const filtered = useNarrowedSaves(mode, sourceFilter);
   const filteredIdsFresh = useMemo(() => filtered.map((r) => r.id), [filtered]);

@@ -1,6 +1,6 @@
 import React from "react";
 import { useSaves } from "@/core/data/hooks";
-import { applyModeFilter } from "@/features/library/lib/save-list";
+import { pickPrimaryUnit } from "@/core/data/media";
 import { useRecents } from "@/features/library/stores/recents";
 import { type NavItem, navItems } from "./data";
 
@@ -27,20 +27,28 @@ export function useSidebarNav(): SidebarNav {
     return map;
   }, [recents]);
 
+  // Single pass over the pool instead of one `applyModeFilter` per mode: the
+  // dock is always mounted and recomputes on every save mutation, and the
+  // non-trash modes share the same "complete + renderable" gate (the
+  // `pickPrimaryUnit` call is the expensive part), so untagged/recents are
+  // just sub-counts of library. Mirrors `applyModeFilter` semantics.
   const counts = React.useMemo<Record<NavItem["mode"], number>>(() => {
-    const count = (mode: NavItem["mode"]) =>
-      applyModeFilter(saves, {
-        mode,
-        sourceFilter: "",
-        recentsOrder: mode === "recents" ? recentsOrder : null,
-      }).length;
-
-    return {
-      library: count("library"),
-      untagged: count("untagged"),
-      recents: count("recents"),
-      trash: count("trash"),
-    };
+    let library = 0;
+    let untagged = 0;
+    let recents = 0;
+    let trash = 0;
+    for (const save of saves) {
+      if (save.deletedAt) {
+        trash++;
+        continue;
+      }
+      if (save.status !== "complete") continue;
+      if (!pickPrimaryUnit(save)) continue;
+      library++;
+      if (save.tags.length === 0) untagged++;
+      if (recentsOrder.has(save.id)) recents++;
+    }
+    return { library, untagged, recents, trash };
   }, [saves, recentsOrder]);
 
   const visibleItems = React.useMemo<SidebarNavEntry[]>(

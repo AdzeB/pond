@@ -14,7 +14,12 @@ import {
   type SaveListMode,
 } from "@/features/library/lib/save-list";
 import { useRecents } from "@/features/library/stores/recents";
-import { useViewStore } from "@/features/library/stores/view-store";
+import {
+  useFilterQuery,
+  useSearchText,
+  useSortDir,
+  useSortKey,
+} from "@/features/library/stores/view-store";
 
 /**
  * Shared library narrowing pipeline: full-text search hits -> route-mode
@@ -27,9 +32,10 @@ export function useNarrowedSaves(
 ): ReadonlyArray<Save> {
   const saves = useSaves();
   const recents = useRecents();
-  const view = useViewStore();
-  const query = view.query;
-  const q = view.q;
+  const query = useFilterQuery();
+  const q = useSearchText();
+  const viewSortKey = useSortKey();
+  const viewSortDir = useSortDir();
 
   const searchHits = useSearchResults(q, { deletedOnly: mode === "trash" });
 
@@ -60,12 +66,12 @@ export function useNarrowedSaves(
       return undefined;
     }
     const sortKey: SortKey =
-      view.sortKey === "title" || view.sortKey === "fileSize"
-        ? view.sortKey
+      viewSortKey === "title" || viewSortKey === "fileSize"
+        ? viewSortKey
         : "savedAt";
-    const sortDir: SortDir = view.sortDir === "asc" ? "asc" : "desc";
+    const sortDir: SortDir = viewSortDir === "asc" ? "asc" : "desc";
     return { sortKey, sortDir };
-  }, [mode, view.sortKey, view.sortDir]);
+  }, [mode, viewSortKey, viewSortDir]);
 
   const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
   return useStableById(filteredFresh);

@@ -97,8 +97,12 @@ export const syncMonitor = {
   },
 };
 
-export function useSyncMonitor(): SyncMonitorState {
-  return useStore(store, (s) => s);
+export function useSyncOpen(): boolean {
+  return useStore(store, (s) => s.open);
+}
+
+export function useSyncBySource(): SyncMonitorState["bySource"] {
+  return useStore(store, (s) => s.bySource);
 }
 
 export function useAnySyncRunning(): boolean {

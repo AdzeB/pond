@@ -1,7 +1,5 @@
 import { cn } from "@pond/ui";
-import { type HTMLMotionProps, motion } from "motion/react";
 import type { ReactNode } from "react";
-import { drawerSpring } from "@/core/lib/motion";
 import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";
@@ -66,14 +64,12 @@ interface ItemProps extends React.ComponentPropsWithRef<"li"> {
 
 function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
   return (
-    <motion.li
-      layout="position"
-      transition={drawerSpring}
+    <li
       className={cn(styles.item, className)}
       data-selected={selected ? "true" : undefined}
       data-multi={multi ? "true" : undefined}
       data-dimmed={dimmed ? "true" : undefined}
-      {...(props as HTMLMotionProps<"li">)}
+      {...props}
     />
   );
 }

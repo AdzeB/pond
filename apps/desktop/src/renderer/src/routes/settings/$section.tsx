@@ -1,16 +1,23 @@
-import { SETTINGS_SECTION_ALIASES } from "@pond/schema";
+import { SETTINGS_SECTION_ALIASES, SETTINGS_SECTIONS } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { SettingsSectionView } from "@/features/settings/engine";
-import { DEFAULT_SECTION, SECTIONS } from "@/features/settings/registry";
+import { SECTIONS } from "@/features/settings/registry";
 
-const CONFIG_BY_PATH = new Map(
-  SECTIONS.map((section) => [section.path, section.config]),
-);
+// Path validation depends on the lightweight schema list, not the registry,
+// so resolving/redirecting a settings URL (e.g. an alias or unknown section)
+// doesn't have to pull in the registry chunk and the section configs it
+// imports. Only the component below references the registry.
+const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
+const DEFAULT_PATH = SETTINGS_SECTIONS[0]?.path ?? "general";
 
 function resolveSectionPath(path: string): string {
   return SETTINGS_SECTION_ALIASES[path] ?? path;
 }
+
+const CONFIG_BY_PATH = new Map(
+  SECTIONS.map((section) => [section.path, section.config]),
+);
 
 function SectionRoute() {
   const { section } = Route.useParams();
@@ -33,10 +40,10 @@ export const Route = createFileRoute("/settings/$section")({
         replace: true,
       });
     }
-    if (!CONFIG_BY_PATH.has(section)) {
+    if (!VALID_PATHS.has(section)) {
       throw redirect({
         to: "/settings/$section",
-        params: { section: DEFAULT_SECTION.path },
+        params: { section: DEFAULT_PATH },
         replace: true,
       });
     }
