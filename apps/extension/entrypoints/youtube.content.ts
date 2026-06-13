@@ -5,6 +5,6 @@ export default defineContentScript({
   matches,
   runAt: "document_start",
   main() {
-    bridge("youtube");
+    void bridge("youtube");
   },
 });

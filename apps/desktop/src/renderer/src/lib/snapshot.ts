@@ -1,3 +1,4 @@
+import { debounce } from "@tanstack/pacer";
 import { pool } from "@/stores/pool";
 import type { Save } from "./types";
 
@@ -46,16 +47,14 @@ export async function readSnapshot(): Promise<Save[]> {
 }
 
 // Coalesce bursts of writes (e.g. a 50-tx batch) into one flush.
-let writeTimer: ReturnType<typeof setTimeout> | null = null;
 const WRITE_DEBOUNCE_MS = 2000;
 
-export function scheduleSnapshotWrite(): void {
-  if (writeTimer) clearTimeout(writeTimer);
-  writeTimer = setTimeout(() => {
-    writeTimer = null;
+export const scheduleSnapshotWrite = debounce(
+  () => {
     void writeSnapshot(pool.snapshot());
-  }, WRITE_DEBOUNCE_MS);
-}
+  },
+  { wait: WRITE_DEBOUNCE_MS },
+);
 
 async function writeSnapshot(saves: ReadonlyArray<Save>): Promise<void> {
   try {

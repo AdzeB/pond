@@ -1,16 +1,27 @@
 import type { Source } from "@pond/schema/db";
-import { normalizeStoredSettings, POND_EVENT, type PondMessage } from "./types";
+import { sendMessage } from "./messaging";
+import { getSettings } from "./settings";
+import { POND_EVENT, type PondMessage } from "./types";
 
-export function bridge(source: Source) {
-  chrome.storage.local.get("settings").then((stored) => {
-    const settings = normalizeStoredSettings(stored.settings);
-    if (!settings.enabled[source]) return;
+// Relays page-world capture/log events (received over postMessage) to the
+// background via typed messaging.
+export async function bridge(source: Source): Promise<void> {
+  const settings = await getSettings();
+  if (!settings.enabled[source]) return;
 
-    window.addEventListener("message", (event: MessageEvent) => {
-      if (event.source !== window) return;
-      const data = event.data as { type?: string; message?: PondMessage };
-      if (!data || data.type !== POND_EVENT || !data.message) return;
-      chrome.runtime.sendMessage(data.message).catch(() => {});
-    });
+  window.addEventListener("message", (event: MessageEvent) => {
+    if (event.source !== window) return;
+    const data = event.data as { type?: string; message?: PondMessage };
+    if (!data || data.type !== POND_EVENT || !data.message) return;
+    const message = data.message;
+    if (message.kind === "capture") {
+      void sendMessage("capture", message.payload).catch(() => {});
+    } else if (message.kind === "log") {
+      void sendMessage("log", {
+        level: message.level,
+        message: message.message,
+        data: message.data,
+      }).catch(() => {});
+    }
   });
 }

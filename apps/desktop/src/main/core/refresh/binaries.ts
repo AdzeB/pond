@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
+import which from "which";
 
 export interface ResolvedBinaries {
   ytdlp: string | null;
@@ -60,13 +61,5 @@ function resolveFfmpeg(): string | null {
 }
 
 function lookupOnPath(name: string): string | null {
-  const path = process.env.PATH;
-  if (!path) return null;
-  const sep = process.platform === "win32" ? ";" : ":";
-  for (const dir of path.split(sep)) {
-    if (!dir) continue;
-    const candidate = resolve(dir, name);
-    if (existsSync(candidate)) return candidate;
-  }
-  return null;
+  return which.sync(name, { nothrow: true });
 }

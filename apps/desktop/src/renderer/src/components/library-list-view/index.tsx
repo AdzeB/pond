@@ -9,6 +9,7 @@ import {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SaveContextMenu } from "@/components/save-context-menu";
+import { findScrollParent } from "@/lib/dom";
 import type { Save } from "@/lib/types";
 import { setSort, useSortDir, useSortKey } from "@/stores/view-store";
 import { buildColumns, SORT_KEYS, type SortKey } from "./columns";
@@ -68,14 +69,9 @@ export function ListView({
   const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    let node: HTMLElement | null = tableRef.current?.parentElement ?? null;
-    while (node) {
-      const style = getComputedStyle(node);
-      const oy = style.overflowY;
-      if (oy === "auto" || oy === "scroll" || oy === "overlay") break;
-      node = node.parentElement;
-    }
-    setScrollParent(node);
+    setScrollParent(
+      findScrollParent(tableRef.current, { fallbackToDocument: false }),
+    );
   }, []);
 
   const rowVirtualizer = useVirtualizer({

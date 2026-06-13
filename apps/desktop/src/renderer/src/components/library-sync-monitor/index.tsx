@@ -3,6 +3,7 @@ import { SOURCES, type Source } from "@pond/schema/db";
 import { Button, Dialog } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useIntervalWhen } from "rooks";
 import { useMeasuredHeight } from "@/hooks/use-measured-height";
 import { drawerSpring } from "@/lib/motion";
 import {
@@ -81,10 +82,7 @@ function SyncMonitorBody() {
 
   // Keep relative timestamps ("3 days ago") honest while the dialog sits open.
   const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 30_000);
-    return () => clearInterval(id);
-  }, []);
+  useIntervalWhen(() => setTick((t) => t + 1), 30_000, true);
 
   const ordered = useMemo(
     () =>

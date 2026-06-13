@@ -1,10 +1,12 @@
+import { debounce } from "@tanstack/pacer";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { clamp } from "@/lib/math";
 import { pickPrimaryFile } from "@/lib/media";
 import type { Save } from "@/lib/types";
 
-const MIN_RATIO = 0.4;
-const MAX_RATIO = 2.5;
+export const MIN_RATIO = 0.4;
+export const MAX_RATIO = 2.5;
 
 const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, number>();
@@ -12,11 +14,9 @@ const fallbackCache = new WeakMap<Save, number>();
 // Persist aspect ratios so the masonry doesn't re-pack as dim-less covers lazy-load; stale entries self-correct on next load.
 const STORAGE_KEY = "pond:aspects:v1";
 const PERSIST_DEBOUNCE_MS = 800;
-let persistTimer: ReturnType<typeof setTimeout> | null = null;
-let persistDirty = false;
 
-function clampRatio(w: number, h: number): number {
-  return Math.min(MAX_RATIO, Math.max(MIN_RATIO, w / h));
+export function clampRatio(w: number, h: number): number {
+  return clamp(w / h, MIN_RATIO, MAX_RATIO);
 }
 
 function hydrateFromStorage(): void {
@@ -35,13 +35,8 @@ function hydrateFromStorage(): void {
   }
 }
 
-function persistSoon(): void {
-  persistDirty = true;
-  if (persistTimer !== null) return;
-  persistTimer = setTimeout(() => {
-    persistTimer = null;
-    if (!persistDirty) return;
-    persistDirty = false;
+const persistSoon = debounce(
+  () => {
     if (typeof localStorage === "undefined") return;
     try {
       const obj: Record<string, number> = {};
@@ -50,8 +45,9 @@ function persistSoon(): void {
     } catch {
       // Storage full / private browsing: drop the persistence pass.
     }
-  }, PERSIST_DEBOUNCE_MS);
-}
+  },
+  { wait: PERSIST_DEBOUNCE_MS },
+);
 
 hydrateFromStorage();
 

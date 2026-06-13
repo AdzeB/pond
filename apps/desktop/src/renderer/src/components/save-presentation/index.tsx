@@ -1,3 +1,4 @@
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MediaViewer } from "@/components/save-media-viewer";
@@ -14,16 +15,8 @@ export function Presentation() {
 function PresentationOverlay({ id }: { id: string }) {
   const save = useSave(id);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "F5") {
-        e.preventDefault();
-        presentation.close();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, []);
+  useHotkey("Escape", () => presentation.close());
+  useHotkey("F5", () => presentation.close());
 
   useEffect(() => {
     const el = document.documentElement;

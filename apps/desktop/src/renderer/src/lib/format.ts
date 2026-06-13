@@ -1,8 +1,15 @@
-const BYTE_UNITS = ["B", "KB", "MB", "GB", "TB"] as const;
+import prettyBytes from "pretty-bytes";
+import prettyMs from "pretty-ms";
 
 const numberFormatter = new Intl.NumberFormat(undefined, {
   useGrouping: true,
   maximumFractionDigits: 0,
+});
+
+const compactFormatter = new Intl.NumberFormat(undefined, {
+  notation: "compact",
+  compactDisplay: "short",
+  maximumFractionDigits: 1,
 });
 
 // Locale-aware integer with grouping separators: 1254 -> "1,254".
@@ -13,39 +20,22 @@ export function formatNumber(n: number): string {
 
 export function formatBytes(bytes: number | null | undefined): string {
   if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "-";
-  if (bytes < 1024) return `${Math.round(bytes)}\u00A0B`;
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < BYTE_UNITS.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  const decimals = unit >= 3 ? 2 : 1;
-  return `${value.toFixed(decimals)}\u00A0${BYTE_UNITS[unit]}`;
+  return prettyBytes(bytes, { binary: true });
 }
 
-// Compact count: 1_200 -> "1.2k", 3_000_000 -> "3M".
+// Compact count: 1_200 -> "1.2K", 3_000_000 -> "3M".
 export function formatCount(n: number): string {
   if (!Number.isFinite(n)) return "-";
-  if (n >= 1_000_000) return `${trimZero(n / 1_000_000)}M`;
-  if (n >= 1_000) return `${trimZero(n / 1_000)}k`;
-  return String(Math.round(n));
-}
-
-function trimZero(n: number): string {
-  return n.toFixed(1).replace(/\.0$/, "");
+  return compactFormatter.format(n);
 }
 
 // Seconds -> "m:ss" (or "h:mm:ss" past an hour).
 export function formatDuration(sec: number): string {
   const total = Math.max(0, Math.floor(sec));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return prettyMs(total * 1000, {
+    colonNotation: true,
+    secondsDecimalDigits: 0,
+  });
 }
 
 // "dd/mm/yyyy"; echoes the input back if it isn't a valid date.

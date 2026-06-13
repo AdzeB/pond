@@ -1,17 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-// Nearest scrollable ancestor; falls back to documentElement for standalone usage with no `<main>`.
-function findScrollParent(el: HTMLElement | null): HTMLElement | null {
-  if (!el) return null;
-  let node: HTMLElement | null = el.parentElement;
-  while (node) {
-    const style = getComputedStyle(node);
-    const oy = style.overflowY;
-    if (oy === "auto" || oy === "scroll" || oy === "overlay") return node;
-    node = node.parentElement;
-  }
-  return document.documentElement;
-}
+import { findScrollParent } from "@/lib/dom";
 
 interface PositionedItem {
   top: number;

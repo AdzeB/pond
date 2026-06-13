@@ -1,6 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { byName } from "@/lib/sort";
 
 export interface TagRow {
   id: string;
@@ -63,7 +64,7 @@ async function load(): Promise<ReadonlyArray<TagRow>> {
     const normalised = rows
       .map(normaliseRow)
       .filter((r): r is TagRow => r !== null)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort(byName);
     setRows(normalised);
     inflight = null;
     return normalised;
@@ -93,7 +94,7 @@ function ensureSubscribed(): void {
       const next = cache.slice();
       if (idx >= 0) next[idx] = row;
       else next.push(row);
-      next.sort((a, b) => a.name.localeCompare(b.name));
+      next.sort(byName);
       setRows(next);
       return;
     }
@@ -108,7 +109,7 @@ function ensureSubscribed(): void {
       if (!merged) return;
       const next = cache.slice();
       next[idx] = merged;
-      next.sort((a, b) => a.name.localeCompare(b.name));
+      next.sort(byName);
       setRows(next);
       return;
     }

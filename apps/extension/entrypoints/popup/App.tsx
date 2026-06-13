@@ -2,12 +2,9 @@ import type { Source } from "@pond/schema/db";
 import { Button, Field, Input } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useState } from "react";
+import { sendMessage } from "@/utils/messaging";
 import { parsePairingLink } from "@/utils/pairing";
-import type {
-  PondMessage,
-  PondSettings,
-  PushSessionResult,
-} from "@/utils/types";
+import type { PondSettings } from "@/utils/types";
 import { cookieDomainForSource, hostToSource, sourceLabel } from "@/utils/url";
 import styles from "./popup.module.css";
 import {
@@ -87,15 +84,8 @@ export function App() {
     setPushBusy(true);
     setPushResult(null);
     try {
-      const message: PondMessage = { kind: "pushSession", source: pushable };
-      const res = (await chrome.runtime.sendMessage(message)) as
-        | PushSessionResult
-        | undefined;
+      const res = await sendMessage("pushSession", pushable);
 
-      if (!res) {
-        setPushResult({ tone: "error", label: "No response from extension" });
-        return;
-      }
       if (res.ok) {
         if (res.data.connected) {
           setPushResult({

@@ -2,6 +2,7 @@ import { open, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
 import { net, protocol } from "electron";
 import log from "electron-log/main.js";
+import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
 import {
   clampThumbWidth,
@@ -14,22 +15,6 @@ const ONE_YEAR_SECONDS = 31_536_000;
 
 const META_HOST = "_meta";
 const META_DIR = "_meta";
-
-const MIME: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-  ".avif": "image/avif",
-  ".mp4": "video/mp4",
-  ".webm": "video/webm",
-  ".mov": "video/quicktime",
-  ".html": "text/html; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".svg": "image/svg+xml",
-};
 
 export function registerScheme() {
   protocol.registerSchemesAsPrivileged([
@@ -96,7 +81,7 @@ export function registerProtocol() {
 
       const total = info.size;
       const ext = extname(target).toLowerCase();
-      const contentType = MIME[ext] ?? "application/octet-stream";
+      const contentType = mime.contentType(ext) || "application/octet-stream";
 
       const headers = new Headers();
       headers.set("content-type", contentType);

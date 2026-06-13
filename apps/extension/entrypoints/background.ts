@@ -3,34 +3,22 @@ import type {
   ExtensionCookie,
   SessionImportResponse,
 } from "@pond/schema/session";
+import { onMessage } from "@/utils/messaging";
+import { ensureSettings, getSettings } from "@/utils/settings";
 import {
-  DEFAULT_SETTINGS,
   enqueueUrl,
-  normalizeStoredSettings,
-  type PondMessage,
-  type PondSettings,
   type PushSessionResult,
   sessionImportUrl,
 } from "@/utils/types";
 import { cookieDomainForSource } from "@/utils/url";
 
 export default defineBackground(() => {
-  async function getSettings(): Promise<PondSettings> {
-    const stored = await chrome.storage.local.get("settings");
-    return normalizeStoredSettings(stored.settings);
-  }
-
   chrome.runtime.onInstalled.addListener(async () => {
-    const existing = await chrome.storage.local.get("settings");
-    if (!existing.settings) {
-      await chrome.storage.local.set({ settings: DEFAULT_SETTINGS });
-    }
+    await ensureSettings();
     clearStaleBadge();
   });
 
-  chrome.runtime.onStartup.addListener(() => {
-    clearStaleBadge();
-  });
+  chrome.runtime.onStartup.addListener(clearStaleBadge);
 
   clearStaleBadge();
 
@@ -39,57 +27,46 @@ export default defineBackground(() => {
     chrome.action.setBadgeText({ text: "" }).catch(() => {});
   }
 
-  chrome.runtime.onMessage.addListener(
-    (msg: PondMessage, sender, sendResponse) => {
-      if (msg.kind === "log") {
-        const fn =
-          msg.level === "error"
-            ? console.error
-            : msg.level === "warn"
-              ? console.warn
-              : console.info;
-        fn("[pond]", msg.message, msg.data);
-        return false;
-      }
+  onMessage("log", ({ data }) => {
+    const fn =
+      data.level === "error"
+        ? console.error
+        : data.level === "warn"
+          ? console.warn
+          : console.info;
+    fn("[pond]", data.message, data.data);
+  });
 
-      if (msg.kind === "capture") {
-        handleCapture(msg.payload, sender.tab?.id)
-          .then((ok) => sendResponse({ ok }))
-          .catch((err) => {
-            console.error("[pond] capture failed", err);
-            sendResponse({ ok: false, error: String(err) });
-          });
-        return true;
-      }
-
-      if (msg.kind === "openPond") {
-        const target = msg.path ? `pond://${msg.path}` : "pond://";
-        chrome.tabs
-          .create({ url: target, active: true })
-          .then(() => sendResponse({ ok: true }))
-          .catch((err) => {
-            console.error("[pond] openPond failed", err);
-            sendResponse({ ok: false, error: String(err) });
-          });
-        return true;
-      }
-
-      if (msg.kind === "pushSession") {
-        pushSession(msg.source)
-          .then((result) => sendResponse(result))
-          .catch((err) => {
-            console.error("[pond] pushSession threw", err);
-            sendResponse({
-              ok: false,
-              reason: "network",
-              detail: String(err),
-            } satisfies PushSessionResult);
-          });
-        return true;
-      }
+  onMessage("capture", ({ data, sender }) =>
+    handleCapture(data, sender.tab?.id).catch((err) => {
+      console.error("[pond] capture failed", err);
       return false;
-    },
+    }),
   );
+
+  onMessage("openPond", ({ data }) => openPondTab(data));
+
+  onMessage("pushSession", ({ data }) =>
+    pushSession(data).catch((err) => {
+      console.error("[pond] pushSession threw", err);
+      return {
+        ok: false,
+        reason: "network",
+        detail: String(err),
+      } satisfies PushSessionResult;
+    }),
+  );
+
+  async function openPondTab(path: string | undefined): Promise<boolean> {
+    const target = path ? `pond://${path}` : "pond://";
+    try {
+      await chrome.tabs.create({ url: target, active: true });
+      return true;
+    } catch (err) {
+      console.error("[pond] openPond failed", err);
+      return false;
+    }
+  }
 
   async function pushSession(source: Source): Promise<PushSessionResult> {
     const settings = await getSettings();

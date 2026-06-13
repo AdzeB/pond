@@ -11,6 +11,7 @@ import { buildMediaUnits, pickPrimaryFile } from "@/lib/media";
 import { getSourceLabel } from "@/lib/source-labels";
 import { getSourceIcon } from "@/lib/sources-registry";
 import type { Save, SaveFile } from "@/lib/types";
+import { clampRatio } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { usePrefs } from "@/stores/prefs";
 import { selection, useIsPrimary, useIsSelected } from "@/stores/selection";
@@ -145,7 +146,7 @@ const SaveCardBody = memo(function SaveCardBody({
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
   // Clamp so panoramas / extreme portraits don't distort justified rows or waterfall cards.
-  const ratio = w && h ? Math.min(2.5, Math.max(0.4, w / h)) : 1;
+  const ratio = w && h ? clampRatio(w, h) : 1;
   const mediaStyle = useMemo<React.CSSProperties>(
     () =>
       ({

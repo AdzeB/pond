@@ -1,3 +1,4 @@
+import { setTimeout as delay } from "node:timers/promises";
 import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
 import log from "electron-log/main.js";
@@ -26,7 +27,7 @@ async function acquireToken(): Promise<void> {
   nextTokenAt = earliest + TOKEN_INTERVAL_MS;
   const wait = earliest - now;
   if (wait > 0) {
-    await new Promise<void>((resolve) => setTimeout(resolve, wait));
+    await delay(wait);
   }
 }
 
@@ -66,7 +67,7 @@ async function fetchJson<T>(
       ? Math.max(1_000, retryAfter * 1_000)
       : 1_000;
     log.info("[pond arena:api] 429; retrying after", waitMs, url);
-    await new Promise<void>((resolve) => setTimeout(resolve, waitMs));
+    await delay(waitMs);
     return fetchJson<T>(url, attempt + 1);
   }
   if (res.status === 429) {

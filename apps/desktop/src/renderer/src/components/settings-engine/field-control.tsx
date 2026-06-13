@@ -14,6 +14,7 @@ import {
 } from "@pond/ui";
 import type { ReactNode } from "react";
 import { type EnumOption, EnumSelect } from "@/components/enum-select";
+import { clamp as clampNum } from "@/lib/math";
 import type {
   Binding,
   ButtonItem,
@@ -204,5 +205,5 @@ function toNumber(value: unknown, fallback: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min;
-  return Math.max(min, Math.min(max, Math.round(value)));
+  return clampNum(Math.round(value), min, max);
 }

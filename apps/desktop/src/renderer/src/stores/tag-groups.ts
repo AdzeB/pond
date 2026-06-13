@@ -1,6 +1,7 @@
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { bySortOrderThenName } from "@/lib/sort";
 
 export interface TagGroupRow {
   id: string;
@@ -26,9 +27,7 @@ let inflight: Promise<ReadonlyArray<TagGroupRow>> | null = null;
 let subscribed = false;
 
 function sortGroups(rows: ReadonlyArray<TagGroupRow>): TagGroupRow[] {
-  return rows
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  return rows.slice().sort(bySortOrderThenName);
 }
 
 function setRows(rows: ReadonlyArray<TagGroupRow>): void {

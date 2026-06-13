@@ -4,6 +4,7 @@ import {
   IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
 import { Button, Dialog, Tooltip } from "@pond/ui";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useStore } from "@tanstack/react-store";
 import { useEffect } from "react";
 import { KebabMenu } from "@/components/save-inspector-kebab";
@@ -45,29 +46,13 @@ function SaveModalContent({ id }: { id: string }) {
     void ensureRawJson(id);
   }, [id]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      const tag = target?.tagName;
-      const isInput =
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
-        target?.isContentEditable === true;
-      if (isInput) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === "j" || e.key === "ArrowDown") {
-        if (!list.nextId) return;
-        e.preventDefault();
-        primarySelection.set(list.nextId);
-      } else if (e.key === "k" || e.key === "ArrowUp") {
-        if (!list.prevId) return;
-        e.preventDefault();
-        primarySelection.set(list.prevId);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [list.nextId, list.prevId]);
+  const goNext = () => list.nextId && primarySelection.set(list.nextId);
+  const goPrev = () => list.prevId && primarySelection.set(list.prevId);
+  // Single-key hotkeys default to ignoring inputs and not matching modifier combos.
+  useHotkey("J", goNext);
+  useHotkey("ArrowDown", goNext);
+  useHotkey("K", goPrev);
+  useHotkey("ArrowUp", goPrev);
 
   const counter =
     list.index >= 0 ? `${list.index + 1} / ${list.total}` : `- / ${list.total}`;

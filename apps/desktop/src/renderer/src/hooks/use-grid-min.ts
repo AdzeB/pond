@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { useMutationObserver } from "rooks";
 
 const DEFAULT_COL_MIN = 130;
 
@@ -18,15 +19,16 @@ function readGridMin(): number {
  * gated by an equality check. */
 export function useGridMin(): number {
   const [value, setValue] = useState<number>(readGridMin);
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const target = document.documentElement;
-    const obs = new MutationObserver(() => {
+  const rootRef = useRef<HTMLElement | null>(
+    typeof document !== "undefined" ? document.documentElement : null,
+  );
+  useMutationObserver(
+    rootRef,
+    () => {
       const next = readGridMin();
       setValue((prev) => (prev === next ? prev : next));
-    });
-    obs.observe(target, { attributes: true, attributeFilter: ["style"] });
-    return () => obs.disconnect();
-  }, []);
+    },
+    { attributes: true, attributeFilter: ["style"] },
+  );
   return value;
 }

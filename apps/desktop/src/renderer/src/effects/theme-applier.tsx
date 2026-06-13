@@ -4,6 +4,7 @@ import {
   themeEngineVars,
 } from "@pond/schema/db";
 import { useEffect } from "react";
+import { useMediaMatch } from "rooks";
 import { usePrefs } from "@/stores/prefs";
 
 // Shadowed in localStorage so the index.html boot script can restore the theme before the bundle parses (kills FOUC).
@@ -34,6 +35,10 @@ function persistShell(patch: ShellPatch) {
 
 export function ThemeApplier() {
   const [prefs] = usePrefs("preferences");
+  const prefersDark = useMediaMatch("(prefers-color-scheme: dark)");
+  const prefersReducedMotion = useMediaMatch(
+    "(prefers-reduced-motion: reduce)",
+  );
 
   useEffect(() => {
     const root = document.documentElement;
@@ -71,15 +76,7 @@ export function ThemeApplier() {
       });
     };
 
-    if (prefs.themeMode === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const sync = () => apply(mq.matches);
-      sync();
-      mq.addEventListener("change", sync);
-      return () => mq.removeEventListener("change", sync);
-    }
-
-    apply(false);
+    apply(prefs.themeMode === "system" ? prefersDark : false);
   }, [
     prefs.themeMode,
     prefs.presetId,
@@ -87,6 +84,7 @@ export function ThemeApplier() {
     prefs.systemDarkId,
     prefs.custom,
     prefs,
+    prefersDark,
   ]);
 
   useEffect(() => {
@@ -122,12 +120,8 @@ export function ThemeApplier() {
       setReduce(false);
       return;
     }
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduce(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
-  }, [prefs.reduceMotion]);
+    setReduce(prefersReducedMotion);
+  }, [prefs.reduceMotion, prefersReducedMotion]);
 
   return null;
 }

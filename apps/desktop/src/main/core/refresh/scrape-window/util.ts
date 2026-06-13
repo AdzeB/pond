@@ -1,3 +1,5 @@
+import { setTimeout as delay } from "node:timers/promises";
+
 export function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return delay(ms);
 }

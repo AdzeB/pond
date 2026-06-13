@@ -1,9 +1,6 @@
+import { cn } from "@pond/ui";
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import styles from "./styles.module.css";
-
-function cx(...parts: (string | false | null | undefined)[]) {
-  return parts.filter(Boolean).join(" ");
-}
 
 interface RootProps extends HTMLAttributes<HTMLElement> {
   id?: string;
@@ -15,7 +12,7 @@ function Root({ id, className, children, bleed, ...rest }: RootProps) {
   return (
     <section
       id={id}
-      className={cx(
+      className={cn(
         styles.section,
         bleed && styles["section-bleed"],
         className,
@@ -57,7 +54,7 @@ interface GridProps {
 }
 
 function Grid({ children, className }: GridProps) {
-  return <div className={cx(styles.grid, className)}>{children}</div>;
+  return <div className={cn(styles.grid, className)}>{children}</div>;
 }
 
 type CardSpan = 4 | 5 | 6 | 7 | 8 | 12;
@@ -94,7 +91,7 @@ function Card({
   if (title || description || fragment) {
     return (
       <article
-        className={cx(
+        className={cn(
           styles.card,
           styles[`card-${tone}`],
           padded && styles["card-padded"],
@@ -120,7 +117,7 @@ function Card({
 
   return (
     <article
-      className={cx(
+      className={cn(
         styles.card,
         styles[`card-${tone}`],
         padded && styles["card-padded"],

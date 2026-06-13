@@ -2,6 +2,7 @@ import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { useStore } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { bySortOrderThenName } from "@/lib/sort";
 
 export interface SavedViewRow {
   id: string;
@@ -27,9 +28,7 @@ let inflight: Promise<ReadonlyArray<SavedViewRow>> | null = null;
 let subscribed = false;
 
 function sortViews(rows: ReadonlyArray<SavedViewRow>): SavedViewRow[] {
-  return rows
-    .slice()
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
+  return rows.slice().sort(bySortOrderThenName);
 }
 
 function setRows(rows: ReadonlyArray<SavedViewRow>): void {

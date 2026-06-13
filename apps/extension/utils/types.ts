@@ -5,11 +5,19 @@ export const POND_EVENT = "pond:capture";
 
 const DEFAULT_PORT = 41610;
 
-interface PondCapturePayload {
+export interface PondCapturePayload {
   url: string;
   trigger?: string;
 }
 
+export interface PondLogEntry {
+  level: "info" | "warn" | "error";
+  message: string;
+  data?: unknown;
+}
+
+// Shape posted by injected MAIN-world scripts over `window.postMessage`, before
+// the content-script bridge relays it to the background via typed messaging.
 export type PondMessage =
   | { kind: "capture"; payload: PondCapturePayload }
   | { kind: "pushSession"; source: Source }

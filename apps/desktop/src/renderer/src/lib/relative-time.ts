@@ -4,19 +4,25 @@ const DAY = 24 * HOUR;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 
+const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
+
+function ago(diff: number): string {
+  if (diff < MINUTE) return "just now";
+  if (diff < HOUR) return rtf.format(-Math.floor(diff / MINUTE), "minute");
+  if (diff < DAY) return rtf.format(-Math.floor(diff / HOUR), "hour");
+  if (diff < MONTH) return rtf.format(-Math.floor(diff / DAY), "day");
+  if (diff < YEAR) return rtf.format(-Math.floor(diff / MONTH), "month");
+  return rtf.format(-Math.floor(diff / YEAR), "year");
+}
+
 export function relativeTime(iso: string | null): string {
   if (!iso) return "never";
   const ms = new Date(iso).getTime();
   if (!Number.isFinite(ms)) return "never";
-  const diff = Date.now() - ms;
-  if (diff < MINUTE) return "just now";
-  if (diff < HOUR) return plural(Math.floor(diff / MINUTE), "minute");
-  if (diff < DAY) return plural(Math.floor(diff / HOUR), "hour");
-  if (diff < MONTH) return plural(Math.floor(diff / DAY), "day");
-  if (diff < YEAR) return plural(Math.floor(diff / MONTH), "month");
-  return plural(Math.floor(diff / YEAR), "year");
+  return ago(Date.now() - ms);
 }
 
-function plural(n: number, unit: string): string {
-  return `${n} ${unit}${n === 1 ? "" : "s"} ago`;
+export function relativeTimeFromMs(ms: number | null, fallback = "—"): string {
+  if (ms == null) return fallback;
+  return ago(Date.now() - ms);
 }

@@ -1,8 +1,5 @@
-import {
-  libraryInfoUrl,
-  normalizeStoredSettings,
-  type PondSettings,
-} from "@/utils/types";
+import { getSettings, setSettings } from "@/utils/settings";
+import { libraryInfoUrl, type PondSettings } from "@/utils/types";
 
 export interface LibraryInfo {
   name: string;
@@ -14,14 +11,8 @@ export type ProbeResult =
   | { state: "offline" }
   | { state: "connected"; library: LibraryInfo };
 
-export async function loadSettings(): Promise<PondSettings> {
-  const stored = await chrome.storage.local.get("settings");
-  return normalizeStoredSettings(stored.settings);
-}
-
-export async function saveSettings(next: PondSettings): Promise<void> {
-  await chrome.storage.local.set({ settings: next });
-}
+export const loadSettings = getSettings;
+export const saveSettings = setSettings;
 
 export async function probe(settings: PondSettings): Promise<ProbeResult> {
   if (!settings.apiKey) return { state: "unpaired" };
