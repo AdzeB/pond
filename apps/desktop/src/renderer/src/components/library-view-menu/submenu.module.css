@@ -1,0 +1,84 @@
+.header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 6px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.reset {
+  height: 24px;
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-accent-11, var(--ds-gray-12));
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    background: var(--ds-gray-2);
+  }
+}
+
+.applied {
+  flex-shrink: 0;
+  margin-inline: 8px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-accent-11, var(--ds-gray-11));
+}
+
+.restore {
+  color: var(--ds-red-11, var(--ds-gray-11));
+}
+
+.sortRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 8px 8px;
+}
+
+.sortField {
+  flex: 1;
+  min-width: 0;
+}
+
+.dirButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: 6px;
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}

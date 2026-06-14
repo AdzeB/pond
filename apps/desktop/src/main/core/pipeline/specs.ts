@@ -84,8 +84,12 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
     ],
   },
   cosmos: {
-    required: ["author"],
+    // Cosmos elements are aggregated images (like pinterest); the uploader is
+    // not reliably present on the element page, so grade on the image we can
+    // always resolve from og:image. Author stays a recommended nicety.
+    required: ["mediaUrl"],
     recommended: [
+      "author",
       "capture.media",
       "capture.upstream.url",
       "capture.author.avatarUrl",

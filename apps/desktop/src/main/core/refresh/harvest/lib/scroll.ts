@@ -15,6 +15,10 @@ export function inPageScrollCollect() {
     nextSelector?: string;
     nextFinder?: () => HTMLElement | null;
     nextDelayMs?: number;
+    // Stop once this many consecutive batches add only already-known items.
+    // These lists are newest-first, so an all-known batch means we've scrolled
+    // into the already-synced backlog. 0 disables early-stop (full walk).
+    stopAfterKnownBatches?: number;
   }) {
     const {
       collectFn,
@@ -28,15 +32,33 @@ export function inPageScrollCollect() {
       nextSelector,
       nextFinder,
       nextDelayMs = 1500,
+      stopAfterKnownBatches = 3,
     } = opts;
 
-    const _known = new Set(knownIds.map(String));
+    const known = new Set(knownIds.map(String));
     const collected = new Map<string, T>();
+    // Early-stop only applies on incremental syncs (we have a baseline to hit).
+    const earlyStopEnabled = stopAfterKnownBatches > 0 && known.size > 0;
+    let knownBatchStreak = 0;
 
-    function ingest(rows: T[]): void {
+    // Returns true once we've added enough consecutive all-known batches.
+    function ingest(rows: T[]): boolean {
+      let addedAny = false;
+      let addedFresh = false;
       for (const r of rows) {
-        if (!collected.has(r.sourceId)) collected.set(r.sourceId, r);
+        if (collected.has(r.sourceId)) continue;
+        collected.set(r.sourceId, r);
+        addedAny = true;
+        if (!known.has(r.sourceId)) addedFresh = true;
       }
+      if (!earlyStopEnabled) return false;
+      if (addedFresh) {
+        knownBatchStreak = 0;
+      } else if (addedAny) {
+        // New rows appeared, but every one was already in the library.
+        knownBatchStreak += 1;
+      }
+      return knownBatchStreak >= stopAfterKnownBatches;
     }
 
     function result(reachedEnd: boolean) {
@@ -68,7 +90,7 @@ export function inPageScrollCollect() {
         if (!next) break;
         next.click();
         await new Promise((r) => setTimeout(r, nextDelayMs));
-        ingest(collectFn());
+        if (ingest(collectFn())) return result(true);
       }
       return result(true);
     }
@@ -82,7 +104,7 @@ export function inPageScrollCollect() {
         behavior: "instant" as ScrollBehavior,
       });
       await new Promise((r) => setTimeout(r, scrollDelayMs));
-      ingest(collectFn());
+      if (ingest(collectFn())) return result(true);
       const sh = document.documentElement.scrollHeight;
       if (sh === lastHeight) {
         stable += 1;

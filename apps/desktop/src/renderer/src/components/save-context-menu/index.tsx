@@ -1,4 +1,4 @@
-import { ContextMenu, Kbd } from "@pond/ui";
+import { ContextMenu, Keyboard } from "@pond/ui";
 import { type ReactElement, type ReactNode, useState } from "react";
 import {
   type ActionDescriptor,
@@ -52,7 +52,7 @@ function renderContextAction(action: ActionDescriptor): ReactNode {
       <ContextMenu.ItemLabel>{action.label}</ContextMenu.ItemLabel>
       {action.shortcut ? (
         <ContextMenu.ItemKbd>
-          <Kbd.Cluster keys={action.shortcut} />
+          <Keyboard.Cluster keys={action.shortcut} />
         </ContextMenu.ItemKbd>
       ) : null}
     </ContextMenu.Item>

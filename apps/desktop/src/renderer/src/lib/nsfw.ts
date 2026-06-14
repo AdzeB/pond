@@ -1,6 +1,6 @@
 import { env, pipeline, RawImage } from "@huggingface/transformers";
 import type { Sensitivity } from "@pond/schema/db";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import pLimit from "p-limit";
 import { pool, savesStore, upsertSave } from "@/stores/pool";
@@ -208,7 +208,7 @@ export function useSensitiveMedia(save: Save): SensitiveMedia {
   const [preferences] = usePrefs("preferences");
   const enabled = preferences?.blurSensitiveMedia === true;
 
-  const revealed = useStore(revealStore, (s) => s.ids.has(save.id));
+  const revealed = useSelector(revealStore, (s) => s.ids.has(save.id));
 
   const sensitivity: SensitivityState =
     save.sensitivity === "sensitive"

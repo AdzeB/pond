@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { byName } from "@/lib/sort";
@@ -127,5 +127,5 @@ export function useTags(): ReadonlyArray<TagRow> {
     ensureSubscribed();
     void load();
   }, []);
-  return useStore(tagsStore, (s) => s.rows);
+  return useSelector(tagsStore, (s) => s.rows);
 }

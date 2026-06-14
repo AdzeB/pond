@@ -49,19 +49,22 @@ export function inPageCosmosNormalize() {
     );
     if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
 
-    const mainImg = document.querySelector<HTMLImageElement>(
-      "[class*='element' i] img, [class*='Element'] img, main img",
+    // The server-rendered `og:image` is the only reliable per-element image:
+    // the DOM is full of sidebar collection covers and `/_next/static/...`
+    // skeleton placeholders that load before (or instead of) the real element.
+    const ogImage = document.querySelector<HTMLMetaElement>(
+      'meta[property="og:image"]',
     );
-    const imgSrc = mainImg?.src ?? mainImg?.currentSrc;
-    if (imgSrc && !imgSrc.startsWith("data:")) {
-      out.mediaUrl = imgSrc;
-      out.mediaUrls = [{ url: imgSrc, type: "image" }];
+    const ogImageUrl = ogImage?.content?.trim();
+    if (ogImageUrl && !ogImageUrl.startsWith("data:")) {
+      out.mediaUrl = ogImageUrl;
+      out.mediaUrls = [{ url: ogImageUrl, type: "image" }];
       out.mediaType = "image";
     }
 
     const video = document.querySelector<HTMLVideoElement>("video");
     if (video?.src) {
-      const poster = video.poster || imgSrc || undefined;
+      const poster = video.poster || ogImageUrl || (out.mediaUrl as string);
       out.mediaUrl = poster || video.src;
       out.mediaUrls = [
         {
@@ -77,15 +80,6 @@ export function inPageCosmosNormalize() {
       'meta[property="og:title"]',
     );
     if (!out.title && ogTitle?.content) out.title = ogTitle.content.trim();
-
-    const ogImage = document.querySelector<HTMLMetaElement>(
-      'meta[property="og:image"]',
-    );
-    if (!out.mediaUrl && ogImage?.content) {
-      out.mediaUrl = ogImage.content;
-      out.mediaUrls = [{ url: ogImage.content, type: "image" }];
-      out.mediaType = "image";
-    }
 
     const lang = document.documentElement.lang?.trim();
     if (lang) {

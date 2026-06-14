@@ -1,8 +1,13 @@
 import type { Source } from "@pond/schema/db";
 import { IPC } from "../../../shared/constants";
 import {
+  cancelTweetScreenshotBackfill,
+  getBackfillStatus,
+  isBackfillRunning,
+  startTweetScreenshotBackfill,
+} from "../../core/pipeline/enqueue";
+import {
   cancelSync,
-  getGlobalSync,
   getSourceSync,
   isSyncing,
   syncAllSources,
@@ -22,15 +27,10 @@ export function registerSyncHandlers(): void {
 
   safeHandle(IPC.syncStatus, async (_, source: string) => {
     const src = source as Source;
-    const [cfg, global] = await Promise.all([
-      getSourceSync(src),
-      getGlobalSync(),
-    ]);
+    const cfg = await getSourceSync(src);
     return {
       ok: true as const,
       running: isSyncing(src),
-      enabled: global.enabled,
-      frequency: global.frequency,
       lastSyncedAt: cfg.lastSyncedAt,
       lastError: cfg.lastError,
     };
@@ -47,4 +47,19 @@ export function registerSyncHandlers(): void {
     cancelSync(src);
     return { ok: true as const, running };
   });
+
+  safeHandle(IPC.screenshotBackfillRun, async () => {
+    if (isBackfillRunning()) {
+      return { ok: false as const, reason: "already_running" as const };
+    }
+    void startTweetScreenshotBackfill();
+    return { ok: true as const };
+  });
+
+  safeHandle(IPC.screenshotBackfillCancel, async () => {
+    cancelTweetScreenshotBackfill();
+    return { ok: true as const };
+  });
+
+  safeHandle(IPC.screenshotBackfillStatus, async () => getBackfillStatus());
 }

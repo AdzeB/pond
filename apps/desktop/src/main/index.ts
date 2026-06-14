@@ -5,7 +5,6 @@ import {
   BrowserWindow,
   globalShortcut,
   nativeTheme,
-  powerMonitor,
   session,
   shell,
 } from "electron";
@@ -14,7 +13,10 @@ import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import { startSaveCompleteNotifier } from "./core/notifications";
-import { backfillTweetScreenshots } from "./core/pipeline/enqueue";
+import {
+  type BackfillStatusUpdate,
+  subscribeToBackfillStatus,
+} from "./core/pipeline/enqueue";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
@@ -24,15 +26,7 @@ import {
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
-import {
-  getGlobalSync,
-  patchGlobalSync,
-  type SyncStatusUpdate,
-  subscribeToSyncStatus,
-  syncAllSources,
-} from "./core/sync";
-import { isOnWifi } from "./core/sync/network-type";
-import { computeNextDueAt } from "./core/sync/schedule";
+import { type SyncStatusUpdate, subscribeToSyncStatus } from "./core/sync";
 import { getDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
@@ -82,6 +76,9 @@ function queueTrayRefresh() {
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
+
+const broadcastBackfillStatus = (status: BackfillStatusUpdate): void =>
+  broadcast(IPC.screenshotBackfillStatus, status);
 
 registerScheme();
 
@@ -439,10 +436,6 @@ async function postLaunchInit(): Promise<void> {
   void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
   startReconciler();
 
-  void backfillTweetScreenshots().catch((err) =>
-    log.warn("[pond] tweet screenshot backfill failed", err),
-  );
-
   try {
     const prefs = await getPrefs();
     httpServer = await startHttpServer(
@@ -454,7 +447,6 @@ async function postLaunchInit(): Promise<void> {
   }
 
   registerTrashCron();
-  registerSyncCron();
   registerYtDlpUpdateCron();
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
@@ -488,6 +480,7 @@ async function postLaunchInit(): Promise<void> {
   );
 
   subscribeToSyncStatus(broadcastSyncStatus);
+  subscribeToBackfillStatus(broadcastBackfillStatus);
 }
 
 function registerTrashCron() {
@@ -505,31 +498,6 @@ function registerTrashCron() {
           `[pond trash-cron] purged ${purged} items older than ${days}d`,
         );
       }
-    },
-  });
-}
-
-function registerSyncCron() {
-  schedule({
-    name: "sync",
-    every: 60 * 1000,
-    initialDelay: 60_000,
-    fn: async () => {
-      const prefs = await getGlobalSync();
-      if (!prefs.enabled) return;
-      const now = new Date();
-      const due = computeNextDueAt(prefs, now);
-      if (!due) return;
-      if (due.getTime() > now.getTime()) return;
-
-      if (prefs.onlyOnAcPower && powerMonitor.isOnBatteryPower()) return;
-      if (prefs.onlyOnWifi) {
-        const wifi = await isOnWifi();
-        if (wifi === false) return;
-      }
-
-      await patchGlobalSync({ lastFireAt: now.toISOString() });
-      void syncAllSources({ trigger: "cron" });
     },
   });
 }

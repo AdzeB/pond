@@ -17,6 +17,7 @@ function packMasonry(
   colMin: number,
   gap: number,
   chromeHeight: number,
+  placeholderCount: number,
 ): PackResult {
   if (containerWidth <= 0) {
     return { items: [], totalHeight: 0 };
@@ -26,6 +27,19 @@ function packMasonry(
   const heights = new Array<number>(cols).fill(0);
 
   const items: PackedItem[] = [];
+  if (placeholderCount > 0) {
+    // Square placeholder seeded into the first column before the masonry loop runs.
+    const mediaH = colW;
+    items.push({
+      kind: "placeholder",
+      count: placeholderCount,
+      top: 0,
+      left: 0,
+      width: colW,
+      height: mediaH,
+    });
+    heights[0] = mediaH + chromeHeight + gap;
+  }
   for (const save of saves) {
     const ratio = aspectFor(save);
     const mediaH = colW / ratio;
@@ -45,9 +59,10 @@ function packMasonry(
 
 interface WaterfallViewProps {
   saves: ReadonlyArray<Save>;
+  placeholderCount: number;
 }
 
-export function WaterfallView({ saves }: WaterfallViewProps) {
+export function WaterfallView({ saves, placeholderCount }: WaterfallViewProps) {
   const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
@@ -57,8 +72,15 @@ export function WaterfallView({ saves }: WaterfallViewProps) {
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packMasonry(saves, width, colMin, itemGap, chromeHeight);
-  }, [saves, width, colMin, chromeHeight, aspectVersion]);
+    return packMasonry(
+      saves,
+      width,
+      colMin,
+      itemGap,
+      chromeHeight,
+      placeholderCount,
+    );
+  }, [saves, width, colMin, chromeHeight, aspectVersion, placeholderCount]);
 
   return (
     <PackedGrid layout="waterfall" items={items} totalHeight={totalHeight} />

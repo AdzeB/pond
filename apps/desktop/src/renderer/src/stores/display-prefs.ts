@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export type DisplayPrefKey = "name" | "date" | "fileCount" | "source" | "type";
@@ -62,5 +62,5 @@ export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
 }
 
 export function useDisplayPrefs(): DisplayPrefs {
-  return useStore(store, (s) => s);
+  return useSelector(store, (s) => s);
 }

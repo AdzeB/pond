@@ -1,5 +1,5 @@
 import type { Source } from "@pond/schema/db";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export type SyncState = "idle" | "running" | "done" | "error" | "auth_required";
@@ -93,15 +93,15 @@ export const syncMonitor = {
 };
 
 export function useSyncOpen(): boolean {
-  return useStore(store, (s) => s.open);
+  return useSelector(store, (s) => s.open);
 }
 
 export function useSyncBySource(): SyncMonitorState["bySource"] {
-  return useStore(store, (s) => s.bySource);
+  return useSelector(store, (s) => s.bySource);
 }
 
 export function useAnySyncRunning(): boolean {
-  return useStore(store, (s) =>
+  return useSelector(store, (s) =>
     Object.values(s.bySource).some((v) => v?.state === "running"),
   );
 }

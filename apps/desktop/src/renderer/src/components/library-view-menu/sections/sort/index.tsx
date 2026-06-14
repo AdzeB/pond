@@ -1,12 +1,12 @@
-import { Toggle } from "@base-ui/react/toggle";
 import {
   IconAscendingSortingFill18 as AscendingIcon,
   IconDescendingSortingFill18 as DescendingIcon,
+  IconSortingFill18 as SortIcon,
 } from "@pond/icons/fill/18";
-import { Menu, Select } from "@pond/ui";
-import { AnimatePresence, motion } from "motion/react";
+import { Select } from "@pond/ui";
 import { type SortDir, type SortKey, useView } from "@/hooks/use-view";
-import styles from "./styles.module.css";
+import { ViewSubmenu } from "../../submenu";
+import submenu from "../../submenu.module.css";
 
 const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "savedAt", label: "Date saved" },
@@ -14,37 +14,32 @@ const KEY_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: "fileSize", label: "Size" },
 ];
 
-const _DIR_OPTIONS: Array<{ value: SortDir; label: string }> = [
-  { value: "desc", label: "Descending" },
-  { value: "asc", label: "Ascending" },
-];
-
 const KEY_LABELS: Record<SortKey, string> = Object.fromEntries(
   KEY_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<SortKey, string>;
 
-const transition = {
-  initial: { opacity: 0, filter: "blur(2px)" },
-  animate: { opacity: 1, filter: "blur(0px)" },
-  exit: { opacity: 0, filter: "blur(px)" },
-  duration: 0.18,
-  ease: [0.19, 1, 0.22, 1],
-} as const;
+const DEFAULT_SORT = { key: "savedAt" as SortKey, dir: "desc" as SortDir };
 
 export function SortSection() {
   const { state, actions } = useView();
+  const { key, dir } = state.sort;
+
+  const isDefault = key === DEFAULT_SORT.key && dir === DEFAULT_SORT.dir;
 
   return (
-    <Menu.Group>
-      <Menu.Item stale>
-        Sorting
+    <ViewSubmenu
+      icon={<SortIcon />}
+      label="Sort by"
+      onReset={isDefault ? undefined : () => actions.setSort(DEFAULT_SORT)}
+    >
+      <div className={submenu.sortRow}>
         <Select.Root
-          value={state.sort.key}
+          value={key}
           onValueChange={(value) =>
-            actions.setSort({ key: value as SortKey, dir: state.sort.dir })
+            actions.setSort({ key: value as SortKey, dir })
           }
         >
-          <Select.Trigger style={{ marginLeft: "auto" }}>
+          <Select.Trigger className={submenu.sortField}>
             <Select.Value>{(value: SortKey) => KEY_LABELS[value]}</Select.Value>
           </Select.Trigger>
           <Select.Portal>
@@ -62,30 +57,23 @@ export function SortSection() {
             </Select.Positioner>
           </Select.Portal>
         </Select.Root>
-        <Toggle
+
+        <button
+          type="button"
+          className={submenu.dirButton}
           aria-label="Toggle sort direction"
-          className={styles.button}
-          pressed={state.sort.dir === "asc"}
-          onPressedChange={(pressed) =>
-            actions.setSort({
-              key: state.sort.key,
-              dir: pressed ? "asc" : "desc",
-            })
+          onClick={() =>
+            actions.setSort({ key, dir: dir === "asc" ? "desc" : "asc" })
           }
         >
-          <AnimatePresence mode="popLayout" initial={false}>
-            {state.sort.dir === "asc" ? (
-              <motion.div key="asc" {...transition}>
-                <AscendingIcon size={14} />
-              </motion.div>
-            ) : (
-              <motion.div key="desc" {...transition}>
-                <DescendingIcon size={14} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </Toggle>
-      </Menu.Item>
-    </Menu.Group>
+          {dir === "asc" ? (
+            <AscendingIcon size={14} />
+          ) : (
+            <DescendingIcon size={14} />
+          )}
+          {dir === "asc" ? "Asc" : "Desc"}
+        </button>
+      </div>
+    </ViewSubmenu>
   );
 }

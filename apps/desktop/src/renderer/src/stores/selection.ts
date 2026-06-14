@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface SelectionState {
@@ -107,15 +107,15 @@ export const selection = {
 };
 
 export function useSelectionSize(): number {
-  return useStore(selectionStore, (s) => s.ids.size);
+  return useSelector(selectionStore, (s) => s.ids.size);
 }
 
 export function useSelectedIds(): ReadonlyArray<string> {
-  return useStore(selectionStore, (s) => s.snapshot);
+  return useSelector(selectionStore, (s) => s.snapshot);
 }
 
 export function useIsSelected(id: string): boolean {
-  return useStore(selectionStore, (s) => s.ids.has(id));
+  return useSelector(selectionStore, (s) => s.ids.has(id));
 }
 
 interface PrimaryState {
@@ -134,5 +134,5 @@ export const primarySelection = {
 };
 
 export function useIsPrimary(id: string): boolean {
-  return useStore(primarySelectionStore, (s) => s.id === id);
+  return useSelector(primarySelectionStore, (s) => s.id === id);
 }

@@ -6,12 +6,14 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import { useMeasuredHeight } from "@/hooks/use-measured-height";
 import { drawerSpring } from "@/lib/motion";
+import { backfillMonitor } from "@/stores/backfill-monitor";
 import {
   type SyncSourceStatus,
   syncMonitor,
   useSyncBySource,
   useSyncOpen,
 } from "@/stores/sync-monitor";
+import { BackfillRow } from "./backfill-row";
 import { SourceRow } from "./source-row";
 import styles from "./styles.module.css";
 
@@ -56,6 +58,14 @@ function SyncMonitorBody() {
   // Seed each source with a one-shot snapshot on open so the list isn't blank before the first live push.
   useEffect(() => {
     let cancelled = false;
+    void (async () => {
+      try {
+        const status = await window.pond.screenshotBackfillStatus();
+        if (!cancelled) backfillMonitor.ingest(status);
+      } catch {
+        /* snapshot is best-effort; live pushes still update the row */
+      }
+    })();
     for (const source of SYNCABLE) {
       void (async () => {
         try {
@@ -185,6 +195,8 @@ function SyncMonitorBody() {
               </Fragment>
             );
           })}
+          <div className={styles.groupLabel}>Maintenance</div>
+          <BackfillRow />
         </div>
       </motion.div>
     </Dialog.Popup>

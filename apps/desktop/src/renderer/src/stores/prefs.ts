@@ -1,5 +1,5 @@
 import type { Prefs } from "@pond/schema/db";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 
@@ -30,7 +30,7 @@ export function usePrefs<K extends keyof Prefs>(
     void load();
   }, []);
 
-  const value = useStore(prefsStore, (s) => s.value?.[section] ?? null);
+  const value = useSelector(prefsStore, (s) => s.value?.[section] ?? null);
 
   const patch = (delta: Partial<Prefs[K]>) => {
     const cache = prefsStore.state.value;

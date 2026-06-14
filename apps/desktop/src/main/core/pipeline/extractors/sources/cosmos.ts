@@ -40,8 +40,11 @@ export class CosmosTileExtractor implements Extractor {
       })()`;
 
   // Accept standard auth-token shapes; cosmos's cookie name has changed before.
+  // Current cosmos auth uses `csms_*` JWTs (csms_accessToken/csms_refreshToken).
   authCookies(name: string): boolean {
     return (
+      name === "csms_accessToken" ||
+      name === "csms_refreshToken" ||
       /^sb-[a-z0-9-]+-auth-token(\.\d+)?$/.test(name) ||
       name === "__Secure-next-auth.session-token" ||
       name === "next-auth.session-token" ||

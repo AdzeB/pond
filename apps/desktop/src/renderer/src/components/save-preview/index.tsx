@@ -1,1 +1,1 @@
-export { SaveInfo } from "./pane";
+export { DescriptionBlock, NotesEditor, SaveInfo, TagsEditor } from "./pane";

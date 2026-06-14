@@ -13,7 +13,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "videos", path: "videos", label: "Videos", group: "saving" },
   { id: "images", path: "images", label: "Images", group: "saving" },
-  { id: "schedule", path: "schedule", label: "Schedule", group: "saving" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ];
 

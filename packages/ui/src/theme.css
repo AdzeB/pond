@@ -36,5 +36,5 @@
   --ds-easing-standard: ease;
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --ds-mac-inset: 16px;
+  --ds-mac-inset: 12px;
 }

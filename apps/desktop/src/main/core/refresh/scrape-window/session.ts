@@ -152,8 +152,16 @@ async function listCookiesForSource(source: Source): Promise<Cookie[]> {
   const persistent = session.fromPartition(PARTITION);
   const domain = primaryDomainForSource(source);
   if (!domain) return [];
+  const host = domain.replace(/^\./, "").toLowerCase();
   try {
-    return await persistent.cookies.get({ domain });
+    // `cookies.get({ domain })` does NOT return host-only subdomain cookies
+    // (e.g. cosmos auth lives on `www.cosmos.so`), so fetch all partition
+    // cookies and filter by host suffix — symmetric with session-import.
+    const all = await persistent.cookies.get({});
+    return all.filter((c) => {
+      const ck = (c.domain ?? "").replace(/^\./, "").toLowerCase();
+      return ck === host || ck.endsWith(`.${host}`);
+    });
   } catch (err) {
     log.warn("[pond refresh:window] cookies.get failed", domain, err);
     return [];

@@ -179,22 +179,91 @@ export async function enqueueSaveByUrl(
   return { id, created: true };
 }
 
-// Match the pool's twitter cap (3) so every lease stays busy.
-const SCREENSHOT_BACKFILL_CONCURRENCY = 3;
+// Stay one below the pool's twitter cap (3) so an interactive sync can still
+// lease a window while a backfill is running.
+const SCREENSHOT_BACKFILL_CONCURRENCY = 2;
 
 // Consecutive auth-wall misses that trip the early abort (stale session).
 const SCREENSHOT_AUTH_WALL_ABORT = 6;
 
-// Out-of-band recapture for twitter saves missing a screenshot variant; never re-ingests.
-export async function backfillTweetScreenshots(): Promise<{
+export interface BackfillStatusUpdate {
+  state: "idle" | "running" | "done" | "error";
   attempted: number;
   captured: number;
-  aborted: boolean;
-}> {
+  total: number;
+  message?: string;
+  lastError?: string | null;
+}
+
+type BackfillListener = (update: BackfillStatusUpdate) => void;
+const backfillListeners = new Set<BackfillListener>();
+let backfillStatus: BackfillStatusUpdate = {
+  state: "idle",
+  attempted: 0,
+  captured: 0,
+  total: 0,
+};
+let backfillCancelRequested = false;
+
+export function subscribeToBackfillStatus(cb: BackfillListener): () => void {
+  backfillListeners.add(cb);
+  return () => {
+    backfillListeners.delete(cb);
+  };
+}
+
+export function getBackfillStatus(): BackfillStatusUpdate {
+  return backfillStatus;
+}
+
+export function isBackfillRunning(): boolean {
+  return backfillStatus.state === "running";
+}
+
+function emitBackfill(patch: Partial<BackfillStatusUpdate>): void {
+  backfillStatus = { ...backfillStatus, ...patch };
+  for (const cb of backfillListeners) {
+    try {
+      cb(backfillStatus);
+    } catch (err) {
+      log.warn("[pond pipeline:capture-tweet] backfill listener threw", err);
+    }
+  }
+}
+
+export function cancelTweetScreenshotBackfill(): void {
+  if (backfillStatus.state !== "running") return;
+  backfillCancelRequested = true;
+  emitBackfill({ message: "Stopping…" });
+}
+
+// User-initiated recapture for twitter saves missing a screenshot variant; never re-ingests.
+export async function startTweetScreenshotBackfill(): Promise<void> {
+  if (backfillStatus.state === "running") {
+    log.info(
+      "[pond pipeline:capture-tweet] backfill already running, ignoring",
+    );
+    return;
+  }
+  backfillCancelRequested = false;
+  emitBackfill({
+    state: "running",
+    attempted: 0,
+    captured: 0,
+    total: 0,
+    message: "Looking for screenshots to recapture…",
+    lastError: null,
+  });
+
   const connected = await isSourceConnected("twitter").catch(() => false);
   if (!connected) {
     log.info("[pond pipeline:capture-tweet] backfill skipped, X not connected");
-    return { attempted: 0, captured: 0, aborted: false };
+    emitBackfill({
+      state: "error",
+      message: "Connect X to backfill screenshots.",
+      lastError: "not_connected",
+    });
+    return;
   }
 
   const db = await getDb();
@@ -220,7 +289,12 @@ export async function backfillTweetScreenshots(): Promise<{
     needCapture.push(row.id);
   }
   if (needCapture.length === 0) {
-    return { attempted: 0, captured: 0, aborted: false };
+    emitBackfill({
+      state: "done",
+      total: 0,
+      message: "All screenshots are up to date.",
+    });
+    return;
   }
 
   log.info(
@@ -229,13 +303,19 @@ export async function backfillTweetScreenshots(): Promise<{
     "saves",
   );
 
+  const total = needCapture.length;
   let cursor = 0;
+  let attempted = 0;
   let captured = 0;
   let authWallStreak = 0;
-  let aborted = false;
+  let authWallAborted = false;
+  emitBackfill({
+    total,
+    message: `Recapturing 0 of ${total}…`,
+  });
 
   const worker = async (): Promise<void> => {
-    while (!aborted) {
+    while (!backfillCancelRequested && !authWallAborted) {
       const saveId = needCapture[cursor];
       if (saveId === undefined) break;
       cursor += 1;
@@ -255,7 +335,7 @@ export async function backfillTweetScreenshots(): Promise<{
         if (result.captured === 0 && result.authWall) {
           authWallStreak += 1;
           if (authWallStreak >= SCREENSHOT_AUTH_WALL_ABORT) {
-            aborted = true;
+            authWallAborted = true;
             log.warn(
               "[pond pipeline:capture-tweet] backfill aborted, repeated auth walls",
             );
@@ -270,6 +350,12 @@ export async function backfillTweetScreenshots(): Promise<{
           err,
         );
       }
+      attempted += 1;
+      emitBackfill({
+        attempted,
+        captured,
+        message: `Recapturing ${attempted} of ${total}…`,
+      });
     }
   };
 
@@ -277,11 +363,29 @@ export async function backfillTweetScreenshots(): Promise<{
   await Promise.all(Array.from({ length: lanes }, () => worker()));
 
   log.info("[pond pipeline:capture-tweet] backfill done", {
-    attempted: cursor,
+    attempted,
     captured,
-    aborted,
+    cancelled: backfillCancelRequested,
+    authWallAborted,
   });
-  return { attempted: cursor, captured, aborted };
+
+  if (authWallAborted) {
+    emitBackfill({
+      state: "error",
+      message: "Sign in to X to recapture screenshots.",
+      lastError: "auth_required",
+    });
+  } else if (backfillCancelRequested) {
+    emitBackfill({
+      state: "idle",
+      message: `Stopped after ${captured} recaptured.`,
+    });
+  } else {
+    emitBackfill({
+      state: "done",
+      message: `Recaptured ${captured} screenshot${captured === 1 ? "" : "s"}.`,
+    });
+  }
 }
 
 export async function resetTasksForSave(

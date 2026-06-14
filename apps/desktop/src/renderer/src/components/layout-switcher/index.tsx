@@ -12,6 +12,8 @@ interface LayoutSwitcherProps {
   saves: ReadonlyArray<Save>;
   selectedId: string | null;
   multiSelectActive: boolean;
+  // Leading "saving N items" placeholder tile for in-flight saves (grid layouts only).
+  placeholderCount: number;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }
@@ -22,6 +24,7 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
     saves,
     selectedId,
     multiSelectActive,
+    placeholderCount,
     onClick,
     onDoubleClick,
   } = props;
@@ -48,11 +51,11 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       multiSelectActive={multiSelectActive}
     >
       {viewMode === "justified" ? (
-        <JustifiedView saves={saves} />
+        <JustifiedView saves={saves} placeholderCount={placeholderCount} />
       ) : viewMode === "waterfall" ? (
-        <WaterfallView saves={saves} />
+        <WaterfallView saves={saves} placeholderCount={placeholderCount} />
       ) : (
-        <GridView saves={saves} />
+        <GridView saves={saves} placeholderCount={placeholderCount} />
       )}
     </LibraryGridProvider>
   );

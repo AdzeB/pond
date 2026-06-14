@@ -1,5 +1,5 @@
 import { useLocation, useParams } from "@tanstack/react-router";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import type { ViewMode } from "@/lib/library-types";
 import { parseMode, type SaveListMode } from "@/lib/save-list";
@@ -43,7 +43,7 @@ export function useLibraryState(): LibraryState {
   const sourceFilter = mode === "source" ? (params.source ?? "") : "";
 
   // The open save is pure client state (drives the drawer); cards read it via `useIsPrimary`.
-  const selectedId = useStore(primarySelectionStore, (s) => s.id);
+  const selectedId = useSelector(primarySelectionStore, (s) => s.id);
 
   const viewMode = layout as ViewMode;
 

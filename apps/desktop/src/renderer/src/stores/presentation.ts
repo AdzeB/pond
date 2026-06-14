@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface PresentationState {
@@ -35,5 +35,5 @@ export const presentation = {
 };
 
 export function usePresentationId(): string | null {
-  return useStore(store, (s) => s.activeSaveId);
+  return useSelector(store, (s) => s.activeSaveId);
 }

@@ -1,5 +1,5 @@
 import { debounce } from "@tanstack/pacer";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { clamp } from "@/lib/math";
 import { pickPrimaryFile } from "@/lib/media";
@@ -93,5 +93,5 @@ export function recordAspect(saveId: string, w: number, h: number): void {
 }
 
 export function useAspectVersion(): number {
-  return useStore(versionStore, (v) => v);
+  return useSelector(versionStore, (v) => v);
 }

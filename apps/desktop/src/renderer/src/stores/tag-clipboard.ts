@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface TagClipboardState {
@@ -23,7 +23,7 @@ export const tagClipboard = {
 };
 
 export function useTagClipboard(): readonly string[] {
-  return useStore(store, (s) => s.tags);
+  return useSelector(store, (s) => s.tags);
 }
 
 export function mergeUniqueTags(

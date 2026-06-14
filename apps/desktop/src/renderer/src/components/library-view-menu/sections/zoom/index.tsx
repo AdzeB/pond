@@ -1,11 +1,10 @@
-import { Menu, Select } from "@pond/ui";
+import { IconMagnifierFill18 as ZoomIcon } from "@pond/icons/fill/18";
+import { Menu } from "@pond/ui";
 import { useView } from "@/hooks/use-view";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/zoom";
+import { ViewSubmenu } from "../../submenu";
 
-const options: Array<{
-  value: number;
-  label: string;
-}> = [
+const options: Array<{ value: number; label: string }> = [
   { value: ZOOM_MIN, label: "Smaller" },
   { value: 105, label: "Small" },
   { value: ZOOM_DEFAULT, label: "Default" },
@@ -28,42 +27,31 @@ function closest(value: number): number {
 
 export function ZoomSection() {
   const { state, actions } = useView();
-
   const value = closest(state.zoom);
 
   return (
-    <Menu.Group>
-      <Menu.Item stale>
-        Zoom
-        <Select.Root
-          value={value}
-          onValueChange={(next) => actions.setZoom(next as number)}
-        >
-          <Select.Trigger style={{ marginLeft: "auto" }}>
-            <Select.Value>
-              {(current: number) => (
-                <span>
-                  {options.find((option) => option.value === current)?.label}
-                </span>
-              )}
-            </Select.Value>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Positioner>
-              <Select.Popup>
-                <Select.List>
-                  {options.map(({ label, value: option }) => (
-                    <Select.Item key={label} value={option}>
-                      <Select.ItemText>{label}</Select.ItemText>
-                      <Select.ItemIndicator />
-                    </Select.Item>
-                  ))}
-                </Select.List>
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
-      </Menu.Item>
-    </Menu.Group>
+    <ViewSubmenu
+      icon={<ZoomIcon />}
+      label="Zoom"
+      onReset={
+        value === ZOOM_DEFAULT ? undefined : () => actions.setZoom(ZOOM_DEFAULT)
+      }
+    >
+      <Menu.Group>
+        {options.map(({ value: option, label }) => (
+          <Menu.CheckboxItem
+            key={label}
+            closeOnClick={false}
+            checked={value === option}
+            onCheckedChange={(checked) => {
+              if (checked) actions.setZoom(option);
+            }}
+          >
+            <Menu.CheckboxItemIndicator />
+            <Menu.ItemLabel>{label}</Menu.ItemLabel>
+          </Menu.CheckboxItem>
+        ))}
+      </Menu.Group>
+    </ViewSubmenu>
   );
 }

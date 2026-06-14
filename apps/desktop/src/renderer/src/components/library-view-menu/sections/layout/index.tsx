@@ -1,51 +1,46 @@
-import { Menu, Select } from "@pond/ui";
+import { IconGridLayoutFill18 as LayoutIcon } from "@pond/icons/fill/18";
+import { Menu } from "@pond/ui";
 import { useView } from "@/hooks/use-view";
 import type { LayoutValue } from "@/lib/view-prefs";
+import { ViewSubmenu } from "../../submenu";
 
-const options: Array<{
-  value: LayoutValue;
-  label: string;
-}> = [
+const options: Array<{ value: LayoutValue; label: string }> = [
   { value: "waterfall", label: "Waterfall" },
   { value: "grid", label: "Grid" },
   { value: "justified", label: "Justified" },
   { value: "list", label: "List" },
 ];
 
+const DEFAULT_LAYOUT: LayoutValue = "waterfall";
+
 export function LayoutSection() {
   const { state, actions } = useView();
 
   return (
-    <Menu.Group>
-      <Menu.Item stale>
-        Layout
-        <Select.Root
-          value={state.layout}
-          onValueChange={(value) => actions.setLayout(value as LayoutValue)}
-        >
-          <Select.Trigger style={{ marginLeft: "auto" }}>
-            <Select.Value>
-              {(value: LayoutValue) => (
-                <span style={{ textTransform: "capitalize" }}>{value}</span>
-              )}
-            </Select.Value>
-          </Select.Trigger>
-          <Select.Portal>
-            <Select.Positioner>
-              <Select.Popup>
-                <Select.List>
-                  {options.map(({ label, value }) => (
-                    <Select.Item key={label} value={value}>
-                      <Select.ItemText>{label}</Select.ItemText>
-                      <Select.ItemIndicator />
-                    </Select.Item>
-                  ))}
-                </Select.List>
-              </Select.Popup>
-            </Select.Positioner>
-          </Select.Portal>
-        </Select.Root>
-      </Menu.Item>
-    </Menu.Group>
+    <ViewSubmenu
+      icon={<LayoutIcon />}
+      label="Layout"
+      onReset={
+        state.layout === DEFAULT_LAYOUT
+          ? undefined
+          : () => actions.setLayout(DEFAULT_LAYOUT)
+      }
+    >
+      <Menu.Group>
+        {options.map(({ value, label }) => (
+          <Menu.CheckboxItem
+            key={value}
+            closeOnClick={false}
+            checked={state.layout === value}
+            onCheckedChange={(checked) => {
+              if (checked) actions.setLayout(value);
+            }}
+          >
+            <Menu.CheckboxItemIndicator />
+            <Menu.ItemLabel>{label}</Menu.ItemLabel>
+          </Menu.CheckboxItem>
+        ))}
+      </Menu.Group>
+    </ViewSubmenu>
   );
 }

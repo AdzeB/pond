@@ -23,7 +23,6 @@ import styles from "./styles.module.css";
 
 // The metadata column (title, author, description, tags, notes, stats), shared by the drawer and standalone window.
 export function SaveInfo({ save }: { save: Save }) {
-  const [descExpanded, setDescExpanded] = useState(false);
   const [avatarBroken, setAvatarBroken] = useState(false);
   const info = useMemo(() => collectInfoRows(save), [save]);
   const avatarUrl = useMemo(() => pickAuthorAvatarUrl(save), [save]);
@@ -79,37 +78,16 @@ export function SaveInfo({ save }: { save: Save }) {
 
       {showDescription ? (
         <PaneSection label="Description">
-          <div
-            className={styles["pane-description"]}
-            data-clamped={descExpanded ? undefined : "true"}
-          >
-            {description}
-          </div>
-          {description.length > 200 ? (
-            <button
-              type="button"
-              className={styles["pane-read-more"]}
-              onClick={() => setDescExpanded((v) => !v)}
-              aria-expanded={descExpanded}
-            >
-              <span>{descExpanded ? "Show Less" : "Read More"}</span>
-              <ChevronDown
-                width={12}
-                height={12}
-                data-rotate={descExpanded ? "true" : undefined}
-                className={styles["pane-read-more-icon"]}
-              />
-            </button>
-          ) : null}
+          <DescriptionBlock save={save} />
         </PaneSection>
       ) : null}
 
       <PaneSection label="Tags">
-        <PaneTags save={save} />
+        <TagsEditor save={save} />
       </PaneSection>
 
       <PaneSection label="Notes">
-        <PaneNotes save={save} />
+        <NotesEditor save={save} />
       </PaneSection>
 
       {info.length > 0 ? (
@@ -149,7 +127,45 @@ function PaneRowList({ rows }: { rows: PaneRow[] }) {
   );
 }
 
-function PaneNotes({ save }: { save: Save }) {
+// Read-only source description with a clamp + "Read More" toggle. Renders a
+// muted placeholder when empty so it can stand alone in a card.
+export function DescriptionBlock({ save }: { save: Save }) {
+  const [expanded, setExpanded] = useState(false);
+  const description = save.description?.trim() ?? "";
+
+  if (!description) {
+    return <p className={styles["pane-empty"]}>No description.</p>;
+  }
+
+  return (
+    <>
+      <div
+        className={styles["pane-description"]}
+        data-clamped={expanded ? undefined : "true"}
+      >
+        {description}
+      </div>
+      {description.length > 200 ? (
+        <button
+          type="button"
+          className={styles["pane-read-more"]}
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          <span>{expanded ? "Show Less" : "Read More"}</span>
+          <ChevronDown
+            width={12}
+            height={12}
+            data-rotate={expanded ? "true" : undefined}
+            className={styles["pane-read-more-icon"]}
+          />
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+export function NotesEditor({ save }: { save: Save }) {
   const [draft, setDraft] = useState(save.notes ?? "");
 
   // Resync the draft when selection changes or notes update elsewhere (e.g. an undo).
@@ -175,7 +191,7 @@ function PaneNotes({ save }: { save: Save }) {
   );
 }
 
-function PaneTags({ save }: { save: Save }) {
+export function TagsEditor({ save }: { save: Save }) {
   const [busy, setBusy] = useState(false);
 
   const remove = useCallback(

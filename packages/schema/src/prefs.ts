@@ -1,12 +1,10 @@
 import { z } from "zod";
 import {
   CUSTOM_THEME_DEFAULT,
-  DEFAULT_GLOBAL_SYNC_PREFS,
   DEFAULT_PRESET_ID,
   DEFAULT_SIDEBAR_SOURCES,
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
-  type GlobalSyncPrefs,
   type SidebarSourcesConfig,
   type SyncHandles,
   type SyncSources,
@@ -90,7 +88,6 @@ const developer = z.object({
 });
 
 const sync = z.object({
-  global: z.custom<GlobalSyncPrefs>().default(DEFAULT_GLOBAL_SYNC_PREFS),
   sources: z.custom<SyncSources>().default({}),
   handles: z.custom<SyncHandles>().default({}),
 });

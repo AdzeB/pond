@@ -9,6 +9,8 @@ import { GLOBAL_POOL_CAP } from "./scrape-window";
 export interface RefreshBackfillOptions {
   source?: Source | null;
   onlyMissing?: boolean;
+  // Re-download media even when covers already exist (full overwrite).
+  overwrite?: boolean;
 }
 
 interface RefreshBackfillStatus {
@@ -122,7 +124,7 @@ async function runWorker(
     const outcomes = await Promise.all(
       batch.map(async (id): Promise<RefreshOutcome> => {
         try {
-          return await refreshSave(id);
+          return await refreshSave(id, { overwrite: opts.overwrite });
         } catch (err) {
           log.warn("[pond refresh-backfill] refreshSave threw", id, err);
           return { ok: false, reason: "internal_error" };

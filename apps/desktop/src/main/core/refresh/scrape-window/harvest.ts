@@ -86,6 +86,7 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       log.warn("[pond refresh:window] harvest timed out", args.url);
       return { ok: false, reason: "timeout", sourceId };
     }
+
     const harvest = harv.adapt(raw);
     if (!harvest) {
       return { ok: false, reason: "harvest_failed", sourceId };

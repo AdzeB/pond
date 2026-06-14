@@ -213,3 +213,49 @@ function isVideoFile(file: SaveFile): boolean {
   if (file.mimeType?.startsWith("video/") === true) return true;
   return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
 }
+
+// Broad category for the primary asset, used to color the type badge.
+export type TypeKind = "image" | "video" | "audio" | "link" | "doc" | "other";
+
+const IMAGE_EXT = /^(png|jpe?g|gif|webp|avif|heic|heif|svg|bmp|tiff?|ico)$/;
+const VIDEO_EXT = /^(mp4|webm|mov|m4v|mkv|avi|gifv|ogv)$/;
+const AUDIO_EXT = /^(mp3|wav|flac|aac|ogg|oga|m4a|opus)$/;
+const DOC_EXT = /^(pdf|docx?|txt|md|markdown|rtf|csv|tsv|xlsx?|pptx?|epub)$/;
+
+export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
+  const ext = file?.path.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXT.test(ext)) return "image";
+  if (VIDEO_EXT.test(ext)) return "video";
+  if (AUDIO_EXT.test(ext)) return "audio";
+  if (DOC_EXT.test(ext)) return "doc";
+
+  const mime = file?.mimeType?.split("/")[0]?.toLowerCase();
+  if (mime === "image") return "image";
+  if (mime === "video") return "video";
+  if (mime === "audio") return "audio";
+
+  const media = save.mediaType?.toLowerCase();
+  if (media === "image") return "image";
+  if (media === "video") return "video";
+  if (media === "audio") return "audio";
+  if (media === "link") return "link";
+
+  return save.url ? "link" : "other";
+}
+
+// Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link".
+export function deriveTypeLabel(
+  file: SaveFile | null,
+  save: Save,
+): string | null {
+  const ext = file?.path.split(".").pop()?.toLowerCase();
+  if (ext && /^[a-z0-9]{1,4}$/.test(ext)) return ext.toUpperCase();
+  const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];
+  if (subtype) return subtype.toUpperCase();
+  const media = save.mediaType?.toLowerCase();
+  if (media === "video") return "Video";
+  if (media === "image") return "Image";
+  if (media === "link") return "Link";
+  if (save.mediaType) return save.mediaType.toUpperCase();
+  return save.url ? "Link" : null;
+}

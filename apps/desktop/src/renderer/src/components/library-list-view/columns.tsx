@@ -3,7 +3,7 @@ import {
   type RowData,
   type SortingFn,
 } from "@tanstack/react-table";
-import { CardThumb } from "@/components/save-card-thumb";
+import { CardThumb } from "@/components/save-card-media";
 import { formatAbsolute, formatBytes } from "@/lib/format";
 import type { Save } from "@/lib/types";
 import styles from "./styles.module.css";

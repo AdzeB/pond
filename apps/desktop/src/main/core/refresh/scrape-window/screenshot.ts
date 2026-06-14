@@ -41,6 +41,28 @@ const SCREENSHOT_VERTICAL_PADDING = 40;
 // Hard cap on hidden-window height; anything beyond is cropped (rare).
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
+// CDP commands and capturePage can hang indefinitely on a wedged hidden window
+// (seen at startup: Emulation.setEmulatedMedia never resolving). Bound them so a
+// stuck capture can't hold its window lease forever and starve the pool.
+const CDP_COMMAND_TIMEOUT_MS = 10_000;
+const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
+
+async function sendCdpCommand(
+  dbg: Electron.Debugger,
+  method: string,
+  params: Record<string, unknown> | undefined,
+  timeoutMs: number,
+): Promise<void> {
+  await Promise.race([
+    params === undefined
+      ? dbg.sendCommand(method)
+      : dbg.sendCommand(method, params),
+    sleep(timeoutMs).then(() => {
+      throw new Error(`CDP ${method} timed out after ${timeoutMs}ms`);
+    }),
+  ]);
+}
+
 // Captures the tweet's <article> from a hidden window; returns ok:false on any miss.
 export async function screenshotTweet(
   args: TweetScreenshotArgs,
@@ -108,12 +130,19 @@ export async function screenshotTweet(
         lease.win,
         CAPTURE_DEVICE_SCALE_FACTOR,
         async () => {
-          const image = await lease.win.webContents.capturePage({
-            x: Math.max(0, Math.floor(rect.x)),
-            y: Math.max(0, Math.floor(rect.y)),
-            width: Math.max(1, Math.ceil(rect.width)),
-            height: Math.max(1, Math.ceil(rect.height)),
-          });
+          const image = await Promise.race([
+            lease.win.webContents.capturePage({
+              x: Math.max(0, Math.floor(rect.x)),
+              y: Math.max(0, Math.floor(rect.y)),
+              width: Math.max(1, Math.ceil(rect.width)),
+              height: Math.max(1, Math.ceil(rect.height)),
+            }),
+            sleep(CAPTURE_PAGE_TIMEOUT_MS).then(() => {
+              throw new Error(
+                `capturePage timed out after ${CAPTURE_PAGE_TIMEOUT_MS}ms`,
+              );
+            }),
+          ]);
           const rawBytes = image.toPNG();
           const size = image.getSize();
           if (
@@ -209,9 +238,12 @@ async function emulateColorScheme(
       dbg.attach("1.3");
       attachedHere = true;
     }
-    await dbg.sendCommand("Emulation.setEmulatedMedia", {
-      features: [{ name: "prefers-color-scheme", value: scheme }],
-    });
+    await sendCdpCommand(
+      dbg,
+      "Emulation.setEmulatedMedia",
+      { features: [{ name: "prefers-color-scheme", value: scheme }] },
+      CDP_COMMAND_TIMEOUT_MS,
+    );
   } catch (err) {
     log.warn(
       "[pond screenshot:tweet] emulated media setup failed",
@@ -229,7 +261,12 @@ async function emulateColorScheme(
   }
   return async () => {
     try {
-      await dbg.sendCommand("Emulation.setEmulatedMedia", { features: [] });
+      await sendCdpCommand(
+        dbg,
+        "Emulation.setEmulatedMedia",
+        { features: [] },
+        CDP_COMMAND_TIMEOUT_MS,
+      );
     } catch {
       /* override may already be cleared; safe to ignore */
     }
@@ -258,16 +295,26 @@ async function withDeviceScaleFactor<T>(
       attachedHere = true;
     }
     const [width, height] = win.getContentSize();
-    await dbg.sendCommand("Emulation.setDeviceMetricsOverride", {
-      width: width ?? 1280,
-      height: height ?? 1024,
-      deviceScaleFactor: factor,
-      mobile: false,
-    });
+    await sendCdpCommand(
+      dbg,
+      "Emulation.setDeviceMetricsOverride",
+      {
+        width: width ?? 1280,
+        height: height ?? 1024,
+        deviceScaleFactor: factor,
+        mobile: false,
+      },
+      CDP_COMMAND_TIMEOUT_MS,
+    );
     return await fn();
   } finally {
     try {
-      await dbg.sendCommand("Emulation.clearDeviceMetricsOverride");
+      await sendCdpCommand(
+        dbg,
+        "Emulation.clearDeviceMetricsOverride",
+        undefined,
+        CDP_COMMAND_TIMEOUT_MS,
+      );
     } catch {
       /* override may already be cleared; safe to ignore */
     }

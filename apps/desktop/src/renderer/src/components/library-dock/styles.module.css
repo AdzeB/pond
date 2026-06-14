@@ -4,6 +4,8 @@
   left: 50%;
   z-index: 60;
   display: flex;
+  gap: 12px;
+  align-items: center;
   justify-content: center;
   transform: translateX(-50%);
   -webkit-app-region: no-drag;
@@ -16,7 +18,7 @@
   align-items: center;
   padding: 6px;
   pointer-events: auto;
-  background: var(--ds-gray-12);
+  background: var(--white-alpha-975);
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-3);
 }

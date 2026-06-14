@@ -24,11 +24,19 @@ export function registerRefreshHandlers(): void {
 
   safeHandle(
     IPC.refreshBackfillStart,
-    async (_, opts: { source?: string | null; onlyMissing?: boolean } = {}) => {
+    async (
+      _,
+      opts: {
+        source?: string | null;
+        onlyMissing?: boolean;
+        overwrite?: boolean;
+      } = {},
+    ) => {
       try {
         return await startRefreshBackfill({
           source: (opts?.source ?? null) as Source | null,
           onlyMissing: Boolean(opts?.onlyMissing),
+          overwrite: Boolean(opts?.overwrite),
         });
       } catch (err) {
         log.error("[pond ipc] refreshBackfillStart failed", err);

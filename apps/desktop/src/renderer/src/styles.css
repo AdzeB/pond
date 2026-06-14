@@ -28,12 +28,39 @@
   src: url("./assets/fonts/inter/variable-italic.woff2") format("woff2");
 }
 
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/jetbrains-mono/latin-400-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("./assets/fonts/jetbrains-mono/latin-500-normal.woff2")
+    format("woff2");
+}
+
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("./assets/fonts/jetbrains-mono/latin-600-normal.woff2")
+    format("woff2");
+}
+
 :root {
   --ds-ui-font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
     "Segoe UI", sans-serif;
   --ds-code-font-family:
-    ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+    jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
   --ds-ui-font-size: 13px;
   --ds-code-font-size: 12px;
 

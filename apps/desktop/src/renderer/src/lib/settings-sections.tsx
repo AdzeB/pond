@@ -6,11 +6,6 @@ import { imagesSection } from "./settings-config-images";
 import { videosSection } from "./settings-config-videos";
 
 // Registry of section configs; bespoke sections are lazy so each ships in its own chunk.
-const ScheduleSection = lazy(() =>
-  import("@/components/settings-section-schedule").then((m) => ({
-    default: m.ScheduleSection,
-  })),
-);
 const DeveloperSection = lazy(() =>
   import("@/components/settings-section-developer").then((m) => ({
     default: m.DeveloperSection,
@@ -28,6 +23,5 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   videos: videosSection,
   images: imagesSection,
   tags: { component: TagsSection },
-  schedule: { component: ScheduleSection },
   developer: { component: DeveloperSection },
 };

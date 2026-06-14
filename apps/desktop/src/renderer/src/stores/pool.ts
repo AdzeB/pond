@@ -20,7 +20,7 @@ export const savesStore = new Store<SavesState>({
   sorted: [],
 });
 
-// Non-React read facade; mutations go through the helpers below so React consumers wake via `useStore`.
+// Non-React read facade; mutations go through the helpers below so React consumers wake via `useSelector`.
 export const pool = {
   get(id: string): Save | undefined {
     return savesStore.state.byId.get(id);

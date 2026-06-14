@@ -1,13 +1,13 @@
 import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
-interface KbdProps {
+interface ClusterProps {
   keys: string[];
   separator?: string;
   className?: string;
 }
 
-function Cluster({ keys, separator = "", className }: KbdProps) {
+function Cluster({ keys, separator = "", className }: ClusterProps) {
   return (
     <span className={cn(styles.cluster, className)} aria-hidden>
       {keys.map((k, i) => (
@@ -37,7 +37,7 @@ function Key({ density = "default", className, ...props }: KeyProps) {
   );
 }
 
-export const Kbd = {
+export const Keyboard = {
   Cluster,
   Key,
 };

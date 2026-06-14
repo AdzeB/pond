@@ -56,128 +56,6 @@ function List({ className, ...props }: ListProps) {
   return <table className={cn(className)} {...props} />;
 }
 
-interface ItemProps extends React.ComponentPropsWithRef<"li"> {
-  selected?: boolean;
-  multi?: boolean;
-  dimmed?: boolean;
-}
-
-function ItemBase({ selected, multi, dimmed, className, ...props }: ItemProps) {
-  return (
-    <li
-      className={cn(styles.item, className)}
-      data-selected={selected ? "true" : undefined}
-      data-multi={multi ? "true" : undefined}
-      data-dimmed={dimmed ? "true" : undefined}
-      {...props}
-    />
-  );
-}
-
-interface ItemSelectProps extends React.ComponentPropsWithoutRef<"button"> {}
-
-function ItemSelect({ className, type, ...props }: ItemSelectProps) {
-  return (
-    <button
-      type={type ?? "button"}
-      className={cn(styles.select, className)}
-      {...props}
-    />
-  );
-}
-
-interface ItemMediaProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function ItemMedia({ className, ...props }: ItemMediaProps) {
-  return <div className={cn(styles.media, className)} {...props} />;
-}
-
-interface ItemMetaProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function ItemMeta({ className, ...props }: ItemMetaProps) {
-  return <div className={cn(styles.meta, className)} {...props} />;
-}
-
-interface ItemTitleProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemTitle({ className, ...props }: ItemTitleProps) {
-  return <span className={cn(styles.title, className)} {...props} />;
-}
-
-interface ItemTimeProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemTime({ className, ...props }: ItemTimeProps) {
-  return <span className={cn(styles.time, className)} {...props} />;
-}
-
-interface ItemCountProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemCount({ className, role, ...props }: ItemCountProps) {
-  return (
-    <span
-      role={role ?? "status"}
-      className={cn(styles.count, className)}
-      {...props}
-    />
-  );
-}
-
-interface ItemNoteProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemNote({ className, ...props }: ItemNoteProps) {
-  return <span className={cn(styles.note, className)} {...props} />;
-}
-
-interface ItemTypeProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemType({ className, ...props }: ItemTypeProps) {
-  return <span className={cn(styles.type, className)} {...props} />;
-}
-
-interface ItemSourceProps extends React.ComponentPropsWithoutRef<"span"> {}
-
-function ItemSource({ className, ...props }: ItemSourceProps) {
-  return <span className={cn(styles.source, className)} {...props} />;
-}
-
-interface ItemCheckboxProps
-  extends Omit<React.ComponentPropsWithoutRef<"button">, "children"> {
-  checked: boolean;
-}
-
-function ItemCheckbox({
-  checked,
-  className,
-  type,
-  ...props
-}: ItemCheckboxProps) {
-  return (
-    <button
-      type={type ?? "button"}
-      aria-pressed={checked}
-      className={cn(styles.checkbox, className)}
-      {...props}
-    >
-      <span aria-hidden className={styles.checkmark}>
-        {checked ? "✓" : ""}
-      </span>
-    </button>
-  );
-}
-
-const Item = Object.assign(ItemBase, {
-  Select: ItemSelect,
-  Media: ItemMedia,
-  Meta: ItemMeta,
-  Title: ItemTitle,
-  Time: ItemTime,
-  Count: ItemCount,
-  Note: ItemNote,
-  Type: ItemType,
-  Source: ItemSource,
-  Checkbox: ItemCheckbox,
-});
-
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
 
 function Empty({ className, ...props }: EmptyProps) {
@@ -188,7 +66,6 @@ export const LibraryGrid = {
   Root,
   Grid,
   List,
-  Item,
   Empty,
 };
 

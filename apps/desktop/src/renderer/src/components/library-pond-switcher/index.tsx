@@ -2,7 +2,6 @@ import { IconChevronDownOutline12 as ChevronDown } from "@pond/icons/outline/12"
 import {
   IconArchivePlusOutline18 as Plus,
   IconRefresh2Outline18 as Refresh,
-  IconArrowUpDownTrailOutline18 as Switch,
 } from "@pond/icons/outline/18";
 import { Menu } from "@pond/ui";
 import { usePonds } from "@/hooks/use-ponds";
@@ -52,6 +51,30 @@ export function PondSwitcher({ compact, className }: PondSwitcherProps) {
       <Menu.Portal>
         <Menu.Positioner sideOffset={8}>
           <Menu.Popup>
+            {ponds.map((pond) => (
+              <Menu.Item
+                key={pond.path}
+                disabled={switching || pond.active || !pond.exists}
+                onClick={() => switchTo(pond.path)}
+              >
+                <span
+                  aria-hidden
+                  className={styles.avatar}
+                  data-emoji={pond.avatar ? true : undefined}
+                  data-missing={!pond.exists || undefined}
+                >
+                  {pond.avatar ?? initials(pond.name)}
+                </span>
+                <Menu.ItemLabel>{pond.name}</Menu.ItemLabel>
+                {pond.active ? (
+                  <span className={styles.dot} aria-hidden />
+                ) : null}
+              </Menu.Item>
+            ))}
+            {ponds.length === 0 ? (
+              <div className={styles.empty}>No ponds yet.</div>
+            ) : null}
+            <Menu.Separator />
             <Menu.Item>
               <Menu.ItemIcon>
                 <Plus />
@@ -59,43 +82,6 @@ export function PondSwitcher({ compact, className }: PondSwitcherProps) {
               Create Pond
               <Menu.SecondaryLabel>P then C</Menu.SecondaryLabel>
             </Menu.Item>
-            <Menu.SubmenuRoot>
-              <Menu.SubmenuTrigger>
-                <Menu.ItemIcon>
-                  <Switch />
-                </Menu.ItemIcon>
-                <Menu.ItemLabel>Switch Pond</Menu.ItemLabel>
-              </Menu.SubmenuTrigger>
-              <Menu.Portal>
-                <Menu.Positioner align="start" sideOffset={-4}>
-                  <Menu.Popup>
-                    {ponds.map((pond) => (
-                      <Menu.Item
-                        key={pond.path}
-                        disabled={switching || pond.active || !pond.exists}
-                        onClick={() => switchTo(pond.path)}
-                      >
-                        <span
-                          aria-hidden
-                          className={styles.avatar}
-                          data-emoji={pond.avatar ? true : undefined}
-                          data-missing={!pond.exists || undefined}
-                        >
-                          {pond.avatar ?? initials(pond.name)}
-                        </span>
-                        <Menu.ItemLabel>{pond.name}</Menu.ItemLabel>
-                        {pond.active ? (
-                          <span className={styles.dot} aria-hidden />
-                        ) : null}
-                      </Menu.Item>
-                    ))}
-                    {ponds.length === 0 ? (
-                      <div className={styles.empty}>No ponds yet.</div>
-                    ) : null}
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.SubmenuRoot>
             <Menu.Item>
               <Menu.ItemIcon>
                 <Refresh />

@@ -1,7 +1,5 @@
 import {
-  DEFAULT_GLOBAL_SYNC_PREFS,
   DEFAULT_SOURCE_SYNC_PREFS,
-  type GlobalSyncPrefs,
   type Source,
   type SourceSyncPrefs,
   saves,
@@ -100,24 +98,6 @@ async function patchSourceSync(
   await setPrefs({
     sync: { sources: { ...prefs.sync.sources, [source]: next } },
   });
-  return next;
-}
-
-export async function getGlobalSync(): Promise<GlobalSyncPrefs> {
-  const prefs = await getPrefs();
-  return { ...DEFAULT_GLOBAL_SYNC_PREFS, ...prefs.sync.global };
-}
-
-export async function patchGlobalSync(
-  patch: Partial<GlobalSyncPrefs>,
-): Promise<GlobalSyncPrefs> {
-  const prefs = await getPrefs();
-  const next: GlobalSyncPrefs = {
-    ...DEFAULT_GLOBAL_SYNC_PREFS,
-    ...prefs.sync.global,
-    ...patch,
-  };
-  await setPrefs({ sync: { global: next } });
   return next;
 }
 

@@ -26,6 +26,15 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
+export interface BackfillStatusWire {
+  state: "idle" | "running" | "done" | "error";
+  attempted: number;
+  captured: number;
+  total: number;
+  message?: string;
+  lastError?: string | null;
+}
+
 const api = {
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);
@@ -132,6 +141,7 @@ const api = {
   refreshBackfillStart(opts?: {
     source?: string | null;
     onlyMissing?: boolean;
+    overwrite?: boolean;
   }): Promise<
     | { ok: true; total: number }
     | { ok: false; reason: "already_running" | "no_saves" }
@@ -162,8 +172,6 @@ const api = {
   syncStatus(source: string): Promise<{
     ok: boolean;
     running: boolean;
-    enabled: boolean;
-    frequency: string;
     lastSyncedAt: string | null;
     lastError: string | null;
   }> {
@@ -176,6 +184,28 @@ const api = {
 
   syncCancel(source: string): Promise<{ ok: true; running: boolean }> {
     return ipcRenderer.invoke(IPC.syncCancel, source);
+  },
+
+  screenshotBackfillRun(): Promise<
+    { ok: true } | { ok: false; reason: "already_running" }
+  > {
+    return ipcRenderer.invoke(IPC.screenshotBackfillRun);
+  },
+
+  screenshotBackfillCancel(): Promise<{ ok: true }> {
+    return ipcRenderer.invoke(IPC.screenshotBackfillCancel);
+  },
+
+  screenshotBackfillStatus(): Promise<BackfillStatusWire> {
+    return ipcRenderer.invoke(IPC.screenshotBackfillStatus);
+  },
+
+  onScreenshotBackfillStatus(
+    cb: (status: BackfillStatusWire) => void,
+  ): () => void {
+    const listener = (_: unknown, status: BackfillStatusWire) => cb(status);
+    ipcRenderer.on(IPC.screenshotBackfillStatus, listener);
+    return () => ipcRenderer.off(IPC.screenshotBackfillStatus, listener);
   },
 
   onSyncStatus(

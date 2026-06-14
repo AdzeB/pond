@@ -2,6 +2,7 @@ import { LayoutSwitcher } from "@/components/layout-switcher";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useLibraryState } from "@/hooks/use-library-state";
+import { useIngestingCount } from "@/hooks/use-saves";
 
 export function LibraryView() {
   const data = useLibraryState();
@@ -11,13 +12,24 @@ export function LibraryView() {
     data.sourceFilter,
   );
 
+  // Surface in-flight saves as a leading grid tile, scoped to the current view. The
+  // grid filter hides "ingesting" saves, so the placeholder is the only proof they exist.
+  const ingestingCount = useIngestingCount(
+    data.mode === "source" ? data.sourceFilter : undefined,
+  );
+  const placeholderCount =
+    (data.mode === "library" || data.mode === "source") &&
+    data.viewMode !== "list"
+      ? ingestingCount
+      : 0;
+
   return (
     <LibraryGrid.Root
       view={data.viewMode === "list" ? "list" : "grid"}
       onDragOver={actions.onDragOver}
       onDrop={(e) => void actions.onDrop(e)}
     >
-      {data.filtered.length === 0 ? (
+      {data.filtered.length === 0 && placeholderCount === 0 ? (
         !data.bootReady ? null : data.mode === "trash" ? (
           <LibraryGrid.Empty>Trash is empty.</LibraryGrid.Empty>
         ) : data.totalSaves === 0 ? (
@@ -35,6 +47,7 @@ export function LibraryView() {
           saves={data.filtered}
           selectedId={data.selectedId}
           multiSelectActive={actions.multiSelectActive}
+          placeholderCount={placeholderCount}
           onClick={actions.handleCardClick}
           onDoubleClick={actions.focus}
         />

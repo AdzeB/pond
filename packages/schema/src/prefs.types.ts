@@ -59,29 +59,6 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
   maxFileSizeMb: 10,
 };
 
-export const SYNC_FREQUENCIES = ["hourly", "daily", "weekly"] as const;
-export type SyncFrequency = (typeof SYNC_FREQUENCIES)[number];
-
-export interface GlobalSyncPrefs {
-  enabled: boolean;
-  frequency: SyncFrequency;
-  anchorTime: string;
-  weekdays: number[];
-  onlyOnAcPower: boolean;
-  onlyOnWifi: boolean;
-  lastFireAt: string | null;
-}
-
-export const DEFAULT_GLOBAL_SYNC_PREFS: GlobalSyncPrefs = {
-  enabled: false,
-  frequency: "daily",
-  anchorTime: "09:00",
-  weekdays: [0, 1, 2, 3, 4, 5, 6],
-  onlyOnAcPower: false,
-  onlyOnWifi: false,
-  lastFireAt: null,
-};
-
 export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;

@@ -1,7 +1,7 @@
 import { FIELD_IDS } from "@pond/schema/filters/meta";
 import type { FieldId, Predicate, Query } from "@pond/schema/filters/types";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { SortDir } from "@/hooks/use-filtered-saves";
 import { defaultPredicateFor, predicateIsActive } from "@/lib/filter-helpers";
@@ -76,31 +76,31 @@ const store = new Store<ViewStoreState>({
 applyZoomVar(store.state.zoom);
 
 export function useViewStore(): ViewStoreState {
-  return useStore(store, (s) => s);
+  return useSelector(store, (s) => s);
 }
 
 export function useFilterQuery(): Query {
-  return useStore(store, (s) => s.query);
+  return useSelector(store, (s) => s.query);
 }
 
 export function useLayout(): LayoutValue {
-  return useStore(store, (s) => s.layout);
+  return useSelector(store, (s) => s.layout);
 }
 
 export function useSearchText(): string {
-  return useStore(store, (s) => s.q);
+  return useSelector(store, (s) => s.q);
 }
 
 export function useSortKey(): string {
-  return useStore(store, (s) => s.sortKey);
+  return useSelector(store, (s) => s.sortKey);
 }
 
 export function useSortDir(): SortDir {
-  return useStore(store, (s) => s.sortDir);
+  return useSelector(store, (s) => s.sortDir);
 }
 
 export function useActiveViewId(): string | null {
-  return useStore(store, (s) => s.activeViewId);
+  return useSelector(store, (s) => s.activeViewId);
 }
 
 export function setSearchText(q: string): void {

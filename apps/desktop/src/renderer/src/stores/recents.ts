@@ -1,4 +1,4 @@
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 
@@ -63,7 +63,7 @@ function recordVisit(saveId: string): void {
 }
 
 export function useRecents(): RecentEntry[] {
-  return useStore(store, (s) => s);
+  return useSelector(store, (s) => s);
 }
 
 export function useTrackVisit(saveId: string | null | undefined): void {

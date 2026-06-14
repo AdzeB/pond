@@ -10,9 +10,11 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { IconBarsFilterFill18 as Funnel } from "@pond/icons/fill/18";
 import { IconPlusOutline12 as Plus } from "@pond/icons/outline/12";
-import { Popover } from "@pond/ui";
-import { type ReactElement, useMemo, useState } from "react";
+import { Menu } from "@pond/ui";
+import { useMemo, useState } from "react";
+import { AppliedBadge } from "@/components/library-view-menu/submenu";
 import { PromptDialog } from "@/components/prompt-dialog";
 import { useView } from "@/hooks/use-view";
 import { defaultPredicateFor } from "@/lib/filter-helpers";
@@ -29,20 +31,13 @@ import {
 import { ConditionRow } from "./condition-row";
 import styles from "./styles.module.css";
 
-interface FilterPanelProps {
-  children: ReactElement;
-  align?: "start" | "end";
-  side?: "top" | "bottom";
-}
-
-export function FilterPanel({
-  children,
-  align = "end",
-  side = "bottom",
-}: FilterPanelProps) {
+// Nested "Filter by" entry for the View options menu. Renders the filter
+// builder inside a submenu popup so filtering lives alongside layout/sort/etc.
+export function FilterSubmenu() {
   const [promptOpen, setPromptOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
   const { query, sortKey, sortDir, layout } = useViewStore();
+  const appliedCount = query.rules.length;
 
   const confirmCreate = () => {
     const name = draftName.trim();
@@ -63,21 +58,27 @@ export function FilterPanel({
 
   return (
     <>
-      <Popover.Root>
-        <Popover.Trigger render={children} />
-        <Popover.Portal>
-          <Popover.Positioner side={side} align={align} sideOffset={6}>
-            <Popover.Popup className={styles.panel}>
+      <Menu.SubmenuRoot>
+        <Menu.SubmenuTrigger>
+          <Menu.ItemIcon>
+            <Funnel />
+          </Menu.ItemIcon>
+          <Menu.ItemLabel>Filter by</Menu.ItemLabel>
+          <AppliedBadge count={appliedCount} />
+        </Menu.SubmenuTrigger>
+        <Menu.Portal>
+          <Menu.Positioner align="start" sideOffset={6}>
+            <Menu.Popup className={styles.panel}>
               <PanelContent
                 onRequestSaveNew={() => {
                   setDraftName("");
                   setPromptOpen(true);
                 }}
               />
-            </Popover.Popup>
-          </Popover.Positioner>
-        </Popover.Portal>
-      </Popover.Root>
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.SubmenuRoot>
 
       <PromptDialog
         open={promptOpen}

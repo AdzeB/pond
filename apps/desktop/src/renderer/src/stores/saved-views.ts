@@ -1,5 +1,5 @@
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
-import { useStore } from "@tanstack/react-store";
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { bySortOrderThenName } from "@/lib/sort";
@@ -117,7 +117,7 @@ export function useSavedViews(): ReadonlyArray<SavedViewRow> {
     ensureSubscribed();
     void load();
   }, []);
-  return useStore(savedViewsStore, (s) => s.rows);
+  return useSelector(savedViewsStore, (s) => s.rows);
 }
 
 export interface CreateSavedViewInput {

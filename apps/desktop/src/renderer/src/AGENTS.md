@@ -33,7 +33,7 @@ renderer/src/
 
 Domain-prefixed kebab-case so the flat folders sort by area and never collide:
 
-- `save-*` — `save-card`, `save-card-thumb`, `save-detail-modal`, `save-preview`,
+- `save-*` — `save-card`, `save-card-media`, `save-detail-modal`, `save-preview`,
   `save-media-viewer`, `save-presentation`, `save-context-menu`, `save-inspector-kebab`.
 - `library-*` — `library-page`, `library-toolbar`, `library-dock`, `library-grid`,
   `library-grid-view`, `library-packed-grid`, `library-waterfall`, `library-justified`,
@@ -64,7 +64,7 @@ Hooks, stores, and lib helpers use the same domain prefixes where it adds clarit
   `components/grid-context.tsx` for the selection/callbacks pattern).
 - Multi-part components export a **compound object** (e.g. `Shell.Body`, `Menu.Item`). A
   family of co-dependent tiny files should be a single folder (see
-  `components/save-card-thumb`). Polymorphic dispatch (one editor per variant behind a
+  `components/save-card-media`). Polymorphic dispatch (one editor per variant behind a
   dispatcher, e.g. `library-view-menu/filter/value-select/bodies/*`) is the exception —
   keep those split.
 - Keep files focused; split components past ~400 lines along their natural seams

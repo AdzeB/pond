@@ -143,6 +143,18 @@
   }
 }
 
+.pane-empty {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  line-height: 1.5;
+  color: var(--ds-gray-9);
+  letter-spacing: 0.01px;
+}
+
 .pane-read-more {
   display: inline-flex;
   gap: 6px;

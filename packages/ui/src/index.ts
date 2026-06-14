@@ -9,7 +9,7 @@ export { Dialog } from "./dialog";
 export { Drawer } from "./drawer";
 export { Field } from "./field";
 export { Input } from "./input";
-export { Kbd } from "./kbd";
+export { Keyboard } from "./keyboard";
 export { Menu } from "./menu";
 export { Popover } from "./popover";
 export { RangeField } from "./range-field";

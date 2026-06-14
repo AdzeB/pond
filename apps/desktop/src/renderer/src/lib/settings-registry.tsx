@@ -3,7 +3,6 @@ import {
   IconTerminalFill18 as Developer,
   IconGear3Fill18 as General,
   IconImageFill18 as Images,
-  IconCalendarClockFill18 as Schedule,
   IconTagsFill18 as Tags,
   IconPresentationScreenPlayFill18 as Videos,
 } from "@pond/icons/fill/18";
@@ -23,7 +22,6 @@ const ICONS: Record<string, IconComponent> = {
   tags: Tags,
   videos: Videos,
   images: Images,
-  schedule: Schedule,
   developer: Developer,
 };
 
