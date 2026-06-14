@@ -46,7 +46,10 @@
     background: var(--ds-gray-11);
   }
 
-  &[data-status="active"],
+  &[data-status="active"] {
+    color: var(--ds-gray-1);
+  }
+
   &[data-popup-open] {
     color: var(--ds-gray-1);
     background: var(--ds-gray-11);
@@ -57,6 +60,16 @@
   }
 }
 
+/* Traveling background that slides between active nav items via motion's
+   shared layout animation. Sits behind the icon (which is z-index 1). */
+.activeIndicator {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ds-gray-11);
+  border-radius: var(--ds-radius-full);
+}
+
 .item.danger {
   &:hover {
     color: var(--ds-red-1, var(--ds-gray-1));
@@ -65,6 +78,8 @@
 }
 
 .icon {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -72,11 +87,16 @@
   height: 18px;
 }
 
-.divider {
-  width: 1px;
-  height: 20px;
-  margin-inline: 4px;
-  background: var(--ds-gray-a3);
+/* Floating companion to the main pill; appears while a selection is active. */
+.selectionPill {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  padding: 6px;
+  pointer-events: auto;
+  background: var(--white-alpha-975);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-3);
 }
 
 .syncDot {

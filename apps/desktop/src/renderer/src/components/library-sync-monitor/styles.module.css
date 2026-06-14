@@ -17,7 +17,7 @@
   /* Springy pop on enter/exit; the body's height is morphed in JS. */
   transition:
     opacity var(--ds-duration-medium) var(--ds-easing-standard),
-    transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform var(--ds-duration-slow) var(--ds-easing-emphasized);
 }
 
 .popup.modal[data-starting-style],
@@ -156,6 +156,12 @@
 
 .state[data-state="done"] {
   color: var(--ds-green-11, var(--ds-gray-11));
+}
+
+.stateDone {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
 }
 
 .state[data-state="error"],

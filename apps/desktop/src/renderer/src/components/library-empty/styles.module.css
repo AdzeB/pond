@@ -1,0 +1,22 @@
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  max-width: 420px;
+  padding: 60px 0;
+  margin: 0 auto;
+}
+
+.text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+.arrow {
+  display: inline-flex;
+  color: var(--ds-gray-9);
+}

@@ -9,7 +9,8 @@ import {
 import { Button, Dialog, Tooltip, useToast } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { KebabMenu } from "@/components/save-inspector-kebab";
 import { MediaViewer } from "@/components/save-media-viewer";
 import {
@@ -21,6 +22,12 @@ import { pickAuthorColor } from "@/components/save-preview/helpers";
 import { useSaveList } from "@/hooks/use-save-list";
 import { useSave } from "@/hooks/use-saves";
 import { initials } from "@/lib/initials";
+import {
+  type Direction,
+  directionalVariants,
+  gentleSpring,
+  snappySpring,
+} from "@/lib/motion";
 import { ensureRawJson } from "@/lib/raw-json";
 import { getSourceLabel } from "@/lib/source-labels";
 import { getSourceIcon } from "@/lib/sources-registry";
@@ -29,6 +36,21 @@ import { pickAuthorAvatarUrl } from "@/lib/url";
 import { useTrackVisit } from "@/stores/recents";
 import { primarySelection, primarySelectionStore } from "@/stores/selection";
 import styles from "./styles.module.css";
+
+// Vertical roll for the position counter: the number flies in/out in the
+// direction of travel while " / total" stays put.
+const COUNTER_OFFSET = 10;
+const counterVariants = {
+  enter: (d: Direction) => ({
+    opacity: 0,
+    y: d === "forward" ? COUNTER_OFFSET : -COUNTER_OFFSET,
+  }),
+  center: { opacity: 1, y: 0 },
+  exit: (d: Direction) => ({
+    opacity: 0,
+    y: d === "forward" ? -COUNTER_OFFSET : COUNTER_OFFSET,
+  }),
+};
 
 // Inline detail view: opening a save sets the primary selection; j/k step it. SaveModalContent mounts only while open, so browsing skips the narrowing work.
 export function SaveModal() {
@@ -52,6 +74,17 @@ function SaveModalContent({ id }: { id: string }) {
   const save = useSave(id);
   const list = useSaveList({ activeId: id });
 
+  // Derive travel direction synchronously so the slide animates the right way
+  // on the same render the id changes (next = forward, prev = backward).
+  const prevIndexRef = useRef(list.index);
+  const directionRef = useRef<Direction>("forward");
+  if (list.index !== prevIndexRef.current) {
+    directionRef.current =
+      list.index > prevIndexRef.current ? "forward" : "backward";
+    prevIndexRef.current = list.index;
+  }
+  const direction = directionRef.current;
+
   useTrackVisit(id);
 
   // The list carries only slim `rawJson`; pull the full blob now the detail view is open.
@@ -67,9 +100,6 @@ function SaveModalContent({ id }: { id: string }) {
   useHotkey("K", goPrev);
   useHotkey("ArrowUp", goPrev);
 
-  const counter =
-    list.index >= 0 ? `${list.index + 1} / ${list.total}` : `- / ${list.total}`;
-
   return (
     <Dialog.Popup className={`${styles.popup} ${styles.modal}`}>
       <div className={styles.main}>
@@ -83,11 +113,24 @@ function SaveModalContent({ id }: { id: string }) {
         </Dialog.Title>
 
         <div className={styles.media}>
-          {save ? (
-            <MediaViewer save={save} />
-          ) : (
-            <p className={styles.empty}>Save not found.</p>
-          )}
+          <AnimatePresence mode="popLayout" custom={direction} initial={false}>
+            <motion.div
+              key={id}
+              className={styles.mediaSlide}
+              custom={direction}
+              variants={directionalVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={gentleSpring}
+            >
+              {save ? (
+                <MediaViewer save={save} />
+              ) : (
+                <p className={styles.empty}>Save not found.</p>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <footer className={styles.footer}>
@@ -100,7 +143,32 @@ function SaveModalContent({ id }: { id: string }) {
               role="status"
               aria-label="Position in list"
             >
-              {counter}
+              {list.index >= 0 ? (
+                <>
+                  <span className={styles.counterRoll}>
+                    <AnimatePresence
+                      mode="popLayout"
+                      custom={direction}
+                      initial={false}
+                    >
+                      <motion.span
+                        key={list.index}
+                        custom={direction}
+                        variants={counterVariants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={snappySpring}
+                      >
+                        {list.index + 1}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                  {` / ${list.total}`}
+                </>
+              ) : (
+                `- / ${list.total}`
+              )}
             </span>
             <span className={styles.headerDivider} aria-hidden />
             <Tooltip label="Previous (K)" side="top">

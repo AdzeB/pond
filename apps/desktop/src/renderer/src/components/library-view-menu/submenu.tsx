@@ -1,5 +1,7 @@
 import { Menu } from "@pond/ui";
+import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
+import { snappySpring } from "@/lib/motion";
 import styles from "./submenu.module.css";
 
 interface ViewSubmenuProps {
@@ -54,5 +56,23 @@ export function ViewSubmenu({
 
 export function AppliedBadge({ count }: { count: number }) {
   if (count <= 0) return null;
-  return <span className={styles.applied}>{count} applied</span>;
+  // Only the number transitions; "applied" stays put (continuity).
+  return (
+    <span className={styles.applied}>
+      <span className={styles.appliedCount}>
+        <AnimatePresence initial={false} mode="popLayout">
+          <motion.span
+            key={count}
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={snappySpring}
+          >
+            {count}
+          </motion.span>
+        </AnimatePresence>
+      </span>{" "}
+      applied
+    </span>
+  );
 }

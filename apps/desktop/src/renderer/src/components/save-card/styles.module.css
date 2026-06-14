@@ -39,7 +39,7 @@
   justify-content: center;
   width: 100%;
   border-radius: 12px;
-  transition: background 140ms ease;
+  transition: background var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .media::before {
@@ -50,7 +50,7 @@
   content: "";
   border: 2px solid transparent;
   border-radius: 6px;
-  transition: all 180ms ease;
+  transition: all var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
 .item[data-selected] .media::before,
@@ -201,9 +201,9 @@
   box-shadow: var(--ds-shadow-search);
   opacity: 0;
   transition:
-    opacity 120ms ease,
-    background 120ms ease,
-    border-color 120ms ease;
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    border-color var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 :global(html[data-reduce-transparency="true"]) .checkbox {
@@ -236,13 +236,13 @@
 .item[data-dimmed] .media,
 .item[data-dimmed] .meta {
   opacity: 0.7;
-  transition: opacity 120ms ease;
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 :global([data-multi-select]) .item:not([data-multi]) .media,
 :global([data-multi-select]) .item:not([data-multi]) .meta {
   opacity: 0.7;
-  transition: opacity 120ms ease;
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .overlay {

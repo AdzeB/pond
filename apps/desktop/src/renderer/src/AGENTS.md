@@ -79,6 +79,14 @@ trades that structural guarantee for ergonomics: nothing physically prevents a n
 **components → hooks → stores/lib** by discipline, and avoid importing a `component` from a
 `store` or `lib` file. An ESLint import-cycle rule can backstop this if cycles creep in.
 
+## Design principles
+
+UI work follows the three principles in [`PRINCIPLES.md`](./PRINCIPLES.md) —
+**simplicity** (gradual revelation), **fluidity** (seamless, directional transitions),
+and **delight** (selective emphasis, per the Delight-Impact Curve). Pull motion from the
+shared `--ds-duration-*` / `--ds-easing-*` tokens and the presets in `lib/motion.ts`, and
+make sure every animation respects reduced motion.
+
 ## Verifying changes
 
 From `apps/desktop`: `pnpm typecheck` (fastest signal that import rewrites are complete)

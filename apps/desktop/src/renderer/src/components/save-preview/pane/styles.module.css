@@ -187,7 +187,7 @@
 }
 
 .pane-read-more-icon {
-  transition: transform 120ms ease;
+  transition: transform var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-rotate="true"] {
     transform: rotate(180deg);
@@ -218,7 +218,7 @@
   background: var(--ds-gray-1);
   border-radius: 2147483647px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
-  transition: box-shadow 80ms ease;
+  transition: box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     box-shadow: 0 0 0 1px var(--ds-gray-a6);
@@ -249,11 +249,11 @@
   border-radius: 2147483647px;
   opacity: 0;
   transition:
-    width 120ms ease,
-    margin 120ms ease,
-    opacity 120ms ease,
-    color 80ms ease,
-    background 80ms ease;
+    width var(--ds-duration-snap) var(--ds-easing-standard),
+    margin var(--ds-duration-snap) var(--ds-easing-standard),
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:disabled {
     cursor: not-allowed;
@@ -290,8 +290,8 @@
   border-radius: 2147483647px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
   transition:
-    box-shadow 80ms ease,
-    color 80ms ease;
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
+    color var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     color: var(--ds-gray-12);
@@ -317,7 +317,7 @@
   border: 0;
   border-radius: 8px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
-  transition: box-shadow 80ms ease;
+  transition: box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
 
   &::placeholder {
     color: var(--ds-gray-9);

@@ -6,6 +6,7 @@ import {
   type BackfillState,
   useBackfillStatus,
 } from "@/stores/backfill-monitor";
+import { CompletionCheck } from "./completion-check";
 import styles from "./styles.module.css";
 
 const BADGE_LABELS: Partial<Record<BackfillState, string>> = {
@@ -18,6 +19,7 @@ export function BackfillRow() {
   const status = useBackfillStatus();
   const running = status.state === "running";
   const failed = status.state === "error";
+  const done = status.state === "done";
   const badgeText = BADGE_LABELS[status.state];
 
   const meta =
@@ -46,10 +48,11 @@ export function BackfillRow() {
           <span className={styles.label}>Tweet screenshots</span>
           {badgeText ? (
             <span
-              className={styles.state}
+              className={`${styles.state} ${done ? styles.stateDone : ""}`}
               data-state={failed ? "error" : status.state}
               aria-live="polite"
             >
+              {done ? <CompletionCheck /> : null}
               {badgeText}
             </span>
           ) : null}

@@ -1,4 +1,5 @@
 import { LayoutSwitcher } from "@/components/layout-switcher";
+import { WelcomeEmpty } from "@/components/library-empty";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useLibraryState } from "@/hooks/use-library-state";
@@ -33,9 +34,7 @@ export function LibraryView() {
         !data.bootReady ? null : data.mode === "trash" ? (
           <LibraryGrid.Empty>Trash is empty.</LibraryGrid.Empty>
         ) : data.totalSaves === 0 ? (
-          <LibraryGrid.Empty>
-            No saves yet. Drop a link, image, or file to get started.
-          </LibraryGrid.Empty>
+          <WelcomeEmpty />
         ) : (
           <LibraryGrid.Empty>
             No matches. Try a different search or clear the filter.

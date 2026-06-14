@@ -124,11 +124,24 @@
 }
 
 .media {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   padding: 0 20px;
+}
+
+/* Each save's media is a slide that flies in/out in the direction of travel.
+   popLayout pops the exiting slide out of flow so the two cross cleanly. */
+.mediaSlide {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
 }
 
 .footer {
@@ -173,12 +186,23 @@
 }
 
 .counter {
+  display: inline-flex;
+  align-items: baseline;
   margin-inline-end: 4px;
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   letter-spacing: -0.26px;
+  white-space: pre;
+}
+
+/* Clips the rolling position number; keeps width stable via tabular figures. */
+.counterRoll {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
 }
 
 /* Right column: stack of detached metadata cards. */

@@ -41,7 +41,7 @@
   border-radius: 4px;
   box-shadow: var(--ds-shadow-2);
   opacity: 0;
-  transition: opacity 180ms ease;
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
 .slide[data-active] {
@@ -64,7 +64,7 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   transform: translateX(-50%);
-  transition: opacity 140ms ease;
+  transition: opacity var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .thumb[data-multi-media]:hover .dots {
@@ -77,8 +77,8 @@
   background: rgba(255, 255, 255, 0.5);
   border-radius: 2147483647px;
   transition:
-    background 120ms ease,
-    transform 120ms ease;
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    transform var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
 .dot[data-active] {
@@ -120,7 +120,7 @@
 
 .media[data-loaded] {
   opacity: 0;
-  transition: opacity 220ms ease;
+  transition: opacity var(--ds-duration-emphasized) var(--ds-easing-standard);
 }
 
 .media[data-loaded="true"] {

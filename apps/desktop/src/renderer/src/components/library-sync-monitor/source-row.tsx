@@ -1,10 +1,12 @@
 import type { Source } from "@pond/schema/db";
 import { Button } from "@pond/ui";
 import { AnimatePresence, motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 import { drawerSpring } from "@/lib/motion";
 import { relativeTime } from "@/lib/relative-time";
 import { getSourceDef } from "@/lib/sources-registry";
 import type { SyncSourceStatus, SyncState } from "@/stores/sync-monitor";
+import { CompletionCheck } from "./completion-check";
 import styles from "./styles.module.css";
 
 const STATE_LABELS: Record<SyncState, string> = {
@@ -33,6 +35,20 @@ export function SourceRow({
   const needsAuth = state === "auth_required";
   const failed = state === "error";
   const disconnected = !connected && !running && !needsAuth;
+
+  // Brief "just finished" reward when a run completes successfully. Selective
+  // emphasis: a calm idle row gets no badge, but the moment of completion does.
+  const [justDone, setJustDone] = useState(false);
+  const prevRunningRef = useRef(running);
+  useEffect(() => {
+    const wasRunning = prevRunningRef.current;
+    prevRunningRef.current = running;
+    if (wasRunning && !running && connected && !failed && !needsAuth) {
+      setJustDone(true);
+      const timer = setTimeout(() => setJustDone(false), 2600);
+      return () => clearTimeout(timer);
+    }
+  }, [running, connected, failed, needsAuth]);
 
   // Only show a badge when it adds signal; a calm idle row reads status from the meta line.
   const badge = running
@@ -80,6 +96,15 @@ export function SourceRow({
               aria-live="polite"
             >
               {badge.text}
+            </span>
+          ) : justDone ? (
+            <span
+              className={`${styles.state} ${styles.stateDone}`}
+              data-state="done"
+              aria-live="polite"
+            >
+              <CompletionCheck />
+              Up to date
             </span>
           ) : null}
         </div>

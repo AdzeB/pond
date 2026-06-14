@@ -6,11 +6,13 @@ import {
   IconTrash2Fill18 as Trash,
 } from "@pond/icons/fill/18";
 import { Tooltip, useToast } from "@pond/ui";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "motion/react";
 import { PondSwitcher } from "@/components/library-pond-switcher";
 import { ViewOptionsMenu } from "@/components/library-view-menu/options-menu";
 import { useSidebarNav } from "@/hooks/use-sidebar-nav";
 import { formatNumber } from "@/lib/format";
+import { gentleSpring, snappySpring } from "@/lib/motion";
 import { trashSaves } from "@/lib/mutate-save";
 import {
   selection,
@@ -26,6 +28,7 @@ export function Dock() {
   const selectionSize = useSelectionSize();
   const { visibleItems } = useSidebarNav();
   const syncRunning = useAnySyncRunning();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const navItems = visibleItems.filter(({ item }) =>
     DOCK_NAV_KEYS.has(item.key),
@@ -36,25 +39,41 @@ export function Dock() {
       <div className={styles.pill}>
         <PondSwitcher compact className={styles.item} />
 
-        {navItems.map(({ item, count }) => (
-          <Tooltip
-            key={item.key}
-            label={
-              count > 0 ? `${item.label} · ${formatNumber(count)}` : item.label
-            }
-            side="top"
-          >
-            <Link
-              to={item.path}
-              params={item.params}
-              activeOptions={item.path === "/" ? { exact: true } : undefined}
-              className={styles.item}
-              aria-label={item.label}
+        {navItems.map(({ item, count }) => {
+          const active =
+            item.path === "/"
+              ? pathname === "/"
+              : pathname === `/${item.params?.mode}`;
+          return (
+            <Tooltip
+              key={item.key}
+              label={
+                count > 0
+                  ? `${item.label} · ${formatNumber(count)}`
+                  : item.label
+              }
+              side="top"
             >
-              <span className={styles.icon}>{item.icon}</span>
-            </Link>
-          </Tooltip>
-        ))}
+              <Link
+                to={item.path}
+                params={item.params}
+                activeOptions={item.path === "/" ? { exact: true } : undefined}
+                className={styles.item}
+                aria-label={item.label}
+              >
+                {active ? (
+                  <motion.span
+                    layoutId="dockActive"
+                    className={styles.activeIndicator}
+                    transition={gentleSpring}
+                    aria-hidden
+                  />
+                ) : null}
+                <span className={styles.icon}>{item.icon}</span>
+              </Link>
+            </Tooltip>
+          );
+        })}
 
         <Tooltip label="View options" side="top">
           <ViewOptionsMenu
@@ -84,9 +103,18 @@ export function Dock() {
             <span className={styles.icon}>
               <Sync />
             </span>
-            {syncRunning ? (
-              <span className={styles.syncDot} aria-hidden />
-            ) : null}
+            <AnimatePresence>
+              {syncRunning ? (
+                <motion.span
+                  className={styles.syncDot}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={snappySpring}
+                  aria-hidden
+                />
+              ) : null}
+            </AnimatePresence>
           </button>
         </Tooltip>
 
@@ -106,7 +134,11 @@ export function Dock() {
           </Link>
         </Tooltip>
       </div>
-      {selectionSize > 0 ? <SelectionGroup count={selectionSize} /> : null}
+      <AnimatePresence>
+        {selectionSize > 0 ? (
+          <SelectionGroup key="selection" count={selectionSize} />
+        ) : null}
+      </AnimatePresence>
     </nav>
   );
 }
@@ -125,8 +157,13 @@ function SelectionGroup({ count }: { count: number }) {
   };
 
   return (
-    <>
-      <span className={styles.divider} aria-hidden />
+    <motion.div
+      className={styles.selectionPill}
+      initial={{ opacity: 0, scale: 0.85, x: -8 }}
+      animate={{ opacity: 1, scale: 1, x: 0 }}
+      exit={{ opacity: 0, scale: 0.85, x: -8 }}
+      transition={snappySpring}
+    >
       <span
         className={styles.count}
         role="status"
@@ -136,16 +173,18 @@ function SelectionGroup({ count }: { count: number }) {
       </span>
 
       <Tooltip label="Move to trash" side="top">
-        <button
+        <motion.button
           type="button"
           className={`${styles.item} ${styles.danger}`}
           aria-label="Move selected to trash"
           onClick={moveToTrash}
+          whileTap={{ scale: 0.86, rotate: -8 }}
+          transition={snappySpring}
         >
           <span className={styles.icon}>
             <Trash />
           </span>
-        </button>
+        </motion.button>
       </Tooltip>
 
       <button
@@ -156,6 +195,6 @@ function SelectionGroup({ count }: { count: number }) {
       >
         Clear
       </button>
-    </>
+    </motion.div>
   );
 }
