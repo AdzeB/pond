@@ -3,6 +3,7 @@ import { color } from "./color";
 import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
 import { duration } from "./duration";
+import { fileCount } from "./file-count";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
 import { publishedAt } from "./published-at";
@@ -24,6 +25,7 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   tags,
   source,
   type: typeField,
+  fileCount,
   duration,
   creator,
   note,

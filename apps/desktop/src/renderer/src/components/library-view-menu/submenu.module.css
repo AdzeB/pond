@@ -1,33 +1,21 @@
-.header {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px 6px;
+/* Liquid-glass treatment for the submenu side-panel. Doubled class wins over
+   the shared .popup background regardless of stylesheet order. The SVG filter
+   (mounted once at the app root) refracts the library content behind the panel;
+   text stays crisp because the filter only touches the backdrop. */
+.glassPopup.glassPopup {
+  background: color-mix(in srgb, var(--ds-gray-1) 72%, transparent);
+  box-shadow:
+    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
+    var(--ds-shadow-3),
+    inset 0 1px 0 light-dark(var(--white-alpha-500), var(--white-alpha-100));
+  -webkit-backdrop-filter: url("#pond-liquid-glass") blur(7px) saturate(170%);
+  backdrop-filter: url("#pond-liquid-glass") blur(7px) saturate(170%);
 }
 
-.title {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-}
-
-.reset {
-  height: 24px;
-  padding: 0 6px;
-  font: inherit;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-accent-11, var(--ds-gray-12));
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
-
-  &:hover {
-    background: var(--ds-gray-2);
-  }
+:global(html[data-reduce-transparency="true"]) .glassPopup.glassPopup {
+  background: var(--ds-gray-1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .applied {

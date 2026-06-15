@@ -4,14 +4,14 @@
   /* intentionally empty; see .popup.modal */
 }
 
-/* The outer popup is a transparent flex row; the two columns read as separate
+/* The outer popup is a transparent flex row; the three columns read as separate
    floating cards over the backdrop (matches the Figma split layout). Because it
    spans the whole viewport, it must stay click-through so presses in the gaps
    reach the backdrop and dismiss the dialog; the cards opt back into events. */
 .popup.modal {
   display: flex;
   flex-direction: row;
-  gap: 24px;
+  gap: 32px;
   width: calc(100vw - 48px);
   max-width: none;
   height: calc(100vh - 48px);
@@ -23,7 +23,7 @@
   box-shadow: none;
 }
 
-/* Left card: header + media + footer, a self-contained floating panel. */
+/* Center card: header + media + footer, a self-contained floating panel. */
 .main {
   display: flex;
   flex: 1 1 auto;
@@ -205,13 +205,13 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Right column: stack of detached metadata cards. */
+/* Flanking columns: a stack of detached metadata cards on each side. */
 .side {
   display: flex;
-  flex: 0 0 320px;
+  flex: 0 0 350px;
   flex-direction: column;
-  gap: 24px;
-  width: 320px;
+  gap: 32px;
+  width: 350px;
   min-height: 0;
 }
 
@@ -269,6 +269,59 @@
   font-size: 12px;
   color: var(--ds-gray-11);
   text-align: center;
+}
+
+/* Properties: a three-up grid of label/value pairs that flows top-to-bottom. */
+.propsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin: 0;
+}
+
+.propCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  min-width: 0;
+}
+
+.propLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  line-height: 24px;
+  color: var(--ds-gray-9);
+  letter-spacing: -0.09px;
+  white-space: nowrap;
+}
+
+.propValue {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 500;
+  font-feature-settings:
+    "lnum" 1,
+    "tnum" 1;
+  font-variant-numeric: tabular-nums;
+  line-height: 24px;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.09px;
+  white-space: nowrap;
+}
+
+.propsEmpty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ds-gray-9);
 }
 
 .srOnly {

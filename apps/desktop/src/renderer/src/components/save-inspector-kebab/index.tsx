@@ -40,7 +40,7 @@ export function KebabMenu({
       const res = await window.pond.refreshSave(save.id);
       if (res.ok) {
         toast.add({
-          title: "Metadata refreshed",
+          title: "Details refreshed",
           type: "success",
           description:
             res.method === "og"

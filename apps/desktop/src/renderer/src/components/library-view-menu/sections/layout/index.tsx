@@ -11,21 +11,11 @@ const options: Array<{ value: LayoutValue; label: string }> = [
   { value: "list", label: "List" },
 ];
 
-const DEFAULT_LAYOUT: LayoutValue = "waterfall";
-
 export function LayoutSection() {
   const { state, actions } = useView();
 
   return (
-    <ViewSubmenu
-      icon={<LayoutIcon />}
-      label="Layout"
-      onReset={
-        state.layout === DEFAULT_LAYOUT
-          ? undefined
-          : () => actions.setLayout(DEFAULT_LAYOUT)
-      }
-    >
+    <ViewSubmenu icon={<LayoutIcon />} label="Layout">
       <Menu.Group>
         {options.map(({ value, label }) => (
           <Menu.CheckboxItem

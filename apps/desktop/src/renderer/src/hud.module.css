@@ -1,0 +1,178 @@
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+}
+
+.pill {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  padding: 10px 12px;
+  font-family:
+    -apple-system, system-ui, "SF Pro Text", inter-variable, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--ds-gray-1) 62%, transparent);
+  border-radius: var(--ds-radius-full);
+  box-shadow:
+    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
+    0 12px 32px -8px var(--black-alpha-400),
+    0 2px 8px -2px var(--black-alpha-200),
+    inset 0 1px 0 light-dark(var(--white-alpha-700), var(--white-alpha-100));
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  transition:
+    transform var(--ds-duration-medium) var(--ds-easing-snap),
+    box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+/* macOS banners gently lift on hover. */
+.pill:hover {
+  box-shadow:
+    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
+    0 18px 44px -10px var(--black-alpha-500),
+    0 3px 10px -2px var(--black-alpha-200),
+    inset 0 1px 0 light-dark(var(--white-alpha-700), var(--white-alpha-100));
+  transform: translateY(-1px) scale(1.012);
+}
+
+/* A real NSGlassEffectView sits behind the window: the pill becomes a thin
+   tint so the live, refracted desktop reads through it. The native material
+   supplies depth, so we drop the CSS drop shadow (the window hugs the pill and
+   has no room for it) and keep only the hairline contour + top highlight. */
+.pill[data-native-glass="true"] {
+  background: color-mix(in srgb, var(--ds-gray-1) 16%, transparent);
+  box-shadow:
+    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
+    inset 0 1px 0 light-dark(var(--white-alpha-700), var(--white-alpha-100));
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.pill[data-native-glass="true"]:hover {
+  box-shadow:
+    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
+    inset 0 1px 0 light-dark(var(--white-alpha-700), var(--white-alpha-100));
+  transform: none;
+}
+
+/* Honor the system/app reduce-transparency setting: solid, no blur. */
+:global(html[data-reduce-transparency="true"]) .pill {
+  background: var(--ds-gray-1);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.avatars {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* Source badge sits behind the author avatar, overlapping like the design. */
+.sourceBadge {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.avatars:has(.avatar) .sourceBadge {
+  margin-right: -12px;
+}
+
+.avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  background: var(--ds-gray-9);
+  border: 3px solid var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+}
+
+.avatarImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 590;
+  line-height: 1.1;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.18px;
+}
+
+.time {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.1;
+  color: var(--ds-gray-11);
+  letter-spacing: -0.1px;
+}
+
+.view {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  align-self: stretch;
+  justify-content: center;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 590;
+  color: var(--ds-gray-1);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-accent-a9);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  box-shadow:
+    inset 0 1px 0 var(--white-alpha-300),
+    inset 0 -1px 0 var(--black-alpha-200);
+  transition:
+    opacity var(--ds-duration-medium) var(--ds-easing-standard),
+    transform var(--ds-duration-fast) var(--ds-easing-snap);
+}
+
+.view:hover {
+  opacity: 0.85;
+}
+
+.view:active {
+  opacity: 0.9;
+  transform: scale(0.97);
+}

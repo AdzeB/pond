@@ -5,30 +5,18 @@ import type { DisplayPrefKey } from "@/stores/display-prefs";
 import { ViewSubmenu } from "../../submenu";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
-  { key: "name", label: "Show name" },
-  { key: "date", label: "Show date" },
-  { key: "source", label: "Show source" },
-  { key: "type", label: "Show type" },
-  { key: "fileCount", label: "Show file count" },
+  { key: "name", label: "Name" },
+  { key: "date", label: "Date" },
+  { key: "source", label: "Source" },
+  { key: "type", label: "Type" },
+  { key: "fileCount", label: "File count" },
 ];
 
 export function DisplaySection() {
   const { state, actions } = useView();
 
-  const allOn = TOGGLES.every(({ key }) => state.displayPrefs[key]);
-
   return (
-    <ViewSubmenu
-      icon={<DisplayIcon />}
-      label="Display"
-      onReset={
-        allOn
-          ? undefined
-          : () => {
-              for (const { key } of TOGGLES) actions.setDisplayPref(key, true);
-            }
-      }
-    >
+    <ViewSubmenu icon={<DisplayIcon />} label="Display">
       <Menu.Group>
         {TOGGLES.map(({ key, label }) => (
           <Menu.CheckboxItem

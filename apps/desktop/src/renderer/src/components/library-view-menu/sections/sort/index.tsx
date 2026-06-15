@@ -4,7 +4,7 @@ import {
   IconSortingFill18 as SortIcon,
 } from "@pond/icons/fill/18";
 import { Select } from "@pond/ui";
-import { type SortDir, type SortKey, useView } from "@/hooks/use-view";
+import { type SortKey, useView } from "@/hooks/use-view";
 import { ViewSubmenu } from "../../submenu";
 import submenu from "../../submenu.module.css";
 
@@ -18,20 +18,12 @@ const KEY_LABELS: Record<SortKey, string> = Object.fromEntries(
   KEY_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<SortKey, string>;
 
-const DEFAULT_SORT = { key: "savedAt" as SortKey, dir: "desc" as SortDir };
-
 export function SortSection() {
   const { state, actions } = useView();
   const { key, dir } = state.sort;
 
-  const isDefault = key === DEFAULT_SORT.key && dir === DEFAULT_SORT.dir;
-
   return (
-    <ViewSubmenu
-      icon={<SortIcon />}
-      label="Sort by"
-      onReset={isDefault ? undefined : () => actions.setSort(DEFAULT_SORT)}
-    >
+    <ViewSubmenu icon={<SortIcon />} label="Sort by">
       <div className={submenu.sortRow}>
         <Select.Root
           value={key}

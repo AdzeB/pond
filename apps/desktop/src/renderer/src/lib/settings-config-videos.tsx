@@ -16,7 +16,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "maxHeight",
-          title: "Maximum Resolution",
+          title: "Maximum resolution",
           description:
             "Higher resolutions mean bigger files. 1080p suits most clips.",
           options: [
@@ -35,7 +35,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "maxFps",
-          title: "Maximum Frame Rate",
+          title: "Maximum frame rate",
           description: "Cap the frame rate to keep files smaller.",
           options: [
             { value: null, label: "Unlimited" },
@@ -47,7 +47,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "maxFileSizeMb",
-          title: "Maximum File Size",
+          title: "Maximum file size",
           description: "Skip downloads bigger than the cap.",
           options: [
             { value: 2, label: "2\u00A0MB" },
@@ -55,7 +55,7 @@ export const videosSection: SectionConfig = {
             { value: 10, label: "10\u00A0MB" },
             { value: 25, label: "25\u00A0MB" },
             { value: 50, label: "50\u00A0MB" },
-            { value: null, label: "No Cap" },
+            { value: null, label: "Unlimited" },
           ],
         },
       ],
@@ -67,7 +67,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "videoCodec",
-          title: "Preferred Video Codec",
+          title: "Preferred video codec",
           description:
             "H.264 is most compatible; AV1 and VP9 are smaller but newer.",
           options: [
@@ -75,18 +75,18 @@ export const videosSection: SectionConfig = {
             { value: "hevc", label: "H.265 (HEVC)" },
             { value: "av1", label: "AV1" },
             { value: "vp9", label: "VP9" },
-            { value: "any", label: "Any / Best" },
+            { value: "any", label: "Any / best" },
           ],
         },
         {
           control: "select",
           key: "audioCodec",
-          title: "Preferred Audio Codec",
+          title: "Preferred audio codec",
           description: "Falls back to the next best when unavailable.",
           options: [
             { value: "aac", label: "AAC" },
             { value: "opus", label: "Opus" },
-            { value: "any", label: "Any / Best" },
+            { value: "any", label: "Any / best" },
           ],
         },
         {
@@ -116,14 +116,14 @@ export const videosSection: SectionConfig = {
             "Download saves a sidecar file; Embed muxes them into the video.",
           options: [
             { value: "off", label: "Off" },
-            { value: "download", label: "Download Sidecar" },
-            { value: "embed", label: "Embed in Video" },
+            { value: "download", label: "Download sidecar" },
+            { value: "embed", label: "Embed in video" },
           ],
         },
         {
           control: "select",
           key: "subtitleLang",
-          title: "Subtitle Language",
+          title: "Subtitle language",
           description: "Preferred language to fetch when available.",
           visible: subtitlesEnabled,
           options: [
@@ -144,25 +144,25 @@ export const videosSection: SectionConfig = {
       ],
     },
     {
-      title: "Emedding",
+      title: "Embedding",
       useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "switch",
           key: "embedMetadata",
-          title: "Embed Metadata",
+          title: "Embed details",
           description: "Write title, uploader, and date into the file.",
         },
         {
           control: "switch",
           key: "embedThumbnail",
-          title: "Embed Thumbnail",
+          title: "Embed thumbnail",
           description: "Attach the poster image as cover art.",
         },
         {
           control: "switch",
           key: "embedChapters",
-          title: "Embed Chapters",
+          title: "Embed chapters",
           description: "Include chapter markers when the source has them.",
         },
       ],
@@ -174,7 +174,7 @@ export const videosSection: SectionConfig = {
         {
           control: "switch",
           key: "sponsorblockRemove",
-          title: "Remove Sponsors",
+          title: "Remove sponsors",
           description:
             "Use SponsorBlock to cut sponsor segments (YouTube only).",
         },

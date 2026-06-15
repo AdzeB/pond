@@ -196,7 +196,7 @@ export function installAppMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("save.add-tag"),
         },
         {
-          label: "Refresh Metadata",
+          label: "Refresh Details",
           click: sendMenuAction("save.refresh"),
         },
         { type: "separator" },

@@ -32,6 +32,9 @@ const preferences = z.object({
 const notifications = z.object({
   saveComplete: z.boolean().catch(true),
   sound: z.boolean().catch(false),
+  // How a save-complete alert appears while the app is unfocused: "hud" is the
+  // in-house corner toast window; "system" falls back to the native OS banner.
+  style: z.enum(["hud", "system"]).catch("hud"),
 });
 
 const trash = z.object({

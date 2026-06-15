@@ -60,7 +60,9 @@ export const CardThumb = memo(function CardThumb({
   // moves over the badge overlay still bubble up and register.
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!slides) return;
+      // Don't scrub frames while the cover is still blurred — scrubbing would
+      // load and surface other sensitive frames underneath the overlay.
+      if (!slides || blurred) return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (rect.width === 0) return;
       const ratio = (e.clientX - rect.left) / rect.width;
@@ -71,7 +73,7 @@ export const CardThumb = memo(function CardThumb({
       setActive((prev) => (prev === i ? prev : i));
       setSeen((prev) => (prev.has(i) ? prev : new Set(prev).add(i)));
     },
-    [slides],
+    [slides, blurred],
   );
 
   const onPointerLeave = useCallback(() => setActive(0), []);

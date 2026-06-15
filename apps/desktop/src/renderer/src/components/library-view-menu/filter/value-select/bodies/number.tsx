@@ -45,21 +45,25 @@ export function NumberBody({ predicate, onChange }: BodyProps) {
 
   return (
     <div className={styles.body}>
-      <Menu.Input
-        value={q}
-        placeholder="Filter…"
-        autoFocus
-        onChange={(e) => setQ(e.target.value)}
-      />
-      {filtered.map((p) => (
-        <Menu.Item key={p.id} onClick={() => applyPreset(p.value)}>
-          <Menu.ItemLabel>{p.label}</Menu.ItemLabel>
-        </Menu.Item>
-      ))}
-      {filtered.length === 0 ? (
-        <div className={styles.empty}>No matches.</div>
+      {presets.length > 0 ? (
+        <>
+          <Menu.Input
+            value={q}
+            placeholder="Filter…"
+            autoFocus
+            onChange={(e) => setQ(e.target.value)}
+          />
+          {filtered.map((p) => (
+            <Menu.Item key={p.id} onClick={() => applyPreset(p.value)}>
+              <Menu.ItemLabel>{p.label}</Menu.ItemLabel>
+            </Menu.Item>
+          ))}
+          {filtered.length === 0 ? (
+            <div className={styles.empty}>No matches.</div>
+          ) : null}
+          <Menu.Separator />
+        </>
       ) : null}
-      <Menu.Separator />
       <div className={styles.range}>
         <Input.Field
           type="number"

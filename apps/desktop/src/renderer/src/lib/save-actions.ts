@@ -136,7 +136,7 @@ export async function refreshSaveMetadata(
 ): Promise<void> {
   if (!save.url) return;
   await window.pond.refreshSave(save.id);
-  toast.add({ title: "Refreshing metadata…", type: "success" });
+  toast.add({ title: "Refreshing details…", type: "success" });
 }
 
 export async function copyImage(save: Save, toast: Toast): Promise<void> {

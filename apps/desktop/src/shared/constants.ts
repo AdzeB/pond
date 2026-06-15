@@ -38,6 +38,10 @@ export const IPC = {
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
+  saveHud: "pond:save-hud",
+  saveHudResize: "pond:save-hud-resize",
+  saveHudActivate: "pond:save-hud-activate",
+  saveHudReady: "pond:save-hud-ready",
 } as const;
 
 export type MenuActionId =

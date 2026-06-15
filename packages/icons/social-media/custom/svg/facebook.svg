@@ -1,0 +1,21 @@
+<svg viewBox="0 0 370 370" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Facebook">
+  <title>Facebook</title>
+  <rect width="370" height="370" fill="url(#facebook-gradient)" />
+  <path
+    d="M258.713 241.37L266.849 188.164H215.95V153.652C215.95 139.093 223.047 124.892 245.845 124.892H269V79.595C269 79.595 247.995 76 227.922 76C185.984 76 158.598 101.488 158.598 147.613V188.164H112V241.37H158.598V370C158.598 370 177.25 370 187 370C196.75 370 215.95 370 215.95 370V241.37H258.713Z"
+    fill="white"
+  />
+  <defs>
+    <linearGradient
+      id="facebook-gradient"
+      x1="185"
+      y1="0"
+      x2="185"
+      y2="370"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color="#18AFFE" />
+      <stop offset="1" stop-color="#0062E1" />
+    </linearGradient>
+  </defs>
+</svg>

@@ -9,18 +9,16 @@ interface ViewSubmenuProps {
   label: string;
   // Right-aligned badge in the trigger row (e.g. "3 applied").
   badge?: ReactNode;
-  onReset?: () => void;
   popupWidth?: string;
   children: ReactNode;
 }
 
-// One row in the View options menu that expands into a side panel with a
-// header (title + optional Reset), mirroring Filter by / Sort by / Density.
+// One row in the View options menu that expands into a side panel. The trigger
+// label already names the panel, so the panel itself carries no title.
 export function ViewSubmenu({
   icon,
   label,
   badge,
-  onReset,
   popupWidth = "240px",
   children,
 }: ViewSubmenuProps) {
@@ -33,19 +31,10 @@ export function ViewSubmenu({
       </Menu.SubmenuTrigger>
       <Menu.Portal>
         <Menu.Positioner align="start" sideOffset={6}>
-          <Menu.Popup style={{ width: popupWidth }}>
-            <div className={styles.header}>
-              <span className={styles.title}>{label}</span>
-              {onReset ? (
-                <button
-                  type="button"
-                  className={styles.reset}
-                  onClick={onReset}
-                >
-                  Reset
-                </button>
-              ) : null}
-            </div>
+          <Menu.Popup
+            className={styles.glassPopup}
+            style={{ width: popupWidth }}
+          >
             {children}
           </Menu.Popup>
         </Menu.Positioner>

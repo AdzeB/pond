@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self' pond:; img-src 'self' data: blob: pond: https:; media-src 'self' data: blob: pond: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: pond: http://localhost:* ws://localhost:* http://127.0.0.1:* ws://127.0.0.1:* https:; font-src 'self' data:"
+		/>
+		<title>Pond</title>
+		<link
+			rel="preload"
+			href="/src/assets/fonts/inter/variable.woff2"
+			as="font"
+			type="font/woff2"
+			crossorigin="anonymous"
+		/>
+		<style>
+			/* Pre-bundle shell paint. The HUD window is transparent, so unlike the
+			   main window the document/body/#root must NOT paint a background —
+			   only the toast card itself is opaque. */
+			:root {
+				font-family:
+					inter-variable, ui-sans-serif, system-ui, -apple-system,
+					"SF Pro Text", "Segoe UI", sans-serif;
+				color-scheme: light dark;
+			}
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				overflow: hidden;
+				overscroll-behavior: none;
+				background: transparent;
+			}
+			#root {
+				display: flex;
+				flex-direction: column;
+				height: 100%;
+				background: transparent;
+				isolation: isolate;
+			}
+		</style>
+		<script>
+			(() => {
+				try {
+					const hint = window.__pondShell || {};
+					const raw = localStorage.getItem("pondShell");
+					const stored = raw ? JSON.parse(raw) : {};
+					const shell = { ...stored, ...hint };
+					const doc = document.documentElement;
+
+					let theme = shell.theme;
+					if (theme !== "light" && theme !== "dark") {
+						theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+							? "dark"
+							: "light";
+					}
+					doc.setAttribute("data-theme", theme);
+					doc.classList.add(theme);
+
+					const setNum = (key, prop) => {
+						if (typeof shell[key] === "number")
+							doc.style.setProperty(prop, String(shell[key]));
+					};
+					setNum("baseL", "--ds-base-l");
+					setNum("baseC", "--ds-base-c");
+					setNum("baseH", "--ds-base-h");
+					setNum("accentL", "--ds-accent-l");
+					setNum("accentC", "--ds-accent-c");
+					setNum("accentH", "--ds-accent-h");
+					setNum("contrast", "--ds-contrast");
+					setNum("fgDir", "--ds-fg-dir");
+
+					if (shell.pointerCursors)
+						doc.setAttribute("data-pointer-cursors", "true");
+
+					const ua = navigator.userAgent || "";
+					const platform = /Mac|iPhone|iPad/i.test(ua) ? "mac" : "other";
+					doc.setAttribute("data-platform", platform);
+				} catch {
+					/* bundle will paint */
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="/src/hud.tsx"></script>
+	</body>
+</html>

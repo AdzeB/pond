@@ -5,6 +5,7 @@ import { IPC } from "../../shared/constants";
 import { registerSyncActionListener } from "./executor";
 import { getPrefs } from "./prefs";
 import { sourceLabel } from "./refresh/sources";
+import { setSaveHudActivation, showSaveHud } from "./save-hud";
 
 export interface SaveCompleteNotifierOptions {
   focusMainWindow: () => Promise<BrowserWindow | null> | BrowserWindow | null;
@@ -18,11 +19,26 @@ export function startSaveCompleteNotifier(
   if (started) return;
   started = true;
 
+  setSaveHudActivation((saveId) => {
+    void activateSave(saveId, opts).catch((err) => {
+      log.warn("[pond notifications] hud activation failed", err);
+    });
+  });
+
   registerSyncActionListener((action) => {
     void handleAction(action, opts).catch((err) => {
       log.warn("[pond notifications] handler threw", err);
     });
   });
+}
+
+async function activateSave(
+  saveId: string,
+  opts: SaveCompleteNotifierOptions,
+): Promise<void> {
+  const win = await opts.focusMainWindow();
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send(IPC.nav, `/save/${encodeURIComponent(saveId)}`);
 }
 
 async function handleAction(
@@ -47,6 +63,15 @@ async function handleAction(
   const title = `Saved from ${sourceLabel(save.source)}`;
   const body = pickBody(save);
 
+  if (prefs.notifications.style === "hud") {
+    await showSaveHud({
+      id: save.id,
+      source: save.source,
+      avatarUrl: pickAvatarUrl(save),
+    });
+    return;
+  }
+
   const notification = new Notification({
     title,
     body,
@@ -67,6 +92,29 @@ async function handleAction(
   });
 
   notification.show();
+}
+
+// Best-effort avatar for the HUD: a local avatar file if the pipeline already
+// wrote one, else the remote author avatar captured in rawJson. Usually absent
+// at insert time (assets arrive moments later), in which case the HUD shows just
+// the source glyph.
+function pickAvatarUrl(save: Partial<Save>): string | null {
+  const files = (save as { files?: Array<{ kind?: string; path?: string }> })
+    .files;
+  const avatar = files?.find(
+    (f) => f.kind === "avatar" && typeof f.path === "string",
+  );
+  if (avatar?.path && save.id) {
+    const encoded = avatar.path.split("/").map(encodeURIComponent).join("/");
+    return `pond://${save.id}/${encoded}`;
+  }
+  const remote = (
+    save as {
+      rawJson?: { capture?: { author?: { avatarUrl?: unknown } } };
+    }
+  ).rawJson?.capture?.author?.avatarUrl;
+  if (typeof remote === "string" && remote.trim().length > 0) return remote;
+  return null;
 }
 
 function pickBody(save: Partial<Save>): string {

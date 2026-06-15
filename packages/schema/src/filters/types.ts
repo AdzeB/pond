@@ -74,6 +74,7 @@ export type FieldId =
   | "tags"
   | "source"
   | "type"
+  | "fileCount"
   | "duration"
   | "creator"
   | "note"

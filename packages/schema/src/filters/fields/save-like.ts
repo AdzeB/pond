@@ -10,6 +10,7 @@ export interface SaveLike {
   tags?: string[];
   notes?: string | null;
   mediaType?: string | null;
+  files?: ReadonlyArray<unknown> | null;
   sensitivity?: "safe" | "sensitive" | null;
   width?: number | null;
   height?: number | null;

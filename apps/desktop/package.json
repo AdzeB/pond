@@ -98,5 +98,8 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.11",
     "vitest": "^4.1.8"
+  },
+  "optionalDependencies": {
+    "electron-liquid-glass": "^1.1.1"
   }
 }

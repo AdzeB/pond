@@ -21,6 +21,7 @@ import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
+import { disposeSaveHud } from "./core/save-hud";
 import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
@@ -598,6 +599,11 @@ app.on("before-quit", async () => {
     disposeHiddenWindow();
   } catch (err) {
     log.warn("[pond] hidden window dispose failed", err);
+  }
+  try {
+    disposeSaveHud();
+  } catch (err) {
+    log.warn("[pond] save hud dispose failed", err);
   }
   try {
     await httpServer?.close();

@@ -10,7 +10,7 @@ import { CompletionCheck } from "./completion-check";
 import styles from "./styles.module.css";
 
 const BADGE_LABELS: Partial<Record<BackfillState, string>> = {
-  running: "Recapturing",
+  running: "Updating",
   error: "Failed",
   done: "Done",
 };
@@ -25,8 +25,8 @@ export function BackfillRow() {
   const meta =
     status.message ??
     (failed
-      ? "Couldn't recapture screenshots"
-      : "Recapture missing or outdated tweet screenshots");
+      ? "Couldn't update screenshots"
+      : "Update missing or outdated tweet screenshots");
 
   const pct =
     status.total > 0
@@ -108,7 +108,7 @@ export function BackfillRow() {
             variant="ghost"
             onClick={() => void window.pond.screenshotBackfillRun()}
           >
-            {failed ? "Retry" : "Backfill"}
+            {failed ? "Retry" : "Update"}
           </Button>
         )}
       </div>

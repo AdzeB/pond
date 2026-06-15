@@ -48,7 +48,7 @@ export const imagesSection: SectionConfig = {
       ],
     },
     {
-      title: "Image Encoding",
+      title: "Image encoding",
       useBinding: useImageDownloadBinding,
       items: [
         {
@@ -84,7 +84,7 @@ export const imagesSection: SectionConfig = {
         {
           control: "switch",
           key: "preserveMetadata",
-          title: "Preserve Metadata",
+          title: "Preserve metadata",
           description: "Keep EXIF and color profile when re-encoding.",
           visible: imageReencode,
         },

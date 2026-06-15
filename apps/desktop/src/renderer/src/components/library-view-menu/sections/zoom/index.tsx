@@ -5,11 +5,11 @@ import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/zoom";
 import { ViewSubmenu } from "../../submenu";
 
 const options: Array<{ value: number; label: string }> = [
-  { value: ZOOM_MIN, label: "Smaller" },
-  { value: 105, label: "Small" },
-  { value: ZOOM_DEFAULT, label: "Default" },
-  { value: 185, label: "Large" },
-  { value: ZOOM_MAX, label: "Larger" },
+  { value: ZOOM_MIN, label: "Compact" },
+  { value: 105, label: "Cozy" },
+  { value: ZOOM_DEFAULT, label: "Comfortable" },
+  { value: 185, label: "Spacious" },
+  { value: ZOOM_MAX, label: "Roomy" },
 ];
 
 function closest(value: number): number {
@@ -30,13 +30,7 @@ export function ZoomSection() {
   const value = closest(state.zoom);
 
   return (
-    <ViewSubmenu
-      icon={<ZoomIcon />}
-      label="Zoom"
-      onReset={
-        value === ZOOM_DEFAULT ? undefined : () => actions.setZoom(ZOOM_DEFAULT)
-      }
-    >
+    <ViewSubmenu icon={<ZoomIcon />} label="Zoom">
       <Menu.Group>
         {options.map(({ value: option, label }) => (
           <Menu.CheckboxItem

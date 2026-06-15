@@ -19,6 +19,7 @@ import {
   TagsEditor,
 } from "@/components/save-preview";
 import { pickAuthorColor } from "@/components/save-preview/helpers";
+import { collectInfoRows } from "@/components/save-preview/rows";
 import { useSaveList } from "@/hooks/use-save-list";
 import { useSave } from "@/hooks/use-saves";
 import { initials } from "@/lib/initials";
@@ -102,6 +103,17 @@ function SaveModalContent({ id }: { id: string }) {
 
   return (
     <Dialog.Popup className={`${styles.popup} ${styles.modal}`}>
+      {save ? (
+        <aside className={styles.side}>
+          <MetaCard label="Description" fade>
+            <DescriptionBlock save={save} />
+          </MetaCard>
+          <MetaCard label="Notes">
+            <NotesEditor save={save} />
+          </MetaCard>
+        </aside>
+      ) : null}
+
       <div className={styles.main}>
         <header className={styles.header}>
           <Identity save={save} />
@@ -201,11 +213,8 @@ function SaveModalContent({ id }: { id: string }) {
 
       {save ? (
         <aside className={styles.side}>
-          <MetaCard label="Description" fade>
-            <DescriptionBlock save={save} />
-          </MetaCard>
-          <MetaCard label="Notes">
-            <NotesEditor save={save} />
+          <MetaCard label="Properties">
+            <PropertiesGrid save={save} />
           </MetaCard>
           <MetaCard label="Tags">
             <TagsEditor save={save} />
@@ -213,6 +222,25 @@ function SaveModalContent({ id }: { id: string }) {
         </aside>
       ) : null}
     </Dialog.Popup>
+  );
+}
+
+function PropertiesGrid({ save }: { save: Save }) {
+  const rows = useMemo(() => collectInfoRows(save), [save]);
+  if (rows.length === 0) {
+    return <p className={styles.propsEmpty}>No properties.</p>;
+  }
+  return (
+    <dl className={styles.propsGrid}>
+      {rows.map((row) => (
+        <div key={row.id} className={styles.propCell}>
+          <dt className={styles.propLabel}>{row.label}</dt>
+          <dd className={styles.propValue} title={row.value}>
+            {row.value}
+          </dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 

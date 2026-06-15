@@ -17,7 +17,7 @@ export const generalSection: SectionConfig = {
         {
           control: "switch",
           key: "closeToTray",
-          title: "Close to Tray",
+          title: "Close to tray",
           description:
             "Hide Pond when you close the window instead of quitting.",
           apply: () => runApply("window.applyPrefs"),
@@ -25,13 +25,13 @@ export const generalSection: SectionConfig = {
       ],
     },
     {
-      title: "Menu Bar",
+      title: "Menu bar",
       prefsKey: "quickCapture",
       items: [
         {
           control: "switch",
           key: "menuBarIcon",
-          title: "Show Menu Bar Icon",
+          title: "Show menu bar icon",
           description:
             "Keep Pond reachable from the system tray with the window hidden.",
           apply: () => runApply("quickCapture.applyPrefs"),
@@ -39,7 +39,7 @@ export const generalSection: SectionConfig = {
         {
           control: "switch",
           key: "launchAtLogin",
-          title: "Launch at Login",
+          title: "Launch at login",
           description: "Start Pond when you sign in to your computer.",
           apply: () => runApply("quickCapture.applyPrefs"),
         },
@@ -52,8 +52,20 @@ export const generalSection: SectionConfig = {
         {
           control: "switch",
           key: "saveComplete",
-          title: "Save Completed",
+          title: "Save completed",
           description: "Notify when a save finishes ingesting.",
+        },
+        {
+          control: "select",
+          key: "style",
+          title: "Alert style",
+          description:
+            "How a save alert appears when Pond is in the background.",
+          options: [
+            { value: "hud", label: "Pond HUD" },
+            { value: "system", label: "System notification" },
+          ],
+          visible: (values) => values.saveComplete !== false,
         },
       ],
     },
@@ -64,7 +76,7 @@ export const generalSection: SectionConfig = {
         {
           control: "switch",
           key: "autoInstall",
-          title: "Automatic Updates",
+          title: "Automatic updates",
           description: "Download updates as they appear. Apply on next launch.",
           apply: () => runApply("updates.applyPrefs"),
         },
@@ -82,7 +94,7 @@ export const generalSection: SectionConfig = {
         {
           control: "switch",
           key: "developerMode",
-          title: "Show Developer Tools",
+          title: "Show developer tools",
           description: "Enable developer tools in the sidebar.",
         },
       ],

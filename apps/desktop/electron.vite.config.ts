@@ -47,8 +47,14 @@ export default defineConfig({
         input: resolve(__dirname, "src/main/index.ts"),
         // Native modules must stay external so they resolve their
         // platform-specific .node binaries from node_modules at runtime
-        // instead of being inlined into the bundle.
-        external: ["electron", "better-sqlite3", "sharp"],
+        // instead of being inlined into the bundle. electron-liquid-glass is an
+        // optionalDependency (macOS-only), so it is listed here explicitly.
+        external: [
+          "electron",
+          "better-sqlite3",
+          "sharp",
+          "electron-liquid-glass",
+        ],
       },
     },
   },
@@ -104,6 +110,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
+          hud: resolve(__dirname, "src/renderer/hud.html"),
         },
         output: {
           // One chunk per npm package: bumping a dependency invalidates

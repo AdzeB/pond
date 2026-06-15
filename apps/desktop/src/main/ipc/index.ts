@@ -1,3 +1,4 @@
+import { registerSaveHudIpc } from "../core/save-hud";
 import { registerAppHandlers } from "./handlers/app";
 import { registerRefreshHandlers } from "./handlers/refresh";
 import { registerSyncHandlers } from "./handlers/sync";
@@ -8,4 +9,5 @@ export function registerIpc(): void {
   registerRefreshHandlers();
   registerSyncHandlers();
   registerQueryHandler();
+  registerSaveHudIpc();
 }

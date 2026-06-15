@@ -242,7 +242,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
       {
         type: "item",
         key: "refresh",
-        label: "Refresh Metadata",
+        label: "Refresh details",
         icon: RefreshCw,
         disabled: !hasUrl,
         shortcut: ["R"],

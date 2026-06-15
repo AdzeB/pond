@@ -69,6 +69,24 @@ const api = {
     return () => ipcRenderer.off(IPC.syncAction, listener);
   },
 
+  onSaveHud(cb: (payload: unknown) => void): () => void {
+    const listener = (_: unknown, payload: unknown) => cb(payload);
+    ipcRenderer.on(IPC.saveHud, listener);
+    return () => ipcRenderer.off(IPC.saveHud, listener);
+  },
+
+  resizeSaveHud(width: number, height: number): void {
+    ipcRenderer.send(IPC.saveHudResize, width, height);
+  },
+
+  activateSaveHud(id: string): void {
+    ipcRenderer.send(IPC.saveHudActivate, id);
+  },
+
+  saveHudReady(): void {
+    ipcRenderer.send(IPC.saveHudReady);
+  },
+
   onNavigate(cb: (path: string) => void): () => void {
     const listener = (_: unknown, path: string) => cb(path);
     ipcRenderer.on(IPC.nav, listener);
