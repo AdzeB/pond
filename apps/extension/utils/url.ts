@@ -20,6 +20,8 @@ export function cookieDomainForSource(source: Source): string | null {
       return ".are.na";
     case "reddit":
       return ".reddit.com";
+    case "threads":
+      return ".threads.com";
     case "local":
       return null;
   }

@@ -55,6 +55,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
     tiktok: true,
     youtube: true,
     reddit: true,
+    threads: true,
     local: false,
   },
 };

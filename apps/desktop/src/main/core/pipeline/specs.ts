@@ -105,6 +105,16 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.metrics.comments",
     ],
   },
+  threads: {
+    required: ["author"],
+    recommended: [
+      "title",
+      "capture.publishedAt",
+      "capture.metrics.likes",
+      "capture.metrics.replies",
+      "capture.author.avatarUrl",
+    ],
+  },
   // Local imports supply their own metadata; nothing to grade.
   local: { required: [], recommended: [] },
 };

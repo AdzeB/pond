@@ -5,6 +5,7 @@ import {
   INSTAGRAM_PATTERNS,
   PINTEREST_PATTERNS,
   REDDIT_PATTERNS,
+  THREADS_PATTERNS,
   TIKTOK_PATTERNS,
   TWITTER_PATTERNS,
   YOUTUBE_PATTERNS,
@@ -50,6 +51,10 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
     }
     case "reddit": {
       const m = firstMatch(url, REDDIT_PATTERNS);
+      return m?.[1] ?? null;
+    }
+    case "threads": {
+      const m = firstMatch(url, THREADS_PATTERNS);
       return m?.[1] ?? null;
     }
     case "local":

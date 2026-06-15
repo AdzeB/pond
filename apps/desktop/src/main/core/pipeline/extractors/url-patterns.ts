@@ -9,6 +9,7 @@ export const COSMOS_PATTERNS = descriptorFor("cosmos").urlPatterns;
 export const TIKTOK_PATTERNS = descriptorFor("tiktok").urlPatterns;
 export const YOUTUBE_PATTERNS = descriptorFor("youtube").urlPatterns;
 export const REDDIT_PATTERNS = descriptorFor("reddit").urlPatterns;
+export const THREADS_PATTERNS = descriptorFor("threads").urlPatterns;
 
 export function firstMatch(
   url: URL,

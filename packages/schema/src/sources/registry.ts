@@ -73,6 +73,15 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/redd\.it\/([a-z0-9]+)/i,
     ],
   },
+  {
+    id: "threads",
+    label: "Threads",
+    hosts: ["threads.net", "threads.com"],
+    urlPatterns: [
+      /^https?:\/\/(?:www\.)?threads\.(?:net|com)\/@[^/]+\/post\/([A-Za-z0-9_-]+)/i,
+      /^https?:\/\/(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)/i,
+    ],
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 /** The id of an external (non-`local`) source. */

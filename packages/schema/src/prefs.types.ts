@@ -125,5 +125,6 @@ export const DEFAULT_SIDEBAR_SOURCES: SidebarSourceEntry[] = [
   { source: "tiktok", visibility: "hidden" },
   { source: "youtube", visibility: "hidden" },
   { source: "reddit", visibility: "when-count" },
+  { source: "threads", visibility: "when-count" },
   { source: "local", visibility: "hidden" },
 ];
