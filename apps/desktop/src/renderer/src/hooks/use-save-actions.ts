@@ -14,7 +14,6 @@ import {
   IconTagsOutline18 as Tags,
   IconTrash2Outline18 as Trash2,
 } from "@pond/icons/outline/18";
-import { useToast } from "@pond/ui";
 import { useMemo } from "react";
 import { purgeSave, trashSave, untrashSave } from "@/lib/mutate-save";
 import { REVEAL_LABEL } from "@/lib/platform";
@@ -67,7 +66,6 @@ export type ActionDescriptor =
   | SeparatorDescriptor;
 
 export function useSaveActions(save: Save): ActionDescriptor[] {
-  const toast = useToast();
   const clipboard = useTagClipboard();
   const clipboardEmpty = clipboard.length === 0;
   const hasFiles = save.files.length > 0;
@@ -80,25 +78,21 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
       if (!save.url) return;
       try {
         await navigator.clipboard.writeText(save.url);
-        toast.add({ title: "URL copied", type: "success" });
       } catch {
-        toast.add({ title: "Couldn't copy URL", type: "error" });
+        /* clipboard unavailable, drop silently */
       }
     };
 
     const trash = async () => {
       await trashSave(save.id);
-      toast.add({ title: "Moved to trash", type: "success" });
     };
 
     const untrash = async () => {
       await untrashSave(save.id);
-      toast.add({ title: "Restored", type: "success" });
     };
 
     const purge = async () => {
       await purgeSave(save.id);
-      toast.add({ title: "Deleted forever", type: "success" });
     };
 
     const refresh = async () => {
@@ -112,7 +106,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         key: `reverse-${engine.key}`,
         label: engine.label,
         icon: Search,
-        onSelect: () => reverseImageSearch(save, engine.key, toast),
+        onSelect: () => reverseImageSearch(save, engine.key),
       }),
     );
 
@@ -151,7 +145,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         icon: ImageIcon,
         disabled: !hasFiles,
         shortcut: ["⌘", "C"],
-        onSelect: () => copyImageAction(save, toast),
+        onSelect: () => copyImageAction(save),
       },
       {
         type: "item",
@@ -159,7 +153,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         label: "Copy File Path",
         icon: Copy,
         disabled: !hasFiles,
-        onSelect: () => copyFilePath(save, toast),
+        onSelect: () => copyFilePath(save),
       },
       {
         type: "item",
@@ -168,7 +162,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         icon: Tags,
         disabled: !hasTags,
         shortcut: ["⌘", "⇧", "C"],
-        onSelect: () => copyTagsAction(save, toast),
+        onSelect: () => copyTagsAction(save),
       },
       {
         type: "item",
@@ -177,7 +171,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         icon: ClipboardPaste,
         disabled: clipboardEmpty,
         shortcut: ["⌘", "⇧", "V"],
-        onSelect: () => pasteTagsAction(save, toast),
+        onSelect: () => pasteTagsAction(save),
       },
       { type: "separator", key: "sep-2" },
       {
@@ -195,7 +189,7 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
         icon: Download,
         disabled: !hasFiles,
         shortcut: ["⌘", "E"],
-        onSelect: () => exportFileAction(save, toast),
+        onSelect: () => exportFileAction(save),
       },
       {
         type: "item",
@@ -259,5 +253,5 @@ export function useSaveActions(save: Save): ActionDescriptor[] {
     ];
 
     return items;
-  }, [save, toast, hasFiles, hasUrl, hasTags, isTrashed, clipboardEmpty]);
+  }, [save, hasFiles, hasUrl, hasTags, isTrashed, clipboardEmpty]);
 }

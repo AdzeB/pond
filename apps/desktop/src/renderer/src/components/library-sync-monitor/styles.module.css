@@ -8,12 +8,13 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  width: min(440px, calc(100vw - 48px));
+  width: min(384px, calc(100vw - 48px));
   max-width: none;
   max-height: min(640px, calc(100vh - 48px));
   padding: 0;
   overflow: hidden;
   background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xl);
   /* Springy pop on enter/exit; the body's height is morphed in JS. */
   transition:
     opacity var(--ds-duration-medium) var(--ds-easing-standard),
@@ -26,153 +27,247 @@
   transform: translate(-50%, calc(-50% + 8px)) scale(0.97);
 }
 
+/* Header: balanced 32px slots flanking a centered title. */
 .header {
-  display: flex;
+  display: grid;
   flex-shrink: 0;
-  gap: 4px;
+  grid-template-columns: 32px 1fr 32px;
   align-items: center;
-  justify-content: space-between;
-  height: 48px;
-  padding-inline: 12px 8px;
-  border-bottom: 1px solid var(--ds-gray-a4);
+  padding: 20px 16px 12px;
 }
 
-.heading {
+.headerSlot {
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: center;
+  justify-content: flex-start;
   min-width: 0;
+}
+
+.headerSlotEnd {
+  justify-content: flex-end;
 }
 
 .title {
   margin: 0;
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--ds-gray-12);
-}
-
-.summary {
-  font-size: 11px;
-  color: var(--ds-gray-11);
+  text-align: center;
+  letter-spacing: -0.18px;
   white-space: nowrap;
 }
 
-.actions {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-/* The morphing wrapper owns the animated height + scroll; the inner `.body`
-   keeps its natural height so the wrapper has a target to spring toward. */
+/* The morphing wrapper owns the animated height; the inner `.body` keeps its
+   natural height so the wrapper has a target to spring toward. */
 .bodyMorph {
   max-height: min(560px, calc(100vh - 140px));
-  overflow-y: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 
 .body {
+  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 4px;
 }
 
-.row {
+.view {
+  width: 100%;
+}
+
+/* ── Overview ─────────────────────────────────────────────────────────── */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 8px;
+  padding: 8px 20px 28px;
+}
+
+.overviewTile {
   display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 8px;
-  border-radius: var(--ds-radius-3, 8px);
-}
-
-.row + .row {
-  border-top: 1px solid var(--ds-gray-a3);
-}
-
-/* The group label already separates the disconnected block, so the first row
-   after it shouldn't also draw a divider. */
-.groupLabel + .row {
-  border-top: none;
-}
-
-.row[data-disconnected] {
-  opacity: 0.62;
-}
-
-.groupLabel {
-  padding: 12px 8px 4px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ds-gray-10);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.icon {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  color: var(--ds-gray-11);
-}
-
-.row[data-disconnected] .icon {
-  filter: grayscale(1);
-}
-
-.main {
-  display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.line {
-  display: flex;
   gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-.label {
+.overviewTile:hover {
+  background: var(--ds-gray-a3);
+}
+
+.overviewTile:active {
+  transform: scale(0.97);
+}
+
+.tileMedia {
+  position: relative;
+  display: flex;
+}
+
+.tileLabel {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 500;
   color: var(--ds-gray-12);
+  text-align: center;
+  white-space: nowrap;
 }
 
-.state {
+.statusDot {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  background: var(--ds-gray-9);
+  border: 2px solid var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+}
+
+.statusDot[data-state="connected"] {
+  background: var(--ds-grass-9);
+}
+
+.statusDot[data-state="error"] {
+  background: var(--ds-tomato-9);
+}
+
+.statusDot[data-state="running"] {
+  background: var(--ds-accent-9);
+  animation: pulse 1.4s var(--ds-easing-standard) infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.footer {
+  padding: 18px 20px 20px;
+  font-size: 13px;
+  color: var(--ds-gray-10);
+  text-align: center;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+/* ── Brand tile ───────────────────────────────────────────────────────── */
+
+.brandTile {
+  display: block;
   flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
+  overflow: hidden;
+  border-radius: var(--ds-radius-xl);
+  box-shadow:
+    0 0 0 1px var(--ds-gray-a3),
+    0 2px 4px -1px var(--ds-gray-a4);
 }
 
-.state[data-state="running"] {
-  color: var(--ds-blue-11, var(--ds-gray-12));
+.brandTile svg {
+  display: block;
 }
 
-.state[data-state="done"] {
-  color: var(--ds-green-11, var(--ds-gray-11));
+/* ── Source detail ────────────────────────────────────────────────────── */
+
+.detailView {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  padding: 16px 20px 24px;
 }
 
-.stateDone {
-  display: inline-flex;
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats {
+  display: flex;
+  width: 100%;
+}
+
+.stat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   gap: 4px;
   align-items: center;
+  min-width: 0;
 }
 
-.state[data-state="error"],
-.state[data-state="auth_required"] {
-  color: var(--ds-red-11, var(--ds-gray-12));
+.statValue {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.18px;
 }
+
+.statLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+}
+
+.errorText {
+  max-width: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-tomato-11);
+  text-align: center;
+}
+
+.hint {
+  max-width: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-gray-10);
+  text-align: center;
+}
+
+.action {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--ds-radius-md);
+}
+
+.maintenance {
+  width: 100%;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.maintenance:hover {
+  color: var(--ds-gray-12);
+}
+
+/* ── Progress ─────────────────────────────────────────────────────────── */
 
 .progress {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
 
 .track {
@@ -180,12 +275,12 @@
   height: 4px;
   overflow: hidden;
   background: var(--ds-gray-a4);
-  border-radius: var(--ds-radius-full, 100px);
+  border-radius: var(--ds-radius-full);
 }
 
 .fill {
   height: 100%;
-  background: var(--ds-blue-9, var(--ds-gray-12));
+  background: var(--ds-accent-9);
   border-radius: inherit;
   transition: width var(--ds-duration-medium) var(--ds-easing-standard);
 }
@@ -207,10 +302,21 @@
   }
 }
 
+.count {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .indeterminate {
     width: 100%;
     opacity: 0.5;
+    animation: none;
+  }
+
+  .statusDot[data-state="running"] {
     animation: none;
   }
 
@@ -222,25 +328,4 @@
   .popup.modal[data-ending-style] {
     transform: translate(-50%, -50%);
   }
-}
-
-.count {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
-}
-
-.meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 11px;
-  color: var(--ds-gray-11);
-  white-space: nowrap;
-}
-
-.rowActions {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
 }

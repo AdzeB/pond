@@ -12,9 +12,10 @@ import {
 } from "@dnd-kit/sortable";
 import { IconBarsFilterFill18 as Funnel } from "@pond/icons/fill/18";
 import { IconPlusOutline12 as Plus } from "@pond/icons/outline/12";
-import { Menu } from "@pond/ui";
+import { Menu, Tooltip } from "@pond/ui";
 import { useMemo, useState } from "react";
 import { AppliedBadge } from "@/components/library-view-menu/submenu";
+import submenu from "@/components/library-view-menu/submenu.module.css";
 import { PromptDialog } from "@/components/prompt-dialog";
 import { useView } from "@/hooks/use-view";
 import { defaultPredicateFor } from "@/lib/filter-helpers";
@@ -31,9 +32,9 @@ import {
 import { ConditionRow } from "./condition-row";
 import styles from "./styles.module.css";
 
-// Nested "Filter by" entry for the View options menu. Renders the filter
-// builder inside a submenu popup so filtering lives alongside layout/sort/etc.
-export function FilterSubmenu() {
+// "Filter by" entry. Inside the View options menu it is a nested submenu row;
+// in `standalone` mode (the toolbar) it is its own dropdown with an icon trigger.
+export function FilterSubmenu({ standalone }: { standalone?: boolean }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [draftName, setDraftName] = useState("");
   const { query, sortKey, sortDir, layout } = useViewStore();
@@ -56,29 +57,64 @@ export function FilterSubmenu() {
     setPromptOpen(false);
   };
 
+  const openSaveNew = () => {
+    setDraftName("");
+    setPromptOpen(true);
+  };
+
   return (
     <>
-      <Menu.SubmenuRoot>
-        <Menu.SubmenuTrigger>
-          <Menu.ItemIcon>
-            <Funnel />
-          </Menu.ItemIcon>
-          <Menu.ItemLabel>Filter by</Menu.ItemLabel>
-          <AppliedBadge count={appliedCount} />
-        </Menu.SubmenuTrigger>
-        <Menu.Portal>
-          <Menu.Positioner align="start" sideOffset={6}>
-            <Menu.Popup className={styles.panel}>
-              <PanelContent
-                onRequestSaveNew={() => {
-                  setDraftName("");
-                  setPromptOpen(true);
-                }}
-              />
-            </Menu.Popup>
-          </Menu.Positioner>
-        </Menu.Portal>
-      </Menu.SubmenuRoot>
+      {standalone ? (
+        <Menu.Root>
+          <Tooltip
+            label={
+              appliedCount > 0 ? `Filter · ${appliedCount} applied` : "Filter"
+            }
+            side="bottom"
+          >
+            <span className={submenu.barTriggerWrap}>
+              <Menu.Trigger
+                render={
+                  <button
+                    type="button"
+                    className={submenu.barTrigger}
+                    aria-label="Filter"
+                  />
+                }
+              >
+                <Funnel />
+              </Menu.Trigger>
+              {appliedCount > 0 ? (
+                <span className={submenu.barDot} aria-hidden />
+              ) : null}
+            </span>
+          </Tooltip>
+          <Menu.Portal>
+            <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+              <Menu.Popup className={styles.panel}>
+                <PanelContent onRequestSaveNew={openSaveNew} />
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      ) : (
+        <Menu.SubmenuRoot>
+          <Menu.SubmenuTrigger>
+            <Menu.ItemIcon>
+              <Funnel />
+            </Menu.ItemIcon>
+            <Menu.ItemLabel>Filter by</Menu.ItemLabel>
+            <AppliedBadge count={appliedCount} />
+          </Menu.SubmenuTrigger>
+          <Menu.Portal>
+            <Menu.Positioner align="start" sideOffset={6}>
+              <Menu.Popup className={styles.panel}>
+                <PanelContent onRequestSaveNew={openSaveNew} />
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.SubmenuRoot>
+      )}
 
       <PromptDialog
         open={promptOpen}

@@ -9,12 +9,17 @@
   }
 }
 
-.side {
+.sideStart {
+  gap: 2px;
+  align-items: center;
+  justify-content: flex-start;
   min-width: 0;
   height: 36px;
 }
 
 .sideEnd {
+  gap: 2px;
+  align-items: center;
   justify-content: flex-end;
   min-width: 0;
   height: 36px;

@@ -1,4 +1,4 @@
-import { Button, Settings, useToast } from "@pond/ui";
+import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
 
 interface IntegrityReport {
@@ -10,7 +10,6 @@ interface IntegrityReport {
 }
 
 export function VerifyRow() {
-  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<IntegrityReport | null>(null);
 
@@ -20,29 +19,13 @@ export function VerifyRow() {
       const res = (await window.pond.query("library.verifyIntegrity", {})) as
         | (IntegrityReport & { ok: true })
         | { ok: false; reason: string };
-      if (!res.ok) {
-        toast.add({
-          title: "Verification failed",
-          description: res.reason,
-          type: "error",
-        });
-        return;
-      }
+      if (!res.ok) return;
       setReport({
         orphans: res.orphans,
         missing: res.missing,
         errors: res.errors,
         totalIndexed: res.totalIndexed,
         totalOnDisk: res.totalOnDisk,
-      });
-      const drift = res.orphans.length + res.missing.length;
-      toast.add({
-        title: drift === 0 ? "Library is clean" : "Drift detected",
-        description:
-          drift === 0
-            ? `${res.totalIndexed}\u00A0items match on disk and in the index.`
-            : `${res.orphans.length} on disk only · ${res.missing.length} indexed only.`,
-        type: drift === 0 ? "success" : "warning",
       });
     } finally {
       setBusy(false);

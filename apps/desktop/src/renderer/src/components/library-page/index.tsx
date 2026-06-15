@@ -10,6 +10,7 @@ export function Library() {
   return (
     <React.Fragment>
       <Shell.Main>
+        <Shell.Mask />
         <Shell.Header>
           <Toolbar />
         </Shell.Header>

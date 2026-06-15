@@ -1,4 +1,4 @@
-import { Button, Input, Settings, useToast } from "@pond/ui";
+import { Button, Input, Settings } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
 import {
   type BindAddress,
@@ -8,7 +8,6 @@ import { usePrefs } from "@/stores/prefs";
 
 // Local API server config (port, bind address, token, CORS allow-list); owns all `api` prefs state.
 export function DeveloperApiSection() {
-  const toast = useToast();
   const [apiPrefs, patchApi] = usePrefs("api");
   const [apiBusy, setApiBusy] = useState(false);
   const [token, setToken] = useState<string | null>(null);
@@ -28,22 +27,7 @@ export function DeveloperApiSection() {
   async function applyServer() {
     setApiBusy(true);
     try {
-      const r = (await window.pond.query("api.restart", {})) as
-        | { ok: true; port: number; host: string }
-        | { ok: false; reason: string };
-      if (!r.ok) {
-        toast.add({
-          title: "Couldn't restart API",
-          description: r.reason,
-          type: "error",
-        });
-        return;
-      }
-      toast.add({
-        title: "API restarted",
-        description: `Listening on http://${r.host}:${r.port}/api/v2/.`,
-        type: "success",
-      });
+      await window.pond.query("api.restart", {});
     } finally {
       setApiBusy(false);
     }
@@ -52,13 +36,11 @@ export function DeveloperApiSection() {
   async function rotateToken() {
     await window.pond.query("settings.rotateIngestToken", {});
     await loadToken();
-    toast.add({ title: "Ingest token rotated", type: "success" });
   }
 
-  function copy(text: string, label: string) {
+  function copy(text: string) {
     if (!text) return;
     void navigator.clipboard.writeText(text);
-    toast.add({ title: `${label} copied`, type: "success" });
   }
 
   function addOrigin() {
@@ -150,7 +132,7 @@ export function DeveloperApiSection() {
               <div style={{ display: "flex", gap: 6 }}>
                 <Button
                   size="sm"
-                  onClick={() => copy(token ?? "", "Token")}
+                  onClick={() => copy(token ?? "")}
                   disabled={!token}
                 >
                   Copy

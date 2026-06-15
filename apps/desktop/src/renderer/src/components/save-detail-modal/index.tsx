@@ -6,7 +6,7 @@ import {
   IconOpenInBrowserOutline18 as OpenInBrowser,
   IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
-import { Button, Dialog, Tooltip, useToast } from "@pond/ui";
+import { Button, Dialog, Tooltip } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import { AnimatePresence, motion } from "motion/react";
@@ -245,14 +245,12 @@ function PropertiesGrid({ save }: { save: Save }) {
 }
 
 function HeaderActions({ save }: { save: Save }) {
-  const toast = useToast();
   const hasUrl = !!save.url;
   const hasFile = (save.files ?? []).length > 0;
 
   const copyLink = async () => {
     if (!save.url) return;
     await navigator.clipboard.writeText(save.url);
-    toast.add({ title: "Link copied", type: "success" });
   };
 
   return (

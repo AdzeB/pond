@@ -11,11 +11,11 @@ const options: Array<{ value: LayoutValue; label: string }> = [
   { value: "list", label: "List" },
 ];
 
-export function LayoutSection() {
+export function LayoutSection({ standalone }: { standalone?: boolean }) {
   const { state, actions } = useView();
 
   return (
-    <ViewSubmenu icon={<LayoutIcon />} label="Layout">
+    <ViewSubmenu icon={<LayoutIcon />} label="Layout" standalone={standalone}>
       <Menu.Group>
         {options.map(({ value, label }) => (
           <Menu.CheckboxItem

@@ -7,7 +7,7 @@ import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageArenaNormalize } from "./normalize";
 
 export function arenaProfileUrl(slug: string): string {
-  return `https://www.are.na/${encodeURIComponent(slug)}/blocks`;
+  return `https://www.are.na/${encodeURIComponent(slug)}/all`;
 }
 
 export function buildArenaListExpression(args: ListHarvestArgs): string {
@@ -72,24 +72,14 @@ async function inPageArenaList(
     return out;
   }
 
-  const findLoadMore = (): HTMLElement | null => {
-    const candidates = Array.from(
-      document.querySelectorAll<HTMLElement>("button, a[role='button'], a"),
-    );
-    return (
-      candidates.find((el) => {
-        const t = (el.textContent ?? "").trim().toLowerCase();
-        return t === "load more" || t === "load more blocks";
-      }) ?? null
-    );
-  };
-
+  // are.na's `/all` view is an infinite-scroll (virtualized) grid with no
+  // "Load more" button, so paginate by scrolling; the collector accumulates
+  // block ids across renders even as off-screen cards unmount.
   return scroll({
     collectFn,
     knownIds: args.knownIds,
     hydrateSelector: 'a[href*="/block/"]',
-    scrollBehavior: "click-next",
-    nextFinder: findLoadMore,
-    nextDelayMs: 1_500,
+    scrollBehavior: "scroll",
+    scrollDelayMs: 900,
   });
 }

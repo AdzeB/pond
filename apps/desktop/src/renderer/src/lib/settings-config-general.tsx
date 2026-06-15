@@ -8,7 +8,7 @@ function runApply(channel: string): void {
 
 export const generalSection: SectionConfig = {
   title: "General",
-  description: "Window behavior, notifications, and updates.",
+  description: "Window behavior, menu bar, and updates.",
   groups: [
     {
       title: "Window",
@@ -42,30 +42,6 @@ export const generalSection: SectionConfig = {
           title: "Launch at login",
           description: "Start Pond when you sign in to your computer.",
           apply: () => runApply("quickCapture.applyPrefs"),
-        },
-      ],
-    },
-    {
-      title: "Notifications",
-      prefsKey: "notifications",
-      items: [
-        {
-          control: "switch",
-          key: "saveComplete",
-          title: "Save completed",
-          description: "Notify when a save finishes ingesting.",
-        },
-        {
-          control: "select",
-          key: "style",
-          title: "Alert style",
-          description:
-            "How a save alert appears when Pond is in the background.",
-          options: [
-            { value: "hud", label: "Pond HUD" },
-            { value: "system", label: "System notification" },
-          ],
-          visible: (values) => values.saveComplete !== false,
         },
       ],
     },

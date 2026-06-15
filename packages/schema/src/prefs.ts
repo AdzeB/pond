@@ -29,14 +29,6 @@ const preferences = z.object({
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
 });
 
-const notifications = z.object({
-  saveComplete: z.boolean().catch(true),
-  sound: z.boolean().catch(false),
-  // How a save-complete alert appears while the app is unfocused: "hud" is the
-  // in-house corner toast window; "system" falls back to the native OS banner.
-  style: z.enum(["hud", "system"]).catch("hud"),
-});
-
 const trash = z.object({
   autoEmptyDays: z.number().nullable().catch(null),
   confirmBeforeEmpty: z.boolean().catch(true),
@@ -106,7 +98,6 @@ const storage = z.object({
 // Each slice catches to its own defaults so a corrupt slice resets in isolation.
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
-  notifications: notifications.catch(notifications.parse({})),
   trash: trash.catch(trash.parse({})),
   window: windowSlice.catch(windowSlice.parse({})),
   quickCapture: quickCapture.catch(quickCapture.parse({})),

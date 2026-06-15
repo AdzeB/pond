@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Headless React primitives for Pond: thin Base UI wrappers (Button, Dialog, Popover, Toast, ...) styled with CSS Modules. App-agnostic; zero coupling to the desktop app's pool/state.",
+  "description": "Headless React primitives for Pond: thin Base UI wrappers (Button, Dialog, Popover, ...) styled with CSS Modules. App-agnostic; zero coupling to the desktop app's pool/state.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",

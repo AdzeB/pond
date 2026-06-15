@@ -50,14 +50,6 @@ const TASK_WATCHDOG_MS: Record<Op, number> = {
   finalize: 30_000,
 };
 
-// A `running` task older than 2x its watchdog is abandoned, reset to pending.
-const STALE_RUNNING_GRACE_FACTOR = 2;
-const MAX_WATCHDOG_MS = Object.values(TASK_WATCHDOG_MS).reduce(
-  (a, b) => Math.max(a, b),
-  0,
-);
-const STALE_RUNNING_MS = MAX_WATCHDOG_MS * STALE_RUNNING_GRACE_FACTOR;
-
 // Periodic orphan-sweep cadence (catches strays that appear mid-runtime).
 const ORPHAN_SWEEP_INTERVAL_MS = 60_000;
 
@@ -122,7 +114,7 @@ export function startReconciler(): void {
   if (started) return;
   started = true;
   log.info("[pond pipeline:reconciler] starting");
-  void recoverStaleRunningTasks().catch((err) =>
+  void recoverOrphanedRunningTasks().catch((err) =>
     log.warn("[pond pipeline:reconciler] stale-running sweep failed", err),
   );
   void sweepOrphanTasks().catch((err) =>
@@ -143,33 +135,41 @@ export function kickReconciler(): void {
   });
 }
 
-// Startup: reset `running` tasks orphaned by a dead process back to pending.
-async function recoverStaleRunningTasks(): Promise<void> {
+// Reset `running` tasks orphaned by a dead process back to pending. A task that
+// is `running` in the DB but absent from this process's in-flight set can only
+// be a leftover from a previous process: a fresh process tracks every task it
+// dispatches (added to `runningTaskIds` before `markRunning`), and the watchdog
+// settles its own tasks within their budget. Without this sweep, a restart while
+// a task was mid-flight (common under dev hot-reload) pins the task `running`
+// forever — `pullDueTasks` only pulls `pending`, so the save never finalizes.
+// Runs at startup (when the set is empty, so all running rows recover) and on
+// the periodic sweep cadence to catch strays mid-runtime.
+async function recoverOrphanedRunningTasks(): Promise<void> {
   const db = await getDb();
-  const cutoff = new Date(Date.now() - STALE_RUNNING_MS);
-  const stale = db
-    .select({ id: tasks.id, op: tasks.op, saveId: tasks.saveId })
+  const running = db
+    .select({ id: tasks.id })
     .from(tasks)
-    .where(and(eq(tasks.status, "running"), lte(tasks.updatedAt, cutoff)))
+    .where(eq(tasks.status, "running"))
     .all();
-  if (stale.length === 0) return;
+  const orphanIds = running
+    .map((t) => t.id)
+    .filter((id) => !runningTaskIds.has(id));
+  if (orphanIds.length === 0) return;
   const now = new Date();
   db.update(tasks)
     .set({
       status: "pending",
       lastError: "recovered: process restarted while running",
+      nextRunAt: now,
       updatedAt: now,
     })
-    .where(
-      inArray(
-        tasks.id,
-        stale.map((s) => s.id),
-      ),
-    )
+    // Guard against a task settling between the read above and this write.
+    .where(and(inArray(tasks.id, orphanIds), eq(tasks.status, "running")))
     .run();
-  log.info("[pond pipeline:reconciler] recovered stale running tasks", {
-    count: stale.length,
+  log.info("[pond pipeline:reconciler] recovered orphaned running tasks", {
+    count: orphanIds.length,
   });
+  kickReconciler();
 }
 
 // Fail `pending` tasks on non-ingesting saves; they can't run and starve the window.
@@ -215,6 +215,12 @@ async function tick(): Promise<void> {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
     void sweepOrphanTasks().catch((err) =>
       log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
+    );
+    void recoverOrphanedRunningTasks().catch((err) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic stale-running sweep failed",
+        err,
+      ),
     );
   }
   if (inflightGlobal >= MAX_GLOBAL_INFLIGHT) return;

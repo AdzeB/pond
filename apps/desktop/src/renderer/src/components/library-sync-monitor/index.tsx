@@ -1,35 +1,30 @@
-import { IconXmarkOutline18 as X } from "@pond/icons/outline/18";
+import {
+  IconChevronLeftOutline18 as ChevronLeft,
+  IconXmarkOutline18 as X,
+} from "@pond/icons/outline/18";
 import { SOURCES, type Source } from "@pond/schema/db";
 import { Button, Dialog } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import { useMeasuredHeight } from "@/hooks/use-measured-height";
-import { drawerSpring } from "@/lib/motion";
+import { getSourceDef } from "@/lib/sources-registry";
 import { backfillMonitor } from "@/stores/backfill-monitor";
 import {
-  type SyncSourceStatus,
   syncMonitor,
   useSyncBySource,
   useSyncOpen,
 } from "@/stores/sync-monitor";
-import { BackfillRow } from "./backfill-row";
-import { SourceRow } from "./source-row";
+import { Overview } from "./overview";
+import { SourceDetail } from "./source-detail";
 import styles from "./styles.module.css";
 
-// Sources in a sync run; `local` holds only manual imports, so it's excluded.
+// Sources you can sync; `local` holds only manual imports, so it's excluded.
 const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
 
 const MORPH_SPRING = { type: "spring" as const, bounce: 0.18, duration: 0.45 };
 
-// Lower sorts first: attention rows float up, disconnected sinks to the bottom group.
-function priority(status: SyncSourceStatus | undefined): number {
-  const state = status?.state ?? "idle";
-  if (state === "error" || state === "auth_required") return 0;
-  if (state === "running") return 1;
-  if (status?.connected) return 2;
-  return 3;
-}
+type Direction = "forward" | "backward";
 
 // Subscribes only to `open`; the data-heavy body mounts only while open, so background sync never re-renders here.
 export function SyncMonitor() {
@@ -54,6 +49,10 @@ function SyncMonitorBody() {
   const popupRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const [bodyRef, bodyHeight] = useMeasuredHeight<HTMLDivElement>();
+
+  const [mode, setMode] = useState<"overview" | "detail">("overview");
+  const [focused, setFocused] = useState<Source>(SYNCABLE[0] ?? "twitter");
+  const [direction, setDirection] = useState<Direction>("forward");
 
   // Seed each source with a one-shot snapshot on open so the list isn't blank before the first live push.
   useEffect(() => {
@@ -94,15 +93,6 @@ function SyncMonitorBody() {
   const [, setTick] = useState(0);
   useIntervalWhen(() => setTick((t) => t + 1), 30_000, true);
 
-  const ordered = useMemo(
-    () =>
-      [...SYNCABLE].sort((a, b) => {
-        const delta = priority(bySource[a]) - priority(bySource[b]);
-        return delta !== 0 ? delta : SYNCABLE.indexOf(a) - SYNCABLE.indexOf(b);
-      }),
-    [bySource],
-  );
-
   const runningSources = SYNCABLE.filter(
     (s) => bySource[s]?.state === "running",
   );
@@ -112,10 +102,24 @@ function SyncMonitorBody() {
   const anyRunning = runningSources.length > 0;
 
   const summary = anyRunning
-    ? `Syncing ${runningSources.length} of ${connectedCount}`
+    ? `Syncing ${runningSources.length} of ${connectedCount} connected`
     : connectedCount
-      ? `${connectedCount} connected`
-      : "No sources connected";
+      ? `${connectedCount} of ${SYNCABLE.length} sources connected`
+      : "No sources connected yet";
+
+  const openDetail = (source: Source) => {
+    setFocused(source);
+    setDirection("forward");
+    setMode("detail");
+  };
+
+  const back = () => {
+    setDirection("backward");
+    setMode("overview");
+  };
+
+  const title =
+    mode === "overview" ? "Confluences" : getSourceDef(focused).label;
 
   return (
     <Dialog.Popup
@@ -125,33 +129,44 @@ function SyncMonitorBody() {
       className={`${styles.popup} ${styles.modal}`}
     >
       <div className={styles.header}>
-        <div className={styles.heading}>
-          <Dialog.Title className={styles.title}>Sync</Dialog.Title>
-          <span className={styles.summary} aria-live="polite">
-            {summary}
-          </span>
+        <div className={styles.headerSlot}>
+          <AnimatePresence initial={false}>
+            {mode === "detail" ? (
+              <motion.div
+                key="back"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={reduceMotion ? { duration: 0 } : undefined}
+              >
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Back to all sources"
+                  onClick={back}
+                >
+                  <ChevronLeft />
+                </Button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
         </div>
-        <div className={styles.actions}>
-          {anyRunning ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                for (const s of runningSources) void window.pond.syncCancel(s);
-              }}
-            >
-              Cancel all
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              disabled={connectedCount === 0}
-              onClick={() => void window.pond.syncRunAll()}
-            >
-              Sync all
-            </Button>
-          )}
+
+        <AnimatePresence initial={false} mode="wait">
+          <motion.h2
+            key={title}
+            className={styles.title}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={reduceMotion ? { duration: 0 } : { duration: 0.12 }}
+          >
+            <Dialog.Title render={<span />}>{title}</Dialog.Title>
+          </motion.h2>
+        </AnimatePresence>
+
+        <div className={`${styles.headerSlot} ${styles.headerSlotEnd}`}>
           <Dialog.Close
             render={
               <Button icon size="sm" variant="ghost" aria-label="Close" />
@@ -169,34 +184,25 @@ function SyncMonitorBody() {
         transition={reduceMotion ? { duration: 0 } : MORPH_SPRING}
       >
         <div ref={bodyRef} className={styles.body}>
-          {ordered.map((source, i) => {
-            const isDisconnected = priority(bySource[source]) === 3;
-            const prev = i > 0 ? ordered[i - 1] : undefined;
-            const startsGroup =
-              isDisconnected && (!prev || priority(bySource[prev]) !== 3);
-            return (
-              <Fragment key={source}>
-                <AnimatePresence initial={false}>
-                  {startsGroup ? (
-                    <motion.div
-                      key="group-label"
-                      layout="position"
-                      className={styles.groupLabel}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={drawerSpring}
-                    >
-                      Not connected
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-                <SourceRow source={source} status={bySource[source]} />
-              </Fragment>
-            );
-          })}
-          <div className={styles.groupLabel}>Maintenance</div>
-          <BackfillRow />
+          <AnimatePresence initial={false} mode="popLayout" custom={direction}>
+            {mode === "overview" ? (
+              <Overview
+                key="overview"
+                sources={SYNCABLE}
+                bySource={bySource}
+                summary={summary}
+                direction={direction}
+                onSelect={openDetail}
+              />
+            ) : (
+              <SourceDetail
+                key="detail"
+                focused={focused}
+                status={bySource[focused]}
+                direction={direction}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </motion.div>
     </Dialog.Popup>

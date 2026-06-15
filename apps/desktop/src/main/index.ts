@@ -12,7 +12,6 @@ import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
-import { startSaveCompleteNotifier } from "./core/notifications";
 import {
   type BackfillStatusUpdate,
   subscribeToBackfillStatus,
@@ -21,7 +20,6 @@ import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
-import { disposeSaveHud } from "./core/save-hud";
 import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
@@ -460,6 +458,13 @@ async function postLaunchInit(): Promise<void> {
         await openLibraryWindow();
         mainWindow?.webContents.send(IPC.nav, "/settings");
       },
+      onOpenSave: async (id) => {
+        await openLibraryWindow();
+        mainWindow?.webContents.send(
+          IPC.nav,
+          `/save/${encodeURIComponent(id)}`,
+        );
+      },
     });
   } catch (err) {
     log.error(
@@ -468,13 +473,6 @@ async function postLaunchInit(): Promise<void> {
     );
   }
   registerSyncActionListener(() => queueTrayRefresh());
-
-  startSaveCompleteNotifier({
-    focusMainWindow: async () => {
-      await openLibraryWindow();
-      return mainWindow;
-    },
-  });
 
   void applyPrefsAtRuntime().catch((err) =>
     log.warn("[pond] applyPrefsAtRuntime failed", err),
@@ -599,11 +597,6 @@ app.on("before-quit", async () => {
     disposeHiddenWindow();
   } catch (err) {
     log.warn("[pond] hidden window dispose failed", err);
-  }
-  try {
-    disposeSaveHud();
-  } catch (err) {
-    log.warn("[pond] save hud dispose failed", err);
   }
   try {
     await httpServer?.close();

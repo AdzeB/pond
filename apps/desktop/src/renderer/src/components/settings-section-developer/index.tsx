@@ -1,4 +1,4 @@
-import { Button, Settings, Switch, useToast } from "@pond/ui";
+import { Button, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { reloadPrefs, usePrefs } from "@/stores/prefs";
@@ -6,7 +6,6 @@ import { DeveloperApiSection } from "./api-section";
 import { VerifyRow } from "./verify-row";
 
 export function DeveloperSection() {
-  const toast = useToast();
   const [prefs, patch] = usePrefs("developer");
   const [resetBusy, setResetBusy] = useState<string | null>(null);
   const [confirmFactory, setConfirmFactory] = useState(false);
@@ -28,46 +27,20 @@ export function DeveloperSection() {
   async function rescan() {
     setResetBusy("rescan");
     try {
-      const res = (await window.pond.query("library.rescan", {})) as {
-        updated: number;
-        total: number;
-      };
-      toast.add({
-        title: "Library rescanned",
-        description: `${res.total}\u00A0items, ${res.updated}\u00A0updated.`,
-        type: "success",
-      });
+      await window.pond.query("library.rescan", {});
     } finally {
       setResetBusy(null);
     }
   }
 
   async function openInspector() {
-    const r = (await window.pond.query("developer.openIpcInspector", {})) as {
-      ok: boolean;
-      reason?: string;
-    };
-    if (!r.ok && r.reason) {
-      toast.add({
-        title: "Inspector failed",
-        description: r.reason,
-        type: "error",
-      });
-    }
+    await window.pond.query("developer.openIpcInspector", {});
   }
 
   async function clearVideoCache() {
     setResetBusy("video");
     try {
-      const r = (await window.pond.query("reset.clearVideoCache", {})) as {
-        ok: boolean;
-        removed: number;
-      };
-      toast.add({
-        title: "Video cache cleared",
-        description: `${r.removed}\u00A0files removed.`,
-        type: "success",
-      });
+      await window.pond.query("reset.clearVideoCache", {});
     } finally {
       setResetBusy(null);
     }
@@ -76,15 +49,7 @@ export function DeveloperSection() {
   async function clearThumbnails() {
     setResetBusy("thumbs");
     try {
-      const r = (await window.pond.query("reset.clearThumbnails", {})) as {
-        ok: boolean;
-        removed: number;
-      };
-      toast.add({
-        title: "Thumbnails cleared",
-        description: `${r.removed}\u00A0files removed.`,
-        type: "success",
-      });
+      await window.pond.query("reset.clearThumbnails", {});
     } finally {
       setResetBusy(null);
     }
@@ -95,7 +60,6 @@ export function DeveloperSection() {
     try {
       await window.pond.query("reset.preferences", {});
       await reloadPrefs();
-      toast.add({ title: "Preferences reset to defaults", type: "success" });
     } finally {
       setResetBusy(null);
     }
@@ -105,12 +69,6 @@ export function DeveloperSection() {
     setResetBusy("factory");
     try {
       await window.pond.query("reset.factory", {});
-      toast.add({
-        title: "Pond will relaunch",
-        description:
-          "Index wiped. Restart Pond to rebuild from your library files.",
-        type: "warning",
-      });
     } finally {
       setResetBusy(null);
       setConfirmFactory(false);

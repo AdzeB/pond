@@ -5,10 +5,9 @@ import {
   IconRefreshClockwiseOutline18 as RefreshCw,
   IconTrashOutline18 as Trash,
 } from "@pond/icons/outline/18";
-import { Menu, useToast } from "@pond/ui";
+import { Menu } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
 import { useCallback } from "react";
-import { humaniseRefreshReason } from "@/components/save-preview/helpers";
 import type { useSave } from "@/hooks/use-saves";
 import { trashSave } from "@/lib/mutate-save";
 import { REVEAL_LABEL } from "@/lib/platform";
@@ -19,7 +18,6 @@ export function KebabMenu({
   save: ReturnType<typeof useSave> | null;
 }) {
   const router = useRouter();
-  const toast = useToast();
 
   const hasUrl = !!save?.url;
   const hasLocalFile = (save?.files ?? []).length > 0;
@@ -36,39 +34,14 @@ export function KebabMenu({
 
   const onRefresh = useCallback(async () => {
     if (!save?.url) return;
-    try {
-      const res = await window.pond.refreshSave(save.id);
-      if (res.ok) {
-        toast.add({
-          title: "Details refreshed",
-          type: "success",
-          description:
-            res.method === "og"
-              ? "Pulled fresh OpenGraph data from the source."
-              : "Re-scraped via signed-in session.",
-        });
-        return;
-      }
-      toast.add({
-        title: "Refresh failed",
-        type: "error",
-        description: humaniseRefreshReason(res.reason),
-      });
-    } catch (err) {
-      toast.add({
-        title: "Refresh failed",
-        type: "error",
-        description: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, [save?.id, save?.url, toast]);
+    await window.pond.refreshSave(save.id);
+  }, [save?.id, save?.url]);
 
   const onDelete = useCallback(async () => {
     if (!save) return;
     await trashSave(save.id);
-    toast.add({ title: "Moved to trash", type: "success" });
     router.history.back();
-  }, [save, toast, router]);
+  }, [save, router]);
 
   return (
     <Menu.Root>

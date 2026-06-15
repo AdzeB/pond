@@ -252,17 +252,42 @@ async function inferAccountKey(source: Source): Promise<string | null> {
     .from(saves)
     .where(eq(saves.source, source))
     .limit(50);
+  // `author` is the saved item's creator, not the account owner. Only trust it
+  // for sources without a path-based handle parser (e.g. cosmos); otherwise a
+  // favorited block/video would resolve to its creator's name (e.g. arena
+  // blocks → "Stephanie Zabala") and poison the user's account key.
+  const hasPathParser = Boolean(extractorFor(source)?.handleFromPath);
+  let result: string | null = null;
   for (const row of rows) {
-    const handle = handleFromUrl(source, row.url) ?? row.author ?? null;
-    if (handle) return handle.replace(/^@/, "");
+    const handle =
+      handleFromUrl(source, row.url) ??
+      (hasPathParser ? null : (row.author ?? null));
+    if (handle) {
+      result = handle.replace(/^@/, "");
+      break;
+    }
   }
-  return null;
+  return result;
 }
 
-// Resolve the user's handle (cosmos/arena): cache → DB inference → hidden-window probe.
+// A cached handle is only trustworthy if it still passes the source's own
+// path validator (e.g. arena rejects reserved roots like "block"). Earlier
+// buggy runs persisted bad handles; this stops us short-circuiting on them.
+function isCachedHandleValid(source: Source, handle: string): boolean {
+  const fn = extractorFor(source)?.handleFromPath;
+  if (!fn) return true;
+  return fn([handle]) != null;
+}
+
+// Resolve the user's handle (cosmos/arena/tiktok): cache → DB inference → hidden-window probe.
 async function resolveAccountKey(source: Source): Promise<string | null> {
   const cached = await readStoredHandle(source);
-  if (cached) return cached;
+  if (cached && isCachedHandleValid(source, cached)) return cached;
+  if (cached) {
+    log.info(
+      `[pond sync:${source}] ignoring invalid cached handle "${cached}"; re-resolving`,
+    );
+  }
 
   const inferred = await inferAccountKey(source);
   if (inferred) {
@@ -327,7 +352,7 @@ async function syncListSource(
   });
 
   let accountKey: string | undefined;
-  if (source === "cosmos" || source === "arena") {
+  if (source === "cosmos" || source === "arena" || source === "tiktok") {
     accountKey = (await resolveAccountKey(source)) ?? undefined;
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
@@ -340,20 +365,6 @@ async function syncListSource(
       });
       return;
     }
-  } else if (source === "tiktok") {
-    const inferred = await inferAccountKey(source);
-    if (!inferred) {
-      log.info(`[pond sync:${source}] no account key inferred`);
-      await patchSourceSync(source, { lastError: "auth_required" });
-      emit({
-        source,
-        state: "auth_required",
-        message: `Save one ${source} item first so Pond knows whose list to read.`,
-        lastError: "auth_required",
-      });
-      return;
-    }
-    accountKey = inferred;
   } else if (source === "pinterest") {
     accountKey = (await inferAccountKey(source)) || "me";
   }

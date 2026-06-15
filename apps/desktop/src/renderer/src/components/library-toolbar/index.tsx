@@ -1,5 +1,11 @@
 import { IconMagnifierFill18 as Magnifier } from "@pond/icons/fill/18";
 import { Input, Toolbar as PondToolbar } from "@pond/ui";
+import { FilterSubmenu } from "@/components/library-filter-panel";
+import { PondSwitcher } from "@/components/library-pond-switcher";
+import { DisplaySection } from "@/components/library-view-menu/sections/display";
+import { LayoutSection } from "@/components/library-view-menu/sections/layout";
+import { SortSection } from "@/components/library-view-menu/sections/sort";
+import { ZoomSection } from "@/components/library-view-menu/sections/zoom";
 import { useDebouncedSearch } from "@/hooks/use-debounced-search";
 import { usePlatform } from "@/lib/platform";
 import { SEARCH_INPUT_ID } from "./constants";
@@ -13,13 +19,21 @@ export function Toolbar() {
   return (
     <PondToolbar.Root style={{ paddingInlineStart: trafficLightInset }}>
       <PondToolbar.Row className={styles.row}>
-        <PondToolbar.Group fill={true} className={styles.sideStart} />
+        <PondToolbar.Group fill={true} className={styles.sideStart}>
+          <PondSwitcher compact className={styles.switcher} />
+        </PondToolbar.Group>
 
         <PondToolbar.Group className={styles.center}>
           <Search />
         </PondToolbar.Group>
 
-        <PondToolbar.Group fill={true} className={styles.sideEnd} />
+        <PondToolbar.Group fill={true} className={styles.sideEnd}>
+          <FilterSubmenu standalone />
+          <SortSection standalone />
+          <LayoutSection standalone />
+          <DisplaySection standalone />
+          <ZoomSection standalone />
+        </PondToolbar.Group>
       </PondToolbar.Row>
     </PondToolbar.Root>
   );

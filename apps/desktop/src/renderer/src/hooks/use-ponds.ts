@@ -1,4 +1,3 @@
-import { useToast } from "@pond/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Pond {
@@ -19,7 +18,6 @@ type ActionResult = { ok: true } | { ok: false; reason: string };
 const pondsQueryKey = ["ponds"] as const;
 
 export function usePonds() {
-  const toast = useToast();
   const qc = useQueryClient();
 
   const { data: ponds = [] } = useQuery({
@@ -40,13 +38,6 @@ export function usePonds() {
       })) as ActionResult;
       // Switching relaunches (or reloads in dev), so there's no success state to settle into.
       if (!res.ok) throw new Error(res.reason);
-    },
-    onError: (err) => {
-      toast.add({
-        title: "Couldn't switch pond",
-        description: err instanceof Error ? err.message : undefined,
-        type: "error",
-      });
     },
   });
 

@@ -18,12 +18,12 @@ const KEY_LABELS: Record<SortKey, string> = Object.fromEntries(
   KEY_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<SortKey, string>;
 
-export function SortSection() {
+export function SortSection({ standalone }: { standalone?: boolean }) {
   const { state, actions } = useView();
   const { key, dir } = state.sort;
 
   return (
-    <ViewSubmenu icon={<SortIcon />} label="Sort by">
+    <ViewSubmenu icon={<SortIcon />} label="Sort by" standalone={standalone}>
       <div className={submenu.sortRow}>
         <Select.Root
           value={key}

@@ -2,7 +2,6 @@ import {
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
 } from "@pond/schema/db";
-import { useToast } from "@pond/ui";
 import { useEffect } from "react";
 import {
   copyId,
@@ -23,7 +22,6 @@ import { cycleLayout, setLayout } from "@/stores/view-store";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
-  const toast = useToast();
 
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
@@ -69,20 +67,7 @@ export function MenuBridge() {
           return;
 
         case "refresh.all":
-          void (async () => {
-            const r = await window.pond.refreshBackfillStart({});
-            if (r.ok) {
-              toast.add({
-                title: `Refreshing ${r.total} saves`,
-                type: "success",
-              });
-            } else {
-              toast.add({
-                title: `Refresh: ${r.reason.replace("_", " ")}`,
-                type: "error",
-              });
-            }
-          })();
+          void window.pond.refreshBackfillStart({});
           return;
 
         case "refresh.cancel":
@@ -90,20 +75,11 @@ export function MenuBridge() {
           return;
 
         case "trash.empty":
-          void (async () => {
-            await window.pond.query("saves.emptyTrash", {});
-            toast.add({ title: "Trash emptied", type: "success" });
-          })();
+          void window.pond.query("saves.emptyTrash", {});
           return;
 
         case "trash.restore-all":
-          void (async () => {
-            await window.pond.query("saves.restoreAll", {});
-            toast.add({
-              title: "Restored all saves from Trash",
-              type: "success",
-            });
-          })();
+          void window.pond.query("saves.restoreAll", {});
           return;
 
         case "library.move":
@@ -111,10 +87,7 @@ export function MenuBridge() {
           return;
 
         case "developer.restart-api":
-          void (async () => {
-            await window.pond.query("api.restart", {});
-            toast.add({ title: "API restarting", type: "success" });
-          })();
+          void window.pond.query("api.restart", {});
           return;
 
         case "developer.open-logs":
@@ -149,14 +122,14 @@ export function MenuBridge() {
         case "save.copy-url": {
           const save = currentSave();
           if (!save?.url) return;
-          void copyUrl(save.url, toast);
+          void copyUrl(save.url);
           return;
         }
 
         case "save.copy-id": {
           const sid = primarySelection.get();
           if (!sid) return;
-          void copyId(sid, toast);
+          void copyId(sid);
           return;
         }
 
@@ -173,48 +146,42 @@ export function MenuBridge() {
         case "save.refresh": {
           const save = currentSave();
           if (!save) return;
-          void refreshSaveMetadata(save, toast);
+          void refreshSaveMetadata(save);
           return;
         }
 
         case "save.trash": {
           const save = currentSave();
           if (!save) return;
-          void trashSave(save, toast);
+          void trashSave(save);
           return;
         }
 
         case "save.untrash": {
           const save = currentSave();
           if (!save) return;
-          void untrashSave(save, toast);
+          void untrashSave(save);
           return;
         }
 
         case "save.delete-forever": {
           const save = currentSave();
           if (!save) return;
-          void purgeForever(save, toast);
+          void purgeForever(save);
           return;
         }
 
         case "save.bulk-trash": {
           const ids = selection.snapshot();
           if (ids.length === 0) return;
-          void (async () => {
-            await window.pond.batch(
-              ids.map((sid) => ({
-                kind: "trash",
-                model: "save",
-                id: sid,
-                meta: { actor: "user", actorReason: "menu-bulk-trash" },
-              })),
-            );
-            toast.add({
-              title: `Moved ${ids.length} save${ids.length === 1 ? "" : "s"} to trash`,
-              type: "success",
-            });
-          })();
+          void window.pond.batch(
+            ids.map((sid) => ({
+              kind: "trash",
+              model: "save",
+              id: sid,
+              meta: { actor: "user", actorReason: "menu-bulk-trash" },
+            })),
+          );
           return;
         }
 
@@ -222,21 +189,15 @@ export function MenuBridge() {
           const ids = selection.snapshot();
           if (ids.length === 0) return;
           void (async () => {
-            let ok = 0;
             for (const sid of ids) {
-              const r = await window.pond.refreshSave(sid);
-              if (r.ok) ok++;
+              await window.pond.refreshSave(sid);
             }
-            toast.add({
-              title: `Refreshed ${ok}/${ids.length} saves`,
-              type: "success",
-            });
           })();
           return;
         }
       }
     });
-  }, [patchPreferences, toast]);
+  }, [patchPreferences]);
 
   return null;
 }

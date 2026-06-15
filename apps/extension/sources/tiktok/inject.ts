@@ -4,7 +4,11 @@ import {
   type RequestLens,
 } from "@/utils/intercept";
 
-const FAVORITE_RE = /\/api\/aweme\/favorite\/?/i;
+// The bookmark icon on TikTok is "Add to Favorites" (collect). Match the
+// favorite/collect verb at the end of any /api/ path so we keep working when
+// TikTok reshuffles the prefix (e.g. /api/aweme/favorite/, /api/item/collect/,
+// /api/commit/item/collect/). Likes ("digg") are intentionally excluded.
+const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;
 const FEED_RE = /\/api\/(aweme|item|feed|post)/i;
 
 function readJson(text: string | null): any {
@@ -16,23 +20,54 @@ function readJson(text: string | null): any {
   }
 }
 
+const ID_KEYS = ["aweme_id", "awemeId", "item_id", "itemId"] as const;
+
 function awemeIdFromUrl(url: string): string | null {
   try {
     const u = new URL(url, location.href);
-    return (
-      u.searchParams.get("aweme_id") ??
-      u.searchParams.get("awemeId") ??
-      u.searchParams.get("item_id") ??
-      null
-    );
+    for (const key of ID_KEYS) {
+      const v = u.searchParams.get(key);
+      if (v) return v;
+    }
+    return null;
   } catch {
     return null;
   }
 }
 
+// Newer endpoints send the id in the POST body rather than the query string.
+async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
+  let body: string | null;
+  try {
+    body = await req.readBody();
+  } catch {
+    return null;
+  }
+  if (!body) return null;
+  try {
+    const params = new URLSearchParams(body);
+    for (const key of ID_KEYS) {
+      const v = params.get(key);
+      if (v) return v;
+    }
+  } catch {
+    /* not form-encoded */
+  }
+  const json = readJson(body);
+  if (json && typeof json === "object") {
+    for (const key of ID_KEYS) {
+      const v = (json as Record<string, unknown>)[key];
+      if (typeof v === "string" && v) return v;
+      if (typeof v === "number") return String(v);
+    }
+  }
+  return null;
+}
+
 function isFavoriteType(url: string): boolean {
   try {
     const t = new URL(url, location.href).searchParams.get("type");
+    // type=1 adds, type=0 removes; absent on endpoints that don't use it.
     return t === "1" || t === null;
   } catch {
     return true;
@@ -86,7 +121,7 @@ export function inject(): void {
     async onResponse(req, res) {
       if (!res.ok) return;
       if (FAVORITE_RE.test(req.url) && isFavoriteType(req.url)) {
-        const id = awemeIdFromUrl(req.url);
+        const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
         if (id) emitFavorite(id);
         return;
       }

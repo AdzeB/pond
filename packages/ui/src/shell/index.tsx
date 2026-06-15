@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
@@ -37,11 +38,37 @@ function Empty({ className, ...props }: EmptyProps) {
   return <p className={cn(styles.empty, className)} {...props} />;
 }
 
+interface MaskProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Mask({ ...props }: MaskProps) {
+  const [top, setTop] = useState(false);
+  const [bottom, setBottom] = useState(false);
+
+  useEffect(() => {
+    window.addEventListener("scroll", () => {
+      setTop(window.scrollY > 0);
+      setBottom(
+        window.innerHeight - window.scrollY - document.body.offsetHeight > 0,
+      );
+    });
+  }, []);
+
+  return (
+    <div
+      data-top={top}
+      data-bottom={bottom}
+      className={styles.mask}
+      {...props}
+    />
+  );
+}
+
 export const Shell = {
   Body,
   Main,
   Header,
   Aside,
+  Mask,
   Drag,
   Empty,
 };

@@ -18,6 +18,71 @@
   backdrop-filter: none;
 }
 
+/* Icon-only trigger for a standalone view control in the toolbar. */
+.barTrigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  & > svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover,
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-2);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+/* Wrapper so the applied-filters dot can be positioned over the trigger. */
+.barTriggerWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.barDot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  pointer-events: none;
+  background: var(--ds-accent-9, var(--ds-gray-12));
+  border: 1px solid var(--ds-gray-1);
+  border-radius: var(--ds-radius-full, 100px);
+}
+
+/* Title row for a standalone view control popup, since there is no submenu
+   trigger label to name the panel. */
+.barHeader {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
+}
+
 .applied {
   flex-shrink: 0;
   margin-inline: 8px 4px;

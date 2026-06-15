@@ -1,15 +1,22 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
-import { saves } from "@pond/schema/db";
-import { count, isNull } from "drizzle-orm";
-import { app, Menu, type NativeImage, nativeImage, Tray } from "electron";
+import { type SaveFile, saves } from "@pond/schema/db";
+import { count, desc, eq, isNull } from "drizzle-orm";
+import {
+  app,
+  Menu,
+  type MenuItemConstructorOptions,
+  type NativeImage,
+  nativeImage,
+  Tray,
+} from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_INGEST_PORT } from "../shared/constants";
 import { syncAllSources } from "./core/sync";
 import { getDb } from "./db";
 import { getIngestToken, rotateIngestToken } from "./keychain";
-import { appDataRoot, libraryRoot } from "./paths";
+import { appDataRoot, itemFile, libraryRoot } from "./paths";
 
 export interface TrayHandle {
   tray: Tray;
@@ -20,11 +27,25 @@ export interface TrayHandle {
 interface TrayOptions {
   onOpenLibrary: () => void | Promise<void>;
   onOpenSettings?: () => void | Promise<void>;
+  onOpenSave?: (id: string) => void | Promise<void>;
 }
 
 let handle: TrayHandle | null = null;
 
 let lastOpts: TrayOptions | null = null;
+
+// How many recent saves to surface in the menu, and the working-state animation.
+const RECENTS_LIMIT = 6;
+const SPINNER_SIZE = 22;
+const SPINNER_DOTS = 8;
+const SPINNER_INTERVAL_MS = 90;
+
+// Icon shown when idle; restored after a sync finishes.
+let idleIcon: NativeImage | null = null;
+let spinnerFrames: NativeImage[] | null = null;
+let spinnerTimer: ReturnType<typeof setInterval> | null = null;
+let spinnerStep = 0;
+let syncing = false;
 
 export async function setTrayVisible(visible: boolean): Promise<void> {
   if (visible) {
@@ -49,6 +70,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     if (process.platform === "darwin") {
       image.setTemplateImage(true);
     }
+    idleIcon = image;
     tray = new Tray(image);
   } catch (err) {
     log.error("[pond tray] failed to create tray", err);
@@ -61,15 +83,17 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     tray,
     async refresh() {
       try {
-        const menu = await buildMenu(opts);
+        const { menu, ingesting } = await buildMenu(opts);
         tray.setContextMenu(menu);
-        const title = await buildTooltip();
-        tray.setToolTip(title);
+        tray.setToolTip(await buildTooltip());
+        setTraySyncing(ingesting > 0);
       } catch (err) {
         log.warn("[pond tray] refresh failed", err);
       }
     },
     destroy() {
+      stopSpinner();
+      syncing = false;
       tray.destroy();
       handle = null;
     },
@@ -98,16 +122,40 @@ async function buildTooltip(): Promise<string> {
   }
 }
 
-async function buildMenu(opts: TrayOptions): Promise<Menu> {
+async function buildMenu(
+  opts: TrayOptions,
+): Promise<{ menu: Menu; ingesting: number }> {
   const db = await getDb().catch(() => null);
-  let active = 0;
-  if (db) {
-    const [a] = await db
-      .select({ n: count() })
-      .from(saves)
-      .where(isNull(saves.deletedAt));
-    active = Number(a?.n ?? 0);
-  }
+
+  const [activeRow] = db
+    ? await db.select({ n: count() }).from(saves).where(isNull(saves.deletedAt))
+    : [];
+  const active = Number(activeRow?.n ?? 0);
+
+  const [ingestRow] = db
+    ? await db
+        .select({ n: count() })
+        .from(saves)
+        .where(eq(saves.status, "ingesting"))
+    : [];
+  const ingesting = Number(ingestRow?.n ?? 0);
+
+  const recents = db
+    ? await db
+        .select({
+          id: saves.id,
+          title: saves.title,
+          author: saves.author,
+          url: saves.url,
+          files: saves.files,
+          coverIndex: saves.coverIndex,
+        })
+        .from(saves)
+        .where(isNull(saves.deletedAt))
+        .orderBy(desc(saves.savedAt))
+        .limit(RECENTS_LIMIT)
+    : [];
+
   const libraryName =
     libraryRoot()
       .split("/")
@@ -115,12 +163,33 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
       ?.replace(/\.(pond|library)$/, "") ?? "Library";
   const loginItem = app.getLoginItemSettings();
 
-  return Menu.buildFromTemplate([
-    {
-      label: `${libraryName} · ${active} saves`,
-      enabled: false,
-    },
+  const headerLabel =
+    ingesting > 0
+      ? `Saving ${ingesting} item${ingesting === 1 ? "" : "s"}…`
+      : `${libraryName} · ${active} saves`;
+
+  const recentItems: MenuItemConstructorOptions[] = recents.map((r) => {
+    const item: MenuItemConstructorOptions = {
+      label: recentLabel(r),
+      click: () => void opts.onOpenSave?.(r.id),
+    };
+    const icon = loadThumb(r.id, r.files, r.coverIndex);
+    if (icon) item.icon = icon;
+    return item;
+  });
+
+  const template: MenuItemConstructorOptions[] = [
+    { label: headerLabel, enabled: false },
     { type: "separator" },
+  ];
+
+  if (recentItems.length > 0) {
+    template.push({ label: "Recently Saved", enabled: false }, ...recentItems, {
+      type: "separator",
+    });
+  }
+
+  template.push(
     {
       label: "Open Library…",
       accelerator: "CommandOrControl+Shift+P",
@@ -170,7 +239,145 @@ async function buildMenu(opts: TrayOptions): Promise<Menu> {
     { type: "separator" },
     { label: `Pond ${app.getVersion()}`, enabled: false },
     { label: "Quit", accelerator: "CommandOrControl+Q", role: "quit" },
-  ]);
+  );
+
+  return { menu: Menu.buildFromTemplate(template), ingesting };
+}
+
+function recentLabel(r: {
+  title: string | null;
+  author: string | null;
+  url: string;
+}): string {
+  const title = r.title?.replace(/\s+/g, " ").trim();
+  if (title) return truncate(title);
+  const author = r.author?.replace(/\s+/g, " ").trim();
+  if (author) return truncate(author);
+  const host = hostFromUrl(r.url);
+  if (host) return truncate(host);
+  return "Untitled";
+}
+
+function truncate(value: string): string {
+  return value.length > 44 ? `${value.slice(0, 43)}…` : value;
+}
+
+function hostFromUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+// A small color thumbnail for the save's cover, sized for a menu item. Returns
+// null for non-image covers or missing files so the item simply renders text.
+function loadThumb(
+  id: string,
+  files: SaveFile[] | null | undefined,
+  coverIndex: number | null | undefined,
+): NativeImage | null {
+  try {
+    const list = files ?? [];
+    const cover = list[coverIndex ?? 0] ?? list[0];
+    if (!cover) return null;
+    const path = itemFile(id, cover.path);
+    if (!existsSync(path)) return null;
+    const img = nativeImage.createFromPath(path);
+    if (img.isEmpty()) return null;
+    return img.resize({ width: 16, height: 16, quality: "good" });
+  } catch {
+    return null;
+  }
+}
+
+// Swap the menu-bar icon for an animated throbber while saves are ingesting,
+// mirroring the way editors flip their icon during background work.
+function setTraySyncing(active: boolean): void {
+  if (active === syncing) return;
+  syncing = active;
+  const tray = handle?.tray;
+  if (!tray) return;
+
+  if (active) {
+    const frames = getSpinnerFrames();
+    spinnerStep = 0;
+    const first = frames[0] ?? idleIcon;
+    if (first) tray.setImage(first);
+    spinnerTimer = setInterval(() => {
+      spinnerStep = (spinnerStep + 1) % frames.length;
+      const frame = frames[spinnerStep];
+      if (frame && handle?.tray) handle.tray.setImage(frame);
+    }, SPINNER_INTERVAL_MS);
+  } else {
+    stopSpinner();
+    if (idleIcon) tray.setImage(idleIcon);
+  }
+}
+
+function stopSpinner(): void {
+  if (spinnerTimer) {
+    clearInterval(spinnerTimer);
+    spinnerTimer = null;
+  }
+}
+
+function getSpinnerFrames(): NativeImage[] {
+  if (spinnerFrames) return spinnerFrames;
+  const frames: NativeImage[] = [];
+  for (let head = 0; head < SPINNER_DOTS; head++) {
+    frames.push(makeSpinnerFrame(SPINNER_SIZE, head));
+  }
+  spinnerFrames = frames;
+  return frames;
+}
+
+// A ring of dots with a bright "head" that rotates and a fading trail; rendered
+// as an alpha-only template image so macOS tints it like any other menu glyph.
+function makeSpinnerFrame(size: number, head: number): NativeImage {
+  const rgba = Buffer.alloc(size * size * 4);
+  const cx = size / 2 - 0.5;
+  const cy = size / 2 - 0.5;
+  const ringR = size * 0.3;
+  const dotR = size * 0.085;
+
+  for (let d = 0; d < SPINNER_DOTS; d++) {
+    const angle = (d / SPINNER_DOTS) * Math.PI * 2 - Math.PI / 2;
+    const px = cx + Math.cos(angle) * ringR;
+    const py = cy + Math.sin(angle) * ringR;
+    const rel = (((head - d) % SPINNER_DOTS) + SPINNER_DOTS) % SPINNER_DOTS;
+    const alpha = Math.round(40 + 215 * (1 - rel / SPINNER_DOTS));
+    stampDot(rgba, size, px, py, dotR, alpha);
+  }
+
+  const img = nativeImage.createFromBuffer(encodeRgbaPng(size, size, rgba));
+  if (process.platform === "darwin") img.setTemplateImage(true);
+  return img;
+}
+
+function stampDot(
+  rgba: Buffer,
+  size: number,
+  cx: number,
+  cy: number,
+  r: number,
+  alpha: number,
+): void {
+  const minX = Math.max(0, Math.floor(cx - r));
+  const maxX = Math.min(size - 1, Math.ceil(cx + r));
+  const minY = Math.max(0, Math.floor(cy - r));
+  const maxY = Math.min(size - 1, Math.ceil(cy + r));
+  const r2 = r * r;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const dx = x - cx;
+      const dy = y - cy;
+      if (dx * dx + dy * dy > r2) continue;
+      const i = (y * size + x) * 4;
+      if (alpha > (rgba[i + 3] ?? 0)) rgba[i + 3] = alpha;
+    }
+  }
 }
 
 function pairingString(token: string): string {

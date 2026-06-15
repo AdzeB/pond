@@ -12,11 +12,11 @@ const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "fileCount", label: "File count" },
 ];
 
-export function DisplaySection() {
+export function DisplaySection({ standalone }: { standalone?: boolean }) {
   const { state, actions } = useView();
 
   return (
-    <ViewSubmenu icon={<DisplayIcon />} label="Display">
+    <ViewSubmenu icon={<DisplayIcon />} label="Display" standalone={standalone}>
       <Menu.Group>
         {TOGGLES.map(({ key, label }) => (
           <Menu.CheckboxItem

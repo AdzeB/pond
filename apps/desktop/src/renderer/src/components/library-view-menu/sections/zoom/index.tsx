@@ -25,12 +25,12 @@ function closest(value: number): number {
   return best;
 }
 
-export function ZoomSection() {
+export function ZoomSection({ standalone }: { standalone?: boolean }) {
   const { state, actions } = useView();
   const value = closest(state.zoom);
 
   return (
-    <ViewSubmenu icon={<ZoomIcon />} label="Zoom">
+    <ViewSubmenu icon={<ZoomIcon />} label="Zoom" standalone={standalone}>
       <Menu.Group>
         {options.map(({ value: option, label }) => (
           <Menu.CheckboxItem

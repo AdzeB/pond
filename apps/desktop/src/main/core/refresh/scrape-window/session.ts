@@ -107,7 +107,7 @@ async function _writeStoredHandle(
 export async function probeUserHandle(source: Source): Promise<string | null> {
   const lease = await leaseWindow(source);
   try {
-    const url = homeUrlForSource(source);
+    const url = probeUrlForSource(source);
     const navOk = await navigateWithTimeout(lease.win, url, NAV_TIMEOUT_MS);
     if (!navOk) {
       log.warn("[pond refresh:probe] navigate failed", source, url);
@@ -136,6 +136,15 @@ export async function probeUserHandle(source: Source): Promise<string | null> {
   } finally {
     lease.release();
   }
+}
+
+// The probe needs a logged-in page that exposes the user's handle. The login
+// URL trips auth-wall detection (and shows no nav), so probe the site root for
+// sources whose root renders the signed-in shell.
+function probeUrlForSource(source: Source): string {
+  if (source === "tiktok") return "https://www.tiktok.com/";
+  if (source === "arena") return "https://www.are.na/";
+  return homeUrlForSource(source);
 }
 
 // The in-page handle probe (cosmos/arena) lives on each extractor.

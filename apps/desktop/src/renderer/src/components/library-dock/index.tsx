@@ -1,15 +1,12 @@
 import {
   IconArchivePlusFill18 as Plus,
   IconGearFill18 as Settings,
-  IconSliders2VerticalFill18 as Sliders,
   IconArrowsRotateCenterFill18 as Sync,
   IconTrash2Fill18 as Trash,
 } from "@pond/icons/fill/18";
-import { Tooltip, useToast } from "@pond/ui";
+import { Tooltip } from "@pond/ui";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { PondSwitcher } from "@/components/library-pond-switcher";
-import { ViewOptionsMenu } from "@/components/library-view-menu/options-menu";
 import { useSidebarNav } from "@/hooks/use-sidebar-nav";
 import { formatNumber } from "@/lib/format";
 import { gentleSpring, snappySpring } from "@/lib/motion";
@@ -37,8 +34,6 @@ export function Dock() {
   return (
     <nav className={styles.dock} aria-label="Primary navigation">
       <div className={styles.pill}>
-        <PondSwitcher compact className={styles.item} />
-
         {navItems.map(({ item, count }) => {
           const active =
             item.path === "/"
@@ -74,24 +69,6 @@ export function Dock() {
             </Tooltip>
           );
         })}
-
-        <Tooltip label="View options" side="top">
-          <ViewOptionsMenu
-            side="top"
-            align="start"
-            trigger={
-              <button
-                type="button"
-                className={styles.item}
-                aria-label="View options"
-              >
-                <span className={styles.icon}>
-                  <Sliders />
-                </span>
-              </button>
-            }
-          />
-        </Tooltip>
 
         <Tooltip label="Sync status" side="top">
           <button
@@ -144,16 +121,11 @@ export function Dock() {
 }
 
 function SelectionGroup({ count }: { count: number }) {
-  const toast = useToast();
   const ids = useSelectedIds();
 
   const moveToTrash = async () => {
-    const moved = await trashSaves(ids);
+    await trashSaves(ids);
     selection.clear();
-    toast.add({
-      title: `Moved ${formatNumber(moved)} to trash`,
-      type: "success",
-    });
   };
 
   return (

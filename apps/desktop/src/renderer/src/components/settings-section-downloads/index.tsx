@@ -1,4 +1,3 @@
-import { useToast } from "@pond/ui";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Binding } from "@/components/settings-engine";
 import {
@@ -32,7 +31,6 @@ function useDownloadBinding(
   field: DownloadField,
   channel: DownloadChannel,
 ): Binding {
-  const toast = useToast();
   const qc = useQueryClient();
 
   const { data } = useQuery<SettingsRow>({
@@ -68,18 +66,10 @@ function useDownloadBinding(
           cur ? { ...cur, [field]: next } : cur,
         );
       })
-      .catch((err) => {
+      .catch(() => {
         qc.setQueryData<SettingsRow | undefined>(["settings", "get"], (cur) =>
           cur ? { ...cur, [field]: previous } : cur,
         );
-        toast.add({
-          title: "Couldn't save preferences",
-          description:
-            err instanceof Error
-              ? err.message
-              : "Try again. If it keeps happening, check Developer › Open Log Directory.",
-          type: "error",
-        });
       });
   };
 

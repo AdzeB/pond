@@ -1,4 +1,4 @@
-import { Menu } from "@pond/ui";
+import { Menu, Tooltip } from "@pond/ui";
 import { AnimatePresence, motion } from "motion/react";
 import type { ReactNode } from "react";
 import { snappySpring } from "@/lib/motion";
@@ -10,18 +10,57 @@ interface ViewSubmenuProps {
   // Right-aligned badge in the trigger row (e.g. "3 applied").
   badge?: ReactNode;
   popupWidth?: string;
+  // When set, render as a self-contained dropdown (icon trigger + titled popup)
+  // for the toolbar instead of a nested row in the View options menu.
+  standalone?: boolean;
   children: ReactNode;
 }
 
-// One row in the View options menu that expands into a side panel. The trigger
-// label already names the panel, so the panel itself carries no title.
+// One part of the view controls. Inside the View options menu it renders as a
+// row that expands into a side panel; in `standalone` mode (the toolbar) it is
+// its own dropdown with an icon trigger and a titled popup.
 export function ViewSubmenu({
   icon,
   label,
   badge,
   popupWidth = "240px",
+  standalone,
   children,
 }: ViewSubmenuProps) {
+  if (standalone) {
+    return (
+      <Menu.Root>
+        <Tooltip label={label} side="bottom">
+          <Menu.Trigger
+            render={
+              <button
+                type="button"
+                className={styles.barTrigger}
+                aria-label={label}
+              />
+            }
+          >
+            {icon}
+          </Menu.Trigger>
+        </Tooltip>
+        <Menu.Portal>
+          <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+            <Menu.Popup
+              className={styles.glassPopup}
+              style={{ width: popupWidth }}
+            >
+              <div className={styles.barHeader}>
+                {label}
+                {badge}
+              </div>
+              {children}
+            </Menu.Popup>
+          </Menu.Positioner>
+        </Menu.Portal>
+      </Menu.Root>
+    );
+  }
+
   return (
     <Menu.SubmenuRoot>
       <Menu.SubmenuTrigger>

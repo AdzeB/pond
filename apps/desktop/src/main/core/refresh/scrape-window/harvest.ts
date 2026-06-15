@@ -5,7 +5,6 @@ import { app, type BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { harvesterFor } from "../harvest";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
-import { harvestArenaListViaApi } from "../harvest/arena/api";
 import {
   buildCosmosListExpression,
   COSMOS_LIST_URL,
@@ -115,19 +114,6 @@ export async function harvestSourceList(
   args: SourceListArgs,
   opts: { onProgress?: (p: ListHarvestProgress) => void } = {},
 ): Promise<ListHarvestResult> {
-  if (source === "arena") {
-    if (!args.accountKey) {
-      return { ok: false, reason: "auth_required" };
-    }
-    return harvestArenaListViaApi(args.accountKey, {
-      knownIds: new Set(args.knownIds),
-      onProgress: opts.onProgress
-        ? (collected, fresh) =>
-            opts.onProgress?.({ phase: "scroll", collected, fresh })
-        : undefined,
-    });
-  }
-
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };
