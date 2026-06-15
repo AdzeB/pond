@@ -4,6 +4,7 @@ import {
   IconBrandCosmos,
   IconBrandInstagram,
   IconBrandPinterest,
+  IconBrandReddit,
   IconBrandTikTok,
   IconBrandTwitter,
   IconBrandYoutube,
@@ -28,6 +29,7 @@ const SOURCE_ICONS: Record<Source, BrandIcon> = {
   cosmos: IconBrandCosmos,
   tiktok: IconBrandTikTok,
   youtube: IconBrandYoutube,
+  reddit: IconBrandReddit,
   local: LocalIcon,
 };
 

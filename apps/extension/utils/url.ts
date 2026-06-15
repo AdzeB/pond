@@ -18,6 +18,8 @@ export function cookieDomainForSource(source: Source): string | null {
       return ".cosmos.so";
     case "arena":
       return ".are.na";
+    case "reddit":
+      return ".reddit.com";
     case "local":
       return null;
   }

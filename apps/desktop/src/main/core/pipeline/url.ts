@@ -4,6 +4,7 @@ import {
   firstMatch,
   INSTAGRAM_PATTERNS,
   PINTEREST_PATTERNS,
+  REDDIT_PATTERNS,
   TIKTOK_PATTERNS,
   TWITTER_PATTERNS,
   YOUTUBE_PATTERNS,
@@ -45,6 +46,10 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
     }
     case "youtube": {
       const m = firstMatch(url, YOUTUBE_PATTERNS);
+      return m?.[1] ?? null;
+    }
+    case "reddit": {
+      const m = firstMatch(url, REDDIT_PATTERNS);
       return m?.[1] ?? null;
     }
     case "local":

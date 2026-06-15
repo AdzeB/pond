@@ -3,6 +3,7 @@ import * as arena from "./arena";
 import * as cosmos from "./cosmos";
 import * as instagram from "./instagram";
 import * as pinterest from "./pinterest";
+import * as reddit from "./reddit";
 import * as tiktok from "./tiktok";
 import * as twitter from "./twitter";
 import type { ScrapedHarvest } from "./types";
@@ -49,6 +50,11 @@ const REGISTRY: Record<Source, Harvester> = {
     buildExpression: cosmos.buildExpression,
     adapt: cosmos.adapt,
     sourceIdFromUrl: cosmos.sourceIdFromUrl,
+  },
+  reddit: {
+    buildExpression: reddit.buildExpression,
+    adapt: reddit.adapt,
+    sourceIdFromUrl: reddit.sourceIdFromUrl,
   },
   // Local never harvests; entry exists for the registry total and throws if called.
   local: {

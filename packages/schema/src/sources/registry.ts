@@ -63,6 +63,16 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/youtu\.be\/([A-Za-z0-9_-]+)/i,
     ],
   },
+  {
+    id: "reddit",
+    label: "Reddit",
+    hosts: ["reddit.com", "redd.it"],
+    urlPatterns: [
+      /^https?:\/\/(?:[a-z]+\.)?reddit\.com\/r\/[^/]+\/comments\/([a-z0-9]+)/i,
+      /^https?:\/\/(?:[a-z]+\.)?reddit\.com\/comments\/([a-z0-9]+)/i,
+      /^https?:\/\/redd\.it\/([a-z0-9]+)/i,
+    ],
+  },
 ] as const satisfies readonly SourceDescriptor[];
 
 /** The id of an external (non-`local`) source. */

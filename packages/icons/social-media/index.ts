@@ -4,6 +4,7 @@ export * from "./custom/cosmos";
 export * from "./custom/facebook";
 export * from "./custom/instagram";
 export * from "./custom/pinterest";
+export * from "./custom/reddit";
 export * from "./custom/snapchat";
 export * from "./custom/threads";
 export * from "./custom/tiktok";

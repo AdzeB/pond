@@ -18,6 +18,7 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   cosmos: 2,
   pinterest: 2,
   arena: 2,
+  reddit: 2,
   // Local never leases a window; present only to complete the record.
   local: 0,
 };

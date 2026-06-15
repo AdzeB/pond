@@ -124,5 +124,6 @@ export const DEFAULT_SIDEBAR_SOURCES: SidebarSourceEntry[] = [
   { source: "cosmos", visibility: "hidden" },
   { source: "tiktok", visibility: "hidden" },
   { source: "youtube", visibility: "hidden" },
+  { source: "reddit", visibility: "when-count" },
   { source: "local", visibility: "hidden" },
 ];

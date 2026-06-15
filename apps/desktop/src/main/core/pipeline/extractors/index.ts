@@ -5,6 +5,7 @@ import { ArenaBlockExtractor } from "./sources/arena";
 import { CosmosTileExtractor } from "./sources/cosmos";
 import { InstagramPostExtractor } from "./sources/instagram";
 import { PinterestPinExtractor } from "./sources/pinterest";
+import { RedditPostExtractor } from "./sources/reddit";
 import { TikTokVideoExtractor } from "./sources/tiktok";
 import { TwitterTweetExtractor } from "./sources/twitter";
 import { YouTubeWatchExtractor } from "./sources/youtube";
@@ -19,6 +20,7 @@ const EXTRACTORS = {
   pinterest: new PinterestPinExtractor(),
   arena: new ArenaBlockExtractor(),
   cosmos: new CosmosTileExtractor(),
+  reddit: new RedditPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
 /** All extractors in URL-resolution order. Exported for the test runner. */

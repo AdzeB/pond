@@ -59,6 +59,7 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   pinterest: 20 * 60_000,
   instagram: 20 * 60_000,
   tiktok: 20 * 60_000,
+  reddit: 20 * 60_000,
   // Local never syncs; present only for the record total.
   local: 20 * 60_000,
 };

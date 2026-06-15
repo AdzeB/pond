@@ -18,6 +18,8 @@ export function homeUrlForSource(source: Source): string {
       return "https://www.are.na/log-in";
     case "youtube":
       return "https://accounts.google.com/ServiceLogin?service=youtube";
+    case "reddit":
+      return "https://www.reddit.com/login/";
     case "local":
       // Local imports have no remote account, so there is no login page.
       return "";

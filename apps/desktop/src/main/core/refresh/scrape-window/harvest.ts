@@ -210,6 +210,8 @@ function listUrlForSource(
       return accountKey ? tiktokFavouritesUrl(accountKey) : null;
     case "twitter":
       return null;
+    case "reddit":
+      return null;
     case "local":
       return null;
   }
@@ -233,6 +235,8 @@ function buildListExpressionFor(
     case "tiktok":
       return buildTiktokListExpression(args);
     case "twitter":
+      return null;
+    case "reddit":
       return null;
     case "local":
       return null;

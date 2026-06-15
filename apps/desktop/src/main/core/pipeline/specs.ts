@@ -95,6 +95,16 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.author.avatarUrl",
     ],
   },
+  reddit: {
+    required: ["title"],
+    recommended: [
+      "author",
+      "mediaUrl",
+      "capture.publishedAt",
+      "capture.metrics.likes",
+      "capture.metrics.comments",
+    ],
+  },
   // Local imports supply their own metadata; nothing to grade.
   local: { required: [], recommended: [] },
 };
