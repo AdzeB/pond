@@ -34,6 +34,8 @@ declare global {
       contrast?: number;
       fgDir?: number;
       pointerCursors?: boolean;
+      glass?: boolean;
+      glassSupported?: boolean;
     };
   }
 }

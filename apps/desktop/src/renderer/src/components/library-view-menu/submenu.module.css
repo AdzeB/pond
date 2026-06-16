@@ -1,12 +1,10 @@
-/* Liquid-glass treatment for the popups. This IS the shared `.card` glass — same
-   tint, convex shine, #pond-glass-card refraction, pointer-sheen layer and
-   reduced-transparency fallback — so popovers are literally the same material as
-   the dock/toolbar chrome. The card filter runs in size-relative units (see
-   liquid-glass/index.tsx) so these large panels refract at the same visual
-   intensity as the small pills. The doubled selector only re-asserts the two
-   properties the base `.popup` also sets (background + shadow), reusing the
-   shared custom properties so there's still a single source of truth, and
-   guaranteeing the glass wins regardless of stylesheet order. */
+/* Frosted treatment for the popups. This IS the shared `.card` surface — same
+   tint, convex shine and reduced-transparency fallback — so popovers are
+   literally the same material as the dock/toolbar chrome. The doubled selector
+   only re-asserts the two properties the base `.popup` also sets (background +
+   shadow), reusing the shared custom properties so there's still a single
+   source of truth, and guaranteeing the frost wins regardless of stylesheet
+   order. */
 .glassPopup {
   composes: card from "../liquid-glass/glass.module.css";
 }

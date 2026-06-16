@@ -1,7 +1,6 @@
 import { IconTrash2Fill18 as Trash } from "@pond/icons/fill/18";
 import { Tooltip } from "@pond/ui";
 import { AnimatePresence, motion } from "motion/react";
-import { usePointerSheen } from "@/hooks/use-pointer-sheen";
 import { formatNumber } from "@/lib/format";
 import { bouncySpring, snappySpring } from "@/lib/motion";
 import { trashSaves } from "@/lib/mutate-save";
@@ -31,7 +30,6 @@ export function Dock() {
 
 function SelectionGroup({ count }: { count: number }) {
   const ids = useSelectedIds();
-  const sheen = usePointerSheen();
 
   const moveToTrash = async () => {
     await trashSaves(ids);
@@ -45,7 +43,6 @@ function SelectionGroup({ count }: { count: number }) {
       animate={{ opacity: 1, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.85, x: -8 }}
       transition={bouncySpring}
-      {...sheen}
     >
       <span
         className={styles.count}

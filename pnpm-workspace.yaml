@@ -3,6 +3,10 @@ packages:
   - "packages/*"
 
 allowBuilds:
+  # Built solely by electron-rebuild in apps/desktop postinstall (Electron ABI).
+  # Letting pnpm run its own node-gyp build produces a plain-Node binary that
+  # clobbers the Electron build and breaks ELECTRON_RUN_AS_NODE tooling.
+  better-sqlite3: false
   core-js: false
   nucleo-ui-fill-12: true
   nucleo-ui-fill-18: true
@@ -13,8 +17,10 @@ allowBuilds:
   protobufjs: true
   sharp: true
 
+minimumReleaseAgeExclude:
+  - better-sqlite3@12.11.1
+
 onlyBuiltDependencies:
-  - better-sqlite3
   - electron
   - electron-winstaller
   - esbuild

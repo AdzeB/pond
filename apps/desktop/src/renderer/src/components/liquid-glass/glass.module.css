@@ -1,29 +1,24 @@
-/* Shared liquid-glass surface. Other CSS modules opt in with
+/* Shared frosted surface. Other CSS modules opt in with
    `composes: pill from "@/components/liquid-glass/glass.module.css";` (or
-   `card`), which brings the translucent tint, the SVG lens refraction, the
-   rim/specular light, and the reduced-transparency fallback in one place.
+   `card`), which brings the translucent tint, backdrop frost, and convex
+   rim/specular light in one place.
 
-   The filter (mounted once at the app root) refracts the content *behind* the
-   surface; text on top stays crisp. Tunables are exposed as custom properties:
+   This is a plain in-app surface, not "liquid glass": the real refractive
+   Liquid Glass is now the native NSGlassEffectView window backing (macOS 26+,
+   see packages/native-glass + src/main/glass.ts). In-app floating chrome can't
+   sit on that native layer (the web UI is a single layer above it), so these
+   surfaces stay a normal frosted backdrop blur. Tunables:
    - --glass-tint     surface fill
    - --glass-blur     backdrop blur radius
-   - --glass-saturate backdrop saturation boost
-   so consumers can nudge a single surface without forking the recipe. */
+   - --glass-saturate backdrop saturation boost */
 
 .glass {
   --glass-tint: color-mix(in srgb, var(--ds-gray-1) 72%, transparent);
-  --glass-blur: var(--pond-glass-blur, 7px);
+  --glass-blur: 7px;
   --glass-saturate: 180%;
-  --glass-refract: none;
-  /* Pointer-tracked glint position + strength. Defaults sit at the top-left
-     light source and stay invisible (`--glass-sheen: 0`) until a surface opts
-     in via the `usePointerSheen` hook (or `<Glass sheen>`). */
-  --glass-mx: 30%;
-  --glass-my: -10%;
-  --glass-sheen: 0;
   /* Convex shine from a fixed top-left light: a hairline rim, a brighter top
      specular and a darker bottom shadow (~1 : 1.4) so the surface reads as a
-     raised lens rather than a flat pane. Exposed as a property so surfaces that
+     raised pane rather than a flat fill. Exposed as a property so surfaces that
      must re-assert it (e.g. a popup beating a base background) reuse one value. */
   --glass-shadow:
     inset 0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-200)),
@@ -32,9 +27,9 @@
     inset 0 -2px 4px -2px
     light-dark(var(--black-alpha-200), var(--black-alpha-400)),
     var(--ds-shadow-3);
-  /* A little brightness lift keeps the glass lively rather than a grey smudge. */
-  --glass-backdrop: var(--glass-refract) blur(var(--glass-blur))
-    saturate(var(--glass-saturate)) brightness(1.04);
+  /* A little brightness lift keeps the surface lively rather than a grey smudge. */
+  --glass-backdrop: blur(var(--glass-blur)) saturate(var(--glass-saturate))
+    brightness(1.04);
 
   background: var(--glass-tint);
   box-shadow: var(--glass-shadow);
@@ -42,48 +37,19 @@
   backdrop-filter: var(--glass-backdrop);
 }
 
-/* Live specular glint that tracks the pointer. A soft white pool centred on the
-   cursor, screened over the surface so it only ever brightens. Inherits the
-   host's corner radius so it stays inside the lens, and fades in/out with
-   `--glass-sheen`. `pointer-events: none` keeps clicks flowing to the content. */
-.glass::after {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  content: "";
-  background: radial-gradient(
-    60% 120% at var(--glass-mx) var(--glass-my),
-    light-dark(var(--white-alpha-700), var(--white-alpha-300)),
-    transparent 60%
-  );
-  border-radius: inherit;
-  mix-blend-mode: screen;
-  opacity: var(--glass-sheen);
-  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
-}
-
 .pill {
-  --glass-refract: url("#pond-glass-pill");
-  --glass-saturate: 180%;
   composes: glass;
 }
 
 .card {
-  --glass-refract: url("#pond-glass-card");
   composes: glass;
 }
 
-/* Accessibility: drop translucency + refraction entirely for an opaque surface.
+/* Accessibility: drop translucency + frost entirely for an opaque surface.
    Doubled selector so it wins over composed-in declarations regardless of
    stylesheet order. */
 :global(html[data-reduce-transparency="true"]) .glass.glass {
   --glass-tint: var(--ds-gray-1);
-  --glass-sheen: 0;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-}
-
-:global(html[data-reduce-transparency="true"]) .glass.glass::after {
-  display: none;
 }

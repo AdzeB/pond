@@ -24,12 +24,7 @@ export function NavCluster() {
   const navItems = visibleItems.filter(({ item }) => NAV_KEYS.has(item.key));
 
   return (
-    <Glass
-      as="nav"
-      sheen
-      className={styles.cluster}
-      aria-label="Primary navigation"
-    >
+    <Glass as="nav" className={styles.cluster} aria-label="Primary navigation">
       {navItems.map(({ item, count }) => {
         const active =
           item.path === "/"

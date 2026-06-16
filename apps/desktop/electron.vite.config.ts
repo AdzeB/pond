@@ -48,7 +48,7 @@ export default defineConfig({
         // Native modules must stay external so they resolve their
         // platform-specific .node binaries from node_modules at runtime
         // instead of being inlined into the bundle.
-        external: ["electron", "better-sqlite3", "sharp"],
+        external: ["electron", "better-sqlite3", "sharp", "@pond/native-glass"],
       },
     },
   },

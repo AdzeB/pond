@@ -14,8 +14,8 @@ const isCustomMode = (v: Values) => (v.themeMode ?? "system") === "custom";
 
 // Glass controls are moot once surfaces are forced opaque.
 const transparencyReduced = (v: Values) => v.reduceTransparency === true;
-// Refraction/chroma only matter while liquid glass is on (and visible).
-const lensDisabled = (v: Values) =>
+// The glass style only matters while glass is on (and visible).
+const glassDisabled = (v: Values) =>
   v.liquidGlass === false || transparencyReduced(v);
 
 export const appearanceSection: SectionConfig = {
@@ -73,50 +73,37 @@ export const appearanceSection: SectionConfig = {
     },
     {
       title: "Liquid glass",
-      render: () => <GlassPreview />,
-    },
-    {
       items: [
         {
           control: "switch",
           key: "liquidGlass",
           title: "Liquid glass",
           description:
-            "Refract the content behind translucent surfaces, like real glass.",
+            "Use a native macOS glass window that refracts the desktop behind Pond. Requires macOS 26 or later.",
           disabled: transparencyReduced,
         },
         {
-          control: "range",
-          key: "liquidGlassRefraction",
-          title: "Refraction",
-          description: "How strongly the glass rim bends the backdrop.",
-          min: 0,
-          max: 30,
-          step: 1,
-          suffix: "px",
-          visible: (v) => !lensDisabled(v),
+          control: "select",
+          key: "liquidGlassStyle",
+          title: "Material",
+          description: "How translucent the glass reads.",
+          options: [
+            { value: "regular", label: "Regular" },
+            { value: "clear", label: "Clear" },
+          ],
+          visible: (v) => !glassDisabled(v),
         },
         {
-          control: "range",
-          key: "liquidGlassChroma",
-          title: "Chromatic aberration",
-          description: "Color fringe split along the glass edges.",
-          min: 0,
-          max: 8,
-          step: 1,
-          suffix: "px",
-          visible: (v) => !lensDisabled(v),
-        },
-        {
-          control: "range",
-          key: "liquidGlassBlur",
-          title: "Blur",
-          description: "Frost radius of the backdrop behind the glass.",
-          min: 0,
-          max: 20,
-          step: 1,
-          suffix: "px",
-          visible: (v) => !transparencyReduced(v),
+          control: "custom",
+          key: "glass-preview",
+          render: (b) => (
+            <GlassPreview
+              style={
+                (b.values.liquidGlassStyle as "regular" | "clear") ?? "regular"
+              }
+            />
+          ),
+          visible: (v) => !glassDisabled(v),
         },
       ],
     },

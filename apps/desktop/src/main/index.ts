@@ -27,6 +27,7 @@ import {
 } from "./core/storage-watcher";
 import { type SyncStatusUpdate, subscribeToSyncStatus } from "./core/sync";
 import { getDb } from "./db";
+import { applyWindowGlass, glassEnabled, isGlassSupported } from "./glass";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
@@ -210,6 +211,10 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
+  // Native Liquid Glass: `glass` is the current active state (first paint),
+  // `glassSupported` lets the renderer react to the toggle without a restart.
+  glass?: boolean;
+  glassSupported?: boolean;
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
@@ -231,6 +236,8 @@ async function resolveShellHint(): Promise<ShellHint> {
       contrast: v.contrast,
       fgDir: v.fgDir,
       pointerCursors: prefs.preferences.pointerCursors === true,
+      glass: glassEnabled(prefs),
+      glassSupported: isGlassSupported(),
     };
   } catch {
     return {};
@@ -248,6 +255,11 @@ async function createWindow(): Promise<BrowserWindow> {
       ? prefs.window.bounds
       : null;
 
+  // A transparent window lets the native glass backing (below the web layer)
+  // refract the desktop. Only on macOS when glass is active; the renderer keeps
+  // its content opaque otherwise, so the window still looks solid.
+  const glassActive = glassEnabled(prefs);
+
   const win = new BrowserWindow({
     width: restored?.width ?? 1280,
     height: restored?.height ?? 800,
@@ -257,6 +269,8 @@ async function createWindow(): Promise<BrowserWindow> {
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 24 } : undefined,
+    transparent: isMac && glassActive,
+    backgroundColor: isMac && glassActive ? "#00000000" : undefined,
     webPreferences: {
       preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
@@ -266,7 +280,10 @@ async function createWindow(): Promise<BrowserWindow> {
     },
   });
 
-  win.on("ready-to-show", () => win.show());
+  win.on("ready-to-show", () => {
+    if (glassActive) applyWindowGlass(win, prefs);
+    win.show();
+  });
 
   // Persist bounds on resize/move (debounced) so the next launch restores them.
   let saveBoundsTimer: NodeJS.Timeout | null = null;
@@ -540,6 +557,13 @@ export async function applyPrefsAtRuntime() {
   invalidatePrefs();
   const prefs = await getPrefs();
   await setTrayVisible(prefs.quickCapture.menuBarIcon);
+  // Toggle the glass backing live. The window's transparency is fixed at
+  // creation, so enabling glass for the first time fully takes effect on the
+  // next launch; the renderer reacts to `liquidGlass`/`reduceTransparency` via
+  // the shell hint's `glassSupported` flag.
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    applyWindowGlass(mainWindow, prefs);
+  }
   // Dev binaries can't register a login item; macOS rejects it.
   if (app.isPackaged) {
     app.setLoginItemSettings({

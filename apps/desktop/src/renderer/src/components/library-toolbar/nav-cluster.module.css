@@ -48,23 +48,18 @@
   }
 }
 
-/* Traveling glass lens that slides between active nav items via motion's shared
-   layout animation. As it moves, its backdrop refraction travels with it — the
-   liquid-glass selection indicator. Kept on a contrasting dark tint so the
-   active icon (--ds-gray-1) stays legible over any backdrop. Sits behind the
-   icon (which is z-index 1). */
+/* Traveling selection lens that slides between active nav items via motion's
+   shared layout animation. A solid high-contrast fill (not a translucent glass
+   surface) so the active icon (--ds-gray-1) stays legible regardless of what's
+   behind the now-transparent, glass-backed window. Sits behind the icon (which
+   is z-index 1). */
 .activeIndicator {
-  --glass-tint: color-mix(in srgb, var(--ds-gray-12) 84%, transparent);
-  --glass-saturate: 200%;
-  composes: pill from "../liquid-glass/glass.module.css";
   position: absolute;
   inset: 0;
   z-index: 0;
-  border-radius: var(--ds-radius-full);
-}
-
-:global(html[data-reduce-transparency="true"]) .activeIndicator {
   background: var(--ds-gray-12);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .icon {

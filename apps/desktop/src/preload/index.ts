@@ -229,7 +229,30 @@ const api = {
     ipcRenderer.on(IPC.storageStatus, listener);
     return () => ipcRenderer.off(IPC.storageStatus, listener);
   },
+
+  // Native macOS Liquid Glass click-through overlay regions. Rects are
+  // top-left CSS px in viewport space; the main process flips them into native
+  // coordinates and keeps them pinned across resizes. No-op off macOS / when
+  // glass is disabled.
+  glassSetRegions(regions: GlassRegionWire[]): Promise<{ ok: boolean }> {
+    return ipcRenderer.invoke(IPC.glassSetRegions, regions);
+  },
+
+  glassClearRegions(): Promise<{ ok: boolean }> {
+    return ipcRenderer.invoke(IPC.glassClearRegions);
+  },
 };
+
+export interface GlassRegionWire {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  cornerRadius?: number;
+  tintColor?: string;
+  style?: "regular" | "clear";
+  contentImage?: string;
+}
 
 interface ShellHint {
   theme?: "light" | "dark";
@@ -242,6 +265,8 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
+  glass?: boolean;
+  glassSupported?: boolean;
 }
 
 function readShellHint(): ShellHint {

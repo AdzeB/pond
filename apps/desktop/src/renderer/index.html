@@ -42,6 +42,21 @@
 				color-scheme: dark;
 				background: #000000;
 			}
+			/* Native Liquid Glass: clear the window background so the
+			   NSGlassEffectView backing shows, and lay a translucent scrim on
+			   the body so refracted desktop stays readable behind content. */
+			html[data-glass="true"][data-theme="light"] {
+				background: transparent;
+			}
+			html[data-glass="true"][data-theme="dark"] {
+				background: transparent;
+			}
+			html[data-glass="true"][data-theme="light"] body {
+				background: rgba(255, 255, 255, 0.55);
+			}
+			html[data-glass="true"][data-theme="dark"] body {
+				background: rgba(18, 18, 18, 0.45);
+			}
 			html,
 			body {
 				height: 100%;
@@ -89,6 +104,8 @@
 
 					if (shell.pointerCursors)
 						doc.setAttribute("data-pointer-cursors", "true");
+
+					if (shell.glass) doc.setAttribute("data-glass", "true");
 
 					const ua = navigator.userAgent || "";
 					const platform = /Mac|iPhone|iPad/i.test(ua) ? "mac" : "other";

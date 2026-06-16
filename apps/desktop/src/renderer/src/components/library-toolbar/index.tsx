@@ -31,7 +31,7 @@ export function Toolbar() {
         </PondToolbar.Group>
 
         <PondToolbar.Group fill={true} className={styles.sideEnd}>
-          <Glass sheen className={styles.glassCluster}>
+          <Glass className={styles.glassCluster}>
             <FilterSubmenu standalone />
             <SortSection standalone />
             <LayoutSection standalone />

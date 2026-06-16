@@ -106,15 +106,22 @@ export function ThemeApplier() {
     }
   }, [prefs.reduceTransparency]);
 
-  // Backdrop frost radius for every glass surface (refraction strength lives on
-  // the SVG filters; see components/liquid-glass).
+  // Native Liquid Glass window backing is only meaningful on macOS 26+ (the
+  // main process reports support via the shell hint). Reflect the live toggle
+  // onto `data-glass` so the window scrim follows the setting; the window's own
+  // transparency is fixed at launch, so first-time enables fully apply on the
+  // next restart.
   useEffect(() => {
     const root = document.documentElement;
-    root.style.setProperty(
-      "--pond-glass-blur",
-      `${prefs.liquidGlassBlur ?? 7}px`,
-    );
-  }, [prefs.liquidGlassBlur]);
+    const supported = window.__pondShell?.glassSupported === true;
+    const active =
+      supported && prefs.liquidGlass !== false && !prefs.reduceTransparency;
+    if (active) {
+      root.setAttribute("data-glass", "true");
+    } else {
+      root.removeAttribute("data-glass");
+    }
+  }, [prefs.liquidGlass, prefs.reduceTransparency]);
 
   useEffect(() => {
     const root = document.documentElement;
