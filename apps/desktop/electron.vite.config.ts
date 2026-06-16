@@ -1,4 +1,5 @@
 import { resolve } from "node:path";
+import stylex from "@stylexjs/unplugin";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
@@ -48,7 +49,7 @@ export default defineConfig({
         // Native modules must stay external so they resolve their
         // platform-specific .node binaries from node_modules at runtime
         // instead of being inlined into the bundle.
-        external: ["electron", "better-sqlite3", "sharp", "@pond/native-glass"],
+        external: ["electron", "better-sqlite3", "sharp"],
       },
     },
   },
@@ -72,6 +73,11 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, "src/renderer"),
     plugins: [
+      // Keep StyleX before @vitejs/plugin-react to preserve Fast Refresh.
+      stylex.vite({
+        useCSSLayers: true,
+        dev: process.env.NODE_ENV !== "production",
+      }),
       tanstackRouter({
         target: "react",
         autoCodeSplitting: true,

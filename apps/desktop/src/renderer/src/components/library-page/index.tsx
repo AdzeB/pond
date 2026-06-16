@@ -2,7 +2,6 @@ import { Shell } from "@pond/ui";
 import { Outlet } from "@tanstack/react-router";
 import React from "react";
 import { Dock } from "@/components/library-dock";
-import { SyncMonitor } from "@/components/library-sync-monitor";
 import { Toolbar } from "@/components/library-toolbar";
 import { SaveModal } from "@/components/save-detail-modal";
 
@@ -10,7 +9,6 @@ export function Library() {
   return (
     <React.Fragment>
       <Shell.Main>
-        <Shell.Mask />
         <Shell.Header>
           <Toolbar />
         </Shell.Header>
@@ -18,7 +16,6 @@ export function Library() {
       </Shell.Main>
       <Dock />
       <SaveModal />
-      <SyncMonitor />
     </React.Fragment>
   );
 }

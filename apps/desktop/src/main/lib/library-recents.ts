@@ -7,11 +7,21 @@ const RECENTS_FILE = "library-recents.json";
 
 export interface KnownLibrary {
   path: string;
+  // Name derived from the path basename; the effective display name applies `displayName` on top.
   name: string;
   addedAt: number;
   lastOpenedAt: number;
   // Emoji avatar for the switcher; `null` falls back to initials.
   avatar: string | null;
+  // User-chosen accent color (CSS string) for the avatar; `null` falls back to the theme accent.
+  color: string | null;
+  // User rename override; `null` means use the name derived from the path.
+  displayName: string | null;
+}
+
+// Effective display name: the user override when set, else the path-derived name.
+export function effectiveName(lib: KnownLibrary): string {
+  return lib.displayName ?? lib.name;
 }
 
 interface RecentsFile {
@@ -46,6 +56,8 @@ function read(): KnownLibrary[] {
       .map((l) => ({
         ...l,
         avatar: typeof l.avatar === "string" ? l.avatar : null,
+        color: typeof l.color === "string" ? l.color : null,
+        displayName: typeof l.displayName === "string" ? l.displayName : null,
       }));
   } catch {
     return [];
@@ -82,6 +94,8 @@ export function rememberLibrary(path: string): KnownLibrary {
     addedAt: now,
     lastOpenedAt: now,
     avatar: null,
+    color: null,
+    displayName: null,
   };
   libraries.unshift(entry);
   write(libraries);
@@ -114,6 +128,35 @@ export function setLibraryAvatar(path: string, avatar: string | null): void {
   if (!lib) return;
   const trimmed = avatar?.trim() ?? "";
   lib.avatar = trimmed.length > 0 ? trimmed : null;
+  write(libraries);
+}
+
+// Update name override, avatar, and color in one shot. Only provided fields change;
+// pass `null` to clear a field back to its default. Never moves the bundle on disk.
+export function setLibraryDetails(
+  path: string,
+  patch: {
+    name?: string | null;
+    avatar?: string | null;
+    color?: string | null;
+  },
+): void {
+  const abs = normalize(path);
+  const libraries = read();
+  const lib = libraries.find((l) => normalize(l.path) === abs);
+  if (!lib) return;
+  if (patch.name !== undefined) {
+    const trimmed = patch.name?.trim() ?? "";
+    lib.displayName = trimmed.length > 0 ? trimmed : null;
+  }
+  if (patch.avatar !== undefined) {
+    const trimmed = patch.avatar?.trim() ?? "";
+    lib.avatar = trimmed.length > 0 ? trimmed : null;
+  }
+  if (patch.color !== undefined) {
+    const trimmed = patch.color?.trim() ?? "";
+    lib.color = trimmed.length > 0 ? trimmed : null;
+  }
   write(libraries);
 }
 

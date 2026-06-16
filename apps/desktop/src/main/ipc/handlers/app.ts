@@ -1,16 +1,10 @@
 import { userInfo } from "node:os";
 import type { Transaction } from "@pond/schema/tx";
-import { app, BrowserWindow, shell } from "electron";
+import { app, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
-import { getPrefs } from "../../core/prefs";
 import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
-import {
-  clearGlassRegions,
-  type GlassRegion,
-  setGlassRegions,
-} from "../../glass";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
@@ -89,23 +83,5 @@ export function registerAppHandlers(): void {
       return { ok: false as const, reason: err };
     }
     return { ok: true as const };
-  });
-
-  safeHandle(IPC.glassSetRegions, async (event, regions: GlassRegion[]) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return { ok: false as const };
-    const prefs = await getPrefs().catch(() => null);
-    const ok = setGlassRegions(
-      win,
-      prefs,
-      Array.isArray(regions) ? regions : [],
-    );
-    return { ok };
-  });
-
-  safeHandle(IPC.glassClearRegions, (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender);
-    if (!win) return { ok: false as const };
-    return { ok: clearGlassRegions(win) };
   });
 }

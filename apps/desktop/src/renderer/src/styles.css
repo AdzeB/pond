@@ -1,6 +1,9 @@
 @import "@pond/ui/reset.css";
 @import "@pond/ui/theme.css";
 
+/* StyleX injects its compiled atomic CSS in place of this directive. */
+@stylex;
+
 @layer reset {
   #root {
     position: relative;

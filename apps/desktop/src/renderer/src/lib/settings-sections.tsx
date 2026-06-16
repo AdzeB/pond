@@ -16,10 +16,16 @@ const TagsSection = lazy(() =>
     default: m.TagsSection,
   })),
 );
+const LibrarySection = lazy(() =>
+  import("@/components/settings-section-library").then((m) => ({
+    default: m.LibrarySection,
+  })),
+);
 
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   general: generalSection,
   appearance: appearanceSection,
+  library: { component: LibrarySection },
   videos: videosSection,
   images: imagesSection,
   tags: { component: TagsSection },

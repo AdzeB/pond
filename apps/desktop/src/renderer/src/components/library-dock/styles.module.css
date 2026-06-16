@@ -1,16 +1,69 @@
-/* The dock is now just the contextual selection pill, floating bottom-center.
-   Primary nav + global actions moved up into the toolbar's nav cluster. */
 .dock {
   position: fixed;
   bottom: calc(var(--ds-mac-inset, 16px) + 4px);
   left: 50%;
-  z-index: 60;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform: translateX(-50%);
-  -webkit-app-region: no-drag;
   pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.pill {
+  z-index: 999;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  pointer-events: auto;
+  background: color-mix(in oklch, var(--ds-gray-1) 75%, transparent);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-2);
+  backdrop-filter: blur(12px);
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding-inline: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-9);
+  text-decoration: none;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  border-radius: var(--ds-radius-full);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover,
+  &[data-status="active"] {
+    color: var(--ds-gray-12);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.indicator {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+}
+
+.tab:active .label {
+  transform: scale(0.9);
 }
 
 .item {
@@ -56,28 +109,11 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  /* Springy press feedback: the glyph squishes down on press, then overshoots
-     back past 1 on release (emphasized = overshoot bezier) for a tactile pop.
-     Scoped to the glyph — never the item box — so it can't disturb the
-     `layoutId` selection lens that travels through the item. Auto-disabled
-     under reduced motion via the global transition-duration killswitch. */
   transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
 }
 
 .item:active .icon {
   transform: scale(0.82);
-}
-
-/* Floating companion to the main pill; appears while a selection is active. */
-.selectionPill {
-  composes: pill from "../liquid-glass/glass.module.css";
-  position: relative;
-  display: flex;
-  gap: 2px;
-  align-items: center;
-  padding: 6px;
-  pointer-events: auto;
-  border-radius: var(--ds-radius-full);
 }
 
 .count {

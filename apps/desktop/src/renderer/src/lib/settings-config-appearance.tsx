@@ -1,5 +1,4 @@
 import type { SectionConfig } from "@/components/settings-engine";
-import { GlassPreview } from "@/components/settings-glass-preview";
 import {
   ContrastRow,
   CustomColorRow,
@@ -11,12 +10,6 @@ type Values = Record<string, unknown>;
 
 const isSystemMode = (v: Values) => (v.themeMode ?? "system") === "system";
 const isCustomMode = (v: Values) => (v.themeMode ?? "system") === "custom";
-
-// Glass controls are moot once surfaces are forced opaque.
-const transparencyReduced = (v: Values) => v.reduceTransparency === true;
-// The glass style only matters while glass is on (and visible).
-const glassDisabled = (v: Values) =>
-  v.liquidGlass === false || transparencyReduced(v);
 
 export const appearanceSection: SectionConfig = {
   title: "Appearance",
@@ -68,42 +61,6 @@ export const appearanceSection: SectionConfig = {
           title: "Pointer cursors",
           description:
             "Show a hand cursor on hover instead of the default text caret.",
-        },
-      ],
-    },
-    {
-      title: "Liquid glass",
-      items: [
-        {
-          control: "switch",
-          key: "liquidGlass",
-          title: "Liquid glass",
-          description:
-            "Use a native macOS glass window that refracts the desktop behind Pond. Requires macOS 26 or later.",
-          disabled: transparencyReduced,
-        },
-        {
-          control: "select",
-          key: "liquidGlassStyle",
-          title: "Material",
-          description: "How translucent the glass reads.",
-          options: [
-            { value: "regular", label: "Regular" },
-            { value: "clear", label: "Clear" },
-          ],
-          visible: (v) => !glassDisabled(v),
-        },
-        {
-          control: "custom",
-          key: "glass-preview",
-          render: (b) => (
-            <GlassPreview
-              style={
-                (b.values.liquidGlassStyle as "regular" | "clear") ?? "regular"
-              }
-            />
-          ),
-          visible: (v) => !glassDisabled(v),
         },
       ],
     },

@@ -22,6 +22,14 @@
   &[data-fill="true"] {
     flex: 1;
   }
+
+  &[data-align="end"] {
+    justify-content: flex-end;
+  }
+
+  &[data-align="start"] {
+    justify-content: flex-start;
+  }
 }
 
 .separator {

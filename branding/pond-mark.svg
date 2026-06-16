@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor">
+  <title>Pond  Ripple mark</title>
+  <circle cx="100" cy="100" r="82" stroke-width="11" />
+  <circle cx="100" cy="100" r="57" stroke-width="11" />
+  <circle cx="100" cy="100" r="32" stroke-width="11" />
+  <circle cx="100" cy="100" r="12" fill="currentColor" stroke="none" />
+</svg>

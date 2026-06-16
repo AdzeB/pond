@@ -1,9 +1,8 @@
 import { useWindowSize } from "rooks";
 
-// Horizontal inset per side: Shell.Main pads 16px + LibraryGrid.Root 4px. Must match real content width or absolutely-positioned columns overflow.
+// Horizontal inset per side: Shell.Main pads 16px. Must match real content width or absolutely-positioned columns overflow.
 const SHELL_MAIN_PADDING = 16;
-const GRID_ROOT_PADDING = 4;
-const GRID_HORIZONTAL_INSET = (SHELL_MAIN_PADDING + GRID_ROOT_PADDING) * 2;
+const GRID_HORIZONTAL_INSET = SHELL_MAIN_PADDING * 2;
 
 export function useGridWidth(): number {
   const { innerWidth } = useWindowSize();

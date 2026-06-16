@@ -1,25 +1,61 @@
 import {
+  IconChevronLeftOutline12 as ChevronLeft,
+  IconChevronRightOutline12 as ChevronRight,
+} from "@pond/icons/outline/12";
+import {
   SETTINGS_GROUP_LABELS,
   SETTINGS_GROUP_ORDER,
   type SettingsGroup,
 } from "@pond/schema";
-import { Sidebar } from "@pond/ui";
+import { Button, Sidebar, Tooltip } from "@pond/ui";
+import { useRouter } from "@tanstack/react-router";
 import { DEV_GROUPS, SECTIONS, type SectionDef } from "@/lib/settings-registry";
 import { usePrefs } from "@/stores/prefs";
-import { settings, useSettingsSection } from "@/stores/settings-dialog";
+
+function Backwards() {
+  const router = useRouter();
+
+  return (
+    <Tooltip label="Back" side="bottom">
+      <Button
+        icon
+        size="sm"
+        variant="ghost"
+        aria-label="Back"
+        onClick={() => router.history.back()}
+      >
+        <ChevronLeft />
+      </Button>
+    </Tooltip>
+  );
+}
+
+function Forwards() {
+  const router = useRouter();
+
+  return (
+    <Tooltip label="Forward" side="bottom">
+      <Button
+        icon
+        size="sm"
+        variant="ghost"
+        aria-label="Forward"
+        onClick={() => router.history.forward()}
+      >
+        <ChevronRight />
+      </Button>
+    </Tooltip>
+  );
+}
 
 function SectionLink({ section }: { section: SectionDef }) {
-  const active = useSettingsSection() === section.path;
   return (
-    <Sidebar.Item
-      data-status={active ? "active" : undefined}
-      onClick={() => settings.setSection(section.path)}
-    >
+    <Sidebar.Anchor to="/settings/$section" params={{ section: section.path }}>
       <Sidebar.Icon>
         <section.icon width={14} height={14} />
       </Sidebar.Icon>
       {section.label}
-    </Sidebar.Item>
+    </Sidebar.Anchor>
   );
 }
 
@@ -61,6 +97,19 @@ export function Settings() {
   return (
     <Sidebar.Provider>
       <Sidebar.Root>
+        <Sidebar.Toolbar>
+          <Backwards />
+          <Forwards />
+        </Sidebar.Toolbar>
+        <Sidebar.Header>
+          <Sidebar.Anchor to="/">
+            <Sidebar.Icon>
+              <ChevronLeft />
+            </Sidebar.Icon>
+            Back to Library
+          </Sidebar.Anchor>
+        </Sidebar.Header>
+
         {SETTINGS_GROUP_ORDER.map((group) => (
           <SectionGroup
             key={group}

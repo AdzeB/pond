@@ -11,6 +11,7 @@
       "**",
       "!**/dist",
       "!**/node_modules/**/*",
+      "!branding",
       "!packages/ui/src/colors/colors.css",
       "!packages/ui/src/theme/aliases.css"
     ]
@@ -36,7 +37,7 @@
         "noUnknownAtRules": {
           "level": "error",
           "options": {
-            "ignore": ["typography"]
+            "ignore": ["typography", "stylex"]
           }
         }
       }

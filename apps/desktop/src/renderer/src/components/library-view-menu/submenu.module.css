@@ -1,18 +1,20 @@
-/* Frosted treatment for the popups. This IS the shared `.card` surface — same
-   tint, convex shine and reduced-transparency fallback — so popovers are
-   literally the same material as the dock/toolbar chrome. The doubled selector
-   only re-asserts the two properties the base `.popup` also sets (background +
-   shadow), reusing the shared custom properties so there's still a single
-   source of truth, and guaranteeing the frost wins regardless of stylesheet
-   order. */
+/* Opaque surface for the popups — the same fill + rim/shadow as the
+   dock/toolbar chrome. The doubled selector re-asserts the two properties the
+   base `.popup` also sets (background + shadow) so the surface wins regardless
+   of stylesheet order. */
 .glassPopup {
-  composes: card from "../liquid-glass/glass.module.css";
+  background: var(--ds-gray-1);
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    var(--ds-shadow-2);
 }
 
 .glassPopup.glassPopup {
   position: relative;
-  background: var(--glass-tint);
-  box-shadow: var(--glass-shadow);
+  background: var(--ds-gray-1);
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    var(--ds-shadow-2);
 }
 
 /* macOS-style popover tail for the standalone (toolbar) dropdowns. Instead of a

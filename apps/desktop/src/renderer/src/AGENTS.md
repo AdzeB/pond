@@ -38,7 +38,7 @@ Domain-prefixed kebab-case so the flat folders sort by area and never collide:
 - `library-*` — `library-page`, `library-toolbar`, `library-dock`, `library-grid`,
   `library-grid-view`, `library-packed-grid`, `library-waterfall`, `library-justified`,
   `library-list-view`, `library-filter-panel`, `library-saved-views`,
-  `library-sync-monitor`, `library-view-menu`, `library-pond-switcher`,
+  `library-sync-monitor`, `library-view-menu`, `library-switcher`,
   plus the bare `layout-switcher` and `grid-context`.
 - `tag-*` — `tag-picker`, `tag-menu`, `tag-context-menu`, `tag-group-context-menu`.
 - `settings-*` — `settings-page`, `settings-sidebar`, `settings-engine`,

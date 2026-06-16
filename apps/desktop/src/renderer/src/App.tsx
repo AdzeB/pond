@@ -8,13 +8,12 @@ import {
 import { MotionConfig } from "motion/react";
 import { useMemo } from "react";
 import type { PondApi } from "../../preload";
+import { PondCustomiseDialog } from "./components/pond-customise-dialog";
 import { Presentation } from "./components/save-presentation";
-import { SettingsDialog } from "./components/settings-dialog";
 import { BackfillStatusBridge } from "./effects/backfill-status-bridge";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { MenuBridge } from "./effects/menu-bridge";
 import { SensitiveSweep } from "./effects/sensitive-sweep";
-import { SettingsNavBridge } from "./effects/settings-nav-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
@@ -34,8 +33,6 @@ declare global {
       contrast?: number;
       fgDir?: number;
       pointerCursors?: boolean;
-      glass?: boolean;
-      glassSupported?: boolean;
     };
   }
 }
@@ -80,10 +77,9 @@ export function App() {
           <SyncStatusBridge />
           <BackfillStatusBridge />
           <SensitiveSweep />
-          <SettingsNavBridge />
           <RouterProvider router={router} />
           <Presentation />
-          <SettingsDialog />
+          <PondCustomiseDialog />
         </Tooltip.Provider>
       </QueryClientProvider>
     </MotionConfig>

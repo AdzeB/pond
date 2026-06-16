@@ -23,12 +23,6 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
-  // Liquid glass: native macOS NSGlassEffectView window backing (macOS 26+),
-  // refracting the desktop behind a translucent window. No-op on other
-  // platforms / older macOS, and forced off by reduceTransparency. `style`
-  // maps to the native regular/clear glass materials.
-  liquidGlass: z.boolean().catch(true),
-  liquidGlassStyle: z.enum(["regular", "clear"]).catch("regular"),
   // Blur sensitive (NSFW) media until classified safe; opt-in.
   blurSensitiveMedia: z.boolean().catch(false),
   // Twitter cover: "media" prefers attached media, "screenshot" always renders the card.

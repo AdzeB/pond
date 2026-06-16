@@ -3,6 +3,7 @@ import {
   IconTerminalFill18 as Developer,
   IconGear3Fill18 as General,
   IconImageFill18 as Images,
+  IconArchiveFill18 as Library,
   IconTagsFill18 as Tags,
   IconPresentationScreenPlayFill18 as Videos,
 } from "@pond/icons/fill/18";
@@ -19,6 +20,7 @@ import { SECTION_CONFIGS } from "./settings-sections";
 const ICONS: Record<string, IconComponent> = {
   general: General,
   appearance: Appearance,
+  library: Library,
   tags: Tags,
   videos: Videos,
   images: Images,

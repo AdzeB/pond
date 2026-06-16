@@ -13,10 +13,12 @@ import { setPrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import {
+  effectiveName,
   forgetLibrary,
   readKnownLibraries,
   rememberLibrary,
   setLibraryAvatar,
+  setLibraryDetails,
   setLibraryOrder,
 } from "../../lib/library-recents";
 import {
@@ -165,10 +167,40 @@ export const libraryQueries: QueryHandlerMap = {
     rememberLibrary(active);
     const libraries = readKnownLibraries().map((lib) => ({
       ...lib,
+      name: effectiveName(lib),
       active: lib.path.replace(/\/+$/, "") === active,
       exists: existsSync(lib.path),
     }));
     return { active, libraries };
+  },
+
+  // Update a library's display name, emoji avatar, and accent color together; tracked paths only.
+  async "library.setDetails"(params) {
+    const requested =
+      typeof params.path === "string" && params.path.trim()
+        ? params.path.trim()
+        : libraryRootDir();
+    const norm = requested.replace(/\/+$/, "");
+    const known = readKnownLibraries().some(
+      (l) => l.path.replace(/\/+$/, "") === norm,
+    );
+    if (!known) return { ok: false as const, reason: "unknown" as const };
+    setLibraryDetails(requested, {
+      name: typeof params.name === "string" ? params.name : undefined,
+      avatar:
+        params.avatar === null
+          ? null
+          : typeof params.avatar === "string"
+            ? params.avatar
+            : undefined,
+      color:
+        params.color === null
+          ? null
+          : typeof params.color === "string"
+            ? params.color
+            : undefined,
+    });
+    return { ok: true as const };
   },
 
   // Set a library's emoji avatar; empty clears to initials, tracked paths only.

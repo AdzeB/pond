@@ -7,7 +7,6 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
   padding: var(--ds-mac-inset);
   overflow-y: auto;
 }
@@ -37,6 +36,7 @@
   align-items: center;
   height: auto;
   min-height: fit-content;
+  margin-bottom: 24px;
 }
 
 .empty {

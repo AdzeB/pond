@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-interface Pond {
+export interface Pond {
   path: string;
   name: string;
   active: boolean;
   exists: boolean;
   avatar: string | null;
+  color: string | null;
+}
+
+export interface PondDetails {
+  path: string;
+  name?: string | null;
+  avatar?: string | null;
+  color?: string | null;
 }
 
 interface ListKnownResult {
@@ -41,11 +49,24 @@ export function usePonds() {
     },
   });
 
+  const detailsMutation = useMutation({
+    mutationFn: async (details: PondDetails) => {
+      const res = (await window.pond.query(
+        "library.setDetails",
+        details,
+      )) as ActionResult;
+      if (!res.ok) throw new Error(res.reason);
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: pondsQueryKey }),
+  });
+
   return {
     ponds,
     active: ponds.find((p) => p.active),
     switching: switchMutation.isPending,
     switchTo: switchMutation.mutate,
+    setDetails: detailsMutation.mutateAsync,
+    savingDetails: detailsMutation.isPending,
     refresh: () => void qc.invalidateQueries({ queryKey: pondsQueryKey }),
   };
 }

@@ -24,7 +24,6 @@ export interface SyncSourceStatus {
 }
 
 interface SyncMonitorState {
-  open: boolean;
   bySource: Partial<Record<Source, SyncSourceStatus>>;
 }
 
@@ -35,31 +34,9 @@ const EMPTY: SyncSourceStatus = {
   connected: false,
 };
 
-const store = new Store<SyncMonitorState>({ open: false, bySource: {} });
+const store = new Store<SyncMonitorState>({ bySource: {} });
 
 export const syncMonitor = {
-  open(): void {
-    store.setState((s) => (s.open ? s : { ...s, open: true }));
-  },
-  close(): void {
-    store.setState((s) => {
-      if (!s.open) return s;
-      // Drop transient fields so a reopen doesn't flash stale message/progress.
-      const bySource: SyncMonitorState["bySource"] = {};
-      for (const [key, value] of Object.entries(s.bySource)) {
-        if (!value) continue;
-        bySource[key as Source] = {
-          ...value,
-          message: undefined,
-          progress: undefined,
-        };
-      }
-      return { ...s, open: false, bySource };
-    });
-  },
-  toggle(): void {
-    store.setState((s) => ({ ...s, open: !s.open }));
-  },
   // Apply a live status push; omitted fields keep the last value, but explicit null clears a stale error.
   ingest(update: SyncStatusUpdate): void {
     const source = update.source as Source;
@@ -91,10 +68,6 @@ export const syncMonitor = {
     });
   },
 };
-
-export function useSyncOpen(): boolean {
-  return useSelector(store, (s) => s.open);
-}
 
 export function useSyncBySource(): SyncMonitorState["bySource"] {
   return useSelector(store, (s) => s.bySource);

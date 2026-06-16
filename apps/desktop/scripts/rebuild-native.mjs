@@ -28,32 +28,6 @@ function run(cmd, args, opts) {
   });
 }
 
-async function buildGlassAddon(version) {
-  // macOS-only native module (NSGlassEffectView); skip elsewhere — the JS
-  // wrapper falls back to no-ops when the .node is absent.
-  if (process.platform !== "darwin") {
-    console.log("[pond] skipping native-glass build (not macOS)");
-    return;
-  }
-  const glassRoot = resolve(appRoot, "../../packages/native-glass");
-  console.log(`[pond] building @pond/native-glass for electron ${version}`);
-  await run(
-    "pnpm",
-    [
-      "exec",
-      "node-gyp",
-      "rebuild",
-      `--target=${version}`,
-      `--arch=${process.arch}`,
-      "--dist-url=https://electronjs.org/headers",
-    ],
-    {
-      cwd: glassRoot,
-      env: { ...process.env, npm_config_runtime: "electron" },
-    },
-  );
-}
-
 async function main() {
   const version = await electronVersion();
   console.log(`[pond] rebuilding native modules for electron ${version}`);
@@ -71,8 +45,6 @@ async function main() {
     ],
     { cwd: appRoot },
   );
-
-  await buildGlassAddon(version);
 
   console.log("[pond] native rebuild ok");
 }

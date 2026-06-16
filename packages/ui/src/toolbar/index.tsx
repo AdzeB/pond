@@ -13,11 +13,13 @@ function Row({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
 function Group({
   fill,
   className,
+  align = "start",
   ...props
-}: Base.Group.Props & { fill?: boolean }) {
+}: Base.Group.Props & { fill?: boolean; align?: "start" | "end" }) {
   return (
     <Base.Group
       data-fill={fill}
+      data-align={align}
       className={cn(styles.group, className)}
       {...props}
     />

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round">
+  <title>Pond  Broken ripple mark</title>
+  <circle cx="100" cy="100" r="82" stroke-width="11" stroke-dasharray="226.1 31.5" transform="rotate(-79 100 100)" />
+  <circle cx="100" cy="100" r="57" stroke-width="11" stroke-dasharray="157.2 21.9" transform="rotate(-79 100 100)" />
+  <circle cx="100" cy="100" r="32" stroke-width="11" stroke-dasharray="88.2 12.3" transform="rotate(-79 100 100)" />
+  <circle cx="100" cy="100" r="12" fill="currentColor" stroke="none" />
+</svg>

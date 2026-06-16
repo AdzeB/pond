@@ -1,30 +1,19 @@
-/* `.popup` is paired with `.modal` so the compound selector outranks the base
-   Dialog `.popup` styles regardless of stylesheet order. */
-.popup {
-  /* intentionally empty; see .popup.modal */
+/* Page shell: centers the sources panel in the library content area and leaves
+   room at the bottom so the floating nav dock never covers the last row. */
+.page {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  width: 100%;
+  padding-bottom: 96px;
 }
 
-.popup.modal {
+.panel {
   display: flex;
   flex-direction: column;
   gap: 0;
-  width: min(384px, calc(100vw - 48px));
-  max-width: none;
-  max-height: min(640px, calc(100vh - 48px));
-  padding: 0;
-  overflow: hidden;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-xl);
-  /* Springy pop on enter/exit; the body's height is morphed in JS. */
-  transition:
-    opacity var(--ds-duration-medium) var(--ds-easing-standard),
-    transform var(--ds-duration-slow) var(--ds-easing-emphasized);
-}
-
-.popup.modal[data-starting-style],
-.popup.modal[data-ending-style] {
-  opacity: 0;
-  transform: translate(-50%, calc(-50% + 8px)) scale(0.97);
+  width: 100%;
+  max-width: 420px;
 }
 
 /* Header: balanced 32px slots flanking a centered title. */
@@ -55,14 +44,6 @@
   text-align: center;
   letter-spacing: -0.18px;
   white-space: nowrap;
-}
-
-/* The morphing wrapper owns the animated height; the inner `.body` keeps its
-   natural height so the wrapper has a target to spring toward. */
-.bodyMorph {
-  max-height: min(560px, calc(100vh - 140px));
-  overflow: hidden;
-  overscroll-behavior: contain;
 }
 
 .body {
@@ -318,14 +299,5 @@
 
   .statusDot[data-state="running"] {
     animation: none;
-  }
-
-  .popup.modal {
-    transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
-  }
-
-  .popup.modal[data-starting-style],
-  .popup.modal[data-ending-style] {
-    transform: translate(-50%, -50%);
   }
 }

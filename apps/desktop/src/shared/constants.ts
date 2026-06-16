@@ -38,8 +38,6 @@ export const IPC = {
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
-  glassSetRegions: "pond:glass-set-regions",
-  glassClearRegions: "pond:glass-clear-regions",
 } as const;
 
 export type MenuActionId =

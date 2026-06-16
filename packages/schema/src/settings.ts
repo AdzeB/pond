@@ -10,6 +10,7 @@ export interface SettingsSection {
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "general", path: "general", label: "General", group: "app" },
   { id: "appearance", path: "appearance", label: "Appearance", group: "app" },
+  { id: "library", path: "library", label: "Library", group: "library" },
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "videos", path: "videos", label: "Videos", group: "saving" },
   { id: "images", path: "images", label: "Images", group: "saving" },

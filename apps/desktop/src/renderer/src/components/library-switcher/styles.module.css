@@ -1,12 +1,11 @@
-.switcher {
-  display: flex;
-  flex: 1;
-  gap: 8px;
+.trigger {
+  display: inline-flex;
+  flex-shrink: 1;
   align-items: center;
-  align-self: stretch;
   min-width: 0;
+  max-width: 220px;
   height: 32px;
-  padding: 0px 8px;
+  padding: 0 8px;
   font-size: 14px;
   font-weight: 550;
   line-height: 150%;
@@ -19,13 +18,62 @@
     background: var(--ds-gray-2);
   }
 
-  .logo {
-    width: 18px;
-    height: 18px;
-    aspect-ratio: 1 / 1;
-    background: var(--ds-accent-9);
-    border-radius: 6px;
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ds-gray-11);
+}
+
+.popup {
+  width: 320px;
+}
+
+.search {
+  margin-bottom: 4px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.row {
+  align-items: center;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.rowName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.rowPath {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
 }
 
 .avatar {
@@ -35,6 +83,7 @@
   justify-content: center;
   width: 18px;
   height: 18px;
+  margin-right: 8px;
   font-size: 9px;
   font-weight: 600;
   line-height: 1;
@@ -54,13 +103,10 @@
   }
 }
 
-.dot {
+.check {
   flex-shrink: 0;
-  width: 6px;
-  height: 6px;
   margin-left: auto;
-  background: var(--ds-accent-9);
-  border-radius: 50%;
+  color: var(--ds-gray-12);
 }
 
 .empty {
