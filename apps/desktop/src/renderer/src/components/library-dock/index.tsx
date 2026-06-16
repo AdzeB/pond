@@ -1,127 +1,37 @@
-import {
-  IconArchivePlusFill18 as Plus,
-  IconGearFill18 as Settings,
-  IconArrowsRotateCenterFill18 as Sync,
-  IconTrash2Fill18 as Trash,
-} from "@pond/icons/fill/18";
+import { IconTrash2Fill18 as Trash } from "@pond/icons/fill/18";
 import { Tooltip } from "@pond/ui";
-import { Link, useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useSidebarNav } from "@/hooks/use-sidebar-nav";
+import { usePointerSheen } from "@/hooks/use-pointer-sheen";
 import { formatNumber } from "@/lib/format";
-import { gentleSpring, snappySpring } from "@/lib/motion";
+import { bouncySpring, snappySpring } from "@/lib/motion";
 import { trashSaves } from "@/lib/mutate-save";
 import {
   selection,
   useSelectedIds,
   useSelectionSize,
 } from "@/stores/selection";
-import { syncMonitor, useAnySyncRunning } from "@/stores/sync-monitor";
 import styles from "./styles.module.css";
 
-const DOCK_NAV_KEYS = new Set(["library", "trash"]);
-
+// Primary nav + global actions now live in the top toolbar (see
+// `library-toolbar/nav-cluster`). The dock is reduced to the contextual
+// selection pill, which stays floating at the bottom while saves are selected.
 export function Dock() {
   const selectionSize = useSelectionSize();
-  const { visibleItems } = useSidebarNav();
-  const syncRunning = useAnySyncRunning();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  const navItems = visibleItems.filter(({ item }) =>
-    DOCK_NAV_KEYS.has(item.key),
-  );
 
   return (
-    <nav className={styles.dock} aria-label="Primary navigation">
-      <div className={styles.pill}>
-        {navItems.map(({ item, count }) => {
-          const active =
-            item.path === "/"
-              ? pathname === "/"
-              : pathname === `/${item.params?.mode}`;
-          return (
-            <Tooltip
-              key={item.key}
-              label={
-                count > 0
-                  ? `${item.label} · ${formatNumber(count)}`
-                  : item.label
-              }
-              side="top"
-            >
-              <Link
-                to={item.path}
-                params={item.params}
-                activeOptions={item.path === "/" ? { exact: true } : undefined}
-                className={styles.item}
-                aria-label={item.label}
-              >
-                {active ? (
-                  <motion.span
-                    layoutId="dockActive"
-                    className={styles.activeIndicator}
-                    transition={gentleSpring}
-                    aria-hidden
-                  />
-                ) : null}
-                <span className={styles.icon}>{item.icon}</span>
-              </Link>
-            </Tooltip>
-          );
-        })}
-
-        <Tooltip label="Sync status" side="top">
-          <button
-            type="button"
-            className={styles.item}
-            aria-label="Sync status"
-            onClick={() => syncMonitor.open()}
-          >
-            <span className={styles.icon}>
-              <Sync />
-            </span>
-            <AnimatePresence>
-              {syncRunning ? (
-                <motion.span
-                  className={styles.syncDot}
-                  initial={{ opacity: 0, scale: 0 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0 }}
-                  transition={snappySpring}
-                  aria-hidden
-                />
-              ) : null}
-            </AnimatePresence>
-          </button>
-        </Tooltip>
-
-        <Tooltip label="New" side="top">
-          <button type="button" className={styles.item} aria-label="New">
-            <span className={styles.icon}>
-              <Plus />
-            </span>
-          </button>
-        </Tooltip>
-
-        <Tooltip label="Settings" side="top">
-          <Link to="/settings" className={styles.item} aria-label="Settings">
-            <span className={styles.icon}>
-              <Settings />
-            </span>
-          </Link>
-        </Tooltip>
-      </div>
+    <div className={styles.dock}>
       <AnimatePresence>
         {selectionSize > 0 ? (
           <SelectionGroup key="selection" count={selectionSize} />
         ) : null}
       </AnimatePresence>
-    </nav>
+    </div>
   );
 }
 
 function SelectionGroup({ count }: { count: number }) {
   const ids = useSelectedIds();
+  const sheen = usePointerSheen();
 
   const moveToTrash = async () => {
     await trashSaves(ids);
@@ -134,7 +44,8 @@ function SelectionGroup({ count }: { count: number }) {
       initial={{ opacity: 0, scale: 0.85, x: -8 }}
       animate={{ opacity: 1, scale: 1, x: 0 }}
       exit={{ opacity: 0, scale: 0.85, x: -8 }}
-      transition={snappySpring}
+      transition={bouncySpring}
+      {...sheen}
     >
       <span
         className={styles.count}
@@ -150,7 +61,7 @@ function SelectionGroup({ count }: { count: number }) {
           className={`${styles.item} ${styles.danger}`}
           aria-label="Move selected to trash"
           onClick={moveToTrash}
-          whileTap={{ scale: 0.86, rotate: -8 }}
+          whileTap={{ rotate: -8 }}
           transition={snappySpring}
         >
           <span className={styles.icon}>

@@ -6,9 +6,11 @@ import { DisplaySection } from "@/components/library-view-menu/sections/display"
 import { LayoutSection } from "@/components/library-view-menu/sections/layout";
 import { SortSection } from "@/components/library-view-menu/sections/sort";
 import { ZoomSection } from "@/components/library-view-menu/sections/zoom";
+import { Glass } from "@/components/liquid-glass";
 import { useDebouncedSearch } from "@/hooks/use-debounced-search";
 import { usePlatform } from "@/lib/platform";
 import { SEARCH_INPUT_ID } from "./constants";
+import { NavCluster } from "./nav-cluster";
 import styles from "./styles.module.css";
 
 export function Toolbar() {
@@ -21,6 +23,7 @@ export function Toolbar() {
       <PondToolbar.Row className={styles.row}>
         <PondToolbar.Group fill={true} className={styles.sideStart}>
           <PondSwitcher compact className={styles.switcher} />
+          <NavCluster />
         </PondToolbar.Group>
 
         <PondToolbar.Group className={styles.center}>
@@ -28,11 +31,13 @@ export function Toolbar() {
         </PondToolbar.Group>
 
         <PondToolbar.Group fill={true} className={styles.sideEnd}>
-          <FilterSubmenu standalone />
-          <SortSection standalone />
-          <LayoutSection standalone />
-          <DisplaySection standalone />
-          <ZoomSection standalone />
+          <Glass sheen className={styles.glassCluster}>
+            <FilterSubmenu standalone />
+            <SortSection standalone />
+            <LayoutSection standalone />
+            <DisplaySection standalone />
+            <ZoomSection standalone />
+          </Glass>
         </PondToolbar.Group>
       </PondToolbar.Row>
     </PondToolbar.Root>

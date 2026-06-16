@@ -25,6 +25,15 @@ export const overshootSpring: Transition = {
   bounce: 0.32,
 };
 
+// Elastic settle for selections/toggles that should "land" with a little
+// bounce rather than slide flat — the Aave "the selection springs into place"
+// feel. Lower bounce than `overshootSpring` since it fires on every switch.
+export const bouncySpring: Transition = {
+  type: "spring",
+  duration: 0.34,
+  bounce: 0.28,
+};
+
 // Default for `layout` animations on persistent elements that reflow.
 export const layoutTransition: Transition = gentleSpring;
 

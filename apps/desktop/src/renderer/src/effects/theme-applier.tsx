@@ -106,6 +106,16 @@ export function ThemeApplier() {
     }
   }, [prefs.reduceTransparency]);
 
+  // Backdrop frost radius for every glass surface (refraction strength lives on
+  // the SVG filters; see components/liquid-glass).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty(
+      "--pond-glass-blur",
+      `${prefs.liquidGlassBlur ?? 7}px`,
+    );
+  }, [prefs.liquidGlassBlur]);
+
   useEffect(() => {
     const root = document.documentElement;
     const setReduce = (reduce: boolean) => {

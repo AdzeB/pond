@@ -1,0 +1,104 @@
+/* Primary nav + global actions, lifted out of the old bottom dock into a single
+   glass pill that sits beside the pond switcher at the top-left of the toolbar.
+   Mirrors the view-controls cluster on the right so both ends of the toolbar
+   read as the same liquid-glass chrome. */
+.cluster {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--ds-radius-full);
+  -webkit-app-region: no-drag;
+}
+
+.item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-6);
+    background: var(--ds-gray-11);
+  }
+
+  &[data-status="active"] {
+    color: var(--ds-gray-1);
+  }
+
+  &[data-popup-open] {
+    color: var(--ds-gray-1);
+    background: var(--ds-gray-11);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+/* Traveling glass lens that slides between active nav items via motion's shared
+   layout animation. As it moves, its backdrop refraction travels with it — the
+   liquid-glass selection indicator. Kept on a contrasting dark tint so the
+   active icon (--ds-gray-1) stays legible over any backdrop. Sits behind the
+   icon (which is z-index 1). */
+.activeIndicator {
+  --glass-tint: color-mix(in srgb, var(--ds-gray-12) 84%, transparent);
+  --glass-saturate: 200%;
+  composes: pill from "../liquid-glass/glass.module.css";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: var(--ds-radius-full);
+}
+
+:global(html[data-reduce-transparency="true"]) .activeIndicator {
+  background: var(--ds-gray-12);
+}
+
+.icon {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  /* Springy press feedback scoped to the glyph so it can't disturb the
+     `layoutId` selection lens traveling through the item. Auto-disabled under
+     reduced motion via the global transition-duration killswitch. */
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+}
+
+.item:active .icon {
+  transform: scale(0.82);
+}
+
+.divider {
+  width: 1px;
+  height: 18px;
+  margin-inline: 4px;
+  background: var(--ds-gray-a4);
+}
+
+.syncDot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  background: var(--ds-blue-9, var(--ds-gray-1));
+  border: 1px solid var(--ds-gray-12);
+  border-radius: var(--ds-radius-full);
+}

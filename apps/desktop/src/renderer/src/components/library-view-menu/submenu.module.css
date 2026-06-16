@@ -1,21 +1,70 @@
-/* Liquid-glass treatment for the submenu side-panel. Doubled class wins over
-   the shared .popup background regardless of stylesheet order. The SVG filter
-   (mounted once at the app root) refracts the library content behind the panel;
-   text stays crisp because the filter only touches the backdrop. */
-.glassPopup.glassPopup {
-  background: color-mix(in srgb, var(--ds-gray-1) 72%, transparent);
-  box-shadow:
-    0 0 0 0.5px light-dark(var(--black-alpha-100), var(--white-alpha-100)),
-    var(--ds-shadow-3),
-    inset 0 1px 0 light-dark(var(--white-alpha-500), var(--white-alpha-100));
-  -webkit-backdrop-filter: url("#pond-liquid-glass") blur(7px) saturate(170%);
-  backdrop-filter: url("#pond-liquid-glass") blur(7px) saturate(170%);
+/* Liquid-glass treatment for the popups. This IS the shared `.card` glass — same
+   tint, convex shine, #pond-glass-card refraction, pointer-sheen layer and
+   reduced-transparency fallback — so popovers are literally the same material as
+   the dock/toolbar chrome. The card filter runs in size-relative units (see
+   liquid-glass/index.tsx) so these large panels refract at the same visual
+   intensity as the small pills. The doubled selector only re-asserts the two
+   properties the base `.popup` also sets (background + shadow), reusing the
+   shared custom properties so there's still a single source of truth, and
+   guaranteeing the glass wins regardless of stylesheet order. */
+.glassPopup {
+  composes: card from "../liquid-glass/glass.module.css";
 }
 
-:global(html[data-reduce-transparency="true"]) .glassPopup.glassPopup {
-  background: var(--ds-gray-1);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+.glassPopup.glassPopup {
+  position: relative;
+  background: var(--glass-tint);
+  box-shadow: var(--glass-shadow);
+}
+
+/* macOS-style popover tail for the standalone (toolbar) dropdowns. Instead of a
+   separate arrow element (which is always a second glass surface and reads as a
+   detached patch), the popup and tail are ONE element: a single clip-path carves
+   the rounded rectangle plus the tail, so the backdrop-filter applies to the
+   whole continuous shape. Because clip-path also clips box-shadow, the hairline
+   ring and depth shadow are supplied via filter: drop-shadow(), which trace the
+   clipped outline (tail included). Scoped to .tailPopup so nested side-panels
+   keep their plain rounded-rect shape. Doubled class wins over .glassPopup. */
+.tailPopup.tailPopup {
+  /* th: reserved tail height at the top; r: corner radius; tb: tail half-base;
+     tx: tail center, measured from the right edge to the trigger's center
+     (32px trigger, right-aligned popup -> ~16px in). */
+  --th: 11px;
+  --r: 8px;
+  --tb: 10px;
+  --tx: calc(100% - 18px);
+  padding-top: var(--th);
+  /* Ring + depth move from box-shadow (clipped away) to drop-shadow so they
+     follow the unified shape; keep only the inset highlights from .glassPopup. */
+  box-shadow:
+    inset 0 2px 4px -2px
+    light-dark(var(--white-alpha-700), var(--white-alpha-300)),
+    inset 0 -2px 4px -2px
+    light-dark(var(--black-alpha-200), var(--black-alpha-400));
+  filter: drop-shadow(
+      0 0 0.5px light-dark(var(--black-alpha-200), var(--white-alpha-200))
+    )
+    drop-shadow(
+      0 6px 16px light-dark(var(--black-alpha-200), var(--black-alpha-500))
+    );
+  clip-path: shape(
+    from var(--r) var(--th),
+    hline to calc(var(--tx) - var(--tb)),
+    curve to var(--tx) 0 with calc(var(--tx) - var(--tb) / 2) var(--th) /
+    calc(var(--tx) - var(--tb) / 2) 0,
+    curve to calc(var(--tx) + var(--tb)) var(--th) with
+      calc(var(--tx) + var(--tb) / 2) 0 /
+    calc(var(--tx) + var(--tb) / 2) var(--th),
+    hline to calc(100% - var(--r)),
+    curve to 100% calc(var(--th) + var(--r)) with 100% var(--th),
+    vline to calc(100% - var(--r)),
+    curve to calc(100% - var(--r)) 100% with 100% 100%,
+    hline to var(--r),
+    curve to 0 calc(100% - var(--r)) with 0 100%,
+    vline to calc(var(--th) + var(--r)),
+    curve to var(--r) var(--th) with 0 var(--th),
+    close
+  );
 }
 
 /* Icon-only trigger for a standalone view control in the toolbar. */
@@ -40,6 +89,13 @@
   & > svg {
     width: 18px;
     height: 18px;
+    /* Springy press feedback, matching the dock: squish on press, overshoot
+       back on release. Disabled under reduced motion globally. */
+    transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+  }
+
+  &:active > svg {
+    transform: scale(0.82);
   }
 
   &:hover,

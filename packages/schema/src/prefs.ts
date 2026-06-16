@@ -23,6 +23,14 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
+  // Liquid glass: refractive lens on translucent surfaces. Off → plain frosted
+  // blur (no refraction). Fully overridden when reduceTransparency makes
+  // surfaces opaque. Refraction/chroma are pixel strengths fed to the SVG
+  // filter; blur is the backdrop frost radius in px.
+  liquidGlass: z.boolean().catch(true),
+  liquidGlassRefraction: z.number().catch(14),
+  liquidGlassChroma: z.number().catch(3),
+  liquidGlassBlur: z.number().catch(7),
   // Blur sensitive (NSFW) media until classified safe; opt-in.
   blurSensitiveMedia: z.boolean().catch(false),
   // Twitter cover: "media" prefers attached media, "screenshot" always renders the card.

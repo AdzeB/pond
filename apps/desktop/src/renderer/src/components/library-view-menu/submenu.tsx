@@ -44,9 +44,9 @@ export function ViewSubmenu({
           </Menu.Trigger>
         </Tooltip>
         <Menu.Portal>
-          <Menu.Positioner side="bottom" align="end" sideOffset={6}>
+          <Menu.Positioner side="bottom" align="end" sideOffset={4}>
             <Menu.Popup
-              className={styles.glassPopup}
+              className={`${styles.glassPopup} ${styles.tailPopup}`}
               style={{ width: popupWidth }}
             >
               <div className={styles.barHeader}>

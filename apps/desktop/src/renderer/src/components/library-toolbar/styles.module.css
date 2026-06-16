@@ -25,6 +25,19 @@
   height: 36px;
 }
 
+/* Single glass bar hugging the view controls. The <Glass> wrapper supplies the
+   tint/refraction/shine; this just lays the buttons out and keeps the bar a
+   non-drag region so clicks on its padding don't drag the window. */
+.glassCluster {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  padding: 4px;
+  border-radius: var(--ds-radius-full);
+  -webkit-app-region: no-drag;
+}
+
 .center {
   flex-shrink: 0;
   justify-content: center;
@@ -63,9 +76,28 @@
   width: 384px;
   max-width: 100%;
   height: 100%;
+}
 
-  .field {
-    border-radius: var(--ds-radius-full);
+/* The same pill glass as the toolbar cluster; `composes` defines the shared
+   glass vars on the field, and a slightly more opaque tint keeps typed text
+   crisp over the refracted backdrop. */
+.field {
+  --glass-tint: color-mix(in srgb, var(--ds-gray-1) 78%, transparent);
+  composes: pill from "../liquid-glass/glass.module.css";
+}
+
+/* Descendant selector (0,2,0) re-asserts the glass over the base control
+   `.field` background/shadow/radius without !important. Values come from the
+   shared vars, so there's still a single source of truth. */
+.search .field {
+  background: var(--glass-tint);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-backdrop);
+  backdrop-filter: var(--glass-backdrop);
+
+  &:focus-visible {
+    box-shadow: var(--ds-shadow-2-focused);
   }
 }
 
