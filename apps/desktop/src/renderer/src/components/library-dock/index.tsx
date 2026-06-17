@@ -14,7 +14,7 @@ import styles from "./styles.module.css";
 
 interface NavTab {
   label: string;
-  to: "/" | "/$mode" | "/sources";
+  to: "/" | "/$mode" | "/sources" | "/components";
   params?: { mode: string };
   match: string;
 }
@@ -22,6 +22,7 @@ interface NavTab {
 const NAV_TABS: readonly NavTab[] = [
   { label: "Library", to: "/", match: "/" },
   { label: "Sources", to: "/sources", match: "/sources" },
+  { label: "Components", to: "/components", match: "/components" },
 ] as const;
 
 export function Dock() {

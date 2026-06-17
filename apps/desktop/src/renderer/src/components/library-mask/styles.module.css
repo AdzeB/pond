@@ -1,7 +1,7 @@
 .mask {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 30;
   background: var(--ds-gray-a8);
   backdrop-filter: blur(2px);
   transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);

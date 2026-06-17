@@ -3,6 +3,7 @@ import {
   IconChevronDownOutline12 as ChevronDown,
 } from "@pond/icons/outline/12";
 import {
+  IconSquareGridOutline18 as Components,
   IconFolderOpenOutline18 as FolderOpen,
   IconPenOutline18 as Pencil,
   IconArchivePlusOutline18 as Plus,
@@ -158,6 +159,12 @@ export function LibrarySwitcher() {
               </Menu.ItemIcon>
               Settings
               <Menu.SecondaryLabel>⌘,</Menu.SecondaryLabel>
+            </Menu.Item>
+            <Menu.Item onClick={() => void navigate({ to: "/components" })}>
+              <Menu.ItemIcon>
+                <Components />
+              </Menu.ItemIcon>
+              Components
             </Menu.Item>
 
             <Menu.Separator />

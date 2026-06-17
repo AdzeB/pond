@@ -12,9 +12,9 @@
   display: flex;
   flex-direction: row;
   gap: 32px;
-  width: calc(100vw - 48px);
+  width: calc(100vw - 128px);
   max-width: none;
-  height: calc(100vh - 48px);
+  height: calc(100vh - 128px);
   padding: 0;
   overflow: visible;
   pointer-events: none;
@@ -271,56 +271,66 @@
   text-align: center;
 }
 
-/* Properties: a three-up grid of label/value pairs that flows top-to-bottom. */
+/* Properties popover: a compact label/value list anchored to the header button. */
+.propsPopup {
+  --popup-min-width: 0;
+  --popup-width: 280px;
+
+  gap: 0;
+  padding: 12px;
+}
+
+.propsPopupTitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 20px;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.09px;
+}
+
 .propsGrid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin: 0;
 }
 
 .propCell {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  justify-content: center;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
   min-width: 0;
 }
 
 .propLabel {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ds-gray-9);
+  letter-spacing: -0.09px;
+}
+
+.propValue {
+  min-width: 0;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
   font-weight: 500;
-  font-feature-settings:
-    "lnum" 1,
-    "tnum" 1;
-  line-height: 24px;
-  color: var(--ds-gray-9);
-  letter-spacing: -0.09px;
-  white-space: nowrap;
-}
-
-.propValue {
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 14px;
-  font-weight: 500;
-  font-feature-settings:
-    "lnum" 1,
-    "tnum" 1;
   font-variant-numeric: tabular-nums;
-  line-height: 24px;
+  line-height: 20px;
   color: var(--ds-gray-12);
+  text-align: right;
   letter-spacing: -0.09px;
   white-space: nowrap;
 }
 
 .propsEmpty {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   color: var(--ds-gray-9);
 }
 

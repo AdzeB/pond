@@ -3,10 +3,11 @@ import {
   IconChevronRightOutline18 as ChevronRight,
   IconClipboardDocumentOutline18 as Clipboard,
   IconFolder5OpenOutline18 as Folder,
+  IconCircleInfoOutline18 as Info,
   IconOpenInBrowserOutline18 as OpenInBrowser,
   IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
-import { Button, Dialog, Tooltip } from "@pond/ui";
+import { Button, Dialog, Popover, Tooltip } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import { AnimatePresence, motion } from "motion/react";
@@ -38,9 +39,8 @@ import { useTrackVisit } from "@/stores/recents";
 import { primarySelection, primarySelectionStore } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-// Vertical roll for the position counter: the number flies in/out in the
-// direction of travel while " / total" stays put.
 const COUNTER_OFFSET = 10;
+
 const counterVariants = {
   enter: (d: Direction) => ({
     opacity: 0,
@@ -53,9 +53,11 @@ const counterVariants = {
   }),
 };
 
-// Inline detail view: opening a save sets the primary selection; j/k step it. SaveModalContent mounts only while open, so browsing skips the narrowing work.
 export function SaveModal() {
   const id = useSelector(primarySelectionStore, (s) => s.id);
+  const lastId = useRef<string | null>(null);
+  if (id != null) lastId.current = id;
+  const renderId = id ?? lastId.current;
   return (
     <Dialog.Root
       open={id != null}
@@ -65,7 +67,7 @@ export function SaveModal() {
     >
       <Dialog.Portal>
         <Dialog.Backdrop />
-        {id != null ? <SaveModalContent id={id} /> : null}
+        {renderId != null ? <SaveModalContent id={renderId} /> : null}
       </Dialog.Portal>
     </Dialog.Root>
   );
@@ -75,8 +77,6 @@ function SaveModalContent({ id }: { id: string }) {
   const save = useSave(id);
   const list = useSaveList({ activeId: id });
 
-  // Derive travel direction synchronously so the slide animates the right way
-  // on the same render the id changes (next = forward, prev = backward).
   const prevIndexRef = useRef(list.index);
   const directionRef = useRef<Direction>("forward");
   if (list.index !== prevIndexRef.current) {
@@ -88,14 +88,12 @@ function SaveModalContent({ id }: { id: string }) {
 
   useTrackVisit(id);
 
-  // The list carries only slim `rawJson`; pull the full blob now the detail view is open.
   useEffect(() => {
     void ensureRawJson(id);
   }, [id]);
 
   const goNext = () => list.nextId && primarySelection.set(list.nextId);
   const goPrev = () => list.prevId && primarySelection.set(list.prevId);
-  // Single-key hotkeys default to ignoring inputs and not matching modifier combos.
   useHotkey("J", goNext);
   useHotkey("ArrowDown", goNext);
   useHotkey("K", goPrev);
@@ -103,17 +101,6 @@ function SaveModalContent({ id }: { id: string }) {
 
   return (
     <Dialog.Popup className={`${styles.popup} ${styles.modal}`}>
-      {save ? (
-        <aside className={styles.side}>
-          <MetaCard label="Description" fade>
-            <DescriptionBlock save={save} />
-          </MetaCard>
-          <MetaCard label="Notes">
-            <NotesEditor save={save} />
-          </MetaCard>
-        </aside>
-      ) : null}
-
       <div className={styles.main}>
         <header className={styles.header}>
           <Identity save={save} />
@@ -213,8 +200,11 @@ function SaveModalContent({ id }: { id: string }) {
 
       {save ? (
         <aside className={styles.side}>
-          <MetaCard label="Properties">
-            <PropertiesGrid save={save} />
+          <MetaCard label="Description" fade>
+            <DescriptionBlock save={save} />
+          </MetaCard>
+          <MetaCard label="Notes" fade>
+            <NotesEditor save={save} />
           </MetaCard>
           <MetaCard label="Tags">
             <TagsEditor save={save} />
@@ -222,25 +212,6 @@ function SaveModalContent({ id }: { id: string }) {
         </aside>
       ) : null}
     </Dialog.Popup>
-  );
-}
-
-function PropertiesGrid({ save }: { save: Save }) {
-  const rows = useMemo(() => collectInfoRows(save), [save]);
-  if (rows.length === 0) {
-    return <p className={styles.propsEmpty}>No properties.</p>;
-  }
-  return (
-    <dl className={styles.propsGrid}>
-      {rows.map((row) => (
-        <div key={row.id} className={styles.propCell}>
-          <dt className={styles.propLabel}>{row.label}</dt>
-          <dd className={styles.propValue} title={row.value}>
-            {row.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
   );
 }
 
@@ -291,6 +262,7 @@ function HeaderActions({ save }: { save: Save }) {
           <Clipboard />
         </Button>
       </Tooltip>
+      <PropertiesPopover save={save} />
       <KebabMenu save={save} />
       <span className={styles.headerDivider} aria-hidden />
       <Dialog.Close
@@ -301,6 +273,44 @@ function HeaderActions({ save }: { save: Save }) {
         <X />
       </Dialog.Close>
     </div>
+  );
+}
+
+function PropertiesPopover({ save }: { save: Save }) {
+  const rows = useMemo(() => collectInfoRows(save), [save]);
+  return (
+    <Popover.Root>
+      <Tooltip label="Properties" side="bottom">
+        <Popover.Trigger
+          render={
+            <Button icon size="sm" variant="ghost" aria-label="Properties" />
+          }
+        >
+          <Info />
+        </Popover.Trigger>
+      </Tooltip>
+      <Popover.Portal>
+        <Popover.Positioner align="end" sideOffset={6}>
+          <Popover.Popup className={styles.propsPopup}>
+            <h3 className={styles.propsPopupTitle}>Properties</h3>
+            {rows.length === 0 ? (
+              <p className={styles.propsEmpty}>No properties.</p>
+            ) : (
+              <dl className={styles.propsGrid}>
+                {rows.map((row) => (
+                  <div key={row.id} className={styles.propCell}>
+                    <dt className={styles.propLabel}>{row.label}</dt>
+                    <dd className={styles.propValue} title={row.value}>
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }
 
