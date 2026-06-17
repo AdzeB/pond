@@ -2,6 +2,7 @@
   position: fixed;
   bottom: calc(var(--ds-mac-inset, 16px) + 4px);
   left: 50%;
+
   z-index: 20;
   display: flex;
   align-items: center;
@@ -15,10 +16,9 @@
   align-items: center;
   padding: 4px;
   pointer-events: auto;
-  background: color-mix(in oklch, var(--ds-gray-1) 75%, transparent);
+  background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-2);
-  backdrop-filter: blur(12px);
+  box-shadow: var(--ds-shadow-4);
 }
 
 .tab {
@@ -26,16 +26,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
-  padding-inline: 12px;
-  font-size: 13px;
-  font-weight: 500;
+  width: 36px;
+  height: 36px;
   color: var(--ds-gray-9);
-  text-decoration: none;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   border-radius: var(--ds-radius-full);
   transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  > svg {
+    width: 18px;
+    height: 18px;
+  }
 
   &:hover,
   &[data-status="active"] {
@@ -154,4 +156,13 @@
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
+}
+
+.separator {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin: 0 2px;
+  background: var(--ds-gray-4);
 }

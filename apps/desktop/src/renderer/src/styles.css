@@ -1,5 +1,5 @@
 @import "@pond/ui/reset.css";
-@import "@pond/ui/theme.css";
+@import "@pond/theme/theme.css";
 
 @layer reset {
   #root {

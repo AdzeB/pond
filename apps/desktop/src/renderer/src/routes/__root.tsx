@@ -1,5 +1,7 @@
 import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { Dock } from "@/components/library-dock";
+import { SaveModal } from "@/components/save-detail-modal";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -24,5 +26,11 @@ function RootComponent() {
     });
   }, [navigate]);
 
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <Dock />
+      <SaveModal />
+    </>
+  );
 }

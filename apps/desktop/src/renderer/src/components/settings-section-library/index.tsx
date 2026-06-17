@@ -1,6 +1,6 @@
 import { Button } from "@pond/ui";
 import { usePonds } from "@/hooks/use-ponds";
-import { initials } from "@/lib/initials";
+import { glyphKind, PondGlyph } from "@/lib/pond-icons";
 import { prettyPath } from "@/lib/pretty-path";
 import { pondCustomise } from "@/stores/pond-customise";
 import styles from "./styles.module.css";
@@ -19,10 +19,23 @@ export function LibrarySection() {
           <span
             aria-hidden
             className={styles.avatar}
-            data-emoji={active?.avatar ? true : undefined}
+            data-emoji={
+              active && glyphKind(active.avatar) === "emoji" ? true : undefined
+            }
+            data-icon={
+              active && glyphKind(active.avatar) === "icon" ? true : undefined
+            }
             style={active?.color ? { background: active.color } : undefined}
           >
-            {active?.avatar ?? (active ? initials(active.name) : "")}
+            {active ? (
+              <PondGlyph
+                avatar={active.avatar}
+                name={active.name}
+                iconSize={22}
+              />
+            ) : (
+              ""
+            )}
           </span>
           <div className={styles.meta}>
             <span className={styles.name}>{active?.name ?? "Library"}</span>

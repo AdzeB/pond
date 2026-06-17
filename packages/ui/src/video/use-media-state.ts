@@ -6,6 +6,7 @@ export interface MediaState {
   currentTime: number;
   duration: number;
   buffered: number;
+  buffering: boolean;
   volume: number;
   muted: boolean;
   rate: number;
@@ -42,6 +43,7 @@ const INITIAL: MediaState = {
   currentTime: 0,
   duration: 0,
   buffered: 0,
+  buffering: false,
   volume: 1,
   muted: false,
   rate: 1,
@@ -82,10 +84,21 @@ export function useMediaState(): {
         buffered: bufferedEnd(v),
       }));
     };
+    const setBuffering = (buffering: boolean) =>
+      setState((s) => (s.buffering === buffering ? s : { ...s, buffering }));
+    const onWaiting = () => setBuffering(true);
+    const onResume = () => setBuffering(false);
+    const RESUME_EVENTS = ["playing", "canplay", "seeked", "pause"] as const;
+    const WAIT_EVENTS = ["waiting", "stalled", "seeking"] as const;
+
     for (const event of MEDIA_EVENTS) v.addEventListener(event, sync);
+    for (const event of WAIT_EVENTS) v.addEventListener(event, onWaiting);
+    for (const event of RESUME_EVENTS) v.addEventListener(event, onResume);
     sync();
     return () => {
       for (const event of MEDIA_EVENTS) v.removeEventListener(event, sync);
+      for (const event of WAIT_EVENTS) v.removeEventListener(event, onWaiting);
+      for (const event of RESUME_EVENTS) v.removeEventListener(event, onResume);
     };
   }, [videoEl]);
 

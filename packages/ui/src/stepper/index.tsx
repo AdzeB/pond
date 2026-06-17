@@ -1,5 +1,5 @@
+import { clsx as cn } from "clsx";
 import type { ReactNode } from "react";
-import { cn } from "../_shared/cn";
 import { Button } from "../button";
 import { Input } from "../input";
 import styles from "./styles.module.css";

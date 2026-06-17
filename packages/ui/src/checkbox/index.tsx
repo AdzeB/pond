@@ -1,5 +1,5 @@
 import { Checkbox as Base } from "@base-ui/react/checkbox";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: Base.Root.Props) {

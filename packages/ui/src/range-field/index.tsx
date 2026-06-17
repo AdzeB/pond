@@ -1,4 +1,4 @@
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import { Slider } from "../slider";
 import styles from "./styles.module.css";
 

@@ -1,8 +1,7 @@
 import { Select as Base } from "@base-ui/react/select";
 import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
 import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
-import { cn } from "../_shared/cn";
-import popupStyles from "../_shared/popup.module.css";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 function Root<Value, Multiple extends boolean | undefined = false>(
@@ -36,7 +35,7 @@ function Icon({ className, ...props }: Base.Icon.Props) {
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop className={cn(popupStyles.backdrop, className)} {...props} />
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
   );
 }
 
@@ -51,14 +50,14 @@ function Positioner({ className, ...props }: Base.Positioner.Props) {
       align="end"
       side="bottom"
       data-type="select"
-      className={cn(popupStyles.positioner, className)}
+      className={cn(styles.positioner, className)}
       {...props}
     />
   );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
+  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
 function List({ className, ...props }: Base.List.Props) {
@@ -66,28 +65,22 @@ function List({ className, ...props }: Base.List.Props) {
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {
-  return <Base.Arrow className={cn(popupStyles.arrow, className)} {...props} />;
+  return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
 }
 
 function Item({ className, ...props }: Base.Item.Props) {
-  return <Base.Item className={cn(popupStyles.item, className)} {...props} />;
+  return <Base.Item className={cn(styles.item, className)} {...props} />;
 }
 
 function ItemText({ className, ...props }: Base.ItemText.Props) {
   return (
-    <Base.ItemText
-      className={cn(popupStyles["item-label"], className)}
-      {...props}
-    />
+    <Base.ItemText className={cn(styles["item-label"], className)} {...props} />
   );
 }
 
 function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   return (
-    <Base.ItemIndicator
-      className={cn(popupStyles.indicator, className)}
-      {...props}
-    >
+    <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
       <Check width={14} height={14} />
     </Base.ItemIndicator>
   );
@@ -101,8 +94,8 @@ function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
   return (
     <Base.GroupLabel
       className={cn(
-        popupStyles["group-label"],
-        popupStyles["group-label-sticky"],
+        styles["group-label"],
+        styles["group-label-sticky"],
         className,
       )}
       {...props}
@@ -112,10 +105,7 @@ function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
 
 function Separator({ className, ...props }: Base.Separator.Props) {
   return (
-    <Base.Separator
-      className={cn(popupStyles.separator, className)}
-      {...props}
-    />
+    <Base.Separator className={cn(styles.separator, className)} {...props} />
   );
 }
 

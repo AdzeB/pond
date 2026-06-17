@@ -212,15 +212,16 @@ Locals live at the top of the root class, in declaration order. Token reads (`va
 
 #### Tokens: always use `--ds-*`
 
-All theme tokens live in `packages/ui/src/theme.css` (re-exported as `@pond/ui/theme.css`). There is one system: `--ds-*`. Don't reach for ad-hoc colours, hex literals, or page-local hand-rolled scales.
+All theme tokens live in the `@pond/theme` package (imported as `@pond/theme/theme.css`, or per-concern: `@pond/theme/colors.css`, `/motion.css`, `/radius.css`, `/shadow.css`, `/typography.css`, `/brand.css`). There is one system: `--ds-*`. Don't reach for ad-hoc colours, hex literals, or page-local hand-rolled scales.
 
 - **Color scales.** Backed by Radix Themes: `--ds-gray-1`…`--ds-gray-12` plus alpha (`--ds-gray-a1`…`--ds-gray-a12`), and `--ds-accent-1`…`--ds-accent-12` (sky-based) plus alpha. Same scale, same semantics in light and dark.
 - **Semantic.** `--ds-tomato-{1..12,a3,a6}` for danger / required / error. `--ds-grass-{3,6,9,11,a6}` for success.
 - **Surface.** `--ds-gray-1` for the app body. Use `--ds-gray-1` for default surface, `--ds-gray-2` for subtle panels.
 - **Radius.** `--ds-radius-xs` (8px), `--ds-radius-sm` (10px), `--ds-radius-md` (12px), `--ds-radius-lg` (14px), `--ds-radius-xl` (16px), `--ds-radius-full` (9999px).
-- **Shadows (structural ring).** `--ds-shadow-1`, `--ds-shadow-2`, `--ds-shadow-2-focused`, `--ds-shadow-3`. Resting elements.
+- **Shadows (elevation scale).** `--ds-shadow-1`…`--ds-shadow-6` (structural hairline ring + increasing drop), built from `--ds-shadow-ring`. `1`–`3` resting elements, `4`–`6` floating surfaces.
 - **Shadows (floating popup).** `--ds-shadow-popover`, `--ds-shadow-dialog`, `--ds-shadow-toast`, `--ds-shadow-tooltip`.
-- **Shadows (atomic).** `--ds-shadow-thumb`, `--ds-shadow-badge`, `--ds-shadow-focus-halo`.
+- **Shadows (atomic).** `--ds-shadow-thumb`, `--ds-shadow-badge`, `--ds-filter-shadow-2` (drop-shadow form for non-box elements).
+- **Focus.** Use `outline: 2px solid var(--ds-focus-outline); outline-offset: 2px;` on `:focus-visible`. Don't use box-shadow halos for focus.
 - **Motion.** `--ds-duration-{fast 80, snap 120, medium 180, emphasized 250}`, `--ds-easing-{standard ease, snap cubic-bezier(0.22, 1, 0.36, 1)}`. Press feedback is `transform: scale(0.98)` everywhere.
 - **Mono font.** `var(--ds-font-mono)` for `<code>`, `<kbd>`, and any identifier-leaning string.
 - **Brand.** `--ds-brand-{twitter, cosmos, arena, facebook, pinterest, dribbble}` for source-badge backgrounds. Stay inside the badge; never escape into surrounding chrome.

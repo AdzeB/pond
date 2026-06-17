@@ -1,4 +1,4 @@
-export { cn } from "./_shared/cn";
+export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
 export { AlertDialog } from "./alert-dialog";
 export { Button, type ButtonProps } from "./button";

@@ -22,11 +22,9 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./reset.css": "./src/reset.css",
-    "./theme.css": "./src/theme.css"
+    "./reset.css": "./src/reset.css"
   },
   "scripts": {
-    "gen:colors": "node src/colors/gen.ts",
     "lint": "biome check --fix --unsafe .",
     "typecheck": "tsc --noEmit"
   },
@@ -35,12 +33,13 @@
     "react-dom": ">=19"
   },
   "dependencies": {
-    "@pond/icons": "workspace:*",
     "@base-ui/react": "^1.5.0",
+    "@pond/icons": "workspace:*",
     "@tanstack/react-router": "^1.170.8",
     "@uiw/color-convert": "^2.10.3",
     "@uiw/react-color-hue": "^2.10.3",
     "@uiw/react-color-saturation": "^2.10.3",
+    "calligraph": "^1.4.1",
     "clsx": "^2.1.1",
     "motion": "^12.39.0"
   },

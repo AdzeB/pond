@@ -1,5 +1,5 @@
 import { Button as Base } from "@base-ui/react/button";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 export interface ButtonProps extends Base.Props {
@@ -10,7 +10,7 @@ export interface ButtonProps extends Base.Props {
     | "ghost"
     | "danger"
     | "accent";
-  size?: "xs" | "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: boolean;
 }
 

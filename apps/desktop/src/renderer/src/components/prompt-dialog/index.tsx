@@ -50,7 +50,7 @@ export function PromptDialog({
               if (e.key === "Enter") onConfirm();
             }}
           />
-          <AlertDialog.Actions>
+          <AlertDialog.Footer>
             <AlertDialog.Close render={<Button variant="ghost" />}>
               {cancelLabel}
             </AlertDialog.Close>
@@ -63,7 +63,7 @@ export function PromptDialog({
             >
               {confirmLabel}
             </Button>
-          </AlertDialog.Actions>
+          </AlertDialog.Footer>
         </AlertDialog.Popup>
       </AlertDialog.Portal>
     </AlertDialog.Root>

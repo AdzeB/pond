@@ -1,5 +1,5 @@
 import { Drawer as Base } from "@base-ui/react/drawer";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {

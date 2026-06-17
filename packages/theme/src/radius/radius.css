@@ -1,0 +1,10 @@
+/* Corner radius scale. The named steps are the design system's documented values. */
+:root {
+  --ds-radius-xs: 8px;
+  --ds-radius-sm: 10px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-xl: 18px;
+  --ds-radius-2xl: 20px;
+  --ds-radius-full: 9999px;
+}

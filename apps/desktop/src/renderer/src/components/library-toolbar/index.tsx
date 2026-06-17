@@ -19,13 +19,7 @@ export function Toolbar() {
   return (
     <PondToolbar.Root style={{ paddingInlineStart: trafficLightInset }}>
       <PondToolbar.Row>
-        <PondToolbar.Group fill={true}>
-          <Tooltip label="New" side="bottom">
-            <Button icon variant="primary">
-              <Plus />
-            </Button>
-          </Tooltip>
-        </PondToolbar.Group>
+        <PondToolbar.Group fill={true}></PondToolbar.Group>
 
         <PondToolbar.Group className={styles.center}>
           <Input.Root className={styles.search}>
@@ -47,6 +41,11 @@ export function Toolbar() {
         </PondToolbar.Group>
 
         <PondToolbar.Group fill={true} align="end">
+          <Tooltip label="New" side="bottom">
+            <Button icon variant="primary">
+              <Plus />
+            </Button>
+          </Tooltip>
           <LibrarySwitcher />
         </PondToolbar.Group>
       </PondToolbar.Row>

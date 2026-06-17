@@ -43,6 +43,10 @@
   &[data-emoji] {
     font-size: 44px;
   }
+
+  &[data-icon] {
+    color: #fff;
+  }
 }
 
 .glyphButton {
@@ -118,8 +122,45 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: 220px;
+  width: 260px;
   padding: 10px;
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  max-height: 168px;
+  padding-bottom: 8px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--ds-gray-3);
+}
+
+.iconOption {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: none;
+  border-radius: var(--ds-radius-md);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &[data-selected] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
 }
 
 .emojiGrid {

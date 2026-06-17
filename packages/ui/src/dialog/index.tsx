@@ -1,5 +1,6 @@
 import { Dialog as Base } from "@base-ui/react/dialog";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
+import type React from "react";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -45,11 +46,29 @@ function Viewport(props: Base.Viewport.Props) {
   return <Base.Viewport {...props} />;
 }
 
-function Actions({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  return <div className={cn(styles.actions, className)} {...props} />;
+interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {
+  trailing?: React.ReactNode;
+  leading?: React.ReactNode;
+}
+
+function Header(props: HeaderProps) {
+  return (
+    <div className={cn(styles.header, props.className)} {...props}>
+      {props.leading && <div className={styles.leading}>{props.leading}</div>}
+      {props.children}
+      {props.trailing && (
+        <div className={styles.trailing}>{props.trailing}</div>
+      )}
+    </div>
+  );
+}
+
+function Content(props: React.ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.content, props.className)} {...props} />;
+}
+
+function Footer(props: React.ComponentPropsWithoutRef<"div">) {
+  return <div className={cn(styles.footer, props.className)} {...props} />;
 }
 
 export const Dialog = {
@@ -60,7 +79,9 @@ export const Dialog = {
   Popup,
   Title,
   Description,
-  Actions,
+  Header,
+  Content,
+  Footer,
   Close,
   Viewport,
   createHandle: Base.createHandle,

@@ -12,8 +12,8 @@
       "!**/dist",
       "!**/node_modules/**/*",
       "!branding",
-      "!packages/ui/src/colors/colors.css",
-      "!packages/ui/src/theme/aliases.css"
+      "!packages/theme/src/colors/palette.css",
+      "!packages/theme/src/colors/scale.css"
     ]
   },
   "formatter": {

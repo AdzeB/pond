@@ -1,5 +1,5 @@
+import { clsx as cn } from "clsx";
 import { useEffect, useState } from "react";
-import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 interface BodyProps extends React.ComponentPropsWithoutRef<"div"> {}

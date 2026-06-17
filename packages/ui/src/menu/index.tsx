@@ -2,8 +2,7 @@ import { Input as BaseInput } from "@base-ui/react/input";
 import { Menu as Base } from "@base-ui/react/menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
-import { cn } from "../_shared/cn";
-import popupStyles from "../_shared/popup.module.css";
+import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Switch } from "../switch";
@@ -50,18 +49,18 @@ function Positioner({
     <Base.Positioner
       sideOffset={sideOffset}
       data-type="menu"
-      className={cn(popupStyles.positioner, className)}
+      className={cn(styles.positioner, className)}
       {...props}
     />
   );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return <Base.Popup {...props} className={cn(popupStyles.popup, className)} />;
+  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {
-  return <Base.Arrow className={cn(popupStyles.arrow, className)} {...props} />;
+  return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
 }
 
 type ItemProps = Base.Item.Props & {
@@ -72,7 +71,7 @@ function Item({ className, stale = false, ...props }: ItemProps) {
   return (
     <Base.Item
       data-stale={stale}
-      className={cn(popupStyles.item, className)}
+      className={cn(styles.item, className)}
       {...props}
     />
   );
@@ -82,20 +81,18 @@ function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       aria-hidden
-      className={cn(popupStyles["item-icon"], className)}
+      className={cn(styles["item-icon"], className)}
       {...props}
     />
   );
 }
 
 function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
-  return (
-    <span className={cn(popupStyles["item-label"], className)} {...props} />
-  );
+  return <span className={cn(styles["item-label"], className)} {...props} />;
 }
 
 function ItemKbd({ className, ...props }: React.ComponentProps<"span">) {
-  return <span className={cn(popupStyles["item-kbd"], className)} {...props} />;
+  return <span className={cn(styles["item-kbd"], className)} {...props} />;
 }
 
 function Group(props: Base.Group.Props) {
@@ -105,14 +102,14 @@ function Group(props: Base.Group.Props) {
 function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
   return (
     <Base.GroupLabel
-      className={cn(popupStyles["group-label"], className)}
+      className={cn(styles["group-label"], className)}
       {...props}
     />
   );
 }
 
 function Separator({ className, ...props }: React.ComponentProps<"hr">) {
-  return <hr className={cn(popupStyles.separator, className)} {...props} />;
+  return <hr className={cn(styles.separator, className)} {...props} />;
 }
 
 function RadioGroup(props: Base.RadioGroup.Props) {
@@ -120,9 +117,7 @@ function RadioGroup(props: Base.RadioGroup.Props) {
 }
 
 function RadioItem({ className, ...props }: Base.RadioItem.Props) {
-  return (
-    <Base.RadioItem className={cn(popupStyles.item, className)} {...props} />
-  );
+  return <Base.RadioItem className={cn(styles.item, className)} {...props} />;
 }
 
 function RadioItemIndicator({
@@ -131,7 +126,7 @@ function RadioItemIndicator({
 }: Base.RadioItemIndicator.Props) {
   return (
     <Base.RadioItemIndicator
-      className={cn(popupStyles.indicator, className)}
+      className={cn(styles.indicator, className)}
       {...props}
     />
   );
@@ -139,7 +134,7 @@ function RadioItemIndicator({
 
 function CheckboxItem({ className, ...props }: Base.CheckboxItem.Props) {
   return (
-    <Base.CheckboxItem className={cn(popupStyles.item, className)} {...props} />
+    <Base.CheckboxItem className={cn(styles.item, className)} {...props} />
   );
 }
 
@@ -151,7 +146,7 @@ function SwitchItemIndicator({
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}
-      className={cn(popupStyles.indicator, className)}
+      className={cn(styles.indicator, className)}
       render={(renderProps, state) => (
         <Switch.Root
           checked={state.checked}
@@ -174,7 +169,7 @@ function CheckboxItemIndicator({
   return (
     <Base.CheckboxItemIndicator
       keepMounted={keepMounted}
-      className={cn(popupStyles.indicator, className)}
+      className={cn(styles.indicator, className)}
       render={(renderProps, state) => (
         <Checkbox.Root
           checked={state.checked}
@@ -199,7 +194,7 @@ function SubmenuRoot(props: Base.SubmenuRoot.Props) {
 
 function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
-    <Base.SubmenuTrigger className={cn(popupStyles.item, className)} {...props}>
+    <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
       {props.children}
       <CaretRight width={8} height={8} style={{ marginLeft: "auto" }} />
     </Base.SubmenuTrigger>
@@ -208,10 +203,7 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
 
 function SecondaryLabel({ className, ...props }: React.ComponentProps<"span">) {
   return (
-    <span
-      className={cn(popupStyles["secondary-label"], className)}
-      {...props}
-    />
+    <span className={cn(styles["secondary-label"], className)} {...props} />
   );
 }
 

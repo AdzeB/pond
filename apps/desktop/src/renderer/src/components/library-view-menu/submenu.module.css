@@ -37,16 +37,12 @@
   /* Ring + depth move from box-shadow (clipped away) to drop-shadow so they
      follow the unified shape; keep only the inset highlights from .glassPopup. */
   box-shadow:
-    inset 0 2px 4px -2px
-    light-dark(var(--white-alpha-700), var(--white-alpha-300)),
-    inset 0 -2px 4px -2px
-    light-dark(var(--black-alpha-200), var(--black-alpha-400));
+    inset 0 2px 4px -2px light-dark(var(--ds-white-a8), var(--ds-white-a4)),
+    inset 0 -2px 4px -2px light-dark(var(--ds-black-a3), var(--ds-black-a5));
   filter: drop-shadow(
-      0 0 0.5px light-dark(var(--black-alpha-200), var(--white-alpha-200))
+      0 0 0.5px light-dark(var(--ds-black-a3), var(--ds-white-a3))
     )
-    drop-shadow(
-      0 6px 16px light-dark(var(--black-alpha-200), var(--black-alpha-500))
-    );
+    drop-shadow(0 6px 16px light-dark(var(--ds-black-a3), var(--ds-black-a6)));
   clip-path: shape(
     from var(--r) var(--th),
     hline to calc(var(--tx) - var(--tb)),
@@ -65,48 +61,6 @@
     curve to var(--r) var(--th) with 0 var(--th),
     close
   );
-}
-
-/* Icon-only trigger for a standalone view control in the toolbar. */
-.barTrigger {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: var(--ds-gray-11);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: 8px;
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  & > svg {
-    width: 18px;
-    height: 18px;
-    /* Springy press feedback, matching the dock: squish on press, overshoot
-       back on release. Disabled under reduced motion globally. */
-    transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-  }
-
-  &:active > svg {
-    transform: scale(0.82);
-  }
-
-  &:hover,
-  &[data-popup-open] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-2);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
 }
 
 /* Wrapper so the applied-filters dot can be positioned over the trigger. */

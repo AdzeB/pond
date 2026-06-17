@@ -6,8 +6,8 @@ import {
 } from "@uiw/color-convert";
 import Hue from "@uiw/react-color-hue";
 import Saturation from "@uiw/react-color-saturation";
+import { clsx as cn } from "clsx";
 import { useEffect, useState } from "react";
-import { cn } from "../_shared/cn";
 import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";

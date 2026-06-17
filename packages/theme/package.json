@@ -1,0 +1,36 @@
+{
+  "name": "@pond/theme",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pond's design tokens: the runtime --ds-* theming engine (colors, motion, radius, shadow, typography, brand) as plain CSS custom properties. App- and framework-agnostic.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "homepage": "https://github.com/raphaelsalaja/pond#readme",
+  "bugs": {
+    "url": "https://github.com/raphaelsalaja/pond/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/theme"
+  },
+  "exports": {
+    ".": "./src/theme.css",
+    "./theme.css": "./src/theme.css",
+    "./colors.css": "./src/colors/colors.css",
+    "./motion.css": "./src/motion/motion.css",
+    "./radius.css": "./src/radius/radius.css",
+    "./shadow.css": "./src/shadow/shadow.css",
+    "./typography.css": "./src/typography/typography.css",
+    "./brand.css": "./src/brand/brand.css"
+  },
+  "scripts": {
+    "generate": "node src/colors/gen.ts",
+    "lint": "biome check --fix --unsafe .",
+    "typecheck": "tsc --noEmit"
+  }
+}

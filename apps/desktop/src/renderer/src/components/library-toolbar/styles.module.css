@@ -1,75 +1,7 @@
-.toolbar {
-  display: flex;
-  align-items: center;
-  min-width: 0;
-  -webkit-app-region: drag;
-
-  & > * {
-    -webkit-app-region: no-drag;
-  }
-}
-
-.sideStart {
-  gap: 2px;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 0;
-  height: 36px;
-}
-
-.sideEnd {
-  gap: 2px;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 0;
-  height: 36px;
-}
-
-/* Opaque surface bar hugging the view controls. Kept a non-drag region so
-   clicks on its padding don't drag the window. */
-.glassCluster {
-  position: relative;
-  display: inline-flex;
-  gap: 2px;
-  align-items: center;
-  padding: 4px;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-full);
-  box-shadow:
-    inset 0 0 0 0.5px var(--ds-gray-a4),
-    var(--ds-shadow-2);
-  -webkit-app-region: no-drag;
-}
-
 .center {
   flex-shrink: 0;
   justify-content: center;
   height: 36px;
-}
-
-.switcher {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: 8px;
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover,
-  &[data-popup-open] {
-    background: var(--ds-gray-2);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
 }
 
 .search {
@@ -81,17 +13,7 @@
   height: 100%;
 }
 
-/* The same opaque pill surface as the toolbar cluster. */
 .field {
-  background: var(--ds-gray-1);
-  box-shadow:
-    inset 0 0 0 0.5px var(--ds-gray-a4),
-    var(--ds-shadow-2);
-}
-
-/* Descendant selector (0,2,0) re-asserts the surface over the base control
-   `.field` background/shadow/radius without !important. */
-.search .field {
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
   box-shadow:
@@ -99,27 +21,10 @@
     var(--ds-shadow-2);
 
   &:focus-visible {
-    box-shadow: var(--ds-shadow-2-focused);
+    outline: 2px solid var(--ds-focus-outline);
+    outline-offset: 2px;
+    box-shadow:
+      inset 0 0 0 0.5px var(--ds-gray-a4),
+      var(--ds-shadow-2);
   }
-}
-
-.button {
-  position: relative;
-  height: 100%;
-
-  > svg {
-    width: 16px;
-    height: 16px;
-  }
-}
-
-.syncDot {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 6px;
-  height: 6px;
-  background: var(--ds-blue-9, var(--ds-gray-12));
-  border: 1px solid var(--ds-gray-1);
-  border-radius: var(--ds-radius-full, 100px);
 }

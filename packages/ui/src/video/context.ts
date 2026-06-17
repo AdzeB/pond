@@ -5,6 +5,7 @@ interface VideoState {
   currentTime: number;
   duration: number;
   buffered: number;
+  buffering: boolean;
   volume: number;
   muted: boolean;
   rate: number;

@@ -2,14 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const HIDE_DELAY_MS = 2500;
 
-// Shows controls on pointer activity, hides after inactivity while playing; paused keeps them.
+// Hover-driven: controls show on pointer activity over the player and hide on
+// leave. While playing they also auto-hide after a spell of inactivity.
 export function useAutoHide(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  playing: boolean;
 }): { controlsVisible: boolean; showControls: () => void } {
-  const { rootRef, videoRef, playing } = opts;
-  const [controlsVisible, setControlsVisible] = useState(true);
+  const { rootRef, videoRef } = opts;
+  const [controlsVisible, setControlsVisible] = useState(false);
   const timer = useRef<number | null>(null);
 
   const showControls = useCallback(() => {
@@ -26,8 +26,8 @@ export function useAutoHide(opts: {
     if (!root) return;
     const onActivity = () => showControls();
     const onLeave = () => {
-      const v = videoRef.current;
-      if (v && !v.paused) setControlsVisible(false);
+      if (timer.current !== null) window.clearTimeout(timer.current);
+      setControlsVisible(false);
     };
     root.addEventListener("pointermove", onActivity);
     root.addEventListener("pointerenter", onActivity);
@@ -37,12 +37,7 @@ export function useAutoHide(opts: {
       root.removeEventListener("pointerenter", onActivity);
       root.removeEventListener("pointerleave", onLeave);
     };
-  }, [rootRef, videoRef, showControls]);
-
-  useEffect(() => {
-    if (playing) showControls();
-    else setControlsVisible(true);
-  }, [playing, showControls]);
+  }, [rootRef, showControls]);
 
   useEffect(
     () => () => {

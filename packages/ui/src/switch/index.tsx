@@ -1,5 +1,5 @@
 import { Switch as Base } from "@base-ui/react/switch";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 function Root({ className, children, ...props }: Base.Root.Props) {

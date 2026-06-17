@@ -3,8 +3,14 @@ import { IconXmarkOutline18 as X } from "@pond/icons/outline/18";
 import { Button, Dialog, Field, Input, Popover } from "@pond/ui";
 import { useMemo, useState } from "react";
 import { type Pond, usePonds } from "@/hooks/use-ponds";
-import { initials } from "@/lib/initials";
 import { DEFAULT_POND_COLOR, POND_COLORS } from "@/lib/pond-colors";
+import {
+  glyphKind,
+  iconAvatar,
+  POND_ICONS,
+  PondGlyph,
+  resolvePondIcon,
+} from "@/lib/pond-icons";
 import {
   pondCustomise,
   usePondCustomiseOpen,
@@ -46,9 +52,10 @@ function PondCustomiseContent({ pond }: { pond: Pond }) {
   const [name, setName] = useState(pond.name);
   const [avatar, setAvatar] = useState<string | null>(pond.avatar);
   const [color, setColor] = useState(pond.color ?? DEFAULT_POND_COLOR);
-  const [emojiOpen, setEmojiOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
-  const glyph = avatar ?? initials(name);
+  const kind = glyphKind(avatar);
+  const selectedIconKey = resolvePondIcon(avatar)?.key ?? null;
 
   async function save() {
     await setDetails({ path: pond.path, name, avatar, color });
@@ -71,12 +78,13 @@ function PondCustomiseContent({ pond }: { pond: Pond }) {
           <div
             className={styles.preview}
             style={{ background: color }}
-            data-emoji={avatar ? true : undefined}
+            data-emoji={kind === "emoji" ? true : undefined}
+            data-icon={kind === "icon" ? true : undefined}
           >
-            {glyph}
+            <PondGlyph avatar={avatar} name={name} iconSize={48} />
           </div>
 
-          <Popover.Root open={emojiOpen} onOpenChange={setEmojiOpen}>
+          <Popover.Root open={pickerOpen} onOpenChange={setPickerOpen}>
             <Popover.Trigger
               render={
                 <button
@@ -91,16 +99,28 @@ function PondCustomiseContent({ pond }: { pond: Pond }) {
             <Popover.Portal>
               <Popover.Positioner side="bottom" align="center">
                 <Popover.Popup className={styles.emojiPopup}>
+                  <div className={styles.iconGrid}>
+                    {POND_ICONS.map(({ key, label, Icon }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        className={styles.iconOption}
+                        data-selected={key === selectedIconKey || undefined}
+                        aria-label={label}
+                        aria-pressed={key === selectedIconKey}
+                        onClick={() => setAvatar(iconAvatar(key))}
+                      >
+                        <Icon width={20} height={20} aria-hidden />
+                      </button>
+                    ))}
+                  </div>
                   <div className={styles.emojiGrid}>
                     {QUICK_EMOJI.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
                         className={styles.emojiOption}
-                        onClick={() => {
-                          setAvatar(emoji);
-                          setEmojiOpen(false);
-                        }}
+                        onClick={() => setAvatar(emoji)}
                       >
                         {emoji}
                       </button>
@@ -109,7 +129,7 @@ function PondCustomiseContent({ pond }: { pond: Pond }) {
                   <Input.Field
                     data-size="sm"
                     placeholder="Type or paste an emoji"
-                    defaultValue={avatar ?? ""}
+                    defaultValue={kind === "emoji" ? (avatar ?? "") : ""}
                     onChange={(e) => {
                       const value = e.target.value.trim();
                       setAvatar(value.length > 0 ? value : null);
@@ -121,7 +141,7 @@ function PondCustomiseContent({ pond }: { pond: Pond }) {
                     className={styles.clearEmoji}
                     onClick={() => {
                       setAvatar(null);
-                      setEmojiOpen(false);
+                      setPickerOpen(false);
                     }}
                   >
                     Use initials

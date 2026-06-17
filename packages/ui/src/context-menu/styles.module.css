@@ -1,3 +1,18 @@
+.positioner {
+  --popup-width: max-content;
+  z-index: var(--popup-z, 9999999999);
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  -webkit-app-region: no-drag;
+}
+
 .popup {
   display: flex;
   flex-direction: column;
@@ -86,12 +101,6 @@
   &:focus-visible::before {
     opacity: 1;
   }
-
-  &[data-stale="true"] {
-    &::before {
-      background: transparent;
-    }
-  }
 }
 
 .item-icon {
@@ -137,50 +146,9 @@
   letter-spacing: 0.02px;
 }
 
-.group-label-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--ds-gray-2);
-}
-
 .separator {
   height: 1px;
   margin: 4px 0px;
   background: var(--ds-gray-a3);
   border: 0;
-}
-
-.secondary-label {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 450;
-  color: var(--ds-gray-10);
-}
-
-.positioner {
-  z-index: var(--popup-z, 9999999999);
-  -webkit-user-select: none;
-  user-select: none;
-  outline: none;
-
-  &[data-type="combobox"],
-  &[data-type="autocomplete"] {
-    --popup-min-width: var(--anchor-width);
-  }
-
-  &[data-type="context-menu"] {
-    --popup-width: max-content;
-  }
-
-  &[data-type="menu"] {
-    --popup-z: 1100;
-  }
-}
-
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  -webkit-app-region: no-drag;
 }

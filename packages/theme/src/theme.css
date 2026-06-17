@@ -1,0 +1,26 @@
+@import "./colors/colors.css";
+@import "./motion/motion.css";
+@import "./radius/radius.css";
+@import "./shadow/shadow.css";
+@import "./typography/typography.css";
+@import "./brand/brand.css";
+
+:root {
+  --ds-mac-inset: 16px;
+
+  --ds-background-1: var(--ds-gray-1);
+  --ds-background-2: var(--ds-gray-2);
+  --ds-bg-default: var(--ds-gray-1);
+  --ds-bg-hover: var(--ds-gray-2);
+  --ds-bg-active: var(--ds-gray-3);
+  --ds-border-default: var(--ds-gray-4);
+  --ds-border-hover: var(--ds-gray-5);
+  --ds-border-active: var(--ds-gray-6);
+  --ds-high-contrast-bg: var(--ds-gray-7);
+  --ds-high-contrast-bg-hover: var(--ds-gray-8);
+  --ds-text-secondary: var(--ds-gray-11);
+  --ds-text-primary: var(--ds-gray-12);
+  --ds-accent-text: var(--ds-accent-11);
+
+  --ds-focus-outline: color-mix(in srgb, var(--ds-accent-9) 20%, transparent);
+}

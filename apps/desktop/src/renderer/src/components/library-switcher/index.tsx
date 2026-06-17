@@ -1,21 +1,16 @@
+import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import {
-  IconCheck3Outline12 as Check,
-  IconChevronDownOutline12 as ChevronDown,
-} from "@pond/icons/outline/12";
-import {
-  IconSquareGridOutline18 as Components,
   IconFolderOpenOutline18 as FolderOpen,
   IconPenOutline18 as Pencil,
   IconArchivePlusOutline18 as Plus,
-  IconRefresh2Outline18 as Refresh,
   IconGearOutline18 as Settings,
 } from "@pond/icons/outline/18";
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
-import { Menu } from "@pond/ui";
+import { Button, Menu } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { usePonds } from "@/hooks/use-ponds";
-import { initials } from "@/lib/initials";
+import { glyphKind, PondGlyph } from "@/lib/pond-icons";
 import { prettyPath } from "@/lib/pretty-path";
 import { pondCustomise } from "@/stores/pond-customise";
 import styles from "./styles.module.css";
@@ -57,19 +52,28 @@ export function LibrarySwitcher() {
       <Menu.Trigger
         variant="ghost"
         aria-label={`Library menu (${active?.name ?? "Library"})`}
-        className={styles.trigger}
-      >
-        <span
-          aria-hidden
-          className={styles.avatar}
-          data-emoji={active?.avatar ? true : undefined}
-          style={active?.color ? { background: active.color } : undefined}
-        >
-          {active?.avatar ?? (active ? initials(active.name) : "")}
-        </span>
-        <span className={styles.name}>{active?.name ?? "Library"}</span>
-        <ChevronDown className={styles.chevron} />
-      </Menu.Trigger>
+        render={
+          <Button
+            icon
+            variant="primary"
+            className={styles.trigger}
+            data-icon={
+              active && glyphKind(active.avatar) === "icon" ? true : undefined
+            }
+            style={{ background: active?.color ?? undefined }}
+          >
+            {active ? (
+              <PondGlyph
+                avatar={active.avatar}
+                name={active.name}
+                iconSize={18}
+              />
+            ) : (
+              "Library"
+            )}
+          </Button>
+        }
+      ></Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner sideOffset={8} align="start">
           <Menu.Popup className={styles.popup}>
@@ -91,11 +95,16 @@ export function LibrarySwitcher() {
                   <span
                     aria-hidden
                     className={styles.avatar}
-                    data-emoji={pond.avatar ? true : undefined}
+                    data-emoji={glyphKind(pond.avatar) === "emoji" || undefined}
+                    data-icon={glyphKind(pond.avatar) === "icon" || undefined}
                     data-missing={!pond.exists || undefined}
                     style={pond.color ? { background: pond.color } : undefined}
                   >
-                    {pond.avatar ?? initials(pond.name)}
+                    <PondGlyph
+                      avatar={pond.avatar}
+                      name={pond.name}
+                      iconSize={18}
+                    />
                   </span>
                   <span className={styles.rowText}>
                     <span className={styles.rowName}>{pond.name}</span>
@@ -123,7 +132,7 @@ export function LibrarySwitcher() {
               <Menu.ItemIcon>
                 <Pencil />
               </Menu.ItemIcon>
-              Edit details…
+              Edit Pond
             </Menu.Item>
             <Menu.Item
               onClick={() => void window.pond.query("library.create", {})}
@@ -131,7 +140,7 @@ export function LibrarySwitcher() {
               <Menu.ItemIcon>
                 <Plus />
               </Menu.ItemIcon>
-              Create library…
+              Create Pond
               <Menu.SecondaryLabel>L then C</Menu.SecondaryLabel>
             </Menu.Item>
             <Menu.Item onClick={() => void switchExisting()}>
@@ -139,16 +148,6 @@ export function LibrarySwitcher() {
                 <FolderOpen />
               </Menu.ItemIcon>
               Switch library…
-            </Menu.Item>
-            <Menu.Item
-              onClick={() =>
-                void window.pond.query("library.emptyCacheAndReload", {})
-              }
-            >
-              <Menu.ItemIcon>
-                <Refresh />
-              </Menu.ItemIcon>
-              Empty cache and reload
             </Menu.Item>
 
             <Menu.Separator />
@@ -159,12 +158,6 @@ export function LibrarySwitcher() {
               </Menu.ItemIcon>
               Settings
               <Menu.SecondaryLabel>⌘,</Menu.SecondaryLabel>
-            </Menu.Item>
-            <Menu.Item onClick={() => void navigate({ to: "/components" })}>
-              <Menu.ItemIcon>
-                <Components />
-              </Menu.ItemIcon>
-              Components
             </Menu.Item>
 
             <Menu.Separator />

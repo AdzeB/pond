@@ -19,19 +19,9 @@
     background: var(--ds-accent-9);
   }
 
-  &::before {
-    position: absolute;
-    inset: -4px;
-    pointer-events: none;
-    content: "";
-    border-radius: calc(var(--ds-radius-full) + 4px);
-    box-shadow: var(--ds-shadow-focus-halo);
-    opacity: 0;
-    transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
-  }
-
-  &:focus-visible::before {
-    opacity: 1;
+  &:focus-visible {
+    outline: 2px solid var(--ds-focus-outline);
+    outline-offset: 2px;
   }
 
   &:disabled {

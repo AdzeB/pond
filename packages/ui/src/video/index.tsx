@@ -1,4 +1,3 @@
-import { Select as SelectBase } from "@base-ui/react/select";
 import { Slider as SliderBase } from "@base-ui/react/slider";
 import {
   IconFullScreenFill18 as FullscreenIcon,
@@ -8,15 +7,15 @@ import {
   IconVolumeFill18 as VolumeIcon,
   IconVolumeOffFill18 as VolumeOffIcon,
 } from "@pond/icons/fill/18";
-import { useMemo } from "react";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
+import { useMemo, useState } from "react";
 import {
   useVideo,
   type VideoActions,
   VideoContext,
   type VideoContextValue,
 } from "./context";
-import { formatTime, SPEED_OPTIONS } from "./lib";
+import { clamp, formatTime, SPEED_OPTIONS } from "./lib";
 import styles from "./styles.module.css";
 import { useAutoHide } from "./use-auto-hide";
 import { useVideoHotkeys } from "./use-hotkeys";
@@ -38,7 +37,6 @@ function Root({ className, children, ...props }: RootProps) {
   const { controlsVisible, showControls } = useAutoHide({
     rootRef,
     videoRef,
-    playing: state.playing,
   });
   const { pipSupported, pipActive, requestPip } = usePip({ videoRef });
 
@@ -69,13 +67,7 @@ function Root({ className, children, ...props }: RootProps) {
 
   return (
     <VideoContext value={value}>
-      <div
-        ref={rootRef}
-        className={cn(styles.root, className)}
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: the player is a focus target so keyboard shortcuts work.
-        tabIndex={0}
-        {...props}
-      >
+      <div ref={rootRef} className={cn(styles.root, className)} {...props}>
         {children}
       </div>
     </VideoContext>
@@ -155,34 +147,7 @@ function MuteButton({ className, ...props }: ButtonProps) {
 }
 
 function Volume({ className }: { className?: string }) {
-  const { state, actions } = useVideo();
-  const level = state.muted ? 0 : state.volume;
-  return (
-    <div className={cn(styles.volume, className)}>
-      <MuteButton />
-      <div className={styles.volumePopup}>
-        <SliderBase.Root
-          orientation="vertical"
-          min={0}
-          max={1}
-          step={0.05}
-          value={level}
-          onValueChange={(v) =>
-            actions.setVolume(typeof v === "number" ? v : (v[0] ?? 0))
-          }
-          aria-label="Volume"
-          className={styles.volumeSlider}
-        >
-          <SliderBase.Control className={styles.volumeControl}>
-            <SliderBase.Track className={styles.volumeTrack}>
-              <SliderBase.Indicator className={styles.volumeIndicator} />
-              <SliderBase.Thumb className={styles.volumeThumb} />
-            </SliderBase.Track>
-          </SliderBase.Control>
-        </SliderBase.Root>
-      </div>
-    </div>
-  );
+  return <MuteButton className={className} />;
 }
 
 function CurrentTime({
@@ -211,26 +176,57 @@ function Duration({
 
 function Scrubber({ className }: { className?: string }) {
   const { state, actions } = useVideo();
+  const [hover, setHover] = useState<number | null>(null);
   const max = state.duration > 0 ? state.duration : 1;
   const current = Math.min(state.currentTime, max);
+  const hasDuration = state.duration > 0;
+
+  const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width === 0) return;
+    setHover(clamp((event.clientX - rect.left) / rect.width, 0, 1));
+  };
+
   return (
     <SliderBase.Root
       className={cn(styles.scrubber, className)}
       value={current}
       min={0}
       max={max}
-      step={0.1}
+      step={0.01}
       onValueChange={(v) =>
         actions.seek(typeof v === "number" ? v : (v[0] ?? 0))
       }
+      onPointerMove={onPointerMove}
+      onPointerLeave={() => setHover(null)}
       aria-label="Seek"
     >
-      <SliderBase.Control className={styles.scrubberControl}>
-        <SliderBase.Track className={styles.track}>
+      {hover !== null && hasDuration ? (
+        <span
+          className={styles.preview}
+          style={{ left: `${hover * 100}%` }}
+          aria-hidden
+        >
+          <span>{formatTime(hover * max)}</span>
+          <span>/</span>
+          <span>{formatTime(max)}</span>
+        </span>
+      ) : null}
+      <SliderBase.Control className={styles.control}>
+        <SliderBase.Track
+          className={styles.track}
+          data-buffering={state.buffering ? "" : undefined}
+        >
           <div
             className={styles.buffer}
             style={{ width: `${(state.buffered / max) * 100}%` }}
           />
+          {hover !== null ? (
+            <div
+              className={styles.hoverFill}
+              style={{ width: `${hover * 100}%` }}
+            />
+          ) : null}
           <SliderBase.Indicator className={styles.indicator} />
           <SliderBase.Thumb className={styles.thumb} />
         </SliderBase.Track>
@@ -247,39 +243,18 @@ interface SpeedSelectProps {
 function SpeedSelect({ className, options = SPEED_OPTIONS }: SpeedSelectProps) {
   const { state, actions } = useVideo();
   return (
-    <SelectBase.Root
+    <select
+      className={cn(styles.speed, className)}
       value={state.rate}
-      onValueChange={(value) => {
-        if (value !== null) actions.setRate(value);
-      }}
+      onChange={(event) => actions.setRate(Number(event.target.value))}
+      aria-label="Playback speed"
     >
-      <SelectBase.Trigger
-        className={cn(styles.speed, className)}
-        aria-label="Playback speed"
-      >
-        <SelectBase.Value>{(value) => `${value ?? 1}×`}</SelectBase.Value>
-      </SelectBase.Trigger>
-      <SelectBase.Portal>
-        <SelectBase.Positioner
-          side="top"
-          align="center"
-          sideOffset={8}
-          className={styles.speedPositioner}
-        >
-          <SelectBase.Popup className={styles.speedPopup}>
-            {options.map((rate) => (
-              <SelectBase.Item
-                key={rate}
-                value={rate}
-                className={styles.speedItem}
-              >
-                <SelectBase.ItemText>{rate}×</SelectBase.ItemText>
-              </SelectBase.Item>
-            ))}
-          </SelectBase.Popup>
-        </SelectBase.Positioner>
-      </SelectBase.Portal>
-    </SelectBase.Root>
+      {options.map((rate) => (
+        <option key={rate} value={rate}>
+          {rate}×
+        </option>
+      ))}
+    </select>
   );
 }
 

@@ -43,7 +43,7 @@ export function ConfirmDialog({
             <AlertDialog.Description>{description}</AlertDialog.Description>
           ) : null}
           {children}
-          <AlertDialog.Actions>
+          <AlertDialog.Footer>
             <AlertDialog.Close
               render={
                 <Button variant="ghost" disabled={busy}>
@@ -62,7 +62,7 @@ export function ConfirmDialog({
             >
               {confirmLabel}
             </Button>
-          </AlertDialog.Actions>
+          </AlertDialog.Footer>
         </AlertDialog.Popup>
       </AlertDialog.Portal>
     </AlertDialog.Root>

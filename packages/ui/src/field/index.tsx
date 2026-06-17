@@ -1,6 +1,5 @@
 import { Field as Base } from "@base-ui/react/field";
-import { cn } from "../_shared/cn";
-import controlStyles from "../_shared/control.module.css";
+import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
 function Root({ className, ...props }: Base.Root.Props) {
@@ -12,9 +11,7 @@ function Label({ className, ...props }: Base.Label.Props) {
 }
 
 function Control({ className, ...props }: Base.Control.Props) {
-  return (
-    <Base.Control className={cn(controlStyles.control, className)} {...props} />
-  );
+  return <Base.Control className={className} {...props} />;
 }
 
 function Description({ className, ...props }: Base.Description.Props) {

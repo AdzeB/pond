@@ -1,0 +1,5 @@
+:root {
+  --ds-font-mono:
+    "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    monospace;
+}

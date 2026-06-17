@@ -1,6 +1,6 @@
 import { Input as Base } from "@base-ui/react/input";
-import { cn } from "../_shared/cn";
-import styles from "../_shared/control.module.css";
+import { clsx as cn } from "clsx";
+import styles from "./styles.module.css";
 
 function Root({ className, ...props }: React.ComponentProps<"div">) {
   return (

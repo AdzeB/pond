@@ -1,6 +1,6 @@
 import { Tooltip as Base } from "@base-ui/react/tooltip";
+import { clsx } from "clsx";
 import type { ReactElement, ReactNode } from "react";
-import { cn } from "../_shared/cn";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -12,15 +12,27 @@ function Provider(props: Base.Provider.Props) {
 }
 
 function Trigger(props: Base.Trigger.Props) {
-  return <Base.Trigger {...props} />;
+  return (
+    <Base.Trigger
+      className={clsx(styles.trigger, props.className)}
+      {...props}
+    />
+  );
 }
 
 function Portal(props: Base.Portal.Props) {
-  return <Base.Portal {...props} />;
+  return (
+    <Base.Portal className={clsx(styles.portal, props.className)} {...props} />
+  );
 }
 
 function Viewport(props: Base.Viewport.Props) {
-  return <Base.Viewport {...props} />;
+  return (
+    <Base.Viewport
+      className={clsx(styles.viewport, props.className)}
+      {...props}
+    />
+  );
 }
 
 function Positioner({
@@ -31,23 +43,18 @@ function Positioner({
   return (
     <Base.Positioner
       sideOffset={sideOffset}
-      className={cn(styles.positioner, className)}
+      className={clsx(styles.positioner, className)}
       {...props}
     />
   );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
+  return <Base.Popup {...props} className={clsx(styles.popup, className)} />;
 }
 
 function Arrow({ className, ...props }: Base.Arrow.Props) {
-  return (
-    <Base.Arrow className={cn(styles.arrow, className)} {...props}>
-      <div data-side="left" className={styles.curve} />
-      <div data-side="right" className={styles.curve} />
-    </Base.Arrow>
-  );
+  return <Base.Arrow className={clsx(styles.arrow, className)} {...props} />;
 }
 
 interface TooltipProps {
@@ -72,7 +79,9 @@ function TooltipWrapper({
       <Trigger delay={delay} render={children} />
       <Portal>
         <Positioner side={side} align={align} sideOffset={sideOffset}>
-          <Popup>{label}</Popup>
+          <Popup>
+            <Viewport>{label}</Viewport>
+          </Popup>
         </Positioner>
       </Portal>
     </Root>
@@ -84,10 +93,10 @@ export const Tooltip = Object.assign(TooltipWrapper, {
   Provider,
   Trigger,
   Portal,
+  Viewport,
   Positioner,
   Popup,
   Arrow,
-  Viewport,
   createHandle: Base.createHandle,
   Handle: Base.Handle,
 });

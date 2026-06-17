@@ -1,5 +1,5 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
-import { cn } from "../_shared/cn";
+import { clsx as cn } from "clsx";
 import dialogStyles from "../dialog/styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -52,11 +52,22 @@ function Viewport(props: Base.Viewport.Props) {
   return <Base.Viewport {...props} />;
 }
 
-function Actions({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  return <div className={cn(dialogStyles.actions, className)} {...props} />;
+function Header(props: React.ComponentPropsWithoutRef<"div">) {
+  return (
+    <div className={cn(dialogStyles.header, props.className)} {...props} />
+  );
+}
+
+function Content(props: React.ComponentPropsWithoutRef<"div">) {
+  return (
+    <div className={cn(dialogStyles.content, props.className)} {...props} />
+  );
+}
+
+function Footer(props: React.ComponentPropsWithoutRef<"div">) {
+  return (
+    <div className={cn(dialogStyles.footer, props.className)} {...props} />
+  );
 }
 
 export const AlertDialog = {
@@ -67,7 +78,9 @@ export const AlertDialog = {
   Popup,
   Title,
   Description,
-  Actions,
+  Header,
+  Content,
+  Footer,
   Close,
   Viewport,
   createHandle: Base.createHandle,
