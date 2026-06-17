@@ -1,5 +1,4 @@
 import { resolve } from "node:path";
-import stylex from "@stylexjs/unplugin";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
@@ -73,11 +72,6 @@ export default defineConfig({
   renderer: {
     root: resolve(__dirname, "src/renderer"),
     plugins: [
-      // Keep StyleX before @vitejs/plugin-react to preserve Fast Refresh.
-      stylex.vite({
-        useCSSLayers: true,
-        dev: process.env.NODE_ENV !== "production",
-      }),
       tanstackRouter({
         target: "react",
         autoCodeSplitting: true,

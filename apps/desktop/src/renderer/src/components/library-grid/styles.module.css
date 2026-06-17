@@ -1,0 +1,37 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.empty {
+  max-width: 420px;
+  padding: 60px 0;
+  margin: 0 auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ds-gray-11);
+  text-align: center;
+}
+
+.grid {
+  padding: 0;
+  margin: 0;
+  contain: layout;
+  list-style: none;
+}
+
+.grid-waterfall {
+  position: relative;
+}
+
+/* Cards are positioned absolutely by the uniform packer (see
+ * features/library/grid-view), matching waterfall/justified so the grid
+ * rides the same viewport-windowing path instead of mounting every save. */
+.grid-grid {
+  position: relative;
+}
+
+.grid-justified {
+  position: relative;
+}

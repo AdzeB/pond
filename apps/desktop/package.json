@@ -49,7 +49,6 @@
     "@pond/icons": "workspace:*",
     "@pond/schema": "workspace:*",
     "@pond/ui": "workspace:*",
-    "@stylexjs/stylex": "^0.18.3",
     "@tanstack/pacer": "^0.21.1",
     "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-pacer": "^0.22.1",
@@ -82,7 +81,6 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
-    "@stylexjs/unplugin": "^0.18.3",
     "@tanstack/router-plugin": "^1.168.11",
     "@types/better-sqlite3": "^7.6.12",
     "@types/mime-types": "^3.0.1",

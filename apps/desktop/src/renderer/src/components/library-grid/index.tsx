@@ -1,7 +1,6 @@
 import { cn } from "@pond/ui";
-import * as stylex from "@stylexjs/stylex";
 import type { ReactNode } from "react";
-import { styles } from "./styles";
+import styles from "./styles.module.css";
 
 type LibraryView = "grid" | "list";
 type GridLayout = "waterfall" | "grid" | "justified";
@@ -12,12 +11,11 @@ interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
 }
 
 function Root({ view, className, style, children, ...props }: RootProps) {
-  const sx = stylex.props(styles.root);
   return (
     <div
       data-view={view}
-      className={cn(sx.className, className)}
-      style={{ ...sx.style, ...style }}
+      className={cn(styles.root, className)}
+      style={style}
       {...props}
     >
       {children}
@@ -34,14 +32,17 @@ function Grid({
   layout = "grid",
   multiSelect,
   className,
-  style,
   ...props
 }: GridProps) {
-  const sx = stylex.props(styles.grid);
+  const layoutClass =
+    layout === "waterfall"
+      ? styles["grid-waterfall"]
+      : layout === "justified"
+        ? styles["grid-justified"]
+        : styles["grid-grid"];
   return (
     <ul
-      className={cn(sx.className, className)}
-      style={{ ...sx.style, ...style }}
+      className={cn(styles.grid, layoutClass, className)}
       data-layout={layout}
       data-multi-select={multiSelect ? "true" : undefined}
       {...props}
@@ -57,15 +58,8 @@ function List({ className, ...props }: ListProps) {
 
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
 
-function Empty({ className, style, ...props }: EmptyProps) {
-  const sx = stylex.props(styles.empty);
-  return (
-    <p
-      className={cn(sx.className, className)}
-      style={{ ...sx.style, ...style }}
-      {...props}
-    />
-  );
+function Empty({ className, ...props }: EmptyProps) {
+  return <p className={cn(styles.empty, className)} {...props} />;
 }
 
 export const LibraryGrid = {
