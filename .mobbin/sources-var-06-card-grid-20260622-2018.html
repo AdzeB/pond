@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>06 · Card-grid</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:920px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{display:flex;flex-direction:column;gap:16pxwidth:100%;max-width:920px;padding:18px 32px 90px;margin:0 auto;}
+.monban{display:flex;gap:11px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.monban .ico{display:grid;place-items:center;width:28px;height:28px;font-size:14px;font-weight:700color:#fff;background:#14130f;border-radius:7px;}
+.monban .d{width:7px;height:7px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}.monban .t{font-size:13px}.monban .t b{font-weight:620}
+.monban .track{width:140px;height:7px;margin-left:auto;overflow:hiddenbackground:var(--bar);border-radius:999px;}.monban .track i{display:block;width:35%;height:100%;background:var(--run);border-radius:999px}
+.sec-label{margin:2px 2px -4pxfont-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.card{padding:14px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);transition:border-color .12s}.card:hover{border-color:var(--ink-3)}
+.card .top{display:flex;gap:10pxalign-items:center;}
+.ring{position:relative;display:grid;place-items:centerwidth:36px;height:36px;border-radius:9px;}
+.ring .ico{display:grid;place-items:center;width:36px;height:36px;font-size:16pxfont-weight:700;color:#fff;border-radius:9px;}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.ms{background:#6364ff}.ico.rss{background:#f26522}.ico.hn{background:#ff6600}.ico.gh{background:#24292e}
+.ring .dot{position:absolute;right:-3px;bottom:-3px;width:12px;height:12px;border:2px solid var(--panel)border-radius:50%;}
+.dot.ok{background:var(--ok)}.dot.run{background:var(--run);animation:pulse 1.4s infinite}.dot.err{background:var(--err)}.dot.idle{background:var(--ink-3)}.dot.paused{background:var(--warn)}
+.card .nm{font-size:14pxfont-weight:620;}.card .st{margin-top:1pxfont-size:11.5px;}
+.st.ok{color:var(--ok)}.st.run{color:var(--run)}.st.err{color:var(--err)}.st.idle{color:var(--ink-3)}.st.paused{color:var(--warn)}
+.card .meta{display:flex;justify-content:space-between;padding-top:9pxmargin-top:12px;font-size:11.5px;color:var(--ink-3);border-top:1px solid var(--line-2);}.card .meta b{font-weight:600;font-variant-numeric:tabular-numscolor:var(--ink-2);}
+.card.add{display:grid;place-items:center;min-height:118pxfont-size:13px;color:var(--ink-2);border-style:dashed;}
+.minibar{height:5px;margin-top:10px;overflow:hiddenbackground:var(--bar);border-radius:999px;}.minibar i{display:block;height:100%;border-radius:999px}
+.note{margin-top:6pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">9 connected</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="monban"><span class="ico">𝕏</span><span class="d"></span><span class="t"><b>X / Twitter</b> syncing — harvest 42/120 · 00:42</span><span class="track"><i></i></span></div>
+  <div class="sec-label">Sources</div>
+  <div class="grid">
+    <div class="card"><div class="top"><span class="ring"><span class="ico x">𝕏</span><span class="dot run"></span></span><div><div class="nm">X / Twitter</div><div class="st run">Syncing · 42/120</div></div></div><div class="minibar"><i style="width:35%;background:var(--run)"></i></div><div class="meta"><span>Manual</span><span><b>16:02</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico yt">▶</span><span class="dot ok"></span></span><div><div class="nm">YouTube</div><div class="st ok">Queued 8</div></div></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>Every 1h</span><span><b>3m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico rd">r</span><span class="dot idle"></span></span><div><div class="nm">Reddit</div><div class="st idle">Caught up</div></div></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 30m</span><span><b>12m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico ig">◎</span><span class="dot err"></span></span><div><div class="nm">Instagram</div><div class="st err">Rate limited</div></div></div><div class="minibar"><i style="width:100%;background:var(--err)"></i></div><div class="meta"><span>Retry 16:08</span><span><b>9m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico bs">⊛</span><span class="dot ok"></span></span><div><div class="nm">Bluesky</div><div class="st ok">Queued 3</div></div></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>Every 1h</span><span><b>21m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico ms">m</span><span class="dot idle"></span></span><div><div class="nm">Mastodon</div><div class="st idle">Caught up</div></div></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 1h</span><span><b>34m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico rss">≈</span><span class="dot ok"></span></span><div><div class="nm">RSS</div><div class="st ok">Queued 22</div></div></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>14 feeds</span><span><b>1h ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico hn">Y</span><span class="dot idle"></span></span><div><div class="nm">Hacker News</div><div class="st idle">Caught up</div></div></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 2h</span><span><b>2h ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico gh">⌥</span><span class="dot paused"></span></span><div><div class="nm">GitHub</div><div class="st paused">Paused · auth</div></div></div><div class="minibar"><i style="width:100%;background:var(--warn)"></i></div><div class="meta"><span>Re-auth needed</span><span><b>—</b></span></div></div>
+    <div class="card add">+ Add source</div>
+  </div>
+  <p class="note">06 · Card-grid</p>
+</div>
+</body></html>

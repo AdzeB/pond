@@ -1,8 +1,7 @@
-import { IconEyeFill18 as DisplayIcon } from "@pond/icons/fill/18";
-import { Menu } from "@pond/ui";
 import { useView } from "@/hooks/use-view";
 import type { DisplayPrefKey } from "@/stores/display-prefs";
-import { ViewSubmenu } from "../../submenu";
+import { Group } from "../../group";
+import styles from "../../styles.module.css";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "name", label: "Name" },
@@ -12,24 +11,28 @@ const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "fileCount", label: "File count" },
 ];
 
-export function DisplaySection({ standalone }: { standalone?: boolean }) {
+export function DisplaySection() {
   const { state, actions } = useView();
 
   return (
-    <ViewSubmenu icon={<DisplayIcon />} label="Display" standalone={standalone}>
-      <Menu.Group>
-        {TOGGLES.map(({ key, label }) => (
-          <Menu.CheckboxItem
-            key={key}
-            closeOnClick={false}
-            checked={state.displayPrefs[key]}
-            onCheckedChange={(v) => actions.setDisplayPref(key, Boolean(v))}
-          >
-            <Menu.ItemLabel>{label}</Menu.ItemLabel>
-            <Menu.SwitchItemIndicator />
-          </Menu.CheckboxItem>
-        ))}
-      </Menu.Group>
-    </ViewSubmenu>
+    <Group title="Display">
+      <div className={styles.chipList}>
+        {TOGGLES.map(({ key, label }) => {
+          const active = state.displayPrefs[key];
+          return (
+            <button
+              key={key}
+              type="button"
+              className={styles.chip}
+              aria-pressed={active}
+              data-active={active}
+              onClick={() => actions.setDisplayPref(key, !active)}
+            >
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </Group>
   );
 }

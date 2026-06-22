@@ -56,6 +56,8 @@ export const DEFAULT_SETTINGS: PondSettings = {
     youtube: true,
     reddit: true,
     threads: true,
+    // Generic web links are a desktop-side fallback, not an extension toggle.
+    web: false,
     local: false,
   },
 };

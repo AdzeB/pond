@@ -1,6 +1,7 @@
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
+  DEFAULT_SKILLS,
   DEFAULT_VIDEO_DOWNLOAD,
   type ImageDownloadSettings,
   type Prefs,
@@ -58,7 +59,21 @@ async function loadSettings(): Promise<SettingsCache> {
 }
 
 export async function getPrefs(): Promise<Prefs> {
-  return (await loadSettings()).prefs;
+  const prefs = (await loadSettings()).prefs;
+  if (prefs.skills.seeded) return prefs;
+  return seedDefaultSkills(prefs);
+}
+
+// Back-fill the starter skills exactly once. Defaults are prepended, skipping
+// any slug the user already defined, then `seeded` flips true so this never
+// runs again (so deleting a starter skill sticks). Persisted so it survives a
+// reload even though it originates from a read.
+async function seedDefaultSkills(prefs: Prefs): Promise<Prefs> {
+  const existing = new Set(prefs.skills.custom.map((s) => s.name));
+  const additions = DEFAULT_SKILLS.filter((s) => !existing.has(s.name));
+  return setPrefs({
+    skills: { custom: [...additions, ...prefs.skills.custom], seeded: true },
+  });
 }
 
 export async function getVideoDownloadPrefs(): Promise<VideoDownloadSettings> {

@@ -37,7 +37,7 @@ Domain-prefixed kebab-case so the flat folders sort by area and never collide:
   `save-media-viewer`, `save-presentation`, `save-context-menu`, `save-inspector-kebab`.
 - `library-*` — `library-page`, `library-toolbar`, `library-dock`, `library-grid`,
   `library-grid-view`, `library-packed-grid`, `library-waterfall`, `library-justified`,
-  `library-list-view`, `library-filter-panel`, `library-saved-views`,
+  `library-list-view`, `library-filter-panel`,
   `library-sync-monitor`, `library-view-menu`, `library-switcher`,
   plus the bare `layout-switcher` and `grid-context`.
 - `tag-*` — `tag-picker`, `tag-menu`, `tag-context-menu`, `tag-group-context-menu`.
@@ -48,7 +48,7 @@ Domain-prefixed kebab-case so the flat folders sort by area and never collide:
   `video-player`.
 
 Hooks, stores, and lib helpers use the same domain prefixes where it adds clarity
-(`use-library-state`, `use-save-actions`, `view-store`, `tag-clipboard`, `save-actions`,
+(`use-library-state`, `save-menu`, `view-store`, `tag-clipboard`, `save-actions`,
 `filter-helpers`, `sources-registry`, `settings-*-config`).
 
 ## Conventions

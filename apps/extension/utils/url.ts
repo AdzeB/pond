@@ -22,6 +22,8 @@ export function cookieDomainForSource(source: Source): string | null {
       return ".reddit.com";
     case "threads":
       return ".threads.com";
+    case "web":
+      return null;
     case "local":
       return null;
   }

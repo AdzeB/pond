@@ -21,6 +21,21 @@ const LibrarySection = lazy(() =>
     default: m.LibrarySection,
   })),
 );
+const AiSection = lazy(() =>
+  import("@/components/settings-ai").then((m) => ({
+    default: m.AiSection,
+  })),
+);
+const EnrichmentSection = lazy(() =>
+  import("@/components/settings-enrichment").then((m) => ({
+    default: m.EnrichmentSection,
+  })),
+);
+const TasksSection = lazy(() =>
+  import("@/components/settings-tasks").then((m) => ({
+    default: m.TasksSection,
+  })),
+);
 
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   general: generalSection,
@@ -29,5 +44,8 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   videos: videosSection,
   images: imagesSection,
   tags: { component: TagsSection },
+  ai: { component: AiSection },
+  enrichment: { component: EnrichmentSection },
+  tasks: { component: TasksSection },
   developer: { component: DeveloperSection },
 };

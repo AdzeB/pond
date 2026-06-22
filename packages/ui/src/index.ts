@@ -23,3 +23,4 @@ export { Switch } from "./switch";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
 export { Video } from "./video";
+export { useVideo, type VideoContextValue } from "./video/context";

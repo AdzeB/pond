@@ -5,6 +5,7 @@ import {
   type QueryHandlerMap,
   safeHandle,
 } from "../helpers";
+import { aiQueries } from "./ai";
 import { developerQueries } from "./developer";
 import { libraryQueries } from "./library";
 import { savedViewsQueries } from "./saved-views";
@@ -25,6 +26,7 @@ const queryRegistry: QueryHandlerMap = {
   ...developerQueries,
   ...videoQueries,
   ...syncHistoryQueries,
+  ...aiQueries,
 };
 
 export function registerQueryHandler(): void {

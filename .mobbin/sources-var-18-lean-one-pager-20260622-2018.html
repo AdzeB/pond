@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>18 · Lean one-pager</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:720px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{display:flex;flex-direction:column;gap:16pxwidth:100%;max-width:720px;padding:18px 32px 90px;margin:0 auto;}
+.strip{display:flex;overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.strip .m{flex:1;padding:13px 16px;border-right:1px solid var(--line-2)}.strip .m:last-child{border-right:0}
+.strip .ml{font-size:11.5px;color:var(--ink-2)}.strip .mv{margin-top:2px;font-size:19px;font-weight:640;font-variant-numeric:tabular-nums}.strip .md{margin-top:1pxfont-size:11px;font-weight:600;}
+.up{color:var(--ok)}.neu{color:var(--ink-3)}
+.monban{display:flex;gap:11px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.monban .ico{display:grid;place-items:center;width:28px;height:28px;font-size:14px;font-weight:700color:#fff;background:#14130f;border-radius:7px;}
+.monban .d{width:7px;height:7px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}.monban .t{font-size:13px}.monban .t b{font-weight:620}
+.monban .track{width:120px;height:7px;margin-left:auto;overflow:hiddenbackground:var(--bar);border-radius:999px;}.monban .track i{display:block;width:35%;height:100%;background:var(--run);border-radius:999px}
+.sec-label{margin:2px 2px -6pxfont-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;gap:8px;align-items:center;padding:6px 13px 6px 7px;font-size:13pxcursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow);}.chip:hover{border-color:var(--ink-3)}
+.chip .ci{display:grid;place-items:center;width:22px;height:22px;font-size:11pxfont-weight:700;color:#fff;border-radius:6px;}
+.ci.x{background:#14130f}.ci.yt{background:#ce3b30}.ci.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ci.rd{background:#e0592a}.ci.bs{background:#1185fe}.ci.ms{background:#6364ff}.ci.rss{background:#f26522}.ci.hn{background:#ff6600}.ci.gh{background:#24292e}
+.chip .sd{width:8px;height:8px;border-radius:50%}.sd.ok{background:var(--ok)}.sd.run{background:var(--run);animation:pulse 1.4s infinite}.sd.err{background:var(--err)}.sd.idle{background:var(--ink-3)}.sd.paused{background:var(--warn)}
+.chip.add{color:var(--ink-2);border-style:dashed;box-shadow:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.ch{display:flex;align-items:center;padding:12px 14px 10px;border-bottom:1px solid var(--line-2)}.ch h3{margin:0;font-size:13.5px;font-weight:600}
+.segf{display:inline-flex;gap:2px;padding:2pxmargin-left:auto;background:var(--hover);border-radius:8px;}.segf button{padding:4px 10px;font-family:inheritfont-size:12px;color:var(--ink-2);cursor:pointer;background:transparent;border:0;border-radius:6px;}.segf button.on{font-weight:560;color:var(--ink);background:var(--panel);box-shadow:var(--shadow)}
+.log{padding:4px 8px 10px}.le{display:grid;grid-template-columns:54px 12px 1fr auto;gap:11px;align-items:baseline;padding:7px 6px;font-size:12.5px;border-radius:8px}.le:hover{background:var(--hover)}
+.le .ts{font-family:ui-monospace,Menlo,monospacefont-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);}.le .ld{align-self:centerwidth:7px;height:7px;border-radius:50%;}
+.ld.ok{background:var(--ok)}.ld.run{background:var(--run)}.ld.err{background:var(--err)}.ld.warn{background:var(--warn)}
+.le .msg .src{font-weight:600}.le .msg .dim{color:var(--ink-2)}.le .dur{font-size:11pxcolor:var(--ink-3);}
+.note{margin-top:6pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">Overview</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="strip"><div class="m"><div class="ml">Items · 7d</div><div class="mv">3,418</div><div class="md up">↑ 12.4%</div></div><div class="m"><div class="ml">Runs today</div><div class="mv">18</div><div class="md neu">next 14m</div></div><div class="m"><div class="ml">Success</div><div class="mv">99.1%</div><div class="md up">↑ 0.6%</div></div><div class="m"><div class="ml">Avg run</div><div class="mv">4.2s</div><div class="md neu">↑ 0.4s</div></div></div>
+  <div class="monban"><span class="ico">𝕏</span><span class="d"></span><span class="t"><b>X / Twitter</b> syncing — harvest 42/120 · 00:42</span><span class="track"><i></i></span></div>
+  <div class="sec-label">Sources</div>
+  <div class="chips">
+    <div class="chip"><span class="ci x">𝕏</span>X<span class="sd run"></span></div>
+    <div class="chip"><span class="ci yt">▶</span>YouTube<span class="sd ok"></span></div>
+    <div class="chip"><span class="ci rd">r</span>Reddit<span class="sd idle"></span></div>
+    <div class="chip"><span class="ci ig">◎</span>Instagram<span class="sd err"></span></div>
+    <div class="chip"><span class="ci bs">⊛</span>Bluesky<span class="sd ok"></span></div>
+    <div class="chip"><span class="ci ms">m</span>Mastodon<span class="sd idle"></span></div>
+    <div class="chip"><span class="ci rss">≈</span>RSS<span class="sd ok"></span></div>
+    <div class="chip"><span class="ci hn">Y</span>HN<span class="sd idle"></span></div>
+    <div class="chip"><span class="ci gh">⌥</span>GitHub<span class="sd paused"></span></div>
+    <div class="chip add">+ Add</div>
+  </div>
+  <div class="card">
+    <div class="ch"><h3>Activity</h3><div class="segf"><button class="on">All</button><button>Errors</button></div></div>
+    <div class="log">
+      <div class="le"><span class="ts">16:02:14</span><span class="ld run"></span><span class="msg"><span class="src">X</span> <span class="dim">harvest — scanning timeline page 3/6</span></span><span class="dur">running</span></div>
+      <div class="le"><span class="ts">16:02:09</span><span class="ld ok"></span><span class="msg"><span class="src">X</span> <span class="dim">enqueued 12 bookmarks</span></span><span class="dur">+12</span></div>
+      <div class="le"><span class="ts">16:01:30</span><span class="ld ok"></span><span class="msg"><span class="src">RSS</span> <span class="dim">completed — queued 22</span></span><span class="dur">3.4s</span></div>
+      <div class="le"><span class="ts">15:59:42</span><span class="ld ok"></span><span class="msg"><span class="src">YouTube</span> <span class="dim">completed — queued 8</span></span><span class="dur">5.1s</span></div>
+      <div class="le"><span class="ts">15:53:18</span><span class="ld err"></span><span class="msg"><span class="src">Instagram</span> <span class="dim">rate limited (429)</span></span><span class="dur">aborted</span></div>
+      <div class="le"><span class="ts">15:42:31</span><span class="ld warn"></span><span class="msg"><span class="src">X</span> <span class="dim">watchdog reset stalled run</span></span><span class="dur">30.0s</span></div>
+      <div class="le"><span class="ts">12:10:04</span><span class="ld err"></span><span class="msg"><span class="src">GitHub</span> <span class="dim">auth token expired — paused</span></span><span class="dur">aborted</span></div>
+    </div>
+  </div>
+  <p class="note">18 · Lean one-pager</p>
+</div>
+</body></html>

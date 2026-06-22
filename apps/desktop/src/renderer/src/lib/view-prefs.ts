@@ -26,13 +26,12 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
   }
 }
 
-export type LayoutValue = "waterfall" | "grid" | "justified" | "list";
+export type LayoutValue = "waterfall" | "grid" | "justified";
 
 const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
   "waterfall",
   "grid",
   "justified",
-  "list",
 ];
 
 export function isLayoutValue(value: string): value is LayoutValue {

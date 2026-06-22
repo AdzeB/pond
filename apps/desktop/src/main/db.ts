@@ -116,6 +116,21 @@ function migratePond(sqlite: Database.Database): void {
 					phash TEXT,
 					sensitivity TEXT,
 					sensitivity_model TEXT,
+					embedding TEXT,
+					embedding_model TEXT,
+					caption TEXT,
+					caption_model TEXT,
+					ocr_text TEXT,
+					ocr_model TEXT,
+					transcript TEXT,
+					transcript_model TEXT,
+					clip_embedding TEXT,
+					clip_model TEXT,
+					aesthetic TEXT,
+					aesthetic_model TEXT,
+					auto_title_model TEXT,
+					suggested_tags TEXT,
+					suggested_tags_model TEXT,
 					video_notes TEXT NOT NULL DEFAULT '[]',
 					dominant_colors TEXT NOT NULL DEFAULT '[]',
 					status TEXT NOT NULL DEFAULT 'ingesting',
@@ -156,6 +171,7 @@ function migratePond(sqlite: Database.Database): void {
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
 					starred INTEGER NOT NULL DEFAULT 0,
+					archived INTEGER NOT NULL DEFAULT 0,
 					last_used_at INTEGER,
 					usage_count INTEGER NOT NULL DEFAULT 0,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
@@ -182,6 +198,7 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS saved_views (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL,
+					question TEXT,
 					query TEXT NOT NULL DEFAULT '{"kind":"and","clauses":[]}',
 					sort_key TEXT NOT NULL DEFAULT 'savedAt',
 					sort_dir TEXT NOT NULL DEFAULT 'desc',
@@ -233,6 +250,62 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
 			`);
 
+  addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
+  // Soft-archive for tags; added to existing libraries on upgrade.
+  addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
+  addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
+  // On-device semantic-search vectors; added to existing libraries on upgrade.
+  addColumnIfMissing(sqlite, "saves", "embedding", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "embedding_model", "TEXT");
+  // On-device enrichment columns (caption/ocr/transcript/clip/aesthetic/auto-title/tags).
+  addColumnIfMissing(sqlite, "saves", "caption", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "caption_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "ocr_text", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "ocr_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "transcript", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "transcript_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "clip_embedding", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "clip_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "aesthetic", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "aesthetic_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "auto_title_model", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "suggested_tags", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
+
+  // FTS5 over save text. caption/ocr_text/transcript are indexed so free-text and
+  // structured search reach visual/audio content. The virtual table can't be
+  // ALTERed, so on upgrade we rebuild it (and the triggers) when columns drift.
+  ensureSavesFts(sqlite);
+}
+
+// Columns the FTS index must carry; bump this list to force a rebuild on upgrade.
+const SAVES_FTS_COLUMNS = [
+  "id",
+  "title",
+  "description",
+  "author",
+  "tag_names",
+  "caption",
+  "ocr_text",
+  "transcript",
+] as const;
+
+function ensureSavesFts(sqlite: Database.Database): void {
+  const existing = (
+    sqlite.prepare("PRAGMA table_info(saves_fts)").all() as Array<{
+      name: string;
+    }>
+  ).map((c) => c.name);
+  const hasAll = SAVES_FTS_COLUMNS.every((c) => existing.includes(c));
+  if (existing.length > 0 && !hasAll) {
+    sqlite.exec(`
+				DROP TRIGGER IF EXISTS saves_ai;
+				DROP TRIGGER IF EXISTS saves_ad;
+				DROP TRIGGER IF EXISTS saves_au;
+				DROP TABLE IF EXISTS saves_fts;
+			`);
+  }
+
   sqlite.exec(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 					id UNINDEXED,
@@ -240,14 +313,18 @@ function migratePond(sqlite: Database.Database): void {
 					description,
 					author,
 					tag_names,
+					caption,
+					ocr_text,
+					transcript,
 					tokenize = 'porter unicode61'
 				);
 
 				CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-					INSERT INTO saves_fts(id, title, description, author, tag_names)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
 					VALUES (
 						new.id, new.title, new.description, new.author,
-						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), '')
+						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
+						new.caption, new.ocr_text, new.transcript
 					);
 				END;
 
@@ -257,15 +334,29 @@ function migratePond(sqlite: Database.Database): void {
 
 				CREATE TRIGGER IF NOT EXISTS saves_au AFTER UPDATE ON saves BEGIN
 					DELETE FROM saves_fts WHERE id = old.id;
-					INSERT INTO saves_fts(id, title, description, author, tag_names)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
 					VALUES (
 						new.id, new.title, new.description, new.author,
-						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), '')
+						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
+						new.caption, new.ocr_text, new.transcript
 					);
 				END;
 			`);
 
-  addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
+  // Repopulate after a rebuild (empty table) so existing rows are searchable.
+  const count = sqlite.prepare("SELECT COUNT(*) AS n FROM saves_fts").get() as {
+    n: number;
+  };
+  if (count.n === 0) {
+    sqlite.exec(`
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
+					SELECT
+						id, title, description, author,
+						COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), ''),
+						caption, ocr_text, transcript
+					FROM saves;
+				`);
+  }
 }
 
 // SQLite has no `ADD COLUMN IF NOT EXISTS`; guard against re-adding on upgrade.

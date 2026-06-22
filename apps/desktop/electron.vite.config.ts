@@ -47,8 +47,12 @@ export default defineConfig({
         input: resolve(__dirname, "src/main/index.ts"),
         // Native modules must stay external so they resolve their
         // platform-specific .node binaries from node_modules at runtime
-        // instead of being inlined into the bundle.
-        external: ["electron", "better-sqlite3", "sharp"],
+        // instead of being inlined into the bundle. `re2` (pulled in by
+        // metascraper via url-regex-safe) is intentionally not built in this
+        // repo; keeping it external lets url-regex-safe fall back to a plain
+        // RegExp at runtime instead of the bundler choking on its missing
+        // `re2.node`.
+        external: ["electron", "better-sqlite3", "sharp", "re2"],
       },
     },
   },
@@ -104,6 +108,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/renderer/index.html"),
+          capture: resolve(__dirname, "src/renderer/capture.html"),
         },
         output: {
           // One chunk per npm package: bumping a dependency invalidates

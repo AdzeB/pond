@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>05 · Activity-first</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:760px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.wrap{width:100%;max-width:760px;padding:16px 32px 90pxmargin:0 auto;}
+.sticky{position:sticky;top:0;z-index:5;padding-top:8px;padding-bottom:10pxbackground:linear-gradient(180deg,var(--bg) 70%,rgba(247,247,246,0));}
+.monban{display:flex;gap:11px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.monban .ico{display:grid;place-items:center;width:28px;height:28px;font-size:14px;font-weight:700color:#fff;background:#14130f;border-radius:7px;}
+.monban .d{width:7px;height:7px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}
+.monban .t{font-size:13px}.monban .t b{font-weight:620}.monban .right{margin-left:auto;font-family:ui-monospace,Menlo,monospacefont-size:11.5px;font-variant-numeric:tabular-nums;color:var(--ink-3);}
+.rail{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.f{display:inline-flex;gap:7px;align-items:center;padding:5px 11px 5px 7px;font-size:12px;cursor:pointerbackground:var(--panel);border:1px solid var(--line);border-radius:999px;}
+.f .ico{display:grid;place-items:center;width:18px;height:18px;font-size:9pxfont-weight:700;color:#fff;border-radius:5px;}
+.f.all{padding-left:11px;font-weight:560}.f.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.ms{background:#6364ff}.ico.rss{background:#f26522}.ico.hn{background:#ff6600}.ico.gh{background:#24292e}
+.daylabel{margin:18px 4px 6pxfont-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;}
+.feed{overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.le{display:grid;grid-template-columns:58px 12px 1fr auto;gap:12px;align-items:baseline;padding:11px 16px;font-size:13px;border-bottom:1px solid var(--line-2)}.le:last-child{border-bottom:0}.le:hover{background:var(--hover)}
+.le .ts{font-family:ui-monospace,Menlo,monospacefont-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);}.le .ld{align-self:centerwidth:8px;height:8px;border-radius:50%;}
+.ld.ok{background:var(--ok)}.ld.run{background:var(--run);animation:pulse 1.4s infinite}.ld.err{background:var(--err)}.ld.warn{background:var(--warn)}
+.le .msg .src{font-weight:600}.le .msg .dim{color:var(--ink-2)}.le .msg .tag{padding:1px 6px;margin-right:8px;font-size:10px;font-weight:600;text-transform:uppercaseborder-radius:5px;}
+.tag.sync{color:var(--run)background:rgba(47,127,191,.12);}.tag.harvest{color:var(--run)background:rgba(47,127,191,.08);}.tag.queue{color:var(--ok)background:rgba(58,158,87,.12);}.tag.error{color:var(--err)background:rgba(204,75,55,.12);}.tag.cron{color:var(--ink-2)background:var(--hover);}
+.le .dur{font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);white-space:nowrap}
+.note{margin-top:14pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Activity</h1><span class="crumb">All sources</span><span class="right"><span class="live"><span class="ld"></span>live</span></span></div>
+<div class="wrap">
+  <div class="sticky">
+    <div class="monban"><span class="ico">𝕏</span><span class="d"></span><span class="t"><b>X / Twitter</b> syncing — harvest 42/120, queued 12</span><span class="right">00:42</span></div>
+    <div class="rail"><span class="f all on">All</span><span class="f"><span class="ico x">𝕏</span>X</span><span class="f"><span class="ico yt">▶</span>YouTube</span><span class="f"><span class="ico rd">r</span>Reddit</span><span class="f"><span class="ico ig">◎</span>Instagram</span><span class="f"><span class="ico bs">⊛</span>Bluesky</span><span class="f"><span class="ico ms">m</span>Mastodon</span><span class="f"><span class="ico rss">≈</span>RSS</span><span class="f"><span class="ico hn">Y</span>HN</span><span class="f"><span class="ico gh">⌥</span>GitHub</span></div>
+  </div>
+  <div class="daylabel">Today</div>
+  <div class="feed">
+    <div class="le"><span class="ts">16:02:14</span><span class="ld run"></span><span class="msg"><span class="tag harvest">harvest</span><span class="src">X</span> <span class="dim">scanning timeline — page 3 of ~6</span></span><span class="dur">running</span></div>
+    <div class="le"><span class="ts">16:02:09</span><span class="ld ok"></span><span class="msg"><span class="tag queue">queue</span><span class="src">X</span> <span class="dim">enqueued</span> 12 bookmarks</span><span class="dur">+12</span></div>
+    <div class="le"><span class="ts">16:01:30</span><span class="ld ok"></span><span class="msg"><span class="tag sync">sync</span><span class="src">RSS</span> <span class="dim">completed — queued 22 across 14 feeds</span></span><span class="dur">3.4s</span></div>
+    <div class="le"><span class="ts">15:59:42</span><span class="ld ok"></span><span class="msg"><span class="tag sync">sync</span><span class="src">YouTube</span> <span class="dim">completed — queued 8, 0 failed</span></span><span class="dur">5.1s</span></div>
+    <div class="le"><span class="ts">15:55:12</span><span class="ld ok"></span><span class="msg"><span class="tag queue">queue</span><span class="src">Bluesky</span> <span class="dim">enqueued</span> 3 likes</span><span class="dur">+3</span></div>
+    <div class="le"><span class="ts">15:53:18</span><span class="ld err"></span><span class="msg"><span class="tag error">error</span><span class="src">Instagram</span> <span class="dim">rate limited (429) — retry 16:08</span></span><span class="dur">aborted</span></div>
+    <div class="le"><span class="ts">15:50:00</span><span class="ld ok"></span><span class="msg"><span class="tag cron">cron</span><span class="src">Reddit</span> <span class="dim">all caught up — nothing new</span></span><span class="dur">1.2s</span></div>
+    <div class="le"><span class="ts">15:42:31</span><span class="ld warn"></span><span class="msg"><span class="tag sync">sync</span><span class="src">X</span> <span class="dim">watchdog reset stalled run, retrying</span></span><span class="dur">30.0s</span></div>
+  </div>
+  <div class="daylabel">Earlier</div>
+  <div class="feed">
+    <div class="le"><span class="ts">15:02:00</span><span class="ld ok"></span><span class="msg"><span class="tag sync">sync</span><span class="src">YouTube</span> <span class="dim">completed — queued 12</span></span><span class="dur">4.8s</span></div>
+    <div class="le"><span class="ts">12:10:04</span><span class="ld err"></span><span class="msg"><span class="tag error">error</span><span class="src">GitHub</span> <span class="dim">auth token expired — paused</span></span><span class="dur">aborted</span></div>
+  </div>
+  <p class="note">05 · Activity-first</p>
+</div>
+</body></html>

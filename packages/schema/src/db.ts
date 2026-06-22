@@ -21,8 +21,9 @@ export * from "./color";
 export * from "./prefs";
 export * from "./theme-presets";
 
-// External source descriptors plus the special-cased `local`.
-export const SOURCES = [...EXTERNAL_SOURCE_IDS, "local"] as const;
+// External source descriptors plus the special-cased `web` (generic-link
+// fallback) and `local` (file imports).
+export const SOURCES = [...EXTERNAL_SOURCE_IDS, "web", "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
 export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;
@@ -108,6 +109,35 @@ export const saves = sqliteTable(
     sensitivity: text("sensitivity").$type<Sensitivity>(),
     // Classifier that produced `sensitivity`; lets the sweep re-run on model upgrades.
     sensitivityModel: text("sensitivity_model"),
+    // On-device semantic-search embedding of the save's text (title/desc/notes/tags),
+    // stored as a JSON float array; null = not yet embedded. DB-only, re-derivable.
+    embedding: text("embedding", { mode: "json" }).$type<number[]>(),
+    // Embedder that produced `embedding`; bumping re-embeds the library, mirroring
+    // `sensitivityModel`. Null embeddings (and stale stamps) get picked up by the sweep.
+    embeddingModel: text("embedding_model"),
+    // ---- On-device enrichment (all DB-only, re-derivable; each has a model stamp
+    // so the enrichment sweep re-runs on model upgrades, mirroring embeddings). ----
+    // Vision caption / alt-text for image saves.
+    caption: text("caption"),
+    captionModel: text("caption_model"),
+    // OCR text extracted from image saves (screenshots, posters).
+    ocrText: text("ocr_text"),
+    ocrModel: text("ocr_model"),
+    // Speech transcript for video/audio saves. Excluded from saves.list payload.
+    transcript: text("transcript"),
+    transcriptModel: text("transcript_model"),
+    // CLIP image embedding (visual similarity), JSON float array. Loaded separately.
+    clipEmbedding: text("clip_embedding", { mode: "json" }).$type<number[]>(),
+    clipModel: text("clip_model"),
+    // Zero-shot aesthetic / style labels for image saves.
+    aesthetic: text("aesthetic", { mode: "json" }).$type<string[]>(),
+    aestheticModel: text("aesthetic_model"),
+    // Stamp recorded when an empty title was auto-filled, so we never re-derive
+    // over a user edit.
+    autoTitleModel: text("auto_title_model"),
+    // Grounded tag suggestions (existing-vocabulary matches); non-destructive.
+    suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
+    suggestedTagsModel: text("suggested_tags_model"),
     videoNotes: text("video_notes", { mode: "json" })
       .$type<VideoNote[]>()
       .notNull()
@@ -182,6 +212,8 @@ export const tags = sqliteTable("tags", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   starred: integer("starred", { mode: "boolean" }).notNull().default(false),
+  // Soft-retire: archived tags drop out of the default list but stay on saves.
+  archived: integer("archived", { mode: "boolean" }).notNull().default(false),
   lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
   usageCount: integer("usage_count").notNull().default(0),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
@@ -222,6 +254,9 @@ export const tagGroupMembers = sqliteTable(
 export const savedViews = sqliteTable("saved_views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  // Optional natural-language question this view was saved from ("Save as view"
+  // off an Ask). Display/editing metadata; the live query lives in `query`.
+  question: text("question"),
   query: text("query", { mode: "json" })
     .$type<Query>()
     .notNull()

@@ -176,9 +176,21 @@
 .swatch {
   width: 28px;
   height: 28px;
+  padding: 0;
   margin-right: -10px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
   border: 3px solid var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.swatch:hover {
+  transform: scale(1.12);
+}
+
+.swatch:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-accent-9);
 }
 
 .swatch:last-child {
@@ -213,6 +225,66 @@
   gap: 32px;
   width: 350px;
   min-height: 0;
+}
+
+/* View switch (Details / Data): a floating pill that reads as its own detached
+   surface, matching the card chrome. The active cell springs between tabs via a
+   shared motion layoutId. */
+.tabList {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  align-self: flex-start;
+  padding: 3px;
+  pointer-events: auto;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-dialog);
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding-inline: 16px;
+  font: inherit;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+
+  &[data-active="true"] {
+    color: var(--ds-gray-12);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.tabHighlight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-full);
+}
+
+.tabLabel {
+  position: relative;
+  z-index: 1;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: -0.09px;
 }
 
 .card {
@@ -269,6 +341,116 @@
   font-size: 12px;
   color: var(--ds-gray-11);
   text-align: center;
+}
+
+/* Insights card: on-device enrichment (caption, OCR, transcript, style, tags). */
+.insights {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.insightBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insightHead {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.insightLabel {
+  margin-right: auto;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.insightAction {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-accent-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* A suggested tag is a one-tap add: filled chip with a trailing plus. */
+.chipAdd {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 22px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.chipAddPlus {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ds-gray-9);
+}
+
+.chipAdd:hover .chipAddPlus {
+  color: var(--ds-accent-11);
+}
+
+.insightText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
 }
 
 /* Properties popover: a compact label/value list anchored to the header button. */
@@ -331,6 +513,428 @@
 .propsEmpty {
   margin: 0;
   font-size: 13px;
+  color: var(--ds-gray-9);
+}
+
+/* Data inspector: a complete, read-only dump of every stored/computed field,
+   grouped into labelled sections of label/value rows. */
+.data {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dataSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dataSectionTitle {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dataRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.dataRow {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.dataRow[data-block="true"] {
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.dataLabel {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ds-gray-9);
+  letter-spacing: -0.09px;
+}
+
+.dataValueCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+}
+
+.dataRow[data-block="true"] .dataValueCell {
+  text-align: left;
+}
+
+.dataValue {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.09px;
+  word-break: break-word;
+}
+
+.dataRow[data-block="true"] .dataValue {
+  justify-content: flex-start;
+}
+
+.dataValue[data-mono="true"] {
+  font-family: var(--ds-font-mono, ui-monospace, monospace);
+  font-size: 12px;
+}
+
+.dataModel {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  color: var(--ds-gray-9);
+  word-break: break-word;
+}
+
+.dataModel[data-mono="true"] {
+  font-family: var(--ds-font-mono, ui-monospace, monospace);
+}
+
+.dataChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dataChip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.dataSwatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dataSwatch {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 22px;
+  padding-inline: 8px;
+  font-family: var(--ds-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.dataSwatchDot {
+  width: 10px;
+  height: 10px;
+  border: 0.5px solid var(--ds-gray-a4);
+  border-radius: var(--ds-radius-full);
+}
+
+.dataCopy {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm, 4px);
+  opacity: 0;
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    opacity var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.dataValue:hover .dataCopy,
+.dataRow:hover .dataCopy,
+.dataCopy[data-floating="true"] {
+  opacity: 1;
+}
+
+.dataTask {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md, 8px);
+}
+
+.dataTaskHead {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.dataTaskOp {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.dataTaskStatus {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dataTaskMeta {
+  font-size: 11px;
+  color: var(--ds-gray-9);
+}
+
+.dataTaskError {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ds-red-11, var(--ds-gray-11));
+  word-break: break-word;
+}
+
+.dataJson {
+  position: relative;
+}
+
+.dataJson .dataCopy[data-floating="true"] {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+  background: var(--ds-gray-1);
+}
+
+.dataJsonPre {
+  max-height: 320px;
+  padding: 12px;
+  margin: 0;
+  overflow: auto;
+  font-family: var(--ds-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ds-gray-11);
+  white-space: pre;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md, 8px);
+}
+
+/* Title card: a compact, sized-to-content editable heading at the top of the
+   Details stack (so it doesn't steal the equal-height growth of the others). */
+.titleCard {
+  flex: 0 0 auto;
+}
+
+.titleInput {
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.18px;
+  outline: none;
+  background: transparent;
+  border: 0;
+}
+
+.titleInput::placeholder {
+  color: var(--ds-gray-9);
+}
+
+.titleInput:focus-visible {
+  border-radius: var(--ds-radius-sm, 4px);
+  box-shadow: 0 0 0 2px var(--ds-gray-a6);
+}
+
+/* Chapter list: timestamped seek targets for the active video. */
+.chapterList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.chapter {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-md, 8px);
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--ds-gray-a3);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &[data-active="true"] {
+    background: var(--ds-gray-a3);
+  }
+}
+
+.chapterIcon {
+  flex-shrink: 0;
+  color: var(--ds-gray-9);
+}
+
+.chapter[data-active="true"] .chapterIcon {
+  color: var(--ds-accent-11);
+}
+
+.chapterTitle {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.chapterTime {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}
+
+/* Related grid: nearest-neighbour thumbnails that navigate the modal. */
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.relatedCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: transparent;
+  border: 0;
+}
+
+.relatedThumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-md, 8px);
+  box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
+  transition: box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.relatedCard:hover .relatedThumb {
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    0 0 0 2px var(--ds-gray-a6);
+}
+
+.relatedCard:focus-visible .relatedThumb {
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    0 0 0 2px var(--ds-accent-9);
+}
+
+.relatedImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.relatedFallback {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+}
+
+.relatedLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.relatedEmpty {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ds-gray-9);
 }
 

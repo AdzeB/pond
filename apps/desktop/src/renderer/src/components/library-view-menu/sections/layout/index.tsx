@@ -1,36 +1,30 @@
-import { IconGridLayoutFill18 as LayoutIcon } from "@pond/icons/fill/18";
-import { Menu } from "@pond/ui";
+import {
+  IconGridFill18 as GridIcon,
+  IconGridLayoutRowsFill18 as JustifiedIcon,
+  IconGridLayoutColsFill18 as WaterfallIcon,
+} from "@pond/icons/fill/18";
 import { useView } from "@/hooks/use-view";
 import type { LayoutValue } from "@/lib/view-prefs";
-import { ViewSubmenu } from "../../submenu";
+import { Group } from "../../group";
+import { Segmented, type SegmentedOption } from "../../segmented";
 
-const options: Array<{ value: LayoutValue; label: string }> = [
-  { value: "waterfall", label: "Waterfall" },
-  { value: "grid", label: "Grid" },
-  { value: "justified", label: "Justified" },
-  { value: "list", label: "List" },
+const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
+  { value: "waterfall", label: "Waterfall", icon: <WaterfallIcon size={18} /> },
+  { value: "grid", label: "Grid", icon: <GridIcon size={18} /> },
+  { value: "justified", label: "Justified", icon: <JustifiedIcon size={18} /> },
 ];
 
-export function LayoutSection({ standalone }: { standalone?: boolean }) {
+export function LayoutSection() {
   const { state, actions } = useView();
 
   return (
-    <ViewSubmenu icon={<LayoutIcon />} label="Layout" standalone={standalone}>
-      <Menu.Group>
-        {options.map(({ value, label }) => (
-          <Menu.CheckboxItem
-            key={value}
-            closeOnClick={false}
-            checked={state.layout === value}
-            onCheckedChange={(checked) => {
-              if (checked) actions.setLayout(value);
-            }}
-          >
-            <Menu.CheckboxItemIndicator />
-            <Menu.ItemLabel>{label}</Menu.ItemLabel>
-          </Menu.CheckboxItem>
-        ))}
-      </Menu.Group>
-    </ViewSubmenu>
+    <Group title="Layout">
+      <Segmented
+        ariaLabel="Layout"
+        options={options}
+        value={state.layout}
+        onChange={actions.setLayout}
+      />
+    </Group>
   );
 }

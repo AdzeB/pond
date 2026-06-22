@@ -385,10 +385,51 @@ function buildArticleRectExpression(tweetId: string): string {
       }
       if (!article) return null;
 
+      // Isolate the focused tweet from the surrounding timeline: hide every
+      // other cell (replies, the reply composer, "Discover more"). Defensive
+      // only — the clip is the tweet's height, so cells below rarely matter.
+      try {
+        const cell = article.closest('[data-testid="cellInnerDiv"]');
+        if (cell) {
+          for (const c of document.querySelectorAll('[data-testid="cellInnerDiv"]')) {
+            if (c !== cell) c.style.setProperty('display', 'none', 'important');
+          }
+        }
+      } catch (_) {}
+
       window.scrollTo(0, 0);
       try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
       await new Promise(r => requestAnimationFrame(() => r(null)));
       await new Promise(r => setTimeout(r, 150));
+
+      // Strip the reply-sort ("Relevant") + "View quotes" row that sits inside
+      // the article directly under the action bar. Its top coincides with the
+      // action bar bottom, so the crop's small bottom pad would otherwise catch
+      // a sliver of it. visibility:hidden (not display:none) keeps layout fixed
+      // so the reply composer below can't reflow up into the captured region.
+      try {
+        let barBottom = 0;
+        for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
+          if (b.closest('article') === article) barBottom = Math.max(barBottom, b.getBoundingClientRect().bottom);
+        }
+        if (barBottom === 0) {
+          const g = Array.from(article.querySelectorAll('[role="group"]'))
+            .filter((x) => x.closest('article') === article)
+            .find((x) => x.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"]'));
+          if (g) barBottom = g.getBoundingClientRect().bottom;
+        }
+        if (barBottom > 0) {
+          const walker = document.createTreeWalker(article, NodeFilter.SHOW_ELEMENT);
+          let node;
+          while ((node = walker.nextNode())) {
+            if (node.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"], [data-testid="bookmark"]')) continue;
+            const nr = node.getBoundingClientRect();
+            if (nr.width > 0 && nr.height > 0 && nr.top >= barBottom - 1) {
+              node.style.setProperty('visibility', 'hidden', 'important');
+            }
+          }
+        }
+      } catch (_) {}
 
       const r = article.getBoundingClientRect();
 

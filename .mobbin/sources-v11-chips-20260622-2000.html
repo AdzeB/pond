@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sources — v10, sync monitor</title>
+    <style>
+      :root {
+        --bg: #f7f7f6; --panel: #ffffff; --ink: #14130f; --ink-2: #6b6962; --ink-3: #9a978d;
+        --line: #ececE7; --line-2: #f1f0ec; --hover: #f7f6f2; --sel: #f0eee8;
+        --ok: #3a9e57; --warn: #c98a16; --err: #cc4b37; --run: #2f7fbf; --live: #2fbf71; --bar: #e7e4dc;
+        --shadow: 0 1px 2px rgba(20,19,15,0.05); font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      html, body { padding: 0; margin: 0; }
+      body { font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; color: var(--ink); background: var(--bg); }
+      @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(47,127,191,.45);} 70% { box-shadow: 0 0 0 5px rgba(47,127,191,0);} 100% { box-shadow: 0 0 0 0 rgba(47,127,191,0);} }
+      @keyframes pulseG { 0% { box-shadow: 0 0 0 0 rgba(47,191,113,.45);} 70% { box-shadow: 0 0 0 5px rgba(47,191,113,0);} 100% { box-shadow: 0 0 0 0 rgba(47,191,113,0);} }
+      @keyframes grow { from { width: 22%; } to { width: 35%; } }
+      @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: 220px 0; } }
+
+      .topbar { display: flex; gap: 14px; align-items: baseline; width: 100%; max-width: 800px; padding: 40px 32px 0; margin: 0 auto; }
+      .topbar h1 { margin: 0; font-size: 24px; font-weight: 640; letter-spacing: -0.02em; }
+      .topbar .crumb { font-size: 13.5px; color: var(--ink-2); }
+      .topbar .right { margin-left: auto; }
+      .live { display: inline-flex; gap: 7px; align-items: center; padding: 6px 12px; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; }
+      .live .ld { width: 7px; height: 7px; background: var(--live); border-radius: 50%; animation: pulseG 2s infinite; }
+
+      .content { display: flex; flex-direction: column; gap: 18px; width: 100%; max-width: 800px; padding: 20px 32px 90px; margin: 0 auto; }
+      .sec-label { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px -4px; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+      .sec-label .ghost { font-size: 12px; font-weight: 500; color: var(--ink-2); text-transform: none; letter-spacing: 0; cursor: pointer; }
+
+      /* ---------- current sync monitor ---------- */
+      .monitor { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+      .mon-top { display: flex; gap: 12px; align-items: center; padding: 16px 18px 12px; }
+      .mon-ico { display: grid; flex: none; place-items: center; width: 38px; height: 38px; font-size: 17px; font-weight: 700; color: #fff; background: #14130f; border-radius: 10px; }
+      .mon-id { flex: 1; min-width: 0; }
+      .mon-id .nm { display: flex; gap: 9px; align-items: center; font-size: 15px; font-weight: 640; }
+      .mon-id .nm .runtag { display: inline-flex; gap: 6px; align-items: center; padding: 2px 9px 2px 7px; font-size: 11px; font-weight: 600; color: var(--run); background: rgba(47,127,191,.1); border-radius: 999px; }
+      .mon-id .nm .runtag .d { width: 6px; height: 6px; background: var(--run); border-radius: 50%; animation: pulse 1.4s infinite; }
+      .mon-id .sub { margin-top: 1px; font-size: 12px; color: var(--ink-3); }
+      .mon-elapsed { font-family: ui-monospace, Menlo, monospace; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+      .mon-cancel { height: 32px; padding: 0 12px; font-size: 12.5px; font-weight: 540; color: var(--ink-2); cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+      .mon-cancel:hover { color: var(--err); border-color: var(--err); }
+
+      /* phases */
+      .phases { display: flex; gap: 6px; align-items: center; padding: 0 18px 12px; }
+      .phase { display: inline-flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--ink-3); }
+      .phase .pn { display: grid; place-items: center; width: 16px; height: 16px; font-size: 9px; border: 1.5px solid var(--line-2); border-radius: 50%; }
+      .phase.done { color: var(--ink-2); } .phase.done .pn { color: #fff; background: var(--ok); border-color: var(--ok); }
+      .phase.active { font-weight: 560; color: var(--ink); } .phase.active .pn { color: var(--run); border-color: var(--run); }
+      .phase .line { width: 18px; height: 1.5px; background: var(--line-2); }
+
+      /* progress */
+      .progress { padding: 0 18px 14px; }
+      .track { height: 8px; overflow: hidden; background: var(--bar); border-radius: 999px; }
+      .fillbar { position: relative; width: 35%; height: 100%; background: linear-gradient(90deg, var(--run), #5aa0d8); border-radius: 999px; animation: grow 2.4s ease-in-out infinite alternate; }
+      .fillbar::after { position: absolute; inset: 0; content: ""; background: linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent); background-size: 200px 100%; animation: shimmer 1.2s linear infinite; }
+      .progress .pmeta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; }
+      .progress .pmeta .counts { font-variant-numeric: tabular-nums; color: var(--ink-2); }
+      .progress .pmeta .counts b { font-weight: 600; color: var(--ink); }
+      .progress .pmeta .pct { font-variant-numeric: tabular-nums; color: var(--ink-3); }
+
+      .mon-tail { display: flex; gap: 9px; align-items: center; padding: 10px 18px; font-size: 12px; background: #fbfaf8; border-top: 1px solid var(--line-2); }
+      .mon-tail .td { flex: none; width: 6px; height: 6px; background: var(--ok); border-radius: 50%; }
+      .mon-tail .tt { color: var(--ink-2); } .mon-tail .tt b { font-weight: 600; color: var(--ink); }
+      .mon-tail .ts { margin-left: auto; font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+
+      /* idle monitor */
+      .monitor.idle { display: flex; gap: 12px; align-items: center; padding: 16px 18px; }
+      .monitor.idle .ii { display: grid; place-items: center; width: 32px; height: 32px; color: var(--ink-3); background: var(--hover); border-radius: 9px; }
+      .monitor.idle .it { font-size: 13px; } .monitor.idle .it b { font-weight: 600; } .monitor.idle .it .s { color: var(--ink-3); }
+
+      /* ---------- metric strip ---------- */
+      .strip { display: flex; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+      .strip .m { flex: 1; padding: 13px 18px; border-right: 1px solid var(--line-2); }
+      .strip .m:last-child { border-right: 0; }
+      .strip .m .ml { font-size: 12px; color: var(--ink-2); }
+      .strip .m .mv { margin-top: 3px; font-size: 20px; font-weight: 630; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+      .strip .m .delta { margin-top: 1px; font-size: 11px; font-weight: 600; }
+      .up { color: var(--ok); } .down { color: var(--err); } .neu { color: var(--ink-3); }
+
+      /* ---------- compact source chips (9-ready) ---------- */
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+      .chip { display: inline-flex; gap: 8px; align-items: center; padding: 6px 13px 6px 7px; font-size: 13px; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; box-shadow: var(--shadow); transition: border-color .12s, background .12s; }
+      .chip:hover { border-color: var(--ink-3); }
+      .chip.sel { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+      .ico { display: grid; flex: none; place-items: center; width: 22px; height: 22px; font-size: 11px; font-weight: 700; color: #fff; border-radius: 6px; }
+      .ico.x { background: #14130f; } .ico.yt { background: #ce3b30; } .ico.ig { background: linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7); } .ico.rd { background: #e0592a; }
+      .ico.bs { background: #1185fe; } .ico.ms { background: #6364ff; } .ico.rss { background: #f26522; } .ico.hn { background: #ff6600; } .ico.gh { background: #24292e; }
+      .chip .nm { font-weight: 540; }
+      .chip .sd { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+      .chip .sd.ok { background: var(--ok); } .chip .sd.run { background: var(--run); animation: pulse 1.4s infinite; } .chip .sd.err { background: var(--err); } .chip .sd.idle { background: var(--ink-3); } .chip .sd.paused { background: var(--warn); }
+      .chip.add { padding: 6px 14px; color: var(--ink-2); border-style: dashed; box-shadow: none; }
+      .chip.add:hover { color: var(--ink); }
+
+      /* ---------- activity ---------- */
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+      .ch { display: flex; gap: 10px; align-items: center; padding: 12px 14px 10px; border-bottom: 1px solid var(--line-2); }
+      .ch h3 { margin: 0; font-size: 13.5px; font-weight: 600; }
+      .ch .filterchip { display: inline-flex; gap: 6px; align-items: center; padding: 3px 6px 3px 9px; font-size: 12px; font-weight: 540; color: var(--ink); background: var(--sel); border-radius: 999px; }
+      .ch .filterchip .x { display: grid; place-items: center; width: 15px; height: 15px; color: var(--ink-2); cursor: pointer; border-radius: 50%; }
+      .ch .filterchip .x:hover { background: rgba(0,0,0,.07); }
+      .ch .segf { display: inline-flex; gap: 2px; padding: 2px; margin-left: auto; background: var(--hover); border-radius: 8px; }
+      .ch .segf button { padding: 4px 10px; font-family: inherit; font-size: 12px; color: var(--ink-2); cursor: pointer; background: transparent; border: 0; border-radius: 6px; }
+      .ch .segf button.on { font-weight: 560; color: var(--ink); background: var(--panel); box-shadow: var(--shadow); }
+      .log { padding: 4px 8px 10px; }
+      .le { display: grid; grid-template-columns: 54px 12px 1fr auto; gap: 11px; align-items: baseline; padding: 7px 6px; font-size: 12.5px; border-radius: 8px; }
+      .le:hover { background: var(--hover); }
+      .le .ts { font-family: ui-monospace, Menlo, monospace; font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+      .le .ld { align-self: center; width: 7px; height: 7px; border-radius: 50%; }
+      .le .ld.ok { background: var(--ok);} .le .ld.run { background: var(--run);} .le .ld.err { background: var(--err);} .le .ld.warn { background: var(--warn);} .le .ld.info { background: var(--ink-3);}
+      .le .msg .src { font-weight: 600; } .le .msg .dim { color: var(--ink-2); }
+      .le .msg .tag { padding: 1px 6px; margin-right: 8px; font-size: 10px; font-weight: 600; text-transform: uppercase; border-radius: 5px; }
+      .tag.sync { color: var(--run);background: rgba(47,127,191,.12);} .tag.harvest { color: var(--run);background: rgba(47,127,191,.08);} .tag.queue { color: var(--ok);background: rgba(58,158,87,.12);} .tag.ai { color: #b03a8a;background: #fbeef7;} .tag.error { color: var(--err);background: rgba(204,75,55,.12);} .tag.cron { color: var(--ink-2);background: var(--hover);}
+      .le .dur { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); white-space: nowrap; }
+      .empty { display: none; padding: 24px; font-size: 12.5px; color: var(--ink-3); text-align: center; }
+
+      .note { margin-top: 6px; font-size: 11.5px; color: var(--ink-3); text-align: center; }
+      .note code { padding: 1px 6px; background: var(--hover); border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <h1>Sources</h1>
+      <span class="crumb">Overview</span>
+      <span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span>
+    </div>
+
+    <div class="content">
+      <!-- current sync monitor -->
+      <div class="sec-label">Current sync</div>
+      <div class="monitor">
+        <div class="mon-top">
+          <span class="mon-ico">𝕏</span>
+          <div class="mon-id">
+            <div class="nm">X / Twitter <span class="runtag"><span class="d"></span>running</span></div>
+            <div class="sub">Manual sync · started 16:02:01</div>
+          </div>
+          <span class="mon-elapsed">00:42</span>
+          <button class="mon-cancel">Cancel</button>
+        </div>
+        <div class="phases">
+          <span class="phase done"><span class="pn">✓</span>Connect</span><span class="line"></span>
+          <span class="phase active"><span class="pn">●</span>Harvest</span><span class="line"></span>
+          <span class="phase"><span class="pn"></span>Enqueue</span><span class="line"></span>
+          <span class="phase"><span class="pn"></span>Enrich</span>
+        </div>
+        <div class="progress">
+          <div class="track"><div class="fillbar"></div></div>
+          <div class="pmeta">
+            <span class="counts">seen <b>86</b> · queued <b>42</b> · failed <b>0</b></span>
+            <span class="pct">42 / ~120 · 35%</span>
+          </div>
+        </div>
+        <div class="mon-tail">
+          <span class="td"></span>
+          <span class="tt"><b>queued</b> 12 bookmarks · enriching tags for 8 saves</span>
+          <span class="ts">16:02:14</span>
+        </div>
+      </div>
+
+      <!-- aggregate strip -->
+      <div class="strip">
+        <div class="m"><div class="ml">Items synced · 7d</div><div class="mv">3,418</div><div class="delta up">↑ 12.4%</div></div>
+        <div class="m"><div class="ml">Runs</div><div class="mv">18</div><div class="delta neu">next in 14m</div></div>
+        <div class="m"><div class="ml">Success</div><div class="mv">99.1%</div><div class="delta up">↑ 0.6%</div></div>
+        <div class="m"><div class="ml">Avg run</div><div class="mv">4.2s</div><div class="delta down">↑ 0.4s</div></div>
+      </div>
+
+      <!-- compact source chips -->
+      <div class="sec-label">Sources · 9 connected · click to filter</div>
+      <div class="chips" id="sources">
+        <div class="chip" data-src="x"><span class="ico x">𝕏</span><span class="nm">X / Twitter</span><span class="sd run"></span></div>
+        <div class="chip" data-src="youtube"><span class="ico yt">▶</span><span class="nm">YouTube</span><span class="sd ok"></span></div>
+        <div class="chip" data-src="reddit"><span class="ico rd">r</span><span class="nm">Reddit</span><span class="sd idle"></span></div>
+        <div class="chip" data-src="instagram"><span class="ico ig">◎</span><span class="nm">Instagram</span><span class="sd err"></span></div>
+        <div class="chip" data-src="bluesky"><span class="ico bs">⊛</span><span class="nm">Bluesky</span><span class="sd ok"></span></div>
+        <div class="chip" data-src="mastodon"><span class="ico ms">m</span><span class="nm">Mastodon</span><span class="sd idle"></span></div>
+        <div class="chip" data-src="rss"><span class="ico rss">≈</span><span class="nm">RSS</span><span class="sd ok"></span></div>
+        <div class="chip" data-src="hn"><span class="ico hn">Y</span><span class="nm">Hacker News</span><span class="sd idle"></span></div>
+        <div class="chip" data-src="github"><span class="ico gh">⌥</span><span class="nm">GitHub</span><span class="sd paused"></span></div>
+        <div class="chip add">+ Add source</div>
+      </div>
+
+      <!-- activity -->
+      <div class="card">
+        <div class="ch">
+          <h3>Activity</h3>
+          <span class="filterchip" id="chip" style="display:none"><span id="chipName"></span><span class="x" id="chipClear">✕</span></span>
+          <div class="segf"><button class="on" data-f="all">All</button><button data-f="error">Errors</button></div>
+        </div>
+        <div class="log" id="log">
+          <div class="le" data-src="x" data-kind="run"><span class="ts">16:02:14</span><span class="ld run"></span><span class="msg"><span class="tag harvest">harvest</span><span class="src">X</span> <span class="dim">scanning timeline — page 3 of ~6</span></span><span class="dur">running</span></div>
+          <div class="le" data-src="x" data-kind="ok"><span class="ts">16:02:09</span><span class="ld ok"></span><span class="msg"><span class="tag queue">queue</span><span class="src">X</span> <span class="dim">enqueued</span> 12 bookmarks</span><span class="dur">+12</span></div>
+          <div class="le" data-src="rss" data-kind="ok"><span class="ts">16:01:30</span><span class="ld ok"></span><span class="msg"><span class="tag sync">sync</span><span class="src">RSS</span> <span class="dim">completed — queued 22 across 14 feeds</span></span><span class="dur">3.4s</span></div>
+          <div class="le" data-src="youtube" data-kind="ok"><span class="ts">15:59:42</span><span class="ld ok"></span><span class="msg"><span class="tag sync">sync</span><span class="src">YouTube</span> <span class="dim">completed — queued 8, 0 failed</span></span><span class="dur">5.1s</span></div>
+          <div class="le" data-src="bluesky" data-kind="ok"><span class="ts">15:55:12</span><span class="ld ok"></span><span class="msg"><span class="tag queue">queue</span><span class="src">Bluesky</span> <span class="dim">enqueued</span> 3 likes</span><span class="dur">+3</span></div>
+          <div class="le" data-src="instagram" data-kind="error"><span class="ts">15:53:18</span><span class="ld err"></span><span class="msg"><span class="tag error">error</span><span class="src">Instagram</span> <span class="dim">rate limited (429) — retry 16:08</span></span><span class="dur">aborted</span></div>
+          <div class="le" data-src="reddit" data-kind="ok"><span class="ts">15:50:00</span><span class="ld info"></span><span class="msg"><span class="tag cron">cron</span><span class="src">Reddit</span> <span class="dim">all caught up — nothing new</span></span><span class="dur">1.2s</span></div>
+          <div class="le" data-src="x" data-kind="error"><span class="ts">15:42:31</span><span class="ld warn"></span><span class="msg"><span class="tag sync">sync</span><span class="src">X</span> <span class="dim">watchdog reset stalled run, retrying</span></span><span class="dur">30.0s</span></div>
+          <div class="le" data-src="github" data-kind="error"><span class="ts">12:10:04</span><span class="ld err"></span><span class="msg"><span class="tag error">error</span><span class="src">GitHub</span> <span class="dim">auth token expired — paused</span></span><span class="dur">aborted</span></div>
+        </div>
+        <div class="empty" id="empty">No activity for this filter.</div>
+      </div>
+
+      <p class="note">v11 · current-sync monitor + compact source chips + filterable activity</p>
+    </div>
+
+    <script>
+      const NAMES = { x:"X / Twitter", youtube:"YouTube", reddit:"Reddit", instagram:"Instagram", bluesky:"Bluesky", mastodon:"Mastodon", rss:"RSS", hn:"Hacker News", github:"GitHub" };
+      let srcFilter = null, kindFilter = "all";
+      const rows = [...document.querySelectorAll("#sources .chip[data-src]")];
+      const entries = [...document.querySelectorAll("#log .le")];
+      const chip = document.getElementById("chip"), chipName = document.getElementById("chipName"), empty = document.getElementById("empty");
+      function apply() {
+        let vis = 0;
+        for (const le of entries) {
+          const okS = !srcFilter || le.dataset.src === srcFilter;
+          const okK = kindFilter === "all" || le.dataset.kind === "error";
+          const show = okS && okK; le.style.display = show ? "" : "none"; if (show) vis++;
+        }
+        empty.style.display = vis ? "none" : "block";
+        for (const r of rows) r.classList.toggle("sel", r.dataset.src === srcFilter);
+        if (srcFilter) { chip.style.display = ""; chipName.textContent = NAMES[srcFilter]; } else chip.style.display = "none";
+      }
+      for (const r of rows) r.addEventListener("click", () => { srcFilter = srcFilter === r.dataset.src ? null : r.dataset.src; apply(); });
+      document.getElementById("chipClear").addEventListener("click", e => { e.stopPropagation(); srcFilter = null; apply(); });
+      for (const b of document.querySelectorAll(".segf button")) b.addEventListener("click", () => { kindFilter = b.dataset.f; for (const x of document.querySelectorAll(".segf button")) x.classList.toggle("on", x === b); apply(); });
+      apply();
+    </script>
+  </body>
+</html>

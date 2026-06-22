@@ -1,10 +1,13 @@
 import {
   IconColorPaletteFill18 as Appearance,
   IconTerminalFill18 as Developer,
+  IconWandSparkleFill18 as Enrichment,
   IconGear3Fill18 as General,
   IconImageFill18 as Images,
   IconArchiveFill18 as Library,
+  IconSparkleFill18 as Sparkle,
   IconTagsFill18 as Tags,
+  IconListCheckboxFill18 as Tasks,
   IconPresentationScreenPlayFill18 as Videos,
 } from "@pond/icons/fill/18";
 import type { IconComponent } from "@pond/icons/types";
@@ -24,6 +27,9 @@ const ICONS: Record<string, IconComponent> = {
   tags: Tags,
   videos: Videos,
   images: Images,
+  ai: Sparkle,
+  enrichment: Enrichment,
+  tasks: Tasks,
   developer: Developer,
 };
 

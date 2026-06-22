@@ -20,6 +20,8 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   arena: 2,
   reddit: 2,
   threads: 2,
+  // Web links fetch over HTTP without a window; present only to complete the record.
+  web: 0,
   // Local never leases a window; present only to complete the record.
   local: 0,
 };

@@ -7,6 +7,7 @@ import {
   screenshotTweet,
   type TweetScreenshotResult,
 } from "../../refresh/scrape-window";
+import { type RenderedCard, renderTweetCardPng } from "../../render-card";
 import { readSave } from "./apply";
 
 // Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel.
@@ -19,7 +20,10 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 }
 
 // Bump when capture output changes so the backfill regenerates stale screenshots.
-export const CAPTURE_TWEET_VERSION = 3;
+// v5: covers are rasterized from the native TweetCard instead of x.com screenshots.
+// v6: avatar URLs are filtered out of media so they no longer render as a tile.
+// v7: capture page paints the scheme background, killing the white edge hairline.
+export const CAPTURE_TWEET_VERSION = 7;
 
 // Quote-chain walk depth cap; keeps navigation bounded.
 const QUOTE_DEPTH_CAP = 3;
@@ -63,6 +67,17 @@ export async function runCaptureTweet(
   if (readCaptureTweetVersion(save.rawJson) >= CAPTURE_TWEET_VERSION) {
     log.debug("[pond pipeline:capture-tweet] up to date, skipping", saveId);
     return idle;
+  }
+
+  // Preferred path: rasterize the native TweetCard from captured data. It's
+  // deterministic, offline, and embeds quoted tweets inline (so no quote-chain
+  // walk is needed). Falls through to live screenshots when there isn't enough
+  // captured data or rendering fails.
+  const rendered = await tryNativeRender(saveId, save);
+  if (rendered) {
+    await finalizeRawJson(saveId, save.rawJson, [], { stampVersion: true });
+    log.info("[pond pipeline:capture-tweet] native card done", { saveId });
+    return { captured: 2, authWall: false, mediaAdded: false };
   }
 
   let captured = 0;
@@ -126,6 +141,59 @@ export async function runCaptureTweet(
     completed,
   });
   return { captured, authWall, mediaAdded };
+}
+
+// Renders the card to light+dark cover PNGs from the save's captured data.
+// Returns true only when both schemes succeed; any miss falls back to x.com.
+async function tryNativeRender(
+  saveId: string,
+  save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
+): Promise<boolean> {
+  const rawJson = save.rawJson as RawJson | null | undefined;
+  const capture = rawJson?.capture ?? null;
+  const light = await renderTweetCardPng(capture, save.author, "light");
+  if (!light) return false;
+  const dark = await renderTweetCardPng(capture, save.author, "dark");
+  if (!dark) return false;
+  await writeCardPng(
+    saveId,
+    TWEET_SCREENSHOT_LIGHT_KIND,
+    "tweet-light.png",
+    light,
+  );
+  await writeCardPng(
+    saveId,
+    TWEET_SCREENSHOT_DARK_KIND,
+    "tweet-dark.png",
+    dark,
+  );
+  return true;
+}
+
+async function writeCardPng(
+  saveId: string,
+  kind: string,
+  filename: string,
+  card: RenderedCard,
+): Promise<void> {
+  await persistSave(
+    saveId,
+    {},
+    {
+      actorReason: `pipeline:capture-tweet:${kind}`,
+      replaceFilesWithKind: kind as SaveFile["kind"],
+      newFiles: [
+        {
+          kind: kind as SaveFile["kind"],
+          filename,
+          bytes: card.bytes,
+          mimeType: "image/png",
+          width: card.width,
+          height: card.height,
+        },
+      ],
+    },
+  );
 }
 
 interface CaptureVariantsArgs {

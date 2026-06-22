@@ -169,6 +169,38 @@ export async function mergeTags(
   return { ok: true, affected: txs.length };
 }
 
+export interface TagPatch {
+  archived?: boolean;
+  starred?: boolean;
+}
+
+// Restyle a single tag (archive / star). Name changes go through renameTag
+// because they have to rewrite every save's tag list.
+export async function updateTag(
+  name: string,
+  patch: TagPatch,
+): Promise<{ ok: boolean }> {
+  const key = labelKey(name) || name.trim().toLowerCase();
+  const db = await getDb();
+  const row = await tagByLowerName(db, key);
+  if (!row) return { ok: false };
+
+  const next: TagPatch = {};
+  if ("archived" in patch) next.archived = Boolean(patch.archived);
+  if ("starred" in patch) next.starred = Boolean(patch.starred);
+  if (Object.keys(next).length === 0) return { ok: true };
+
+  await executeTransaction({
+    kind: "update",
+    model: "tag",
+    id: row.id,
+    patch: next,
+    before: row,
+    meta: { actor: "user", actorReason: "tag-update" },
+  });
+  return { ok: true };
+}
+
 export async function deleteTag(name: string): Promise<{
   ok: boolean;
   affected: number;

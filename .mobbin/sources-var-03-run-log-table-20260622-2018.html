@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>03 · Run-log table</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:880px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{display:flex;flex-direction:column;gap:14pxwidth:100%;max-width:880px;padding:18px 32px 90px;margin:0 auto;}
+.banner{display:flex;gap:11px;align-items:center;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.banner .ico{display:grid;place-items:center;width:26px;height:26px;font-size:13px;font-weight:700color:#fff;background:#14130f;border-radius:7px;}
+.banner .d{width:7px;height:7px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}
+.banner .t{font-size:13px}.banner .t b{font-weight:620}.banner .right{margin-left:auto;font-family:ui-monospace,Menlo,monospacefont-size:12px;font-variant-numeric:tabular-nums;color:var(--ink-3);}
+.toolbar{display:flex;gap:10pxalign-items:center;}
+.segf{display:inline-flex;gap:2px;padding:2pxbackground:var(--hover);border-radius:8px;}.segf button{padding:5px 12px;font-family:inheritfont-size:12px;color:var(--ink-2);cursor:pointer;background:transparent;border:0;border-radius:6px;}.segf button.on{font-weight:560;color:var(--ink);background:var(--panel);box-shadow:var(--shadow)}
+.toolbar .right{margin-left:auto;font-size:12px;color:var(--ink-2)}
+.tbl{overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.thead,.trow{display:grid;grid-template-columns:64px 1.4fr 0.9fr 0.7fr 0.7fr 0.7fr;gap:10px;align-items:center;padding:10px 16px}
+.thead{font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;background:#fbfaf8border-bottom:1px solid var(--line-2);}
+.trow{font-size:12.5pxborder-bottom:1px solid var(--line-2);}.trow:last-child{border-bottom:0}.trow:hover{background:var(--hover)}
+.trow.active{background:rgba(47,127,191,.05)}
+.tcell.right{font-variant-numeric:tabular-nums;color:var(--ink-2)text-align:right;}
+.time{font-family:ui-monospace,Menlo,monospacefont-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);}
+.srcc{display:flex;gap:8pxalign-items:center;}.ico{display:grid;place-items:center;width:22px;height:22px;font-size:11pxfont-weight:700;color:#fff;border-radius:6px;}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.rss{background:#f26522}.ico.gh{background:#24292e}
+.srcc .nm{font-weight:560}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:2px 9px;font-size:11px;font-weight:600;border-radius:999px}
+.pill .pd{width:6px;height:6px;border-radius:50%}
+.pill.ok{color:var(--ok)background:rgba(58,158,87,.12);}.pill.ok .pd{background:var(--ok)}
+.pill.run{color:var(--run)background:rgba(47,127,191,.12);}.pill.run .pd{background:var(--run);animation:pulse 1.4s infinite}
+.pill.err{color:var(--err)background:rgba(204,75,55,.12);}.pill.err .pd{background:var(--err)}
+.pill.warn{color:var(--warn)background:rgba(201,138,22,.14);}.pill.warn .pd{background:var(--warn)}
+.note{margin-top:6pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">Run log</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="banner"><span class="ico">𝕏</span><span class="d"></span><span class="t"><b>X / Twitter</b> syncing — harvest 42/120, 0 failed</span><span class="right">00:42 · seen 86</span></div>
+  <div class="toolbar"><div class="segf"><button class="on">All runs</button><button>Errors</button><button>Manual</button><button>Scheduled</button></div><span class="right">Last 24h · 18 runs</span></div>
+  <div class="tbl">
+    <div class="thead"><span>Time</span><span>Source</span><span>Status</span><span class="tcell right">Items</span><span class="tcell right">Failed</span><span class="tcell right">Duration</span></div>
+    <div class="trow active"><span class="time">16:02:01</span><span class="srcc"><span class="ico x">𝕏</span><span class="nm">X / Twitter</span></span><span><span class="pill run"><span class="pd"></span>Running</span></span><span class="tcell right">42</span><span class="tcell right">0</span><span class="tcell right">00:42</span></div>
+    <div class="trow"><span class="time">16:01:30</span><span class="srcc"><span class="ico rss">≈</span><span class="nm">RSS</span></span><span><span class="pill ok"><span class="pd"></span>Success</span></span><span class="tcell right">22</span><span class="tcell right">0</span><span class="tcell right">3.4s</span></div>
+    <div class="trow"><span class="time">15:59:42</span><span class="srcc"><span class="ico yt">▶</span><span class="nm">YouTube</span></span><span><span class="pill ok"><span class="pd"></span>Success</span></span><span class="tcell right">8</span><span class="tcell right">0</span><span class="tcell right">5.1s</span></div>
+    <div class="trow"><span class="time">15:53:18</span><span class="srcc"><span class="ico ig">◎</span><span class="nm">Instagram</span></span><span><span class="pill err"><span class="pd"></span>Rate limited</span></span><span class="tcell right">0</span><span class="tcell right">—</span><span class="tcell right">0.3s</span></div>
+    <div class="trow"><span class="time">15:50:00</span><span class="srcc"><span class="ico rd">r</span><span class="nm">Reddit</span></span><span><span class="pill ok"><span class="pd"></span>Success</span></span><span class="tcell right">0</span><span class="tcell right">0</span><span class="tcell right">1.2s</span></div>
+    <div class="trow"><span class="time">15:42:31</span><span class="srcc"><span class="ico x">𝕏</span><span class="nm">X / Twitter</span></span><span><span class="pill warn"><span class="pd"></span>Recovered</span></span><span class="tcell right">31</span><span class="tcell right">0</span><span class="tcell right">30.0s</span></div>
+    <div class="trow"><span class="time">15:02:00</span><span class="srcc"><span class="ico yt">▶</span><span class="nm">YouTube</span></span><span><span class="pill ok"><span class="pd"></span>Success</span></span><span class="tcell right">12</span><span class="tcell right">0</span><span class="tcell right">4.8s</span></div>
+    <div class="trow"><span class="time">12:10:04</span><span class="srcc"><span class="ico gh">⌥</span><span class="nm">GitHub</span></span><span><span class="pill err"><span class="pd"></span>Auth expired</span></span><span class="tcell right">0</span><span class="tcell right">—</span><span class="tcell right">0.1s</span></div>
+  </div>
+  <p class="note">03 · Run-log table</p>
+</div>
+</body></html>

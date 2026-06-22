@@ -7,6 +7,7 @@ import { bySortOrderThenName } from "@/lib/sort";
 export interface SavedViewRow {
   id: string;
   name: string;
+  question: string | null;
   query: Query;
   sortKey: string;
   sortDir: "asc" | "desc";
@@ -47,6 +48,7 @@ function normaliseRow(raw: unknown): SavedViewRow | null {
   return {
     id: r.id,
     name: r.name,
+    question: typeof r.question === "string" ? r.question : null,
     query: coerceQuery(r.query),
     sortKey: typeof r.sortKey === "string" ? r.sortKey : "savedAt",
     sortDir: r.sortDir === "asc" ? "asc" : "desc",
@@ -122,6 +124,7 @@ export function useSavedViews(): ReadonlyArray<SavedViewRow> {
 
 export interface CreateSavedViewInput {
   name: string;
+  question?: string | null;
   query?: Query;
   sortKey?: string;
   sortDir?: string;

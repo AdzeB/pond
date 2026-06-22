@@ -12,6 +12,7 @@
       "!**/dist",
       "!**/node_modules/**/*",
       "!branding",
+      "!.mobbin/**",
       "!packages/theme/src/colors/palette.css",
       "!packages/theme/src/colors/scale.css"
     ]

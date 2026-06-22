@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sources — full mockup</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --surface: #ffffff;
+        --surface-2: #fafafa;
+        --t12: #18181b;
+        --t11: #3f3f46;
+        --t10: #71717a;
+        --t9: #a1a1aa;
+        --line: rgba(24, 24, 27, 0.09);
+        --line-2: rgba(24, 24, 27, 0.06);
+        --hover: rgba(24, 24, 27, 0.04);
+        --grass: #2f9e60;
+        --grass-bg: #e6f6ec;
+        --amber: #d99509;
+        --amber-bg: #fbf0d9;
+        --tomato: #df3f44;
+        --tomato-bg: #fcebec;
+        --accent: #2f6feb;
+        --accent-bg: #e8f0fe;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          monospace;
+        --radius: 16px;
+        --shadow: 0 1px 2px rgba(24, 24, 27, 0.05),
+          0 18px 48px -20px rgba(24, 24, 27, 0.28);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Inter, Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
+        color: var(--t12);
+        background: var(--bg);
+      }
+      .wrap {
+        max-width: 960px;
+        padding: 48px 24px 100px;
+        margin: 0 auto;
+      }
+      .cap-line {
+        margin-bottom: 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--t10);
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      /* window */
+      .win {
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .win-bar {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        height: 40px;
+        padding: 0 14px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--line-2);
+      }
+      .dot3 {
+        width: 11px;
+        height: 11px;
+        background: #e3e3e6;
+        border-radius: 999px;
+      }
+      .win-title {
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--t10);
+      }
+      .win-body {
+        padding: 22px 24px 26px;
+      }
+
+      .ph {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .ph h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 670;
+        letter-spacing: -0.02em;
+      }
+      .ph-sub {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--t10);
+      }
+      .ph-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        height: 32px;
+        padding: 0 13px;
+        font-size: 13px;
+        font-weight: 550;
+        color: var(--t12);
+        white-space: nowrap;
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .btn:hover {
+        background: var(--hover);
+      }
+      .btn.accent {
+        color: #fff;
+        background: var(--t12);
+        border-color: var(--t12);
+      }
+      .btn.sm {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12.5px;
+      }
+      .btn.danger {
+        color: var(--tomato);
+      }
+      .kebab {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        font-size: 16px;
+        color: var(--t9);
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 7px;
+      }
+      .kebab:hover {
+        color: var(--t11);
+        background: var(--hover);
+      }
+      .caret {
+        display: inline-block;
+        font-size: 12px;
+        color: var(--t9);
+        transition: transform 0.15s ease;
+      }
+      tr.open .caret {
+        color: var(--accent);
+        transform: rotate(90deg);
+      }
+
+      .tile {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        border-radius: 9px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+      .tile.lg {
+        width: 38px;
+        height: 38px;
+        font-size: 16px;
+        border-radius: 10px;
+      }
+      .b-x {
+        background: #16181c;
+      }
+      .b-youtube {
+        background: #ff0033;
+      }
+      .b-cosmos {
+        background: #2b2b2b;
+      }
+      .b-arena {
+        background: #111;
+      }
+      .b-pinterest {
+        background: #e60023;
+      }
+      .b-instagram {
+        background: linear-gradient(45deg, #feda75, #d62976 45%, #4f5bd5);
+      }
+      .b-tiktok {
+        background: #111;
+      }
+
+      .sdot {
+        display: inline-block;
+        flex: none;
+        width: 8px;
+        height: 8px;
+        background: var(--t9);
+        border-radius: 999px;
+      }
+      .sdot.ok {
+        background: var(--grass);
+      }
+      .sdot.run {
+        background: var(--accent);
+        box-shadow: 0 0 0 4px var(--accent-bg);
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .sdot.warn {
+        background: var(--amber);
+      }
+      .sdot.err {
+        background: var(--tomato);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+      .chip {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        height: 22px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 560;
+        color: var(--t10);
+        background: var(--hover);
+        border-radius: 999px;
+      }
+      .chip.warn {
+        color: var(--amber);
+        background: var(--amber-bg);
+      }
+      .chip.err {
+        color: var(--tomato);
+        background: var(--tomato-bg);
+      }
+      .num-cell {
+        font-variant-numeric: tabular-nums;
+      }
+      .muted {
+        color: var(--t10);
+      }
+      .faint {
+        color: var(--t9);
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .grow {
+        flex: 1;
+      }
+
+      /* banner + filters */
+      .banner {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding: 10px 13px;
+        margin: 16px 0 0;
+        font-size: 12.5px;
+        color: #8a5d06;
+        background: var(--amber-bg);
+        border: 1px solid var(--amber);
+        border-radius: 10px;
+      }
+      .banner a {
+        font-weight: 600;
+        color: #8a5d06;
+        cursor: pointer;
+      }
+      .filters {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin: 14px 0 6px;
+      }
+      .pill {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+        height: 30px;
+        padding: 0 11px;
+        font-size: 12.5px;
+        font-weight: 520;
+        color: var(--t11);
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .pill:hover {
+        background: var(--hover);
+      }
+      .pill .ch {
+        font-size: 10px;
+        color: var(--t9);
+      }
+      .statusbar {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        height: 30px;
+        padding: 0 10px;
+        font-size: 12.5px;
+        font-weight: 520;
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .seg {
+        display: inline-flex;
+        gap: 1.5px;
+        width: 46px;
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+      }
+      .seg i {
+        display: block;
+        height: 100%;
+      }
+      .seg i.ok {
+        background: var(--grass);
+      }
+      .seg i.warn {
+        background: var(--amber);
+      }
+      .seg i.err {
+        background: var(--tomato);
+      }
+      .seg i.run {
+        background: var(--accent);
+      }
+
+      /* table */
+      table.tbl {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .tbl thead th {
+        padding: 10px 12px 9px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--line);
+      }
+      .tbl td {
+        padding: 12px;
+        font-size: 13.5px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .tbl tr.row {
+        cursor: pointer;
+      }
+      .tbl tr.row:hover td {
+        background: var(--hover);
+      }
+      .tbl tr.row.open td {
+        background: var(--accent-bg);
+        border-bottom-color: transparent;
+      }
+      .src {
+        display: flex;
+        gap: 11px;
+        align-items: center;
+      }
+      .src .name {
+        font-weight: 580;
+      }
+      .src .handle {
+        font-size: 12px;
+        color: var(--t10);
+      }
+      .statline {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .progress {
+        margin-top: 6px;
+      }
+      .track {
+        width: 130px;
+        height: 4px;
+        overflow: hidden;
+        background: var(--hover);
+        border-radius: 999px;
+      }
+      .fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: inherit;
+      }
+      .right {
+        text-align: right;
+      }
+      .health {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .health .seg {
+        width: 64px;
+        height: 6px;
+      }
+      .health .pct {
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+      }
+      .row-actions {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        opacity: 0;
+        transition: opacity 0.12s ease;
+      }
+      tr.row:hover .row-actions,
+      tr.row.open .row-actions {
+        opacity: 1;
+      }
+      .sect-label {
+        padding: 16px 12px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      tr.dim .tile {
+        opacity: 0.55;
+      }
+
+      /* ── expanded panel ── */
+      .detail td {
+        padding: 0 10px 14px;
+        background: var(--accent-bg);
+        border-bottom: 1px solid var(--line);
+      }
+      .panel {
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 16px;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .panel-head .lbl {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .range {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .range button {
+        height: 28px;
+        padding: 0 11px;
+        font-size: 12px;
+        font-weight: 540;
+        color: var(--t10);
+        cursor: pointer;
+        background: var(--surface);
+        border: 0;
+        border-right: 1px solid var(--line);
+      }
+      .range button:last-child {
+        border-right: 0;
+      }
+      .range button.on {
+        color: #fff;
+        background: var(--t12);
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        border-bottom: 1px solid var(--line-2);
+      }
+      .mtile {
+        position: relative;
+        padding: 13px 16px 15px;
+        cursor: pointer;
+        border-right: 1px solid var(--line-2);
+      }
+      .mtile:last-child {
+        border-right: 0;
+      }
+      .mtile:hover {
+        background: var(--surface-2);
+      }
+      .mtile.on {
+        background: var(--surface-2);
+      }
+      .mtile.on::before {
+        position: absolute;
+        top: -1px;
+        right: 0;
+        left: 0;
+        height: 2px;
+        content: "";
+        background: var(--accent);
+      }
+      .mtile .l {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 11.5px;
+        color: var(--t10);
+      }
+      .mtile .v {
+        display: flex;
+        gap: 7px;
+        align-items: baseline;
+        margin-top: 6px;
+        font-size: 21px;
+        font-weight: 680;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .delta {
+        padding: 1px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        border-radius: 999px;
+      }
+      .delta.up {
+        color: var(--grass);
+        background: var(--grass-bg);
+      }
+      .delta.down {
+        color: var(--tomato);
+        background: var(--tomato-bg);
+      }
+      .key {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .key.ok {
+        background: var(--grass);
+      }
+      .key.err {
+        background: var(--tomato);
+      }
+      .key.warn {
+        background: var(--amber);
+      }
+      .key.accent {
+        background: var(--accent);
+      }
+
+      .charts {
+        display: grid;
+        grid-template-columns: 1.9fr 1fr;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .chart {
+        padding: 14px 16px 12px;
+      }
+      .chart.left {
+        border-right: 1px solid var(--line-2);
+      }
+      .chart-h {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .chart-h .big {
+        font-size: 18px;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+      }
+      .chart-h .cap {
+        font-size: 11.5px;
+        color: var(--t10);
+      }
+      .legend {
+        display: flex;
+        gap: 11px;
+        font-size: 11px;
+        color: var(--t10);
+      }
+      .legend span {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+      }
+      .hist {
+        display: flex;
+        gap: 3px;
+        align-items: flex-end;
+        height: 110px;
+      }
+      .col {
+        display: flex;
+        flex: 1;
+        flex-direction: column-reverse;
+        gap: 1.5px;
+        overflow: hidden;
+        cursor: pointer;
+        border-radius: 3px 3px 0 0;
+      }
+      .col:hover {
+        outline: 2px solid var(--accent-bg);
+      }
+      .col i {
+        display: block;
+      }
+      .col i.ok {
+        background: var(--grass);
+      }
+      .col i.err {
+        background: var(--tomato);
+      }
+      .col i.warn {
+        background: var(--amber);
+      }
+      .col.today {
+        opacity: 0.55;
+      }
+      .col.today i.ok {
+        background: repeating-linear-gradient(
+          45deg,
+          var(--grass),
+          var(--grass) 3px,
+          #fff 3px,
+          #fff 5px
+        );
+      }
+      .axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t9);
+      }
+      .mini svg {
+        display: block;
+        width: 100%;
+        height: 110px;
+      }
+
+      .kpis {
+        display: flex;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .kpi {
+        flex: 1;
+        padding: 11px 16px;
+        border-right: 1px solid var(--line-2);
+      }
+      .kpi:last-child {
+        border-right: 0;
+      }
+      .kpi .kl {
+        font-size: 11px;
+        color: var(--t10);
+      }
+      .kpi .kv {
+        margin-top: 3px;
+        font-size: 14px;
+        font-weight: 620;
+        font-variant-numeric: tabular-nums;
+      }
+      .kpi .kt {
+        margin-left: 4px;
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--t9);
+      }
+
+      .body2 {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+      }
+      .runs {
+        padding: 10px 10px 10px;
+        border-right: 1px solid var(--line-2);
+      }
+      .col-title {
+        padding: 6px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .run {
+        display: grid;
+        grid-template-columns: 12px 1fr auto;
+        gap: 11px;
+        align-items: center;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .run:hover {
+        background: var(--hover);
+      }
+      .run .lab {
+        font-size: 13px;
+        font-weight: 540;
+      }
+      .run .subm {
+        margin-top: 2px;
+        color: var(--t10);
+      }
+      .run .meta {
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+        text-align: right;
+        white-space: nowrap;
+      }
+      .run .meta b {
+        font-weight: 600;
+        color: var(--t11);
+      }
+      .ranks {
+        padding: 10px 14px 10px;
+      }
+      .rank {
+        position: relative;
+        z-index: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        overflow: hidden;
+        font-size: 13px;
+        border-radius: 7px;
+      }
+      .rank .bar {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: var(--accent-bg);
+        border-radius: 7px;
+      }
+      .rank .who {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 520;
+      }
+      .rank .av {
+        display: grid;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #c7d2fe, #6366f1);
+        border-radius: 999px;
+      }
+      .rank .ct {
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+      }
+      .panel-foot {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--surface-2);
+        border-top: 1px solid var(--line-2);
+      }
+      .maint {
+        font-size: 12.5px;
+        color: var(--t10);
+      }
+      .maint a {
+        color: var(--accent);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="cap-line">Pond · /sources — full page, X row expanded</div>
+
+      <div class="win">
+        <div class="win-bar">
+          <span class="dot3"></span><span class="dot3"></span
+          ><span class="dot3"></span>
+          <span class="win-title">pond · /sources</span>
+        </div>
+        <div class="win-body">
+          <div class="ph">
+            <div>
+              <h2>Sources</h2>
+              <p class="ph-sub">Confluences feeding your pond</p>
+            </div>
+            <div class="ph-actions">
+              <button class="btn sm">Compact</button>
+              <button class="btn accent sm">Sync all</button>
+            </div>
+          </div>
+
+          <div class="banner">
+            <span class="sdot warn"></span>
+            <span class="grow"
+              >Auto-sync paused — Pinterest needs sign-in and Instagram is rate
+              limited.</span
+            >
+            <a>Review</a>
+          </div>
+
+          <div class="filters">
+            <button class="pill">Last 7 days <span class="ch">▾</span></button>
+            <button class="statusbar">
+              <span class="seg"
+                ><i class="ok" style="flex: 6"></i
+                ><i class="warn" style="flex: 1"></i
+                ><i class="err" style="flex: 1"></i></span
+              >Outcome <span class="muted">3/4</span>
+            </button>
+            <span class="grow"></span>
+            <span class="muted" style="font-size: 12.5px"
+              >5 connected · 2,697 saves</span
+            >
+          </div>
+
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width: 27%">Source</th>
+                <th style="width: 29%">Status</th>
+                <th style="width: 18%">Health</th>
+                <th class="right" style="width: 10%">Saves</th>
+                <th style="width: 16%"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- running -->
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="caret">›</span>
+                    <span class="tile b-youtube">▶</span>
+                    <div>
+                      <div class="name">YouTube</div>
+                      <div class="handle">Liked &amp; Watch Later</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot run"></span><span>Queueing 34 of 120…</span>
+                  </div>
+                  <div class="progress">
+                    <span class="track"
+                      ><span class="fill" style="width: 28%"></span
+                    ></span>
+                  </div>
+                </td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 9"></i
+                      ><i class="run" style="flex: 1"></i></span
+                    ><span class="pct">98%</span>
+                  </div>
+                </td>
+                <td class="right num-cell">642</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Cancel</button></span
+                  >
+                </td>
+              </tr>
+
+              <!-- error -->
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="caret">›</span>
+                    <span class="tile b-instagram">◎</span>
+                    <div>
+                      <div class="name">Instagram</div>
+                      <div class="handle">Saved collections</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot err"></span
+                    ><span class="chip err">Failed</span
+                    ><span class="muted">rate limited</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 4"></i
+                      ><i class="err" style="flex: 3"></i></span
+                    ><span class="pct">57%</span>
+                  </div>
+                </td>
+                <td class="right num-cell">88</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Retry</button
+                    ><button class="kebab">⋯</button></span
+                  >
+                </td>
+              </tr>
+
+              <!-- auth -->
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="caret">›</span>
+                    <span class="tile b-pinterest">P</span>
+                    <div>
+                      <div class="name">Pinterest</div>
+                      <div class="handle">Pins &amp; boards</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot warn"></span
+                    ><span class="chip warn">Sign-in required</span>
+                  </div>
+                </td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 7"></i
+                      ><i class="warn" style="flex: 2"></i></span
+                    ><span class="pct">78%</span>
+                  </div>
+                </td>
+                <td class="right num-cell">156</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn accent sm">Sign in</button></span
+                  >
+                </td>
+              </tr>
+
+              <!-- X open -->
+              <tr class="row open">
+                <td>
+                  <div class="src">
+                    <span class="caret">›</span>
+                    <span class="tile b-x">𝕏</span>
+                    <div>
+                      <div class="name">X</div>
+                      <div class="handle">@raphaelsalaja · bookmarks</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot ok"></span
+                    ><span>Synced <span class="muted">2 min ago</span></span>
+                  </div>
+                </td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 11"></i
+                      ><i class="warn" style="flex: 1"></i></span
+                    ><span class="pct">92%</span>
+                  </div>
+                </td>
+                <td class="right num-cell">1,284</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Sync now</button
+                    ><button class="kebab">⋯</button></span
+                  >
+                </td>
+              </tr>
+              <tr class="detail">
+                <td colspan="5">
+                  <div class="panel">
+                    <div class="panel-head">
+                      <span class="lbl">Overview · last 7 days</span>
+                      <div class="range">
+                        <button>24h</button>
+                        <button class="on">7D</button>
+                        <button>30D</button>
+                        <button>All</button>
+                      </div>
+                    </div>
+
+                    <div class="tiles">
+                      <div class="mtile">
+                        <div class="l"><span class="key accent"></span>Saves</div>
+                        <div class="v">1,284 <span class="delta up">+37</span></div>
+                      </div>
+                      <div class="mtile on">
+                        <div class="l"><span class="key ok"></span>Runs</div>
+                        <div class="v">49 <span class="delta up">+6</span></div>
+                      </div>
+                      <div class="mtile">
+                        <div class="l">
+                          <span class="key accent"></span>Items queued
+                        </div>
+                        <div class="v">208</div>
+                      </div>
+                      <div class="mtile">
+                        <div class="l"><span class="key err"></span>Success</div>
+                        <div class="v">92% <span class="delta down">−4%</span></div>
+                      </div>
+                    </div>
+
+                    <div class="charts">
+                      <div class="chart left">
+                        <div class="chart-h">
+                          <div>
+                            <div class="big">49 runs</div>
+                            <div class="cap">last 7 days</div>
+                          </div>
+                          <div class="legend">
+                            <span><span class="key ok"></span>Synced</span>
+                            <span><span class="key warn"></span>Timed out</span>
+                            <span><span class="key err"></span>Failed</span>
+                          </div>
+                        </div>
+                        <div class="hist">
+                          <div class="col"><i class="ok" style="height: 40px"></i></div>
+                          <div class="col"><i class="ok" style="height: 62px"></i></div>
+                          <div class="col">
+                            <i class="ok" style="height: 30px"></i
+                            ><i class="err" style="height: 10px"></i>
+                          </div>
+                          <div class="col"><i class="ok" style="height: 78px"></i></div>
+                          <div class="col">
+                            <i class="ok" style="height: 52px"></i
+                            ><i class="warn" style="height: 22px"></i>
+                          </div>
+                          <div class="col"><i class="ok" style="height: 88px"></i></div>
+                          <div class="col"><i class="ok" style="height: 46px"></i></div>
+                          <div class="col"><i class="ok" style="height: 70px"></i></div>
+                          <div class="col">
+                            <i class="ok" style="height: 34px"></i
+                            ><i class="err" style="height: 14px"></i>
+                          </div>
+                          <div class="col"><i class="ok" style="height: 58px"></i></div>
+                          <div class="col"><i class="ok" style="height: 64px"></i></div>
+                          <div class="col"><i class="ok" style="height: 50px"></i></div>
+                          <div class="col"><i class="ok" style="height: 72px"></i></div>
+                          <div class="col today">
+                            <i class="ok" style="height: 26px"></i>
+                          </div>
+                        </div>
+                        <div class="axis">
+                          <span>Jun 15</span><span>Jun 18</span><span>Jun 21</span
+                          ><span>Today</span>
+                        </div>
+                      </div>
+
+                      <div class="chart mini">
+                        <div class="chart-h">
+                          <div>
+                            <div class="big">8%</div>
+                            <div class="cap">fail rate · 7d</div>
+                          </div>
+                          <div class="legend">
+                            <span><span class="key err"></span>Failed</span>
+                          </div>
+                        </div>
+                        <svg viewBox="0 0 280 110" preserveAspectRatio="none">
+                          <polyline
+                            points="0,98 40,94 80,78 120,100 160,62 200,86 240,90 280,82"
+                            fill="none"
+                            stroke="#df3f44"
+                            stroke-width="2"
+                          />
+                          <polyline
+                            points="0,106 40,108 80,102 120,104 160,86 200,108 240,106 280,108"
+                            fill="none"
+                            stroke="#d99509"
+                            stroke-width="1.5"
+                            stroke-dasharray="3 3"
+                          />
+                        </svg>
+                        <div class="axis">
+                          <span>Jun 15</span><span>Today</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="kpis">
+                      <div class="kpi">
+                        <div class="kl">Avg run</div>
+                        <div class="kv">4.2s</div>
+                      </div>
+                      <div class="kpi">
+                        <div class="kl">Slowest</div>
+                        <div class="kv">30:00 <span class="kt">P95</span></div>
+                      </div>
+                      <div class="kpi">
+                        <div class="kl">Items / run</div>
+                        <div class="kv">4.2 <span class="kt">avg</span></div>
+                      </div>
+                      <div class="kpi">
+                        <div class="kl">Failures</div>
+                        <div class="kv">4 <span class="kt">of 49</span></div>
+                      </div>
+                      <div class="kpi">
+                        <div class="kl">Auto-sync</div>
+                        <div class="kv">Hourly</div>
+                      </div>
+                    </div>
+
+                    <div class="body2">
+                      <div class="runs">
+                        <div class="col-title">Recent runs</div>
+                        <div class="run">
+                          <span class="sdot ok"></span>
+                          <div>
+                            <div class="lab">Queued 12 new</div>
+                            <div class="subm mono">manual · 312 seen · 0 failed</div>
+                          </div>
+                          <div class="meta"><b>3.4s</b><br />2 min ago</div>
+                        </div>
+                        <div class="run">
+                          <span class="sdot ok"></span>
+                          <div>
+                            <div class="lab">All caught up</div>
+                            <div class="subm mono">auto · 300 seen · 0 new</div>
+                          </div>
+                          <div class="meta"><b>1.1s</b><br />1 hr ago</div>
+                        </div>
+                        <div class="run">
+                          <span class="sdot warn"></span>
+                          <div>
+                            <div class="lab">Timed out</div>
+                            <div class="subm mono">auto · watchdog aborted</div>
+                          </div>
+                          <div class="meta"><b>30:00</b><br />3 hr ago</div>
+                        </div>
+                        <div class="run">
+                          <span class="sdot ok"></span>
+                          <div>
+                            <div class="lab">Queued 41 new</div>
+                            <div class="subm mono">manual · 341 seen · 2 failed</div>
+                          </div>
+                          <div class="meta"><b>12.0s</b><br />5 hr ago</div>
+                        </div>
+                      </div>
+
+                      <div class="ranks">
+                        <div class="col-title">Top authors saved</div>
+                        <div class="rank">
+                          <span class="bar" style="width: 100%"></span>
+                          <span class="who"><span class="av">PG</span>@paulg</span>
+                          <span class="ct">182</span>
+                        </div>
+                        <div class="rank">
+                          <span class="bar" style="width: 68%"></span>
+                          <span class="who"><span class="av">VS</span>@visakanv</span>
+                          <span class="ct">124</span>
+                        </div>
+                        <div class="rank">
+                          <span class="bar" style="width: 44%"></span>
+                          <span class="who"><span class="av">RC</span>@rauchg</span>
+                          <span class="ct">80</span>
+                        </div>
+                        <div class="rank">
+                          <span class="bar" style="width: 30%"></span>
+                          <span class="who"><span class="av">SJ</span>@s_jobs</span>
+                          <span class="ct">54</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="panel-foot">
+                      <span class="maint"
+                        >Tweet screenshots · <a>Update 23 missing</a></span
+                      >
+                      <span class="grow"></span>
+                      <button class="btn sm">Open X ↗</button>
+                      <button class="btn sm danger">Disconnect</button>
+                      <button class="btn accent sm">Sync now</button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- healthy collapsed -->
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="caret">›</span>
+                    <span class="tile b-cosmos">✦</span>
+                    <div>
+                      <div class="name">Cosmos</div>
+                      <div class="handle">@raphael · saved</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot ok"></span
+                    ><span>Synced <span class="muted">3 hr ago</span></span>
+                  </div>
+                </td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 12"></i></span
+                    ><span class="pct">100%</span>
+                  </div>
+                </td>
+                <td class="right num-cell">318</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Sync now</button
+                    ><button class="kebab">⋯</button></span
+                  >
+                </td>
+              </tr>
+
+              <tr>
+                <td colspan="5" class="sect-label">Not connected</td>
+              </tr>
+              <tr class="row dim">
+                <td>
+                  <div class="src">
+                    <span class="caret" style="opacity: 0">›</span>
+                    <span class="tile b-arena">A</span>
+                    <div><div class="name">Are.na</div></div>
+                  </div>
+                </td>
+                <td><span class="faint">Not connected</span></td>
+                <td><span class="faint">—</span></td>
+                <td class="right faint">—</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Connect</button></span
+                  >
+                </td>
+              </tr>
+              <tr class="row dim">
+                <td>
+                  <div class="src">
+                    <span class="caret" style="opacity: 0">›</span>
+                    <span class="tile b-tiktok">♪</span>
+                    <div><div class="name">TikTok</div></div>
+                  </div>
+                </td>
+                <td><span class="faint">Not connected</span></td>
+                <td><span class="faint">—</span></td>
+                <td class="right faint">—</td>
+                <td class="right">
+                  <span class="row-actions"
+                    ><button class="btn sm">Connect</button></span
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

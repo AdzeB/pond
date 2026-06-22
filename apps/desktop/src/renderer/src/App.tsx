@@ -10,10 +10,11 @@ import { useMemo } from "react";
 import type { PondApi } from "../../preload";
 import { PondCustomiseDialog } from "./components/pond-customise-dialog";
 import { Presentation } from "./components/save-presentation";
+import { Toaster } from "./components/toaster";
 import { BackfillStatusBridge } from "./effects/backfill-status-bridge";
 import { DeveloperApplier } from "./effects/developer-applier";
+import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { MenuBridge } from "./effects/menu-bridge";
-import { SensitiveSweep } from "./effects/sensitive-sweep";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
@@ -76,10 +77,11 @@ export function App() {
           <MenuBridge />
           <SyncStatusBridge />
           <BackfillStatusBridge />
-          <SensitiveSweep />
+          <EnrichmentSweep />
           <RouterProvider router={router} />
           <Presentation />
           <PondCustomiseDialog />
+          <Toaster />
         </Tooltip.Provider>
       </QueryClientProvider>
     </MotionConfig>

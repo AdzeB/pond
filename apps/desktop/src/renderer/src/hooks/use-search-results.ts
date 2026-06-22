@@ -40,6 +40,10 @@ function scoreMatch(save: Save, terms: string[]): number {
   const tagBlob = save.tags.join(" ").toLowerCase();
   const description = (save.description ?? "").toLowerCase();
   const notes = (save.notes ?? "").toLowerCase();
+  // On-device enriched text: caption/OCR (image) and transcript (audio/video).
+  const caption = (save.caption ?? "").toLowerCase();
+  const ocr = (save.ocrText ?? "").toLowerCase();
+  const transcript = (save.transcript ?? "").toLowerCase();
 
   let total = 0;
   for (const term of terms) {
@@ -50,6 +54,9 @@ function scoreMatch(save: Save, terms: string[]): number {
     if (url.includes(term)) score = Math.max(score, 200);
     if (author.includes(term)) score = Math.max(score, 150);
     if (description.includes(term)) score = Math.max(score, 100);
+    if (caption.includes(term)) score = Math.max(score, 90);
+    if (ocr.includes(term)) score = Math.max(score, 70);
+    if (transcript.includes(term)) score = Math.max(score, 60);
     if (notes.includes(term)) score = Math.max(score, 50);
     if (score === 0) return 0;
     total += score;

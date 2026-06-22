@@ -1,4 +1,9 @@
-export type SettingsGroup = "app" | "library" | "saving" | "dev";
+export type SettingsGroup =
+  | "app"
+  | "library"
+  | "intelligence"
+  | "saving"
+  | "dev";
 
 export interface SettingsSection {
   id: string;
@@ -14,18 +19,28 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "videos", path: "videos", label: "Videos", group: "saving" },
   { id: "images", path: "images", label: "Images", group: "saving" },
+  { id: "ai", path: "ai", label: "AI", group: "intelligence" },
+  {
+    id: "enrichment",
+    path: "enrichment",
+    label: "Enrichment",
+    group: "intelligence",
+  },
+  { id: "tasks", path: "tasks", label: "Tasks", group: "intelligence" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
   "app",
   "library",
+  "intelligence",
   "saving",
   "dev",
 ];
 
 export const SETTINGS_GROUP_LABELS: Partial<Record<SettingsGroup, string>> = {
   library: "Library",
+  intelligence: "Intelligence",
   saving: "Saving",
 };
 

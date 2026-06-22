@@ -78,6 +78,8 @@ export type FieldId =
   | "duration"
   | "creator"
   | "note"
+  | "caption"
+  | "transcript"
   | "color"
   | "sensitivity"
   | "savedAt"

@@ -214,6 +214,8 @@ function listUrlForSource(
       return null;
     case "threads":
       return null;
+    case "web":
+      return null;
     case "local":
       return null;
   }
@@ -241,6 +243,8 @@ function buildListExpressionFor(
     case "reddit":
       return null;
     case "threads":
+      return null;
+    case "web":
       return null;
     case "local":
       return null;

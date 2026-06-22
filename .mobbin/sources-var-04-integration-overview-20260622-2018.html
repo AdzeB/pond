@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>04 · Integration-overview</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:940px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:startwidth:100%;max-width:940px;padding:18px 32px 90px;margin:0 auto;}
+.main{display:flex;flex-direction:column;gap:14px}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cc{padding:14px 16pxbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.cc .cl{font-size:12px;color:var(--ink-2)}.cc .cv{margin-top:2px;font-size:24px;font-weight:640;font-variant-numeric:tabular-numsletter-spacing:-.02em;}.cc .cd{margin-top:1pxfont-size:11px;font-weight:600;}
+.up{color:var(--ok)}.down{color:var(--err)}.neu{color:var(--ink-3)}
+.spark{display:flex;gap:3px;align-items:flex-end;height:42px;margin-top:12px}
+.spark i{flex:1;background:var(--bar);border-radius:3px 3px 0 0}.spark.b i{background:rgba(47,127,191,.45)}.spark.g i{background:rgba(58,158,87,.45)}.spark.r i{background:rgba(204,75,55,.4)}
+.spark i.hl{background:var(--run)}
+.banner{display:flex;gap:11px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.banner .ico{display:grid;place-items:center;width:28px;height:28px;font-size:14px;font-weight:700color:#fff;background:#14130f;border-radius:7px;}
+.banner .bi{flex:1}.banner .bn{font-size:13pxfont-weight:600;}.banner .bs{font-size:11.5px;color:var(--ink-3)}
+.track{width:130px;height:7px;overflow:hiddenbackground:var(--bar);border-radius:999px;}.track i{display:block;width:35%;height:100%;background:var(--run);border-radius:999px;animation:pulse 1.6s infinite}
+.side{display:flex;flex-direction:column;gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.ch{padding:12px 14px 10px;border-bottom:1px solid var(--line-2)}.ch h3{margin:0;font-size:13.5px;font-weight:600}.ch .sub{margin-top:1pxfont-size:11.5px;color:var(--ink-3);}
+.err{padding:6px 8px 10px}.er{display:flex;gap:9px;align-items:flex-start;padding:8px 8px;border-radius:8px}.er:hover{background:var(--hover)}
+.er .ico{display:grid;flex:noneplace-items:center;width:22px;height:22px;font-size:11px;font-weight:700;color:#fff;border-radius:6px;}
+.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.gh{background:#24292e}.ico.x{background:#14130f}
+.er .et{font-size:12.5px}.er .et b{font-weight:600}.er .es{margin-top:1pxfont-size:11px;color:var(--ink-3);}.er .ex{margin-left:auto;font-family:ui-monospace,Menlo,monospacefont-size:10px;color:var(--ink-3);}
+.note{grid-column:1/-1;margin-top:6pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">Integration overview</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="main">
+    <div class="banner"><span class="ico">𝕏</span><div class="bi"><div class="bn">X / Twitter · syncing</div><div class="bs">Harvest · 42 / ~120 · 0 failed · 00:42</div></div><span class="track"><i></i></span></div>
+    <div class="charts">
+      <div class="cc"><div class="cl">Items / run · 7d</div><div class="cv">189</div><div class="cd up">↑ 12.4%</div><div class="spark b"><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:82%"></i><i style="height:75%"></i><i class="hl" style="height:95%"></i></div></div>
+      <div class="cc"><div class="cl">Success rate</div><div class="cv">99.1%</div><div class="cd up">↑ 0.6%</div><div class="spark g"><i style="height:88%"></i><i style="height:92%"></i><i style="height:80%"></i><i style="height:95%"></i><i style="height:90%"></i><i style="height:97%"></i><i style="height:94%"></i><i style="height:99%"></i></div></div>
+      <div class="cc"><div class="cl">Errors · 7d</div><div class="cv">3</div><div class="cd down">↑ 1</div><div class="spark r"><i style="height:10%"></i><i style="height:0%"></i><i style="height:30%"></i><i style="height:10%"></i><i style="height:0%"></i><i style="height:20%"></i><i style="height:10%"></i><i style="height:40%"></i></div></div>
+      <div class="cc"><div class="cl">Avg duration</div><div class="cv">4.2s</div><div class="cd neu">↑ 0.4s</div><div class="spark"><i style="height:50%"></i><i style="height:42%"></i><i style="height:60%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:52%"></i><i style="height:58%"></i><i style="height:62%"></i></div></div>
+    </div>
+    <div class="card"><div class="ch"><h3>Items synced by source · today</h3></div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:90px 1fr 40px;gap:10px;align-items:center;font-size:12.5px"><span>RSS</span><span class="track" style="width:100%;background:var(--bar)"><i style="width:80%;background:var(--ok);animation:none"></i></span><span style="text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums">22</span></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 40px;gap:10px;align-items:center;font-size:12.5px"><span>X</span><span class="track" style="width:100%;background:var(--bar)"><i style="width:65%;background:var(--run);animation:none"></i></span><span style="text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums">42</span></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 40px;gap:10px;align-items:center;font-size:12.5px"><span>YouTube</span><span class="track" style="width:100%;background:var(--bar)"><i style="width:30%;background:var(--ok);animation:none"></i></span><span style="text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums">8</span></div>
+        <div style="display:grid;grid-template-columns:90px 1fr 40px;gap:10px;align-items:center;font-size:12.5px"><span>Bluesky</span><span class="track" style="width:100%;background:var(--bar)"><i style="width:12%;background:var(--ok);animation:none"></i></span><span style="text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums">3</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="side">
+    <div class="card"><div class="ch"><h3>Recent errors</h3><div class="sub">Last 24 hours</div></div>
+      <div class="err">
+        <div class="er"><span class="ico ig">◎</span><div><div class="et"><b>Instagram</b> rate limited (429)</div><div class="es">Retry scheduled 16:08</div></div><span class="ex">15:53</span></div>
+        <div class="er"><span class="ico gh">⌥</span><div><div class="et"><b>GitHub</b> auth token expired</div><div class="es">Re-authenticate to resume</div></div><span class="ex">12:10</span></div>
+        <div class="er"><span class="ico x">𝕏</span><div><div class="et"><b>X</b> watchdog reset stalled run</div><div class="es">Recovered automatically</div></div><span class="ex">15:42</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note">04 · Integration-overview</p>
+</div>
+</body></html>

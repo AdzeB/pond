@@ -15,6 +15,10 @@ function RootComponent() {
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
+      if (pathname === "/tweet-preview") {
+        void navigate({ to: "/tweet-preview" });
+        return;
+      }
       if (pathname === "/settings") {
         void navigate({ to: "/settings" });
         return;

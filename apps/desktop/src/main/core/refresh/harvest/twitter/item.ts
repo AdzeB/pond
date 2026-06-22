@@ -143,6 +143,16 @@ function harvestSource(): string {
           if (innerName) quoted.authorName = innerName;
         }
       }
+      const innerAvatar = innerArticle.querySelector<HTMLImageElement>(
+        '[data-testid^="UserAvatar-Container"] img',
+      );
+      const innerAvatarSrc = innerAvatar?.currentSrc ?? innerAvatar?.src ?? "";
+      if (innerAvatarSrc) {
+        quoted.authorAvatar = innerAvatarSrc.replace(
+          /_normal(\.(?:jpg|jpeg|png|webp))/i,
+          "_400x400$1",
+        );
+      }
       const innerText = innerArticle.querySelector<HTMLElement>(
         '[data-testid="tweetText"]',
       );
@@ -292,19 +302,26 @@ function harvestSource(): string {
       }
     }
 
-    // Second pass over the nested quote <article> to append its media after the parent's.
+    // Second pass over the nested quote <article> to append its media after the
+    // parent's. Quoted media is also recorded separately on `quoted.media` so
+    // the native card can render it inside the nested quote card.
     if (innerArticle) {
+      const quotedMedia: Array<Record<string, unknown>> = [];
+      const pushQuoted = (m: Record<string, unknown>) => {
+        push(m);
+        mediaItems.push(m);
+        quotedMedia.push(m);
+      };
       const quotedVideos = Array.from(
         innerArticle.querySelectorAll<HTMLVideoElement>("video"),
       );
       let capturedQuotedVideo = false;
       for (const v of quotedVideos) {
         if (!v.poster) continue;
-        push({ url: v.poster, type: "video", poster: v.poster });
         const dur = norm.readDuration(v);
         const w = v.videoWidth;
         const h = v.videoHeight;
-        mediaItems.push({
+        pushQuoted({
           url: v.poster,
           type: "video",
           poster: v.poster,
@@ -327,8 +344,7 @@ function harvestSource(): string {
           const src = best ?? img.currentSrc ?? img.src;
           if (!src) continue;
           const upgraded = norm.upgradeTwimgUrl(src);
-          push({ url: upgraded, type: "video", poster: upgraded });
-          mediaItems.push({ url: upgraded, type: "video", poster: upgraded });
+          pushQuoted({ url: upgraded, type: "video", poster: upgraded });
         }
       }
 
@@ -344,7 +360,6 @@ function harvestSource(): string {
         const src = best ?? img.currentSrc ?? img.src;
         if (!src) continue;
         const upgraded = norm.upgradeTwimgUrl(src);
-        push({ url: upgraded, type: "image" });
         const item: Record<string, unknown> = { url: upgraded, type: "image" };
         const alt = img.getAttribute("alt")?.trim();
         if (alt) item.altText = alt;
@@ -352,7 +367,11 @@ function harvestSource(): string {
         const h = img.naturalHeight;
         if (w) item.width = w;
         if (h) item.height = h;
-        mediaItems.push(item);
+        pushQuoted(item);
+      }
+
+      if (quotedMedia.length > 0 && meta.quotedTweet) {
+        (meta.quotedTweet as Record<string, unknown>).media = quotedMedia;
       }
     }
 
@@ -365,7 +384,11 @@ function harvestSource(): string {
       const isSsrDefault =
         typeof ogSrc === "string" &&
         /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);
-      if (ogSrc && !isSsrDefault) {
+      // Skip avatars: X serves the author's profile image as og:image for
+      // text/video tweets, which would render as a bogus (and 404-ing) tile.
+      const isAvatar =
+        typeof ogSrc === "string" && /\/profile_images\//i.test(ogSrc);
+      if (ogSrc && !isSsrDefault && !isAvatar) {
         const upgraded = norm.upgradeTwimgUrl(ogSrc);
         const type = videos.length > 0 ? "video" : "image";
         const entry =

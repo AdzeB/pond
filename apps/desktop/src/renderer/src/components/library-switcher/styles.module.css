@@ -1,28 +1,54 @@
-.trigger {
+.glyph {
   display: inline-flex;
-  flex-shrink: 1;
+  flex-shrink: 0;
   align-items: center;
-  width: 32px;
-  min-width: 0;
-  height: 32px;
-  padding: 0;
-  font-size: 14px;
-  font-weight: 550;
-  line-height: 150%;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
   color: var(--ds-gray-12);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover,
-  &[data-popup-open] {
-    background: var(--ds-gray-2);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-2);
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
 
   &[data-icon] {
     color: #fff;
+  }
+}
+
+.trigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-4);
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+
+  &:hover .glyph,
+  &[data-popup-open] .glyph {
+    transform: scale(1.06);
+  }
+
+  &:active .glyph {
+    transform: scale(0.92);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      var(--ds-shadow-4),
+      0 0 0 2px var(--ds-gray-a8);
   }
 }
 

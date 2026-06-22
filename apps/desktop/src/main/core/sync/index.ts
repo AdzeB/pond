@@ -61,6 +61,8 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   tiktok: 20 * 60_000,
   reddit: 20 * 60_000,
   threads: 20 * 60_000,
+  // Web links are saved individually, never list-synced; present for the record total.
+  web: 20 * 60_000,
   // Local never syncs; present only for the record total.
   local: 20 * 60_000,
 };

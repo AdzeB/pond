@@ -2,22 +2,15 @@ import { cn } from "@pond/ui";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-type LibraryView = "grid" | "list";
 type GridLayout = "waterfall" | "grid" | "justified";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
-  view: LibraryView;
   children: ReactNode;
 }
 
-function Root({ view, className, style, children, ...props }: RootProps) {
+function Root({ className, style, children, ...props }: RootProps) {
   return (
-    <div
-      data-view={view}
-      className={cn(styles.root, className)}
-      style={style}
-      {...props}
-    >
+    <div className={cn(styles.root, className)} style={style} {...props}>
       {children}
     </div>
   );
@@ -50,12 +43,6 @@ function Grid({
   );
 }
 
-interface ListProps extends React.ComponentPropsWithoutRef<"table"> {}
-
-function List({ className, ...props }: ListProps) {
-  return <table className={cn(className)} {...props} />;
-}
-
 interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
 
 function Empty({ className, ...props }: EmptyProps) {
@@ -65,7 +52,6 @@ function Empty({ className, ...props }: EmptyProps) {
 export const LibraryGrid = {
   Root,
   Grid,
-  List,
   Empty,
 };
 

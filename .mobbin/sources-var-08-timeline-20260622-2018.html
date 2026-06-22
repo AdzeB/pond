@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>08 · Timeline</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:720px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{width:100%;max-width:720px;padding:18px 32px 90pxmargin:0 auto;}
+.daylabel{margin:14px 0 4pxfont-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;}
+.tl{position:relative;padding-left:30px}
+.tl::before{position:absolute;top:6px;bottom:6px;left:9px;width:2px;content:"";background:var(--line)}
+.ev{position:relative;padding:10px 0}
+.ev .node{position:absolute;top:13px;left:-26px;width:14px;height:14px;border:2px solid var(--panel);border-radius:50%;box-shadow:0 0 0 1px var(--line)}
+.node.ok{background:var(--ok)}.node.run{background:var(--run);animation:pulse 1.4s infinite}.node.err{background:var(--err)}.node.warn{background:var(--warn)}.node.idle{background:var(--ink-3)}
+.ev .card{display:flex;gap:11pxalign-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);}
+.ev.current .card{background:linear-gradient(180deg,#f4f9fd,#fff)border-color:rgba(47,127,191,.4);}
+.ico{display:grid;flex:noneplace-items:center;width:26px;height:26px;font-size:13px;font-weight:700;color:#fff;border-radius:7px;}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.ms{background:#6364ff}.ico.rss{background:#f26522}.ico.gh{background:#24292e}
+.ev .ti{flex:1;min-width:0}.ev .tn{font-size:13px}.ev .tn b{font-weight:620}.ev .ts2{margin-top:1pxfont-size:11.5px;color:var(--ink-3);}
+.ev .meta{font-family:ui-monospace,Menlo,monospace;font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);white-space:nowrap}
+.runtag{display:inline-flex;gap:6px;align-items:center;padding:2px 8px;margin-left:6pxfont-size:10px;font-weight:600;color:var(--run);background:rgba(47,127,191,.1);border-radius:999px;}
+.note{margin-top:14pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Timeline</h1><span class="crumb">All runs</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="daylabel">Now</div>
+  <div class="tl">
+    <div class="ev current"><span class="node run"></span><div class="card"><span class="ico x">𝕏</span><div class="ti"><div class="tn"><b>X / Twitter</b> syncing <span class="runtag">harvest 42/120</span></div><div class="ts2">Manual run · seen 86 · queued 12 · 0 failed</div></div><span class="meta">00:42</span></div></div>
+  </div>
+  <div class="daylabel">Today</div>
+  <div class="tl">
+    <div class="ev"><span class="node ok"></span><div class="card"><span class="ico rss">≈</span><div class="ti"><div class="tn"><b>RSS</b> sync completed</div><div class="ts2">Queued 22 across 14 feeds</div></div><span class="meta">16:01 · 3.4s</span></div></div>
+    <div class="ev"><span class="node ok"></span><div class="card"><span class="ico yt">▶</span><div class="ti"><div class="tn"><b>YouTube</b> sync completed</div><div class="ts2">Queued 8 · 0 failed</div></div><span class="meta">15:59 · 5.1s</span></div></div>
+    <div class="ev"><span class="node ok"></span><div class="card"><span class="ico bs">⊛</span><div class="ti"><div class="tn"><b>Bluesky</b> enqueued likes</div><div class="ts2">+3 likes</div></div><span class="meta">15:55</span></div></div>
+    <div class="ev"><span class="node err"></span><div class="card"><span class="ico ig">◎</span><div class="ti"><div class="tn"><b>Instagram</b> rate limited (429)</div><div class="ts2">Retry scheduled 16:08</div></div><span class="meta">15:53</span></div></div>
+    <div class="ev"><span class="node idle"></span><div class="card"><span class="ico rd">r</span><div class="ti"><div class="tn"><b>Reddit</b> caught up</div><div class="ts2">Nothing new</div></div><span class="meta">15:50 · 1.2s</span></div></div>
+    <div class="ev"><span class="node warn"></span><div class="card"><span class="ico x">𝕏</span><div class="ti"><div class="tn"><b>X</b> watchdog reset stalled run</div><div class="ts2">Recovered, retried automatically</div></div><span class="meta">15:42 · 30.0s</span></div></div>
+  </div>
+  <div class="daylabel">Earlier</div>
+  <div class="tl">
+    <div class="ev"><span class="node ok"></span><div class="card"><span class="ico yt">▶</span><div class="ti"><div class="tn"><b>YouTube</b> sync completed</div><div class="ts2">Queued 12</div></div><span class="meta">15:02 · 4.8s</span></div></div>
+    <div class="ev"><span class="node err"></span><div class="card"><span class="ico gh">⌥</span><div class="ti"><div class="tn"><b>GitHub</b> auth token expired</div><div class="ts2">Source paused — re-authenticate</div></div><span class="meta">12:10</span></div></div>
+  </div>
+  <p class="note">08 · Timeline</p>
+</div>
+</body></html>

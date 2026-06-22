@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sources — visitors.new style</title>
+    <style>
+      :root {
+        --bg: #fbfbfa;
+        --panel: #ffffff;
+        --ink: #14130f;
+        --ink-2: #6b6962;
+        --ink-3: #9a978d;
+        --line: #ece9e2;
+        --line-2: #f3f1ec;
+        --accent: #14130f;
+        --ok: #3a9e57;
+        --warn: #c98a16;
+        --err: #cc4b37;
+        --live: #2fbf71;
+        --bar: #e7e4dc;
+        --bar-fill: #14130f;
+        --radius: 14px;
+        --shadow: 0 1px 2px rgba(20, 19, 15, 0.04), 0 1px 0 rgba(20, 19, 15, 0.02);
+        font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      html, body { padding: 0; margin: 0; }
+      body {
+        font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.45;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      .wrap { max-width: 1080px; padding: 40px 28px 80px; margin: 0 auto; }
+
+      /* ---------- header ---------- */
+      .top {
+        display: flex; 
+        gap: 24px; align-items: flex-end; justify-content: space-between;margin-bottom: 30px;
+      }
+      .top h1 {
+        margin: 0 0 4px; 
+        font-size: 28px; font-weight: 640;letter-spacing: -0.02em;
+      }
+      .top .sub { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+      .controls { display: flex; gap: 10px; align-items: center; }
+      .live {
+        display: inline-flex; gap: 7px;align-items: center; padding: 6px 12px;
+        font-size: 12.5px; font-variant-numeric: tabular-nums;color: var(--ink-2); 
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .dot {
+        width: 7px; height: 7px; background: var(--live);border-radius: 50%; 
+        box-shadow: 0 0 0 0 rgba(47, 191, 113, 0.5);
+        animation: pulse 2s infinite;
+      }
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(47, 191, 113, 0.45); }
+        70% { box-shadow: 0 0 0 6px rgba(47, 191, 113, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(47, 191, 113, 0); }
+      }
+      .range {
+        display: inline-flex; gap: 2px;padding: 3px; background: var(--panel); border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .range button {
+        padding: 5px 11px; 
+        font-family: inherit;
+        font-size: 12.5px; color: var(--ink-2);cursor: pointer;background: transparent; 
+        border: 0; border-radius: 999px;
+      }
+      .range button.on { color: #fff; background: var(--ink); }
+      .ghost-btn {
+        display: inline-flex; gap: 6px;align-items: center; padding: 7px 14px; font-family: inherit;font-size: 12.5px; font-weight: 540;color: #fff; 
+        cursor: pointer; 
+        background: var(--ink); border: 0;
+        border-radius: 999px;
+      }
+      .ghost-btn .plus { margin-top: -1px; font-size: 14px; line-height: 1; }
+
+      /* ---------- source rail ---------- */
+      .rail {
+        display: flex; gap: 8px; align-items: center; padding-bottom: 2px;margin-bottom: 22px;
+        overflow-x: auto;
+      }
+      .chip {
+        display: inline-flex; flex: none;gap: 8px; align-items: center; padding: 6px 13px 6px 7px; 
+        font-size: 13px; font-weight: 540; color: var(--ink); cursor: pointer;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 999px; transition: border-color .12s, background .12s;
+      }
+      .chip:hover { border-color: var(--ink-3); }
+      .chip.on { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+      .chip .ci {
+        position: relative;display: grid; place-items: center;
+        width: 22px; height: 22px; 
+        font-size: 11px; font-weight: 700; color: #fff; border-radius: 6px;
+      }
+      .chip .ci.all { color: var(--ink-2); background: var(--line); }
+      .chip .ci.x { background: #14130f; }
+      .chip .ci.yt { background: #ce3b30; }
+      .chip .ci.ig { background: linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7); }
+      .chip .ci.rd { background: #e0592a; }
+      .chip .sd { width: 7px; height: 7px; border-radius: 50%; }
+      .chip .sd.ok { background: var(--ok); }
+      .chip .sd.run { background: #2f7fbf; animation: pulse 1.4s infinite; }
+      .chip .sd.err { background: var(--err); }
+      .chip .cn { display: flex; flex-direction: column; align-items: flex-start; line-height: 1.15; }
+      .chip .cn small { font-size: 10.5px; font-weight: 400; color: var(--ink-3); }
+      .chip.add { padding: 6px 14px; color: var(--ink-2); border-style: dashed; }
+      .chip.add:hover { color: var(--ink); border-color: var(--ink-3); }
+      .rail .sep { flex: none; width: 1px; height: 24px; margin: 0 2px; background: var(--line); }
+
+      /* ---------- hero ---------- */
+      .hero {
+        position: relative; 
+        padding: 24px 26px 8px; margin-bottom: 16px; overflow: hidden;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+      }
+      .hero .label {
+        font-size: 12px; font-weight: 560;
+        color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em;
+      }
+      .hero .big {
+        margin: 6px 0 2px;
+        font-size: 52px; font-weight: 660; 
+        font-variant-numeric: tabular-nums;letter-spacing: -0.03em;
+      }
+      .hero .delta { font-size: 13px; color: var(--ink-2); }
+      .hero .delta b { font-weight: 600; color: var(--ok); }
+      .spark-wide { display: block; width: 100%; height: 132px; margin-top: 10px; }
+
+      /* ---------- kpi row ---------- */
+      .kpis {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;
+      }
+      .kpi {
+        position: relative; 
+        padding: 16px 16px 10px; overflow: hidden;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+      }
+      .kpi .k-label { font-size: 12px; color: var(--ink-2); }
+      .kpi .k-val {
+        margin: 2px 0 0;
+        font-size: 26px; font-weight: 620; 
+        font-variant-numeric: tabular-nums;letter-spacing: -0.02em;
+      }
+      .kpi .k-sub { font-size: 11.5px; color: var(--ink-3); }
+      .kpi .k-sub b { color: var(--ok); }
+      .kpi .k-sub b.down { color: var(--err); }
+      .kpi svg.mini { position: absolute; right: 0; bottom: 0; width: 60%; height: 40px; opacity: 0.9; }
+
+      /* ---------- main grid ---------- */
+      .grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
+      .card {
+        overflow: hidden;
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+      }
+      .card .c-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 15px 18px 12px;
+      }
+      .card .c-head h3 { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; }
+      .card .c-head .meta { font-size: 11.5px; color: var(--ink-3); }
+
+      /* ---------- sources list ---------- */
+      .src { padding: 0 8px 8px; }
+      .src-row {
+        display: grid; grid-template-columns: 22px 1fr 78px 64px 14px;gap: 12px;
+        align-items: center; 
+        padding: 11px 10px; cursor: pointer;border-radius: 10px; 
+        transition: background 0.12s;
+      }
+      .src-row:hover { background: var(--line-2); }
+      .src-row .go { font-size: 15px; color: var(--ink-3); text-align: center; opacity: 0; transition: opacity .12s; }
+      .src-row:hover .go { opacity: 1; }
+      .src-add {
+        display: flex; gap: 10px; align-items: center; 
+        padding: 11px 10px; margin: 4px 2px 2px;font-size: 13px; font-weight: 500;
+        color: var(--ink-2); cursor: pointer;
+        border: 1px dashed var(--line); border-radius: 10px; transition: border-color .12s, color .12s;
+      }
+      .src-add:hover { color: var(--ink); border-color: var(--ink-3); }
+      .src-add .pl { display: grid; place-items: center; width: 22px; height: 22px; font-size: 14px; color: var(--ink-2); background: var(--line-2); border-radius: 6px; }
+      .s-ico {
+        display: grid; place-items: center;
+        width: 22px; height: 22px; 
+        font-size: 12px; font-weight: 700; color: #fff;border-radius: 6px;
+      }
+      .s-ico.x { background: #14130f; }
+      .s-ico.yt { background: #ce3b30; }
+      .s-ico.ig { background: linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7); }
+      .s-ico.rd { background: #e0592a; }
+      .s-name { font-size: 13.5px; font-weight: 540; }
+      .s-name .s-stat { display: flex; gap: 6px; align-items: center; margin-top: 1px; font-size: 11.5px; font-weight: 400; color: var(--ink-3); }
+      .s-bar { height: 6px; overflow: hidden; background: var(--bar); border-radius: 999px; }
+      .s-bar i { display: block; height: 100%; background: var(--bar-fill); border-radius: 999px; }
+      .s-count { font-size: 13px; font-weight: 560; font-variant-numeric: tabular-nums; text-align: right; }
+      .s-count small { display: block; font-size: 10.5px; font-weight: 400; color: var(--ink-3); }
+      .pill {
+        display: inline-flex; gap: 5px; align-items: center; 
+        padding: 2px 7px; font-size: 11px;font-weight: 500;border-radius: 999px;
+      }
+      .pill .pd { width: 6px; height: 6px; border-radius: 50%; }
+      .pill.ok { color: var(--ok); background: rgba(58,158,87,0.1); }
+      .pill.ok .pd { background: var(--ok); }
+      .pill.run { color: #2f7fbf; background: rgba(47,127,191,0.1); }
+      .pill.run .pd { background: #2f7fbf; animation: pulse 1.4s infinite; }
+      .pill.err { color: var(--err); background: rgba(204,75,55,0.1); }
+      .pill.err .pd { background: var(--err); }
+      .src-row .mini-spark { width: 78px; height: 22px; }
+
+      /* ---------- activity feed ---------- */
+      .feed { padding: 4px 6px 10px; }
+      .ev {
+        position: relative;
+        display: grid; grid-template-columns: 16px 1fr auto; gap: 10px;align-items: start; 
+        padding: 9px 12px;
+      }
+      .ev::before {
+        position: absolute; top: 22px; bottom: -4px;left: 19px; 
+        width: 1px; 
+        content: ""; background: var(--line);
+      }
+      .ev:last-child::before { display: none; }
+      .ev .ed {
+        width: 8px; height: 8px; margin-top: 5px; margin-left: 4px;
+        outline: 3px solid var(--panel);border-radius: 50%;
+      }
+      .ev .ed.ok { background: var(--ok); }
+      .ev .ed.run { background: #2f7fbf; }
+      .ev .ed.err { background: var(--err); }
+      .ev .ed.idle { background: var(--ink-3); }
+      .ev .etxt { font-size: 12.5px; color: var(--ink); }
+      .ev .etxt b { font-weight: 600; }
+      .ev .etxt .em { color: var(--ink-2); }
+      .ev .etime { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); white-space: nowrap; }
+
+      /* ---------- bottom ranked lists ---------- */
+      .ranks { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+      .rank-row {
+        display: grid; grid-template-columns: 1fr 46px; gap: 12px;align-items: center; 
+        padding: 8px 10px; border-radius: 9px;
+      }
+      .rank-row:hover { background: var(--line-2); }
+      .rank-name { display: flex; gap: 9px; align-items: center; font-size: 13px; }
+      .rank-name .av {
+        display: grid; place-items: center; 
+        width: 20px; height: 20px; font-size: 10px; font-weight: 600;color: var(--ink-2); background: var(--line);border-radius: 50%;
+      }
+      .rank-bar { position: relative; }
+      .rank-name .rb {
+        position: absolute; right: 0; bottom: -3px; left: 0; height: 4px;overflow: hidden;
+        background: var(--bar); border-radius: 999px;
+      }
+      .rank-val { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; }
+      .rank-list { padding: 2px 8px 12px; }
+      .ftnote { margin-top: 30px; font-size: 11.5px; color: var(--ink-3); text-align: center; }
+      .ftnote code { padding: 1px 6px; background: var(--line-2); border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- header -->
+      <div class="top">
+        <div>
+          <h1>Sources</h1>
+          <p class="sub">Everything pond is pulling in, across every connection.</p>
+        </div>
+        <div class="controls">
+          <span class="live"><span class="dot"></span>2 syncing now</span>
+          <div class="range">
+            <button>24h</button>
+            <button class="on">7d</button>
+            <button>30d</button>
+            <button>90d</button>
+          </div>
+          <button class="ghost-btn"><span class="plus">+</span> Add source</button>
+        </div>
+      </div>
+
+      <!-- source rail: what you have + jump + add -->
+      <div class="rail">
+        <button class="chip on"><span class="ci all">◎</span><span class="cn">All sources<small>4 connected</small></span></button>
+        <span class="sep"></span>
+        <button class="chip"><span class="ci x">𝕏</span><span class="cn">X / Twitter<small>1,902 · 7d</small></span><span class="sd run"></span></button>
+        <button class="chip"><span class="ci yt">▶</span><span class="cn">YouTube<small>844 · 7d</small></span><span class="sd ok"></span></button>
+        <button class="chip"><span class="ci rd">r</span><span class="cn">Reddit<small>350 · 7d</small></span><span class="sd ok"></span></button>
+        <button class="chip"><span class="ci ig">◎</span><span class="cn">Instagram<small>needs attention</small></span><span class="sd err"></span></button>
+        <span class="sep"></span>
+        <button class="chip add"><span class="plus" style="font-size:15px">+</span> Add source</button>
+      </div>
+
+      <!-- hero -->
+      <div class="hero">
+        <div class="label">Items synced · last 7 days</div>
+        <div class="big">3,418</div>
+        <div class="delta"><b>↑ 12.4%</b> vs previous 7 days · 18 runs, 99.1% success</div>
+        <svg class="spark-wide" viewBox="0 0 720 132" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#14130f" stop-opacity="0.12" />
+              <stop offset="1" stop-color="#14130f" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path d="M0,108 C60,96 90,72 140,80 C190,88 220,40 270,48 C320,56 350,90 400,70 C450,52 480,28 540,40 C600,52 650,22 720,30 L720,132 L0,132 Z" fill="url(#g)" />
+          <path d="M0,108 C60,96 90,72 140,80 C190,88 220,40 270,48 C320,56 350,90 400,70 C450,52 480,28 540,40 C600,52 650,22 720,30" fill="none" stroke="#14130f" stroke-width="2" />
+        </svg>
+      </div>
+
+      <!-- kpis -->
+      <div class="kpis">
+        <div class="kpi">
+          <div class="k-label">Success rate</div>
+          <div class="k-val">99.1%</div>
+          <div class="k-sub"><b>↑ 0.6%</b> this week</div>
+          <svg class="mini" viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M0,30 L20,28 L40,31 L60,24 L80,26 L100,18 L120,20" fill="none" stroke="#3a9e57" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Avg run time</div>
+          <div class="k-val">4.2s</div>
+          <div class="k-sub"><b class="down">↑ 0.4s</b> slower</div>
+          <svg class="mini" viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M0,24 L20,26 L40,20 L60,28 L80,22 L100,30 L120,26" fill="none" stroke="#9a978d" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Failed runs</div>
+          <div class="k-val">1</div>
+          <div class="k-sub">Instagram · rate limited</div>
+          <svg class="mini" viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M0,32 L20,33 L40,31 L60,33 L80,30 L100,34 L120,22" fill="none" stroke="#cc4b37" stroke-width="2"/></svg>
+        </div>
+        <div class="kpi">
+          <div class="k-label">Active sources</div>
+          <div class="k-val">3<span style="font-size:15px;color:var(--ink-3)"> / 4</span></div>
+          <div class="k-sub">1 needs sign-in</div>
+          <svg class="mini" viewBox="0 0 120 40" preserveAspectRatio="none"><path d="M0,28 L20,28 L40,22 L60,22 L80,16 L100,16 L120,16" fill="none" stroke="#14130f" stroke-width="2" stroke-opacity="0.35"/></svg>
+        </div>
+      </div>
+
+      <!-- main grid: sources + activity -->
+      <div class="grid">
+        <div class="card">
+          <div class="c-head">
+            <h3>Sources</h3>
+            <span class="meta">items synced · 7d</span>
+          </div>
+          <div class="src">
+            <!-- X -->
+            <div class="src-row">
+              <span class="s-ico x">𝕏</span>
+              <div>
+                <div class="s-name">X / Twitter</div>
+                <div class="s-stat"><span class="pill run"><span class="pd"></span>syncing</span> 42 of ~120 this run</div>
+              </div>
+              <svg class="mini-spark" viewBox="0 0 78 22" preserveAspectRatio="none"><path d="M0,16 L13,14 L26,17 L39,9 L52,12 L65,5 L78,8" fill="none" stroke="#14130f" stroke-width="1.6"/></svg>
+              <div class="s-count">1,902<small>62% of total</small></div>
+              <span class="go">›</span>
+            </div>
+            <!-- YouTube -->
+            <div class="src-row">
+              <span class="s-ico yt">▶</span>
+              <div>
+                <div class="s-name">YouTube</div>
+                <div class="s-stat"><span class="pill ok"><span class="pd"></span>ok</span> 3m ago · queued 8</div>
+              </div>
+              <svg class="mini-spark" viewBox="0 0 78 22" preserveAspectRatio="none"><path d="M0,12 L13,15 L26,10 L39,13 L52,8 L65,11 L78,7" fill="none" stroke="#14130f" stroke-width="1.6"/></svg>
+              <div class="s-count">844<small>27% of total</small></div>
+              <span class="go">›</span>
+            </div>
+            <!-- Reddit -->
+            <div class="src-row">
+              <span class="s-ico rd">r</span>
+              <div>
+                <div class="s-name">Reddit</div>
+                <div class="s-stat"><span class="pill ok"><span class="pd"></span>ok</span> 12m ago · all caught up</div>
+              </div>
+              <svg class="mini-spark" viewBox="0 0 78 22" preserveAspectRatio="none"><path d="M0,14 L13,12 L26,13 L39,11 L52,12 L65,9 L78,10" fill="none" stroke="#14130f" stroke-width="1.6"/></svg>
+              <div class="s-count">350<small>10% of total</small></div>
+              <span class="go">›</span>
+            </div>
+            <!-- Instagram -->
+            <div class="src-row">
+              <span class="s-ico ig">◎</span>
+              <div>
+                <div class="s-name">Instagram</div>
+                <div class="s-stat"><span class="pill err"><span class="pd"></span>rate limited</span> retry in 14m</div>
+              </div>
+              <svg class="mini-spark" viewBox="0 0 78 22" preserveAspectRatio="none"><path d="M0,10 L13,11 L26,9 L39,12 L52,16 L65,18 L78,20" fill="none" stroke="#cc4b37" stroke-width="1.6"/></svg>
+              <div class="s-count">22<small>1% of total</small></div>
+              <span class="go">›</span>
+            </div>
+            <!-- add source row -->
+            <div class="src-add"><span class="pl">+</span> Connect a source — X, YouTube, Reddit, Instagram…</div>
+          </div>
+        </div>
+
+        <!-- activity feed -->
+        <div class="card">
+          <div class="c-head">
+            <h3>Live activity</h3>
+            <span class="meta">real-time</span>
+          </div>
+          <div class="feed">
+            <div class="ev">
+              <span class="ed run"></span>
+              <div class="etxt"><b>X</b> <span class="em">sync started — harvesting timeline</span></div>
+              <span class="etime">now</span>
+            </div>
+            <div class="ev">
+              <span class="ed ok"></span>
+              <div class="etxt"><b>X</b> <span class="em">queued</span> 12 bookmarks</div>
+              <span class="etime">8s</span>
+            </div>
+            <div class="ev">
+              <span class="ed ok"></span>
+              <div class="etxt"><b>YouTube</b> <span class="em">queued</span> 8 videos <span class="em">· run ok</span></div>
+              <span class="etime">3m</span>
+            </div>
+            <div class="ev">
+              <span class="ed err"></span>
+              <div class="etxt"><b>Instagram</b> <span class="em">failed —</span> rate limited <span class="em">(429)</span></div>
+              <span class="etime">9m</span>
+            </div>
+            <div class="ev">
+              <span class="ed ok"></span>
+              <div class="etxt"><b>Reddit</b> <span class="em">all caught up — nothing new</span></div>
+              <span class="etime">12m</span>
+            </div>
+            <div class="ev">
+              <span class="ed idle"></span>
+              <div class="etxt"><b>YouTube</b> <span class="em">scheduled sync in 57m</span></div>
+              <span class="etime">12m</span>
+            </div>
+            <div class="ev">
+              <span class="ed ok"></span>
+              <div class="etxt"><b>X</b> <span class="em">queued</span> 31 likes <span class="em">· run ok in 5.1s</span></div>
+              <span class="etime">1h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- bottom ranked lists -->
+      <div class="ranks">
+        <div class="card">
+          <div class="c-head"><h3>Top authors</h3><span class="meta">by items saved · 7d</span></div>
+          <div class="rank-list">
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name"><span class="av">PG</span>@paulg<span class="rb"><i style="display:block;height:100%;width:92%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">214</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name"><span class="av">VC</span>@visualizevalue<span class="rb"><i style="display:block;height:100%;width:71%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">166</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name"><span class="av">SW</span>@swyx<span class="rb"><i style="display:block;height:100%;width:58%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">135</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name"><span class="av">FF</span>Fireship<span class="rb"><i style="display:block;height:100%;width:40%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">93</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name"><span class="av">TW</span>@theo<span class="rb"><i style="display:block;height:100%;width:31%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">72</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="c-head"><h3>Content type</h3><span class="meta">queued · 7d</span></div>
+          <div class="rank-list">
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name">Threads & posts<span class="rb"><i style="display:block;height:100%;width:84%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">1,410</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name">Videos<span class="rb"><i style="display:block;height:100%;width:62%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">844</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name">Images<span class="rb"><i style="display:block;height:100%;width:38%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">512</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name">Links / articles<span class="rb"><i style="display:block;height:100%;width:24%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">331</div></div>
+            <div class="rank-row"><div class="rank-bar"><div class="rank-name">Other<span class="rb"><i style="display:block;height:100%;width:10%;background:#14130f;border-radius:999px"></i></span></div></div><div class="rank-val">137</div></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="ftnote">Mock · the rail shows every connection + lets you jump or add · rows and chips open <code>/sources/:id</code></p>
+    </div>
+  </body>
+</html>

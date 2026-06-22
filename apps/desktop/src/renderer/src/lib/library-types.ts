@@ -1,1 +1,1 @@
-export type ViewMode = "waterfall" | "justified" | "grid" | "list";
+export type ViewMode = "waterfall" | "justified" | "grid";

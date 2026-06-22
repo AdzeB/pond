@@ -4,7 +4,7 @@ export interface ChapterCue {
   endSec?: number;
 }
 
-type ChapterLike =
+export type ChapterLike =
   | { title?: string | null; startSec?: number | null; endSec?: number | null }
   | {
       title?: string | null;
@@ -14,7 +14,7 @@ type ChapterLike =
 
 const SENTINEL_END_SEC = 359_999.999;
 
-function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
+export function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
   const cues: ChapterCue[] = [];
   for (const c of input) {
     if (!c) continue;
@@ -58,6 +58,15 @@ export function chaptersToVttUrl(input: readonly ChapterLike[]): string | null {
   if (!text) return null;
   const blob = new Blob([text], { type: "text/vtt" });
   return URL.createObjectURL(blob);
+}
+
+// The chapter cues a save exposes (yt-dlp dumps these on most platforms).
+export function chaptersForSave(save: {
+  rawJson?: { ytdlp?: { chapters?: readonly ChapterLike[] } } | null;
+}): ChapterCue[] {
+  const raw = save.rawJson?.ytdlp?.chapters;
+  if (!raw || raw.length === 0) return [];
+  return normalizeChapters(raw);
 }
 
 function formatVttTime(totalSec: number): string {

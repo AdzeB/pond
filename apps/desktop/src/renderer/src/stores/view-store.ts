@@ -115,6 +115,35 @@ export function setQuery(query: Query): void {
   });
 }
 
+// Apply a parsed structured-search input in one update: predicates become the
+// active filter (combinator stays "and") and the residual words become `q`.
+export function setSearchInput(predicates: Predicate[], q: string): void {
+  store.setState((s) => ({
+    ...s,
+    q,
+    rows: predicates,
+    combinator: "and",
+    query: deriveQuery(predicates, "and"),
+  }));
+}
+
+// Apply a fully compiled query (from the NL "find anything" compiler). Unlike
+// `setSearchInput`, this preserves the compiled query verbatim for filtering —
+// including nested groups / `or` that the flat `rows` model can't represent —
+// while still surfacing its predicates as editable chips (flattened).
+export function applyCompiledQuery(query: Query, residual: string): void {
+  const rows = query.rules.filter((c): c is Predicate => !("rules" in c));
+  const combinator: Combinator = query.combinator === "or" ? "or" : "and";
+  store.setState((s) => ({
+    ...s,
+    q: residual,
+    rows,
+    combinator,
+    query,
+    activeViewId: null,
+  }));
+}
+
 export function resetFilters(): void {
   store.setState((s) => ({ ...s, rows: [], query: EMPTY_QUERY }));
 }

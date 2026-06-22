@@ -1,4 +1,7 @@
-import { IconFolderFill18 as LocalIcon } from "@pond/icons/fill/18";
+import {
+  IconFolderFill18 as LocalIcon,
+  IconEarthFill18 as WebIcon,
+} from "@pond/icons/fill/18";
 import {
   IconBrandArena,
   IconBrandCosmos,
@@ -32,6 +35,7 @@ const SOURCE_ICONS: Record<Source, BrandIcon> = {
   youtube: IconBrandYoutube,
   reddit: IconBrandReddit,
   threads: IconBrandThreads,
+  web: WebIcon,
   local: LocalIcon,
 };
 

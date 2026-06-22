@@ -6,6 +6,7 @@ import { byName } from "@/lib/sort";
 export interface TagRow {
   id: string;
   name: string;
+  archived: boolean;
   lastUsedAt: number | null;
   usageCount: number;
   createdAt: number | null;
@@ -44,6 +45,7 @@ function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
   return {
     id: raw.id,
     name: raw.name,
+    archived: Boolean(raw.archived),
     lastUsedAt: toMs(raw.lastUsedAt as unknown),
     usageCount: typeof raw.usageCount === "number" ? raw.usageCount : 0,
     createdAt: toMs(raw.createdAt as unknown),

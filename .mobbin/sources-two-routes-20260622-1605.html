@@ -1,0 +1,1302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sources — /sources + /sources/:id</title>
+    <style>
+      :root {
+        --bg: #f4f4f5;
+        --surface: #ffffff;
+        --surface-2: #fafafa;
+        --t12: #18181b;
+        --t11: #3f3f46;
+        --t10: #71717a;
+        --t9: #a1a1aa;
+        --line: rgba(24, 24, 27, 0.09);
+        --line-2: rgba(24, 24, 27, 0.06);
+        --hover: rgba(24, 24, 27, 0.04);
+        --grass: #2f9e60;
+        --grass-bg: #e6f6ec;
+        --amber: #d99509;
+        --amber-bg: #fbf0d9;
+        --tomato: #df3f44;
+        --tomato-bg: #fcebec;
+        --accent: #2f6feb;
+        --accent-bg: #e8f0fe;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+          monospace;
+        --radius: 16px;
+        --shadow: 0 1px 2px rgba(24, 24, 27, 0.05),
+          0 16px 44px -22px rgba(24, 24, 27, 0.26);
+        font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Inter, Roboto, Helvetica, Arial, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
+        color: var(--t12);
+        background: var(--bg);
+      }
+      .wrap {
+        max-width: 980px;
+        padding: 48px 24px 110px;
+        margin: 0 auto;
+      }
+      .cap-line {
+        margin: 0 0 16px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--t10);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .cap-line.spaced {
+        margin-top: 56px;
+      }
+      .cap-line b {
+        color: var(--accent);
+      }
+
+      .win {
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .win-bar {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        height: 40px;
+        padding: 0 14px;
+        background: var(--surface-2);
+        border-bottom: 1px solid var(--line-2);
+      }
+      .dot3 {
+        width: 11px;
+        height: 11px;
+        background: #e3e3e6;
+        border-radius: 999px;
+      }
+      .win-title {
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--t10);
+      }
+      .win-body {
+        padding: 20px 22px 24px;
+      }
+
+      .btn {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        height: 32px;
+        padding: 0 13px;
+        font-size: 13px;
+        font-weight: 550;
+        color: var(--t12);
+        white-space: nowrap;
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .btn:hover {
+        background: var(--hover);
+      }
+      .btn.accent {
+        color: #fff;
+        background: var(--t12);
+        border-color: var(--t12);
+      }
+      .btn.sm {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 12.5px;
+      }
+      .btn.danger {
+        color: var(--tomato);
+      }
+      .pill {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+        height: 32px;
+        padding: 0 11px;
+        font-size: 12.5px;
+        font-weight: 520;
+        color: var(--t11);
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .pill .ch {
+        font-size: 10px;
+        color: var(--t9);
+      }
+      .range {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .range button {
+        height: 30px;
+        padding: 0 11px;
+        font-size: 12px;
+        font-weight: 540;
+        color: var(--t10);
+        cursor: pointer;
+        background: var(--surface);
+        border: 0;
+        border-right: 1px solid var(--line);
+      }
+      .range button:last-child {
+        border-right: 0;
+      }
+      .range button.on {
+        color: #fff;
+        background: var(--t12);
+      }
+
+      .tile {
+        display: grid;
+        flex: none;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #fff;
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      }
+      .tile.lg {
+        width: 44px;
+        height: 44px;
+        font-size: 18px;
+        border-radius: 12px;
+      }
+      .b-x {
+        background: #16181c;
+      }
+      .b-youtube {
+        background: #ff0033;
+      }
+      .b-cosmos {
+        background: #2b2b2b;
+      }
+      .b-arena {
+        background: #111;
+      }
+      .b-pinterest {
+        background: #e60023;
+      }
+      .b-instagram {
+        background: linear-gradient(45deg, #feda75, #d62976 45%, #4f5bd5);
+      }
+      .b-tiktok {
+        background: #111;
+      }
+
+      .sdot {
+        display: inline-block;
+        flex: none;
+        width: 8px;
+        height: 8px;
+        background: var(--t9);
+        border-radius: 999px;
+      }
+      .sdot.ok {
+        background: var(--grass);
+      }
+      .sdot.run {
+        background: var(--accent);
+        box-shadow: 0 0 0 4px var(--accent-bg);
+      }
+      .sdot.warn {
+        background: var(--amber);
+      }
+      .sdot.err {
+        background: var(--tomato);
+      }
+      .chip {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        height: 22px;
+        padding: 0 9px;
+        font-size: 12px;
+        font-weight: 560;
+        color: var(--t10);
+        background: var(--hover);
+        border-radius: 999px;
+      }
+      .chip.warn {
+        color: var(--amber);
+        background: var(--amber-bg);
+      }
+      .chip.err {
+        color: var(--tomato);
+        background: var(--tomato-bg);
+      }
+      .chip.run {
+        color: var(--accent);
+        background: var(--accent-bg);
+      }
+      .muted {
+        color: var(--t10);
+      }
+      .faint {
+        color: var(--t9);
+      }
+      .mono {
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+      .grow {
+        flex: 1;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* page header */
+      .ph {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .ph h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 670;
+        letter-spacing: -0.02em;
+      }
+      .ph .sub {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--t10);
+      }
+      .ph .actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      /* breadcrumb */
+      .crumb {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        margin-bottom: 14px;
+        font-size: 13px;
+        color: var(--t10);
+      }
+      .crumb a {
+        color: var(--t10);
+        cursor: pointer;
+      }
+      .crumb a:hover {
+        color: var(--t12);
+      }
+      .crumb .cur {
+        font-weight: 560;
+        color: var(--t12);
+      }
+
+      /* legend + key */
+      .key {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .key.ok {
+        background: var(--grass);
+      }
+      .key.err {
+        background: var(--tomato);
+      }
+      .key.warn {
+        background: var(--amber);
+      }
+      .legend {
+        display: flex;
+        gap: 11px;
+        font-size: 11px;
+        color: var(--t10);
+      }
+      .legend span {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+      }
+
+      /* charts */
+      .charts {
+        display: grid;
+        grid-template-columns: 1.9fr 1fr;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .chart {
+        padding: 14px 16px 12px;
+      }
+      .chart.left {
+        border-right: 1px solid var(--line-2);
+      }
+      .chart-h {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .chart-h .big {
+        font-size: 19px;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+      }
+      .chart-h .cap {
+        font-size: 11.5px;
+        color: var(--t10);
+      }
+      .hist {
+        display: flex;
+        gap: 2.5px;
+        align-items: flex-end;
+        height: 96px;
+      }
+      .col {
+        display: flex;
+        flex: 1;
+        flex-direction: column-reverse;
+        gap: 1.5px;
+        overflow: hidden;
+        cursor: pointer;
+        border-radius: 2px 2px 0 0;
+      }
+      .col:hover {
+        outline: 2px solid var(--accent-bg);
+      }
+      .col i {
+        display: block;
+      }
+      .col i.ok {
+        background: var(--grass);
+      }
+      .col i.err {
+        background: var(--tomato);
+      }
+      .col i.warn {
+        background: var(--amber);
+      }
+      .col.today {
+        opacity: 0.5;
+      }
+      .col.today i.ok {
+        background: repeating-linear-gradient(
+          45deg,
+          var(--grass),
+          var(--grass) 3px,
+          #fff 3px,
+          #fff 5px
+        );
+      }
+      .axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t9);
+      }
+      .mini svg {
+        display: block;
+        width: 100%;
+        height: 96px;
+      }
+
+      /* kpi chips */
+      .kpis {
+        display: flex;
+        margin-top: 12px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .kpi {
+        flex: 1;
+        padding: 11px 15px;
+        border-right: 1px solid var(--line-2);
+      }
+      .kpi:last-child {
+        border-right: 0;
+      }
+      .kpi .kl {
+        font-size: 11px;
+        color: var(--t10);
+      }
+      .kpi .kv {
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+        margin-top: 3px;
+        font-size: 15px;
+        font-weight: 640;
+        font-variant-numeric: tabular-nums;
+      }
+      .kpi .kt {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--t9);
+      }
+      .delta {
+        padding: 1px 5px;
+        font-size: 10.5px;
+        font-weight: 600;
+        border-radius: 999px;
+      }
+      .delta.up {
+        color: var(--grass);
+        background: var(--grass-bg);
+      }
+      .delta.down {
+        color: var(--tomato);
+        background: var(--tomato-bg);
+      }
+
+      /* search */
+      .search {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        height: 34px;
+        padding: 0 12px;
+        margin: 16px 0 2px;
+        font-size: 13px;
+        color: var(--t9);
+        border: 1px solid var(--line);
+        border-radius: 9px;
+      }
+
+      /* table */
+      table.tbl {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .tbl thead th {
+        padding: 10px 12px 9px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--line);
+      }
+      .tbl thead th.r {
+        text-align: right;
+      }
+      .tbl td {
+        padding: 11px 12px;
+        font-size: 13.5px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .tbl tr.row {
+        cursor: pointer;
+      }
+      .tbl tr.row:hover td {
+        background: var(--hover);
+      }
+      .tbl td.r {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .src {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .src .name {
+        font-weight: 580;
+      }
+      .src .handle {
+        font-size: 12px;
+        color: var(--t10);
+      }
+      .statline {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+      .health {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .seg {
+        display: inline-flex;
+        gap: 1.5px;
+        width: 60px;
+        height: 6px;
+        overflow: hidden;
+        border-radius: 999px;
+      }
+      .seg i {
+        display: block;
+        height: 100%;
+      }
+      .seg i.ok {
+        background: var(--grass);
+      }
+      .seg i.warn {
+        background: var(--amber);
+      }
+      .seg i.err {
+        background: var(--tomato);
+      }
+      .seg i.run {
+        background: var(--accent);
+      }
+      .pct {
+        font-size: 11.5px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+      }
+      .chev {
+        font-size: 15px;
+        color: var(--t9);
+        text-align: right;
+      }
+      .tfoot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 4px 0;
+        font-size: 12px;
+        color: var(--t10);
+      }
+      tr.dim .tile {
+        opacity: 0.55;
+      }
+
+      /* detail-only */
+      .dhead {
+        display: flex;
+        gap: 13px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .dhead .id {
+        flex: 1;
+        min-width: 0;
+      }
+      .dhead .name {
+        font-size: 18px;
+        font-weight: 660;
+        letter-spacing: -0.01em;
+      }
+      .dhead .sub {
+        display: flex;
+        gap: 7px;
+        align-items: center;
+        margin-top: 3px;
+        font-size: 12.5px;
+        color: var(--t10);
+      }
+      .dhead .actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        margin-bottom: 12px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .mtile {
+        position: relative;
+        padding: 12px 15px 14px;
+        cursor: pointer;
+        border-right: 1px solid var(--line-2);
+      }
+      .mtile:last-child {
+        border-right: 0;
+      }
+      .mtile.on {
+        background: var(--surface-2);
+      }
+      .mtile.on::before {
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 2px;
+        content: "";
+        background: var(--accent);
+      }
+      .mtile .l {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        font-size: 11.5px;
+        color: var(--t10);
+      }
+      .mtile .v {
+        display: flex;
+        gap: 7px;
+        align-items: baseline;
+        margin-top: 6px;
+        font-size: 20px;
+        font-weight: 680;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.02em;
+      }
+      .key.accent {
+        background: var(--accent);
+      }
+
+      .twocol {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        margin-top: 12px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+      .runs {
+        padding: 8px 8px;
+        border-right: 1px solid var(--line-2);
+      }
+      .col-title {
+        padding: 8px 8px 6px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--t9);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .run {
+        display: grid;
+        grid-template-columns: 12px 1fr auto;
+        gap: 11px;
+        align-items: center;
+        padding: 8px;
+        border-radius: 8px;
+      }
+      .run:hover {
+        background: var(--hover);
+      }
+      .run .lab {
+        font-size: 13px;
+        font-weight: 540;
+      }
+      .run .subm {
+        margin-top: 2px;
+        color: var(--t10);
+      }
+      .run .meta {
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+        text-align: right;
+        white-space: nowrap;
+      }
+      .run .meta b {
+        font-weight: 600;
+        color: var(--t11);
+      }
+      .ranks {
+        padding: 8px 14px;
+      }
+      .rank {
+        position: relative;
+        z-index: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 10px;
+        overflow: hidden;
+        font-size: 13px;
+        border-radius: 7px;
+      }
+      .rank .bar {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        background: var(--accent-bg);
+        border-radius: 7px;
+      }
+      .rank .who {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-weight: 520;
+      }
+      .rank .av {
+        display: grid;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #c7d2fe, #6366f1);
+        border-radius: 999px;
+      }
+      .rank .ct {
+        font-size: 12.5px;
+        font-variant-numeric: tabular-nums;
+        color: var(--t10);
+      }
+      .maint {
+        display: flex;
+        align-items: center;
+        padding: 11px 14px;
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: var(--t10);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+      }
+      .maint a {
+        color: var(--accent);
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <!-- ══════════ PAGE 1: /sources ══════════ -->
+      <p class="cap-line">Page 1 — <b>/sources</b> · overview across all sources</p>
+
+      <div class="win">
+        <div class="win-bar">
+          <span class="dot3"></span><span class="dot3"></span
+          ><span class="dot3"></span>
+          <span class="win-title">pond · /sources</span>
+        </div>
+        <div class="win-body">
+          <div class="ph">
+            <div>
+              <h2>Sources</h2>
+              <p class="sub">5 of 8 connected · syncing 1 · 2,697 saves</p>
+            </div>
+            <div class="actions">
+              <button class="pill">Last 7 days <span class="ch">▾</span></button>
+              <button class="btn accent">Sync all</button>
+            </div>
+          </div>
+
+          <!-- charts -->
+          <div class="charts">
+            <div class="chart left">
+              <div class="chart-h">
+                <div>
+                  <div class="big">312 runs</div>
+                  <div class="cap">all sources · last 7 days</div>
+                </div>
+                <div class="legend">
+                  <span><span class="key ok"></span>Synced</span>
+                  <span><span class="key warn"></span>Timed out</span>
+                  <span><span class="key err"></span>Failed</span>
+                </div>
+              </div>
+              <div class="hist">
+                <div class="col"><i class="ok" style="height: 38px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 50px"></i
+                  ><i class="err" style="height: 8px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 62px"></i></div>
+                <div class="col"><i class="ok" style="height: 44px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 70px"></i
+                  ><i class="warn" style="height: 12px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 56px"></i></div>
+                <div class="col"><i class="ok" style="height: 80px"></i></div>
+                <div class="col"><i class="ok" style="height: 48px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 60px"></i
+                  ><i class="err" style="height: 16px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 72px"></i></div>
+                <div class="col"><i class="ok" style="height: 52px"></i></div>
+                <div class="col"><i class="ok" style="height: 66px"></i></div>
+                <div class="col"><i class="ok" style="height: 84px"></i></div>
+                <div class="col today"><i class="ok" style="height: 30px"></i></div>
+              </div>
+              <div class="axis">
+                <span>Jun 15</span><span>Jun 18</span><span>Jun 21</span
+                ><span>Today</span>
+              </div>
+            </div>
+            <div class="chart mini">
+              <div class="chart-h">
+                <div>
+                  <div class="big">6%</div>
+                  <div class="cap">fail rate · 7d</div>
+                </div>
+                <div class="legend">
+                  <span><span class="key err"></span>Failed</span>
+                </div>
+              </div>
+              <svg viewBox="0 0 280 96" preserveAspectRatio="none">
+                <polyline
+                  points="0,86 40,80 80,66 120,88 160,58 200,76 240,82 280,72"
+                  fill="none"
+                  stroke="#df3f44"
+                  stroke-width="2"
+                />
+              </svg>
+              <div class="axis"><span>Jun 15</span><span>Today</span></div>
+            </div>
+          </div>
+
+          <!-- kpi chips -->
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kl">Connected</div>
+              <div class="kv">5 <span class="kt">/ 8</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Saves</div>
+              <div class="kv">2,697 <span class="delta up">+89</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Queued today</div>
+              <div class="kv">208</div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Avg run</div>
+              <div class="kv">5.1s</div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Success</div>
+              <div class="kv">94% <span class="delta down">−2%</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Last sync</div>
+              <div class="kv">2 min</div>
+            </div>
+          </div>
+
+          <div class="search">⌕ Search sources…</div>
+
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width: 26%">Source</th>
+                <th style="width: 24%">Status</th>
+                <th class="r" style="width: 11%">Runs 7d</th>
+                <th class="r" style="width: 12%">Avg</th>
+                <th style="width: 15%">Health</th>
+                <th class="r" style="width: 9%">Saves</th>
+                <th style="width: 3%"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="tile b-youtube">▶</span>
+                    <div>
+                      <div class="name">YouTube</div>
+                      <div class="handle">Liked &amp; Watch Later</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot run"></span
+                    ><span class="chip run">Syncing 34/120</span>
+                  </div>
+                </td>
+                <td class="r">61</td>
+                <td class="r">6.4s</td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 9"></i
+                      ><i class="run" style="flex: 1"></i></span
+                    ><span class="pct">98%</span>
+                  </div>
+                </td>
+                <td class="r">642</td>
+                <td class="chev">›</td>
+              </tr>
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="tile b-x">𝕏</span>
+                    <div>
+                      <div class="name">X</div>
+                      <div class="handle">@raphaelsalaja</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot ok"></span>Synced
+                    <span class="muted">2 min ago</span>
+                  </div>
+                </td>
+                <td class="r">49</td>
+                <td class="r">4.2s</td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 11"></i
+                      ><i class="warn" style="flex: 1"></i></span
+                    ><span class="pct">92%</span>
+                  </div>
+                </td>
+                <td class="r">1,284</td>
+                <td class="chev">›</td>
+              </tr>
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="tile b-instagram">◎</span>
+                    <div>
+                      <div class="name">Instagram</div>
+                      <div class="handle">Saved collections</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot err"></span
+                    ><span class="chip err">Failed</span>
+                  </div>
+                </td>
+                <td class="r">22</td>
+                <td class="r">8.0s</td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 4"></i
+                      ><i class="err" style="flex: 3"></i></span
+                    ><span class="pct">57%</span>
+                  </div>
+                </td>
+                <td class="r">88</td>
+                <td class="chev">›</td>
+              </tr>
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="tile b-pinterest">P</span>
+                    <div>
+                      <div class="name">Pinterest</div>
+                      <div class="handle">Pins &amp; boards</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot warn"></span
+                    ><span class="chip warn">Sign-in required</span>
+                  </div>
+                </td>
+                <td class="r">12</td>
+                <td class="r">3.1s</td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 7"></i
+                      ><i class="warn" style="flex: 2"></i></span
+                    ><span class="pct">78%</span>
+                  </div>
+                </td>
+                <td class="r">156</td>
+                <td class="chev">›</td>
+              </tr>
+              <tr class="row">
+                <td>
+                  <div class="src">
+                    <span class="tile b-cosmos">✦</span>
+                    <div>
+                      <div class="name">Cosmos</div>
+                      <div class="handle">@raphael</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="statline">
+                    <span class="sdot ok"></span>Synced
+                    <span class="muted">3 hr ago</span>
+                  </div>
+                </td>
+                <td class="r">28</td>
+                <td class="r">2.7s</td>
+                <td>
+                  <div class="health">
+                    <span class="seg"
+                      ><i class="ok" style="flex: 12"></i></span
+                    ><span class="pct">100%</span>
+                  </div>
+                </td>
+                <td class="r">318</td>
+                <td class="chev">›</td>
+              </tr>
+              <tr class="row dim">
+                <td>
+                  <div class="src">
+                    <span class="tile b-arena">A</span>
+                    <div><div class="name">Are.na</div></div>
+                  </div>
+                </td>
+                <td><span class="faint">Not connected</span></td>
+                <td class="r faint">—</td>
+                <td class="r faint">—</td>
+                <td><span class="faint">—</span></td>
+                <td class="r faint">—</td>
+                <td class="chev">›</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="tfoot">
+            <span>8 sources · 3 not connected</span>
+            <span>Auto-sync hourly</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════ PAGE 2: /sources/x ══════════ -->
+      <p class="cap-line spaced">
+        Page 2 — <b>/sources/x</b> · same shape, scoped to one source
+      </p>
+
+      <div class="win">
+        <div class="win-bar">
+          <span class="dot3"></span><span class="dot3"></span
+          ><span class="dot3"></span>
+          <span class="win-title">pond · /sources/x</span>
+        </div>
+        <div class="win-body">
+          <div class="crumb">
+            <a>‹ Sources</a><span>/</span><span class="cur">X</span>
+          </div>
+
+          <div class="dhead">
+            <span class="tile lg b-x">𝕏</span>
+            <div class="id">
+              <div class="name">X</div>
+              <div class="sub">
+                <span class="sdot ok"></span>Synced 2 min ago · @raphaelsalaja ·
+                bookmarks
+              </div>
+            </div>
+            <div class="actions">
+              <div class="range">
+                <button>24h</button>
+                <button class="on">7D</button>
+                <button>30D</button>
+                <button>All</button>
+              </div>
+              <button class="btn">Open ↗</button>
+              <button class="btn accent">Sync now</button>
+            </div>
+          </div>
+
+          <!-- metric tiles drive chart -->
+          <div class="tiles">
+            <div class="mtile">
+              <div class="l"><span class="key accent"></span>Saves</div>
+              <div class="v">1,284 <span class="delta up">+37</span></div>
+            </div>
+            <div class="mtile on">
+              <div class="l"><span class="key ok"></span>Runs</div>
+              <div class="v">49 <span class="delta up">+6</span></div>
+            </div>
+            <div class="mtile">
+              <div class="l"><span class="key accent"></span>Items queued</div>
+              <div class="v">208</div>
+            </div>
+            <div class="mtile">
+              <div class="l"><span class="key err"></span>Success</div>
+              <div class="v">92% <span class="delta down">−4%</span></div>
+            </div>
+          </div>
+
+          <!-- charts -->
+          <div class="charts">
+            <div class="chart left">
+              <div class="chart-h">
+                <div>
+                  <div class="big">49 runs</div>
+                  <div class="cap">X · last 7 days</div>
+                </div>
+                <div class="legend">
+                  <span><span class="key ok"></span>Synced</span>
+                  <span><span class="key warn"></span>Timed out</span>
+                  <span><span class="key err"></span>Failed</span>
+                </div>
+              </div>
+              <div class="hist">
+                <div class="col"><i class="ok" style="height: 40px"></i></div>
+                <div class="col"><i class="ok" style="height: 62px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 30px"></i
+                  ><i class="err" style="height: 10px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 78px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 52px"></i
+                  ><i class="warn" style="height: 22px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 88px"></i></div>
+                <div class="col"><i class="ok" style="height: 46px"></i></div>
+                <div class="col"><i class="ok" style="height: 70px"></i></div>
+                <div class="col">
+                  <i class="ok" style="height: 34px"></i
+                  ><i class="err" style="height: 14px"></i>
+                </div>
+                <div class="col"><i class="ok" style="height: 58px"></i></div>
+                <div class="col"><i class="ok" style="height: 64px"></i></div>
+                <div class="col"><i class="ok" style="height: 50px"></i></div>
+                <div class="col"><i class="ok" style="height: 72px"></i></div>
+                <div class="col today"><i class="ok" style="height: 26px"></i></div>
+              </div>
+              <div class="axis">
+                <span>Jun 15</span><span>Jun 18</span><span>Jun 21</span
+                ><span>Today</span>
+              </div>
+            </div>
+            <div class="chart mini">
+              <div class="chart-h">
+                <div>
+                  <div class="big">8%</div>
+                  <div class="cap">fail rate · 7d</div>
+                </div>
+                <div class="legend">
+                  <span><span class="key err"></span>Failed</span>
+                </div>
+              </div>
+              <svg viewBox="0 0 280 96" preserveAspectRatio="none">
+                <polyline
+                  points="0,86 40,82 80,66 120,88 160,52 200,74 240,78 280,70"
+                  fill="none"
+                  stroke="#df3f44"
+                  stroke-width="2"
+                />
+              </svg>
+              <div class="axis"><span>Jun 15</span><span>Today</span></div>
+            </div>
+          </div>
+
+          <!-- kpi chips -->
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kl">Avg run</div>
+              <div class="kv">4.2s</div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Slowest</div>
+              <div class="kv">30:00 <span class="kt">P95</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Items / run</div>
+              <div class="kv">4.2 <span class="kt">avg</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Failures</div>
+              <div class="kv">4 <span class="kt">of 49</span></div>
+            </div>
+            <div class="kpi">
+              <div class="kl">Auto-sync</div>
+              <div class="kv">Hourly</div>
+            </div>
+          </div>
+
+          <!-- runs + authors -->
+          <div class="twocol">
+            <div class="runs">
+              <div class="col-title">Recent runs</div>
+              <div class="run">
+                <span class="sdot ok"></span>
+                <div>
+                  <div class="lab">Queued 12 new</div>
+                  <div class="subm mono">manual · 312 seen · 0 failed</div>
+                </div>
+                <div class="meta"><b>3.4s</b><br />2 min ago</div>
+              </div>
+              <div class="run">
+                <span class="sdot ok"></span>
+                <div>
+                  <div class="lab">All caught up</div>
+                  <div class="subm mono">auto · 300 seen · 0 new</div>
+                </div>
+                <div class="meta"><b>1.1s</b><br />1 hr ago</div>
+              </div>
+              <div class="run">
+                <span class="sdot warn"></span>
+                <div>
+                  <div class="lab">Timed out</div>
+                  <div class="subm mono">auto · watchdog aborted</div>
+                </div>
+                <div class="meta"><b>30:00</b><br />3 hr ago</div>
+              </div>
+              <div class="run">
+                <span class="sdot ok"></span>
+                <div>
+                  <div class="lab">Queued 41 new</div>
+                  <div class="subm mono">manual · 341 seen · 2 failed</div>
+                </div>
+                <div class="meta"><b>12.0s</b><br />5 hr ago</div>
+              </div>
+            </div>
+            <div class="ranks">
+              <div class="col-title">Top authors saved</div>
+              <div class="rank">
+                <span class="bar" style="width: 100%"></span>
+                <span class="who"><span class="av">PG</span>@paulg</span>
+                <span class="ct">182</span>
+              </div>
+              <div class="rank">
+                <span class="bar" style="width: 68%"></span>
+                <span class="who"><span class="av">VS</span>@visakanv</span>
+                <span class="ct">124</span>
+              </div>
+              <div class="rank">
+                <span class="bar" style="width: 44%"></span>
+                <span class="who"><span class="av">RC</span>@rauchg</span>
+                <span class="ct">80</span>
+              </div>
+              <div class="rank">
+                <span class="bar" style="width: 30%"></span>
+                <span class="who"><span class="av">SJ</span>@s_jobs</span>
+                <span class="ct">54</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="maint">
+            <span class="grow"
+              >Tweet screenshots · <a>Update 23 missing</a></span
+            >
+            <button class="btn sm danger">Disconnect</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

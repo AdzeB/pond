@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sources — v7, Vercel Overview shape</title>
+    <style>
+      :root {
+        --bg: #f7f7f6;
+        --panel: #ffffff;
+        --ink: #14130f;
+        --ink-2: #6b6962;
+        --ink-3: #9a978d;
+        --line: #ececE7;
+        --line-2: #f1f0ec;
+        --hover: #f4f3ef;
+        --ok: #3a9e57;
+        --warn: #c98a16;
+        --err: #cc4b37;
+        --run: #2f7fbf;
+        --live: #2fbf71;
+        --bar: #e7e4dc;
+        --shadow: 0 1px 2px rgba(20,19,15,0.05);
+        font-synthesis: none;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; padding: 0; margin: 0; }
+      body { font-family: ui-sans-serif, -apple-system, "SF Pro Text", "Inter", system-ui, sans-serif; font-size: 14px; -webkit-font-smoothing: antialiased; color: var(--ink); background: var(--bg); }
+      .main { display: flex; flex-direction: column; min-width: 0; }
+      .topbar { display: flex; gap: 14px; align-items: baseline; width: 100%; max-width: 860px; padding: 40px 32px 0; margin: 0 auto; }
+      .topbar h1 { margin: 0; font-size: 24px; font-weight: 640; letter-spacing: -0.02em; }
+      .topbar .crumb { font-size: 13.5px; color: var(--ink-2); }
+      .topbar .right { display: inline-flex; gap: 8px; align-items: center; margin-left: auto; }
+      .live { display: inline-flex; gap: 7px; align-items: center; padding: 6px 12px; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); background: var(--panel); border: 1px solid var(--line); border-radius: 999px; }
+      .live .ld { width: 7px; height: 7px; background: var(--live); border-radius: 50%; animation: pulse 2s infinite; }
+      .content { display: flex; flex-direction: column; gap: 22px; width: 100%; max-width: 860px; padding: 22px 32px 80px; margin: 0 auto; }
+
+      /* horizontal metric strip (replaces left summary column) */
+      .strip { display: flex; gap: 0; overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+      .strip .m { flex: 1; padding: 15px 18px; border-right: 1px solid var(--line-2); }
+      .strip .m:last-child { border-right: 0; }
+      .strip .m .ml { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink-2); }
+      .strip .m .ml .md { width: 7px; height: 7px; border-radius: 50%; }
+      .strip .m .mv { margin-top: 3px; font-size: 22px; font-weight: 630; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+      .strip .m .mv small { font-size: 14px; font-weight: 500; color: var(--ink-3); }
+      .strip .m .delta { margin-top: 1px; font-size: 11px; font-weight: 600; }
+
+      /* alert banner */
+      .banner { display: flex; gap: 11px; align-items: center; padding: 12px 15px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--err); border-radius: 12px; box-shadow: var(--shadow); }
+      .banner .bi { display: grid; flex: none; place-items: center; width: 24px; height: 24px; font-weight: 700; color: var(--err); background: rgba(204,75,55,.12); border-radius: 7px; }
+      .banner .bt { font-size: 13px; } .banner .bt b { font-weight: 600; } .banner .bt .s { color: var(--ink-2); }
+      .banner .bx { margin-left: auto; font-size: 12.5px; color: var(--ink-2); cursor: pointer; }
+
+      /* ---------- left summary column ---------- */
+      .col-l { display: flex; flex-direction: column; gap: 16px; }
+      .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+      .card .ch { display: flex; align-items: center; justify-content: space-between; padding: 13px 15px 0; }
+      .card .ch h3 { margin: 0; font-size: 13px; font-weight: 600; }
+      .card .ch a { font-size: 11.5px; color: var(--ink-3); cursor: pointer; }
+      .usage { padding: 12px 15px 14px; }
+      .usage .cycle { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 12px; color: var(--ink-2); }
+      .usage .cycle b { font-weight: 600; color: var(--ink); }
+      .urow { display: flex; align-items: baseline; justify-content: space-between; padding: 7px 0; font-size: 12.5px; border-top: 1px solid var(--line-2); }
+      .urow .l { color: var(--ink-2); }
+      .urow .v { font-weight: 560; font-variant-numeric: tabular-nums; }
+      .urow .v.ok { color: var(--ok); }
+      .meter { height: 6px; margin: 10px 0 2px; overflow: hidden; background: var(--bar); border-radius: 999px; }
+      .meter i { display: block; height: 100%; background: var(--ink); border-radius: 999px; }
+
+      .alert { display: flex; gap: 10px; align-items: flex-start; padding: 13px 15px 15px; }
+      .alert .ai { display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 7px; }
+      .alert.good .ai { color: var(--ok); background: rgba(58,158,87,.12); }
+      .alert.bad .ai { color: var(--err); background: rgba(204,75,55,.12); }
+      .alert .at { font-size: 12.5px; }
+      .alert .at b { font-weight: 600; }
+      .alert .at .s { display: block; margin-top: 1px; font-size: 11.5px; color: var(--ink-2); }
+
+      .recent { padding: 4px 9px 10px; }
+      .rev { display: grid; grid-template-columns: 12px 1fr auto; gap: 9px; align-items: center; padding: 8px 6px; border-radius: 8px; }
+      .rev:hover { background: var(--hover); }
+      .rev .rd { width: 7px; height: 7px; border-radius: 50%; }
+      .rev .rd.ok { background: var(--ok); } .rev .rd.run { background: var(--run); animation: pulse 1.4s infinite; } .rev .rd.err { background: var(--err); } .rev .rd.idle { background: var(--ink-3); }
+      .rev .rt { overflow: hidden; text-overflow: ellipsis; font-size: 12px; white-space: nowrap; }
+      .rev .rt b { font-weight: 600; }
+      .rev .rt .dim { color: var(--ink-2); }
+      .rev .rm { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+      @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(47,127,191,.4);} 70% { box-shadow: 0 0 0 5px rgba(47,127,191,0);} 100% { box-shadow: 0 0 0 0 rgba(47,127,191,0);} }
+
+      /* ---------- right: sources grid ---------- */
+      .col-r { min-width: 0; }
+      .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+      .srch { display: flex; flex: 1; gap: 9px; align-items: center; padding: 8px 12px; font-size: 13px; color: var(--ink-3); background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+      .tb-btn { display: grid; place-items: center; width: 36px; height: 36px; color: var(--ink-2); cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 9px; }
+      .seg { display: inline-flex; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; }
+      .seg button { width: 36px; height: 36px; color: var(--ink-3); cursor: pointer; background: var(--panel); border: 0; }
+      .seg button.on { color: var(--ink); background: var(--hover); }
+      .add { display: inline-flex; gap: 7px; align-items: center; height: 36px; padding: 0 14px; font-size: 13px; font-weight: 560; color: #fff; cursor: pointer; background: #14130f; border: 0; border-radius: 9px; }
+      .add .cv { opacity: .6; }
+
+      .lbl-row { margin: 0 2px 10px; font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; }
+
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .scard { padding: 15px 16px; cursor: pointer; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); transition: border-color .12s, box-shadow .12s; }
+      .scard:hover { border-color: var(--ink-3); box-shadow: 0 4px 16px rgba(20,19,15,.06); }
+      .sc-top { display: flex; gap: 11px; align-items: center; }
+      .sc-ico { display: grid; flex: none; place-items: center; width: 32px; height: 32px; font-size: 15px; font-weight: 700; color: #fff; border-radius: 9px; }
+      .sc-ico.x { background: #14130f; } .sc-ico.yt { background: #ce3b30; } .sc-ico.ig { background: linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7); } .sc-ico.rd { background: #e0592a; }
+      .sc-id { flex: 1; min-width: 0; }
+      .sc-id .nm { font-size: 14px; font-weight: 600; }
+      .sc-id .hd { overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+      .status-ring { flex: none; width: 26px; height: 26px; }
+      .kebab { flex: none; padding: 0 2px; color: var(--ink-3); cursor: pointer; }
+      .sc-spark { height: 34px; margin: 12px 0 10px; }
+      .sc-spark svg { display: block; width: 100%; height: 100%; }
+      .sc-foot { display: flex; gap: 8px; align-items: center; padding-top: 11px; font-size: 12px; color: var(--ink-2); border-top: 1px solid var(--line-2); }
+      .sc-foot .fd { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+      .fd.ok { background: var(--ok); } .fd.run { background: var(--run); animation: pulse 1.4s infinite; } .fd.err { background: var(--err); } .fd.idle { background: var(--ink-3); }
+      .sc-foot .msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .sc-foot .msg b { font-weight: 560; color: var(--ink); }
+      .sc-foot .when { font-variant-numeric: tabular-nums; color: var(--ink-3); white-space: nowrap; }
+      .sc-foot .trig { display: inline-flex; gap: 4px; align-items: center; color: var(--ink-3); }
+
+      /* add card */
+      .scard.addcard { display: flex; flex-direction: column; gap: 8px; align-items: center; justify-content: center; min-height: 158px; color: var(--ink-2); border-style: dashed; }
+      .scard.addcard:hover { color: var(--ink); }
+      .scard.addcard .plus { display: grid; place-items: center; width: 34px; height: 34px; font-size: 18px; background: var(--hover); border-radius: 10px; }
+      .scard.addcard .sub { font-size: 11.5px; color: var(--ink-3); }
+
+      .note { grid-column: 1 / -1; margin-top: 26px; font-size: 11.5px; color: var(--ink-3); text-align: center; }
+      .note code { padding: 1px 6px; background: var(--hover); border-radius: 5px; }
+    </style>
+  </head>
+  <body>
+      <!-- main overview -->
+      <div class="main">
+        <div class="topbar">
+          <h1>Sources</h1>
+          <span class="crumb">Overview</span>
+          <div class="right">
+            <span class="live"><span class="ld"></span>2 syncing now</span>
+          </div>
+        </div>
+
+        <div class="content">
+          <!-- metric strip -->
+          <div class="strip">
+            <div class="m"><div class="ml"><span class="md" style="background:#14130f"></span>Items synced</div><div class="mv">3,418</div><div class="delta up">↑ 12.4%</div></div>
+            <div class="m"><div class="ml"><span class="md" style="background:var(--ink-3)"></span>Runs · 7d</div><div class="mv">18</div><div class="delta neu" style="color:var(--ink-3)">next in 14m</div></div>
+            <div class="m"><div class="ml"><span class="md" style="background:var(--ok)"></span>Success</div><div class="mv">99.1%</div><div class="delta up">↑ 0.6%</div></div>
+            <div class="m"><div class="ml"><span class="md" style="background:var(--warn)"></span>Avg run</div><div class="mv">4.2s</div><div class="delta down">↑ 0.4s</div></div>
+          </div>
+
+          <!-- alert banner -->
+          <div class="banner">
+            <span class="bi">!</span>
+            <span class="bt"><b>Instagram needs attention</b> <span class="s">— rate limited (429), retry in 14m</span></span>
+            <span class="bx">Resolve ›</span>
+          </div>
+
+          <!-- toolbar -->
+          <div class="toolbar">
+            <div class="srch">🔍 Search sources…</div>
+            <button class="tb-btn" aria-label="filter">⛃</button>
+            <div class="seg"><button class="on" aria-label="grid">▦</button><button aria-label="list">≣</button></div>
+            <button class="add">Add source <span class="cv">⌄</span></button>
+          </div>
+
+          <div class="grid">
+              <!-- X -->
+              <a class="scard" href="sources-x-detail-20260622-1656.html" style="text-decoration:none;color:inherit;display:block">
+                <div class="sc-top">
+                  <span class="sc-ico x">𝕏</span>
+                  <span class="sc-id"><span class="nm">X / Twitter</span><span class="hd">@raphaelsalaja · bookmarks + likes</span></span>
+                  <svg class="status-ring" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#eee" stroke-width="3"/><circle cx="13" cy="13" r="10" fill="none" stroke="#2f7fbf" stroke-width="3" stroke-dasharray="63" stroke-dashoffset="28" stroke-linecap="round" transform="rotate(-90 13 13)"/></svg>
+                  <span class="kebab">⋯</span>
+                </div>
+                <div class="sc-spark"><svg viewBox="0 0 300 34" preserveAspectRatio="none"><path d="M0,24 L40,21 L80,26 L120,12 L160,17 L200,7 L240,14 L300,6" fill="none" stroke="#14130f" stroke-width="1.6"/></svg></div>
+                <div class="sc-foot"><span class="fd run"></span><span class="msg"><b>Syncing</b> · 42 of ~120</span><span class="trig">⌥ manual</span></div>
+              </a>
+
+              <!-- YouTube -->
+              <div class="scard">
+                <div class="sc-top">
+                  <span class="sc-ico yt">▶</span>
+                  <span class="sc-id"><span class="nm">YouTube</span><span class="hd">Subscriptions · Watch later</span></span>
+                  <svg class="status-ring" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#eee" stroke-width="3"/><circle cx="13" cy="13" r="10" fill="none" stroke="#3a9e57" stroke-width="3" stroke-dasharray="63" stroke-dashoffset="1" stroke-linecap="round" transform="rotate(-90 13 13)"/><path d="M9 13.5 l2.5 2.5 l5 -5.5" fill="none" stroke="#3a9e57" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  <span class="kebab">⋯</span>
+                </div>
+                <div class="sc-spark"><svg viewBox="0 0 300 34" preserveAspectRatio="none"><path d="M0,18 L40,22 L80,14 L120,19 L160,10 L200,16 L240,9 L300,12" fill="none" stroke="#14130f" stroke-width="1.6"/></svg></div>
+                <div class="sc-foot"><span class="fd ok"></span><span class="msg"><b>Queued 8</b> · 0 failed</span><span class="when">3m ago</span></div>
+              </div>
+
+              <!-- Reddit -->
+              <div class="scard">
+                <div class="sc-top">
+                  <span class="sc-ico rd">r</span>
+                  <span class="sc-id"><span class="nm">Reddit</span><span class="hd">Saved posts</span></span>
+                  <svg class="status-ring" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#eee" stroke-width="3"/><circle cx="13" cy="13" r="10" fill="none" stroke="#3a9e57" stroke-width="3" stroke-dasharray="63" stroke-dashoffset="1" stroke-linecap="round" transform="rotate(-90 13 13)"/><path d="M9 13.5 l2.5 2.5 l5 -5.5" fill="none" stroke="#3a9e57" stroke-width="1.6" stroke-linecap="round"/></svg>
+                  <span class="kebab">⋯</span>
+                </div>
+                <div class="sc-spark"><svg viewBox="0 0 300 34" preserveAspectRatio="none"><path d="M0,20 L40,17 L80,19 L120,15 L160,17 L200,13 L240,15 L300,14" fill="none" stroke="#14130f" stroke-width="1.6"/></svg></div>
+                <div class="sc-foot"><span class="fd idle"></span><span class="msg">All caught up · nothing new</span><span class="when">12m ago</span></div>
+              </div>
+
+              <!-- Instagram -->
+              <div class="scard">
+                <div class="sc-top">
+                  <span class="sc-ico ig">◎</span>
+                  <span class="sc-id"><span class="nm">Instagram</span><span class="hd">Saved collections</span></span>
+                  <svg class="status-ring" viewBox="0 0 26 26"><circle cx="13" cy="13" r="10" fill="none" stroke="#eee" stroke-width="3"/><circle cx="13" cy="13" r="10" fill="none" stroke="#cc4b37" stroke-width="3" stroke-dasharray="63" stroke-dashoffset="40" stroke-linecap="round" transform="rotate(-90 13 13)"/><text x="13" y="16.5" text-anchor="middle" font-size="9" font-weight="700" fill="#cc4b37">!</text></svg>
+                  <span class="kebab">⋯</span>
+                </div>
+                <div class="sc-spark"><svg viewBox="0 0 300 34" preserveAspectRatio="none"><path d="M0,10 L40,12 L80,9 L120,14 L160,20 L200,24 L240,27 L300,29" fill="none" stroke="#cc4b37" stroke-width="1.6"/></svg></div>
+                <div class="sc-foot"><span class="fd err"></span><span class="msg"><b>Rate limited</b> (429)</span><span class="when">retry 14m</span></div>
+              </div>
+
+              <!-- add card -->
+              <div class="scard addcard">
+                <span class="plus">+</span>
+                <span>Connect a source</span>
+                <span class="sub">X · YouTube · Reddit · Instagram · RSS…</span>
+              </div>
+          </div>
+
+          <!-- recent activity (full width) -->
+          <div class="card">
+            <div class="ch"><h3>Recent activity</h3><a>View all</a></div>
+            <div class="recent">
+              <div class="rev"><span class="rd run"></span><span class="rt"><b>X</b> <span class="dim">harvesting timeline — 42 so far</span></span><span class="rm">now</span></div>
+              <div class="rev"><span class="rd ok"></span><span class="rt"><b>X</b> <span class="dim">queued 12 bookmarks</span></span><span class="rm">8s</span></div>
+              <div class="rev"><span class="rd ok"></span><span class="rt"><b>YouTube</b> <span class="dim">queued 8 · run ok in 5.1s</span></span><span class="rm">3m</span></div>
+              <div class="rev"><span class="rd err"></span><span class="rt"><b>Instagram</b> <span class="dim">failed — rate limited (429)</span></span><span class="rm">9m</span></div>
+              <div class="rev"><span class="rd idle"></span><span class="rt"><b>Reddit</b> <span class="dim">all caught up — nothing new</span></span><span class="rm">12m</span></div>
+              <div class="rev"><span class="rd ok"></span><span class="rt"><b>X</b> <span class="dim">queued 31 likes</span></span><span class="rm">1h</span></div>
+            </div>
+          </div>
+
+          <p class="note">v7 · centered single column — metric strip · alert banner · source cards · activity. Cards open <code>/sources/:id</code></p>
+        </div>
+      </div>
+  </body>
+</html>

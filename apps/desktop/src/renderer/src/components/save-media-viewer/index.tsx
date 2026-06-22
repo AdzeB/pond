@@ -2,12 +2,14 @@ import {
   IconArrowLeftOutline18 as ArrowLeft,
   IconArrowRightOutline18 as ArrowRight,
   IconEyeOutline18 as Eye,
+  IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
-import { Button, Tooltip } from "@pond/ui";
+import { Button, Dialog, Tooltip } from "@pond/ui";
 import useEmblaCarousel from "embla-carousel-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { VideoPlayer } from "@/components/video-player";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
+import { type ChapterCue, chaptersForSave } from "@/lib/chapters-vtt";
 import { buildMediaUnits } from "@/lib/media";
 import { useSensitiveMedia } from "@/lib/nsfw";
 import type { Save } from "@/lib/types";
@@ -24,6 +26,12 @@ interface MediaSlide {
 export function MediaViewer({ save }: { save: Save }) {
   const theme = useResolvedTheme();
   const { blurred, reveal } = useSensitiveMedia(save);
+  const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
+  const singleVideo = useMemo(
+    () =>
+      buildMediaUnits(save, { theme }).filter((u) => u.isVideo).length === 1,
+    [save, theme],
+  );
   const allSlides = useMemo<MediaSlide[]>(
     () =>
       buildMediaUnits(save, { theme }).map((u) => {
@@ -73,7 +81,25 @@ export function MediaViewer({ save }: { save: Save }) {
   const [thumbAtStart, setThumbAtStart] = useState(true);
   const [thumbAtEnd, setThumbAtEnd] = useState(true);
   const [inViewSnaps, setInViewSnaps] = useState<readonly number[]>([0]);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const prevIndexRef = useRef(0);
+  // Distinguish a tap from a carousel drag so panning the strip doesn't pop the
+  // lightbox open: remember the press origin and bail if the pointer travelled.
+  const pressRef = useRef<{ x: number; y: number } | null>(null);
+
+  const onZoomPointerDown = useCallback((e: React.PointerEvent) => {
+    pressRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const openLightbox = useCallback((src: string, e: React.MouseEvent) => {
+    const origin = pressRef.current;
+    pressRef.current = null;
+    if (origin) {
+      const moved = Math.hypot(e.clientX - origin.x, e.clientY - origin.y);
+      if (moved > 6) return;
+    }
+    setLightboxSrc(src);
+  }, []);
 
   // Sync the thumb strip to the carousel; wrap-around jumps instantly to avoid scrolling the whole length.
   useEffect(() => {
@@ -174,6 +200,8 @@ export function MediaViewer({ save }: { save: Save }) {
                       <VideoPlayer
                         src={s.src}
                         poster={s.posterUrl}
+                        active={isActive}
+                        chapters={singleVideo ? chapters : undefined}
                         onError={() => markBroken(s.src)}
                       />
                     ) : (
@@ -192,7 +220,14 @@ export function MediaViewer({ save }: { save: Save }) {
                       </div>
                     )
                   ) : (
-                    <div className={styles["media-shell"]}>
+                    <button
+                      type="button"
+                      className={styles["media-shell"]}
+                      data-zoom-trigger="true"
+                      aria-label="View full size"
+                      onPointerDown={onZoomPointerDown}
+                      onClick={(e) => openLightbox(s.src, e)}
+                    >
                       <img
                         src={s.src}
                         alt={save.title ?? ""}
@@ -204,7 +239,7 @@ export function MediaViewer({ save }: { save: Save }) {
                         height={s.height}
                         onError={() => markBroken(s.src)}
                       />
-                    </div>
+                    </button>
                   )}
                 </div>
               );
@@ -286,6 +321,154 @@ export function MediaViewer({ save }: { save: Save }) {
           </div>
         </div>
       ) : null}
+      {lightboxSrc ? (
+        <Lightbox
+          src={lightboxSrc}
+          alt={save.title ?? ""}
+          onClose={() => setLightboxSrc(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+const MAX_ZOOM = 6;
+const MIN_ZOOM = 1;
+const DOUBLE_CLICK_ZOOM = 2.5;
+
+// Fullscreen zoom/pan viewer for a single image. A nested Base UI dialog so
+// it layers above the detail modal with correct focus/Escape handling. Wheel
+// (or trackpad pinch) zooms; drag pans when zoomed; double-click toggles.
+function Lightbox({
+  src,
+  alt,
+  onClose,
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    ox: number;
+    oy: number;
+  } | null>(null);
+
+  const reset = useCallback(() => {
+    setScale(1);
+    setOffset({ x: 0, y: 0 });
+  }, []);
+
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setScale((prev) => {
+      const next = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, prev * (e.deltaY < 0 ? 1.15 : 1 / 1.15)),
+      );
+      if (next === MIN_ZOOM) setOffset({ x: 0, y: 0 });
+      return next;
+    });
+  }, []);
+
+  const onPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      if (scale <= 1) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      dragRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        ox: offset.x,
+        oy: offset.y,
+      };
+    },
+    [scale, offset],
+  );
+
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    setOffset({
+      x: drag.ox + (e.clientX - drag.x),
+      y: drag.oy + (e.clientY - drag.y),
+    });
+  }, []);
+
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    dragRef.current = null;
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  }, []);
+
+  const toggleZoom = useCallback(() => {
+    setScale((prev) => {
+      if (prev > 1) {
+        setOffset({ x: 0, y: 0 });
+        return 1;
+      }
+      return DOUBLE_CLICK_ZOOM;
+    });
+  }, []);
+
+  return (
+    <Dialog.Root
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Backdrop className={styles["lightbox-backdrop"]} />
+        <Dialog.Popup
+          className={styles.lightbox}
+          aria-label="Image viewer"
+          onWheel={onWheel}
+          onPointerDown={(e) => {
+            if (e.target === e.currentTarget) onClose();
+          }}
+        >
+          <Tooltip label="Close (Esc)" side="left">
+            <Button
+              icon
+              size="sm"
+              variant="secondary"
+              aria-label="Close"
+              className={styles["lightbox-close"]}
+              onClick={onClose}
+            >
+              <X />
+            </Button>
+          </Tooltip>
+          <img
+            src={src}
+            alt={alt}
+            className={styles["lightbox-image"]}
+            draggable={false}
+            data-zoomed={scale > 1 ? "true" : undefined}
+            style={{
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+            }}
+            onDoubleClick={toggleZoom}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+          />
+          {scale > 1 ? (
+            <button
+              type="button"
+              className={styles["lightbox-reset"]}
+              onClick={reset}
+            >
+              Reset zoom
+            </button>
+          ) : null}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

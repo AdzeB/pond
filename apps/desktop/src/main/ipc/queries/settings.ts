@@ -6,6 +6,7 @@ import {
   type VideoDownloadSettings,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import { resetProvider } from "../../core/ai";
 import {
   getImageDownloadPrefs,
   getPrefs,
@@ -77,6 +78,8 @@ export const settingsQueries: QueryHandlerMap = {
 
   async "settings.setPrefs"(params) {
     const next = await setPrefs(params as Parameters<typeof setPrefs>[0]);
+    // AI provider config is cached; drop it so endpoint/model edits take effect.
+    if (params && typeof params === "object" && "ai" in params) resetProvider();
     return { ok: true, prefs: next };
   },
 };

@@ -6,7 +6,7 @@ import {
   IconGearOutline18 as Settings,
 } from "@pond/icons/outline/18";
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
-import { Button, Menu } from "@pond/ui";
+import { Menu } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { usePonds } from "@/hooks/use-ponds";
@@ -50,28 +50,27 @@ export function LibrarySwitcher() {
       }}
     >
       <Menu.Trigger
-        variant="ghost"
         aria-label={`Library menu (${active?.name ?? "Library"})`}
         render={
-          <Button
-            icon
-            variant="primary"
-            className={styles.trigger}
-            data-icon={
-              active && glyphKind(active.avatar) === "icon" ? true : undefined
-            }
-            style={{ background: active?.color ?? undefined }}
-          >
-            {active ? (
-              <PondGlyph
-                avatar={active.avatar}
-                name={active.name}
-                iconSize={18}
-              />
-            ) : (
-              "Library"
-            )}
-          </Button>
+          <button type="button" className={styles.trigger}>
+            <span
+              className={styles.glyph}
+              data-icon={
+                active && glyphKind(active.avatar) === "icon" ? true : undefined
+              }
+              style={{ background: active?.color ?? undefined }}
+            >
+              {active ? (
+                <PondGlyph
+                  avatar={active.avatar}
+                  name={active.name}
+                  iconSize={16}
+                />
+              ) : (
+                "P"
+              )}
+            </span>
+          </button>
         }
       ></Menu.Trigger>
       <Menu.Portal>

@@ -37,6 +37,12 @@
       "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
       "computedHash": "ef32aea0a8fab9b365ff9e08a95f8d353e20ca21ea46ec2e73587c86dd341351"
     },
+    "mobbin-search": {
+      "source": "mobbin/skills",
+      "sourceType": "github",
+      "skillPath": "skills/mobbin-search/SKILL.md",
+      "computedHash": "1f01cf85e7786cfb38c8519f7739bdc2d41747c925ba6a237e7bdf4ce4ca5d8e"
+    },
     "nodejs-backend-patterns": {
       "source": "wshobson/agents",
       "sourceType": "github",

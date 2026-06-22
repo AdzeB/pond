@@ -20,6 +20,7 @@ import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
+import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
 import {
   startStorageWatcher,
@@ -606,6 +607,11 @@ app.on("before-quit", async () => {
     disposeHiddenWindow();
   } catch (err) {
     log.warn("[pond] hidden window dispose failed", err);
+  }
+  try {
+    disposeRenderCardWindow();
+  } catch (err) {
+    log.warn("[pond] render-card window dispose failed", err);
   }
   try {
     await httpServer?.close();

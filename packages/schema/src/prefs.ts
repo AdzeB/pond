@@ -3,9 +3,11 @@ import {
   CUSTOM_THEME_DEFAULT,
   DEFAULT_PRESET_ID,
   DEFAULT_SIDEBAR_SOURCES,
+  DEFAULT_SOURCE_METRICS,
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
   type SidebarSourcesConfig,
+  type SourceMetricDisplay,
   type SyncHandles,
   type SyncSources,
   type ThemeDef,
@@ -67,6 +69,14 @@ const sidebar = z.object({
   sources: z.custom<SidebarSourcesConfig>().default(DEFAULT_SIDEBAR_SOURCES),
 });
 
+// Sources page header: ordered list of pinned metric ids, per-metric display
+// style (card vs compact chip), and the rolling window the KPIs summarize.
+const sourcesView = z.object({
+  metrics: z.custom<string[]>().default(DEFAULT_SOURCE_METRICS),
+  metricDisplay: z.custom<Record<string, SourceMetricDisplay>>().default({}),
+  days: z.number().catch(7),
+});
+
 const api = z.object({
   port: z.number().catch(41610),
   bindAddress: z.enum(["loopback", "lan"]).catch("loopback"),
@@ -95,6 +105,98 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
+// Local AI: the "find anything" NL compiler and on-device semantic search.
+// `provider` selects where the LLM stage runs; embeddings always run on-device
+// in the renderer via Transformers.js. A custom endpoint's API key (if any) is
+// stored in the OS keychain, never here.
+const ai = z.object({
+  // Enable the natural-language -> structured-query compiler (LLM stage).
+  nlCompiler: z.boolean().catch(false),
+  // Enable on-device embeddings + semantic ranking of free-text search.
+  semanticSearch: z.boolean().catch(false),
+  // Where the LLM stage runs. "bundled" = node-llama-cpp GGUF in the main
+  // process; the rest are local OpenAI-compatible HTTP servers.
+  provider: z.enum(["bundled", "ollama", "lmstudio", "custom"]).catch("ollama"),
+  // Base URL for HTTP providers (ollama/lmstudio/custom). Empty = provider default.
+  endpoint: z.string().catch(""),
+  // Chat/completion model id for the LLM stage (provider-specific).
+  modelId: z.string().catch(""),
+  // Transformers.js feature-extraction model for embeddings.
+  embedModelId: z.string().catch("Xenova/all-MiniLM-L6-v2"),
+  // ---- On-device enrichment toggles. Heavy models (caption/OCR, transcript,
+  // CLIP) default OFF given download size; all run locally via Transformers.js. ----
+  enableCaption: z.boolean().catch(false),
+  enableOcr: z.boolean().catch(false),
+  enableTranscript: z.boolean().catch(false),
+  enableClip: z.boolean().catch(false),
+  enableAesthetic: z.boolean().catch(false),
+  // Non-destructive text enrichers (suggest only); cheap, but opt-in for clarity.
+  enableAutoTitle: z.boolean().catch(false),
+  enableSuggestedTags: z.boolean().catch(false),
+  // Optional model-id overrides for the heavy enrichers (empty = default).
+  captionModelId: z.string().catch(""),
+  clipModelId: z.string().catch(""),
+  whisperModelId: z.string().catch(""),
+});
+
+// User-defined composer skills: named slash shortcuts that run a saved prompt
+// through the "find anything" Ask flow. `name` is the slash token (no leading
+// slash); `id` is its stable slug.
+const customSkill = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().catch(""),
+  prompt: z.string(),
+});
+
+export type CustomSkill = z.infer<typeof customSkill>;
+
+// Starter slash skills so a new library isn't an empty composer. Each prompt is
+// phrased to resolve through the deterministic NL compiler (type / date /
+// presence / file-count fields) rather than relying on semantic guesses. Stable
+// ids keep them de-duplicated across reloads; a user can delete any of them and
+// the deletion persists (the seed only fills an absent skills slice).
+export const DEFAULT_SKILLS: CustomSkill[] = [
+  {
+    id: "default-untagged",
+    name: "untagged",
+    description: "Saves you haven't labelled yet",
+    prompt: "untagged",
+  },
+  {
+    id: "default-recent",
+    name: "recent",
+    description: "Saved in the last week",
+    prompt: "saved this week, newest first",
+  },
+  {
+    id: "default-videos",
+    name: "videos",
+    description: "Just your videos",
+    prompt: "videos",
+  },
+  {
+    id: "default-images",
+    name: "images",
+    description: "Just your images",
+    prompt: "images",
+  },
+  {
+    id: "default-galleries",
+    name: "galleries",
+    description: "Posts with multiple images",
+    prompt: "multiple images",
+  },
+];
+
+const skills = z.object({
+  custom: z.array(customSkill).catch([]),
+  // One-shot marker: false until the starter skills have been merged in once.
+  // Keeps deletions sticky (we never re-seed once this flips true) while still
+  // back-filling existing libraries whose `skills` slice predates the defaults.
+  seeded: z.boolean().catch(false),
+});
+
 // Each slice catches to its own defaults so a corrupt slice resets in isolation.
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
@@ -104,11 +206,14 @@ const PrefsObject = z.object({
   tagPicker: tagPicker.catch(tagPicker.parse({})),
   allTags: allTags.catch(allTags.parse({})),
   sidebar: sidebar.catch(sidebar.parse({})),
+  sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
   developer: developer.catch(developer.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
+  ai: ai.catch(ai.parse({})),
+  skills: skills.catch(skills.parse({})),
 });
 
 export type Prefs = z.infer<typeof PrefsObject>;

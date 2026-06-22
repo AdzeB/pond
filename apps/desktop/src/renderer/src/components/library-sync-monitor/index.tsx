@@ -1,43 +1,39 @@
-import { IconChevronLeftOutline18 as ChevronLeft } from "@pond/icons/outline/18";
 import { SOURCES, type Source } from "@pond/schema/db";
 import { Button } from "@pond/ui";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useIntervalWhen } from "rooks";
+import { useSyncStats } from "@/hooks/use-sync-stats";
+import { showContextMenu } from "@/lib/native-menu";
 import { getSourceDef } from "@/lib/sources-registry";
-import { backfillMonitor } from "@/stores/backfill-monitor";
 import { syncMonitor, useSyncBySource } from "@/stores/sync-monitor";
-import { Overview } from "./overview";
-import { SourceDetail } from "./source-detail";
+import type { SyncRun } from "./helpers";
+import { KpiCustomizeDialog } from "./kpi-customize-dialog";
+import { KpiStrip } from "./kpi-strip";
+import { LiveMonitor } from "./live-monitor";
+import { RecentRuns } from "./recent-runs";
+import { RunDialog } from "./run-dialog";
+import { SourceCard } from "./source-card";
+import { SourceDialog } from "./source-dialog";
+import { StorageBanner } from "./storage-banner";
 import styles from "./styles.module.css";
 
 // Sources you can sync; `local` holds only manual imports, so it's excluded.
 const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
 
-type Direction = "forward" | "backward";
-
-// The Sources view (`/sources`). Formerly a dialog; now a first-class page that
-// shares the library shell (toolbar + bottom nav) via the route Outlet.
 export function SourcesPage() {
   const bySource = useSyncBySource();
-  const reduceMotion = useReducedMotion();
+  const { stats } = useSyncStats(7);
 
-  const [mode, setMode] = useState<"overview" | "detail">("overview");
-  const [focused, setFocused] = useState<Source>(SYNCABLE[0] ?? "twitter");
-  const [direction, setDirection] = useState<Direction>("forward");
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+  const [selectedSource, setSelectedSource] = useState<Source | null>(null);
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [selectedRun, setSelectedRun] = useState<SyncRun | null>(null);
+  const [runOpen, setRunOpen] = useState(false);
 
-  // Seed each source with a one-shot snapshot on mount so the list isn't blank
+  // Seed each source with a one-shot snapshot on mount so the grid isn't blank
   // before the first live push.
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      try {
-        const status = await window.pond.screenshotBackfillStatus();
-        if (!cancelled) backfillMonitor.ingest(status);
-      } catch {
-        /* snapshot is best-effort; live pushes still update the row */
-      }
-    })();
     for (const source of SYNCABLE) {
       void (async () => {
         try {
@@ -62,104 +58,132 @@ export function SourcesPage() {
     };
   }, []);
 
-  // Keep relative timestamps ("3 days ago") honest while the page sits open.
+  // Keep relative timestamps honest while the page sits open.
   const [, setTick] = useState(0);
   useIntervalWhen(() => setTick((t) => t + 1), 30_000, true);
 
-  const runningSources = SYNCABLE.filter(
+  const runningCount = SYNCABLE.filter(
     (s) => bySource[s]?.state === "running",
-  );
+  ).length;
   const connectedCount = SYNCABLE.filter(
     (s) => bySource[s]?.connected || bySource[s]?.state === "running",
   ).length;
-  const anyRunning = runningSources.length > 0;
 
-  const summary = anyRunning
-    ? `Syncing ${runningSources.length} of ${connectedCount} connected`
-    : connectedCount
-      ? `${connectedCount} of ${SYNCABLE.length} sources connected`
-      : "No sources connected yet";
-
-  const openDetail = (source: Source) => {
-    setFocused(source);
-    setDirection("forward");
-    setMode("detail");
+  const openSource = (source: Source) => {
+    setSelectedSource(source);
+    setSourceOpen(true);
   };
 
-  const back = () => {
-    setDirection("backward");
-    setMode("overview");
+  const openRun = (run: SyncRun) => {
+    setSelectedRun(run);
+    setRunOpen(true);
   };
 
-  const title =
-    mode === "overview" ? "Confluences" : getSourceDef(focused).label;
+  const addSource = () => {
+    const unconnected = SYNCABLE.filter(
+      (s) => !(bySource[s]?.connected || bySource[s]?.state === "running"),
+    );
+    if (unconnected.length === 0) {
+      void showContextMenu([
+        { label: "All sources connected", enabled: false },
+      ]);
+      return;
+    }
+    void showContextMenu(
+      unconnected.map((s) => ({
+        label: getSourceDef(s).label,
+        onSelect: () => void window.pond.connectSource(s),
+      })),
+    );
+  };
 
   return (
     <div className={styles.page}>
-      <div className={styles.panel}>
-        <div className={styles.header}>
-          <div className={styles.headerSlot}>
-            <AnimatePresence initial={false}>
-              {mode === "detail" ? (
-                <motion.div
-                  key="back"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={reduceMotion ? { duration: 0 } : undefined}
-                >
-                  <Button
-                    icon
-                    size="sm"
-                    variant="ghost"
-                    aria-label="Back to all sources"
-                    onClick={back}
-                  >
-                    <ChevronLeft />
-                  </Button>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-          </div>
-
-          <AnimatePresence initial={false} mode="wait">
-            <motion.h1
-              key={title}
-              className={styles.title}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={reduceMotion ? { duration: 0 } : { duration: 0.12 }}
+      <div className={styles.content}>
+        <div className={styles.topbar}>
+          <h1>Sources</h1>
+          <span className={styles.crumb}>
+            {connectedCount} of {SYNCABLE.length} connected
+          </span>
+          <span className={styles.topRight}>
+            {runningCount > 0 ? (
+              <span className={styles.live}>
+                <span className={styles.liveDot} />
+                {runningCount} syncing now
+              </span>
+            ) : null}
+            <Button
+              variant="primary"
+              onClick={() => void window.pond.syncRunAll()}
             >
-              {title}
-            </motion.h1>
-          </AnimatePresence>
-
-          <div className={`${styles.headerSlot} ${styles.headerSlotEnd}`} />
+              Sync all
+            </Button>
+          </span>
         </div>
 
-        <div className={styles.body}>
-          <AnimatePresence initial={false} mode="popLayout" custom={direction}>
-            {mode === "overview" ? (
-              <Overview
-                key="overview"
-                sources={SYNCABLE}
-                bySource={bySource}
-                summary={summary}
-                direction={direction}
-                onSelect={openDetail}
-              />
-            ) : (
-              <SourceDetail
-                key="detail"
-                focused={focused}
-                status={bySource[focused]}
-                direction={direction}
-              />
-            )}
-          </AnimatePresence>
+        <StorageBanner />
+
+        <div className={styles.secLabel}>
+          Overview
+          <button
+            type="button"
+            className={styles.customize}
+            onClick={() => setCustomizeOpen(true)}
+          >
+            ⚙ Customize
+          </button>
         </div>
+        <KpiStrip
+          sources={SYNCABLE}
+          bySource={bySource}
+          onCustomize={() => setCustomizeOpen(true)}
+        />
+
+        <div className={styles.secLabel}>Current sync</div>
+        <LiveMonitor
+          bySource={bySource}
+          lastRunAt={stats.lastRunAt}
+          onSyncAll={() => void window.pond.syncRunAll()}
+        />
+
+        <div className={styles.secLabel}>
+          Sources{" "}
+          <span className={styles.muted}>· {connectedCount} connected</span>
+        </div>
+        <div className={styles.grid}>
+          {SYNCABLE.map((source) => (
+            <SourceCard
+              key={source}
+              source={source}
+              status={bySource[source]}
+              onOpen={openSource}
+            />
+          ))}
+          <button
+            type="button"
+            className={`${styles.card} ${styles.add}`}
+            onClick={addSource}
+          >
+            + Add source
+          </button>
+        </div>
+
+        <div className={styles.secLabel}>Recent runs</div>
+        <RecentRuns onOpenRun={openRun} />
       </div>
+
+      <SourceDialog
+        source={selectedSource}
+        status={selectedSource ? bySource[selectedSource] : undefined}
+        open={sourceOpen}
+        onOpenChange={setSourceOpen}
+        onOpenRun={openRun}
+      />
+      <RunDialog run={selectedRun} open={runOpen} onOpenChange={setRunOpen} />
+      <KpiCustomizeDialog
+        open={customizeOpen}
+        onOpenChange={setCustomizeOpen}
+      />
     </div>
   );
 }

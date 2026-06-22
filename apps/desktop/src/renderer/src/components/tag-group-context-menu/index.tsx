@@ -1,83 +1,55 @@
-import { IconTrash2Outline18 as Trash2 } from "@pond/icons/outline/18";
-import { ContextMenu } from "@pond/ui";
-import type { ReactElement } from "react";
-import styles from "./styles.module.css";
+import { cloneElement, type MouseEvent, type ReactElement } from "react";
+import { type NativeMenuItem, showContextMenu } from "@/lib/native-menu";
 
+// Native menus can't render color swatches, so colors are named items for now.
 const GROUP_COLORS = [
-  "var(--ds-red-9)",
-  "var(--ds-orange-9)",
-  "var(--ds-amber-9)",
-  "var(--ds-green-9)",
-  "var(--ds-teal-9)",
-  "var(--ds-blue-9)",
-  "var(--ds-violet-9)",
-  "var(--ds-pink-9)",
+  { label: "Red", value: "var(--ds-red-9)" },
+  { label: "Orange", value: "var(--ds-orange-9)" },
+  { label: "Amber", value: "var(--ds-amber-9)" },
+  { label: "Green", value: "var(--ds-green-9)" },
+  { label: "Teal", value: "var(--ds-teal-9)" },
+  { label: "Blue", value: "var(--ds-blue-9)" },
+  { label: "Violet", value: "var(--ds-violet-9)" },
+  { label: "Pink", value: "var(--ds-pink-9)" },
 ] as const;
 
-interface TagGroupContextMenuProps {
+export interface TagGroupMenuActions {
   onRename: () => void;
   onSetColor: (color: string | null) => void;
   onRequestDelete: () => void;
-  children: ReactElement;
+}
+
+export function buildTagGroupMenuItems(
+  a: TagGroupMenuActions,
+): NativeMenuItem[] {
+  const colorItems: NativeMenuItem[] = GROUP_COLORS.map((c) => ({
+    label: c.label,
+    onSelect: () => a.onSetColor(c.value),
+  }));
+  colorItems.push(
+    { type: "separator" },
+    { label: "Clear color", onSelect: () => a.onSetColor(null) },
+  );
+
+  return [
+    { label: "Rename", onSelect: a.onRename },
+    { label: "Color", submenu: colorItems },
+    { type: "separator" },
+    { label: "Remove", onSelect: a.onRequestDelete },
+  ];
+}
+
+interface TagGroupContextMenuProps extends TagGroupMenuActions {
+  children: ReactElement<{ onContextMenu?: (e: MouseEvent) => void }>;
 }
 
 export function TagGroupContextMenu({
-  onRename,
-  onSetColor,
-  onRequestDelete,
   children,
+  ...actions
 }: TagGroupContextMenuProps) {
-  return (
-    <ContextMenu.Root>
-      <ContextMenu.Trigger render={children} />
-      <ContextMenu.Portal>
-        <ContextMenu.Backdrop />
-        <ContextMenu.Positioner>
-          <ContextMenu.Popup>
-            <ContextMenu.Item onClick={onRename}>
-              <ContextMenu.ItemLabel>Rename</ContextMenu.ItemLabel>
-            </ContextMenu.Item>
-            <ContextMenu.SubmenuRoot>
-              <ContextMenu.SubmenuTrigger>
-                <ContextMenu.ItemLabel>Color</ContextMenu.ItemLabel>
-              </ContextMenu.SubmenuTrigger>
-              <ContextMenu.Portal>
-                <ContextMenu.Positioner
-                  align="start"
-                  side="right"
-                  sideOffset={6}
-                >
-                  <ContextMenu.Popup className={styles["color-popup"]}>
-                    <div className={styles["color-grid"]}>
-                      {GROUP_COLORS.map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          className={styles["color-swatch"]}
-                          style={{ background: c }}
-                          aria-label={`Use ${c}`}
-                          onClick={() => onSetColor(c)}
-                        />
-                      ))}
-                    </div>
-                    <ContextMenu.Separator />
-                    <ContextMenu.Item onClick={() => onSetColor(null)}>
-                      <ContextMenu.ItemLabel>Clear color</ContextMenu.ItemLabel>
-                    </ContextMenu.Item>
-                  </ContextMenu.Popup>
-                </ContextMenu.Positioner>
-              </ContextMenu.Portal>
-            </ContextMenu.SubmenuRoot>
-            <ContextMenu.Separator />
-            <ContextMenu.Item onClick={onRequestDelete}>
-              <ContextMenu.ItemIcon>
-                <Trash2 width={14} height={14} />
-              </ContextMenu.ItemIcon>
-              <ContextMenu.ItemLabel>Remove</ContextMenu.ItemLabel>
-            </ContextMenu.Item>
-          </ContextMenu.Popup>
-        </ContextMenu.Positioner>
-      </ContextMenu.Portal>
-    </ContextMenu.Root>
-  );
+  const onContextMenu = (e: MouseEvent) => {
+    e.preventDefault();
+    void showContextMenu(buildTagGroupMenuItems(actions));
+  };
+  return cloneElement(children, { onContextMenu });
 }

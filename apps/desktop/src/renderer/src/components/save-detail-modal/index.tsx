@@ -1,4 +1,8 @@
 import {
+  IconMediaPlayFill18 as Play,
+  IconSparkleFill18 as Sparkle,
+} from "@pond/icons/fill/18";
+import {
   IconChevronLeftOutline18 as ChevronLeft,
   IconChevronRightOutline18 as ChevronRight,
   IconClipboardDocumentOutline18 as Clipboard,
@@ -10,8 +14,15 @@ import {
 import { Button, Dialog, Popover, Tooltip } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
-import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { KebabMenu } from "@/components/save-inspector-kebab";
 import { MediaViewer } from "@/components/save-media-viewer";
 import {
@@ -21,8 +32,11 @@ import {
 } from "@/components/save-preview";
 import { pickAuthorColor } from "@/components/save-preview/helpers";
 import { collectInfoRows } from "@/components/save-preview/rows";
+import { useAsk } from "@/hooks/use-ask";
 import { useSaveList } from "@/hooks/use-save-list";
 import { useSave } from "@/hooks/use-saves";
+import { type ChapterCue, chaptersForSave } from "@/lib/chapters-vtt";
+import { formatDuration } from "@/lib/format";
 import { initials } from "@/lib/initials";
 import {
   type Direction,
@@ -30,13 +44,24 @@ import {
   gentleSpring,
   snappySpring,
 } from "@/lib/motion";
+import { mutateSave, setSaveTags } from "@/lib/mutate-save";
 import { ensureRawJson } from "@/lib/raw-json";
 import { getSourceLabel } from "@/lib/source-labels";
 import { getSourceIcon } from "@/lib/sources-registry";
+import { ensureTranscript } from "@/lib/transcript";
 import type { Save } from "@/lib/types";
 import { pickAuthorAvatarUrl } from "@/lib/url";
+import {
+  seekActiveMedia,
+  useActiveMediaSeek,
+  useActiveMediaTime,
+} from "@/stores/active-media";
 import { useTrackVisit } from "@/stores/recents";
 import { primarySelection, primarySelectionStore } from "@/stores/selection";
+import { mergeUniqueTags } from "@/stores/tag-clipboard";
+import { pushToast } from "@/stores/toasts";
+import { CopyButton } from "./copy-button";
+import { DataInspector } from "./data-inspector";
 import styles from "./styles.module.css";
 
 const COUNTER_OFFSET = 10;
@@ -73,9 +98,12 @@ export function SaveModal() {
   );
 }
 
+type SideTab = "details" | "data";
+
 function SaveModalContent({ id }: { id: string }) {
   const save = useSave(id);
   const list = useSaveList({ activeId: id });
+  const [tab, setTab] = useState<SideTab>("details");
 
   const prevIndexRef = useRef(list.index);
   const directionRef = useRef<Direction>("forward");
@@ -90,6 +118,7 @@ function SaveModalContent({ id }: { id: string }) {
 
   useEffect(() => {
     void ensureRawJson(id);
+    void ensureTranscript(id);
   }, [id]);
 
   const goNext = () => list.nextId && primarySelection.set(list.nextId);
@@ -200,15 +229,27 @@ function SaveModalContent({ id }: { id: string }) {
 
       {save ? (
         <aside className={styles.side}>
-          <MetaCard label="Description" fade>
-            <DescriptionBlock save={save} />
-          </MetaCard>
-          <MetaCard label="Notes" fade>
-            <NotesEditor save={save} />
-          </MetaCard>
-          <MetaCard label="Tags">
-            <TagsEditor save={save} />
-          </MetaCard>
+          <SideTabs value={tab} onChange={setTab} />
+          {tab === "details" ? (
+            <>
+              <TitleCard save={save} />
+              <MetaCard label="Description" fade>
+                <DescriptionBlock save={save} />
+              </MetaCard>
+              <ChaptersCard save={save} />
+              <MetaCard label="Notes" fade>
+                <NotesEditor save={save} />
+              </MetaCard>
+              <MetaCard label="Tags">
+                <TagsEditor save={save} />
+              </MetaCard>
+              <EnrichmentCard save={save} />
+            </>
+          ) : (
+            <MetaCard label="Data">
+              <DataInspector save={save} />
+            </MetaCard>
+          )}
         </aside>
       ) : null}
     </Dialog.Popup>
@@ -218,14 +259,33 @@ function SaveModalContent({ id }: { id: string }) {
 function HeaderActions({ save }: { save: Save }) {
   const hasUrl = !!save.url;
   const hasFile = (save.files ?? []).length > 0;
+  const ask = useAsk();
 
   const copyLink = async () => {
     if (!save.url) return;
     await navigator.clipboard.writeText(save.url);
   };
 
+  // Anchor an "Ask" run on this save and hand control back to the library grid,
+  // which renders the ranked similar set.
+  const findSimilar = async () => {
+    primarySelection.set(null);
+    await ask("", [save.id]);
+  };
+
   return (
     <div className={styles.actions}>
+      <Tooltip label="Find similar items" side="bottom">
+        <Button
+          icon
+          size="sm"
+          variant="ghost"
+          aria-label="Find similar items"
+          onClick={() => void findSimilar()}
+        >
+          <Sparkle />
+        </Button>
+      </Tooltip>
       <Tooltip label="Open in browser" side="bottom">
         <Button
           icon
@@ -314,6 +374,50 @@ function PropertiesPopover({ save }: { save: Save }) {
   );
 }
 
+const SIDE_TABS: ReadonlyArray<{ value: SideTab; label: string }> = [
+  { value: "details", label: "Details" },
+  { value: "data", label: "Data" },
+];
+
+function SideTabs({
+  value,
+  onChange,
+}: {
+  value: SideTab;
+  onChange: (value: SideTab) => void;
+}) {
+  const groupId = useId();
+  const reduceMotion = useReducedMotion();
+  return (
+    <div role="tablist" aria-label="Detail view" className={styles.tabList}>
+      {SIDE_TABS.map((tab) => {
+        const active = tab.value === value;
+        return (
+          <button
+            key={tab.value}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            data-active={active}
+            className={styles.tab}
+            onClick={() => onChange(tab.value)}
+          >
+            {active ? (
+              <motion.span
+                aria-hidden
+                layoutId={`${groupId}-tab`}
+                className={styles.tabHighlight}
+                transition={reduceMotion ? { duration: 0 } : snappySpring}
+              />
+            ) : null}
+            <span className={styles.tabLabel}>{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function MetaCard({
   label,
   fade,
@@ -330,6 +434,200 @@ function MetaCard({
         {children}
       </div>
     </section>
+  );
+}
+
+function TitleCard({ save }: { save: Save }) {
+  const [draft, setDraft] = useState(save.title ?? "");
+
+  // Resync when the title changes elsewhere (undo, sync) or the save switches.
+  useEffect(() => {
+    setDraft(save.title ?? "");
+  }, [save.title]);
+
+  const commit = async () => {
+    const trimmed = draft.trim();
+    if (trimmed === (save.title ?? "")) return;
+    await mutateSave(save.id, { title: trimmed || null });
+  };
+
+  return (
+    <section className={`${styles.card} ${styles.titleCard}`}>
+      <h3 className={styles.cardTitle}>Title</h3>
+      <input
+        className={styles.titleInput}
+        value={draft}
+        placeholder="Untitled"
+        spellCheck={false}
+        aria-label="Title"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => void commit()}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+        }}
+      />
+    </section>
+  );
+}
+
+function ChaptersCard({ save }: { save: Save }) {
+  const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
+  const playerReady = useActiveMediaSeek();
+  const currentTime = useActiveMediaTime();
+  if (chapters.length === 0) return null;
+
+  const activeIndex = chapters.reduce(
+    (acc, c, i) => (currentTime >= c.startSec ? i : acc),
+    -1,
+  );
+
+  return (
+    <MetaCard label="Chapters" fade>
+      <ol className={styles.chapterList}>
+        {chapters.map((chapter, i) => (
+          <li key={`${chapter.startSec}-${chapter.title}`}>
+            <button
+              type="button"
+              className={styles.chapter}
+              data-active={i === activeIndex ? "true" : undefined}
+              disabled={!playerReady}
+              onClick={() => seekActiveMedia(chapter.startSec)}
+            >
+              <Play className={styles.chapterIcon} width={11} height={11} />
+              <span className={styles.chapterTitle}>{chapter.title}</span>
+              <span className={styles.chapterTime}>
+                {formatDuration(chapter.startSec)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ol>
+    </MetaCard>
+  );
+}
+
+function EnrichmentCard({ save }: { save: Save }) {
+  const caption = save.caption?.trim();
+  const ocr = save.ocrText?.trim();
+  const transcript = save.transcript?.trim();
+  const style = (save.aesthetic ?? []).filter(Boolean);
+  // Only offer suggestions the save doesn't already carry.
+  const existing = useMemo(
+    () => new Set(save.tags.map((t) => t.toLowerCase())),
+    [save.tags],
+  );
+  const suggested = (save.suggestedTags ?? []).filter(
+    (t) => t && !existing.has(t.toLowerCase()),
+  );
+
+  const addTag = async (tag: string) => {
+    await setSaveTags(save.id, mergeUniqueTags(save.tags, [tag]));
+  };
+  const addAllTags = async () => {
+    await setSaveTags(save.id, mergeUniqueTags(save.tags, suggested));
+  };
+
+  const hasAny =
+    !!caption ||
+    !!ocr ||
+    !!transcript ||
+    style.length > 0 ||
+    suggested.length > 0;
+  if (!hasAny) return null;
+
+  return (
+    <MetaCard label="Insights" fade>
+      <div className={styles.insights}>
+        {caption ? (
+          <InsightBlock label="Caption" copyText={caption}>
+            <p className={styles.insightText}>{caption}</p>
+          </InsightBlock>
+        ) : null}
+        {ocr ? (
+          <InsightBlock label="Extracted text" copyText={ocr}>
+            <p className={styles.insightText}>{ocr}</p>
+          </InsightBlock>
+        ) : null}
+        {transcript ? (
+          <InsightBlock label="Transcript" copyText={transcript}>
+            <p className={styles.insightText}>{transcript}</p>
+          </InsightBlock>
+        ) : null}
+        {style.length > 0 ? (
+          <InsightBlock label="Style">
+            <Chips items={style} />
+          </InsightBlock>
+        ) : null}
+        {suggested.length > 0 ? (
+          <InsightBlock
+            label="Suggested tags"
+            action={
+              suggested.length > 1 ? (
+                <button
+                  type="button"
+                  className={styles.insightAction}
+                  onClick={() => void addAllTags()}
+                >
+                  Add all
+                </button>
+              ) : null
+            }
+          >
+            <div className={styles.chips}>
+              {suggested.map((tag) => (
+                <button
+                  key={tag}
+                  type="button"
+                  className={styles.chipAdd}
+                  aria-label={`Add tag ${tag}`}
+                  onClick={() => void addTag(tag)}
+                >
+                  {tag}
+                  <span className={styles.chipAddPlus} aria-hidden>
+                    +
+                  </span>
+                </button>
+              ))}
+            </div>
+          </InsightBlock>
+        ) : null}
+      </div>
+    </MetaCard>
+  );
+}
+
+function InsightBlock({
+  label,
+  copyText,
+  action,
+  children,
+}: {
+  label: string;
+  copyText?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className={styles.insightBlock}>
+      <div className={styles.insightHead}>
+        <span className={styles.insightLabel}>{label}</span>
+        {action}
+        {copyText ? <CopyButton text={copyText} /> : null}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Chips({ items }: { items: ReadonlyArray<string> }) {
+  return (
+    <div className={styles.chips}>
+      {items.map((item) => (
+        <span key={item} className={styles.chip}>
+          {item}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -383,14 +681,28 @@ function Identity({ save }: { save: Save | null | undefined }) {
 function Swatches({ save }: { save: Save | null | undefined }) {
   const colors = save?.dominantColors?.slice(0, 4) ?? [];
   if (colors.length === 0) return null;
+
+  const copy = async (color: string) => {
+    try {
+      await navigator.clipboard.writeText(color);
+      pushToast(`Copied ${color}`, "success");
+    } catch {
+      // Clipboard can reject without focus; skip the toast.
+    }
+  };
+
   return (
-    <div className={styles.swatches} aria-hidden>
+    <div className={styles.swatches}>
       {colors.map((color) => (
-        <span
-          key={color}
-          className={styles.swatch}
-          style={{ background: color }}
-        />
+        <Tooltip key={color} label={`Copy ${color}`} side="top">
+          <button
+            type="button"
+            className={styles.swatch}
+            style={{ background: color }}
+            aria-label={`Copy color ${color}`}
+            onClick={() => void copy(color)}
+          />
+        </Tooltip>
       ))}
     </div>
   );

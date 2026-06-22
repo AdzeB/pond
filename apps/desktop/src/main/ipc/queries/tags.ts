@@ -23,6 +23,15 @@ export const tagsQueries: QueryHandlerMap = {
     return await mergeTags(String(params.from ?? ""), String(params.to ?? ""));
   },
 
+  async "tags.update"(params) {
+    const { updateTag } = await import("../../core/tags");
+    const patch = (params.patch as Record<string, unknown>) ?? {};
+    return await updateTag(String(params.name ?? ""), {
+      ...("archived" in patch ? { archived: Boolean(patch.archived) } : {}),
+      ...("starred" in patch ? { starred: Boolean(patch.starred) } : {}),
+    });
+  },
+
   async "tags.delete"(params) {
     const { deleteTag } = await import("../../core/tags");
     return await deleteTag(String(params.name ?? ""));

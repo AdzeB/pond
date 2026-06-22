@@ -12,6 +12,7 @@
 }
 
 .pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   padding: 4px;
@@ -21,27 +22,61 @@
   box-shadow: var(--ds-shadow-4);
 }
 
-.tab {
-  position: relative;
+/* Animated thinking border. Overlays the pill without intercepting pointer
+   events; the beam layers fade themselves in/out via the `active` prop. */
+.beam {
+  z-index: 0;
+  pointer-events: none;
+}
+
+.beamSurface {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--ds-radius-full);
+}
+
+.row {
   display: inline-flex;
   align-items: center;
+}
+
+.askRow {
+  display: inline-flex;
+  align-items: center;
+}
+
+.item {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
+  background: none;
+  border: 0;
   border-radius: var(--ds-radius-full);
   transition: color var(--ds-duration-medium) var(--ds-easing-standard);
 
   > svg {
+    position: relative;
+    z-index: 1;
     width: 18px;
     height: 18px;
+    transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
   }
 
   &:hover,
   &[data-status="active"] {
     color: var(--ds-gray-12);
+  }
+
+  &:active > svg {
+    transform: scale(0.82);
   }
 
   &:focus-visible {
@@ -57,42 +92,71 @@
   border-radius: var(--ds-radius-full);
 }
 
-.label {
-  position: relative;
-  z-index: 1;
-  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+.separator {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin-inline: 7.5px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
 }
 
-.tab:active .label {
-  transform: scale(0.9);
-}
-
-.item {
-  position: relative;
+.search {
   display: inline-flex;
+  flex-shrink: 0;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
+  justify-content: space-between;
+  width: 150px;
+  height: 28px;
+  padding-inline: 12px 8px;
   color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
-  background: none;
+  background: var(--ds-gray-3);
   border: 0;
   border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 
   &:hover {
-    color: var(--ds-gray-6);
-    background: var(--ds-gray-11);
+    background: var(--ds-gray-4);
   }
 
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
+}
+
+.searchInner {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.searchIcon {
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  color: var(--ds-gray-9);
+}
+
+.searchLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.kbd {
+  flex-shrink: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-8);
 }
 
 .item.danger {
@@ -156,13 +220,4 @@
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
-}
-
-.separator {
-  flex-shrink: 0;
-  align-self: center;
-  width: 1px;
-  height: 16px;
-  margin: 0 2px;
-  background: var(--ds-gray-4);
 }

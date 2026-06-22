@@ -1,4 +1,5 @@
 import type { FieldId } from "../types";
+import { caption } from "./caption";
 import { color } from "./color";
 import { creator } from "./creator";
 import type { FieldDescriptor } from "./descriptor";
@@ -11,6 +12,7 @@ import { savedAt } from "./saved-at";
 import { sensitivity } from "./sensitivity";
 import { source } from "./source";
 import { tags } from "./tags";
+import { transcript } from "./transcript";
 import { typeField } from "./type";
 
 export type {
@@ -29,6 +31,8 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   duration,
   creator,
   note,
+  caption,
+  transcript,
   color,
   sensitivity,
   savedAt,

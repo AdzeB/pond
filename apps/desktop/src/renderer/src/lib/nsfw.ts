@@ -2,20 +2,22 @@ import { env, pipeline, RawImage } from "@huggingface/transformers";
 import type { Sensitivity } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import pLimit from "p-limit";
-import { pool, savesStore, upsertSave } from "@/stores/pool";
+import { pool, upsertSave } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { pickPrimaryUnit } from "./media";
 import type { Save } from "./types";
 
-// On-device NSFW detection: a lazily-loaded ViT classifies saves; verdict persisted to save.sensitivity and a background sweep syncs across devices.
+// On-device NSFW detection: a lazily-loaded ViT classifies saves; the verdict is
+// persisted to save.sensitivity (and synced across devices). The classification
+// is driven by the sensitivity enricher (lib/enrichment/enrichers/sensitivity.ts);
+// this module owns the model, the persistence, and the reveal UI state.
 
 type SensitivityState = "pending" | "safe" | "sensitive";
 
 const MODEL_ID = "AdamCodd/vit-base-nsfw-detector";
 
 // Verdict stamp (save.sensitivityModel); bumping re-classifies the whole library. Legacy MobileNet saves have a null stamp and get picked up.
-const SENSITIVITY_MODEL_VERSION = "vit-base-nsfw-detector@2";
+export const SENSITIVITY_MODEL_VERSION = "vit-base-nsfw-detector@2";
 
 // nsfw probability at/above which a save is flagged sensitive.
 const SENSITIVE_THRESHOLD = 0.5;
@@ -36,7 +38,7 @@ const revealStore = new Store<{ ids: ReadonlySet<string> }>({
 
 // Lazy shared classifier; dynamic import trims the bundle. Prefers WebGPU. q8 only — fp16 gives broken constant output for this ViT on WebGPU.
 let classifierPromise: Promise<ImageClassifier> | null = null;
-function getClassifier(): Promise<ImageClassifier> {
+export function getClassifier(): Promise<ImageClassifier> {
   if (!classifierPromise) {
     classifierPromise = (async () => {
       env.allowLocalModels = false;
@@ -66,20 +68,15 @@ function getClassifier(): Promise<ImageClassifier> {
   return classifierPromise;
 }
 
-const limit = pLimit(2);
-const inflight = new Set<string>();
-// Decode/classify failures: skipped this session rather than marked "safe" (a false negative would hide sensitive media).
-const failed = new Set<string>();
-
 // Best frame for a save: primary image or video poster; null until something's classifiable.
-function representativeImageUrl(save: Save): string | null {
+export function representativeImageUrl(save: Save): string | null {
   const unit = pickPrimaryUnit(save);
   if (!unit) return null;
   return unit.isVideo ? (unit.posterUrl ?? null) : unit.url;
 }
 
 // Fetch the bytes (img crossOrigin is rejected for the pond:// scheme) and hand the Blob to transformers.js.
-async function loadImage(url: string): Promise<RawImage> {
+export async function loadImage(url: string): Promise<RawImage> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
   return RawImage.fromBlob(await res.blob());
@@ -91,8 +88,23 @@ function verdictFromPredictions(predictions: Prediction[]): Sensitivity {
   return nsfw >= SENSITIVE_THRESHOLD ? "sensitive" : "safe";
 }
 
+// Classify one save's representative frame. Returns null when nothing is
+// classifiable yet (no frame) so the caller leaves it unstamped for a later run.
+export async function classifySensitivity(
+  save: Save,
+): Promise<Sensitivity | null> {
+  const url = representativeImageUrl(save);
+  if (!url) return null;
+  const classifier = await getClassifier();
+  const image = await loadImage(url);
+  // top_k must be > 0 — top_k:0 returns [] in transformers.js, which reads as "safe".
+  const out = await classifier(image, { top_k: 2 });
+  const predictions = (Array.isArray(out[0]) ? out[0] : out) as Prediction[];
+  return verdictFromPredictions(predictions);
+}
+
 // Update the pool immediately (blur/filter react now), then write through to the DB; a failed write retries later.
-async function persistVerdict(
+export async function persistVerdict(
   id: string,
   verdict: Sensitivity,
   model: string = SENSITIVITY_MODEL_VERSION,
@@ -113,77 +125,6 @@ async function persistVerdict(
   } catch (err) {
     console.warn(`[nsfw] failed to persist verdict for ${id}`, err);
   }
-}
-
-function classify(save: Save): void {
-  const id = save.id;
-  if (inflight.has(id) || failed.has(id)) return;
-  const url = representativeImageUrl(save);
-  if (!url) return; // nothing to classify yet; stays unclassified
-  inflight.add(id);
-  void limit(async () => {
-    let classifier: ImageClassifier;
-    try {
-      classifier = await getClassifier();
-    } catch {
-      // Model didn't load; bail unpersisted so a later sweep retries.
-      inflight.delete(id);
-      return;
-    }
-    try {
-      const image = await loadImage(url);
-      // top_k must be > 0 — top_k:0 returns [] in transformers.js, which reads as "safe".
-      const out = await classifier(image, { top_k: 2 });
-      const predictions = (
-        Array.isArray(out[0]) ? out[0] : out
-      ) as Prediction[];
-      await persistVerdict(id, verdictFromPredictions(predictions));
-    } catch (err) {
-      // Don't persist on failure — marking "safe" would falsely un-blur sensitive media.
-      failed.add(id);
-      console.warn(`[nsfw] classify failed for ${id}`, err);
-    } finally {
-      inflight.delete(id);
-    }
-  });
-}
-
-function isSweepEligible(save: Save): boolean {
-  if (save.status !== "complete" || save.deletedAt != null) return false;
-  // Unclassified, or classified by an older model — re-run with the current one.
-  return (
-    save.sensitivity == null ||
-    save.sensitivityModel !== SENSITIVITY_MODEL_VERSION
-  );
-}
-
-// Enqueue every unclassified save; cheap to re-run (classify dedupes, pLimit caps concurrency).
-function scan(): void {
-  for (const save of pool.snapshot()) {
-    if (isSweepEligible(save)) classify(save);
-  }
-}
-
-let sweepStarted = false;
-let scanScheduled = false;
-
-function scheduleScan(): void {
-  if (scanScheduled) return;
-  scanScheduled = true;
-  // Coalesce bursts of pool updates into one scan, off the store-update path.
-  setTimeout(() => {
-    scanScheduled = false;
-    scan();
-  }, 250);
-}
-
-// Begin the background sweep. Idempotent; unsubscribe is for symmetry (sweep runs for app lifetime).
-export function startSensitiveSweep(): () => void {
-  if (sweepStarted) return () => {};
-  sweepStarted = true;
-  scheduleScan();
-  const sub = savesStore.subscribe(scheduleScan);
-  return () => sub.unsubscribe();
 }
 
 function reveal(id: string): void {

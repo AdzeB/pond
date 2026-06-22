@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Sources · 20 prototype variations</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--run:#2f7fbf;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+.head{max-width:1080px;padding:48px 32px 0margin:0 auto;}
+.head h1{margin:0;font-size:28px;font-weight:680;letter-spacing:-.03em}
+.head p{max-width:620px;margin:8px 0 0;font-size:14px;line-height:1.5color:var(--ink-2);}
+.head .meta{display:flex;flex-wrap:wrapgap:8px;margin-top:14px;}
+.tag{padding:5px 11pxfont-size:11.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14pxmax-width:1080px;padding:24px 32px 90px;margin:0 auto;}
+.card{display:flex;flex-direction:column;overflow:hidden;color:inherit;text-decoration:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);transition:border-color .12s,transform .12s}
+.card:hover{border-color:var(--ink-3);transform:translateY(-2px)}
+.card .frame{position:relative;height:170px;overflow:hidden;background:var(--bg)border-bottom:1px solid var(--line-2);}
+.card .frame iframe{width:200%;height:340px;pointer-events:noneborder:0;transform:scale(.5);transform-origin:top left;}
+.card .num{position:absolute;top:10px;left:10px;padding:3px 7px;font-size:11px;font-weight:700;font-variant-numeric:tabular-numscolor:#fff;background:rgba(20,19,15,.7);border-radius:6px;}
+.card .body{padding:12px 14px}
+.card .t{font-size:13.5pxfont-weight:620;}
+.card .d{margin-top:3px;font-size:12px;line-height:1.45color:var(--ink-2);}
+.card .ref{margin-top:6pxfont-size:11px;color:var(--ink-3);}
+.foot{max-width:1080px;padding:0 32px 60px;margin:0 auto;font-size:12pxcolor:var(--ink-3);}
+</style></head>
+<body>
+<div class="head">
+  <h1>Sources — 20 prototype variations</h1>
+  <p>Twenty standalone takes on the pond Sources / sync-monitoring overview. Same warm theme, same fake dataset (9 sources, one live X run, shared activity log) so the organizing principle is the only thing that changes. Click any card to open it full-size.</p>
+  <div class="meta"><span class="tag">One page · no sidebar</span><span class="tag">No search</span><span class="tag">Current-sync monitor</span><span class="tag">Up to 9 sources</span></div>
+</div>
+<div class="grid" id="grid"></div>
+<div class="foot">Field names mirror pond's wide-events and <code>sync.history</code> query, so wiring a chosen direction later is mechanical.</div>
+<script>
+const items=[
+ ["01","sources-var-01-monitor-hero-20260622-2018.html","Monitor-hero","Large live sync monitor with phases + shimmer progress, source chips, activity log.","Klaviyo sync progress"],
+ ["02","sources-var-02-status-board-20260622-2018.html","Status-board","Summary counts column, “all systems operational” banner, filterable feed.","Twingate / status pages"],
+ ["03","sources-var-03-run-log-table-20260622-2018.html","Run-log table","Dominant run-history table — time / source / status / items / duration.","Sentry, Zapier"],
+ ["04","sources-var-04-integration-overview","sources-var-04-integration-overview-20260622-2018.html"],
+ ["05","sources-var-05-activity-first-20260622-2018.html","Activity-first","Full-height log is the page; sources as a filter rail; sticky monitor banner.","Realtime logs"],
+ ["06","sources-var-06-card-grid-20260622-2018.html","Card-grid","Vercel-style source cards with status ring + last-run line; monitor banner.","Vercel integrations"],
+ ["07","sources-var-07-expandable-list-20260622-2018.html","Expandable list","Clean source rows that expand inline for per-source detail.","Linear / settings rows"],
+ ["08","sources-var-08-timeline-20260622-2018.html","Timeline","Single vertical time axis of all runs; current run pinned at top.","Git history / vertical feeds"],
+ ["09","sources-var-09-swimlanes-20260622-2018.html","Swimlanes","One horizontal lane per source; run history as ticks; active run animating.","CI / Gantt"],
+ ["10","sources-var-10-kpi-dashboard-20260622-2018.html","KPI-dashboard","Greeting, big stat tiles, trend chart with monitor, side activity feed.","Outseta / analytics"],
+ ["11","sources-var-11-health-matrix-20260622-2018.html","Health-matrix","Sources × last-10-runs grid, cells colored by outcome (heatmap).","Better Stack / status grids"],
+ ["12","sources-var-12-split-pane-20260622-2018.html","Split-pane","Sources list left, selected source's detail + activity right — same page.","Mail / master-detail"],
+ ["13","sources-var-13-needs-attention-20260622-2018.html","Needs-attention","Fix-it checklist (re-auth GitHub, retry Instagram) above activity + summary.","Mintlify, Better Stack"],
+ ["14","sources-var-14-minimal-zen-20260622-2018.html","Minimal-zen","One hero number + chart, sources as status dots, tiny activity list.","visitors.now"],
+ ["15","sources-var-15-console-20260622-2018.html","Console","Monospace log stream in a terminal; status pills header; top progress line.","Deploy logs"],
+ ["16","sources-var-16-feed-rail-20260622-2018.html","Feed + rail","Big central live feed with rich rows; monitor + status summary on the side.","Wix realtime"],
+ ["17","sources-var-17-progress-stack-20260622-2018.html","Progress-stack","Stacked progress bars per active/queued source; idle sources collapsed below.","Upload / job queues"],
+ ["18","sources-var-18-lean-one-pager-20260622-2018.html","Lean one-pager","Refined v9 — metric strip + source chips + filterable activity.","pond v9"],
+ ["19","sources-var-19-grouped-by-status-20260622-2018.html","Grouped-by-status","Sources grouped Syncing / Healthy / Needs attention / Paused; monitor banner.","Kanban / sectioned lists"],
+ ["20","sources-var-20-heatmap-calendar-20260622-2018.html","Heatmap-calendar","Contribution graph of sync volume per day + today's runs + streak stats.","GitHub contributions"]
+];
+// fix entry 04 shape
+items[3]=["04","sources-var-04-integration-overview-20260622-2018.html","Integration-overview","Grid of mini metric charts (items/run, success, errors) + recent-errors panel.","Stripe"];
+const grid=document.getElementById('grid');
+for(const [num,file,title,desc,ref] of items){
+  const a=document.createElement('a');a.className='card';a.href=file;a.target='_blank';
+  a.innerHTML=`<div class="frame"><span class="num">${num}</span><iframe src="${file}" loading="lazy" scrolling="no"></iframe></div><div class="body"><div class="t">${title}</div><div class="d">${desc}</div><div class="ref">Ref · ${ref}</div></div>`;
+  grid.appendChild(a);
+}
+</script>
+</body></html>

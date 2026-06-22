@@ -12,6 +12,7 @@ export const savedViewsQueries: QueryHandlerMap = {
     const { createView } = await import("../../core/saved-views");
     return await createView({
       name: String(params.name ?? ""),
+      question: params.question == null ? null : String(params.question),
       query: params.query as Query | undefined,
       sortKey: params.sortKey ? String(params.sortKey) : undefined,
       sortDir: params.sortDir ? String(params.sortDir) : undefined,

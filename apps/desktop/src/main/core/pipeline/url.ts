@@ -57,6 +57,9 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
       const m = firstMatch(url, THREADS_PATTERNS);
       return m?.[1] ?? null;
     }
+    case "web":
+      // Generic links have no upstream id; the normalized href is the dedupe key.
+      return url.href;
     case "local":
       // Local saves mint their own id; no upstream URL.
       return null;

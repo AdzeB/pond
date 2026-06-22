@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Card-grid · deep dive</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 6px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+@keyframes grow{from{width:31%}to{width:40%}}
+@keyframes shimmer{0%{background-position:-220px 0}100%{background-position:260px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:1080px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{display:flex;gap:8pxmargin-left:auto;}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.btn{display:inline-flex;gap:7px;align-items:center;padding:6px 14px;font-size:12.5px;font-weight:540;color:var(--ink);cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:var(--shadow)}
+.btn.primary{color:#fff;background:var(--ink);border-color:var(--ink)}
+
+.content{display:flex;flex-direction:column;gap:18pxwidth:100%;max-width:1080px;padding:18px 32px 96px;margin:0 auto;}
+.sec-label{display:flex;gap:8pxalign-items:center;margin:2px 2px -6px;font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;}
+.sec-label .c{font-weight:500color:var(--ink-3);}
+
+/* KPI strip */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{position:relative;padding:14px 16px;overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.kpi .l{font-size:12px;color:var(--ink-2)}
+.kpi .v{margin-top:3px;font-size:26px;font-weight:650;font-variant-numeric:tabular-numsletter-spacing:-.02em;}
+.kpi .d{margin-top:1pxfont-size:11.5px;font-weight:600;}
+.up{color:var(--ok)}.down{color:var(--err)}.neu{color:var(--ink-3)}
+.kpi .spark{position:absolute;right:12px;bottom:12px;display:flex;gap:2px;align-items:flex-end;height:26px;opacity:.9}
+.kpi .spark i{width:4px;background:var(--bar)border-radius:2px 2px 0 0;}
+.kpi .spark.b i{background:rgba(47,127,191,.4)}.kpi .spark.b i.hl{background:var(--run)}
+.kpi .spark.g i{background:rgba(58,158,87,.4)}.kpi .spark.g i.hl{background:var(--ok)}
+
+/* Current sync pane */
+.monitor{overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+.mon-top{display:flex;gap:13px;align-items:center;padding:18px 20px 14px}
+.mon-ico{position:relative;display:grid;place-items:center;width:46px;height:46px;font-size:20px;font-weight:700color:#fff;background:#14130f;border-radius:12px;}
+.mon-ico .spinner{position:absolute;inset:-4px;border:2px solid transparent;border-top-color:var(--run);border-right-color:var(--run);border-radius:15px;opacity:.7animation:spin 1.1s linear infinite;}
+.mon-id{flex:1min-width:0;}
+.mon-id .nm{display:flex;gap:9pxalign-items:center;font-size:16px;font-weight:650;}
+.runtag{display:inline-flex;gap:6px;align-items:center;padding:2px 9px 2px 7pxfont-size:11px;font-weight:600;color:var(--run);background:rgba(47,127,191,.1);border-radius:999px;}
+.runtag .d{width:6px;height:6px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}
+.mon-id .sub{display:flex;gap:7pxalign-items:center;margin-top:3px;font-size:12.5px;color:var(--ink-3);}
+.mon-id .sub b{font-weight:600color:var(--ink-2);}
+.typepill{padding:1px 7pxfont-size:11px;font-weight:600;color:var(--ink-2);background:var(--hover);border:1px solid var(--line);border-radius:6px;}
+.mon-elapsed{text-align:right}
+.mon-elapsed .t{font-family:ui-monospace,Menlo,monospace;font-size:20px;font-weight:640;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.mon-elapsed .e{font-size:11px;color:var(--ink-3)}
+.mon-cancel{height:34px;padding:0 14px;margin-left:4pxfont-size:12.5px;font-weight:540;color:var(--ink-2);cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:9px;}
+.mon-cancel:hover{color:var(--err);border-color:var(--err)}
+
+.stages{display:flex;gap:10px;align-items:center;padding:0 20px 14px}
+.stage{display:inline-flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-3)}
+.stage .pn{display:grid;place-items:center;width:19px;height:19px;font-size:9pxborder:1.5px solid var(--line-2);border-radius:50%;}
+.stage .sc{font-size:11.5px;font-weight:400color:var(--ink-3);}
+.stage.done{color:var(--ink-2)}.stage.done .pn{color:#fffbackground:var(--ok);border-color:var(--ok);}
+.stage.active{font-weight:600color:var(--ink);}.stage.active .pn{color:var(--run);border-color:var(--run);animation:pulse 1.6s infinite}
+.stage.active .sc{color:var(--run)}
+.stages .line{flex:1;min-width:14pxheight:1.5px;background:var(--line-2);}
+
+.progress{padding:0 20px 16px}
+.track{height:10px;overflow:hiddenbackground:var(--bar);border-radius:999px;}
+.fillbar{position:relativewidth:35%;height:100%;background:linear-gradient(90deg,var(--run),#5aa0d8);border-radius:999px;}
+.fillbar::after{position:absolute;inset:0;content:"";background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);background-size:220px 100%;animation:shimmer 1.2s linear infinite}
+.pmeta{display:flex;justify-content:space-between;margin-top:9px;font-size:12.5px}
+.pmeta .counts{font-variant-numeric:tabular-numscolor:var(--ink-2);}.pmeta .counts b{font-weight:600color:var(--ink);}
+.pmeta .pct{font-variant-numeric:tabular-numscolor:var(--ink-3);}
+
+.mon-stats{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line-2)}
+.mon-stats .s{padding:12px 14px;border-right:1px solid var(--line-2)}.mon-stats .s:last-child{border-right:0}
+.mon-stats .sl{font-size:10.5px;color:var(--ink-3)text-transform:uppercase;letter-spacing:.04em;}
+.mon-stats .sv{margin-top:3px;font-size:17px;font-weight:640;font-variant-numeric:tabular-nums}
+.mon-stats .sv small{font-size:11px;font-weight:500color:var(--ink-3);}
+.sv.ok{color:var(--ok)}.sv.zero{color:var(--ink-3)}
+
+.mon-tail{padding:8px 10pxbackground:#fbfaf8;border-top:1px solid var(--line-2);}
+.tl{display:grid;grid-template-columns:56px 12px 1fr auto;gap:11px;align-items:baseline;padding:5px 10px;font-size:12px;border-radius:7px}
+.tl .ts{font-family:ui-monospace,Menlo,monospacefont-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-3);}
+.tl .ld{align-self:centerwidth:6px;height:6px;border-radius:50%;}.ld.ok{background:var(--ok)}.ld.run{background:var(--run)}
+.tl .m .dim{color:var(--ink-2)}.tl .m b{font-weight:600}
+.tl .dur{font-size:11px;font-variant-numeric:tabular-numscolor:var(--ink-3);}
+
+/* 4-column source grid */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.card{display:flex;flex-direction:columnpadding:14px;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);transition:border-color .12s,transform .12s;}
+.card:hover{border-color:var(--ink-3);transform:translateY(-2px)}
+.card .top{display:flex;gap:10pxalign-items:center;}
+.ring{position:relative;flex:nonewidth:36px;height:36px;}
+.ring .ico{display:grid;place-items:center;width:36px;height:36px;font-size:16pxfont-weight:700;color:#fff;border-radius:10px;}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.ms{background:#6364ff}.ico.rss{background:#f26522}.ico.hn{background:#ff6600}.ico.gh{background:#24292e}
+.ring .dot{position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border:2.5px solid var(--panel)border-radius:50%;}
+.dot.ok{background:var(--ok)}.dot.run{background:var(--run);animation:pulse 1.4s infinite}.dot.err{background:var(--err)}.dot.idle{background:var(--ink-3)}.dot.paused{background:var(--warn)}
+.card .nm{font-size:14px;font-weight:620;line-height:1.1}
+.card .st{margin-top:2pxfont-size:11.5px;}
+.st.ok{color:var(--ok)}.st.run{color:var(--run)}.st.err{color:var(--err)}.st.idle{color:var(--ink-3)}.st.paused{color:var(--warn)}
+.card .kebab{align-self:flex-start;padding:2pxmargin-left:auto;font-size:16px;line-height:1;color:var(--ink-3);}
+.card .minibar{height:5px;margin-top:13px;overflow:hiddenbackground:var(--bar);border-radius:999px;}
+.card .minibar i{display:block;height:100%;border-radius:999px}
+.card .minibar i.live{position:relative;background:linear-gradient(90deg,var(--run),#5aa0d8);animation:grow 2.6s ease-in-out infinite alternate}
+.card .minibar i.live::after{position:absolute;inset:0;content:"";background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);background-size:120px 100%;animation:shimmer 1.2s linear infinite}
+.card .meta{display:flex;justify-content:space-between;padding-top:9pxmargin-top:11px;font-size:11px;color:var(--ink-3);border-top:1px solid var(--line-2);}
+.card .meta b{font-weight:600;font-variant-numeric:tabular-numscolor:var(--ink-2);}
+.card.add{display:grid;place-items:center;min-height:130px;font-size:13px;font-weight:540color:var(--ink-2);border-style:dashed;}
+.card.add:hover{color:var(--ink);border-color:var(--ink-3)transform:none;}
+
+.note{margin-top:8pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">9 connected</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span><button class="btn">Sync all</button></span></div>
+<div class="content">
+
+  <div class="kpis">
+    <div class="kpi"><div class="l">Items synced · 7d</div><div class="v">3,418</div><div class="d up">↑ 12.4% vs last week</div><div class="spark b"><i style="height:30%"></i><i style="height:48%"></i><i style="height:40%"></i><i style="height:62%"></i><i style="height:52%"></i><i style="height:74%"></i><i class="hl" style="height:96%"></i></div></div>
+    <div class="kpi"><div class="l">Runs today</div><div class="v">18</div><div class="d neu">next in 14m</div><div class="spark"><i style="height:40%"></i><i style="height:55%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:60%"></i><i style="height:50%"></i><i style="height:80%"></i></div></div>
+    <div class="kpi"><div class="l">Success rate</div><div class="v">99.1%</div><div class="d up">↑ 0.6%</div><div class="spark g"><i style="height:80%"></i><i style="height:88%"></i><i style="height:78%"></i><i style="height:92%"></i><i style="height:86%"></i><i style="height:94%"></i><i class="hl" style="height:99%"></i></div></div>
+    <div class="kpi"><div class="l">Avg run time</div><div class="v">4.2s</div><div class="d neu">↑ 0.4s</div><div class="spark"><i style="height:50%"></i><i style="height:42%"></i><i style="height:60%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:52%"></i><i style="height:62%"></i></div></div>
+  </div>
+
+  <div class="sec-label">Current sync</div>
+  <div class="monitor">
+    <div class="mon-top">
+      <span class="mon-ico">𝕏<span class="spinner"></span></span>
+      <div class="mon-id"><div class="nm">X / Twitter <span class="runtag"><span class="d"></span>running</span></div><div class="sub"><span class="typepill">Manual sync</span> started <b>16:02:01</b> · Twitter bookmarks</div></div>
+      <div class="mon-elapsed"><div class="t">00:42</div><div class="e">elapsed</div></div>
+      <button class="mon-cancel">Cancel</button>
+    </div>
+    <div class="stages">
+      <span class="stage done"><span class="pn">✓</span>Harvest <span class="sc">340 seen · 120 new</span></span>
+      <span class="line"></span>
+      <span class="stage active"><span class="pn">●</span>Enqueue <span class="sc">queueing into pipeline</span></span>
+    </div>
+    <div class="progress">
+      <div class="track"><div class="fillbar" style="width:35%"></div></div>
+      <div class="pmeta"><span class="counts">queueing fresh bookmarks · <b>0</b> failed</span><span class="pct">42 / 120 · 35%</span></div>
+    </div>
+    <div class="mon-stats">
+      <div class="s"><div class="sl">Seen</div><div class="sv">340</div></div>
+      <div class="s"><div class="sl">New</div><div class="sv">120</div></div>
+      <div class="s"><div class="sl">Recovered</div><div class="sv">0</div></div>
+      <div class="s"><div class="sl">Queued</div><div class="sv ok">42</div></div>
+      <div class="s"><div class="sl">Failed</div><div class="sv zero">0</div></div>
+    </div>
+    <div class="mon-tail">
+      <div class="tl"><span class="ts">16:02:14</span><span class="ld run"></span><span class="m"><span class="dim">Queueing 42 of 120 bookmarks…</span></span><span class="dur">running</span></div>
+      <div class="tl"><span class="ts">16:02:08</span><span class="ld ok"></span><span class="m"><span class="dim">Found 120 new bookmarks (340 scanned)</span></span><span class="dur">harvest</span></div>
+      <div class="tl"><span class="ts">16:02:01</span><span class="ld ok"></span><span class="m"><span class="dim">Looking at your Twitter bookmarks…</span></span><span class="dur">start</span></div>
+    </div>
+  </div>
+
+  <div class="sec-label">Sources <span class="c">· 9 connected</span></div>
+  <div class="grid">
+    <div class="card"><div class="top"><span class="ring"><span class="ico x">𝕏</span><span class="dot run"></span></span><div><div class="nm">X / Twitter</div><div class="st run">Syncing · 42/120</div></div><span class="kebab">⋯</span></div><div class="minibar"><i class="live" style="width:35%"></i></div><div class="meta"><span>Manual</span><span><b>now</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico yt">▶</span><span class="dot ok"></span></span><div><div class="nm">YouTube</div><div class="st ok">Queued 8</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>Every 1h</span><span><b>3m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico rd">r</span><span class="dot idle"></span></span><div><div class="nm">Reddit</div><div class="st idle">Caught up</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 30m</span><span><b>12m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico ig">◎</span><span class="dot err"></span></span><div><div class="nm">Instagram</div><div class="st err">Rate limited</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--err)"></i></div><div class="meta"><span>Retry 16:08</span><span><b>9m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico bs">⊛</span><span class="dot ok"></span></span><div><div class="nm">Bluesky</div><div class="st ok">Queued 3</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>Every 1h</span><span><b>21m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico ms">m</span><span class="dot idle"></span></span><div><div class="nm">Mastodon</div><div class="st idle">Caught up</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 1h</span><span><b>34m ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico rss">≈</span><span class="dot ok"></span></span><div><div class="nm">RSS</div><div class="st ok">Queued 22</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--ok)"></i></div><div class="meta"><span>14 feeds</span><span><b>1h ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico hn">Y</span><span class="dot idle"></span></span><div><div class="nm">Hacker News</div><div class="st idle">Caught up</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--bar)"></i></div><div class="meta"><span>Every 2h</span><span><b>2h ago</b></span></div></div>
+    <div class="card"><div class="top"><span class="ring"><span class="ico gh">⌥</span><span class="dot paused"></span></span><div><div class="nm">GitHub</div><div class="st paused">Paused · auth</div></div><span class="kebab">⋯</span></div><div class="minibar"><i style="width:100%;background:var(--warn)"></i></div><div class="meta"><span>Re-auth needed</span><span><b>—</b></span></div></div>
+    <div class="card add">+ Add source</div>
+  </div>
+
+  <p class="note">Card-grid · deep dive — 4-column grid, detailed current-sync pane, KPI strip</p>
+</div>
+</body></html>

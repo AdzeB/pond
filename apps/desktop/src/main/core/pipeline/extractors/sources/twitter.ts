@@ -70,11 +70,16 @@ export class TwitterTweetExtractor implements Extractor {
         ? [{ tweetId: quotedRaw.tweetId, url: quotedRaw.url }]
         : [];
 
+    // Rich quoted content so the native card can render the nested quote inline
+    // instead of a separate screenshot.
+    const quotedTweet = buildQuotedTweet(quotedRaw);
+
     const extras: Record<string, unknown> = {
       ...(typeof meta.conversationId === "string"
         ? { conversationId: meta.conversationId }
         : {}),
       ...(quotedTweets.length > 0 ? { quotedTweets } : {}),
+      ...(quotedTweet ? { quotedTweet } : {}),
     };
 
     return {
@@ -93,6 +98,60 @@ export class TwitterTweetExtractor implements Extractor {
       ...(Object.keys(extras).length > 0 ? { extras } : {}),
     };
   }
+}
+
+interface QuotedTweetExtra {
+  tweetId?: string;
+  url?: string;
+  author?: { name?: string; handle?: string; avatarUrl?: string };
+  text?: string;
+  media?: MediaCandidate[];
+}
+
+// Shapes the harvested quote DOM into the rich extra the card consumes. Returns
+// undefined when there's nothing renderable (no text, author, or media).
+function buildQuotedTweet(
+  raw: Record<string, unknown>,
+): QuotedTweetExtra | undefined {
+  const handle =
+    typeof raw.author === "string" ? raw.author.replace(/^@/, "") : undefined;
+  const name = typeof raw.authorName === "string" ? raw.authorName : undefined;
+  const avatarUrl =
+    typeof raw.authorAvatar === "string" ? raw.authorAvatar : undefined;
+  const text = typeof raw.text === "string" ? raw.text : undefined;
+  const media: MediaCandidate[] = Array.isArray(raw.media)
+    ? (raw.media as Array<Record<string, unknown>>)
+        .filter((m) => typeof m.url === "string")
+        .map((m) => ({
+          url: m.url as string,
+          type: m.type === "video" ? "video" : "image",
+          ...(typeof m.poster === "string" ? { posterUrl: m.poster } : {}),
+          ...(typeof m.width === "number" ? { width: m.width } : {}),
+          ...(typeof m.height === "number" ? { height: m.height } : {}),
+          ...(typeof m.durationSec === "number"
+            ? { durationSec: m.durationSec }
+            : {}),
+        }))
+    : [];
+
+  const author =
+    handle || name || avatarUrl
+      ? {
+          ...(name ? { name } : {}),
+          ...(handle ? { handle } : {}),
+          ...(avatarUrl ? { avatarUrl } : {}),
+        }
+      : undefined;
+
+  if (!author && !text && media.length === 0) return undefined;
+
+  return {
+    ...(typeof raw.tweetId === "string" ? { tweetId: raw.tweetId } : {}),
+    ...(typeof raw.url === "string" ? { url: raw.url } : {}),
+    ...(author ? { author } : {}),
+    ...(text ? { text } : {}),
+    ...(media.length > 0 ? { media } : {}),
+  };
 }
 
 function pickNumbers<K extends string>(

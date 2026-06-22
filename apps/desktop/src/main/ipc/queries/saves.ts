@@ -64,9 +64,38 @@ async function loadTasksFor(
   return grouped;
 }
 
-// Every saves column except the heavy rawJson blob; raw_slim carries the projection
-// the grid needs, so saves.list never reads or parses rawJson.
-const { rawJson: _omitRawJson, ...SAVE_LIST_COLUMNS } = getTableColumns(saves);
+// Every saves column except the heavy rawJson blob and the large vectors/text;
+// raw_slim carries the projection the grid needs, so saves.list never reads or
+// parses rawJson. embedding/clipEmbedding load via `saves.embeddings` /
+// `saves.clipEmbeddings`, and transcript loads lazily in the detail view.
+const {
+  rawJson: _omitRawJson,
+  embedding: _omitEmbedding,
+  clipEmbedding: _omitClipEmbedding,
+  transcript: _omitTranscript,
+  ...SAVE_LIST_COLUMNS
+} = getTableColumns(saves);
+
+// Columns the enrichment pipeline may write back via `saves.patchDerived`. All
+// are on-device-derived (DB-only, non-synced); writing them never emits a sync
+// action. Maps the wire patch key to the drizzle column.
+const DERIVED_COLUMNS = {
+  caption: saves.caption,
+  captionModel: saves.captionModel,
+  ocrText: saves.ocrText,
+  ocrModel: saves.ocrModel,
+  transcript: saves.transcript,
+  transcriptModel: saves.transcriptModel,
+  clipEmbedding: saves.clipEmbedding,
+  clipModel: saves.clipModel,
+  aesthetic: saves.aesthetic,
+  aestheticModel: saves.aestheticModel,
+  autoTitleModel: saves.autoTitleModel,
+  suggestedTags: saves.suggestedTags,
+  suggestedTagsModel: saves.suggestedTagsModel,
+} as const;
+
+type DerivedKey = keyof typeof DERIVED_COLUMNS;
 
 export const savesQueries: QueryHandlerMap = {
   ...savesImportQueries,
@@ -173,6 +202,95 @@ export const savesQueries: QueryHandlerMap = {
       { actorReason: "nsfw:classify" },
     );
     return { ok: true };
+  },
+
+  // All persisted embeddings (id + vector + model stamp), loaded once on startup
+  // into the renderer's in-memory embedding store. Vectors are excluded from
+  // saves.list to keep that payload small, so this is the only path that reads them.
+  async "saves.embeddings"() {
+    const db = await getDb();
+    const rows = await db
+      .select({
+        id: saves.id,
+        embedding: saves.embedding,
+        embeddingModel: saves.embeddingModel,
+      })
+      .from(saves)
+      .where(isNotNull(saves.embedding));
+    return rows.map((r) => ({
+      id: r.id,
+      embedding: r.embedding ?? null,
+      embeddingModel: r.embeddingModel ?? null,
+    }));
+  },
+
+  // Persist an on-device embedding. Written directly (not via the sync executor)
+  // because the vector is large and would bloat the sync-action ring; embeddings
+  // are cheap to re-derive per device, so they don't need to sync.
+  async "saves.setEmbedding"(params) {
+    const id = String(params.id ?? "");
+    if (!id) return { ok: false };
+    const raw = params.embedding;
+    const embedding =
+      Array.isArray(raw) && raw.every((n) => typeof n === "number")
+        ? (raw as number[])
+        : null;
+    const embeddingModel =
+      params.embeddingModel != null ? String(params.embeddingModel) : null;
+    const db = await getDb();
+    await db
+      .update(saves)
+      .set({ embedding, embeddingModel })
+      .where(eq(saves.id, id));
+    return { ok: true };
+  },
+
+  // All persisted CLIP image vectors, hydrated into the renderer's clip store on
+  // startup. Mirrors `saves.embeddings`; vectors are excluded from saves.list.
+  async "saves.clipEmbeddings"() {
+    const db = await getDb();
+    const rows = await db
+      .select({
+        id: saves.id,
+        clipEmbedding: saves.clipEmbedding,
+        clipModel: saves.clipModel,
+      })
+      .from(saves)
+      .where(isNotNull(saves.clipEmbedding));
+    return rows.map((r) => ({
+      id: r.id,
+      clipEmbedding: r.clipEmbedding ?? null,
+      clipModel: r.clipModel ?? null,
+    }));
+  },
+
+  // Lazy transcript for one save (excluded from the list payload, like rawJson).
+  async "saves.transcript"(params) {
+    const db = await getDb();
+    const id = String(params.id ?? "");
+    if (!id) return { id: "", transcript: null };
+    const rows = await db
+      .select({ transcript: saves.transcript })
+      .from(saves)
+      .where(eq(saves.id, id));
+    return { id, transcript: rows[0]?.transcript ?? null };
+  },
+
+  // Generic write-back for on-device enrichment. Whitelisted, DB-only (non-synced
+  // like setEmbedding); the saves AFTER UPDATE trigger refreshes the FTS index for
+  // any text columns (caption/ocr_text/transcript) automatically.
+  async "saves.patchDerived"(params) {
+    const id = String(params.id ?? "");
+    if (!id) return { ok: false as const };
+    const patch = (params.patch ?? {}) as Record<string, unknown>;
+    const set: Record<string, unknown> = {};
+    for (const key of Object.keys(patch) as DerivedKey[]) {
+      if (key in DERIVED_COLUMNS) set[key] = patch[key];
+    }
+    if (Object.keys(set).length === 0) return { ok: false as const };
+    const db = await getDb();
+    await db.update(saves).set(set).where(eq(saves.id, id));
+    return { ok: true as const };
   },
 
   async "saves.copyImage"(params) {

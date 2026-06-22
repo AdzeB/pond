@@ -3,7 +3,11 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, safeStorage } from "electron";
 import log from "electron-log/main.js";
-import { KEYCHAIN_INGEST_TOKEN, KEYCHAIN_SERVICE } from "../shared/constants";
+import {
+  KEYCHAIN_AI_API_KEY,
+  KEYCHAIN_INGEST_TOKEN,
+  KEYCHAIN_SERVICE,
+} from "../shared/constants";
 
 const SECRETS_FILE = "secrets.json";
 
@@ -86,4 +90,21 @@ export async function rotateIngestToken(): Promise<string> {
   const token = randomBytes(24).toString("hex");
   await setIngestToken(token);
   return token;
+}
+
+// API key for a custom OpenAI-compatible AI endpoint. Stored encrypted, never
+// in prefs. Returns null when none is set (local servers don't need one).
+export async function getAiApiKey(): Promise<string | null> {
+  const all = await readAll();
+  const value = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY)];
+  if (!value) return null;
+  return decrypt(value);
+}
+
+export async function setAiApiKey(key: string | null): Promise<void> {
+  const all = await readAll();
+  const mapKey = entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY);
+  if (key && key.trim().length > 0) all[mapKey] = encrypt(key.trim());
+  else delete all[mapKey];
+  await writeAll(all);
 }

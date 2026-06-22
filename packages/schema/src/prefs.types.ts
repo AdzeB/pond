@@ -107,6 +107,20 @@ export interface WindowBounds {
   height: number;
 }
 
+// ── Sources page (KPI strip) ──────────────────────────────────────────────
+// Which aggregate metrics the user pins to the Sources header and whether each
+// renders as a full card or a compact chip. Metric ids are owned by the
+// renderer's metric catalog; the schema stays generic so adding a metric never
+// requires a migration.
+export type SourceMetricDisplay = "card" | "chip";
+
+export const DEFAULT_SOURCE_METRICS: string[] = [
+  "itemsSynced",
+  "successRate",
+  "runsToday",
+  "avgRun",
+];
+
 export type SourceVisibility = "always" | "when-count" | "hidden";
 
 export interface SidebarSourceEntry {

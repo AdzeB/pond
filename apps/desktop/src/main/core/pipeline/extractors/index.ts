@@ -9,6 +9,7 @@ import { RedditPostExtractor } from "./sources/reddit";
 import { ThreadsPostExtractor } from "./sources/threads";
 import { TikTokVideoExtractor } from "./sources/tiktok";
 import { TwitterTweetExtractor } from "./sources/twitter";
+import { WebPageExtractor } from "./sources/web";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
@@ -25,12 +26,18 @@ const EXTRACTORS = {
   threads: new ThreadsPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
+// Generic-link fallback. Catch-all, so it lives outside EXTRACTOR_LIST to avoid
+// shadowing the source-specific extractors; wired in explicitly below.
+const WEB_EXTRACTOR = new WebPageExtractor();
+
 /** All extractors in URL-resolution order. Exported for the test runner. */
 export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(EXTRACTORS);
 
 /** The extractor for a source, or `null` for `local` (which has none). */
 export function extractorFor(source: Source): Extractor | null {
-  return source === "local" ? null : EXTRACTORS[source];
+  if (source === "local") return null;
+  if (source === "web") return WEB_EXTRACTOR;
+  return EXTRACTORS[source];
 }
 
 export function resolveExtractor(rawUrl: string): Extractor {
@@ -43,6 +50,8 @@ export function resolveExtractor(rawUrl: string): Extractor {
   for (const ex of EXTRACTOR_LIST) {
     if (ex.suitable(url)) return ex;
   }
+  // Any remaining http(s) URL falls back to the generic web extractor.
+  if (WEB_EXTRACTOR.suitable(url)) return WEB_EXTRACTOR;
   throw new UnsupportedError(`no extractor for ${rawUrl}`);
 }
 
@@ -60,6 +69,9 @@ export function classifyUrlToSource(rawUrl: string): {
     if (ex.suitable(url)) {
       return { source: ex.source, extractorId: ex.id };
     }
+  }
+  if (WEB_EXTRACTOR.suitable(url)) {
+    return { source: WEB_EXTRACTOR.source, extractorId: WEB_EXTRACTOR.id };
   }
   return { source: null, extractorId: null };
 }

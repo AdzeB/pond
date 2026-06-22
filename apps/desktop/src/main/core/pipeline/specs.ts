@@ -22,6 +22,9 @@ export function maxAttemptsFor(op: Op): number {
 export function planOps(source: Source): readonly Op[] {
   // Local saves carry everything at import time; no pipeline ops.
   if (source === "local") return [];
+  // Generic web links: fetch metadata + cover only. Skip capture_tweet,
+  // yt-dlp, poster, and avatar so an arbitrary article never triggers them.
+  if (source === "web") return ["harvest_metadata", "fetch_blobs", "finalize"];
   // capture_tweet is twitter-only; filter it out elsewhere to avoid dead tasks.
   if (source === "twitter") return UNIVERSAL_SPEC;
   return UNIVERSAL_SPEC.filter((op) => op !== "capture_tweet");
@@ -114,6 +117,11 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.metrics.replies",
       "capture.author.avatarUrl",
     ],
+  },
+  // Generic web links: a title is the bar; cover + description are nice-to-have.
+  web: {
+    required: ["title"],
+    recommended: ["description", "mediaUrl"],
   },
   // Local imports supply their own metadata; nothing to grade.
   local: { required: [], recommended: [] },

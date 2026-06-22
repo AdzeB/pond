@@ -19,14 +19,10 @@ export function LibraryView() {
     data.mode === "source" ? data.sourceFilter : undefined,
   );
   const placeholderCount =
-    (data.mode === "library" || data.mode === "source") &&
-    data.viewMode !== "list"
-      ? ingestingCount
-      : 0;
+    data.mode === "library" || data.mode === "source" ? ingestingCount : 0;
 
   return (
     <LibraryGrid.Root
-      view={data.viewMode === "list" ? "list" : "grid"}
       onDragOver={actions.onDragOver}
       onDrop={(e) => void actions.onDrop(e)}
     >
@@ -44,7 +40,6 @@ export function LibraryView() {
         <LayoutSwitcher
           viewMode={data.viewMode}
           saves={data.filtered}
-          selectedId={data.selectedId}
           multiSelectActive={actions.multiSelectActive}
           placeholderCount={placeholderCount}
           onClick={actions.handleCardClick}

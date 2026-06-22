@@ -1,5 +1,9 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
-import { IPC, type MenuActionId } from "../shared/constants";
+import {
+  type ContextMenuTemplateItem,
+  IPC,
+  type MenuActionId,
+} from "../shared/constants";
 
 export interface RelocatePreviewWire {
   currentPath: string;
@@ -54,6 +58,11 @@ const api = {
 
   query(name: string, params?: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.query, name, params);
+  },
+
+  // Pop up a native context menu; resolves with the chosen item id or null.
+  popupMenu(template: ContextMenuTemplateItem[]): Promise<string | null> {
+    return ipcRenderer.invoke(IPC.menuPopup, template);
   },
 
   // Electron 41 removed File.path. Resolve a dropped/picked File to its

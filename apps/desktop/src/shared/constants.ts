@@ -8,6 +8,8 @@ export const KEYCHAIN_SERVICE = "so.pond.desktop";
 
 export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
 
+export const KEYCHAIN_AI_API_KEY = "ai-api-key";
+
 export const POND_PROTOCOL = "pond";
 
 export const IPC = {
@@ -38,7 +40,20 @@ export const IPC = {
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
+  menuPopup: "pond:menu-popup",
 } as const;
+
+// Serializable native context-menu template sent renderer -> main. The renderer
+// keeps the click handlers; main returns the `id` of the chosen item (or null).
+export interface ContextMenuTemplateItem {
+  id?: string;
+  type?: "normal" | "separator" | "submenu" | "checkbox";
+  label?: string;
+  enabled?: boolean;
+  checked?: boolean;
+  accelerator?: string;
+  submenu?: ContextMenuTemplateItem[];
+}
 
 export type MenuActionId =
   | "view.inspector.toggle"
@@ -67,8 +82,6 @@ export type MenuActionId =
   | "save.bulk-refresh"
   | "trash.empty"
   | "trash.restore-all"
-  | "library.export-zip"
-  | "library.export-json"
   | "library.move"
   | "developer.restart-api"
   | "developer.open-logs"

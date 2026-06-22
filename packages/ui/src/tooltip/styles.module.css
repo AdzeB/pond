@@ -10,7 +10,13 @@
     bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 
-  &[data-instant] {
+  /* Base UI positions the popup by writing pixel top/left onto the positioner,
+     starting from 0,0 before the first measurement. Transitioning those on the
+     initial open makes the popup slide in from the viewport corner, so we only
+     animate position changes once the popup is already open (i.e. when the
+     shared handle moves it between triggers). */
+  &[data-instant],
+  &:has([data-starting-style]) {
     transition: none;
   }
 }

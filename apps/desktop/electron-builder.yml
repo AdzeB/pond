@@ -8,6 +8,11 @@ asarUnpack:
   - resources/**
   - "**/*.node"
   - "**/node_modules/better-sqlite3/**"
+  # node-llama-cpp ships a native addon plus platform-specific llama.cpp
+  # binaries (under the @node-llama-cpp scope); they must live outside the
+  # asar so the addon can dlopen() them at runtime.
+  - "**/node_modules/node-llama-cpp/**"
+  - "**/node_modules/@node-llama-cpp/**"
 
 directories:
   buildResources: build

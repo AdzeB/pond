@@ -10,6 +10,7 @@ const SOURCE_PRESETS = [
   { id: "cosmos", label: "Cosmos", value: "cosmos" },
   { id: "tiktok", label: "TikTok", value: "tiktok" },
   { id: "youtube", label: "YouTube", value: "youtube" },
+  { id: "web", label: "Web", value: "web" },
   { id: "local", label: "Local", value: "local" },
 ] as const;
 

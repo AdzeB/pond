@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>16 · Feed + rail</title>
+<style>
+:root{--bg:#f7f7f6;--panel:#fff;--ink:#14130f;--ink-2:#6b6962;--ink-3:#9a978d;--line:#ececE7;--line-2:#f1f0ec;--hover:#f7f6f2;--ok:#3a9e57;--warn:#c98a16;--err:#cc4b37;--run:#2f7fbf;--live:#2fbf71;--bar:#e7e4dc;--shadow:0 1px 2px rgba(20,19,15,.05)}
+*{box-sizing:border-box}html,body{padding:0margin:0;}
+body{font-family:ui-sans-serif,-apple-system,"SF Pro Text","Inter",system-ui,sans-serif;font-size:14px-webkit-font-smoothing:antialiased;color:var(--ink);background:var(--bg);}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(47,127,191,.45)}70%{box-shadow:0 0 0 5px rgba(47,127,191,0)}100%{box-shadow:0 0 0 0 rgba(47,127,191,0)}}
+@keyframes pulseG{0%{box-shadow:0 0 0 0 rgba(47,191,113,.45)}70%{box-shadow:0 0 0 5px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+.topbar{display:flex;gap:14px;align-items:baseline;width:100%;max-width:940px;padding:40px 32px 0margin:0 auto;}
+.topbar h1{margin:0;font-size:24px;font-weight:640;letter-spacing:-.02em}.topbar .crumb{font-size:13.5pxcolor:var(--ink-2);}.topbar .right{margin-left:auto}
+.live{display:inline-flex;gap:7px;align-items:center;padding:6px 12pxfont-size:12.5px;color:var(--ink-2);background:var(--panel);border:1px solid var(--line);border-radius:999px;}.live .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}
+.content{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:startwidth:100%;max-width:940px;padding:18px 32px 90px;margin:0 auto;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.ch{display:flex;gap:8px;align-items:center;padding:13px 16px 11px;border-bottom:1px solid var(--line-2)}.ch h3{margin:0;font-size:14px;font-weight:620}.ch .ld{width:7px;height:7px;background:var(--live);border-radius:50%;animation:pulseG 2s infinite}.ch .r{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.feed .le{display:grid;grid-template-columns:30px 1fr auto;gap:11px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--line-2)}.feed .le:last-child{border-bottom:0}
+.ico{display:grid;place-items:center;width:30px;height:30px;font-size:13pxfont-weight:700;color:#fff;border-radius:8px;}
+.ico.x{background:#14130f}.ico.yt{background:#ce3b30}.ico.ig{background:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7)}.ico.rd{background:#e0592a}.ico.bs{background:#1185fe}.ico.ms{background:#6364ff}.ico.rss{background:#f26522}.ico.hn{background:#ff6600}.ico.gh{background:#24292e}
+.le .m{font-size:13px}.le .m b{font-weight:620}.le .m .dim{color:var(--ink-2)}.le .m .sub{margin-top:1pxfont-size:11.5px;color:var(--ink-3);}
+.le .badge{padding:2px 8px;font-size:10px;font-weight:600;white-space:nowrapborder-radius:999px;}
+.b.run{color:var(--run)background:rgba(47,127,191,.12);}.b.ok{color:var(--ok)background:rgba(58,158,87,.12);}.b.err{color:var(--err)background:rgba(204,75,55,.12);}.b.warn{color:var(--warn)background:rgba(201,138,22,.14);}.b.tm{color:var(--ink-3)}
+.side{display:flex;flex-direction:column;gap:14px}
+.mon{padding:14pxbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.mon .top{display:flex;gap:10pxalign-items:center;}.mon .bico{display:grid;place-items:center;width:30px;height:30px;font-size:14px;font-weight:700color:#fff;background:#14130f;border-radius:8px;}
+.mon .nm{font-size:13pxfont-weight:620;}.mon .st{display:flex;gap:6pxalign-items:center;font-size:11.5px;color:var(--run);}.mon .st .d{width:6px;height:6px;background:var(--run);border-radius:50%;animation:pulse 1.4s infinite}
+.mon .track{height:7px;margin-top:12px;overflow:hiddenbackground:var(--bar);border-radius:999px;}.mon .track i{display:block;width:35%;height:100%;background:var(--run);border-radius:999px}
+.mon .pm{display:flex;justify-content:space-between;margin-top:7px;font-size:11px;color:var(--ink-2)}
+.summary{overflow:hiddenbackground:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);}
+.sr{display:flex;gap:9px;align-items:center;padding:9px 14px;font-size:12pxborder-bottom:1px solid var(--line-2);}.sr:last-child{border-bottom:0}.sr .sd{width:8px;height:8px;border-radius:50%}.sr .c{margin-left:auto;font-weight:640;font-variant-numeric:tabular-nums}
+.sd.ok{background:var(--ok)}.sd.run{background:var(--run)}.sd.err{background:var(--err)}.sd.idle{background:var(--ink-3)}.sd.paused{background:var(--warn)}
+.note{grid-column:1/-1;margin-top:6pxfont-size:11.5px;color:var(--ink-3);text-align:center;}
+</style></head>
+<body>
+<div class="topbar"><h1>Sources</h1><span class="crumb">Live feed</span><span class="right"><span class="live"><span class="ld"></span>1 syncing now</span></span></div>
+<div class="content">
+  <div class="card">
+    <div class="ch"><span class="ld"></span><h3>Live activity</h3><span class="r">across 9 sources</span></div>
+    <div class="feed">
+      <div class="le"><span class="ico x">𝕏</span><div class="m"><b>X / Twitter</b> <span class="dim">harvesting timeline</span><div class="sub">page 3 of ~6 · seen 86 · queued 42</div></div><span class="badge b run">running</span></div>
+      <div class="le"><span class="ico x">𝕏</span><div class="m"><b>X / Twitter</b> <span class="dim">enqueued bookmarks</span><div class="sub">+12 added to queue</div></div><span class="badge b ok">+12</span></div>
+      <div class="le"><span class="ico rss">≈</span><div class="m"><b>RSS</b> <span class="dim">sync completed</span><div class="sub">queued 22 across 14 feeds</div></div><span class="badge b tm">16:01</span></div>
+      <div class="le"><span class="ico yt">▶</span><div class="m"><b>YouTube</b> <span class="dim">sync completed</span><div class="sub">queued 8 · 0 failed · 5.1s</div></div><span class="badge b tm">15:59</span></div>
+      <div class="le"><span class="ico bs">⊛</span><div class="m"><b>Bluesky</b> <span class="dim">enqueued likes</span><div class="sub">+3 likes</div></div><span class="badge b tm">15:55</span></div>
+      <div class="le"><span class="ico ig">◎</span><div class="m"><b>Instagram</b> <span class="dim">rate limited</span><div class="sub">429 · retry scheduled 16:08</div></div><span class="badge b err">error</span></div>
+      <div class="le"><span class="ico x">𝕏</span><div class="m"><b>X</b> <span class="dim">watchdog reset</span><div class="sub">stalled run recovered, retried</div></div><span class="badge b warn">recovered</span></div>
+      <div class="le"><span class="ico gh">⌥</span><div class="m"><b>GitHub</b> <span class="dim">auth token expired</span><div class="sub">source paused 12:10</div></div><span class="badge b err">paused</span></div>
+    </div>
+  </div>
+  <div class="side">
+    <div class="mon"><div class="top"><span class="bico">𝕏</span><div><div class="nm">X / Twitter</div><div class="st"><span class="d"></span>Syncing · 00:42</span></div></div></div><div class="track"><i></i></div><div class="pm"><span>42 / ~120</span><span>35%</span></div></div>
+    <div class="summary"><div class="sr"><span class="sd run"></span>Syncing<span class="c">1</span></div><div class="sr"><span class="sd ok"></span>Healthy<span class="c">5</span></div><div class="sr"><span class="sd idle"></span>Idle<span class="c">2</span></div><div class="sr"><span class="sd err"></span>Errored<span class="c">1</span></div><div class="sr"><span class="sd paused"></span>Paused<span class="c">1</span></div></div>
+  </div>
+  <p class="note">16 · Feed + rail</p>
+</div>
+</body></html>

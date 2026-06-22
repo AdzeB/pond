@@ -14,6 +14,7 @@ const SOURCE_SET: ReadonlySet<string> = new Set(SOURCES);
 const SOURCE_LABELS = new Map<string, string>(
   SOURCE_DESCRIPTORS.map((d) => [d.id, d.label]),
 );
+SOURCE_LABELS.set("web", "Web");
 SOURCE_LABELS.set("local", "Local");
 
 export function isSource(value: string): value is Source {

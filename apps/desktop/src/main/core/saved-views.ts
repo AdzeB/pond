@@ -28,6 +28,7 @@ export async function listViews(): Promise<SavedView[]> {
 
 export interface CreateViewInput {
   name: string;
+  question?: string | null;
   query?: Query;
   sortKey?: string;
   sortDir?: string;
@@ -43,6 +44,7 @@ export async function createView(
   const data: NewSavedView = {
     id: ulid(),
     name,
+    question: input.question ?? null,
     query: input.query ?? EMPTY_QUERY,
     sortKey: input.sortKey ?? "savedAt",
     sortDir: input.sortDir ?? "desc",

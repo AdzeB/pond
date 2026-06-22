@@ -35,13 +35,8 @@ export function installAppMenu(deps: AppMenuDeps): void {
       click: navTo(`/settings/${section.path}`),
     }));
 
+  // Sync source remotes and refresh the metadata those sources feed.
   const sourcesSubmenu = (): Electron.MenuItemConstructorOptions[] => {
-    const filterItems: Electron.MenuItemConstructorOptions[] = SOURCES.map(
-      (source) => ({
-        label: `Filter by ${sourceLabel(source)}`,
-        click: navTo(`/source/${source}`),
-      }),
-    );
     const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
       // Local imports have no remote to sync from.
       (source) => source !== "local",
@@ -53,7 +48,22 @@ export function installAppMenu(deps: AppMenuDeps): void {
         );
       },
     }));
-    return [...filterItems, { type: "separator" }, ...syncItems];
+    return [
+      {
+        label: "Sync All Sources",
+        click: () => void syncAllSources({ trigger: "manual" }),
+      },
+      ...syncItems,
+      { type: "separator" },
+      {
+        label: "Refresh All Metadata…",
+        click: sendMenuAction("refresh.all"),
+      },
+      {
+        label: "Cancel Metadata Refresh",
+        click: sendMenuAction("refresh.cancel"),
+      },
+    ];
   };
 
   const preferencesItem: Electron.MenuItemConstructorOptions = {
@@ -90,38 +100,7 @@ export function installAppMenu(deps: AppMenuDeps): void {
       : []),
     {
       label: "File",
-      submenu: [
-        {
-          label: "New Save…",
-          click: navTo("/?capture=1"),
-        },
-        { type: "separator" },
-        { label: "Sources", submenu: sourcesSubmenu() },
-        {
-          label: "Sync All Sources",
-          click: () => void syncAllSources({ trigger: "manual" }),
-        },
-        { type: "separator" },
-        {
-          label: "Refresh All Metadata…",
-          click: sendMenuAction("refresh.all"),
-        },
-        {
-          label: "Cancel Metadata Refresh",
-          click: sendMenuAction("refresh.cancel"),
-        },
-        { type: "separator" },
-        {
-          label: "Reveal Library in Finder",
-          click: () => void shell.openPath(libraryRoot()),
-        },
-        {
-          label: "Move Library…",
-          click: sendMenuAction("library.move"),
-        },
-        { type: "separator" },
-        isMac ? { role: "close" } : { role: "quit" },
-      ],
+      submenu: [isMac ? { role: "close" } : { role: "quit" }],
     },
     {
       label: "Edit",
@@ -153,13 +132,49 @@ export function installAppMenu(deps: AppMenuDeps): void {
       ],
     },
     {
-      label: "Go",
+      label: "View",
       submenu: [
-        { label: "Library", click: navTo("/") },
-        { label: "Recents", click: navTo("/recents") },
-        { label: "Untagged", click: navTo("/untagged") },
-        { label: "Trash", click: navTo("/trash") },
-        { label: "Settings", click: navTo("/settings") },
+        {
+          label: "Cycle Layout",
+          click: sendMenuAction("view.layout.cycle"),
+        },
+        {
+          label: "Waterfall",
+          click: sendMenuAction("view.layout.waterfall"),
+        },
+        { label: "Grid", click: sendMenuAction("view.layout.grid") },
+        {
+          label: "Justified",
+          click: sendMenuAction("view.layout.justified"),
+        },
+        { label: "List", click: sendMenuAction("view.layout.list") },
+        { type: "separator" },
+        {
+          label: "Toggle Details",
+          click: sendMenuAction("view.inspector.toggle"),
+        },
+        {
+          label: "Theme",
+          submenu: [
+            { label: "Light", click: sendMenuAction("theme.light") },
+            { label: "Dark", click: sendMenuAction("theme.dark") },
+            { label: "Match System", click: sendMenuAction("theme.system") },
+          ],
+        },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+        ...(!app.isPackaged
+          ? ([
+              { type: "separator" },
+              { role: "reload" },
+              { role: "forceReload" },
+              { role: "toggleDevTools" },
+            ] satisfies Electron.MenuItemConstructorOptions[])
+          : []),
       ],
     },
     {
@@ -229,25 +244,20 @@ export function installAppMenu(deps: AppMenuDeps): void {
       ],
     },
     {
+      label: "Sources",
+      submenu: sourcesSubmenu(),
+    },
+    {
       label: "Library",
       submenu: [
         {
-          label: "All Saves",
-          click: navTo("/"),
+          label: "Reveal in Finder",
+          click: () => void shell.openPath(libraryRoot()),
         },
         {
-          label: "Recents",
-          click: navTo("/recents"),
+          label: "Move Library…",
+          click: sendMenuAction("library.move"),
         },
-        {
-          label: "Untagged",
-          click: navTo("/untagged"),
-        },
-        {
-          label: "Trash",
-          click: navTo("/trash"),
-        },
-        { type: "separator" },
         { type: "separator" },
         {
           label: "Rescan Library",
@@ -281,58 +291,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
       ],
     },
     {
-      label: "View",
-      submenu: [
-        {
-          label: "Toggle Details",
-          click: sendMenuAction("view.inspector.toggle"),
-        },
-        { type: "separator" },
-        {
-          label: "Cycle Layout",
-          click: sendMenuAction("view.layout.cycle"),
-        },
-        {
-          label: "Layout",
-          submenu: [
-            {
-              label: "Waterfall",
-              click: sendMenuAction("view.layout.waterfall"),
-            },
-            { label: "Grid", click: sendMenuAction("view.layout.grid") },
-            {
-              label: "Justified",
-              click: sendMenuAction("view.layout.justified"),
-            },
-            { label: "List", click: sendMenuAction("view.layout.list") },
-          ],
-        },
-        { type: "separator" },
-        {
-          label: "Theme",
-          submenu: [
-            { label: "Light", click: sendMenuAction("theme.light") },
-            { label: "Dark", click: sendMenuAction("theme.dark") },
-            { label: "Match System", click: sendMenuAction("theme.system") },
-          ],
-        },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-        ...(!app.isPackaged
-          ? ([
-              { type: "separator" },
-              { role: "reload" },
-              { role: "forceReload" },
-              { role: "toggleDevTools" },
-            ] satisfies Electron.MenuItemConstructorOptions[])
-          : []),
-      ],
-    },
-    {
       label: "Window",
       submenu: [
         { role: "minimize" },
@@ -352,6 +310,32 @@ export function installAppMenu(deps: AppMenuDeps): void {
             ] satisfies Electron.MenuItemConstructorOptions[])),
       ],
     },
+    ...(!app.isPackaged
+      ? ([
+          {
+            label: "Developer",
+            submenu: [
+              {
+                label: "Restart Local API",
+                click: sendMenuAction("developer.restart-api"),
+              },
+              {
+                label: "Open Developer Logs",
+                click: sendMenuAction("developer.open-logs"),
+              },
+              {
+                label: "Open IPC Inspector",
+                click: sendMenuAction("developer.ipc-inspector"),
+              },
+              { type: "separator" as const },
+              {
+                label: "Tweet Card Preview",
+                click: navTo("/tweet-preview"),
+              },
+            ],
+          },
+        ] satisfies Electron.MenuItemConstructorOptions[])
+      : []),
     {
       label: "Help",
       role: "help",
@@ -371,28 +355,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
           label: "Show Logs in Finder",
           click: () => void shell.openPath(app.getPath("logs")),
         },
-        ...(!app.isPackaged
-          ? ([
-              { type: "separator" as const },
-              {
-                label: "Developer",
-                submenu: [
-                  {
-                    label: "Restart Local API",
-                    click: sendMenuAction("developer.restart-api"),
-                  },
-                  {
-                    label: "Open Developer Logs",
-                    click: sendMenuAction("developer.open-logs"),
-                  },
-                  {
-                    label: "Open IPC Inspector",
-                    click: sendMenuAction("developer.ipc-inspector"),
-                  },
-                ],
-              },
-            ] satisfies Electron.MenuItemConstructorOptions[])
-          : []),
       ],
     },
   ];

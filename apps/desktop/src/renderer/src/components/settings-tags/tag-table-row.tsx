@@ -1,43 +1,98 @@
+import { useDraggable } from "@dnd-kit/core";
+import {
+  IconCheckFill18 as Check,
+  IconDotsFill18 as Dots,
+  IconPencilFill18 as Pencil,
+} from "@pond/icons/fill/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { useState } from "react";
+import { cn } from "@pond/ui";
+import { type KeyboardEvent, type MouseEvent, use, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PromptDialog } from "@/components/prompt-dialog";
-import { TagContextMenu } from "@/components/tag-context-menu";
+import {
+  buildTagMenuItems,
+  type TagMenuActions,
+} from "@/components/tag-context-menu";
+import { showContextMenu } from "@/lib/native-menu";
 import type { TagRow } from "@/stores/tags";
-import { colorForName, formatCreated, relativeTime } from "./helpers";
+import { TagsTableContext } from "./context";
+import { colorForName, focusInput, relativeTime } from "./helpers";
 import styles from "./styles.module.css";
 
 interface TagTableRowProps {
   tag: TagRow;
   depth: 0 | 1;
-  count: number;
-  groupNames: string[];
   inGroup: string | null;
-  onOpen: (name: string) => void;
 }
 
-export function TagTableRow({
-  tag,
-  depth,
-  count,
-  groupNames,
-  inGroup,
-  onOpen,
-}: TagTableRowProps) {
+export function TagTableRow({ tag, depth, inGroup }: TagTableRowProps) {
+  const ctx = use(TagsTableContext);
+  if (!ctx) throw new Error("TagTableRow must be used within TagsTableContext");
+  const {
+    selected,
+    selecting,
+    toggleSelect,
+    maxUsage,
+    countFor,
+    groupNames,
+    onOpen,
+  } = ctx;
+
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(tag.name);
   const [merging, setMerging] = useState(false);
   const [mergeTarget, setMergeTarget] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const count = countFor(tag.name);
+  const isSelected = selected.has(tag.id);
+
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `tag:${tag.id}:${inGroup ?? "_root"}`,
+    data: { type: "tag", name: tag.name, group: inGroup },
+  });
+
+  const pct =
+    maxUsage > 0 ? Math.max(count > 0 ? 6 : 0, (count / maxUsage) * 100) : 0;
+
+  function setArchived(archived: boolean) {
+    void window.pond.query("tags.update", {
+      name: tag.name,
+      patch: { archived },
+    });
+  }
+
+  const menuActions: TagMenuActions = {
+    groups: groupNames,
+    inGroup,
+    archived: tag.archived,
+    onAddToGroup: (g) =>
+      void window.pond.query("tagGroups.addTags", {
+        tags: [tag.name],
+        group: g,
+      }),
+    onRemoveFromGroup: (g) =>
+      void window.pond.query("tagGroups.removeTag", {
+        tag: tag.name,
+        group: g,
+      }),
+    onRename: () => {
+      setRenameDraft(tag.name);
+      setRenaming(true);
+    },
+    onMerge: () => {
+      setMergeTarget("");
+      setMerging(true);
+    },
+    onArchive: setArchived,
+    onDelete: () => setConfirmDelete(true),
+  };
+
   async function commitRename() {
     const cleaned = normalizeLabelName(renameDraft);
-    if (!cleaned || cleaned.toLowerCase() === tag.name.toLowerCase()) {
-      setRenaming(false);
-      return;
-    }
-    await window.pond.query("tags.rename", { from: tag.name, to: cleaned });
     setRenaming(false);
+    if (!cleaned || cleaned.toLowerCase() === tag.name.toLowerCase()) return;
+    await window.pond.query("tags.rename", { from: tag.name, to: cleaned });
   }
 
   async function commitMerge() {
@@ -48,69 +103,140 @@ export function TagTableRow({
     setMergeTarget("");
   }
 
+  function onRowClick(e: MouseEvent) {
+    if (renaming) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || selecting) {
+      toggleSelect(tag.id);
+      return;
+    }
+    onOpen(tag.name);
+  }
+
+  function onRowKeyDown(e: KeyboardEvent) {
+    if (renaming) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onOpen(tag.name);
+    }
+  }
+
+  function stop(e: MouseEvent) {
+    e.stopPropagation();
+  }
+
   return (
     <>
-      <TagContextMenu
-        groups={groupNames}
-        inGroup={inGroup}
-        onAddToGroup={(g) =>
-          void window.pond.query("tagGroups.addTags", {
-            tags: [tag.name],
-            group: g,
-          })
-        }
-        onRemoveFromGroup={(g) =>
-          void window.pond.query("tagGroups.removeTag", {
-            tag: tag.name,
-            group: g,
-          })
-        }
-        onRename={() => {
-          setRenameDraft(tag.name);
-          setRenaming(true);
+      {/* biome-ignore lint/a11y/useSemanticElements: row hosts nested interactive controls (checkbox, drag handle, actions), so it can't be a <button>. */}
+      <div
+        ref={setNodeRef}
+        role="button"
+        tabIndex={0}
+        className={cn(styles.row, isSelected && styles["row-selected"])}
+        data-depth={depth || undefined}
+        data-dragging={isDragging || undefined}
+        data-archived={tag.archived || undefined}
+        onClick={onRowClick}
+        onKeyDown={onRowKeyDown}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          void showContextMenu(buildTagMenuItems(menuActions));
         }}
-        onMerge={() => {
-          setMergeTarget("");
-          setMerging(true);
-        }}
-        onDelete={() => setConfirmDelete(true)}
+        title={tag.name}
       >
-        <button
-          type="button"
-          className={styles.row}
-          data-depth={depth || undefined}
-          onClick={() => onOpen(tag.name)}
-          title={tag.name}
-        >
-          <span className={styles.name}>
-            <span className={styles["chevron-slot"]} aria-hidden />
+        <span className={styles.name}>
+          <button
+            type="button"
+            className={cn(styles.check, isSelected && styles["check-on"])}
+            aria-pressed={isSelected}
+            aria-label={isSelected ? "Deselect" : "Select"}
+            data-active={selecting || undefined}
+            onClick={(e) => {
+              stop(e);
+              toggleSelect(tag.id);
+            }}
+          >
+            {isSelected ? <Check width={11} height={11} /> : null}
+          </button>
+          <button
+            type="button"
+            className={styles["dot-handle"]}
+            aria-label={`Drag "${tag.name}" into a group`}
+            onClick={stop}
+            {...attributes}
+            {...listeners}
+          >
             <span
               className={styles.dot}
               style={{ background: colorForName(tag.name) }}
               aria-hidden
             />
+          </button>
+          {renaming ? (
+            <input
+              ref={focusInput}
+              className={styles["name-input"]}
+              value={renameDraft}
+              spellCheck={false}
+              onClick={stop}
+              onChange={(e) => setRenameDraft(e.target.value)}
+              onBlur={() => void commitRename()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  void commitRename();
+                } else if (e.key === "Escape") {
+                  e.preventDefault();
+                  setRenaming(false);
+                }
+              }}
+            />
+          ) : (
             <span className={styles["name-text"]}>{tag.name}</span>
-          </span>
-          <span className={styles["col-issues"]}>{count > 0 ? count : ""}</span>
-          <span className={styles["col-applied"]}>
-            {relativeTime(tag.lastUsedAt)}
-          </span>
-          <span className={styles["col-created"]}>
-            {formatCreated(tag.createdAt)}
-          </span>
-        </button>
-      </TagContextMenu>
+          )}
+        </span>
 
-      <PromptDialog
-        open={renaming}
-        onOpenChange={setRenaming}
-        title="Rename tag"
-        description={`Rename "${tag.name}". Every save using it will be updated.`}
-        value={renameDraft}
-        onValueChange={setRenameDraft}
-        onConfirm={() => void commitRename()}
-        confirmLabel="Rename"
-      />
+        <span className={styles.usage}>
+          <span className={styles.bar} aria-hidden>
+            <span className={styles["bar-fill"]} style={{ width: `${pct}%` }} />
+          </span>
+          <span className={styles.count} data-zero={count === 0 || undefined}>
+            {count}
+          </span>
+        </span>
+
+        <span className={styles["col-applied"]}>
+          {tag.archived ? "Archived" : relativeTime(tag.lastUsedAt)}
+        </span>
+
+        {!renaming ? (
+          <span className={styles.actions}>
+            <button
+              type="button"
+              className={styles["action-btn"]}
+              aria-label="Rename"
+              onClick={(e) => {
+                stop(e);
+                setRenameDraft(tag.name);
+                setRenaming(true);
+              }}
+            >
+              <Pencil width={14} height={14} />
+            </button>
+            <button
+              type="button"
+              className={styles["action-btn"]}
+              aria-label="More actions"
+              onClick={(e) => {
+                stop(e);
+                void showContextMenu(buildTagMenuItems(menuActions));
+              }}
+            >
+              <Dots width={14} height={14} />
+            </button>
+          </span>
+        ) : null}
+      </div>
+
       <PromptDialog
         open={merging}
         onOpenChange={setMerging}

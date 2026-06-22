@@ -9,6 +9,9 @@ export interface SaveLike {
   author?: string | null;
   tags?: string[];
   notes?: string | null;
+  caption?: string | null;
+  ocrText?: string | null;
+  transcript?: string | null;
   mediaType?: string | null;
   files?: ReadonlyArray<unknown> | null;
   sensitivity?: "safe" | "sensitive" | null;

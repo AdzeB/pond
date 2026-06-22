@@ -1,10 +1,11 @@
-import { IconMagnifierFill18 as ZoomIcon } from "@pond/icons/fill/18";
-import { Menu } from "@pond/ui";
+import type { CSSProperties } from "react";
 import { useView } from "@/hooks/use-view";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/zoom";
-import { ViewSubmenu } from "../../submenu";
+import { Group } from "../../group";
+import { Segmented, type SegmentedOption } from "../../segmented";
+import styles from "../../styles.module.css";
 
-const options: Array<{ value: number; label: string }> = [
+const STEPS: ReadonlyArray<{ value: number; label: string }> = [
   { value: ZOOM_MIN, label: "Compact" },
   { value: 105, label: "Cozy" },
   { value: ZOOM_DEFAULT, label: "Comfortable" },
@@ -13,39 +14,46 @@ const options: Array<{ value: number; label: string }> = [
 ];
 
 function closest(value: number): number {
-  let best = options[0]?.value ?? ZOOM_DEFAULT;
+  let best = STEPS[0]?.value ?? ZOOM_DEFAULT;
   let bestDelta = Math.abs(value - best);
-  for (const { value: option } of options) {
-    const delta = Math.abs(value - option);
+  for (const { value: step } of STEPS) {
+    const delta = Math.abs(value - step);
     if (delta < bestDelta) {
-      best = option;
+      best = step;
       bestDelta = delta;
     }
   }
   return best;
 }
 
-export function ZoomSection({ standalone }: { standalone?: boolean }) {
+const options: ReadonlyArray<SegmentedOption<number>> = STEPS.map(
+  ({ value, label }, index) => ({
+    value,
+    label,
+    icon: (
+      <span
+        aria-hidden
+        className={styles.zoomDot}
+        style={{ "--dot": `${6 + index * 3}px` } as CSSProperties}
+      />
+    ),
+  }),
+);
+
+export function ZoomSection() {
   const { state, actions } = useView();
-  const value = closest(state.zoom);
+  const current = closest(state.zoom);
+  const label = STEPS.find((step) => step.value === current)?.label;
 
   return (
-    <ViewSubmenu icon={<ZoomIcon />} label="Zoom" standalone={standalone}>
-      <Menu.Group>
-        {options.map(({ value: option, label }) => (
-          <Menu.CheckboxItem
-            key={label}
-            closeOnClick={false}
-            checked={value === option}
-            onCheckedChange={(checked) => {
-              if (checked) actions.setZoom(option);
-            }}
-          >
-            <Menu.CheckboxItemIndicator />
-            <Menu.ItemLabel>{label}</Menu.ItemLabel>
-          </Menu.CheckboxItem>
-        ))}
-      </Menu.Group>
-    </ViewSubmenu>
+    <Group title="Zoom" value={label}>
+      <Segmented
+        ariaLabel="Zoom"
+        options={options}
+        value={current}
+        onChange={actions.setZoom}
+        showLabels={false}
+      />
+    </Group>
   );
 }

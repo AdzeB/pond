@@ -46,6 +46,21 @@ export interface Save {
   phash?: string | null;
   sensitivity?: Sensitivity | null;
   sensitivityModel?: string | null;
+  // On-device enrichment outputs (lightweight fields ride along on saves.list;
+  // transcript and clipEmbedding are lazy-loaded and omitted from the list payload).
+  caption?: string | null;
+  captionModel?: string | null;
+  ocrText?: string | null;
+  ocrModel?: string | null;
+  transcript?: string | null;
+  transcriptModel?: string | null;
+  clipEmbedding?: number[] | null;
+  clipModel?: string | null;
+  aesthetic?: string[] | null;
+  aestheticModel?: string | null;
+  autoTitleModel?: string | null;
+  suggestedTags?: string[] | null;
+  suggestedTagsModel?: string | null;
   videoNotes?: VideoNote[];
   dominantColors?: string[];
   tags: string[];

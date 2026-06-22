@@ -8,6 +8,10 @@ allowBuilds:
   # clobbers the Electron build and breaks ELECTRON_RUN_AS_NODE tooling.
   better-sqlite3: false
   core-js: false
+  # Optional bundled-AI dependency. Like better-sqlite3, we don't let pnpm run
+  # its node-gyp build (that yields a plain-Node binary); node-llama-cpp resolves
+  # the correct prebuilt binaries for this Electron ABI itself on first use.
+  node-llama-cpp: false
   nucleo-ui-fill-12: true
   nucleo-ui-fill-18: true
   nucleo-ui-fill-duo-18: true
@@ -15,6 +19,10 @@ allowBuilds:
   nucleo-ui-outline-18: true
   onnxruntime-node: true
   protobufjs: true
+  # Native module pulled in transitively by metascraper (via url-regex-safe).
+  # Not built: pnpm's node-gyp would emit a plain-Node binary that can't load in
+  # Electron's main process, and url-regex-safe falls back to RegExp without it.
+  re2: false
   sharp: true
 
 minimumReleaseAgeExclude:

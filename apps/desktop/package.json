@@ -46,6 +46,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hono/node-server": "^2.0.2",
     "@huggingface/transformers": "^4.2.0",
+    "@lexical/react": "^0.45.0",
     "@pond/icons": "workspace:*",
     "@pond/schema": "workspace:*",
     "@pond/theme": "workspace:*",
@@ -60,6 +61,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "@tanstack/store": "^0.11.0",
     "better-sqlite3": "^12.11.1",
+    "border-beam": "^1.2.0",
     "calligraph": "^1.4.1",
     "csv-stringify": "^6.7.0",
     "drizzle-orm": "^0.45.2",
@@ -68,6 +70,16 @@
     "embla-carousel-react": "9.0.0-rc02",
     "ffmpeg-static": "^5.2.0",
     "hono": "^4.12.18",
+    "lexical": "^0.45.0",
+    "metascraper": "^5.50.6",
+    "metascraper-author": "^5.50.6",
+    "metascraper-date": "^5.50.6",
+    "metascraper-description": "^5.50.6",
+    "metascraper-image": "^5.50.6",
+    "metascraper-logo-favicon": "^5.50.6",
+    "metascraper-publisher": "^5.50.6",
+    "metascraper-title": "^5.50.6",
+    "metascraper-url": "^5.50.6",
     "mime-types": "^3.0.2",
     "mitt": "^3.0.1",
     "motion": "^12.39.0",
@@ -80,6 +92,9 @@
     "ulid": "^3.0.2",
     "which": "^7.0.0",
     "zod": "^4.4.3"
+  },
+  "optionalDependencies": {
+    "node-llama-cpp": "^3.0.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
