@@ -25,18 +25,34 @@ export function Toaster() {
     <div className={styles.viewport} aria-live="polite">
       <AnimatePresence initial={false}>
         {toasts.map((toast) => (
-          <motion.button
+          <motion.div
             key={toast.id}
-            type="button"
             layout
             className={styles.toast}
             data-tone={toast.tone}
-            onClick={() => dismissToast(toast.id)}
             {...variants}
             transition={gentleSpring}
           >
-            {toast.message}
-          </motion.button>
+            <button
+              type="button"
+              className={styles.message}
+              onClick={() => dismissToast(toast.id)}
+            >
+              {toast.message}
+            </button>
+            {toast.action ? (
+              <button
+                type="button"
+                className={styles.action}
+                onClick={() => {
+                  toast.action?.onAction();
+                  dismissToast(toast.id);
+                }}
+              >
+                {toast.action.label}
+              </button>
+            ) : null}
+          </motion.div>
         ))}
       </AnimatePresence>
     </div>

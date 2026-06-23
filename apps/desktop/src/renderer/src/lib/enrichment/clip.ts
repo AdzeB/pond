@@ -5,6 +5,7 @@ import {
   pipeline,
   type RawImage,
 } from "@huggingface/transformers";
+import { pickDevice } from "@/lib/inference-device";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
 // CLIP runtime: image embeddings (visual similarity / related / near-dup) and
@@ -69,11 +70,11 @@ function getVision() {
         console.info(`[clip] vision ready (${device})`);
         return { model, processor };
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await build("webgpu");
         } catch (err) {
-          console.warn("[clip] WebGPU unavailable; using WASM", err);
+          console.warn("[clip] WebGPU build failed; using WASM", err);
         }
       }
       return build("wasm");
@@ -116,12 +117,12 @@ function getZeroShot(): Promise<ZeroShotClassifier> {
         });
         return pipe as unknown as ZeroShotClassifier;
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await build("webgpu");
         } catch (err) {
           console.warn(
-            "[clip] WebGPU unavailable (zero-shot); using WASM",
+            "[clip] WebGPU build failed (zero-shot); using WASM",
             err,
           );
         }

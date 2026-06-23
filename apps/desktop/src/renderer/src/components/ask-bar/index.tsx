@@ -34,7 +34,7 @@ import { SkillDialog } from "@/components/skill-dialog";
 import { runAskSuggestion, useAsk } from "@/hooks/use-ask";
 import { useSaves } from "@/hooks/use-saves";
 import { formatNumber } from "@/lib/format";
-import { bouncySpring } from "@/lib/motion";
+import { bouncySpring, gentleSpring } from "@/lib/motion";
 import { type CustomSkill, matchSkills, slugifySkillName } from "@/lib/skills";
 import type { Save } from "@/lib/types";
 import { type AskStage, clearAsk, useAskResult } from "@/stores/ask-store";
@@ -198,6 +198,7 @@ interface ComposerProps {
   autoFocus?: boolean;
   onCollapse?: () => void;
   onSubmitted?: () => void;
+  onClear?: () => void;
 }
 
 export function AskComposer(props: ComposerProps) {
@@ -224,8 +225,10 @@ function AskField({
   autoFocus = false,
   onCollapse,
   onSubmitted,
+  onClear,
 }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
+  const ask = useAskResult();
   const saves = useSaves();
   const [skillsPrefs] = usePrefs("skills");
   const skills = useMemo(() => skillsPrefs.custom ?? [], [skillsPrefs.custom]);
@@ -457,6 +460,10 @@ function AskField({
         </div>
       </div>
 
+      <AnimatePresence initial={false}>
+        {ask.active ? <AskResultPanel key="result" onClear={onClear} /> : null}
+      </AnimatePresence>
+
       <div className={styles.editor}>
         <PlainTextPlugin
           contentEditable={
@@ -524,6 +531,105 @@ function AskField({
         onOpenChange={setCreateOpen}
         initialName={createName}
       />
+    </motion.div>
+  );
+}
+
+// The answer surface that sits above the input once a run is active. Unlike the
+// collapsed status pill, this keeps the composer open and shows the full,
+// wrapping summary so the user can read it and immediately ask something else.
+function AskResultPanel({ onClear }: { onClear?: () => void }) {
+  const ask = useAskResult();
+  const reduceMotion = useReducedMotion();
+  const busy = ask.status === "thinking" || ask.summaryStatus === "loading";
+  const stageLabel = ask.stage ? STAGE_LABELS[ask.stage] : "Thinking…";
+  const hasSummary = ask.summaryStatus === "done" && ask.summary.length > 0;
+  const showSuggestions =
+    ask.status === "done" && ask.count === 0 && ask.suggestions.length > 0;
+
+  const labelMotion = reduceMotion
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
+    : {
+        initial: { opacity: 0, y: 6 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -6 },
+      };
+
+  return (
+    <motion.div
+      layout
+      className={styles.result}
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: 4 }}
+      animate={
+        reduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", y: 0 }
+      }
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: 4 }}
+      transition={gentleSpring}
+    >
+      <div className={styles.resultHead}>
+        {busy ? (
+          <span className={styles.resultStatus} role="status">
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={stageLabel}
+                {...labelMotion}
+                transition={bouncySpring}
+              >
+                {stageLabel}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+        ) : ask.status === "error" ? (
+          <span className={styles.resultStatus}>Couldn’t search</span>
+        ) : ask.count === 0 ? (
+          <span className={styles.resultStatus}>No matches</span>
+        ) : (
+          <span className={styles.resultStatus}>
+            <motion.span
+              key={ask.count}
+              className={styles.count}
+              initial={reduceMotion ? false : { opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={bouncySpring}
+            >
+              {formatNumber(ask.count)}
+            </motion.span>
+            <span className={styles.resultLabel}>found</span>
+          </span>
+        )}
+
+        {!busy && ask.status !== "idle" ? (
+          <button
+            type="button"
+            className={styles.resultClear}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onClear?.()}
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+
+      {showSuggestions ? (
+        <div className={styles.suggestions}>
+          {ask.suggestions.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              className={styles.suggestion}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => runAskSuggestion(s)}
+            >
+              {s.label}
+              <span className={styles.suggestionCount}>{s.count}</span>
+            </button>
+          ))}
+        </div>
+      ) : hasSummary ? (
+        <p className={styles.resultBody}>{ask.summary}</p>
+      ) : !busy && ask.count > 0 && ask.question ? (
+        <p className={styles.resultBody}>{ask.question}</p>
+      ) : null}
     </motion.div>
   );
 }

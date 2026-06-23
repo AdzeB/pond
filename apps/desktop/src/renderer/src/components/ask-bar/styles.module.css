@@ -338,6 +338,72 @@
   }
 }
 
+/* ----- Inline answer panel (above the input, composer stays open) ----- */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 4px 8px;
+  margin-top: 2px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.resultHead {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 18px;
+}
+
+.resultStatus {
+  display: inline-flex;
+  gap: 5px;
+  align-items: baseline;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.resultLabel {
+  color: var(--ds-gray-11);
+}
+
+.resultClear {
+  flex-shrink: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+}
+
+.resultBody {
+  max-height: 168px;
+  margin: 0;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+  user-select: text;
+}
+
+.result .suggestions {
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
 /* ----- Collapsed status pill ----- */
 
 .statusPill {

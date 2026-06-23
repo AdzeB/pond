@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { MouseEvent } from "react";
-import { showContextMenu } from "@/lib/native-menu";
+import { type NativeMenuItem, showContextMenu } from "@/lib/native-menu";
 import { getSourceDef } from "@/lib/sources-registry";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
 import { cardModel } from "./helpers";
@@ -29,7 +29,7 @@ export function SourceCard({
 
   const openMenu = (e: MouseEvent) => {
     e.stopPropagation();
-    void showContextMenu([
+    const items: NativeMenuItem[] = [
       running
         ? {
             label: "Cancel sync",
@@ -54,9 +54,25 @@ export function SourceCard({
                   label: "Sync now",
                   onSelect: () => void window.pond.syncRunNow(source),
                 },
+    ];
+    if (model.connected && !running) {
+      items.push(
+        {
+          label: "Backfill",
+          onSelect: () =>
+            void window.pond.syncRunNow(source, { forceFull: true }),
+        },
+        {
+          label: "Refresh metadata",
+          onSelect: () => void window.pond.refreshBackfillStart({ source }),
+        },
+      );
+    }
+    items.push(
       { type: "separator" },
       { label: "Open settings", onSelect: () => onOpen(source) },
-    ]);
+    );
+    void showContextMenu(items);
   };
 
   const fixLabel = tone === "paused" ? "Re-authenticate" : "Retry now";

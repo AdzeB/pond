@@ -1,9 +1,11 @@
+import { useEffect } from "react";
 import { LayoutSwitcher } from "@/components/layout-switcher";
 import { WelcomeEmpty } from "@/components/library-empty";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useLibraryState } from "@/hooks/use-library-state";
 import { useIngestingCount } from "@/hooks/use-saves";
+import { libraryViewContext } from "@/stores/library-view-context";
 
 export function LibraryView() {
   const data = useLibraryState();
@@ -12,6 +14,13 @@ export function LibraryView() {
     data.mode,
     data.sourceFilter,
   );
+
+  // Mirror the resolved view into a lightweight store so the global dock can
+  // drive select-all / invert and pick the right destructive action without
+  // recomputing the narrowing pipeline.
+  useEffect(() => {
+    libraryViewContext.set(data.filteredIds, data.mode);
+  }, [data.filteredIds, data.mode]);
 
   // Surface in-flight saves as a leading grid tile, scoped to the current view. The
   // grid filter hides "ingesting" saves, so the placeholder is the only proof they exist.

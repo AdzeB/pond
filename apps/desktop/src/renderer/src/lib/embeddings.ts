@@ -1,4 +1,5 @@
 import { env, pipeline } from "@huggingface/transformers";
+import { pickDevice } from "@/lib/inference-device";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
 // On-device text embeddings for semantic search and fuzzy facet resolution.
@@ -40,11 +41,11 @@ function getExtractor(): Promise<Extractor> {
         console.info(`[embeddings] extractor ready (${device}/q8)`);
         return pipe as unknown as Extractor;
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await tryBuild("webgpu");
         } catch (err) {
-          console.warn("[embeddings] WebGPU unavailable; using WASM", err);
+          console.warn("[embeddings] WebGPU build failed; using WASM", err);
         }
       }
       return tryBuild("wasm");

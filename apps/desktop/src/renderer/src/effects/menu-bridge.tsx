@@ -14,6 +14,7 @@ import {
   trashSave,
   untrashSave,
 } from "@/lib/save-actions";
+import { trashSelection } from "@/lib/selection-actions";
 import type { LayoutValue } from "@/lib/view-prefs";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
@@ -174,14 +175,7 @@ export function MenuBridge() {
         case "save.bulk-trash": {
           const ids = selection.snapshot();
           if (ids.length === 0) return;
-          void window.pond.batch(
-            ids.map((sid) => ({
-              kind: "trash",
-              model: "save",
-              id: sid,
-              meta: { actor: "user", actorReason: "menu-bulk-trash" },
-            })),
-          );
+          void trashSelection(ids);
           return;
         }
 

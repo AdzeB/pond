@@ -17,6 +17,7 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { broadcastSyncAction } from "../executor";
+import { persistSave } from "../persist-save";
 import { isSourceConnected } from "../refresh/scrape-window";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
@@ -609,6 +610,55 @@ export async function resetTasksForSave(
     .where(eq(saves.id, saveId))
     .run();
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
+}
+
+// Re-run failed saves: reset only each save's `failed` tasks back to pending
+// (done steps stay done) and flip the save to `ingesting` via persistSave so the
+// reconciler picks it up and the change broadcasts to the renderer. `ids` scopes
+// the retry; omit it to retry every failed save. Returns the count requeued.
+export async function retryFailedSaves(
+  ids?: readonly string[],
+): Promise<number> {
+  const db = await getDb();
+  const scoped = ids != null && ids.length > 0;
+  const rows = scoped
+    ? db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(and(eq(saves.status, "failed"), inArray(saves.id, [...ids])))
+        .all()
+    : db
+        .select({ id: saves.id })
+        .from(saves)
+        .where(and(eq(saves.status, "failed"), isNull(saves.deletedAt)))
+        .all();
+  if (rows.length === 0) return 0;
+
+  const now = new Date();
+  for (const { id } of rows) {
+    db.update(tasks)
+      .set({
+        status: "pending",
+        attempts: 0,
+        lastError: null,
+        nextRunAt: now,
+        updatedAt: now,
+      })
+      .where(and(eq(tasks.saveId, id), eq(tasks.status, "failed")))
+      .run();
+    await persistSave(
+      id,
+      { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
+      { actorReason: "pipeline:retry-failed" },
+    );
+  }
+
+  log.info("[pond pipeline:enqueue] retry failed saves", {
+    requeued: rows.length,
+    scoped,
+  });
+  kickReconciler();
+  return rows.length;
 }
 
 function seedToInsertColumns(seed: EnqueueSeed): Partial<NewSave> {

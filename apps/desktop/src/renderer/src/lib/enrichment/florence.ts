@@ -5,6 +5,7 @@ import {
   Florence2ForConditionalGeneration,
   type RawImage,
 } from "@huggingface/transformers";
+import { pickDevice } from "@/lib/inference-device";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
 // Florence-2 runtime: one vision-language model serving both captioning and OCR.
@@ -93,11 +94,11 @@ function getFlorence(): Promise<FlorenceBundle> {
         console.info(`[florence] ready (${device})`);
         return { model, processor, tokenizer };
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await build("webgpu");
         } catch (err) {
-          console.warn("[florence] WebGPU unavailable; using WASM", err);
+          console.warn("[florence] WebGPU build failed; using WASM", err);
         }
       }
       return build("wasm");

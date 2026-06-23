@@ -2,6 +2,7 @@ import { env, pipeline, RawImage } from "@huggingface/transformers";
 import type { Sensitivity } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { pickDevice } from "@/lib/inference-device";
 import { pool, upsertSave } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { pickPrimaryUnit } from "./media";
@@ -50,11 +51,11 @@ export function getClassifier(): Promise<ImageClassifier> {
         console.info(`[nsfw] ViT classifier ready (${device}/q8)`);
         return pipe as unknown as ImageClassifier;
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await tryBuild("webgpu");
         } catch (err) {
-          console.warn("[nsfw] WebGPU unavailable; falling back to WASM", err);
+          console.warn("[nsfw] WebGPU build failed; falling back to WASM", err);
         }
       }
       return tryBuild("wasm");

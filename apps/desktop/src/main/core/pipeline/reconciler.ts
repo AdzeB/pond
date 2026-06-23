@@ -9,6 +9,7 @@ import {
   startTaskEvent,
   toErrorInfo,
 } from "../../lib/wide-event";
+import { persistSave } from "../persist-save";
 import { RateLimitedError, TransientError } from "./extractors/errors";
 import { classifyError } from "./retry-policy";
 import {
@@ -565,10 +566,13 @@ async function handleFailure(
       .where(eq(saves.id, task.saveId))
       .get();
     if (current?.status === "ingesting") {
-      db.update(saves)
-        .set({ status: "failed" })
-        .where(eq(saves.id, task.saveId))
-        .run();
+      // Via persistSave so the `failed` flip broadcasts to the renderer pool;
+      // a direct write wouldn't reach it until the next hydrate.
+      await persistSave(
+        task.saveId,
+        { status: "failed" },
+        { actorReason: "pipeline:failed" },
+      );
       // Fail still-pending siblings too: this failure blocks them and they'd starve the window.
       db.update(tasks)
         .set({

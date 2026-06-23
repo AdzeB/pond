@@ -1,4 +1,5 @@
 import { env, pipeline } from "@huggingface/transformers";
+import { pickDevice } from "@/lib/inference-device";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
 // Whisper runtime for on-device speech-to-text over video/audio saves. Lazy,
@@ -38,11 +39,11 @@ function getTranscriber(): Promise<Transcriber> {
         console.info(`[whisper] ready (${device})`);
         return pipe as unknown as Transcriber;
       };
-      if (typeof navigator !== "undefined" && "gpu" in navigator) {
+      if ((await pickDevice()) === "webgpu") {
         try {
           return await build("webgpu");
         } catch (err) {
-          console.warn("[whisper] WebGPU unavailable; using WASM", err);
+          console.warn("[whisper] WebGPU build failed; using WASM", err);
         }
       }
       return build("wasm");

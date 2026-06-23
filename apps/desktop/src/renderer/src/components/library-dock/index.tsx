@@ -1,8 +1,11 @@
 import {
   IconArchiveContent2Fill18 as Library,
+  IconDotsFill18 as More,
   IconArchivePlusFill18 as New,
+  IconArrowRotateAnticlockwiseFill18 as Restore,
   IconNutFill18 as Settings,
   IconArrowsConvergeFill18 as Sources,
+  IconTagPlusFill18 as TagAdd,
   IconTagsFill18 as Tags,
   IconTrash2ContentFill18 as Trash,
   IconRulerCursorFill18 as ViewIcon,
@@ -15,19 +18,38 @@ import { BorderBeam } from "border-beam";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useCallback, useRef, useState } from "react";
 import { AskComposer, AskStatusPill } from "@/components/ask-bar";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { ViewMenu } from "@/components/library-view-menu";
 import { NewSaveDialog } from "@/components/new-save-dialog";
 import { formatNumber } from "@/lib/format";
 import { bouncySpring, gentleSpring, snappySpring } from "@/lib/motion";
-import { trashSaves } from "@/lib/mutate-save";
 import { type NativeMenuItem, showContextMenu } from "@/lib/native-menu";
+import {
+  addTagToSelection,
+  clearTagsFromSelection,
+  copyFilePathsForSelection,
+  copyUrlsForSelection,
+  deleteSelectionForever,
+  exportSelectionCsv,
+  exportSelectionFiles,
+  failedIdsIn,
+  invertSelectionInView,
+  isAllSelected,
+  pasteTagsToSelection,
+  restoreSelection,
+  retryFailedSelection,
+  selectAllInView,
+  trashSelection,
+} from "@/lib/selection-actions";
 import { selectableTasks } from "@/lib/tasks";
 import { clearAsk, useAskResult } from "@/stores/ask-store";
 import {
-  selection,
-  useSelectedIds,
-  useSelectionSize,
-} from "@/stores/selection";
+  useViewFilteredCount,
+  useViewMode,
+} from "@/stores/library-view-context";
+import { selection, useSelectionSize } from "@/stores/selection";
+import { useTagClipboard } from "@/stores/tag-clipboard";
+import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
@@ -63,11 +85,17 @@ type DockMode = "nav" | "compose";
 export function Dock() {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const ids = useSelectedIds();
   const reduceMotion = useReducedMotion();
   const ask = useAskResult();
+  const tags = useTags();
+  const clipboard = useTagClipboard();
+  const viewMode = useViewMode();
+  const filteredCount = useViewFilteredCount();
   const [mode, setMode] = useState<DockMode>("nav");
   const [newOpen, setNewOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const inTrash = viewMode === "trash";
 
   // Popovers launched from the dock (New, View options) anchor to the whole
   // pill rather than their individual icon buttons, so they sit above the dock
@@ -90,33 +118,154 @@ export function Dock() {
   useHotkey("Mod+/", triggerAsk);
   useHotkey("Mod+K", triggerAsk);
 
-  const moveToTrash = async () => {
-    await trashSaves(ids);
-    selection.clear();
-  };
+  const destructive = useCallback(() => {
+    if (inTrash) void restoreSelection(selection.snapshot());
+    else void trashSelection(selection.snapshot());
+  }, [inTrash]);
 
-  // Pop a native menu of tasks that can run on a subset, scoped to the current
-  // selection. Each result is surfaced as a toast.
+  // Task menu items, scoped to the current selection. Shared by the wand button
+  // and the overflow menu's "Run task" submenu.
+  const taskItems = useCallback((): NativeMenuItem[] => {
+    const scope = selection.snapshot();
+    return selectableTasks().map((task) => ({
+      label: task.label,
+      onSelect: async () => {
+        try {
+          const res = await task.run(scope);
+          pushToast(res.message, res.ok ? "success" : "error");
+        } catch {
+          pushToast(`${task.label} failed.`, "error");
+        }
+      },
+    }));
+  }, []);
+
+  // Tag menu items: each existing tag adds to every selected save, plus paste
+  // and clear shortcuts. Shared by the tag button and the overflow submenu.
+  const tagItems = useCallback((): NativeMenuItem[] => {
+    const scope = selection.snapshot();
+    const items: NativeMenuItem[] = [];
+    if (tags.length === 0) {
+      items.push({ label: "No tags yet", enabled: false });
+    } else {
+      for (const tag of tags) {
+        items.push({
+          label: tag.name,
+          onSelect: () => void addTagToSelection(scope, tag.name),
+        });
+      }
+    }
+    items.push({ type: "separator" });
+    items.push({
+      label: "Paste tags",
+      enabled: clipboard.length > 0,
+      shortcut: ["⌘", "⇧", "V"],
+      onSelect: () => void pasteTagsToSelection(scope, clipboard),
+    });
+    items.push({
+      label: "Remove all tags",
+      onSelect: () => void clearTagsFromSelection(scope),
+    });
+    return items;
+  }, [tags, clipboard]);
+
   const runSelectionTask = useCallback(() => {
     const scope = selection.snapshot();
     if (scope.length === 0) return;
-    const items: NativeMenuItem[] = [
+    void showContextMenu([
       { label: `Run on ${scope.length} selected`, enabled: false },
       { type: "separator" },
-      ...selectableTasks().map((task) => ({
-        label: task.label,
-        onSelect: async () => {
-          try {
-            const res = await task.run(scope);
-            pushToast(res.message, res.ok ? "success" : "error");
-          } catch {
-            pushToast(`${task.label} failed.`, "error");
-          }
-        },
-      })),
+      ...taskItems(),
+    ]);
+  }, [taskItems]);
+
+  const openTagMenu = useCallback(() => {
+    const scope = selection.snapshot();
+    if (scope.length === 0) return;
+    void showContextMenu([
+      { label: `Tag ${scope.length} selected`, enabled: false },
+      { type: "separator" },
+      ...tagItems(),
+    ]);
+  }, [tagItems]);
+
+  // The long tail of bulk actions, gathered behind the overflow button so the
+  // pill stays compact.
+  const openOverflowMenu = useCallback(() => {
+    const scope = selection.snapshot();
+    if (scope.length === 0) return;
+    const failedCount = failedIdsIn(scope).length;
+    const items: NativeMenuItem[] = [
+      {
+        label: "Select all",
+        enabled: filteredCount > 0 && !isAllSelected(),
+        shortcut: ["⌘", "A"],
+        onSelect: () => selectAllInView(),
+      },
+      {
+        label: "Invert selection",
+        enabled: filteredCount > 0,
+        onSelect: () => invertSelectionInView(),
+      },
+      { type: "separator" },
+      { label: "Run task", submenu: taskItems() },
+      { label: "Add tag", submenu: tagItems() },
+      {
+        label: failedCount > 0 ? `Retry ${failedCount} failed` : "Retry failed",
+        enabled: failedCount > 0,
+        onSelect: () => void retryFailedSelection(scope),
+      },
+      { type: "separator" },
+      {
+        label: "Copy links",
+        onSelect: () => void copyUrlsForSelection(scope),
+      },
+      {
+        label: "Copy file paths",
+        onSelect: () => void copyFilePathsForSelection(scope),
+      },
+      { type: "separator" },
+      {
+        label: "Export files…",
+        onSelect: () => void exportSelectionFiles(scope),
+      },
+      {
+        label: "Export to CSV…",
+        onSelect: () => void exportSelectionCsv(scope),
+      },
+      { type: "separator" },
+      ...(inTrash
+        ? ([
+            {
+              label: "Restore",
+              onSelect: () => void restoreSelection(scope),
+            },
+            {
+              label: "Delete Forever…",
+              onSelect: () => setConfirmDelete(true),
+            },
+          ] satisfies NativeMenuItem[])
+        : ([
+            {
+              label: "Move to Trash",
+              shortcut: ["⌫"],
+              onSelect: () => void trashSelection(scope),
+            },
+          ] satisfies NativeMenuItem[])),
     ];
     void showContextMenu(items);
-  }, []);
+  }, [filteredCount, inTrash, taskItems, tagItems]);
+
+  // Selection keyboard shortcuts. Single-key handlers are auto-ignored while a
+  // text field is focused; Escape stays purely additive so it never blocks
+  // dialogs or popovers from closing.
+  useHotkey("Escape", () => selection.clear(), {
+    enabled: selectionSize > 0,
+    preventDefault: false,
+    stopPropagation: false,
+  });
+  useHotkey("Backspace", destructive, { enabled: selectionSize > 0 });
+  useHotkey("Delete", destructive, { enabled: selectionSize > 0 });
 
   // Precedence: selection > active composer > live agent result > nav. Composing
   // wins over an active result so the user can ask again on top of results.
@@ -163,39 +312,101 @@ export function Dock() {
                 {...swap}
                 transition={bouncySpring}
               >
-                <span
+                <button
+                  type="button"
                   className={styles.count}
-                  role="status"
-                  aria-label={`${formatNumber(selectionSize)} selected`}
+                  aria-label={
+                    isAllSelected()
+                      ? `${formatNumber(selectionSize)} selected`
+                      : `${formatNumber(selectionSize)} selected, select all`
+                  }
+                  onClick={() => selectAllInView()}
                 >
                   {formatNumber(selectionSize)}
-                </span>
+                  {filteredCount > selectionSize ? (
+                    <span className={styles.countTotal}>
+                      /{formatNumber(filteredCount)}
+                    </span>
+                  ) : null}
+                </button>
 
-                <motion.button
-                  type="button"
+                <Tooltip.Trigger
+                  handle={tooltip}
                   className={styles.item}
+                  payload="Run task"
                   aria-label="Run task on selection"
-                  onClick={runSelectionTask}
-                  whileTap={{ rotate: -8 }}
-                  transition={snappySpring}
-                >
-                  <span className={styles.icon}>
-                    <Wand />
-                  </span>
-                </motion.button>
+                  render={
+                    <motion.button
+                      type="button"
+                      onClick={runSelectionTask}
+                      whileTap={{ rotate: -8 }}
+                      transition={snappySpring}
+                    >
+                      <span className={styles.icon}>
+                        <Wand />
+                      </span>
+                    </motion.button>
+                  }
+                />
 
-                <motion.button
-                  type="button"
-                  className={`${styles.item} ${styles.danger}`}
-                  aria-label="Move selected to trash"
-                  onClick={moveToTrash}
-                  whileTap={{ rotate: -8 }}
-                  transition={snappySpring}
-                >
-                  <span className={styles.icon}>
-                    <Trash />
-                  </span>
-                </motion.button>
+                <Tooltip.Trigger
+                  handle={tooltip}
+                  className={styles.item}
+                  payload="Tag"
+                  aria-label="Tag selection"
+                  render={
+                    <motion.button
+                      type="button"
+                      onClick={openTagMenu}
+                      whileTap={{ rotate: -8 }}
+                      transition={snappySpring}
+                    >
+                      <span className={styles.icon}>
+                        <TagAdd />
+                      </span>
+                    </motion.button>
+                  }
+                />
+
+                <Tooltip.Trigger
+                  handle={tooltip}
+                  className={`${styles.item} ${inTrash ? "" : styles.danger}`}
+                  payload={inTrash ? "Restore" : "Move to Trash"}
+                  aria-label={
+                    inTrash ? "Restore selection" : "Move selection to trash"
+                  }
+                  render={
+                    <motion.button
+                      type="button"
+                      onClick={destructive}
+                      whileTap={{ rotate: -8 }}
+                      transition={snappySpring}
+                    >
+                      <span className={styles.icon}>
+                        {inTrash ? <Restore /> : <Trash />}
+                      </span>
+                    </motion.button>
+                  }
+                />
+
+                <Tooltip.Trigger
+                  handle={tooltip}
+                  className={styles.item}
+                  payload="More"
+                  aria-label="More actions"
+                  render={
+                    <motion.button
+                      type="button"
+                      onClick={openOverflowMenu}
+                      whileTap={{ scale: 0.9 }}
+                      transition={snappySpring}
+                    >
+                      <span className={styles.icon}>
+                        <More />
+                      </span>
+                    </motion.button>
+                  }
+                />
 
                 <button
                   type="button"
@@ -216,7 +427,7 @@ export function Dock() {
                 <AskComposer
                   autoFocus
                   onCollapse={closeAsk}
-                  onSubmitted={closeAsk}
+                  onClear={clearAsk}
                 />
               </motion.div>
             ) : view === "status" ? (
@@ -364,6 +575,18 @@ export function Dock() {
         open={newOpen}
         onOpenChange={setNewOpen}
         anchor={() => pillRef.current}
+      />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title={`Delete ${formatNumber(selectionSize)} ${selectionSize === 1 ? "item" : "items"} forever?`}
+        description="This permanently removes the selected items and their files. This can't be undone."
+        confirmLabel="Delete Forever"
+        onConfirm={() => {
+          void deleteSelectionForever(selection.snapshot());
+          setConfirmDelete(false);
+        }}
       />
     </div>
   );

@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import { useSyncStats } from "@/hooks/use-sync-stats";
 import { showContextMenu } from "@/lib/native-menu";
+import { retryAllFailed } from "@/lib/selection-actions";
 import { getSourceDef } from "@/lib/sources-registry";
+import { useFailedSaveCount } from "@/stores/pool";
 import { syncMonitor, useSyncBySource } from "@/stores/sync-monitor";
 import type { SyncRun } from "./helpers";
 import { KpiCustomizeDialog } from "./kpi-customize-dialog";
@@ -23,6 +25,7 @@ const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
 export function SourcesPage() {
   const bySource = useSyncBySource();
   const { stats } = useSyncStats(7);
+  const failedCount = useFailedSaveCount();
 
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
@@ -74,6 +77,29 @@ export function SourcesPage() {
     setSourceOpen(true);
   };
 
+  const openSyncAllMenu = () => {
+    void showContextMenu([
+      { label: "Sync all", onSelect: () => void window.pond.syncRunAll() },
+      {
+        label: "Backfill all",
+        onSelect: () => void window.pond.syncRunAll({ forceFull: true }),
+      },
+      { type: "separator" },
+      {
+        label: "Refresh all metadata",
+        onSelect: () => void window.pond.refreshBackfillStart({}),
+      },
+      {
+        label:
+          failedCount > 0
+            ? `Retry ${failedCount} failed saves`
+            : "Retry failed saves",
+        enabled: failedCount > 0,
+        onSelect: () => void retryAllFailed(),
+      },
+    ]);
+  };
+
   const openRun = (run: SyncRun) => {
     setSelectedRun(run);
     setRunOpen(true);
@@ -117,6 +143,14 @@ export function SourcesPage() {
               onClick={() => void window.pond.syncRunAll()}
             >
               Sync all
+            </Button>
+            <Button
+              icon
+              variant="secondary"
+              aria-label="More sync actions"
+              onClick={openSyncAllMenu}
+            >
+              ▾
             </Button>
           </span>
         </div>

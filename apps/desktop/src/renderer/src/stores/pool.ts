@@ -1,3 +1,4 @@
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { Save } from "@/lib/types";
 
@@ -81,6 +82,18 @@ function clearSaves(): void {
   savesStore.setState((s) =>
     s.byId.size === 0 ? s : { byId: new Map(), sorted: [] },
   );
+}
+
+// Live count of non-trashed saves stuck in `failed` ingest; drives the sync
+// page's "Retry failed" affordance.
+export function useFailedSaveCount(): number {
+  return useSelector(savesStore, (s) => {
+    let n = 0;
+    for (const save of s.byId.values()) {
+      if (save.status === "failed" && !save.deletedAt) n += 1;
+    }
+    return n;
+  });
 }
 
 // Merge a lazily-fetched full `rawJson` into a pooled save; keeps `sorted` identity stable so only useSave(id) consumers wake.

@@ -6,6 +6,7 @@ import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
 import { persistSave } from "../../core/persist-save";
+import { retryFailedSaves } from "../../core/pipeline/enqueue";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
@@ -171,6 +172,16 @@ export const savesQueries: QueryHandlerMap = {
     await executeBatch(txs);
     for (const tx of txs) recordForUndo(tx);
     return { ok: true, count: txs.length };
+  },
+
+  // Re-run saves stuck in `failed`. `ids` scopes the retry to a selection;
+  // omit it to retry every failed save in the library.
+  async "saves.retryFailed"(params) {
+    const ids = Array.isArray(params.ids)
+      ? (params.ids as unknown[]).map(String).filter(Boolean)
+      : undefined;
+    const requeued = await retryFailedSaves(ids);
+    return { ok: true as const, requeued };
   },
 
   async "saves.filePath"(params) {

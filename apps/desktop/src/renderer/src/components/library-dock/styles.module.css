@@ -183,17 +183,36 @@
 
 .count {
   display: inline-flex;
+  gap: 1px;
   align-items: center;
   justify-content: center;
   min-width: 24px;
-  height: 20px;
+  height: 22px;
   padding-inline: 7px;
+  margin-inline: 2px;
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-1);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
   background: var(--ds-gray-11);
+  border: 0;
   border-radius: var(--ds-radius-full);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    background: var(--ds-gray-12);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.countTotal {
+  font-weight: 500;
+  color: var(--ds-gray-7);
 }
 
 .clear {

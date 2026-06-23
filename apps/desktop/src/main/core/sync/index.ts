@@ -490,10 +490,13 @@ async function syncListSource(
     accountKey = (await inferAccountKey(source)) || "me";
   }
 
+  // On a full walk, hide known ids from the harvester so it doesn't early-stop
+  // at the top of the list — we still dedup below via the real `knownIds` set.
+  const harvestKnownIds = baseline.full ? [] : Array.from(knownIds);
   const harvest = await harvestSourceList(
     source,
     {
-      knownIds: Array.from(knownIds),
+      knownIds: harvestKnownIds,
       accountKey,
     },
     {
@@ -554,7 +557,7 @@ async function syncListSource(
   const combined = harvest.entries;
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList({
-      knownIds: Array.from(knownIds),
+      knownIds: harvestKnownIds,
     });
     if (liked.ok) {
       const seen = new Set(combined.map((e) => e.sourceId));
@@ -660,9 +663,11 @@ async function syncTwitter(
     message: `Looking at your Twitter bookmarks…`,
   });
 
+  // On a full walk, hide known ids so the harvester scans the whole bookmark
+  // history instead of early-stopping; dedup still happens via `knownIds` below.
   const harvest = await harvestTwitterBookmarks(
     {
-      knownIds: Array.from(knownIds),
+      knownIds: baseline.full ? [] : Array.from(knownIds),
     },
     {
       onProgress: (p) => {

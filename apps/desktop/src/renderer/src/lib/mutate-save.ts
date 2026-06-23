@@ -113,3 +113,55 @@ export async function trashSaves(
   );
   return changes.length;
 }
+
+// Bulk restore from trash, batched so the whole set can be re-trashed in one undo.
+export async function untrashSaves(
+  ids: readonly string[],
+  opts: MutateOpts = {},
+): Promise<number> {
+  const changes: { prev: Save; next: Save; tx: unknown }[] = [];
+  for (const id of ids) {
+    const prev = pool.get(id);
+    if (!prev) continue;
+    changes.push({
+      prev,
+      next: { ...prev, deletedAt: null },
+      tx: { kind: "untrash", model: "save", id, ...metaFor(opts) },
+    });
+  }
+  if (changes.length === 0) return 0;
+  await optimistic(
+    () => {
+      for (const c of changes) pool.upsert(c.next);
+    },
+    () => {
+      for (const c of changes) pool.upsert(c.prev);
+    },
+    async () => window.pond.batch(changes.map((c) => c.tx)),
+  );
+  return changes.length;
+}
+
+// Bulk permanent delete. Irreversible, so no undo path is offered.
+export async function purgeSaves(ids: readonly string[]): Promise<number> {
+  const changes: { prev: Save; tx: unknown }[] = [];
+  for (const id of ids) {
+    const prev = pool.get(id);
+    if (!prev) continue;
+    changes.push({
+      prev,
+      tx: { kind: "purge", model: "save", id, before: prev },
+    });
+  }
+  if (changes.length === 0) return 0;
+  await optimistic(
+    () => {
+      for (const c of changes) pool.delete(c.prev.id);
+    },
+    () => {
+      for (const c of changes) pool.upsert(c.prev);
+    },
+    async () => window.pond.batch(changes.map((c) => c.tx)),
+  );
+  return changes.length;
+}

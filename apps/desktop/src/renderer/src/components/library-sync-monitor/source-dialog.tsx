@@ -226,6 +226,46 @@ function SourceBody({
               <option value="manual">Manual only</option>
             </select>
           </div>
+          {model.connected ? (
+            <>
+              <div className={styles.field}>
+                <div>
+                  <div className={styles.fl}>Backfill</div>
+                  <div className={styles.fh}>
+                    Re-scan your entire saved list for anything missed, not just
+                    new items.
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={model.tone === "run"}
+                  onClick={() =>
+                    void window.pond.syncRunNow(source, { forceFull: true })
+                  }
+                >
+                  Backfill
+                </Button>
+              </div>
+              <div className={styles.field}>
+                <div>
+                  <div className={styles.fl}>Refresh metadata</div>
+                  <div className={styles.fh}>
+                    Re-download covers and details for saves you already have.
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    void window.pond.refreshBackfillStart({ source })
+                  }
+                >
+                  Refresh
+                </Button>
+              </div>
+            </>
+          ) : null}
           <div className={styles.field}>
             <div>
               <div className={styles.fl}>Show in sidebar</div>

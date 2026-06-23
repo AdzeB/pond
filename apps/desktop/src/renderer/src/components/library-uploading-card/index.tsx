@@ -1,9 +1,8 @@
+import { BorderBeam } from "border-beam";
 import { useMemo } from "react";
 import type { CardLayout } from "@/components/save-card-media";
 import { formatNumber } from "@/lib/format";
 import styles from "./styles.module.css";
-
-const SPINNER_DOTS = [0, 1, 2, 3, 4, 5, 6, 7];
 
 interface UploadingCardProps {
   count: number;
@@ -35,22 +34,27 @@ export function UploadingCard({
     [packedWidth, packedHeight, packedTop, packedLeft],
   );
 
-  const label = `Saving ${formatNumber(count)} ${count === 1 ? "item" : "items"}`;
+  const formattedCount = formatNumber(count);
+  const noun = count === 1 ? "item" : "items";
+  const label = `Saving ${formattedCount} ${noun}`;
 
   return (
     <li className={styles.item} style={liStyle} aria-hidden={false}>
-      <div className={styles.media} role="status" aria-label={label}>
-        <span className={styles.spinner} aria-hidden>
-          {SPINNER_DOTS.map((i) => (
-            <span
-              key={i}
-              className={styles.dot}
-              style={{ ["--i" as never]: i }}
-            />
-          ))}
-        </span>
-        <span className={styles.label}>{label}</span>
-      </div>
+      <BorderBeam
+        className={styles.beam}
+        colorVariant="ocean"
+        staticColors
+        borderRadius={12}
+        duration={3}
+        saturation={1.1}
+      >
+        <div className={styles.media} role="status" aria-label={label}>
+          <span className={styles.content}>
+            <span className={styles.count}>{formattedCount}</span>
+            <span className={styles.label}>Saving {noun}</span>
+          </span>
+        </div>
+      </BorderBeam>
     </li>
   );
 }
