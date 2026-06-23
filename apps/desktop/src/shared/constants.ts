@@ -36,6 +36,11 @@ export const IPC = {
   screenshotBackfillRun: "pond:screenshot-backfill-run",
   screenshotBackfillCancel: "pond:screenshot-backfill-cancel",
   screenshotBackfillStatus: "pond:screenshot-backfill-status",
+  // Rate governor: account-safety pause state + kill switch.
+  governorStatus: "pond:governor-status",
+  governorSnapshot: "pond:governor-snapshot",
+  governorSetPaused: "pond:governor-set-paused",
+  governorResumeSource: "pond:governor-resume-source",
   storageStatus: "pond:storage-status",
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",

@@ -10,6 +10,26 @@ export interface FetchMediaOptions {
   imageMaxBytes?: number | null;
 }
 
+// transient = network / 408 / 429 / 5xx (retry); permanent = 4xx / oversized /
+// wrong-type (the URL will never succeed, so the worker settles it as done).
+export type BlobMiss = "transient" | "permanent";
+
+function classifyHttpStatus(status: number): BlobMiss {
+  if (status === 408 || status === 425 || status === 429) return "transient";
+  if (status >= 500) return "transient";
+  return "permanent";
+}
+
+export type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
+
+// One downloaded media URL paired with its origin URL so callers can persist a
+// URL->file mapping (smart skip) and tally transient vs permanent misses.
+export interface MediaBatchEntry {
+  url: string;
+  file: TxSaveFile | null;
+  miss?: BlobMiss;
+}
+
 function extensionFor(mimeType: string | null, url: string): string {
   const fromUrl = extname(new URL(url).pathname).toLowerCase();
   if (fromUrl) return fromUrl;
@@ -37,7 +57,7 @@ async function fetchMediaToTxFile(
   mediaUrl: string,
   index = 0,
   options: FetchMediaOptions = {},
-): Promise<TxSaveFile | null> {
+): Promise<MediaFetchOutcome> {
   let res: Response;
   try {
     res = await fetch(mediaUrl, {
@@ -46,11 +66,11 @@ async function fetchMediaToTxFile(
     });
   } catch (err) {
     log.warn("[pond blob] fetch failed", mediaUrl, err);
-    return null;
+    return { miss: "transient" };
   }
   if (!res.ok) {
     log.warn("[pond blob] non-2xx", res.status, mediaUrl);
-    return null;
+    return { miss: classifyHttpStatus(res.status) };
   }
 
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
@@ -71,7 +91,7 @@ async function fetchMediaToTxFile(
       cap: hardCap,
       reason: imageCap ? "image cap" : "absolute cap",
     });
-    return null;
+    return { miss: "permanent" };
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
@@ -82,7 +102,7 @@ async function fetchMediaToTxFile(
       cap: hardCap,
       reason: imageCap ? "image cap" : "absolute cap",
     });
-    return null;
+    return { miss: "permanent" };
   }
 
   const ext = extensionFor(mime, mediaUrl);
@@ -90,9 +110,11 @@ async function fetchMediaToTxFile(
   const filename = nameFor(kind, ext, index);
 
   return {
-    filename,
-    bytes: buf,
-    mimeType: mime ?? undefined,
+    file: {
+      filename,
+      bytes: buf,
+      mimeType: mime ?? undefined,
+    },
   };
 }
 
@@ -109,7 +131,7 @@ function nameFor(
 
 export async function fetchAvatarToTxFile(
   avatarUrl: string,
-): Promise<TxSaveFile | null> {
+): Promise<MediaFetchOutcome> {
   let res: Response;
   try {
     res = await fetch(avatarUrl, {
@@ -118,17 +140,17 @@ export async function fetchAvatarToTxFile(
     });
   } catch (err) {
     log.warn("[pond blob] avatar fetch failed", avatarUrl, err);
-    return null;
+    return { miss: "transient" };
   }
   if (!res.ok) {
     log.warn("[pond blob] avatar non-2xx", res.status, avatarUrl);
-    return null;
+    return { miss: classifyHttpStatus(res.status) };
   }
 
   const contentLength = Number(res.headers.get("content-length") ?? 0);
   if (contentLength > MAX_AVATAR_BYTES) {
     log.warn("[pond blob] avatar too big, skipping", contentLength, avatarUrl);
-    return null;
+    return { miss: "permanent" };
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
@@ -138,27 +160,29 @@ export async function fetchAvatarToTxFile(
       buf.byteLength,
       avatarUrl,
     );
-    return null;
+    return { miss: "permanent" };
   }
 
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
   if (mime && !mime.startsWith("image/")) {
     log.warn("[pond blob] avatar not an image, skipping", mime, avatarUrl);
-    return null;
+    return { miss: "permanent" };
   }
 
   const ext = extensionFor(mime, avatarUrl);
   return {
-    filename: `avatar${ext}`,
-    bytes: buf,
-    mimeType: mime ?? undefined,
+    file: {
+      filename: `avatar${ext}`,
+      bytes: buf,
+      mimeType: mime ?? undefined,
+    },
   };
 }
 
 export async function fetchMediaBatch(
   urls: string[],
   options: FetchMediaOptions = {},
-): Promise<TxSaveFile[]> {
+): Promise<MediaBatchEntry[]> {
   const unique: string[] = [];
   const seen = new Set<string>();
   for (const u of urls) {
@@ -168,29 +192,40 @@ export async function fetchMediaBatch(
   }
   if (unique.length === 0) return [];
 
-  const results = await Promise.all(
-    unique.map((u, i) =>
-      fetchMediaToTxFile(u, i, options).catch((err) => {
+  const results: MediaBatchEntry[] = await Promise.all(
+    unique.map(async (u, i): Promise<MediaBatchEntry> => {
+      try {
+        const outcome = await fetchMediaToTxFile(u, i, options);
+        return "file" in outcome
+          ? { url: u, file: outcome.file }
+          : { url: u, file: null, miss: outcome.miss };
+      } catch (err) {
         log.warn("[pond blob] batch fetch failed", u, err);
-        return null;
-      }),
-    ),
+        return { url: u, file: null, miss: "transient" };
+      }
+    }),
   );
 
-  const survivors = results.filter((r): r is TxSaveFile => r !== null);
-  return renumberCovers(survivors);
+  return renumberCovers(results);
 }
 
-function renumberCovers(files: TxSaveFile[]): TxSaveFile[] {
+// Reassigns cover/media filenames across the survivors while preserving each
+// entry's origin url (and leaving missed entries untouched).
+function renumberCovers(entries: MediaBatchEntry[]): MediaBatchEntry[] {
   let coverAssigned = false;
   let mediaIndex = 1;
-  return files.map((f) => {
+  return entries.map((entry) => {
+    if (!entry.file) return entry;
+    const f = entry.file;
     const ext = extname(f.filename).toLowerCase() || ".bin";
-    if (f.filename.startsWith("video")) return f;
+    if (f.filename.startsWith("video")) return entry;
     if (!coverAssigned) {
       coverAssigned = true;
-      return { ...f, filename: `cover${ext}` };
+      return { ...entry, file: { ...f, filename: `cover${ext}` } };
     }
-    return { ...f, filename: `media-${mediaIndex++}${ext}` };
+    return {
+      ...entry,
+      file: { ...f, filename: `media-${mediaIndex++}${ext}` },
+    };
   });
 }

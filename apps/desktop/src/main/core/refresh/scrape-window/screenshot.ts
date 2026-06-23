@@ -88,27 +88,141 @@ export async function screenshotTweet(
       return { ok: false, reason: "auth_required" };
     }
 
-    // Pin html background to the scheme so rect rounding doesn't leak edge color.
-    const htmlBg = colorScheme === "light" ? "#fff" : "#000";
-    // Hide "View quotes" and strip article borders so a divider can't leak into the trim.
-    await lease.win.webContents
-      .insertCSS(
-        `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
-         a[href$="/quotes"], a[href$="/retweets/with_comments"] { display: none !important; }
-         article { border: 0 !important; }
-         html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`,
-      )
-      .catch(() => {});
+    const shot = await captureCurrentScheme(
+      lease.win,
+      args.sourceId,
+      colorScheme,
+    );
+    if (shot.ok && args.harvestMedia) {
+      const media = await harvestPageMedia(lease.win, args.sourceId);
+      if (media && media.length > 0) return { ...shot, media };
+    }
+    return shot;
+  } catch (err) {
+    log.warn("[pond screenshot:tweet] unexpected error", args.url, err);
+    return { ok: false, reason: "no_article" };
+  } finally {
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    lease.release();
+  }
+}
 
-    const initial = await readArticleRect(lease.win, args.sourceId);
+export interface TweetDualScreenshotArgs {
+  url: string;
+  sourceId: string;
+  // Harvest media off the loaded page (once); used by the quote walker.
+  harvestMedia?: boolean;
+}
+
+export interface TweetDualScreenshotResult {
+  light: TweetScreenshotResult;
+  dark: TweetScreenshotResult;
+  quotedUrl?: string;
+  media?: ScrapedHarvest["mediaUrls"];
+}
+
+// Captures both color schemes from a single window lease and, when X cooperates,
+// a single navigation: load light, capture, flip the emulated scheme, and only
+// reload if the page didn't re-theme (`waitForSchemeFlip`). Halves X.com loads
+// per tweet in the common case; worst case matches the old two-navigation path.
+export async function screenshotTweetDual(
+  args: TweetDualScreenshotArgs,
+): Promise<TweetDualScreenshotResult> {
+  const lease = await leaseWindow("twitter");
+  let restoreEmulation: (() => Promise<void>) | null = null;
+  try {
+    restoreEmulation = await emulateColorScheme(lease.win, "light");
+    const navOk = await navigateWithTimeout(
+      lease.win,
+      args.url,
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) {
+      log.warn("[pond screenshot:tweet] navigate failed", args.url);
+      const fail: TweetScreenshotResult = {
+        ok: false,
+        reason: "navigate_failed",
+      };
+      return { light: fail, dark: fail };
+    }
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+      log.info("[pond screenshot:tweet] auth wall hit", args.url);
+      const wall: TweetScreenshotResult = {
+        ok: false,
+        reason: "auth_required",
+      };
+      return { light: wall, dark: wall };
+    }
+
+    const light = await captureCurrentScheme(lease.win, args.sourceId, "light");
+
+    // Harvest media once while the page is loaded (light pass) to avoid a second
+    // page evaluation on the dark pass.
+    let media: ScrapedHarvest["mediaUrls"] | undefined;
+    if (args.harvestMedia && light.ok) {
+      const harvested = await harvestPageMedia(lease.win, args.sourceId);
+      if (harvested && harvested.length > 0) media = harvested;
+    }
+
+    // Flip to dark. Clear the light override first so the flip detector reads X's
+    // own theme background, not our pinned html background.
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    restoreEmulation = await emulateColorScheme(lease.win, "dark");
+    const flipped = await waitForSchemeFlip(lease.win, "dark");
+    if (!flipped) {
+      // X ignored the live media change (explicit account theme); reload so it
+      // re-mounts in dark. Still one lease, but a second load — old behaviour.
+      log.debug("[pond screenshot:tweet] scheme flip needed reload", args.url);
+      await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
+    }
+    const dark = await captureCurrentScheme(lease.win, args.sourceId, "dark");
+
+    const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
+    return {
+      light,
+      dark,
+      ...(quotedUrl ? { quotedUrl } : {}),
+      ...(media ? { media } : {}),
+    };
+  } catch (err) {
+    log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
+    const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
+    return { light: fail, dark: fail };
+  } finally {
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    lease.release();
+  }
+}
+
+// Captures the focused article in the window's CURRENT navigation + emulated
+// scheme. Assumes the page is already loaded; pins the html background to the
+// scheme for the duration of this capture only (removes its injected CSS after).
+async function captureCurrentScheme(
+  win: BrowserWindow,
+  sourceId: string,
+  colorScheme: "light" | "dark",
+): Promise<TweetScreenshotResult> {
+  // Pin html background to the scheme so rect rounding doesn't leak edge color.
+  const htmlBg = colorScheme === "light" ? "#fff" : "#000";
+  // Hide "View quotes" and strip article borders so a divider can't leak into the trim.
+  const cssKey = await win.webContents
+    .insertCSS(
+      `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
+       a[href$="/quotes"], a[href$="/retweets/with_comments"] { display: none !important; }
+       article { border: 0 !important; }
+       html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`,
+    )
+    .catch(() => undefined);
+
+  try {
+    const initial = await readArticleRect(win, sourceId);
     if (!initial) {
-      log.info("[pond screenshot:tweet] no article", args.url);
+      log.info("[pond screenshot:tweet] no article", sourceId);
       return { ok: false, reason: "no_article" };
     }
 
     // Resize to fit the whole article (capturePage crops overflow), then re-measure.
-    const [contentWidthRaw, originalContentHeightRaw] =
-      lease.win.getContentSize();
+    const [contentWidthRaw, originalContentHeightRaw] = win.getContentSize();
     const contentWidth = contentWidthRaw ?? 1280;
     const originalContentHeight = originalContentHeightRaw ?? 1024;
     const requiredHeight = Math.ceil(
@@ -118,20 +232,20 @@ export async function screenshotTweet(
     let resized = false;
     if (requiredHeight > originalContentHeight) {
       const target = Math.min(requiredHeight, SCREENSHOT_MAX_HEIGHT);
-      lease.win.setContentSize(contentWidth, target);
+      win.setContentSize(contentWidth, target);
       resized = true;
       await sleep(400);
-      const remeasured = await readArticleRect(lease.win, args.sourceId);
+      const remeasured = await readArticleRect(win, sourceId);
       if (remeasured) rect = remeasured;
     }
 
     try {
-      const shot = await withDeviceScaleFactor(
-        lease.win,
+      return await withDeviceScaleFactor(
+        win,
         CAPTURE_DEVICE_SCALE_FACTOR,
         async () => {
           const image = await Promise.race([
-            lease.win.webContents.capturePage({
+            win.webContents.capturePage({
               x: Math.max(0, Math.floor(rect.x)),
               y: Math.max(0, Math.floor(rect.y)),
               width: Math.max(1, Math.ceil(rect.width)),
@@ -150,7 +264,7 @@ export async function screenshotTweet(
             size.width === 0 ||
             size.height === 0
           ) {
-            log.warn("[pond screenshot:tweet] empty capture", args.url);
+            log.warn("[pond screenshot:tweet] empty capture", sourceId);
             return { ok: false, reason: "no_article" } as const;
           }
           const padded = await padScreenshot(rawBytes, size, colorScheme);
@@ -161,27 +275,63 @@ export async function screenshotTweet(
           } as const;
         },
       );
-
-      if (shot.ok && args.harvestMedia) {
-        const media = await harvestPageMedia(lease.win, args.sourceId);
-        if (media && media.length > 0) return { ...shot, media };
-      }
-      return shot;
     } finally {
       if (resized) {
         try {
-          lease.win.setContentSize(contentWidth, originalContentHeight);
+          win.setContentSize(contentWidth, originalContentHeight);
         } catch {
           /* window may have been destroyed mid-capture; pool drops it */
         }
       }
     }
-  } catch (err) {
-    log.warn("[pond screenshot:tweet] unexpected error", args.url, err);
-    return { ok: false, reason: "no_article" };
   } finally {
-    if (restoreEmulation) await restoreEmulation().catch(() => {});
-    lease.release();
+    if (cssKey) await win.webContents.removeInsertedCSS(cssKey).catch(() => {});
+  }
+}
+
+// Polls document.body background luminance until it matches the target scheme
+// or a short deadline passes; returns false (theme didn't flip) so the caller
+// can reload. A transparent/unknown value counts as "not flipped".
+async function waitForSchemeFlip(
+  win: BrowserWindow,
+  target: "light" | "dark",
+): Promise<boolean> {
+  const deadline = Date.now() + 1500;
+  while (Date.now() < deadline) {
+    const lum = await readBackgroundLuminance(win);
+    if (lum != null) {
+      if (target === "dark" && lum < 0.4) return true;
+      if (target === "light" && lum > 0.6) return true;
+    }
+    await sleep(150);
+  }
+  return false;
+}
+
+async function readBackgroundLuminance(
+  win: BrowserWindow,
+): Promise<number | null> {
+  const expr = `(() => {
+    try {
+      const c = getComputedStyle(document.body).backgroundColor || '';
+      const m = c.match(/rgba?\\(([^)]+)\\)/);
+      if (!m) return null;
+      const parts = m[1].split(',').map((s) => parseFloat(s));
+      const [r, g, b, a] = parts;
+      if (a === 0) return null;
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    } catch (_) {
+      return null;
+    }
+  })()`;
+  try {
+    const raw = await Promise.race([
+      win.webContents.executeJavaScript(expr, true),
+      sleep(1000).then(() => null),
+    ]);
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+  } catch {
+    return null;
   }
 }
 

@@ -2,7 +2,14 @@ import type { Source } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type SyncState = "idle" | "running" | "done" | "error" | "auth_required";
+export type SyncState =
+  | "idle"
+  | "running"
+  | "done"
+  | "error"
+  | "auth_required"
+  // Backed off to protect the account (rate limited / governor cooldown).
+  | "paused";
 
 // Live wire shape pushed over onSyncStatus; mirrors the main process type, kept local to avoid crossing IPC.
 export interface SyncStatusUpdate {

@@ -5,12 +5,12 @@ import {
   saves,
 } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
-import { eq } from "drizzle-orm";
+import { sourceLabel } from "@pond/schema/sources";
+import { and, count, desc, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
-import pLimit from "p-limit";
 import { getDb } from "../../db";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
-import { enqueueSaveByUrl } from "../pipeline/enqueue";
+import { enqueueSavesBulk } from "../pipeline/enqueue";
 import { extractorFor } from "../pipeline/extractors";
 import { getPrefs, setPrefs } from "../prefs";
 import {
@@ -28,11 +28,21 @@ export interface SyncOptions {
   trigger?: "manual" | "cron";
   // Cap on new items enqueued per source; the full list is still walked.
   maxItems?: number;
+  // Ignore the incremental watermark and walk the whole remote list (loads the
+  // full known-id set, disables early-stop). For drift recovery.
+  forceFull?: boolean;
 }
 
 export interface SyncStatusUpdate {
   source: Source;
-  state: "idle" | "running" | "done" | "error" | "auth_required";
+  state:
+    | "idle"
+    | "running"
+    | "done"
+    | "error"
+    | "auth_required"
+    // Backed off to protect the account (rate limited / governor cooldown).
+    | "paused";
   message?: string;
   progress?: { current: number; total: number };
   lastSyncedAt?: string | null;
@@ -105,16 +115,88 @@ async function patchSourceSync(
   return next;
 }
 
-export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
-  for (const source of SYNCABLE_SOURCES) {
-    const connected = await isSourceConnected(source).catch(() => false);
-    if (!connected) continue;
-    try {
-      await syncSource(source, opts);
-    } catch (err) {
-      log.warn("[pond sync] syncSource threw", source, err);
-    }
+// Most-recent known ids loaded for an incremental run. Lists are newest-first,
+// so this window is enough to detect the already-synced backlog and early-stop.
+const RECENT_KNOWN_WINDOW = 1500;
+
+interface SyncBaseline {
+  // Known source ids for dedup + harvester early-stop. Full set on a full sync,
+  // a bounded recent window on an incremental sync.
+  knownIds: Set<string>;
+  // True library size for this source (UI + watermark).
+  total: number;
+  // Whether this run is a full walk (first sync or forced).
+  full: boolean;
+}
+
+// Decide full vs incremental and load the right baseline. A full walk happens on
+// the very first sync (no prior full sync recorded) or when explicitly forced.
+async function loadSyncBaseline(
+  source: Source,
+  forceFull: boolean,
+): Promise<SyncBaseline> {
+  const db = await getDb();
+  const cfg = await getSourceSync(source);
+  const full = forceFull || cfg.lastFullSyncAt === null;
+  if (full) {
+    const rows = await db
+      .select({ sourceId: saves.sourceId })
+      .from(saves)
+      .where(eq(saves.source, source));
+    const knownIds = new Set<string>(rows.map((r) => r.sourceId));
+    return { knownIds, total: knownIds.size, full: true };
   }
+  const rows = await db
+    .select({ sourceId: saves.sourceId })
+    .from(saves)
+    .where(eq(saves.source, source))
+    .orderBy(desc(saves.savedAt))
+    .limit(RECENT_KNOWN_WINDOW);
+  const knownIds = new Set<string>(rows.map((r) => r.sourceId));
+  const totalRow = await db
+    .select({ c: count() })
+    .from(saves)
+    .where(eq(saves.source, source))
+    .get();
+  return { knownIds, total: totalRow?.c ?? knownIds.size, full: false };
+}
+
+// Persist the incremental cursor after a successful run. Only advance
+// `lastFullSyncAt` on a full walk so the next run can go incremental.
+async function persistWatermark(
+  source: Source,
+  opts: { full: boolean; newestId: string | null; total: number },
+): Promise<string> {
+  const lastSyncedAt = new Date().toISOString();
+  const patch: Partial<SourceSyncPrefs> = {
+    lastSyncedAt,
+    lastError: null,
+    knownCount: opts.total,
+  };
+  if (opts.newestId) patch.highWaterMark = opts.newestId;
+  if (opts.full) patch.lastFullSyncAt = lastSyncedAt;
+  await patchSourceSync(source, patch);
+  return lastSyncedAt;
+}
+
+export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+  const connected = await Promise.all(
+    SYNCABLE_SOURCES.map(async (source) =>
+      (await isSourceConnected(source).catch(() => false)) ? source : null,
+    ),
+  );
+  const sources = connected.filter((s): s is Source => s !== null);
+  if (sources.length === 0) return;
+  // Run sources concurrently; real concurrency is bounded by the shared window
+  // pool and the governor. Different sources hit different domains, so cross-
+  // source parallelism doesn't raise per-account risk.
+  await Promise.all(
+    sources.map((source) =>
+      syncSource(source, opts).catch((err) =>
+        log.warn("[pond sync] syncSource threw", source, err),
+      ),
+    ),
+  );
 }
 
 const SYNCABLE_SOURCES: readonly Source[] = [
@@ -168,6 +250,11 @@ export async function syncSource(
     startedAt,
     watchdog,
   });
+  // Persist an in-flight marker so a crash/force-quit mid-run is recoverable on
+  // next launch (see recoverInterruptedSyncs). Best-effort; never block the run.
+  void patchSourceSync(source, {
+    runningSince: new Date(startedAt).toISOString(),
+  }).catch(() => {});
   // One wide event per sync run, mutated then committed in the finally.
   const ev: SyncRunEvent = startSyncEvent({
     source,
@@ -177,9 +264,15 @@ export async function syncSource(
   emit({ source, state: "running", message: "Starting…" });
   try {
     if (source === "twitter") {
-      await syncTwitter(controller.signal, ev, opts.maxItems);
+      await syncTwitter(controller.signal, ev, opts.maxItems, opts.forceFull);
     } else if (LIST_HARVEST_SOURCES.has(source)) {
-      await syncListSource(source, controller.signal, ev, opts.maxItems);
+      await syncListSource(
+        source,
+        controller.signal,
+        ev,
+        opts.maxItems,
+        opts.forceFull,
+      );
     } else {
       await patchSourceSync(source, { lastError: "unsupported" });
       emit({
@@ -220,12 +313,41 @@ export async function syncSource(
     const entry = inFlight.get(source);
     if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(source);
+    // Clear the persisted in-flight marker; the run reached a terminal state.
+    void patchSourceSync(source, { runningSince: null }).catch(() => {});
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
     if (watchdogTripped) ev.outcome = "aborted";
     void commitEvent(ev);
   }
+}
+
+// On startup, a source still flagged `runningSince` was interrupted by a crash
+// (a clean finish clears it). Clear the stale marker and record a lastError so
+// the UI doesn't show a stuck spinner; re-running is safe (idempotent watermarks).
+export async function recoverInterruptedSyncs(): Promise<Source[]> {
+  const recovered: Source[] = [];
+  for (const source of SYNCABLE_SOURCES) {
+    const cfg = await getSourceSync(source);
+    if (!cfg.runningSince) continue;
+    recovered.push(source);
+    await patchSourceSync(source, {
+      runningSince: null,
+      lastError: "interrupted",
+    }).catch(() => {});
+    emit({
+      source,
+      state: "idle",
+      message: "Previous sync was interrupted.",
+      lastSyncedAt: cfg.lastSyncedAt,
+      lastError: "interrupted",
+    });
+  }
+  if (recovered.length > 0) {
+    log.info("[pond sync] recovered interrupted runs", recovered);
+  }
+  return recovered;
 }
 
 export function cancelSync(source: Source): void {
@@ -332,22 +454,17 @@ function handleFromUrl(source: Source, url: string): string | null {
   }
 }
 
-const ENQUEUE_CONCURRENCY = 8;
-
 async function syncListSource(
   source: Source,
   signal: AbortSignal,
   ev: SyncRunEvent,
   maxItems?: number,
+  forceFull = false,
 ): Promise<void> {
-  const db = await getDb();
-  const knownRows = await db
-    .select({ sourceId: saves.sourceId })
-    .from(saves)
-    .where(eq(saves.source, source));
-  const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
+  const baseline = await loadSyncBaseline(source, forceFull);
+  const knownIds = baseline.knownIds;
   log.info(
-    `[pond sync:${source}] starting; ${knownIds.size} items already in library`,
+    `[pond sync:${source}] starting; ${baseline.total} items already in library (${baseline.full ? "full" : `incremental, ${knownIds.size}-id window`})`,
   );
   emit({
     source,
@@ -406,6 +523,22 @@ async function syncListSource(
       ev.outcome = "auth_required";
       return;
     }
+    if (harvest.reason === "rate_limited") {
+      const waitMin = harvest.retryAfterSec
+        ? Math.max(1, Math.round(harvest.retryAfterSec / 60))
+        : null;
+      await patchSourceSync(source, { lastError: "rate_limited" });
+      emit({
+        source,
+        state: "paused",
+        message: waitMin
+          ? `${sourceLabel(source)} asked us to slow down — paused ~${waitMin} min to protect your account.`
+          : `${sourceLabel(source)} asked us to slow down — paused to protect your account.`,
+        lastError: "rate_limited",
+      });
+      ev.outcome = "rate_limited";
+      return;
+    }
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
@@ -439,14 +572,19 @@ async function syncListSource(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
+  // Honest seen: the harvester's scanned total (often more than the fresh
+  // entries it returned), floored at the entries we actually have in hand.
   ev.harvest = {
-    seen: combined.length,
+    seen: Math.max(harvest.seen ?? 0, combined.length),
     fresh: fresh.length,
     recovery: 0,
   };
   if (fresh.length === 0) {
-    const lastSyncedAt = new Date().toISOString();
-    await patchSourceSync(source, { lastSyncedAt, lastError: null });
+    const lastSyncedAt = await persistWatermark(source, {
+      full: baseline.full,
+      newestId: null,
+      total: baseline.total,
+    });
     emit({
       source,
       state: "done",
@@ -465,53 +603,33 @@ async function syncListSource(
   emit({
     source,
     state: "running",
-    message: `Queueing 0 of ${fresh.length}…`,
+    message: `Queueing ${fresh.length} item${fresh.length === 1 ? "" : "s"}…`,
     progress: { current: 0, total: fresh.length },
   });
 
-  let processed = 0;
-  let enqueueFailed = 0;
-  const limit = pLimit(ENQUEUE_CONCURRENCY);
-  await Promise.all(
-    fresh.map((entry) =>
-      limit(async () => {
-        if (signal.aborted) return;
-        try {
-          await enqueueSaveByUrl(entry.url, { trigger: `sync:${source}` });
-        } catch (err) {
-          log.warn(
-            `[pond sync:${source}] enqueue failure`,
-            entry.sourceId,
-            err,
-          );
-          enqueueFailed += 1;
-        }
-        processed += 1;
-        emit({
-          source,
-          state: "running",
-          message: `Queueing ${processed} of ${fresh.length}…`,
-          progress: { current: processed, total: fresh.length },
-        });
-      }),
-    ),
+  // One batched, transactional insert for the whole harvest instead of
+  // pLimit(8) per-URL round-trips.
+  const bulk = await enqueueSavesBulk(
+    fresh.map((entry) => ({ url: entry.url })),
+    { trigger: `sync:${source}` },
   );
-  ev.enqueue = {
-    succeeded: Math.max(0, processed - enqueueFailed),
-    failed: enqueueFailed,
-  };
+  const succeeded = bulk.created + bulk.existing;
+  ev.enqueue = { succeeded, failed: bulk.failed };
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
   }
 
-  const lastSyncedAt = new Date().toISOString();
-  await patchSourceSync(source, { lastSyncedAt, lastError: null });
+  const lastSyncedAt = await persistWatermark(source, {
+    full: baseline.full,
+    newestId: fresh[0]?.sourceId ?? null,
+    total: baseline.total + bulk.created,
+  });
   emit({
     source,
     state: "done",
-    message: `Queued ${processed} item${processed === 1 ? "" : "s"} for ingest.`,
-    progress: { current: processed, total: fresh.length },
+    message: `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`,
+    progress: { current: fresh.length, total: fresh.length },
     lastSyncedAt,
     lastError: null,
   });
@@ -521,20 +639,20 @@ async function syncTwitter(
   signal: AbortSignal,
   ev: SyncRunEvent,
   maxItems?: number,
+  forceFull = false,
 ): Promise<void> {
   const source: Source = "twitter";
   const db = await getDb();
-  const knownRows = await db
-    .select({ sourceId: saves.sourceId, status: saves.status })
-    .from(saves)
-    .where(eq(saves.source, source));
-  const knownIds = new Set<string>(knownRows.map((r) => r.sourceId));
+  const baseline = await loadSyncBaseline(source, forceFull);
+  const knownIds = baseline.knownIds;
   // Previously-failed tweets we can reseed from GraphQL data when they reappear.
-  const failedSourceIds = new Set<string>(
-    knownRows.filter((r) => r.status === "failed").map((r) => r.sourceId),
-  );
+  const failedRows = await db
+    .select({ sourceId: saves.sourceId })
+    .from(saves)
+    .where(and(eq(saves.source, source), eq(saves.status, "failed")));
+  const failedSourceIds = new Set<string>(failedRows.map((r) => r.sourceId));
   log.info(
-    `[pond sync:twitter] starting; ${knownIds.size} tweets already in library (${failedSourceIds.size} failed)`,
+    `[pond sync:twitter] starting; ${baseline.total} tweets already in library (${failedSourceIds.size} failed, ${baseline.full ? "full" : `incremental ${knownIds.size}-id window`})`,
   );
   emit({
     source,
@@ -576,6 +694,22 @@ async function syncTwitter(
       ev.outcome = "auth_required";
       return;
     }
+    if (harvest.reason === "rate_limited") {
+      const waitMin = harvest.retryAfterSec
+        ? Math.max(1, Math.round(harvest.retryAfterSec / 60))
+        : null;
+      await patchSourceSync(source, { lastError: "rate_limited" });
+      emit({
+        source,
+        state: "paused",
+        message: waitMin
+          ? `Twitter asked us to slow down — paused ~${waitMin} min to protect your account.`
+          : "Twitter asked us to slow down — paused to protect your account.",
+        lastError: "rate_limited",
+      });
+      ev.outcome = "rate_limited";
+      return;
+    }
     await patchSourceSync(source, { lastError: harvest.reason });
     emit({
       source,
@@ -607,8 +741,11 @@ async function syncTwitter(
     recovery: recovery.length,
   };
   if (total === 0) {
-    const lastSyncedAt = new Date().toISOString();
-    await patchSourceSync(source, { lastSyncedAt, lastError: null });
+    const lastSyncedAt = await persistWatermark(source, {
+      full: baseline.full,
+      newestId: null,
+      total: baseline.total,
+    });
     emit({
       source,
       state: "done",
@@ -634,53 +771,37 @@ async function syncTwitter(
     progress: { current: 0, total },
   });
 
-  let processed = 0;
-  let enqueueFailed = 0;
-  const limit = pLimit(ENQUEUE_CONCURRENCY);
+  // Batched insert for the whole bookmark harvest (fresh + recovery), each
+  // carrying its GraphQL seed so harvest_metadata can skip a re-scrape. Recovery
+  // items already exist, so the bulk path routes them to the reseed path.
   const queue = [...fresh, ...recovery];
-  await Promise.all(
-    queue.map((entry) =>
-      limit(async () => {
-        if (signal.aborted) return;
-        try {
-          const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
-          await enqueueSaveByUrl(entry.url, {
-            trigger: "sync:twitter",
-            seed,
-          });
-        } catch (err) {
-          log.warn("[pond sync:twitter] enqueue failure", entry.tweetId, err);
-          enqueueFailed += 1;
-        }
-        processed += 1;
-        emit({
-          source,
-          state: "running",
-          message: `Queueing ${processed} of ${total} bookmarks…`,
-          progress: { current: processed, total },
-        });
-      }),
-    ),
+  const bulk = await enqueueSavesBulk(
+    queue.map((entry) => {
+      const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
+      return { url: entry.url, ...(seed ? { seed } : {}) };
+    }),
+    { trigger: "sync:twitter" },
   );
-  ev.enqueue = {
-    succeeded: Math.max(0, processed - enqueueFailed),
-    failed: enqueueFailed,
-  };
+  const succeeded = bulk.created + bulk.existing;
+  ev.enqueue = { succeeded, failed: bulk.failed };
   if (signal.aborted) {
     ev.outcome = "aborted";
     return;
   }
 
-  const lastSyncedAt = new Date().toISOString();
-  await patchSourceSync(source, { lastSyncedAt, lastError: null });
+  const lastSyncedAt = await persistWatermark(source, {
+    full: baseline.full,
+    newestId: fresh[0]?.tweetId ?? null,
+    total: baseline.total + bulk.created,
+  });
   emit({
     source,
     state: "done",
     message:
       recovery.length > 0
         ? `Queued ${fresh.length} new + recovered ${recovery.length} failed.`
-        : `Queued ${processed} bookmark${processed === 1 ? "" : "s"} for ingest.`,
-    progress: { current: processed, total },
+        : `Queued ${succeeded} bookmark${succeeded === 1 ? "" : "s"} for ingest.`,
+    progress: { current: total, total },
     lastSyncedAt,
     lastError: null,
   });

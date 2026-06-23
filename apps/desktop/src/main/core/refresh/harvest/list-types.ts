@@ -18,5 +18,22 @@ export interface ListEntry {
 }
 
 export type ListHarvestResult =
-  | { ok: true; entries: ListEntry[]; reachedEnd: boolean }
-  | { ok: false; reason: "auth_required" | "no_match" | "timeout" | "unknown" };
+  | {
+      ok: true;
+      entries: ListEntry[];
+      reachedEnd: boolean;
+      // Total items scanned this run (not just the fresh entries returned), for
+      // honest sync.seen metrics; falls back to entries.length when unset.
+      seen?: number;
+    }
+  | {
+      ok: false;
+      reason:
+        | "auth_required"
+        | "no_match"
+        | "timeout"
+        | "unknown"
+        | "rate_limited";
+      // Server-requested wait (seconds), present on rate_limited.
+      retryAfterSec?: number;
+    };

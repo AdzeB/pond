@@ -28,6 +28,15 @@ function openSqlite(file: string): Database.Database {
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("temp_store = MEMORY");
   sqlite.pragma("mmap_size = 268435456"); // 256 MiB
+  // Wait (rather than throw SQLITE_BUSY) when a write races a WAL checkpoint or
+  // a concurrent connection — important once ingest writes land in batches.
+  sqlite.pragma("busy_timeout = 5000");
+  // ~64 MiB page cache (negative = KiB). Bulk inserts and FTS rebuilds keep far
+  // more hot pages resident, cutting disk round-trips during heavy ingest.
+  sqlite.pragma("cache_size = -65536");
+  // Checkpoint a little less eagerly so a burst of batched writes isn't
+  // interrupted mid-transaction (default is 1000 pages).
+  sqlite.pragma("wal_autocheckpoint = 2000");
   return sqlite;
 }
 
@@ -176,6 +185,8 @@ function migratePond(sqlite: Database.Database): void {
 					usage_count INTEGER NOT NULL DEFAULT 0,
 					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
 				);
+				-- Case-insensitive name lookups (rename/merge collision checks).
+				CREATE INDEX IF NOT EXISTS tags_name_lower_idx ON tags(lower(name));
 
 				CREATE TABLE IF NOT EXISTS tag_groups (
 					id TEXT PRIMARY KEY,
@@ -247,6 +258,7 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS pipeline_events_ts_idx ON pipeline_events(ts);
 				CREATE INDEX IF NOT EXISTS pipeline_events_save_idx ON pipeline_events(save_id, ts);
 				CREATE INDEX IF NOT EXISTS pipeline_events_kind_outcome_idx ON pipeline_events(kind, outcome, ts);
+				CREATE INDEX IF NOT EXISTS pipeline_events_kind_ts_idx ON pipeline_events(kind, ts);
 				CREATE INDEX IF NOT EXISTS pipeline_events_source_op_idx ON pipeline_events(source, op);
 			`);
 
@@ -271,6 +283,15 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "auto_title_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "suggested_tags", "TEXT");
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
+
+  // Partial indexes for the embedding columns: most rows have no vector, so
+  // these stay tiny and keep "has/needs an embedding" scans cheap.
+  sqlite.exec(`
+				CREATE INDEX IF NOT EXISTS saves_has_embedding_idx
+					ON saves(id) WHERE embedding IS NOT NULL;
+				CREATE INDEX IF NOT EXISTS saves_has_clip_embedding_idx
+					ON saves(id) WHERE clip_embedding IS NOT NULL;
+			`);
 
   // FTS5 over save text. caption/ocr_text/transcript are indexed so free-text and
   // structured search reach visual/audio content. The virtual table can't be
@@ -306,6 +327,12 @@ function ensureSavesFts(sqlite: Database.Database): void {
 			`);
   }
 
+  // Scope the UPDATE trigger to only the FTS-indexed columns (`AFTER UPDATE OF
+  // ...`); it used to fire on every saves UPDATE, so high-churn ingest columns
+  // caused huge FTS write amplification. Drop the legacy trigger first so older
+  // libraries pick up the scoped version (CREATE IF NOT EXISTS won't replace it).
+  sqlite.exec("DROP TRIGGER IF EXISTS saves_au;");
+
   sqlite.exec(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
 					id UNINDEXED,
@@ -332,7 +359,9 @@ function ensureSavesFts(sqlite: Database.Database): void {
 					DELETE FROM saves_fts WHERE id = old.id;
 				END;
 
-				CREATE TRIGGER IF NOT EXISTS saves_au AFTER UPDATE ON saves BEGIN
+				CREATE TRIGGER IF NOT EXISTS saves_au
+				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript
+				ON saves BEGIN
 					DELETE FROM saves_fts WHERE id = old.id;
 					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
 					VALUES (

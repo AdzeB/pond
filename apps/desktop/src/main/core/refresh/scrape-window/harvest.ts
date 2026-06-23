@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
 import { app, type BrowserWindow } from "electron";
 import log from "electron-log/main.js";
+import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { harvesterFor } from "../harvest";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import {
@@ -35,7 +36,11 @@ import {
   YOUTUBE_LIST_URLS,
 } from "../harvest/youtube";
 import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS } from "./constants";
-import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
+import {
+  looksLikeAuthWall,
+  looksLikeChallenge,
+  navigateWithTimeout,
+} from "./navigation";
 import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
@@ -124,7 +129,15 @@ export async function harvestSourceList(
     if (!navOk) {
       return { ok: false, reason: "timeout" };
     }
-    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+    const landedUrl = lease.win.webContents.getURL();
+    const challenge = looksLikeChallenge(landedUrl);
+    if (challenge) {
+      // Anti-abuse interstitial: hard-stop and park the source so we never keep
+      // poking an account the platform is already scrutinising.
+      markAtRisk(source, challenge.kind, `harvest landed on ${challenge.kind}`);
+      return { ok: false, reason: "auth_required" };
+    }
+    if (looksLikeAuthWall(landedUrl)) {
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildListExpressionFor(source, args);
@@ -182,12 +195,51 @@ export async function harvestSourceList(
     if (!raw || typeof raw !== "object") {
       return { ok: false, reason: "no_match" };
     }
-    return raw as ListHarvestResult;
+    const result = raw as ListHarvestResult;
+    // Honest seen count: harvesters that return only fresh entries undercount
+    // what they scanned, so backfill from __pondHarvestStats.collected.
+    if (result.ok && result.seen == null) {
+      const collected = await readHarvestCollected(lease.win);
+      if (collected != null) result.seen = collected;
+    }
+    // Feed the outcome to the governor so cooldowns and pacing adapt for every
+    // source's list harvest, not just Twitter's.
+    if (!result.ok && result.reason === "rate_limited") {
+      const { cooldownMs } = report(source, {
+        ok: false,
+        rateLimited: true,
+        retryAfterSec: result.retryAfterSec,
+      });
+      log.warn(
+        `[pond list:${source}] rate limited; backing off ${Math.round(cooldownMs / 1000)}s`,
+      );
+    } else if (result.ok) {
+      report(source, { ok: true });
+    }
+    return result;
   } catch (err) {
     log.warn("[pond list]", source, "unexpected error", err);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();
+  }
+}
+
+// Reads the final scanned count the in-page harvester recorded in
+// `__pondHarvestStats.collected`; null when the harvester doesn't track it.
+async function readHarvestCollected(
+  win: Electron.BrowserWindow,
+): Promise<number | null> {
+  try {
+    const raw = await win.webContents.executeJavaScript(
+      "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
+      true,
+    );
+    if (typeof raw !== "string" || raw === "null") return null;
+    const stats = JSON.parse(raw) as { collected?: number };
+    return typeof stats.collected === "number" ? stats.collected : null;
+  } catch {
+    return null;
   }
 }
 
@@ -306,7 +358,17 @@ export async function harvestTwitterBookmarks(
       NAV_TIMEOUT_MS,
     );
     if (!navOk) return { ok: false, reason: "timeout" };
-    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+    const bookmarksUrl = lease.win.webContents.getURL();
+    const bookmarksChallenge = looksLikeChallenge(bookmarksUrl);
+    if (bookmarksChallenge) {
+      markAtRisk(
+        "twitter",
+        bookmarksChallenge.kind,
+        `bookmarks harvest landed on ${bookmarksChallenge.kind}`,
+      );
+      return { ok: false, reason: "auth_required" };
+    }
+    if (looksLikeAuthWall(bookmarksUrl)) {
       return { ok: false, reason: "auth_required" };
     }
 
@@ -368,6 +430,7 @@ export async function harvestTwitterBookmarks(
         log.info(
           `[pond bookmarks] api ok pages=${api.apiDebug?.pages ?? "?"} tweets=${api.apiDebug?.tweets ?? "?"} reason=${api.apiDebug?.reason ?? "?"}`,
         );
+        report("twitter", { ok: true });
         result = {
           ok: true,
           entries: api.entries,
@@ -376,6 +439,22 @@ export async function harvestTwitterBookmarks(
         };
       } else if (api && api.reason === "auth_required") {
         return { ok: false, reason: "auth_required" };
+      } else if (api && api.reason === "rate_limited") {
+        // Set the governor cooldown and stop. Do NOT fall back to scroll — it
+        // hits the live timeline harder and risks the account further.
+        const { cooldownMs } = report("twitter", {
+          ok: false,
+          rateLimited: true,
+          retryAfterSec: api.retryAfterSec ?? undefined,
+        });
+        log.warn(
+          `[pond bookmarks] rate limited; backing off ${Math.round(cooldownMs / 1000)}s (no scroll fallback)`,
+        );
+        return {
+          ok: false,
+          reason: "rate_limited",
+          retryAfterSec: api.retryAfterSec ?? undefined,
+        };
       } else {
         log.info(
           `[pond bookmarks] api fallback (${api && "detail" in api ? api.detail : "timeout"}); scrolling`,

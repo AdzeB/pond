@@ -7,6 +7,13 @@ import {
   startTweetScreenshotBackfill,
 } from "../../core/pipeline/enqueue";
 import {
+  governorSnapshot,
+  isAllPaused,
+  pauseAll,
+  resumeAll,
+  resumeSource,
+} from "../../core/pipeline/rate-governor";
+import {
   cancelSync,
   getSourceSync,
   isSyncing,
@@ -16,14 +23,22 @@ import {
 import { safeHandle } from "../helpers";
 
 export function registerSyncHandlers(): void {
-  safeHandle(IPC.syncRunNow, async (_, source: string) => {
-    const src = source as Source;
-    if (isSyncing(src)) {
-      return { ok: false as const, reason: "already_running" as const };
-    }
-    void syncSource(src, { trigger: "manual" });
-    return { ok: true as const };
-  });
+  safeHandle(
+    IPC.syncRunNow,
+    async (_, source: string, opts?: { forceFull?: boolean }) => {
+      const src = source as Source;
+      if (isSyncing(src)) {
+        return { ok: false as const, reason: "already_running" as const };
+      }
+      // forceFull is the "Full re-sync" escape hatch: ignore the incremental
+      // watermark and walk the whole remote list (drift recovery).
+      void syncSource(src, {
+        trigger: "manual",
+        forceFull: opts?.forceFull ?? false,
+      });
+      return { ok: true as const };
+    },
+  );
 
   safeHandle(IPC.syncStatus, async (_, source: string) => {
     const src = source as Source;
@@ -36,8 +51,11 @@ export function registerSyncHandlers(): void {
     };
   });
 
-  safeHandle(IPC.syncRunAll, async () => {
-    void syncAllSources({ trigger: "manual" });
+  safeHandle(IPC.syncRunAll, async (_, opts?: { forceFull?: boolean }) => {
+    void syncAllSources({
+      trigger: "manual",
+      forceFull: opts?.forceFull ?? false,
+    });
     return { ok: true as const };
   });
 
@@ -62,4 +80,18 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.screenshotBackfillStatus, async () => getBackfillStatus());
+
+  // ── Rate governor (account safety) ────────────────────────────────────────
+  safeHandle(IPC.governorSnapshot, async () => governorSnapshot());
+
+  safeHandle(IPC.governorSetPaused, async (_, paused: boolean) => {
+    if (paused) pauseAll();
+    else resumeAll();
+    return { ok: true as const, allPaused: isAllPaused() };
+  });
+
+  safeHandle(IPC.governorResumeSource, async (_, source: string) => {
+    resumeSource(source as Source);
+    return { ok: true as const };
+  });
 }

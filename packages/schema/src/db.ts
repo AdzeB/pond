@@ -64,6 +64,9 @@ export interface SaveFile {
   mimeType?: string | null;
   width?: number | null;
   height?: number | null;
+  // Origin media URL this file was downloaded from, when applicable. Enables
+  // smart per-URL skip so one failed image doesn't force re-downloading all.
+  sourceUrl?: string | null;
 }
 
 export interface VideoNote {

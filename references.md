@@ -59,8 +59,6 @@ library, and accepts saves from the browser extension over `http://127.0.0.1:416
 |---|---|---|
 | [`@base-ui/react`](https://base-ui.com/) | `^1.5.0` | Headless UI primitives |
 | [`@dnd-kit/core`](https://dndkit.com/) | `^6.3.1` | Drag-and-drop core |
-| [`@dnd-kit/sortable`](https://dndkit.com/) | `^10.0.0` | Sortable drag-and-drop |
-| [`@dnd-kit/utilities`](https://dndkit.com/) | `^3.2.2` | dnd-kit helpers |
 | [`@hono/node-server`](https://hono.dev/) | `^2.0.2` | Node adapter for the local HTTP ingest server |
 | [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) | `^4.2.0` | On-device ML (Transformers.js / ONNX) |
 | [`@lexical/react`](https://lexical.dev/) | `^0.45.0` | React bindings for the Lexical editor |
@@ -70,13 +68,9 @@ library, and accepts saves from the browser extension over `http://127.0.0.1:416
 | [`@tanstack/react-query`](https://tanstack.com/query) | `^5.100.14` | Async state / data fetching |
 | [`@tanstack/react-router`](https://tanstack.com/router) | `^1.170.8` | Type-safe routing |
 | [`@tanstack/react-store`](https://tanstack.com/store) | `^0.11.0` | React bindings for the store |
-| [`@tanstack/react-table`](https://tanstack.com/table) | `^8.21.3` | Headless tables (list view) |
-| [`@tanstack/react-virtual`](https://tanstack.com/virtual) | `^3.13.24` | List/grid virtualization |
 | [`@tanstack/store`](https://tanstack.com/store) | `^0.11.0` | Core reactive store |
 | [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3) | `^12.11.1` | Synchronous SQLite (native) |
 | [`border-beam`](https://www.npmjs.com/package/border-beam) | `^1.2.0` | Animated border effect |
-| [`calligraph`](https://www.npmjs.com/package/calligraph) | `^1.4.1` | Text/typography utility |
-| [`csv-stringify`](https://csv.js.org/stringify/) | `^6.7.0` | CSV export |
 | [`drizzle-orm`](https://orm.drizzle.team/) | `^0.45.2` | SQLite ORM |
 | [`electron-log`](https://github.com/megahertz/electron-log) | `^5.4.3` | Logging |
 | [`electron-updater`](https://www.electron.build/auto-update) | `^6.8.3` | Auto-update |
@@ -100,7 +94,6 @@ library, and accepts saves from the browser extension over `http://127.0.0.1:416
 | [`pretty-bytes`](https://github.com/sindresorhus/pretty-bytes) | `^7.1.0` | Human-readable sizes |
 | [`pretty-ms`](https://github.com/sindresorhus/pretty-ms) | `^9.3.0` | Human-readable durations |
 | [`rooks`](https://rooks.vercel.app/) | `^9.8.0` | React hooks collection |
-| [`rrule`](https://github.com/jakubroztocil/rrule) | `^2.8.1` | Recurrence rules (scheduling) |
 | [`sharp`](https://sharp.pixelplumbing.com/) | `^0.34.5` | Image processing (native) |
 | [`ulid`](https://github.com/ulid/javascript) | `^3.0.2` | Sortable unique IDs |
 | [`which`](https://github.com/npm/node-which) | `^7.0.0` | Locate executables on PATH |
@@ -228,7 +221,6 @@ Thin Base UI wrappers styled with CSS Modules; app-agnostic.
 | [`@uiw/color-convert`](https://uiwjs.github.io/react-color/) | `^2.10.3` | Color conversion |
 | [`@uiw/react-color-hue`](https://uiwjs.github.io/react-color/) | `^2.10.3` | Hue picker |
 | [`@uiw/react-color-saturation`](https://uiwjs.github.io/react-color/) | `^2.10.3` | Saturation picker |
-| [`calligraph`](https://www.npmjs.com/package/calligraph) | `^1.4.1` | Typography utility |
 | [`clsx`](https://github.com/lukeed/clsx) | `^2.1.1` | Conditional classnames |
 | [`motion`](https://motion.dev/) | `^12.39.0` | Animations |
 | `react` / `react-dom` (peer) | `>=19` | UI runtime |

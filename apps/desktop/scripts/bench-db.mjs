@@ -425,6 +425,227 @@ function run(n) {
   return { n, seedMs, results, poolSize: pool.length };
 }
 
+// ===========================================================================
+// Sync engine micro-benchmark
+// ===========================================================================
+// Measures the sync-rework hot paths on a large library:
+//   1. Baseline id load: full known-id Set vs bounded recent-window (Phase 1).
+//   2. Enqueue write: per-URL no-transaction (old) vs chunked bulk transaction
+//      (Phase 2) — reporting wall time, DB write/statement count, and the
+//      longest single synchronous block (the UI-freeze proxy).
+//   3. Peak RSS while holding the full id Set vs the bounded window.
+
+const SYNC_DDL = `${DDL}
+CREATE TABLE IF NOT EXISTS sync_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, batch_id TEXT, model_name TEXT NOT NULL,
+  model_id TEXT NOT NULL, action TEXT NOT NULL, data TEXT, prev_data TEXT,
+  actor TEXT NOT NULL, actor_reason TEXT,
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()*1000)
+);`;
+
+const RECENT_KNOWN_WINDOW = 1500;
+const BULK_INSERT_CHUNK = 100;
+// Twitter plans ~7 ops/save; mirror that task fan-out (op is UNIQUE per save).
+const OPS = [
+  "harvest_metadata",
+  "fetch_blobs",
+  "fetch_avatar",
+  "capture_tweet",
+  "ensure_poster",
+  "embed",
+  "finalize",
+];
+const OPS_PER_SAVE = OPS.length;
+
+function freshItems(count, offset) {
+  const items = [];
+  for (let i = 0; i < count; i++) {
+    const id = `new${(offset + i).toString(36).padStart(8, "0")}`;
+    items.push({
+      id,
+      sourceId: `nsrc${offset + i}`,
+      url: `https://x/new/${offset + i}`,
+    });
+  }
+  return items;
+}
+
+function buildSaveRow(item, now) {
+  return {
+    id: item.id,
+    source: "twitter",
+    source_id: item.sourceId,
+    url: item.url,
+    title: words(6),
+    description: words(20),
+    author: pick(WORDS),
+    media_type: "image",
+    raw_json: rawJson(),
+    raw_slim: "{}",
+    tags: "[]",
+    files: "[]",
+    width: 800,
+    height: 600,
+    file_size: 12345,
+    status: "ingesting",
+    saved_at: now,
+    created_at: now,
+  };
+}
+
+function runSync(n) {
+  const db = new Database(":memory:");
+  db.pragma("journal_mode = WAL");
+  db.pragma("synchronous = NORMAL");
+  db.pragma("busy_timeout = 5000");
+  db.pragma("cache_size = -65536");
+  db.pragma("temp_store = MEMORY");
+  db.exec(SYNC_DDL);
+
+  const seedT0 = performance.now();
+  seed(db, n);
+  const seedMs = performance.now() - seedT0;
+
+  const out = [];
+
+  // --- 1. Baseline id load: full vs bounded recent window ---
+  const memBefore = process.memoryUsage().rss;
+  const fullT0 = performance.now();
+  const fullRows = db
+    .prepare(`SELECT source_id FROM saves WHERE source = 'twitter'`)
+    .all();
+  const fullSet = new Set(fullRows.map((r) => r.source_id));
+  const fullMs = performance.now() - fullT0;
+  const memFull = process.memoryUsage().rss - memBefore;
+
+  const winT0 = performance.now();
+  const winRows = db
+    .prepare(
+      `SELECT source_id FROM saves WHERE source = 'twitter' ORDER BY saved_at DESC LIMIT ${RECENT_KNOWN_WINDOW}`,
+    )
+    .all();
+  const winSet = new Set(winRows.map((r) => r.source_id));
+  const winMs = performance.now() - winT0;
+
+  out.push(
+    `  baseline full id load (${fullSet.size} ids)        ${fmt(fullMs).padStart(9)}  (~${(memFull / 1e6).toFixed(1)} MB rss)`,
+  );
+  out.push(
+    `  baseline recent-window load (${winSet.size} ids)        ${fmt(winMs).padStart(9)}`,
+  );
+
+  // --- 2a. OLD enqueue: per-URL, 3 separate .run() with no transaction ---
+  const FRESH = Math.min(2000, Math.max(500, Math.floor(n / 20)));
+  const oldItems = freshItems(FRESH, 0);
+  const now = Date.now();
+  const insSave = db.prepare(`INSERT INTO saves
+    (id,source,source_id,url,title,description,author,media_type,raw_json,raw_slim,tags,files,width,height,file_size,status,saved_at,created_at)
+    VALUES (@id,@source,@source_id,@url,@title,@description,@author,@media_type,@raw_json,@raw_slim,@tags,@files,@width,@height,@file_size,@status,@saved_at,@created_at)`);
+  const insTask = db.prepare(
+    `INSERT INTO tasks (id,save_id,op,status) VALUES (?,?,?,?)`,
+  );
+  const insAction = db.prepare(
+    `INSERT INTO sync_actions (model_name,model_id,action,actor,actor_reason) VALUES ('save',?,'I','system','bench')`,
+  );
+  let oldWrites = 0;
+  const oldT0 = performance.now();
+  for (const item of oldItems) {
+    insSave.run(buildSaveRow(item, now)); // 1 write
+    for (const op of OPS)
+      insTask.run(`t-${op}-${item.id}`, item.id, op, "pending");
+    insAction.run(item.id); // +1
+    oldWrites += 2 + OPS_PER_SAVE;
+  }
+  const oldMs = performance.now() - oldT0;
+  // The old path never yields, so the whole run is one contiguous UI freeze.
+  const oldMaxBlock = oldMs;
+  out.push(
+    `  enqueue OLD per-URL, no tx (${FRESH} saves)        ${fmt(oldMs).padStart(9)}  ${oldWrites} stmts, worst block ${fmt(oldMaxBlock)}`,
+  );
+
+  // --- 2b. NEW enqueue: chunked multi-row inserts, one tx per chunk ---
+  const newItems = freshItems(FRESH, FRESH);
+  let newWrites = 0;
+  let newMaxBlock = 0;
+  const newT0 = performance.now();
+  for (let i = 0; i < newItems.length; i += BULK_INSERT_CHUNK) {
+    const group = newItems.slice(i, i + BULK_INSERT_CHUNK);
+    const b0 = performance.now();
+    const tx = db.transaction((rows) => {
+      const saveCols =
+        "id,source,source_id,url,title,description,author,media_type,raw_json,raw_slim,tags,files,width,height,file_size,status,saved_at,created_at";
+      const savePh = `(${saveCols
+        .split(",")
+        .map(() => "?")
+        .join(",")})`;
+      const saveVals = [];
+      for (const r of rows) {
+        const row = buildSaveRow(r, now);
+        saveVals.push(
+          row.id,
+          row.source,
+          row.source_id,
+          row.url,
+          row.title,
+          row.description,
+          row.author,
+          row.media_type,
+          row.raw_json,
+          row.raw_slim,
+          row.tags,
+          row.files,
+          row.width,
+          row.height,
+          row.file_size,
+          row.status,
+          row.saved_at,
+          row.created_at,
+        );
+      }
+      db.prepare(
+        `INSERT INTO saves (${saveCols}) VALUES ${rows.map(() => savePh).join(",")}`,
+      ).run(...saveVals);
+      newWrites += 1;
+
+      const taskVals = [];
+      for (const r of rows) {
+        for (const op of OPS) {
+          taskVals.push(`t-${op}-${r.id}`, r.id, op, "pending");
+        }
+      }
+      db.prepare(
+        `INSERT INTO tasks (id,save_id,op,status) VALUES ${rows
+          .flatMap(() =>
+            Array.from({ length: OPS_PER_SAVE }, () => "(?,?,?,?)"),
+          )
+          .join(",")}`,
+      ).run(...taskVals);
+      newWrites += 1;
+
+      const actionVals = [];
+      for (const r of rows) actionVals.push(r.id);
+      db.prepare(
+        `INSERT INTO sync_actions (model_name,model_id,action,actor,actor_reason) VALUES ${rows
+          .map(() => "('save',?,'I','system','bench')")
+          .join(",")}`,
+      ).run(...actionVals);
+      newWrites += 1;
+    });
+    tx(group);
+    newMaxBlock = Math.max(newMaxBlock, performance.now() - b0);
+  }
+  const newMs = performance.now() - newT0;
+  out.push(
+    `  enqueue NEW chunked bulk tx (${FRESH} saves)        ${fmt(newMs).padStart(9)}  ${newWrites} stmts, worst block ${fmt(newMaxBlock)}`,
+  );
+  out.push(
+    `  → speedup ${(oldMs / newMs).toFixed(1)}x, ${(oldWrites / newWrites).toFixed(0)}x fewer statements, ${(oldMaxBlock / Math.max(newMaxBlock, 0.001)).toFixed(1)}x shorter worst block`,
+  );
+
+  db.close();
+  return { n, seedMs, out };
+}
+
 console.log(
   `\nPond DB benchmark — node ${process.versions.node} / electron ${process.versions.electron} / ${os.cpus()[0].model}\n`,
 );
@@ -439,5 +660,14 @@ for (const n of ROW_COUNTS) {
       `  ${r.label.padEnd(58)} ${fmt(r.median).padStart(9)}  (min ${fmt(r.min)})`,
     );
   }
+}
+
+console.log("\n--- Sync engine micro-benchmark ---");
+for (const n of ROW_COUNTS) {
+  const { seedMs, out } = runSync(n);
+  console.log(
+    `\n=== sync @ ${n.toLocaleString()} saves  (seed ${fmt(seedMs)}) ===`,
+  );
+  for (const line of out) console.log(line);
 }
 console.log("");

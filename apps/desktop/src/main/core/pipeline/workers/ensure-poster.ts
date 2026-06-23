@@ -4,6 +4,7 @@ import log from "electron-log/main.js";
 import { extractFirstFrame } from "../../../lib/ffmpeg-frame";
 import { itemDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
+import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 
 export async function runEnsurePoster(saveId: string): Promise<void> {
@@ -25,16 +26,15 @@ export async function runEnsurePoster(saveId: string): Promise<void> {
   const videoPath = join(itemDir(saveId), video.path);
   const frame = await extractFirstFrame(videoPath);
   if (!frame) {
-    log.info(
-      "[pond pipeline:ensure-poster] no frame produced",
-      saveId,
-      videoPath,
-    );
-    return;
+    // ffmpeg produced nothing; retry as transient (it can flake). A poster is
+    // non-fatal, so giving up afterwards won't fail the save.
+    throw new TransientError(`ensure-poster: no frame produced for ${saveId}`);
   }
   try {
     const buf = await readFile(frame.path);
-    if (buf.byteLength === 0) return;
+    if (buf.byteLength === 0) {
+      throw new TransientError(`ensure-poster: empty frame for ${saveId}`);
+    }
     const ext = extname(frame.path).toLowerCase() || ".jpg";
     await persistSave(
       saveId,

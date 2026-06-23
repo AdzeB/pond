@@ -28,3 +28,31 @@ URL-first ingest pipeline.
 > [`Capture`](../../../../../../packages/schema/src/raw.ts) shape. There
 > is no per-source persistence DTO any more. The current per-source
 > coverage matrix lives in [`harvest/COVERAGE.md`](harvest/COVERAGE.md).
+
+## Account safety: the rate governor
+
+Pond scrapes through each user's **own logged-in session**, so the highest-risk
+outcome is tripping a platform's anti-abuse systems against a real account. Every
+network request that touches a platform — list harvest, item harvest, and
+screenshot navigation — is gated by one shared governor in
+[`core/pipeline/rate-governor.ts`](../pipeline/rate-governor.ts):
+
+- **`await acquire(source)` before, `report(source, …)` after.** `acquire` blocks
+  until it's safe (per-source spacing + human jitter, rolling per-window budget,
+  cooldowns, circuit breaker, manual/at-risk pauses). The hidden-window pool
+  (`scrape-window/pool.ts`) calls `acquire` inside `leaseWindow`, so anything that
+  leases a window is automatically paced.
+- **Respect platform signals.** `report` reads `retry-after` /
+  `x-rate-limit-remaining` / `x-rate-limit-reset` and adjusts pacing (AIMD) and
+  cooldowns. Harvesters return `rate_limited` on HTTP 429 and **never** escalate
+  to the noisier scroll path.
+- **Persisted.** Cooldowns and at-risk state live in `userData/rate-governor.json`
+  so a crash/relaunch loop can't re-hammer a penalised account.
+- **Danger detection.** A login/challenge/checkpoint/captcha redirect mid-harvest
+  marks the source "at risk" and hard-stops it with honest UX copy.
+
+The per-source pacing profile + sync strategy are declared **once** in the source
+descriptor (`packages/schema/src/sources/registry.ts`) with conservative safe
+defaults, so a new source is protected without any tuning. See
+[`core/sync/README.md`](../sync/README.md) for how harvest, the governor, the
+watermark cursor, and the off-thread-ish ingest path fit together.

@@ -5,6 +5,7 @@ import { fetchMediaBatch } from "../../../lib/blob";
 import { processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
+import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 
 export async function runFetchBlobs(saveId: string): Promise<void> {
@@ -17,10 +18,11 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     return;
   }
 
-  // Self-gate: every URL already mapped to a file => skip.
+  // Smart per-URL skip: only fetch URLs not already mapped to a file. Falls back
+  // to a coarse count check for legacy files written before sourceUrl existed.
   const existingFiles = save.files ?? [];
-  const haveAllCovers = mediaUrlsCovered(urls, existingFiles);
-  if (haveAllCovers) {
+  const missing = missingMediaUrls(urls, existingFiles);
+  if (missing.length === 0) {
     log.debug(
       "[pond pipeline:fetch-blobs] all media already on disk, skipping",
       saveId,
@@ -33,14 +35,29 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     ? imagePrefs.maxFileSizeMb * 1024 * 1024
     : null;
 
-  const fetched = await fetchMediaBatch(urls, { imageMaxBytes });
+  const results = await fetchMediaBatch(missing, { imageMaxBytes });
+  const fetched = results.filter((r) => r.file);
+  const transientMisses = results.filter((r) => r.miss === "transient").length;
+
   if (fetched.length === 0) {
-    log.warn("[pond pipeline:fetch-blobs] all fetches failed", saveId, urls);
+    // Nothing downloaded: retry if any miss was transient, otherwise the URLs
+    // are unfetchable (404 / oversized / wrong type) so settle as done.
+    if (transientMisses > 0) {
+      throw new TransientError(
+        `fetch-blobs: ${transientMisses}/${missing.length} media transiently unavailable`,
+      );
+    }
+    log.warn(
+      "[pond pipeline:fetch-blobs] all media permanently unavailable",
+      saveId,
+      missing,
+    );
     return;
   }
 
   const newFiles = await Promise.all(
-    fetched.map(async (tx) => {
+    fetched.map(async (entry) => {
+      const tx = entry.file as NonNullable<typeof entry.file>;
       const kind: SaveFile["kind"] = tx.filename.startsWith("video")
         ? "video"
         : tx.filename.startsWith("cover")
@@ -66,6 +83,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
         kind,
         filename,
         bytes,
+        sourceUrl: entry.url,
         ...(mimeType ? { mimeType } : {}),
       };
     }),
@@ -83,6 +101,14 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     saveId,
     count: newFiles.length,
   });
+
+  // Some downloaded, others failed transiently: retry to fill in the rest (the
+  // skip above means the retry only re-fetches what's still missing).
+  if (transientMisses > 0) {
+    throw new TransientError(
+      `fetch-blobs: ${transientMisses}/${missing.length} media still pending`,
+    );
+  }
 }
 
 // URLs fetchable with a plain GET; non-direct video page URLs stay for fetch_video_ytdlp.
@@ -117,16 +143,28 @@ function hasDirectVideoExtension(url: string): boolean {
   }
 }
 
-function mediaUrlsCovered(
+// Media URLs that don't yet have a downloaded file. Uses the precise
+// sourceUrl->file mapping, falling back to a coarse count for legacy files.
+function missingMediaUrls(
   urls: string[],
   files: ReadonlyArray<SaveFile>,
-): boolean {
-  if (urls.length === 0) return true;
-  // No URL→file mapping kept; use file count as a coarse "covered" signal.
-  const coverCount = files.filter(
-    (f) => f.kind === "cover" || f.kind === "media",
-  ).length;
-  return coverCount >= urls.length;
+): string[] {
+  if (urls.length === 0) return [];
+  const mediaFiles = files.filter(
+    (f) => f.kind === "cover" || f.kind === "media" || f.kind === "video",
+  );
+  const mapped = new Set(
+    mediaFiles
+      .map((f) => f.sourceUrl)
+      .filter((u): u is string => typeof u === "string" && u.length > 0),
+  );
+  if (mapped.size > 0) {
+    return urls.filter((u) => !mapped.has(u));
+  }
+  // Legacy fallback: no sourceUrl mapping on any file. If the coarse count says
+  // we're already covered, treat all as present; otherwise fetch everything.
+  if (mediaFiles.length >= urls.length) return [];
+  return urls;
 }
 
 void extname;

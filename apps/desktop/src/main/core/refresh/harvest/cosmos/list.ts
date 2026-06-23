@@ -381,6 +381,19 @@ async function inPageCosmosList(
   ingestAll();
   publishStats("scroll");
 
+  const countFresh = (): number => {
+    let n = 0;
+    for (const id of collected.keys()) if (!known.has(id)) n += 1;
+    return n;
+  };
+
+  // Incremental early-stop: the grid is newest-first, so once scrolling only
+  // surfaces known items we've hit the synced backlog. Off on full runs.
+  const earlyStopEnabled = known.size > 0;
+  const STOP_AFTER_KNOWN_SCROLLS = 3;
+  let knownScrollStreak = 0;
+  let lastFresh = countFresh();
+
   const scrollDeadline = Date.now() + args.scrollDeadlineMs;
   let stable = 0;
   let lastSize = collected.size;
@@ -393,6 +406,18 @@ async function inPageCosmosList(
     stats.scrolls += 1;
     ingestAll();
     publishStats("scroll");
+    const grew = collected.size !== lastSize;
+    const freshNow = countFresh();
+    if (earlyStopEnabled && grew && freshNow === lastFresh) {
+      // New tiles appeared but every one was already in the library.
+      knownScrollStreak += 1;
+      if (knownScrollStreak >= STOP_AFTER_KNOWN_SCROLLS) {
+        return { ok: true, entries: freshEntries(), reachedEnd: true };
+      }
+    } else if (freshNow !== lastFresh) {
+      knownScrollStreak = 0;
+    }
+    lastFresh = freshNow;
     if (collected.size === lastSize) {
       stable += 1;
       if (stable >= 5) {

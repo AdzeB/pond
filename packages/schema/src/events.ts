@@ -61,8 +61,11 @@ export interface PipelineTaskEvent {
   trigger: string | null;
   /* For `deferred`, when the task is scheduled to fire next. */
   nextRunAt: number | null;
-  /* Source-gate state at commit time (cooldown / breaker), if any. */
-  gate: { reason: "cooldown" | "breaker"; until: number } | null;
+  /* Rate-governor pause state at commit time, if any. */
+  gate: {
+    reason: "cooldown" | "breaker" | "at_risk" | "manual";
+    until: number;
+  } | null;
   pipeline: PipelineSnapshot;
 }
 

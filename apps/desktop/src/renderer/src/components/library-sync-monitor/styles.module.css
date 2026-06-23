@@ -177,15 +177,15 @@
   border-radius: 7px;
 }
 
-.sbanner .bText {
+.bText {
   font-size: 13px;
 }
 
-.sbanner .bText b {
+.bText b {
   font-weight: 620;
 }
 
-.sbanner .bText .dim {
+.bText .dim {
   color: var(--ink-2);
 }
 

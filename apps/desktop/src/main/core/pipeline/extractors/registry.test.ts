@@ -1,4 +1,5 @@
-import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import { SOURCES } from "@pond/schema/db";
+import { EXTERNAL_SOURCE_IDS, syncConfigFor } from "@pond/schema/sources";
 import { describe, expect, it } from "vitest";
 import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
@@ -21,6 +22,29 @@ describe("extractor registry", () => {
   it("uses unique extractor ids", () => {
     const ids = EXTRACTOR_LIST.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+// Every source must resolve to a complete, account-safe sync config: a source
+// that omits `sync` still gets a conservative profile, and one that declares it
+// can't ship invalid pacing.
+describe("sync config totality", () => {
+  for (const source of SOURCES) {
+    it(`resolves a valid sync config for ${source}`, () => {
+      const cfg = syncConfigFor(source);
+      expect(["cursor", "scroll", "full", "none"]).toContain(cfg.strategy);
+      expect(cfg.rate.minDelayMs).toBeGreaterThan(0);
+      expect(cfg.rate.jitterFraction).toBeGreaterThanOrEqual(0);
+      expect(cfg.rate.jitterFraction).toBeLessThanOrEqual(1);
+      expect(cfg.rate.maxPerWindow).toBeGreaterThan(0);
+      expect(cfg.rate.windowMs).toBeGreaterThan(0);
+      expect(cfg.rate.firstSyncSlowdown).toBeGreaterThanOrEqual(1);
+    });
+  }
+
+  it("treats web and local as non-syncing", () => {
+    expect(syncConfigFor("web").strategy).toBe("none");
+    expect(syncConfigFor("local").strategy).toBe("none");
   });
 });
 

@@ -23,6 +23,22 @@ async function tagByLowerName(db: Db, lowered: string) {
   return rows[0];
 }
 
+// Candidate saves whose tag list mentions `lowerKey`, fetching only id + tags
+// (never the heavy raw_json) instead of scanning the whole table into JS. The
+// tags column is a JSON array of quoted strings, so matching the quoted,
+// lowercased token avoids substring false positives ("foo" won't match
+// "foobar"); callers still verify each hit in JS before rewriting.
+async function savesWithTag(
+  db: Db,
+  lowerKey: string,
+): Promise<Array<{ id: string; tags: string[] | null }>> {
+  const needle = `%"${lowerKey}"%`;
+  return db
+    .select({ id: savesTable.id, tags: savesTable.tags })
+    .from(savesTable)
+    .where(sql`lower(${savesTable.tags}) LIKE ${needle}`);
+}
+
 export async function listTags() {
   const db = await getDb();
   return await db.select().from(tagsTable);
@@ -69,7 +85,7 @@ export async function renameTag(
     }
   }
 
-  const all = await db.select().from(savesTable);
+  const all = await savesWithTag(db, fromKey);
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
@@ -88,7 +104,7 @@ export async function renameTag(
       model: "save",
       id: row.id,
       patch: { tags: current },
-      before: { tags: row.tags },
+      before: { tags: row.tags ?? undefined },
       meta: { actor: "user", actorReason: "tag-rename" },
     });
   }
@@ -124,7 +140,7 @@ export async function mergeTags(
   const fromRow = await tagByLowerName(db, fromKey);
   const toRow = await tagByLowerName(db, toKey);
 
-  const all = await db.select().from(savesTable);
+  const all = await savesWithTag(db, fromKey);
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
@@ -140,7 +156,7 @@ export async function mergeTags(
       model: "save",
       id: row.id,
       patch: { tags: current },
-      before: { tags: row.tags },
+      before: { tags: row.tags ?? undefined },
       meta: { actor: "user", actorReason: "tag-merge" },
     });
   }
@@ -207,7 +223,7 @@ export async function deleteTag(name: string): Promise<{
 }> {
   const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
-  const all = await db.select().from(savesTable);
+  const all = await savesWithTag(db, key);
   const txs: Transaction[] = [];
   for (const row of all) {
     const current = (row.tags ?? []).filter((t) => t.toLowerCase() !== key);
@@ -217,7 +233,7 @@ export async function deleteTag(name: string): Promise<{
       model: "save",
       id: row.id,
       patch: { tags: current },
-      before: { tags: row.tags },
+      before: { tags: row.tags ?? undefined },
       meta: { actor: "user", actorReason: "tag-delete" },
     });
   }

@@ -1,10 +1,8 @@
 import { join } from "node:path";
 import { SOURCES, type Source } from "@pond/schema/db";
 import { BrowserWindow, session } from "electron";
-import log from "electron-log/main.js";
-import { sourcePausedUntil } from "../../pipeline/source-gate";
+import { acquire } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
-import { sleep } from "./util";
 
 // Hard ceiling on live scrape windows (~150 MB each).
 export const GLOBAL_POOL_CAP = 6;
@@ -100,19 +98,20 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
   };
 }
 
-export async function leaseWindow(source: Source): Promise<Lease> {
-  // Honour an active cooldown/breaker: sleep until it clears before claiming.
-  const pausedUntil = sourcePausedUntil(source);
-  if (pausedUntil > 0) {
-    const waitMs = Math.max(0, pausedUntil - Date.now());
-    if (waitMs > 0) {
-      log.info("[pond refresh:window] source paused, deferring lease", {
-        source,
-        waitMs,
-      });
-      await sleep(waitMs);
-    }
-  }
+export interface LeaseOptions {
+  /** Apply the stricter first/full-sync pacing profile. */
+  firstSync?: boolean;
+  /** Abort the governor wait (e.g. on sync cancel). */
+  signal?: AbortSignal;
+}
+
+export async function leaseWindow(
+  source: Source,
+  opts: LeaseOptions = {},
+): Promise<Lease> {
+  // Acquire from the governor before claiming a slot (blocks for cooldown /
+  // breaker / spacing / budget), so a paused source never pins a pool window.
+  await acquire(source, { firstSync: opts.firstSync, signal: opts.signal });
   if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
     return new Promise<Lease>((resolve) => {
       waitQueues[source].push({

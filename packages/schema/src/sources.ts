@@ -2,12 +2,20 @@ import { SOURCES, type Source } from "./db";
 import { SOURCE_DESCRIPTORS } from "./sources/registry";
 
 export {
+  DEFAULT_RATE_PROFILE,
   descriptorFor,
   EXTERNAL_SOURCE_IDS,
   type ExternalSource,
   SOURCE_DESCRIPTORS,
+  syncConfigFor,
 } from "./sources/registry";
-export type { SourceDescriptor } from "./sources/types";
+export type {
+  RateProfile,
+  SourceDescriptor,
+  SourceSyncConfig,
+  SourceSyncOverride,
+  SyncStrategy,
+} from "./sources/types";
 
 const SOURCE_SET: ReadonlySet<string> = new Set(SOURCES);
 

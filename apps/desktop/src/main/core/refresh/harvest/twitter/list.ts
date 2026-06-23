@@ -60,7 +60,9 @@ export type BookmarksHarvestResult =
     }
   | {
       ok: false;
-      reason: "auth_required" | "no_match" | "timeout";
+      reason: "auth_required" | "no_match" | "timeout" | "rate_limited";
+      // Server-requested wait (seconds), present on rate_limited.
+      retryAfterSec?: number;
       debug?: BookmarksHarvestDebug;
     };
 

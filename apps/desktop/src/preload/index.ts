@@ -39,6 +39,21 @@ export interface BackfillStatusWire {
   lastError?: string | null;
 }
 
+export interface GovernorSnapshotWire {
+  allPaused: boolean;
+  paused: Array<{
+    source: string;
+    until: number;
+    reason: "cooldown" | "breaker" | "at_risk" | "manual";
+  }>;
+  atRisk: Array<{
+    source: string;
+    kind: "challenge" | "checkpoint" | "captcha" | "login" | "rate_limit";
+    since: number;
+    note: string;
+  }>;
+}
+
 const api = {
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);
@@ -174,8 +189,9 @@ const api = {
 
   syncRunNow(
     source: string,
+    opts?: { forceFull?: boolean },
   ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
-    return ipcRenderer.invoke(IPC.syncRunNow, source);
+    return ipcRenderer.invoke(IPC.syncRunNow, source, opts);
   },
 
   syncStatus(source: string): Promise<{
@@ -187,8 +203,8 @@ const api = {
     return ipcRenderer.invoke(IPC.syncStatus, source);
   },
 
-  syncRunAll(): Promise<{ ok: true }> {
-    return ipcRenderer.invoke(IPC.syncRunAll);
+  syncRunAll(opts?: { forceFull?: boolean }): Promise<{ ok: true }> {
+    return ipcRenderer.invoke(IPC.syncRunAll, opts);
   },
 
   syncCancel(source: string): Promise<{ ok: true; running: boolean }> {
@@ -220,7 +236,7 @@ const api = {
   onSyncStatus(
     cb: (update: {
       source: string;
-      state: "idle" | "running" | "done" | "error" | "auth_required";
+      state: "idle" | "running" | "done" | "error" | "auth_required" | "paused";
       message?: string;
       progress?: { current: number; total: number };
       lastSyncedAt?: string | null;
@@ -237,6 +253,28 @@ const api = {
     const listener = (_: unknown, status: StorageGuardStatusWire) => cb(status);
     ipcRenderer.on(IPC.storageStatus, listener);
     return () => ipcRenderer.off(IPC.storageStatus, listener);
+  },
+
+  // ── Rate governor (account safety) ──────────────────────────────────────
+  governorSnapshot(): Promise<GovernorSnapshotWire> {
+    return ipcRenderer.invoke(IPC.governorSnapshot);
+  },
+
+  governorSetPaused(
+    paused: boolean,
+  ): Promise<{ ok: true; allPaused: boolean }> {
+    return ipcRenderer.invoke(IPC.governorSetPaused, paused);
+  },
+
+  governorResumeSource(source: string): Promise<{ ok: true }> {
+    return ipcRenderer.invoke(IPC.governorResumeSource, source);
+  },
+
+  onGovernorStatus(cb: (snapshot: GovernorSnapshotWire) => void): () => void {
+    const listener = (_: unknown, snapshot: GovernorSnapshotWire) =>
+      cb(snapshot);
+    ipcRenderer.on(IPC.governorStatus, listener);
+    return () => ipcRenderer.off(IPC.governorStatus, listener);
   },
 };
 

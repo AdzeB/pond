@@ -150,6 +150,15 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
       lastText,
     };
   }
+  if (state === "paused") {
+    return {
+      tone: "paused",
+      statusText: "Paused to protect your account",
+      connected,
+      meta: status?.message ?? "Backing off",
+      lastText,
+    };
+  }
   if (state === "error") {
     return {
       tone: "err",

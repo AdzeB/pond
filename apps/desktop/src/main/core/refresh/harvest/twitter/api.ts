@@ -26,6 +26,9 @@ interface BookmarksApiDebug {
 export type BookmarksApiResult =
   | (BookmarksHarvestResult & { ok: true; apiDebug?: BookmarksApiDebug })
   | { ok: false; reason: "auth_required" }
+  // Platform asked us to slow down (HTTP 429 / exhausted budget). The caller
+  // MUST back off and must NOT escalate to the noisier scroll path.
+  | { ok: false; reason: "rate_limited"; retryAfterSec: number | null }
   // No usable Bookmarks request or first replay failed; caller falls back to scroll.
   | { ok: false; reason: "fallback"; detail: string };
 
@@ -68,6 +71,28 @@ async function inPageBookmarksApi(
 
   const sleep = (ms: number): Promise<void> =>
     new Promise((r) => setTimeout(r, ms));
+
+  // Extract a "please wait N seconds" hint from rate-limit response headers.
+  const retryAfterFromHeaders = (res: Response): number | null => {
+    const retryAfter = res.headers.get("retry-after");
+    if (retryAfter) {
+      const n = Number(retryAfter);
+      if (Number.isFinite(n)) return Math.max(0, n);
+      const when = Date.parse(retryAfter);
+      if (Number.isFinite(when)) {
+        return Math.max(0, Math.round((when - Date.now()) / 1000));
+      }
+    }
+    const reset = res.headers.get("x-rate-limit-reset");
+    if (reset) {
+      const epoch = Number(reset);
+      if (Number.isFinite(epoch)) {
+        const ms = epoch > 1e12 ? epoch : epoch * 1000;
+        return Math.max(0, Math.round((ms - Date.now()) / 1000));
+      }
+    }
+    return null;
+  };
 
   const getRequest = (): BookmarksRequestTemplate | null => {
     const req = (
@@ -180,6 +205,22 @@ async function inPageBookmarksApi(
     }
     return n;
   };
+  // Tweet ids on a page (entryId looks like `tweet-1234567890`), for the
+  // incremental early-stop check below.
+  const pageTweetIds = (json: unknown): string[] => {
+    const ids: string[] = [];
+    for (const ix of readInstructions(json)) {
+      if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
+        continue;
+      }
+      for (const e of ix.entries) {
+        if (typeof e.entryId === "string" && e.entryId.startsWith("tweet-")) {
+          ids.push(e.entryId.slice("tweet-".length));
+        }
+      }
+    }
+    return ids;
+  };
 
   const stats = {
     seen: 0,
@@ -196,6 +237,12 @@ async function inPageBookmarksApi(
 
   const captures: BookmarksCapture[] = [];
   const deadline = Date.now() + args.deadlineMs;
+  // Incremental early-stop: bookmarks are newest-first, so a run of already-known
+  // tweets means we've hit the synced backlog. Off on full runs (no known ids).
+  const known = new Set<string>((args.knownIds ?? []).map(String));
+  const earlyStopEnabled = known.size > 0;
+  const STOP_AFTER_KNOWN_PAGES = 2;
+  let knownPageStreak = 0;
   let cursor: string | null =
     typeof baseVariables.cursor === "string" ? baseVariables.cursor : null;
   let prevCursor: string | null = null;
@@ -222,6 +269,15 @@ async function inPageBookmarksApi(
     }
     if (pages === 0) firstStatus = res.status;
     if (!res.ok) {
+      // Rate limited: back off with the server's retry hint, never escalate to
+      // scroll (noisier and more detectable).
+      if (res.status === 429) {
+        return {
+          ok: false,
+          reason: "rate_limited",
+          retryAfterSec: retryAfterFromHeaders(res),
+        };
+      }
       if (pages === 0) {
         return {
           ok: false,
@@ -255,6 +311,20 @@ async function inPageBookmarksApi(
     stats.captures = pages;
     stats.scrolls = pages;
     stats.updatedAt = Date.now();
+
+    if (earlyStopEnabled && tweets > 0) {
+      const ids = pageTweetIds(json);
+      const hasFresh = ids.some((id) => !known.has(id));
+      if (!hasFresh) {
+        knownPageStreak += 1;
+        if (knownPageStreak >= STOP_AFTER_KNOWN_PAGES) {
+          reason = "exhausted";
+          break;
+        }
+      } else {
+        knownPageStreak = 0;
+      }
+    }
 
     if (tweets === 0) {
       reason = pages === 1 ? "empty" : "exhausted";

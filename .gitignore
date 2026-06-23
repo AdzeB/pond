@@ -42,5 +42,14 @@ apps/extension/.wxt
 # agent caches
 .agents
 
+# cursor local config, skills, prototype assets
+.cursor/
+
+# mobbin UI evidence boards (design-exploration scratch)
+.mobbin/
+
+# TanStack Router cache
+**/.tanstack/
+
 # TanStack Router generated route tree
 apps/desktop/src/renderer/src/routeTree.gen.ts

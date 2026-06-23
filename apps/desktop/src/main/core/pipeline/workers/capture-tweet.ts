@@ -4,7 +4,7 @@ import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import type { ScrapedHarvest } from "../../refresh/harvest/types";
 import {
-  screenshotTweet,
+  screenshotTweetDual,
   type TweetScreenshotResult,
 } from "../../refresh/scrape-window";
 import { type RenderedCard, renderTweetCardPng } from "../../render-card";
@@ -215,7 +215,8 @@ interface CaptureVariantsResult {
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// Screenshots one tweet in both schemes; returns the quoted-tweet URL for chain walking.
+// Screenshots one tweet in both schemes from a single navigation; returns the
+// quoted-tweet URL for chain walking.
 async function captureVariants(
   saveId: string,
   args: CaptureVariantsArgs,
@@ -225,12 +226,13 @@ async function captureVariants(
   let lightOk = false;
   let darkOk = false;
 
-  const light: TweetScreenshotResult = await screenshotTweet({
+  const dual = await screenshotTweetDual({
     url: args.url,
     sourceId: args.sourceId,
-    colorScheme: "light",
     harvestMedia: args.harvestMedia,
   });
+
+  const light: TweetScreenshotResult = dual.light;
   if (light.ok && light.png) {
     await writeScreenshot(saveId, args.lightKind, args.lightFilename, light);
     captured += 1;
@@ -238,14 +240,8 @@ async function captureVariants(
   } else if (light.reason === "auth_required") {
     authWall = true;
   }
-  let quotedUrl: string | undefined = light.quotedUrl;
-  const media = light.media;
 
-  const dark: TweetScreenshotResult = await screenshotTweet({
-    url: args.url,
-    sourceId: args.sourceId,
-    colorScheme: "dark",
-  });
+  const dark: TweetScreenshotResult = dual.dark;
   if (dark.ok && dark.png) {
     await writeScreenshot(saveId, args.darkKind, args.darkFilename, dark);
     captured += 1;
@@ -253,7 +249,9 @@ async function captureVariants(
   } else if (dark.reason === "auth_required") {
     authWall = true;
   }
-  if (!quotedUrl) quotedUrl = dark.quotedUrl;
+
+  const quotedUrl = dual.quotedUrl;
+  const media = dual.media;
 
   return {
     captured,

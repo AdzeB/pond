@@ -42,6 +42,10 @@ const descriptorEntry = `  {
     label: "${Label}",
     hosts: ["${id}.com"],
     urlPatterns: [/^https?:\\/\\/(?:www\\.)?${id}\\.com\\/([A-Za-z0-9_-]+)/i],
+    // Optional: only if this source can sync a user's saved list. Omit for
+    // capture-only sources. The rate governor fills the rest from safe
+    // defaults (DEFAULT_RATE_PROFILE), so you rarely need a custom \`rate\`.
+    // sync: { strategy: "scroll" },
   },
 `;
 const registryAnchor = "] as const satisfies readonly SourceDescriptor[];";
@@ -147,6 +151,12 @@ console.log(
 );
 console.log(`  4. Optional: a list harvester in core/refresh/harvest/${id}/`);
 console.log(`     and extension entrypoints in apps/extension/sources/.`);
+console.log(
+  `     If you add list sync, set \`sync: { strategy }\` on the descriptor`,
+);
+console.log(
+  `     (cursor | scroll | full). Pacing defaults are account-safe already.`,
+);
 console.log(
   `  5. Run \`pnpm test\` and \`pnpm generate\`, then fix every type error.\n`,
 );

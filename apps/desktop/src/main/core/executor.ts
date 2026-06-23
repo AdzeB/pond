@@ -126,16 +126,70 @@ export async function executeBatch(
   txs: Transaction[],
   opts: ExecuteOptions = {},
 ): Promise<SyncAction[]> {
+  if (txs.length === 0) return [];
   const batchId = ulid();
-  const results: SyncAction[] = [];
-  for (const tx of txs) {
-    const withBatch = {
-      ...tx,
-      meta: { ...(tx.meta ?? {}), batchId },
-    } as Transaction;
-    results.push(await executeTransaction(withBatch, opts));
+  const db = await getDb();
+  const raw = db.$raw;
+
+  const withBatch = txs.map(
+    (tx) => ({ ...tx, meta: { ...(tx.meta ?? {}), batchId } }) as Transaction,
+  );
+
+  // File writes first, outside the transaction (better-sqlite3 can't await
+  // mid-transaction).
+  for (const tx of withBatch) {
+    await applyToDisk(tx);
   }
-  return results;
+
+  // Then all index writes + sync_action inserts in one transaction: one fsync
+  // for the batch instead of one per item, and atomic on a mid-batch crash.
+  const actions = raw.transaction(() => {
+    const out: SyncAction[] = [];
+    for (const tx of withBatch) {
+      applyToIndex(db, tx);
+      const inserted = db
+        .insert(syncActionsTable)
+        .values({
+          batchId,
+          modelName: tx.model,
+          modelId: tx.id,
+          action: toActionKind(tx),
+          data: dataForSyncAction(tx),
+          prevData: "before" in tx ? (tx.before as unknown) : null,
+          actor: resolveActor(tx.meta).actor,
+          actorReason: resolveActor(tx.meta).reason,
+        })
+        .returning()
+        .all()[0];
+      if (!inserted) throw new Error("sync_actions insert returned no row");
+      out.push(inserted as SyncAction);
+    }
+    return out;
+  })();
+
+  writesSinceTrim += actions.length;
+  if (writesSinceTrim >= 500) {
+    writesSinceTrim = 0;
+    try {
+      raw
+        .prepare(
+          `DELETE FROM sync_actions WHERE id <= (
+             SELECT id FROM sync_actions ORDER BY id DESC LIMIT 1 OFFSET ?
+           )`,
+        )
+        .run(SYNC_ACTIONS_RING);
+    } catch (err) {
+      log.warn("[pond executor] sync_actions trim failed", err);
+    }
+  }
+
+  if (!opts.silent) {
+    for (let i = 0; i < actions.length; i += 1) {
+      const action = actions[i];
+      if (action && !withBatch[i]?.meta?.silent) broadcastSyncAction(action);
+    }
+  }
+  return actions;
 }
 
 async function applyToDisk(tx: Transaction): Promise<void> {

@@ -47,6 +47,11 @@ async function inPageInstagramList(
     const entries: Entry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
+    // Incremental early-stop: the saved feed is newest-first, so a run of
+    // already-known posts means we've hit the synced backlog. Off on full runs.
+    const earlyStopEnabled = known.size > 0;
+    let knownPageStreak = 0;
+    const STOP_AFTER_KNOWN_PAGES = 2;
 
     function reportProgress(phase: string) {
       (globalThis as any).__pondHarvestStats = {
@@ -79,6 +84,17 @@ async function inPageInstagramList(
         if (res.status === 401 || res.status === 403) {
           return { ok: false, reason: "auth_required" };
         }
+        // Rate limited: back off with the server's retry hint; never keep
+        // hammering the saved-feed API.
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("retry-after");
+          const n = retryAfter ? Number(retryAfter) : Number.NaN;
+          return {
+            ok: false,
+            reason: "rate_limited",
+            ...(Number.isFinite(n) ? { retryAfterSec: Math.max(0, n) } : {}),
+          };
+        }
         if (!res.ok) return null;
 
         json = await res.json();
@@ -93,15 +109,27 @@ async function inPageInstagramList(
       const items: any[] = json?.items ?? [];
       if (items.length === 0 && page === 0) return null;
 
+      let pageFresh = 0;
       for (const item of items) {
         const raw = norm.normalizeMediaNode(item?.media, {
           savedTimestamp: item?.timestamp,
         });
         if (!raw) continue;
+        if (!known.has(String((raw as Entry).sourceId))) pageFresh += 1;
         entries.push(raw as Entry);
       }
 
       reportProgress("fetching");
+
+      if (earlyStopEnabled && items.length > 0 && pageFresh === 0) {
+        knownPageStreak += 1;
+        if (knownPageStreak >= STOP_AFTER_KNOWN_PAGES) {
+          reportProgress("done");
+          return { ok: true, entries, reachedEnd: true };
+        }
+      } else {
+        knownPageStreak = 0;
+      }
 
       const moreAvailable = json?.more_available === true;
       const nextCursor = json?.next_max_id;

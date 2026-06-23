@@ -5,6 +5,7 @@ import {
   BrowserWindow,
   globalShortcut,
   nativeTheme,
+  net,
   session,
   shell,
 } from "electron";
@@ -16,6 +17,11 @@ import {
   type BackfillStatusUpdate,
   subscribeToBackfillStatus,
 } from "./core/pipeline/enqueue";
+import {
+  flushGovernor,
+  type GovernorSnapshot,
+  subscribeToGovernor,
+} from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
@@ -23,10 +29,16 @@ import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
 import {
+  isSyncBlockedByStorageGuard,
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
-import { type SyncStatusUpdate, subscribeToSyncStatus } from "./core/sync";
+import {
+  recoverInterruptedSyncs,
+  type SyncStatusUpdate,
+  subscribeToSyncStatus,
+  syncAllSources,
+} from "./core/sync";
 import { getDb } from "./db";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
@@ -79,6 +91,9 @@ const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
 
 const broadcastBackfillStatus = (status: BackfillStatusUpdate): void =>
   broadcast(IPC.screenshotBackfillStatus, status);
+
+const broadcastGovernor = (snapshot: GovernorSnapshot): void =>
+  broadcast(IPC.governorStatus, snapshot);
 
 registerScheme();
 
@@ -455,8 +470,12 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] http server failed to start", err);
   }
 
+  void recoverInterruptedSyncs().catch((err) =>
+    log.warn("[pond] interrupted-sync recovery failed", err),
+  );
   registerTrashCron();
   registerYtDlpUpdateCron();
+  registerSyncCron();
   void startStorageWatcher().catch((err) =>
     log.warn("[pond] storage watcher failed to start", err),
   );
@@ -490,6 +509,7 @@ async function postLaunchInit(): Promise<void> {
 
   subscribeToSyncStatus(broadcastSyncStatus);
   subscribeToBackfillStatus(broadcastBackfillStatus);
+  subscribeToGovernor(broadcastGovernor);
 }
 
 function registerTrashCron() {
@@ -518,6 +538,50 @@ function registerYtDlpUpdateCron() {
     // yt-dlp isn't bundled; check soon after launch, then daily.
     initialDelay: 5_000,
     fn: () => maybeUpdateYtDlp(),
+  });
+}
+
+// Last cron run this session; 0 = never, so the first due-check does a catch-up.
+let lastSyncCronRunAt = 0;
+// Random pre-run delay so many installs don't hit a platform in lockstep.
+const SYNC_CRON_JITTER_MS = 10 * 60_000;
+
+// Background sync scheduler. Unattended traffic is the highest account-risk path,
+// so it short-circuits on disabled-pref / offline / storage-guard / not-yet-due
+// and otherwise defers to the rate governor.
+function registerSyncCron() {
+  schedule({
+    name: "sync-all",
+    // Poll every 30m and decide if a run is due, so the configured interval can
+    // change at runtime without re-registering the job.
+    every: 30 * 60_000,
+    initialDelay: 5 * 60_000,
+    fn: async () => {
+      const prefs = await getPrefs();
+      const cron = prefs.sync.cron;
+      if (!cron.enabled) return;
+      if (isSyncBlockedByStorageGuard()) {
+        log.info("[pond sync-cron] storage guard active, skipping");
+        return;
+      }
+      if (!net.isOnline()) {
+        log.info("[pond sync-cron] offline, skipping");
+        return;
+      }
+      const intervalMs = Math.max(1, cron.intervalHours) * 60 * 60_000;
+      if (Date.now() - lastSyncCronRunAt < intervalMs) return;
+
+      const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
+      await new Promise((resolve) => setTimeout(resolve, jitter));
+      // Re-check online after the jitter wait; connectivity may have dropped.
+      if (!net.isOnline()) return;
+
+      lastSyncCronRunAt = Date.now();
+      log.info("[pond sync-cron] starting background sync", {
+        intervalHours: cron.intervalHours,
+      });
+      await syncAllSources({ trigger: "cron" });
+    },
   });
 }
 
@@ -602,6 +666,11 @@ app.on("before-quit", async () => {
     stopStorageWatcher();
   } catch (err) {
     log.warn("[pond] storage watcher stop failed", err);
+  }
+  try {
+    flushGovernor();
+  } catch (err) {
+    log.warn("[pond] governor flush failed", err);
   }
   try {
     disposeHiddenWindow();

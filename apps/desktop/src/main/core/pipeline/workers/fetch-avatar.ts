@@ -1,6 +1,7 @@
 import log from "electron-log/main.js";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { persistSave } from "../../persist-save";
+import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 
 export async function runFetchAvatar(saveId: string): Promise<void> {
@@ -19,8 +20,16 @@ export async function runFetchAvatar(saveId: string): Promise<void> {
   const avatarUrl = pickAvatarUrl(save.rawJson);
   if (!avatarUrl) return;
 
-  const tx = await fetchAvatarToTxFile(avatarUrl);
-  if (!tx) return;
+  const outcome = await fetchAvatarToTxFile(avatarUrl);
+  if (!("file" in outcome)) {
+    // Transient: retry. Permanent (404 / not-an-image): settle as done — a
+    // missing avatar is cosmetic and must never fail the save.
+    if (outcome.miss === "transient") {
+      throw new TransientError(`fetch-avatar: ${avatarUrl} transiently failed`);
+    }
+    return;
+  }
+  const tx = outcome.file;
 
   await persistSave(
     saveId,
@@ -32,6 +41,7 @@ export async function runFetchAvatar(saveId: string): Promise<void> {
           kind: "avatar",
           filename: tx.filename,
           bytes: Buffer.from(tx.bytes),
+          sourceUrl: avatarUrl,
           ...(tx.mimeType ? { mimeType: tx.mimeType } : {}),
         },
       ],

@@ -107,7 +107,9 @@ export function KpiStrip({
                         // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length sparkline
                         key={i}
                         className={
-                          i === m.spark?.length - 1 ? styles.hl : undefined
+                          i === (m.spark?.length ?? 0) - 1
+                            ? styles.hl
+                            : undefined
                         }
                         style={{
                           height: `${Math.max(8, Math.round(h * 100))}%`,

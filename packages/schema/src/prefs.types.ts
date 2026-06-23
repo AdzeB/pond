@@ -62,11 +62,23 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
 export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;
+  // Incremental sync cursor: most recent enqueued source id, the gate for
+  // full vs incremental walks, and the library size at last sync.
+  highWaterMark: string | null;
+  lastFullSyncAt: string | null;
+  knownCount: number;
+  // ISO timestamp while a run is in flight, cleared on finish. Still set at
+  // startup means the previous run was interrupted (see recoverInterruptedSyncs).
+  runningSince: string | null;
 }
 
 export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
   lastSyncedAt: null,
   lastError: null,
+  highWaterMark: null,
+  lastFullSyncAt: null,
+  knownCount: 0,
+  runningSince: null,
 };
 
 export type SyncSources = Partial<Record<Source, SourceSyncPrefs>>;

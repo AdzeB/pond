@@ -10,6 +10,7 @@ import {
   syncActions,
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
+import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../../db";
@@ -24,6 +25,8 @@ export interface WriteFileArgs {
   mimeType?: string;
   width?: number;
   height?: number;
+  // Origin URL this file was downloaded from; persisted for smart per-URL skip.
+  sourceUrl?: string;
 }
 
 export interface ApplyPatchOptions {
@@ -39,8 +42,19 @@ export async function applySavePatch(
   opts: ApplyPatchOptions,
 ): Promise<Save | null> {
   const db = await getDb();
-  const rows = await db.select().from(saves).where(eq(saves.id, saveId));
-  const current = rows[0];
+  // Select only the columns this patch needs (`files` + the overwritten keys for
+  // prevData), not the whole row — avoids loading `raw_json` on every patch.
+  const cols: Record<string, SQLiteColumn> = {
+    id: saves.id,
+    files: saves.files,
+  };
+  const columnByKey = saves as unknown as Record<string, SQLiteColumn>;
+  for (const key of Object.keys(patch)) {
+    const col = columnByKey[key];
+    if (col) cols[key] = col;
+  }
+  const rows = await db.select(cols).from(saves).where(eq(saves.id, saveId));
+  const current = rows[0] as Partial<Save> | undefined;
   if (!current) {
     log.warn("[pond pipeline] applySavePatch: save vanished", saveId);
     return null;
@@ -73,6 +87,7 @@ export async function applySavePatch(
         ...(file.mimeType ? { mimeType: file.mimeType } : {}),
         ...(file.width ? { width: file.width } : {}),
         ...(file.height ? { height: file.height } : {}),
+        ...(file.sourceUrl ? { sourceUrl: file.sourceUrl } : {}),
       };
       written.push(entry);
     }
@@ -126,7 +141,7 @@ export async function readSave(saveId: string): Promise<Save | null> {
   return rows[0] ?? null;
 }
 
-function pickPrev(current: Save, patch: Partial<NewSave>): unknown {
+function pickPrev(current: Partial<Save>, patch: Partial<NewSave>): unknown {
   const prev: Record<string, unknown> = {};
   for (const key of Object.keys(patch)) {
     prev[key] = (current as Record<string, unknown>)[key];

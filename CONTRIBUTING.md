@@ -32,12 +32,37 @@ per external source:
   label: "Vimeo",              // human-facing name
   hosts: ["vimeo.com"],        // apex hosts (matched directly or as a suffix)
   urlPatterns: [/.../],        // patterns identifying a saveable item URL
+  // Optional — only if the source can sync a saved list. Omit for
+  // capture-only sources (defaults to no list sync).
+  sync: { strategy: "scroll" }, // "cursor" | "scroll" | "full" | "none"
 }
 ```
 
 Adding an entry automatically widens the `Source` union (`@pond/schema/db`) and
 re-derives `sourceLabel` / `isSource` / `hostToSource` (`@pond/schema/sources`).
 The descriptor is the **only** place these cross-runtime facts are defined.
+
+#### Sync + rate limiting (account safety)
+
+If the source can sync a user's saved list, declare `sync` on the descriptor.
+`strategy` tells the sync engine how the list is walked so it can **stop early**
+once it reaches items you already have:
+
+- `cursor` — API pagination with a cursor (newest-first); early-stops on known ids.
+- `scroll` — DOM infinite-scroll (newest-first); early-stops on known ids.
+- `full` — no reliable ordering; must walk everything (use sparingly).
+- `none` — no list sync (the default; capture-only).
+
+You almost never need to set `rate`. Every source inherits a conservative,
+account-safe profile (`DEFAULT_RATE_PROFILE`: ~1 request / 1.5s, ≤60/min, paced
+2× slower on the first full sync). The rate **governor**
+(`apps/desktop/src/main/core/pipeline/rate-governor.ts`) enforces this for both
+list harvest and pipeline ingest, respects platform rate-limit headers, and
+persists cooldowns across restarts. Only override `rate` (e.g.
+`rate: { minDelayMs: 2500, maxPerWindow: 30 }`) when a platform is unusually
+strict — and always err slower. The governing rule is **it is always better to
+sync slowly than to risk a user's account.** Use `syncConfigFor(id)` to read the
+resolved config; never read `descriptor.sync` directly.
 
 ### 2. The extractor (main-process, where the logic lives)
 
@@ -92,6 +117,20 @@ forgotten regenerate is a red build — never hand-edit that file.
 ### 7. Optional extras
 
 - **List sync / harvest**: a real `core/refresh/harvest/<id>/` adapter if the
-  source supports syncing a user's saved list.
+  source supports syncing a user's saved list. Set `sync: { strategy }` on the
+  descriptor (see "Sync + rate limiting" above) so the engine early-stops and
+  the governor paces requests safely.
 - **Extension capture**: entrypoints under `apps/extension/sources/` if the
   browser extension should capture this source directly.
+
+> **A note on responsibility.** Pond's source adapters run entirely through the
+> user's own authenticated browser session on their own machine — there are no
+> Pond-operated scraping servers and no credentials leave the device. The rate
+> governor exists to respect each platform's limits. When adding a source, keep
+> the conservative pacing and remember that users are responsible for their own
+> use under each platform's terms of service. See the
+> [README "How sourcing works"](README.md#how-sourcing-works-and-your-responsibility)
+> note for the user-facing version of this boundary, and
+> [`core/sync/README.md`](apps/desktop/src/main/core/sync/README.md) +
+> [`core/refresh/README.md`](apps/desktop/src/main/core/refresh/README.md) for
+> how the governor, watermark cursors, and ingest path fit together.

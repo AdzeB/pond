@@ -23,6 +23,35 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
   }
 }
 
+// Anti-abuse interstitials (challenge / checkpoint / captcha). Unlike a normal
+// sign-in wall, hitting one means the platform is suspicious of the account, so
+// callers should hard-stop and mark the source at-risk rather than retry.
+export function looksLikeChallenge(currentUrl: string): null | {
+  kind: "challenge" | "checkpoint" | "captcha";
+} {
+  try {
+    const u = new URL(currentUrl);
+    const p = u.pathname.toLowerCase();
+    const hay = `${p}?${u.search.toLowerCase()}`;
+    if (p.includes("/challenge") || hay.includes("challenge")) {
+      return { kind: "challenge" };
+    }
+    if (p.includes("/checkpoint")) return { kind: "checkpoint" };
+    if (
+      p.includes("/account/access") ||
+      p.includes("/i/flow/consent") ||
+      p.includes("/captcha") ||
+      u.hostname.includes("funcaptcha") ||
+      u.hostname.includes("arkoselabs")
+    ) {
+      return { kind: "captcha" };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function navigateWithTimeout(
   win: BrowserWindow,
   url: string,

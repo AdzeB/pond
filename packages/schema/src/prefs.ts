@@ -95,6 +95,14 @@ const developer = z.object({
 const sync = z.object({
   sources: z.custom<SyncSources>().default({}),
   handles: z.custom<SyncHandles>().default({}),
+  // Background sync scheduler; conservative default of every 6h, deferring to
+  // the rate governor. Users can disable or retune the interval.
+  cron: z
+    .object({
+      enabled: z.boolean().catch(true),
+      intervalHours: z.number().min(1).catch(6),
+    })
+    .catch({ enabled: true, intervalHours: 6 }),
 });
 
 const storage = z.object({

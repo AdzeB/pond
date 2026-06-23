@@ -39,7 +39,6 @@
     "@uiw/color-convert": "^2.10.3",
     "@uiw/react-color-hue": "^2.10.3",
     "@uiw/react-color-saturation": "^2.10.3",
-    "calligraph": "^1.4.1",
     "clsx": "^2.1.1",
     "motion": "^12.39.0"
   },

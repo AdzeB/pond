@@ -74,7 +74,14 @@ const WORKERS: Record<Op, Worker> = {
   harvest_metadata: (saveId, payload) =>
     runHarvestMetadata(saveId, payload as { force?: boolean }),
   capture_tweet: async (saveId) => {
-    await runCaptureTweet(saveId);
+    const result = await runCaptureTweet(saveId);
+    // A dead/expired X session yields zero screenshots; surface it so the
+    // reconciler retries with backoff (capture_tweet is non-fatal anyway).
+    if (result.authWall && result.captured === 0) {
+      throw new TransientError(
+        "capture_tweet: X auth wall (session may be expired)",
+      );
+    }
   },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
   fetch_video_ytdlp: (saveId) => runFetchVideoYtdlp(saveId),
@@ -82,6 +89,14 @@ const WORKERS: Record<Op, Worker> = {
   fetch_avatar: (saveId) => runFetchAvatar(saveId),
   finalize: (saveId) => runFinalize(saveId),
 };
+
+// Cosmetic enhancer ops: when these exhaust retries the save still finalizes,
+// unlike core ops (harvest/blobs/video/finalize) whose final failure fails it.
+const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
+  "capture_tweet",
+  "ensure_poster",
+  "fetch_avatar",
+]);
 
 let started = false;
 const paused = false;
@@ -502,6 +517,31 @@ async function handleFailure(
   });
   if (decision.status === "blocked") metrics.tasksBlocked++;
   const db = await getDb();
+
+  // Non-fatal enhancer out of retries: settle as `done` (keeping lastError)
+  // rather than `failed`, so finalize can still complete the save.
+  const nonFatalTerminal =
+    decision.status === "failed" && NON_FATAL_OPS.has(task.op);
+  if (nonFatalTerminal) {
+    metrics.tasksFailed++;
+    db.update(tasks)
+      .set({
+        status: "done",
+        attempts: task.attempts + 1,
+        nextRunAt: decision.nextRunAt,
+        lastError: decision.lastError,
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, task.id))
+      .run();
+    await maybeFinalizeSave(task.saveId);
+    return {
+      outcome: "failed",
+      nextRunAt: decision.nextRunAt.getTime(),
+      recordedAttempts: task.attempts + 1,
+    };
+  }
+
   db.update(tasks)
     .set({
       status: decision.status,
