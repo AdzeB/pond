@@ -8,7 +8,10 @@ import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
 import { resolveYtDlpTarget } from "../specs";
 import { readSave } from "./apply";
 
-export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
+export async function runFetchVideoYtdlp(
+  saveId: string,
+  ctx?: { signal?: AbortSignal },
+): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
 
@@ -47,7 +50,11 @@ export async function runFetchVideoYtdlp(saveId: string): Promise<void> {
     target,
     source: save.source,
   });
-  const dl = await downloadVideo({ url: target, source: save.source });
+  const dl = await downloadVideo({
+    url: target,
+    source: save.source,
+    ...(ctx?.signal ? { signal: ctx.signal } : {}),
+  });
   if (!dl) {
     log.info("[pond pipeline:fetch-video-ytdlp] no video produced", saveId);
     return;

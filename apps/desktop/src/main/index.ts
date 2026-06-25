@@ -22,8 +22,16 @@ import {
   type GovernorSnapshot,
   subscribeToGovernor,
 } from "./core/pipeline/rate-governor";
-import { startReconciler } from "./core/pipeline/reconciler";
+import {
+  type PipelineSnapshot,
+  startReconciler,
+  subscribeToPipeline,
+} from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
+import {
+  type RefreshBackfillStatus,
+  subscribeToRefreshBackfillStatus,
+} from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
 import { disposeRenderCardWindow } from "./core/render-card";
@@ -94,6 +102,12 @@ const broadcastBackfillStatus = (status: BackfillStatusUpdate): void =>
 
 const broadcastGovernor = (snapshot: GovernorSnapshot): void =>
   broadcast(IPC.governorStatus, snapshot);
+
+const broadcastPipeline = (snapshot: PipelineSnapshot): void =>
+  broadcast(IPC.pipelineStatus, snapshot);
+
+const broadcastRefreshBackfill = (status: RefreshBackfillStatus): void =>
+  broadcast(IPC.refreshBackfillStatus, status);
 
 registerScheme();
 
@@ -510,6 +524,8 @@ async function postLaunchInit(): Promise<void> {
   subscribeToSyncStatus(broadcastSyncStatus);
   subscribeToBackfillStatus(broadcastBackfillStatus);
   subscribeToGovernor(broadcastGovernor);
+  subscribeToPipeline(broadcastPipeline);
+  subscribeToRefreshBackfillStatus(broadcastRefreshBackfill);
 }
 
 function registerTrashCron() {

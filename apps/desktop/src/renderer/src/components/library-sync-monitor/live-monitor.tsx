@@ -6,6 +6,7 @@ import { getSourceDef } from "@/lib/sources-registry";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
 import { BrandTile } from "./source-tile";
 import styles from "./styles.module.css";
+import type { ProcessItem } from "./use-active-processes";
 
 function fmtElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -39,10 +40,12 @@ function useElapsed(runningKey: string): (source: Source) => number {
 
 export function LiveMonitor({
   bySource,
+  processes = [],
   lastRunAt,
   onSyncAll,
 }: {
   bySource: Partial<Record<Source, SyncSourceStatus>>;
+  processes?: ProcessItem[];
   lastRunAt: number | null;
   onSyncAll: () => void;
 }) {
@@ -52,7 +55,7 @@ export function LiveMonitor({
   const runningKey = running.join(",");
   const elapsedOf = useElapsed(runningKey);
 
-  if (running.length === 0) {
+  if (running.length === 0 && processes.length === 0) {
     return (
       <div className={styles.monitor}>
         <div className={styles.idle}>
@@ -60,9 +63,9 @@ export function LiveMonitor({
             ◴
           </span>
           <div className={styles.it}>
-            <div className={styles.itn}>No active sync</div>
+            <div className={styles.itn}>No active processes</div>
             <div className={styles.its}>
-              All sources are up to date. Last run{" "}
+              Everything is up to date. Last sync run{" "}
               {relativeTimeFromMs(lastRunAt, "—")}.
             </div>
           </div>
@@ -75,14 +78,15 @@ export function LiveMonitor({
   }
 
   const [primary, ...rest] = running;
-  if (!primary) return null;
   return (
     <div className={styles.monitor}>
-      <Primary
-        source={primary}
-        status={bySource[primary]}
-        elapsedMs={elapsedOf(primary)}
-      />
+      {primary ? (
+        <Primary
+          source={primary}
+          status={bySource[primary]}
+          elapsedMs={elapsedOf(primary)}
+        />
+      ) : null}
       {rest.map((s) => (
         <Mini
           key={s}
@@ -91,6 +95,63 @@ export function LiveMonitor({
           elapsedMs={elapsedOf(s)}
         />
       ))}
+      {processes.map((p) => (
+        <ProcessRow key={p.id} item={p} />
+      ))}
+    </div>
+  );
+}
+
+function ProcessRow({ item }: { item: ProcessItem }) {
+  const progress = item.progress;
+  const determinate = !!progress?.total;
+  const pct =
+    determinate && progress
+      ? Math.min(100, Math.round((progress.current / progress.total) * 100))
+      : 0;
+  const paused = item.state === "paused";
+
+  return (
+    <div className={styles.mini}>
+      <div className={styles.mt}>
+        <div className={styles.mn}>
+          {item.label}
+          <span className={styles.typepill}>
+            {paused ? "Paused" : "Active"}
+          </span>
+        </div>
+        <div className={styles.mtrack}>
+          {determinate ? (
+            <div className={styles.fillbar} style={{ width: `${pct}%` }} />
+          ) : paused ? null : (
+            <div className={styles.indet} />
+          )}
+        </div>
+        <div className={styles.ms}>
+          {item.message ?? (paused ? "Paused" : "Working…")}
+          {determinate && progress
+            ? ` · ${progress.current} / ${progress.total}`
+            : ""}
+        </div>
+      </div>
+      {item.onPause ? (
+        <button
+          type="button"
+          className={styles.monCancel}
+          onClick={item.onPause}
+        >
+          {paused ? "Resume" : "Pause"}
+        </button>
+      ) : null}
+      {item.onCancel ? (
+        <button
+          type="button"
+          className={styles.monCancel}
+          onClick={item.onCancel}
+        >
+          {item.kind === "ingest" ? "Stop all" : "Cancel"}
+        </button>
+      ) : null}
     </div>
   );
 }

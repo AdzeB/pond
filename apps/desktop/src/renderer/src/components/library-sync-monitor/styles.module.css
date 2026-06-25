@@ -367,6 +367,9 @@
 
 /* ── monitor ────────────────────────────────────────────────────────────── */
 .monitor {
+  /* In the column-flex .content, overflow:hidden makes min-height:auto resolve
+     to 0, so this card collapses to absorb overflow shrinkage. Pin it. */
+  flex-shrink: 0;
   overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--line);

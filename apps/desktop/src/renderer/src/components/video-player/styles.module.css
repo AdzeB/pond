@@ -1,0 +1,13 @@
+/* Centers the player within the slide. The inner Video.Root is sized to the
+   video's contained box (see index.tsx) so the controls track the actual
+   video width instead of spanning the letterboxed slide. */
+.fit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+}

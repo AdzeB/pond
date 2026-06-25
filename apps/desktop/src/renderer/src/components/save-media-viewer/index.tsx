@@ -201,6 +201,8 @@ export function MediaViewer({ save }: { save: Save }) {
                         src={s.src}
                         poster={s.posterUrl}
                         active={isActive}
+                        width={s.width}
+                        height={s.height}
                         chapters={singleVideo ? chapters : undefined}
                         onError={() => markBroken(s.src)}
                       />

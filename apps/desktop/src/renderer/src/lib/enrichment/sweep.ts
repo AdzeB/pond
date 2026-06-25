@@ -1,5 +1,6 @@
 import pLimit from "p-limit";
 import type { Save } from "@/lib/types";
+import { enrichmentMonitor } from "@/stores/enrichment-monitor";
 import { pool, savesStore, upsertSave } from "@/stores/pool";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
@@ -19,6 +20,13 @@ import type { Enricher } from "./types";
 const limit = pLimit(2);
 const inflight = new Set<string>();
 const failed = new Set<string>();
+// User-controlled stop: when paused, no new enricher runs are scheduled;
+// in-flight runs finish naturally.
+let paused = false;
+
+function reportInflight(): void {
+  enrichmentMonitor.set({ inflight: inflight.size });
+}
 
 function keyFor(enricher: Enricher, save: Save): string {
   return `${enricher.id}:${save.id}`;
@@ -63,9 +71,11 @@ async function persist(enricher: Enricher, save: Save): Promise<void> {
 }
 
 function schedule(enricher: Enricher, save: Save): void {
+  if (paused) return;
   const key = keyFor(enricher, save);
   if (inflight.has(key) || failed.has(key)) return;
   inflight.add(key);
+  reportInflight();
   void limit(async () => {
     try {
       await persist(enricher, save);
@@ -74,11 +84,13 @@ function schedule(enricher: Enricher, save: Save): void {
       console.warn(`[enrichment] ${enricher.id} failed for ${save.id}`, err);
     } finally {
       inflight.delete(key);
+      reportInflight();
     }
   });
 }
 
 function scan(): void {
+  if (paused) return;
   const prefs = getPrefsSnapshot();
   const saves = pool.snapshot();
   for (const enricher of ENRICHERS) {
@@ -108,6 +120,20 @@ function scheduleScan(): void {
 // does not reset stamps, so already-enriched saves are skipped by eligibility.
 export function rescanEnrichment(): void {
   failed.clear();
+  scheduleScan();
+}
+
+// Stop scheduling new enricher runs; in-flight runs drain on their own.
+export function pauseEnrichmentSweep(): void {
+  if (paused) return;
+  paused = true;
+  enrichmentMonitor.set({ paused: true });
+}
+
+export function resumeEnrichmentSweep(): void {
+  if (!paused) return;
+  paused = false;
+  enrichmentMonitor.set({ paused: false });
   scheduleScan();
 }
 

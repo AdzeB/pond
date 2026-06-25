@@ -1,6 +1,6 @@
 import { type Op, saves, type Task, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
-import { and, asc, eq, inArray, lte, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, lte, ne, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import {
@@ -85,7 +85,7 @@ const WORKERS: Record<Op, Worker> = {
     }
   },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
-  fetch_video_ytdlp: (saveId) => runFetchVideoYtdlp(saveId),
+  fetch_video_ytdlp: (saveId, _payload, ctx) => runFetchVideoYtdlp(saveId, ctx),
   ensure_poster: (saveId) => runEnsurePoster(saveId),
   fetch_avatar: (saveId) => runFetchAvatar(saveId),
   finalize: (saveId) => runFinalize(saveId),
@@ -100,7 +100,7 @@ const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
 ]);
 
 let started = false;
-const paused = false;
+let paused = false;
 let pollTimer: NodeJS.Timeout | null = null;
 let kickPending = false;
 let nextOrphanSweepAt = 0;
@@ -125,6 +125,156 @@ const metrics = {
   watchdogTrips: 0,
   cascadeEvents: 0,
 };
+
+export interface PipelineSnapshot {
+  paused: boolean;
+  inflight: number;
+  inflightByOp: Record<Op, number>;
+  // Tasks waiting to run (status='pending').
+  pending: number;
+  // Saves still mid-ingest (status='ingesting').
+  ingesting: number;
+}
+
+type PipelineListener = (snapshot: PipelineSnapshot) => void;
+const pipelineListeners = new Set<PipelineListener>();
+let snapshotTimer: NodeJS.Timeout | null = null;
+
+export function subscribeToPipeline(cb: PipelineListener): () => void {
+  pipelineListeners.add(cb);
+  return () => {
+    pipelineListeners.delete(cb);
+  };
+}
+
+export async function getPipelineSnapshot(): Promise<PipelineSnapshot> {
+  const db = await getDb();
+  const pendingRow = db
+    .select({ n: count() })
+    .from(tasks)
+    .where(eq(tasks.status, "pending"))
+    .get();
+  const ingestingRow = db
+    .select({ n: count() })
+    .from(saves)
+    .where(eq(saves.status, "ingesting"))
+    .get();
+  return {
+    paused,
+    inflight: inflightGlobal,
+    inflightByOp: { ...inflightByOp },
+    pending: pendingRow?.n ?? 0,
+    ingesting: ingestingRow?.n ?? 0,
+  };
+}
+
+// Coalesce snapshot pushes: dispatch/settle can fire in bursts, so debounce a
+// single DB read + broadcast instead of one per task transition.
+function emitPipeline(): void {
+  if (pipelineListeners.size === 0) return;
+  if (snapshotTimer) return;
+  snapshotTimer = setTimeout(() => {
+    snapshotTimer = null;
+    void getPipelineSnapshot()
+      .then((snap) => {
+        for (const cb of pipelineListeners) {
+          try {
+            cb(snap);
+          } catch (err) {
+            log.warn("[pond pipeline:reconciler] pipeline listener threw", err);
+          }
+        }
+      })
+      .catch((err) =>
+        log.warn("[pond pipeline:reconciler] snapshot emit failed", err),
+      );
+  }, 250);
+}
+
+export function isReconcilerPaused(): boolean {
+  return paused;
+}
+
+export function pauseReconciler(): void {
+  if (paused) return;
+  paused = true;
+  log.info("[pond pipeline:reconciler] paused");
+  emitPipeline();
+}
+
+export function resumeReconciler(): void {
+  if (!paused) return;
+  paused = false;
+  log.info("[pond pipeline:reconciler] resumed");
+  emitPipeline();
+  kickReconciler();
+}
+
+// Stop work for a single save: abort any in-flight tasks, fail still-pending
+// ones, and flip the save out of `ingesting` (via persistSave so the renderer
+// pool updates). In-flight workers that ignore the abort signal finish their
+// current attempt, but no further tasks are dispatched for the save.
+export async function cancelSaveIngest(saveId: string): Promise<boolean> {
+  const db = await getDb();
+  const save = db
+    .select({ status: saves.status })
+    .from(saves)
+    .where(eq(saves.id, saveId))
+    .get();
+  if (save?.status !== "ingesting") return false;
+
+  const running = db
+    .select({ id: tasks.id })
+    .from(tasks)
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "running")))
+    .all();
+  for (const { id } of running) {
+    const controller = runningTasks.get(id);
+    if (controller) {
+      try {
+        controller.abort();
+      } catch {
+        /* worker may already have settled */
+      }
+    }
+  }
+
+  db.update(tasks)
+    .set({
+      status: "failed",
+      lastError: "cancelled by user",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))
+    .run();
+
+  await persistSave(
+    saveId,
+    { status: "failed" },
+    { actorReason: "user:cancel-ingest" },
+  );
+  log.info("[pond pipeline:reconciler] cancelled save ingest", { saveId });
+  emitPipeline();
+  return true;
+}
+
+// Pause dispatch, then cancel every save still ingesting. Returns the count
+// cancelled. Pausing first stops the reconciler from re-leasing slots mid-sweep.
+export async function cancelAllIngest(): Promise<number> {
+  pauseReconciler();
+  const db = await getDb();
+  const rows = db
+    .select({ id: saves.id })
+    .from(saves)
+    .where(eq(saves.status, "ingesting"))
+    .all();
+  let cancelled = 0;
+  for (const { id } of rows) {
+    if (await cancelSaveIngest(id)) cancelled += 1;
+  }
+  log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
+  return cancelled;
+}
 
 export function startReconciler(): void {
   if (started) return;
@@ -355,6 +505,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   inflightByOp[task.op]++;
   inflightGlobal++;
   metrics.tasksDispatched++;
+  emitPipeline();
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
   // One wide event per task attempt, committed in the finally.
@@ -416,6 +567,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
     ev.pipeline = { inflight: inflightGlobal, paused };
     ev.gate = gateForSource(task.source);
     void commitEvent(ev);
+    emitPipeline();
     kickReconciler();
   }
 }

@@ -3,9 +3,16 @@ import { Button } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import { useSyncStats } from "@/hooks/use-sync-stats";
+import {
+  pauseEnrichmentSweep,
+  resumeEnrichmentSweep,
+} from "@/lib/enrichment/sweep";
 import { showContextMenu } from "@/lib/native-menu";
 import { retryAllFailed } from "@/lib/selection-actions";
 import { getSourceDef } from "@/lib/sources-registry";
+import { useEnrichmentStatus } from "@/stores/enrichment-monitor";
+import { useGovernorSnapshot } from "@/stores/governor-monitor";
+import { usePipelineSnapshot } from "@/stores/pipeline-monitor";
 import { useFailedSaveCount } from "@/stores/pool";
 import { syncMonitor, useSyncBySource } from "@/stores/sync-monitor";
 import type { SyncRun } from "./helpers";
@@ -18,6 +25,7 @@ import { SourceCard } from "./source-card";
 import { SourceDialog } from "./source-dialog";
 import { StorageBanner } from "./storage-banner";
 import styles from "./styles.module.css";
+import { useActiveProcesses } from "./use-active-processes";
 
 // Sources you can sync; `local` holds only manual imports, so it's excluded.
 const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
@@ -26,6 +34,10 @@ export function SourcesPage() {
   const bySource = useSyncBySource();
   const { stats } = useSyncStats(7);
   const failedCount = useFailedSaveCount();
+  const processes = useActiveProcesses();
+  const pipeline = usePipelineSnapshot();
+  const enrichment = useEnrichmentStatus();
+  const governor = useGovernorSnapshot();
 
   const [customizeOpen, setCustomizeOpen] = useState(false);
   const [selectedSource, setSelectedSource] = useState<Source | null>(null);
@@ -65,12 +77,23 @@ export function SourcesPage() {
   const [, setTick] = useState(0);
   useIntervalWhen(() => setTick((t) => t + 1), 30_000, true);
 
-  const runningCount = SYNCABLE.filter(
+  const syncRunningCount = SYNCABLE.filter(
     (s) => bySource[s]?.state === "running",
   ).length;
+  const activeCount =
+    syncRunningCount + processes.filter((p) => p.state === "running").length;
   const connectedCount = SYNCABLE.filter(
     (s) => bySource[s]?.connected || bySource[s]?.state === "running",
   ).length;
+
+  const anyPaused = pipeline.paused || enrichment.paused || governor.allPaused;
+  const togglePauseAll = () => {
+    const next = !anyPaused;
+    void window.pond.pipelinePause(next);
+    void window.pond.governorSetPaused(next);
+    if (next) pauseEnrichmentSweep();
+    else resumeEnrichmentSweep();
+  };
 
   const openSource = (source: Source) => {
     setSelectedSource(source);
@@ -132,12 +155,15 @@ export function SourcesPage() {
             {connectedCount} of {SYNCABLE.length} connected
           </span>
           <span className={styles.topRight}>
-            {runningCount > 0 ? (
+            {activeCount > 0 ? (
               <span className={styles.live}>
                 <span className={styles.liveDot} />
-                {runningCount} syncing now
+                {activeCount} active now
               </span>
             ) : null}
+            <Button variant="secondary" onClick={togglePauseAll}>
+              {anyPaused ? "Resume all" : "Pause all"}
+            </Button>
             <Button
               variant="primary"
               onClick={() => void window.pond.syncRunAll()}
@@ -173,9 +199,10 @@ export function SourcesPage() {
           onCustomize={() => setCustomizeOpen(true)}
         />
 
-        <div className={styles.secLabel}>Current sync</div>
+        <div className={styles.secLabel}>Activity</div>
         <LiveMonitor
           bySource={bySource}
+          processes={processes}
           lastRunAt={stats.lastRunAt}
           onSyncAll={() => void window.pond.syncRunAll()}
         />

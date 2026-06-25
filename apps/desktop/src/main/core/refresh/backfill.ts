@@ -13,7 +13,7 @@ export interface RefreshBackfillOptions {
   overwrite?: boolean;
 }
 
-interface RefreshBackfillStatus {
+export interface RefreshBackfillStatus {
   state: "idle" | "running" | "done" | "error" | "cancelled";
   total: number;
   current: number;
@@ -28,6 +28,19 @@ interface RefreshBackfillStatus {
 
 type StatusListener = (status: RefreshBackfillStatus) => void;
 const listeners = new Set<StatusListener>();
+
+export function subscribeToRefreshBackfillStatus(
+  cb: StatusListener,
+): () => void {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+export function getRefreshBackfillStatus(): RefreshBackfillStatus {
+  return lastStatus;
+}
 
 let inFlight: AbortController | null = null;
 let lastStatus: RefreshBackfillStatus = idleStatus({});

@@ -14,7 +14,10 @@ import { Toaster } from "./components/toaster";
 import { BackfillStatusBridge } from "./effects/backfill-status-bridge";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
+import { GovernorStatusBridge } from "./effects/governor-status-bridge";
 import { MenuBridge } from "./effects/menu-bridge";
+import { PipelineStatusBridge } from "./effects/pipeline-status-bridge";
+import { RefreshStatusBridge } from "./effects/refresh-status-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
@@ -77,6 +80,9 @@ export function App() {
           <MenuBridge />
           <SyncStatusBridge />
           <BackfillStatusBridge />
+          <PipelineStatusBridge />
+          <RefreshStatusBridge />
+          <GovernorStatusBridge />
           <EnrichmentSweep />
           <RouterProvider router={router} />
           <Presentation />

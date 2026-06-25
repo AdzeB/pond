@@ -39,6 +39,26 @@ export interface BackfillStatusWire {
   lastError?: string | null;
 }
 
+export interface PipelineSnapshotWire {
+  paused: boolean;
+  inflight: number;
+  inflightByOp: Record<string, number>;
+  pending: number;
+  ingesting: number;
+}
+
+export interface RefreshBackfillStatusWire {
+  state: "idle" | "running" | "done" | "error" | "cancelled";
+  total: number;
+  current: number;
+  succeeded: number;
+  failed: number;
+  authRequired: string[];
+  startedAt: string | null;
+  finishedAt: string | null;
+  message?: string;
+}
+
 export interface GovernorSnapshotWire {
   allPaused: boolean;
   paused: Array<{
@@ -175,6 +195,43 @@ const api = {
 
   refreshBackfillCancel(): Promise<{ ok: boolean }> {
     return ipcRenderer.invoke(IPC.refreshBackfillCancel);
+  },
+
+  refreshBackfillStatusGet(): Promise<RefreshBackfillStatusWire> {
+    return ipcRenderer.invoke(IPC.refreshBackfillStatusGet);
+  },
+
+  onRefreshBackfillStatus(
+    cb: (status: RefreshBackfillStatusWire) => void,
+  ): () => void {
+    const listener = (_: unknown, status: RefreshBackfillStatusWire) =>
+      cb(status);
+    ipcRenderer.on(IPC.refreshBackfillStatus, listener);
+    return () => ipcRenderer.off(IPC.refreshBackfillStatus, listener);
+  },
+
+  // ── Ingest pipeline ─────────────────────────────────────────────────────
+  pipelineSnapshot(): Promise<PipelineSnapshotWire> {
+    return ipcRenderer.invoke(IPC.pipelineSnapshot);
+  },
+
+  pipelinePause(paused: boolean): Promise<{ ok: true; paused: boolean }> {
+    return ipcRenderer.invoke(IPC.pipelinePause, paused);
+  },
+
+  pipelineCancelSave(id: string): Promise<{ ok: true; cancelled: boolean }> {
+    return ipcRenderer.invoke(IPC.pipelineCancelSave, id);
+  },
+
+  pipelineCancelAll(): Promise<{ ok: true; cancelled: number }> {
+    return ipcRenderer.invoke(IPC.pipelineCancelAll);
+  },
+
+  onPipelineStatus(cb: (snapshot: PipelineSnapshotWire) => void): () => void {
+    const listener = (_: unknown, snapshot: PipelineSnapshotWire) =>
+      cb(snapshot);
+    ipcRenderer.on(IPC.pipelineStatus, listener);
+    return () => ipcRenderer.off(IPC.pipelineStatus, listener);
   },
 
   connectSource(

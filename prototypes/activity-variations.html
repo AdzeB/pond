@@ -1,0 +1,1482 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Activity — 10 variations</title>
+    <style>
+      :root {
+        --bg: #f4f5f7;
+        --panel: #ffffff;
+        --panel-2: #fbfbfc;
+        --ink: #15171a;
+        --ink-2: #5b6470;
+        --ink-3: #939aa4;
+        --line: #e7e9ee;
+        --line-2: #eef0f3;
+        --accent: #1d9bf6;
+        --accent-ink: #fff;
+        --accent-soft: #e8f4fe;
+        --green: #2bb673;
+        --green-soft: #e6f6ee;
+        --queued: #c3c8d1;
+        --amber: #e0a106;
+        --radius: 16px;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.04),
+          0 8px 24px rgba(16, 24, 40, 0.05);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter,
+          Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.45;
+        color: var(--ink);
+        background: var(--bg);
+      }
+      .wrap {
+        max-width: 1080px;
+        padding: 40px 28px 120px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        max-width: 620px;
+        margin: 0 0 24px;
+        color: var(--ink-2);
+      }
+
+      /* jump nav */
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 36px;
+      }
+      .nav a {
+        padding: 5px 11px;
+        font-size: 12.5px;
+        font-weight: 540;
+        color: var(--ink-2);
+        text-decoration: none;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .nav a:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      /* variation section */
+      .v {
+        margin-bottom: 44px;
+        scroll-margin-top: 20px;
+      }
+      .v-head {
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+        margin-bottom: 14px;
+      }
+      .v-num {
+        flex: none;
+        padding: 2px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 999px;
+      }
+      .v-title {
+        font-size: 17px;
+        font-weight: 660;
+        letter-spacing: -0.01em;
+      }
+      .v-desc {
+        font-size: 13px;
+        color: var(--ink-3);
+      }
+      .stage {
+        background: var(--bg);
+      }
+
+      /* ── shared atoms ─────────────────────────────────── */
+      .pill {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        padding: 3px 9px;
+        font-size: 11.5px;
+        font-weight: 580;
+        color: var(--ink-2);
+        white-space: nowrap;
+        background: var(--line-2);
+        border-radius: 999px;
+      }
+      .pill.live {
+        color: #1378c9;
+        background: var(--accent-soft);
+      }
+      .pill.done {
+        color: #1c8a55;
+        background: var(--green-soft);
+      }
+      .pill .dot {
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 999px;
+      }
+      .pill.live .dot {
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .bar {
+        display: flex;
+        height: 6px;
+        overflow: hidden;
+        background: var(--line-2);
+        border-radius: 999px;
+      }
+      .bar span {
+        display: block;
+        height: 100%;
+      }
+      .s-run {
+        background: var(--accent);
+      }
+      .s-queued {
+        background: var(--queued);
+      }
+      .s-done {
+        background: var(--green);
+      }
+      .mono {
+        font-variant-numeric: tabular-nums;
+      }
+      .indet {
+        position: relative;
+        overflow: hidden;
+        background: var(--accent-soft);
+      }
+      .indet::after {
+        position: absolute;
+        inset: 0;
+        width: 38%;
+        content: "";
+        background: var(--accent);
+        border-radius: 999px;
+        animation: slide 1.5s ease-in-out infinite;
+      }
+      @keyframes slide {
+        0% {
+          transform: translateX(-110%);
+        }
+        100% {
+          transform: translateX(330%);
+        }
+      }
+
+      /* card */
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+
+      /* ══ V1 master-detail ══ */
+      .v1-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 320px) 1fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .v1-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .v1-row {
+        all: unset;
+        display: block;
+        padding: 13px;
+        cursor: pointer;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        box-shadow: var(--shadow);
+      }
+      .v1-row.sel {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px var(--accent) inset, var(--shadow);
+      }
+      .v1-row .t {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .v1-row .nm {
+        font-weight: 620;
+      }
+      .v1-row .c {
+        margin: 9px 0;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .v1-row .c b {
+        color: var(--ink);
+      }
+      .panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .panel-head .ti {
+        font-size: 15px;
+        font-weight: 660;
+      }
+      .panel-body {
+        padding: 18px;
+      }
+      .legend {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        margin-bottom: 9px;
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .legend .ac {
+        font-weight: 620;
+        color: var(--accent);
+      }
+      .legend .rem {
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .divider {
+        height: 1px;
+        margin: 18px 0;
+        background: var(--line-2);
+      }
+      .itemrow {
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .itemrow .k {
+        font-size: 12px;
+        font-weight: 560;
+        color: var(--ink-3);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .itemrow .vv {
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+
+      /* vertical stepper (shared by V1, V2) */
+      .stepper {
+        padding: 18px 18px 4px;
+        background: var(--panel-2);
+        border: 1px solid var(--line-2);
+        border-radius: 12px;
+      }
+      .step {
+        position: relative;
+        display: flex;
+        gap: 14px;
+        padding-bottom: 18px;
+      }
+      .step:last-child {
+        padding-bottom: 14px;
+      }
+      .gutter {
+        position: relative;
+        flex: none;
+        width: 22px;
+      }
+      .gutter .line {
+        position: absolute;
+        top: 22px;
+        bottom: -18px;
+        left: 10px;
+        width: 2px;
+        background: var(--line);
+      }
+      .step.done .gutter .line {
+        background: var(--accent);
+      }
+      .step:last-child .gutter .line {
+        display: none;
+      }
+      .badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        background: var(--panel);
+        border-radius: 999px;
+      }
+      .step.done .badge {
+        background: var(--accent);
+      }
+      .step.active .badge {
+        border: 2px solid var(--accent);
+      }
+      .step.active .badge .core {
+        width: 8px;
+        height: 8px;
+        background: var(--accent);
+        border-radius: 999px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .step.pending .badge {
+        border: 2px solid var(--queued);
+      }
+      .step .b {
+        display: flex;
+        flex: 1;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+        min-width: 0;
+        min-height: 22px;
+      }
+      .step .lb {
+        font-weight: 560;
+      }
+      .step.active .lb {
+        font-weight: 640;
+        color: var(--accent);
+      }
+      .step.pending .lb {
+        color: var(--ink-3);
+      }
+      .step .mt {
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+      .step.active .mt {
+        color: var(--accent);
+      }
+
+      /* ══ V2 accordion ══ */
+      .v2-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .v2-item {
+        overflow: hidden;
+      }
+      .v2-head {
+        all: unset;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 14px 16px;
+        cursor: pointer;
+      }
+      .v2-chev {
+        flex: none;
+        color: var(--ink-3);
+        transition: transform 0.15s ease;
+      }
+      .v2-item.open .v2-chev {
+        transform: rotate(90deg);
+      }
+      .v2-head .nm {
+        font-weight: 620;
+      }
+      .v2-head .c {
+        font-size: 13px;
+        color: var(--ink-2);
+      }
+      .v2-body {
+        display: none;
+        padding: 0 16px 16px 16px;
+      }
+      .v2-item.open .v2-body {
+        display: block;
+      }
+      .grow {
+        flex: 1;
+      }
+
+      /* ══ V3 horizontal pipeline ══ */
+      .v3-row {
+        padding: 16px 18px;
+        margin-bottom: 10px;
+      }
+      .v3-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .v3-top .nm {
+        font-weight: 620;
+      }
+      .hpipe {
+        display: flex;
+        align-items: center;
+      }
+      .hstage {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        width: 96px;
+        text-align: center;
+      }
+      .hbadge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        background: var(--panel);
+        border: 2px solid var(--queued);
+        border-radius: 999px;
+      }
+      .hstage.done .hbadge {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .hstage.active .hbadge {
+        border-color: var(--accent);
+      }
+      .hstage.active .hbadge .core {
+        width: 9px;
+        height: 9px;
+        background: var(--accent);
+        border-radius: 999px;
+        animation: pulse 1.4s ease-in-out infinite;
+      }
+      .hstage .hl {
+        font-size: 12px;
+        font-weight: 560;
+        color: var(--ink-3);
+      }
+      .hstage.done .hl,
+      .hstage.active .hl {
+        color: var(--ink);
+      }
+      .hconn {
+        flex: 1;
+        height: 2px;
+        margin-top: -22px;
+        background: var(--line);
+        border-radius: 2px;
+      }
+      .hconn.done {
+        background: var(--accent);
+      }
+      .hconn.active {
+        background: linear-gradient(
+          90deg,
+          var(--accent) 50%,
+          var(--line) 50%
+        );
+      }
+
+      /* ══ V4 kanban ══ */
+      .v4-cols {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .v4-col {
+        padding: 14px;
+      }
+      .v4-colhead {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 620;
+      }
+      .v4-colhead .n {
+        margin-left: auto;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        color: var(--ink-3);
+      }
+      .chip {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 9px 11px;
+        margin-bottom: 7px;
+        font-size: 13px;
+        background: var(--panel-2);
+        border: 1px solid var(--line-2);
+        border-radius: 10px;
+      }
+      .chip .tag {
+        flex: none;
+        width: 7px;
+        height: 7px;
+        border-radius: 2px;
+      }
+      .chip .nm {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .more {
+        padding: 6px;
+        font-size: 12px;
+        color: var(--ink-3);
+        text-align: center;
+      }
+      .tag-enrichment {
+        background: #9b7df2;
+      }
+      .tag-ingest {
+        background: var(--accent);
+      }
+      .tag-refresh {
+        background: var(--green);
+      }
+
+      /* ══ V5 dashboard bars ══ */
+      .v5-row {
+        padding: 16px 18px;
+        margin-bottom: 10px;
+      }
+      .v5-top {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .v5-top .nm {
+        font-size: 15px;
+        font-weight: 620;
+      }
+      .v5-top .eta {
+        margin-left: auto;
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+      .v5-bar {
+        display: flex;
+        height: 26px;
+        overflow: hidden;
+        background: var(--line-2);
+        border-radius: 8px;
+      }
+      .v5-bar span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 0;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .v5-bar .s-queued {
+        color: var(--ink-2);
+      }
+      .v5-meta {
+        display: flex;
+        gap: 18px;
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--ink-2);
+      }
+      .v5-meta .k {
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .sw {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 3px;
+      }
+
+      /* ══ V6 feed ══ */
+      .v6 {
+        padding: 8px 0;
+      }
+      .fr {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        padding: 10px 18px;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .fr:last-child {
+        border-bottom: none;
+      }
+      .fr .ic {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        font-size: 12px;
+        border-radius: 999px;
+      }
+      .ic.ok {
+        color: #1c8a55;
+        background: var(--green-soft);
+      }
+      .ic.run {
+        color: #1378c9;
+        background: var(--accent-soft);
+      }
+      .ic.wait {
+        color: var(--ink-3);
+        background: var(--line-2);
+      }
+      .fr .tx {
+        flex: 1;
+        min-width: 0;
+      }
+      .fr .tx b {
+        font-weight: 620;
+      }
+      .fr .tx .sm {
+        font-size: 12.5px;
+        color: var(--ink-3);
+      }
+      .fr .ts {
+        font-size: 12px;
+        color: var(--ink-3);
+        white-space: nowrap;
+      }
+
+      /* ══ V7 rings ══ */
+      .v7-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .v7-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+        padding: 18px;
+        text-align: center;
+      }
+      .ring {
+        position: relative;
+        width: 120px;
+        height: 120px;
+      }
+      .ring .ctr {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .ring .ctr .big {
+        font-size: 26px;
+        font-weight: 680;
+        line-height: 1;
+      }
+      .ring .ctr .lab {
+        margin-top: 3px;
+        font-size: 11px;
+        color: var(--ink-3);
+      }
+      .v7-card .nm {
+        font-weight: 620;
+      }
+      .v7-card .sub {
+        font-size: 12.5px;
+        color: var(--ink-2);
+      }
+
+      /* ══ V8 table ══ */
+      table {
+        width: 100%;
+        font-size: 13px;
+        border-collapse: collapse;
+      }
+      thead th {
+        padding: 12px 16px;
+        font-size: 11.5px;
+        font-weight: 580;
+        color: var(--ink-3);
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid var(--line);
+      }
+      tbody td {
+        padding: 13px 16px;
+        vertical-align: middle;
+        border-bottom: 1px solid var(--line-2);
+      }
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      td.num {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      td .nm {
+        font-weight: 600;
+      }
+      .tbar {
+        width: 120px;
+      }
+      .linkbtn {
+        font-weight: 560;
+        color: var(--accent);
+        cursor: pointer;
+      }
+
+      /* ══ V9 throughput cards ══ */
+      .v9-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 14px;
+      }
+      .v9-card {
+        padding: 16px 18px;
+      }
+      .v9-card .nm {
+        font-weight: 620;
+      }
+      .v9-card .rate {
+        margin: 8px 0 2px;
+        font-size: 24px;
+        font-weight: 680;
+        letter-spacing: -0.02em;
+      }
+      .v9-card .rate small {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--ink-3);
+      }
+      .spark {
+        margin: 12px 0;
+      }
+      .v9-foot {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12.5px;
+        color: var(--ink-2);
+      }
+
+      /* ══ V10 menubar popover ══ */
+      .v10-wrap {
+        display: flex;
+        justify-content: center;
+      }
+      .tray {
+        width: 320px;
+        overflow: hidden;
+        border-radius: 14px;
+      }
+      .tray-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 620;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .tray-head .n {
+        margin-left: auto;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .tray-row {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line-2);
+      }
+      .tray-row:last-child {
+        border-bottom: none;
+      }
+      .tray-row .t {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 7px;
+      }
+      .tray-row .nm {
+        font-size: 13px;
+        font-weight: 560;
+      }
+      .tray-row .c {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--ink-3);
+      }
+      .tray-foot {
+        display: flex;
+        gap: 8px;
+        padding: 10px 14px;
+      }
+      .mini-btn {
+        flex: 1;
+        padding: 7px;
+        font-size: 12.5px;
+        font-weight: 560;
+        text-align: center;
+        cursor: pointer;
+        background: var(--panel-2);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+      }
+      .mini-btn.primary {
+        color: #fff;
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Activity — 10 variations</h1>
+      <p class="lede">
+        Ten ways to render the same background-process data, all built around one
+        idea: separate what is <b>actually running</b> from what is merely
+        <b>queued</b>, and make each item's lifecycle legible.
+      </p>
+      <nav class="nav" id="nav"></nav>
+
+      <div id="root"></div>
+    </div>
+
+    <script>
+      const fmt = (n) => n.toLocaleString("en-US");
+      const DATA = [
+        {
+          id: "enrichment",
+          label: "On-device enrichment",
+          running: 2,
+          queued: 14998,
+          doneToday: 312,
+          eta: "~3h 40m",
+          rate: 38,
+          itemLabel: "caption · IMG_4821.jpg",
+          stages: ["Queued", "Captioning", "Embedding", "Auto-title", "Tagged"],
+          active: 1,
+          spark: [4, 6, 5, 8, 7, 9, 12, 10, 8, 11, 9, 13],
+          steps: [
+            { l: "Queued", m: "12:25:01", s: "done" },
+            { l: "Captioning", m: "live", s: "active" },
+            { l: "Embedding", m: "waiting", s: "pending" },
+            { l: "Auto-title", m: "waiting", s: "pending" },
+            { l: "Tagged", m: "waiting", s: "pending" },
+          ],
+        },
+        {
+          id: "ingest",
+          label: "Ingest pipeline",
+          running: 3,
+          queued: 921,
+          doneToday: 146,
+          eta: "~22m",
+          rate: 64,
+          itemLabel: "youtube.com/watch?v=… · 1 of 921",
+          stages: ["Submitted", "Downloading", "Processing", "Saved"],
+          active: 1,
+          spark: [2, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8],
+          steps: [
+            { l: "Submitted", m: "12:22:04", s: "done" },
+            { l: "Downloading", m: "live", s: "active" },
+            { l: "Processing", m: "queued", s: "pending" },
+            { l: "Saved", m: "—", s: "pending" },
+          ],
+        },
+        {
+          id: "refresh",
+          label: "Metadata refresh",
+          running: 1,
+          queued: 38,
+          doneToday: 210,
+          eta: "~4m",
+          rate: 51,
+          itemLabel: "are.na · block 9931",
+          stages: ["Submitted", "Fetching", "Merged", "Saved"],
+          active: 1,
+          spark: [5, 4, 6, 5, 7, 6, 5, 7, 6, 8, 7, 6],
+          steps: [
+            { l: "Submitted", m: "12:18:50", s: "done" },
+            { l: "Fetching", m: "live", s: "active" },
+            { l: "Merged", m: "waiting", s: "pending" },
+            { l: "Saved", m: "—", s: "pending" },
+          ],
+        },
+      ];
+
+      const CHECK =
+        '<svg width="12" height="12" viewBox="0 0 12 12"><path d="M2.6 6.3 L5 8.6 L9.4 3.7" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      const CHECK_BIG =
+        '<svg width="14" height="14" viewBox="0 0 12 12"><path d="M2.6 6.3 L5 8.6 L9.4 3.7" stroke="#fff" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+      // elapsed spans get a data-sec; a global tick increments them
+      const elBase = 8;
+      function elapsedSpan(extra) {
+        return (
+          `<span class="js-el mono" data-sec="${elBase + extra}"></span>`
+        );
+      }
+      function fmtEl(s) {
+        return (
+          String(Math.floor(s / 60)).padStart(2, "0") +
+          ":" +
+          String(s % 60).padStart(2, "0")
+        );
+      }
+
+      function seg(p) {
+        const tot = p.running + p.queued + p.doneToday;
+        const w = (n) => (n / tot) * 100;
+        return (
+          '<span class="s-run" style="width:' +
+          w(p.running) +
+          '%"></span><span class="s-queued" style="width:' +
+          w(p.queued) +
+          '%"></span><span class="s-done" style="width:' +
+          w(p.doneToday) +
+          '%"></span>'
+        );
+      }
+
+      function vstepper(p, baseExtra) {
+        return (
+          '<div class="stepper">' +
+          p.steps
+            .map((s) => {
+              let inner = "";
+              if (s.s === "done") inner = CHECK;
+              else if (s.s === "active") inner = '<span class="core"></span>';
+              const _meta = s.m === "live" ? "elapsed " + "" : s.m;
+              const metaHtml =
+                s.m === "live"
+                  ? `elapsed ${elapsedSpan(baseExtra)}`
+                  : s.m;
+              return (
+                '<div class="step ' +
+                s.s +
+                '"><div class="gutter"><div class="line"></div><div class="badge">' +
+                inner +
+                '</div></div><div class="b"><span class="lb">' +
+                s.l +
+                '</span><span class="mt">' +
+                metaHtml +
+                "</span></div></div>"
+              );
+            })
+            .join("") +
+          "</div>"
+        );
+      }
+
+      // ── V1 master-detail ──
+      const v1state = { sel: DATA[0].id };
+      function renderV1() {
+        const list = DATA.map(
+          (p) =>
+            '<button class="v1-row ' +
+            (p.id === v1state.sel ? "sel" : "") +
+            '" data-id="' +
+            p.id +
+            '"><div class="t"><span class="nm">' +
+            p.label +
+            '</span><span class="pill live"><span class="dot"></span>Running</span></div>' +
+            '<div class="c"><b>' +
+            p.running +
+            " running</b> · " +
+            fmt(p.queued) +
+            ' queued</div><div class="bar">' +
+            seg(p) +
+            "</div></button>",
+        ).join("");
+        const p = DATA.find((x) => x.id === v1state.sel) || DATA[0];
+        const detail =
+          '<div class="card"><div class="panel-head"><span class="ti">' +
+          p.label +
+          '</span><span class="pill live"><span class="dot"></span>' +
+          p.running +
+          ' active now</span></div><div class="panel-body">' +
+          '<div class="legend"><span><span class="ac">' +
+          p.running +
+          " running</span> · " +
+          fmt(p.queued) +
+          " queued · " +
+          fmt(p.doneToday) +
+          ' done today</span><span class="rem mono">' +
+          fmt(p.running + p.queued) +
+          ' remaining</span></div><div class="bar">' +
+          seg(p) +
+          '</div><div class="divider"></div><div class="itemrow"><span class="k">Current item</span><span class="vv">' +
+          p.itemLabel +
+          "</span></div>" +
+          vstepper(p, 0) +
+          "</div></div>";
+        const host = document.getElementById("v1");
+        host.innerHTML =
+          '<div class="v1-grid"><div class="v1-list">' +
+          list +
+          "</div>" +
+          detail +
+          "</div>";
+        host.querySelectorAll(".v1-row").forEach((r) =>
+          r.addEventListener("click", () => {
+            v1state.sel = r.dataset.id;
+            renderV1();
+          }),
+        );
+      }
+
+      // ── V2 accordion ──
+      const v2open = new Set([DATA[0].id]);
+      function renderV2() {
+        const host = document.getElementById("v2");
+        host.innerHTML =
+          '<div class="v2-list">' +
+          DATA.map((p) => {
+            const open = v2open.has(p.id);
+            return (
+              '<div class="card v2-item ' +
+              (open ? "open" : "") +
+              '"><button class="v2-head" data-id="' +
+              p.id +
+              '"><svg class="v2-chev" width="14" height="14" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
+              '<span class="nm">' +
+              p.label +
+              '</span><span class="grow"></span><span class="c"><b style="color:var(--ink)">' +
+              p.running +
+              " running</b> · " +
+              fmt(p.queued) +
+              ' queued</span><span class="pill live"><span class="dot"></span>Live</span></button>' +
+              '<div class="v2-body"><div class="bar" style="margin-bottom:14px">' +
+              seg(p) +
+              "</div>" +
+              vstepper(p, 0) +
+              "</div></div>"
+            );
+          }).join("") +
+          "</div>";
+        host.querySelectorAll(".v2-head").forEach((h) =>
+          h.addEventListener("click", () => {
+            const id = h.dataset.id;
+            v2open.has(id) ? v2open.delete(id) : v2open.add(id);
+            renderV2();
+          }),
+        );
+      }
+
+      // ── V3 horizontal pipeline ──
+      function renderV3() {
+        document.getElementById("v3").innerHTML = DATA.map((p) => {
+          const stages = p.stages
+            .map((st, i) => {
+              const cls =
+                i < p.active ? "done" : i === p.active ? "active" : "pending";
+              let inner = "";
+              if (cls === "done") inner = CHECK_BIG;
+              else if (cls === "active") inner = '<span class="core"></span>';
+              const node =
+                '<div class="hstage ' +
+                cls +
+                '"><div class="hbadge">' +
+                inner +
+                '</div><span class="hl">' +
+                st +
+                "</span></div>";
+              if (i === p.stages.length - 1) return node;
+              const ccls =
+                i < p.active ? "done" : i === p.active ? "active" : "";
+              return `${node}<div class="hconn ${ccls}"></div>`;
+            })
+            .join("");
+          return (
+            '<div class="card v3-row"><div class="v3-top"><span class="nm">' +
+            p.label +
+            '</span><span class="pill live"><span class="dot"></span>' +
+            p.running +
+            " running · " +
+            fmt(p.queued) +
+            " queued</span></div><div class=\"hpipe\">" +
+            stages +
+            "</div></div>"
+          );
+        }).join("");
+      }
+
+      // ── V4 kanban ──
+      function renderV4() {
+        const running = [
+          { nm: "IMG_4821.jpg — captioning", proc: "enrichment" },
+          { nm: "IMG_4822.jpg — embedding", proc: "enrichment" },
+          { nm: "youtube.com/watch — downloading", proc: "ingest" },
+          { nm: "vimeo.com/9931 — processing", proc: "ingest" },
+          { nm: "are.na/block/9931 — fetching", proc: "refresh" },
+          { nm: "tiktok.com/@x — downloading", proc: "ingest" },
+        ];
+        const queued = [
+          { nm: "IMG_4990.jpg", proc: "enrichment" },
+          { nm: "IMG_5001.jpg", proc: "enrichment" },
+          { nm: "pinterest.com/pin/55", proc: "ingest" },
+          { nm: "are.na/block/9940", proc: "refresh" },
+        ];
+        const done = [
+          { nm: "IMG_4801.jpg — tagged", proc: "enrichment" },
+          { nm: "youtube.com/abc — saved", proc: "ingest" },
+          { nm: "are.na/block/9900 — merged", proc: "refresh" },
+          { nm: "IMG_4799.jpg — tagged", proc: "enrichment" },
+        ];
+        const totQ = DATA.reduce((a, p) => a + p.queued, 0);
+        const totD = DATA.reduce((a, p) => a + p.doneToday, 0);
+        const totR = DATA.reduce((a, p) => a + p.running, 0);
+        const chip = (it) =>
+          '<div class="chip"><span class="tag tag-' +
+          it.proc +
+          '"></span><span class="nm">' +
+          it.nm +
+          "</span></div>";
+        const col = (title, dotcls, n, items, extra) =>
+          '<div class="card v4-col"><div class="v4-colhead"><span class="dot ' +
+          dotcls +
+          '" style="width:8px;height:8px;border-radius:999px;background:' +
+          dotcls +
+          '"></span>' +
+          title +
+          '<span class="n">' +
+          fmt(n) +
+          "</span></div>" +
+          items.map(chip).join("") +
+          (extra ? `<div class="more">${extra}</div>` : "") +
+          "</div>";
+        document.getElementById("v4").innerHTML =
+          '<div class="v4-cols">' +
+          col("Running", "var(--accent)", totR, running) +
+          col(
+            "Queued",
+            "var(--queued)",
+            totQ,
+            queued,
+            `+ ${fmt(totQ - queued.length)} more`,
+          ) +
+          col(
+            "Done today",
+            "var(--green)",
+            totD,
+            done,
+            `+ ${fmt(totD - done.length)} more`,
+          ) +
+          "</div>";
+      }
+
+      // ── V5 dashboard bars ──
+      function renderV5() {
+        document.getElementById("v5").innerHTML = DATA.map((p) => {
+          const tot = p.running + p.queued + p.doneToday;
+          const w = (n) => (n / tot) * 100;
+          return (
+            '<div class="card v5-row"><div class="v5-top"><span class="nm">' +
+            p.label +
+            '</span><span class="pill live"><span class="dot"></span>Running</span><span class="eta mono">ETA ' +
+            p.eta +
+            '</span></div><div class="v5-bar"><span class="s-run" style="width:' +
+            w(p.running) +
+            '%"></span><span class="s-queued" style="width:' +
+            w(p.queued) +
+            '%">' +
+            (w(p.queued) > 12 ? `${fmt(p.queued)} queued` : "") +
+            '</span><span class="s-done" style="width:' +
+            w(p.doneToday) +
+            '%"></span></div><div class="v5-meta"><span class="k"><span class="sw s-run"></span><b>' +
+            p.running +
+            '</b>&nbsp;running</span><span class="k"><span class="sw s-queued"></span>' +
+            fmt(p.queued) +
+            ' queued</span><span class="k"><span class="sw s-done"></span>' +
+            fmt(p.doneToday) +
+            " done today</span></div></div>"
+          );
+        }).join("");
+      }
+
+      // ── V6 feed ──
+      function renderV6() {
+        const rows = [
+          ["run", "<b>Captioning</b> IMG_4821.jpg", "enrichment", "now"],
+          ["run", "<b>Downloading</b> youtube.com/watch?v=…", "ingest", "now"],
+          ["ok", "<b>Tagged</b> IMG_4801.jpg", "enrichment", "12:24:58"],
+          ["run", "<b>Fetching</b> are.na/block/9931", "refresh", "12:24:40"],
+          ["ok", "<b>Saved</b> youtube.com/abc", "ingest", "12:24:31"],
+          ["ok", "<b>Merged</b> are.na/block/9900", "refresh", "12:24:02"],
+          ["wait", "<b>14,998 items</b> queued for enrichment", "enrichment", "—"],
+        ];
+        const _glyph = { ok: CHECK, run: "●", wait: "·" };
+        document.getElementById("v6").innerHTML =
+          '<div class="card v6">' +
+          rows
+            .map(
+              (r) =>
+                '<div class="fr"><span class="ic ' +
+                r[0] +
+                '">' +
+                (r[0] === "ok" ? CHECK : r[0] === "run" ? "●" : "·") +
+                '</span><span class="tx"><b>' +
+                r[1] +
+                '</b> <span class="sm">· ' +
+                r[2] +
+                '</span></span><span class="ts mono">' +
+                r[3] +
+                "</span></div>",
+            )
+            .join("") +
+          "</div>";
+      }
+
+      // ── V7 rings ──
+      function ring(p) {
+        const tot = p.running + p.queued + p.doneToday;
+        const doneFrac = p.doneToday / tot;
+        const runFrac = p.running / tot;
+        const R = 52,
+          C = 2 * Math.PI * R;
+        const arc = (frac, color, offsetFrac, w) =>
+          '<circle cx="60" cy="60" r="' +
+          R +
+          '" fill="none" stroke="' +
+          color +
+          '" stroke-width="' +
+          w +
+          '" stroke-linecap="round" stroke-dasharray="' +
+          frac * C +
+          " " +
+          C +
+          '" stroke-dashoffset="' +
+          -offsetFrac * C +
+          '" transform="rotate(-90 60 60)"/>';
+        return (
+          '<div class="ring"><svg width="120" height="120">' +
+          '<circle cx="60" cy="60" r="' +
+          R +
+          '" fill="none" stroke="var(--line-2)" stroke-width="10"/>' +
+          arc(doneFrac, "var(--green)", 0, 10) +
+          arc(runFrac, "var(--accent)", doneFrac, 10) +
+          '</svg><div class="ctr"><span class="big mono">' +
+          p.running +
+          '</span><span class="lab">running</span></div></div>'
+        );
+      }
+      function renderV7() {
+        document.getElementById("v7").innerHTML =
+          '<div class="v7-grid">' +
+          DATA.map(
+            (p) =>
+              '<div class="card v7-card">' +
+              ring(p) +
+              '<div class="nm">' +
+              p.label +
+              '</div><div class="sub">' +
+              fmt(p.queued) +
+              " queued · " +
+              fmt(p.doneToday) +
+              " done</div></div>",
+          ).join("") +
+          "</div>";
+      }
+
+      // ── V8 table ──
+      function renderV8() {
+        const rows = DATA.map((p) => {
+          const tot = p.running + p.queued + p.doneToday;
+          const w = (n) => (n / tot) * 100;
+          return (
+            '<tr><td><span class="nm">' +
+            p.label +
+            '</span></td><td><span class="pill live"><span class="dot"></span>Running</span></td><td class="num">' +
+            p.running +
+            '</td><td class="num">' +
+            fmt(p.queued) +
+            '</td><td class="num">' +
+            fmt(p.doneToday) +
+            '</td><td><div class="bar tbar"><span class="s-run" style="width:' +
+            w(p.running) +
+            '%"></span><span class="s-queued" style="width:' +
+            w(p.queued) +
+            '%"></span><span class="s-done" style="width:' +
+            w(p.doneToday) +
+            '%"></span></div></td><td class="mono">' +
+            p.eta +
+            '</td><td><span class="linkbtn">Pause</span></td></tr>'
+          );
+        }).join("");
+        document.getElementById("v8").innerHTML =
+          '<div class="card" style="overflow:hidden"><table><thead><tr><th>Process</th><th>Status</th><th style="text-align:right">Running</th><th style="text-align:right">Queued</th><th style="text-align:right">Done</th><th>Progress</th><th>ETA</th><th></th></tr></thead><tbody>' +
+          rows +
+          "</tbody></table></div>";
+      }
+
+      // ── V9 throughput cards ──
+      function spark(points) {
+        const w = 220,
+          h = 44,
+          max = Math.max(...points),
+          min = Math.min(...points);
+        const dx = w / (points.length - 1);
+        const sy = (v) => h - 4 - ((v - min) / (max - min || 1)) * (h - 8);
+        const pts = points.map((v, i) => `${i * dx},${sy(v)}`).join(" ");
+        const area =
+          `0,${h} ${pts} ${w},${h}`;
+        return (
+          '<svg class="spark" width="' +
+          w +
+          '" height="' +
+          h +
+          '" viewBox="0 0 ' +
+          w +
+          " " +
+          h +
+          '" preserveAspectRatio="none"><polygon points="' +
+          area +
+          '" fill="var(--accent-soft)"/><polyline points="' +
+          pts +
+          '" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        );
+      }
+      function renderV9() {
+        document.getElementById("v9").innerHTML =
+          '<div class="v9-grid">' +
+          DATA.map(
+            (p) =>
+              '<div class="card v9-card"><div class="nm">' +
+              p.label +
+              '</div><div class="rate mono">' +
+              p.rate +
+              " <small>items/min</small></div>" +
+              spark(p.spark) +
+              '<div class="v9-foot"><span><b style="color:var(--accent)">' +
+              p.running +
+              '</b> running</span><span>' +
+              fmt(p.queued) +
+              " queued</span></div></div>",
+          ).join("") +
+          "</div>";
+      }
+
+      // ── V10 menubar popover ──
+      function renderV10() {
+        const totR = DATA.reduce((a, p) => a + p.running, 0);
+        document.getElementById("v10").innerHTML =
+          '<div class="v10-wrap"><div class="card tray"><div class="tray-head">Activity<span class="n">' +
+          totR +
+          ' active</span></div>' +
+          DATA.map((p) => {
+            const tot = p.running + p.queued + p.doneToday;
+            const w = (n) => (n / tot) * 100;
+            return (
+              '<div class="tray-row"><div class="t"><span class="dot" style="width:7px;height:7px;border-radius:999px;background:var(--accent)"></span><span class="nm">' +
+              p.label +
+              '</span><span class="c mono">' +
+              p.running +
+              " / " +
+              fmt(p.queued) +
+              '</span></div><div class="bar">' +
+              seg(p) +
+              "</div></div>"
+            );
+          }).join("") +
+          '<div class="tray-foot"><button class="mini-btn">Pause all</button><button class="mini-btn primary">Open Activity</button></div></div></div>';
+      }
+
+      // ── compose page ──
+      const VARS = [
+        ["v1", "Master–detail timeline", "List on the left, full per-item lifecycle on the right. Best for deep inspection."],
+        ["v2", "Inline expandable rows", "Accordion list; expand any process to reveal its timeline in place."],
+        ["v3", "Horizontal pipeline", "Stages flow left→right with connectors. Reads like a progress map."],
+        ["v4", "Triage columns", "Kanban-style Running / Queued / Done with item chips and overflow counts."],
+        ["v5", "Dashboard bars", "Big segmented bars with numeric breakdown and ETA. Scannable at a glance."],
+        ["v6", "Live activity feed", "Chronological event log with timestamps. Good for ‘what just happened’."],
+        ["v7", "Ring gauges", "Circular completion rings; center shows live running count."],
+        ["v8", "Dense table", "Data-grid with sortable-feeling columns and inline controls."],
+        ["v9", "Throughput cards", "Items/min with a sparkline trend per process."],
+        ["v10", "Menubar popover", "Compact tray widget summarizing everything in ~320px."],
+      ];
+      const root = document.getElementById("root");
+      const nav = document.getElementById("nav");
+      root.innerHTML = VARS.map(
+        (v, i) =>
+          '<section class="v" id="sec-' +
+          v[0] +
+          '"><div class="v-head"><span class="v-num">' +
+          (i + 1) +
+          '</span><span class="v-title">' +
+          v[1] +
+          '</span><span class="v-desc">' +
+          v[2] +
+          '</span></div><div class="stage" id="' +
+          v[0] +
+          '"></div></section>',
+      ).join("");
+      nav.innerHTML = VARS.map(
+        (v, i) => `<a href="#sec-${v[0]}">${i + 1}. ${v[1]}</a>`,
+      ).join("");
+
+      renderV1();
+      renderV2();
+      renderV3();
+      renderV4();
+      renderV5();
+      renderV6();
+      renderV7();
+      renderV8();
+      renderV9();
+      renderV10();
+
+      // global elapsed clock for all .js-el spans
+      function tick() {
+        document.querySelectorAll(".js-el").forEach((el) => {
+          const s = parseInt(el.dataset.sec, 10) + 1;
+          el.dataset.sec = s;
+          el.textContent = fmtEl(s);
+        });
+      }
+      tick();
+      setInterval(tick, 1000);
+    </script>
+  </body>
+</html>
