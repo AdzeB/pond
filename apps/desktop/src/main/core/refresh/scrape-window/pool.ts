@@ -7,6 +7,11 @@ import { PARTITION } from "./constants";
 // Hard ceiling on live scrape windows (~150 MB each).
 export const GLOBAL_POOL_CAP = 6;
 
+// Idle windows keep a heavy SPA (Twitter/Cosmos/…) resident and running page
+// timers in a full renderer process. Blank them on release and tear them down
+// after a grace period so a finished sync doesn't pin CPU/memory.
+const IDLE_EVICT_MS = 60_000;
+
 // Per-source budgets (sum > global cap on purpose) to prevent head-of-line blocking.
 const PER_SOURCE_CAP: Record<Source, number> = {
   twitter: 3,
@@ -28,6 +33,7 @@ interface PoolSlot {
   win: BrowserWindow;
   busy: boolean;
   source: Source | null;
+  evictTimer: ReturnType<typeof setTimeout> | null;
 }
 
 interface Waiter {
@@ -80,7 +86,29 @@ export interface Lease {
   release: () => void;
 }
 
+function cancelEviction(slot: PoolSlot): void {
+  if (slot.evictTimer) {
+    clearTimeout(slot.evictTimer);
+    slot.evictTimer = null;
+  }
+}
+
+// Drop a heavy page so an idle window stops running its timers/observers, then
+// arm a teardown so a fully idle pool releases its renderer processes.
+function blankAndScheduleEviction(slot: PoolSlot): void {
+  cancelEviction(slot);
+  if (slot.win.isDestroyed()) return;
+  void slot.win.loadURL("about:blank").catch(() => {});
+  slot.evictTimer = setTimeout(() => {
+    slot.evictTimer = null;
+    if (!slot.busy && !slot.win.isDestroyed()) slot.win.destroy();
+  }, IDLE_EVICT_MS);
+  // Never let the eviction timer keep the process alive on its own.
+  slot.evictTimer.unref?.();
+}
+
 function claimSlot(slot: PoolSlot, source: Source): Lease {
+  cancelEviction(slot);
   slot.busy = true;
   slot.source = source;
   busyBySource[source] += 1;
@@ -94,6 +122,8 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
       slot.source = null;
       busyBySource[source] = Math.max(0, busyBySource[source] - 1);
       drainQueues();
+      // If a waiter didn't immediately re-claim the slot, free its page.
+      if (!slot.busy) blankAndScheduleEviction(slot);
     },
   };
 }
@@ -125,7 +155,7 @@ export async function leaseWindow(
   }
   if (pool.length < GLOBAL_POOL_CAP) {
     const win = createHiddenWindow();
-    const slot: PoolSlot = { win, busy: false, source: null };
+    const slot: PoolSlot = { win, busy: false, source: null, evictTimer: null };
     pool.push(slot);
     return claimSlot(slot, source);
   }
@@ -160,6 +190,7 @@ function drainQueues(): void {
 
 export function disposeHiddenWindow(): void {
   for (const slot of pool) {
+    cancelEviction(slot);
     if (!slot.win.isDestroyed()) slot.win.destroy();
   }
   pool.length = 0;
