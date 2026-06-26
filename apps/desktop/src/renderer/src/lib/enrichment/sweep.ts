@@ -17,12 +17,41 @@ import type { Enricher } from "./types";
 // while any of its (enabled) prerequisites is still eligible; completing a
 // prerequisite optimistically updates the pool, which reschedules the scan.
 
-const limit = pLimit(2);
+// Cap on-device model work to a single concurrent run. These models are CPU/GPU
+// heavy and share the UI renderer; one-at-a-time keeps the sweep from starving
+// interactive work. (Raise only if inference moves off the UI thread.)
+const limit = pLimit(1);
 const inflight = new Set<string>();
 const failed = new Set<string>();
 // User-controlled stop: when paused, no new enricher runs are scheduled;
 // in-flight runs finish naturally.
 let paused = false;
+
+// Lightweight throughput instrumentation so we can see how fast the on-device
+// backlog drains and whether a model path (WebGPU vs WASM) is pulling its
+// weight. Logged at `info`, so it only shows with DevTools open.
+const stats = {
+  done: 0,
+  totalMs: 0,
+  byEnricher: new Map<string, { done: number; ms: number }>(),
+};
+
+function recordRun(enricher: Enricher, ms: number): void {
+  stats.done += 1;
+  stats.totalMs += ms;
+  const e = stats.byEnricher.get(enricher.id) ?? { done: 0, ms: 0 };
+  e.done += 1;
+  e.ms += ms;
+  stats.byEnricher.set(enricher.id, e);
+  // Summarize every 10 completions to keep the console readable on big libraries.
+  if (stats.done % 10 === 0) {
+    const avg = Math.round(stats.totalMs / stats.done);
+    console.info(
+      `[enrichment] progress done=${stats.done} inflight=${inflight.size} avg=${avg}ms ` +
+        `last=${enricher.id} (${Math.round(ms)}ms)`,
+    );
+  }
+}
 
 function reportInflight(): void {
   enrichmentMonitor.set({ inflight: inflight.size });
@@ -30,6 +59,25 @@ function reportInflight(): void {
 
 function keyFor(enricher: Enricher, save: Save): string {
   return `${enricher.id}:${save.id}`;
+}
+
+// Wait for the renderer to be idle before kicking off a model run, so enrichment
+// always yields to interactive work. Falls back to a macrotask where
+// requestIdleCallback is unavailable. The timeout caps starvation when the user
+// keeps the app busy, so the backlog still drains.
+function whenIdle(timeout = 2000): Promise<void> {
+  return new Promise((resolve) => {
+    const ric = (
+      globalThis as {
+        requestIdleCallback?: (
+          cb: () => void,
+          opts?: { timeout: number },
+        ) => void;
+      }
+    ).requestIdleCallback;
+    if (typeof ric === "function") ric(() => resolve(), { timeout });
+    else setTimeout(resolve, 0);
+  });
 }
 
 // True when every enabled prerequisite has already stamped this save.
@@ -77,12 +125,21 @@ function schedule(enricher: Enricher, save: Save): void {
   inflight.add(key);
   reportInflight();
   void limit(async () => {
+    // Yield to the UI before claiming the CPU/GPU for this run.
+    await whenIdle();
+    if (paused) {
+      inflight.delete(key);
+      reportInflight();
+      return;
+    }
+    const startedAt = performance.now();
     try {
       await persist(enricher, save);
     } catch (err) {
       failed.add(key);
       console.warn(`[enrichment] ${enricher.id} failed for ${save.id}`, err);
     } finally {
+      recordRun(enricher, performance.now() - startedAt);
       inflight.delete(key);
       reportInflight();
     }
@@ -92,14 +149,27 @@ function schedule(enricher: Enricher, save: Save): void {
 function scan(): void {
   if (paused) return;
   const prefs = getPrefsSnapshot();
-  const saves = pool.snapshot();
+  // Newest-first: enrich what the user just saved before grinding old backlog,
+  // so fresh items get captions/embeddings while they're still looking at them.
+  const saves = [...pool.snapshot()].sort((a, b) => b.savedAt - a.savedAt);
+  // Per-enricher count of work still outstanding this pass — a quick gauge of
+  // how big the on-device backlog is right now.
+  const backlog: string[] = [];
   for (const enricher of ENRICHERS) {
     if (!enricher.enabled(prefs)) continue;
+    let eligible = 0;
     for (const save of saves) {
       if (!enricher.eligible(save)) continue;
+      eligible += 1;
       if (!dependenciesSatisfied(enricher, save, prefs)) continue;
       schedule(enricher, save);
     }
+    if (eligible > 0) backlog.push(`${enricher.id}=${eligible}`);
+  }
+  if (backlog.length > 0) {
+    console.info(
+      `[enrichment] scan backlog ${backlog.join(" ")} (inflight=${inflight.size})`,
+    );
   }
 }
 
@@ -109,9 +179,12 @@ let scanScheduled = false;
 function scheduleScan(): void {
   if (scanScheduled) return;
   scanScheduled = true;
+  // Debounce bursts of pool updates, then run the scan during idle time.
   setTimeout(() => {
-    scanScheduled = false;
-    scan();
+    void whenIdle().then(() => {
+      scanScheduled = false;
+      scan();
+    });
   }, 250);
 }
 
