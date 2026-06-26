@@ -256,3 +256,16 @@
 .sensitive[data-revealing] > svg {
   transform: scale(0.85);
 }
+
+/* backdrop-filter forces the compositor to re-sample the backdrop per card on
+   every paint; swap to an opaque cover when transparency is reduced. */
+:global(html[data-reduce-transparency="true"]) .sensitive {
+  background: var(--ds-gray-3);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:global(html[data-reduce-transparency="true"]) .sensitive > svg {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
