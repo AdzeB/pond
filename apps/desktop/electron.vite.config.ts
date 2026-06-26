@@ -75,6 +75,17 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, "src/renderer"),
+    // Cross-origin isolation unlocks SharedArrayBuffer, which onnxruntime-web
+    // needs for multi-threaded WASM. Without it, on-device enrichment falls back
+    // to a single thread and pins one core (see lib/inference-device.ts). COEP
+    // `credentialless` keeps cross-origin images/media loading without the third
+    // party having to send CORP. (Prod mirrors these via onHeadersReceived.)
+    server: {
+      headers: {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "credentialless",
+      },
+    },
     plugins: [
       tanstackRouter({
         target: "react",

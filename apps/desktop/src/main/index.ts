@@ -231,6 +231,11 @@ function configureSessionDefaults(): void {
         }
       }
       headers["Content-Security-Policy"] = [PROD_CSP];
+      // Mirror the dev server's cross-origin isolation so onnxruntime-web can use
+      // multi-threaded WASM in packaged builds too. `credentialless` keeps remote
+      // images/media loading without requiring CORP on the third party.
+      headers["Cross-Origin-Opener-Policy"] = ["same-origin"];
+      headers["Cross-Origin-Embedder-Policy"] = ["credentialless"];
       cb({ responseHeaders: headers });
     });
   }
