@@ -563,11 +563,13 @@
 .indet {
   position: absolute;
   top: 0;
+  left: 0;
   width: 35%;
   height: 100%;
   background: linear-gradient(90deg, transparent, var(--run), transparent);
   border-radius: var(--ds-radius-full);
   animation: indet 1.3s ease-in-out infinite;
+  will-change: transform;
 }
 
 .pmeta {
@@ -867,8 +869,12 @@
 }
 
 .minibar i.liveFill {
+  width: 100%;
   background: var(--run);
+  transform: scaleX(0.31);
+  transform-origin: left center;
   animation: grow 2.6s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 .fix {
@@ -1572,10 +1578,10 @@
 
 @keyframes grow {
   from {
-    width: 31%;
+    transform: scaleX(0.31);
   }
   to {
-    width: 60%;
+    transform: scaleX(0.6);
   }
 }
 
@@ -1587,10 +1593,10 @@
 
 @keyframes indet {
   0% {
-    left: -35%;
+    transform: translateX(-100%);
   }
   100% {
-    left: 100%;
+    transform: translateX(285.7%);
   }
 }
 
@@ -1602,5 +1608,15 @@
   .minibar i.liveFill,
   .liveDot {
     animation: none;
+  }
+
+  /* Keep the (now transform-driven) bars visible at rest instead of parked
+     off-screen / collapsed by their animation's starting keyframe. */
+  .indet {
+    transform: none;
+  }
+
+  .minibar i.liveFill {
+    transform: scaleX(0.6);
   }
 }
