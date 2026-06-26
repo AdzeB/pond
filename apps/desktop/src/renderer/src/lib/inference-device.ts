@@ -27,13 +27,27 @@ function capWasmThreads(): void {
     typeof navigator.hardwareConcurrency === "number"
       ? navigator.hardwareConcurrency
       : 4;
-  const threads = Math.max(1, Math.floor(cores / 2));
+  const isolated =
+    typeof crossOriginIsolated !== "undefined" ? crossOriginIsolated : false;
+  const hasSAB = typeof SharedArrayBuffer !== "undefined";
+  // Multi-threaded WASM only works when the page is cross-origin isolated AND
+  // SharedArrayBuffer exists; otherwise onnxruntime silently runs single-thread.
+  const threads = isolated && hasSAB ? Math.max(1, Math.floor(cores / 2)) : 1;
   try {
     const wasm = (env.backends as { onnx?: { wasm?: { numThreads?: number } } })
       ?.onnx?.wasm;
     if (wasm) wasm.numThreads = threads;
   } catch {
     // Backend not initialized yet or the shape changed upstream — safe to skip.
+  }
+  console.info(
+    `[inference] wasm threads=${threads} (cores=${cores}, crossOriginIsolated=${isolated}, SharedArrayBuffer=${hasSAB})`,
+  );
+  if (!isolated) {
+    console.warn(
+      "[inference] page is NOT cross-origin isolated — WASM inference is " +
+        "single-threaded. Check COOP/COEP headers on the renderer.",
+    );
   }
 }
 
