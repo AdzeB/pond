@@ -27,10 +27,30 @@ const CDP_TIMEOUT_MS = 10_000;
 const CAPTURE_TIMEOUT_MS = 15_000;
 // Whole-render budget; on overrun the window is torn down for a clean retry.
 const RENDER_TIMEOUT_MS = 30_000;
+// The hidden window runs un-throttled (backgroundThrottling: false), so tear it
+// down once renders stop arriving rather than keeping a renderer process warm.
+const IDLE_DISPOSE_MS = 60_000;
 
 let win: BrowserWindow | null = null;
 // Serialize renders through the single hidden window.
 let chain: Promise<unknown> = Promise.resolve();
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearIdleDispose(): void {
+  if (idleTimer) {
+    clearTimeout(idleTimer);
+    idleTimer = null;
+  }
+}
+
+function scheduleIdleDispose(): void {
+  clearIdleDispose();
+  idleTimer = setTimeout(() => {
+    idleTimer = null;
+    disposeRenderCardWindow();
+  }, IDLE_DISPOSE_MS);
+  idleTimer.unref?.();
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
@@ -234,6 +254,8 @@ export async function renderTweetCardPng(
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
+  // A render is queued: cancel any pending teardown so the window survives.
+  clearIdleDispose();
   const run = chain.then(async () => {
     try {
       return await withTimeout(
@@ -246,6 +268,9 @@ export async function renderTweetCardPng(
       // A wedged window would stall every later render; drop it for a fresh one.
       disposeRenderCardWindow();
       return null;
+    } finally {
+      // Re-arm teardown; a later render clears it before the window is dropped.
+      scheduleIdleDispose();
     }
   });
   chain = run.catch(() => undefined);
@@ -253,6 +278,7 @@ export async function renderTweetCardPng(
 }
 
 export function disposeRenderCardWindow(): void {
+  clearIdleDispose();
   if (win && !win.isDestroyed()) win.destroy();
   win = null;
 }
