@@ -18,7 +18,6 @@ import {
 import { clamp, formatTime, SPEED_OPTIONS } from "./lib";
 import styles from "./styles.module.css";
 import { useAutoHide } from "./use-auto-hide";
-import { useVideoHotkeys } from "./use-hotkeys";
 import { useMediaState } from "./use-media-state";
 import { usePip } from "./use-pip";
 
@@ -44,8 +43,6 @@ function Root({ className, children, ...props }: RootProps) {
     () => ({ ...mediaActions, requestPip, showControls }),
     [mediaActions, requestPip, showControls],
   );
-
-  useVideoHotkeys({ rootRef, videoRef, actions });
 
   const value = useMemo<VideoContextValue>(
     () => ({
@@ -100,7 +97,19 @@ function Controls({ className, children, ...props }: ControlsProps) {
       data-visible={state.controlsVisible ? "" : undefined}
       {...props}
     >
-      <div className={styles.bar}>{children}</div>
+      {children}
+    </div>
+  );
+}
+
+function Row({
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
+  return (
+    <div className={cn(styles.bar, className)} {...props}>
+      {children}
     </div>
   );
 }
@@ -299,6 +308,7 @@ export const Video = {
   Root,
   Media,
   Controls,
+  Row,
   PlayButton,
   MuteButton,
   Volume,

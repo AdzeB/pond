@@ -703,7 +703,9 @@ interface SeedMerge {
   rawJson: RawJson | null;
 }
 
-// Additive merge, scoped to `capture.author.*`: fills missing fields, never overwrites.
+// Additive merge: fills missing `capture.author.*`, `capture.metrics`, and
+// `capture.extras.card` from the seed, never overwriting existing values. Lets a
+// re-sync backfill link cards / metrics onto saves ingested before those existed.
 function mergeSeedIntoExistingSave(
   current: Save,
   seed: EnqueueSeed,
@@ -713,9 +715,11 @@ function mergeSeedIntoExistingSave(
       ? (current.rawJson as RawJson)
       : null;
   const seedRaw = seed.rawJson;
+  const existingCapture = existingRaw?.capture;
+  const seedCapture = seedRaw.capture;
 
-  const existingAuthor: CaptureAuthor = existingRaw?.capture?.author ?? {};
-  const seedAuthor: CaptureAuthor = seedRaw.capture?.author ?? {};
+  const existingAuthor: CaptureAuthor = existingCapture?.author ?? {};
+  const seedAuthor: CaptureAuthor = seedCapture?.author ?? {};
   const nextAuthor: CaptureAuthor = { ...existingAuthor };
   const filled: string[] = [];
   let didFillAvatarUrl = false;
@@ -735,16 +739,44 @@ function mergeSeedIntoExistingSave(
     }
   }
 
+  // Backfill metrics only when the existing capture has none.
+  const existingMetrics = existingCapture?.metrics;
+  const seedMetrics = seedCapture?.metrics;
+  let nextMetrics = existingMetrics;
+  if (
+    (!existingMetrics || Object.keys(existingMetrics).length === 0) &&
+    seedMetrics &&
+    Object.keys(seedMetrics).length > 0
+  ) {
+    nextMetrics = { ...seedMetrics };
+    filled.push("capture.metrics");
+  }
+
+  // Backfill the link card only when absent.
+  const existingExtras = (existingCapture?.extras ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const seedExtras = (seedCapture?.extras ?? {}) as Record<string, unknown>;
+  let nextExtras = existingExtras;
+  if (!existingExtras.card && seedExtras.card) {
+    nextExtras = { ...existingExtras, card: seedExtras.card };
+    filled.push("capture.extras.card");
+  }
+
   if (filled.length === 0) {
     return { changed: false, filled, didFillAvatarUrl, rawJson: existingRaw };
   }
 
   const baseRaw = existingRaw ?? seedRaw;
+  const baseCapture = existingCapture ?? seedCapture;
   const nextRaw: RawJson = {
     ...baseRaw,
     capture: {
-      ...(existingRaw?.capture ?? seedRaw.capture),
+      ...baseCapture,
       author: nextAuthor,
+      ...(nextMetrics ? { metrics: nextMetrics } : {}),
+      ...(Object.keys(nextExtras).length > 0 ? { extras: nextExtras } : {}),
     },
   };
 

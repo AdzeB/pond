@@ -1,10 +1,9 @@
-import { env, pipeline } from "@huggingface/transformers";
-import { pickDevice } from "@/lib/inference-device";
 import { getPrefsSnapshot } from "@/stores/prefs";
+import { inferTranscribe } from "./inference-client";
 
-// Whisper runtime for on-device speech-to-text over video/audio saves. Lazy,
-// opt-in, WebGPU-then-WASM. Audio is decoded to 16 kHz mono in the renderer via
-// the Web Audio API before being handed to the ASR pipeline.
+// Whisper speech-to-text for video/audio saves. Audio is decoded to 16 kHz mono
+// here on the main thread (Web Audio API is window-only), then the PCM buffer is
+// handed to the inference worker for the actual ASR run (inference-core).
 
 const DEFAULT_MODEL_ID = "Xenova/whisper-tiny";
 
@@ -17,43 +16,6 @@ function modelId(): string {
 
 export function whisperModelVersion(): string {
   return `${modelId()}@1`;
-}
-
-type Transcriber = (
-  audio: Float32Array,
-  opts?: Record<string, unknown>,
-) => Promise<{ text: string } | Array<{ text: string }>>;
-
-let transcriberPromise: Promise<Transcriber> | null = null;
-
-function getTranscriber(): Promise<Transcriber> {
-  if (!transcriberPromise) {
-    transcriberPromise = (async () => {
-      env.allowLocalModels = false;
-      const id = modelId();
-      const build = async (device: "webgpu" | "wasm") => {
-        const pipe = await pipeline("automatic-speech-recognition", id, {
-          device,
-          dtype: device === "webgpu" ? "fp16" : "q8",
-        });
-        console.info(`[whisper] ready (${device})`);
-        return pipe as unknown as Transcriber;
-      };
-      if ((await pickDevice()) === "webgpu") {
-        try {
-          return await build("webgpu");
-        } catch (err) {
-          console.warn("[whisper] WebGPU build failed; using WASM", err);
-        }
-      }
-      return build("wasm");
-    })();
-    transcriberPromise.catch((err) => {
-      console.error("[whisper] failed to load", err);
-      transcriberPromise = null;
-    });
-  }
-  return transcriberPromise;
 }
 
 // Decode an audio/video URL into a 16 kHz mono PCM buffer. The AudioContext
@@ -93,11 +55,5 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
 // Transcribe one audio/video URL to plain text ("" when there's no speech).
 export async function transcribeAudio(url: string): Promise<string> {
   const audio = await decodeMono16k(url);
-  const transcriber = await getTranscriber();
-  const out = await transcriber(audio, {
-    chunk_length_s: 30,
-    stride_length_s: 5,
-  });
-  const text = Array.isArray(out) ? out.map((o) => o.text).join(" ") : out.text;
-  return (text ?? "").trim();
+  return inferTranscribe(audio, modelId());
 }

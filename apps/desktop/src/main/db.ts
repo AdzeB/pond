@@ -123,8 +123,6 @@ function migratePond(sqlite: Database.Database): void {
 					height INTEGER,
 					file_size INTEGER,
 					phash TEXT,
-					sensitivity TEXT,
-					sensitivity_model TEXT,
 					embedding TEXT,
 					embedding_model TEXT,
 					caption TEXT,
@@ -157,7 +155,6 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);
 				CREATE INDEX IF NOT EXISTS saves_deleted_idx ON saves(deleted_at);
 				CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status);
-				CREATE INDEX IF NOT EXISTS saves_sensitivity_idx ON saves(sensitivity);
 
 				CREATE TABLE IF NOT EXISTS tasks (
 					id TEXT PRIMARY KEY,

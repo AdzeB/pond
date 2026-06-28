@@ -20,6 +20,7 @@ export { Sidebar } from "./sidebar";
 export { Slider } from "./slider";
 export { Stepper } from "./stepper";
 export { Switch } from "./switch";
+export { TitleBar } from "./title-bar";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
 export { Video } from "./video";

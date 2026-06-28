@@ -25,8 +25,6 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
-  // Blur sensitive (NSFW) media until classified safe; opt-in.
-  blurSensitiveMedia: z.boolean().catch(false),
   // Twitter cover: "media" prefers attached media, "screenshot" always renders the card.
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
 });

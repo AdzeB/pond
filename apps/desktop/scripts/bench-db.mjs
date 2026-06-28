@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS saves (
   title TEXT, description TEXT, author TEXT, lang TEXT, site_name TEXT, published_at INTEGER,
   notes TEXT, media_url TEXT, media_type TEXT, raw_json TEXT, raw_slim TEXT,
   tags TEXT NOT NULL DEFAULT '[]', files TEXT NOT NULL DEFAULT '[]', cover_index INTEGER NOT NULL DEFAULT 0,
-  width INTEGER, height INTEGER, file_size INTEGER, phash TEXT, sensitivity TEXT, sensitivity_model TEXT,
+  width INTEGER, height INTEGER, file_size INTEGER, phash TEXT,
   video_notes TEXT NOT NULL DEFAULT '[]', dominant_colors TEXT NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'ingesting', ingest_started_at INTEGER, ingest_completed_at INTEGER,
   deleted_at INTEGER, saved_at INTEGER NOT NULL DEFAULT (unixepoch()*1000), created_at INTEGER NOT NULL DEFAULT (unixepoch()*1000),
@@ -35,7 +35,6 @@ CREATE INDEX IF NOT EXISTS saves_size_idx ON saves(file_size);
 CREATE INDEX IF NOT EXISTS saves_dims_idx ON saves(width, height);
 CREATE INDEX IF NOT EXISTS saves_deleted_idx ON saves(deleted_at);
 CREATE INDEX IF NOT EXISTS saves_status_idx ON saves(status);
-CREATE INDEX IF NOT EXISTS saves_sensitivity_idx ON saves(sensitivity);
 
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY, save_id TEXT NOT NULL REFERENCES saves(id) ON DELETE CASCADE,
@@ -247,7 +246,7 @@ function run(n) {
 
   // --- A2. Same, but DON'T select/parse raw_json (slim at SQL layer) ---
   const COLS =
-    "id,source,source_id,url,title,description,author,media_type,tags,files,cover_index,width,height,file_size,status,sensitivity,saved_at,created_at";
+    "id,source,source_id,url,title,description,author,media_type,tags,files,cover_index,width,height,file_size,status,saved_at,created_at";
   const selectSlim = db.prepare(
     `SELECT ${COLS} FROM saves ORDER BY saved_at DESC`,
   );

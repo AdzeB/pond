@@ -251,7 +251,8 @@ function SourceBody({
                 <div>
                   <div className={styles.fl}>Refresh metadata</div>
                   <div className={styles.fh}>
-                    Re-download covers and details for saves you already have.
+                    Re-fetch titles, descriptions, and any covers still missing
+                    for saves you already have.
                   </div>
                 </div>
                 <Button
@@ -262,6 +263,27 @@ function SourceBody({
                   }
                 >
                   Refresh
+                </Button>
+              </div>
+              <div className={styles.field}>
+                <div>
+                  <div className={styles.fl}>Re-download at full quality</div>
+                  <div className={styles.fh}>
+                    Discard existing covers and re-download them at full
+                    resolution. Slower, but replaces any low-res media.
+                  </div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    void window.pond.refreshBackfillStart({
+                      source,
+                      overwrite: true,
+                    })
+                  }
+                >
+                  Re-download
                 </Button>
               </div>
             </>

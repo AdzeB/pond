@@ -1,4 +1,3 @@
-import { useHotkey } from "@tanstack/react-hotkeys";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { MediaViewer } from "@/components/save-media-viewer";
@@ -14,9 +13,6 @@ export function Presentation() {
 
 function PresentationOverlay({ id }: { id: string }) {
   const save = useSave(id);
-
-  useHotkey("Escape", () => presentation.close());
-  useHotkey("F5", () => presentation.close());
 
   useEffect(() => {
     const el = document.documentElement;
@@ -44,9 +40,9 @@ function PresentationOverlay({ id }: { id: string }) {
         type="button"
         className={styles.close}
         onClick={() => presentation.close()}
-        aria-label="Exit presentation mode (Esc)"
+        aria-label="Exit presentation mode"
       >
-        Esc
+        Close
       </button>
     </div>,
     document.body,

@@ -66,6 +66,11 @@ export function SourceCard({
           label: "Refresh metadata",
           onSelect: () => void window.pond.refreshBackfillStart({ source }),
         },
+        {
+          label: "Re-download at full quality",
+          onSelect: () =>
+            void window.pond.refreshBackfillStart({ source, overwrite: true }),
+        },
       );
     }
     items.push(

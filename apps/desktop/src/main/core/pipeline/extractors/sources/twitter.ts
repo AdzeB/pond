@@ -74,12 +74,16 @@ export class TwitterTweetExtractor implements Extractor {
     // instead of a separate screenshot.
     const quotedTweet = buildQuotedTweet(quotedRaw);
 
+    // Link-card embed (the linked page's OG preview X renders for summary cards).
+    const card = buildLinkCard((meta.card ?? {}) as Record<string, unknown>);
+
     const extras: Record<string, unknown> = {
       ...(typeof meta.conversationId === "string"
         ? { conversationId: meta.conversationId }
         : {}),
       ...(quotedTweets.length > 0 ? { quotedTweets } : {}),
       ...(quotedTweet ? { quotedTweet } : {}),
+      ...(card ? { card } : {}),
     };
 
     return {
@@ -151,6 +155,40 @@ function buildQuotedTweet(
     ...(author ? { author } : {}),
     ...(text ? { text } : {}),
     ...(media.length > 0 ? { media } : {}),
+  };
+}
+
+interface LinkCardExtra {
+  url?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  large?: boolean;
+}
+
+// Shapes the scraped card DOM into the link-card extra the card renders. Returns
+// undefined when there's nothing renderable (no url, title, or image).
+function buildLinkCard(
+  raw: Record<string, unknown>,
+): LinkCardExtra | undefined {
+  const url = typeof raw.url === "string" ? raw.url : undefined;
+  const domain = typeof raw.domain === "string" ? raw.domain : undefined;
+  const title = typeof raw.title === "string" ? raw.title : undefined;
+  const description =
+    typeof raw.description === "string" ? raw.description : undefined;
+  const imageUrl = typeof raw.imageUrl === "string" ? raw.imageUrl : undefined;
+  const large = raw.large === true;
+
+  if (!url && !title && !imageUrl) return undefined;
+
+  return {
+    ...(url ? { url } : {}),
+    ...(domain ? { domain } : {}),
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(large ? { large } : {}),
   };
 }
 

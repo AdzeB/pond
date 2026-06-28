@@ -7,10 +7,4 @@
   --ds-shadow-4: var(--ds-shadow-ring), 0 8px 16px 0 var(--ds-black-a2);
   --ds-shadow-5: var(--ds-shadow-ring), 0 16px 28px 0 var(--ds-black-a3);
   --ds-shadow-6: var(--ds-shadow-ring), 0 24px 48px 0 var(--ds-black-a3);
-
-  --ds-filter-shadow-2: drop-shadow(1px 0 0 var(--ds-gray-a3))
-    drop-shadow(-1px 0 0 var(--ds-gray-a3))
-    drop-shadow(0 1px 0 var(--ds-gray-a3))
-    drop-shadow(0 -1px 0 var(--ds-gray-a3))
-    drop-shadow(0 2px 4px var(--ds-black-a2));
 }

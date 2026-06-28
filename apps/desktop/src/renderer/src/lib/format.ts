@@ -48,6 +48,27 @@ export function formatShortDate(value: string | number): string {
   return `${dd}/${mm}/${yyyy}`;
 }
 
+const tsTime = new Intl.DateTimeFormat(undefined, {
+  hour: "numeric",
+  minute: "2-digit",
+});
+
+const tsDate = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
+// "3:47 PM · Feb 11, 2026"; empty string for nullish/invalid input.
+export function formatTimestampLine(
+  value: string | number | null | undefined,
+): string {
+  if (value === null || value === undefined || value === "") return "";
+  const d = new Date(value);
+  if (!Number.isFinite(d.getTime())) return "";
+  return `${tsTime.format(d)} · ${tsDate.format(d)}`;
+}
+
 // "yyyy/mm/dd hh:mi"; empty string for nullish/empty input.
 export function formatAbsolute(
   value: string | number | null | undefined,

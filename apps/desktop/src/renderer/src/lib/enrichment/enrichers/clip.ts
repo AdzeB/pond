@@ -1,4 +1,3 @@
-import { loadImage, representativeImageUrl } from "@/lib/nsfw";
 import type { Save } from "@/lib/types";
 import {
   clipEmbeddingStore,
@@ -6,6 +5,7 @@ import {
   setClipEmbedding,
 } from "@/stores/clip-embedding-store";
 import { clipImageEmbedding, clipModelVersion } from "../clip";
+import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
 // CLIP image embedding for visual similarity (related / near-dup / image search).

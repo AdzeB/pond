@@ -10,6 +10,34 @@ export function inPageCosmosNormalize() {
     }
   }
 
+  // Cosmos serves assets through cdn.cosmos.so behind Cloudflare image
+  // resizing, where `w`/`h`/`q`/`dpr` shrink the original. The og:image and
+  // grid thumbnails carry those params, so strip them to fetch the
+  // full-resolution source while preserving the requested output `format`.
+  function upgradeCosmosImage(src: string): string {
+    try {
+      const u = new URL(src, location.origin);
+      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) return src;
+      if (!u.hostname.startsWith("cdn.")) return src;
+      for (const key of [
+        "w",
+        "h",
+        "width",
+        "height",
+        "q",
+        "quality",
+        "dpr",
+        "fit",
+        "blur",
+      ]) {
+        u.searchParams.delete(key);
+      }
+      return u.toString();
+    } catch {
+      return src;
+    }
+  }
+
   function extractElementPageMeta(): Record<string, unknown> | null {
     const out: Record<string, unknown> = {};
     const meta: Record<string, unknown> = {};
@@ -55,8 +83,12 @@ export function inPageCosmosNormalize() {
     const ogImage = document.querySelector<HTMLMetaElement>(
       'meta[property="og:image"]',
     );
-    const ogImageUrl = ogImage?.content?.trim();
-    if (ogImageUrl && !ogImageUrl.startsWith("data:")) {
+    const ogImageRaw = ogImage?.content?.trim();
+    const ogImageUrl =
+      ogImageRaw && !ogImageRaw.startsWith("data:")
+        ? upgradeCosmosImage(ogImageRaw)
+        : undefined;
+    if (ogImageUrl) {
       out.mediaUrl = ogImageUrl;
       out.mediaUrls = [{ url: ogImageUrl, type: "image" }];
       out.mediaType = "image";

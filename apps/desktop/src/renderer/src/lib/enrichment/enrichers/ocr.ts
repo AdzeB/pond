@@ -1,6 +1,6 @@
-import { loadImage, representativeImageUrl } from "@/lib/nsfw";
 import type { Save } from "@/lib/types";
 import { florenceModelVersion, runFlorence } from "../florence";
+import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
 // OCR text extracted from image saves (screenshots, posters) via Florence-2.

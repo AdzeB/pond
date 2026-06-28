@@ -14,7 +14,6 @@ export interface SaveLike {
   transcript?: string | null;
   mediaType?: string | null;
   files?: ReadonlyArray<unknown> | null;
-  sensitivity?: "safe" | "sensitive" | null;
   width?: number | null;
   height?: number | null;
   fileSize?: number | null;

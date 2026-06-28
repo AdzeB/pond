@@ -1,7 +1,7 @@
 import { env } from "@huggingface/transformers";
 
-// Centralized device selection for every on-device transformer model (NSFW,
-// embeddings, CLIP, Florence, Whisper). It does two things the per-model loaders
+// Centralized device selection for every on-device transformer model
+// (embeddings, CLIP, Florence, Whisper). It does two things the per-model loaders
 // previously got wrong, which together were a major source of fan/heat:
 //
 //   1. Pick WebGPU vs WASM *correctly*. `'gpu' in navigator` can be true while

@@ -1,10 +1,13 @@
-import { env, pipeline } from "@huggingface/transformers";
-import { pickDevice } from "@/lib/inference-device";
+import {
+  inferEmbedText,
+  inferEmbedTexts,
+} from "@/lib/enrichment/inference-client";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
 // On-device text embeddings for semantic search and fuzzy facet resolution.
-// Mirrors the lazy, WebGPU-then-WASM runtime of `lib/nsfw.ts`: a single shared
-// feature-extraction pipeline, dynamically imported so it never bloats startup.
+// Model loading + execution lives in the inference worker (inference-core); this
+// module resolves the prefs-driven model id, the persisted stamp, and the pure
+// vector helpers (cosine, embedding text) used at query time.
 
 const DEFAULT_MODEL_ID = "Xenova/all-MiniLM-L6-v2";
 
@@ -16,63 +19,20 @@ export function embedModelId(): string {
 }
 
 // Version stamp persisted alongside each embedding; changing the model
-// invalidates stored vectors so the sweep re-embeds, mirroring nsfw's stamp.
+// invalidates stored vectors so the sweep re-embeds.
 // @2 re-embeds once caption/OCR/transcript text can be folded into the vector.
 export function embedModelVersion(): string {
   return `${embedModelId()}@2`;
 }
 
-type Extractor = (
-  text: string | string[],
-  opts?: { pooling?: "mean" | "cls" | "none"; normalize?: boolean },
-) => Promise<{ data: Float32Array; dims: number[] }>;
-
-let extractorPromise: Promise<Extractor> | null = null;
-
-function getExtractor(): Promise<Extractor> {
-  if (!extractorPromise) {
-    extractorPromise = (async () => {
-      env.allowLocalModels = false;
-      const tryBuild = async (device: "webgpu" | "wasm") => {
-        const pipe = await pipeline("feature-extraction", embedModelId(), {
-          device,
-          dtype: "q8",
-        });
-        console.info(`[embeddings] extractor ready (${device}/q8)`);
-        return pipe as unknown as Extractor;
-      };
-      if ((await pickDevice()) === "webgpu") {
-        try {
-          return await tryBuild("webgpu");
-        } catch (err) {
-          console.warn("[embeddings] WebGPU build failed; using WASM", err);
-        }
-      }
-      return tryBuild("wasm");
-    })();
-    extractorPromise.catch((err) => {
-      console.error("[embeddings] failed to load extractor", err);
-      extractorPromise = null; // allow a later retry (e.g. offline)
-    });
-  }
-  return extractorPromise;
-}
-
 // Embed one string into a normalized vector. Mean-pooled + normalized so cosine
 // similarity is a plain dot product.
-export async function embedText(text: string): Promise<Float32Array> {
-  const extractor = await getExtractor();
-  const out = await extractor(text, { pooling: "mean", normalize: true });
-  return Float32Array.from(out.data);
+export function embedText(text: string): Promise<Float32Array> {
+  return inferEmbedText(text, embedModelId());
 }
 
-export async function embedTexts(texts: string[]): Promise<Float32Array[]> {
-  if (texts.length === 0) return [];
-  const extractor = await getExtractor();
-  const out = await Promise.all(
-    texts.map((t) => extractor(t, { pooling: "mean", normalize: true })),
-  );
-  return out.map((o) => Float32Array.from(o.data));
+export function embedTexts(texts: string[]): Promise<Float32Array[]> {
+  return inferEmbedTexts(texts, embedModelId());
 }
 
 // Dot product of two normalized vectors == cosine similarity.

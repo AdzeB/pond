@@ -38,7 +38,7 @@ export function labelForMode(mode: SaveListMode, sourceFilter: string): string {
     case "trash":
       return "Trash";
     default:
-      return "All Saves";
+      return "Library";
   }
 }
 

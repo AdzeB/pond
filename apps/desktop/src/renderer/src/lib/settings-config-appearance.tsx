@@ -102,17 +102,5 @@ export const appearanceSection: SectionConfig = {
         },
       ],
     },
-    {
-      title: "Privacy",
-      items: [
-        {
-          control: "switch",
-          key: "blurSensitiveMedia",
-          title: "Blur sensitive media",
-          description:
-            "Detect explicit media on-device and blur it until you click to reveal.",
-        },
-      ],
-    },
   ],
 };

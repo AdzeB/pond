@@ -50,6 +50,17 @@
       var(--ds-shadow-4),
       0 0 0 2px var(--ds-gray-a8);
   }
+
+  /* Inside the dock pill the trigger is just one item among the icon buttons,
+     so it sheds its floating chrome and lets the glyph carry the identity. */
+  &[data-variant="dock"] {
+    background: none;
+    box-shadow: none;
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    }
+  }
 }
 
 .name {

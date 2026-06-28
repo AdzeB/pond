@@ -54,7 +54,6 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "creator", keys: ["by", "creator", "author"] },
   { field: "note", keys: ["note", "notes"] },
   { field: "color", keys: ["color", "colour"] },
-  { field: "sensitivity", keys: ["sensitivity", "nsfw"] },
   { field: "savedAt", keys: ["saved", "savedat"] },
   { field: "publishedAt", keys: ["published", "publishedat"] },
   { field: "modifiedAt", keys: ["modified", "modifiedat"] },

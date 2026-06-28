@@ -3,8 +3,6 @@ import {
   type ReactEventHandler,
   useCallback,
   useEffect,
-  useLayoutEffect,
-  useRef,
   useState,
 } from "react";
 import { type ChapterCue, chaptersToVttUrl } from "@/lib/chapters-vtt";
@@ -13,7 +11,6 @@ import {
   setActiveMediaSeek,
   setActiveMediaTime,
 } from "@/stores/active-media";
-import styles from "./styles.module.css";
 
 interface VideoPlayerProps {
   src: string;
@@ -23,10 +20,13 @@ interface VideoPlayerProps {
   // active-media store so out-of-tree chrome (the detail chapter list) can
   // drive it. The carousel marks only the in-view slide active.
   active?: boolean;
-  // Intrinsic media dimensions, used to size the player to the video's
-  // contained box so the controls track the video width (not the slide).
+  // Intrinsic media dimensions; seed the aspect ratio so it's known before
+  // metadata loads and reported through onRatio.
   width?: number | null;
   height?: number | null;
+  // Reports the resolved aspect ratio (from props or loaded metadata) so the
+  // slide can size its box; the player itself doesn't know the slide layout.
+  onRatio?: (ratio: number) => void;
   onError?: () => void;
 }
 
@@ -34,8 +34,15 @@ interface VideoPlayerProps {
 // action and time to the active-media store while this slide is active.
 function MediaBridge({ active }: { active: boolean }) {
   const { state, actions } = useVideo();
-  const { seek, play } = actions;
+  const { seek, play, pause } = actions;
   const { currentTime } = state;
+
+  // Autoplay the active (centered, in-view) slide and pause the rest so only
+  // one video ever plays. Keyed on `active` so a manual pause isn't overridden.
+  useEffect(() => {
+    if (active) play();
+    else pause();
+  }, [active, play, pause]);
 
   useEffect(() => {
     if (!active) return;
@@ -76,83 +83,63 @@ export function VideoPlayer({
   active,
   width,
   height,
+  onRatio,
   onError,
 }: VideoPlayerProps) {
   const trackUrl = useChaptersTrackUrl(chapters);
 
-  // Size the player to the video's contained box so the controls stop at the
-  // video edges. Ratio comes from the known dimensions, else from metadata.
-  const fitRef = useRef<HTMLDivElement>(null);
+  // Seeded from the stored dimensions, then corrected to the true frame ratio
+  // on load and reported so the slide can size its box without letterboxing.
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
-  );
-  const [box, setBox] = useState<{ width: number; height: number } | null>(
-    null,
   );
 
   useEffect(() => {
     if (width && height) setRatio(width / height);
   }, [width, height]);
 
-  useLayoutEffect(() => {
-    const el = fitRef.current;
-    if (!el || !ratio) return;
-    const compute = () => {
-      const aw = el.clientWidth;
-      const ah = el.clientHeight;
-      if (aw === 0 || ah === 0) return;
-      let w = aw;
-      let h = aw / ratio;
-      if (h > ah) {
-        h = ah;
-        w = ah * ratio;
-      }
-      setBox({ width: Math.round(w), height: Math.round(h) });
-    };
-    compute();
-    const observer = new ResizeObserver(compute);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ratio]);
+  useEffect(() => {
+    if (ratio && onRatio) onRatio(ratio);
+  }, [ratio, onRatio]);
 
   const onLoadedMetadata = useCallback<ReactEventHandler<HTMLVideoElement>>(
     (event) => {
-      if (ratio) return;
       const video = event.currentTarget;
       if (video.videoWidth && video.videoHeight) {
         setRatio(video.videoWidth / video.videoHeight);
       }
     },
-    [ratio],
+    [],
   );
 
   return (
-    <div ref={fitRef} className={styles.fit}>
-      <Video.Root
-        style={box ? { width: box.width, height: box.height } : undefined}
+    <Video.Root>
+      <MediaBridge active={!!active} />
+      <Video.Media
+        src={src}
+        poster={poster}
+        preload="metadata"
+        onError={onError}
+        onLoadedMetadata={onLoadedMetadata}
       >
-        {active ? <MediaBridge active={active} /> : null}
-        <Video.Media
-          src={src}
-          poster={poster}
-          preload="metadata"
-          onError={onError}
-          onLoadedMetadata={onLoadedMetadata}
-        >
-          {trackUrl ? (
-            <track kind="chapters" src={trackUrl} default label="Chapters" />
-          ) : null}
-        </Video.Media>
-        <Video.Controls>
-          <Video.PlayButton />
-          <Video.Volume />
+        {trackUrl ? (
+          <track kind="chapters" src={trackUrl} default label="Chapters" />
+        ) : null}
+      </Video.Media>
+      <Video.Controls>
+        <Video.Row>
           <Video.CurrentTime />
           <Video.Scrubber />
           <Video.Duration />
+        </Video.Row>
+        <Video.Row>
+          <Video.PlayButton />
+          <Video.Volume />
+          <Video.Spacer />
           <Video.SpeedSelect />
           <Video.FullscreenButton />
-        </Video.Controls>
-      </Video.Root>
-    </div>
+        </Video.Row>
+      </Video.Controls>
+    </Video.Root>
   );
 }

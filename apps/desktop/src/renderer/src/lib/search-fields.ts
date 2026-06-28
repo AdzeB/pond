@@ -1,7 +1,6 @@
 import {
   IconCalendarFill18 as Calendar,
   IconChatBubbleFill18 as Caption,
-  IconEyeSlashFill18 as EyeSlash,
   IconFileFill18 as FileIcon,
   IconCloneFill18 as FilesIcon,
   IconLinkFill18 as LinkIcon,
@@ -40,7 +39,6 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
   caption: Caption,
   transcript: Mic,
   color: Palette,
-  sensitivity: EyeSlash,
   savedAt: Upload,
   publishedAt: Calendar,
   modifiedAt: Calendar,
@@ -57,7 +55,6 @@ export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
   caption: "with, without",
   transcript: "with, without",
   color: "red, #ff0000",
-  sensitivity: "safe, sensitive",
   savedAt: "past-week, 2024-01-01",
   publishedAt: "past-week, 2024-01-01",
   modifiedAt: "past-week, 2024-01-01",

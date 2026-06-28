@@ -25,10 +25,14 @@ import { SourceCard } from "./source-card";
 import { SourceDialog } from "./source-dialog";
 import { StorageBanner } from "./storage-banner";
 import styles from "./styles.module.css";
+import { TasksPanel } from "./tasks-panel";
 import { useActiveProcesses } from "./use-active-processes";
 
-// Sources you can sync; `local` holds only manual imports, so it's excluded.
-const SYNCABLE: readonly Source[] = SOURCES.filter((s) => s !== "local");
+// Sources you can sync; `local` (manual imports) and `web` (generic-link
+// fallback) aren't connectable accounts, so they're excluded.
+const SYNCABLE: readonly Source[] = SOURCES.filter(
+  (s) => s !== "local" && s !== "web",
+);
 
 export function SourcesPage() {
   const bySource = useSyncBySource();
@@ -231,6 +235,12 @@ export function SourcesPage() {
 
         <div className={styles.secLabel}>Recent runs</div>
         <RecentRuns onOpenRun={openRun} />
+
+        <div className={styles.secLabel}>
+          Tasks{" "}
+          <span className={styles.muted}>· run across your whole library</span>
+        </div>
+        <TasksPanel />
       </div>
 
       <SourceDialog

@@ -28,6 +28,18 @@ export interface TweetCardMetrics {
   bookmarks?: number;
 }
 
+// Link-card embed: the linked page's OG preview X renders below a tweet for
+// summary / summary_large_image cards. `url` is the destination; the rest is
+// best-effort, so every field is optional.
+export interface TweetCardLink {
+  url?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  large?: boolean;
+}
+
 export interface TweetCardData {
   author: TweetCardAuthor;
   text?: string;
@@ -38,6 +50,7 @@ export interface TweetCardData {
   media?: TweetCardMedia[];
   metrics?: TweetCardMetrics;
   quoted?: TweetCardData;
+  card?: TweetCardLink;
 }
 
 // Rich quoted-tweet content persisted by the extractor (Phase 3). Older saves
@@ -130,6 +143,30 @@ function buildQuoted(
   return undefined;
 }
 
+function buildCard(
+  extras: Record<string, unknown> | undefined,
+): TweetCardLink | undefined {
+  if (!extras) return undefined;
+  const raw = extras.card;
+  if (!raw || typeof raw !== "object") return undefined;
+  const c = raw as Partial<TweetCardLink>;
+  const url = typeof c.url === "string" ? c.url : undefined;
+  const domain = typeof c.domain === "string" ? c.domain : undefined;
+  const title = typeof c.title === "string" ? c.title : undefined;
+  const description =
+    typeof c.description === "string" ? c.description : undefined;
+  const imageUrl = typeof c.imageUrl === "string" ? c.imageUrl : undefined;
+  if (!url && !title && !imageUrl) return undefined;
+  return {
+    ...(url ? { url } : {}),
+    ...(domain ? { domain } : {}),
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(c.large === true ? { large: true } : {}),
+  };
+}
+
 // Pure adapter from a captured tweet to the card model. Returns null when the
 // capture is missing entirely. `fallbackAuthor` is the save's `@handle` string.
 export function buildTweetCardData(
@@ -161,6 +198,9 @@ export function buildTweetCardData(
     capture.extras as Record<string, unknown> | undefined,
   );
   if (quoted) data.quoted = quoted;
+
+  const card = buildCard(capture.extras as Record<string, unknown> | undefined);
+  if (card) data.card = card;
 
   // Parent media excludes anything also shown inside the quoted card, since the
   // harvester merges quoted media into the parent capture list.

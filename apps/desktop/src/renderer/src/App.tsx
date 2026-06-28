@@ -8,6 +8,8 @@ import {
 import { MotionConfig } from "motion/react";
 import { useMemo } from "react";
 import type { PondApi } from "../../preload";
+import { ErrorBoundary } from "./components/error-boundary";
+import { ErrorScreen } from "./components/error-screen";
 import { PondCustomiseDialog } from "./components/pond-customise-dialog";
 import { Presentation } from "./components/save-presentation";
 import { Toaster } from "./components/toaster";
@@ -52,6 +54,9 @@ function buildRouter() {
     routeTree,
     history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultPreload: "intent",
+    defaultErrorComponent: ({ error, reset }) => (
+      <ErrorScreen error={error} reset={reset} />
+    ),
   });
 }
 
@@ -84,9 +89,11 @@ export function App() {
           <RefreshStatusBridge />
           <GovernorStatusBridge />
           <EnrichmentSweep />
-          <RouterProvider router={router} />
-          <Presentation />
-          <PondCustomiseDialog />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+            <Presentation />
+            <PondCustomiseDialog />
+          </ErrorBoundary>
           <Toaster />
         </Tooltip.Provider>
       </QueryClientProvider>

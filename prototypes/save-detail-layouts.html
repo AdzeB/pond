@@ -1,0 +1,1136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Save Detail — layout variations</title>
+    <style>
+      :root {
+        --page: #e9eaec;
+        --backdrop: rgba(20, 18, 16, 0.55);
+        --surface: #ffffff;
+        --surface-2: #f3f2f1;
+        --surface-3: #ebeae8;
+        --ink-12: #1c1a18;
+        --ink-11: #57534e;
+        --ink-10: #78716c;
+        --ink-9: #a8a29e;
+        --line: #e7e5e3;
+        --accent: #1d9bf6;
+        --radius-xl: 16px;
+        --radius-md: 10px;
+        --shadow-dialog: 0 8px 24px rgba(20, 18, 16, 0.1),
+          0 30px 80px rgba(20, 18, 16, 0.26);
+        --stage-w: 1100px;
+        --stage-h: 660px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter,
+          Roboto, Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.45;
+        color: var(--ink-12);
+        background: #f7f7f8;
+      }
+      .wrap {
+        max-width: 1360px;
+        padding: 28px 28px 160px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        max-width: 720px;
+        margin: 0 0 20px;
+        color: var(--ink-10);
+      }
+
+      /* sticky control bar */
+      .controls {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 16px;
+        margin-bottom: 28px;
+        background: rgba(247, 247, 248, 0.86);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        backdrop-filter: blur(8px);
+      }
+      .controls label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--ink-11);
+      }
+      .controls input[type="range"] {
+        width: 240px;
+      }
+      .wreadout {
+        min-width: 64px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+      }
+      .presets {
+        display: flex;
+        gap: 6px;
+      }
+      .preset {
+        padding: 5px 11px;
+        font-size: 12.5px;
+        font-weight: 560;
+        color: var(--ink-11);
+        cursor: pointer;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .preset.on {
+        color: #fff;
+        background: var(--ink-12);
+        border-color: var(--ink-12);
+      }
+      .jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-left: auto;
+      }
+      .jump a {
+        padding: 5px 10px;
+        font-size: 12px;
+        font-weight: 540;
+        color: var(--ink-10);
+        text-decoration: none;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+      }
+      .jump a:hover {
+        color: var(--accent);
+        border-color: var(--accent);
+      }
+
+      /* variation block */
+      .v {
+        margin-bottom: 40px;
+        scroll-margin-top: 96px;
+      }
+      .v-head {
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+        margin-bottom: 12px;
+      }
+      .v-num {
+        flex: none;
+        padding: 2px 9px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--accent);
+        background: #e8f4fe;
+        border-radius: 999px;
+      }
+      .v-title {
+        font-size: 17px;
+        font-weight: 660;
+        letter-spacing: -0.01em;
+      }
+      .v-desc {
+        font-size: 13px;
+        color: var(--ink-9);
+      }
+
+      /* the simulated desktop window; width is driven by the global slider so
+         every variation reflows together. It is the container query context. */
+      .stage {
+        container: stagecq / inline-size;
+        width: min(100%, var(--stage-w));
+        height: var(--stage-h);
+        margin: 0 auto;
+        overflow: hidden;
+        background: repeating-linear-gradient(
+            115deg,
+            #d6d8db 0 22px,
+            #cfd1d4 22px 44px
+          );
+        border: 1px solid var(--line);
+        border-radius: 14px;
+      }
+      .scrim {
+        position: relative;
+        display: flex;
+        width: 100%;
+        height: 100%;
+        background: var(--backdrop);
+      }
+
+      /* ── shared modal atoms ─────────────────────────────── */
+      .bar-head {
+        position: relative;
+        display: flex;
+        flex: none;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        height: 52px;
+        padding-inline: 14px;
+      }
+      .title-c {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        align-items: center;
+        max-width: 60%;
+        transform: translate(-50%, -50%);
+      }
+      .title-c .t {
+        overflow: hidden;
+        font-size: 12px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .title-c .s {
+        font-size: 11px;
+        color: var(--ink-10);
+      }
+      .iconbtn {
+        display: inline-flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        font-size: 13px;
+        color: var(--ink-11);
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 8px;
+      }
+      .iconbtn:hover {
+        background: var(--surface-2);
+      }
+
+      /* media stage — a working coverflow carousel */
+      .media {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+        min-height: 0;
+        /* query context so slides can cap their width to the media area,
+           mirroring the real fix (max-width: 100cqi on .media-shell). */
+        container-type: inline-size;
+      }
+      .mv-scroller {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+        padding-block: 28px;
+        padding-inline: 50%; /* lets first/last slides reach centre */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+      }
+      .mv-scroller::-webkit-scrollbar {
+        display: none;
+      }
+      .mv-slide {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding-inline: 14px;
+        scroll-snap-align: center;
+      }
+      .mv-shot {
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        height: 80%;
+        aspect-ratio: var(--ar);
+        max-width: 82cqi; /* cap to the container, never overflow */
+        padding: 10px;
+        border-radius: 10px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        will-change: transform, opacity, filter;
+      }
+      .mv-shot .idx {
+        padding: 2px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.35);
+        border-radius: 999px;
+        backdrop-filter: blur(4px);
+      }
+      .navarrow {
+        position: absolute;
+        top: 50%;
+        z-index: 3;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        font-size: 16px;
+        color: #fff;
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.16);
+        border: 0;
+        border-radius: 999px;
+        backdrop-filter: blur(6px);
+        transform: translateY(-50%);
+      }
+      .navarrow.prev {
+        left: 12px;
+      }
+      .navarrow.next {
+        right: 12px;
+      }
+
+      /* details panel internals */
+      .det {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: var(--surface);
+      }
+      .det-scroll {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 26px;
+        min-height: 0;
+        padding: 12px 16px 80px;
+        overflow-y: auto;
+      }
+      .sec-h {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+        font-size: 13px;
+        font-weight: 620;
+        color: var(--ink-12);
+      }
+      .sec-h .gi {
+        color: var(--ink-10);
+      }
+      .content-txt {
+        font-size: 13px;
+        color: var(--ink-11);
+      }
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .metric {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        align-items: center;
+        padding: 12px;
+        text-align: center;
+        background: var(--surface-2);
+        border-radius: var(--radius-md);
+      }
+      .metric .l {
+        font-size: 10px;
+        font-weight: 500;
+        color: var(--ink-9);
+      }
+      .metric .v {
+        font-size: 13px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .rows {
+        display: flex;
+        flex-direction: column;
+        margin-top: 14px;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        justify-content: space-between;
+        height: 36px;
+        padding-inline: 12px;
+        border-radius: 10px;
+      }
+      .row.alt {
+        background: var(--surface-2);
+      }
+      .row .k {
+        font-size: 13px;
+        color: var(--ink-10);
+      }
+      .row .vv {
+        overflow: hidden;
+        font-size: 13px;
+        font-weight: 560;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        height: 28px;
+        padding-inline: 12px;
+        font-size: 13px;
+        color: var(--ink-11);
+        background: var(--surface-3);
+        border-radius: 999px;
+      }
+      .chip.add {
+        width: 28px;
+        padding: 0;
+        justify-content: center;
+        color: var(--ink-10);
+      }
+      .det-foot {
+        flex: none;
+        padding: 12px 16px 16px;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          var(--surface) 48%
+        );
+      }
+      .det-foot.float {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+      }
+      .btn-wide {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 40px;
+        font-size: 14px;
+        font-weight: 560;
+        color: var(--ink-11);
+        cursor: pointer;
+        background: var(--surface-3);
+        border: 0;
+        border-radius: 999px;
+      }
+
+      /* ════════ V1 — split floating cards (current) ════════ */
+      .v1 {
+        display: flex;
+        gap: 32px;
+        width: 100%;
+        height: 100%;
+        padding: 48px;
+      }
+      .v1 .card-media {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+      }
+      .v1 .card-det {
+        position: relative;
+        flex: none;
+        width: 384px;
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+      }
+      .v1 .card-det .det {
+        height: 100%;
+      }
+      @container stagecq (max-width: 820px) {
+        .v1 {
+          flex-direction: column;
+          gap: 16px;
+          padding: 20px;
+        }
+        .v1 .card-det {
+          width: 100%;
+          height: 46%;
+        }
+        .v1 .card-media {
+          height: 54%;
+        }
+      }
+
+      /* ════════ V2 — unified full-cover split ════════ */
+      .v2 {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        padding: 32px;
+      }
+      .v2 .surface {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+      }
+      .v2 .pane-media {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .v2 .pane-det {
+        position: relative;
+        flex: none;
+        width: 380px;
+        border-left: 1px solid var(--line);
+      }
+      .v2 .pane-det .det {
+        height: 100%;
+      }
+      @container stagecq (max-width: 760px) {
+        .v2 {
+          padding: 0;
+        }
+        .v2 .surface {
+          border-radius: 0;
+        }
+        .v2 .pane-det {
+          width: 320px;
+        }
+      }
+
+      /* ════════ V3 — media-first + slide-over drawer ════════ */
+      .v3 {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .v3 .pane-media {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+      }
+      .v3 .drawer {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        bottom: 16px;
+        width: 360px;
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+        transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
+          opacity 0.24s ease;
+      }
+      .v3 .drawer .det {
+        height: 100%;
+      }
+      .v3[data-open="false"] .drawer {
+        opacity: 0;
+        transform: translateX(calc(100% + 24px));
+        pointer-events: none;
+      }
+      .v3 .info-toggle {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 5;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        height: 32px;
+        padding-inline: 12px;
+        font-size: 12.5px;
+        font-weight: 560;
+        color: var(--ink-12);
+        cursor: pointer;
+        background: rgba(255, 255, 255, 0.9);
+        border: 0;
+        border-radius: 999px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      /* ════════ V4 — bottom sheet ════════ */
+      .v4 {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .v4 .pane-media {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+      }
+      .v4 .sheet {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        height: 78%;
+        background: var(--surface);
+        border-radius: 18px 18px 0 0;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+        transition: transform 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      .v4[data-open="false"] .sheet {
+        transform: translateY(calc(100% - 64px));
+      }
+      .v4 .grabber {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: center;
+        height: 28px;
+        cursor: grab;
+      }
+      .v4 .grabber::before {
+        width: 38px;
+        height: 4px;
+        content: "";
+        background: var(--surface-3);
+        border-radius: 999px;
+      }
+      .v4 .sheet-peek {
+        flex: none;
+        padding: 0 18px 10px;
+        font-size: 13px;
+        font-weight: 620;
+      }
+
+      /* ════════ V5 — floating glass overlay panel ════════ */
+      .v5 {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      .v5 .pane-media {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+      }
+      .v5 .glass {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        bottom: 16px;
+        width: 340px;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+        backdrop-filter: blur(24px) saturate(140%);
+      }
+      .v5 .glass .det {
+        height: 100%;
+        background: transparent;
+      }
+      .v5 .glass .det-foot {
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          rgba(255, 255, 255, 0.72) 48%
+        );
+      }
+
+      /* ════════ V6 — tabbed single panel ════════ */
+      .v6 {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        padding: 28px;
+      }
+      .v6 .surface {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+      }
+      .v6 .tabs {
+        display: flex;
+        flex: none;
+        gap: 4px;
+        justify-content: center;
+        padding: 10px;
+      }
+      .v6 .tab {
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 560;
+        color: var(--ink-10);
+        cursor: pointer;
+        background: transparent;
+        border: 0;
+        border-radius: 999px;
+      }
+      .v6 .tab.on {
+        color: var(--ink-12);
+        background: var(--surface-2);
+      }
+      .v6 .body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+      }
+      .v6 .pane-media {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+      }
+      .v6 .det {
+        flex: 1;
+      }
+      .v6[data-tab="media"] .det,
+      .v6[data-tab="details"] .pane-media {
+        display: none;
+      }
+
+      /* ════════ V7 — stacked single scroll (full cover) ════════ */
+      .v7 {
+        display: flex;
+        width: 100%;
+        height: 100%;
+        padding: 24px;
+      }
+      .v7 .surface {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        overflow-y: auto;
+        background: var(--surface);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-dialog);
+      }
+      .v7 .pane-media {
+        display: flex;
+        flex: none;
+        flex-direction: column;
+        height: 70%;
+        border-bottom: 1px solid var(--line);
+      }
+      .v7 .det {
+        flex: none;
+      }
+      .v7 .det-scroll {
+        overflow: visible;
+        padding-bottom: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Save Detail — layout variations</h1>
+      <p class="lede">
+        Seven ways to lay out the media viewer + Save Details panel. Drag the
+        <b>width</b> slider (or pick a preset) to simulate the window narrowing —
+        every stage reflows live via container queries, so you can judge how
+        each behaves on small screens.
+      </p>
+
+      <div class="controls">
+        <label for="w">Window width</label>
+        <input id="w" type="range" min="360" max="1320" step="10" value="1100" />
+        <span class="wreadout" id="wr">1100px</span>
+        <div class="presets" id="presets"></div>
+        <nav class="jump" id="jump"></nav>
+      </div>
+
+      <div id="root"></div>
+    </div>
+
+    <script>
+      const ICON = {
+        kebab: "•••",
+        close: "✕",
+        help: "?",
+        prev: "‹",
+        next: "›",
+        info: "ⓘ",
+      };
+
+      // ── shared fragments ──────────────────────────────────
+      function head(title, right) {
+        return `
+          <div class="bar-head">
+            <button class="iconbtn">${ICON.kebab}</button>
+            <div class="title-c">
+              <span class="t">${title}</span>
+              <span class="s">2:36 PM · Jun 26, 2026</span>
+            </div>
+            <button class="iconbtn">${right}</button>
+          </div>`;
+      }
+
+      // a few mixed-aspect "photos" so the coverflow + width cap are visible
+      const SLIDES = [
+        ["3 / 4", "linear-gradient(150deg,#2e3b46,#6b8a7a 45%,#b7a98b 80%)"],
+        ["16 / 9", "linear-gradient(135deg,#3a2f4a,#7d5a8c 50%,#d99fb0)"],
+        ["1 / 1", "linear-gradient(135deg,#1f2d3d,#3b6ea5 60%,#a7c7e7)"],
+        ["4 / 5", "linear-gradient(160deg,#42301f,#a5743b 55%,#e3c08b)"],
+        ["9 / 16", "linear-gradient(150deg,#1c2b22,#3f7d5a 55%,#9fd6b0)"],
+      ];
+      function media() {
+        const slides = SLIDES.map(
+          (s, i) =>
+            `<div class="mv-slide"><div class="mv-shot" style="--ar:${s[0]};background:${s[1]}"><span class="idx">${i + 1} / ${SLIDES.length}</span></div></div>`,
+        ).join("");
+        return `
+          <div class="media">
+            <button class="navarrow prev">${ICON.prev}</button>
+            <div class="mv-scroller">${slides}</div>
+            <button class="navarrow next">${ICON.next}</button>
+          </div>`;
+      }
+
+      const ROWS = [
+        ["ID", "01KW22AK48FBQ64AVE…"],
+        ["Author", "Levon Tutundzhian"],
+        ["Platform", "Twitter"],
+        ["Type", "MP4"],
+        ["Duration", "0:14"],
+        ["Size", "155 KiB"],
+        ["Published", "25/06/2026"],
+        ["Imported", "26/06/2026"],
+        ["Modified", "26/06/2026"],
+      ];
+      const METRICS = [
+        ["Reposts", "4"],
+        ["Bookmarks", "60"],
+        ["Likes", "128"],
+      ];
+
+      // details panel, optionally with a header (the split/unified variants put
+      // their own "Save Details" header; drawer/sheet/overlay embed one too)
+      function details({ header = true, floatFoot = false } = {}) {
+        const rows = ROWS.map(
+          (r, i) =>
+            `<div class="row ${i % 2 ? "alt" : ""}"><span class="k">${r[0]}</span><span class="vv">${r[1]}</span></div>`,
+        ).join("");
+        const metrics = METRICS.map(
+          (m) =>
+            `<div class="metric"><span class="l">${m[0]}</span><span class="v">${m[1]}</span></div>`,
+        ).join("");
+        return `
+          <div class="det">
+            ${
+              header
+                ? `<div class="bar-head"><button class="iconbtn">${ICON.kebab}</button><div class="title-c"><span class="t" style="font-size:14px">Save Details</span></div><button class="iconbtn">${ICON.help}</button></div>`
+                : ""
+            }
+            <div class="det-scroll">
+              <div>
+                <div class="sec-h"><span class="gi">≣</span> Content</div>
+                <div class="content-txt">pre-launch fun</div>
+              </div>
+              <div>
+                <div class="sec-h"><span class="gi">≣</span> Properties</div>
+                <div class="metrics">${metrics}</div>
+                <div class="rows">${rows}</div>
+              </div>
+              <div>
+                <div class="sec-h"><span class="gi">⌗</span> Tags</div>
+                <div class="tags"><span class="chip">launch</span><span class="chip">fun</span><span class="chip add">+</span></div>
+              </div>
+            </div>
+            <div class="det-foot ${floatFoot ? "float" : ""}">
+              <button class="btn-wide">Copy Raw JSON</button>
+            </div>
+          </div>`;
+      }
+
+      // ── variations ────────────────────────────────────────
+      const VARS = [
+        {
+          id: "v1",
+          title: "Split floating cards (current)",
+          desc: "Two cards on the backdrop. Stacks vertically when narrow.",
+          render: () => `
+            <div class="v1">
+              <div class="card-media">
+                ${head("pre-launch fun", ICON.close)}
+                ${media()}
+              </div>
+              <div class="card-det">${details()}</div>
+            </div>`,
+        },
+        {
+          id: "v2",
+          title: "Unified full-cover split",
+          desc: "One surface, media + fixed sidebar. Goes edge-to-edge when narrow.",
+          render: () => `
+            <div class="v2">
+              <div class="surface">
+                <div class="pane-media">
+                  ${head("pre-launch fun", ICON.close)}
+                  ${media()}
+                </div>
+                <div class="pane-det">${details()}</div>
+              </div>
+            </div>`,
+        },
+        {
+          id: "v3",
+          title: "Media-first + slide-over drawer",
+          desc: "Media owns the stage; details slide in over it. Tap the toggle.",
+          render: () => `
+            <div class="v3" data-open="true">
+              <div class="pane-media">
+                ${head("pre-launch fun", ICON.close)}
+                ${media()}
+              </div>
+              <button class="info-toggle js-toggle">${ICON.info} Details</button>
+              <div class="drawer">${details({ floatFoot: true })}</div>
+            </div>`,
+        },
+        {
+          id: "v4",
+          title: "Bottom sheet",
+          desc: "Media fills; details peek from the bottom and expand. Tap the sheet.",
+          render: () => `
+            <div class="v4" data-open="false">
+              <div class="pane-media">
+                ${head("pre-launch fun", ICON.close)}
+                ${media()}
+              </div>
+              <div class="sheet js-toggle">
+                <div class="grabber"></div>
+                <div class="sheet-peek">Save Details</div>
+                ${details({ header: false }).replace('<div class="det">', '<div class="det" style="flex:1;min-height:0">')}
+              </div>
+            </div>`,
+        },
+        {
+          id: "v5",
+          title: "Floating glass overlay",
+          desc: "Translucent details panel hovering over full-bleed media.",
+          render: () => `
+            <div class="v5">
+              <div class="pane-media">
+                ${head("pre-launch fun", ICON.close)}
+                ${media()}
+              </div>
+              <div class="glass">${details({ floatFoot: true })}</div>
+            </div>`,
+        },
+        {
+          id: "v6",
+          title: "Tabbed single panel",
+          desc: "One panel toggling Media / Details — most compact, best for tiny widths.",
+          render: () => `
+            <div class="v6" data-tab="media">
+              <div class="surface">
+                <div class="tabs">
+                  <button class="tab on js-tab" data-tab="media">Media</button>
+                  <button class="tab js-tab" data-tab="details">Details</button>
+                </div>
+                <div class="body">
+                  <div class="pane-media">${media()}</div>
+                  ${details({ header: false })}
+                </div>
+              </div>
+            </div>`,
+        },
+        {
+          id: "v7",
+          title: "Stacked single scroll",
+          desc: "Media on top, details scroll underneath in one surface.",
+          render: () => `
+            <div class="v7">
+              <div class="surface">
+                <div class="pane-media">
+                  ${head("pre-launch fun", ICON.close)}
+                  ${media()}
+                </div>
+                ${details({ header: false })}
+              </div>
+            </div>`,
+        },
+      ];
+
+      // ── compose page ──────────────────────────────────────
+      const root = document.getElementById("root");
+      root.innerHTML = VARS.map(
+        (v, i) => `
+          <section class="v" id="sec-${v.id}">
+            <div class="v-head">
+              <span class="v-num">${i + 1}</span>
+              <span class="v-title">${v.title}</span>
+              <span class="v-desc">${v.desc}</span>
+            </div>
+            <div class="stage"><div class="scrim">${v.render()}</div></div>
+          </section>`,
+      ).join("");
+
+      document.getElementById("jump").innerHTML = VARS.map(
+        (v, i) => `<a href="#sec-${v.id}">${i + 1}</a>`,
+      ).join("");
+
+      // ── carousel behaviour (coverflow scaling + arrow nav) ──
+      function slideCenters(sc) {
+        return [...sc.querySelectorAll(".mv-slide")].map((s) => {
+          const r = s.getBoundingClientRect();
+          return r.left + r.width / 2;
+        });
+      }
+      function curIdx(sc) {
+        const r = sc.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        let best = 0,
+          bestD = Infinity;
+        slideCenters(sc).forEach((c, i) => {
+          const d = Math.abs(c - cx);
+          if (d < bestD) {
+            bestD = d;
+            best = i;
+          }
+        });
+        return best;
+      }
+      function centerIdx(sc, i, behavior) {
+        const slides = sc.querySelectorAll(".mv-slide");
+        i = Math.max(0, Math.min(i, slides.length - 1));
+        const sl = slides[i];
+        if (!sl) return;
+        const r = sc.getBoundingClientRect();
+        const sr = sl.getBoundingClientRect();
+        const delta = sr.left + sr.width / 2 - (r.left + r.width / 2);
+        sc.scrollTo({ left: sc.scrollLeft + delta, behavior });
+      }
+      function initCarousels() {
+        document.querySelectorAll(".media").forEach((mv) => {
+          const sc = mv.querySelector(".mv-scroller");
+          const slides = [...mv.querySelectorAll(".mv-slide")];
+          const shots = [...mv.querySelectorAll(".mv-shot")];
+          let raf = 0;
+          const update = () => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => {
+              const r = sc.getBoundingClientRect();
+              const cx = r.left + r.width / 2;
+              slides.forEach((sl, i) => {
+                const sr = sl.getBoundingClientRect();
+                const d = Math.min(
+                  1,
+                  Math.abs(sr.left + sr.width / 2 - cx) / (r.width / 2 || 1),
+                );
+                const shot = shots[i];
+                shot.style.transform = `scale(${1 - 0.18 * d})`;
+                shot.style.opacity = `${1 - 0.5 * d}`;
+                shot.style.filter = `blur(${2 * d}px)`;
+              });
+            });
+          };
+          sc.addEventListener("scroll", update, { passive: true });
+          new ResizeObserver(update).observe(sc);
+          mv.querySelector(".prev").addEventListener("click", () =>
+            centerIdx(sc, curIdx(sc) - 1, "smooth"),
+          );
+          mv.querySelector(".next").addEventListener("click", () =>
+            centerIdx(sc, curIdx(sc) + 1, "smooth"),
+          );
+          requestAnimationFrame(() => {
+            centerIdx(sc, 0, "instant");
+            update();
+          });
+        });
+      }
+      initCarousels();
+
+      // interactivity: drawer / sheet toggles, tabs
+      document.querySelectorAll(".js-toggle").forEach((el) => {
+        el.addEventListener("click", (e) => {
+          if (e.target.closest(".det-scroll")) return; // don't toggle when scrolling content
+          const host = el.closest("[data-open]");
+          host.dataset.open = host.dataset.open === "true" ? "false" : "true";
+        });
+      });
+      document.querySelectorAll(".js-tab").forEach((el) => {
+        el.addEventListener("click", () => {
+          const host = el.closest(".v6");
+          host.dataset.tab = el.dataset.tab;
+          host
+            .querySelectorAll(".js-tab")
+            .forEach((t) => t.classList.toggle("on", t === el));
+        });
+      });
+
+      // ── width control ─────────────────────────────────────
+      const slider = document.getElementById("w");
+      const readout = document.getElementById("wr");
+      const PRESETS = [
+        ["Phone", 390],
+        ["Small", 640],
+        ["Medium", 900],
+        ["Large", 1100],
+        ["XL", 1320],
+      ];
+      const presetsEl = document.getElementById("presets");
+      presetsEl.innerHTML = PRESETS.map(
+        (p) => `<button class="preset" data-w="${p[1]}">${p[0]}</button>`,
+      ).join("");
+      function setWidth(px) {
+        document.documentElement.style.setProperty("--stage-w", px + "px");
+        readout.textContent = px + "px";
+        slider.value = px;
+        presetsEl.querySelectorAll(".preset").forEach((b) => {
+          b.classList.toggle("on", Number(b.dataset.w) === Number(px));
+        });
+        // keep each carousel's active slide centred as the stage resizes
+        requestAnimationFrame(() =>
+          document
+            .querySelectorAll(".mv-scroller")
+            .forEach((sc) => centerIdx(sc, curIdx(sc), "instant")),
+        );
+      }
+      slider.addEventListener("input", () => setWidth(Number(slider.value)));
+      presetsEl.querySelectorAll(".preset").forEach((b) =>
+        b.addEventListener("click", () => setWidth(Number(b.dataset.w))),
+      );
+      setWidth(1100);
+    </script>
+  </body>
+</html>

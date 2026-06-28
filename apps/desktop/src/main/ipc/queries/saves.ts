@@ -199,22 +199,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  // Persist an on-device NSFW verdict; system write, DB-only, emits a sync action.
-  async "saves.setSensitivity"(params) {
-    const id = String(params.id ?? "");
-    const raw = params.sensitivity;
-    const sensitivity = raw === "safe" || raw === "sensitive" ? raw : null;
-    const sensitivityModel =
-      params.sensitivityModel != null ? String(params.sensitivityModel) : null;
-    if (!id) return { ok: false };
-    await persistSave(
-      id,
-      { sensitivity, sensitivityModel },
-      { actorReason: "nsfw:classify" },
-    );
-    return { ok: true };
-  },
-
   // All persisted embeddings (id + vector + model stamp), loaded once on startup
   // into the renderer's in-memory embedding store. Vectors are excluded from
   // saves.list to keep that payload small, so this is the only path that reads them.

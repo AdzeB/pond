@@ -288,6 +288,64 @@ export const TWEET_FIXTURES: readonly TweetFixture[] = [
     },
   },
   {
+    id: "link-card-large",
+    label: "Link card - large image",
+    data: {
+      author: {
+        name: "John Phamous",
+        handle: "JohnPhamous",
+        avatarUrl: avatar(8),
+        verified: true,
+      },
+      text: "an improving design loop",
+      publishedAt: "2026-06-25T22:41:00Z",
+      metrics: { replies: 14, retweets: 24, likes: 415, views: 18000 },
+      card: {
+        url: "https://example.com/design-loop",
+        domain: "example.com",
+        title: "An improving design loop",
+        description:
+          "How a tight feedback loop between code and design compounds into better products over time.",
+        imageUrl: img("designloop", 1200, 628),
+        large: true,
+      },
+    },
+  },
+  {
+    id: "link-card-small",
+    label: "Link card - small thumbnail",
+    data: {
+      author: { name: "Reader", handle: "reader", avatarUrl: avatar(24) },
+      text: "Great writeup, worth the read.",
+      publishedAt: "2026-05-10T09:00:00Z",
+      metrics: { replies: 3, retweets: 12, likes: 210 },
+      card: {
+        url: "https://blog.example.com/post",
+        domain: "blog.example.com",
+        title: "The case for small, reversible changes",
+        description:
+          "Why shipping in tiny increments beats big-bang rewrites almost every time.",
+        imageUrl: img("smallcard", 400, 400),
+      },
+    },
+  },
+  {
+    id: "link-card-no-image",
+    label: "Link card - no image",
+    data: {
+      author: { name: "Linkbot", handle: "linkbot", avatarUrl: avatar(31) },
+      text: "Reference for later.",
+      publishedAt: "2026-04-02T14:20:00Z",
+      metrics: { replies: 0, retweets: 1, likes: 9 },
+      card: {
+        url: "https://docs.example.com/guide",
+        domain: "docs.example.com",
+        title: "Getting started guide",
+        description: "Everything you need to set up your first project.",
+      },
+    },
+  },
+  {
     id: "quote-media",
     label: "Quote tweet with media",
     data: {

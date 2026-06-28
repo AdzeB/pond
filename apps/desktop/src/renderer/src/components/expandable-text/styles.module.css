@@ -1,0 +1,55 @@
+/* Clampable multi-line text with a soft fade + Read More toggle. */
+.expandable {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.expandableText {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ds-gray-11);
+  word-break: break-word;
+  white-space: pre-wrap;
+
+  &[data-compact="true"] {
+    font-size: 12px;
+    letter-spacing: 0.01px;
+  }
+
+  &[data-clamped="true"] {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    -webkit-line-clamp: 10;
+    mask-image: linear-gradient(to bottom, #000 62%, transparent);
+  }
+}
+
+.readMore {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  align-self: flex-start;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.readMoreIcon {
+  color: var(--ds-gray-11);
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-rotate="true"] {
+    transform: rotate(180deg);
+  }
+}

@@ -19,6 +19,10 @@ function RootComponent() {
         void navigate({ to: "/tweet-preview" });
         return;
       }
+      if (pathname === "/dock-playground") {
+        void navigate({ to: "/dock-playground" });
+        return;
+      }
       if (pathname === "/settings") {
         void navigate({ to: "/settings" });
         return;
@@ -33,7 +37,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <Dock />
+      <Dock.Root />
       <SaveModal />
     </>
   );

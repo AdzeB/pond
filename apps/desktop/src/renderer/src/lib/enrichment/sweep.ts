@@ -8,7 +8,7 @@ import type { Enricher } from "./types";
 
 // Generalized on-device enrichment scheduler. One background sweep drives every
 // registered enricher, reusing the concurrency/dedupe/debounce mechanics of the
-// old NSFW + embedding sweeps:
+// old embedding sweep:
 //   - pLimit caps concurrent model runs across all enrichers
 //   - inflight/failed are keyed `${enricher.id}:${save.id}` so a failure is
 //     retried only after a restart or model upgrade (eligibility-by-stamp)
@@ -26,6 +26,17 @@ const failed = new Set<string>();
 // User-controlled stop: when paused, no new enricher runs are scheduled;
 // in-flight runs finish naturally.
 let paused = false;
+// Auto-stop when the window is hidden/occluded (tray, another Space, minimized).
+// Background GPU/CPU inference is the worst kind of heat — the machine warms up
+// for work the user can't even see — so we gate scheduling on visibility too,
+// independent of the manual pause toggle. (Best practice: only do heavy on-device
+// inference while the surface is actually on screen.)
+let hidden = false;
+
+// No new runs while paused OR hidden; the single in-flight run drains on its own.
+function suspended(): boolean {
+  return paused || hidden;
+}
 
 // Lightweight throughput instrumentation so we can see how fast the on-device
 // backlog drains and whether a model path (WebGPU vs WASM) is pulling its
@@ -59,6 +70,31 @@ function reportInflight(): void {
 
 function keyFor(enricher: Enricher, save: Save): string {
   return `${enricher.id}:${save.id}`;
+}
+
+// Rest between model runs so the CPU/GPU returns to idle instead of being pinned
+// at ~100% for the whole backlog (the thing that spins the fans). `whenIdle`
+// only yields to the UI; on an otherwise-idle machine requestIdleCallback fires
+// immediately, so heavy runs would otherwise fire back-to-back with no breather.
+// We rest in proportion to the run's own duration (~50% duty cycle), clamped so
+// quick runs still pause a little and long runs (e.g. transcription) don't stall
+// the backlog indefinitely. pLimit(1) means this gap sits *between* runs.
+const COOLDOWN_MIN_MS = 400;
+const COOLDOWN_MAX_MS = 3000;
+// On battery we rest substantially longer between runs: background enrichment
+// shouldn't drain the battery (or cook the lap) when the machine is unplugged.
+// Toggled by the Battery Status API in startEnrichmentSweep; defaults to "plugged
+// in" so we never over-throttle when battery state is unknown.
+let onBattery = false;
+const ON_BATTERY_COOLDOWN_FACTOR = 2.5;
+function cooldown(lastRunMs: number): Promise<void> {
+  if (suspended()) return Promise.resolve();
+  const factor = onBattery ? ON_BATTERY_COOLDOWN_FACTOR : 1;
+  const ms = Math.min(
+    COOLDOWN_MAX_MS * factor,
+    Math.max(COOLDOWN_MIN_MS * factor, lastRunMs * 0.5 * factor),
+  );
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // Wait for the renderer to be idle before kicking off a model run, so enrichment
@@ -119,7 +155,7 @@ async function persist(enricher: Enricher, save: Save): Promise<void> {
 }
 
 function schedule(enricher: Enricher, save: Save): void {
-  if (paused) return;
+  if (suspended()) return;
   const key = keyFor(enricher, save);
   if (inflight.has(key) || failed.has(key)) return;
   inflight.add(key);
@@ -127,27 +163,31 @@ function schedule(enricher: Enricher, save: Save): void {
   void limit(async () => {
     // Yield to the UI before claiming the CPU/GPU for this run.
     await whenIdle();
-    if (paused) {
+    if (suspended()) {
       inflight.delete(key);
       reportInflight();
       return;
     }
     const startedAt = performance.now();
+    let elapsed = 0;
     try {
       await persist(enricher, save);
     } catch (err) {
       failed.add(key);
       console.warn(`[enrichment] ${enricher.id} failed for ${save.id}`, err);
     } finally {
-      recordRun(enricher, performance.now() - startedAt);
+      elapsed = performance.now() - startedAt;
+      recordRun(enricher, elapsed);
       inflight.delete(key);
       reportInflight();
     }
+    // Let the chip breathe before the next queued run claims the limit slot.
+    await cooldown(elapsed);
   });
 }
 
 function scan(): void {
-  if (paused) return;
+  if (suspended()) return;
   const prefs = getPrefsSnapshot();
   // Newest-first: enrich what the user just saved before grinding old backlog,
   // so fresh items get captions/embeddings while they're still looking at them.
@@ -210,6 +250,15 @@ export function resumeEnrichmentSweep(): void {
   scheduleScan();
 }
 
+// Toggle the visibility gate. Distinct from the manual pause so hiding the
+// window never clobbers (or gets clobbered by) the user's pause state. Becoming
+// visible kicks a fresh scan to resume any remaining backlog.
+function setHidden(next: boolean): void {
+  if (hidden === next) return;
+  hidden = next;
+  if (!hidden) scheduleScan();
+}
+
 // Begin the background enrichment sweep. Idempotent. Hydrates every enricher's
 // persisted state first (vectors), so a restart doesn't re-run the whole library.
 export function startEnrichmentSweep(): () => void {
@@ -222,5 +271,45 @@ export function startEnrichmentSweep(): () => void {
   );
   void Promise.all(hydrations).then(scheduleScan);
   const sub = savesStore.subscribe(scheduleScan);
-  return () => sub.unsubscribe();
+
+  // Pause the sweep whenever the window isn't actually on screen, so we never
+  // heat the machine doing inference the user can't see.
+  let detachVisibility = (): void => {};
+  if (typeof document !== "undefined") {
+    hidden = document.hidden;
+    const onVisibility = (): void => setHidden(document.hidden);
+    document.addEventListener("visibilitychange", onVisibility);
+    detachVisibility = () =>
+      document.removeEventListener("visibilitychange", onVisibility);
+  }
+
+  // Track AC vs battery so the cooldown can back off when unplugged. The Battery
+  // Status API is best-effort (absent on some platforms); if it's missing we
+  // stay in the "plugged in" default and just rely on the visibility gate.
+  let detachBattery = (): void => {};
+  const getBattery = (
+    navigator as Navigator & {
+      getBattery?: () => Promise<EventTarget & { charging: boolean }>;
+    }
+  ).getBattery;
+  if (typeof getBattery === "function") {
+    void getBattery
+      .call(navigator)
+      .then((battery) => {
+        const sync = (): void => {
+          onBattery = !battery.charging;
+        };
+        sync();
+        battery.addEventListener("chargingchange", sync);
+        detachBattery = () =>
+          battery.removeEventListener("chargingchange", sync);
+      })
+      .catch(() => {});
+  }
+
+  return () => {
+    sub.unsubscribe();
+    detachVisibility();
+    detachBattery();
+  };
 }

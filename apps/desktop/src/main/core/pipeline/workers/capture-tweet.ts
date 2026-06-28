@@ -23,7 +23,9 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 // v5: covers are rasterized from the native TweetCard instead of x.com screenshots.
 // v6: avatar URLs are filtered out of media so they no longer render as a tile.
 // v7: capture page paints the scheme background, killing the white edge hairline.
-export const CAPTURE_TWEET_VERSION = 7;
+// v8: link-card (OG embed) is captured and rendered below the tweet text.
+// v9: large link-cards match X — rounded image, title overlay, domain beneath.
+export const CAPTURE_TWEET_VERSION = 9;
 
 // Quote-chain walk depth cap; keeps navigation bounded.
 const QUOTE_DEPTH_CAP = 3;

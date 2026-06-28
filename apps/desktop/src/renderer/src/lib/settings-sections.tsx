@@ -31,11 +31,6 @@ const EnrichmentSection = lazy(() =>
     default: m.EnrichmentSection,
   })),
 );
-const TasksSection = lazy(() =>
-  import("@/components/settings-tasks").then((m) => ({
-    default: m.TasksSection,
-  })),
-);
 
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   general: generalSection,
@@ -46,6 +41,5 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   tags: { component: TagsSection },
   ai: { component: AiSection },
   enrichment: { component: EnrichmentSection },
-  tasks: { component: TasksSection },
   developer: { component: DeveloperSection },
 };

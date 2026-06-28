@@ -9,7 +9,6 @@ import { modifiedAt } from "./modified-at";
 import { note } from "./note";
 import { publishedAt } from "./published-at";
 import { savedAt } from "./saved-at";
-import { sensitivity } from "./sensitivity";
 import { source } from "./source";
 import { tags } from "./tags";
 import { transcript } from "./transcript";
@@ -34,7 +33,6 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   caption,
   transcript,
   color,
-  sensitivity,
   savedAt,
   publishedAt,
   modifiedAt,

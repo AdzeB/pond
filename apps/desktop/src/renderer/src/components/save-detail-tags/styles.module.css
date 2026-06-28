@@ -1,0 +1,39 @@
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.chipAdd {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding-inline: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-9);
+  letter-spacing: -0.04px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 1px solid var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    border-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    border-color: var(--ds-gray-6);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.chipAddIcon {
+  color: var(--ds-gray-9);
+}

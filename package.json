@@ -20,6 +20,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:desktop": "pnpm --filter @pond/desktop dev",
     "generate": "turbo run generate",
     "lint": "biome check . --write --unsafe",
     "lint:check": "biome ci .",
@@ -33,12 +34,12 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.0",
-    "@commitlint/cli": "^21.0.2",
-    "@commitlint/config-conventional": "^21.0.2",
-    "@types/node": "^25.9.3",
+    "@biomejs/biome": "2.5.1",
+    "@commitlint/cli": "^21.1.0",
+    "@commitlint/config-conventional": "^21.1.0",
+    "@types/node": "^26.0.1",
     "husky": "^9.1.7",
-    "turbo": "^2.9.18",
+    "turbo": "^2.10.0",
     "typescript": "^6.0.3"
   },
   "engines": {

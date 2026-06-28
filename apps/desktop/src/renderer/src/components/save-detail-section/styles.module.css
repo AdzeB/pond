@@ -1,0 +1,28 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &[data-tight="true"] {
+    gap: 12px;
+  }
+}
+
+.sectionHead {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.sectionIcon {
+  display: inline-flex;
+  color: var(--ds-gray-12);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.04px;
+}

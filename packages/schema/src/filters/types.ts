@@ -81,7 +81,6 @@ export type FieldId =
   | "caption"
   | "transcript"
   | "color"
-  | "sensitivity"
   | "savedAt"
   | "publishedAt"
   | "modifiedAt";

@@ -1,6 +1,6 @@
-import { loadImage, representativeImageUrl } from "@/lib/nsfw";
 import type { Save } from "@/lib/types";
 import { florenceModelVersion, runFlorence } from "../florence";
+import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
 // Vision caption / alt-text for image (and video-poster) saves via Florence-2.

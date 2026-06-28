@@ -1,17 +1,50 @@
-import { Toolbar as PondToolbar } from "@pond/ui";
-import { LibrarySwitcher } from "@/components/library-switcher";
-import styles from "./styles.module.css";
+import { TitleBar } from "@pond/ui";
+import { useRouterState } from "@tanstack/react-router";
+import { formatNumber } from "@/lib/format";
+import { extractSource, labelForMode, parseMode } from "@/lib/save-list";
+import { listBaseFromPath } from "@/lib/search-schemas";
+import { useAskResult } from "@/stores/ask-store";
+import { useViewFilteredCount } from "@/stores/library-view-context";
+import { useFilterQuery, useSearchText } from "@/stores/view-store";
 
 export function Toolbar() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const count = useViewFilteredCount();
+  const search = useSearchText().trim();
+  const filterQuery = useFilterQuery();
+  const ask = useAskResult();
+
+  const isSources = pathname === "/sources";
+  const base = listBaseFromPath(pathname);
+  const mode = parseMode(base) ?? "library";
+  const sourceFilter = mode === "source" ? extractSource(base) : "";
+
+  const title = ask.active
+    ? ask.question.trim() || "Results"
+    : isSources
+      ? "Sources"
+      : labelForMode(mode, sourceFilter);
+
+  const filterCount = filterQuery.rules.length;
+  const meta: string[] = [];
+  if (!ask.active && !isSources) {
+    if (search) meta.push(`matching “${search}”`);
+    if (filterCount > 0) {
+      meta.push(`${filterCount} filter${filterCount === 1 ? "" : "s"}`);
+    }
+  }
+  if (!isSources) {
+    meta.push(formatNumber(count));
+  }
+
   return (
-    <PondToolbar.Root>
-      <PondToolbar.Row>
-        <PondToolbar.Group fill={true} />
-        <PondToolbar.Group className={styles.center}>
-          <LibrarySwitcher />
-        </PondToolbar.Group>
-        <PondToolbar.Group fill={true} align="end" />
-      </PondToolbar.Row>
-    </PondToolbar.Root>
+    <TitleBar.Root>
+      <TitleBar.Title>
+        <TitleBar.Label>{title}</TitleBar.Label>
+        {meta.map((segment) => (
+          <TitleBar.Meta key={segment}>{segment}</TitleBar.Meta>
+        ))}
+      </TitleBar.Title>
+    </TitleBar.Root>
   );
 }

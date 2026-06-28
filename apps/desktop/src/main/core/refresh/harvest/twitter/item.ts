@@ -407,6 +407,76 @@ function harvestSource(): string {
     }
 
     if (mediaItems.length > 0) meta.media = mediaItems;
+
+    // Link card (summary / summary_large_image): X renders the linked page's OG
+    // preview as [data-testid="card.wrapper"]. Capture the parts we render so the
+    // native card shows the embed instead of a bare t.co URL. Scoped via
+    // notInNested so a quoted tweet's own card isn't picked up here.
+    const cardWrap = Array.from(
+      article.querySelectorAll<HTMLElement>('[data-testid="card.wrapper"]'),
+    ).find(notInNested);
+    if (cardWrap) {
+      const card: Record<string, unknown> = {};
+
+      const linkEl = cardWrap.querySelector<HTMLAnchorElement>("a[href]");
+      if (linkEl?.href) card.url = linkEl.href;
+
+      card.large = !!cardWrap.querySelector(
+        '[data-testid="card.layoutLarge.media"]',
+      );
+
+      // Card image: X renders it as an <img> in some layouts and as a CSS
+      // background on a div in others. Look only inside the media block, and
+      // keep the URL as-is — card_img thumbnails don't support the ?name=orig
+      // upgrade that tweet photos use, so forcing it would 404 the image.
+      const mediaBlock =
+        cardWrap.querySelector<HTMLElement>('[data-testid$=".media"]') ??
+        cardWrap;
+      let cardImgSrc =
+        mediaBlock.querySelector<HTMLImageElement>("img")?.currentSrc ??
+        mediaBlock.querySelector<HTMLImageElement>("img")?.src ??
+        "";
+      if (!cardImgSrc) {
+        const bgEl = Array.from(
+          mediaBlock.querySelectorAll<HTMLElement>("*"),
+        ).find((el) => {
+          const bg = window.getComputedStyle(el).backgroundImage;
+          return !!bg && bg !== "none" && bg.includes("url(");
+        });
+        if (bgEl) {
+          const match = window
+            .getComputedStyle(bgEl)
+            .backgroundImage.match(/url\((['"]?)(.*?)\1\)/);
+          if (match?.[2]) cardImgSrc = match[2];
+        }
+      }
+      if (cardImgSrc) card.imageUrl = cardImgSrc;
+
+      // The detail column stacks domain, title, description as separate spans.
+      // Read each span's own (non-nested) text to avoid parent rows that
+      // concatenate every line, then map by X's fixed ordering.
+      const detail =
+        cardWrap.querySelector<HTMLElement>('[data-testid$=".detail"]') ??
+        cardWrap;
+      const directText = (el: Element): string => {
+        let s = "";
+        el.childNodes.forEach((n) => {
+          if (n.nodeType === 3) s += n.textContent ?? "";
+        });
+        return s.replace(/\s+/g, " ").trim();
+      };
+      const rows = Array.from(detail.querySelectorAll<HTMLElement>("span"))
+        .map(directText)
+        .filter((t) => t.length > 0);
+      const unique = rows.filter((t, i) => rows.indexOf(t) === i);
+      const [domain, title, description] = unique;
+      if (domain) card.domain = domain;
+      if (title) card.title = title;
+      if (description) card.description = description;
+
+      if (card.url || card.title || card.imageUrl) meta.card = card;
+    }
+
     if (Object.keys(meta).length > 0) out.meta = meta;
     return out;
   }

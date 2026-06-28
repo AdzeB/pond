@@ -62,6 +62,10 @@ export function buildTwitterBookmarkSeed(
   const title = pickTitle(rich.fullText, entry.title);
   const description = rich.fullText || entry.description || null;
 
+  const extras: Record<string, unknown> = {};
+  if (quotedTweets.length > 0) extras.quotedTweets = quotedTweets;
+  if (rich.card) extras.card = rich.card;
+
   const capture: Capture = {
     id: entry.tweetId,
     source: "twitter",
@@ -82,7 +86,7 @@ export function buildTwitterBookmarkSeed(
     ...(rich.metrics && Object.keys(rich.metrics).length > 0
       ? { metrics: { ...rich.metrics } }
       : {}),
-    ...(quotedTweets.length > 0 ? { extras: { quotedTweets } } : {}),
+    ...(Object.keys(extras).length > 0 ? { extras } : {}),
   };
 
   const rawJson: RawJson = {

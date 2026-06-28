@@ -4,6 +4,7 @@ import type { Save } from "@/lib/types";
 export type {
   TweetCardAuthor,
   TweetCardData,
+  TweetCardLink,
   TweetCardMedia,
   TweetCardMetrics,
 } from "@shared/tweet-card";

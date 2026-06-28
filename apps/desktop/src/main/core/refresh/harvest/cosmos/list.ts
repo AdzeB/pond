@@ -52,6 +52,32 @@ async function inPageCosmosList(
   const known = new Set(args.knownIds.map(String));
   const collected = new Map<string, CosmosEntry>();
 
+  // cdn.cosmos.so images are downscaled by Cloudflare `w`/`h`/`q`/`dpr`
+  // params. Strip them so the stored asset is the full-resolution source.
+  const upgradeCosmosImage = (src: string): string => {
+    try {
+      const u = new URL(src, location.origin);
+      if (!/(^|\.)cosmos\.so$/i.test(u.hostname)) return src;
+      if (!u.hostname.startsWith("cdn.")) return src;
+      for (const key of [
+        "w",
+        "h",
+        "width",
+        "height",
+        "q",
+        "quality",
+        "dpr",
+        "fit",
+        "blur",
+      ]) {
+        u.searchParams.delete(key);
+      }
+      return u.toString();
+    } catch {
+      return src;
+    }
+  };
+
   const pickString = (
     obj: Record<string, unknown>,
     keys: string[],
@@ -210,12 +236,19 @@ async function inPageCosmosList(
     if (description) entry.description = description;
     if (author.author) entry.author = author.author;
     if (media.mediaUrl) {
-      entry.mediaUrl = media.mediaUrl;
+      const url =
+        media.type === "image"
+          ? upgradeCosmosImage(media.mediaUrl)
+          : media.mediaUrl;
+      const poster = media.poster
+        ? upgradeCosmosImage(media.poster)
+        : undefined;
+      entry.mediaUrl = url;
       entry.mediaUrls = [
         {
-          url: media.mediaUrl,
+          url,
           type: media.type,
-          ...(media.poster ? { poster: media.poster } : {}),
+          ...(poster ? { poster } : {}),
         },
       ];
       entry.mediaType = media.type;
@@ -301,7 +334,9 @@ async function inPageCosmosList(
       const img = card.querySelector<HTMLImageElement>("img");
       const src = img?.currentSrc ?? img?.src ?? undefined;
       const mediaUrl =
-        typeof src === "string" && !src.startsWith("data:") ? src : undefined;
+        typeof src === "string" && !src.startsWith("data:")
+          ? upgradeCosmosImage(src)
+          : undefined;
       const title = img?.alt?.trim() || undefined;
       const hasVideo = !!card.querySelector("video, [data-type='video']");
 

@@ -85,6 +85,11 @@ export default defineConfig({
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "credentialless",
       },
+      // chokidar (via Vite) defaults `usePolling` to true on macOS in some
+      // versions, which pins a CPU core on the dev-server `node` process even
+      // when idle — a big, easy-to-miss source of fan noise during `pnpm dev`.
+      // FS events are reliable here, so force the event-based watcher.
+      watch: { usePolling: false },
     },
     plugins: [
       tanstackRouter({
@@ -101,10 +106,10 @@ export default defineConfig({
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },
-    // transformers.js (the sensitive-media ViT detector) imports
+    // transformers.js (the on-device enrichment models) imports
     // `onnxruntime-web` / `onnxruntime-web/webgpu` as bare specifiers. Excluding
     // it from optimization leaves those unresolved in dev ("Failed to resolve
-    // module specifier"), so the classifier never loads. Pre-bundling it (and
+    // module specifier"), so the models never load. Pre-bundling it (and
     // its deps) with esbuild resolves the subpaths — mirroring the prod Rollup
     // build. The ORT wasm binaries are fetched from a CDN at runtime, not
     // imported, so esbuild doesn't choke on them.

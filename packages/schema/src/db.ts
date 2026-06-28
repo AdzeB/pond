@@ -29,10 +29,6 @@ export type Source = (typeof SOURCES)[number];
 export const MEDIA_TYPES = ["image", "video", "mixed", "link"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
-// On-device NSFW verdict; null = not yet classified. DB-only, re-derivable on reconcile.
-export const SENSITIVITIES = ["safe", "sensitive"] as const;
-export type Sensitivity = (typeof SENSITIVITIES)[number];
-
 export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
 export type SaveStatus = (typeof SAVE_STATUSES)[number];
 
@@ -109,14 +105,11 @@ export const saves = sqliteTable(
     height: integer("height"),
     fileSize: integer("file_size"),
     phash: text("phash"),
-    sensitivity: text("sensitivity").$type<Sensitivity>(),
-    // Classifier that produced `sensitivity`; lets the sweep re-run on model upgrades.
-    sensitivityModel: text("sensitivity_model"),
     // On-device semantic-search embedding of the save's text (title/desc/notes/tags),
     // stored as a JSON float array; null = not yet embedded. DB-only, re-derivable.
     embedding: text("embedding", { mode: "json" }).$type<number[]>(),
-    // Embedder that produced `embedding`; bumping re-embeds the library, mirroring
-    // `sensitivityModel`. Null embeddings (and stale stamps) get picked up by the sweep.
+    // Embedder that produced `embedding`; bumping re-embeds the library. Null
+    // embeddings (and stale stamps) get picked up by the sweep.
     embeddingModel: text("embedding_model"),
     // ---- On-device enrichment (all DB-only, re-derivable; each has a model stamp
     // so the enrichment sweep re-runs on model upgrades, mirroring embeddings). ----
@@ -174,7 +167,6 @@ export const saves = sqliteTable(
     dimsIdx: index("saves_dims_idx").on(t.width, t.height),
     deletedIdx: index("saves_deleted_idx").on(t.deletedAt),
     statusIdx: index("saves_status_idx").on(t.status),
-    sensitivityIdx: index("saves_sensitivity_idx").on(t.sensitivity),
   }),
 );
 

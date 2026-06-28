@@ -1,6 +1,7 @@
 import { Body } from "./body";
 import type { TweetCardData } from "./data";
 import { Header } from "./header";
+import { LinkCard } from "./link-card";
 import { MediaGrid } from "./media-grid";
 import { Metrics } from "./metrics";
 import { QuotedCard } from "./quoted-card";
@@ -34,7 +35,8 @@ export function TweetCard({
   data: TweetCardData;
   scheme?: Scheme;
 }) {
-  const { author, text, media, metrics, quoted, publishedAt, isReply } = data;
+  const { author, text, media, metrics, quoted, card, publishedAt, isReply } =
+    data;
   const timestamp = publishedAt ? formatTimestamp(publishedAt) : null;
 
   return (
@@ -52,6 +54,8 @@ export function TweetCard({
       {media && media.length > 0 ? <MediaGrid media={media} /> : null}
 
       {quoted ? <QuotedCard data={quoted} /> : null}
+
+      {card ? <LinkCard data={card} /> : null}
 
       {timestamp ? <p className={styles.timestamp}>{timestamp}</p> : null}
 

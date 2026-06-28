@@ -1,4 +1,4 @@
-import { MEDIA_TYPES, SENSITIVITIES, SOURCES } from "@pond/schema/db";
+import { MEDIA_TYPES, SOURCES } from "@pond/schema/db";
 import { COLOR_PRESETS } from "@pond/schema/filters/color";
 import type {
   Clause,
@@ -204,16 +204,6 @@ const SOURCE_SYNONYMS: Record<string, string> = {
   cosmos: "cosmos",
 };
 
-// Spoken sensitivity words -> the on-device verdict (safe | sensitive).
-const SENSITIVITY_SYNONYMS: Record<string, string> = {
-  nsfw: "sensitive",
-  sensitive: "sensitive",
-  explicit: "sensitive",
-  lewd: "sensitive",
-  sfw: "safe",
-  safe: "safe",
-};
-
 interface Candidate {
   // Lowercased phrase to match, longest-first.
   phrase: string;
@@ -243,12 +233,6 @@ function buildCandidates(facets: NlFacets): Candidate[] {
   // Live sources by their literal id, in case of unmapped/new sources.
   for (const source of facets.sources) push(source, "source", source);
 
-  for (const [word, value] of Object.entries(SENSITIVITY_SYNONYMS)) {
-    if ((SENSITIVITIES as readonly string[]).includes(value)) {
-      push(word, "sensitivity", value);
-    }
-  }
-
   for (const color of COLOR_PRESETS) {
     push(color.label, "color", color.hex.toLowerCase());
   }
@@ -267,14 +251,12 @@ function buildCandidates(facets: NlFacets): Candidate[] {
 interface Accumulator {
   sources: Set<string>;
   types: Set<string>;
-  sensitivities: Set<string>;
   tags: Set<string>;
   creators: Set<string>;
   colors: string[];
   // Negated counterparts.
   negSources: Set<string>;
   negTypes: Set<string>;
-  negSensitivities: Set<string>;
   negTags: Set<string>;
   negCreators: Set<string>;
 }
@@ -283,13 +265,11 @@ function newAccumulator(): Accumulator {
   return {
     sources: new Set(),
     types: new Set(),
-    sensitivities: new Set(),
     tags: new Set(),
     creators: new Set(),
     colors: [],
     negSources: new Set(),
     negTypes: new Set(),
-    negSensitivities: new Set(),
     negCreators: new Set(),
     negTags: new Set(),
   };
@@ -302,9 +282,6 @@ function accumulate(acc: Accumulator, c: Candidate, negate: boolean): void {
       return;
     case "type":
       (negate ? acc.negTypes : acc.types).add(c.value);
-      return;
-    case "sensitivity":
-      (negate ? acc.negSensitivities : acc.sensitivities).add(c.value);
       return;
     case "tags":
       (negate ? acc.negTags : acc.tags).add(c.value);
@@ -326,7 +303,7 @@ function toPredicates(acc: Accumulator): Predicate[] {
   const out: Predicate[] = [];
 
   const enumPred = (
-    field: "source" | "type" | "sensitivity",
+    field: "source" | "type",
     values: Set<string>,
     negate: boolean,
   ) => {
@@ -342,8 +319,6 @@ function toPredicates(acc: Accumulator): Predicate[] {
   enumPred("source", acc.negSources, true);
   enumPred("type", acc.types, false);
   enumPred("type", acc.negTypes, true);
-  enumPred("sensitivity", acc.sensitivities, false);
-  enumPred("sensitivity", acc.negSensitivities, true);
 
   if (acc.creators.size > 0) {
     const list = [...acc.creators];

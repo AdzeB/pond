@@ -304,6 +304,12 @@ async function createWindow(): Promise<BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Throttle timers/rAF when the window is minimized or fully occluded.
+      // This is Electron's default, but we set it explicitly: combined with the
+      // renderer's visibility-gated enrichment sweep, it keeps a backgrounded
+      // window from heating the machine. (The renderer still pauses on-device
+      // inference itself via `document.hidden` — see lib/enrichment/sweep.ts.)
+      backgroundThrottling: true,
       additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
   });

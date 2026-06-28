@@ -30,12 +30,19 @@
   -webkit-app-region: no-drag;
   transition:
     opacity var(--ds-duration-medium) var(--ds-easing-standard),
-    transform var(--ds-duration-medium) var(--ds-easing-standard);
+    transform var(--ds-duration-medium) var(--ds-easing-standard),
+    filter var(--ds-duration-medium) var(--ds-easing-standard);
 
-  &[data-starting-style],
+  &[data-starting-style] {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+
   &[data-ending-style] {
     opacity: 0;
-    transform: translate(-50%, calc(-50% + 4px));
+    filter: blur(4px);
+    transform: translate(-50%, -50%) scale(0.95);
   }
 
   &[data-size="fullscreen"] {

@@ -7,7 +7,6 @@ import {
   IconArchiveFill18 as Library,
   IconSparkleFill18 as Sparkle,
   IconTagsFill18 as Tags,
-  IconListCheckboxFill18 as Tasks,
   IconPresentationScreenPlayFill18 as Videos,
 } from "@pond/icons/fill/18";
 import type { IconComponent } from "@pond/icons/types";
@@ -29,7 +28,6 @@ const ICONS: Record<string, IconComponent> = {
   images: Images,
   ai: Sparkle,
   enrichment: Enrichment,
-  tasks: Tasks,
   developer: Developer,
 };
 

@@ -18,7 +18,12 @@ import styles from "./styles.module.css";
 const GITHUB_URL = "https://github.com/raphaelsalaja/pond";
 const TWITTER_URL = "https://x.com/raphaelsalaja";
 
-export function LibrarySwitcher() {
+interface LibrarySwitcherProps {
+  // "toolbar" floats standalone; "dock" blends into the dock pill and opens upward.
+  variant?: "toolbar" | "dock";
+}
+
+export function LibrarySwitcher({ variant = "toolbar" }: LibrarySwitcherProps) {
   const { ponds, active, switching, switchTo, refresh } = usePonds();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -52,7 +57,11 @@ export function LibrarySwitcher() {
       <Menu.Trigger
         aria-label={`Library menu (${active?.name ?? "Library"})`}
         render={
-          <button type="button" className={styles.trigger}>
+          <button
+            type="button"
+            className={styles.trigger}
+            data-variant={variant}
+          >
             <span
               className={styles.glyph}
               data-icon={
@@ -74,7 +83,11 @@ export function LibrarySwitcher() {
         }
       ></Menu.Trigger>
       <Menu.Portal>
-        <Menu.Positioner sideOffset={8} align="start">
+        <Menu.Positioner
+          sideOffset={8}
+          align="start"
+          side={variant === "dock" ? "top" : "bottom"}
+        >
           <Menu.Popup className={styles.popup}>
             <Menu.Input
               className={styles.search}

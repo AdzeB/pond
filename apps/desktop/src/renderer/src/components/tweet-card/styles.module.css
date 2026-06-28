@@ -291,6 +291,114 @@
   white-space: pre-wrap;
 }
 
+/* Link card (summary / summary_large_image) */
+.linkCard {
+  margin-top: 12px;
+}
+
+/* Small "summary" card: bordered row, square thumbnail beside the text. */
+.linkCard:not([data-large="true"]) {
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  border: 1px solid var(--tw-border);
+  border-radius: 16px;
+}
+
+/* Large "summary_large_image" card: rounded image, title overlaid bottom-left,
+   domain in muted text beneath — matching how X renders large previews. */
+.linkCard[data-large="true"] {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.linkCardMedia {
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--tw-placeholder);
+}
+
+.linkCard:not([data-large="true"]) .linkCardMedia {
+  width: 130px;
+  aspect-ratio: 1 / 1;
+  border-right: 1px solid var(--tw-border);
+}
+
+.linkCard[data-large="true"] .linkCardMedia {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1.91 / 1;
+  border: 1px solid var(--tw-border);
+  border-radius: 16px;
+}
+
+.linkCardImg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.linkCardOverlayTitle {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  max-width: calc(100% - 24px);
+  padding: 2px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  line-height: 16px;
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.77);
+  border-radius: 4px;
+}
+
+.linkCardDomainBelow {
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--tw-secondary);
+}
+
+.linkCardDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+  min-width: 0;
+  padding: 12px;
+}
+
+.linkCardDomain {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--tw-secondary);
+  white-space: nowrap;
+}
+
+.linkCardTitle {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 1;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.linkCardDescription {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--tw-secondary);
+}
+
 /* Timestamp */
 .timestamp {
   margin: 16px 0 0;

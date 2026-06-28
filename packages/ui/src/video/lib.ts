@@ -1,8 +1,6 @@
 export const SPEED_OPTIONS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 export const FRAME_STEP_SECONDS = 1 / 30;
-export const SEEK_HOTKEY_STEP = 5;
-export const VOLUME_HOTKEY_STEP = 0.1;
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));

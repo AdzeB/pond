@@ -26,7 +26,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     label: "Enrichment",
     group: "intelligence",
   },
-  { id: "tasks", path: "tasks", label: "Tasks", group: "intelligence" },
   { id: "developer", path: "developer", label: "Developer", group: "dev" },
 ];
 

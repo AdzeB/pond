@@ -7,9 +7,9 @@ import type { Save } from "@/lib/types";
 //
 // `run` may either return a `DerivedPatch` (the scheduler persists it via
 // `saves.patchDerived` and/or optimistically into the pool) or persist through
-// its own store (embeddings, clip vectors, sensitivity) and return an empty
-// patch. Returning `null` marks the save failed for this session (retried after
-// a model upgrade or restart).
+// its own store (embeddings, clip vectors) and return an empty patch. Returning
+// `null` marks the save failed for this session (retried after a model upgrade
+// or restart).
 export interface DerivedPatch {
   // Whitelisted AI columns to persist (non-synced) via `saves.patchDerived`.
   derived?: Record<string, unknown>;

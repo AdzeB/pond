@@ -5,6 +5,7 @@ import { Toolbar } from "@/components/library-toolbar";
 export function Library() {
   return (
     <Shell.Main>
+      <Shell.Mask />
       <Shell.Header>
         <Toolbar />
       </Shell.Header>

@@ -1,45 +1,64 @@
 .carousel {
   position: relative;
   display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-}
-
-.stage {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
   min-height: 0;
+  /* Size container so the shell can contain-fit against both axes (cqi/cqh). */
+  container-type: size;
 }
 
-.viewport {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
+.scroller {
+  --slide-spacing: 32px;
+  --snap-type: x mandatory;
 
-.container {
-  display: flex;
   height: 100%;
-  overflow: visible;
-  touch-action: pan-y pinch-zoom;
-  will-change: transform;
+  padding-inline: 50%;
+  /* Keep the inline-level slides on a single row. Blossom's base stylesheet
+     normally sets this, but we can't depend on that layer being applied — with
+     the default `white-space: normal` and the zero-width content box (50%
+     padding), the slides wrap onto separate lines and stack vertically. */
+  white-space: nowrap;
+  scroll-snap-type: x mandatory;
 }
 
 .slide {
-  position: relative;
-  display: flex;
-  flex: 0 0 100%;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
   height: 100%;
-  overflow: visible;
+  padding-inline: calc(var(--slide-spacing) / 2);
+  vertical-align: top;
+  scroll-snap-align: center;
+}
+
+@keyframes coverflow {
+  0%,
+  100% {
+    opacity: 0.5;
+    filter: blur(2px);
+    transform: scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+.scroller .media-shell {
+  animation: coverflow linear both;
+  animation-timeline: view(inline);
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroller .media-shell {
+    animation: none;
+  }
 }
 
 .nav {
@@ -57,282 +76,27 @@
   }
 }
 
+/* Contain-fit the media against both axes while preserving its true ratio:
+   width is the smaller of the horizontal cap and the height-bound width
+   (available height x ratio), so the box itself equals the displayed media and
+   the frame hugs it — no letterboxing inside the shell. The 128px insets leave
+   breathing room and give the shadow space within the scroll container. */
 .media-shell {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
+  width: min(calc(100cqi - 128px), calc((100cqh - 128px) * var(--ratio)));
+  aspect-ratio: var(--ratio);
+  overflow: hidden;
   background: transparent;
-}
-
-/* Sensitive media: blur the whole viewport (covers images and the video
-   player alike) until the viewer reveals it. The matching thumbnail blur
-   lives after the base `.thumbnail` rule so specificity ascends in source. */
-.carousel[data-blurred="true"] .viewport {
-  filter: blur(40px);
-}
-
-.sensitive {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  color: #fff;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-}
-
-.sensitive-badge {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  padding: 10px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  background: rgba(0, 0, 0, 0.6);
-  border-radius: 2147483647px;
-  box-shadow: inset 0 0 0 0.5px var(--ds-white-a3);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
-  backdrop-filter: blur(8px) saturate(150%);
-  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
-}
-
-:global(html[data-reduce-transparency="true"]) .sensitive-badge {
-  background: rgb(0, 0, 0);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.sensitive:hover .sensitive-badge,
-.sensitive:focus-visible .sensitive-badge {
-  background: rgba(0, 0, 0, 0.78);
-}
-
-.sensitive:focus-visible {
-  outline: 2px solid var(--ds-accent-9);
-  outline-offset: -4px;
+  border-radius: 8px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .media {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-/* The image shell doubles as a button that opens the zoom lightbox. */
-button.media-shell {
-  padding: 0;
-  cursor: zoom-in;
-  outline: none;
-  background: transparent;
-  border: 0;
-}
-
-button.media-shell:focus-visible {
-  outline: 2px solid var(--ds-accent-9);
-  outline-offset: -4px;
-}
-
-/* Fullscreen zoom/pan viewer: a nested dialog layered above the detail modal.
-   Override the @pond/ui dialog popup centering so it fills the viewport. */
-.lightbox-backdrop {
-  background: rgba(0, 0, 0, 0.86);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-
-:global(html[data-reduce-transparency="true"]) .lightbox-backdrop {
-  background: rgb(0, 0, 0);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
-
-.lightbox {
-  inset: 0;
-  top: 0;
-  left: 0;
-  z-index: 1002;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  max-width: none;
-  overflow: hidden;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
-  transform: none;
-
-  &[data-starting-style],
-  &[data-ending-style] {
-    opacity: 0;
-    transform: none;
-  }
-}
-
-.lightbox-image {
-  max-width: 92vw;
-  max-height: 92vh;
-  touch-action: none;
-  cursor: zoom-in;
-  user-select: none;
-  object-fit: contain;
-  will-change: transform;
-}
-
-.lightbox-image[data-zoomed="true"] {
-  cursor: grab;
-}
-
-.lightbox-image[data-zoomed="true"]:active {
-  cursor: grabbing;
-}
-
-.lightbox-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 1;
-}
-
-.lightbox-reset {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #fff;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: rgba(0, 0, 0, 0.6);
-  border: 0;
-  border-radius: 2147483647px;
-  box-shadow: inset 0 0 0 0.5px var(--ds-white-a3);
-  transform: translateX(-50%);
-}
-
-.slides {
-  --fade: 32px;
-  --fade-left: var(--fade);
-  --fade-right: var(--fade);
-
-  position: relative;
-  flex: 0 0 auto;
   width: 100%;
-  overflow: hidden;
-  mask-image: linear-gradient(
-    to right,
-    rgb(0 0 0 / 0) 0,
-    rgb(0 0 0 / 0.005) calc(var(--fade-left) * 0.083),
-    rgb(0 0 0 / 0.027) calc(var(--fade-left) * 0.167),
-    rgb(0 0 0 / 0.072) calc(var(--fade-left) * 0.25),
-    rgb(0 0 0 / 0.147) calc(var(--fade-left) * 0.333),
-    rgb(0 0 0 / 0.265) calc(var(--fade-left) * 0.417),
-    rgb(0 0 0 / 0.421) calc(var(--fade-left) * 0.5),
-    rgb(0 0 0 / 0.598) calc(var(--fade-left) * 0.583),
-    rgb(0 0 0 / 0.756) calc(var(--fade-left) * 0.667),
-    rgb(0 0 0 / 0.88) calc(var(--fade-left) * 0.75),
-    rgb(0 0 0 / 0.951) calc(var(--fade-left) * 0.833),
-    rgb(0 0 0 / 0.987) calc(var(--fade-left) * 0.917),
-    rgb(0 0 0 / 1) var(--fade-left),
-    rgb(0 0 0 / 1) calc(100% - var(--fade-right)),
-    rgb(0 0 0 / 0.987) calc(100% - var(--fade-right) * 0.917),
-    rgb(0 0 0 / 0.951) calc(100% - var(--fade-right) * 0.833),
-    rgb(0 0 0 / 0.88) calc(100% - var(--fade-right) * 0.75),
-    rgb(0 0 0 / 0.756) calc(100% - var(--fade-right) * 0.667),
-    rgb(0 0 0 / 0.598) calc(100% - var(--fade-right) * 0.583),
-    rgb(0 0 0 / 0.421) calc(100% - var(--fade-right) * 0.5),
-    rgb(0 0 0 / 0.265) calc(100% - var(--fade-right) * 0.417),
-    rgb(0 0 0 / 0.147) calc(100% - var(--fade-right) * 0.333),
-    rgb(0 0 0 / 0.072) calc(100% - var(--fade-right) * 0.25),
-    rgb(0 0 0 / 0.027) calc(100% - var(--fade-right) * 0.167),
-    rgb(0 0 0 / 0.005) calc(100% - var(--fade-right) * 0.083),
-    rgb(0 0 0 / 0) 100%
-  );
-
-  &[data-at-start="true"] {
-    --fade-left: 0px;
-  }
-
-  &[data-at-end="true"] {
-    --fade-right: 0px;
-  }
-}
-
-.slides-container {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 8px var(--fade);
-  touch-action: pan-y pinch-zoom;
-  will-change: transform;
-}
-
-.slides[data-at-start="true"][data-at-end="true"] .slides-container {
-  justify-content: center;
-}
-
-.thumbnail {
-  display: block;
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 24px;
-  max-width: 96px;
-  height: 40px;
-  padding: 0;
-  overflow: hidden;
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: 1px solid var(--ds-gray-a5);
-  outline-offset: -1px;
-  background: var(--ds-gray-a3);
-  border: 0;
-  border-radius: 3px;
-  opacity: 0.7;
-  transition:
-    opacity var(--ds-duration-fast) var(--ds-easing-standard),
-    outline-color var(--ds-duration-fast) var(--ds-easing-standard);
-
-  &:hover {
-    opacity: 1;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 1px;
-  }
-
-  &[data-active="true"] {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 1px;
-    opacity: 1;
-  }
-
-  .image {
-    display: block;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    object-fit: cover;
-  }
-
-  .fallback {
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: var(--ds-gray-a4);
-  }
-}
-
-/* Blur the thumbnail previews of sensitive media until revealed. */
-.carousel[data-blurred="true"] .thumbnail .image {
-  filter: blur(10px);
+  height: 100%;
+  object-fit: contain;
 }

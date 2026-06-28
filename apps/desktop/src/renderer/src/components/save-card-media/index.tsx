@@ -2,7 +2,6 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media";
-import { useSensitiveMedia } from "@/lib/nsfw";
 import type { Save } from "@/lib/types";
 import { withThumbWidth } from "@/lib/url";
 import { usePrefs } from "@/stores/prefs";
@@ -11,7 +10,6 @@ import { CARD_THUMB_WIDTH } from "./constants";
 import { DownloadingBadge } from "./downloading-badge";
 import { HoverGallery } from "./hover-gallery";
 import { HoverVideo } from "./hover-video";
-import { SensitiveOverlay } from "./sensitive-overlay";
 import styles from "./styles.module.css";
 
 export type CardLayout = "waterfall" | "grid" | "justified";
@@ -30,7 +28,6 @@ export const CardThumb = memo(function CardThumb({
     [save, theme, preferences?.tweetCover],
   );
   const isDownloading = useIsVideoDownloading(save);
-  const { blurred, reveal } = useSensitiveMedia(save);
 
   // Build the image-only cycle list for multi-image saves. Disabled when the primary
   // is a video, when there's only one image, or when the cover isn't one of these
@@ -60,9 +57,7 @@ export const CardThumb = memo(function CardThumb({
   // moves over the badge overlay still bubble up and register.
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      // Don't scrub frames while the cover is still blurred — scrubbing would
-      // load and surface other sensitive frames underneath the overlay.
-      if (!slides || blurred) return;
+      if (!slides) return;
       const rect = e.currentTarget.getBoundingClientRect();
       if (rect.width === 0) return;
       const ratio = (e.clientX - rect.left) / rect.width;
@@ -73,7 +68,7 @@ export const CardThumb = memo(function CardThumb({
       setActive((prev) => (prev === i ? prev : i));
       setSeen((prev) => (prev.has(i) ? prev : new Set(prev).add(i)));
     },
-    [slides, blurred],
+    [slides],
   );
 
   const onPointerLeave = useCallback(() => setActive(0), []);
@@ -122,9 +117,6 @@ export const CardThumb = memo(function CardThumb({
         <div className={styles.placeholder} aria-hidden />
       ) : null}
       <DownloadingBadge save={save} isDownloading={isDownloading} />
-      {blurred && !broken && unit ? (
-        <SensitiveOverlay onReveal={reveal} />
-      ) : null}
     </div>
   );
 });

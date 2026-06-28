@@ -34,6 +34,15 @@ interface RichTweetMetrics {
   views?: number;
 }
 
+export interface RichTweetCard {
+  url?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  large?: boolean;
+}
+
 export interface RichTweet {
   tweetId: string;
   url: string;
@@ -43,6 +52,7 @@ export interface RichTweet {
   media: RichTweetMedia[];
   metrics: RichTweetMetrics;
   quoted?: RichTweet;
+  card?: RichTweetCard;
   raw: unknown;
 }
 
@@ -159,6 +169,13 @@ interface TweetLike {
     entities?: { media?: MediaLike[] };
   };
   views?: { count?: string };
+  card?: {
+    legacy?: {
+      name?: string;
+      url?: string;
+      binding_values?: unknown;
+    };
+  };
   note_tweet?: {
     note_tweet_results?: { result?: { text?: string } };
   };
@@ -197,6 +214,7 @@ function shapeRichTweet(raw: unknown): RichTweet | null {
     : `https://x.com/i/status/${tweetId}`;
 
   const avatarUrl = pickAuthorAvatar(tweet);
+  const card = pickCard(tweet);
   return {
     tweetId,
     url,
@@ -211,7 +229,79 @@ function shapeRichTweet(raw: unknown): RichTweet | null {
     quoted: tweet.quoted_status_result?.result
       ? (resolveTweet(tweet.quoted_status_result.result) ?? undefined)
       : undefined,
+    ...(card ? { card } : {}),
     raw: tweet,
+  };
+}
+
+interface CardBindingValue {
+  string_value?: string;
+  image_value?: { url?: string; width?: number; height?: number };
+}
+
+// binding_values arrives as either an array of { key, value } or a key->value
+// map depending on the GraphQL surface; normalize both to a lookup.
+function cardBindings(raw: unknown): Map<string, CardBindingValue> {
+  const map = new Map<string, CardBindingValue>();
+  if (Array.isArray(raw)) {
+    for (const entry of raw as Array<{
+      key?: string;
+      value?: CardBindingValue;
+    }>) {
+      if (entry?.key && entry.value) map.set(entry.key, entry.value);
+    }
+  } else if (raw && typeof raw === "object") {
+    for (const [key, value] of Object.entries(
+      raw as Record<string, CardBindingValue>,
+    )) {
+      if (value) map.set(key, value);
+    }
+  }
+  return map;
+}
+
+// Best card image: prefer the *_original / *_large variants, then widest.
+function pickCardImage(map: Map<string, CardBindingValue>): string | undefined {
+  let best: { url: string; score: number } | null = null;
+  for (const [key, value] of map) {
+    const url = value.image_value?.url;
+    if (typeof url !== "string" || url.length === 0) continue;
+    if (!/image/i.test(key)) continue;
+    let score = value.image_value?.width ?? 0;
+    if (/original/i.test(key)) score += 100_000;
+    else if (/large/i.test(key)) score += 50_000;
+    if (!best || score > best.score) best = { url, score };
+  }
+  return best?.url;
+}
+
+// Link-card embed from the tweet's `card.legacy.binding_values` (the OG preview
+// X renders for summary / summary_large_image links).
+function pickCard(tweet: TweetLike): RichTweetCard | undefined {
+  const legacy = tweet.card?.legacy;
+  if (!legacy) return undefined;
+  const map = cardBindings(legacy.binding_values);
+  const str = (k: string): string | undefined => {
+    const v = map.get(k)?.string_value;
+    return typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined;
+  };
+  const title = str("title");
+  const description = str("description");
+  const domain = str("vanity_url") ?? str("domain");
+  const url =
+    str("card_url") ??
+    (typeof legacy.url === "string" ? legacy.url : undefined);
+  const imageUrl = pickCardImage(map);
+  const large = legacy.name === "summary_large_image";
+
+  if (!title && !imageUrl && !url) return undefined;
+  return {
+    ...(url ? { url } : {}),
+    ...(domain ? { domain } : {}),
+    ...(title ? { title } : {}),
+    ...(description ? { description } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(large ? { large } : {}),
   };
 }
 

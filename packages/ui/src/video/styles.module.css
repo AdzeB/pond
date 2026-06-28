@@ -24,6 +24,7 @@
   inset: auto 0 0;
   display: flex;
   flex-direction: column;
+  gap: 8px;
   justify-content: flex-end;
   padding: 64px 16px 16px;
   color: var(--ds-white-a12);

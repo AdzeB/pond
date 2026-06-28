@@ -1,6 +1,36 @@
 {
   "version": 1,
   "skills": {
+    "blossom-carousel-core": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "fa49fc3412b602646f8a45ee2e43dede990a98d98676b751d961256c6efdb6b1"
+    },
+    "blossom-carousel-migration": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "ce702fcfa1ece23132b1ee33c956209cd9fef0f635f2cf9135c29b25a2557826"
+    },
+    "blossom-carousel-react": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "812389ffc3220fdc6553e4271cb960ec2d95ceb229d164d058666b6e6709fcd2"
+    },
+    "blossom-carousel-svelte": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "6b9746647853d338745247cf5bea3c44e85e7937c0364a860f359433a9504118"
+    },
+    "blossom-carousel-vue": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "8030ac512d635cc659eb876f85c6fd1d2e958a490adee49f42dbc3473ee2b5e1"
+    },
+    "blossom-carousel-web": {
+      "source": "blossom-carousel.com",
+      "sourceType": "well-known",
+      "computedHash": "6a91633828967bb54865b6ce6043b5a97a5b0f21af5d886ebd11ea047c27b500"
+    },
     "deploy-to-vercel": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
