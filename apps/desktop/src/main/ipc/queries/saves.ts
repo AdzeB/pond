@@ -310,6 +310,31 @@ export const savesQueries: QueryHandlerMap = {
     }
   },
 
+  async "saves.copyFile"(params) {
+    const id = String(params.id ?? "");
+    const fileIndex = Number(params.fileIndex ?? 0);
+    if (!id) return { ok: false as const, reason: "not_found" as const };
+    const target = await resolveSaveFilePath(
+      id,
+      Number.isFinite(fileIndex) ? fileIndex : 0,
+    );
+    if (!target.ok) return target;
+    try {
+      if (process.platform === "darwin") {
+        // Write the file reference to the pasteboard so it can be pasted as a
+        // file into Finder, Mail, etc. (distinct from the image data copy).
+        const url = `file://${encodeURI(target.path)}`;
+        clipboard.writeBuffer("public.file-url", Buffer.from(url, "utf8"));
+      } else {
+        clipboard.writeText(target.path);
+      }
+      return { ok: true as const };
+    } catch (err) {
+      log.warn("[pond ipc] saves.copyFile failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
+  },
+
   async "saves.backfillColors"() {
     const { extractPalette } = await import("../../lib/palette");
     const { itemFile } = await import("../../paths");

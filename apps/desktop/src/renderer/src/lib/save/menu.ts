@@ -1,4 +1,5 @@
 import {
+  copyFile as copyFileAction,
   copyFilePath,
   copyImage as copyImageAction,
   copyTags as copyTagsAction,
@@ -96,6 +97,11 @@ export function buildSaveMenu(
       enabled: hasFiles,
       shortcut: ["⌘", "C"],
       onSelect: () => copyImageAction(save),
+    },
+    {
+      label: "Copy File",
+      enabled: hasFiles,
+      onSelect: () => copyFileAction(save),
     },
     {
       label: "Copy File Path",

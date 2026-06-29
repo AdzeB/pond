@@ -183,6 +183,24 @@ function Duration({
   );
 }
 
+function TimeDisplay({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<"div">) {
+  const { state } = useVideo();
+  return (
+    <div
+      className={cn(styles.timeDisplay, className)}
+      data-visible={state.controlsVisible ? "" : undefined}
+      {...props}
+    >
+      <span>{formatTime(state.currentTime)}</span>
+      <span className={styles.timeDisplaySep}>/</span>
+      <span>{formatTime(state.duration)}</span>
+    </div>
+  );
+}
+
 function Scrubber({ className }: { className?: string }) {
   const { state, actions } = useVideo();
   const [hover, setHover] = useState<number | null>(null);
@@ -314,6 +332,7 @@ export const Video = {
   Volume,
   CurrentTime,
   Duration,
+  TimeDisplay,
   Scrubber,
   SpeedSelect,
   PiPButton,

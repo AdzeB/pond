@@ -104,6 +104,14 @@ export async function copyFilePath(save: Save): Promise<void> {
   }
 }
 
+export async function copyFile(save: Save): Promise<void> {
+  if (save.files.length === 0) return;
+  await window.pond.query("saves.copyFile", {
+    id: save.id,
+    fileIndex: save.coverIndex ?? 0,
+  });
+}
+
 export async function openInBrowser(save: Save): Promise<void> {
   if (!save.url) return;
   try {
