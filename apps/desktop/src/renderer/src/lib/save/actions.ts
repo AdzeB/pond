@@ -6,7 +6,6 @@ import {
 } from "@/lib/save/mutate";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
-import { presentation } from "@/stores/presentation";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
 async function toggleTrash(save: Save): Promise<void> {
@@ -157,11 +156,6 @@ export async function exportFile(save: Save): Promise<void> {
     id: save.id,
     fileIndex: save.coverIndex ?? 0,
   });
-}
-
-export function enterPresentation(save: Save): void {
-  if (save.files.length === 0) return;
-  presentation.open(save.id);
 }
 
 // Open the native file picker, then import the chosen images/videos as saves.

@@ -1,0 +1,224 @@
+/* ── recent runs status badge (reused) ──────────────────────────────────── */
+.rout {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: var(--ds-radius-full);
+}
+
+.rout .od {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.rout.ok {
+  color: var(--ok-t);
+  background: var(--ds-grass-a3);
+}
+
+.rout.ok .od {
+  background: var(--ok);
+}
+
+.rout.noop {
+  color: var(--ink-2);
+  background: var(--hover);
+}
+
+.rout.noop .od {
+  background: var(--ink-3);
+}
+
+.rout.err {
+  color: var(--err-t);
+  background: var(--ds-tomato-a3);
+}
+
+.rout.err .od {
+  background: var(--err);
+}
+
+.rout.warn {
+  color: var(--warn-t);
+  background: var(--ds-amber-a3);
+}
+
+.rout.warn .od {
+  background: var(--warn);
+}
+
+/* ── dialogs (Dialog.Popup) ─────────────────────────────────────────────── */
+.dlgPopup {
+  width: 100%;
+  max-width: 540px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.dlgHead {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 18px 20px;
+}
+
+.dlgHead .dh {
+  flex: 1;
+  min-width: 0;
+}
+
+.dlgHead .dn {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 660;
+  color: var(--ink);
+}
+
+.dlgHead .ds {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.dlgActions {
+  display: flex;
+  gap: 8px;
+  padding: 2px 20px 16px;
+}
+
+.dlgActions > * {
+  flex: 1;
+}
+
+.dlgBody {
+  max-height: 56vh;
+  padding: 4px 20px 8px;
+  overflow: auto;
+  border-top: 1px solid var(--line-2);
+}
+
+.dsec {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.dsec:last-child {
+  border-bottom: 0;
+}
+
+.dt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 11px;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── run dialog ─────────────────────────────────────────────────────────── */
+.flow {
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+}
+
+.fstep {
+  flex: 1;
+  padding: 11px 13px;
+  background: var(--hover);
+}
+
+.fstep + .fstep {
+  border-left: 1px solid var(--line-2);
+}
+
+.fn {
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.fv {
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.fv .dim {
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.farrow {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  color: var(--ink-3);
+  background: var(--hover);
+}
+
+.kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 0;
+  font-size: 12.5px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.kv:last-child {
+  border-bottom: 0;
+}
+
+.kv .kk {
+  color: var(--ink-2);
+}
+
+.kv .vv {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.kv .vv.ok {
+  color: var(--ok-t);
+}
+
+.kv .vv.err {
+  color: var(--err-t);
+}
+
+.kv .vv.muted {
+  color: var(--ink-3);
+}
+
+.errbox {
+  padding: 11px 13px;
+  background: var(--ds-tomato-2);
+  border: 1px solid var(--ds-tomato-a5);
+  border-radius: 10px;
+}
+
+.errbox .en {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--err-t);
+}
+
+.errbox .em {
+  margin-top: 3px;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink-2);
+}

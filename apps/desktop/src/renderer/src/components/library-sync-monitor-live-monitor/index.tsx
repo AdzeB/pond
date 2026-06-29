@@ -2,11 +2,11 @@ import type { Source } from "@pond/schema/db";
 import { Button } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import type { ProcessItem } from "@/components/library-sync-monitor/lib/use-active-processes";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
+import styles from "./styles.module.css";
 
 function fmtElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));

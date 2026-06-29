@@ -8,12 +8,12 @@ import {
   runTone,
   type SyncRun,
 } from "@/components/library-sync-monitor/lib/helpers";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useSyncHistory } from "@/hooks/use-sync-history";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { usePrefs } from "@/stores/prefs";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
+import styles from "./styles.module.css";
 
 const VISIBILITY: { id: SourceVisibility; label: string }[] = [
   { id: "always", label: "Always" },

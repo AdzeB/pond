@@ -1,7 +1,7 @@
 import { useState } from "react";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { formatBytes } from "@/lib/util/format";
 import { useStorageStatus } from "@/stores/storage-status";
+import styles from "./styles.module.css";
 
 export function StorageBanner() {
   const storage = useStorageStatus();

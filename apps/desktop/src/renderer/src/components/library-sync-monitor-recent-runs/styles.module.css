@@ -1,0 +1,213 @@
+/* ── section labels (segmented control) ─────────────────────────────────── */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  margin-left: auto;
+  background: var(--hover);
+  border-radius: 8px;
+}
+
+.seg button {
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--ink-2);
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.seg button.on {
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+/* ── recent runs table ──────────────────────────────────────────────────── */
+.runs {
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.rh {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.rh h3 {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.thd,
+.rrow {
+  display: grid;
+  grid-template-columns: 96px 150px 1fr 52px 90px 116px 16px;
+  gap: 12px;
+  align-items: center;
+}
+
+.thd {
+  padding: 9px 16px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--ds-gray-a2);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.thd .r {
+  text-align: right;
+}
+
+.daygrp {
+  padding: 9px 16px 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: var(--ds-gray-a2);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.rrow {
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.rrow:last-child {
+  border-bottom: 0;
+}
+
+.rrow:hover {
+  background: var(--hover);
+}
+
+.rrow .src {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.rrow .sn {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 560;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.rrow .rmsg {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.rrow .ritems {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+.rrow .ritems b {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rrow .rtrig {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.rrow .rt {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+  text-align: right;
+}
+
+.rrow .chev {
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.rout {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 2px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: var(--ds-radius-full);
+}
+
+.rout .od {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.rout.ok {
+  color: var(--ok-t);
+  background: var(--ds-grass-a3);
+}
+
+.rout.ok .od {
+  background: var(--ok);
+}
+
+.rout.noop {
+  color: var(--ink-2);
+  background: var(--hover);
+}
+
+.rout.noop .od {
+  background: var(--ink-3);
+}
+
+.rout.err {
+  color: var(--err-t);
+  background: var(--ds-tomato-a3);
+}
+
+.rout.err .od {
+  background: var(--err);
+}
+
+.rout.warn {
+  color: var(--warn-t);
+  background: var(--ds-amber-a3);
+}
+
+.rout.warn .od {
+  background: var(--warn);
+}
+
+.empty {
+  padding: 28px 16px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+  text-align: center;
+}

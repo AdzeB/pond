@@ -3,7 +3,7 @@ import {
   IconArrowRightOutline18 as ArrowRight,
 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
-import styles from "@/components/save-media-viewer/styles.module.css";
+import styles from "./styles.module.css";
 
 export function NavButtons({
   onPrev,

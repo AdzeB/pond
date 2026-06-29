@@ -11,7 +11,6 @@ import type { PondApi } from "../../preload";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { PondCustomiseDialog } from "./components/pond-customise-dialog";
-import { Presentation } from "./components/save-presentation";
 import { Toaster } from "./components/toaster";
 import { BackfillStatusBridge } from "./effects/backfill-status-bridge";
 import { DeveloperApplier } from "./effects/developer-applier";
@@ -91,7 +90,6 @@ export function App() {
           <EnrichmentSweep />
           <ErrorBoundary>
             <RouterProvider router={router} />
-            <Presentation />
             <PondCustomiseDialog />
           </ErrorBoundary>
           <Toaster />

@@ -1,0 +1,320 @@
+/* ── status ring + dot (reused) ─────────────────────────────────────────── */
+.ring {
+  position: relative;
+  flex: none;
+}
+
+.ring .dot {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 13px;
+  height: 13px;
+  border: 2.5px solid var(--panel);
+  border-radius: 50%;
+}
+
+.dot.ok {
+  background: var(--ok);
+}
+
+.dot.run {
+  background: var(--run);
+  animation: pulse 1.4s infinite;
+}
+
+.dot.err {
+  background: var(--err);
+}
+
+.dot.idle {
+  background: var(--ink-3);
+}
+
+.dot.paused {
+  background: var(--warn);
+}
+
+.st.ok {
+  color: var(--ok-t);
+}
+
+.st.run {
+  color: var(--run-t);
+}
+
+.st.err {
+  color: var(--err-t);
+}
+
+.st.idle {
+  color: var(--ink-3);
+}
+
+.st.paused {
+  color: var(--warn-t);
+}
+
+/* ── dialogs (Dialog.Popup) ─────────────────────────────────────────────── */
+.dlgPopup {
+  width: 100%;
+  max-width: 540px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.dlgHead {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  padding: 18px 20px;
+}
+
+.dlgHead .dh {
+  flex: 1;
+  min-width: 0;
+}
+
+.dlgHead .dn {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 18px;
+  font-weight: 660;
+  color: var(--ink);
+}
+
+.dlgHead .ds {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.dlgActions {
+  display: flex;
+  gap: 8px;
+  padding: 2px 20px 16px;
+}
+
+.dlgActions > * {
+  flex: 1;
+}
+
+.dlgBody {
+  max-height: 56vh;
+  padding: 4px 20px 8px;
+  overflow: auto;
+  border-top: 1px solid var(--line-2);
+}
+
+.dsec {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.dsec:last-child {
+  border-bottom: 0;
+}
+
+.dt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 11px;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.statgrid .sb {
+  padding: 9px 11px;
+  background: var(--hover);
+  border-radius: 10px;
+}
+
+.statgrid .sl {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.statgrid .sv {
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.sv.ok {
+  color: var(--ok-t);
+}
+
+.sv.zero {
+  color: var(--ink-3);
+}
+
+.drow {
+  display: grid;
+  grid-template-columns: 12px 1fr auto 12px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 6px;
+  margin: 0 -6px;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+}
+
+.drow:hover {
+  background: var(--hover);
+}
+
+.drow .dd {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.drow .dl {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.drow .dl .dim {
+  color: var(--ink-2);
+}
+
+.drow .rt {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+
+.drow .dchev {
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.dd.ok {
+  background: var(--ok);
+}
+
+.dd.err {
+  background: var(--err);
+}
+
+.dd.warn {
+  background: var(--warn);
+}
+
+.dd.idle,
+.dd.noop {
+  background: var(--ink-3);
+}
+
+.field {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+
+.field .fl {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.field .fh {
+  max-width: 320px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.field select {
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.segm {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--hover);
+  border-radius: 8px;
+}
+
+.segm button {
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink-2);
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+}
+
+.segm button.on {
+  font-weight: 560;
+  color: var(--ink);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.propose {
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--warn-t);
+  letter-spacing: 0.02em;
+  background: var(--ds-amber-a3);
+  border-radius: 5px;
+}
+
+.handle {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* ── keyframes ──────────────────────────────────────────────────────────── */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 var(--ds-accent-a6);
+  }
+  70% {
+    box-shadow: 0 0 0 5px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot.run {
+    animation: none;
+  }
+}

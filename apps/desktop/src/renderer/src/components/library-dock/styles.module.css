@@ -46,8 +46,6 @@
   box-shadow: var(--ds-shadow-5);
 }
 
-/* Animated thinking border. Overlays the pill without intercepting pointer
-   events; the beam layers fade themselves in/out via the `active` prop. */
 .beam {
   z-index: 0;
   pointer-events: none;
@@ -57,16 +55,6 @@
   position: absolute;
   inset: 0;
   border-radius: var(--ds-radius-full);
-}
-
-.row {
-  display: inline-flex;
-  align-items: center;
-}
-
-.askRow {
-  display: inline-flex;
-  align-items: center;
 }
 
 .item {
@@ -101,106 +89,6 @@
 
   &:active > svg {
     transform: scale(0.82);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
-}
-
-.indicator {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-full);
-}
-
-.separator {
-  flex-shrink: 0;
-  align-self: center;
-  width: 1px;
-  height: 16px;
-  margin-inline: 7.5px;
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-full);
-}
-
-.item.danger {
-  &:hover {
-    color: var(--ds-red-1, var(--ds-gray-1));
-    background: var(--ds-red-9, var(--ds-gray-11));
-  }
-}
-
-.icon {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-}
-
-.item:active .icon {
-  transform: scale(0.82);
-}
-
-.count {
-  display: inline-flex;
-  gap: 1px;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 22px;
-  padding-inline: 7px;
-  margin-inline: 2px;
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-1);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-11);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    background: var(--ds-gray-12);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
-}
-
-.countTotal {
-  font-weight: 500;
-  color: var(--ds-gray-7);
-}
-
-.clear {
-  display: inline-flex;
-  align-items: center;
-  height: 32px;
-  padding-inline: 10px;
-  font-size: 13px;
-  color: var(--ds-gray-6);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-1);
-    background: var(--ds-gray-11);
   }
 
   &:focus-visible {

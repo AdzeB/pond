@@ -24,7 +24,6 @@ import {
   $createSkillChipNode,
   $createTagChipNode,
 } from "@/components/ask-bar/lib/nodes";
-import styles from "@/components/ask-bar/styles.module.css";
 import {
   type CustomSkill,
   matchSkills,
@@ -32,6 +31,7 @@ import {
 } from "@/lib/save/skills";
 import type { Save } from "@/lib/types";
 import { bouncySpring } from "@/lib/ui/motion";
+import styles from "./styles.module.css";
 
 // How many skills the "/" menu shows before a "Show N more" expander appears.
 const GROUP_CAP = 5;

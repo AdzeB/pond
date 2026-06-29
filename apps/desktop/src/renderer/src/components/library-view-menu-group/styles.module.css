@@ -1,0 +1,40 @@
+/* Trails a group title when that group is off its default. */
+.groupDot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  vertical-align: middle;
+  background: var(--ds-blue-9);
+  border-radius: 999px;
+}
+
+/* One labelled group within the panel. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.groupHeader {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-height: 14px;
+}
+
+.groupTitle {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ds-gray-10);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.groupValue {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}

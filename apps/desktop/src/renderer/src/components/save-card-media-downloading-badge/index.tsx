@@ -1,5 +1,5 @@
-import styles from "@/components/save-card-media/styles.module.css";
 import type { Save } from "@/lib/types";
+import styles from "./styles.module.css";
 
 export function DownloadingBadge({
   save,

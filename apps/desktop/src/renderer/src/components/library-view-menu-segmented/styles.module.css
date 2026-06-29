@@ -1,0 +1,70 @@
+/* Segmented control: a single-select switch shared by Layout and Zoom. The
+   active cell is a floating surface that springs between positions (motion
+   layoutId), so switching reads as one continuous move, not a repaint. */
+.segmented {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-gray-a3);
+  border-radius: 8px;
+}
+
+.segment {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0;
+  font: inherit;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+  }
+
+  &[data-active="true"] {
+    color: var(--ds-gray-12);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.segmented[data-labels="true"] .segment {
+  height: 54px;
+}
+
+.segmentHighlight {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ds-gray-1);
+  border-radius: 6px;
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    var(--ds-shadow-2);
+}
+
+.segmentInner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.segmentLabel {
+  font-size: 11px;
+  font-weight: 500;
+}

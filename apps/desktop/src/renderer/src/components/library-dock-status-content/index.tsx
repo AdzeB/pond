@@ -1,8 +1,8 @@
 import { motion } from "motion/react";
 import { AskStatusPill } from "@/components/ask-bar";
 import { useDock } from "@/components/library-dock/lib/context";
-import styles from "@/components/library-dock/styles.module.css";
 import { bouncySpring } from "@/lib/ui/motion";
+import styles from "./styles.module.css";
 
 export function StatusContent() {
   const dock = useDock();

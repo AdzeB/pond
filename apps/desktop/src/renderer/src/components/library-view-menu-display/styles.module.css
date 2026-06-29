@@ -1,0 +1,47 @@
+/* Display properties: wrapping pill toggles. A filled chip is on, an outlined
+   muted chip is off, so the whole enabled set reads at a glance. */
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: transparent;
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 999px;
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background-color var(--ds-duration-fast) var(--ds-easing-standard),
+    border-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    border-color: var(--ds-gray-a6);
+  }
+
+  &[data-active="true"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+    border-color: transparent;
+  }
+
+  &[data-active="true"]:hover {
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}

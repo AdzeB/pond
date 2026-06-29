@@ -6,6 +6,7 @@ import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Switch } from "../switch";
+import { type MenuItemSpec, renderMenuSpec } from "./items";
 
 import styles from "./styles.module.css";
 
@@ -91,8 +92,18 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return <span className={cn(styles["item-label"], className)} {...props} />;
 }
 
-function ItemKbd({ className, ...props }: React.ComponentProps<"span">) {
-  return <span className={cn(styles["item-kbd"], className)} {...props} />;
+function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
+  const letters = props.children?.toString().split("");
+
+  return (
+    <span className={cn(styles["item-keyboard"], className)} {...props}>
+      {letters?.map((letter) => (
+        <kbd className={styles.key} key={letter}>
+          {letter}
+        </kbd>
+      ))}
+    </span>
+  );
 }
 
 function Group(props: Base.Group.Props) {
@@ -196,7 +207,7 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
     <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
       {props.children}
-      <CaretRight width={8} height={8} style={{ marginLeft: "auto" }} />
+      <CaretRight width={6} height={6} style={{ color: "var(--ds-gray-9)" }} />
     </Base.SubmenuTrigger>
   );
 }
@@ -204,6 +215,27 @@ function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
 function SecondaryLabel({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span className={cn(styles["secondary-label"], className)} {...props} />
+  );
+}
+
+function Items({ items }: { items: MenuItemSpec[] }) {
+  return (
+    <>
+      {renderMenuSpec(items, {
+        Item,
+        ItemIcon,
+        ItemLabel,
+        ItemKeyboard,
+        Separator,
+        Group,
+        GroupLabel,
+        SubmenuRoot,
+        SubmenuTrigger,
+        Portal,
+        Positioner,
+        Popup,
+      })}
+    </>
   );
 }
 
@@ -215,8 +247,6 @@ function Input({ className, onKeyDown, ...props }: BaseInput.Props) {
       className={cn(styles.input, className)}
       onKeyDown={(event) => {
         onKeyDown?.(event);
-        // Stop printable keys bubbling so Base UI's menu typeahead doesn't eat them;
-        // navigation keys still reach the menu.
         if (
           event.key.length === 1 &&
           !event.ctrlKey &&
@@ -241,7 +271,7 @@ export const Menu = {
   Item,
   ItemIcon,
   ItemLabel,
-  ItemKbd,
+  ItemKeyboard,
   Input,
   SecondaryLabel,
   Group,
@@ -255,4 +285,7 @@ export const Menu = {
   SwitchItemIndicator,
   SubmenuRoot,
   SubmenuTrigger,
+  Items,
 };
+
+export type { MenuItemSpec } from "./items";

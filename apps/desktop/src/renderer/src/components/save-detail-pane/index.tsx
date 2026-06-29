@@ -1,11 +1,11 @@
 import {
   IconPalette2Outline18 as ColorsIcon,
   IconDropCapOutline18 as ContentIcon,
-  IconCircleQuestionOutline18 as Help,
+  IconXmarkOutline18 as Cross,
   IconChartActivity2Outline18 as InsightsIcon,
   IconOrderedList2Outline18 as PropertiesIcon,
 } from "@pond/icons/outline/18";
-import { Button, TitleBar, Tooltip } from "@pond/ui";
+import { Button, TitleBar } from "@pond/ui";
 import { ColorSwatch } from "@/components/color-swatch";
 import { ExpandableText } from "@/components/expandable-text";
 import { Insight } from "@/components/save-detail-insight";
@@ -54,11 +54,9 @@ export function SaveDetails({ save }: { save: Save }) {
           <TitleBar.Label>Save Details</TitleBar.Label>
         </TitleBar.Title>
         <TitleBar.End>
-          <Tooltip label="Help" side="top">
-            <Button icon size="sm" variant="ghost" aria-label="Help">
-              <Help />
-            </Button>
-          </Tooltip>
+          <Button icon size="sm" variant="ghost" aria-label="Close">
+            <Cross />
+          </Button>
         </TitleBar.End>
       </TitleBar.Root>
 

@@ -10,7 +10,7 @@ export { Drawer } from "./drawer";
 export { Field } from "./field";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";
-export { Menu } from "./menu";
+export { Menu, type MenuItemSpec } from "./menu";
 export { Popover } from "./popover";
 export { RangeField } from "./range-field";
 export { Select } from "./select";

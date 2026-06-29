@@ -1,8 +1,8 @@
 import { Slider } from "@pond/ui";
-import styles from "@/components/library-view-menu/styles.module.css";
 import { Group } from "@/components/library-view-menu-group";
 import { useView } from "@/hooks/use-view";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/ui/zoom";
+import styles from "./styles.module.css";
 
 const STEPS: ReadonlyArray<{ value: number; label: string }> = [
   { value: ZOOM_MIN, label: "Compact" },

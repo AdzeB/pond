@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { getSourceDef } from "@/lib/save/sources-registry";
+import styles from "./styles.module.css";
 
 // The colored brand square. Each `IconBrand*` is full-bleed (its own
 // background rect), so clipping to a rounded box yields the app-icon look.

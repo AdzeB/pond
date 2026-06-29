@@ -121,7 +121,7 @@
   white-space: nowrap;
 }
 
-.item-kbd {
+.item-keyboard {
   flex-shrink: 0;
   padding: 1px 5px;
   font-family: var(--ds-font-mono);

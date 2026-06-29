@@ -1,6 +1,6 @@
 import { IconXmarkOutline18 as Clear } from "@pond/icons/outline/18";
 import { forwardRef, type ReactNode } from "react";
-import styles from "@/components/ask-bar/styles.module.css";
+import styles from "./styles.module.css";
 
 export type ChipTone = "skill" | "mention" | "tag";
 

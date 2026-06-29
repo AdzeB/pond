@@ -1,11 +1,11 @@
 import type { Source } from "@pond/schema/db";
 import type { MouseEvent } from "react";
 import { cardModel } from "@/components/library-sync-monitor/lib/helpers";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { type NativeMenuItem, showContextMenu } from "@/lib/ui/native-menu";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
+import styles from "./styles.module.css";
 
 export function SourceCard({
   source,

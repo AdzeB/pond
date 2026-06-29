@@ -1,14 +1,14 @@
 import {
   IconMagnifierFill18 as Search,
-  IconNut2Fill18 as ViewIcon,
+  IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
-import styles from "@/components/library-dock/styles.module.css";
 import { ViewMenu } from "@/components/library-view-menu";
 import { bouncySpring, gentleSpring } from "@/lib/ui/motion";
+import styles from "./styles.module.css";
 
 export function NavContent() {
   const dock = useDock();
@@ -29,8 +29,6 @@ export function NavContent() {
       >
         <Search />
       </button>
-
-      <span className={styles.separator} aria-hidden />
 
       {NAV_TABS.map((tab) => {
         const active = dock.isTabActive(tab.id);
@@ -56,8 +54,6 @@ export function NavContent() {
           </Link>
         );
       })}
-
-      <span className={styles.separator} aria-hidden />
 
       <ViewMenu
         side="top"

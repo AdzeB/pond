@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useId } from "react";
-import styles from "@/components/library-view-menu/styles.module.css";
 import { snappySpring } from "@/lib/ui/motion";
+import styles from "./styles.module.css";
 
 export interface SegmentedOption<T> {
   value: T;

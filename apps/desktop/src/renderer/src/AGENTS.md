@@ -47,7 +47,7 @@ renderer/src/
 Domain-prefixed kebab-case so the flat folders sort by area and never collide:
 
 - `save-*` — `save-card`, `save-card-media`, `save-detail-modal`, `save-preview`,
-  `save-media-viewer`, `save-presentation`, `save-context-menu`, `save-inspector-kebab`.
+  `save-media-viewer`, `save-context-menu`, `save-inspector-kebab`.
 - `library-*` — `library-page`, `library-toolbar`, `library-dock`, `library-grid`,
   `library-grid-view`, `library-packed-grid`, `library-waterfall`, `library-justified`,
   `library-list-view`, `library-filter-panel`,

@@ -1,7 +1,7 @@
-import styles from "@/components/library-view-menu/styles.module.css";
 import { Group } from "@/components/library-view-menu-group";
 import { useView } from "@/hooks/use-view";
 import { DISPLAY_DEFAULTS, type DisplayPrefKey } from "@/stores/display-prefs";
+import styles from "./styles.module.css";
 
 const TOGGLES: Array<{ key: DisplayPrefKey; label: string }> = [
   { key: "name", label: "Name" },

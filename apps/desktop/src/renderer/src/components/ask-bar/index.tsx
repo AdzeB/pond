@@ -51,8 +51,7 @@ import {
 } from "@/stores/ask-store";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
-import { presentation } from "@/stores/presentation";
-import { selection } from "@/stores/selection";
+import { primarySelection, selection } from "@/stores/selection";
 import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 import {
@@ -416,7 +415,7 @@ function AskField({
     queueMicrotask(() => editor.focus());
   }, [onClear, editor, removePendingImage]);
 
-  const openSave = useCallback((id: string) => presentation.open(id), []);
+  const openSave = useCallback((id: string) => primarySelection.set(id), []);
 
   const replayAsk = useCallback(
     (question: string) => {

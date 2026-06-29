@@ -4,12 +4,12 @@ import {
   type MetricContext,
   type MetricDisplay,
 } from "@/components/library-sync-monitor/lib/kpi-catalog";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { useRecentRuns } from "@/hooks/use-recent-runs";
 import { useSyncStats } from "@/hooks/use-sync-stats";
 import { usePrefs } from "@/stores/prefs";
 import { useStorageStatus } from "@/stores/storage-status";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
+import styles from "./styles.module.css";
 
 export function KpiStrip({
   sources,

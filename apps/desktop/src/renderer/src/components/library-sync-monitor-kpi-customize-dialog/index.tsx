@@ -6,8 +6,8 @@ import {
   METRIC_GROUPS,
   type MetricDisplay,
 } from "@/components/library-sync-monitor/lib/kpi-catalog";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { usePrefs } from "@/stores/prefs";
+import styles from "./styles.module.css";
 
 const WINDOWS = [
   { value: 1, label: "24h" },

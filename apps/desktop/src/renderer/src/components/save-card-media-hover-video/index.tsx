@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useInViewRef, useMergeRefs } from "rooks";
-import styles from "@/components/save-card-media/styles.module.css";
 import { recordAspect } from "@/stores/aspect";
+import styles from "./styles.module.css";
 
 export function HoverVideo({
   saveId,

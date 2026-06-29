@@ -7,11 +7,11 @@ import {
 } from "@pond/icons/fill/18";
 import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
-import styles from "@/components/library-dock/styles.module.css";
 import { selectAllInView } from "@/lib/save/selection";
 import { bouncySpring, snappySpring } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
 import { selection } from "@/stores/selection";
+import styles from "./styles.module.css";
 
 export function SelectionContent() {
   const dock = useDock();

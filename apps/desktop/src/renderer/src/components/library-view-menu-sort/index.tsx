@@ -3,10 +3,10 @@ import {
   IconDescendingSortingFill18 as DescendingIcon,
 } from "@pond/icons/fill/18";
 import { Select } from "@pond/ui";
-import styles from "@/components/library-view-menu/styles.module.css";
 import { Group } from "@/components/library-view-menu-group";
 import { type SortKey, useView } from "@/hooks/use-view";
 import { VIEW_DEFAULTS } from "@/stores/view-store";
+import styles from "./styles.module.css";
 
 type KeyOption = { value: SortKey; label: string };
 

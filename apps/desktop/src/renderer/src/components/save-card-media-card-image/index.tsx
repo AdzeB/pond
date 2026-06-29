@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { CARD_THUMB_WIDTH } from "@/components/save-card-media/lib/constants";
-import styles from "@/components/save-card-media/styles.module.css";
 import type { MediaUnit } from "@/lib/media/units";
 import { withThumbWidth } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { recordAspect } from "@/stores/aspect";
+import styles from "./styles.module.css";
 
 export function CardImage({
   save,

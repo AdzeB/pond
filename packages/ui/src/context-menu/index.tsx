@@ -56,8 +56,8 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
   return <span className={cn(styles["item-label"], className)} {...props} />;
 }
 
-function ItemKbd({ className, ...props }: React.ComponentProps<"span">) {
-  return <span className={cn(styles["item-kbd"], className)} {...props} />;
+function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(styles["item-keyboard"], className)} {...props} />;
 }
 
 function Group(props: Base.Group.Props) {
@@ -136,7 +136,7 @@ export const ContextMenu = {
   Item,
   ItemIcon,
   ItemLabel,
-  ItemKbd,
+  ItemKeyboard,
   Group,
   GroupLabel,
   Separator,

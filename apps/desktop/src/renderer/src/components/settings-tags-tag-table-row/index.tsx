@@ -15,13 +15,13 @@ import {
   focusInput,
   relativeTime,
 } from "@/components/settings-tags/lib/helpers";
-import styles from "@/components/settings-tags/styles.module.css";
 import {
   buildTagMenuItems,
   type TagMenuActions,
 } from "@/components/tag-context-menu";
 import { showContextMenu } from "@/lib/ui/native-menu";
 import type { TagRow } from "@/stores/tags";
+import styles from "./styles.module.css";
 
 interface TagTableRowProps {
   tag: TagRow;

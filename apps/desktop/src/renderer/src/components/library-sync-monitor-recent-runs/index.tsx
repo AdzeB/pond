@@ -10,10 +10,10 @@ import {
   runTone,
   type SyncRun,
 } from "@/components/library-sync-monitor/lib/helpers";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useRecentRuns } from "@/hooks/use-recent-runs";
 import { getSourceDef } from "@/lib/save/sources-registry";
+import styles from "./styles.module.css";
 
 type Filter = "all" | "errors" | "manual";
 

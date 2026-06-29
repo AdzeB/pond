@@ -1,0 +1,40 @@
+/* Sort row: field select + direction toggle. */
+.sortRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sortField {
+  flex: 1;
+  min-width: 0;
+}
+
+.dirButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-a3);
+  border: 0;
+  border-radius: 6px;
+  transition: background-color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}

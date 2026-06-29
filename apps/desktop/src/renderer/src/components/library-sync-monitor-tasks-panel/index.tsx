@@ -1,12 +1,12 @@
 import { Button } from "@pond/ui";
 import { useState } from "react";
-import styles from "@/components/library-sync-monitor/styles.module.css";
 import {
   type LibraryTask,
   TASK_GROUPS,
   TASKS,
   type TaskResult,
 } from "@/lib/save/tasks";
+import styles from "./styles.module.css";
 
 export function TasksPanel() {
   return (

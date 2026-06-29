@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import styles from "@/components/library-view-menu/styles.module.css";
+import styles from "./styles.module.css";
 
 // A labelled section of the view-options panel: an uppercase title with an
 // optional right-aligned readout of the current value (e.g. the Zoom step).

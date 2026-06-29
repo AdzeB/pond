@@ -16,7 +16,6 @@ import {
   GROUP_COLORS,
   relativeTime,
 } from "@/components/settings-tags/lib/helpers";
-import styles from "@/components/settings-tags/styles.module.css";
 import { TagTableRow } from "@/components/settings-tags-tag-table-row";
 import {
   buildTagGroupMenuItems,
@@ -26,6 +25,7 @@ import { gentleSpring } from "@/lib/ui/motion";
 import { showContextMenu } from "@/lib/ui/native-menu";
 import type { TagGroupRow } from "@/stores/tag-groups";
 import type { TagRow } from "@/stores/tags";
+import styles from "./styles.module.css";
 
 interface GroupRowProps {
   group: TagGroupRow;

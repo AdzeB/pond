@@ -61,21 +61,6 @@
   }
 }
 
-.nav {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
-  transform: translateY(-50%);
-
-  &[data-side="prev"] {
-    left: 8px;
-  }
-
-  &[data-side="next"] {
-    right: 8px;
-  }
-}
-
 /* Contain-fit the media against both axes while preserving its true ratio:
    width is the smaller of the horizontal cap and the height-bound width
    (available height x ratio), so the box itself equals the displayed media and
