@@ -1,4 +1,4 @@
-import type { ComparatorId, FieldId } from "@pond/schema/filters/types";
+import type { ComparatorId } from "@pond/schema/filters/types";
 import type { AskSort } from "@/lib/search/nl-query";
 
 // Static vocabulary for the Stage A natural-language compiler: filler words,
@@ -57,6 +57,7 @@ export const FILLER = new Set([
   "within",
   "around",
   "ago",
+  "between",
 ]);
 
 export const NEGATORS = new Set([
@@ -67,9 +68,14 @@ export const NEGATORS = new Set([
   "excluding",
 ]);
 
-// Phrase (lowercased) -> date-preset ISO duration; resolved against now() by the
-// matcher. Multi-word phrases are tried before single words.
-const DATE_PHRASES: ReadonlyArray<[string, string]> = [
+// Rolling time windows ("last 3 months" = the last ~90 days, not the previous
+// calendar quarter). These carry intentional product semantics that differ from
+// chrono's bounded-calendar parsing, so they're claimed before chrono and emit a
+// relative ISO duration resolved as `>= now - duration` downstream. Everything
+// else (absolute dates, calendar ranges, "two weeks ago", "yesterday", named
+// months/years) is owned by chrono in nl-chrono. Sorted longest-first so
+// "past 6 months" wins over "past month".
+const ROLLING_RAW: ReadonlyArray<[string, string]> = [
   ["past 6 months", "-P6M"],
   ["last 6 months", "-P6M"],
   ["past 3 months", "-P3M"],
@@ -83,45 +89,22 @@ const DATE_PHRASES: ReadonlyArray<[string, string]> = [
   ["last 3 days", "-P3D"],
   ["past 2 days", "-P2D"],
   ["last 2 days", "-P2D"],
+  ["past 24 hours", "-P1D"],
   ["last few days", "-P3D"],
-  ["this week", "-P1W"],
   ["past week", "-P1W"],
   ["last week", "-P1W"],
-  ["this month", "-P1M"],
   ["past month", "-P1M"],
   ["last month", "-P1M"],
-  ["this year", "-P1Y"],
   ["past year", "-P1Y"],
   ["last year", "-P1Y"],
+  ["past day", "-P1D"],
   ["recently", "-P1W"],
   ["recent", "-P1W"],
-  // The matcher only supports cumulative "since now - N" windows, so "yesterday"
-  // resolves to the last two days (includes yesterday's saves) rather than a
-  // strict single-day range.
-  ["yesterday", "-P2D"],
-  ["past 24 hours", "-P1D"],
-  ["past day", "-P1D"],
-  ["today", "-P1D"],
 ];
 
-// Date phrases sorted longest-first so "past 6 months" beats "month".
-export const SORTED_DATE_PHRASES = [...DATE_PHRASES].sort(
-  (a, b) => b[0].split(/\s+/).length - a[0].split(/\s+/).length,
-);
-
-// Words that qualify which date a following phrase refers to. "published last
-// week" -> publishedAt; "updated today" -> modifiedAt; bare phrases -> savedAt.
-export const DATE_FIELD_KEYWORDS: Record<string, FieldId> = {
-  published: "publishedAt",
-  posted: "publishedAt",
-  modified: "modifiedAt",
-  updated: "modifiedAt",
-  edited: "modifiedAt",
-  changed: "modifiedAt",
-  saved: "savedAt",
-  added: "savedAt",
-  created: "savedAt",
-};
+export const ROLLING_WINDOWS: ReadonlyArray<[string, string]> = [
+  ...ROLLING_RAW,
+].sort((a, b) => b[0].split(/\s+/).length - a[0].split(/\s+/).length);
 
 // Spoken type words -> a canonical media type (only emitted if it's a real type).
 export const TYPE_SYNONYMS: Record<string, string> = {

@@ -11,7 +11,6 @@ import {
   MULTI_WORDS,
   NUMBER_WORDS,
   SORT_WORDS,
-  SORTED_DATE_PHRASES,
   SOURCE_SYNONYMS,
   TYPE_SYNONYMS,
   WITH_WORDS,
@@ -269,82 +268,6 @@ export function matchCountIntent(
     }
   }
   return null;
-}
-
-// A relative window ("last week") or an absolute year ("2024") starting at i.
-function matchDateValue(
-  words: string[],
-  i: number,
-):
-  | { kind: "window"; iso: string; len: number }
-  | { kind: "year"; year: number; len: number }
-  | null {
-  const w = (words[i] ?? "").toLowerCase();
-  if (/^(19|20)\d{2}$/.test(w)) {
-    return { kind: "year", year: Number.parseInt(w, 10), len: 1 };
-  }
-  for (const [phrase, iso] of SORTED_DATE_PHRASES) {
-    const parts = phrase.split(/\s+/);
-    if (parts.every((part, k) => (words[i + k] ?? "") === part)) {
-      return { kind: "window", iso, len: parts.length };
-    }
-  }
-  return null;
-}
-
-const yearStart = (y: number) => `${y}-01-01`;
-
-// Date intents with direction: "before last week", "after 2023", "since last
-// month", "older than a year", or a bare phrase ("this week" -> on or after).
-// `field` is the qualifier-resolved target (savedAt / publishedAt / modifiedAt).
-export function matchDateIntent(
-  words: string[],
-  i: number,
-  field: FieldId,
-): { pred: Predicate; len: number } | null {
-  const at = (k: number) => (words[i + k] ?? "").toLowerCase();
-
-  // Optional direction word(s) before the date value.
-  let k = 0;
-  let dir: "before" | "after" | "since" | null = null;
-  const head = at(0);
-  if (head === "before" || head === "older" || head === "earlier") {
-    dir = "before";
-    k = 1;
-  } else if (head === "after" || head === "newer") {
-    dir = "after";
-    k = 1;
-  } else if (head === "since") {
-    dir = "since";
-    k = 1;
-  }
-  if (dir && (at(k) === "than" || at(k) === "to")) k += 1;
-
-  const value = matchDateValue(words, i + k);
-  if (!value) return null;
-  const len = k + value.len;
-
-  let predicate: Predicate;
-  if (value.kind === "year") {
-    if (dir === "before") {
-      predicate = { field, operator: "lt", value: yearStart(value.year) };
-    } else if (dir === "after") {
-      predicate = { field, operator: "gte", value: yearStart(value.year + 1) };
-    } else if (dir === "since") {
-      predicate = { field, operator: "gte", value: yearStart(value.year) };
-    } else {
-      predicate = {
-        field,
-        operator: "between",
-        value: [yearStart(value.year), yearStart(value.year + 1)],
-      };
-    }
-  } else {
-    // A relative window: default "on or after"; "before" flips to strictly older.
-    const operator = dir === "before" ? "lt" : dir === "after" ? "gt" : "gte";
-    predicate = { field, operator, value: value.iso };
-  }
-  return { pred: predicate, len };
 }
 
 // Recognize ordering / cap phrasing: "newest", "most recent", "top 10",

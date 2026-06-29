@@ -1,26 +1,17 @@
-import type {
-  Clause,
-  FieldId,
-  Predicate,
-  Query,
-} from "@pond/schema/filters/types";
+import type { Clause, Predicate, Query } from "@pond/schema/filters/types";
+import { extractDates } from "@/lib/search/nl-chrono";
 import {
   accumulate,
   buildCandidates,
   matchCandidate,
   matchCountIntent,
-  matchDateIntent,
   matchDurationIntent,
   matchIntent,
   matchSortLimit,
   newAccumulator,
   toPredicates,
 } from "@/lib/search/nl-matchers";
-import {
-  DATE_FIELD_KEYWORDS,
-  FILLER,
-  NEGATORS,
-} from "@/lib/search/nl-vocabulary";
+import { FILLER, NEGATORS } from "@/lib/search/nl-vocabulary";
 import { serializePredicate } from "@/lib/search/syntax";
 
 // Stage A of the "find anything" compiler: a deterministic natural-language ->
@@ -77,7 +68,11 @@ export function dedupePredicates(predicates: Predicate[]): Predicate[] {
 // Resolve a natural-language string into a structured query plus residual text,
 // using only deterministic lookups grounded in the supplied live facets.
 export function compileStageA(input: string, facets: NlFacets): NlResult {
-  const words = input
+  // Dates are pulled out first by chrono (+ the curated rolling-window table),
+  // leaving the token walker a date-free string to reason about.
+  const { predicates: datePreds, rest } = extractDates(input);
+
+  const words = rest
     .toLowerCase()
     .replace(/[?!.,]/g, " ")
     .split(/\s+/)
@@ -92,29 +87,8 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   let negateNext = false;
   let sort: AskSort | null = null;
   let limit: number | null = null;
-  // Which date field an upcoming date phrase applies to, set by a qualifier
-  // like "published" / "updated" and cleared once consumed or interrupted.
-  let pendingDateField: FieldId | null = null;
   while (i < words.length) {
     const word = words[i] as string;
-
-    // A date qualifier ("published", "updated") steers the next date phrase.
-    const dateField = DATE_FIELD_KEYWORDS[word];
-    if (dateField) {
-      pendingDateField = dateField;
-      i += 1;
-      continue;
-    }
-
-    // Date intents (incl. before/after/year), honoring a pending qualifier.
-    const date = matchDateIntent(words, i, pendingDateField ?? "savedAt");
-    if (date) {
-      intentPreds.push(date.pred);
-      pendingDateField = null;
-      i += date.len;
-      negateNext = false;
-      continue;
-    }
 
     // Ordering / cap phrasing ("newest", "top 10"). Last write wins.
     const order = matchSortLimit(words, i);
@@ -169,16 +143,16 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    if (!FILLER.has(word)) {
-      residual.push(word);
-      // A real (non-date, unmatched) word breaks the qualifier's reach.
-      pendingDateField = null;
-    }
+    if (!FILLER.has(word)) residual.push(word);
     negateNext = false;
     i += 1;
   }
 
-  const rules = dedupePredicates([...toPredicates(acc), ...intentPreds]);
+  const rules = dedupePredicates([
+    ...toPredicates(acc),
+    ...intentPreds,
+    ...datePreds,
+  ]);
   const query: Query = { combinator: "and", rules };
   return { query, residual: residual.join(" "), sort, limit };
 }

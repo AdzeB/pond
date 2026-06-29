@@ -11,6 +11,9 @@ export default defineConfig({
       // bindings so the modules import in a plain Node test process.
       electron: stub("electron.ts"),
       "electron-log/main.js": stub("electron-log.ts"),
+      // Renderer path alias, so renderer modules (e.g. the NL compiler) import
+      // under test the same way they do in the app.
+      "@": fileURLToPath(new URL("./src/renderer/src", import.meta.url)),
     },
   },
   test: {
