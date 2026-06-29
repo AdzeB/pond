@@ -16,6 +16,7 @@ import {
 } from "@/lib/save/actions";
 import { trashSelection } from "@/lib/save/selection";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
+import { newSave } from "@/stores/new-save";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";
@@ -97,6 +98,10 @@ export function MenuBridge() {
 
         case "developer.ipc-inspector":
           void window.pond.query("developer.openIpcInspector", {});
+          return;
+
+        case "save.new":
+          newSave.open();
           return;
 
         case "save.open-with-default": {

@@ -1,4 +1,4 @@
-import { SETTINGS_SECTIONS, SOURCES, sourceLabel } from "@pond/schema";
+import { SOURCES, sourceLabel } from "@pond/schema";
 import { app, BrowserWindow, Menu, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC, type MenuActionId } from "../shared/constants";
@@ -29,19 +29,13 @@ export function installAppMenu(deps: AppMenuDeps): void {
     void shell.openExternal(url);
   };
 
-  const settingsSubmenu = (): Electron.MenuItemConstructorOptions[] =>
-    SETTINGS_SECTIONS.map((section) => ({
-      label: section.label,
-      click: navTo(`/settings/${section.path}`),
-    }));
-
   // Sync source remotes and refresh the metadata those sources feed.
   const sourcesSubmenu = (): Electron.MenuItemConstructorOptions[] => {
     const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
       // Local imports have no remote to sync from.
       (source) => source !== "local",
     ).map((source) => ({
-      label: `Sync ${sourceLabel(source)} Now`,
+      label: `Sync ${sourceLabel(source)}`,
       click: () => {
         void syncSource(source, { trigger: "manual" }).catch((err) =>
           log.warn(`[pond menu] sync ${source} failed`, err),
@@ -66,8 +60,9 @@ export function installAppMenu(deps: AppMenuDeps): void {
     ];
   };
 
-  const preferencesItem: Electron.MenuItemConstructorOptions = {
-    label: "Preferences…",
+  const settingsItem: Electron.MenuItemConstructorOptions = {
+    label: "Settings…",
+    accelerator: "CmdOrCtrl+,",
     click: navTo("/settings"),
   };
 
@@ -84,8 +79,7 @@ export function installAppMenu(deps: AppMenuDeps): void {
                 click: navTo("/settings/general"),
               },
               { type: "separator" as const },
-              preferencesItem,
-              { label: "Settings", submenu: settingsSubmenu() },
+              settingsItem,
               { type: "separator" as const },
               { role: "services" as const },
               { type: "separator" as const },
@@ -100,78 +94,17 @@ export function installAppMenu(deps: AppMenuDeps): void {
       : []),
     {
       label: "File",
-      submenu: [isMac ? { role: "close" } : { role: "quit" }],
-    },
-    {
-      label: "Edit",
       submenu: [
         {
-          label: "Undo",
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (!win || win.isDestroyed()) return;
-            win.webContents.undo();
-            win.webContents.send(IPC.editUndoRequested);
-          },
+          label: "New Save…",
+          accelerator: "CmdOrCtrl+N",
+          click: sendMenuAction("save.new"),
         },
         {
-          label: "Redo",
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (!win || win.isDestroyed()) return;
-            win.webContents.redo();
-            win.webContents.send(IPC.editRedoRequested);
-          },
+          label: "Open Library…",
+          click: () => openLibraryWindow(),
         },
         { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        { role: "selectAll" },
-        ...(!isMac ? [{ type: "separator" as const }, preferencesItem] : []),
-      ],
-    },
-    {
-      label: "View",
-      submenu: [
-        {
-          label: "Cycle Layout",
-          click: sendMenuAction("view.layout.cycle"),
-        },
-        {
-          label: "Waterfall",
-          click: sendMenuAction("view.layout.waterfall"),
-        },
-        { label: "Grid", click: sendMenuAction("view.layout.grid") },
-        {
-          label: "Justified",
-          click: sendMenuAction("view.layout.justified"),
-        },
-        { label: "List", click: sendMenuAction("view.layout.list") },
-        { type: "separator" },
-        {
-          label: "Toggle Details",
-          click: sendMenuAction("view.inspector.toggle"),
-        },
-        {
-          label: "Theme",
-          submenu: [
-            { label: "Light", click: sendMenuAction("theme.light") },
-            { label: "Dark", click: sendMenuAction("theme.dark") },
-            { label: "Match System", click: sendMenuAction("theme.system") },
-          ],
-        },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
-    },
-    {
-      label: "Save",
-      submenu: [
         {
           label: "Open with Default App",
           click: sendMenuAction("save.open-with-default"),
@@ -183,15 +116,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         {
           label: "Reveal in Finder",
           click: sendMenuAction("save.reveal"),
-        },
-        { type: "separator" },
-        {
-          label: "Copy URL",
-          click: sendMenuAction("save.copy-url"),
-        },
-        {
-          label: "Copy Save ID",
-          click: sendMenuAction("save.copy-id"),
         },
         { type: "separator" },
         {
@@ -220,30 +144,101 @@ export function installAppMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("save.delete-forever"),
         },
         { type: "separator" },
-        {
-          label: "Bulk",
-          submenu: [
-            {
-              label: "Move Selected to Trash",
-              click: sendMenuAction("save.bulk-trash"),
-            },
-            {
-              label: "Refresh Selected",
-              click: sendMenuAction("save.bulk-refresh"),
-            },
-          ],
-        },
+        isMac ? { role: "close" } : { role: "quit" },
       ],
     },
     {
-      label: "Sources",
-      submenu: sourcesSubmenu(),
+      label: "Edit",
+      submenu: [
+        {
+          label: "Undo",
+          accelerator: "CmdOrCtrl+Z",
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (!win || win.isDestroyed()) return;
+            win.webContents.undo();
+            win.webContents.send(IPC.editUndoRequested);
+          },
+        },
+        {
+          label: "Redo",
+          accelerator: "CmdOrCtrl+Shift+Z",
+          click: () => {
+            const win = BrowserWindow.getFocusedWindow();
+            if (!win || win.isDestroyed()) return;
+            win.webContents.redo();
+            win.webContents.send(IPC.editRedoRequested);
+          },
+        },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+        { type: "separator" },
+        {
+          label: "Copy URL",
+          click: sendMenuAction("save.copy-url"),
+        },
+        {
+          label: "Copy Save ID",
+          click: sendMenuAction("save.copy-id"),
+        },
+        { type: "separator" },
+        {
+          label: "Move Selected to Trash",
+          click: sendMenuAction("save.bulk-trash"),
+        },
+        {
+          label: "Refresh Selected",
+          click: sendMenuAction("save.bulk-refresh"),
+        },
+        ...(!isMac ? [{ type: "separator" as const }, settingsItem] : []),
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        {
+          label: "Cycle Layout",
+          click: sendMenuAction("view.layout.cycle"),
+        },
+        {
+          label: "Waterfall",
+          click: sendMenuAction("view.layout.waterfall"),
+        },
+        { label: "Grid", click: sendMenuAction("view.layout.grid") },
+        {
+          label: "Justified",
+          click: sendMenuAction("view.layout.justified"),
+        },
+        { label: "List", click: sendMenuAction("view.layout.list") },
+        { type: "separator" },
+        {
+          label: "Toggle Details",
+          click: sendMenuAction("view.inspector.toggle"),
+        },
+        {
+          label: "Appearance",
+          submenu: [
+            { label: "Light", click: sendMenuAction("theme.light") },
+            { label: "Dark", click: sendMenuAction("theme.dark") },
+            { label: "Match System", click: sendMenuAction("theme.system") },
+          ],
+        },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
     },
     {
       label: "Library",
       submenu: [
         {
-          label: "Reveal in Finder",
+          label: "Reveal Library in Finder",
           click: () => void shell.openPath(libraryRoot()),
         },
         {
@@ -273,6 +268,11 @@ export function installAppMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          label: "Sync",
+          submenu: sourcesSubmenu(),
+        },
+        { type: "separator" },
+        {
           label: "Empty Trash",
           click: sendMenuAction("trash.empty"),
         },
@@ -291,11 +291,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
           ? ([
               { type: "separator" },
               { role: "front" },
-              { type: "separator" },
-              {
-                label: "Library",
-                click: () => openLibraryWindow(),
-              },
             ] satisfies Electron.MenuItemConstructorOptions[])
           : ([
               { role: "close" },

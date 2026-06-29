@@ -18,6 +18,7 @@ import {
   useViewFilteredCount,
   useViewMode,
 } from "@/stores/library-view-context";
+import { newSave, useNewSaveOpen } from "@/stores/new-save";
 import { selection, useSelectionSize } from "@/stores/selection";
 import { useDockActions } from "./lib/actions";
 import {
@@ -53,7 +54,7 @@ export function Root({ preview }: RootProps) {
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
   const [mode, setMode] = useState<DockMode>("nav");
-  const [newOpen, setNewOpen] = useState(false);
+  const newOpen = useNewSaveOpen();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const inTrash = viewMode === "trash";
@@ -72,7 +73,7 @@ export function Root({ preview }: RootProps) {
     clearAsk();
     setMode("nav");
   }, []);
-  const openNewSave = useCallback(() => setNewOpen(true), []);
+  const openNewSave = useCallback(() => newSave.open(), []);
 
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
@@ -228,7 +229,7 @@ export function Root({ preview }: RootProps) {
 
       <NewSaveDialog
         open={newOpen}
-        onOpenChange={setNewOpen}
+        onOpenChange={newSave.set}
         anchor={() => newButtonRef.current}
         align="end"
       />
