@@ -1,0 +1,51 @@
+.quoted {
+  padding: 12px;
+  margin-top: 12px;
+  border: 1px solid var(--tw-border);
+  border-radius: 16px;
+}
+
+.quotedHeader {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+}
+
+.quotedName {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.quotedHandle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  line-height: 20px;
+  color: var(--tw-secondary);
+  white-space: nowrap;
+}
+
+.quotedBody {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  margin: 4px 0 0;
+  overflow: hidden;
+  -webkit-line-clamp: 6;
+  font-size: 15px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.verified {
+  flex-shrink: 0;
+  color: var(--tw-verified);
+}

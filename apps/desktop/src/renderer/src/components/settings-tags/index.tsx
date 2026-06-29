@@ -16,13 +16,14 @@ import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useMemo, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PromptDialog } from "@/components/prompt-dialog";
+import { GroupRow } from "@/components/settings-tags-group-row";
+import { TagTableRow } from "@/components/settings-tags-tag-table-row";
 import { useSaves } from "@/hooks/use-saves";
-import { adaptNavigate } from "@/lib/navigate-path";
+import { adaptNavigate } from "@/lib/ui/navigate-path";
 import { type TagGroupRow, useTagGroups } from "@/stores/tag-groups";
 import { type TagRow, useTags } from "@/stores/tags";
 import { setQuery } from "@/stores/view-store";
-import { TagsTableContext, type TagsTableValue } from "./context";
-import { GroupRow } from "./group-row";
+import { TagsTableContext, type TagsTableValue } from "./lib/context";
 import {
   colorForName,
   compareFacets,
@@ -31,9 +32,8 @@ import {
   type SortFacets,
   type SortKey,
   type SortState,
-} from "./helpers";
+} from "./lib/helpers";
 import styles from "./styles.module.css";
-import { TagTableRow } from "./tag-table-row";
 
 interface GroupStats {
   members: TagRow[];

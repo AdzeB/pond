@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { findScrollParent } from "@/lib/dom";
+import { findScrollParent } from "@/lib/util/dom";
 
 interface PositionedItem {
   top: number;

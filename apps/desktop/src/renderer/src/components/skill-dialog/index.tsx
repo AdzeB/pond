@@ -4,7 +4,11 @@ import {
 } from "@pond/icons/outline/18";
 import { Button, Dialog, Field, Input } from "@pond/ui";
 import { useEffect, useState } from "react";
-import { type CustomSkill, makeSkillId, slugifySkillName } from "@/lib/skills";
+import {
+  type CustomSkill,
+  makeSkillId,
+  slugifySkillName,
+} from "@/lib/save/skills";
 import { usePrefs } from "@/stores/prefs";
 import styles from "./styles.module.css";
 

@@ -4,21 +4,21 @@ import {
 } from "@blossom-carousel/react";
 import "@blossom-carousel/react/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { NavButtons } from "@/components/save-media-viewer-controls";
+import { type MediaSlide, Slide } from "@/components/save-media-viewer-slide";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
-import { type ChapterCue, chaptersForSave } from "@/lib/chapters-vtt";
-import { buildMediaUnits } from "@/lib/media";
-import { showContextMenu } from "@/lib/native-menu";
+import { type ChapterCue, chaptersForSave } from "@/lib/media/chapters-vtt";
+import { buildMediaUnits } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
+import { showContextMenu } from "@/lib/ui/native-menu";
 import { tagClipboard } from "@/stores/tag-clipboard";
-import { NavButtons } from "./controls";
-import { buildViewerMenu } from "./menu";
-import { type MediaSlide, Slide } from "./slide";
-import styles from "./styles.module.css";
+import { buildViewerMenu } from "./lib/menu";
 import {
   useActiveSlide,
   useCarouselNavigation,
   useRatioCache,
-} from "./use-carousel";
+} from "./lib/use-carousel";
+import styles from "./styles.module.css";
 
 export function MediaViewer({ save }: { save: Save }) {
   const theme = useResolvedTheme();

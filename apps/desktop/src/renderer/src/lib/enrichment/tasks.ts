@@ -1,4 +1,4 @@
-import { setSaveTags } from "@/lib/mutate-save";
+import { setSaveTags } from "@/lib/save/mutate";
 import type { Save } from "@/lib/types";
 import { clearClipEmbeddings } from "@/stores/clip-embedding-store";
 import { clearEmbeddings } from "@/stores/embedding-store";

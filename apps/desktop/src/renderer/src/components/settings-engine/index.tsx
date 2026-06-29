@@ -1,13 +1,13 @@
 import { Settings } from "@pond/ui";
+import { ItemView } from "@/components/settings-engine-field-control";
 import type {
   Binding,
   GroupConfig,
   SectionConfig,
-} from "@/lib/settings-engine-types";
+} from "@/lib/settings/engine-types";
 import { usePrefs } from "@/stores/prefs";
-import { ItemView } from "./field-control";
 
-export type { Binding, SectionConfig } from "@/lib/settings-engine-types";
+export type { Binding, SectionConfig } from "@/lib/settings/engine-types";
 
 const EMPTY_BINDING: Binding = {
   values: {},

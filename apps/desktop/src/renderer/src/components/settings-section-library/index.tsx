@@ -1,7 +1,7 @@
 import { Button } from "@pond/ui";
 import { usePonds } from "@/hooks/use-ponds";
-import { glyphKind, PondGlyph } from "@/lib/pond-icons";
-import { prettyPath } from "@/lib/pretty-path";
+import { glyphKind, PondGlyph } from "@/lib/ui/pond-icons";
+import { prettyPath } from "@/lib/util/pretty-path";
 import { pondCustomise } from "@/stores/pond-customise";
 import styles from "./styles.module.css";
 

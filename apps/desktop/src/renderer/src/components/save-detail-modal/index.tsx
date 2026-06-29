@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { SaveDetails } from "@/components/save-detail-pane";
 import { MediaViewer } from "@/components/save-media-viewer";
 import { useSave } from "@/hooks/use-saves";
-import { formatTimestampLine } from "@/lib/format";
+import { formatTimestampLine } from "@/lib/util/format";
 import { useTrackVisit } from "@/stores/recents";
 import { useSaveDetailsOpen } from "@/stores/save-detail-prefs";
 import { primarySelection, primarySelectionStore } from "@/stores/selection";

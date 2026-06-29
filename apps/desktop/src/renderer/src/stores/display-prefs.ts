@@ -19,7 +19,7 @@ const STORAGE_KEYS: Record<DisplayPrefKey, string> = {
   type: "pond.display.type",
 };
 
-const DEFAULTS: DisplayPrefs = {
+export const DISPLAY_DEFAULTS: DisplayPrefs = {
   name: true,
   date: true,
   fileCount: true,
@@ -28,13 +28,13 @@ const DEFAULTS: DisplayPrefs = {
 };
 
 function readKey(key: DisplayPrefKey): boolean {
-  if (typeof window === "undefined") return DEFAULTS[key];
+  if (typeof window === "undefined") return DISPLAY_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS[key]);
-    if (raw == null) return DEFAULTS[key];
+    if (raw == null) return DISPLAY_DEFAULTS[key];
     return raw === "1";
   } catch {
-    return DEFAULTS[key];
+    return DISPLAY_DEFAULTS[key];
   }
 }
 

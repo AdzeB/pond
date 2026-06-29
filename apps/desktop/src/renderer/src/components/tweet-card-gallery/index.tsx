@@ -1,5 +1,5 @@
 import { TweetCard } from "@/components/tweet-card";
-import { TWEET_FIXTURES, type TweetFixture } from "./fixtures";
+import { TWEET_FIXTURES, type TweetFixture } from "./lib/fixtures";
 import styles from "./styles.module.css";
 
 export function TweetCardGallery() {

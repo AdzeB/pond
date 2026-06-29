@@ -1,5 +1,5 @@
 import { cloneElement, type MouseEvent, type ReactElement } from "react";
-import { type NativeMenuItem, showContextMenu } from "@/lib/native-menu";
+import { type NativeMenuItem, showContextMenu } from "@/lib/ui/native-menu";
 
 // Native menus can't render color swatches, so colors are named items for now.
 const GROUP_COLORS = [

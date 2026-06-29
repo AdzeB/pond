@@ -2,7 +2,7 @@ import { SETTINGS_SECTION_ALIASES, SETTINGS_SECTIONS } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { SettingsSectionView } from "@/components/settings-engine";
-import { SECTIONS } from "@/lib/settings-registry";
+import { SECTIONS } from "@/lib/settings/registry";
 
 // Path validation uses the lightweight schema list so redirects don't pull in the registry chunk; only the component below does.
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));

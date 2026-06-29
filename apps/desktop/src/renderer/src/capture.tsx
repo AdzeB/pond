@@ -3,11 +3,6 @@ import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { TweetCard } from "./components/tweet-card";
 
-// Standalone entry the main process loads in a hidden window to rasterize a
-// tweet card into a cover PNG. Kept deliberately minimal — no stores, IPC, or
-// router — so it boots fast and deterministically. Data arrives base64-encoded
-// in the query string; readiness is signalled via `documentElement.dataset`.
-
 const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
 
@@ -16,9 +11,6 @@ const SCHEME: "light" | "dark" =
   params.get("scheme") === "dark" ? "dark" : "light";
 const WIDTH = Number(params.get("w") ?? DEFAULT_WIDTH) || DEFAULT_WIDTH;
 
-// Paint the page the card's own background. capturePage composites transparent
-// pixels onto white, so without this a sub-pixel rounding sliver below the card
-// shows as a white hairline on the dark card.
 document.documentElement.style.background = SCHEME === "dark" ? "#000" : "#fff";
 
 function decodePayload(): TweetCardData {
@@ -32,8 +24,6 @@ function decodePayload(): TweetCardData {
 
 const PAYLOAD = decodePayload();
 
-// Resolve once every <img> in the card has loaded (or errored), so capturePage
-// never fires on a half-painted card. Bounded so a hung image can't stall.
 function waitForImages(root: HTMLElement): Promise<void> {
   const pending = Array.from(root.querySelectorAll("img")).filter(
     (img) => !img.complete,
@@ -82,4 +72,5 @@ function CaptureCard() {
 }
 
 const root = document.getElementById("capture-root");
+
 if (root) createRoot(root).render(<CaptureCard />);

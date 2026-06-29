@@ -6,7 +6,7 @@ import {
   type ImageDownloadPrefs,
   type SettingsRow,
   type VideoDownloadPrefs,
-} from "@/lib/settings-section-types";
+} from "@/lib/settings/section-types";
 
 export function useVideoDownloadBinding(): Binding {
   return useDownloadBinding("videoDownload", "settings.setVideoDownload");

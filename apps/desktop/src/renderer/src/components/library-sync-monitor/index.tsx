@@ -2,31 +2,31 @@ import { SOURCES, type Source } from "@pond/schema/db";
 import { Button } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { useIntervalWhen } from "rooks";
+import { KpiCustomizeDialog } from "@/components/library-sync-monitor-kpi-customize-dialog";
+import { KpiStrip } from "@/components/library-sync-monitor-kpi-strip";
+import { LiveMonitor } from "@/components/library-sync-monitor-live-monitor";
+import { RecentRuns } from "@/components/library-sync-monitor-recent-runs";
+import { RunDialog } from "@/components/library-sync-monitor-run-dialog";
+import { SourceCard } from "@/components/library-sync-monitor-source-card";
+import { SourceDialog } from "@/components/library-sync-monitor-source-dialog";
+import { StorageBanner } from "@/components/library-sync-monitor-storage-banner";
+import { TasksPanel } from "@/components/library-sync-monitor-tasks-panel";
 import { useSyncStats } from "@/hooks/use-sync-stats";
 import {
   pauseEnrichmentSweep,
   resumeEnrichmentSweep,
 } from "@/lib/enrichment/sweep";
-import { showContextMenu } from "@/lib/native-menu";
-import { retryAllFailed } from "@/lib/selection-actions";
-import { getSourceDef } from "@/lib/sources-registry";
+import { retryAllFailed } from "@/lib/save/selection";
+import { getSourceDef } from "@/lib/save/sources-registry";
+import { showContextMenu } from "@/lib/ui/native-menu";
 import { useEnrichmentStatus } from "@/stores/enrichment-monitor";
 import { useGovernorSnapshot } from "@/stores/governor-monitor";
 import { usePipelineSnapshot } from "@/stores/pipeline-monitor";
 import { useFailedSaveCount } from "@/stores/pool";
 import { syncMonitor, useSyncBySource } from "@/stores/sync-monitor";
-import type { SyncRun } from "./helpers";
-import { KpiCustomizeDialog } from "./kpi-customize-dialog";
-import { KpiStrip } from "./kpi-strip";
-import { LiveMonitor } from "./live-monitor";
-import { RecentRuns } from "./recent-runs";
-import { RunDialog } from "./run-dialog";
-import { SourceCard } from "./source-card";
-import { SourceDialog } from "./source-dialog";
-import { StorageBanner } from "./storage-banner";
+import type { SyncRun } from "./lib/helpers";
+import { useActiveProcesses } from "./lib/use-active-processes";
 import styles from "./styles.module.css";
-import { TasksPanel } from "./tasks-panel";
-import { useActiveProcesses } from "./use-active-processes";
 
 // Sources you can sync; `local` (manual imports) and `web` (generic-link
 // fallback) aren't connectable accounts, so they're excluded.

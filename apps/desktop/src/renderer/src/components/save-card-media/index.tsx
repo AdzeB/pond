@@ -1,15 +1,15 @@
 import { memo, useCallback, useMemo, useState } from "react";
+import { CardImage } from "@/components/save-card-media-card-image";
+import { DownloadingBadge } from "@/components/save-card-media-downloading-badge";
+import { HoverGallery } from "@/components/save-card-media-hover-gallery";
+import { HoverVideo } from "@/components/save-card-media-hover-video";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
-import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media";
+import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";
+import { withThumbWidth } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
-import { withThumbWidth } from "@/lib/url";
 import { usePrefs } from "@/stores/prefs";
-import { CardImage } from "./card-image";
-import { CARD_THUMB_WIDTH } from "./constants";
-import { DownloadingBadge } from "./downloading-badge";
-import { HoverGallery } from "./hover-gallery";
-import { HoverVideo } from "./hover-video";
+import { CARD_THUMB_WIDTH } from "./lib/constants";
 import styles from "./styles.module.css";
 
 export type CardLayout = "waterfall" | "grid" | "justified";

@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
-import { byName } from "@/lib/sort";
+import { byName } from "@/lib/util/sort";
 
 export interface TagRow {
   id: string;

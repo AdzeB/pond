@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { cosine } from "@/lib/embeddings";
 import type { Save } from "@/lib/types";
+import { dot } from "@/lib/util/vector";
 import { embeddingStore, useEmbeddingVersion } from "@/stores/embedding-store";
 import { useSemanticQuery } from "@/stores/semantic-store";
 import { useSearchText } from "@/stores/view-store";
@@ -29,7 +29,7 @@ export function useSemanticRank(
     const unscored: { save: Save; index: number }[] = [];
     saves.forEach((save, index) => {
       const entry = embeddingStore.state.byId.get(save.id);
-      if (entry) scored.push({ save, score: cosine(vector, entry.vec), index });
+      if (entry) scored.push({ save, score: dot(vector, entry.vec), index });
       else unscored.push({ save, index });
     });
 

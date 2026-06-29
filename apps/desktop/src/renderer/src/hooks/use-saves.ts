@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
-import { bootStore } from "@/lib/bootstrap";
 import type { Save } from "@/lib/types";
+import { bootStore } from "@/stores/bootstrap";
 import { savesStore } from "@/stores/pool";
 
 export function useSave(id: string | null | undefined): Save | undefined {

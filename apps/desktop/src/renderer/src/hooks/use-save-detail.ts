@@ -1,16 +1,16 @@
 import { useEffect, useMemo } from "react";
-import { ensureRawJson } from "@/lib/raw-json";
+import { ensureTranscript } from "@/lib/media/transcript";
+import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import {
   collectEngagement,
   collectIdentityRows,
   composeContentDescription,
   type DetailRow,
   type Metric,
-} from "@/lib/save-detail";
-import { getSourceIcon } from "@/lib/sources-registry";
-import { ensureTranscript } from "@/lib/transcript";
+} from "@/lib/save/detail";
+import { ensureRawJson } from "@/lib/save/raw-json";
+import { getSourceIcon } from "@/lib/save/sources-registry";
 import type { Save } from "@/lib/types";
-import { pickAuthorAvatarUrl } from "@/lib/url";
 import { useSave } from "./use-saves";
 
 type SourceIcon = ReturnType<typeof getSourceIcon>;

@@ -5,7 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { type ChapterCue, chaptersToVttUrl } from "@/lib/chapters-vtt";
+import { type ChapterCue, chaptersToVttUrl } from "@/lib/media/chapters-vtt";
 import {
   clearActiveMediaSeek,
   setActiveMediaSeek,

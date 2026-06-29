@@ -13,9 +13,9 @@ import {
   refreshSaveMetadata,
   trashSave,
   untrashSave,
-} from "@/lib/save-actions";
-import { trashSelection } from "@/lib/selection-actions";
-import type { LayoutValue } from "@/lib/view-prefs";
+} from "@/lib/save/actions";
+import { trashSelection } from "@/lib/save/selection";
+import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";

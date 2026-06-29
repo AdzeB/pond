@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import type { SaveListMode } from "@/lib/save-list";
+import type { SaveListMode } from "@/lib/save/list";
 
 // The ids and mode of the currently-rendered library view. Published by the
 // library route and read by the globally-mounted dock, so selection actions

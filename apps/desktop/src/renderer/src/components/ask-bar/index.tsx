@@ -1,3 +1,5 @@
+import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
+import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -6,188 +8,97 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import {
   IconArrowUpFill18 as ArrowUp,
+  IconChevronDownFill18 as Collapse,
+  IconImagePlusFill18 as ImagePlus,
+  IconPenSparkleFill18 as NewChat,
   IconSparkleFill18 as Sparkle,
   IconCircleStopFill18 as Stop,
 } from "@pond/icons/fill/18";
 import {
+  IconAtSignOutline18 as AtSign,
   IconXmarkOutline18 as Clear,
+  IconClockRotateClockwiseOutline18 as History,
   IconPlusOutline18 as Plus,
 } from "@pond/icons/outline/18";
+import { Popover } from "@pond/ui";
 import {
+  CLEAR_EDITOR_COMMAND,
   COMMAND_PRIORITY_LOW,
-  KEY_ARROW_DOWN_COMMAND,
-  KEY_ARROW_UP_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
-  KEY_TAB_COMMAND,
 } from "lexical";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-  type MouseEvent as ReactMouseEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AskMentions } from "@/components/ask-bar-mentions";
+import { PromptDialog } from "@/components/prompt-dialog";
 import { SkillDialog } from "@/components/skill-dialog";
 import { runAskSuggestion, useAsk } from "@/hooks/use-ask";
 import { useSaves } from "@/hooks/use-saves";
-import { formatNumber } from "@/lib/format";
-import { bouncySpring, gentleSpring } from "@/lib/motion";
-import { type CustomSkill, matchSkills, slugifySkillName } from "@/lib/skills";
-import type { Save } from "@/lib/types";
-import { type AskStage, clearAsk, useAskResult } from "@/stores/ask-store";
-import { usePrefs } from "@/stores/prefs";
+import { representativeImageUrl } from "@/lib/enrichment/image";
+import { addTagToSelection, trashSelection } from "@/lib/save/selection";
+import { bouncySpring } from "@/lib/ui/motion";
+import { showContextMenu } from "@/lib/ui/native-menu";
+import { formatNumber } from "@/lib/util/format";
+import { useAskHistory } from "@/stores/ask-history";
 import {
-  $clearTrigger,
+  type AskSegment,
+  type AskStage,
+  type AskTurn,
+  askSnapshot,
+  clearAsk,
+  useAskResult,
+  useAskTurns,
+} from "@/stores/ask-store";
+import { pool } from "@/stores/pool";
+import { usePrefs } from "@/stores/prefs";
+import { presentation } from "@/stores/presentation";
+import { selection } from "@/stores/selection";
+import { useTags } from "@/stores/tags";
+import { pushToast } from "@/stores/toasts";
+import {
   $collectMentionIds,
+  $insertTrigger,
   $isEditorEmpty,
   $readPrompt,
-  $readTrigger,
-  $replaceTriggerWithChip,
-  $setPlainText,
+  $readSegments,
   type AskTrigger,
-} from "./editor-state";
-import {
-  $createMentionChipNode,
-  $createSkillChipNode,
-  $createTagChipNode,
-  MentionChipNode,
-  SkillChipNode,
-  TagChipNode,
-} from "./nodes";
+} from "./lib/editor-state";
+import { MentionChipNode, SkillChipNode, TagChipNode } from "./lib/nodes";
 import styles from "./styles.module.css";
 
-// How many skills the "/" menu shows before a "Show N more" expander appears.
-const GROUP_CAP = 5;
-const LOOKUP_CAP = 8;
-
-type AskMenuItem =
-  | { kind: "skill"; key: string; skill: CustomSkill }
-  | { kind: "create"; key: string; name: string }
-  | { kind: "more"; key: string; count: number }
-  | { kind: "save"; key: string; save: Save }
-  | { kind: "tag"; key: string; tag: string; count: number };
-
-interface AskMenuGroup {
-  id: string;
-  label: string;
-  items: AskMenuItem[];
-}
-
-interface AskMenu {
-  groups: AskMenuGroup[];
-  flat: AskMenuItem[];
-}
-
-function tagCountsOf(saves: ReadonlyArray<Save>): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const save of saves) {
-    if (save.deletedAt) continue;
-    for (const tag of save.tags ?? []) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }
-  }
-  return counts;
-}
-
-function matchSaves(saves: ReadonlyArray<Save>, query: string): Save[] {
-  const q = query.trim().toLowerCase();
-  const live = saves.filter((s) => !s.deletedAt);
-  if (!q) return live.slice(0, LOOKUP_CAP);
-  return live
-    .filter((s) =>
-      [s.title, s.author, s.url].some((v) =>
-        (v ?? "").toLowerCase().includes(q),
-      ),
-    )
-    .slice(0, LOOKUP_CAP);
-}
-
-function matchTagList(
-  counts: Map<string, number>,
-  query: string,
-): { tag: string; count: number }[] {
-  const q = query.trim().toLowerCase();
-  const all = Array.from(counts, ([tag, count]) => ({ tag, count }));
-  const filtered = q ? all.filter((t) => t.tag.toLowerCase().includes(q)) : all;
-  filtered.sort((a, b) => {
-    if (q) {
-      const ap = a.tag.toLowerCase().startsWith(q) ? 0 : 1;
-      const bp = b.tag.toLowerCase().startsWith(q) ? 0 : 1;
-      if (ap !== bp) return ap - bp;
-    }
-    return b.count - a.count || a.tag.localeCompare(b.tag);
-  });
-  return filtered.slice(0, LOOKUP_CAP);
-}
-
-// Build the grouped menu for the active trigger, or null when none is open.
-function buildMenu(
-  trigger: { trigger: AskTrigger; query: string } | null,
-  ctx: {
-    skills: ReadonlyArray<CustomSkill>;
-    saves: ReadonlyArray<Save>;
-    tagCounts: Map<string, number>;
-    expandedSkills: boolean;
-  },
-): AskMenu | null {
-  if (!trigger) return null;
-  const { query } = trigger;
-
-  if (trigger.trigger === "/") {
-    const matched = matchSkills(ctx.skills, query);
-    const visible = ctx.expandedSkills ? matched : matched.slice(0, GROUP_CAP);
-    const items: AskMenuItem[] = visible.map((skill) => ({
-      kind: "skill",
-      key: `skill-${skill.id}`,
-      skill,
-    }));
-    if (!ctx.expandedSkills && matched.length > GROUP_CAP) {
-      items.push({
-        kind: "more",
-        key: "more",
-        count: matched.length - GROUP_CAP,
-      });
-    }
-    items.push({
-      kind: "create",
-      key: "create",
-      name: slugifySkillName(query),
-    });
-    const groups: AskMenuGroup[] = [{ id: "skills", label: "Skills", items }];
-    return { groups, flat: items };
-  }
-
-  if (trigger.trigger === "@") {
-    const items: AskMenuItem[] = matchSaves(ctx.saves, query).map((save) => ({
-      kind: "save",
-      key: `save-${save.id}`,
-      save,
-    }));
-    if (items.length === 0) return null;
-    return { groups: [{ id: "saves", label: "Saves", items }], flat: items };
-  }
-
-  const items: AskMenuItem[] = matchTagList(ctx.tagCounts, query).map((t) => ({
-    kind: "tag",
-    key: `tag-${t.tag}`,
-    tag: t.tag,
-    count: t.count,
-  }));
-  if (items.length === 0) return null;
-  return { groups: [{ id: "tags", label: "Tags", items }], flat: items };
+// A query image staged in the composer before it's sent. `blob` feeds CLIP;
+// `url` is an object URL shown as a thumbnail and handed to the resolved turn.
+interface PendingImage {
+  blob: Blob;
+  url: string;
+  name: string;
 }
 
 // Trim + validate a question before running it, returning whether it ran.
 function useAskSubmit() {
   const run = useAsk();
   return useCallback(
-    (raw: string, anchors: string[] = []): boolean => {
+    (
+      raw: string,
+      anchors: string[] = [],
+      opts: {
+        refine?: boolean;
+        image?: PendingImage;
+        segments?: ReadonlyArray<AskSegment>;
+      } = {},
+    ): boolean => {
       const text = raw.trim();
-      if (!text && anchors.length === 0) return false;
-      void run(text, anchors);
+      if (!text && anchors.length === 0 && !opts.image) return false;
+      void run(text, anchors, {
+        refine: opts.refine,
+        segments: opts.segments,
+        image: opts.image
+          ? {
+              blob: opts.image.blob,
+              meta: { url: opts.image.url, name: opts.image.name },
+            }
+          : undefined,
+      });
       return true;
     },
     [run],
@@ -228,40 +139,41 @@ function AskField({
   onClear,
 }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
-  const ask = useAskResult();
   const saves = useSaves();
+  const turns = useAskTurns();
+  const recents = useAskHistory();
+  const tags = useTags();
   const [skillsPrefs] = usePrefs("skills");
   const skills = useMemo(() => skillsPrefs.custom ?? [], [skillsPrefs.custom]);
-  const tagCounts = useMemo(() => tagCountsOf(saves), [saves]);
 
   const submit = useAskSubmit();
+  const hasTurns = turns.length > 0;
 
-  const [trigger, setTrigger] = useState<{
-    trigger: AskTrigger;
-    query: string;
-  } | null>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [expandedSkills, setExpandedSkills] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  // Staged query image (image-to-image visual search), before send.
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+  // "Save as view" prompt state, seeded from the latest turn's question.
+  const [viewOpen, setViewOpen] = useState(false);
+  const [viewName, setViewName] = useState("");
 
-  const menu = useMemo(
-    () => buildMenu(trigger, { skills, saves, tagCounts, expandedSkills }),
-    [trigger, skills, saves, tagCounts, expandedSkills],
-  );
-  const open = !dismissed && menu !== null && menu.flat.length > 0;
-  const flat = menu?.flat ?? [];
-  const activeItem = open
-    ? (flat[Math.min(activeIndex, flat.length - 1)] ?? null)
-    : null;
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Auto-scroll bookkeeping: only follow new content when the user is already
+  // pinned to the bottom, but always jump on a brand-new turn.
+  const stickRef = useRef(true);
+  const prevLenRef = useRef(0);
+  // Mirror of the staged image so an unmount (dock collapse) can revoke an
+  // unsent object URL without revoking one already handed to a turn.
+  const pendingRef = useRef<PendingImage | null>(null);
+  pendingRef.current = pendingImage;
 
-  // Mirror the editor's caret-trigger + emptiness into React state.
+  // Mirror the editor's emptiness into React state.
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
-        setTrigger($readTrigger());
         // A lone @mention reads as empty text but is still sendable ("find
         // similar"), so count mention chips toward having content.
         setHasContent(!$isEditorEmpty() || $collectMentionIds().length > 0);
@@ -269,87 +181,197 @@ function AskField({
     });
   }, [editor]);
 
-  const triggerKey = trigger ? `${trigger.trigger}:${trigger.query}` : null;
-  // Reset the highlight, dismissal, and skills expander as the trigger changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on trigger change
-  useEffect(() => {
-    setActiveIndex(0);
-    setDismissed(false);
-    setExpandedSkills(false);
-  }, [triggerKey]);
-
-  useEffect(() => {
-    if (!autoFocus) return;
-    const raf = requestAnimationFrame(() => editor.focus());
-    return () => cancelAnimationFrame(raf);
-  }, [autoFocus, editor]);
-
   const sendNow = useCallback(() => {
     const state = editor.getEditorState();
     const prompt = state.read($readPrompt);
     const anchors = state.read($collectMentionIds);
-    if (submit(prompt, anchors)) {
-      editor.update(() => $setPlainText(""));
+    const segments = state.read($readSegments);
+    // A follow-up (any turn already exists) refines the current result set.
+    const refine = turns.length > 0;
+    const image = pendingImage ?? undefined;
+    if (submit(prompt, anchors, { refine, image, segments })) {
+      editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+      // The turn now owns the object URL; drop our handle without revoking it.
+      setPendingImage(null);
       onSubmitted?.();
     }
-  }, [editor, submit, onSubmitted]);
+  }, [editor, submit, onSubmitted, turns.length, pendingImage]);
 
-  const select = useCallback(
-    (item: AskMenuItem) => {
-      switch (item.kind) {
-        case "skill":
-          editor.update(() =>
-            $replaceTriggerWithChip("/", () =>
-              $createSkillChipNode(
-                item.skill.id,
-                item.skill.name,
-                item.skill.prompt,
-              ),
-            ),
-          );
-          break;
-        case "create":
-          editor.update(() => $clearTrigger("/"));
-          setCreateName(item.name);
-          setCreateOpen(true);
-          break;
-        case "more":
-          setExpandedSkills(true);
-          return;
-        case "save":
-          editor.update(() =>
-            $replaceTriggerWithChip("@", () =>
-              $createMentionChipNode(
-                item.save.id,
-                item.save.title ?? "Untitled",
-              ),
-            ),
-          );
-          break;
-        case "tag":
-          editor.update(() =>
-            $replaceTriggerWithChip("#", () => $createTagChipNode(item.tag)),
-          );
-          break;
+  // Send a literal string (starter chips / recent questions). Starts a fresh
+  // conversation rather than refining.
+  const runText = useCallback(
+    (text: string) => {
+      if (submit(text, [], { refine: false })) onSubmitted?.();
+    },
+    [submit, onSubmitted],
+  );
+
+  // Stage an image file for the next send (file picker / paste / drop).
+  const acceptImageFile = useCallback((file: File) => {
+    if (!file.type.startsWith("image/")) return;
+    setPendingImage((prev) => {
+      if (prev) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch {
+          /* already revoked */
+        }
       }
+      return {
+        blob: file,
+        url: URL.createObjectURL(file),
+        name: file.name || "image",
+      };
+    });
+  }, []);
+
+  const removePendingImage = useCallback(() => {
+    setPendingImage((prev) => {
+      if (prev) {
+        try {
+          URL.revokeObjectURL(prev.url);
+        } catch {
+          /* already revoked */
+        }
+      }
+      return null;
+    });
+  }, []);
+
+  const onPickImage = useCallback(() => fileInputRef.current?.click(), []);
+
+  const onPaste = useCallback(
+    (event: React.ClipboardEvent) => {
+      const file = Array.from(event.clipboardData.files).find((f) =>
+        f.type.startsWith("image/"),
+      );
+      if (file) {
+        event.preventDefault();
+        acceptImageFile(file);
+      }
+    },
+    [acceptImageFile],
+  );
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      const file = Array.from(event.dataTransfer.files).find((f) =>
+        f.type.startsWith("image/"),
+      );
+      if (file) {
+        event.preventDefault();
+        acceptImageFile(file);
+      }
+    },
+    [acceptImageFile],
+  );
+
+  // Conversational actions operate on the latest turn's result ids.
+  const currentIds = turns[turns.length - 1]?.ids ?? null;
+  const selectInGrid = useCallback(() => {
+    if (!currentIds || currentIds.length === 0) return;
+    selection.set([...currentIds]);
+    pushToast(`Selected ${formatNumber(currentIds.length)} in grid.`);
+  }, [currentIds]);
+
+  const openTagMenu = useCallback(() => {
+    if (!currentIds || currentIds.length === 0) return;
+    const scope = [...currentIds];
+    const items =
+      tags.length === 0
+        ? [{ label: "No tags yet", enabled: false }]
+        : tags.map((tag) => ({
+            label: tag.name,
+            onSelect: () => void addTagToSelection(scope, tag.name),
+          }));
+    void showContextMenu([
+      { label: `Tag ${formatNumber(scope.length)} results`, enabled: false },
+      { type: "separator" },
+      ...items,
+    ]);
+  }, [currentIds, tags]);
+
+  const trashCurrent = useCallback(() => {
+    if (!currentIds || currentIds.length === 0) return;
+    void trashSelection([...currentIds]);
+  }, [currentIds]);
+
+  const openSaveView = useCallback(() => {
+    setViewName(askSnapshot().question);
+    setViewOpen(true);
+  }, []);
+
+  const confirmSaveView = useCallback(() => {
+    const name = viewName.trim();
+    if (!name) return;
+    const snap = askSnapshot();
+    void window.pond
+      .query("savedViews.create", {
+        name,
+        question: snap.question,
+        query: snap.query,
+      })
+      .then(() => pushToast(`Saved view “${name}”.`, "success"))
+      .catch(() => pushToast("Couldn't save view.", "error"));
+    setViewOpen(false);
+  }, [viewName]);
+
+  // Track whether the user is parked at the bottom so streaming updates don't
+  // yank them away while they're scrolled up reading earlier turns.
+  const onTranscriptScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48;
+  }, []);
+
+  // A new turn always scrolls into view; content updates (stage/summary) only
+  // follow when already pinned to the bottom.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const grew = turns.length > prevLenRef.current;
+    prevLenRef.current = turns.length;
+    if (grew || stickRef.current) {
+      el.scrollTop = el.scrollHeight;
+      stickRef.current = true;
+    }
+  }, [turns]);
+
+  // Revoke a staged-but-unsent image URL if the composer unmounts (e.g. the
+  // dock collapses). A sent image is already null here, so its turn keeps it.
+  useEffect(() => {
+    return () => {
+      if (pendingRef.current) {
+        try {
+          URL.revokeObjectURL(pendingRef.current.url);
+        } catch {
+          /* already revoked */
+        }
+      }
+    };
+  }, []);
+
+  // Toolbar quick-add: drop a trigger char and refocus so its menu opens.
+  const insertTrigger = useCallback(
+    (trigger: AskTrigger) => {
+      editor.update(() => $insertTrigger(trigger));
       queueMicrotask(() => editor.focus());
     },
     [editor],
   );
 
-  // Refs let the Lexical command handlers read the latest menu state without
-  // re-registering on every keystroke.
-  const openRef = useRef(open);
-  const activeIndexRef = useRef(activeIndex);
-  const flatRef = useRef(flat);
-  const selectRef = useRef(select);
+  // Open the "create skill" dialog seeded with a slug (from the `/` menu).
+  const openCreateSkill = useCallback((name: string) => {
+    setCreateName(name);
+    setCreateOpen(true);
+  }, []);
+
+  // Refs let the command handlers read the latest values without re-registering
+  // on every keystroke. The typeahead plugin intercepts enter/escape at a higher
+  // priority while a menu is open, so these LOW handlers only run otherwise.
   const sendRef = useRef(sendNow);
   const emptyRef = useRef(!hasContent);
   const onCollapseRef = useRef(onCollapse);
-  openRef.current = open;
-  activeIndexRef.current = activeIndex;
-  flatRef.current = flat;
-  selectRef.current = select;
   sendRef.current = sendNow;
   emptyRef.current = !hasContent;
   onCollapseRef.current = onCollapse;
@@ -357,70 +379,21 @@ function AskField({
   useEffect(() => {
     const cleanups = [
       editor.registerCommand(
-        KEY_ARROW_DOWN_COMMAND,
-        (event) => {
-          if (!openRef.current) return false;
-          event?.preventDefault();
-          const count = flatRef.current.length;
-          if (count > 0) setActiveIndex((i) => (i + 1) % count);
-          return true;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_ARROW_UP_COMMAND,
-        (event) => {
-          if (!openRef.current) return false;
-          event?.preventDefault();
-          const count = flatRef.current.length;
-          if (count > 0) setActiveIndex((i) => (i <= 0 ? count - 1 : i - 1));
-          return true;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
         KEY_ENTER_COMMAND,
         (event) => {
           event?.preventDefault();
-          const idx = activeIndexRef.current;
-          const items = flatRef.current;
-          if (openRef.current && idx >= 0 && idx < items.length) {
-            const item = items[idx];
-            if (item) selectRef.current(item);
-            return true;
-          }
           sendRef.current();
           return true;
         },
         COMMAND_PRIORITY_LOW,
       ),
       editor.registerCommand(
-        KEY_TAB_COMMAND,
-        (event) => {
-          const idx = activeIndexRef.current;
-          const items = flatRef.current;
-          if (openRef.current && idx >= 0 && idx < items.length) {
-            const item = items[idx];
-            if (item) {
-              event?.preventDefault();
-              selectRef.current(item);
-              return true;
-            }
-          }
-          return false;
-        },
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
         KEY_ESCAPE_COMMAND,
         () => {
-          if (openRef.current) {
-            setDismissed(true);
-            setActiveIndex(0);
-          } else if (emptyRef.current) {
+          if (emptyRef.current) {
             onCollapseRef.current?.();
           } else {
-            editor.update(() => $setPlainText(""));
+            editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
           }
           return true;
         },
@@ -432,37 +405,111 @@ function AskField({
     };
   }, [editor]);
 
-  const titleLabel = trigger
-    ? trigger.trigger === "/"
-      ? "Skills"
-      : trigger.trigger === "@"
-        ? "Saves"
-        : "Tags"
-    : "Ask";
+  const lastTurn = turns[turns.length - 1] ?? null;
+  const busy = lastTurn?.status === "thinking";
+  const canSend = (hasContent || pendingImage != null) && !busy;
+
+  const newChat = useCallback(() => {
+    if (onClear) onClear();
+    else clearAsk();
+    removePendingImage();
+    queueMicrotask(() => editor.focus());
+  }, [onClear, editor, removePendingImage]);
+
+  const openSave = useCallback((id: string) => presentation.open(id), []);
+
+  const replayAsk = useCallback(
+    (question: string) => {
+      setHistoryOpen(false);
+      runText(question);
+    },
+    [runText],
+  );
 
   return (
-    <motion.div layout className={styles.card}>
-      <div className={styles.header}>
-        <span className={styles.title}>
-          <Sparkle width={14} height={14} />
-          {titleLabel}
-        </span>
-        <div className={styles.headerActions}>
+    <motion.div
+      layout
+      className={styles.card}
+      data-chat={hasTurns || undefined}
+      onPaste={onPaste}
+      onDrop={onDrop}
+      onDragOver={(e) => {
+        if (Array.from(e.dataTransfer.types).includes("Files"))
+          e.preventDefault();
+      }}
+    >
+      {hasTurns ? (
+        <div className={styles.chatHead}>
+          <span className={styles.chatTitle}>
+            <Sparkle width={13} height={13} />
+            Chat
+          </span>
           <button
             type="button"
-            className={styles.iconBtn}
-            aria-label="Close"
+            className={styles.chatNew}
+            aria-label="New chat"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onCollapse?.()}
+            onClick={newChat}
           >
-            <Clear width={15} height={15} />
+            <NewChat width={14} height={14} />
+            New
           </button>
         </div>
-      </div>
+      ) : null}
 
-      <AnimatePresence initial={false}>
-        {ask.active ? <AskResultPanel key="result" onClear={onClear} /> : null}
-      </AnimatePresence>
+      {hasTurns ? (
+        <div
+          className={styles.transcript}
+          ref={scrollRef}
+          onScroll={onTranscriptScroll}
+        >
+          {turns.map((turn, i) => (
+            <TurnView
+              key={turn.id}
+              turn={turn}
+              isLast={i === turns.length - 1}
+              onOpenSave={openSave}
+              onRetry={
+                i === turns.length - 1 &&
+                turn.status === "error" &&
+                turn.question
+                  ? () => runText(turn.question)
+                  : undefined
+              }
+              actions={
+                i === turns.length - 1 &&
+                turn.status === "done" &&
+                turn.count > 0
+                  ? {
+                      onSelect: selectInGrid,
+                      onTag: openTagMenu,
+                      onTrash: trashCurrent,
+                      onSaveView: openSaveView,
+                    }
+                  : null
+              }
+            />
+          ))}
+        </div>
+      ) : null}
+
+      {pendingImage ? (
+        <div className={styles.attachRow}>
+          <span className={styles.attachThumb}>
+            <img src={pendingImage.url} alt="" />
+          </span>
+          <span className={styles.attachLabel}>{pendingImage.name}</span>
+          <button
+            type="button"
+            className={styles.attachRemove}
+            aria-label="Remove image"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={removePendingImage}
+          >
+            <Clear width={13} height={13} />
+          </button>
+        </div>
+      ) : null}
 
       <div className={styles.editor}>
         <PlainTextPlugin
@@ -475,77 +522,190 @@ function AskField({
           }
           placeholder={
             <span className={styles.placeholder}>
-              Ask anything, or / for skills…
+              {hasTurns
+                ? "Ask a follow-up, or drop an image…"
+                : "Ask anything, / for skills, @ for context…"}
             </span>
           }
           ErrorBoundary={LexicalErrorBoundary}
         />
         <HistoryPlugin />
+        <ClearEditorPlugin />
+        {autoFocus ? <AutoFocusPlugin /> : null}
+        <AskMentions
+          skills={skills}
+          saves={saves}
+          onCreateSkill={openCreateSkill}
+        />
       </div>
 
-      {open && menu ? (
-        <motion.div
-          className={styles.menu}
-          initial={{ opacity: 0, y: 6, scale: 0.98 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={bouncySpring}
-        >
-          {menu.groups.map((group) => (
-            <div key={group.id} className={styles.menuGroup}>
-              <div className={styles.menuGroupLabel}>{group.label}</div>
-              {group.items.map((item) => {
-                const index = flat.indexOf(item);
-                return (
-                  <AskMenuRow
-                    key={item.key}
-                    item={item}
-                    active={item === activeItem}
-                    onHover={() => setActiveIndex(index)}
-                    onSelect={() => select(item)}
-                  />
-                );
-              })}
-            </div>
-          ))}
-        </motion.div>
-      ) : null}
+      <div className={styles.toolbar}>
+        <div className={styles.toolbarGroup}>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Collapse"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onCollapse?.()}
+          >
+            <Collapse width={16} height={16} />
+          </button>
+          <Popover.Root open={historyOpen} onOpenChange={setHistoryOpen}>
+            <Popover.Trigger
+              className={styles.iconBtn}
+              aria-label="Recent asks"
+            >
+              <History width={16} height={16} />
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Positioner side="top" align="start" sideOffset={8}>
+                <Popover.Popup className={styles.historyPopup}>
+                  <div className={styles.historyLabel}>Recent</div>
+                  {recents.length === 0 ? (
+                    <div className={styles.historyEmpty}>
+                      No recent asks yet
+                    </div>
+                  ) : (
+                    recents.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        className={styles.historyItem}
+                        onClick={() => replayAsk(q)}
+                      >
+                        {q}
+                      </button>
+                    ))
+                  )}
+                </Popover.Popup>
+              </Popover.Positioner>
+            </Popover.Portal>
+          </Popover.Root>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Attach image"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={onPickImage}
+          >
+            <ImagePlus width={16} height={16} />
+          </button>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Add context"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertTrigger("@")}
+          >
+            <AtSign width={16} height={16} />
+          </button>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label="Add skill"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => insertTrigger("/")}
+          >
+            <Plus width={16} height={16} />
+          </button>
+        </div>
 
-      <div className={styles.footer}>
-        <kbd className={styles.kbd}>
-          {open ? "↑↓ to choose · ⏎ to insert" : "⏎ to ask · / @ # to add"}
-        </kbd>
-        <button
-          type="button"
-          className={styles.primary}
-          aria-label="Ask"
-          disabled={!hasContent}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={sendNow}
-        >
-          <ArrowUp width={16} height={16} />
-        </button>
+        <div className={styles.toolbarGroup}>
+          <button
+            type="button"
+            className={styles.primary}
+            aria-label="Ask"
+            disabled={!canSend}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={sendNow}
+          >
+            <ArrowUp width={16} height={16} />
+          </button>
+        </div>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) acceptImageFile(file);
+          e.target.value = "";
+        }}
+      />
 
       <SkillDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
         initialName={createName}
       />
+
+      <PromptDialog
+        open={viewOpen}
+        onOpenChange={setViewOpen}
+        title="Save as view"
+        description="Name this result set to pin it as a saved view."
+        value={viewName}
+        onValueChange={setViewName}
+        onConfirm={confirmSaveView}
+        confirmLabel="Save view"
+        placeholder="View name"
+      />
     </motion.div>
   );
 }
 
-// The answer surface that sits above the input once a run is active. Unlike the
-// collapsed status pill, this keeps the composer open and shows the full,
-// wrapping summary so the user can read it and immediately ask something else.
-function AskResultPanel({ onClear }: { onClear?: () => void }) {
-  const ask = useAskResult();
+// How many result thumbnails to show inline under an assistant turn.
+const MAX_THUMBS = 6;
+
+interface TurnActionHandlers {
+  onSelect: () => void;
+  onTag: () => void;
+  onTrash: () => void;
+  onSaveView: () => void;
+}
+
+// Render one piece of the sent message: free text inline, or a chip styled to
+// match how it looked in the composer (mention `@`, tag `#`, skill `/`).
+function TurnSegment({ segment }: { segment: AskSegment }) {
+  if (segment.kind === "text") return <>{segment.text}</>;
+  const label =
+    segment.kind === "mention"
+      ? `@${segment.title}`
+      : segment.kind === "tag"
+        ? `#${segment.tag}`
+        : `/${segment.name}`;
+  return (
+    <span className={styles.userChip} data-kind={segment.kind}>
+      {label}
+    </span>
+  );
+}
+
+// One conversation exchange: the user's question (+ optional image) above the
+// assistant's status, prose summary, inline result thumbnails, and — on the
+// latest turn — actions on the result set.
+function TurnView({
+  turn,
+  isLast,
+  onOpenSave,
+  onRetry,
+  actions,
+}: {
+  turn: AskTurn;
+  isLast: boolean;
+  onOpenSave: (id: string) => void;
+  onRetry?: () => void;
+  actions: TurnActionHandlers | null;
+}) {
   const reduceMotion = useReducedMotion();
-  const busy = ask.status === "thinking" || ask.summaryStatus === "loading";
-  const stageLabel = ask.stage ? STAGE_LABELS[ask.stage] : "Thinking…";
-  const hasSummary = ask.summaryStatus === "done" && ask.summary.length > 0;
+  const busy = turn.status === "thinking" || turn.summaryStatus === "loading";
+  const stageLabel = turn.stage ? STAGE_LABELS[turn.stage] : "Thinking…";
+  const hasSummary = turn.summaryStatus === "done" && turn.summary.length > 0;
   const showSuggestions =
-    ask.status === "done" && ask.count === 0 && ask.suggestions.length > 0;
+    turn.status === "done" && turn.count === 0 && turn.suggestions.length > 0;
 
   const labelMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
@@ -556,138 +716,170 @@ function AskResultPanel({ onClear }: { onClear?: () => void }) {
       };
 
   return (
-    <motion.div
-      layout
-      className={styles.result}
-      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: 4 }}
-      animate={
-        reduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", y: 0 }
-      }
-      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, y: 4 }}
-      transition={gentleSpring}
-    >
-      <div className={styles.resultHead}>
-        {busy ? (
-          <span className={styles.resultStatus} role="status">
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span
-                key={stageLabel}
-                {...labelMotion}
-                transition={bouncySpring}
-              >
-                {stageLabel}
-              </motion.span>
-            </AnimatePresence>
+    <div className={styles.turn}>
+      <div className={styles.userMsg}>
+        {turn.image ? (
+          <img className={styles.userImg} src={turn.image.url} alt="" />
+        ) : null}
+        {turn.segments.length > 0 ? (
+          <span className={styles.userText}>
+            {turn.segments.map((seg, i) => (
+              // Segments are a fixed, ordered snapshot of the sent message; the
+              // index is a stable identity here.
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional segments
+              <TurnSegment key={`${seg.kind}-${i}`} segment={seg} />
+            ))}
           </span>
-        ) : ask.status === "error" ? (
-          <span className={styles.resultStatus}>Couldn’t search</span>
-        ) : ask.count === 0 ? (
-          <span className={styles.resultStatus}>No matches</span>
-        ) : (
-          <span className={styles.resultStatus}>
-            <motion.span
-              key={ask.count}
-              className={styles.count}
-              initial={reduceMotion ? false : { opacity: 0, y: 3 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={bouncySpring}
-            >
-              {formatNumber(ask.count)}
-            </motion.span>
-            <span className={styles.resultLabel}>found</span>
-          </span>
-        )}
-
-        {!busy && ask.status !== "idle" ? (
-          <button
-            type="button"
-            className={styles.resultClear}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onClear?.()}
-          >
-            Clear
-          </button>
+        ) : turn.question ? (
+          <span className={styles.userText}>{turn.question}</span>
         ) : null}
       </div>
 
-      {showSuggestions ? (
-        <div className={styles.suggestions}>
-          {ask.suggestions.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              className={styles.suggestion}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => runAskSuggestion(s)}
-            >
-              {s.label}
-              <span className={styles.suggestionCount}>{s.count}</span>
-            </button>
-          ))}
+      <div className={styles.assistantMsg}>
+        <div className={styles.turnStatus}>
+          {busy ? (
+            <span className={styles.statusLine} role="status">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={stageLabel}
+                  {...labelMotion}
+                  transition={bouncySpring}
+                >
+                  {stageLabel}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          ) : turn.status === "error" ? (
+            <span className={styles.statusLine}>
+              Couldn’t search
+              {onRetry ? (
+                <button
+                  type="button"
+                  className={styles.retry}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={onRetry}
+                >
+                  Retry
+                </button>
+              ) : null}
+            </span>
+          ) : turn.count === 0 ? (
+            <span className={styles.statusLine}>No matches</span>
+          ) : (
+            <span className={styles.statusLine}>
+              <span className={styles.count}>{formatNumber(turn.count)}</span>
+              <span className={styles.resultLabel}>found</span>
+            </span>
+          )}
         </div>
-      ) : hasSummary ? (
-        <p className={styles.resultBody}>{ask.summary}</p>
-      ) : !busy && ask.count > 0 && ask.question ? (
-        <p className={styles.resultBody}>{ask.question}</p>
-      ) : null}
-    </motion.div>
+
+        {hasSummary ? <p className={styles.turnBody}>{turn.summary}</p> : null}
+
+        {turn.status === "done" && turn.count > 0 ? (
+          <TurnResults ids={turn.ids} onOpenSave={onOpenSave} />
+        ) : null}
+
+        {showSuggestions ? (
+          <div className={styles.suggestions}>
+            {turn.suggestions.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={styles.suggestion}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => runAskSuggestion(s)}
+              >
+                {s.label}
+                <span className={styles.suggestionCount}>{s.count}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {isLast && actions ? (
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.action}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={actions.onSelect}
+            >
+              Select
+            </button>
+            <button
+              type="button"
+              className={styles.action}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={actions.onTag}
+            >
+              Tag…
+            </button>
+            <button
+              type="button"
+              className={styles.action}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={actions.onSaveView}
+            >
+              Save as view
+            </button>
+            <button
+              type="button"
+              className={`${styles.action} ${styles.actionDanger}`}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={actions.onTrash}
+            >
+              Trash
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
-function AskMenuRow({
-  item,
-  active,
-  onHover,
-  onSelect,
+// Inline thumbnail strip of the top matches for a resolved turn.
+function TurnResults({
+  ids,
+  onOpenSave,
 }: {
-  item: AskMenuItem;
-  active: boolean;
-  onHover: () => void;
-  onSelect: () => void;
+  ids: ReadonlyArray<string>;
+  onOpenSave: (id: string) => void;
 }) {
-  const common = {
-    type: "button" as const,
-    "data-active": active || undefined,
-    onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
-    onMouseEnter: onHover,
-    onClick: onSelect,
-  };
+  const items = useMemo(() => {
+    const out: { id: string; url: string | null }[] = [];
+    for (const id of ids.slice(0, MAX_THUMBS)) {
+      const save = pool.get(id);
+      if (!save) continue;
+      out.push({ id, url: representativeImageUrl(save) });
+    }
+    return out;
+  }, [ids]);
 
-  if (item.kind === "more") {
-    return (
-      <button className={styles.menuMore} {...common}>
-        Show {item.count} more
-      </button>
-    );
-  }
-
-  if (item.kind === "create") {
-    return (
-      <button className={styles.menuCreate} {...common}>
-        <Plus width={14} height={14} />
-        {item.name ? `Create skill “/${item.name}”` : "Create skill…"}
-      </button>
-    );
-  }
-
-  const name =
-    item.kind === "skill"
-      ? `/${item.skill.name}`
-      : item.kind === "tag"
-        ? `#${item.tag}`
-        : (item.save.title ?? "Untitled");
-  const description =
-    item.kind === "skill"
-      ? item.skill.description || item.skill.prompt
-      : item.kind === "tag"
-        ? `${item.count} ${item.count === 1 ? "item" : "items"}`
-        : [item.save.source, item.save.author].filter(Boolean).join(" · ");
+  if (items.length === 0) return null;
+  const more = ids.length - items.length;
 
   return (
-    <button className={styles.menuRow} {...common}>
-      <span className={styles.menuName}>{name}</span>
-      <span className={styles.menuDesc}>{description}</span>
-    </button>
+    <div className={styles.thumbs}>
+      {items.map((it) => (
+        <button
+          key={it.id}
+          type="button"
+          className={styles.thumb}
+          aria-label="Open save"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => onOpenSave(it.id)}
+        >
+          {it.url ? (
+            <img src={it.url} alt="" />
+          ) : (
+            <span className={styles.thumbBlank} />
+          )}
+        </button>
+      ))}
+      {more > 0 ? (
+        <span className={styles.thumbMore}>+{formatNumber(more)}</span>
+      ) : null}
+    </div>
   );
 }
 

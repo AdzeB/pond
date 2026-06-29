@@ -3,14 +3,14 @@ import { IconXmarkOutline18 as X } from "@pond/icons/outline/18";
 import { Button, Dialog, Field, Input, Popover } from "@pond/ui";
 import { useMemo, useState } from "react";
 import { type Pond, usePonds } from "@/hooks/use-ponds";
-import { DEFAULT_POND_COLOR, POND_COLORS } from "@/lib/pond-colors";
+import { DEFAULT_POND_COLOR, POND_COLORS } from "@/lib/ui/pond-colors";
 import {
   glyphKind,
   iconAvatar,
   POND_ICONS,
   PondGlyph,
   resolvePondIcon,
-} from "@/lib/pond-icons";
+} from "@/lib/ui/pond-icons";
 import {
   pondCustomise,
   usePondCustomiseOpen,

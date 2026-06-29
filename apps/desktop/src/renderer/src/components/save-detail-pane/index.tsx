@@ -12,10 +12,10 @@ import { Insight } from "@/components/save-detail-insight";
 import { Section } from "@/components/save-detail-section";
 import { TagsSection } from "@/components/save-detail-tags";
 import { KebabMenu } from "@/components/save-inspector-kebab";
-import { pickAuthorColor } from "@/components/save-preview/helpers";
+import { pickAuthorColor } from "@/components/save-preview/lib/helpers";
 import { useSaveDetail } from "@/hooks/use-save-detail";
-import { initials } from "@/lib/initials";
 import type { Save } from "@/lib/types";
+import { initials } from "@/lib/util/initials";
 import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 

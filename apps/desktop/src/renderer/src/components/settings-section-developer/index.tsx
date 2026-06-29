@@ -1,9 +1,9 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DeveloperApiSection } from "@/components/settings-section-developer-api-section";
+import { VerifyRow } from "@/components/settings-section-developer-verify-row";
 import { reloadPrefs, usePrefs } from "@/stores/prefs";
-import { DeveloperApiSection } from "./api-section";
-import { VerifyRow } from "./verify-row";
 
 export function DeveloperSection() {
   const [prefs, patch] = usePrefs("developer");

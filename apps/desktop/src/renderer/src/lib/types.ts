@@ -1,6 +1,8 @@
 import type { Op, SaveStatus, TaskStatus, VideoNote } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 
+export type ViewMode = "waterfall" | "justified" | "grid";
+
 export interface SaveFile {
   kind: string;
   path: string;

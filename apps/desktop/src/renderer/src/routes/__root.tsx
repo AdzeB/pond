@@ -23,6 +23,10 @@ function RootComponent() {
         void navigate({ to: "/dock-playground" });
         return;
       }
+      if (pathname === "/ai-search-lab") {
+        void navigate({ to: "/ai-search-lab" });
+        return;
+      }
       if (pathname === "/settings") {
         void navigate({ to: "/settings" });
         return;

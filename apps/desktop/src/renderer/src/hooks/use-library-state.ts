@@ -1,10 +1,9 @@
 import { useLocation, useParams } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
-import type { ViewMode } from "@/lib/library-types";
-import { parseMode, type SaveListMode } from "@/lib/save-list";
-import { listBaseFromPath } from "@/lib/search-schemas";
-import type { Save } from "@/lib/types";
+import { parseMode, type SaveListMode } from "@/lib/save/list";
+import { listBaseFromPath } from "@/lib/search/schemas";
+import type { Save, ViewMode } from "@/lib/types";
 import { primarySelectionStore } from "@/stores/selection";
 import { useLayout } from "@/stores/view-store";
 import { useNarrowedSaves } from "./use-narrowed-saves";

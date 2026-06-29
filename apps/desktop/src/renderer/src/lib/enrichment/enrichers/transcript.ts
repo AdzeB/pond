@@ -1,4 +1,8 @@
-import { deriveTypeKind, pickPrimaryFile, pickPrimaryUnit } from "@/lib/media";
+import {
+  deriveTypeKind,
+  pickPrimaryFile,
+  pickPrimaryUnit,
+} from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import type { Enricher } from "../types";
 import { transcribeAudio, whisperModelVersion } from "../whisper";

@@ -4,31 +4,9 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 380px;
-  padding: 8px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 24px;
-  padding-inline: 4px;
-}
-
-.title {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ds-gray-11);
-}
-
-.headerActions {
-  display: inline-flex;
-  gap: 2px;
-  align-items: center;
+  width: 400px;
+  max-height: 72vh;
+  padding: 6px;
 }
 
 .iconBtn {
@@ -36,8 +14,8 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
@@ -64,21 +42,362 @@
   }
 }
 
+/* ----- Chat transcript ----- */
+
+.chatHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 2px;
+}
+
+.chatTitle {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
+
+  & svg {
+    color: var(--ds-gray-10);
+  }
+}
+
+.chatNew {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 24px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+}
+
+.transcript {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 340px;
+  padding: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.userMsg {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  align-self: flex-end;
+  max-width: 85%;
+}
+
+.userImg {
+  max-width: 180px;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-md);
+  box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
+}
+
+.userText {
+  padding: 7px 11px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-lg);
+}
+
+/* A chip rendered inline within the sent message bubble, mirroring the
+   composer's chips so the transcript reads back exactly as typed. */
+.userChip {
+  display: inline;
+  padding: 1px 5px;
+  margin: 0 1px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+  background: var(--ds-gray-a4);
+  border-radius: var(--ds-radius-sm);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.assistantMsg {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  max-width: 100%;
+}
+
+.turnStatus {
+  display: flex;
+  min-height: 18px;
+}
+
+.statusLine {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.retry {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-blue-11, var(--ds-gray-12));
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+}
+
+.turnBody {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+  user-select: text;
+}
+
+/* ----- Inline result thumbnails ----- */
+
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
+}
+
+.thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &:hover {
+    transform: scale(1.04);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.thumbBlank {
+  width: 100%;
+  height: 100%;
+  background: var(--ds-gray-4);
+}
+
+.thumbMore {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+/* ----- Per-turn action row ----- */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding-inline: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+}
+
+.actionDanger:hover {
+  color: var(--ds-red-1, var(--ds-gray-1));
+  background: var(--ds-red-9, var(--ds-gray-11));
+}
+
+/* ----- Recent-asks history popover ----- */
+
+.historyPopup {
+  --popup-min-width: 240px;
+
+  max-width: 320px;
+  padding-inline: 4px;
+}
+
+.historyLabel {
+  padding: 4px 8px 2px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-9);
+}
+
+.historyEmpty {
+  padding: 4px 8px 6px;
+  font-size: 12px;
+  color: var(--ds-gray-10);
+}
+
+.historyItem {
+  width: 100%;
+  padding: 5px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ds-gray-12);
+  text-align: left;
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover,
+  &[data-active] {
+    background: var(--ds-gray-4);
+  }
+}
+
+/* ----- Staged query image ----- */
+
+.attachRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px;
+  margin: 2px 4px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-md);
+}
+
+.attachThumb {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+  border-radius: var(--ds-radius-sm);
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.attachLabel {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.attachRemove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+}
+
 /* ----- Lexical editor surface ----- */
 
 .editor {
   position: relative;
   width: 100%;
-  min-height: 28px;
-  margin-block: 4px;
+  min-height: 76px;
+  padding: 8px 6px 4px;
+}
+
+/* Once a conversation exists the input is a compact follow-up bar. */
+.card[data-chat] .editor {
+  min-height: 40px;
 }
 
 .input {
   display: block;
   width: 100%;
-  padding: 4px;
+  max-height: 220px;
+  overflow-y: auto;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ds-gray-12);
   word-break: break-word;
@@ -91,9 +410,9 @@
 
 .placeholder {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  font-size: 13px;
+  top: 8px;
+  left: 6px;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ds-gray-9);
   pointer-events: none;
@@ -120,6 +439,10 @@
 .chip[data-tone="skill"] {
   color: var(--ds-teal-11, var(--ds-gray-12));
   background: var(--ds-teal-a3, var(--ds-gray-a3));
+}
+
+.chip[data-selected] {
+  box-shadow: 0 0 0 2px var(--ds-blue-a7, var(--ds-gray-a8));
 }
 
 .chipBody {
@@ -168,16 +491,21 @@
   }
 }
 
-/* ----- Slash menu: grouped skills + tasks ----- */
+/* ----- Trigger menu: grouped skills / saves / tags -----
+   Portaled into the typeahead plugin's caret-anchored container, so it tracks
+   the active `/ @ #` token. The container sits just below the caret; `bottom`
+   lifts the panel above the current line. */
 
 .menu {
   position: absolute;
-  right: 0;
   bottom: calc(100% + 8px);
   left: 0;
   z-index: var(--popup-z, 1100);
   display: flex;
   flex-direction: column;
+  width: max-content;
+  min-width: 240px;
+  max-width: 340px;
   max-height: 320px;
   padding: 4px;
   overflow-y: auto;
@@ -186,7 +514,22 @@
   box-shadow:
     inset 0 0 0 0.5px var(--ds-gray-a4),
     var(--ds-shadow-3);
-  transform-origin: bottom center;
+  transform-origin: bottom left;
+}
+
+/* Same surface as `.menu`, but in normal flow for the component lab. */
+.menuStatic {
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  min-width: 240px;
+  max-width: 340px;
+  padding: 4px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow:
+    inset 0 0 0 0.5px var(--ds-gray-a4),
+    var(--ds-shadow-3);
 }
 
 .menuGroup {
@@ -290,19 +633,21 @@
   }
 }
 
-.footer {
+/* ----- Bottom toolbar: quick-add actions · mode chip · send ----- */
+
+.toolbar {
   display: flex;
+  gap: 8px;
   align-items: center;
   justify-content: space-between;
-  height: 28px;
-  padding-left: 4px;
+  padding: 2px;
 }
 
-.kbd {
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ds-gray-8);
+.toolbarGroup {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 2px;
+  align-items: center;
 }
 
 .primary {
@@ -310,8 +655,8 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   padding: 0;
   color: var(--ds-gray-1);
   cursor: var(--ds-cursor-interactive, pointer);
@@ -320,7 +665,8 @@
   border: 0;
   border-radius: var(--ds-radius-full);
   transition:
-    opacity var(--ds-duration-medium) var(--ds-easing-standard),
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard),
     transform var(--ds-duration-medium) var(--ds-easing-emphasized);
 
   &:active:not(:disabled) {
@@ -338,70 +684,8 @@
   }
 }
 
-/* ----- Inline answer panel (above the input, composer stays open) ----- */
-
-.result {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 6px 4px 8px;
-  margin-top: 2px;
-  overflow: hidden;
-  border-bottom: 1px solid var(--ds-gray-a3);
-}
-
-.resultHead {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
-  min-height: 18px;
-}
-
-.resultStatus {
-  display: inline-flex;
-  gap: 5px;
-  align-items: baseline;
-  min-width: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-}
-
 .resultLabel {
   color: var(--ds-gray-11);
-}
-
-.resultClear {
-  flex-shrink: 0;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-  }
-}
-
-.resultBody {
-  max-height: 168px;
-  margin: 0;
-  overflow-y: auto;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ds-gray-12);
-  word-break: break-word;
-  user-select: text;
-}
-
-.result .suggestions {
-  flex-wrap: wrap;
-  overflow: visible;
 }
 
 /* ----- Collapsed status pill ----- */
@@ -480,6 +764,12 @@
   align-items: center;
   min-width: 0;
   overflow: hidden;
+}
+
+/* In the transcript, relaxation chips wrap instead of clipping to one line. */
+.assistantMsg .suggestions {
+  flex-wrap: wrap;
+  overflow: visible;
 }
 
 .suggestion {

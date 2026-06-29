@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { Direction } from "@/lib/motion";
+import type { Direction } from "@/lib/ui/motion";
 
 export function useListDirection(index: number): Direction {
   const prevIndexRef = useRef(index);

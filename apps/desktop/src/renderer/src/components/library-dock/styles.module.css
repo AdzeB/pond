@@ -11,6 +11,30 @@
   transform: translateX(-50%);
 }
 
+/* Standalone floating buttons pinned to the bottom corners — the library
+   switcher (left) and the New composer (right). Each carries its own pill
+   chrome so it stays legible over scrolling content. */
+.corner {
+  position: fixed;
+  bottom: calc(var(--ds-mac-inset, 16px) + 4px);
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px;
+  pointer-events: auto;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: var(--ds-shadow-5);
+}
+
+.cornerLeft {
+  left: calc(var(--ds-mac-inset, 16px) + 4px);
+}
+
+.cornerRight {
+  right: calc(var(--ds-mac-inset, 16px) + 4px);
+}
+
 .pill {
   position: relative;
   display: inline-flex;
@@ -19,7 +43,7 @@
   pointer-events: auto;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
-  box-shadow: var(--ds-shadow-4);
+  box-shadow: var(--ds-shadow-5);
 }
 
 /* Animated thinking border. Overlays the pill without intercepting pointer

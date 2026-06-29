@@ -4,15 +4,18 @@ import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { SortDir } from "@/hooks/use-filtered-saves";
-import { defaultPredicateFor, predicateIsActive } from "@/lib/filter-helpers";
+import {
+  defaultPredicateFor,
+  predicateIsActive,
+} from "@/lib/search/filter-helpers";
 import {
   isLayoutValue,
   type LayoutValue,
   nextLayout,
   readViewPref,
   writeViewPref,
-} from "@/lib/view-prefs";
-import { clampZoom, ZOOM_DEFAULT, ZOOM_STORAGE_KEY } from "@/lib/zoom";
+} from "@/lib/ui/view-prefs";
+import { clampZoom, ZOOM_DEFAULT, ZOOM_STORAGE_KEY } from "@/lib/ui/zoom";
 
 export type Combinator = "and" | "or";
 
@@ -260,6 +263,15 @@ export function setZoom(zoom: number): void {
   applyZoomVar(clamped);
   store.setState((s) => ({ ...s, zoom: clamped }));
 }
+
+// The default presentation (layout / sort / zoom) used by the view-options
+// panel to detect a "changed" state per group.
+export const VIEW_DEFAULTS = {
+  layout: "waterfall" as LayoutValue,
+  sortKey: "savedAt",
+  sortDir: "desc" as SortDir,
+  zoom: ZOOM_DEFAULT,
+};
 
 export function restoreDefaults(): void {
   writeViewPref("view", "waterfall");

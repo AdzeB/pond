@@ -1,10 +1,10 @@
 import { IconSliders3Fill18 as ViewIcon } from "@pond/icons/fill/18";
 import { Button, Popover, Tooltip } from "@pond/ui";
 import type { ReactElement } from "react";
-import { DisplaySection } from "./sections/display";
-import { LayoutSection } from "./sections/layout";
-import { SortSection } from "./sections/sort";
-import { ZoomSection } from "./sections/zoom";
+import { DisplaySection } from "@/components/library-view-menu-display";
+import { LayoutSection } from "@/components/library-view-menu-layout";
+import { SortSection } from "@/components/library-view-menu-sort";
+import { ZoomSection } from "@/components/library-view-menu-zoom";
 import styles from "./styles.module.css";
 
 type PopoverAnchor = Element | null | (() => Element | null) | undefined;
@@ -51,11 +51,14 @@ export function ViewMenu({
           sideOffset={11}
         >
           <Popover.Popup className={styles.panel}>
-            <SortSection />
+            <header className={styles.header}>
+              <span className={styles.headerTitle}>View</span>
+            </header>
             <hr className={styles.divider} />
             <LayoutSection />
-            <hr className={styles.divider} />
             <ZoomSection />
+            <hr className={styles.divider} />
+            <SortSection />
             <hr className={styles.divider} />
             <DisplaySection />
           </Popover.Popup>

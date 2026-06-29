@@ -167,14 +167,6 @@ export function installAppMenu(deps: AppMenuDeps): void {
         { role: "zoomOut" },
         { type: "separator" },
         { role: "togglefullscreen" },
-        ...(!app.isPackaged
-          ? ([
-              { type: "separator" },
-              { role: "reload" },
-              { role: "forceReload" },
-              { role: "toggleDevTools" },
-            ] satisfies Electron.MenuItemConstructorOptions[])
-          : []),
       ],
     },
     {
@@ -315,6 +307,10 @@ export function installAppMenu(deps: AppMenuDeps): void {
           {
             label: "Developer",
             submenu: [
+              { role: "reload" as const },
+              { role: "forceReload" as const },
+              { role: "toggleDevTools" as const },
+              { type: "separator" as const },
               {
                 label: "Restart Local API",
                 click: sendMenuAction("developer.restart-api"),
@@ -329,12 +325,21 @@ export function installAppMenu(deps: AppMenuDeps): void {
               },
               { type: "separator" as const },
               {
-                label: "Tweet Card Preview",
-                click: navTo("/tweet-preview"),
-              },
-              {
-                label: "Dock Playground",
-                click: navTo("/dock-playground"),
+                label: "Component Previews",
+                submenu: [
+                  {
+                    label: "AI Search Lab",
+                    click: navTo("/ai-search-lab"),
+                  },
+                  {
+                    label: "Dock Playground",
+                    click: navTo("/dock-playground"),
+                  },
+                  {
+                    label: "Tweet Card Preview",
+                    click: navTo("/tweet-preview"),
+                  },
+                ],
               },
             ],
           },

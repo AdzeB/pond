@@ -1,5 +1,5 @@
 import { RawImage } from "@huggingface/transformers";
-import { pickPrimaryUnit } from "@/lib/media";
+import { pickPrimaryUnit } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 
 // Shared image-loading helpers for the on-device enrichers (caption, OCR, CLIP,

@@ -1,5 +1,5 @@
 import { cloneElement, type MouseEvent, type ReactElement } from "react";
-import { type NativeMenuItem, showContextMenu } from "@/lib/native-menu";
+import { type NativeMenuItem, showContextMenu } from "@/lib/ui/native-menu";
 
 export interface TagMenuActions {
   groups: string[];

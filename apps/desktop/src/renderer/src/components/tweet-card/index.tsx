@@ -1,14 +1,14 @@
-import { Body } from "./body";
-import type { TweetCardData } from "./data";
-import { Header } from "./header";
-import { LinkCard } from "./link-card";
-import { MediaGrid } from "./media-grid";
-import { Metrics } from "./metrics";
-import { QuotedCard } from "./quoted-card";
+import { Body } from "@/components/tweet-card-body";
+import { Header } from "@/components/tweet-card-header";
+import { LinkCard } from "@/components/tweet-card-link-card";
+import { MediaGrid } from "@/components/tweet-card-media-grid";
+import { Metrics } from "@/components/tweet-card-metrics";
+import { QuotedCard } from "@/components/tweet-card-quoted-card";
+import type { TweetCardData } from "./lib/data";
 import styles from "./styles.module.css";
 
-export type { TweetCardData } from "./data";
-export { toTweetCardData } from "./data";
+export type { TweetCardData } from "./lib/data";
+export { toTweetCardData } from "./lib/data";
 
 type Scheme = "light" | "dark";
 

@@ -7,7 +7,7 @@ import {
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Button, Popover } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { pickAndImportFiles } from "@/lib/save-actions";
+import { pickAndImportFiles } from "@/lib/save/actions";
 import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
@@ -17,9 +17,11 @@ type PopoverAnchor = Element | null | (() => Element | null) | undefined;
 interface NewSaveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // Anchor the popover to the dock pill so it floats above the dock and
-  // inherits its width.
+  // Anchor the popover to its trigger so it floats above the dock chrome.
   anchor?: PopoverAnchor;
+  // Edge alignment relative to the anchor. The corner "New" button sits at the
+  // bottom-right, so it aligns to the end and grows leftward into the viewport.
+  align?: "start" | "center" | "end";
 }
 
 interface QuickAddResult {
@@ -53,6 +55,7 @@ export function NewSaveDialog({
   open,
   onOpenChange,
   anchor,
+  align = "center",
 }: NewSaveDialogProps) {
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
@@ -60,7 +63,7 @@ export function NewSaveDialog({
         <Popover.Positioner
           anchor={anchor}
           side="top"
-          align="center"
+          align={align}
           sideOffset={11}
         >
           <Popover.Popup className={styles.popup}>

@@ -5,7 +5,7 @@ import {
 import { useMemo } from "react";
 import { Section } from "@/components/save-detail-section";
 import { TagsEditor } from "@/components/save-preview";
-import { setSaveTags } from "@/lib/mutate-save";
+import { setSaveTags } from "@/lib/save/mutate";
 import type { Save } from "@/lib/types";
 import { mergeUniqueTags } from "@/stores/tag-clipboard";
 import styles from "./styles.module.css";

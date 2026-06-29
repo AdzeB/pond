@@ -19,8 +19,8 @@ import {
   retranscribe,
   type TaskResult,
 } from "@/lib/enrichment/tasks";
-import { trashSave } from "@/lib/mutate-save";
-import { REVEAL_LABEL } from "@/lib/platform";
+import { trashSave } from "@/lib/save/mutate";
+import { REVEAL_LABEL } from "@/lib/ui/platform";
 import { pushToast } from "@/stores/toasts";
 
 export function KebabMenu({

@@ -2,7 +2,7 @@ import {
   embedModelVersion,
   embedText,
   saveEmbeddingText,
-} from "@/lib/embeddings";
+} from "@/lib/enrichment/embeddings";
 import type { Save } from "@/lib/types";
 import {
   embeddingStore,

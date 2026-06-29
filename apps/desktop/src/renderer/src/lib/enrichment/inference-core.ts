@@ -7,7 +7,7 @@ import {
   pipeline,
   type RawImage,
 } from "@huggingface/transformers";
-import { pickDevice } from "@/lib/inference-device";
+import { pickDevice } from "@/lib/enrichment/inference-device";
 
 // Shared transformers.js model host. This module owns every on-device model
 // (Florence caption/OCR, CLIP vision + zero-shot, text embeddings, Whisper). It

@@ -4,7 +4,7 @@ import {
   CAPTION_CATALOG,
   CLIP_CATALOG,
   WHISPER_CATALOG,
-} from "@/lib/model-catalogs";
+} from "@/lib/enrichment/model-catalogs";
 import { usePrefs } from "@/stores/prefs";
 
 export function EnrichmentSection() {

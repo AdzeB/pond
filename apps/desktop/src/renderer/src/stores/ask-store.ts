@@ -2,10 +2,15 @@ import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-// The agent ("Ask anything") result layer. This is intentionally separate from
-// the manual filter state in `view-store`: asking produces a frozen, ranked set
-// of save ids that takes over the grid, and clearing it returns to the normal
-// (optionally filtered) library. No chips, no predicates surface here.
+// The agent ("Ask anything") conversation layer. This is intentionally separate
+// from the manual filter state in `view-store`: asking produces a frozen, ranked
+// set of save ids that takes over the grid, and clearing it returns to the
+// normal (optionally filtered) library. No chips, no predicates surface here.
+//
+// The chat is multi-turn: each exchange is an `AskTurn` appended to a transcript.
+// The grid always reflects the latest turn (see `useAskResult`), while the
+// composer renders the whole transcript. A follow-up can "refine in place" by
+// searching within the previous turn's result set.
 
 export type AskStatus = "idle" | "thinking" | "done" | "error";
 
@@ -33,92 +38,137 @@ export interface AskSuggestion {
   readonly count: number;
 }
 
-interface AskState {
+// A query image attached to a turn (image-to-image visual search). `url` is an
+// object URL used only for the thumbnail; it's revoked when the transcript is
+// cleared so we don't leak blobs.
+export interface AskQueryImage {
+  readonly url: string;
+  readonly name: string;
+}
+
+// An ordered piece of the user's composed message, kept so the transcript can
+// render it back exactly as typed: free text interleaved with chips. The plain
+// `question` (chips expanded/stripped) still drives ranking and labels.
+export type AskSegment =
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "mention"; readonly id: string; readonly title: string }
+  | { readonly kind: "tag"; readonly tag: string }
+  | { readonly kind: "skill"; readonly name: string };
+
+// One exchange in the conversation: the user's question (+ optional image) and
+// the assistant's resolved result set. The grid reads the latest turn.
+export interface AskTurn {
+  readonly id: string;
+  readonly nonce: number;
+  // user side
   readonly question: string;
+  readonly image: AskQueryImage | null;
+  // The composed message as typed (text + chips, in order). Empty for turns
+  // created from plain text (history replay, relaxation suggestions).
+  readonly segments: ReadonlyArray<AskSegment>;
+  // True when this turn searched within the previous turn's result set.
+  readonly refine: boolean;
+  // assistant side
   readonly status: AskStatus;
-  // Ordered result ids (most relevant first). Empty until a run resolves.
+  readonly stage: AskStage;
   readonly ids: ReadonlyArray<string>;
   readonly count: number;
-  // The compiled structured query for the last run, so "Save as view" can
-  // persist a live query alongside the natural-language question.
   readonly query: Query;
-  // Relaxations to offer when the run found nothing.
   readonly suggestions: ReadonlyArray<AskSuggestion>;
-  // A short generated prose summary of the result set, shown in the dock card.
   readonly summary: string;
   readonly summaryStatus: AskSummaryStatus;
-  // The live pipeline stage, narrated in the dock while a run is in flight.
-  readonly stage: AskStage;
-  // Bumps on every run so a repeated identical question still re-renders.
+}
+
+interface AskState {
+  readonly turns: ReadonlyArray<AskTurn>;
+  // Monotonic counter; each turn claims one so late summary/stage updates can
+  // target their own turn even after newer turns have started.
   readonly nonce: number;
 }
 
-const INITIAL: AskState = {
-  question: "",
-  status: "idle",
-  ids: [],
-  count: 0,
-  query: EMPTY_QUERY,
-  suggestions: [],
-  summary: "",
-  summaryStatus: "idle",
-  stage: null,
-  nonce: 0,
-};
+const INITIAL: AskState = { turns: [], nonce: 0 };
 
 const store = new Store<AskState>(INITIAL);
 
 export const askStore = store;
 
-// Mark a run as in-flight so the grid/banner can show a thinking state.
-export function startAsk(question: string): number {
+const EMPTY_IDS: ReadonlyArray<string> = [];
+const EMPTY_SUGGESTIONS: ReadonlyArray<AskSuggestion> = [];
+const EMPTY_SEGMENTS: ReadonlyArray<AskSegment> = [];
+
+// Patch a single turn by nonce; a no-op if that turn is gone (transcript cleared).
+function updateTurn(nonce: number, patch: Partial<AskTurn>): void {
+  store.setState((s) => {
+    let changed = false;
+    const turns = s.turns.map((t) => {
+      if (t.nonce !== nonce) return t;
+      changed = true;
+      return { ...t, ...patch };
+    });
+    return changed ? { ...s, turns } : s;
+  });
+}
+
+export interface StartTurnInput {
+  question: string;
+  image?: AskQueryImage | null;
+  segments?: ReadonlyArray<AskSegment>;
+  refine?: boolean;
+}
+
+// Append a fresh in-flight turn to the transcript. Returns its nonce so the
+// caller can resolve/advance exactly this turn.
+export function startTurn(input: StartTurnInput): number {
   const nonce = store.state.nonce + 1;
-  store.setState((s) => ({
-    ...s,
-    question,
+  const turn: AskTurn = {
+    id: `turn-${nonce}`,
+    nonce,
+    question: input.question,
+    image: input.image ?? null,
+    segments: input.segments ?? EMPTY_SEGMENTS,
+    refine: input.refine ?? false,
     status: "thinking",
-    ids: [],
+    stage: "compiling",
+    ids: EMPTY_IDS,
     count: 0,
-    suggestions: [],
+    query: EMPTY_QUERY,
+    suggestions: EMPTY_SUGGESTIONS,
     summary: "",
     summaryStatus: "idle",
-    stage: "compiling",
-    nonce,
-  }));
+  };
+  store.setState((s) => ({ turns: [...s.turns, turn], nonce }));
   return nonce;
 }
 
-// Advance the narrated pipeline stage for a run (ignored if superseded).
+// Back-compat: a plain text turn with no image and no refinement.
+export function startAsk(question: string): number {
+  return startTurn({ question });
+}
+
+// Advance the narrated pipeline stage for a turn.
 export function setAskStage(nonce: number, stage: AskStage): void {
-  store.setState((s) => (s.nonce !== nonce ? s : { ...s, stage }));
+  updateTurn(nonce, { stage });
 }
 
-// Mark the summary request as in-flight for a run, so the card can shimmer.
+// Mark the summary request as in-flight for a turn, so the card can shimmer.
 export function startAskSummary(nonce: number): void {
-  store.setState((s) =>
-    s.nonce !== nonce
-      ? s
-      : { ...s, summaryStatus: "loading", stage: "summarizing" },
-  );
+  updateTurn(nonce, { summaryStatus: "loading", stage: "summarizing" });
 }
 
-// Commit a generated summary. An empty string resets to idle (the card then
+// Commit a generated summary. An empty string resets to idle (the turn then
 // falls back to the count/question line).
 export function setAskSummary(nonce: number, summary: string): void {
-  store.setState((s) =>
-    s.nonce !== nonce
-      ? s
-      : { ...s, summary, summaryStatus: summary ? "done" : "idle" },
-  );
+  updateTurn(nonce, {
+    summary,
+    summaryStatus: summary ? "done" : "idle",
+  });
 }
 
 export function setAskSummaryError(nonce: number): void {
-  store.setState((s) =>
-    s.nonce !== nonce ? s : { ...s, summaryStatus: "error" },
-  );
+  updateTurn(nonce, { summaryStatus: "error" });
 }
 
-// Commit a resolved result set. Ignored if a newer run started meanwhile.
+// Commit a resolved result set for a turn.
 export function setAskResult(
   nonce: number,
   question: string,
@@ -126,42 +176,46 @@ export function setAskResult(
   query: Query = EMPTY_QUERY,
   suggestions: ReadonlyArray<AskSuggestion> = [],
 ): void {
-  store.setState((s) =>
-    s.nonce !== nonce
-      ? s
-      : {
-          ...s,
-          question,
-          status: "done",
-          ids,
-          count: ids.length,
-          query,
-          suggestions,
-          stage: null,
-        },
-  );
+  updateTurn(nonce, {
+    question,
+    status: "done",
+    ids,
+    count: ids.length,
+    query,
+    suggestions,
+    stage: null,
+  });
 }
 
 export function setAskError(nonce: number, question: string): void {
-  store.setState((s) =>
-    s.nonce !== nonce
-      ? s
-      : {
-          ...s,
-          question,
-          status: "error",
-          ids: [],
-          count: 0,
-          suggestions: [],
-          stage: null,
-        },
-  );
+  updateTurn(nonce, {
+    question,
+    status: "error",
+    ids: EMPTY_IDS,
+    count: 0,
+    suggestions: EMPTY_SUGGESTIONS,
+    stage: null,
+  });
 }
 
+// Reset the whole conversation (used on dock collapse and "New chat"). Revokes
+// any attached query-image object URLs first.
 export function clearAsk(): void {
-  store.setState((s) => (s.status === "idle" ? s : INITIAL));
+  if (store.state.turns.length === 0) return;
+  for (const turn of store.state.turns) {
+    if (turn.image) {
+      try {
+        URL.revokeObjectURL(turn.image.url);
+      } catch {
+        /* already revoked */
+      }
+    }
+  }
+  store.setState((s) => ({ turns: [], nonce: s.nonce }));
 }
 
+// The latest turn drives the grid; this is the back-compat snapshot shape that
+// `use-narrowed-saves` and the toolbar consume.
 export interface AskResult {
   active: boolean;
   status: AskStatus;
@@ -176,40 +230,56 @@ export interface AskResult {
 }
 
 export function useAskResult(): AskResult {
-  return useSelector(store, (s) => ({
-    active: s.status !== "idle",
-    status: s.status,
-    question: s.question,
-    ids: s.ids,
-    count: s.count,
-    query: s.query,
-    suggestions: s.suggestions,
-    summary: s.summary,
-    summaryStatus: s.summaryStatus,
-    stage: s.stage,
-  }));
+  return useSelector(store, (s) => {
+    const last = s.turns[s.turns.length - 1];
+    return {
+      active: s.turns.length > 0,
+      status: last?.status ?? "idle",
+      question: last?.question ?? "",
+      ids: last?.ids ?? EMPTY_IDS,
+      count: last?.count ?? 0,
+      query: last?.query ?? EMPTY_QUERY,
+      suggestions: last?.suggestions ?? EMPTY_SUGGESTIONS,
+      summary: last?.summary ?? "",
+      summaryStatus: last?.summaryStatus ?? "idle",
+      stage: last?.stage ?? null,
+    };
+  });
 }
 
-// Publish a pre-ordered result set directly (used by relaxation suggestions,
-// which re-run a structured query without going back through the compiler).
+// The full transcript, for the composer's chat view.
+export function useAskTurns(): ReadonlyArray<AskTurn> {
+  return useSelector(store, (s) => s.turns);
+}
+
+// Publish a pre-ordered result set directly as a new turn (used by relaxation
+// suggestions, which re-run a structured query without going through the
+// compiler).
 export function commitAskResult(
   question: string,
   ids: ReadonlyArray<string>,
   query: Query,
 ): void {
-  const nonce = startAsk(question);
+  const nonce = startTurn({ question });
   setAskResult(nonce, question, ids, query);
 }
 
-// Snapshot the current ask (question + compiled query) for "Save as view".
+// Snapshot the latest ask (question + compiled query) for "Save as view".
 export function askSnapshot(): { question: string; query: Query } {
-  return { question: store.state.question, query: store.state.query };
+  const last = store.state.turns[store.state.turns.length - 1];
+  return {
+    question: last?.question ?? "",
+    query: last?.query ?? EMPTY_QUERY,
+  };
 }
 
 export function useAskActive(): boolean {
-  return useSelector(store, (s) => s.status !== "idle");
+  return useSelector(store, (s) => s.turns.length > 0);
 }
 
 export function useAskStatus(): AskStatus {
-  return useSelector(store, (s) => s.status);
+  return useSelector(
+    store,
+    (s) => s.turns[s.turns.length - 1]?.status ?? "idle",
+  );
 }

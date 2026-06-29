@@ -2,7 +2,7 @@ import { Button, Input, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { type EnumOption, EnumSelect } from "@/components/enum-select";
 import { ModelPicker } from "@/components/model-picker";
-import { EMBEDDING_CATALOG } from "@/lib/model-catalogs";
+import { EMBEDDING_CATALOG } from "@/lib/enrichment/model-catalogs";
 import { usePrefs } from "@/stores/prefs";
 
 type Provider = "bundled" | "ollama" | "lmstudio" | "custom";

@@ -1,15 +1,15 @@
 import { matches } from "@pond/schema/filters/match";
 import type { Predicate, Query } from "@pond/schema/filters/types";
 import { useCallback, useMemo } from "react";
-import { embedQuery, resolveFacets } from "@/lib/facet-resolver";
-import { computeLiveFacets } from "@/lib/live-facets";
+import { embedQuery, resolveFacets } from "@/lib/search/facet-resolver";
+import { computeLiveFacets } from "@/lib/search/live-facets";
 import {
   compileStageA,
   dedupePredicates,
   type NlFacets,
   type NlResult,
-} from "@/lib/nl-query";
-import { validateQuery } from "@/lib/nl-validate";
+} from "@/lib/search/nl-query";
+import { validateQuery } from "@/lib/search/nl-validate";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { useSaves } from "./use-saves";

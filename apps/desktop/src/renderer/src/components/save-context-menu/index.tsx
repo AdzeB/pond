@@ -1,7 +1,7 @@
 import { cloneElement, type MouseEvent, type ReactElement } from "react";
-import { showContextMenu } from "@/lib/native-menu";
-import { buildSaveMenu } from "@/lib/save-menu";
+import { buildSaveMenu } from "@/lib/save/menu";
 import type { Save } from "@/lib/types";
+import { showContextMenu } from "@/lib/ui/native-menu";
 import { tagClipboard } from "@/stores/tag-clipboard";
 
 interface SaveContextMenuProps {

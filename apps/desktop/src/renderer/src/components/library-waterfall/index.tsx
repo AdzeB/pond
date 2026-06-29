@@ -5,8 +5,8 @@ import {
   type PackResult,
 } from "@/components/library-packed-grid";
 import { useGridMin } from "@/hooks/use-grid-min";
-import { chromeHeightFor } from "@/lib/library-chrome";
 import type { Save } from "@/lib/types";
+import { chromeHeightFor } from "@/lib/ui/library-chrome";
 import { aspectFor, useAspectVersion } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { useGridWidth } from "@/stores/shell-state";

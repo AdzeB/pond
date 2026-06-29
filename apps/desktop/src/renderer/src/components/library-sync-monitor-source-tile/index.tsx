@@ -1,0 +1,24 @@
+import type { Source } from "@pond/schema/db";
+import styles from "@/components/library-sync-monitor/styles.module.css";
+import { getSourceDef } from "@/lib/save/sources-registry";
+
+// The colored brand square. Each `IconBrand*` is full-bleed (its own
+// background rect), so clipping to a rounded box yields the app-icon look.
+export function BrandTile({
+  source,
+  size = 36,
+}: {
+  source: Source;
+  size?: number;
+}) {
+  const Icon = getSourceDef(source).icon;
+  return (
+    <span
+      className={styles.brandTile}
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <Icon width={size} height={size} />
+    </span>
+  );
+}

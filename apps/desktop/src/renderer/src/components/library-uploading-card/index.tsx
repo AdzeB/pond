@@ -1,7 +1,7 @@
 import { BorderBeam } from "border-beam";
 import { useMemo } from "react";
 import type { CardLayout } from "@/components/save-card-media";
-import { formatNumber } from "@/lib/format";
+import { formatNumber } from "@/lib/util/format";
 import styles from "./styles.module.css";
 
 interface UploadingCardProps {

@@ -9,7 +9,7 @@ import {
 } from "@pond/schema";
 import { Button, Sidebar, Tooltip } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
-import { DEV_GROUPS, SECTIONS, type SectionDef } from "@/lib/settings-registry";
+import { DEV_GROUPS, SECTIONS, type SectionDef } from "@/lib/settings/registry";
 import { usePrefs } from "@/stores/prefs";
 
 function Backwards() {

@@ -10,7 +10,7 @@ import {
   groupedModels,
   type ModelCatalog,
   type PickerModel,
-} from "@/lib/model-catalogs";
+} from "@/lib/enrichment/model-catalogs";
 import styles from "./styles.module.css";
 
 interface Props {

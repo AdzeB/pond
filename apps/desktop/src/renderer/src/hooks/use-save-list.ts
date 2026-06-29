@@ -5,8 +5,8 @@ import {
   labelForMode,
   parseMode,
   type SaveListMode,
-} from "@/lib/save-list";
-import { listBaseFromPath } from "@/lib/search-schemas";
+} from "@/lib/save/list";
+import { listBaseFromPath } from "@/lib/search/schemas";
 import { useNarrowedSaves } from "./use-narrowed-saves";
 
 export interface SaveList {

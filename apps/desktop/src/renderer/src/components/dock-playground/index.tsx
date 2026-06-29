@@ -7,6 +7,7 @@ import {
   setAskResult,
   setAskSummary,
   startAsk,
+  startTurn,
 } from "@/stores/ask-store";
 import styles from "./styles.module.css";
 
@@ -31,6 +32,14 @@ const makeIds = (count: number): string[] =>
 
 const ASK_QUESTION = "mountain landscapes at golden hour";
 
+// A tiny inline gradient used as the staged reference image in the visual-search
+// preview (the playground has no real saves to embed).
+const REF_IMAGE =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7aa2ff"/><stop offset="1" stop-color="#ff9ec4"/></linearGradient></defs><rect width="64" height="64" fill="url(#g)"/></svg>',
+  );
+
 const GROUPS: DockStateGroup[] = [
   {
     label: "Navigation",
@@ -52,12 +61,6 @@ const GROUPS: DockStateGroup[] = [
         label: "Trash",
         caption: "Trash tab active.",
         preview: { view: "nav", activeTab: "trash" },
-      },
-      {
-        id: "nav-settings",
-        label: "Settings",
-        caption: "Settings active, no nav tab highlighted.",
-        preview: { view: "nav", activeTab: "settings" },
       },
     ],
   },
@@ -129,6 +132,45 @@ const GROUPS: DockStateGroup[] = [
           setAskSummary(
             nonce,
             "Mostly wide alpine ranges and sunset ridgelines you saved this spring.",
+          );
+        },
+      },
+      {
+        id: "ask-conversation",
+        label: "Multi-turn conversation",
+        caption: "A follow-up refines the previous turn's result set.",
+        preview: { view: "ask" },
+        seed: () => {
+          const n1 = startAsk(ASK_QUESTION);
+          setAskResult(n1, ASK_QUESTION, makeIds(24), EMPTY_QUERY);
+          setAskSummary(
+            n1,
+            "Mostly wide alpine ranges and sunset ridgelines you saved this spring.",
+          );
+          const followUp = "only the vertical ones";
+          const n2 = startTurn({ question: followUp, refine: true });
+          setAskResult(n2, followUp, makeIds(7), EMPTY_QUERY);
+          setAskSummary(
+            n2,
+            "Seven tall, portrait-orientation shots from that set.",
+          );
+        },
+      },
+      {
+        id: "ask-visual",
+        label: "Visual search",
+        caption: "Image-to-image: a dropped reference ranks by CLIP.",
+        preview: { view: "ask" },
+        seed: () => {
+          const label = "Similar to this image";
+          const nonce = startTurn({
+            question: label,
+            image: { url: REF_IMAGE, name: "reference.png" },
+          });
+          setAskResult(nonce, label, makeIds(12), EMPTY_QUERY);
+          setAskSummary(
+            nonce,
+            "A dozen visually similar saves, closest match first.",
           );
         },
       },

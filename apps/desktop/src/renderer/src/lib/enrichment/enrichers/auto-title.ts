@@ -1,4 +1,4 @@
-import { mutateSave } from "@/lib/mutate-save";
+import { mutateSave } from "@/lib/save/mutate";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
 import type { Enricher } from "../types";

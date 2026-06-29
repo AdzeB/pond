@@ -2,22 +2,25 @@ import { matches } from "@pond/schema/filters/match";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { useCallback } from "react";
-import { cosine } from "@/lib/embeddings";
-import { type AskSort, flattenPredicates } from "@/lib/nl-query";
-import { describePredicate } from "@/lib/search-fields";
+import { embedQueryImage, rankByClip } from "@/lib/enrichment/clip-query";
+import { describePredicate } from "@/lib/search/fields";
+import { type AskSort, flattenPredicates } from "@/lib/search/nl-query";
 import type { Save } from "@/lib/types";
+import { dot } from "@/lib/util/vector";
 import { recordAsk } from "@/stores/ask-history";
 import {
+  type AskQueryImage,
+  type AskSegment,
   type AskSuggestion,
-  clearAsk,
+  askStore,
   commitAskResult,
   setAskError,
   setAskResult,
   setAskStage,
   setAskSummary,
   setAskSummaryError,
-  startAsk,
   startAskSummary,
+  startTurn,
 } from "@/stores/ask-store";
 import { embeddingStore } from "@/stores/embedding-store";
 import { pool } from "@/stores/pool";
@@ -155,7 +158,7 @@ function rankByVector(
   const unscored: Save[] = [];
   candidates.forEach((save, index) => {
     const entry = embeddingStore.state.byId.get(save.id);
-    if (entry) scored.push({ save, score: cosine(vector, entry.vec), index });
+    if (entry) scored.push({ save, score: dot(vector, entry.vec), index });
     else unscored.push(save);
   });
   scored.sort((a, b) => b.score - a.score || a.index - b.index);
@@ -172,7 +175,7 @@ function rankSemantic(
   for (const save of candidates) {
     const entry = embeddingStore.state.byId.get(save.id);
     if (!entry) continue;
-    const score = cosine(vector, entry.vec);
+    const score = dot(vector, entry.vec);
     if (score >= SEMANTIC_MIN_SCORE) scored.push({ save, score });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -278,28 +281,84 @@ export function runAskSuggestion(suggestion: AskSuggestion): void {
   commitAskResult(suggestion.label, ids, suggestion.query);
 }
 
+// Per-turn options: refine within the previous result set, and/or attach a
+// query image for image-to-image visual search.
+export interface AskOptions {
+  refine?: boolean;
+  image?: { blob: Blob; meta: AskQueryImage };
+  // The composed message as typed, so the transcript renders it back exactly.
+  segments?: ReadonlyArray<AskSegment>;
+}
+
 // The "Ask anything" agent: turn a question into an ordered result set of save
-// ids and publish it to the ask-store. Structured constraints (from the NL
-// compiler) filter; the query embedding ranks by meaning.
+// ids and append it to the ask-store transcript. Structured constraints (from
+// the NL compiler) filter; a query embedding (text, anchor, or CLIP image)
+// ranks by meaning. A refining turn searches within the previous turn's set.
 export function useAsk(): (
   question: string,
   anchorIds?: readonly string[],
+  opts?: AskOptions,
 ) => Promise<void> {
   const compile = useNlCompiler();
   const [ai] = usePrefs("ai");
 
   return useCallback(
-    async (raw: string, anchorIds: readonly string[] = []): Promise<void> => {
+    async (
+      raw: string,
+      anchorIds: readonly string[] = [],
+      opts: AskOptions = {},
+    ): Promise<void> => {
       const question = raw.trim();
-      if (!question && anchorIds.length === 0) {
-        clearAsk();
-        return;
-      }
+      const image = opts.image ?? null;
+      if (!question && anchorIds.length === 0 && !image) return;
 
       // Anchor-only runs ("@save" with no question) read as "find similar".
-      const label = question || "Similar items";
-      const nonce = startAsk(label);
+      const label =
+        question || (image ? "Similar to this image" : "Similar items");
+
+      // Refine within the previous turn's resolved set when asked and possible.
+      const prev = askStore.state.turns[askStore.state.turns.length - 1];
+      const refining =
+        (opts.refine ?? false) &&
+        prev != null &&
+        prev.status === "done" &&
+        prev.ids.length > 0;
+
+      const nonce = startTurn({
+        question: label,
+        image: image?.meta ?? null,
+        segments: opts.segments ?? [],
+        refine: refining,
+      });
       try {
+        const live = pool.snapshot().filter((s) => !s.deletedAt);
+        const basePool = refining
+          ? prev.ids
+              .map((id) => pool.get(id))
+              .filter((s): s is Save => s != null && !s.deletedAt)
+          : live;
+
+        // Image-to-image visual search: rank the candidate pool by CLIP
+        // similarity to the query image, skipping the NL compile entirely.
+        if (image) {
+          setAskStage(nonce, "ranking");
+          const vec = await embedQueryImage(image.blob);
+          let ordered = rankByClip(basePool, vec);
+          ordered = pinAnchors(ordered, anchorIds);
+          recordAsk(label);
+          setAskResult(
+            nonce,
+            label,
+            ordered.map((s) => s.id),
+            EMPTY_QUERY,
+            [],
+          );
+          if (ordered.length > 0 && ai?.nlCompiler) {
+            void runAskSummary(nonce, label, ordered);
+          }
+          return;
+        }
+
         const { query, queryVector, residual, sort, limit } = question
           ? await compile(question)
           : {
@@ -319,8 +378,7 @@ export function useAsk(): (
         const residualText = (residual || "").trim();
         const freeText = residualText || question;
 
-        const live = pool.snapshot().filter((s) => !s.deletedAt);
-        const candidates = live.filter((s) => matches(query, s));
+        const candidates = basePool.filter((s) => matches(query, s));
 
         setAskStage(nonce, "ranking");
         let ordered: Save[];
@@ -360,8 +418,10 @@ export function useAsk(): (
         if (limit != null && limit > 0) ordered = ordered.slice(0, limit);
 
         // Nothing matched: offer one-tap relaxations instead of a dead end.
+        // Relax against whatever pool this turn searched (the refined set or
+        // the whole library).
         const suggestions =
-          ordered.length === 0 ? buildSuggestions(query, live) : [];
+          ordered.length === 0 ? buildSuggestions(query, basePool) : [];
 
         recordAsk(label);
         setAskResult(

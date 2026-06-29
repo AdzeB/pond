@@ -3,8 +3,7 @@ import { LibraryGridProvider } from "@/components/grid-context";
 import { GridView } from "@/components/library-grid-view";
 import { JustifiedView } from "@/components/library-justified";
 import { WaterfallView } from "@/components/library-waterfall";
-import type { ViewMode } from "@/lib/library-types";
-import type { Save } from "@/lib/types";
+import type { Save, ViewMode } from "@/lib/types";
 
 interface LayoutSwitcherProps {
   viewMode: ViewMode;

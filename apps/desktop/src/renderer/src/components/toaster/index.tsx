@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { gentleSpring } from "@/lib/motion";
+import { gentleSpring } from "@/lib/ui/motion";
 import { dismissToast, useToasts } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
