@@ -334,6 +334,10 @@ export function installAppMenu(deps: AppMenuDeps): void {
                     label: "Tweet Card Preview",
                     click: navTo("/tweet-preview"),
                   },
+                  {
+                    label: "Popups",
+                    click: navTo("/popups-preview"),
+                  },
                 ],
               },
             ],

@@ -27,6 +27,10 @@ function RootComponent() {
         void navigate({ to: "/ai-search-lab" });
         return;
       }
+      if (pathname === "/popups-preview") {
+        void navigate({ to: "/popups-preview" });
+        return;
+      }
       if (pathname === "/settings") {
         void navigate({ to: "/settings" });
         return;

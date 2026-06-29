@@ -1,153 +1,45 @@
 .positioner {
-  z-index: var(--popup-z, 1100);
-  -webkit-user-select: none;
-  user-select: none;
-  outline: none;
+  composes: positioner from "../shared/popup.module.css";
+  z-index: 1100;
 }
 
 .popup {
-  display: flex;
-  flex-direction: column;
-  min-width: calc(100% + 43px);
+  composes: popup from "../shared/popup.module.css";
+  width: var(--popup-width, auto);
+  min-width: var(--popup-min-width, calc(100% + 43px));
   max-width: 512px;
-  padding-block: var(--popup-padding-block, 4px);
-  outline: none;
-  background: var(--ds-gray-1);
-  border-radius: var(--popup-radius, var(--ds-radius-md));
-  box-shadow: var(--ds-shadow-3);
-  transform-origin: var(--transform-origin);
-  transition:
-    opacity var(--ds-duration-snap) var(--ds-easing-standard),
-    transform var(--ds-duration-snap) var(--ds-easing-standard);
-  -webkit-app-region: no-drag;
-
-  &[data-starting-style],
-  &[data-ending-style] {
-    opacity: 0;
-    transform: scale(0.97) translateY(-2px);
-  }
 }
 
 .arrow {
-  display: flex;
-  color: var(--ds-gray-2);
-
-  &[data-side="top"] {
-    bottom: -8px;
-    rotate: 180deg;
-  }
-
-  &[data-side="bottom"] {
-    top: -8px;
-  }
-
-  &[data-side="left"] {
-    right: -13px;
-    rotate: 90deg;
-  }
-
-  &[data-side="right"] {
-    left: -13px;
-    rotate: -90deg;
-  }
+  composes: arrow from "../shared/popup.module.css";
 }
 
 .item {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: 32px;
-  padding-inline: var(--popup-item-padding-inline, 12px);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 450;
-  color: var(--ds-gray-11);
-  text-align: left;
-  touch-action: manipulation;
-  cursor: default;
-  user-select: none;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  isolation: isolate;
-
-  &::before {
-    position: absolute;
-    inset: 0 4px;
-    z-index: -1;
-    content: "";
-    background: var(--ds-gray-3);
-    border-radius: inherit;
-    opacity: 0;
-    transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
-  }
-
-  &[data-checked] {
-    color: var(--ds-gray-12);
-  }
-
-  &:hover::before,
-  &[data-highlighted]::before,
-  &:focus-visible::before {
-    opacity: 1;
-  }
-
-  &[data-stale="true"] {
-    &::before {
-      background: transparent;
-    }
-  }
+  composes: item from "../shared/popup.module.css";
 }
 
 .item-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
+  composes: item-icon from "../shared/popup.module.css";
 }
 
 .item-label {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  composes: item-label from "../shared/popup.module.css";
 }
 
 .item-keyboard {
-  display: inline-flex;
-  gap: 2px;
-  align-items: center;
-
-  .key {
-    font-size: 11px;
-    font-weight: 500;
-    font-feature-settings: "cv08" on;
-
-  }
+  composes: item-keyboard from "../shared/popup.module.css";
 }
 
 .indicator {
-  &:first-child {
-    margin-right: 8px;
-  }
+  composes: indicator from "../shared/popup.module.css";
 }
 
 .group-label {
-  padding: 10px 8px 4px;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--ds-gray-11);
-  letter-spacing: 0.02px;
+  composes: group-label from "../shared/popup.module.css";
 }
 
 .separator {
-  height: 1px;
-  margin: 4px 0px;
-  background: var(--ds-gray-a3);
-  border: 0;
+  composes: separator from "../shared/popup.module.css";
 }
 
 .secondary-label {

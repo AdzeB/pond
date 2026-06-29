@@ -1,0 +1,177 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+}
+
+.header {
+  display: flex;
+  flex-shrink: 0;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--ds-gray-3);
+  -webkit-app-region: drag;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.subtitle {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 20px 96px;
+  overflow-y: auto;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-3);
+  border-radius: var(--ds-radius-lg, 12px);
+}
+
+.cardHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.cardCaption {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ds-gray-10);
+}
+
+.cardStage {
+  position: relative;
+  display: flex;
+  justify-content: flex-start;
+  padding: 8px 4px;
+  overflow: visible;
+}
+
+/* Surface + item parts pulled from the canonical shared stylesheet, so the
+ * preview always reflects the real menu/context-menu/popover/select styling. */
+.popup {
+  composes: popup from "@pond/ui/shared/popup.module.css";
+}
+
+.item {
+  composes: item from "@pond/ui/shared/popup.module.css";
+}
+
+/* Submenu trigger row: lift it so its open submenu (and shadow) sit above
+ * neighbouring rows. */
+.hasSubmenu {
+  z-index: 1;
+}
+
+/* A submenu rendered already-open, anchored to the right of its trigger row. */
+.submenu {
+  composes: popup from "@pond/ui/shared/popup.module.css";
+  position: absolute;
+  top: -4px;
+  left: 100%;
+  margin-left: 6px;
+}
+
+.itemIcon {
+  composes: item-icon from "@pond/ui/shared/popup.module.css";
+}
+
+.itemLabel {
+  composes: item-label from "@pond/ui/shared/popup.module.css";
+}
+
+.itemKeyboard {
+  composes: item-keyboard from "@pond/ui/shared/popup.module.css";
+}
+
+.key {
+  composes: key from "@pond/ui/shared/popup.module.css";
+}
+
+.indicator {
+  composes: indicator from "@pond/ui/shared/popup.module.css";
+}
+
+.groupLabel {
+  composes: group-label from "@pond/ui/shared/popup.module.css";
+}
+
+.separator {
+  composes: separator from "@pond/ui/shared/popup.module.css";
+}
+
+.popoverBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.popoverTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.popoverDescription {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ds-gray-10);
+}
+
+.popoverActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}

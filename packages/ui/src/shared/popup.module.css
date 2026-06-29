@@ -1,0 +1,180 @@
+/*
+ * Canonical popup surface + item styling shared by menu, context-menu,
+ * popover, and select. The `menu` component is the source of truth for how
+ * these look. Defaults match the anchored components (context-menu / popover /
+ * select); `menu` re-declares the few properties where it differs.
+ *
+ * `--popup-width` and `--popup-min-width` are the only consumer-facing knobs
+ * (set on the positioner/popup to size a specific menu).
+ */
+
+.positioner {
+  z-index: 9999999999;
+  -webkit-user-select: none;
+  user-select: none;
+  outline: none;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  -webkit-app-region: no-drag;
+}
+
+.popup {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--popup-min-width, 200px);
+  width: var(--popup-width, var(--anchor-width));
+  max-width: var(--available-width);
+  padding-block: 4px;
+  outline: none;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-3);
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
+    transform var(--ds-duration-snap) var(--ds-easing-standard);
+  -webkit-app-region: no-drag;
+
+  &[data-starting-style],
+  &[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.97) translateY(-2px);
+  }
+
+  &[data-instant] {
+    transition: none;
+  }
+}
+
+.arrow {
+  display: flex;
+  color: var(--ds-gray-2);
+
+  &[data-side="top"] {
+    bottom: -8px;
+    rotate: 180deg;
+  }
+
+  &[data-side="bottom"] {
+    top: -8px;
+  }
+
+  &[data-side="left"] {
+    right: -13px;
+    rotate: 90deg;
+  }
+
+  &[data-side="right"] {
+    left: -13px;
+    rotate: -90deg;
+  }
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding-inline: 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-11);
+  text-align: left;
+  touch-action: manipulation;
+  cursor: default;
+  user-select: none;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  isolation: isolate;
+
+  &::before {
+    position: absolute;
+    inset: 0 4px;
+    z-index: -1;
+    content: "";
+    background: var(--ds-gray-3);
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  &[data-checked],
+  &[data-selected] {
+    color: var(--ds-gray-12);
+  }
+
+  &:not([data-disabled]):hover::before,
+  &[data-highlighted]::before,
+  &[data-popup-open]::before,
+  &:not([data-disabled]):focus-visible::before {
+    opacity: 1;
+  }
+
+  &[data-disabled] {
+    color: var(--ds-gray-8);
+    pointer-events: none;
+
+    &::before {
+      opacity: 0;
+    }
+  }
+
+  &[data-stale="true"]::before {
+    background: transparent;
+  }
+}
+
+.item-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+}
+
+.item-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-keyboard {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+
+  .key {
+    font-size: 11px;
+    font-weight: 500;
+    font-feature-settings: "cv08" on;
+  }
+}
+
+.indicator {
+  &:first-child {
+    margin-right: 8px;
+  }
+}
+
+.group-label {
+  padding: 8px 12px 4px;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+}
+
+.separator {
+  height: 1px;
+  margin: 4px 0px;
+  background: var(--ds-gray-a3);
+  border: 0;
+}

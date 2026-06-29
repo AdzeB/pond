@@ -71,7 +71,10 @@ export interface MenuParts {
     children?: ReactNode;
   }>;
   Portal: React.ComponentType<{ children?: ReactNode }>;
-  Positioner: React.ComponentType<{ children?: ReactNode; sideOffset?: number }>;
+  Positioner: React.ComponentType<{
+    children?: ReactNode;
+    sideOffset?: number;
+  }>;
   Popup: React.ComponentType<{ children?: ReactNode }>;
 }
 

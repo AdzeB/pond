@@ -181,7 +181,9 @@ export function Root({ preview }: RootProps) {
   // surfaces inline rather than pinned to the viewport.
   if (
     !preview &&
-    (pathname === "/dock-playground" || pathname === "/ai-search-lab")
+    (pathname === "/dock-playground" ||
+      pathname === "/ai-search-lab" ||
+      pathname === "/popups-preview")
   ) {
     return null;
   }
