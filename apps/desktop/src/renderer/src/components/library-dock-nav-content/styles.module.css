@@ -40,14 +40,22 @@
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
+
+  &[data-disabled="true"] {
+    color: var(--ds-gray-7);
+
+    &:hover {
+      color: var(--ds-gray-8);
+    }
+  }
 }
 
 .indicator {
   position: absolute;
-  inset: 0;
+  inset: 2px;
   z-index: 0;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-full);
+  border-radius: var(--ds-radius-sm);
 }
 
 .separator {
@@ -55,7 +63,7 @@
   align-self: center;
   width: 1px;
   height: 16px;
-  margin-inline: 2px;
+  margin-inline: 4px;
   background: var(--ds-gray-3);
   border-radius: var(--ds-radius-full);
 }

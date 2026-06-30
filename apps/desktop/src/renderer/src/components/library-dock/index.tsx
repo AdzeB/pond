@@ -1,4 +1,3 @@
-import { IconArchivePlusFill18 as New } from "@pond/icons/fill/18";
 import { useRouterState } from "@tanstack/react-router";
 import { BorderBeam } from "border-beam";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -8,7 +7,6 @@ import { AskContent } from "@/components/library-dock-ask-content";
 import { NavContent } from "@/components/library-dock-nav-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
 import { StatusContent } from "@/components/library-dock-status-content";
-import { LibrarySwitcher } from "@/components/library-switcher";
 import { NewSaveDialog } from "@/components/new-save-dialog";
 import { deleteSelectionForever, isAllSelected } from "@/lib/save/selection";
 import { gentleSpring } from "@/lib/ui/motion";
@@ -63,9 +61,6 @@ export function Root({ preview }: RootProps) {
   // pill rather than their individual icon buttons, so they sit above the dock
   // and inherit its width.
   const pillRef = useRef<HTMLDivElement | null>(null);
-  // The "New" composer now lives in the bottom-right corner, so its dialog
-  // anchors to that button rather than the centered pill.
-  const newButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const openAsk = useCallback(() => setMode("compose"), []);
   const closeAsk = useCallback(() => setMode("nav"), []);
@@ -73,7 +68,6 @@ export function Root({ preview }: RootProps) {
     clearAsk();
     setMode("nav");
   }, []);
-  const openNewSave = useCallback(() => newSave.open(), []);
 
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
@@ -177,14 +171,9 @@ export function Root({ preview }: RootProps) {
     ],
   );
 
-  // Hidden on component-preview routes, which mount the dock / AI-search
-  // surfaces inline rather than pinned to the viewport.
-  if (
-    !preview &&
-    (pathname === "/dock-playground" ||
-      pathname === "/ai-search-lab" ||
-      pathname === "/popups-preview")
-  ) {
+  // Hidden on the component library route, which renders its own surfaces
+  // inline rather than alongside the pinned dock.
+  if (!preview && pathname === "/components") {
     return null;
   }
 
@@ -206,7 +195,6 @@ export function Root({ preview }: RootProps) {
         className={styles.pill}
         layout
         animate={{
-          borderRadius: isCard ? 20 : 9999,
           padding: isCard ? 0 : 4,
         }}
         transition={gentleSpring}
@@ -232,7 +220,7 @@ export function Root({ preview }: RootProps) {
       <NewSaveDialog
         open={newOpen}
         onOpenChange={newSave.set}
-        anchor={() => newButtonRef.current}
+        anchor={() => pillRef.current}
         align="end"
       />
 
@@ -252,25 +240,5 @@ export function Root({ preview }: RootProps) {
 
   if (preview) return body;
 
-  return (
-    <>
-      <div className={styles.dock}>{body}</div>
-
-      <div className={`${styles.corner} ${styles.cornerLeft}`}>
-        <LibrarySwitcher variant="dock" />
-      </div>
-
-      <div className={`${styles.corner} ${styles.cornerRight}`}>
-        <button
-          ref={newButtonRef}
-          type="button"
-          className={styles.item}
-          aria-label="New"
-          onClick={openNewSave}
-        >
-          <New />
-        </button>
-      </div>
-    </>
-  );
+  return <div className={styles.dock}>{body}</div>;
 }

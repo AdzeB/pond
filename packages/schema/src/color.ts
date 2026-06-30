@@ -89,6 +89,10 @@ export interface ThemeEngineVars {
 const FALLBACK_BASE: Oklch = { l: 0.99, c: 0, h: 0 };
 const FALLBACK_ACCENT: Oklch = { l: 0.62, c: 0.19, h: 250 };
 
+// Accent chroma multiplier applied only on Display P3 panels; mirrors the P3
+// tier the theme package bakes into the static ramps (theme colors/ramps.ts).
+export const P3_CHROMA_BOOST = 1.4;
+
 // Maps the 0..100 contrast slider to the CSS lightness-spread multiplier.
 export function contrastMultiplier(contrast: number): number {
   const n = Number.isFinite(contrast) ? contrast : 30;

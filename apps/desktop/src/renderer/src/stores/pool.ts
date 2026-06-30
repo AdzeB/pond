@@ -1,5 +1,11 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import {
+  clearTextIndex,
+  indexSave,
+  indexSaves,
+  removeSaveFromIndex,
+} from "@/lib/search/text-index";
 import type { Save } from "@/lib/types";
 
 interface SavesState {
@@ -47,6 +53,9 @@ export const pool = {
 };
 
 export function upsertSave(save: Save): void {
+  // Keep the BM25 text index current. Enrichment optimistic updates also funnel
+  // through here, so captions/OCR/transcripts get indexed as they land.
+  indexSave(save);
   savesStore.setState((s) => {
     const prev = s.byId.get(save.id);
     if (prev === save) return s;
@@ -62,6 +71,7 @@ export function upsertSave(save: Save): void {
 
 export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
   if (list.length === 0) return;
+  indexSaves(list);
   savesStore.setState((s) => {
     const byId = new Map(s.byId);
     for (const save of list) byId.set(save.id, save);
@@ -70,6 +80,7 @@ export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
 }
 
 export function deleteSave(id: string): void {
+  removeSaveFromIndex(id);
   savesStore.setState((s) => {
     if (!s.byId.has(id)) return s;
     const byId = new Map(s.byId);
@@ -79,6 +90,7 @@ export function deleteSave(id: string): void {
 }
 
 function clearSaves(): void {
+  clearTextIndex();
   savesStore.setState((s) =>
     s.byId.size === 0 ? s : { byId: new Map(), sorted: [] },
   );
@@ -116,7 +128,11 @@ export function patchSaveTranscript(
     const prev = s.byId.get(id);
     if (!prev) return s;
     const byId = new Map(s.byId);
-    byId.set(id, { ...prev, transcript });
+    const next = { ...prev, transcript };
+    byId.set(id, next);
+    // Transcript is a searchable field and arrives lazily (omitted from the list
+    // payload), so fold it into the text index when it hydrates.
+    indexSave(next);
     return { byId, sorted: s.sorted };
   });
 }

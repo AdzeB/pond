@@ -3,6 +3,7 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline as streamPipeline } from "node:stream/promises";
+import type { AgentStepRecord } from "@pond/schema";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import {
@@ -155,6 +156,24 @@ export class LlamaCppProvider implements AiProvider {
       }
       return null;
     }
+  }
+
+  // The bundled model isn't trusted for the richer plan format, so it just emits
+  // a filter-only plan, which the renderer treats as a safe fallback.
+  async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
+    const filter = await this.compileQuery(input, ctx);
+    return { filter };
+  }
+
+  // Bundled isn't agent-capable; collapse the loop into a single filter-only
+  // result. The accumulated steps are ignored (no multi-step reasoning here).
+  async agentStep(
+    question: string,
+    ctx: CompileContext,
+    _steps?: ReadonlyArray<AgentStepRecord>,
+  ): Promise<unknown> {
+    const filter = await this.compileQuery(question, ctx);
+    return { type: "final", plan: { filter } };
   }
 
   async summarize(question: string, items: SummaryItem[]): Promise<string> {

@@ -4,7 +4,7 @@ import {
   lightPresets,
   type ThemeDef,
 } from "@pond/schema/db";
-import { Select } from "@pond/ui";
+import { Select, type SelectItemSpec } from "@pond/ui";
 import styles from "./styles.module.css";
 
 const THEME_VALUE_SYSTEM = "system";
@@ -61,6 +61,28 @@ export function ThemeSelect({
       });
   };
 
+  const items: SelectItemSpec<string>[] = [
+    {
+      value: THEME_VALUE_SYSTEM,
+      label: <SystemOption light={systemLight} dark={systemDark} />,
+    },
+    { type: "separator" },
+    ...lightPresets().map((preset) => ({
+      value: `${PRESET_PREFIX}${preset.id}`,
+      label: <ThemeOption def={preset.def} label={preset.name} />,
+    })),
+    { type: "separator" },
+    ...darkPresets().map((preset) => ({
+      value: `${PRESET_PREFIX}${preset.id}`,
+      label: <ThemeOption def={preset.def} label={preset.name} />,
+    })),
+    { type: "separator" },
+    {
+      value: THEME_VALUE_CUSTOM,
+      label: <ThemeOption def={custom} label="Custom" />,
+    },
+  ];
+
   return (
     <Select.Root value={value} onValueChange={onValueChange}>
       <Select.Trigger>
@@ -69,31 +91,7 @@ export function ThemeSelect({
       <Select.Portal>
         <Select.Positioner sideOffset={6}>
           <Select.Popup>
-            <Select.Item value={THEME_VALUE_SYSTEM}>
-              <SystemOption light={systemLight} dark={systemDark} />
-            </Select.Item>
-            <Select.Separator />
-            {lightPresets().map((preset) => (
-              <Select.Item
-                key={preset.id}
-                value={`${PRESET_PREFIX}${preset.id}`}
-              >
-                <ThemeOption def={preset.def} label={preset.name} />
-              </Select.Item>
-            ))}
-            <Select.Separator />
-            {darkPresets().map((preset) => (
-              <Select.Item
-                key={preset.id}
-                value={`${PRESET_PREFIX}${preset.id}`}
-              >
-                <ThemeOption def={preset.def} label={preset.name} />
-              </Select.Item>
-            ))}
-            <Select.Separator />
-            <Select.Item value={THEME_VALUE_CUSTOM}>
-              <ThemeOption def={custom} label="Custom" />
-            </Select.Item>
+            <Select.Items items={items} />
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>
@@ -123,11 +121,12 @@ export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
       <Select.Portal>
         <Select.Positioner sideOffset={6}>
           <Select.Popup>
-            {presets.map((preset) => (
-              <Select.Item key={preset.id} value={preset.id}>
-                <ThemeOption def={preset.def} label={preset.name} />
-              </Select.Item>
-            ))}
+            <Select.Items
+              items={presets.map((preset) => ({
+                value: preset.id,
+                label: <ThemeOption def={preset.def} label={preset.name} />,
+              }))}
+            />
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>

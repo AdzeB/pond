@@ -64,8 +64,15 @@ function recordRun(enricher: Enricher, ms: number): void {
   }
 }
 
-function reportInflight(): void {
-  enrichmentMonitor.set({ inflight: inflight.size });
+// Publish the current activity snapshot so per-save detail views can show which
+// enrichments are running/failed for a given item. Copies the sets so consumers
+// can rely on referential change to re-render.
+function publishActivity(): void {
+  enrichmentMonitor.set({
+    inflight: inflight.size,
+    activeKeys: new Set(inflight),
+    failedKeys: new Set(failed),
+  });
 }
 
 function keyFor(enricher: Enricher, save: Save): string {
@@ -159,13 +166,13 @@ function schedule(enricher: Enricher, save: Save): void {
   const key = keyFor(enricher, save);
   if (inflight.has(key) || failed.has(key)) return;
   inflight.add(key);
-  reportInflight();
+  publishActivity();
   void limit(async () => {
     // Yield to the UI before claiming the CPU/GPU for this run.
     await whenIdle();
     if (suspended()) {
       inflight.delete(key);
-      reportInflight();
+      publishActivity();
       return;
     }
     const startedAt = performance.now();
@@ -179,19 +186,25 @@ function schedule(enricher: Enricher, save: Save): void {
       elapsed = performance.now() - startedAt;
       recordRun(enricher, elapsed);
       inflight.delete(key);
-      reportInflight();
+      publishActivity();
     }
     // Let the chip breathe before the next queued run claims the limit slot.
     await cooldown(elapsed);
   });
 }
 
-function scan(): void {
+// Run the eligibility scan. With no `ids` it sweeps the whole library; with a
+// scope it only considers those saves, so a per-item reprocess re-runs just
+// that save instead of draining the entire backlog.
+function scan(ids?: readonly string[]): void {
   if (suspended()) return;
   const prefs = getPrefsSnapshot();
+  const scope = ids && ids.length > 0 ? new Set(ids) : null;
   // Newest-first: enrich what the user just saved before grinding old backlog,
   // so fresh items get captions/embeddings while they're still looking at them.
-  const saves = [...pool.snapshot()].sort((a, b) => b.savedAt - a.savedAt);
+  const saves = [...pool.snapshot()]
+    .filter((s) => !scope || scope.has(s.id))
+    .sort((a, b) => b.savedAt - a.savedAt);
   // Per-enricher count of work still outstanding this pass — a quick gauge of
   // how big the on-device backlog is right now.
   const backlog: string[] = [];
@@ -215,15 +228,29 @@ function scan(): void {
 
 let sweepStarted = false;
 let scanScheduled = false;
+// Scope carried by the pending (debounced) scan: `null` means a full-library
+// sweep, a Set means the union of scoped ids. A global request always wins, so
+// a scoped scan landing next to a library-wide one falls back to the full sweep.
+let pendingScope: Set<string> | null = null;
 
-function scheduleScan(): void {
-  if (scanScheduled) return;
+function scheduleScan(ids?: readonly string[]): void {
+  const scoped = ids && ids.length > 0 ? ids : null;
+  if (scanScheduled) {
+    // Merge into the in-flight debounce window.
+    if (!scoped) pendingScope = null;
+    else if (pendingScope !== null)
+      for (const id of scoped) pendingScope.add(id);
+    return;
+  }
   scanScheduled = true;
+  pendingScope = scoped ? new Set(scoped) : null;
   // Debounce bursts of pool updates, then run the scan during idle time.
   setTimeout(() => {
     void whenIdle().then(() => {
       scanScheduled = false;
-      scan();
+      const scope = pendingScope ? [...pendingScope] : undefined;
+      pendingScope = null;
+      scan(scope);
     });
   }, 250);
 }
@@ -231,8 +258,21 @@ function scheduleScan(): void {
 // Retry failed runs and pick up newly-enabled enrichers immediately. Clears the
 // per-session failure set so transient failures (offline model load) re-attempt;
 // does not reset stamps, so already-enriched saves are skipped by eligibility.
-export function rescanEnrichment(): void {
+// Pass `ids` to scope both the failure-clear and the scan to a selection (e.g. a
+// single item reprocessed from the inspector), leaving the rest of the library
+// untouched; omit for a library-wide rescan.
+export function rescanEnrichment(ids?: readonly string[]): void {
+  if (ids && ids.length > 0) {
+    const scope = new Set(ids);
+    for (const key of failed) {
+      if (scope.has(key.slice(key.indexOf(":") + 1))) failed.delete(key);
+    }
+    publishActivity();
+    scheduleScan(ids);
+    return;
+  }
   failed.clear();
+  publishActivity();
   scheduleScan();
 }
 
@@ -269,8 +309,8 @@ export function startEnrichmentSweep(): () => void {
       console.warn(`[enrichment] hydrate failed (${e.id})`, err);
     }),
   );
-  void Promise.all(hydrations).then(scheduleScan);
-  const sub = savesStore.subscribe(scheduleScan);
+  void Promise.all(hydrations).then(() => scheduleScan());
+  const sub = savesStore.subscribe(() => scheduleScan());
 
   // Pause the sweep whenever the window isn't actually on screen, so we never
   // heat the machine doing inference the user can't see.

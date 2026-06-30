@@ -24,10 +24,12 @@
     "./fill-duo": "./fill-duo/index.ts",
     "./outline/12": "./outline/12/index.ts",
     "./outline/18": "./outline/18/index.ts",
+    "./providers": "./providers/index.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
   "scripts": {
+    "generate:providers": "node --experimental-strip-types providers/generate.ts",
     "lint": "biome check --fix --unsafe ."
   },
   "peerDependencies": {

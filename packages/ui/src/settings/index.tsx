@@ -29,10 +29,24 @@ function Description({ className, ...props }: DescriptionProps) {
   return <p className={cn(styles.description, className)} {...props} />;
 }
 
-interface SectionProps extends React.ComponentPropsWithoutRef<"div"> {}
+interface ColumnsProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Section({ className, ...props }: SectionProps) {
-  return <div className={cn(styles.section, className)} {...props} />;
+function Columns({ className, ...props }: ColumnsProps) {
+  return <div className={cn(styles.columns, className)} {...props} />;
+}
+
+interface SectionProps extends React.ComponentPropsWithoutRef<"div"> {
+  span?: "full";
+}
+
+function Section({ className, span, ...props }: SectionProps) {
+  return (
+    <div
+      className={cn(styles.section, className)}
+      data-span={span}
+      {...props}
+    />
+  );
 }
 
 interface SectionTitleProps extends React.ComponentPropsWithoutRef<"h2"> {}
@@ -82,6 +96,7 @@ export const Settings = {
   Header: Header,
   Title: Title,
   Description: Description,
+  Columns: Columns,
   Section: Section,
   SectionTitle: SectionTitle,
   List: List,

@@ -1,26 +1,14 @@
-import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-export function Section({
-  icon,
-  title,
-  tight,
-  children,
-}: {
-  icon: ReactNode;
+interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
   title: string;
-  tight?: boolean;
-  children: ReactNode;
-}) {
+}
+
+export function Section({ title, ...props }: SectionProps) {
   return (
-    <section className={styles.section} data-tight={tight ? "true" : undefined}>
-      <div className={styles.sectionHead}>
-        <span className={styles.sectionIcon} aria-hidden>
-          {icon}
-        </span>
-        <h3 className={styles.sectionTitle}>{title}</h3>
-      </div>
-      {children}
+    <section className={styles.section} {...props}>
+      <h3 className={styles.title}>{title}</h3>
+      {props.children}
     </section>
   );
 }

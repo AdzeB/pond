@@ -99,29 +99,16 @@
 }
 
 .timeDisplay {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 1;
   display: flex;
+  flex: 0 0 auto;
   gap: 6px;
+  align-items: center;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--ds-white-a12);
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.5);
   pointer-events: none;
   user-select: none;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition:
-    opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-    transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.timeDisplay[data-visible] {
-  opacity: 1;
-  transform: none;
 }
 
 .timeDisplaySep {

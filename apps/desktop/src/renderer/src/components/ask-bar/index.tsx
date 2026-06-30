@@ -702,9 +702,13 @@ function TurnView({
   const reduceMotion = useReducedMotion();
   const busy = turn.status === "thinking" || turn.summaryStatus === "loading";
   const stageLabel = turn.stage ? STAGE_LABELS[turn.stage] : "Thinking…";
+  const hasAnswer = turn.answer.length > 0;
   const hasSummary = turn.summaryStatus === "done" && turn.summary.length > 0;
   const showSuggestions =
-    turn.status === "done" && turn.count === 0 && turn.suggestions.length > 0;
+    turn.status === "done" &&
+    turn.count === 0 &&
+    !hasAnswer &&
+    turn.suggestions.length > 0;
 
   const labelMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
@@ -763,7 +767,9 @@ function TurnView({
               ) : null}
             </span>
           ) : turn.count === 0 ? (
-            <span className={styles.statusLine}>No matches</span>
+            hasAnswer ? null : (
+              <span className={styles.statusLine}>No matches</span>
+            )
           ) : (
             <span className={styles.statusLine}>
               <span className={styles.count}>{formatNumber(turn.count)}</span>
@@ -772,7 +778,11 @@ function TurnView({
           )}
         </div>
 
-        {hasSummary ? <p className={styles.turnBody}>{turn.summary}</p> : null}
+        {hasAnswer ? <p className={styles.turnBody}>{turn.answer}</p> : null}
+
+        {hasSummary && !hasAnswer ? (
+          <p className={styles.turnBody}>{turn.summary}</p>
+        ) : null}
 
         {turn.status === "done" && turn.count > 0 ? (
           <TurnResults ids={turn.ids} onOpenSave={onOpenSave} />
@@ -886,7 +896,9 @@ function TurnResults({
 // mirrors the reference's "Reading…/Determining…/Making changes…".
 const STAGE_LABELS: Record<NonNullable<AskStage>, string> = {
   compiling: "Understanding your question…",
+  planning: "Planning your search…",
   searching: "Searching your library…",
+  executing: "Working through your library…",
   ranking: "Ranking matches…",
   summarizing: "Summarizing results…",
 };
@@ -908,9 +920,15 @@ export function AskStatusPill({ onReopen, onClear }: StatusPillProps) {
   // the narration keeps animating until the prose is ready.
   const busy = thinking || ask.summaryStatus === "loading";
   const stageLabel = ask.stage ? STAGE_LABELS[ask.stage] : "Thinking…";
+  const hasAnswer = ask.answer.length > 0;
   const hasSummary = ask.summaryStatus === "done" && ask.summary.length > 0;
-  const detail = hasSummary ? ask.summary : ask.question;
-  const showSuggestions = done && ask.count === 0 && ask.suggestions.length > 0;
+  const detail = hasAnswer
+    ? ask.answer
+    : hasSummary
+      ? ask.summary
+      : ask.question;
+  const showSuggestions =
+    done && ask.count === 0 && !hasAnswer && ask.suggestions.length > 0;
 
   const labelMotion = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
@@ -947,7 +965,11 @@ export function AskStatusPill({ onReopen, onClear }: StatusPillProps) {
         ) : ask.status === "error" ? (
           <span className={styles.label}>Couldn’t search</span>
         ) : ask.count === 0 ? (
-          <span className={styles.label}>No matches</span>
+          hasAnswer ? (
+            <span className={styles.label}>Answer</span>
+          ) : (
+            <span className={styles.label}>No matches</span>
+          )
         ) : (
           <>
             <motion.span

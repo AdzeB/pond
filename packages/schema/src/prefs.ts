@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
   CUSTOM_THEME_DEFAULT,
   DEFAULT_PRESET_ID,
@@ -118,12 +119,19 @@ const storage = z.object({
 const ai = z.object({
   // Enable the natural-language -> structured-query compiler (LLM stage).
   nlCompiler: z.boolean().catch(false),
+  // Enable the multi-step agentic loop (inspect -> plan -> execute -> answer)
+  // for capable providers. Falls back to single-shot plan compile when off or
+  // when the model can't drive it. See modelSupportsAgent.
+  agent: z.boolean().catch(false),
+  // Hard cap on agent reasoning steps per turn (bounds latency + token spend).
+  agentMaxSteps: z.number().catch(5),
   // Enable on-device embeddings + semantic ranking of free-text search.
   semanticSearch: z.boolean().catch(false),
   // Where the LLM stage runs. "bundled" = node-llama-cpp GGUF in the main
-  // process; the rest are local OpenAI-compatible HTTP servers.
-  provider: z.enum(["bundled", "ollama", "lmstudio", "custom"]).catch("ollama"),
-  // Base URL for HTTP providers (ollama/lmstudio/custom). Empty = provider default.
+  // process; local servers (ollama/lmstudio/custom) and hosted vendors
+  // (openai/anthropic/google/...) speak OpenAI-compatible HTTP. See AI_PROVIDERS.
+  provider: z.enum(AI_PROVIDER_IDS).catch("ollama"),
+  // Base URL override for HTTP providers. Empty = the provider's default.
   endpoint: z.string().catch(""),
   // Chat/completion model id for the LLM stage (provider-specific).
   modelId: z.string().catch(""),

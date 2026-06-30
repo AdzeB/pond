@@ -22,6 +22,21 @@ export const generalSection: SectionConfig = {
             "Hide Pond when you close the window instead of quitting.",
           apply: () => runApply("window.applyPrefs"),
         },
+        {
+          control: "switch",
+          key: "launchHidden",
+          title: "Start hidden",
+          description:
+            "Launch into the tray without opening the window. Pairs with Launch at login.",
+          apply: () => runApply("window.applyPrefs"),
+        },
+        {
+          control: "switch",
+          key: "restorePosition",
+          title: "Restore window position",
+          description: "Reopen Pond where you last left it.",
+          apply: () => runApply("window.applyPrefs"),
+        },
       ],
     },
     {

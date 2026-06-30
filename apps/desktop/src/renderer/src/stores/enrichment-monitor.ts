@@ -5,9 +5,20 @@ export interface EnrichmentStatus {
   paused: boolean;
   // On-device enricher runs currently executing.
   inflight: number;
+  // Keys (`${enricher.id}:${save.id}`) currently running, so a save's detail
+  // view can show which of its enrichments are working right now.
+  activeKeys: ReadonlySet<string>;
+  // Keys that failed this session (retried after a restart/upgrade, or when the
+  // user explicitly retries).
+  failedKeys: ReadonlySet<string>;
 }
 
-const store = new Store<EnrichmentStatus>({ paused: false, inflight: 0 });
+const store = new Store<EnrichmentStatus>({
+  paused: false,
+  inflight: 0,
+  activeKeys: new Set<string>(),
+  failedKeys: new Set<string>(),
+});
 
 export const enrichmentMonitor = {
   set(patch: Partial<EnrichmentStatus>): void {

@@ -1,5 +1,7 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
+import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
+import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
 import styles from "./styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -38,8 +40,18 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
 }
 
-function Item({ className, ...props }: Base.Item.Props) {
-  return <Base.Item className={cn(styles.item, className)} {...props} />;
+type ItemProps = Base.Item.Props & {
+  stale?: boolean;
+};
+
+function Item({ className, stale = false, ...props }: ItemProps) {
+  return (
+    <Base.Item
+      data-stale={stale}
+      className={cn(styles.item, className)}
+      {...props}
+    />
+  );
 }
 
 function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
@@ -57,7 +69,17 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
 }
 
 function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
-  return <span className={cn(styles["item-keyboard"], className)} {...props} />;
+  const letters = props.children?.toString().split("");
+
+  return (
+    <span className={cn(styles["item-keyboard"], className)} {...props}>
+      {letters?.map((letter) => (
+        <kbd className={styles.key} key={letter}>
+          {letter}
+        </kbd>
+      ))}
+    </span>
+  );
 }
 
 function Group(props: Base.Group.Props) {
@@ -121,7 +143,31 @@ function SubmenuRoot(props: Base.SubmenuRoot.Props) {
 
 function SubmenuTrigger({ className, ...props }: Base.SubmenuTrigger.Props) {
   return (
-    <Base.SubmenuTrigger className={cn(styles.item, className)} {...props} />
+    <Base.SubmenuTrigger className={cn(styles.item, className)} {...props}>
+      {props.children}
+      <CaretRight width={6} height={6} style={{ color: "var(--ds-gray-9)" }} />
+    </Base.SubmenuTrigger>
+  );
+}
+
+function Items({ items }: { items: MenuItemSpec[] }) {
+  return (
+    <>
+      {renderMenuSpec(items, {
+        Item,
+        ItemIcon,
+        ItemLabel,
+        ItemKeyboard,
+        Separator,
+        Group,
+        GroupLabel,
+        SubmenuRoot,
+        SubmenuTrigger,
+        Portal,
+        Positioner,
+        Popup,
+      })}
+    </>
   );
 }
 
@@ -147,4 +193,5 @@ export const ContextMenu = {
   CheckboxItemIndicator,
   SubmenuRoot,
   SubmenuTrigger,
+  Items,
 };

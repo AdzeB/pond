@@ -2,7 +2,7 @@ import {
   IconAscendingSortingFill18 as AscendingIcon,
   IconDescendingSortingFill18 as DescendingIcon,
 } from "@pond/icons/fill/18";
-import { Select } from "@pond/ui";
+import { Select, type SelectItemSpec } from "@pond/ui";
 import { Group } from "@/components/library-view-menu-group";
 import { type SortKey, useView } from "@/hooks/use-view";
 import { VIEW_DEFAULTS } from "@/stores/view-store";
@@ -41,6 +41,16 @@ const KEY_LABELS: Record<SortKey, string> = Object.fromEntries(
   KEY_GROUPS.flatMap((g) => g.options).map((o) => [o.value, o.label]),
 ) as Record<SortKey, string>;
 
+// Groups, separated by a divider — mirrors the manual JSX it replaced.
+const KEY_ITEMS: SelectItemSpec<SortKey>[] = KEY_GROUPS.flatMap((group, i) => [
+  ...(i > 0 ? [{ type: "separator" as const }] : []),
+  {
+    type: "group" as const,
+    label: group.label,
+    items: group.options.map((o) => ({ value: o.value, label: o.label })),
+  },
+]);
+
 export function SortSection() {
   const { state, actions } = useView();
   const { key, dir } = state.sort;
@@ -63,18 +73,7 @@ export function SortSection() {
             <Select.Positioner>
               <Select.Popup>
                 <Select.List>
-                  {KEY_GROUPS.map((group, i) => (
-                    <Select.Group key={group.label}>
-                      {i > 0 ? <Select.Separator /> : null}
-                      <Select.GroupLabel>{group.label}</Select.GroupLabel>
-                      {group.options.map(({ label, value }) => (
-                        <Select.Item key={value} value={value}>
-                          <Select.ItemText>{label}</Select.ItemText>
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Group>
-                  ))}
+                  <Select.Items items={KEY_ITEMS} />
                 </Select.List>
               </Select.Popup>
             </Select.Positioner>

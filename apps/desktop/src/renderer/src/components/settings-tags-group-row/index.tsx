@@ -14,7 +14,6 @@ import {
   colorForName,
   focusInput,
   GROUP_COLORS,
-  relativeTime,
 } from "@/components/settings-tags/lib/helpers";
 import { TagTableRow } from "@/components/settings-tags-tag-table-row";
 import {
@@ -33,7 +32,6 @@ interface GroupRowProps {
   items: TagRow[];
   labelCount: number;
   totalSaves: number;
-  recentMs: number | null;
   onToggle: () => void;
 }
 
@@ -43,12 +41,10 @@ export function GroupRow({
   items,
   labelCount,
   totalSaves,
-  recentMs,
   onToggle,
 }: GroupRowProps) {
   const ctx = use(TagsTableContext);
   if (!ctx) throw new Error("GroupRow must be used within TagsTableContext");
-  const { maxUsage } = ctx;
 
   const reduceMotion = useReducedMotion();
   const [renaming, setRenaming] = useState(false);
@@ -59,14 +55,6 @@ export function GroupRow({
     id: `group:${group.id}`,
     data: { type: "group", name: group.name },
   });
-
-  const pct =
-    maxUsage > 0
-      ? Math.min(
-          100,
-          Math.max(totalSaves > 0 ? 6 : 0, (totalSaves / maxUsage) * 100),
-        )
-      : 0;
 
   function setColor(color: string | null) {
     void window.pond.query("tagGroups.update", {
@@ -180,19 +168,13 @@ export function GroupRow({
           <span className={styles["group-count"]}>{labelCount}</span>
         </span>
 
-        <span className={styles.usage}>
-          <span className={styles.bar} aria-hidden>
-            <span className={styles["bar-fill"]} style={{ width: `${pct}%` }} />
+        {totalSaves > 0 ? (
+          <span className={styles.count}>
+            {totalSaves} {totalSaves === 1 ? "save" : "saves"}
           </span>
-          <span
-            className={styles.count}
-            data-zero={totalSaves === 0 || undefined}
-          >
-            {totalSaves}
-          </span>
-        </span>
-
-        <span className={styles["col-applied"]}>{relativeTime(recentMs)}</span>
+        ) : (
+          <span className={styles.count} data-zero />
+        )}
 
         {!renaming ? (
           <span className={styles.actions}>

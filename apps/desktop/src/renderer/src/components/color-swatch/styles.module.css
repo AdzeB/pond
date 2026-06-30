@@ -1,16 +1,13 @@
-/* Dominant-colour swatch: tinted pill with the hex value in-colour. */
 .colorSwatch {
   display: inline-flex;
-  align-items: center;
+  width: 28px;
   height: 28px;
-  padding-inline: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: -0.04px;
+
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   border: 0;
   border-radius: var(--ds-radius-full);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 10%);
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
@@ -18,6 +15,8 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 10%),
+      0 0 0 2px var(--ds-gray-a8);
   }
 }

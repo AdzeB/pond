@@ -1,22 +1,21 @@
-import {
-  IconPalette2Outline18 as ColorsIcon,
-  IconDropCapOutline18 as ContentIcon,
-  IconXmarkOutline18 as Cross,
-  IconChartActivity2Outline18 as InsightsIcon,
-  IconOrderedList2Outline18 as PropertiesIcon,
-} from "@pond/icons/outline/18";
+import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import { Button, TitleBar } from "@pond/ui";
+import type { ReactNode } from "react";
 import { ColorSwatch } from "@/components/color-swatch";
 import { ExpandableText } from "@/components/expandable-text";
-import { Insight } from "@/components/save-detail-insight";
+import {
+  type InsightSpec,
+  type InsightState,
+  Insights,
+} from "@/components/save-detail-insight";
 import { Section } from "@/components/save-detail-section";
 import { TagsSection } from "@/components/save-detail-tags";
 import { KebabMenu } from "@/components/save-inspector-kebab";
 import { pickAuthorColor } from "@/components/save-preview/lib/helpers";
 import { useSaveDetail } from "@/hooks/use-save-detail";
+import { useSaveEnrichment } from "@/hooks/use-save-enrichment";
 import type { Save } from "@/lib/types";
 import { initials } from "@/lib/util/initials";
-import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
 export function SaveDetails({ save }: { save: Save }) {
@@ -31,18 +30,61 @@ export function SaveDetails({ save }: { save: Save }) {
     colors,
     avatarUrl,
     sourceIcon: SourceIcon,
-    hasInsights,
   } = useSaveDetail(save.id);
 
-  const copyRawJson = async () => {
-    try {
-      const json = JSON.stringify(save.rawJson ?? {}, null, 2);
-      await navigator.clipboard.writeText(json);
-      pushToast("Copied raw JSON", "success");
-    } catch {
-      pushToast("Could not copy", "error");
-    }
+  const enrich = useSaveEnrichment(save.id);
+
+  const insights: InsightSpec[] = [];
+
+  const pushSlot = (
+    id: string,
+    label: string,
+    body: { text?: string; content?: ReactNode; hasContent: boolean },
+  ): void => {
+    const st = enrich.statusOf(id);
+    let state: InsightState | null = null;
+    if (st.running) state = "running";
+    else if (body.hasContent) state = "ready";
+    else if (st.failed) state = "failed";
+    else if (st.enabled && st.eligible)
+      state = enrich.paused ? "paused" : "queued";
+    if (!state) return;
+    insights.push({
+      id,
+      label,
+      state,
+      text: body.text,
+      content: body.content,
+      onRegenerate:
+        state === "ready" && enrich.canRegenerate(id)
+          ? () => enrich.regenerate(id)
+          : undefined,
+      onRetry: state === "failed" ? enrich.retry : undefined,
+    });
   };
+
+  pushSlot("caption", "Caption", { text: caption, hasContent: !!caption });
+
+  pushSlot("ocr", "Extracted Text", { text: ocr, hasContent: !!ocr });
+
+  pushSlot("transcript", "Transcript", {
+    text: transcript,
+    hasContent: !!transcript,
+  });
+
+  pushSlot("aesthetic", "Style", {
+    hasContent: style.length > 0,
+    content:
+      style.length > 0 ? (
+        <div className={styles.tags}>
+          {style.map((item) => (
+            <span key={item} className={styles.chip}>
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : undefined,
+  });
 
   return (
     <div className={styles.detailCard}>
@@ -62,18 +104,12 @@ export function SaveDetails({ save }: { save: Save }) {
 
       <div className={styles.detailScroll}>
         {description ? (
-          <Section
-            icon={<ContentIcon width={16} height={16} />}
-            title="Content"
-          >
+          <Section title="Content">
             <ExpandableText text={description} compact />
           </Section>
         ) : null}
 
-        <Section
-          icon={<PropertiesIcon width={16} height={16} />}
-          title="Properties"
-        >
+        <Section title="Properties">
           {engagement.length > 0 ? (
             <div className={styles.metrics}>
               {engagement.map((m) => (
@@ -135,11 +171,7 @@ export function SaveDetails({ save }: { save: Save }) {
         <TagsSection save={save} />
 
         {colors.length > 0 ? (
-          <Section
-            icon={<ColorsIcon width={16} height={16} />}
-            title="Colors"
-            tight
-          >
+          <Section title="Colors">
             <div className={styles.colors}>
               {colors.map((color) => (
                 <ColorSwatch key={color} color={color} />
@@ -148,53 +180,12 @@ export function SaveDetails({ save }: { save: Save }) {
           </Section>
         ) : null}
 
-        {hasInsights ? (
-          <Section
-            icon={<InsightsIcon width={18} height={18} />}
-            title="Insights"
-            tight
-          >
-            <div className={styles.insights}>
-              {caption ? (
-                <Insight label="Caption" copyText={caption}>
-                  <p className={styles.insightText}>{caption}</p>
-                </Insight>
-              ) : null}
-              {ocr ? (
-                <Insight label="Extracted Text" copyText={ocr}>
-                  <p className={styles.insightText}>{ocr}</p>
-                </Insight>
-              ) : null}
-              {transcript ? (
-                <Insight label="Transcript" copyText={transcript}>
-                  <ExpandableText text={transcript} />
-                </Insight>
-              ) : null}
-              {style.length > 0 ? (
-                <Insight label="Style">
-                  <div className={styles.tags}>
-                    {style.map((item) => (
-                      <span key={item} className={styles.chip}>
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                </Insight>
-              ) : null}
-            </div>
+        {insights.length > 0 ? (
+          <Section title="Insights">
+            <Insights insights={insights} />
           </Section>
         ) : null}
       </div>
-
-      <footer className={styles.detailFooter}>
-        <button
-          type="button"
-          className={styles.footerSecondary}
-          onClick={() => void copyRawJson()}
-        >
-          Copy Raw JSON
-        </button>
-      </footer>
     </div>
   );
 }

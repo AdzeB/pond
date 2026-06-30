@@ -1,8 +1,6 @@
 import { SETTINGS_SECTION_ALIASES, SETTINGS_SECTIONS } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { SettingsSectionView } from "@/components/settings-engine";
-import { SECTIONS } from "@/lib/settings/registry";
+import { SettingsDetail } from "@/components/settings-detail";
 
 // Path validation uses the lightweight schema list so redirects don't pull in the registry chunk; only the component below does.
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
@@ -12,19 +10,9 @@ function resolveSectionPath(path: string): string {
   return SETTINGS_SECTION_ALIASES[path] ?? path;
 }
 
-const CONFIG_BY_PATH = new Map(
-  SECTIONS.map((section) => [section.path, section.config]),
-);
-
 function SectionRoute() {
   const { section } = Route.useParams();
-  const config = CONFIG_BY_PATH.get(section);
-  if (!config) return null;
-  return (
-    <Suspense fallback={null}>
-      <SettingsSectionView config={config} />
-    </Suspense>
-  );
+  return <SettingsDetail section={section} />;
 }
 
 export const Route = createFileRoute("/settings/$section")({

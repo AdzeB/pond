@@ -1,5 +1,6 @@
-/* Sources page — card-grid deep dive. Local vars map the mock palette onto the
-   app's --ds-* design tokens so the rest of the sheet reads like the prototype. */
+/* Sources page — a source manager first. Local vars map the mock palette onto
+   the app's --ds-* design tokens, and are inherited by every sub-component
+   (kpi strip, rows, runs, tasks) via the cascade. */
 .page {
   --panel: var(--ds-gray-1);
   --ink: var(--ds-gray-12);
@@ -29,21 +30,26 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
   width: 100%;
-  max-width: 1080px;
+  max-width: 760px;
   padding: 24px 32px 120px;
 }
 
-/* ── topbar ─────────────────────────────────────────────────────────────── */
-.topbar {
+/* ── header ─────────────────────────────────────────────────────────────── */
+.header {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-  align-items: baseline;
+  align-items: center;
 }
 
-.topbar h1 {
+.heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
   margin: 0;
   font-size: 24px;
   font-weight: 640;
@@ -51,31 +57,23 @@
   letter-spacing: -0.02em;
 }
 
-.crumb {
-  font-size: 13.5px;
-  color: var(--ink-2);
-}
-
-.topRight {
+.subtitle {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-left: auto;
-}
-
-.live {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  padding: 6px 12px;
-  font-size: 12.5px;
+  margin: 3px 0 0;
+  font-size: 13px;
   color: var(--ink-2);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--ds-radius-full);
 }
 
-.liveDot {
+.active {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: var(--ok-t);
+}
+
+.activeDot {
   width: 7px;
   height: 7px;
   background: var(--ok);
@@ -83,91 +81,119 @@
   animation: pulseG 2s infinite;
 }
 
-/* ── section labels ─────────────────────────────────────────────────────── */
-.secLabel {
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── sections ───────────────────────────────────────────────────────────── */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.secHead {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin: 2px 2px -6px;
+  min-height: 24px;
+}
+
+.secLabel {
   font-size: 11px;
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.secLabel .muted {
-  font-weight: 500;
+.secMeta {
+  margin-left: auto;
+  font-size: 11px;
   color: var(--ink-3);
 }
 
-.customize {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  padding: 5px 11px;
+.secAction {
   margin-left: auto;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 540;
-  color: var(--ink);
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: pointer;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
 }
 
-.customize:hover {
-  border-color: var(--ink-3);
-}
-
-/* ── source grid ────────────────────────────────────────────────────────── */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-
-.card {
-  position: relative;
+/* ── sources list ───────────────────────────────────────────────────────── */
+.list {
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  text-align: left;
-  cursor: pointer;
+  overflow: hidden;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
   box-shadow: var(--shadow);
-  transition:
-    border-color 0.12s,
-    transform 0.12s;
 }
 
-.card:hover {
-  border-color: var(--ink-3);
-}
-
-.card:active {
-  transform: scale(0.99);
-}
-
-.card.add {
-  display: grid;
-  place-items: center;
-  min-height: 130px;
-  font-size: 13px;
-  font-weight: 540;
+.addRow {
+  gap: 8px;
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  padding: 12px 16px;
   color: var(--ink-2);
-  border-style: dashed;
-  box-shadow: none;
+  border-radius: 0;
 }
 
-.card.add:hover {
-  color: var(--ink);
-  border-color: var(--ink-3);
+/* ── collapsible secondary sections ─────────────────────────────────────── */
+.acc {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.accItem {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.accHeader {
+  margin: 0;
+}
+
+.accTrigger {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+}
+
+.accLabel {
+  font-weight: 500;
+}
+
+.accMeta {
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.accChevron {
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform 0.18s ease;
+}
+
+.accTrigger[data-panel-open] .accChevron {
+  transform: rotate(180deg);
+}
+
+.accPanel {
+  overflow: hidden;
 }
 
 /* ── keyframes ──────────────────────────────────────────────────────────── */
@@ -184,7 +210,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .liveDot {
+  .activeDot {
     animation: none;
+  }
+
+  .accChevron {
+    transition: none;
   }
 }

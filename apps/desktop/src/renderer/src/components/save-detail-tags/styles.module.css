@@ -14,7 +14,7 @@
   font-size: 13px;
   font-weight: 500;
   color: var(--ds-gray-9);
-  letter-spacing: -0.04px;
+
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 1px solid var(--ds-gray-3);

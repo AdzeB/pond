@@ -126,8 +126,8 @@ export function VideoPlayer({
           <track kind="chapters" src={trackUrl} default label="Chapters" />
         ) : null}
       </Video.Media>
-      <Video.TimeDisplay />
       <Video.Controls>
+        <Video.TimeDisplay />
         <Video.Row>
           <Video.Scrubber />
         </Video.Row>

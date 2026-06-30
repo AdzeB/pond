@@ -1,4 +1,9 @@
+import {
+  IconPlusOutline18 as Plus,
+  IconXmarkOutline18 as Xmark,
+} from "@pond/icons/outline/18";
 import { DEFAULT_SOURCE_METRICS, type Source } from "@pond/schema/db";
+import { Button } from "@pond/ui";
 import {
   METRIC_BY_ID,
   type MetricContext,
@@ -27,8 +32,10 @@ export function KpiStrip({
   const storage = useStorageStatus();
 
   const ids = view.metrics ?? DEFAULT_SOURCE_METRICS;
+  // Default to the quiet chip rail; the larger KPI cards are opt-in per metric
+  // via Customize (metricDisplay), so the page stays calm out of the box.
   const displayOf = (id: string): MetricDisplay =>
-    view.metricDisplay?.[id] ?? METRIC_BY_ID[id]?.defaultDisplay ?? "chip";
+    view.metricDisplay?.[id] ?? "chip";
 
   const connectedCount = sources.filter(
     (s) => bySource[s]?.connected || bySource[s]?.state === "running",
@@ -72,14 +79,16 @@ export function KpiStrip({
             const dir = m.delta?.dir ?? "neutral";
             return (
               <div key={id} className={styles.kpi}>
-                <button
-                  type="button"
+                <Button
+                  icon
+                  size="xs"
+                  variant="ghost"
                   className={styles.kx}
                   aria-label={`Remove ${def.label}`}
                   onClick={() => remove(id)}
                 >
-                  ✕
-                </button>
+                  <Xmark width={14} height={14} />
+                </Button>
                 <div className={styles.kLabel}>
                   {def.label}
                   {def.group === "Items" || def.group === "Sync"
@@ -148,13 +157,15 @@ export function KpiStrip({
             </span>
           );
         })}
-        <button
-          type="button"
-          className={`${styles.statchip} ${styles.addmetric}`}
+        <Button
+          size="sm"
+          variant="ghost"
+          className={styles.addmetric}
           onClick={onCustomize}
         >
-          + Add metric
-        </button>
+          <Plus width={14} height={14} />
+          Add metric
+        </Button>
       </div>
     </>
   );

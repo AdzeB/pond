@@ -13,7 +13,6 @@ import { TagsTableContext } from "@/components/settings-tags/lib/context";
 import {
   colorForName,
   focusInput,
-  relativeTime,
 } from "@/components/settings-tags/lib/helpers";
 import {
   buildTagMenuItems,
@@ -32,15 +31,8 @@ interface TagTableRowProps {
 export function TagTableRow({ tag, depth, inGroup }: TagTableRowProps) {
   const ctx = use(TagsTableContext);
   if (!ctx) throw new Error("TagTableRow must be used within TagsTableContext");
-  const {
-    selected,
-    selecting,
-    toggleSelect,
-    maxUsage,
-    countFor,
-    groupNames,
-    onOpen,
-  } = ctx;
+  const { selected, selecting, toggleSelect, countFor, groupNames, onOpen } =
+    ctx;
 
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(tag.name);
@@ -55,9 +47,6 @@ export function TagTableRow({ tag, depth, inGroup }: TagTableRowProps) {
     id: `tag:${tag.id}:${inGroup ?? "_root"}`,
     data: { type: "tag", name: tag.name, group: inGroup },
   });
-
-  const pct =
-    maxUsage > 0 ? Math.max(count > 0 ? 6 : 0, (count / maxUsage) * 100) : 0;
 
   function setArchived(archived: boolean) {
     void window.pond.query("tags.update", {
@@ -199,18 +188,17 @@ export function TagTableRow({ tag, depth, inGroup }: TagTableRowProps) {
           )}
         </span>
 
-        <span className={styles.usage}>
-          <span className={styles.bar} aria-hidden>
-            <span className={styles["bar-fill"]} style={{ width: `${pct}%` }} />
+        {tag.archived ? (
+          <span className={styles.count} data-muted>
+            Archived
           </span>
-          <span className={styles.count} data-zero={count === 0 || undefined}>
-            {count}
+        ) : count > 0 ? (
+          <span className={styles.count}>
+            {count} {count === 1 ? "save" : "saves"}
           </span>
-        </span>
-
-        <span className={styles["col-applied"]}>
-          {tag.archived ? "Archived" : relativeTime(tag.lastUsedAt)}
-        </span>
+        ) : (
+          <span className={styles.count} data-zero />
+        )}
 
         {!renaming ? (
           <span className={styles.actions}>

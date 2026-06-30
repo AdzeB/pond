@@ -30,6 +30,10 @@
   composes: item-keyboard from "../shared/popup.module.css";
 }
 
+.key {
+  composes: key from "../shared/popup.module.css";
+}
+
 .indicator {
   composes: indicator from "../shared/popup.module.css";
 }

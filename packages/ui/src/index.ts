@@ -13,7 +13,7 @@ export { Keyboard } from "./keyboard";
 export { Menu, type MenuItemSpec } from "./menu";
 export { Popover } from "./popover";
 export { RangeField } from "./range-field";
-export { Select } from "./select";
+export { Select, type SelectItemSpec } from "./select";
 export { Settings } from "./settings";
 export { Shell } from "./shell";
 export { Sidebar } from "./sidebar";

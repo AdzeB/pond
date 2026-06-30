@@ -92,18 +92,31 @@ export async function rotateIngestToken(): Promise<string> {
   return token;
 }
 
-// API key for a custom OpenAI-compatible AI endpoint. Stored encrypted, never
-// in prefs. Returns null when none is set (local servers don't need one).
-export async function getAiApiKey(): Promise<string | null> {
-  const all = await readAll();
-  const value = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY)];
-  if (!value) return null;
-  return decrypt(value);
+// Per-provider API key for hosted/OpenAI-compatible AI endpoints. Stored
+// encrypted, never in prefs. Keyed by provider id so several can be configured
+// at once and switching providers never overwrites another's key. Returns null
+// when none is set (local servers don't need one).
+function aiApiKeyAccount(provider: string): string {
+  return `${KEYCHAIN_AI_API_KEY}:${provider}`;
 }
 
-export async function setAiApiKey(key: string | null): Promise<void> {
+export async function getAiApiKey(provider: string): Promise<string | null> {
   const all = await readAll();
-  const mapKey = entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY);
+  const value = all[entryKey(KEYCHAIN_SERVICE, aiApiKeyAccount(provider))];
+  if (value) return decrypt(value);
+  // Back-compat: fall back to the legacy single-slot key for the active provider
+  // so keys saved before per-provider storage aren't lost.
+  const legacy = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY)];
+  if (legacy) return decrypt(legacy);
+  return null;
+}
+
+export async function setAiApiKey(
+  provider: string,
+  key: string | null,
+): Promise<void> {
+  const all = await readAll();
+  const mapKey = entryKey(KEYCHAIN_SERVICE, aiApiKeyAccount(provider));
   if (key && key.trim().length > 0) all[mapKey] = encrypt(key.trim());
   else delete all[mapKey];
   await writeAll(all);

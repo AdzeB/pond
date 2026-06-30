@@ -1,12 +1,33 @@
 import sharp from "sharp";
 
-// Top-N dominant colors as #rrggbb, most frequent first; [] if undecodable.
+interface Bucket {
+  count: number;
+  r: number;
+  g: number;
+  b: number;
+}
+
+interface Swatch {
+  r: number;
+  g: number;
+  b: number;
+  count: number;
+  saturation: number;
+  score: number;
+}
+
+// Top-N representative colors as #rrggbb; [] if undecodable. Ranking is biased
+// toward vibrancy rather than raw frequency: in most photos the commonest pixels
+// are desaturated background (sky, walls, skin), so a frequency-only sort buries
+// the colors a person actually recognises the image by. We weight each bucket by
+// saturation and damp the near-black / near-white extremes, then fall back to the
+// most frequent neutrals so genuinely greyscale images still return something.
 export async function extractPalette(
   path: string,
   count = 5,
 ): Promise<string[]> {
   try {
-    const size = 32;
+    const size = 64;
     const { data, info } = await sharp(path)
       .resize(size, size, { fit: "inside" })
       .removeAlpha()
@@ -14,10 +35,7 @@ export async function extractPalette(
       .toBuffer({ resolveWithObject: true });
 
     const channels = info.channels;
-    const buckets = new Map<
-      string,
-      { count: number; r: number; g: number; b: number }
-    >();
+    const buckets = new Map<string, Bucket>();
     for (let i = 0; i + channels - 1 < data.length; i += channels) {
       const r = data[i];
       const g = data[i + 1];
@@ -33,19 +51,67 @@ export async function extractPalette(
       buckets.set(key, entry);
     }
 
-    return Array.from(buckets.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, count)
-      .map((e) =>
-        toHex(
-          Math.round(e.r / e.count),
-          Math.round(e.g / e.count),
-          Math.round(e.b / e.count),
-        ),
-      );
+    const swatches: Swatch[] = Array.from(buckets.values()).map((e) => {
+      const r = Math.round(e.r / e.count);
+      const g = Math.round(e.g / e.count);
+      const b = Math.round(e.b / e.count);
+      const { s, l } = toHsl(r, g, b);
+      // Peaks for mid-tones, tapers toward pure black/white so backgrounds and
+      // blown highlights don't dominate, but never fully zero so they remain
+      // eligible as a fallback.
+      const lightWeight = 0.15 + 0.85 * (1 - Math.abs(l - 0.5) / 0.5);
+      const score = e.count * (0.2 + s) * lightWeight;
+      return { r, g, b, count: e.count, saturation: s, score };
+    });
+
+    // Colours people actually notice: enough saturation, not crushed/blown.
+    const vibrant = swatches
+      .filter((sw) => sw.saturation >= 0.15 && isMidtone(sw))
+      .sort((a, b) => b.score - a.score);
+
+    const chosen: Swatch[] = [];
+    const pushUnique = (sw: Swatch) => {
+      if (chosen.length >= count) return;
+      if (chosen.some((c) => distance(c, sw) < 48)) return;
+      chosen.push(sw);
+    };
+    for (const sw of vibrant) pushUnique(sw);
+
+    // Top up with the most frequent remaining buckets (covers neutral images and
+    // fills any slots left after de-duplicating near-identical vibrant colours).
+    if (chosen.length < count) {
+      const byFrequency = swatches
+        .filter((sw) => !chosen.includes(sw))
+        .sort((a, b) => b.count - a.count);
+      for (const sw of byFrequency) pushUnique(sw);
+    }
+
+    return chosen.map((sw) => toHex(sw.r, sw.g, sw.b));
   } catch {
     return [];
   }
+}
+
+// Squared-ish RGB distance; cheap dedupe so two adjacent buckets don't both land.
+function distance(a: Swatch, b: Swatch): number {
+  return Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
+}
+
+function isMidtone(sw: Swatch): boolean {
+  const { l } = toHsl(sw.r, sw.g, sw.b);
+  return l > 0.08 && l < 0.95;
+}
+
+function toHsl(r: number, g: number, b: number): { s: number; l: number } {
+  const rr = r / 255;
+  const gg = g / 255;
+  const bb = b / 255;
+  const max = Math.max(rr, gg, bb);
+  const min = Math.min(rr, gg, bb);
+  const l = (max + min) / 2;
+  const delta = max - min;
+  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
+  return { s, l };
 }
 
 function toHex(r: number, g: number, b: number): string {

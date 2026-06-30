@@ -1,3 +1,4 @@
+import { parseQueryPlan, type QueryPlan } from "@pond/schema";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import {
   type Clause,
@@ -102,4 +103,60 @@ export function validateQuery(raw: unknown): Query {
   if (!clause) return EMPTY_QUERY;
   if ("rules" in clause) return clause as Query;
   return { combinator: "and", rules: [clause] };
+}
+
+// ---- Query-plan validation (Stage D for the richer agent output) ----------
+// A model-emitted plan is untrusted: its `filter` runs through validateQuery and
+// its numeric bounds are clamped so the executor can never be handed a runaway
+// per-group/limit. Structurally invalid plans degrade to a filter-only plan.
+
+const MAX_PER_GROUP = 50;
+const MAX_GROUPS = 100;
+const MAX_LIMIT = 1000;
+
+function clampInt(n: number, lo: number, hi: number): number {
+  const x = Math.floor(n);
+  if (!Number.isFinite(x)) return lo;
+  return Math.min(hi, Math.max(lo, x));
+}
+
+export function validatePlan(raw: unknown): QueryPlan {
+  const parsed = parseQueryPlan(raw);
+  const filterRaw =
+    parsed?.filter ??
+    (raw && typeof raw === "object"
+      ? (raw as Record<string, unknown>).filter
+      : undefined);
+  const filter = validateQuery(filterRaw);
+  if (!parsed) return { filter };
+
+  const plan: QueryPlan = { filter };
+  if (parsed.rank) plan.rank = parsed.rank;
+  if (parsed.group) {
+    plan.group = {
+      by: parsed.group.by,
+      ...(parsed.group.bucket ? { bucket: parsed.group.bucket } : {}),
+      ...(parsed.group.perGroup != null
+        ? { perGroup: clampInt(parsed.group.perGroup, 1, MAX_PER_GROUP) }
+        : {}),
+      ...(parsed.group.interleave != null
+        ? { interleave: parsed.group.interleave }
+        : {}),
+      ...(parsed.group.maxGroups != null
+        ? { maxGroups: clampInt(parsed.group.maxGroups, 1, MAX_GROUPS) }
+        : {}),
+    };
+  }
+  if (parsed.limit != null) plan.limit = clampInt(parsed.limit, 1, MAX_LIMIT);
+  if (parsed.aggregate) {
+    plan.aggregate = {
+      ...(parsed.aggregate.count != null
+        ? { count: parsed.aggregate.count }
+        : {}),
+      ...(parsed.aggregate.countBy
+        ? { countBy: parsed.aggregate.countBy }
+        : {}),
+    };
+  }
+  return plan;
 }

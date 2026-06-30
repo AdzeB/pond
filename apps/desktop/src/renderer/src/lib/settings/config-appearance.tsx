@@ -18,6 +18,7 @@ export const appearanceSection: SectionConfig = {
   groups: [
     {
       title: "Theme",
+      fullWidth: true,
       items: [
         {
           control: "custom",

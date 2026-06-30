@@ -1,4 +1,5 @@
 import {
+  P3_CHROMA_BOOST,
   type Prefs,
   resolveActiveTheme,
   themeEngineVars,
@@ -36,6 +37,7 @@ function persistShell(patch: ShellPatch) {
 export function ThemeApplier() {
   const [prefs] = usePrefs("preferences");
   const prefersDark = useMediaMatch("(prefers-color-scheme: dark)");
+  const prefersP3 = useMediaMatch("(color-gamut: p3)");
   const prefersReducedMotion = useMediaMatch(
     "(prefers-reduced-motion: reduce)",
   );
@@ -49,11 +51,13 @@ export function ThemeApplier() {
         prefersDark,
       );
       const v = themeEngineVars(def);
+      // Match the static ramps' P3 tier: boost accent chroma on wide-gamut displays.
+      const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
       root.style.setProperty("--ds-base-l", String(v.baseL));
       root.style.setProperty("--ds-base-c", String(v.baseC));
       root.style.setProperty("--ds-base-h", String(v.baseH));
       root.style.setProperty("--ds-accent-l", String(v.accentL));
-      root.style.setProperty("--ds-accent-c", String(v.accentC));
+      root.style.setProperty("--ds-accent-c", String(accentC));
       root.style.setProperty("--ds-accent-h", String(v.accentH));
       root.style.setProperty("--ds-contrast", String(v.contrast));
       root.style.setProperty("--ds-fg-dir", String(v.fgDir));
@@ -69,7 +73,7 @@ export function ThemeApplier() {
         baseC: v.baseC,
         baseH: v.baseH,
         accentL: v.accentL,
-        accentC: v.accentC,
+        accentC,
         accentH: v.accentH,
         contrast: v.contrast,
         fgDir: v.fgDir,
@@ -85,6 +89,7 @@ export function ThemeApplier() {
     prefs.custom,
     prefs,
     prefersDark,
+    prefersP3,
   ]);
 
   useEffect(() => {

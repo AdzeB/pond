@@ -16,8 +16,6 @@
   place-items: center;
   width: 26px;
   height: 26px;
-  font-size: 14px;
-  font-weight: 700;
   color: #fff;
   background: var(--err);
   border-radius: 7px;
@@ -39,27 +37,4 @@
   display: flex;
   gap: 8px;
   margin-left: auto;
-}
-
-.customize {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  padding: 5px 11px;
-  margin-left: auto;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 540;
-  color: var(--ink);
-  text-transform: none;
-  letter-spacing: 0;
-  cursor: pointer;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-}
-
-.customize:hover {
-  border-color: var(--ink-3);
 }

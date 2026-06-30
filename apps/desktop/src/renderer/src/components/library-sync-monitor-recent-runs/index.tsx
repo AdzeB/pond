@@ -1,3 +1,5 @@
+import { IconChevronRightOutline18 as Chevron } from "@pond/icons/outline/18";
+import { Toolbar } from "@pond/ui";
 import { useMemo, useState } from "react";
 import {
   dayBucket,
@@ -16,6 +18,12 @@ import { getSourceDef } from "@/lib/save/sources-registry";
 import styles from "./styles.module.css";
 
 type Filter = "all" | "errors" | "manual";
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "errors", label: "Errors" },
+  { id: "manual", label: "Manual" },
+];
 
 export function RecentRuns({
   onOpenRun,
@@ -48,19 +56,20 @@ export function RecentRuns({
   return (
     <div className={styles.runs}>
       <div className={styles.rh}>
-        <h3>Run history</h3>
-        <span className={styles.seg}>
-          {(["all", "errors", "manual"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              type="button"
-              className={filter === f ? styles.on : undefined}
-              onClick={() => setFilter(f)}
-            >
-              {f === "all" ? "All" : f === "errors" ? "Errors" : "Manual"}
-            </button>
-          ))}
-        </span>
+        <Toolbar.Root className={styles.seg}>
+          <Toolbar.Group>
+            {FILTERS.map(({ id, label }) => (
+              <Toolbar.Button
+                key={id}
+                className={styles.segBtn}
+                data-active={filter === id ? "" : undefined}
+                onClick={() => setFilter(id)}
+              >
+                {label}
+              </Toolbar.Button>
+            ))}
+          </Toolbar.Group>
+        </Toolbar.Root>
       </div>
 
       <div className={styles.thd}>
@@ -111,7 +120,7 @@ export function RecentRuns({
                   <span className={styles.rt}>
                     {formatRunDuration(run.durationMs)} · {formatClock(run.ts)}
                   </span>
-                  <span className={styles.chev}>›</span>
+                  <Chevron className={styles.chev} width={16} height={16} />
                 </button>
               );
             })}

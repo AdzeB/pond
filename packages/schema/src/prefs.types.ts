@@ -103,7 +103,7 @@ export const CONTRAST_DEFAULT = 30;
 
 // Fallback custom theme and default preset ids (presets in theme-presets.ts).
 export const CUSTOM_THEME_DEFAULT: ThemeDef = {
-  base: "#fcfcfd",
+  base: "#ffffff",
   accent: "#3b82f6",
   contrast: CONTRAST_DEFAULT,
 };

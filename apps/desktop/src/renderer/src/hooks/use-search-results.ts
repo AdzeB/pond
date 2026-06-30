@@ -1,8 +1,12 @@
 import { useMemo } from "react";
+import { searchScores } from "@/lib/search/text-index";
 import type { Save } from "@/lib/types";
 import { useSaves } from "./use-saves";
 
-// Client-side scorer over the pool; every term must hit a field, ranked title prefix > substring > tag > url/author/desc/notes.
+// Grid search box: ranks the pool by the shared Orama BM25 index (the same index
+// the Ask agent's keyword ranker uses). "all"-term matching keeps the old
+// "every word must hit" behaviour; results are intersected with the live/trashed
+// scope and capped.
 const MAX_RESULTS = 500;
 
 export function useSearchResults(
@@ -15,51 +19,19 @@ export function useSearchResults(
   const saves = useSaves();
   const deletedOnly = opts?.deletedOnly ?? false;
   const results = useMemo<Save[] | null>(() => {
-    const trimmed = query.trim().toLowerCase();
-    if (!trimmed) return null;
-    const terms = trimmed.split(/\s+/).filter(Boolean);
-    if (terms.length === 0) return null;
+    if (!query.trim()) return null;
+    const scores = searchScores(query, "all");
+    if (scores.size === 0) return [];
 
     const scored: Array<{ save: Save; score: number }> = [];
     for (const save of saves) {
       if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
-      const s = scoreMatch(save, terms);
-      if (s > 0) scored.push({ save, score: s });
+      const score = scores.get(save.id);
+      if (score != null) scored.push({ save, score });
     }
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, MAX_RESULTS).map((row) => row.save);
   }, [saves, query, deletedOnly]);
 
   return { results, searching: false };
-}
-
-function scoreMatch(save: Save, terms: string[]): number {
-  const title = (save.title ?? "").toLowerCase();
-  const url = save.url.toLowerCase();
-  const author = (save.author ?? "").toLowerCase();
-  const tagBlob = save.tags.join(" ").toLowerCase();
-  const description = (save.description ?? "").toLowerCase();
-  const notes = (save.notes ?? "").toLowerCase();
-  // On-device enriched text: caption/OCR (image) and transcript (audio/video).
-  const caption = (save.caption ?? "").toLowerCase();
-  const ocr = (save.ocrText ?? "").toLowerCase();
-  const transcript = (save.transcript ?? "").toLowerCase();
-
-  let total = 0;
-  for (const term of terms) {
-    let score = 0;
-    if (title.startsWith(term)) score = Math.max(score, 1000);
-    else if (title.includes(term)) score = Math.max(score, 500);
-    if (tagBlob.includes(term)) score = Math.max(score, 300);
-    if (url.includes(term)) score = Math.max(score, 200);
-    if (author.includes(term)) score = Math.max(score, 150);
-    if (description.includes(term)) score = Math.max(score, 100);
-    if (caption.includes(term)) score = Math.max(score, 90);
-    if (ocr.includes(term)) score = Math.max(score, 70);
-    if (transcript.includes(term)) score = Math.max(score, 60);
-    if (notes.includes(term)) score = Math.max(score, 50);
-    if (score === 0) return 0;
-    total += score;
-  }
-  return total;
 }

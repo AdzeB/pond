@@ -15,20 +15,8 @@ function RootComponent() {
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
-      if (pathname === "/tweet-preview") {
-        void navigate({ to: "/tweet-preview" });
-        return;
-      }
-      if (pathname === "/dock-playground") {
-        void navigate({ to: "/dock-playground" });
-        return;
-      }
-      if (pathname === "/ai-search-lab") {
-        void navigate({ to: "/ai-search-lab" });
-        return;
-      }
-      if (pathname === "/popups-preview") {
-        void navigate({ to: "/popups-preview" });
+      if (pathname === "/components") {
+        void navigate({ to: "/components" });
         return;
       }
       if (pathname === "/settings") {

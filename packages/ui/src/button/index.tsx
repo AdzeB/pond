@@ -8,8 +8,8 @@ export interface ButtonProps extends Base.Props {
     | "secondary"
     | "tertiary"
     | "ghost"
-    | "danger"
-    | "accent";
+    | "destructive"
+    | "link";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: boolean;
 }

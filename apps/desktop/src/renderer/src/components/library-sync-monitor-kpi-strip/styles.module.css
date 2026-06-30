@@ -49,29 +49,14 @@
 
 .kpi .kx {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 6px;
+  right: 6px;
   z-index: 2;
   display: none;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  font-size: 11px;
-  color: var(--ink-3);
-  cursor: pointer;
-  background: var(--hover);
-  border: 0;
-  border-radius: 6px;
 }
 
 .kpi:hover .kx {
-  display: flex;
-}
-
-.kpi .kx:hover {
-  color: #fff;
-  background: var(--err);
+  display: inline-flex;
 }
 
 .spark {
@@ -137,15 +122,6 @@
   color: var(--warn-t);
 }
 
-.statchip.addmetric {
-  font-family: inherit;
+.addmetric {
   color: var(--ink-2);
-  cursor: pointer;
-  border-style: dashed;
-  box-shadow: none;
-}
-
-.statchip.addmetric:hover {
-  color: var(--ink);
-  border-color: var(--ink-3);
 }

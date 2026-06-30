@@ -76,6 +76,8 @@ export type Item = FieldItem | ButtonItem | CustomItem;
 export interface GroupConfig {
   title?: ReactNode;
   visible?: (values: Record<string, unknown>) => boolean;
+  // Break this group out of the two-column masonry to span the full width.
+  fullWidth?: boolean;
   items?: Item[];
   // Bespoke group body rendered in place of the item list (e.g. usage bar).
   render?: (binding: Binding) => ReactNode;

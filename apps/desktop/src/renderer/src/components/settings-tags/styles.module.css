@@ -1,17 +1,25 @@
 .page {
   display: flex;
-  flex: 1;
   flex-direction: column;
+  gap: 16px;
+  align-items: center;
   min-width: 0;
-  min-height: 0;
+  padding: 32px 24px 56px;
 }
+
+.head,
+.toolbar,
+.table {
+  width: 100%;
+  max-width: 640px;
+}
+
+/* ── Header ───────────────────────────────────────────────────────────── */
 
 .head {
   display: flex;
-  flex-shrink: 0;
   flex-direction: column;
-  gap: 4px;
-  padding: 24px 24px 0;
+  gap: 6px;
 }
 
 .title {
@@ -22,40 +30,39 @@
   letter-spacing: -0.01em;
 }
 
-.summary {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+.description {
+  max-width: 64ch;
   margin: 0;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--ds-gray-10);
 }
 
-.summary b {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
-}
-
-.summaryDot {
-  width: 3px;
-  height: 3px;
-  background: var(--ds-gray-a6);
-  border-radius: 50%;
-}
+/* ── Toolbar ──────────────────────────────────────────────────────────── */
 
 .toolbar {
   display: flex;
-  flex-shrink: 0;
   gap: 8px;
   align-items: center;
-  height: 56px;
-  padding: 0 24px;
 }
 
 .search {
+  position: relative;
   flex: 0 1 280px;
   min-width: 160px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  color: var(--ds-gray-9);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.search-field {
+  padding-left: 30px;
 }
 
 .spacer {
@@ -69,78 +76,30 @@
   color: var(--ds-gray-12);
 }
 
+/* ── List of cards ────────────────────────────────────────────────────── */
+
 .table {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  min-height: 0;
-}
-
-/* Shared column geometry for the header and every row. */
-.header,
-.draft {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 148px 128px;
-  column-gap: 16px;
-  align-items: center;
-  padding: 0 24px;
-}
-
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  height: 34px;
-  background: var(--ds-gray-1);
-  border-bottom: 1px solid var(--ds-gray-a4);
-}
-
-.colhead {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  justify-self: start;
-  padding: 0;
-  font: inherit;
-  font-size: 12px;
-  color: var(--ds-gray-10);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-  transition: color var(--ds-duration-fast, 0.12s) ease;
-}
-
-.colhead:hover,
-.colhead[data-active] {
-  color: var(--ds-gray-12);
-}
-
-.sort-caret {
-  color: var(--ds-gray-11);
-  opacity: 0;
-  transition:
-    transform var(--ds-duration-fast, 0.12s) ease,
-    opacity var(--ds-duration-fast, 0.12s) ease;
-}
-
-.colhead[data-active] .sort-caret {
-  opacity: 1;
-}
-
-.sort-caret[data-dir="asc"] {
-  transform: rotate(-90deg);
-}
-
-.sort-caret[data-dir="desc"] {
-  transform: rotate(90deg);
 }
 
 .body {
-  flex: 1;
-  min-height: 0;
-  padding-bottom: 96px;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
 }
+
+/* Each top-level item (a group with its labels, or a stand-alone label) is
+   its own bordered card; expanded group children live inside the same card. */
+.card {
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: var(--ds-radius-lg, 12px);
+}
+
+/* ── Shared name pieces (used by the inline create draft) ─────────────── */
 
 .name {
   position: relative;
@@ -150,8 +109,6 @@
   min-width: 0;
 }
 
-/* Leading 16px slots so tag rows (checkbox + dot) line up with group rows
-   (chevron + dot). */
 .chevron-slot {
   display: inline-flex;
   flex: none;
@@ -185,8 +142,14 @@
 /* ── Inline create draft row ──────────────────────────────────────────── */
 
 .draft {
+  display: flex;
+  align-items: center;
   height: 44px;
-  border-bottom: 1px solid var(--ds-gray-a3);
+  padding: 0 16px;
+}
+
+.draft .name {
+  flex: 1;
 }
 
 /* ── Drag overlay chip ────────────────────────────────────────────────── */
@@ -251,10 +214,4 @@
 
 .empty-action {
   margin-top: 12px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sort-caret {
-    transition: none;
-  }
 }

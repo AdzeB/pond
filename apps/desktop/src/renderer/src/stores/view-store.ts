@@ -33,6 +33,10 @@ function applyZoomVar(zoom: number): void {
 
 export interface ViewStoreState {
   q: string;
+  // Verbatim text typed into the dock Search field. Kept separate from `q` (the
+  // residual after structured terms are parsed out) so the field can re-seed
+  // itself when the dock swaps away and back. Session-only.
+  searchInput: string;
   // Ordered draft conditions (incomplete rows allowed); `query` is the committed view.
   rows: Predicate[];
   combinator: Combinator;
@@ -65,6 +69,7 @@ function readInitialZoom(): number {
 
 const store = new Store<ViewStoreState>({
   q: "",
+  searchInput: "",
   rows: [],
   combinator: "and",
   query: EMPTY_QUERY,
@@ -94,6 +99,10 @@ export function useSearchText(): string {
   return useSelector(store, (s) => s.q);
 }
 
+export function useSearchInput(): string {
+  return useSelector(store, (s) => s.searchInput);
+}
+
 export function useSortKey(): string {
   return useSelector(store, (s) => s.sortKey);
 }
@@ -108,6 +117,13 @@ export function useActiveViewId(): string | null {
 
 export function setSearchText(q: string): void {
   store.setState((s) => (s.q === q ? s : { ...s, q }));
+}
+
+// Store the verbatim text typed into the dock Search field.
+export function setSearchInputText(searchInput: string): void {
+  store.setState((s) =>
+    s.searchInput === searchInput ? s : { ...s, searchInput },
+  );
 }
 
 export function setQuery(query: Query): void {
@@ -148,7 +164,13 @@ export function applyCompiledQuery(query: Query, residual: string): void {
 }
 
 export function resetFilters(): void {
-  store.setState((s) => ({ ...s, rows: [], query: EMPTY_QUERY }));
+  store.setState((s) => ({
+    ...s,
+    q: "",
+    searchInput: "",
+    rows: [],
+    query: EMPTY_QUERY,
+  }));
 }
 
 // Apply a saved view: load its query + sort (+ layout) and mark it active.

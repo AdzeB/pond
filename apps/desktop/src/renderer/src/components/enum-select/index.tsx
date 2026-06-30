@@ -1,4 +1,3 @@
-import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { Select } from "@pond/ui";
 import type { ReactNode } from "react";
 
@@ -51,23 +50,15 @@ export function EnumSelect<T>({
       <Select.Portal>
         <Select.Positioner sideOffset={sideOffset} align={align} side={side}>
           <Select.Popup>
-            {options.map((option) => (
-              <Select.Item key={keyFor(option.value)} value={option.value}>
-                <Select.ItemText>{option.label}</Select.ItemText>
-                <Select.ItemIndicator>
-                  <Check width={14} height={14} />
-                </Select.ItemIndicator>
-              </Select.Item>
-            ))}
+            <Select.Items
+              items={options.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+            />
           </Select.Popup>
         </Select.Positioner>
       </Select.Portal>
     </Select.Root>
   );
-}
-
-function keyFor(value: unknown): string {
-  return typeof value === "object" && value !== null
-    ? JSON.stringify(value)
-    : String(value);
 }

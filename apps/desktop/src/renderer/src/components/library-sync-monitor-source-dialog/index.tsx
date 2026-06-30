@@ -1,3 +1,7 @@
+import {
+  IconChevronRightOutline18 as Chevron,
+  IconXmarkOutline18 as Xmark,
+} from "@pond/icons/outline/18";
 import type { Source, SourceVisibility } from "@pond/schema/db";
 import { Button, Dialog } from "@pond/ui";
 import {
@@ -115,7 +119,7 @@ function SourceBody({
         <Dialog.Close
           render={<Button icon size="sm" variant="ghost" aria-label="Close" />}
         >
-          ✕
+          <Xmark width={16} height={16} />
         </Dialog.Close>
       </div>
 
@@ -174,7 +178,7 @@ function SourceBody({
                   <span className={styles.rt}>
                     {formatClock(run.ts)} · {formatRunDuration(run.durationMs)}
                   </span>
-                  <span className={styles.dchev}>›</span>
+                  <Chevron className={styles.dchev} width={16} height={16} />
                 </button>
               );
             })}

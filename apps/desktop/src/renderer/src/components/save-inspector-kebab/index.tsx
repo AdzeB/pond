@@ -1,24 +1,22 @@
 import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
 import {
-  IconClosedCaptionsOutline18 as Caption,
   IconClone2Outline18 as Copy,
   IconTrash2Outline18 as DeleteForever,
   IconFileOutline18 as File,
   IconFolderOutline18 as FilePath,
   IconGlobeOutline18 as Globe,
   IconImageOutline18 as Image,
+  IconBracketsCurlyOutline18 as Json,
   IconLinkOutline18 as Link,
   IconWindowShareOutline18 as OpenExternal,
   IconFileRefreshOutline18 as Refresh,
   IconArrowRotateAnticlockwiseOutline18 as Restore,
   IconFolderOpenOutline18 as Reveal,
   IconScanImageOutline18 as ScanImage,
-  IconScanTextOutline18 as ScanText,
   IconMagnifierOutline18 as Search,
   IconTrashOutline18 as Trash,
   IconVectorOutline18 as Vector,
   IconWandSparkleOutline18 as Wand,
-  IconWaveformLinesOutline18 as Waveform,
 } from "@pond/icons/outline/18";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { useRouter } from "@tanstack/react-router";
@@ -27,10 +25,7 @@ import type { useSave } from "@/hooks/use-saves";
 import {
   autoTag,
   rebuildVisualIndex,
-  recaption,
   reembed,
-  reocr,
-  retranscribe,
   type TaskResult,
 } from "@/lib/enrichment/tasks";
 import {
@@ -65,6 +60,7 @@ export function KebabMenu({
   const hasUrl = !!save?.url;
   const hasFiles = (save?.files ?? []).length > 0;
   const _hasTags = (save?.tags ?? []).length > 0;
+  const hasRawJson = !!save?.rawJson;
   const isTrashed = !!save?.deletedAt;
 
   const onTrash = useCallback(async () => {
@@ -97,6 +93,18 @@ export function KebabMenu({
     if (!save) return;
     const res = await autoTag([save.id]);
     pushToast(res.message, res.ok ? "success" : "error");
+  }, [save]);
+
+  const copyRawJson = useCallback(async () => {
+    if (!save?.rawJson) return;
+    try {
+      await navigator.clipboard.writeText(
+        JSON.stringify(save.rawJson, null, 2),
+      );
+      pushToast("Copied raw JSON", "success");
+    } catch {
+      pushToast("Could not copy", "error");
+    }
   }, [save]);
 
   const items = useMemo<MenuItemSpec[]>(
@@ -133,7 +141,7 @@ export function KebabMenu({
         type: "submenu",
         label: "Copy",
         icon: <Copy />,
-        disabled: !hasUrl && !hasFiles,
+        disabled: !hasUrl && !hasFiles && !hasRawJson,
         items: [
           {
             label: "File",
@@ -161,6 +169,13 @@ export function KebabMenu({
             disabled: !hasFiles,
             onClick: () => save && void copyFilePath(save),
           },
+          { type: "separator" },
+          {
+            label: "Raw JSON",
+            icon: <Json />,
+            disabled: !hasRawJson,
+            onClick: () => void copyRawJson(),
+          },
         ],
       },
       { type: "separator" },
@@ -181,7 +196,7 @@ export function KebabMenu({
         disabled: !save,
         items: [
           {
-            label: "Source",
+            label: "Metadata",
             icon: <Refresh />,
             shortcut: "R",
             disabled: !hasUrl,
@@ -189,28 +204,12 @@ export function KebabMenu({
           },
           { type: "separator" },
           {
-            label: "Caption",
-            icon: <Caption />,
-            onClick: () => reprocess(recaption),
-          },
-          {
-            label: "Text recognition",
-            icon: <ScanText />,
-            onClick: () => reprocess(reocr),
-          },
-          {
-            label: "Transcript",
-            icon: <Waveform />,
-            onClick: () => reprocess(retranscribe),
-          },
-          { type: "separator" },
-          {
-            label: "Semantic index",
+            label: "Semantic Index",
             icon: <Vector />,
             onClick: () => reprocess(reembed),
           },
           {
-            label: "Visual index",
+            label: "Visual Index",
             icon: <ScanImage />,
             onClick: () => reprocess(rebuildVisualIndex),
           },
@@ -244,7 +243,18 @@ export function KebabMenu({
             },
           ] satisfies MenuItemSpec[])),
     ],
-    [save, hasUrl, hasFiles, isTrashed, onTrash, onRestore, onPurge, reprocess],
+    [
+      save,
+      hasUrl,
+      hasFiles,
+      hasRawJson,
+      isTrashed,
+      onTrash,
+      onRestore,
+      onPurge,
+      reprocess,
+      copyRawJson,
+    ],
   );
 
   return (

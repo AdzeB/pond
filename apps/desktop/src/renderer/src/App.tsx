@@ -22,6 +22,7 @@ import { RefreshStatusBridge } from "./effects/refresh-status-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
+import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
 
 declare global {
@@ -92,6 +93,7 @@ export function App() {
             <RouterProvider router={router} />
             <PondCustomiseDialog />
           </ErrorBoundary>
+          <ContextMenuHost />
           <Toaster />
         </Tooltip.Provider>
       </QueryClientProvider>

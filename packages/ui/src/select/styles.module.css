@@ -99,6 +99,9 @@
 
 .item {
   composes: item from "../shared/popup.module.css";
+  /* Pull item text in to line up with the trigger's value text (8px inset),
+     since the popup anchors at the trigger width directly below it. */
+  padding-inline: 8px;
 }
 
 .item-label {
@@ -111,6 +114,7 @@
 
 .group-label {
   composes: group-label from "../shared/popup.module.css";
+  padding-inline: 8px;
 }
 
 .group-label-sticky {

@@ -9,7 +9,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { IconTagsFill18 as TagsIcon } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
+import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Button, Input } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
@@ -27,10 +27,8 @@ import { TagsTableContext, type TagsTableValue } from "./lib/context";
 import {
   colorForName,
   compareFacets,
-  DEFAULT_DIR,
   focusInput,
   type SortFacets,
-  type SortKey,
   type SortState,
 } from "./lib/helpers";
 import styles from "./styles.module.css";
@@ -44,6 +42,8 @@ interface GroupStats {
 
 type Creating = "tag" | "group" | null;
 
+const SORT: SortState = { key: "name", dir: "asc" };
+
 export function TagsSection() {
   const tags = useTags();
   const groups = useTagGroups();
@@ -52,7 +52,6 @@ export function TagsSection() {
   const navigate = useMemo(() => adaptNavigate(tsNavigate), [tsNavigate]);
 
   const [q, setQ] = useState("");
-  const [sort, setSort] = useState<SortState>({ key: "name", dir: "asc" });
   const [toggles, setToggles] = useState<Map<string, boolean>>(new Map());
   const [showArchived, setShowArchived] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
@@ -83,11 +82,6 @@ export function TagsSection() {
   const countFor = useCallback(
     (name: string) => counts.get(name.toLowerCase()) ?? 0,
     [counts],
-  );
-
-  const untaggedSaves = useMemo(
-    () => saves.filter((s) => !s.deletedAt && s.tags.length === 0).length,
-    [saves],
   );
 
   const archivedCount = useMemo(
@@ -158,7 +152,7 @@ export function TagsSection() {
   const childrenOf = (g: TagGroupRow): TagRow[] =>
     (groupStats.get(g.id)?.members ?? [])
       .filter((t) => (needle ? t.name.toLowerCase().includes(needle) : true))
-      .sort((a, b) => compareFacets(tagFacet(a), tagFacet(b), sort));
+      .sort((a, b) => compareFacets(tagFacet(a), tagFacet(b), SORT));
 
   type Row =
     | { kind: "tag"; tag: TagRow; facet: SortFacets }
@@ -185,7 +179,7 @@ export function TagsSection() {
         facet: tagFacet(tag),
       })),
     ];
-    list.sort((a, b) => compareFacets(a.facet, b.facet, sort));
+    list.sort((a, b) => compareFacets(a.facet, b.facet, SORT));
     if (!needle) return list;
     return list.filter((row) => {
       if (row.kind === "tag")
@@ -194,7 +188,7 @@ export function TagsSection() {
       if (g.name.toLowerCase().includes(needle)) return true;
       return g.tagNames.some((n) => n.toLowerCase().includes(needle));
     });
-  }, [activeTags, groups, taggedIds, groupStats, sort, needle, tagFacet]);
+  }, [activeTags, groups, taggedIds, groupStats, needle, tagFacet]);
 
   const toggleSelect = useCallback((id: string) => {
     setSelected((prev) => {
@@ -242,14 +236,6 @@ export function TagsSection() {
       activeTags.filter((t) => selected.has(t.id)).every((t) => t.archived),
     [activeTags, selected, selectedNames.length],
   );
-
-  function applySort(key: SortKey) {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
-        : { key, dir: DEFAULT_DIR[key] },
-    );
-  }
 
   const isExpanded = (g: TagGroupRow) =>
     toggles.has(g.id) ? Boolean(toggles.get(g.id)) : !g.collapsed;
@@ -323,15 +309,6 @@ export function TagsSection() {
       await window.pond.query("tagGroups.removeTag", { tag, group: from });
   }
 
-  const sortCaret = (
-    <ChevronRight
-      className={styles["sort-caret"]}
-      data-dir={sort.dir}
-      width={12}
-      height={12}
-    />
-  );
-
   const total = tags.length;
   const selecting = selected.size > 0;
 
@@ -340,19 +317,9 @@ export function TagsSection() {
       <div className={styles.page}>
         <header className={styles.head}>
           <h1 className={styles.title}>Tags</h1>
-          <p className={styles.summary}>
-            <span>
-              <b>{total}</b> {total === 1 ? "label" : "labels"}
-            </span>
-            <span className={styles.summaryDot} aria-hidden />
-            <span>
-              <b>{taggedIds.size}</b> grouped
-            </span>
-            <span className={styles.summaryDot} aria-hidden />
-            <span>
-              <b>{untaggedSaves}</b> untagged{" "}
-              {untaggedSaves === 1 ? "save" : "saves"}
-            </span>
+          <p className={styles.description}>
+            Labels and label groups help you organise and filter your library.
+            Drag a label into a group to build a hierarchy.
           </p>
         </header>
 
@@ -393,7 +360,13 @@ export function TagsSection() {
         ) : (
           <div className={styles.toolbar}>
             <div className={styles.search}>
+              <Search
+                className={styles["search-icon"]}
+                width={15}
+                height={15}
+              />
               <Input.Field
+                className={styles["search-field"]}
                 data-size="sm"
                 type="search"
                 placeholder="Filter by name…"
@@ -431,36 +404,6 @@ export function TagsSection() {
         )}
 
         <div className={styles.table}>
-          <div className={styles.header}>
-            <button
-              type="button"
-              className={styles.colhead}
-              data-active={sort.key === "name" || undefined}
-              onClick={() => applySort("name")}
-            >
-              Name
-              {sort.key === "name" ? sortCaret : null}
-            </button>
-            <button
-              type="button"
-              className={styles.colhead}
-              data-active={sort.key === "usage" || undefined}
-              onClick={() => applySort("usage")}
-            >
-              Saves
-              {sort.key === "usage" ? sortCaret : null}
-            </button>
-            <button
-              type="button"
-              className={styles.colhead}
-              data-active={sort.key === "recent" || undefined}
-              onClick={() => applySort("recent")}
-            >
-              Last used
-              {sort.key === "recent" ? sortCaret : null}
-            </button>
-          </div>
-
           <TagsTableContext value={ctxValue}>
             <DndContext
               sensors={sensors}
@@ -470,41 +413,43 @@ export function TagsSection() {
             >
               <div className={styles.body}>
                 {creating ? (
-                  <div
-                    className={styles.draft}
-                    data-group={creating === "group" || undefined}
-                  >
-                    <span className={styles.name}>
-                      <span className={styles["chevron-slot"]} aria-hidden />
-                      <span
-                        className={styles.dot}
-                        style={{ background: colorForName(draft || creating) }}
-                        aria-hidden
-                      />
-                      <input
-                        ref={focusInput}
-                        className={styles["name-input"]}
-                        value={draft}
-                        spellCheck={false}
-                        placeholder={
-                          creating === "group" ? "Group name" : "Label name"
-                        }
-                        onChange={(e) => setDraft(e.target.value)}
-                        onBlur={() => void commitCreate()}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            void commitCreate();
-                          } else if (e.key === "Escape") {
-                            e.preventDefault();
-                            setDraft("");
-                            setCreating(null);
+                  <div className={styles.card}>
+                    <div
+                      className={styles.draft}
+                      data-group={creating === "group" || undefined}
+                    >
+                      <span className={styles.name}>
+                        <span className={styles["chevron-slot"]} aria-hidden />
+                        <span
+                          className={styles.dot}
+                          style={{
+                            background: colorForName(draft || creating),
+                          }}
+                          aria-hidden
+                        />
+                        <input
+                          ref={focusInput}
+                          className={styles["name-input"]}
+                          value={draft}
+                          spellCheck={false}
+                          placeholder={
+                            creating === "group" ? "Group name" : "Label name"
                           }
-                        }}
-                      />
-                    </span>
-                    <span />
-                    <span />
+                          onChange={(e) => setDraft(e.target.value)}
+                          onBlur={() => void commitCreate()}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void commitCreate();
+                            } else if (e.key === "Escape") {
+                              e.preventDefault();
+                              setDraft("");
+                              setCreating(null);
+                            }
+                          }}
+                        />
+                      </span>
+                    </div>
                   </div>
                 ) : null}
 
@@ -539,29 +484,24 @@ export function TagsSection() {
                 ) : (
                   rows.map((row) =>
                     row.kind === "group" ? (
-                      <GroupRow
-                        key={row.group.id}
-                        group={row.group}
-                        expanded={needle ? true : isExpanded(row.group)}
-                        items={childrenOf(row.group)}
-                        labelCount={
-                          groupStats.get(row.group.id)?.labelCount ?? 0
-                        }
-                        totalSaves={
-                          groupStats.get(row.group.id)?.totalSaves ?? 0
-                        }
-                        recentMs={
-                          groupStats.get(row.group.id)?.recentMs ?? null
-                        }
-                        onToggle={() => toggleGroup(row.group)}
-                      />
+                      <div key={row.group.id} className={styles.card}>
+                        <GroupRow
+                          group={row.group}
+                          expanded={needle ? true : isExpanded(row.group)}
+                          items={childrenOf(row.group)}
+                          labelCount={
+                            groupStats.get(row.group.id)?.labelCount ?? 0
+                          }
+                          totalSaves={
+                            groupStats.get(row.group.id)?.totalSaves ?? 0
+                          }
+                          onToggle={() => toggleGroup(row.group)}
+                        />
+                      </div>
                     ) : (
-                      <TagTableRow
-                        key={row.tag.id}
-                        tag={row.tag}
-                        depth={0}
-                        inGroup={null}
-                      />
+                      <div key={row.tag.id} className={styles.card}>
+                        <TagTableRow tag={row.tag} depth={0} inGroup={null} />
+                      </div>
                     ),
                   )
                 )}

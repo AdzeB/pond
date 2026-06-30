@@ -256,7 +256,7 @@ function UnpairedBody({
         </Field.Root>
       </div>
       <Button
-        variant="accent"
+        variant="primary"
         size="lg"
         className={styles.cta}
         disabled={busy || !value.trim()}
@@ -285,7 +285,7 @@ function OfflineBody({ onRetry, onOpenPond }: OfflineBodyProps) {
       />
       <div className={styles.actions}>
         <Button
-          variant="accent"
+          variant="primary"
           size="lg"
           className={styles.cta}
           onClick={onOpenPond}
@@ -347,7 +347,7 @@ function PushSessionBody({
         </div>
       </div>
       <Button
-        variant="accent"
+        variant="primary"
         size="lg"
         className={styles.cta}
         disabled={busy}

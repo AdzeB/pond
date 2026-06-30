@@ -1,7 +1,6 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { useCallback, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { DeveloperApiSection } from "@/components/settings-section-developer-api-section";
 import { VerifyRow } from "@/components/settings-section-developer-verify-row";
 import { reloadPrefs, usePrefs } from "@/stores/prefs";
 
@@ -76,14 +75,7 @@ export function DeveloperSection() {
   }
 
   return (
-    <Settings.Page>
-      <Settings.Header>
-        <Settings.Title>Developer</Settings.Title>
-        <Settings.Description>
-          Logs, inspector, cache resets, and the factory wipe.
-        </Settings.Description>
-      </Settings.Header>
-
+    <>
       <Settings.Section>
         <Settings.SectionTitle>Diagnostics</Settings.SectionTitle>
         <Settings.List>
@@ -201,8 +193,6 @@ export function DeveloperSection() {
         </Settings.List>
       </Settings.Section>
 
-      <DeveloperApiSection />
-
       <Settings.Section>
         <Settings.SectionTitle>Reset Preferences</Settings.SectionTitle>
         <Settings.List>
@@ -238,7 +228,10 @@ export function DeveloperSection() {
               </Settings.ItemDescription>
             </Settings.ItemDetails>
             <Settings.ItemControl>
-              <Button variant="danger" onClick={() => setConfirmFactory(true)}>
+              <Button
+                variant="destructive"
+                onClick={() => setConfirmFactory(true)}
+              >
                 Factory Reset…
               </Button>
               <ConfirmDialog
@@ -256,6 +249,6 @@ export function DeveloperSection() {
           </Settings.Item>
         </Settings.List>
       </Settings.Section>
-    </Settings.Page>
+    </>
   );
 }

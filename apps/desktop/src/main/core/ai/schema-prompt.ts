@@ -1,3 +1,9 @@
+import {
+  type AgentStepRecord,
+  DATE_BUCKETS,
+  GROUPABLE_FIELDS,
+  SORTABLE_FIELDS,
+} from "@pond/schema";
 import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
 import type { CompileContext, SummaryItem } from "./types";
@@ -57,6 +63,136 @@ export function buildSystemPrompt(ctx: CompileContext): string {
     list("tags", f.tags.slice(0, 80)),
     list("creators", f.creators.slice(0, 60)),
   ].join("\n");
+}
+
+// ---- Query-plan prompt (the richer agent output) --------------------------
+// Capable providers compile to a plan: a small pipeline of filter -> rank ->
+// group (+ per-group sample) -> limit -> aggregate. This lets the agent express
+// "a few from each source", "group by month", "how many X vs Y", etc., which the
+// flat filter alone cannot. Whatever it returns is still validated + clamped.
+
+const PLAN_RULES = `
+You translate a user's natural-language request into a JSON "query plan" that runs over their saved items.
+
+Output ONLY a JSON object of this shape (no prose, no markdown):
+{
+  "filter": { "combinator": "and" | "or", "rules": [ { "field": <field>, "operator": <operator>, "value": <value>, "negate"?: boolean } ] },
+  "rank":   { "kind": "relevance" } | { "kind": "field", "field": <sortField>, "dir": "asc" | "desc" },
+  "group":  { "by": <groupField>, "bucket"?: <dateBucket>, "perGroup"?: number, "interleave"?: boolean, "maxGroups"?: number },
+  "limit":  number,
+  "aggregate": { "count"?: boolean, "countBy"?: <groupField> }
+}
+
+Only "filter" is required; omit any part you don't need.
+
+Guidelines:
+- filter: the same boolean filter as before. Use only the listed fields/operators. For "X or Y" on one field use operator "in" with an array. Relative dates are ISO-8601 durations with a leading minus ("-P1W", "-P1M", "-P1Y"); use "gte" for "since/within". saved/added -> savedAt, published/posted -> publishedAt, modified/updated -> modifiedAt. duration is SECONDS; tags use "some" with an array.
+- rank: how to order results. Use { "kind": "field", ... } for explicit "newest/oldest/longest/most files"; otherwise prefer { "kind": "relevance" } (semantic/keyword).
+- group: cluster results by a field. For "a few from each source" use { "by": "source", "perGroup": 3, "interleave": true }. For date fields set "bucket" (day/week/month/year), e.g. "by month" -> { "by": "savedAt", "bucket": "month" }. "maxGroups" caps how many groups.
+- limit: a global cap, for "top 10" / "first 5".
+- aggregate: for "how many" questions. "count": true returns the total; "countBy" returns per-group counts (e.g. "how many by source" -> { "countBy": "source" }). Still include a "filter".
+- Omit anything you're unsure about. If nothing matches, return { "filter": { "combinator": "and", "rules": [] } }.
+`.trim();
+
+function planFieldLines(): string {
+  return [
+    `Sort fields (for rank.field): ${SORTABLE_FIELDS.join(", ")}`,
+    `Group fields (for group.by / aggregate.countBy): ${GROUPABLE_FIELDS.join(", ")}`,
+    `Date buckets (for group.bucket): ${DATE_BUCKETS.join(", ")}`,
+  ].join("\n");
+}
+
+export function buildPlanPrompt(ctx: CompileContext): string {
+  const f = ctx.facets;
+  const list = (label: string, values: string[]) =>
+    values.length > 0 ? `${label}: ${values.join(", ")}` : `${label}: (none)`;
+
+  return [
+    PLAN_RULES,
+    "",
+    "Filter fields:",
+    fieldLines(),
+    "",
+    planFieldLines(),
+    "",
+    "Known values in this library:",
+    list("sources", f.sources),
+    list("types", f.types),
+    list("tags", f.tags.slice(0, 80)),
+    list("creators", f.creators.slice(0, 60)),
+  ].join("\n");
+}
+
+// ---- Agentic loop prompt --------------------------------------------------
+// The agent reasons in steps, emitting ONE action per round; the renderer runs
+// the action over the library and feeds an observation back. See AgentAction.
+
+const AGENT_RULES = `
+You are a search agent over the user's saved items (bookmarks, images, videos, articles, posts). Answer the request by reasoning in steps, emitting exactly ONE action per step as a JSON object (no prose, no markdown).
+
+Actions:
+- { "type": "inspect" } — get a digest of the library (top sources/types/tags/creators and totals) before deciding.
+- { "type": "run_plan", "plan": <QueryPlan> } — execute a plan; you'll see how many items match and a small sample, so you can refine.
+- { "type": "final", "plan": <QueryPlan> } — finish: the result set this plan produces is shown to the user as a grid.
+- { "type": "answer", "text": <string> } — finish with a short prose answer (for "how many" / "which is more" questions where a grid isn't needed).
+
+A QueryPlan object:
+{
+  "filter": { "combinator": "and" | "or", "rules": [ { "field": <field>, "operator": <operator>, "value": <value> } ] },
+  "rank":   { "kind": "relevance" } | { "kind": "field", "field": <sortField>, "dir": "asc" | "desc" },
+  "group":  { "by": <groupField>, "bucket"?: <dateBucket>, "perGroup"?: number, "interleave"?: boolean, "maxGroups"?: number },
+  "limit":  number,
+  "aggregate": { "count"?: boolean, "countBy"?: <groupField> }
+}
+Only "filter" is required.
+
+Rules:
+- Finish quickly — use as few steps as possible.
+- Use "final" for "show me …" requests; use "answer" for "how many / which is more …" (run a plan with "aggregate" first, then cite its facts).
+- Base every number you state on an observation you actually received; never invent counts.
+- For "a few from each source": group by source with a small perGroup and interleave true.
+- Use only the fields/operators/values listed below.
+`.trim();
+
+export function buildAgentPrompt(ctx: CompileContext): string {
+  const f = ctx.facets;
+  const list = (label: string, values: string[]) =>
+    values.length > 0 ? `${label}: ${values.join(", ")}` : `${label}: (none)`;
+
+  return [
+    AGENT_RULES,
+    "",
+    "Filter fields:",
+    fieldLines(),
+    "",
+    planFieldLines(),
+    "",
+    "Known values in this library:",
+    list("sources", f.sources),
+    list("types", f.types),
+    list("tags", f.tags.slice(0, 80)),
+    list("creators", f.creators.slice(0, 60)),
+  ].join("\n");
+}
+
+// Render the question + the steps taken so far into the user message for the
+// next agent round. Keeps observations the model can build on.
+export function formatAgentHistory(
+  question: string,
+  steps: ReadonlyArray<AgentStepRecord>,
+): string {
+  const lines: string[] = [`Request: ${question}`, ""];
+  if (steps.length === 0) {
+    lines.push("No steps yet. Output your first action as JSON.");
+    return lines.join("\n");
+  }
+  steps.forEach((step, i) => {
+    lines.push(`Step ${i + 1} action: ${JSON.stringify(step.action)}`);
+    if (step.observation) lines.push(`Observation: ${step.observation}`);
+  });
+  lines.push("");
+  lines.push("Output your next action as JSON.");
+  return lines.join("\n");
 }
 
 // System prompt for the result summarizer. The model only ever sees the items

@@ -96,7 +96,7 @@ function reprocessStamped(
     if (next) updated.push(next);
   }
   pool.bulkUpsert(updated);
-  rescanEnrichment();
+  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
   const n = updated.length;
   return {
     ok: true,
@@ -141,7 +141,7 @@ export function reembed(ids?: TaskScope): TaskResult {
     return { ok: false, message: "Turn on Semantic search in AI first." };
   }
   const n = clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  rescanEnrichment();
+  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
   return {
     ok: true,
     message:
@@ -160,7 +160,7 @@ export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
     };
   }
   const n = clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  rescanEnrichment();
+  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
   return {
     ok: true,
     message:

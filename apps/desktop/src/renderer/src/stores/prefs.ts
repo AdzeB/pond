@@ -51,6 +51,16 @@ export function usePrefs<K extends keyof Prefs>(
   return [value ?? ({} as Prefs[K]), patch, value !== null];
 }
 
+// Reactive access to the whole prefs object (loads on first use). Use when a
+// consumer needs more than one section, e.g. evaluating enricher `enabled()`
+// predicates that read across `prefs.ai`.
+export function usePrefsValue(): Prefs | null {
+  useEffect(() => {
+    void load();
+  }, []);
+  return useSelector(prefsStore, (s) => s.value);
+}
+
 export function getPrefsSnapshot(): Prefs | null {
   return prefsStore.state.value;
 }

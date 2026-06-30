@@ -1,17 +1,24 @@
 import {
-  IconMagnifierFill18 as Search,
+  IconSparkleFill18 as Ask,
+  IconArchivePlusFill18 as New,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
+import { Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
+import { DockSearch } from "@/components/library-dock-search";
+import { LibrarySwitcher } from "@/components/library-switcher";
 import { ViewMenu } from "@/components/library-view-menu";
+import { useAgentAvailable } from "@/hooks/use-agent-available";
 import { bouncySpring, gentleSpring } from "@/lib/ui/motion";
+import { newSave } from "@/stores/new-save";
 import styles from "./styles.module.css";
 
 export function NavContent() {
   const dock = useDock();
+  const agentAvailable = useAgentAvailable();
 
   return (
     <motion.div
@@ -21,14 +28,17 @@ export function NavContent() {
       {...dock.swap}
       transition={bouncySpring}
     >
+      <LibrarySwitcher variant="dock" />
       <button
         type="button"
         className={styles.item}
-        aria-label="Ask anything"
-        onClick={dock.openAsk}
+        aria-label="New"
+        onClick={() => newSave.open()}
       >
-        <Search />
+        <New />
       </button>
+
+      <span className={styles.separator} aria-hidden />
 
       {NAV_TABS.map((tab) => {
         const active = dock.isTabActive(tab.id);
@@ -54,6 +64,36 @@ export function NavContent() {
           </Link>
         );
       })}
+
+      <span className={styles.separator} aria-hidden />
+
+      <DockSearch />
+
+      {agentAvailable ? (
+        <Tooltip label="Ask AI" side="top">
+          <button
+            type="button"
+            className={styles.item}
+            aria-label="Ask AI"
+            onClick={dock.openAsk}
+          >
+            <Ask />
+          </button>
+        </Tooltip>
+      ) : (
+        <Tooltip label="Connect an AI model to ask" side="top">
+          <Link
+            to="/settings/$section"
+            params={{ section: "ai-models" }}
+            className={styles.item}
+            aria-label="Connect an AI model to ask"
+            aria-disabled="true"
+            data-disabled="true"
+          >
+            <Ask />
+          </Link>
+        </Tooltip>
+      )}
 
       <ViewMenu
         side="top"

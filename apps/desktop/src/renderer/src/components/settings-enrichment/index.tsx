@@ -11,15 +11,7 @@ export function EnrichmentSection() {
   const [prefs, patch] = usePrefs("ai");
 
   return (
-    <Settings.Page>
-      <Settings.Header>
-        <Settings.Title>Enrichment</Settings.Title>
-        <Settings.Description>
-          On-device models that caption, transcribe, and label your library.
-          Everything runs locally in the background.
-        </Settings.Description>
-      </Settings.Header>
-
+    <>
       <Settings.Section>
         <Settings.SectionTitle>Features</Settings.SectionTitle>
         <Settings.List>
@@ -120,7 +112,7 @@ export function EnrichmentSection() {
           </Settings.Item>
         </Settings.List>
       </Settings.Section>
-    </Settings.Page>
+    </>
   );
 }
 

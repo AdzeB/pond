@@ -1,6 +1,6 @@
 .page {
   --settings-padding-inline-inset: 16px;
-  --settings-margin-block: 64px;
+  --settings-margin-block: 40px;
   --settings-max-width: 640px;
 
   display: flex;
@@ -41,17 +41,32 @@
   color: var(--ds-gray-11);
 }
 
+/* Two-column masonry: group cards balance across columns; wide groups span all. */
+.columns {
+  columns: 2;
+  column-gap: 24px;
+}
+
+.columns > * {
+  margin-bottom: 24px;
+  break-inside: avoid;
+}
+
 .section {
   display: flex;
   flex-direction: column;
   border-radius: 16px;
 }
 
+.section[data-span="full"] {
+  column-span: all;
+}
+
 .section-title {
-  padding: var(--settings-padding-inline-inset);
-  font-size: 14px;
-  font-weight: 550;
-  color: var(--ds-gray-12);
+  padding: 0 var(--settings-padding-inline-inset) 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
 }
 
 .list {
@@ -60,11 +75,14 @@
   box-shadow: var(--ds-shadow-1);
 }
 
+/* Inline field anatomy: label/description on the left, control pinned to the
+   trailing edge. Every control type (switch, select, button, slider, color,
+   input) sits on the right — nothing stacks below its label. */
 .item {
   display: flex;
+  flex-direction: row;
   gap: 16px;
   align-items: center;
-  height: 72px;
   padding: 16px;
 
   &:not(:last-child) {
@@ -74,7 +92,10 @@
 
 .details {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
   margin-inline-end: auto;
 }
 
@@ -92,6 +113,7 @@
 
 .control {
   display: flex;
+  flex: none;
   gap: 8px;
   align-items: center;
   justify-content: flex-end;

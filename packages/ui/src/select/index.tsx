@@ -2,7 +2,10 @@ import { Select as Base } from "@base-ui/react/select";
 import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
 import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { clsx as cn } from "clsx";
+import { renderSelectSpec, type SelectItemSpec } from "./items";
 import styles from "./styles.module.css";
+
+export type { SelectItemSpec } from "./items";
 
 function Root<Value, Multiple extends boolean | undefined = false>(
   props: Base.Root.Props<Value, Multiple>,
@@ -109,6 +112,21 @@ function Separator({ className, ...props }: Base.Separator.Props) {
   );
 }
 
+function Items<Value>({ items }: { items: SelectItemSpec<Value>[] }) {
+  return (
+    <>
+      {renderSelectSpec(items, {
+        Item,
+        ItemText,
+        ItemIndicator,
+        Group,
+        GroupLabel,
+        Separator,
+      })}
+    </>
+  );
+}
+
 export const Select = {
   Root,
   Label,
@@ -127,4 +145,5 @@ export const Select = {
   Group,
   GroupLabel,
   Separator,
+  Items,
 };

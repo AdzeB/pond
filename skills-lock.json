@@ -1,6 +1,12 @@
 {
   "version": 1,
   "skills": {
+    "ai-sdk": {
+      "source": "vercel/ai",
+      "sourceType": "github",
+      "skillPath": "skills/use-ai-sdk/SKILL.md",
+      "computedHash": "2fdbb3c2c9c0e19c64f03f2febd4fec134473e2fe7443f7ebe67870eba5b3c75"
+    },
     "blossom-carousel-core": {
       "source": "blossom-carousel.com",
       "sourceType": "well-known",
@@ -84,6 +90,12 @@
       "sourceType": "github",
       "skillPath": "swiftui-expert-skill/SKILL.md",
       "computedHash": "ffe7adc4c442d2e75985b61ab281e3e303fe201c077ed05d82c0198a18fb1a25"
+    },
+    "tanstack-ai": {
+      "source": "tanstack-skills/tanstack-skills",
+      "sourceType": "github",
+      "skillPath": "plugins/tanstack-ai/skills/tanstack-ai/SKILL.md",
+      "computedHash": "d95cd0d1700d882cc2d38e6bd4f59d219954eabf579a8771f6cbccedce4892de"
     },
     "tanstack-router": {
       "source": "tanstack-skills/tanstack-skills",

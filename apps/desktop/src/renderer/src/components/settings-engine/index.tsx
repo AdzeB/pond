@@ -60,18 +60,7 @@ function SectionBody({
 }) {
   const groups = config.groups ?? [];
   return (
-    <Settings.Page width={config.width}>
-      {config.title || config.description ? (
-        <Settings.Header>
-          {config.title ? (
-            <Settings.Title>{config.title}</Settings.Title>
-          ) : null}
-          {config.description ? (
-            <Settings.Description>{config.description}</Settings.Description>
-          ) : null}
-        </Settings.Header>
-      ) : null}
-
+    <>
       {groups.map((group, index) => (
         <GroupRouter
           key={groupKey(group, index)}
@@ -79,7 +68,7 @@ function SectionBody({
           sectionBinding={binding}
         />
       ))}
-    </Settings.Page>
+    </>
   );
 }
 
@@ -135,7 +124,7 @@ function Group({ group, binding }: { group: GroupConfig; binding: Binding }) {
   if (group.render === undefined && items.length === 0) return null;
 
   return (
-    <Settings.Section>
+    <Settings.Section span={group.fullWidth ? "full" : undefined}>
       {group.title ? (
         <Settings.SectionTitle>{group.title}</Settings.SectionTitle>
       ) : null}

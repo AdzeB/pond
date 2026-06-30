@@ -320,25 +320,8 @@ export function installAppMenu(deps: AppMenuDeps): void {
               },
               { type: "separator" as const },
               {
-                label: "Component Previews",
-                submenu: [
-                  {
-                    label: "AI Search Lab",
-                    click: navTo("/ai-search-lab"),
-                  },
-                  {
-                    label: "Dock Playground",
-                    click: navTo("/dock-playground"),
-                  },
-                  {
-                    label: "Tweet Card Preview",
-                    click: navTo("/tweet-preview"),
-                  },
-                  {
-                    label: "Popups",
-                    click: navTo("/popups-preview"),
-                  },
-                ],
+                label: "Component Library",
+                click: navTo("/components"),
               },
             ],
           },

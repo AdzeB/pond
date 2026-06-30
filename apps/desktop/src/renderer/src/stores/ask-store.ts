@@ -24,7 +24,9 @@ export type AskSummaryStatus = "idle" | "loading" | "done" | "error";
 // the real run: compile the query, search/rank the library, then summarize.
 export type AskStage =
   | "compiling"
+  | "planning"
   | "searching"
+  | "executing"
   | "ranking"
   | "summarizing"
   | null;
@@ -77,6 +79,10 @@ export interface AskTurn {
   readonly suggestions: ReadonlyArray<AskSuggestion>;
   readonly summary: string;
   readonly summaryStatus: AskSummaryStatus;
+  // A direct prose answer produced by the agent (e.g. "You have 142 saves; 60%
+  // from Twitter"). Distinct from `summary` (a best-effort post-hoc blurb): when
+  // present it's the primary content and may stand in for an empty grid.
+  readonly answer: string;
 }
 
 interface AskState {
@@ -135,6 +141,7 @@ export function startTurn(input: StartTurnInput): number {
     suggestions: EMPTY_SUGGESTIONS,
     summary: "",
     summaryStatus: "idle",
+    answer: "",
   };
   store.setState((s) => ({ turns: [...s.turns, turn], nonce }));
   return nonce;
@@ -148,6 +155,11 @@ export function startAsk(question: string): number {
 // Advance the narrated pipeline stage for a turn.
 export function setAskStage(nonce: number, stage: AskStage): void {
   updateTurn(nonce, { stage });
+}
+
+// Set the agent's prose answer for a turn (shown as the primary response).
+export function setAskAnswer(nonce: number, answer: string): void {
+  updateTurn(nonce, { answer });
 }
 
 // Mark the summary request as in-flight for a turn, so the card can shimmer.
@@ -226,6 +238,7 @@ export interface AskResult {
   suggestions: ReadonlyArray<AskSuggestion>;
   summary: string;
   summaryStatus: AskSummaryStatus;
+  answer: string;
   stage: AskStage;
 }
 
@@ -242,6 +255,7 @@ export function useAskResult(): AskResult {
       suggestions: last?.suggestions ?? EMPTY_SUGGESTIONS,
       summary: last?.summary ?? "",
       summaryStatus: last?.summaryStatus ?? "idle",
+      answer: last?.answer ?? "",
       stage: last?.stage ?? null,
     };
   });

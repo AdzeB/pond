@@ -1,23 +1,81 @@
+import {
+  IconRefreshOutline18 as Regenerate,
+  IconArrowRotateClockwiseOutline18 as Retry,
+} from "@pond/icons/outline/18";
 import type { ReactNode } from "react";
-import { CopyButton } from "@/components/copy-button";
+import { ExpandableText } from "@/components/expandable-text";
 import styles from "./styles.module.css";
 
-export function Insight({
-  label,
-  copyText,
-  children,
-}: {
+export type InsightState = "ready" | "running" | "queued" | "paused" | "failed";
+
+export interface InsightSpec {
+  id: string;
   label: string;
-  copyText?: string;
-  children: ReactNode;
-}) {
+  state: InsightState;
+  text?: string;
+  content?: ReactNode;
+  onRegenerate?: () => void;
+  onRetry?: () => void;
+}
+
+const PENDING_LABEL: Record<Exclude<InsightState, "ready">, string> = {
+  running: "Generating…",
+  queued: "Waiting to process…",
+  paused: "Paused — resume to process.",
+  failed: "Couldn’t generate.",
+};
+
+function Insight({
+  label,
+  state,
+  text,
+  content,
+  onRegenerate,
+  onRetry,
+}: InsightSpec) {
+  const pending = state !== "ready";
   return (
-    <div className={styles.insight}>
-      <div className={styles.insightHead}>
-        <span className={styles.insightLabel}>{label}</span>
-        {copyText ? <CopyButton text={copyText} /> : null}
+    <div className={styles.insight} data-state={state}>
+      <div className={styles.head}>
+        <span className={styles.label}>{label}</span>
+        {state === "running" ? (
+          <span className={styles.spinner} aria-hidden />
+        ) : state === "failed" && onRetry ? (
+          <button type="button" className={styles.action} onClick={onRetry}>
+            <Retry width={14} height={14} />
+            Retry
+          </button>
+        ) : state === "ready" && onRegenerate ? (
+          <button
+            type="button"
+            className={styles.iconAction}
+            onClick={onRegenerate}
+            aria-label={`Regenerate ${label.toLowerCase()}`}
+          >
+            <Regenerate width={14} height={14} />
+          </button>
+        ) : null}
       </div>
-      {children}
+      {pending ? (
+        <span className={styles.pending}>
+          {PENDING_LABEL[state as Exclude<InsightState, "ready">]}
+        </span>
+      ) : text != null ? (
+        <ExpandableText text={text} />
+      ) : (
+        content
+      )}
+    </div>
+  );
+}
+
+export function Insights({ insights }: { insights: InsightSpec[] }) {
+  if (insights.length === 0) return null;
+  return (
+    <div className={styles.insights}>
+      {insights.map((insight) => (
+        <Insight key={insight.id} {...insight} />
+      ))}
     </div>
   );
 }

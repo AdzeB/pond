@@ -16,58 +16,16 @@ export interface ThemePreset {
 
 export const THEME_PRESETS: readonly ThemePreset[] = [
   {
-    id: "pure-light",
-    name: "Pure Light",
-    appearance: "light",
-    def: { base: "#ffffff", accent: "#3b82f6", contrast: 50 },
-  },
-  {
     id: "light",
     name: "Light",
     appearance: "light",
-    def: { base: "#fcfcfd", accent: "#3b82f6", contrast: 30 },
-  },
-  {
-    id: "foam",
-    name: "Foam",
-    appearance: "light",
-    def: { base: "#eef5f7", accent: "#0ea5b7", contrast: 30 },
-  },
-  {
-    id: "lagoon",
-    name: "Lagoon",
-    appearance: "light",
-    def: { base: "#e7f3f0", accent: "#0d9488", contrast: 32 },
+    def: { base: "#ffffff", accent: "#3b82f6", contrast: 30 },
   },
   {
     id: "dark",
     name: "Dark",
     appearance: "dark",
-    def: { base: "#111113", accent: "#6e95ff", contrast: 30 },
-  },
-  {
-    id: "pure-dark",
-    name: "Pure Dark",
-    appearance: "dark",
-    def: { base: "#000000", accent: "#6e95ff", contrast: 50 },
-  },
-  {
-    id: "tide",
-    name: "Tide",
-    appearance: "dark",
-    def: { base: "#0b1a24", accent: "#38bdf8", contrast: 34 },
-  },
-  {
-    id: "marine",
-    name: "Marine",
-    appearance: "dark",
-    def: { base: "#08191d", accent: "#2dd4bf", contrast: 34 },
-  },
-  {
-    id: "abyss",
-    name: "Abyss",
-    appearance: "dark",
-    def: { base: "#050912", accent: "#5b8cff", contrast: 42 },
+    def: { base: "#2c2d30", accent: "#6e95ff", contrast: 30 },
   },
 ] as const;
 

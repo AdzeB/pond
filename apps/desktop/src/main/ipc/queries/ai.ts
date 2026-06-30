@@ -1,12 +1,14 @@
+import type { AgentStepRecord } from "@pond/schema";
 import {
+  agentStep,
   type CompileFacets,
-  compileQuery,
+  compilePlan,
   providerAvailable,
   resetProvider,
   type SummaryItem,
   summarize,
 } from "../../core/ai";
-import { setAiApiKey } from "../../keychain";
+import { getAiApiKey, setAiApiKey } from "../../keychain";
 import type { QueryHandlerMap } from "../helpers";
 
 // IPC surface for the local AI query compiler. The renderer owns the
@@ -52,13 +54,29 @@ function asSummaryItems(raw: unknown): SummaryItem[] {
 }
 
 export const aiQueries: QueryHandlerMap = {
-  // Natural language -> raw Query JSON (untrusted; validated by the renderer).
-  async "ai.compileQuery"(params) {
+  // Natural language -> raw QueryPlan JSON (untrusted; validated + clamped by
+  // the renderer's validatePlan). The single LLM compile entry point: networked
+  // providers emit a full plan; the bundled model returns a filter-only plan.
+  async "ai.compilePlan"(params) {
     const input = String(params.input ?? "").slice(0, 500);
-    if (!input.trim()) return { query: null };
+    if (!input.trim()) return { plan: null };
     const facets = asFacets(params.facets);
-    const query = await compileQuery(input, { facets });
-    return { query };
+    const plan = await compilePlan(input, { facets });
+    return { plan };
+  },
+
+  // One round of the agentic loop -> a raw AgentAction JSON object (untrusted;
+  // parsed/validated by the renderer). The renderer runs the action's tool over
+  // the pool and sends the accumulated steps back for the next round.
+  async "ai.agentStep"(params) {
+    const question = String(params.question ?? "").slice(0, 500);
+    if (!question.trim()) return { action: null };
+    const facets = asFacets(params.facets);
+    const steps = Array.isArray(params.steps)
+      ? (params.steps as AgentStepRecord[])
+      : [];
+    const action = await agentStep(question, { facets }, steps);
+    return { action };
   },
 
   // Result set + question -> a short prose summary (best-effort; "" on failure).
@@ -75,11 +93,22 @@ export const aiQueries: QueryHandlerMap = {
     return { available: await providerAvailable() };
   },
 
-  // Persist (or clear) the custom-endpoint API key in the OS keychain.
+  // Persist (or clear) a provider's API key in the OS keychain.
   async "ai.setApiKey"(params) {
+    const provider = String(params.provider ?? "").trim();
+    if (!provider) return { ok: false };
     const key = params.key != null ? String(params.key) : null;
-    await setAiApiKey(key);
+    await setAiApiKey(provider, key);
     resetProvider();
     return { ok: true };
+  },
+
+  // Whether a key is stored for the given provider (so the UI can show state
+  // without ever exposing the key itself).
+  async "ai.hasApiKey"(params) {
+    const provider = String(params.provider ?? "").trim();
+    if (!provider) return { present: false };
+    const key = await getAiApiKey(provider);
+    return { present: Boolean(key) };
   },
 };

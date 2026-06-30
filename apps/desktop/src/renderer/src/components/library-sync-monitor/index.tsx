@@ -1,5 +1,11 @@
+import { IconDotsFill18 as More } from "@pond/icons/fill/18";
+import {
+  IconChevronDownOutline18 as Chevron,
+  IconPlusOutline18 as Plus,
+  IconSliders3Outline18 as Sliders,
+} from "@pond/icons/outline/18";
 import { SOURCES, type Source } from "@pond/schema/db";
-import { Button } from "@pond/ui";
+import { Accordion, Button, Tooltip } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { useIntervalWhen } from "rooks";
 import { KpiCustomizeDialog } from "@/components/library-sync-monitor-kpi-customize-dialog";
@@ -7,11 +13,10 @@ import { KpiStrip } from "@/components/library-sync-monitor-kpi-strip";
 import { LiveMonitor } from "@/components/library-sync-monitor-live-monitor";
 import { RecentRuns } from "@/components/library-sync-monitor-recent-runs";
 import { RunDialog } from "@/components/library-sync-monitor-run-dialog";
-import { SourceCard } from "@/components/library-sync-monitor-source-card";
 import { SourceDialog } from "@/components/library-sync-monitor-source-dialog";
+import { SourceRow } from "@/components/library-sync-monitor-source-row";
 import { StorageBanner } from "@/components/library-sync-monitor-storage-banner";
 import { TasksPanel } from "@/components/library-sync-monitor-tasks-panel";
-import { useSyncStats } from "@/hooks/use-sync-stats";
 import {
   pauseEnrichmentSweep,
   resumeEnrichmentSweep,
@@ -36,7 +41,6 @@ const SYNCABLE: readonly Source[] = SOURCES.filter(
 
 export function SourcesPage() {
   const bySource = useSyncBySource();
-  const { stats } = useSyncStats(7);
   const failedCount = useFailedSaveCount();
   const processes = useActiveProcesses();
   const pipeline = usePipelineSnapshot();
@@ -49,7 +53,7 @@ export function SourcesPage() {
   const [selectedRun, setSelectedRun] = useState<SyncRun | null>(null);
   const [runOpen, setRunOpen] = useState(false);
 
-  // Seed each source with a one-shot snapshot on mount so the grid isn't blank
+  // Seed each source with a one-shot snapshot on mount so the list isn't blank
   // before the first live push.
   useEffect(() => {
     let cancelled = false;
@@ -150,21 +154,26 @@ export function SourcesPage() {
     );
   };
 
+  const hasActivity = processes.length > 0;
+  const secondaryOpen = hasActivity ? ["activity"] : [];
+
   return (
     <div className={styles.page}>
       <div className={styles.content}>
-        <div className={styles.topbar}>
-          <h1>Sources</h1>
-          <span className={styles.crumb}>
-            {connectedCount} of {SYNCABLE.length} connected
-          </span>
-          <span className={styles.topRight}>
-            {activeCount > 0 ? (
-              <span className={styles.live}>
-                <span className={styles.liveDot} />
-                {activeCount} active now
-              </span>
-            ) : null}
+        <header className={styles.header}>
+          <div className={styles.heading}>
+            <h1 className={styles.title}>Sources</h1>
+            <p className={styles.subtitle}>
+              {connectedCount} of {SYNCABLE.length} connected
+              {activeCount > 0 ? (
+                <span className={styles.active}>
+                  <span className={styles.activeDot} />
+                  {activeCount} active
+                </span>
+              ) : null}
+            </p>
+          </div>
+          <div className={styles.actions}>
             <Button variant="secondary" onClick={togglePauseAll}>
               {anyPaused ? "Resume all" : "Pause all"}
             </Button>
@@ -174,73 +183,120 @@ export function SourcesPage() {
             >
               Sync all
             </Button>
-            <Button
-              icon
-              variant="secondary"
-              aria-label="More sync actions"
-              onClick={openSyncAllMenu}
-            >
-              ▾
-            </Button>
-          </span>
-        </div>
+            <Tooltip label="More sync actions">
+              <Button
+                icon
+                variant="secondary"
+                aria-label="More sync actions"
+                onClick={openSyncAllMenu}
+              >
+                <More width={16} height={16} />
+              </Button>
+            </Tooltip>
+          </div>
+        </header>
 
         <StorageBanner />
 
-        <div className={styles.secLabel}>
-          Overview
-          <button
-            type="button"
-            className={styles.customize}
-            onClick={() => setCustomizeOpen(true)}
-          >
-            ⚙ Customize
-          </button>
-        </div>
-        <KpiStrip
-          sources={SYNCABLE}
-          bySource={bySource}
-          onCustomize={() => setCustomizeOpen(true)}
-        />
+        <section className={styles.section}>
+          <div className={styles.secHead}>
+            <span className={styles.secLabel}>Overview</span>
+            <Tooltip label="Customize metrics">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Customize metrics"
+                className={styles.secAction}
+                onClick={() => setCustomizeOpen(true)}
+              >
+                <Sliders width={16} height={16} />
+              </Button>
+            </Tooltip>
+          </div>
+          <KpiStrip
+            sources={SYNCABLE}
+            bySource={bySource}
+            onCustomize={() => setCustomizeOpen(true)}
+          />
+        </section>
 
-        <div className={styles.secLabel}>Activity</div>
-        <LiveMonitor
-          bySource={bySource}
-          processes={processes}
-          lastRunAt={stats.lastRunAt}
-          onSyncAll={() => void window.pond.syncRunAll()}
-        />
+        <section className={styles.section}>
+          <div className={styles.secHead}>
+            <span className={styles.secLabel}>Sources</span>
+            <span className={styles.secMeta}>{connectedCount} connected</span>
+          </div>
+          <div className={styles.list}>
+            {SYNCABLE.map((source) => (
+              <SourceRow
+                key={source}
+                source={source}
+                status={bySource[source]}
+                onOpen={openSource}
+              />
+            ))}
+            <Button
+              variant="ghost"
+              className={styles.addRow}
+              onClick={addSource}
+            >
+              <Plus width={16} height={16} />
+              Add source
+            </Button>
+          </div>
+        </section>
 
-        <div className={styles.secLabel}>
-          Sources{" "}
-          <span className={styles.muted}>· {connectedCount} connected</span>
-        </div>
-        <div className={styles.grid}>
-          {SYNCABLE.map((source) => (
-            <SourceCard
-              key={source}
-              source={source}
-              status={bySource[source]}
-              onOpen={openSource}
-            />
-          ))}
-          <button
-            type="button"
-            className={`${styles.card} ${styles.add}`}
-            onClick={addSource}
-          >
-            + Add source
-          </button>
-        </div>
+        <Accordion.Root
+          className={styles.acc}
+          defaultValue={secondaryOpen}
+          multiple
+        >
+          {hasActivity ? (
+            <Accordion.Item className={styles.accItem} value="activity">
+              <Accordion.Header className={styles.accHeader}>
+                <Accordion.Trigger className={styles.accTrigger}>
+                  <span className={styles.accLabel}>Activity</span>
+                  <span className={styles.accMeta}>{activeCount} running</span>
+                  <Chevron
+                    className={styles.accChevron}
+                    width={16}
+                    height={16}
+                  />
+                </Accordion.Trigger>
+              </Accordion.Header>
+              <Accordion.Panel className={styles.accPanel}>
+                <LiveMonitor processes={processes} />
+              </Accordion.Panel>
+            </Accordion.Item>
+          ) : null}
 
-        <div className={styles.secLabel}>Recent runs</div>
-        <RecentRuns onOpenRun={openRun} />
+          <Accordion.Item className={styles.accItem} value="runs">
+            <Accordion.Header className={styles.accHeader}>
+              <Accordion.Trigger className={styles.accTrigger}>
+                <span className={styles.accLabel}>Recent runs</span>
+                <Chevron className={styles.accChevron} width={16} height={16} />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel className={styles.accPanel}>
+              <RecentRuns onOpenRun={openRun} />
+            </Accordion.Panel>
+          </Accordion.Item>
 
-        <div className={styles.secLabel}>
-          Tasks{" "}
-          <span className={styles.muted}>· run across your whole library</span>
-        </div>
-        <TasksPanel />
+          <Accordion.Item className={styles.accItem} value="tasks">
+            <Accordion.Header className={styles.accHeader}>
+              <Accordion.Trigger className={styles.accTrigger}>
+                <span className={styles.accLabel}>Tasks</span>
+                <span className={styles.accMeta}>
+                  run across your whole library
+                </span>
+                <Chevron className={styles.accChevron} width={16} height={16} />
+              </Accordion.Trigger>
+            </Accordion.Header>
+            <Accordion.Panel className={styles.accPanel}>
+              <TasksPanel />
+            </Accordion.Panel>
+          </Accordion.Item>
+        </Accordion.Root>
       </div>
 
       <SourceDialog

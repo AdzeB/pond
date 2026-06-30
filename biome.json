@@ -39,7 +39,7 @@
         "noUnknownAtRules": {
           "level": "error",
           "options": {
-            "ignore": ["typography", "stylex"]
+            "ignore": ["typography"]
           }
         }
       }

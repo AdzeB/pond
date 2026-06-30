@@ -34,7 +34,7 @@
     "tnum" 1;
   line-height: 1.5;
   color: var(--ds-gray-12);
-  letter-spacing: -0.04px;
+
   white-space: nowrap;
   outline: none;
 
@@ -69,7 +69,6 @@
     "lnum" 1,
     "tnum" 1;
   color: var(--ds-gray-11);
-  letter-spacing: 0.01px;
 }
 
 .pane-author-dot {
@@ -113,7 +112,6 @@
     "lnum" 1,
     "tnum" 1;
   color: var(--ds-gray-12);
-  letter-spacing: 0.01px;
 }
 
 .pane-description {
@@ -124,7 +122,7 @@
     "tnum" 1;
   line-height: 1.5;
   color: var(--ds-gray-11);
-  letter-spacing: 0.01px;
+
   word-break: break-word;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
@@ -152,7 +150,6 @@
     "tnum" 1;
   line-height: 1.5;
   color: var(--ds-gray-9);
-  letter-spacing: 0.01px;
 }
 
 .pane-read-more {
@@ -168,7 +165,7 @@
     "lnum" 1,
     "tnum" 1;
   color: var(--ds-gray-12);
-  letter-spacing: 0.01px;
+
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: none;
@@ -214,7 +211,7 @@
     "lnum" 1,
     "tnum" 1;
   color: var(--ds-gray-11);
-  letter-spacing: 0.01px;
+
   background: var(--ds-gray-1);
   border-radius: 2147483647px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
@@ -352,7 +349,6 @@
     "tnum" 1;
   line-height: 1.5;
   color: var(--ds-gray-10);
-  letter-spacing: 0.01px;
 }
 
 .pane-row-label {

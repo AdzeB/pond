@@ -31,8 +31,8 @@ export interface ProcessItem {
 }
 
 // Composes every non-sync background subsystem into a single list of active
-// processes for the Activity view. Source sync keeps its richer rendering and is
-// handled separately by the LiveMonitor via the sync-monitor store.
+// processes for the Activity view. Source sync isn't included here — running
+// syncs surface their progress inline on each source row instead.
 export function useActiveProcesses(): ProcessItem[] {
   const pipeline = usePipelineSnapshot();
   const refresh = useRefreshBackfillStatus();

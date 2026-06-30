@@ -1,8 +1,9 @@
 import { IconChevronDownOutline18 as ChevronDown } from "@pond/icons/outline/18";
+import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+import { bouncySpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
-// Multi-line text that clamps to a few lines with a soft fade and a toggle.
 export function ExpandableText({
   text,
   compact,
@@ -11,28 +12,39 @@ export function ExpandableText({
   compact?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+
   const long = text.length > 240;
+
   return (
     <div className={styles.expandable}>
-      <div
-        className={styles.expandableText}
+      <span
+        className={styles.text}
         data-compact={compact ? "true" : undefined}
         data-clamped={!expanded && long ? "true" : undefined}
       >
         {text}
-      </div>
+      </span>
       {long ? (
         <button
           type="button"
-          className={styles.readMore}
+          className={styles.button}
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
         >
-          <span>{expanded ? "Show Less" : "Read More"}</span>
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={expanded ? "show-less" : "read-more"}
+              animate={{ opacity: 1, y: 0 }}
+              transition={bouncySpring}
+            >
+              {expanded ? "Show Less" : "Read More"}
+            </motion.span>
+          </AnimatePresence>
+
           <ChevronDown
             width={12}
             height={12}
-            className={styles.readMoreIcon}
+            className={styles.icon}
             data-rotate={expanded ? "true" : undefined}
           />
         </button>

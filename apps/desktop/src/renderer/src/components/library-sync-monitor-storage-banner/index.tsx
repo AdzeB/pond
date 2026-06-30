@@ -1,3 +1,5 @@
+import { IconTriangleWarningFill18 as Warning } from "@pond/icons/fill/18";
+import { Button } from "@pond/ui";
 import { useState } from "react";
 import { formatBytes } from "@/lib/util/format";
 import { useStorageStatus } from "@/stores/storage-status";
@@ -15,7 +17,9 @@ export function StorageBanner() {
 
   return (
     <div className={styles.sbanner}>
-      <span className={styles.bIco}>!</span>
+      <span className={styles.bIco} aria-hidden>
+        <Warning width={16} height={16} />
+      </span>
       <span className={styles.bText}>
         <b>
           {paused
@@ -30,13 +34,13 @@ export function StorageBanner() {
         </span>
       </span>
       <span className={styles.bAct}>
-        <button
-          type="button"
-          className={styles.customize}
+        <Button
+          size="sm"
+          variant="secondary"
           onClick={() => setDismissed(true)}
         >
           Dismiss
-        </button>
+        </Button>
       </span>
     </div>
   );
