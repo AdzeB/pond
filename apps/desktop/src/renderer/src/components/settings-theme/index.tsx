@@ -61,6 +61,19 @@ export function ThemeSelect({
       });
   };
 
+  const renderValue = (v: string) => {
+    if (v === THEME_VALUE_SYSTEM)
+      return <SystemOption light={systemLight} dark={systemDark} />;
+    if (v === THEME_VALUE_CUSTOM)
+      return <ThemeOption def={custom} label="Custom" />;
+    if (v.startsWith(PRESET_PREFIX)) {
+      const id = v.slice(PRESET_PREFIX.length);
+      const preset = getPreset(id);
+      if (preset) return <ThemeOption def={preset.def} label={preset.name} />;
+    }
+    return themeValueLabel(v);
+  };
+
   const items: SelectItemSpec<string>[] = [
     {
       value: THEME_VALUE_SYSTEM,
@@ -86,7 +99,7 @@ export function ThemeSelect({
   return (
     <Select.Root value={value} onValueChange={onValueChange}>
       <Select.Trigger>
-        <Select.Value>{(v: string) => themeValueLabel(v)}</Select.Value>
+        <Select.Value>{(v: string) => renderValue(v)}</Select.Value>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner sideOffset={6}>
@@ -115,7 +128,14 @@ export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
     >
       <Select.Trigger>
         <Select.Value>
-          {(v: string) => presets.find((p) => p.id === v)?.name ?? v}
+          {(v: string) => {
+            const preset = presets.find((p) => p.id === v);
+            return preset ? (
+              <ThemeOption def={preset.def} label={preset.name} />
+            ) : (
+              v
+            );
+          }}
         </Select.Value>
       </Select.Trigger>
       <Select.Portal>

@@ -25,6 +25,8 @@ export interface DockContextValue {
   // actions
   openAsk: () => void;
   closeAsk: () => void;
+  openSearch: () => void;
+  closeSearch: () => void;
   clearResults: () => void;
   destructive: () => void;
   runSelectionTask: () => void;

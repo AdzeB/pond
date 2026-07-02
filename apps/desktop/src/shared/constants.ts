@@ -54,7 +54,17 @@ export const IPC = {
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
   menuPopup: "pond:menu-popup",
+  // Recently-visited saves pushed renderer -> main to populate the History menu.
+  menuRecents: "pond:menu-recents",
+  // A recent chosen from the History menu, sent main -> renderer to open it.
+  menuOpenSave: "pond:menu-open-save",
 } as const;
+
+// A recently-visited save surfaced in the native History menu.
+export interface RecentMenuEntry {
+  id: string;
+  title: string;
+}
 
 // Serializable native context-menu template sent renderer -> main. The renderer
 // keeps the click handlers; main returns the `id` of the chosen item (or null).
@@ -69,6 +79,8 @@ export interface ContextMenuTemplateItem {
 }
 
 export type MenuActionId =
+  | "history.back"
+  | "history.forward"
   | "view.inspector.toggle"
   | "view.layout.cycle"
   | "view.layout.waterfall"

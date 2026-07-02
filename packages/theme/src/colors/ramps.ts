@@ -161,7 +161,9 @@ const GRAY_CT = [1, 1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.5, 0.42, 0.3, 0.22];
 const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
 const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
 
-// Scale endpoints: white (#ffffff, oklch L=1) and black (#2c2d30, oklch L).
+// Scale endpoints. White (#ffffff) is the hard top. SCALE_BLACK_L (#2c2d30) is
+// the minimum ink lightness in light mode; a dark theme whose base is darker
+// than this may go all the way down to its own base (see grayLightness).
 const SCALE_BLACK_L = 0.2974;
 const SCALE_WHITE_L = 1;
 
@@ -170,7 +172,8 @@ function grayLightness(i: number): string {
   const b = GRAY_BL[i];
   const spread = `${a} * var(--ds-contrast) + ${b}`;
   const value = `calc(var(--ds-base-l) + var(--ds-fg-dir) * (${spread}))`;
-  return `clamp(${SCALE_BLACK_L}, ${value}, ${SCALE_WHITE_L})`;
+  const floor = `min(${SCALE_BLACK_L}, var(--ds-base-l))`;
+  return `clamp(${floor}, ${value}, ${SCALE_WHITE_L})`;
 }
 
 function grayStep(i: number): string {

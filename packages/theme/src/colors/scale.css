@@ -12,18 +12,18 @@
   --ds-fg-dir: -1;
   --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));
 
-  --ds-gray-1: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
-  --ds-gray-2: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.022 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
-  --ds-gray-3: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.05 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.95) var(--ds-base-h));
-  --ds-gray-4: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.078 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.9) var(--ds-base-h));
-  --ds-gray-5: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.11 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.85) var(--ds-base-h));
-  --ds-gray-6: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.145 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.8) var(--ds-base-h));
-  --ds-gray-7: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.19 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.72) var(--ds-base-h));
-  --ds-gray-8: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.24 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.64) var(--ds-base-h));
-  --ds-gray-9: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.27 * var(--ds-contrast) + 0.1)), 1) calc(var(--ds-base-c) * 0.5) var(--ds-base-h));
-  --ds-gray-10: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.16)), 1) calc(var(--ds-base-c) * 0.42) var(--ds-base-h));
-  --ds-gray-11: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.34)), 1) calc(var(--ds-base-c) * 0.3) var(--ds-base-h));
-  --ds-gray-12: oklch(clamp(0.2974, calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.52)), 1) calc(var(--ds-base-c) * 0.22) var(--ds-base-h));
+  --ds-gray-1: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
+  --ds-gray-2: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.022 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
+  --ds-gray-3: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.05 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.95) var(--ds-base-h));
+  --ds-gray-4: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.078 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.9) var(--ds-base-h));
+  --ds-gray-5: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.11 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.85) var(--ds-base-h));
+  --ds-gray-6: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.145 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.8) var(--ds-base-h));
+  --ds-gray-7: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.19 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.72) var(--ds-base-h));
+  --ds-gray-8: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.24 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.64) var(--ds-base-h));
+  --ds-gray-9: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.27 * var(--ds-contrast) + 0.1)), 1) calc(var(--ds-base-c) * 0.5) var(--ds-base-h));
+  --ds-gray-10: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.16)), 1) calc(var(--ds-base-c) * 0.42) var(--ds-base-h));
+  --ds-gray-11: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.34)), 1) calc(var(--ds-base-c) * 0.3) var(--ds-base-h));
+  --ds-gray-12: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.52)), 1) calc(var(--ds-base-c) * 0.22) var(--ds-base-h));
 
   --ds-gray-a1: color-mix(in srgb, var(--ds-gray-12) calc((0 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
   --ds-gray-a2: color-mix(in srgb, var(--ds-gray-12) calc((0.022 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);

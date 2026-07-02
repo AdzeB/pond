@@ -41,9 +41,9 @@ export function Toolbar() {
     <TitleBar.Root>
       <TitleBar.Title>
         <TitleBar.Label>{title}</TitleBar.Label>
-        {meta.map((segment) => (
-          <TitleBar.Meta key={segment}>{segment}</TitleBar.Meta>
-        ))}
+        {meta.length > 0 ? (
+          <TitleBar.Meta>{meta.join(" / ")}</TitleBar.Meta>
+        ) : null}
       </TitleBar.Title>
     </TitleBar.Root>
   );

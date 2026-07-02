@@ -1,7 +1,11 @@
 import { SOURCES, sourceLabel } from "@pond/schema";
 import { app, BrowserWindow, Menu, shell } from "electron";
 import log from "electron-log/main.js";
-import { IPC, type MenuActionId } from "../shared/constants";
+import {
+  IPC,
+  type MenuActionId,
+  type RecentMenuEntry,
+} from "../shared/constants";
 import { reconcileLibrary } from "./core/scan";
 import { syncAllSources, syncSource } from "./core/sync";
 import { libraryRoot } from "./paths";
@@ -11,7 +15,26 @@ interface AppMenuDeps {
   openLibraryWindow: () => void;
 }
 
+// How many recently-visited saves to surface in the History menu.
+const RECENTS_MENU_CAP = 12;
+
+// Kept at module scope so `setMenuRecents` can rebuild the menu in place after
+// `installAppMenu` has run, without the caller re-threading its dependencies.
+let activeDeps: AppMenuDeps | null = null;
+let recentEntries: RecentMenuEntry[] = [];
+
+// Replace the History menu's recents from the renderer and rebuild in place.
+export function setMenuRecents(entries: RecentMenuEntry[]): void {
+  recentEntries = entries.slice(0, RECENTS_MENU_CAP);
+  if (activeDeps) buildAndSetMenu(activeDeps);
+}
+
 export function installAppMenu(deps: AppMenuDeps): void {
+  activeDeps = deps;
+  buildAndSetMenu(deps);
+}
+
+function buildAndSetMenu(deps: AppMenuDeps): void {
   const { focusedOrMain, openLibraryWindow } = deps;
   const isMac = process.platform === "darwin";
 
@@ -27,6 +50,21 @@ export function installAppMenu(deps: AppMenuDeps): void {
 
   const openExternalUrl = (url: string) => () => {
     void shell.openExternal(url);
+  };
+
+  const openRecent = (id: string) => () => {
+    focusedOrMain()?.webContents.send(IPC.menuOpenSave, id);
+  };
+
+  // Recently-visited saves, browser-history style.
+  const recentsItems = (): Electron.MenuItemConstructorOptions[] => {
+    if (recentEntries.length === 0) {
+      return [{ label: "No Recent Items", enabled: false }];
+    }
+    return recentEntries.map((entry) => ({
+      label: entry.title,
+      click: openRecent(entry.id),
+    }));
   };
 
   // Sync source remotes and refresh the metadata those sources feed.
@@ -233,6 +271,10 @@ export function installAppMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         { role: "togglefullscreen" },
       ],
+    },
+    {
+      label: "History",
+      submenu: recentsItems(),
     },
     {
       label: "Library",

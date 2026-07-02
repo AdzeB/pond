@@ -1,18 +1,25 @@
-import {
-  type HsvaColor,
-  hexToHsva,
-  hsvaToHex,
-  validHex,
-} from "@uiw/color-convert";
-import Hue from "@uiw/react-color-hue";
-import Saturation from "@uiw/react-color-saturation";
 import { clsx as cn } from "clsx";
-import { useEffect, useState } from "react";
+import { createContext, use, useEffect, useRef, useState } from "react";
+import {
+  useColorArea,
+  useColorSlider,
+  useFocusRing,
+  useLocale,
+  VisuallyHidden,
+} from "react-aria";
+import {
+  type Color,
+  parseColor,
+  useColorAreaState,
+  useColorSliderState,
+} from "react-stately";
 import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";
 
-// Normalize 3/6-digit hex (with or without "#") to lowercase `#rrggbb`; null if invalid.
+const AREA_SIZE = 156;
+const TRACK_WIDTH = 12;
+
 function defaultNormalize(input: string): string | null {
   if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");
@@ -24,6 +31,14 @@ function defaultNormalize(input: string): string | null {
           .join("")
       : trimmed;
   return /^[0-9a-f]{6}$/i.test(expanded) ? `#${expanded.toLowerCase()}` : null;
+}
+
+function toHsb(hex: string): Color {
+  try {
+    return parseColor(hex).toFormat("hsb");
+  } catch {
+    return parseColor("#000000").toFormat("hsb");
+  }
 }
 
 interface ColorFieldProps {
@@ -65,15 +80,18 @@ export function ColorField({
           style={{ background: swatch }}
         />
         <Popover.Portal>
-          <Popover.Positioner sideOffset={6} align="end">
+          <Popover.Positioner sideOffset={6} align="start">
             <Popover.Popup className={styles.popup}>
-              <ColorPicker value={swatch} onChange={onChange} />
+              <ColorPicker
+                value={swatch}
+                ariaLabel={ariaLabel}
+                onChange={onChange}
+              />
             </Popover.Popup>
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
       <Input.Field
-        data-size="sm"
         aria-label={`${ariaLabel} hex`}
         spellCheck={false}
         autoCapitalize="off"
@@ -90,60 +108,143 @@ export function ColorField({
   );
 }
 
+interface PickerContextValue {
+  color: Color;
+  ariaLabel: string;
+  onChange: (color: Color) => void;
+}
+
+const PickerContext = createContext<PickerContextValue | null>(null);
+
+function usePicker(): PickerContextValue {
+  const context = use(PickerContext);
+  if (!context) {
+    throw new Error("Color picker parts must be rendered within ColorPicker");
+  }
+  return context;
+}
+
 function ColorPicker({
   value,
+  ariaLabel,
   onChange,
 }: {
   value: string;
+  ariaLabel: string;
   onChange: (hex: string) => void;
 }) {
-  const [hsva, setHsva] = useState<HsvaColor>(() => hexToHsva(value));
+  const [color, setColor] = useState<Color>(() => toHsb(value));
 
   useEffect(() => {
-    if (!validHex(value)) return;
-    setHsva((prev) => (hsvaToHex(prev) === value ? prev : hexToHsva(value)));
+    setColor((prev) => (prev.toString("hex") === value ? prev : toHsb(value)));
   }, [value]);
 
-  const apply = (next: HsvaColor) => {
-    setHsva(next);
-    onChange(hsvaToHex(next));
+  const apply = (next: Color) => {
+    setColor(next);
+    onChange(next.toString("hex"));
   };
 
   return (
-    <div className={styles.picker}>
-      <div className={styles.body}>
-        <Saturation
-          hsva={hsva}
-          radius="8px"
-          style={{ flex: 1, height: 156 }}
-          className={styles.saturation}
-          pointer={SaturationHandle}
-          onChange={(next) => apply({ ...hsva, ...next })}
-        />
-        <Hue
-          hue={hsva.h}
-          direction="vertical"
-          width="12px"
-          height="156px"
-          radius="6px"
-          className={styles.hue}
-          pointer={HueHandle}
-          onChange={({ h }) => apply({ ...hsva, h })}
-        />
+    <PickerContext value={{ color, ariaLabel, onChange: apply }}>
+      <div className={styles.picker}>
+        <div className={styles.body}>
+          <ColorArea />
+          <HueSlider />
+        </div>
+      </div>
+    </PickerContext>
+  );
+}
+
+function ColorArea() {
+  const { color, ariaLabel, onChange } = usePicker();
+  const inputXRef = useRef<HTMLInputElement>(null);
+  const inputYRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const state = useColorAreaState({
+    value: color,
+    onChange,
+    xChannel: "saturation",
+    yChannel: "brightness",
+  });
+
+  const { isFocusVisible, focusProps } = useFocusRing();
+  const { colorAreaProps, xInputProps, yInputProps, thumbProps } = useColorArea(
+    {
+      "aria-label": `${ariaLabel} saturation and brightness`,
+      inputXRef,
+      inputYRef,
+      containerRef,
+    },
+    state,
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      {...colorAreaProps}
+      className={styles.saturation}
+      style={{ ...colorAreaProps.style, width: AREA_SIZE, height: AREA_SIZE }}
+    >
+      <div
+        {...thumbProps}
+        className={styles.satHandle}
+        data-focus={isFocusVisible || undefined}
+        style={thumbProps.style}
+      >
+        <VisuallyHidden>
+          <input ref={inputXRef} {...xInputProps} {...focusProps} />
+          <input ref={inputYRef} {...yInputProps} {...focusProps} />
+        </VisuallyHidden>
       </div>
     </div>
   );
 }
 
-interface HandleProps {
-  left?: string | number;
-  top?: string | number;
-}
+function HueSlider() {
+  const { color, ariaLabel, onChange } = usePicker();
+  const { locale } = useLocale();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-function SaturationHandle({ left, top }: HandleProps) {
-  return <div className={styles.satHandle} style={{ left, top }} />;
-}
+  const state = useColorSliderState({
+    value: color,
+    onChange,
+    channel: "hue",
+    orientation: "vertical",
+    locale,
+  });
 
-function HueHandle({ top }: HandleProps) {
-  return <div className={styles.hueHandle} style={{ left: "50%", top }} />;
+  const { isFocusVisible, focusProps } = useFocusRing();
+  const { trackProps, thumbProps, inputProps } = useColorSlider(
+    {
+      "aria-label": `${ariaLabel} hue`,
+      channel: "hue",
+      orientation: "vertical",
+      trackRef,
+      inputRef,
+    },
+    state,
+  );
+
+  return (
+    <div
+      {...trackProps}
+      ref={trackRef}
+      className={styles.hue}
+      style={{ ...trackProps.style, width: TRACK_WIDTH, height: AREA_SIZE }}
+    >
+      <div
+        {...thumbProps}
+        className={styles.hueHandle}
+        data-focus={isFocusVisible || undefined}
+        style={{ ...thumbProps.style, left: "50%" }}
+      >
+        <VisuallyHidden>
+          <input ref={inputRef} {...inputProps} {...focusProps} />
+        </VisuallyHidden>
+      </div>
+    </div>
+  );
 }

@@ -3,6 +3,7 @@ import {
   type ContextMenuTemplateItem,
   IPC,
   type MenuActionId,
+  type RecentMenuEntry,
 } from "../shared/constants";
 
 export interface RelocatePreviewWire {
@@ -135,6 +136,17 @@ const api = {
     const listener = (_: unknown, id: MenuActionId) => cb(id);
     ipcRenderer.on(IPC.menuAction, listener);
     return () => ipcRenderer.off(IPC.menuAction, listener);
+  },
+
+  // Push the recently-visited saves so main can render them in the History menu.
+  sendMenuRecents(entries: RecentMenuEntry[]): void {
+    ipcRenderer.send(IPC.menuRecents, entries);
+  },
+
+  onMenuOpenSave(cb: (id: string) => void): () => void {
+    const listener = (_: unknown, id: string) => cb(id);
+    ipcRenderer.on(IPC.menuOpenSave, listener);
+    return () => ipcRenderer.off(IPC.menuOpenSave, listener);
   },
 
   appInfo(): Promise<{

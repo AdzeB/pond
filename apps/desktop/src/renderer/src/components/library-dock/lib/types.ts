@@ -1,7 +1,7 @@
 import type { DockTab } from "./nav-tabs";
 
-// The four mutually exclusive surfaces the pill can show.
-export type DockView = "selection" | "ask" | "status" | "nav";
+// The mutually exclusive surfaces the pill can show.
+export type DockView = "selection" | "ask" | "search" | "status" | "nav";
 
 // A forced rendering of the pill, used by the dock playground to drive every
 // state/sub-state without touching the live stores. When absent, the pill

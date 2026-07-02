@@ -1,43 +1,7 @@
 .trigger {
-  display: inline-flex;
-  gap: 8px;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  width: fit-content;
-  max-height: 100%;
-  padding: 6px 8px;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1;
-  color: var(--ds-gray-12);
-  text-wrap: nowrap;
-  user-select: none;
-  background-color: transparent;
-  border-radius: 6px;
-  box-shadow: var(--ds-shadow-1);
-  transition: all var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    background-color: var(--ds-gray-2);
-  }
-
-  &:active {
-    background-color: var(--ds-gray-3);
-    transform: scale(0.98);
-  }
-
-  &[data-disabled] {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 2px;
-  }
-
-  &[data-popup-open] {
-    background-color: var(--ds-gray-2);
-  }
 }
 
 .value {
@@ -91,6 +55,9 @@
 
 .popup {
   composes: popup from "../shared/popup.module.css";
+  width: var(--anchor-width);
+  min-width: min-content;
+  max-width: var(--anchor-width);
 }
 
 .arrow {
@@ -99,9 +66,6 @@
 
 .item {
   composes: item from "../shared/popup.module.css";
-  /* Pull item text in to line up with the trigger's value text (8px inset),
-     since the popup anchors at the trigger width directly below it. */
-  padding-inline: 8px;
 }
 
 .item-label {
@@ -114,7 +78,6 @@
 
 .group-label {
   composes: group-label from "../shared/popup.module.css";
-  padding-inline: 8px;
 }
 
 .group-label-sticky {

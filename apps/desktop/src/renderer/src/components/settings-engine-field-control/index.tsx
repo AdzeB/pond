@@ -7,8 +7,8 @@ import {
   Button,
   ColorField,
   Input,
-  RangeField,
   Settings,
+  Slider,
   Stepper,
   Switch,
 } from "@pond/ui";
@@ -124,18 +124,27 @@ function FieldControl({
 
     case "range":
       return (
-        <RangeField
-          aria-label={item.title}
+        <Slider.Root
           min={item.min}
           max={item.max}
           step={item.step}
-          suffix={item.suffix}
           value={toNumber(current, item.min)}
-          onValueChange={(n) => {
+          onValueChange={(next) => {
+            const n = typeof next === "number" ? next : (next[0] ?? item.min);
             patch({ [item.key]: n });
             runApply(item);
           }}
-        />
+        >
+          <Slider.Control>
+            <Slider.Track>
+              <Slider.Indicator />
+              <Slider.Thumb aria-label={item.title} />
+            </Slider.Track>
+          </Slider.Control>
+          <Slider.Value>
+            {(_, values) => `${values[0]}${item.suffix ?? ""}`}
+          </Slider.Value>
+        </Slider.Root>
       );
 
     case "stepper":

@@ -1,5 +1,6 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
 import { clsx as cn } from "clsx";
+import { Content, Footer, Header } from "../dialog/parts";
 import dialogStyles from "../dialog/styles.module.css";
 
 function Root(props: Base.Root.Props) {
@@ -50,24 +51,6 @@ function Close(props: Base.Close.Props) {
 
 function Viewport(props: Base.Viewport.Props) {
   return <Base.Viewport {...props} />;
-}
-
-function Header(props: React.ComponentPropsWithoutRef<"div">) {
-  return (
-    <div className={cn(dialogStyles.header, props.className)} {...props} />
-  );
-}
-
-function Content(props: React.ComponentPropsWithoutRef<"div">) {
-  return (
-    <div className={cn(dialogStyles.content, props.className)} {...props} />
-  );
-}
-
-function Footer(props: React.ComponentPropsWithoutRef<"div">) {
-  return (
-    <div className={cn(dialogStyles.footer, props.className)} {...props} />
-  );
 }
 
 export const AlertDialog = {

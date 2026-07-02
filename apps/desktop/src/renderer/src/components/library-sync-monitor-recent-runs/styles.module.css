@@ -190,7 +190,7 @@
 
 .rout.err {
   color: var(--err-t);
-  background: var(--ds-tomato-a3);
+  background: var(--ds-red-a3);
 }
 
 .rout.err .od {

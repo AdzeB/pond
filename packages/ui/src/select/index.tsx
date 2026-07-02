@@ -2,6 +2,7 @@ import { Select as Base } from "@base-ui/react/select";
 import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
 import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
 import { clsx as cn } from "clsx";
+import { Button, type ButtonProps } from "../button";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
 import styles from "./styles.module.css";
 
@@ -17,14 +18,31 @@ function Label({ className, ...props }: Base.Label.Props) {
   return <Base.Label className={cn(styles.label, className)} {...props} />;
 }
 
-function Trigger({ className, ...props }: Base.Trigger.Props) {
+type TriggerProps = Base.Trigger.Props &
+  Pick<ButtonProps, "variant" | "size" | "icon">;
+
+function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
   return (
-    <Base.Trigger className={cn(styles.trigger, className)} {...props}>
-      {props.children}
-      <Icon>
-        <Expand size={10} />
-      </Icon>
-    </Base.Trigger>
+    <Base.Trigger
+      render={
+        props.render ? (
+          props.render
+        ) : (
+          <Button
+            size={size}
+            icon={icon}
+            variant={"secondary"}
+            className={cn(styles.trigger, className)}
+          >
+            {props.children}
+            <Icon>
+              <Expand size={10} />
+            </Icon>
+          </Button>
+        )
+      }
+      {...props}
+    />
   );
 }
 
@@ -49,9 +67,7 @@ function Portal(props: Base.Portal.Props) {
 function Positioner({ className, ...props }: Base.Positioner.Props) {
   return (
     <Base.Positioner
-      sideOffset={6}
-      align="end"
-      side="bottom"
+      sideOffset={8}
       data-type="select"
       className={cn(styles.positioner, className)}
       {...props}

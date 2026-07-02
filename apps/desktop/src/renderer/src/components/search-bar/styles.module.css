@@ -1,0 +1,148 @@
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  padding: 6px;
+}
+
+/* ----- Lexical editor surface ----- */
+
+.editor {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 8px 8px;
+}
+
+.leadIcon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--ds-gray-9);
+}
+
+.input {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+  outline: none;
+}
+
+.paragraph {
+  margin: 0;
+}
+
+/* An editable, highlighted filter token (e.g. `source:twitter`). Rendered as
+   styled text so the caret can move inside and edit the value inline. */
+.token {
+  padding: 1px 4px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.placeholder {
+  position: absolute;
+  top: 10px;
+  left: 32px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ----- Bottom toolbar ----- */
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px;
+}
+
+.toolbarGroup {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+}
+
+.iconBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.count {
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.clearBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}

@@ -150,13 +150,6 @@
   align-items: flex-start;
 }
 
-.stackNarrow {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  width: 280px;
-}
-
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -164,16 +157,100 @@
   align-items: center;
 }
 
-.slider {
-  width: 280px;
+.matrix {
+  display: grid;
+  grid-template-columns: auto repeat(var(--matrix-cols, 5), minmax(112px, 1fr));
+  gap: 1px;
+  width: 100%;
+  overflow: hidden;
+  background: var(--ds-gray-a5);
 }
 
-.range {
+.matrixCorner,
+.matrixColHead,
+.matrixRowHead,
+.matrixCell {
+  background: var(--ds-gray-1);
+}
+
+.matrixColHead {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+}
+
+.matrixRowHead {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  text-transform: capitalize;
+}
+
+.matrixCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 64px;
+  padding: 12px;
+}
+
+.matrixFill {
+  width: 100%;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.slider {
   width: 280px;
 }
 
 .selectTrigger {
   min-width: 160px;
+}
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.subsectionLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+}
+
+/* Reserve room below the trigger so the open dropdown has space to render. */
+.selectOpen {
+  min-height: 220px;
 }
 
 .accordion {

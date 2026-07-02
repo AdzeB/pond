@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AskContent } from "@/components/library-dock-ask-content";
 import { NavContent } from "@/components/library-dock-nav-content";
+import { SearchContent } from "@/components/library-dock-search-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
 import { StatusContent } from "@/components/library-dock-status-content";
 import { NewSaveDialog } from "@/components/new-save-dialog";
@@ -39,7 +40,7 @@ interface RootProps {
   preview?: DockPreview;
 }
 
-type DockMode = "nav" | "compose";
+type DockMode = "nav" | "compose" | "search";
 
 // The single self-driving dock container. Owns all dock state, resolves
 // preview-vs-live values, and swaps exactly one content module through its
@@ -64,6 +65,8 @@ export function Root({ preview }: RootProps) {
 
   const openAsk = useCallback(() => setMode("compose"), []);
   const closeAsk = useCallback(() => setMode("nav"), []);
+  const openSearch = useCallback(() => setMode("search"), []);
+  const closeSearch = useCallback(() => setMode("nav"), []);
   const clearResults = useCallback(() => {
     clearAsk();
     setMode("nav");
@@ -72,16 +75,19 @@ export function Root({ preview }: RootProps) {
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
 
-  // Precedence: selection > active composer > live agent result > nav. Composing
-  // wins over an active result so the user can ask again on top of results.
+  // Precedence: selection > active composer > search composer > live agent
+  // result > nav. Composing wins over an active result so the user can ask
+  // again on top of results.
   const liveView: DockView =
     selectionSize > 0
       ? "selection"
       : mode === "compose"
         ? "ask"
-        : ask.active
-          ? "status"
-          : "nav";
+        : mode === "search"
+          ? "search"
+          : ask.active
+            ? "status"
+            : "nav";
   const view = preview?.view ?? liveView;
 
   // Effective display values: the playground feeds these directly so the pill
@@ -105,7 +111,7 @@ export function Root({ preview }: RootProps) {
     [preview, pathname],
   );
 
-  const isCard = view === "ask";
+  const isCard = view === "ask" || view === "search";
   // Animate the pill border while the agent is searching (status view). The beam
   // is an absolute, click-through overlay so it never clips the pill's shadow.
   // Its hue-rotate/blur filter animation is GPU-heavy, so pause it whenever the
@@ -141,6 +147,8 @@ export function Root({ preview }: RootProps) {
       isCard,
       openAsk,
       closeAsk,
+      openSearch,
+      closeSearch,
       clearResults,
       destructive,
       runSelectionTask,
@@ -161,6 +169,8 @@ export function Root({ preview }: RootProps) {
       isCard,
       openAsk,
       closeAsk,
+      openSearch,
+      closeSearch,
       clearResults,
       destructive,
       runSelectionTask,
@@ -182,6 +192,8 @@ export function Root({ preview }: RootProps) {
       <SelectionContent key="selection" />
     ) : view === "ask" ? (
       <AskContent key="ask" />
+    ) : view === "search" ? (
+      <SearchContent key="search" />
     ) : view === "status" ? (
       <StatusContent key="status" />
     ) : (

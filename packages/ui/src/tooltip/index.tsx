@@ -37,7 +37,7 @@ function Viewport(props: Base.Viewport.Props) {
 
 function Positioner({
   className,
-  sideOffset = 16,
+  sideOffset = 8,
   ...props
 }: Base.Positioner.Props) {
   return (

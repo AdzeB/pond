@@ -6,7 +6,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import type { PondApi } from "../../preload";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
@@ -17,11 +17,13 @@ import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { GovernorStatusBridge } from "./effects/governor-status-bridge";
 import { MenuBridge } from "./effects/menu-bridge";
+import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { PipelineStatusBridge } from "./effects/pipeline-status-bridge";
 import { RefreshStatusBridge } from "./effects/refresh-status-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
+import { setAppRouter } from "./lib/ui/app-router";
 import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
 
@@ -62,6 +64,14 @@ function buildRouter() {
 
 export function App() {
   const router = useMemo(() => buildRouter(), []);
+
+  // Expose the *rendered* router (the committed memo value) to non-context
+  // consumers such as the native History menu. Registering here -- rather than
+  // inside the useMemo factory -- avoids StrictMode's double-invoked factory
+  // leaving the singleton pointed at a discarded orphan router.
+  useEffect(() => {
+    setAppRouter(router);
+  }, [router]);
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -83,6 +93,7 @@ export function App() {
           <DeveloperApplier />
           <UndoRedoBridge />
           <MenuBridge />
+          <MenuRecentsBridge />
           <SyncStatusBridge />
           <BackfillStatusBridge />
           <PipelineStatusBridge />

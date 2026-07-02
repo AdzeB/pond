@@ -6,6 +6,25 @@ import styles from "./styles.module.css";
 // Twitter caps a tweet at four media tiles; extra items are dropped.
 const MAX_TILES = 4;
 
+// A single video is shown inside Twitter's timeline window: landscape is capped
+// at 16:9 and portrait bottoms out at 9:16, so wider/taller videos letterbox
+// into that range instead of stretching the card. Images keep their natural
+// ratio and multi-media grids use Twitter's fixed 16:9 frame.
+const VIDEO_MIN_RATIO = 9 / 16;
+const VIDEO_MAX_RATIO = 16 / 9;
+
+function singleRatio(m: TweetCardMedia): string | undefined {
+  if (!m.width || !m.height) return undefined;
+  if (m.type === "video") {
+    const clamped = Math.min(
+      VIDEO_MAX_RATIO,
+      Math.max(VIDEO_MIN_RATIO, m.width / m.height),
+    );
+    return String(clamped);
+  }
+  return `${m.width} / ${m.height}`;
+}
+
 export function MediaGrid({
   media,
   compact,
@@ -17,18 +36,16 @@ export function MediaGrid({
   if (tiles.length === 0) return null;
 
   const count = tiles.length;
-  // A lone image keeps its natural aspect ratio; grids use Twitter's fixed frame.
   const single = count === 1 ? tiles[0] : undefined;
-  const ratio =
-    single?.width && single.height
-      ? `${single.width} / ${single.height}`
-      : undefined;
+  const ratio = single ? singleRatio(single) : undefined;
+  const singleVideo = single?.type === "video";
 
   return (
     <div
       className={styles.mediaGrid}
       data-count={count}
       data-compact={compact ? "true" : undefined}
+      data-single-video={singleVideo ? "true" : undefined}
       style={
         count === 1 && ratio
           ? ({ "--tweet-media-ratio": ratio } as React.CSSProperties)

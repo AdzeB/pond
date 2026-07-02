@@ -30,7 +30,6 @@
   font-weight: 600;
   color: var(--ds-gray-10);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .groupValue {

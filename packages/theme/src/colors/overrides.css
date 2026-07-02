@@ -1383,7 +1383,7 @@
   --ds-base-h: 0;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1395,7 +1395,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1407,7 +1407,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1419,7 +1419,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1431,7 +1431,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1443,7 +1443,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1455,7 +1455,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1467,7 +1467,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1479,7 +1479,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1491,7 +1491,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1503,7 +1503,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1515,7 +1515,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1654,7 +1654,7 @@
   --ds-base-h: 12;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1666,7 +1666,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1678,7 +1678,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1690,7 +1690,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1702,7 +1702,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1714,7 +1714,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1726,7 +1726,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1738,7 +1738,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1750,7 +1750,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1762,7 +1762,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1774,7 +1774,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1786,7 +1786,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1925,7 +1925,7 @@
   --ds-base-h: 25;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1937,7 +1937,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1949,7 +1949,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1961,7 +1961,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1973,7 +1973,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1985,7 +1985,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -1997,7 +1997,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2009,7 +2009,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2021,7 +2021,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2033,7 +2033,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2045,7 +2045,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2057,7 +2057,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2196,7 +2196,7 @@
   --ds-base-h: 50;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2208,7 +2208,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2220,7 +2220,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2232,7 +2232,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2244,7 +2244,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2256,7 +2256,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2268,7 +2268,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2280,7 +2280,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2292,7 +2292,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2304,7 +2304,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2316,7 +2316,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2328,7 +2328,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2467,7 +2467,7 @@
   --ds-base-h: 75;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2479,7 +2479,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2491,7 +2491,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2503,7 +2503,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2515,7 +2515,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2527,7 +2527,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2539,7 +2539,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2551,7 +2551,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2563,7 +2563,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2575,7 +2575,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2587,7 +2587,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2599,7 +2599,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2738,7 +2738,7 @@
   --ds-base-h: 100;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2750,7 +2750,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2762,7 +2762,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2774,7 +2774,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2786,7 +2786,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2798,7 +2798,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2810,7 +2810,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2822,7 +2822,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2834,7 +2834,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2846,7 +2846,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2858,7 +2858,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -2870,7 +2870,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3009,7 +3009,7 @@
   --ds-base-h: 128;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3021,7 +3021,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3033,7 +3033,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3045,7 +3045,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3057,7 +3057,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3069,7 +3069,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3081,7 +3081,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3093,7 +3093,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3105,7 +3105,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3117,7 +3117,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3129,7 +3129,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3141,7 +3141,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3280,7 +3280,7 @@
   --ds-base-h: 150;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3292,7 +3292,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3304,7 +3304,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3316,7 +3316,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3328,7 +3328,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3340,7 +3340,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3352,7 +3352,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3364,7 +3364,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3376,7 +3376,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3388,7 +3388,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3400,7 +3400,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3412,7 +3412,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3551,7 +3551,7 @@
   --ds-base-h: 168;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3563,7 +3563,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3575,7 +3575,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3587,7 +3587,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3599,7 +3599,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3611,7 +3611,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3623,7 +3623,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3635,7 +3635,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3647,7 +3647,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3659,7 +3659,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3671,7 +3671,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3683,7 +3683,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3822,7 +3822,7 @@
   --ds-base-h: 185;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3834,7 +3834,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3846,7 +3846,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3858,7 +3858,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3870,7 +3870,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3882,7 +3882,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3894,7 +3894,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3906,7 +3906,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3918,7 +3918,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3930,7 +3930,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3942,7 +3942,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -3954,7 +3954,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4093,7 +4093,7 @@
   --ds-base-h: 210;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4105,7 +4105,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4117,7 +4117,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4129,7 +4129,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4141,7 +4141,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4153,7 +4153,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4165,7 +4165,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4177,7 +4177,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4189,7 +4189,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4201,7 +4201,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4213,7 +4213,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4225,7 +4225,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4364,7 +4364,7 @@
   --ds-base-h: 250;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4376,7 +4376,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4388,7 +4388,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4400,7 +4400,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4412,7 +4412,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4424,7 +4424,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4436,7 +4436,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4448,7 +4448,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4460,7 +4460,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4472,7 +4472,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4484,7 +4484,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4496,7 +4496,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4635,7 +4635,7 @@
   --ds-base-h: 262;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4647,7 +4647,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4659,7 +4659,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4671,7 +4671,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4683,7 +4683,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4695,7 +4695,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4707,7 +4707,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4719,7 +4719,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4731,7 +4731,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4743,7 +4743,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4755,7 +4755,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4767,7 +4767,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4906,7 +4906,7 @@
   --ds-base-h: 275;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4918,7 +4918,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4930,7 +4930,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4942,7 +4942,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4954,7 +4954,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4966,7 +4966,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4978,7 +4978,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -4990,7 +4990,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5002,7 +5002,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5014,7 +5014,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5026,7 +5026,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5038,7 +5038,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5177,7 +5177,7 @@
   --ds-base-h: 292;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5189,7 +5189,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5201,7 +5201,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5213,7 +5213,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5225,7 +5225,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5237,7 +5237,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5249,7 +5249,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5261,7 +5261,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5273,7 +5273,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5285,7 +5285,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5297,7 +5297,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5309,7 +5309,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5448,7 +5448,7 @@
   --ds-base-h: 310;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5460,7 +5460,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5472,7 +5472,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5484,7 +5484,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5496,7 +5496,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5508,7 +5508,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5520,7 +5520,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5532,7 +5532,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5544,7 +5544,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5556,7 +5556,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5568,7 +5568,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5580,7 +5580,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5719,7 +5719,7 @@
   --ds-base-h: 328;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5731,7 +5731,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5743,7 +5743,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5755,7 +5755,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5767,7 +5767,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5779,7 +5779,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5791,7 +5791,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5803,7 +5803,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5815,7 +5815,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5827,7 +5827,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5839,7 +5839,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5851,7 +5851,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -5990,7 +5990,7 @@
   --ds-base-h: 350;
   --ds-gray-1: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6002,7 +6002,7 @@
   );
   --ds-gray-2: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6014,7 +6014,7 @@
   );
   --ds-gray-3: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6026,7 +6026,7 @@
   );
   --ds-gray-4: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6038,7 +6038,7 @@
   );
   --ds-gray-5: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6050,7 +6050,7 @@
   );
   --ds-gray-6: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6062,7 +6062,7 @@
   );
   --ds-gray-7: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6074,7 +6074,7 @@
   );
   --ds-gray-8: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6086,7 +6086,7 @@
   );
   --ds-gray-9: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6098,7 +6098,7 @@
   );
   --ds-gray-10: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6110,7 +6110,7 @@
   );
   --ds-gray-11: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *
@@ -6122,7 +6122,7 @@
   );
   --ds-gray-12: oklch(
     clamp(
-        0.2974,
+        min(0.2974, var(--ds-base-l)),
         calc(
           var(--ds-base-l) +
           var(--ds-fg-dir) *

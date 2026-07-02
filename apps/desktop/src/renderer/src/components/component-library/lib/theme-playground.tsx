@@ -1,4 +1,4 @@
-import { Button, RangeField } from "@pond/ui";
+import { Button, Slider } from "@pond/ui";
 import { type CSSProperties, useState } from "react";
 import styles from "./theme-playground.module.css";
 
@@ -141,14 +141,21 @@ export function ThemePlayground() {
             <span className={styles.groupLabel}>Radius</span>
             <span className={styles.groupValue}>{radius}px</span>
           </div>
-          <RangeField
+          <Slider.Root
             value={radius}
             min={0}
             max={20}
-            suffix="px"
-            aria-label="Radius"
-            onValueChange={setRadius}
-          />
+            onValueChange={(next) =>
+              setRadius(typeof next === "number" ? next : (next[0] ?? 0))
+            }
+          >
+            <Slider.Control>
+              <Slider.Track>
+                <Slider.Indicator />
+                <Slider.Thumb aria-label="Radius" />
+              </Slider.Track>
+            </Slider.Control>
+          </Slider.Root>
         </div>
 
         <Button variant="secondary" size="sm" onClick={reset}>

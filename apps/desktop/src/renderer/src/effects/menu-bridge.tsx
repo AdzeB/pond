@@ -15,6 +15,7 @@ import {
   untrashSave,
 } from "@/lib/save/actions";
 import { trashSelection } from "@/lib/save/selection";
+import { getAppRouter } from "@/lib/ui/app-router";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { newSave } from "@/stores/new-save";
 import { pool } from "@/stores/pool";
@@ -28,6 +29,14 @@ export function MenuBridge() {
   useEffect(() => {
     return window.pond.onMenuAction((id) => {
       switch (id) {
+        case "history.back":
+          getAppRouter()?.history.back();
+          return;
+
+        case "history.forward":
+          getAppRouter()?.history.forward();
+          return;
+
         case "view.inspector.toggle": {
           // Toggle the drawer: close if open, else reopen the anchored save.
           if (primarySelection.get()) {

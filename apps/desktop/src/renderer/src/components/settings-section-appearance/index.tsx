@@ -9,7 +9,7 @@ import {
   type Prefs,
   type ThemeDef,
 } from "@pond/schema/db";
-import { ColorField, RangeField, Settings } from "@pond/ui";
+import { ColorField, Settings, Slider } from "@pond/ui";
 import type { Binding } from "@/components/settings-engine";
 import { PresetSelect, ThemeSelect } from "@/components/settings-theme";
 
@@ -132,14 +132,28 @@ export function ContrastRow({ binding }: { binding: Binding }) {
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <RangeField
-          aria-label="Contrast"
+        <Slider.Root
           min={CONTRAST_MIN}
           max={CONTRAST_MAX}
           step={5}
           value={custom.contrast}
-          onValueChange={(n) => patch({ custom: { ...custom, contrast: n } })}
-        />
+          onValueChange={(next) =>
+            patch({
+              custom: {
+                ...custom,
+                contrast: typeof next === "number" ? next : (next[0] ?? 0),
+              },
+            })
+          }
+        >
+          <Slider.Control>
+            <Slider.Track>
+              <Slider.Indicator />
+              <Slider.Thumb aria-label="Contrast" />
+            </Slider.Track>
+          </Slider.Control>
+          <Slider.Value />
+        </Slider.Root>
       </Settings.ItemControl>
     </>
   );

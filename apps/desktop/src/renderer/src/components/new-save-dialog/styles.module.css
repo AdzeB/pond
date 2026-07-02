@@ -47,7 +47,9 @@
   transition: box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
 
   &:focus-within {
-    outline: 2px solid var(--ds-focus-outline);
+    outline-width: 2px;
+    outline-style: solid;
+    outline-color: var(--ds-gray-6);
     outline-offset: 2px;
     box-shadow: var(--ds-shadow-2);
   }
@@ -291,7 +293,9 @@
   }
 
   &:focus-visible {
-    outline: 2px solid var(--ds-focus-outline);
+    outline-width: 2px;
+    outline-style: solid;
+    outline-color: var(--ds-gray-6);
     outline-offset: 2px;
     box-shadow: var(--ds-shadow-2);
   }

@@ -23,6 +23,9 @@ interface RichTweetMedia {
   url: string;
   type: "image" | "video";
   poster?: string;
+  width?: number;
+  height?: number;
+  durationSec?: number;
 }
 
 interface RichTweetMetrics {
@@ -199,7 +202,10 @@ interface MediaLike {
   media_url_https?: string;
   url?: string;
   type?: "photo" | "video" | "animated_gif";
+  original_info?: { width?: number; height?: number };
   video_info?: {
+    duration_millis?: number;
+    aspect_ratio?: number[];
     variants?: Array<{ bitrate?: number; url?: string; content_type?: string }>;
   };
 }
@@ -352,19 +358,48 @@ function pickMedia(tweet: TweetLike): RichTweetMedia[] {
 
 function mapMedia(item: MediaLike): RichTweetMedia | null {
   if (!item.media_url_https) return null;
+  const dims = pickDims(item);
   if (item.type === "video" || item.type === "animated_gif") {
     const best = pickBestVariant(item.video_info?.variants);
     const poster = upgradeTwimg(item.media_url_https);
+    const ms = item.video_info?.duration_millis;
     return {
       url: best ?? poster,
       type: "video",
       poster,
+      ...(dims ?? {}),
+      ...(typeof ms === "number" && ms > 0 ? { durationSec: ms / 1000 } : {}),
     };
   }
   return {
     url: upgradeTwimg(item.media_url_https),
     type: "image",
+    ...(dims ?? {}),
   };
+}
+
+// Prefer the true pixel dimensions; fall back to the video's reduced aspect
+// ratio (a [w, h] pair) so single-video tiles can size themselves correctly.
+function pickDims(
+  item: MediaLike,
+): { width: number; height: number } | undefined {
+  const w = item.original_info?.width;
+  const h = item.original_info?.height;
+  if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) {
+    return { width: w, height: h };
+  }
+  const ar = item.video_info?.aspect_ratio;
+  const arW = ar?.[0];
+  const arH = ar?.[1];
+  if (
+    typeof arW === "number" &&
+    typeof arH === "number" &&
+    arW > 0 &&
+    arH > 0
+  ) {
+    return { width: arW, height: arH };
+  }
+  return undefined;
 }
 
 function pickBestVariant(

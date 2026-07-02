@@ -3,11 +3,13 @@ import { LayoutSwitcher } from "@/components/layout-switcher";
 import { WelcomeEmpty } from "@/components/library-empty";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
+import { useDetailRouteSync } from "@/hooks/use-detail-route";
 import { useLibraryState } from "@/hooks/use-library-state";
 import { useIngestingCount } from "@/hooks/use-saves";
 import { libraryViewContext } from "@/stores/library-view-context";
 
 export function LibraryView() {
+  useDetailRouteSync();
   const data = useLibraryState();
   const actions = useCardActions(
     data.filteredIds,

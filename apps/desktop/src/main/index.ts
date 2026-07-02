@@ -4,13 +4,18 @@ import {
   app,
   BrowserWindow,
   globalShortcut,
+  ipcMain,
   nativeTheme,
   net,
   session,
   shell,
 } from "electron";
 import log from "electron-log/main.js";
-import { DEFAULT_INGEST_PORT, IPC } from "../shared/constants";
+import {
+  DEFAULT_INGEST_PORT,
+  IPC,
+  type RecentMenuEntry,
+} from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
 import { emptyTrashOlderThan } from "./core/library-ops";
 import {
@@ -54,7 +59,7 @@ import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { pruneMissingLibraries, rememberLibrary } from "./lib/library-recents";
 import { schedule } from "./lib/scheduler";
-import { installAppMenu } from "./menu";
+import { installAppMenu, setMenuRecents } from "./menu";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { ensureTray, setTrayVisible, type TrayHandle } from "./tray";
@@ -438,6 +443,12 @@ app.whenReady().then(async () => {
   installAppMenu({
     focusedOrMain,
     openLibraryWindow: () => void openLibraryWindow(),
+  });
+
+  // The renderer owns the recently-visited saves (localStorage + resolved
+  // titles); mirror them into the native History menu whenever they change.
+  ipcMain.on(IPC.menuRecents, (_event, entries: RecentMenuEntry[]) => {
+    setMenuRecents(Array.isArray(entries) ? entries : []);
   });
 
   const loginItem = app.getLoginItemSettings();

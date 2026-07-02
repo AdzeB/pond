@@ -33,11 +33,10 @@ export class TwitterTweetExtractor implements Extractor {
     const result = await fetchHtmlInWindow(canonical, "twitter", tweetId);
     const meta = (result.meta ?? {}) as Record<string, unknown>;
 
-    const media: MediaCandidate[] = (result.mediaUrls ?? []).map((m) => ({
-      url: m.url,
-      type: m.type === "video" ? "video" : "image",
-      ...(m.poster ? { posterUrl: m.poster } : {}),
-    }));
+    // `meta.media` carries width/height/duration harvested from the DOM, which
+    // the flat `mediaUrls` list drops; prefer it so single videos can size to
+    // their real aspect ratio. Fall back to `mediaUrls` when it's absent.
+    const media = buildMedia(meta.media, result.mediaUrls);
 
     const author = {
       ...(typeof meta.authorName === "string" ? { name: meta.authorName } : {}),
@@ -190,6 +189,50 @@ function buildLinkCard(
     ...(imageUrl ? { imageUrl } : {}),
     ...(large ? { large } : {}),
   };
+}
+
+// Shapes captured media into candidates, preferring the dimensioned
+// `meta.media` entries and falling back to the flat `mediaUrls` list. Dedupes
+// by url so the parent/quote passes don't double-count a shared poster.
+function buildMedia(
+  metaMedia: unknown,
+  mediaUrls: Array<{ url: string; type?: string; poster?: string }> | undefined,
+): MediaCandidate[] {
+  const rich = Array.isArray(metaMedia)
+    ? (metaMedia as Array<Record<string, unknown>>).filter(
+        (m) => typeof m.url === "string",
+      )
+    : [];
+  const out: MediaCandidate[] = [];
+  const seen = new Set<string>();
+  if (rich.length > 0) {
+    for (const m of rich) {
+      const url = m.url as string;
+      if (seen.has(url)) continue;
+      seen.add(url);
+      out.push({
+        url,
+        type: m.type === "video" ? "video" : "image",
+        ...(typeof m.poster === "string" ? { posterUrl: m.poster } : {}),
+        ...(typeof m.width === "number" ? { width: m.width } : {}),
+        ...(typeof m.height === "number" ? { height: m.height } : {}),
+        ...(typeof m.durationSec === "number"
+          ? { durationSec: m.durationSec }
+          : {}),
+      });
+    }
+    return out;
+  }
+  for (const m of mediaUrls ?? []) {
+    if (seen.has(m.url)) continue;
+    seen.add(m.url);
+    out.push({
+      url: m.url,
+      type: m.type === "video" ? "video" : "image",
+      ...(m.poster ? { posterUrl: m.poster } : {}),
+    });
+  }
+  return out;
 }
 
 function pickNumbers<K extends string>(

@@ -1,16 +1,16 @@
 .root {
-  position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   width: 28px;
   height: 16px;
-  padding: 0;
+  padding: 2px;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
-  background: var(--ds-gray-a6);
+  background: var(--ds-gray-6);
   border: 0;
-  border-radius: 2147483647px;
+  border-radius: var(--ds-radius-full);
   transition:
     background var(--ds-duration-snap) var(--ds-easing-standard),
     box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
@@ -19,7 +19,18 @@
     background: var(--ds-accent-9);
   }
 
-  &:focus-visible {
+  &:hover,
+  &[data-demo-state="hover"] {
+    background: var(--ds-gray-a7);
+  }
+
+  &[data-checked]:hover,
+  &[data-checked][data-demo-state="hover"] {
+    background: var(--ds-accent-10);
+  }
+
+  &:focus-visible,
+  &[data-demo-state="focus"] {
     outline: 2px solid var(--ds-focus-outline);
     outline-offset: 2px;
   }
@@ -33,16 +44,14 @@
 .thumb {
   width: 12px;
   height: 12px;
-  margin-left: 2px;
   background: var(--ds-gray-1);
-  border-radius: 2147483647px;
-  box-shadow: var(--ds-shadow-thumb);
+  border-radius: var(--ds-radius-full);
   transition:
-    transform var(--ds-duration-snap) var(--ds-easing-standard),
+    translate var(--ds-duration-snap) var(--ds-easing-standard),
     background var(--ds-duration-snap) var(--ds-easing-standard);
-}
 
-.root[data-checked] .thumb {
-  background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
-  transform: translateX(100%);
+  &[data-checked] {
+    background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
+    translate: 100% 0;
+  }
 }

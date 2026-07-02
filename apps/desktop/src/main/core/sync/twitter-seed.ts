@@ -43,6 +43,11 @@ export function buildTwitterBookmarkSeed(
         url: m.url,
         type: m.type === "video" ? "video" : "image",
         ...(m.poster ? { posterUrl: m.poster } : {}),
+        ...(typeof m.width === "number" ? { width: m.width } : {}),
+        ...(typeof m.height === "number" ? { height: m.height } : {}),
+        ...(typeof m.durationSec === "number"
+          ? { durationSec: m.durationSec }
+          : {}),
       });
     }
   };

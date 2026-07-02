@@ -3,12 +3,12 @@ import {
   IconArchivePlusFill18 as New,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
+import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
-import { DockSearch } from "@/components/library-dock-search";
 import { LibrarySwitcher } from "@/components/library-switcher";
 import { ViewMenu } from "@/components/library-view-menu";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
@@ -67,7 +67,16 @@ export function NavContent() {
 
       <span className={styles.separator} aria-hidden />
 
-      <DockSearch />
+      <Tooltip label="Search" side="top">
+        <button
+          type="button"
+          className={styles.item}
+          aria-label="Search"
+          onClick={dock.openSearch}
+        >
+          <Search />
+        </button>
+      </Tooltip>
 
       {agentAvailable ? (
         <Tooltip label="Ask AI" side="top">

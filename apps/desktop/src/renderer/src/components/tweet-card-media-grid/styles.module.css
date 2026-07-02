@@ -19,6 +19,12 @@
   aspect-ratio: var(--tweet-media-ratio, 16 / 9);
 }
 
+/* A lone video honours its (clamped) aspect ratio rather than being cropped
+   into the landscape height cap, so portrait/square videos read correctly. */
+.mediaGrid[data-single-video="true"] {
+  max-height: none;
+}
+
 .mediaGrid[data-count="2"] {
   grid-template-columns: 1fr 1fr;
   aspect-ratio: 16 / 9;

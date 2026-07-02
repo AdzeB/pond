@@ -10,11 +10,6 @@
     bottom 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Base UI positions the popup by writing pixel top/left onto the positioner,
-     starting from 0,0 before the first measurement. Transitioning those on the
-     initial open makes the popup slide in from the viewport corner, so we only
-     animate position changes once the popup is already open (i.e. when the
-     shared handle moves it between triggers). */
   &[data-instant],
   &:has([data-starting-style]) {
     transition: none;
@@ -22,14 +17,14 @@
 }
 
 .popup {
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-1);
   max-width: 256px;
   padding: 4px 8px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--ds-gray-12);
+  color: var(--ds-gray-11);
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--ds-radius-md);
   transition:
     opacity var(--ds-duration-snap) var(--ds-easing-standard),
     transform var(--ds-duration-snap) var(--ds-easing-standard);

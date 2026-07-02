@@ -35,7 +35,7 @@ threat model and therefore the value of each Orbit bet:
 
 | Orbit bet | pond status today |
 | --- | --- |
-| #2 `light-dark()` tokens | **Already done for color.** `--ds-gray-a*`, `--ds-tomato-*`, `--ds-grass-*` bake in `light-dark()`; grays are oklch ramps. There is no `dark:` variant to forget. The headline bug is already solved. |
+| #2 `light-dark()` tokens | **Already done for color.** `--ds-gray-a*`, `--ds-red-*`, `--ds-grass-*` bake in `light-dark()`; grays are oklch ramps. There is no `dark:` variant to forget. The headline bug is already solved. |
 | #1 intent tokens | **Half done.** The **radius** scale (`--ds-radius-xs…2xl`, `full`) is exactly Orbit-style role naming. But **colors are scale-named** (`--ds-gray-11`, `--ds-accent-9`), not intent-named — there is no `text-secondary` / `surface-card`. |
 | Spacing | **Unguarded.** There is **no `--ds-space-*` scale at all.** Every gap/padding is a raw pixel literal. This is the real drift surface, with zero enforcement. |
 | #3 `<Box>` + ban `<div>` | **Mostly redundant + architecturally costly.** CSS Modules already close the _call-site_ string hole; pond's JSX references `styles.x`, which must exist. pond's open surface is _inside_ the `.module.css` file, not the markup. |

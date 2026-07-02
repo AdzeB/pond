@@ -11,7 +11,7 @@
 }
 
 .root:has(:required) .label::after {
-  color: var(--ds-tomato-9);
+  color: var(--ds-red-9);
   content: " *";
 }
 
@@ -23,5 +23,5 @@
 .error {
   font-size: 12px;
   font-weight: 550;
-  color: var(--ds-tomato-9);
+  color: var(--ds-red-9);
 }

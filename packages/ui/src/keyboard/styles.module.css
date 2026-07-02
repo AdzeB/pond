@@ -10,11 +10,10 @@
   align-items: center;
 }
 
-.sep {
+.separator {
   font-size: 10px;
   color: var(--ds-gray-9);
   text-transform: lowercase;
-  letter-spacing: 0.04em;
 }
 
 .key {
@@ -22,24 +21,12 @@
   align-items: center;
   justify-content: center;
   min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  font-family: var(--ds-font-mono);
-  font-size: 10.5px;
+  min-height: 18px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
-  background: var(--ds-gray-a3);
-  border: 1px solid var(--ds-gray-a5);
+  background: var(--ds-gray-3);
   border-radius: 4px;
-}
-
-.key[data-density="inline"] {
-  min-width: 0;
-  height: auto;
-  padding: 1px 5px;
-  font-size: 11px;
-
-  background: var(--ds-gray-a3);
-  border: 0;
-  border-radius: 3px;
 }

@@ -35,7 +35,7 @@
 
 .rout.err {
   color: var(--err-t);
-  background: var(--ds-tomato-a3);
+  background: var(--ds-red-a3);
 }
 
 .rout.err .od {
@@ -146,7 +146,6 @@
   font-size: 11px;
   color: var(--ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .fv {
@@ -205,8 +204,8 @@
 
 .errbox {
   padding: 11px 13px;
-  background: var(--ds-tomato-2);
-  border: 1px solid var(--ds-tomato-a5);
+  background: var(--ds-red-2);
+  border: 1px solid var(--ds-red-a5);
   border-radius: 10px;
 }
 

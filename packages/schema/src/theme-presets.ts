@@ -19,13 +19,61 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     id: "light",
     name: "Light",
     appearance: "light",
-    def: { base: "#ffffff", accent: "#3b82f6", contrast: 30 },
+    def: { base: "#ffffff", accent: "#008FFF", contrast: 30 },
+  },
+  {
+    id: "paper",
+    name: "Paper",
+    appearance: "light",
+    def: { base: "#FCFBF8", accent: "#E8590C", contrast: 30 },
+  },
+  {
+    id: "mint",
+    name: "Mint",
+    appearance: "light",
+    def: { base: "#F5FBF8", accent: "#0CA678", contrast: 30 },
+  },
+  {
+    id: "rose",
+    name: "Rose",
+    appearance: "light",
+    def: { base: "#ffffff", accent: "#E64980", contrast: 30 },
+  },
+  {
+    id: "grape",
+    name: "Grape",
+    appearance: "light",
+    def: { base: "#ffffff", accent: "#7C5CFF", contrast: 30 },
   },
   {
     id: "dark",
     name: "Dark",
     appearance: "dark",
-    def: { base: "#2c2d30", accent: "#6e95ff", contrast: 30 },
+    def: { base: "#0A0A0A", accent: "#008FFF", contrast: 30 },
+  },
+  {
+    id: "midnight",
+    name: "Midnight",
+    appearance: "dark",
+    def: { base: "#0B0F1A", accent: "#4C8DFF", contrast: 30 },
+  },
+  {
+    id: "forest",
+    name: "Forest",
+    appearance: "dark",
+    def: { base: "#0A0F0C", accent: "#2FB380", contrast: 30 },
+  },
+  {
+    id: "plum",
+    name: "Plum",
+    appearance: "dark",
+    def: { base: "#100A16", accent: "#A17CFF", contrast: 30 },
+  },
+  {
+    id: "ember",
+    name: "Ember",
+    appearance: "dark",
+    def: { base: "#140D0A", accent: "#FF8A3D", contrast: 30 },
   },
 ] as const;
 

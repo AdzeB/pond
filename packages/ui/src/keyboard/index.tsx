@@ -14,7 +14,7 @@ function Cluster({ keys, separator = "", className }: ClusterProps) {
         // biome-ignore lint/suspicious/noArrayIndexKey: short, immutable lists; duplicate keys are valid (e.g. `⌘ ⌘`)
         <span key={`${i}-${k}`} className={styles.row}>
           {i > 0 && separator ? (
-            <span className={styles.sep}>{separator}</span>
+            <span className={styles.separator}>{separator}</span>
           ) : null}
           <kbd className={styles.key}>{k}</kbd>
         </span>
