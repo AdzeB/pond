@@ -1,16 +1,23 @@
 import { useRouterState } from "@tanstack/react-router";
-import { BorderBeam } from "border-beam";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { AskComposer, AskStatusPill } from "@/components/ask-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { AskContent } from "@/components/library-dock-ask-content";
+import { LibraryContent } from "@/components/library-dock-library-content";
 import { NavContent } from "@/components/library-dock-nav-content";
-import { SearchContent } from "@/components/library-dock-search-content";
+import { NewContent } from "@/components/library-dock-new-content";
+import { OptionsContent } from "@/components/library-dock-options-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
-import { StatusContent } from "@/components/library-dock-status-content";
-import { NewSaveDialog } from "@/components/new-save-dialog";
+import { SearchComposer } from "@/components/search-bar";
 import { deleteSelectionForever, isAllSelected } from "@/lib/save/selection";
-import { gentleSpring } from "@/lib/ui/motion";
+import { buildDockMotion } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
 import { clearAsk, useAskResult } from "@/stores/ask-store";
 import {
@@ -20,11 +27,7 @@ import {
 import { newSave, useNewSaveOpen } from "@/stores/new-save";
 import { selection, useSelectionSize } from "@/stores/selection";
 import { useDockActions } from "./lib/actions";
-import {
-  type DockContextValue,
-  DockProvider,
-  type SwapVariants,
-} from "./lib/context";
+import { type DockContextValue, DockProvider } from "./lib/context";
 import { type DockTab, NAV_TABS } from "./lib/nav-tabs";
 import type { DockPreview, DockView } from "./lib/types";
 import styles from "./styles.module.css";
@@ -40,11 +43,8 @@ interface RootProps {
   preview?: DockPreview;
 }
 
-type DockMode = "nav" | "compose" | "search";
+type DockMode = "nav" | "compose" | "search" | "options" | "library";
 
-// The single self-driving dock container. Owns all dock state, resolves
-// preview-vs-live values, and swaps exactly one content module through its
-// internal `AnimatePresence` so the morph + cross-fade stays centralized.
 export function Root({ preview }: RootProps) {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -58,15 +58,32 @@ export function Root({ preview }: RootProps) {
 
   const inTrash = viewMode === "trash";
 
-  // Popovers launched from the dock (New, View options) anchor to the whole
-  // pill rather than their individual icon buttons, so they sit above the dock
-  // and inherit its width.
   const pillRef = useRef<HTMLDivElement | null>(null);
+  // Family (connectkit) morph: the viewport sizes to the active view's content;
+  // we write that measured size onto the pill, which transitions its real
+  // width/height via CSS (see .pill). Content is never scaled/distorted. First
+  // paint is measured before paint (useLayoutEffect) so there's no grow-in on
+  // mount, and CSS only transitions on subsequent size changes.
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const [bounds, setBounds] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   const openAsk = useCallback(() => setMode("compose"), []);
   const closeAsk = useCallback(() => setMode("nav"), []);
   const openSearch = useCallback(() => setMode("search"), []);
   const closeSearch = useCallback(() => setMode("nav"), []);
+  const openNew = useCallback(() => newSave.open(), []);
+  const closeNew = useCallback(() => newSave.set(false), []);
+  const openOptions = useCallback(() => setMode("options"), []);
+  const closeOptions = useCallback(() => setMode("nav"), []);
+  const openLibrary = useCallback(() => setMode("library"), []);
+  const closeLibrary = useCallback(() => setMode("nav"), []);
+  const closeMenuView = useCallback(() => {
+    newSave.set(false);
+    setMode("nav");
+  }, []);
   const clearResults = useCallback(() => {
     clearAsk();
     setMode("nav");
@@ -75,23 +92,25 @@ export function Root({ preview }: RootProps) {
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
 
-  // Precedence: selection > active composer > search composer > live agent
-  // result > nav. Composing wins over an active result so the user can ask
-  // again on top of results.
   const liveView: DockView =
     selectionSize > 0
       ? "selection"
-      : mode === "compose"
-        ? "ask"
-        : mode === "search"
-          ? "search"
-          : ask.active
-            ? "status"
-            : "nav";
+      : newOpen
+        ? "new"
+        : mode === "compose"
+          ? "ask"
+          : mode === "search"
+            ? "search"
+            : mode === "options"
+              ? "options"
+              : mode === "library"
+                ? "library"
+                : ask.active
+                  ? "status"
+                  : "nav";
   const view = preview?.view ?? liveView;
+  const isMenuView = view === "new" || view === "options" || view === "library";
 
-  // Effective display values: the playground feeds these directly so the pill
-  // can show counts and sub-states (trash, select-all) it isn't really in.
   const effSelectionSize = preview?.selectionSize ?? selectionSize;
   const effFilteredCount = preview
     ? (preview.filteredCount ?? 0)
@@ -111,11 +130,32 @@ export function Root({ preview }: RootProps) {
     [preview, pathname],
   );
 
-  const isCard = view === "ask" || view === "search";
-  // Animate the pill border while the agent is searching (status view). The beam
-  // is an absolute, click-through overlay so it never clips the pill's shadow.
-  // Its hue-rotate/blur filter animation is GPU-heavy, so pause it whenever the
-  // window is hidden (minimized / occluded) — nobody can see it anyway.
+  const isCard =
+    view === "ask" ||
+    view === "search" ||
+    view === "new" ||
+    view === "options" ||
+    view === "library";
+
+  // Measure the viewport (which sizes to the active view) and drive the pill's
+  // width/height to match. Runs synchronously on every view change (so the box
+  // starts morphing the same frame the content swaps, no lag) and via a
+  // ResizeObserver for in-view growth (e.g. typing tokens in search).
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const measure = () =>
+      setBounds({ width: el.offsetWidth, height: el.offsetHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useLayoutEffect(() => {
+    const el = viewportRef.current;
+    if (el) setBounds({ width: el.offsetWidth, height: el.offsetHeight });
+  }, []);
+
   const [docVisible, setDocVisible] = useState(
     () => typeof document === "undefined" || !document.hidden,
   );
@@ -126,14 +166,21 @@ export function Root({ preview }: RootProps) {
   }, []);
   const thinking = ask.status === "thinking" && docVisible;
 
-  // Inner content cross-fades while the pill springs to its new width.
-  const swap: SwapVariants = reduceMotion
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0, scale: 0.96 },
-        animate: { opacity: 1, scale: 1 },
-        exit: { opacity: 0, scale: 0.96 },
-      };
+  useEffect(() => {
+    if (preview || !isMenuView) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeMenuView();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [preview, isMenuView, closeMenuView]);
+
+  const { pillTransition, swapTransition, swap } = buildDockMotion(
+    reduceMotion ?? false,
+  );
 
   const context = useMemo<DockContextValue>(
     () => ({
@@ -149,6 +196,12 @@ export function Root({ preview }: RootProps) {
       closeAsk,
       openSearch,
       closeSearch,
+      openNew,
+      closeNew,
+      openOptions,
+      closeOptions,
+      openLibrary,
+      closeLibrary,
       clearResults,
       destructive,
       runSelectionTask,
@@ -156,6 +209,8 @@ export function Root({ preview }: RootProps) {
       openOverflowMenu,
       isPreview: preview != null,
       swap,
+      swapTransition,
+      sizeTransition: pillTransition,
       pillRef,
     }),
     [
@@ -171,6 +226,12 @@ export function Root({ preview }: RootProps) {
       closeAsk,
       openSearch,
       closeSearch,
+      openNew,
+      closeNew,
+      openOptions,
+      closeOptions,
+      openLibrary,
+      closeLibrary,
       clearResults,
       destructive,
       runSelectionTask,
@@ -178,63 +239,91 @@ export function Root({ preview }: RootProps) {
       openOverflowMenu,
       preview,
       swap,
+      swapTransition,
+      pillTransition,
     ],
   );
 
-  // Hidden on the component library route, which renders its own surfaces
-  // inline rather than alongside the pinned dock.
   if (!preview && pathname === "/components") {
     return null;
   }
 
-  const content =
-    view === "selection" ? (
-      <SelectionContent key="selection" />
-    ) : view === "ask" ? (
-      <AskContent key="ask" />
-    ) : view === "search" ? (
-      <SearchContent key="search" />
-    ) : view === "status" ? (
-      <StatusContent key="status" />
-    ) : (
-      <NavContent key="nav" />
-    );
-
   const body = (
     <DockProvider value={context}>
-      <motion.div
+      {!preview && isMenuView ? (
+        <button
+          type="button"
+          aria-label="Close"
+          className={styles.backdrop}
+          onClick={closeMenuView}
+        />
+      ) : null}
+      <div
         ref={pillRef}
         className={styles.pill}
-        layout
-        animate={{
-          padding: isCard ? 0 : 4,
-        }}
-        transition={gentleSpring}
+        style={
+          bounds ? { width: bounds.width, height: bounds.height } : undefined
+        }
       >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {content}
-        </AnimatePresence>
-
-        <BorderBeam
-          aria-hidden
-          size="md"
-          colorVariant="ocean"
-          theme="auto"
-          borderRadius={9999}
-          active={thinking}
-          className={styles.beam}
-          style={{ position: "absolute", inset: 0 }}
+        <div
+          ref={viewportRef}
+          className={styles.viewport}
+          data-card={isCard || undefined}
         >
-          <span className={styles.beamSurface} />
-        </BorderBeam>
-      </motion.div>
-
-      <NewSaveDialog
-        open={newOpen}
-        onOpenChange={newSave.set}
-        anchor={() => pillRef.current}
-        align="end"
-      />
+          <AnimatePresence initial={false}>
+            {view === "selection" ? (
+              <SelectionContent key="selection" />
+            ) : view === "ask" ? (
+              <motion.div
+                key="ask"
+                className={styles.askRow}
+                {...swap}
+                transition={swapTransition}
+              >
+                <AskComposer
+                  autoFocus
+                  onCollapse={closeAsk}
+                  onClear={clearAsk}
+                />
+              </motion.div>
+            ) : view === "search" ? (
+              <motion.div
+                key="search"
+                className={styles.searchRow}
+                {...swap}
+                transition={swapTransition}
+              >
+                <SearchComposer autoFocus onCollapse={closeSearch} />
+              </motion.div>
+            ) : view === "status" ? (
+              <motion.div
+                key="status"
+                className={styles.askRow}
+                {...swap}
+                transition={swapTransition}
+              >
+                <AskStatusPill onReopen={openAsk} onClear={clearResults} />
+              </motion.div>
+            ) : view === "new" ? (
+              <motion.div key="new" {...swap} transition={swapTransition}>
+                <NewContent />
+              </motion.div>
+            ) : view === "options" ? (
+              <motion.div key="options" {...swap} transition={swapTransition}>
+                <OptionsContent />
+              </motion.div>
+            ) : view === "library" ? (
+              <motion.div key="library" {...swap} transition={swapTransition}>
+                <LibraryContent />
+              </motion.div>
+            ) : (
+              <motion.div key="nav" {...swap} transition={swapTransition}>
+                <NavContent />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
 
       <ConfirmDialog
         open={confirmDelete}

@@ -15,10 +15,8 @@ import {
   IconCircleStopFill18 as Stop,
 } from "@pond/icons/fill/18";
 import {
-  IconAtSignOutline18 as AtSign,
   IconXmarkOutline18 as Clear,
   IconClockRotateClockwiseOutline18 as History,
-  IconPlusOutline18 as Plus,
 } from "@pond/icons/outline/18";
 import { Popover } from "@pond/ui";
 import {
@@ -56,11 +54,9 @@ import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 import {
   $collectMentionIds,
-  $insertTrigger,
   $isEditorEmpty,
   $readPrompt,
   $readSegments,
-  type AskTrigger,
 } from "./lib/editor-state";
 import { MentionChipNode, SkillChipNode, TagChipNode } from "./lib/nodes";
 import styles from "./styles.module.css";
@@ -350,15 +346,6 @@ function AskField({
     };
   }, []);
 
-  // Toolbar quick-add: drop a trigger char and refocus so its menu opens.
-  const insertTrigger = useCallback(
-    (trigger: AskTrigger) => {
-      editor.update(() => $insertTrigger(trigger));
-      queueMicrotask(() => editor.focus());
-    },
-    [editor],
-  );
-
   // Open the "create skill" dialog seeded with a slug (from the `/` menu).
   const openCreateSkill = useCallback((name: string) => {
     setCreateName(name);
@@ -588,24 +575,6 @@ function AskField({
             onClick={onPickImage}
           >
             <ImagePlus width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Add context"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => insertTrigger("@")}
-          >
-            <AtSign width={16} height={16} />
-          </button>
-          <button
-            type="button"
-            className={styles.iconBtn}
-            aria-label="Add skill"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => insertTrigger("/")}
-          >
-            <Plus width={16} height={16} />
           </button>
         </div>
 

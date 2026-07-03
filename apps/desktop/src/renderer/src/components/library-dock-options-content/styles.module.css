@@ -1,0 +1,31 @@
+/* Flat "view options" panel morphed out of the pill. Groups sit at a
+   comfortable menu width with a small internal padding; the pill supplies the
+   surface (radius + shadow), so no extra ring here. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 280px;
+  padding: 4px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+  padding: 4px 8px 0;
+}
+
+.headerTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.divider {
+  height: 0;
+  margin: 4px 8px;
+  border: 0;
+  border-top: 1px solid var(--ds-gray-a3);
+}

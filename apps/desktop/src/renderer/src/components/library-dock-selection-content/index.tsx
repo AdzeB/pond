@@ -6,23 +6,24 @@ import {
   IconWandSparkleFill18 as Wand,
 } from "@pond/icons/fill/18";
 import { motion } from "motion/react";
+import { forwardRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { selectAllInView } from "@/lib/save/selection";
-import { bouncySpring, snappySpring } from "@/lib/ui/motion";
+import { snappySpring } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-export function SelectionContent() {
+export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
   const dock = useDock();
 
   return (
     <motion.div
+      ref={ref}
       key="selection"
       className={styles.row}
-      layout="position"
+      transition={dock.swapTransition}
       {...dock.swap}
-      transition={bouncySpring}
     >
       <button
         type="button"
@@ -106,4 +107,5 @@ export function SelectionContent() {
       </button>
     </motion.div>
   );
-}
+});
+SelectionContent.displayName = "SelectionContent";

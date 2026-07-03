@@ -2,7 +2,6 @@
   position: fixed;
   bottom: calc(var(--ds-mac-inset, 16px) + 4px);
   left: 50%;
-
   z-index: 20;
   display: flex;
   align-items: center;
@@ -11,18 +10,82 @@
   transform: translateX(-50%);
 }
 
+/* Family (connectkit) morph: the pill's real width/height (set from the measured
+   viewport in index.tsx) transition via CSS — matching connectkit's
+   `--duration: 200ms; --ease: cubic-bezier(0.25, 0.1, 0.25, 1)`. Content is never
+   scaled/distorted; `overflow: hidden` clips the incoming/outgoing views to the
+   morphing box while they crossfade. */
 .pill {
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 4px;
+  z-index: 1;
+  box-sizing: border-box;
+  overflow: hidden;
   pointer-events: auto;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-5);
+  transition:
+    width 200ms cubic-bezier(0.25, 0.1, 0.25, 1),
+    height 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
-.beam {
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+}
+
+/* Invisible full-viewport catcher shown while a menu-like view (new/options/
+   library) is open, so clicking anywhere outside the pill collapses it — the
+   popover-style dismissal, without a popover. Sits below the pill (z-index). */
+.backdrop {
+  position: fixed;
+  inset: 0;
   z-index: 0;
-  pointer-events: none;
+  padding: 0;
+  appearance: none;
+  pointer-events: auto;
+  cursor: default;
+  outline: none;
+  background: transparent;
+  border: 0;
+}
+
+/* The viewport is what we measure to drive the pill's size. It's absolutely
+   centered so it keeps its natural (shrink-to-fit) size regardless of the pill's
+   animated size, and so content stays centered while the box morphs. All views
+   share one grid cell so an outgoing + incoming view stack (never sum widths);
+   the viewport then measures only the active view. */
+.viewport {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  /* max-content keeps the natural (unwrapped) size regardless of the pill's
+     animated width — without it, an absolutely-positioned shrink-to-fit element
+     inside the 0-width morphing pill collapses to min-content and the dock
+     appears to vanish. */
+  width: max-content;
+  padding: 4px;
+  transform: translate(-50%, -50%);
+}
+
+.viewport[data-card="true"] {
+  padding: 0;
+}
+
+.viewport > * {
+  grid-area: 1 / 1;
+}
+
+.askRow {
+  display: inline-flex;
+  align-items: center;
+}
+
+.searchRow {
+  display: inline-flex;
+  align-items: center;
 }

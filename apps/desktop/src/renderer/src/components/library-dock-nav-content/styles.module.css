@@ -50,6 +50,57 @@
   }
 }
 
+/* The library glyph trigger. Inside the pill it sheds floating chrome and lets
+   the pond glyph carry the identity, matching the old dock switcher trigger. */
+.libraryTrigger {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 4px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+
+  &:hover .glyph {
+    transform: scale(1.06);
+  }
+
+  &:active .glyph {
+    transform: scale(0.92);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.glyph {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-2);
+  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+
+  &[data-icon] {
+    color: #fff;
+  }
+}
+
 .indicator {
   position: absolute;
   inset: 2px;

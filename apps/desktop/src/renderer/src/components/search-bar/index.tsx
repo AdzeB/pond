@@ -127,7 +127,10 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   }, [editor]);
 
   return (
-    <motion.div layout className={styles.card}>
+    // No `layout` here: the dock pill owns the size morph. An inner `layout`
+    // projects from a stale origin inside the pill's popLayout crossfade,
+    // producing a scale/translate slide-in artifact.
+    <motion.div className={styles.card}>
       <div className={styles.editor}>
         <Search
           className={styles.leadIcon}

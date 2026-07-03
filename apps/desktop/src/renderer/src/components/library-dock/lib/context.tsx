@@ -1,13 +1,16 @@
+import type { TargetAndTransition, Transition } from "motion/react";
 import { createContext, type ReactNode, type RefObject, use } from "react";
 import type { DockTab } from "./nav-tabs";
 import type { DockView } from "./types";
 
 // Reduced-motion-aware enter/exit used by every content module so they all
-// cross-fade in lockstep with the pill's width morph.
+// cross-fade in lockstep with the pill's width morph. `TargetAndTransition`
+// allows string values (e.g. `filter: "blur(6px)"`) and a per-variant
+// `transition` (e.g. delaying the incoming opacity), Family-style.
 export interface SwapVariants {
-  initial: Record<string, number>;
-  animate: Record<string, number>;
-  exit: Record<string, number>;
+  initial: TargetAndTransition;
+  animate: TargetAndTransition;
+  exit: TargetAndTransition;
 }
 
 // Single dependency-injection value. `Root` is the only place that resolves
@@ -27,6 +30,12 @@ export interface DockContextValue {
   closeAsk: () => void;
   openSearch: () => void;
   closeSearch: () => void;
+  openNew: () => void;
+  closeNew: () => void;
+  openOptions: () => void;
+  closeOptions: () => void;
+  openLibrary: () => void;
+  closeLibrary: () => void;
   clearResults: () => void;
   destructive: () => void;
   runSelectionTask: () => void;
@@ -35,6 +44,10 @@ export interface DockContextValue {
   // meta
   isPreview: boolean;
   swap: SwapVariants;
+  swapTransition: Transition;
+  // Spring for a card view's nested `layout` scale-correction, matched to the
+  // pill so the box morph and its content settle together.
+  sizeTransition: Transition;
   pillRef: RefObject<HTMLDivElement | null>;
 }
 

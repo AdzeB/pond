@@ -9,31 +9,48 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
-import { LibrarySwitcher } from "@/components/library-switcher";
-import { ViewMenu } from "@/components/library-view-menu";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
-import { bouncySpring, gentleSpring } from "@/lib/ui/motion";
-import { newSave } from "@/stores/new-save";
+import { usePonds } from "@/hooks/use-ponds";
+import { gentleSpring } from "@/lib/ui/motion";
+import { glyphKind, PondGlyph } from "@/lib/ui/pond-icons";
 import styles from "./styles.module.css";
 
 export function NavContent() {
   const dock = useDock();
   const agentAvailable = useAgentAvailable();
+  const { active } = usePonds();
 
   return (
-    <motion.div
-      key="nav"
-      className={styles.row}
-      layout="position"
-      {...dock.swap}
-      transition={bouncySpring}
-    >
-      <LibrarySwitcher variant="dock" />
+    <div className={styles.row}>
+      <button
+        type="button"
+        className={styles.libraryTrigger}
+        aria-label={`Library menu (${active?.name ?? "Library"})`}
+        onClick={dock.openLibrary}
+      >
+        <span
+          className={styles.glyph}
+          data-icon={
+            active && glyphKind(active.avatar) === "icon" ? true : undefined
+          }
+          style={{ background: active?.color ?? undefined }}
+        >
+          {active ? (
+            <PondGlyph
+              avatar={active.avatar}
+              name={active.name}
+              iconSize={16}
+            />
+          ) : (
+            "P"
+          )}
+        </span>
+      </button>
       <button
         type="button"
         className={styles.item}
         aria-label="New"
-        onClick={() => newSave.open()}
+        onClick={dock.openNew}
       >
         <New />
       </button>
@@ -104,20 +121,16 @@ export function NavContent() {
         </Tooltip>
       )}
 
-      <ViewMenu
-        side="top"
-        align="center"
-        anchor={() => dock.pillRef.current}
-        trigger={
-          <button
-            type="button"
-            className={styles.item}
-            aria-label="View options"
-          >
-            <ViewIcon />
-          </button>
-        }
-      />
-    </motion.div>
+      <Tooltip label="View options" side="top">
+        <button
+          type="button"
+          className={styles.item}
+          aria-label="View options"
+          onClick={dock.openOptions}
+        >
+          <ViewIcon />
+        </button>
+      </Tooltip>
+    </div>
   );
 }

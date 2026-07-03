@@ -1,0 +1,42 @@
+/* A single capture row: link glyph, the input, and the Add affordance. Sized to
+   a comfortable link-entry width. The pill supplies the surface, so the field
+   sheds its own chrome to melt into the row rather than nesting a box in a box. */
+.card {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 360px;
+  padding: 8px;
+}
+
+.inputRoot {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.inputRoot .inputField {
+  height: 24px;
+  min-height: 24px;
+  padding-top: 0;
+  padding-bottom: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.inputRoot .inputField:hover {
+  box-shadow: none;
+}
+
+.inputRoot .inputField:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.kbd {
+  margin-left: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.7;
+}
