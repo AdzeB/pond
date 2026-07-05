@@ -1,0 +1,270 @@
+.container {
+  width: 100%;
+  min-width: 0;
+  user-select: none;
+}
+
+/* Keep real text fields selectable even though the grid disables selection. */
+.container :is(input, textarea, [contenteditable="true"]) {
+  user-select: text;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+
+.header-row {
+  display: grid;
+  align-items: center;
+  height: 28px;
+}
+
+.head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 28px;
+  padding: 0 12px;
+}
+
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  z-index: 1;
+  width: 6px;
+  height: 100%;
+  touch-action: none;
+  cursor: col-resize;
+}
+
+.resize-handle::after {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 2px;
+  width: 2px;
+  content: "";
+  background: transparent;
+  border-radius: 1px;
+  transition: background var(--ds-duration-fast, 0.12s) ease;
+}
+
+.resize-handle:hover::after {
+  background: var(--ds-gray-a6);
+}
+
+.head[data-align="end"] {
+  justify-content: flex-end;
+}
+
+.head[data-align="center"] {
+  justify-content: center;
+}
+
+.head-static {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.select-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0;
+}
+
+.sort-button {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  transition: color var(--ds-duration-fast, 0.12s) ease;
+}
+
+.sort-button:hover,
+.sort-button[data-active] {
+  color: var(--ds-gray-12);
+}
+
+.sort-caret {
+  color: var(--ds-gray-9);
+  transform: rotate(180deg);
+}
+
+.sort-caret[data-desc] {
+  transform: none;
+}
+
+/* ── Body / rows ─────────────────────────────────────────────────────────── */
+
+.body {
+  min-width: 0;
+}
+
+.row {
+  display: grid;
+  align-items: center;
+  min-height: 44px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-fast, 0.12s) ease;
+}
+
+.row:hover,
+.row:focus-visible {
+  outline: none;
+  background: var(--ds-gray-2);
+}
+
+/*
+ * A contiguous run of selected rows reads as one rounded block: rounded on the
+ * top of the first row and the bottom of the last, square everywhere in between.
+ * A lone selected row matches both rules and stays fully rounded.
+ */
+.row-selected {
+  background: var(--ds-accent-a1);
+  border-radius: 0;
+}
+
+.row-selected:not(.row-selected + .row-selected) {
+  border-top-left-radius: var(--ds-radius-md);
+  border-top-right-radius: var(--ds-radius-md);
+}
+
+.row-selected:not(:has(+ .row-selected)) {
+  border-bottom-right-radius: var(--ds-radius-md);
+  border-bottom-left-radius: var(--ds-radius-md);
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 12px;
+}
+
+.cell[data-align="end"] {
+  justify-content: flex-end;
+}
+
+.cell[data-align="center"] {
+  justify-content: center;
+}
+
+/* ── Built-in select + caret cells ───────────────────────────────────────── */
+
+.select-cell,
+.caret-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0;
+}
+
+.check {
+  flex: none;
+  opacity: 0;
+  scale: 0.8;
+  transition: opacity var(--ds-duration-fast, 0.12s) ease;
+}
+
+.row:hover .check,
+.header-row:hover .check,
+.check[data-active],
+.check[data-checked] {
+  opacity: 1;
+}
+
+.caret {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  transition: transform var(--ds-duration-fast, 0.12s) ease;
+}
+
+.caret[data-open] {
+  transform: rotate(90deg);
+}
+
+/*
+ * ── Floating bulk-action bar ─────────────────────────────────────────────
+ * A centered pill fixed to the bottom of the viewport. Consumers can shift it
+ * horizontally (e.g. to account for a sidebar) via --data-table-action-bar-offset
+ * without having to restyle the pill.
+ */
+.action-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 8px 7px 14px;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a5);
+  border-radius: var(--ds-radius-full, 999px);
+  box-shadow:
+    0 1px 2px var(--ds-gray-a4),
+    0 12px 32px -8px var(--ds-gray-a8);
+  transform: translateX(calc(-50% + var(--data-table-action-bar-offset, 0px)));
+  animation: data-table-action-bar-in var(--ds-duration-fast, 0.16s) ease;
+}
+
+.action-bar-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 2px;
+  background: var(--ds-gray-a5);
+}
+
+@keyframes data-table-action-bar-in {
+  from {
+    opacity: 0;
+    transform: translate(
+      calc(-50% + var(--data-table-action-bar-offset, 0px)),
+      8px
+    );
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(
+      calc(-50% + var(--data-table-action-bar-offset, 0px)),
+      0
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .action-bar {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .check,
+  .caret,
+  .row {
+    transition: none;
+  }
+}

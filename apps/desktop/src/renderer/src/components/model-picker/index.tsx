@@ -1,9 +1,5 @@
-import {
-  IconCheckOutline18 as Check,
-  IconChevronExpandYOutline18 as Expand,
-  IconGlobeOutline18 as Globe,
-} from "@pond/icons/outline/18";
-import { Input, Popover } from "@pond/ui";
+import { IconGlobeOutline18 as Globe } from "@pond/icons/outline/18";
+import { Combobox } from "@pond/ui";
 import { useMemo, useState } from "react";
 import {
   findModel,
@@ -20,157 +16,128 @@ interface Props {
   onChange: (id: string) => void;
 }
 
+// A group of model ids under a provider/family heading. The free-form "use
+// this id" candidate is appended as its own "Custom" group.
+type Group = { value: string; items: string[] };
+
 export function ModelPicker({ catalog, value, onChange }: Props) {
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const selectedId = value.trim() || catalog.defaultId;
-  const selected = findModel(catalog, selectedId);
   const [activeId, setActiveId] = useState(selectedId);
 
+  const selected = findModel(catalog, selectedId);
   const triggerLabel = selected?.name ?? selectedId;
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return catalog.models;
-    return catalog.models.filter((m) =>
-      `${m.name} ${m.id} ${m.group}`.toLowerCase().includes(needle),
-    );
-  }, [query, catalog.models]);
-
-  const groups = useMemo(() => groupedModels(filtered), [filtered]);
 
   // Offer a custom id when the search looks like a model path and matches nothing.
   const trimmed = query.trim();
   const customCandidate =
     trimmed.includes("/") && !findModel(catalog, trimmed) ? trimmed : null;
 
+  const groups = useMemo<Group[]>(() => {
+    const base: Group[] = groupedModels(catalog.models).map((g) => ({
+      value: g.group,
+      items: g.models.map((m) => m.id),
+    }));
+    if (customCandidate) {
+      base.push({ value: "Custom", items: [customCandidate] });
+    }
+    return base;
+  }, [catalog.models, customCandidate]);
+
   const active = findModel(catalog, activeId);
 
-  const choose = (id: string) => {
-    onChange(id);
-    setOpen(false);
+  const labelFor = (id: string) => {
+    const model = findModel(catalog, id);
+    return model ? `${model.name} ${model.id} ${model.group}` : id;
   };
 
   return (
-    <Popover.Root
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) {
+    <Combobox.Root<string>
+      items={groups}
+      value={selectedId}
+      onValueChange={(next) => onChange(next ?? "")}
+      onInputValueChange={setQuery}
+      onItemHighlighted={(id) => setActiveId(id || selectedId)}
+      onOpenChange={(open) => {
+        if (open) {
           setQuery("");
           setActiveId(selectedId);
         }
       }}
+      itemToStringLabel={labelFor}
     >
-      <Popover.Trigger
-        className={styles.trigger}
-        aria-label={`Model: ${triggerLabel}`}
-      >
-        <span className={styles.triggerLabel}>{triggerLabel}</span>
-        <Expand width={14} height={14} className={styles.triggerIcon} />
-      </Popover.Trigger>
+      <Combobox.Trigger aria-label={`Model: ${triggerLabel}`}>
+        <Combobox.Value>{() => triggerLabel}</Combobox.Value>
+      </Combobox.Trigger>
 
-      <Popover.Portal>
-        <Popover.Positioner
+      <Combobox.Portal>
+        <Combobox.Backdrop />
+        <Combobox.Positioner
           align="end"
-          sideOffset={6}
-          style={
-            { "--popup-width": "auto", "--popup-min-width": "0px" } as Record<
-              string,
-              string
-            >
-          }
+          style={{ "--popup-width": "auto" } as React.CSSProperties}
         >
-          <Popover.Popup className={styles.popup}>
+          <Combobox.Popup className={styles.popup}>
             <div className={styles.panel}>
               <div className={styles.left}>
-                <Input.Field
+                <Combobox.Input
                   autoFocus
-                  data-size="sm"
-                  className={styles.search}
                   placeholder={catalog.searchPlaceholder}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
                 />
-
-                <div className={styles.list}>
-                  {groups.map(({ group, models }) => (
-                    <div key={group} className={styles.group}>
-                      <div className={styles.groupLabel}>{group}</div>
-                      {models.map((model) => (
-                        <ModelRow
-                          key={model.id}
-                          model={model}
-                          selected={model.id === selectedId}
-                          onActivate={() => setActiveId(model.id)}
-                          onChoose={() => choose(model.id)}
-                        />
-                      ))}
-                    </div>
-                  ))}
-
-                  {customCandidate ? (
-                    <button
-                      type="button"
-                      className={styles.row}
-                      onMouseEnter={() => setActiveId("")}
-                      onFocus={() => setActiveId("")}
-                      onClick={() => choose(customCandidate)}
-                    >
-                      <span className={styles.rowName}>
-                        Use “{customCandidate}”
-                      </span>
-                      <span className={styles.rowMeta}>Custom</span>
-                    </button>
-                  ) : null}
-
-                  {groups.length === 0 && !customCandidate ? (
-                    <div className={styles.empty}>No models match.</div>
-                  ) : null}
-                </div>
+                <Combobox.List>
+                  {(group: Group) => (
+                    <Combobox.Group key={group.value} items={group.items}>
+                      <Combobox.GroupLabel>{group.value}</Combobox.GroupLabel>
+                      <Combobox.Collection>
+                        {(id: string) => {
+                          const model = findModel(catalog, id);
+                          if (!model)
+                            return (
+                              <Combobox.Item key={id} value={id}>
+                                <Combobox.ItemLabel>
+                                  Use “{id}”
+                                </Combobox.ItemLabel>
+                                <Combobox.ItemEnd>
+                                  <Combobox.ItemMeta>Custom</Combobox.ItemMeta>
+                                </Combobox.ItemEnd>
+                              </Combobox.Item>
+                            );
+                          return (
+                            <Combobox.Item key={id} value={id}>
+                              <Combobox.ItemLabel>
+                                {model.name}
+                              </Combobox.ItemLabel>
+                              <Combobox.ItemEnd>
+                                {model.multilingual ? (
+                                  <Globe
+                                    width={13}
+                                    height={13}
+                                    aria-label="Multilingual"
+                                  />
+                                ) : null}
+                                {model.meta ? (
+                                  <Combobox.ItemMeta>
+                                    {model.meta}
+                                  </Combobox.ItemMeta>
+                                ) : null}
+                                <Combobox.ItemIndicator />
+                              </Combobox.ItemEnd>
+                            </Combobox.Item>
+                          );
+                        }}
+                      </Combobox.Collection>
+                    </Combobox.Group>
+                  )}
+                </Combobox.List>
+                <Combobox.Empty>No models match.</Combobox.Empty>
               </div>
 
               <InfoPanel model={active} fallbackId={activeId} />
             </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-}
-
-function ModelRow({
-  model,
-  selected,
-  onActivate,
-  onChoose,
-}: {
-  model: PickerModel;
-  selected: boolean;
-  onActivate: () => void;
-  onChoose: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      className={styles.row}
-      data-selected={selected || undefined}
-      onMouseEnter={onActivate}
-      onFocus={onActivate}
-      onClick={onChoose}
-    >
-      <span className={styles.rowName}>{model.name}</span>
-      <span className={styles.rowEnd}>
-        {model.multilingual ? (
-          <Globe width={13} height={13} aria-label="Multilingual" />
-        ) : null}
-        {model.meta ? (
-          <span className={styles.rowMeta}>{model.meta}</span>
-        ) : null}
-        {selected ? <Check width={14} height={14} /> : null}
-      </span>
-    </button>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
   );
 }
 

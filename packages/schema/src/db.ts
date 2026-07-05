@@ -206,6 +206,8 @@ export const tasks = sqliteTable(
 export const tags = sqliteTable("tags", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  description: text("description"),
+  color: text("color"),
   starred: integer("starred", { mode: "boolean" }).notNull().default(false),
   // Soft-retire: archived tags drop out of the default list but stay on saves.
   archived: integer("archived", { mode: "boolean" }).notNull().default(false),
@@ -219,6 +221,7 @@ export const tags = sqliteTable("tags", {
 export const tagGroups = sqliteTable("tag_groups", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  description: text("description"),
   color: text("color"),
   sortOrder: integer("sort_order").notNull().default(0),
   collapsed: integer("collapsed", { mode: "boolean" }).notNull().default(false),

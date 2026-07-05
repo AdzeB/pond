@@ -3,8 +3,16 @@ export { Accordion } from "./accordion";
 export { AlertDialog } from "./alert-dialog";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
-export { ColorField } from "./color-field";
+export { ColorField, ColorPicker } from "./color-field";
+export { Combobox } from "./combobox";
 export { ContextMenu } from "./context-menu";
+export {
+  DataTable,
+  type DataTableProviderProps,
+  type RenderRowArgs,
+  type TableColumn,
+  useDataTable,
+} from "./data-table";
 export { Dialog } from "./dialog";
 export { Drawer } from "./drawer";
 export { Field } from "./field";
@@ -19,6 +27,7 @@ export { Sidebar } from "./sidebar";
 export { Slider } from "./slider";
 export { Stepper } from "./stepper";
 export { Switch } from "./switch";
+export { Table } from "./table";
 export { TitleBar } from "./title-bar";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";

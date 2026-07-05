@@ -186,12 +186,13 @@ export async function mergeTags(
 }
 
 export interface TagPatch {
-  archived?: boolean;
   starred?: boolean;
+  description?: string | null;
+  color?: string | null;
 }
 
-// Restyle a single tag (archive / star). Name changes go through renameTag
-// because they have to rewrite every save's tag list.
+// Restyle a single tag (star / description / colour). Name changes go through
+// renameTag because they have to rewrite every save's tag list.
 export async function updateTag(
   name: string,
   patch: TagPatch,
@@ -202,8 +203,16 @@ export async function updateTag(
   if (!row) return { ok: false };
 
   const next: TagPatch = {};
-  if ("archived" in patch) next.archived = Boolean(patch.archived);
   if ("starred" in patch) next.starred = Boolean(patch.starred);
+  if ("description" in patch) {
+    const d =
+      typeof patch.description === "string" ? patch.description.trim() : "";
+    next.description = d ? d : null;
+  }
+  if ("color" in patch) {
+    const c = typeof patch.color === "string" ? patch.color.trim() : "";
+    next.color = c ? c : null;
+  }
   if (Object.keys(next).length === 0) return { ok: true };
 
   await executeTransaction({

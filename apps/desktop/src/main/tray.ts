@@ -225,7 +225,7 @@ async function buildMenu(
     },
     { type: "separator" },
     {
-      label: "Launch at Login",
+      label: "Launch on startup",
       type: "checkbox",
       checked: loginItem.openAtLogin,
       click: (menuItem) => {

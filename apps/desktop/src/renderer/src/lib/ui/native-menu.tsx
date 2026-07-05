@@ -6,13 +6,15 @@
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { type CSSProperties, useMemo } from "react";
+import { type CSSProperties, type ReactNode, useMemo } from "react";
 
 export interface NativeMenuItem {
   type?: "normal" | "separator" | "submenu" | "checkbox";
   label?: string;
   enabled?: boolean;
   checked?: boolean;
+  /** Leading glyph rendered before the label. */
+  icon?: ReactNode;
   /** Symbol tokens (e.g. ["⌘", "C"]) shown right-aligned; display only. */
   shortcut?: string[];
   submenu?: NativeMenuItem[];
@@ -50,6 +52,7 @@ function toSpec(item: NativeMenuItem): MenuItemSpec {
     return {
       type: "submenu",
       label: item.label ?? "",
+      icon: item.icon,
       disabled: item.enabled === false,
       items: item.submenu.map(toSpec),
     };
@@ -58,10 +61,17 @@ function toSpec(item: NativeMenuItem): MenuItemSpec {
   const onSelect = item.onSelect;
   return {
     label: item.label ?? "",
+    icon: item.icon,
     disabled: item.enabled === false,
     shortcut: item.shortcut,
     onClick: onSelect ? () => void onSelect() : undefined,
   };
+}
+
+/** Convert the imperative menu description into `Menu.Items` specs so the same
+ * builders can drive both the right-click context menu and an anchored dropdown. */
+export function toMenuSpecs(items: NativeMenuItem[]): MenuItemSpec[] {
+  return items.map(toSpec);
 }
 
 export function showContextMenu(items: NativeMenuItem[]): Promise<void> {

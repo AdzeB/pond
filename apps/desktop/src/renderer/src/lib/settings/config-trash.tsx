@@ -1,17 +1,16 @@
-import type { SectionConfig } from "@/components/settings-engine";
+import { defineSection } from "@/lib/settings/engine-types";
 
-export const trashSection: SectionConfig = {
+export const trashSection = defineSection("trash", {
   title: "Trash",
   description: "How deleted saves are kept and cleared.",
-  prefsKey: "trash",
   groups: [
     {
-      title: "Auto-empty",
+      title: "Auto-Empty",
       items: [
         {
           control: "select",
           key: "autoEmptyDays",
-          title: "Empty automatically",
+          title: "Empty Automatically",
           description: "Permanently remove trashed saves after this long.",
           options: [
             { value: null, label: "Never" },
@@ -29,10 +28,10 @@ export const trashSection: SectionConfig = {
         {
           control: "switch",
           key: "confirmBeforeEmpty",
-          title: "Confirm before emptying",
+          title: "Confirm Before Emptying",
           description: "Ask for confirmation before clearing the trash.",
         },
       ],
     },
   ],
-};
+});

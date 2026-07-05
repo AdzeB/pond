@@ -27,14 +27,33 @@ export const tagsQueries: QueryHandlerMap = {
     const { updateTag } = await import("../../core/tags");
     const patch = (params.patch as Record<string, unknown>) ?? {};
     return await updateTag(String(params.name ?? ""), {
-      ...("archived" in patch ? { archived: Boolean(patch.archived) } : {}),
       ...("starred" in patch ? { starred: Boolean(patch.starred) } : {}),
+      ...("description" in patch
+        ? {
+            description:
+              patch.description == null ? null : String(patch.description),
+          }
+        : {}),
+      ...("color" in patch
+        ? { color: patch.color == null ? null : String(patch.color) }
+        : {}),
     });
   },
 
   async "tags.delete"(params) {
     const { deleteTag } = await import("../../core/tags");
     return await deleteTag(String(params.name ?? ""));
+  },
+
+  async "tags.convertToGroup"(params) {
+    const { createGroup } = await import("../../core/tag-groups");
+    const { deleteTag } = await import("../../core/tags");
+    const name = String(params.name ?? "").trim();
+    if (!name) return { ok: false };
+    const created = await createGroup({ name });
+    if (!created.ok) return { ok: false };
+    await deleteTag(name);
+    return { ok: true };
   },
 
   async "tags.setForSave"(params) {

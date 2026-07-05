@@ -360,11 +360,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
                 label: "Open IPC Inspector",
                 click: sendMenuAction("developer.ipc-inspector"),
               },
-              { type: "separator" as const },
-              {
-                label: "Component Library",
-                click: navTo("/components"),
-              },
             ],
           },
         ] satisfies Electron.MenuItemConstructorOptions[])

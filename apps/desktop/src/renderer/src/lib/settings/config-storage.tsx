@@ -1,14 +1,13 @@
-import type { SectionConfig } from "@/components/settings-engine";
 import { LocationRow } from "@/components/settings-section-storage";
+import { defineSection } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;
 
 const guardsOn = (v: Values) => v.guardsEnabled === true;
 
-export const storageSection: SectionConfig = {
+export const storageSection = defineSection("storage", {
   title: "Storage",
   description: "Where your library lives and how much space it may use.",
-  prefsKey: "storage",
   groups: [
     {
       title: "Location",
@@ -16,19 +15,19 @@ export const storageSection: SectionConfig = {
       render: () => <LocationRow />,
     },
     {
-      title: "Usage guard",
+      title: "Usage Guard",
       items: [
         {
           control: "switch",
           key: "guardsEnabled",
-          title: "Watch library size",
+          title: "Watch Library Size",
           description:
             "Track disk usage and act when the library grows too large.",
         },
         {
           control: "select",
           key: "maxLibraryGb",
-          title: "Size limit",
+          title: "Size Limit",
           description:
             "Trigger the action below once the library exceeds this.",
           visible: guardsOn,
@@ -45,7 +44,7 @@ export const storageSection: SectionConfig = {
         {
           control: "select",
           key: "warnAtPercent",
-          title: "Warn at",
+          title: "Warn At",
           description:
             "Show a banner when usage reaches this share of the limit.",
           visible: guardsOn,
@@ -59,7 +58,7 @@ export const storageSection: SectionConfig = {
         {
           control: "select",
           key: "action",
-          title: "When the limit is hit",
+          title: "When the Limit Is Reached",
           description: "What Pond does once the library passes the size limit.",
           visible: guardsOn,
           options: [
@@ -71,7 +70,7 @@ export const storageSection: SectionConfig = {
         {
           control: "select",
           key: "watchIntervalMinutes",
-          title: "Check interval",
+          title: "Check Interval",
           description: "How often to re-measure disk usage.",
           visible: guardsOn,
           options: [
@@ -84,4 +83,4 @@ export const storageSection: SectionConfig = {
       ],
     },
   ],
-};
+});

@@ -26,6 +26,7 @@ import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { setAppRouter } from "./lib/ui/app-router";
 import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
+import { usePrefs } from "./stores/prefs";
 
 declare global {
   interface Window {
@@ -51,15 +52,58 @@ declare module "@tanstack/react-router" {
   }
 }
 
+const LAST_PATH_KEY = "pond:lastPath";
+const STARTUP_PAGE_KEY = "pond:startupPage";
+
+// Fixed pages the "On startup" preference can pin to. "continue" is handled
+// separately by restoring the persisted last path.
+const STARTUP_ROUTES: Record<string, string> = {
+  library: "/",
+  sources: "/sources",
+  trash: "/trash",
+  settings: "/settings",
+};
+
+function readStored(key: string): string | null {
+  if (typeof localStorage === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+// Resolve the initial route synchronously (before prefs finish loading over
+// IPC) by reading a localStorage mirror of the startup preference. Defaults to
+// resuming the last route; a full quit or reload both land you back here.
+function initialPath(): string {
+  const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
+  if (startup !== "continue" && STARTUP_ROUTES[startup]) {
+    return STARTUP_ROUTES[startup];
+  }
+  return readStored(LAST_PATH_KEY) || "/";
+}
+
 function buildRouter() {
-  return createRouter({
+  const router = createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: ["/"] }),
+    history: createMemoryHistory({ initialEntries: [initialPath()] }),
     defaultPreload: "intent",
     defaultErrorComponent: ({ error, reset }) => (
       <ErrorScreen error={error} reset={reset} />
     ),
   });
+  // Memory history lives only in RAM, so a reload (Cmd+R) or relaunch would
+  // otherwise reset us to "/". Persist the resolved path so "Continue where you
+  // left off" can restore it on next launch.
+  router.subscribe("onResolved", () => {
+    try {
+      localStorage.setItem(LAST_PATH_KEY, router.state.location.pathname);
+    } catch {
+      /* best-effort; navigation still works without persistence */
+    }
+  });
+  return router;
 }
 
 export function App() {
@@ -72,6 +116,19 @@ export function App() {
   useEffect(() => {
     setAppRouter(router);
   }, [router]);
+
+  // Mirror the startup preference into localStorage so the next cold launch can
+  // resolve the initial route synchronously, before prefs load over IPC.
+  const [windowPrefs] = usePrefs("window");
+  const startupPage = windowPrefs?.startupPage;
+  useEffect(() => {
+    if (!startupPage) return;
+    try {
+      localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
+    } catch {
+      /* best-effort; falls back to "continue" when unreadable */
+    }
+  }, [startupPage]);
   const queryClient = useMemo(
     () =>
       new QueryClient({

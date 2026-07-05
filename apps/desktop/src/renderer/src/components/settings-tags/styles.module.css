@@ -1,68 +1,20 @@
-.page {
+.content {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: center;
-  min-width: 0;
-  padding: 32px 24px 56px;
+  margin-top: -16px;
 }
-
-.head,
-.toolbar,
-.table {
-  width: 100%;
-  max-width: 640px;
-}
-
-/* ── Header ───────────────────────────────────────────────────────────── */
-
-.head {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-  letter-spacing: -0.01em;
-}
-
-.description {
-  max-width: 64ch;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ds-gray-10);
-}
-
-/* ── Toolbar ──────────────────────────────────────────────────────────── */
 
 .toolbar {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
+  margin-left: 80px;
 }
 
 .search {
-  position: relative;
-  flex: 0 1 280px;
-  min-width: 160px;
-}
-
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 9px;
-  color: var(--ds-gray-9);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
-.search-field {
-  padding-left: 30px;
+  width: 100%;
+  max-width: 320px;
 }
 
 .spacer {
@@ -76,53 +28,54 @@
   color: var(--ds-gray-12);
 }
 
-/* ── List of cards ────────────────────────────────────────────────────── */
-
-.table {
-  display: flex;
-  flex-direction: column;
-}
-
-.body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.table-wrap {
   min-width: 0;
 }
 
-/* Each top-level item (a group with its labels, or a stand-alone label) is
-   its own bordered card; expanded group children live inside the same card. */
-.card {
-  overflow: hidden;
-  background: var(--ds-gray-1);
-  border: 1px solid var(--ds-gray-a4);
-  border-radius: var(--ds-radius-lg, 12px);
+/* ── Floating bulk-action bar ─────────────────────────────────────────── */
+
+/* The pill itself is styled by the DataTable primitive; we only offset it
+   horizontally so it stays centered over the content beside the settings nav. */
+.action-bar {
+  --data-table-action-bar-offset: calc(var(--settings-sidebar-width, 0px) / 2);
 }
 
-/* ── Shared name pieces (used by the inline create draft) ─────────────── */
+/* ── Name cell ─────────────────────────────────────────────────────────── */
 
 .name {
-  position: relative;
   display: flex;
   gap: 8px;
   align-items: center;
   min-width: 0;
 }
 
-.chevron-slot {
+[role="row"][data-depth="1"] .name {
+  padding-left: 26px;
+}
+
+.dot-slot {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 16px;
+  width: 22px;
 }
 
 .dot {
   flex: none;
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
+}
+
+.name-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
 }
 
 .name-input {
@@ -139,43 +92,60 @@
   border-radius: var(--ds-radius-sm, 6px);
 }
 
+/* ── Saves / last-used / created ──────────────────────────────────────── */
+
+.meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 450;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+/* ── Kebab actions ────────────────────────────────────────────────────── */
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  border-radius: var(--ds-radius-sm, 6px);
+
+  transition:
+    color var(--ds-duration-fast, 0.12s) ease,
+    background var(--ds-duration-fast, 0.12s) ease,
+    opacity var(--ds-duration-fast, 0.12s) ease;
+}
+
+.action-btn:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+}
+
 /* ── Inline create draft row ──────────────────────────────────────────── */
 
-.draft {
+.draft-row {
+  display: grid;
+  align-items: center;
+  min-height: 44px;
+}
+
+.name-cell {
   display: flex;
   align-items: center;
-  height: 44px;
-  padding: 0 16px;
-}
-
-.draft .name {
-  flex: 1;
-}
-
-/* ── Drag overlay chip ────────────────────────────────────────────────── */
-
-.overlay {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  height: 32px;
+  min-width: 0;
   padding: 0 12px;
-  font-size: 13px;
-  color: var(--ds-gray-12);
-  cursor: grabbing;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-md, 8px);
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a4),
-    0 8px 24px -6px var(--ds-gray-a8);
 }
 
-.overlay .dot {
-  width: 9px;
-  height: 9px;
-}
-
-/* ── Empty states ─────────────────────────────────────────────────────── */
+/* ── Empty state ──────────────────────────────────────────────────────── */
 
 .empty {
   display: flex;
@@ -185,18 +155,6 @@
   justify-content: center;
   padding: 64px 24px;
   text-align: center;
-}
-
-.empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  margin-bottom: 6px;
-  color: var(--ds-gray-9);
-  background: var(--ds-gray-a3);
-  border-radius: var(--ds-radius-full, 999px);
 }
 
 .empty-title {
@@ -212,6 +170,8 @@
   text-wrap: balance;
 }
 
-.empty-action {
-  margin-top: 12px;
+@media (prefers-reduced-motion: reduce) {
+  .action-btn {
+    transition: none;
+  }
 }

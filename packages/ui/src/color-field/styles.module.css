@@ -19,8 +19,15 @@
   }
 }
 
+/* No valid colour parsed yet: show an empty, dashed placeholder swatch. */
+.swatch[data-empty] {
+  background: transparent;
+  border: 1.5px dashed var(--ds-gray-a7);
+  box-shadow: none;
+}
+
 .popup {
-  padding: 0;
+  padding: 12px;
   overflow: hidden;
 }
 
@@ -35,7 +42,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
 }
 
 .header {
@@ -57,7 +63,6 @@
   font-weight: 550;
   color: var(--ds-gray-11);
   text-transform: uppercase;
-  letter-spacing: 0.02px;
 }
 
 .hexValue {

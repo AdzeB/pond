@@ -1,5 +1,12 @@
 import { clsx as cn } from "clsx";
-import { createContext, use, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  use,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   useColorArea,
   useColorSlider,
@@ -56,19 +63,21 @@ export function ColorField({
   normalize = defaultNormalize,
   className,
 }: ColorFieldProps) {
-  const [draft, setDraft] = useState(value);
+  const [text, setText] = useState(value);
 
   useEffect(() => {
-    setDraft(value);
+    setText(value);
   }, [value]);
 
-  const commit = (next: string) => {
+  // Auto-apply as the user types: any keystroke that resolves to a real colour
+  // is committed immediately; incomplete/invalid input just stays in the field.
+  const handleChange = (next: string) => {
+    setText(next);
     const normalized = normalize(next);
     if (normalized) onChange(normalized);
-    else setDraft(value);
   };
 
-  const swatch = normalize(value) ?? "#000000";
+  const normalized = normalize(text);
 
   return (
     <div className={cn(styles.root, className)}>
@@ -77,13 +86,14 @@ export function ColorField({
           type="button"
           aria-label={`${ariaLabel} picker`}
           className={styles.swatch}
-          style={{ background: swatch }}
+          data-empty={!normalized || undefined}
+          style={normalized ? { background: normalized } : undefined}
         />
         <Popover.Portal>
           <Popover.Positioner sideOffset={6} align="start">
             <Popover.Popup className={styles.popup}>
               <ColorPicker
-                value={swatch}
+                value={normalized ?? "#000000"}
                 ariaLabel={ariaLabel}
                 onChange={onChange}
               />
@@ -91,19 +101,16 @@ export function ColorField({
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
-      <Input.Field
-        aria-label={`${ariaLabel} hex`}
-        spellCheck={false}
-        autoCapitalize="off"
-        autoCorrect="off"
-        value={draft}
-        className={styles.input}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={() => commit(draft)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") commit(draft);
-        }}
-      />
+      <Input.Root>
+        <Input.Field
+          aria-label={`${ariaLabel} hex`}
+          spellCheck={false}
+          autoCapitalize="off"
+          autoCorrect="off"
+          value={text}
+          onChange={(e) => handleChange(e.target.value)}
+        />
+      </Input.Root>
     </div>
   );
 }
@@ -124,14 +131,21 @@ function usePicker(): PickerContextValue {
   return context;
 }
 
-function ColorPicker({
+/**
+ * Headless colour-picker state provider. Compose the visual parts inside it:
+ * `<ColorPicker.Root><ColorPicker.Area /><ColorPicker.Hue /></ColorPicker.Root>`.
+ * For the common bundled layout use `<ColorPicker />` directly.
+ */
+function ColorPickerRoot({
   value,
   ariaLabel,
   onChange,
+  children,
 }: {
   value: string;
   ariaLabel: string;
   onChange: (hex: string) => void;
+  children: ReactNode;
 }) {
   const [color, setColor] = useState<Color>(() => toHsb(value));
 
@@ -146,17 +160,43 @@ function ColorPicker({
 
   return (
     <PickerContext value={{ color, ariaLabel, onChange: apply }}>
-      <div className={styles.picker}>
-        <div className={styles.body}>
-          <ColorArea />
-          <HueSlider />
-        </div>
-      </div>
+      {children}
     </PickerContext>
   );
 }
 
-function ColorArea() {
+export function ColorPicker({
+  value,
+  ariaLabel,
+  onChange,
+  areaWidth = AREA_SIZE,
+  areaHeight = AREA_SIZE,
+}: {
+  value: string;
+  ariaLabel: string;
+  onChange: (hex: string) => void;
+  areaWidth?: number;
+  areaHeight?: number;
+}) {
+  return (
+    <ColorPickerRoot value={value} ariaLabel={ariaLabel} onChange={onChange}>
+      <div className={styles.picker}>
+        <div className={styles.body}>
+          <ColorArea width={areaWidth} height={areaHeight} />
+          <HueSlider height={areaHeight} />
+        </div>
+      </div>
+    </ColorPickerRoot>
+  );
+}
+
+function ColorArea({
+  width,
+  height = AREA_SIZE,
+}: {
+  width?: number;
+  height?: number;
+}) {
   const { color, ariaLabel, onChange } = usePicker();
   const inputXRef = useRef<HTMLInputElement>(null);
   const inputYRef = useRef<HTMLInputElement>(null);
@@ -185,7 +225,11 @@ function ColorArea() {
       ref={containerRef}
       {...colorAreaProps}
       className={styles.saturation}
-      style={{ ...colorAreaProps.style, width: AREA_SIZE, height: AREA_SIZE }}
+      style={{
+        ...colorAreaProps.style,
+        width: width ? `${width}px` : "100%",
+        height,
+      }}
     >
       <div
         {...thumbProps}
@@ -202,7 +246,13 @@ function ColorArea() {
   );
 }
 
-function HueSlider() {
+function HueSlider({
+  height = AREA_SIZE,
+  width = TRACK_WIDTH,
+}: {
+  height?: number;
+  width?: number;
+}) {
   const { color, ariaLabel, onChange } = usePicker();
   const { locale } = useLocale();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -233,7 +283,7 @@ function HueSlider() {
       {...trackProps}
       ref={trackRef}
       className={styles.hue}
-      style={{ ...trackProps.style, width: TRACK_WIDTH, height: AREA_SIZE }}
+      style={{ ...trackProps.style, width, height }}
     >
       <div
         {...thumbProps}
@@ -248,3 +298,7 @@ function HueSlider() {
     </div>
   );
 }
+
+ColorPicker.Root = ColorPickerRoot;
+ColorPicker.Area = ColorArea;
+ColorPicker.Hue = HueSlider;

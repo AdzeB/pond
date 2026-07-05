@@ -1,73 +1,87 @@
-import type { SectionConfig } from "@/components/settings-engine";
 import { CheckNowRow } from "@/components/settings-section-general";
+import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
-// Post-patch side effect telling main to apply saved prefs; fails open if the handler is missing.
 function runApply(channel: string): void {
   void window.pond.query(channel, {}).catch(() => {});
 }
 
-export const generalSection: SectionConfig = {
-  title: "General",
+export const generalSection = defineCustomSection({
+  title: "Preferences",
   description: "Window behavior, menu bar, and updates.",
   groups: [
-    {
-      title: "Window",
-      prefsKey: "window",
+    group.prefs("window", {
+      title: "Startup",
       items: [
         {
-          control: "switch",
-          key: "closeToTray",
-          title: "Close to tray",
-          description:
-            "Hide Pond when you close the window instead of quitting.",
-          apply: () => runApply("window.applyPrefs"),
-        },
-        {
-          control: "switch",
-          key: "launchHidden",
-          title: "Start hidden",
-          description:
-            "Launch into the tray without opening the window. Pairs with Launch at login.",
-          apply: () => runApply("window.applyPrefs"),
-        },
-        {
-          control: "switch",
-          key: "restorePosition",
-          title: "Restore window position",
-          description: "Reopen Pond where you last left it.",
-          apply: () => runApply("window.applyPrefs"),
-        },
-      ],
-    },
-    {
-      title: "Menu bar",
-      prefsKey: "quickCapture",
-      items: [
-        {
-          control: "switch",
-          key: "menuBarIcon",
-          title: "Show menu bar icon",
-          description:
-            "Keep Pond reachable from the system tray with the window hidden.",
-          apply: () => runApply("quickCapture.applyPrefs"),
+          control: "select",
+          key: "startupPage",
+          title: "Startup Behavior",
+          description: "Where Pond opens when you launch.",
+          options: [
+            { value: "continue", label: "Last Screen" },
+            { value: "library", label: "Library" },
+            { value: "sources", label: "Sources" },
+            { value: "trash", label: "Trash" },
+            { value: "settings", label: "Settings" },
+          ],
         },
         {
           control: "switch",
           key: "launchAtLogin",
-          title: "Launch at login",
+          title: "Launch at Login",
           description: "Start Pond when you sign in to your computer.",
+          prefsKey: "quickCapture",
+          apply: () => runApply("quickCapture.applyPrefs"),
+        },
+        {
+          control: "switch",
+          key: "launchHidden",
+          title: "Launch Hidden",
+          description: "Launch into the tray without opening the window.",
+          apply: () => runApply("window.applyPrefs"),
+        },
+      ],
+    }),
+    group.prefs("window", {
+      title: "Window",
+      items: [
+        {
+          control: "switch",
+          key: "restorePosition",
+          title: "Restore Window Position",
+          description: "Reopen Pond where you last left it.",
+          apply: () => runApply("window.applyPrefs"),
+        },
+        {
+          control: "switch",
+          key: "closeToTray",
+          title: "Close to Tray",
+          description:
+            "Hide Pond when you close the window instead of quitting.",
+          apply: () => runApply("window.applyPrefs"),
+        },
+      ],
+    }),
+    group.prefs("quickCapture", {
+      title: "Menu Bar",
+      items: [
+        {
+          control: "switch",
+          key: "menuBarIcon",
+          title: "Menu Bar Icon",
+          description:
+            "Keep Pond reachable from the system tray with the window hidden.",
           apply: () => runApply("quickCapture.applyPrefs"),
         },
       ],
-    },
-    {
+    }),
+    group.prefs("updates", {
       title: "Updates",
-      prefsKey: "updates",
       items: [
         {
           control: "switch",
           key: "autoInstall",
-          title: "Automatic updates",
+          title: "Automatic Updates",
           description: "Download updates as they appear. Apply on next launch.",
           apply: () => runApply("updates.applyPrefs"),
         },
@@ -77,18 +91,6 @@ export const generalSection: SectionConfig = {
           render: () => <CheckNowRow />,
         },
       ],
-    },
-    {
-      title: "Advanced",
-      prefsKey: "developer",
-      items: [
-        {
-          control: "switch",
-          key: "developerMode",
-          title: "Show developer tools",
-          description: "Enable developer tools in the sidebar.",
-        },
-      ],
-    },
+    }),
   ],
-};
+});

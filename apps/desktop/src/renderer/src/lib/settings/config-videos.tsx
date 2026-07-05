@@ -1,22 +1,21 @@
-import type { SectionConfig } from "@/components/settings-engine";
 import { useVideoDownloadBinding } from "@/components/settings-section-downloads";
+import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;
 
 const subtitlesEnabled = (v: Values) => v.subtitles !== "off";
 
-export const videosSection: SectionConfig = {
+export const videosSection = defineCustomSection({
   title: "Videos",
   description: "Quality, codecs, and extras for saved videos.",
   groups: [
-    {
+    group.with(useVideoDownloadBinding, {
       title: "Quality",
-      useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "select",
           key: "maxHeight",
-          title: "Maximum resolution",
+          title: "Maximum Resolution",
           description:
             "Higher resolutions mean bigger files. 1080p suits most clips.",
           options: [
@@ -35,7 +34,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "maxFps",
-          title: "Maximum frame rate",
+          title: "Maximum Frame Rate",
           description: "Cap the frame rate to keep files smaller.",
           options: [
             { value: null, label: "Unlimited" },
@@ -47,7 +46,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "maxFileSizeMb",
-          title: "Maximum file size",
+          title: "Maximum File Size",
           description: "Skip downloads bigger than the cap.",
           options: [
             { value: 2, label: "2\u00A0MB" },
@@ -59,15 +58,14 @@ export const videosSection: SectionConfig = {
           ],
         },
       ],
-    },
-    {
+    }),
+    group.with(useVideoDownloadBinding, {
       title: "Codecs",
-      useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "select",
           key: "videoCodec",
-          title: "Preferred video codec",
+          title: "Preferred Video Codec",
           description:
             "H.264 is most compatible; AV1 and VP9 are smaller but newer.",
           options: [
@@ -81,7 +79,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "audioCodec",
-          title: "Preferred audio codec",
+          title: "Preferred Audio Codec",
           description: "Falls back to the next best when unavailable.",
           options: [
             { value: "aac", label: "AAC" },
@@ -103,10 +101,9 @@ export const videosSection: SectionConfig = {
           ],
         },
       ],
-    },
-    {
+    }),
+    group.with(useVideoDownloadBinding, {
       title: "Subtitles",
-      useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "select",
@@ -123,7 +120,7 @@ export const videosSection: SectionConfig = {
         {
           control: "select",
           key: "subtitleLang",
-          title: "Subtitle language",
+          title: "Subtitle Language",
           description: "Preferred language to fetch when available.",
           visible: subtitlesEnabled,
           options: [
@@ -142,43 +139,41 @@ export const videosSection: SectionConfig = {
           ],
         },
       ],
-    },
-    {
+    }),
+    group.with(useVideoDownloadBinding, {
       title: "Embedding",
-      useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "switch",
           key: "embedMetadata",
-          title: "Embed details",
+          title: "Embed Details",
           description: "Write title, uploader, and date into the file.",
         },
         {
           control: "switch",
           key: "embedThumbnail",
-          title: "Embed thumbnail",
+          title: "Embed Thumbnail",
           description: "Attach the poster image as cover art.",
         },
         {
           control: "switch",
           key: "embedChapters",
-          title: "Embed chapters",
+          title: "Embed Chapters",
           description: "Include chapter markers when the source has them.",
         },
       ],
-    },
-    {
+    }),
+    group.with(useVideoDownloadBinding, {
       title: "Sponsor Block",
-      useBinding: useVideoDownloadBinding,
       items: [
         {
           control: "switch",
           key: "sponsorblockRemove",
-          title: "Remove sponsors",
+          title: "Remove Sponsors",
           description:
             "Use SponsorBlock to cut sponsor segments (YouTube only).",
         },
       ],
-    },
+    }),
   ],
-};
+});

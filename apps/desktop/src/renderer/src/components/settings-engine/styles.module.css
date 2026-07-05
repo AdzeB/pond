@@ -1,0 +1,46 @@
+/* Collapsible group header: mirrors Settings.SectionTitle, plus a chevron. */
+.toggle {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  padding: 0 16px 8px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.toggleTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
+}
+
+.chevron {
+  color: var(--ds-gray-9);
+  transition: transform var(--ds-duration-fast, 0.12s) ease;
+}
+
+.chevron[data-open] {
+  transform: rotate(90deg);
+}
+
+.toggle:hover .toggleTitle,
+.toggle:focus-visible .toggleTitle {
+  color: var(--ds-gray-12);
+}
+
+.toggle:hover .chevron,
+.toggle:focus-visible .chevron {
+  color: var(--ds-gray-11);
+}
+
+.collapsibleBody {
+  overflow: hidden;
+}

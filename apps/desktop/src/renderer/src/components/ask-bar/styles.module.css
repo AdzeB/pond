@@ -528,7 +528,6 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);
-  letter-spacing: -0.01em;
 }
 
 .label {

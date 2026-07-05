@@ -40,6 +40,11 @@ const windowSlice = z.object({
   launchHidden: z.boolean().catch(false),
   restorePosition: z.boolean().catch(true),
   bounds: z.custom<WindowBounds | null>().default(null),
+  // Which page Pond opens on launch/reload. "continue" restores the last route
+  // you were on; the others jump to a fixed page.
+  startupPage: z
+    .enum(["continue", "library", "sources", "trash", "settings"])
+    .catch("continue"),
 });
 
 const quickCapture = z.object({
@@ -87,7 +92,6 @@ const updates = z.object({
 });
 
 const developer = z.object({
-  developerMode: z.boolean().catch(false),
   verboseLogging: z.boolean().catch(false),
 });
 

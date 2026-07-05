@@ -1,16 +1,17 @@
 import { Button } from "@base-ui/react/button";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
+import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
 import { Link, type LinkProps } from "@tanstack/react-router";
 import { type HTMLMotionProps, motion } from "motion/react";
-import { createContext, use, useId, useState } from "react";
-
+import {
+  type ComponentProps,
+  createContext,
+  use,
+  useId,
+  useState,
+} from "react";
+import { Input } from "../input";
 import styles from "./styles.module.css";
-
-interface ProviderProps extends React.ComponentPropsWithoutRef<"div"> {}
-
-function Provider({ ...props }: ProviderProps) {
-  return <div className={styles.provider} {...props} />;
-}
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
 
@@ -78,6 +79,37 @@ interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Footer({ ...props }: FooterProps) {
   return <div className={styles.footer} {...props} />;
+}
+
+interface ScrollProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function Scroll({ ...props }: ScrollProps) {
+  return <div className={styles.scroll} {...props} />;
+}
+
+interface SearchProps extends ComponentProps<typeof Input.Field> {}
+
+function Search({ ...props }: SearchProps) {
+  return (
+    <Input.Root>
+      <Input.Icon>
+        <Magnifier width={14} height={14} />
+      </Input.Icon>
+      <Input.Field {...props} />
+    </Input.Root>
+  );
+}
+
+interface ResultProps extends LinkProps {}
+
+function Result({ ...props }: ResultProps) {
+  return <Link className={styles.result} {...props} />;
+}
+
+interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
+
+function Empty({ ...props }: EmptyProps) {
+  return <p className={styles.empty} {...props} />;
 }
 
 interface CollapsibleContextValue {
@@ -187,20 +219,21 @@ function CollapsibleGroupContent({
 }
 
 export const Sidebar = {
-  Provider,
   Root,
   Toolbar,
   Header,
+  Scroll,
+  Search,
   Item,
   Icon,
   Count,
   Anchor,
+  Result,
+  Empty,
   Footer,
-
   Group,
   GroupLabel,
   GroupContent,
-
   CollapsibleGroup,
   CollapsibleGroupLabel,
   CollapsibleGroupContent,

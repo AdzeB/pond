@@ -244,7 +244,10 @@ export function Root({ preview }: RootProps) {
     ],
   );
 
-  if (!preview && pathname === "/components") {
+  if (
+    !preview &&
+    (pathname === "/components" || pathname.startsWith("/settings"))
+  ) {
     return null;
   }
 

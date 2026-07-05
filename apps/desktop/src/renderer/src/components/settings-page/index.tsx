@@ -1,12 +1,14 @@
-import { Shell } from "@pond/ui";
 import { Outlet } from "@tanstack/react-router";
+import { SettingsSidebar } from "@/components/settings-sidebar";
+import styles from "./styles.module.css";
 
 export function Settings() {
   return (
-    <Shell.Body style={{ height: "100dvh" }}>
-      <Shell.Main>
+    <div className={styles.page}>
+      <SettingsSidebar />
+      <main className={styles.content}>
         <Outlet />
-      </Shell.Main>
-    </Shell.Body>
+      </main>
+    </div>
   );
 }

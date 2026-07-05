@@ -8,12 +8,18 @@ import {
   type VideoDownloadPrefs,
 } from "@/lib/settings/section-types";
 
-export function useVideoDownloadBinding(): Binding {
-  return useDownloadBinding("videoDownload", "settings.setVideoDownload");
+export function useVideoDownloadBinding(): Binding<VideoDownloadPrefs> {
+  return useDownloadBinding(
+    "videoDownload",
+    "settings.setVideoDownload",
+  ) as unknown as Binding<VideoDownloadPrefs>;
 }
 
-export function useImageDownloadBinding(): Binding {
-  return useDownloadBinding("imageDownload", "settings.setImageDownload");
+export function useImageDownloadBinding(): Binding<ImageDownloadPrefs> {
+  return useDownloadBinding(
+    "imageDownload",
+    "settings.setImageDownload",
+  ) as unknown as Binding<ImageDownloadPrefs>;
 }
 
 type DownloadField = "videoDownload" | "imageDownload";

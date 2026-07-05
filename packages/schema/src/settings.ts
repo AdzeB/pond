@@ -10,15 +10,12 @@ export interface SettingsSection {
   path: string;
   label: string;
   group: SettingsGroup;
-  // When set, this section is a child of the given hub section: it renders
-  // nested (breadcrumb) and is hidden from the top-level settings index.
-  parent?: string;
-  // Hide from the top-level settings index regardless of parentage.
+  // Hide from the top-level settings index (still routable directly).
   hidden?: boolean;
 }
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
-  { id: "general", path: "general", label: "General", group: "general" },
+  { id: "general", path: "general", label: "Preferences", group: "general" },
   {
     id: "appearance",
     path: "appearance",
@@ -28,19 +25,13 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },
-  {
-    id: "connections",
-    path: "connections",
-    label: "Connections",
-    group: "capture",
-  },
   { id: "sync", path: "sync", label: "Sync", group: "capture" },
   { id: "videos", path: "videos", label: "Videos", group: "capture" },
   { id: "images", path: "images", label: "Images", group: "capture" },
   {
     id: "ai",
     path: "ai",
-    label: "Artificial Intelligence",
+    label: "AI",
     group: "intelligence",
   },
   {
@@ -48,23 +39,34 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     path: "ai-models",
     label: "Models",
     group: "intelligence",
-    parent: "ai",
   },
   {
     id: "enrichment",
     path: "enrichment",
     label: "Enrichment",
     group: "intelligence",
-    parent: "ai",
   },
   {
     id: "skills",
     path: "skills",
     label: "Skills",
     group: "intelligence",
-    parent: "ai",
+  },
+  {
+    id: "connections",
+    path: "connections",
+    label: "Connections",
+    group: "advanced",
   },
   { id: "developer", path: "developer", label: "Developer", group: "advanced" },
+  // Pinned at the top of the settings sidebar (not shown in a group).
+  {
+    id: "account",
+    path: "account",
+    label: "Account",
+    group: "general",
+    hidden: true,
+  },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
@@ -78,7 +80,7 @@ export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
 export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
   general: "General",
   library: "Library",
-  capture: "Capturing",
+  capture: "Capture",
   intelligence: "Intelligence",
   advanced: "Advanced",
 };

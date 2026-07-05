@@ -1,71 +1,100 @@
-import {
-  DndContext,
-  type DragEndEvent,
-  DragOverlay,
-  type DragStartEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { IconTagsFill18 as TagsIcon } from "@pond/icons/fill/18";
-import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
+import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Button, Input } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo, useState } from "react";
+import { Button, DataTable, Input, Settings, useDataTable } from "@pond/ui";
+import {
+  useCallback,
+  useDeferredValue,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { PromptDialog } from "@/components/prompt-dialog";
-import { GroupRow } from "@/components/settings-tags-group-row";
-import { TagTableRow } from "@/components/settings-tags-tag-table-row";
 import { useSaves } from "@/hooks/use-saves";
-import { adaptNavigate } from "@/lib/ui/navigate-path";
 import { type TagGroupRow, useTagGroups } from "@/stores/tag-groups";
 import { type TagRow, useTags } from "@/stores/tags";
-import { setQuery } from "@/stores/view-store";
-import { TagsTableContext, type TagsTableValue } from "./lib/context";
-import {
-  colorForName,
-  compareFacets,
-  focusInput,
-  type SortFacets,
-  type SortState,
-} from "./lib/helpers";
+import { tagsColumns } from "./lib/columns";
+import { TagsTableContext } from "./lib/context";
+import { colorForName, focusInput } from "./lib/helpers";
+import { TagRow as TagRowRenderer } from "./lib/row-context";
+import { EMPTY_STATS, type GroupStats, type TagsRowData } from "./lib/types";
 import styles from "./styles.module.css";
-
-interface GroupStats {
-  members: TagRow[];
-  labelCount: number;
-  totalSaves: number;
-  recentMs: number | null;
-}
 
 type Creating = "tag" | "group" | null;
 
-const SORT: SortState = { key: "name", dir: "asc" };
+interface DraftRowProps {
+  creating: "tag" | "group";
+  draft: string;
+  setDraft: (v: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+}
+
+function DraftRow({
+  creating,
+  draft,
+  setDraft,
+  onCommit,
+  onCancel,
+}: DraftRowProps) {
+  const { meta } = useDataTable<TagsRowData>();
+  return (
+    <div
+      className={styles["draft-row"]}
+      style={{ gridTemplateColumns: meta.gridTemplate }}
+      data-group={creating === "group" || undefined}
+    >
+      {meta.selectionEnabled ? <div /> : null}
+      {meta.expansionEnabled ? <div /> : null}
+      <div className={styles["name-cell"]}>
+        <span className={styles.name}>
+          <span className={styles["dot-slot"]}>
+            <span
+              className={styles.dot}
+              style={{ background: colorForName(draft || creating) }}
+              aria-hidden
+            />
+          </span>
+          <input
+            ref={focusInput}
+            className={styles["name-input"]}
+            value={draft}
+            spellCheck={false}
+            placeholder={creating === "group" ? "Group name" : "Label name"}
+            onChange={(e) => setDraft(e.target.value)}
+            onBlur={onCommit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onCommit();
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                onCancel();
+              }
+            }}
+          />
+        </span>
+      </div>
+    </div>
+  );
+}
 
 export function TagsSection() {
   const tags = useTags();
   const groups = useTagGroups();
   const saves = useSaves();
-  const tsNavigate = useNavigate();
-  const navigate = useMemo(() => adaptNavigate(tsNavigate), [tsNavigate]);
 
   const [q, setQ] = useState("");
+  const deferredQ = useDeferredValue(q);
   const [toggles, setToggles] = useState<Map<string, boolean>>(new Map());
-  const [showArchived, setShowArchived] = useState(false);
-  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [creating, setCreating] = useState<Creating>(null);
   const [draft, setDraft] = useState("");
+
   const [merging, setMerging] = useState(false);
   const [mergeTarget, setMergeTarget] = useState("");
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const [dragName, setDragName] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor),
-  );
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const clearRef = useRef<() => void>(() => {});
 
   const counts = useMemo(() => {
     const c = new Map<string, number>();
@@ -84,28 +113,11 @@ export function TagsSection() {
     [counts],
   );
 
-  const archivedCount = useMemo(
-    () => tags.filter((t) => t.archived).length,
-    [tags],
-  );
-
-  // Everything below operates on the active set (archived hidden unless toggled).
-  const activeTags = useMemo(
-    () => (showArchived ? tags : tags.filter((t) => !t.archived)),
-    [tags, showArchived],
-  );
-
-  const maxUsage = useMemo(() => {
-    let m = 0;
-    for (const t of activeTags) m = Math.max(m, countFor(t.name));
-    return m;
-  }, [activeTags, countFor]);
-
   const tagsById = useMemo(() => {
     const m = new Map<string, TagRow>();
-    for (const t of activeTags) m.set(t.id, t);
+    for (const t of tags) m.set(t.id, t);
     return m;
-  }, [activeTags]);
+  }, [tags]);
 
   const taggedIds = useMemo(() => {
     const set = new Set<string>();
@@ -121,133 +133,123 @@ export function TagsSection() {
         .filter((t): t is TagRow => Boolean(t));
       let totalSaves = 0;
       let recentMs: number | null = null;
+      let createdMs: number | null = null;
       for (const t of members) {
         totalSaves += countFor(t.name);
         if (t.lastUsedAt != null)
           recentMs =
             recentMs == null ? t.lastUsedAt : Math.max(recentMs, t.lastUsedAt);
+        if (t.createdAt != null)
+          createdMs =
+            createdMs == null ? t.createdAt : Math.min(createdMs, t.createdAt);
       }
-      m.set(g.id, {
-        members,
-        labelCount: members.length,
-        totalSaves,
-        recentMs,
-      });
+      m.set(g.id, { members, totalSaves, recentMs, createdMs });
     }
     return m;
   }, [groups, tagsById, countFor]);
 
-  const groupNames = useMemo(() => groups.map((g) => g.name), [groups]);
-  const needle = q.trim().toLowerCase();
-
-  const tagFacet = useCallback(
-    (t: TagRow): SortFacets => ({
-      name: t.name,
-      usage: countFor(t.name),
-      recent: t.lastUsedAt ?? Number.NEGATIVE_INFINITY,
-    }),
-    [countFor],
+  const groupOptions = useMemo(
+    () =>
+      groups.map((g) => ({
+        name: g.name,
+        color: g.color ?? colorForName(g.name),
+      })),
+    [groups],
   );
+  const needle = deferredQ.trim().toLowerCase();
 
-  const childrenOf = (g: TagGroupRow): TagRow[] =>
-    (groupStats.get(g.id)?.members ?? [])
-      .filter((t) => (needle ? t.name.toLowerCase().includes(needle) : true))
-      .sort((a, b) => compareFacets(tagFacet(a), tagFacet(b), SORT));
-
-  type Row =
-    | { kind: "tag"; tag: TagRow; facet: SortFacets }
-    | { kind: "group"; group: TagGroupRow; facet: SortFacets };
-
-  const rows = useMemo<Row[]>(() => {
-    const uncategorized = activeTags.filter((t) => !taggedIds.has(t.id));
-    const list: Row[] = [
-      ...groups.map((group) => {
-        const st = groupStats.get(group.id);
+  const data = useMemo<TagsRowData[]>(() => {
+    const groupRows: TagsRowData[] = groups
+      .map((group) => {
+        const stats = groupStats.get(group.id) ?? EMPTY_STATS;
+        const children = stats.members
+          .filter((t) =>
+            needle ? t.name.toLowerCase().includes(needle) : true,
+          )
+          .map<TagsRowData>((tag) => ({
+            id: `${group.id}:${tag.id}`,
+            kind: "tag",
+            tag,
+            inGroup: group.name,
+            saves: countFor(tag.name),
+          }));
         return {
+          id: group.id,
           kind: "group" as const,
           group,
-          facet: {
-            name: group.name,
-            usage: st?.totalSaves ?? 0,
-            recent: st?.recentMs ?? Number.NEGATIVE_INFINITY,
-          },
+          stats,
+          children,
         };
-      }),
-      ...uncategorized.map((tag) => ({
-        kind: "tag" as const,
-        tag,
-        facet: tagFacet(tag),
-      })),
-    ];
-    list.sort((a, b) => compareFacets(a.facet, b.facet, SORT));
-    if (!needle) return list;
-    return list.filter((row) => {
-      if (row.kind === "tag")
-        return row.tag.name.toLowerCase().includes(needle);
-      const g = row.group;
-      if (g.name.toLowerCase().includes(needle)) return true;
-      return g.tagNames.some((n) => n.toLowerCase().includes(needle));
-    });
-  }, [activeTags, groups, taggedIds, groupStats, needle, tagFacet]);
-
-  const toggleSelect = useCallback((id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const clearSelection = useCallback(() => setSelected(new Set()), []);
-
-  const openTag = useCallback(
-    (name: string) => {
-      setQuery({
-        combinator: "and",
-        rules: [{ field: "tags", operator: "some", value: [name] }],
+      })
+      .filter((row) => {
+        if (row.kind !== "group") return true;
+        if (!needle) return true;
+        if (row.group.name.toLowerCase().includes(needle)) return true;
+        return row.group.tagNames.some((n) => n.toLowerCase().includes(needle));
       });
-      navigate("/");
+
+    const tagRows: TagsRowData[] = tags
+      .filter((t) => !taggedIds.has(t.id))
+      .filter((t) => (needle ? t.name.toLowerCase().includes(needle) : true))
+      .map((tag) => ({
+        id: tag.id,
+        kind: "tag",
+        tag,
+        inGroup: null,
+        saves: countFor(tag.name),
+      }));
+
+    return [...groupRows, ...tagRows];
+  }, [tags, groups, groupStats, taggedIds, needle, countFor]);
+
+  const isExpanded = useCallback(
+    (g: TagGroupRow) =>
+      toggles.has(g.id) ? Boolean(toggles.get(g.id)) : !g.collapsed,
+    [toggles],
+  );
+
+  const expandedIds = useMemo<string[]>(() => {
+    if (needle) return groups.map((g) => g.id);
+    return groups.filter((g) => isExpanded(g)).map((g) => g.id);
+  }, [needle, groups, isExpanded]);
+
+  const onToggleExpand = useCallback(
+    (id: string, next: boolean) => {
+      const g = groups.find((x) => x.id === id);
+      if (!g) return;
+      setToggles((prev) => new Map(prev).set(id, next));
+      void window.pond.query("tagGroups.update", {
+        name: g.name,
+        patch: { collapsed: !next },
+      });
     },
-    [navigate],
+    [groups],
   );
 
-  const ctxValue: TagsTableValue = useMemo(
-    () => ({
-      selected,
-      selecting: selected.size > 0,
-      toggleSelect,
-      maxUsage,
-      countFor,
-      groupNames,
-      onOpen: openTag,
-    }),
-    [selected, toggleSelect, maxUsage, countFor, groupNames, openTag],
+  const tagNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const row of data) {
+      if (row.kind === "tag") m.set(row.id, row.tag.name);
+      else
+        for (const child of row.children)
+          if (child.kind === "tag") m.set(child.id, child.tag.name);
+    }
+    return m;
+  }, [data]);
+
+  const namesFromIds = useCallback(
+    (ids: string[]) => {
+      const set = new Set<string>();
+      for (const id of ids) {
+        const name = tagNameById.get(id);
+        if (name) set.add(name);
+      }
+      return [...set];
+    },
+    [tagNameById],
   );
 
-  const selectedNames = useMemo(
-    () => activeTags.filter((t) => selected.has(t.id)).map((t) => t.name),
-    [activeTags, selected],
-  );
-
-  const allSelectedArchived = useMemo(
-    () =>
-      selectedNames.length > 0 &&
-      activeTags.filter((t) => selected.has(t.id)).every((t) => t.archived),
-    [activeTags, selected, selectedNames.length],
-  );
-
-  const isExpanded = (g: TagGroupRow) =>
-    toggles.has(g.id) ? Boolean(toggles.get(g.id)) : !g.collapsed;
-
-  function toggleGroup(g: TagGroupRow) {
-    const next = !isExpanded(g);
-    setToggles((prev) => new Map(prev).set(g.id, next));
-    void window.pond.query("tagGroups.update", {
-      name: g.name,
-      patch: { collapsed: !next },
-    });
-  }
+  const ctxValue = useMemo(() => ({ groups: groupOptions }), [groupOptions]);
 
   async function commitCreate() {
     const kind = creating;
@@ -266,269 +268,151 @@ export function TagsSection() {
     setCreating(kind);
   }
 
-  // ── Bulk actions ──────────────────────────────────────────────────────
-  async function bulkArchive(archived: boolean) {
-    for (const name of selectedNames)
-      await window.pond.query("tags.update", { name, patch: { archived } });
-    clearSelection();
-  }
   async function bulkDelete() {
-    for (const name of selectedNames)
+    for (const name of namesFromIds(pendingIds))
       await window.pond.query("tags.delete", { name });
-    clearSelection();
+    clearRef.current();
     setConfirmBulkDelete(false);
   }
+
   async function bulkMerge() {
     const target = normalizeLabelName(mergeTarget);
     setMerging(false);
     setMergeTarget("");
     if (!target) return;
-    for (const name of selectedNames) {
+    for (const name of namesFromIds(pendingIds)) {
       if (name.toLowerCase() === target.toLowerCase()) continue;
       await window.pond.query("tags.merge", { from: name, to: target });
     }
-    clearSelection();
+    clearRef.current();
   }
 
-  // ── Drag and drop ─────────────────────────────────────────────────────
-  function onDragStart(e: DragStartEvent) {
-    const data = e.active.data.current;
-    if (data?.type === "tag") setDragName(String(data.name));
-  }
-  async function onDragEnd(e: DragEndEvent) {
-    setDragName(null);
-    const active = e.active.data.current;
-    const over = e.over?.data.current;
-    if (active?.type !== "tag" || over?.type !== "group") return;
-    const tag = String(active.name);
-    const from = active.group as string | null;
-    const to = String(over.name);
-    if (from === to) return;
-    await window.pond.query("tagGroups.addTags", { tags: [tag], group: to });
-    if (from)
-      await window.pond.query("tagGroups.removeTag", { tag, group: from });
-  }
+  const onSelectionChange = useCallback(() => {}, []);
 
   const total = tags.length;
-  const selecting = selected.size > 0;
 
   return (
-    <>
-      <div className={styles.page}>
-        <header className={styles.head}>
-          <h1 className={styles.title}>Tags</h1>
-          <p className={styles.description}>
-            Labels and label groups help you organise and filter your library.
-            Drag a label into a group to build a hierarchy.
-          </p>
-        </header>
+    <DataTable.Provider
+      data={data}
+      columns={tagsColumns}
+      getRowId={(row) => row.id}
+      getSubRows={(row) => (row.kind === "group" ? row.children : undefined)}
+      onSelectionChange={onSelectionChange}
+      defaultSort={{ id: "name", desc: false }}
+      expandedIds={expandedIds}
+      onToggleExpand={onToggleExpand}
+      renderRow={(args) => <TagRowRenderer {...args} />}
+    >
+      <Settings.Page width="wide" inset={80}>
+        <Settings.Header>
+          <Settings.HeaderText>
+            <Settings.Title>Tags</Settings.Title>
+            <Settings.Description>
+              Organise your saves with tags and groups.
+            </Settings.Description>
+          </Settings.HeaderText>
+        </Settings.Header>
 
-        {selecting ? (
-          <div className={styles.toolbar} data-selection>
-            <span className={styles["selection-count"]}>
-              {selected.size} selected
-            </span>
-            <div className={styles.spacer} />
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => void bulkArchive(!allSelectedArchived)}
-            >
-              {allSelectedArchived ? "Unarchive" : "Archive"}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setMergeTarget("");
-                setMerging(true);
-              }}
-            >
-              Merge
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setConfirmBulkDelete(true)}
-            >
-              Delete
-            </Button>
-            <Button size="sm" variant="secondary" onClick={clearSelection}>
-              Clear
-            </Button>
-          </div>
-        ) : (
-          <div className={styles.toolbar}>
-            <div className={styles.search}>
-              <Search
-                className={styles["search-icon"]}
-                width={15}
-                height={15}
-              />
+        <div className={styles.content}>
+          <DataTable.Toolbar className={styles.toolbar}>
+            <Input.Root className={styles.search}>
+              <Input.Icon>
+                <Magnifier width={14} height={14} />
+              </Input.Icon>
               <Input.Field
-                className={styles["search-field"]}
-                data-size="sm"
-                type="search"
-                placeholder="Filter by name…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 spellCheck={false}
+                placeholder="Search…"
               />
-            </div>
-            {archivedCount > 0 ? (
+            </Input.Root>
+            <div className={styles.spacer} />
+            <Button variant="secondary" onClick={() => startCreate("group")}>
+              New Group
+            </Button>
+            <Button variant="primary" onClick={() => startCreate("tag")}>
+              New Tag
+            </Button>
+          </DataTable.Toolbar>
+
+          <TagsTableContext value={ctxValue}>
+            <DataTable.Root className={styles["table-wrap"]}>
+              <DataTable.ExtraRow>
+                {creating ? (
+                  <DraftRow
+                    creating={creating}
+                    draft={draft}
+                    setDraft={setDraft}
+                    onCommit={() => void commitCreate()}
+                    onCancel={() => {
+                      setDraft("");
+                      setCreating(null);
+                    }}
+                  />
+                ) : null}
+              </DataTable.ExtraRow>
+              <DataTable.Empty>
+                <div className={styles.empty}>
+                  <span className={styles["empty-title"]}>
+                    {total === 0 ? "No Tags Yet" : "No matches"}
+                  </span>
+                  <span className={styles["empty-text"]}>
+                    {total === 0
+                      ? "Labels keep your saves organised. Create one, then add it to a group to build a hierarchy."
+                      : "Try a different search."}
+                  </span>
+                </div>
+              </DataTable.Empty>
+            </DataTable.Root>
+          </TagsTableContext>
+        </div>
+      </Settings.Page>
+
+      <DataTable.ActionBar className={styles["action-bar"]}>
+        {(selection) => {
+          const count = namesFromIds(selection.ids).length;
+          return (
+            <>
+              <span className={styles["selection-count"]}>
+                {count} selected
+              </span>
+              <DataTable.ActionBarDivider />
               <Button
                 size="sm"
                 variant="ghost"
-                data-active={showArchived || undefined}
-                onClick={() => setShowArchived((v) => !v)}
+                onClick={() => {
+                  clearRef.current = selection.clear;
+                  setPendingIds(selection.ids);
+                  setMergeTarget("");
+                  setMerging(true);
+                }}
               >
-                {showArchived ? "Hide archived" : `Archived (${archivedCount})`}
+                Merge
               </Button>
-            ) : null}
-            <div className={styles.spacer} />
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => startCreate("group")}
-            >
-              New group
-            </Button>
-            <Button
-              size="sm"
-              variant="primary"
-              onClick={() => startCreate("tag")}
-            >
-              New label
-            </Button>
-          </div>
-        )}
-
-        <div className={styles.table}>
-          <TagsTableContext value={ctxValue}>
-            <DndContext
-              sensors={sensors}
-              onDragStart={onDragStart}
-              onDragEnd={(e) => void onDragEnd(e)}
-              onDragCancel={() => setDragName(null)}
-            >
-              <div className={styles.body}>
-                {creating ? (
-                  <div className={styles.card}>
-                    <div
-                      className={styles.draft}
-                      data-group={creating === "group" || undefined}
-                    >
-                      <span className={styles.name}>
-                        <span className={styles["chevron-slot"]} aria-hidden />
-                        <span
-                          className={styles.dot}
-                          style={{
-                            background: colorForName(draft || creating),
-                          }}
-                          aria-hidden
-                        />
-                        <input
-                          ref={focusInput}
-                          className={styles["name-input"]}
-                          value={draft}
-                          spellCheck={false}
-                          placeholder={
-                            creating === "group" ? "Group name" : "Label name"
-                          }
-                          onChange={(e) => setDraft(e.target.value)}
-                          onBlur={() => void commitCreate()}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              void commitCreate();
-                            } else if (e.key === "Escape") {
-                              e.preventDefault();
-                              setDraft("");
-                              setCreating(null);
-                            }
-                          }}
-                        />
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
-
-                {rows.length === 0 && !creating ? (
-                  total === 0 ? (
-                    <div className={styles.empty}>
-                      <span className={styles["empty-icon"]}>
-                        <TagsIcon width={20} height={20} />
-                      </span>
-                      <span className={styles["empty-title"]}>No tags yet</span>
-                      <span className={styles["empty-text"]}>
-                        Labels keep your saves organised. Create one, then drag
-                        it into a group to build a hierarchy.
-                      </span>
-                      <Button
-                        className={styles["empty-action"]}
-                        size="sm"
-                        variant="primary"
-                        onClick={() => startCreate("tag")}
-                      >
-                        New label
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className={styles.empty}>
-                      <span className={styles["empty-title"]}>No matches</span>
-                      <span className={styles["empty-text"]}>
-                        Nothing matches “{q}”. Try a different search.
-                      </span>
-                    </div>
-                  )
-                ) : (
-                  rows.map((row) =>
-                    row.kind === "group" ? (
-                      <div key={row.group.id} className={styles.card}>
-                        <GroupRow
-                          group={row.group}
-                          expanded={needle ? true : isExpanded(row.group)}
-                          items={childrenOf(row.group)}
-                          labelCount={
-                            groupStats.get(row.group.id)?.labelCount ?? 0
-                          }
-                          totalSaves={
-                            groupStats.get(row.group.id)?.totalSaves ?? 0
-                          }
-                          onToggle={() => toggleGroup(row.group)}
-                        />
-                      </div>
-                    ) : (
-                      <div key={row.tag.id} className={styles.card}>
-                        <TagTableRow tag={row.tag} depth={0} inGroup={null} />
-                      </div>
-                    ),
-                  )
-                )}
-              </div>
-
-              <DragOverlay dropAnimation={null}>
-                {dragName ? (
-                  <span className={styles.overlay}>
-                    <span
-                      className={styles.dot}
-                      style={{ background: colorForName(dragName) }}
-                      aria-hidden
-                    />
-                    {dragName}
-                  </span>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </TagsTableContext>
-        </div>
-      </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  clearRef.current = selection.clear;
+                  setPendingIds(selection.ids);
+                  setConfirmBulkDelete(true);
+                }}
+              >
+                Delete
+              </Button>
+              <Button size="sm" variant="secondary" onClick={selection.clear}>
+                Clear
+              </Button>
+            </>
+          );
+        }}
+      </DataTable.ActionBar>
 
       <PromptDialog
         open={merging}
         onOpenChange={setMerging}
-        title={`Merge ${selectedNames.length} ${
-          selectedNames.length === 1 ? "tag" : "tags"
+        title={`Merge ${namesFromIds(pendingIds).length} ${
+          namesFromIds(pendingIds).length === 1 ? "tag" : "tags"
         } into…`}
         description="Every save using the selected tags will be re-tagged with the target, and the originals removed."
         value={mergeTarget}
@@ -540,13 +424,13 @@ export function TagsSection() {
       <ConfirmDialog
         open={confirmBulkDelete}
         onOpenChange={setConfirmBulkDelete}
-        title={`Delete ${selectedNames.length} ${
-          selectedNames.length === 1 ? "tag" : "tags"
+        title={`Delete ${namesFromIds(pendingIds).length} ${
+          namesFromIds(pendingIds).length === 1 ? "tag" : "tags"
         }?`}
         description="They will be removed from every save. This cannot be undone."
         confirmLabel="Delete"
         onConfirm={() => void bulkDelete()}
       />
-    </>
+    </DataTable.Provider>
   );
 }

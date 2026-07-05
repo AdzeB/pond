@@ -1,6 +1,7 @@
 import {
   IconSparkleFill18 as Ask,
   IconArchivePlusFill18 as New,
+  IconGearFill18 as SettingsIcon,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
@@ -54,6 +55,17 @@ export function NavContent() {
       >
         <New />
       </button>
+
+      <Tooltip label="Settings" side="top">
+        <Link
+          to="/settings"
+          className={styles.item}
+          aria-label="Settings"
+          data-status={dock.isTabActive("settings") ? "active" : undefined}
+        >
+          <SettingsIcon />
+        </Link>
+      </Tooltip>
 
       <span className={styles.separator} aria-hidden />
 

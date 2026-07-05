@@ -73,7 +73,10 @@ export interface MenuParts {
   Portal: React.ComponentType<{ children?: ReactNode }>;
   Positioner: React.ComponentType<{
     children?: ReactNode;
+    side?: "top" | "bottom" | "left" | "right" | "inline-start" | "inline-end";
+    align?: "start" | "center" | "end";
     sideOffset?: number;
+    alignOffset?: number;
   }>;
   Popup: React.ComponentType<{ children?: ReactNode }>;
 }
@@ -116,7 +119,12 @@ function renderSpec(
           <parts.ItemLabel>{spec.label}</parts.ItemLabel>
         </parts.SubmenuTrigger>
         <parts.Portal>
-          <parts.Positioner sideOffset={-2}>
+          <parts.Positioner
+            side="inline-end"
+            align="start"
+            sideOffset={-2}
+            alignOffset={-4}
+          >
             <parts.Popup>
               {spec.items.map((child, i) => renderSpec(child, i, parts))}
             </parts.Popup>

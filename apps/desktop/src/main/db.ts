@@ -176,6 +176,7 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS tags (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
+					description TEXT,
 					starred INTEGER NOT NULL DEFAULT 0,
 					archived INTEGER NOT NULL DEFAULT 0,
 					last_used_at INTEGER,
@@ -188,6 +189,7 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE TABLE IF NOT EXISTS tag_groups (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL UNIQUE,
+					description TEXT,
 					color TEXT,
 					sort_order INTEGER NOT NULL DEFAULT 0,
 					collapsed INTEGER NOT NULL DEFAULT 0,
@@ -262,6 +264,11 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
   // Soft-archive for tags; added to existing libraries on upgrade.
   addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
+  // Free-text descriptions for tags/groups; added on upgrade.
+  addColumnIfMissing(sqlite, "tags", "description", "TEXT");
+  addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");
+  // Per-tag colour (groups already have one); added on upgrade.
+  addColumnIfMissing(sqlite, "tags", "color", "TEXT");
   addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
   // On-device semantic-search vectors; added to existing libraries on upgrade.
   addColumnIfMissing(sqlite, "saves", "embedding", "TEXT");

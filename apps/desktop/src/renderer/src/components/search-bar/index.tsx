@@ -65,10 +65,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [hasContent, setHasContent] = useState(false);
   const seededRef = useRef(false);
 
-  const tagNames = useMemo(
-    () => tags.filter((t) => !t.archived).map((t) => t.name),
-    [tags],
-  );
+  const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
   // Seed the editor once from the committed query as plain text; the token
   // entity plugin highlights the recognized tokens on the next transform pass.

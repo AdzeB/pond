@@ -6,6 +6,7 @@ import { bySortOrderThenName } from "@/lib/util/sort";
 export interface TagGroupRow {
   id: string;
   name: string;
+  description: string | null;
   color: string | null;
   sortOrder: number;
   collapsed: boolean;
@@ -58,6 +59,7 @@ function normaliseRow(
   return {
     id: raw.id,
     name: raw.name,
+    description: typeof raw.description === "string" ? raw.description : null,
     color: raw.color ?? null,
     sortOrder: typeof raw.sortOrder === "number" ? raw.sortOrder : 0,
     collapsed: Boolean(raw.collapsed),

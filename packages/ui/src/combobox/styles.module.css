@@ -1,0 +1,132 @@
+.trigger {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 180px;
+  max-width: 260px;
+}
+
+.value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  color: var(--ds-gray-11);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+}
+
+.positioner {
+  composes: positioner from "../shared/popup.module.css";
+}
+
+.backdrop {
+  composes: backdrop from "../shared/popup.module.css";
+}
+
+.popup {
+  composes: popup from "../shared/popup.module.css";
+  gap: 4px;
+}
+
+.arrow {
+  composes: arrow from "../shared/popup.module.css";
+}
+
+.input {
+  box-sizing: border-box;
+  height: 32px;
+  padding: 0 10px;
+  margin: 0 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: 8px;
+
+  &::placeholder {
+    color: var(--ds-gray-9);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a7);
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  padding-inline: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-block: 4px;
+}
+
+.empty {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ds-gray-9);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.item {
+  composes: item from "../shared/popup.module.css";
+  gap: 8px;
+}
+
+.item-label {
+  composes: item-label from "../shared/popup.module.css";
+  font-variant-numeric: tabular-nums;
+}
+
+.item-end {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  margin-left: auto;
+  color: var(--ds-gray-9);
+}
+
+.item-meta {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}
+
+.indicator {
+  composes: indicator from "../shared/popup.module.css";
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.group-label {
+  composes: group-label from "../shared/popup.module.css";
+}
+
+.separator {
+  composes: separator from "../shared/popup.module.css";
+}

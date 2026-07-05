@@ -5,6 +5,7 @@ import {
   type ThemeDef,
 } from "@pond/schema/db";
 import { Select, type SelectItemSpec } from "@pond/ui";
+import { useMediaMatch } from "rooks";
 import styles from "./styles.module.css";
 
 const THEME_VALUE_SYSTEM = "system";
@@ -176,19 +177,11 @@ function ThemeOption({ def, label }: { def: ThemeDef; label: string }) {
 }
 
 function SystemOption({ light, dark }: { light: ThemeDef; dark: ThemeDef }) {
+  const prefersDark = useMediaMatch("(prefers-color-scheme: dark)");
   return (
     <span className={styles.option}>
-      <span
-        aria-hidden
-        className={styles.chip}
-        style={{
-          background: `linear-gradient(105deg, ${light.base} 0 50%, ${dark.base} 50% 100%)`,
-          color: light.accent,
-        }}
-      >
-        Aa
-      </span>
-      <span>System preference</span>
+      <ThemeChip def={prefersDark ? dark : light} />
+      <span>System Preference</span>
     </span>
   );
 }

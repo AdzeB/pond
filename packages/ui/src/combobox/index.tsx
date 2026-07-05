@@ -1,0 +1,176 @@
+import { Combobox as Base } from "@base-ui/react/combobox";
+import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
+import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
+import { clsx as cn } from "clsx";
+import { Button, type ButtonProps } from "../button";
+import styles from "./styles.module.css";
+
+function Root<Value, Multiple extends boolean | undefined = false>(
+  props: Base.Root.Props<Value, Multiple>,
+) {
+  return <Base.Root {...props} />;
+}
+
+function Label({ className, ...props }: Base.Label.Props) {
+  return <Base.Label className={cn(styles.label, className)} {...props} />;
+}
+
+type TriggerProps = Base.Trigger.Props &
+  Pick<ButtonProps, "variant" | "size" | "icon">;
+
+function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
+  return (
+    <Base.Trigger
+      render={
+        props.render ? (
+          props.render
+        ) : (
+          <Button
+            size={size}
+            icon={icon}
+            variant={variant ?? "secondary"}
+            className={cn(styles.trigger, className)}
+          >
+            {props.children}
+            <Icon>
+              <Expand size={10} />
+            </Icon>
+          </Button>
+        )
+      }
+      {...props}
+    />
+  );
+}
+
+function Value({
+  className,
+  ...props
+}: Base.Value.Props & { className?: string }) {
+  return (
+    <span className={cn(styles.value, className)}>
+      <Base.Value {...props} />
+    </span>
+  );
+}
+
+function Icon({ className, ...props }: Base.Icon.Props) {
+  return <Base.Icon className={cn(styles.icon, className)} {...props} />;
+}
+
+function Input({ className, ...props }: Base.Input.Props) {
+  return <Base.Input className={cn(styles.input, className)} {...props} />;
+}
+
+function Portal(props: Base.Portal.Props) {
+  return <Base.Portal {...props} />;
+}
+
+function Backdrop({ className, ...props }: Base.Backdrop.Props) {
+  return (
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
+  );
+}
+
+function Positioner({
+  className,
+  sideOffset = 6,
+  ...props
+}: Base.Positioner.Props) {
+  return (
+    <Base.Positioner
+      sideOffset={sideOffset}
+      data-type="combobox"
+      className={cn(styles.positioner, className)}
+      {...props}
+    />
+  );
+}
+
+function Popup({ className, ...props }: Base.Popup.Props) {
+  return <Base.Popup className={cn(styles.popup, className)} {...props} />;
+}
+
+function Arrow({ className, ...props }: Base.Arrow.Props) {
+  return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
+}
+
+function List({ className, ...props }: Base.List.Props) {
+  return <Base.List className={cn(styles.list, className)} {...props} />;
+}
+
+function Empty({ className, ...props }: Base.Empty.Props) {
+  return <Base.Empty className={cn(styles.empty, className)} {...props} />;
+}
+
+function Item({ className, ...props }: Base.Item.Props) {
+  return <Base.Item className={cn(styles.item, className)} {...props} />;
+}
+
+function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(styles["item-label"], className)} {...props} />;
+}
+
+function ItemEnd({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(styles["item-end"], className)} {...props} />;
+}
+
+function ItemMeta({ className, ...props }: React.ComponentProps<"span">) {
+  return <span className={cn(styles["item-meta"], className)} {...props} />;
+}
+
+function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
+  return (
+    <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
+      <Check width={14} height={14} />
+    </Base.ItemIndicator>
+  );
+}
+
+function Group({ className, ...props }: Base.Group.Props) {
+  return <Base.Group className={cn(styles.group, className)} {...props} />;
+}
+
+function GroupLabel({ className, ...props }: Base.GroupLabel.Props) {
+  return (
+    <Base.GroupLabel
+      className={cn(styles["group-label"], className)}
+      {...props}
+    />
+  );
+}
+
+function Separator({ className, ...props }: Base.Separator.Props) {
+  return (
+    <Base.Separator className={cn(styles.separator, className)} {...props} />
+  );
+}
+
+function Collection(props: Base.Collection.Props) {
+  return <Base.Collection {...props} />;
+}
+
+export const Combobox = {
+  Root,
+  Label,
+  Trigger,
+  Value,
+  Icon,
+  Input,
+  Portal,
+  Backdrop,
+  Positioner,
+  Popup,
+  Arrow,
+  List,
+  Empty,
+  Item,
+  ItemLabel,
+  ItemEnd,
+  ItemMeta,
+  ItemIndicator,
+  Group,
+  GroupLabel,
+  Separator,
+  Collection,
+};

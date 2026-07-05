@@ -51,7 +51,7 @@
 
 .title {
   margin: 0;
-  font-size: 24px;
+  font-size: 19px;
   font-weight: 640;
   color: var(--ink);
   letter-spacing: -0.02em;
@@ -61,8 +61,8 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  margin: 3px 0 0;
-  font-size: 13px;
+  margin: 2px 0 0;
+  font-size: 12px;
   color: var(--ink-2);
 }
 
@@ -118,25 +118,58 @@
   margin-left: auto;
 }
 
-/* ── sources list ───────────────────────────────────────────────────────── */
-.list {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+/* ── sources grid (app-icon launcher) ───────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px 4px;
 }
 
-.addRow {
+/* Trailing add tile — mirrors an icon tile: rounded square + short label. */
+.addTile {
+  display: flex;
+  flex-direction: column;
   gap: 8px;
-  justify-content: flex-start;
-  width: 100%;
-  height: auto;
-  padding: 12px 16px;
+  align-items: center;
+  padding: 10px 4px;
+  font: inherit;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
+  transition: background 0.15s ease;
+}
+
+.addTile:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.addTile:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.addSquare {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
   color: var(--ink-2);
-  border-radius: 0;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--ds-radius-lg);
+}
+
+.addTile:hover:not(:disabled) .addSquare {
+  color: var(--ink);
+  border-color: var(--ink-3);
+}
+
+.addLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
 /* ── collapsible secondary sections ─────────────────────────────────────── */

@@ -1,5 +1,6 @@
 import { IconDotsFill18 as More } from "@pond/icons/fill/18";
 import {
+  IconAntennaOutline18 as Antenna,
   IconChevronDownOutline18 as Chevron,
   IconPlusOutline18 as Plus,
   IconSliders3Outline18 as Sliders,
@@ -13,22 +14,23 @@ import { KpiStrip } from "@/components/library-sync-monitor-kpi-strip";
 import { LiveMonitor } from "@/components/library-sync-monitor-live-monitor";
 import { RecentRuns } from "@/components/library-sync-monitor-recent-runs";
 import { RunDialog } from "@/components/library-sync-monitor-run-dialog";
+import { SourceCard } from "@/components/library-sync-monitor-source-card";
 import { SourceDialog } from "@/components/library-sync-monitor-source-dialog";
-import { SourceRow } from "@/components/library-sync-monitor-source-row";
 import { StorageBanner } from "@/components/library-sync-monitor-storage-banner";
-import { TasksPanel } from "@/components/library-sync-monitor-tasks-panel";
 import {
   pauseEnrichmentSweep,
   resumeEnrichmentSweep,
 } from "@/lib/enrichment/sweep";
 import { retryAllFailed } from "@/lib/save/selection";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { showContextMenu } from "@/lib/ui/native-menu";
+import { TASK_GROUPS, TASKS } from "@/lib/save/tasks";
+import { type NativeMenuItem, showContextMenu } from "@/lib/ui/native-menu";
 import { useEnrichmentStatus } from "@/stores/enrichment-monitor";
 import { useGovernorSnapshot } from "@/stores/governor-monitor";
 import { usePipelineSnapshot } from "@/stores/pipeline-monitor";
 import { useFailedSaveCount } from "@/stores/pool";
 import { syncMonitor, useSyncBySource } from "@/stores/sync-monitor";
+import { pushToast } from "@/stores/toasts";
 import type { SyncRun } from "./lib/helpers";
 import { useActiveProcesses } from "./lib/use-active-processes";
 import styles from "./styles.module.css";
@@ -90,9 +92,11 @@ export function SourcesPage() {
   ).length;
   const activeCount =
     syncRunningCount + processes.filter((p) => p.state === "running").length;
-  const connectedCount = SYNCABLE.filter(
+  const connectedSources = SYNCABLE.filter(
     (s) => bySource[s]?.connected || bySource[s]?.state === "running",
-  ).length;
+  );
+  const connectedCount = connectedSources.length;
+  const allConnected = connectedCount === SYNCABLE.length;
 
   const anyPaused = pipeline.paused || enrichment.paused || governor.allPaused;
   const togglePauseAll = () => {
@@ -107,6 +111,29 @@ export function SourcesPage() {
     setSelectedSource(source);
     setSourceOpen(true);
   };
+
+  // Library-wide tasks, grouped into submenus mirroring the task catalog. Each
+  // runs across the whole library (no selection scope) and toasts its result.
+  const taskGroupItems: NativeMenuItem[] = TASK_GROUPS.flatMap((group) => {
+    const tasks = TASKS.filter((t) => t.group === group.id);
+    if (tasks.length === 0) return [];
+    return [
+      {
+        label: group.label,
+        submenu: tasks.map((task) => ({
+          label: task.label,
+          onSelect: async () => {
+            try {
+              const res = await task.run();
+              pushToast(res.message, res.ok ? "success" : "error");
+            } catch {
+              pushToast(`${task.label} failed.`, "error");
+            }
+          },
+        })),
+      },
+    ];
+  });
 
   const openSyncAllMenu = () => {
     void showContextMenu([
@@ -128,6 +155,8 @@ export function SourcesPage() {
         enabled: failedCount > 0,
         onSelect: () => void retryAllFailed(),
       },
+      { type: "separator" },
+      ...taskGroupItems,
     ]);
   };
 
@@ -225,24 +254,44 @@ export function SourcesPage() {
           <div className={styles.secHead}>
             <span className={styles.secLabel}>Sources</span>
             <span className={styles.secMeta}>{connectedCount} connected</span>
+            <Tooltip label="Add source">
+              <Button
+                icon
+                size="sm"
+                variant="ghost"
+                aria-label="Add source"
+                onClick={addSource}
+              >
+                <Plus width={16} height={16} />
+              </Button>
+            </Tooltip>
           </div>
-          <div className={styles.list}>
-            {SYNCABLE.map((source) => (
-              <SourceRow
+          <div className={styles.grid}>
+            {connectedSources.map((source) => (
+              <SourceCard
                 key={source}
                 source={source}
                 status={bySource[source]}
                 onOpen={openSource}
               />
             ))}
-            <Button
-              variant="ghost"
-              className={styles.addRow}
+            <button
+              type="button"
+              className={styles.addTile}
               onClick={addSource}
+              disabled={allConnected}
             >
-              <Plus width={16} height={16} />
-              Add source
-            </Button>
+              <span className={styles.addSquare}>
+                {allConnected ? (
+                  <Antenna width={22} height={22} />
+                ) : (
+                  <Plus width={22} height={22} />
+                )}
+              </span>
+              <span className={styles.addLabel}>
+                {allConnected ? "All set" : "Add"}
+              </span>
+            </button>
           </div>
         </section>
 
@@ -279,21 +328,6 @@ export function SourcesPage() {
             </Accordion.Header>
             <Accordion.Panel className={styles.accPanel}>
               <RecentRuns onOpenRun={openRun} />
-            </Accordion.Panel>
-          </Accordion.Item>
-
-          <Accordion.Item className={styles.accItem} value="tasks">
-            <Accordion.Header className={styles.accHeader}>
-              <Accordion.Trigger className={styles.accTrigger}>
-                <span className={styles.accLabel}>Tasks</span>
-                <span className={styles.accMeta}>
-                  run across your whole library
-                </span>
-                <Chevron className={styles.accChevron} width={16} height={16} />
-              </Accordion.Trigger>
-            </Accordion.Header>
-            <Accordion.Panel className={styles.accPanel}>
-              <TasksPanel />
             </Accordion.Panel>
           </Accordion.Item>
         </Accordion.Root>

@@ -93,6 +93,16 @@ trades that structural guarantee for ergonomics: nothing physically prevents a n
 **components → hooks → stores/lib** by discipline, and avoid importing a `component` from a
 `store` or `lib` file. An ESLint import-cycle rule can backstop this if cycles creep in.
 
+**Sanctioned exception — `lib/settings/config-*.tsx` → `components`.** The settings
+section configs are declarative UI descriptions, not pure logic: they reference row
+components (`CheckNowRow`, `ThemeRow`, download bindings, …) that only make sense in the
+renderer. They deliberately import from `components/` and are the one place the
+`components → lib` arrow is inverted on purpose. This is contained to settings authoring;
+do not treat it as license for other `lib → components` imports. Author these configs
+through the typed helpers in `lib/settings/engine-types.ts`
+(`defineSection` / `defineCustomSection` / `group.prefs` / `group.with` / `group.plain`)
+so every field-control `key` is checked against the bound prefs slice.
+
 ## Design principles
 
 UI work follows the three principles in [`PRINCIPLES.md`](./PRINCIPLES.md) —

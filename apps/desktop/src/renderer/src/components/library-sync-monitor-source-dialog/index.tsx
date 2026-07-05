@@ -2,7 +2,7 @@ import {
   IconChevronRightOutline18 as Chevron,
   IconXmarkOutline18 as Xmark,
 } from "@pond/icons/outline/18";
-import type { Source, SourceVisibility } from "@pond/schema/db";
+import type { Prefs, Source, SourceVisibility } from "@pond/schema/db";
 import { Button, Dialog } from "@pond/ui";
 import {
   cardModel,
@@ -14,6 +14,7 @@ import {
 } from "@/components/library-sync-monitor/lib/helpers";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useSyncHistory } from "@/hooks/use-sync-history";
+import { sourceSettingsFor } from "@/lib/save/source-settings";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { usePrefs } from "@/stores/prefs";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
@@ -312,28 +313,34 @@ function SourceBody({
               ))}
             </span>
           </div>
-          {source === "twitter" ? (
-            <div className={styles.field}>
+          {sourceSettingsFor(source).map((field) => (
+            <div className={styles.field} key={field.key}>
               <div>
-                <div className={styles.fl}>Tweet cover</div>
-                <div className={styles.fh}>Image used as the card cover.</div>
+                <div className={styles.fl}>{field.label}</div>
+                <div className={styles.fh}>{field.description}</div>
               </div>
               <span className={styles.segm}>
-                {(["media", "screenshot"] as const).map((c) => (
+                {field.options.map((option) => (
                   <button
-                    key={c}
+                    key={option.value}
                     type="button"
                     className={
-                      preferences.tweetCover === c ? styles.on : undefined
+                      preferences[field.key] === option.value
+                        ? styles.on
+                        : undefined
                     }
-                    onClick={() => patchPreferences({ tweetCover: c })}
+                    onClick={() =>
+                      patchPreferences({
+                        [field.key]: option.value,
+                      } as Partial<Prefs["preferences"]>)
+                    }
                   >
-                    {c === "media" ? "Media" : "Screenshot"}
+                    {option.label}
                   </button>
                 ))}
               </span>
             </div>
-          ) : null}
+          ))}
         </div>
       </div>
     </Dialog.Popup>

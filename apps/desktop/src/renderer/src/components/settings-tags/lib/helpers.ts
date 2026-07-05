@@ -1,21 +1,5 @@
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 
-export type SortDir = "asc" | "desc";
-export type SortKey = "name" | "usage" | "recent";
-
-export interface SortState {
-  key: SortKey;
-  dir: SortDir;
-}
-
-// Each key lands on the direction people actually want first: names read A→Z,
-// but usage and recency are most useful biggest/newest-first.
-export const DEFAULT_DIR: Record<SortKey, SortDir> = {
-  name: "asc",
-  usage: "desc",
-  recent: "desc",
-};
-
 // Named swatches a user can assign to a group. Values are theme tokens so they
 // adapt to light/dark automatically.
 export const GROUP_COLORS: ReadonlyArray<{ label: string; value: string }> = [
@@ -50,27 +34,13 @@ export function relativeTime(ms: number | null): string {
   return relativeTimeFromMs(ms, "—");
 }
 
-export function cmpName(a: string, b: string, dir: SortDir): number {
-  const r = a.localeCompare(b, undefined, { sensitivity: "base" });
-  return dir === "asc" ? r : -r;
-}
+// Short absolute date ("Jul 2025") for the Created column.
+const MONTH_YEAR = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  year: "numeric",
+});
 
-// A single row's comparable values for the active sort key. `recent` uses
-// -Infinity for "never used" so those always sink to the bottom on desc.
-export interface SortFacets {
-  name: string;
-  usage: number;
-  recent: number;
-}
-
-export function compareFacets(
-  a: SortFacets,
-  b: SortFacets,
-  sort: SortState,
-): number {
-  if (sort.key === "name") return cmpName(a.name, b.name, sort.dir);
-  const delta = sort.key === "usage" ? a.usage - b.usage : a.recent - b.recent;
-  // Stable, readable tiebreak so equal counts/dates don't shuffle on re-render.
-  if (delta !== 0) return sort.dir === "asc" ? delta : -delta;
-  return cmpName(a.name, b.name, "asc");
+export function shortDate(ms: number | null): string {
+  if (ms == null) return "—";
+  return MONTH_YEAR.format(new Date(ms));
 }

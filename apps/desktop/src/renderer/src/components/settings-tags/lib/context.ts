@@ -1,15 +1,23 @@
-import { createContext } from "react";
+import { createContext, use } from "react";
 
-// Shared state + callbacks for every row in the tags table. Lets group rows and
-// tag rows read selection and helpers without threading props through each level.
+/** A group as offered in the "Move to group" menu — name plus its resolved
+ * swatch colour (explicit group colour, or the name-derived fallback). */
+export interface TagGroupOption {
+  name: string;
+  color: string;
+}
+
+// Global table metadata every row needs but that isn't row-specific: the
+// groups (for the "Move to group" menu). Selection/expansion now live in the
+// DataTable primitive, so they no longer belong here.
 export interface TagsTableValue {
-  selected: ReadonlySet<string>;
-  selecting: boolean;
-  toggleSelect: (id: string) => void;
-  maxUsage: number;
-  countFor: (name: string) => number;
-  groupNames: string[];
-  onOpen: (name: string) => void;
+  groups: TagGroupOption[];
 }
 
 export const TagsTableContext = createContext<TagsTableValue | null>(null);
+
+export function useTagsTable(): TagsTableValue {
+  const ctx = use(TagsTableContext);
+  if (!ctx) throw new Error("Tags cell must be used within TagsTableContext");
+  return ctx;
+}

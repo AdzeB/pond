@@ -15,10 +15,6 @@ function RootComponent() {
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
-      if (pathname === "/components") {
-        void navigate({ to: "/components" });
-        return;
-      }
       if (pathname === "/settings") {
         void navigate({ to: "/settings" });
         return;

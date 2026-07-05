@@ -1,0 +1,20 @@
+.accountGlyph {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+  background: var(--ds-accent-9);
+  border-radius: var(--ds-radius-full, 999px);
+
+  &[data-emoji] {
+    font-size: 13px;
+    color: inherit;
+  }
+}

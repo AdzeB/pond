@@ -1,9 +1,5 @@
-import {
-  IconCheckOutline18 as Check,
-  IconChevronExpandYOutline18 as Expand,
-} from "@pond/icons/outline/18";
 import { type AiProviderId, providerModels } from "@pond/schema";
-import { Input, Popover } from "@pond/ui";
+import { Combobox } from "@pond/ui";
 import { useMemo, useState } from "react";
 import styles from "./styles.module.css";
 
@@ -31,126 +27,89 @@ export function AiModelPicker({
   onChange,
   placeholder,
 }: Props) {
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
   const models = useMemo(() => providerModels(provider), [provider]);
+  const byId = useMemo(() => new Map(models.map((m) => [m.id, m])), [models]);
+  const ids = useMemo(() => models.map((m) => m.id), [models]);
   const selectedId = value.trim();
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    if (!needle) return models;
-    return models.filter((m) => m.id.toLowerCase().includes(needle));
-  }, [query, models]);
 
   const trimmed = query.trim();
   const customCandidate =
-    trimmed.length > 0 && !models.some((m) => m.id === trimmed)
-      ? trimmed
-      : null;
-
-  const choose = (id: string) => {
-    onChange(id);
-    setOpen(false);
-  };
+    trimmed.length > 0 && !byId.has(trimmed) ? trimmed : null;
 
   return (
-    <Popover.Root
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) setQuery("");
+    <Combobox.Root
+      items={ids}
+      value={selectedId}
+      onValueChange={(next) => onChange(next ?? "")}
+      onInputValueChange={setQuery}
+      onOpenChange={(open) => {
+        if (open) setQuery("");
       }}
     >
-      <Popover.Trigger
-        className={styles.trigger}
-        aria-label={`Model: ${selectedId || placeholder}`}
-      >
-        <span className={styles.triggerLabel}>{selectedId || placeholder}</span>
-        <Expand width={14} height={14} className={styles.triggerIcon} />
-      </Popover.Trigger>
+      <Combobox.Trigger aria-label={`Model: ${selectedId || placeholder}`}>
+        <Combobox.Value>
+          {(id: string | null) => id || placeholder}
+        </Combobox.Value>
+      </Combobox.Trigger>
 
-      <Popover.Portal>
-        <Popover.Positioner
+      <Combobox.Portal>
+        <Combobox.Backdrop />
+        <Combobox.Positioner
           align="end"
-          sideOffset={6}
-          style={
-            { "--popup-width": "auto", "--popup-min-width": "0px" } as Record<
-              string,
-              string
-            >
-          }
+          style={{ "--popup-width": "300px" } as React.CSSProperties}
         >
-          <Popover.Popup className={styles.popup}>
-            <div className={styles.panel}>
-              <Input.Field
-                autoFocus
-                data-size="sm"
-                className={styles.search}
-                placeholder="Search models…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+          <Combobox.Popup>
+            <Combobox.Input autoFocus placeholder="Search models…" />
+            <Combobox.List>
+              <Combobox.Item value="">
+                <Combobox.ItemLabel>Default · {placeholder}</Combobox.ItemLabel>
+                <Combobox.ItemEnd>
+                  <Combobox.ItemIndicator />
+                </Combobox.ItemEnd>
+              </Combobox.Item>
 
-              <div className={styles.list}>
-                <button
-                  type="button"
-                  className={styles.row}
-                  data-selected={selectedId === "" || undefined}
-                  onClick={() => choose("")}
-                >
-                  <span className={styles.rowName}>
-                    Default · {placeholder}
-                  </span>
-                  {selectedId === "" ? <Check width={14} height={14} /> : null}
-                </button>
+              <Combobox.Collection>
+                {(id: string) => {
+                  const model = byId.get(id);
+                  return (
+                    <Combobox.Item key={id} value={id}>
+                      <Combobox.ItemLabel>{id}</Combobox.ItemLabel>
+                      <Combobox.ItemEnd>
+                        {model?.agent ? (
+                          <span className={styles.badge}>agent</span>
+                        ) : null}
+                        {model && model.context > 0 ? (
+                          <Combobox.ItemMeta>
+                            {formatContext(model.context)}
+                          </Combobox.ItemMeta>
+                        ) : null}
+                        <Combobox.ItemIndicator />
+                      </Combobox.ItemEnd>
+                    </Combobox.Item>
+                  );
+                }}
+              </Combobox.Collection>
 
-                {filtered.map((model) => (
-                  <button
-                    key={model.id}
-                    type="button"
-                    className={styles.row}
-                    data-selected={model.id === selectedId || undefined}
-                    onClick={() => choose(model.id)}
-                  >
-                    <span className={styles.rowName}>{model.id}</span>
-                    <span className={styles.rowEnd}>
-                      {model.agent ? (
-                        <span className={styles.badge}>agent</span>
-                      ) : null}
-                      {model.context > 0 ? (
-                        <span className={styles.rowMeta}>
-                          {formatContext(model.context)}
-                        </span>
-                      ) : null}
-                      {model.id === selectedId ? (
-                        <Check width={14} height={14} />
-                      ) : null}
-                    </span>
-                  </button>
-                ))}
+              {customCandidate ? (
+                <Combobox.Item value={customCandidate}>
+                  <Combobox.ItemLabel>
+                    Use “{customCandidate}”
+                  </Combobox.ItemLabel>
+                  <Combobox.ItemEnd>
+                    <Combobox.ItemMeta>Custom</Combobox.ItemMeta>
+                  </Combobox.ItemEnd>
+                </Combobox.Item>
+              ) : null}
+            </Combobox.List>
 
-                {customCandidate ? (
-                  <button
-                    type="button"
-                    className={styles.row}
-                    onClick={() => choose(customCandidate)}
-                  >
-                    <span className={styles.rowName}>
-                      Use “{customCandidate}”
-                    </span>
-                    <span className={styles.rowMeta}>Custom</span>
-                  </button>
-                ) : null}
-
-                {filtered.length === 0 && !customCandidate ? (
-                  <div className={styles.empty}>No models match.</div>
-                ) : null}
-              </div>
-            </div>
-          </Popover.Popup>
-        </Popover.Positioner>
-      </Popover.Portal>
-    </Popover.Root>
+            <Combobox.Empty>
+              {customCandidate ? "" : "No models match."}
+            </Combobox.Empty>
+          </Combobox.Popup>
+        </Combobox.Positioner>
+      </Combobox.Portal>
+    </Combobox.Root>
   );
 }

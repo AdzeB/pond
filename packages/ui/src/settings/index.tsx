@@ -3,11 +3,23 @@ import styles from "./styles.module.css";
 
 interface PageProps extends React.ComponentPropsWithoutRef<"div"> {
   width?: "narrow" | "medium" | "wide";
+  inset?: number;
 }
 
-function Page({ className, width, ...props }: PageProps) {
+function Page({ className, width, inset, style, ...props }: PageProps) {
   return (
-    <div className={cn(styles.page, className)} data-width={width} {...props} />
+    <div
+      className={cn(styles.page, className)}
+      data-width={width}
+      data-inset={inset}
+      style={
+        {
+          ...style,
+          ...(inset ? { "--settings-padding-inline-inset": `${inset}px` } : {}),
+        } as React.CSSProperties
+      }
+      {...props}
+    />
   );
 }
 
@@ -15,6 +27,12 @@ interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}
 
 function Header({ className, ...props }: HeaderProps) {
   return <header className={cn(styles.header, className)} {...props} />;
+}
+
+interface HeaderTextProps extends React.ComponentPropsWithoutRef<"div"> {}
+
+function HeaderText({ className, ...props }: HeaderTextProps) {
+  return <div className={cn(styles["header-text"], className)} {...props} />;
 }
 
 interface TitleProps extends React.ComponentPropsWithoutRef<"h1"> {}
@@ -91,9 +109,39 @@ function ItemControl({ className, ...props }: ItemControlProps) {
   return <div className={cn(styles.control, className)} {...props} />;
 }
 
+interface EmptyProps
+  extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+}
+
+// Shared empty-state row: a titled explanation with an optional trailing action,
+// styled to match a single list card ("No X yet" — Action).
+function Empty({
+  title,
+  description,
+  action,
+  className,
+  ...props
+}: EmptyProps) {
+  return (
+    <div className={cn(styles.empty, className)} {...props}>
+      <div className={styles.details}>
+        <h3 className={styles["item-title"]}>{title}</h3>
+        {description ? (
+          <p className={styles["item-description"]}>{description}</p>
+        ) : null}
+      </div>
+      {action ? <div className={styles.control}>{action}</div> : null}
+    </div>
+  );
+}
+
 export const Settings = {
   Page: Page,
   Header: Header,
+  HeaderText: HeaderText,
   Title: Title,
   Description: Description,
   Columns: Columns,
@@ -105,4 +153,5 @@ export const Settings = {
   ItemTitle: ItemTitle,
   ItemDescription: ItemDescription,
   ItemControl: ItemControl,
+  Empty: Empty,
 };

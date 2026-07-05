@@ -1,20 +1,19 @@
-import type { SectionConfig } from "@/components/settings-engine";
 import {
   ContrastRow,
   CustomColorRow,
   SystemPresetRow,
   ThemeRow,
 } from "@/components/settings-section-appearance";
+import { defineSection } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;
 
 const isSystemMode = (v: Values) => (v.themeMode ?? "system") === "system";
 const isCustomMode = (v: Values) => (v.themeMode ?? "system") === "custom";
 
-export const appearanceSection: SectionConfig = {
+export const appearanceSection = defineSection("preferences", {
   title: "Appearance",
-  description: "Theme, motion, and typography.",
-  prefsKey: "preferences",
+  description: "Theme, colors, and accessibility.",
   groups: [
     {
       title: "Theme",
@@ -55,29 +54,16 @@ export const appearanceSection: SectionConfig = {
           render: (b) => <ContrastRow binding={b} />,
           visible: isCustomMode,
         },
-
-        {
-          control: "switch",
-          key: "pointerCursors",
-          title: "Pointer cursors",
-          description:
-            "Show a hand cursor on hover instead of the default text caret.",
-        },
       ],
     },
     {
-      title: "Library",
       items: [
         {
-          control: "select",
-          key: "tweetCover",
-          title: "Tweet cover",
+          control: "switch",
+          key: "pointerCursors",
+          title: "Pointer Cursors",
           description:
-            "Show a tweet's attached media, or the rendered tweet card.",
-          options: [
-            { value: "media", label: "Attached media" },
-            { value: "screenshot", label: "Tweet screenshot" },
-          ],
+            "Show a hand cursor on hover instead of the default text caret.",
         },
       ],
     },
@@ -87,7 +73,7 @@ export const appearanceSection: SectionConfig = {
         {
           control: "select",
           key: "reduceMotion",
-          title: "Reduce motion",
+          title: "Reduce Motion",
           description: "Tone down animations and transitions across Pond.",
           options: [
             { value: "system", label: "Match system" },
@@ -98,10 +84,10 @@ export const appearanceSection: SectionConfig = {
         {
           control: "switch",
           key: "reduceTransparency",
-          title: "Reduce transparency",
+          title: "Reduce Transparency",
           description: "Swap blurred surfaces for opaque fills.",
         },
       ],
     },
   ],
-};
+});

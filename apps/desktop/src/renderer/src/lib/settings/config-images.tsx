@@ -1,5 +1,5 @@
-import type { SectionConfig } from "@/components/settings-engine";
 import { useImageDownloadBinding } from "@/components/settings-section-downloads";
+import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;
 
@@ -11,13 +11,12 @@ const imageLossless = (v: Values) => v.format === "webp" || v.format === "avif";
 const imageProgressive = (v: Values) =>
   v.format === "jpeg" || v.format === "png";
 
-export const imagesSection: SectionConfig = {
+export const imagesSection = defineCustomSection({
   title: "Images",
   description: "Resize, format, and encoding for saved images.",
   groups: [
-    {
+    group.with(useImageDownloadBinding, {
       title: "Format",
-      useBinding: useImageDownloadBinding,
       items: [
         {
           control: "select",
@@ -46,10 +45,9 @@ export const imagesSection: SectionConfig = {
           ],
         },
       ],
-    },
-    {
-      title: "Image encoding",
-      useBinding: useImageDownloadBinding,
+    }),
+    group.with(useImageDownloadBinding, {
+      title: "Encoding",
       items: [
         {
           control: "select",
@@ -84,11 +82,11 @@ export const imagesSection: SectionConfig = {
         {
           control: "switch",
           key: "preserveMetadata",
-          title: "Preserve metadata",
+          title: "Preserve Metadata",
           description: "Keep EXIF and color profile when re-encoding.",
           visible: imageReencode,
         },
       ],
-    },
+    }),
   ],
-};
+});
