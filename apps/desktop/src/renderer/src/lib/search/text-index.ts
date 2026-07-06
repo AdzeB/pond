@@ -93,7 +93,7 @@ export function clearTextIndex(): void {
   indexed.clear();
 }
 
-export type KeywordMatchMode = "all" | "any";
+type KeywordMatchMode = "all" | "any";
 
 // Run a BM25 query and return a map of save id -> relevance score. `mode` "all"
 // requires every query term to match (threshold 0, like the old grid scorer);

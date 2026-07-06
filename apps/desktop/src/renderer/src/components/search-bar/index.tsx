@@ -130,7 +130,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
     <motion.div className={styles.card}>
       <div className={styles.editor}>
         <Search
-          className={styles.leadIcon}
+          className={styles["lead-icon"]}
           width={16}
           height={16}
           aria-hidden
@@ -158,10 +158,10 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       </div>
 
       <div className={styles.toolbar}>
-        <div className={styles.toolbarGroup}>
+        <div className={styles["toolbar-group"]}>
           <button
             type="button"
-            className={styles.iconBtn}
+            className={styles["icon-button"]}
             aria-label="Collapse"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => onCollapse?.()}
@@ -171,14 +171,14 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
           <FiltersMenu />
         </div>
 
-        <div className={styles.toolbarGroup}>
+        <div className={styles["toolbar-group"]}>
           <span className={styles.count}>
             {formatNumber(count)} {count === 1 ? "result" : "results"}
           </span>
           {hasContent ? (
             <button
               type="button"
-              className={styles.clearBtn}
+              className={styles["clear-button"]}
               aria-label="Clear filters"
               onMouseDown={(e) => e.preventDefault()}
               onClick={clearAll}

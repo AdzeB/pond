@@ -59,14 +59,14 @@ export function SortSection() {
 
   return (
     <Group title="Sort by" changed={changed}>
-      <div className={styles.sortRow}>
+      <div className={styles["sort-row"]}>
         <Select.Root
           value={key}
           onValueChange={(value) =>
             actions.setSort({ key: value as SortKey, dir })
           }
         >
-          <Select.Trigger className={styles.sortField}>
+          <Select.Trigger className={styles["sort-field"]}>
             <Select.Value>{(value: SortKey) => KEY_LABELS[value]}</Select.Value>
           </Select.Trigger>
           <Select.Portal>
@@ -82,7 +82,7 @@ export function SortSection() {
 
         <button
           type="button"
-          className={styles.dirButton}
+          className={styles["direction-button"]}
           aria-label="Toggle sort direction"
           onClick={() =>
             actions.setSort({ key, dir: dir === "asc" ? "desc" : "asc" })

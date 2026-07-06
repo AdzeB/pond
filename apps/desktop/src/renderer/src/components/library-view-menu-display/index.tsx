@@ -19,7 +19,7 @@ export function DisplaySection() {
 
   return (
     <Group title="Display" changed={changed}>
-      <div className={styles.chipList}>
+      <div className={styles["chip-list"]}>
         {TOGGLES.map(({ key, label }) => {
           const active = state.displayPrefs[key];
           return (

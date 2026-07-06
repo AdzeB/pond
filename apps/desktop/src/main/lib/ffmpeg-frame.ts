@@ -7,7 +7,7 @@ import { binariesAvailable } from "../core/refresh/binaries";
 
 const HARD_TIMEOUT_MS = 10_000;
 
-export interface ExtractedFrame {
+interface ExtractedFrame {
   path: string;
   mimeType: string;
   size: number;

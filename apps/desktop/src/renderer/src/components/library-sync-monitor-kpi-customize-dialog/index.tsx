@@ -54,11 +54,13 @@ function Body() {
   };
 
   return (
-    <Dialog.Popup className={styles.dlgPopup}>
-      <div className={styles.dlgHead}>
-        <div className={styles.dh}>
-          <Dialog.Title className={styles.dn}>Customize metrics</Dialog.Title>
-          <div className={styles.ds}>
+    <Dialog.Popup className={styles["dialog-popup"]}>
+      <div className={styles["dialog-header"]}>
+        <div className={styles["dialog-heading"]}>
+          <Dialog.Title className={styles["dialog-title"]}>
+            Customize metrics
+          </Dialog.Title>
+          <div className={styles["dialog-subtitle"]}>
             Choose what to track and whether each shows as a card or a chip.
           </div>
         </div>
@@ -69,13 +71,15 @@ function Body() {
         </Dialog.Close>
       </div>
 
-      <div className={styles.dlgBody}>
+      <div className={styles["dialog-body"]}>
         <div className={styles.field}>
           <div>
-            <div className={styles.fl}>Window</div>
-            <div className={styles.fh}>Rolling period the KPIs summarize.</div>
+            <div className={styles["field-label"]}>Window</div>
+            <div className={styles["field-hint"]}>
+              Rolling period the KPIs summarize.
+            </div>
           </div>
-          <span className={styles.segm}>
+          <span className={styles.segmented}>
             {WINDOWS.map((w) => (
               <button
                 key={w.value}
@@ -94,7 +98,7 @@ function Body() {
           if (metrics.length === 0) return null;
           return (
             <div key={group}>
-              <div className={styles.catgrp}>{group}</div>
+              <div className={styles["category-group"]}>{group}</div>
               {metrics.map((m) => {
                 const on = ids.includes(m.id);
                 const display = displayOf(m.id);
@@ -104,10 +108,12 @@ function Body() {
                     className={`${styles.metric} ${on ? "" : styles.off}`}
                   >
                     <div>
-                      <div className={styles.mn}>{m.label}</div>
-                      <div className={styles.md}>{m.description}</div>
+                      <div className={styles["metric-name"]}>{m.label}</div>
+                      <div className={styles["metric-description"]}>
+                        {m.description}
+                      </div>
                     </div>
-                    <span className={styles.dispseg}>
+                    <span className={styles["display-segmented"]}>
                       {(["card", "chip"] as MetricDisplay[]).map((d) => (
                         <button
                           key={d}
@@ -134,7 +140,7 @@ function Body() {
         })}
       </div>
 
-      <div className={styles.dlgActions}>
+      <div className={styles["dialog-actions"]}>
         <Button variant="secondary" onClick={reset}>
           Reset to defaults
         </Button>

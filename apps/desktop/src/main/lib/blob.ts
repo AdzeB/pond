@@ -6,13 +6,13 @@ const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024; // 50 MiB
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MiB -- avatars are tiny
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
-export interface FetchMediaOptions {
+interface FetchMediaOptions {
   imageMaxBytes?: number | null;
 }
 
 // transient = network / 408 / 429 / 5xx (retry); permanent = 4xx / oversized /
 // wrong-type (the URL will never succeed, so the worker settles it as done).
-export type BlobMiss = "transient" | "permanent";
+type BlobMiss = "transient" | "permanent";
 
 function classifyHttpStatus(status: number): BlobMiss {
   if (status === 408 || status === 425 || status === 429) return "transient";
@@ -20,11 +20,11 @@ function classifyHttpStatus(status: number): BlobMiss {
   return "permanent";
 }
 
-export type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
+type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
 
 // One downloaded media URL paired with its origin URL so callers can persist a
 // URL->file mapping (smart skip) and tally transient vs permanent misses.
-export interface MediaBatchEntry {
+interface MediaBatchEntry {
   url: string;
   file: TxSaveFile | null;
   miss?: BlobMiss;

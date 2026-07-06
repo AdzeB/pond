@@ -15,14 +15,14 @@ export interface MetricContext {
   days: number;
 }
 
-export interface MetricValue {
+interface MetricValue {
   value: string;
   delta?: { text: string; dir: "up" | "down" | "neutral" };
   spark?: number[];
   tone?: "ok" | "err" | "warn";
 }
 
-export interface MetricDef {
+interface MetricDef {
   id: string;
   label: string;
   group: "Sync" | "Items" | "Pipeline" | "System";

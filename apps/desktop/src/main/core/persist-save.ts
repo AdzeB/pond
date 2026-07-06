@@ -3,7 +3,7 @@ import { writeSaveInfo } from "../lib/library";
 import { patchTouchesInfo } from "../lib/library-format";
 import { applySavePatch, type WriteFileArgs } from "./pipeline/workers/apply";
 
-export interface PersistSaveOptions {
+interface PersistSaveOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
   replaceFilesWithKind?: WriteFileArgs["kind"];

@@ -26,7 +26,7 @@ export async function listViews(): Promise<SavedView[]> {
   return rows.map((row) => ({ ...row, query: coerceQuery(row.query) }));
 }
 
-export interface CreateViewInput {
+interface CreateViewInput {
   name: string;
   question?: string | null;
   query?: Query;

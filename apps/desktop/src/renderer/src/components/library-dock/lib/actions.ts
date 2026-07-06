@@ -26,7 +26,7 @@ import { useTagClipboard } from "@/stores/tag-clipboard";
 import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 
-export interface DockActions {
+interface DockActions {
   destructive: () => void;
   runSelectionTask: () => void;
   openTagMenu: () => void;

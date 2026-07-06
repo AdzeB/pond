@@ -1,7 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import { AuthRequiredError, TerminalError, TransientError } from "../errors";
 
-export interface InWindowResult {
+interface InWindowResult {
   ok: true;
   title?: string;
   description?: string;

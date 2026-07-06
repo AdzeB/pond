@@ -7,9 +7,6 @@ import { QuotedCard } from "@/components/tweet-card-quoted-card";
 import type { TweetCardData } from "./lib/data";
 import styles from "./styles.module.css";
 
-export type { TweetCardData } from "./lib/data";
-export { toTweetCardData } from "./lib/data";
-
 type Scheme = "light" | "dark";
 
 // Format the timestamp the way a tweet's detail view does: "h:mm AM · MMM D, YYYY".
@@ -44,7 +41,7 @@ export function TweetCard({
       <Header author={author} />
 
       {isReply && data.replyingTo ? (
-        <p className={styles.replyContext}>
+        <p className={styles["reply-context"]}>
           Replying to <span className={styles.entity}>@{data.replyingTo}</span>
         </p>
       ) : null}

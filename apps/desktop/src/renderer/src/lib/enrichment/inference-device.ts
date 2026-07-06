@@ -16,7 +16,7 @@ import { env } from "@huggingface/transformers";
 //      CPU path is taken. Half the cores keeps the UI responsive and the laptop
 //      cool while still making progress; the WebGPU path is unaffected.
 
-export type InferenceDevice = "webgpu" | "wasm";
+type InferenceDevice = "webgpu" | "wasm";
 
 let wasmConfigured = false;
 function capWasmThreads(): void {

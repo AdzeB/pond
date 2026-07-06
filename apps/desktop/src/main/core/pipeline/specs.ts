@@ -1,7 +1,5 @@
 import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
 
-export type { Op };
-
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
 // Per-op attempt budget, tuned to each worker's cost and recoverability.
@@ -30,7 +28,7 @@ export function planOps(source: Source): readonly Op[] {
   return UNIVERSAL_SPEC.filter((op) => op !== "capture_tweet");
 }
 
-export interface CaptureExpectation {
+interface CaptureExpectation {
   required: readonly string[];
   recommended: readonly string[];
 }

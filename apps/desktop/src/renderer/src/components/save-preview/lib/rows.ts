@@ -7,7 +7,7 @@ import {
 } from "@/lib/util/format";
 import { prettifyType } from "./helpers";
 
-export interface PaneRow {
+interface PaneRow {
   id: string;
   label: string;
   value: string;

@@ -8,14 +8,14 @@ import { useGovernorSnapshot } from "@/stores/governor-monitor";
 import { usePipelineSnapshot } from "@/stores/pipeline-monitor";
 import { useRefreshBackfillStatus } from "@/stores/refresh-monitor";
 
-export type ProcessKind =
+type ProcessKind =
   | "ingest"
   | "refresh"
   | "screenshot"
   | "enrichment"
   | "governor";
 
-export type ProcessState = "running" | "paused" | "idle";
+type ProcessState = "running" | "paused" | "idle";
 
 export interface ProcessItem {
   id: string;

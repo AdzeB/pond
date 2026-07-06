@@ -3,10 +3,4 @@ export {
   type DataTableProviderProps,
   useDataTable,
 } from "./data-table";
-export type {
-  CellContext,
-  ColumnAlign,
-  HeaderContext,
-  RenderRowArgs,
-  TableColumn,
-} from "./types";
+export type { RenderRowArgs, TableColumn } from "./types";

@@ -14,13 +14,13 @@ interface PackedPosition {
   height: number;
 }
 
-export interface PackedSaveItem extends PackedPosition {
+interface PackedSaveItem extends PackedPosition {
   kind?: "save";
   save: Save;
 }
 
 // Synthetic leading tile for in-flight (ingesting) saves the grid filter still hides.
-export interface PackedPlaceholderItem extends PackedPosition {
+interface PackedPlaceholderItem extends PackedPosition {
   kind: "placeholder";
   count: number;
 }

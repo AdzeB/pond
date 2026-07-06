@@ -18,13 +18,15 @@ export function Group({
 }) {
   return (
     <section className={styles.group}>
-      <header className={styles.groupHeader}>
-        <span className={styles.groupTitle}>
+      <header className={styles["group-header"]}>
+        <span className={styles["group-title"]}>
           {title}
-          {changed ? <span className={styles.groupDot} aria-hidden /> : null}
+          {changed ? (
+            <span className={styles["group-dot"]} aria-hidden />
+          ) : null}
         </span>
         {value != null ? (
-          <span className={styles.groupValue}>{value}</span>
+          <span className={styles["group-value"]}>{value}</span>
         ) : null}
       </header>
       {children}

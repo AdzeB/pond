@@ -86,9 +86,9 @@ function SkillForm({ initialName }: { initialName?: string }) {
           <ul className={styles.list}>
             {skills.map((skill) => (
               <li key={skill.id} className={styles.item}>
-                <div className={styles.itemText}>
-                  <span className={styles.itemName}>/{skill.name}</span>
-                  <span className={styles.itemDesc}>
+                <div className={styles["item-text"]}>
+                  <span className={styles["item-name"]}>/{skill.name}</span>
+                  <span className={styles["item-description"]}>
                     {skill.description || skill.prompt}
                   </span>
                 </div>

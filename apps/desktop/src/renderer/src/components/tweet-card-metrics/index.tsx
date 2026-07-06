@@ -29,8 +29,10 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
     <div className={styles.metrics}>
       {shown.map(({ key, Icon, value }) => (
         <span key={key} className={styles.metric}>
-          <Icon className={styles.metricIcon} width={18} height={18} />
-          <span className={styles.metricValue}>{formatCount(value ?? 0)}</span>
+          <Icon className={styles["metric-icon"]} width={18} height={18} />
+          <span className={styles["metric-value"]}>
+            {formatCount(value ?? 0)}
+          </span>
         </span>
       ))}
     </div>

@@ -10,7 +10,7 @@ import { cancelSync } from "./sync";
 type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
 type StorageGuardState = "ok" | "warn" | "exceeded";
 
-export interface StorageGuardStatus {
+interface StorageGuardStatus {
   state: StorageGuardState;
   pondBytes: number;
   capBytes: number | null;

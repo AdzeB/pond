@@ -56,7 +56,7 @@ export function SkillEditor({
 
   return (
     <Settings.Page width="medium">
-      <Settings.Header className={styles.editorHead}>
+      <Settings.Header className={styles["editor-header"]}>
         <Button
           icon
           size="sm"
@@ -103,8 +103,8 @@ export function SkillEditor({
         ) : null}
       </Settings.Header>
 
-      <div className={styles.editorBody}>
-        <div className={styles.editorForm}>
+      <div className={styles["editor-body"]}>
+        <div className={styles["editor-form"]}>
           <Field.Root className={styles.field}>
             <Field.Label className={styles.label}>Command</Field.Label>
             <Input.Root>

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useSyncBySource } from "@/stores/sync-monitor";
 
 // Mirrors the main-process SyncOutcome so the renderer never imports across IPC.
-export type SyncOutcome =
+type SyncOutcome =
   | "ok"
   | "noop"
   | "auth_required"

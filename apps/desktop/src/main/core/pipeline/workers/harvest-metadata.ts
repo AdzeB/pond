@@ -7,7 +7,7 @@ import { readSave } from "./apply";
 
 const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
 
-export interface HarvestPayload {
+interface HarvestPayload {
   force?: boolean;
 }
 

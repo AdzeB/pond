@@ -229,7 +229,7 @@ function MenuPanel({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={bouncySpring}
     >
-      <div className={styles.groupLabel}>{menu.title}</div>
+      <div className={styles["group-label"]}>{menu.title}</div>
       {menu.items.map((item, index) => {
         const option = options[index];
         return (
@@ -267,7 +267,7 @@ function MenuRow({
       onClick={onSelect}
     >
       <span className={styles.name}>{item.label}</span>
-      <span className={styles.desc}>
+      <span className={styles.description}>
         {item.kind === "field" ? item.token : item.description}
       </span>
     </button>

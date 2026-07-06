@@ -64,7 +64,7 @@ export interface ButtonItem {
   // Extra terms fed to the settings search index.
   keywords?: string[];
   label: ReactNode;
-  variant?: "primary" | "ghost" | "danger";
+  variant?: "primary" | "ghost" | "destructive";
   size?: "xs" | "sm";
   visible?: (values: Record<string, unknown>) => boolean;
   disabled?: (values: Record<string, unknown>) => boolean;

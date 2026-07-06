@@ -27,7 +27,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   cancelLabel = "Cancel",
-  confirmVariant = "danger",
+  confirmVariant = "destructive",
   busy = false,
   onConfirm,
   children,

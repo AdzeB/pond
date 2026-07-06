@@ -9,12 +9,12 @@
   padding: 8px;
 }
 
-.inputRoot {
+.input-root {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.inputRoot .inputField {
+.input-root .input-field {
   height: 24px;
   min-height: 24px;
   padding-top: 0;
@@ -24,16 +24,16 @@
   box-shadow: none;
 }
 
-.inputRoot .inputField:hover {
+.input-root .input-field:hover {
   box-shadow: none;
 }
 
-.inputRoot .inputField:focus-visible {
+.input-root .input-field:focus-visible {
   outline: none;
   box-shadow: none;
 }
 
-.kbd {
+.keyboard {
   margin-left: 4px;
   font-family: inherit;
   font-size: 11px;

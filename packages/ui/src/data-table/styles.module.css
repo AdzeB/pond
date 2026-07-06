@@ -17,7 +17,7 @@
   height: 28px;
 }
 
-.head {
+.header {
   position: relative;
   display: flex;
   align-items: center;
@@ -53,21 +53,21 @@
   background: var(--ds-gray-a6);
 }
 
-.head[data-align="end"] {
+.header[data-align="end"] {
   justify-content: flex-end;
 }
 
-.head[data-align="center"] {
+.header[data-align="center"] {
   justify-content: center;
 }
 
-.head-static {
+.header-static {
   font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-11);
 }
 
-.select-head {
+.select-header {
   display: flex;
   align-items: center;
   justify-content: center;

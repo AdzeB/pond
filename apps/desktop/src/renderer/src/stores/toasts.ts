@@ -1,14 +1,14 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type ToastTone = "info" | "success" | "error";
+type ToastTone = "info" | "success" | "error";
 
-export interface ToastAction {
+interface ToastAction {
   readonly label: string;
   readonly onAction: () => void;
 }
 
-export interface Toast {
+interface Toast {
   readonly id: number;
   readonly message: string;
   readonly tone: ToastTone;

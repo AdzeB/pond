@@ -74,7 +74,7 @@ function useChipSelection(nodeKey: NodeKey) {
 
 // ---- Skill chip: expands to its saved prompt when the editor is read ----
 
-export type SerializedSkillChipNode = Spread<
+type SerializedSkillChipNode = Spread<
   { skillId: string; name: string; prompt: string },
   SerializedLexicalNode
 >;
@@ -197,7 +197,7 @@ export function $isSkillChipNode(
 
 // ---- Mention chip: a referenced save, threaded to the agent by id ----
 
-export type SerializedMentionChipNode = Spread<
+type SerializedMentionChipNode = Spread<
   { saveId: string; title: string },
   SerializedLexicalNode
 >;
@@ -318,10 +318,7 @@ export function $isMentionChipNode(
 
 // ---- Tag chip: expands to the bare tag name, which Stage A resolves ----
 
-export type SerializedTagChipNode = Spread<
-  { tag: string },
-  SerializedLexicalNode
->;
+type SerializedTagChipNode = Spread<{ tag: string }, SerializedLexicalNode>;
 
 export class TagChipNode extends DecoratorNode<ReactNode> {
   __tag: string;

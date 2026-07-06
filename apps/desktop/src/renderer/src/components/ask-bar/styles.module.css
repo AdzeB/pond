@@ -9,7 +9,7 @@
   padding: 6px;
 }
 
-.iconBtn {
+.icon-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -44,14 +44,14 @@
 
 /* ----- Chat transcript ----- */
 
-.chatHead {
+.chat-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 6px 2px;
 }
 
-.chatTitle {
+.chat-title {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -64,7 +64,7 @@
   }
 }
 
-.chatNew {
+.chat-new {
   display: inline-flex;
   gap: 4px;
   align-items: center;
@@ -103,7 +103,7 @@
   gap: 8px;
 }
 
-.userMsg {
+.user-message {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -112,7 +112,7 @@
   max-width: 85%;
 }
 
-.userImg {
+.user-image {
   max-width: 180px;
   max-height: 140px;
   object-fit: cover;
@@ -120,7 +120,7 @@
   box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
 }
 
-.userText {
+.user-text {
   padding: 7px 11px;
   font-size: 13px;
   line-height: 1.45;
@@ -132,7 +132,7 @@
 
 /* A chip rendered inline within the sent message bubble, mirroring the
    composer's chips so the transcript reads back exactly as typed. */
-.userChip {
+.user-chip {
   display: inline;
   padding: 1px 5px;
   margin: 0 1px;
@@ -145,7 +145,7 @@
   -webkit-box-decoration-break: clone;
 }
 
-.assistantMsg {
+.assistant-message {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -153,12 +153,12 @@
   max-width: 100%;
 }
 
-.turnStatus {
+.turn-status {
   display: flex;
   min-height: 18px;
 }
 
-.statusLine {
+.status-line {
   display: inline-flex;
   gap: 6px;
   align-items: baseline;
@@ -177,7 +177,7 @@
   border: 0;
 }
 
-.turnBody {
+.turn-body {
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
@@ -225,13 +225,13 @@
   }
 }
 
-.thumbBlank {
+.thumb-blank {
   width: 100%;
   height: 100%;
   background: var(--ds-gray-4);
 }
 
-.thumbMore {
+.thumb-more {
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -270,34 +270,34 @@
   }
 }
 
-.actionDanger:hover {
+.action-danger:hover {
   color: var(--ds-red-1, var(--ds-gray-1));
   background: var(--ds-red-9, var(--ds-gray-11));
 }
 
 /* ----- Recent-asks history popover ----- */
 
-.historyPopup {
+.history-popup {
   --popup-min-width: 240px;
 
   max-width: 320px;
   padding-inline: 4px;
 }
 
-.historyLabel {
+.history-label {
   padding: 4px 8px 2px;
   font-size: 11px;
   font-weight: 550;
   color: var(--ds-gray-9);
 }
 
-.historyEmpty {
+.history-empty {
   padding: 4px 8px 6px;
   font-size: 12px;
   color: var(--ds-gray-10);
 }
 
-.historyItem {
+.history-item {
   width: 100%;
   padding: 5px 8px;
   overflow: hidden;
@@ -320,7 +320,7 @@
 
 /* ----- Staged query image ----- */
 
-.attachRow {
+.attach-row {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -330,7 +330,7 @@
   border-radius: var(--ds-radius-md);
 }
 
-.attachThumb {
+.attach-thumb {
   display: inline-flex;
   flex-shrink: 0;
   width: 32px;
@@ -345,7 +345,7 @@
   }
 }
 
-.attachLabel {
+.attach-label {
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -354,7 +354,7 @@
   white-space: nowrap;
 }
 
-.attachRemove {
+.attach-remove {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -429,7 +429,7 @@
   padding: 2px;
 }
 
-.toolbarGroup {
+.toolbar-group {
   display: inline-flex;
   flex-shrink: 0;
   gap: 2px;
@@ -470,13 +470,13 @@
   }
 }
 
-.resultLabel {
+.result-label {
   color: var(--ds-gray-11);
 }
 
 /* ----- Collapsed status pill ----- */
 
-.statusPill {
+.status-pill {
   position: relative;
   display: inline-flex;
   gap: 8px;
@@ -486,7 +486,7 @@
   overflow: hidden;
 }
 
-.avatarBtn {
+.avatar-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -511,7 +511,7 @@
   }
 }
 
-.statusText {
+.status-text {
   display: inline-flex;
   gap: 5px;
   align-items: baseline;
@@ -535,7 +535,7 @@
   color: var(--ds-gray-11);
 }
 
-.sep {
+.separator {
   flex-shrink: 0;
   color: var(--ds-gray-7);
 }
@@ -552,7 +552,7 @@
 }
 
 /* In the transcript, relaxation chips wrap instead of clipping to one line. */
-.assistantMsg .suggestions {
+.assistant-message .suggestions {
   flex-wrap: wrap;
   overflow: visible;
 }
@@ -580,12 +580,12 @@
   }
 }
 
-.suggestionCount {
+.suggestion-count {
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
 }
 
-.q {
+.detail {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -594,7 +594,7 @@
   white-space: nowrap;
 }
 
-.endBtn {
+.end-button {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;

@@ -1,15 +1,6 @@
 import { existsSync } from "node:fs";
-import { join, resolve as resolvePath } from "node:path";
-import {
-  app,
-  BrowserWindow,
-  globalShortcut,
-  ipcMain,
-  nativeTheme,
-  net,
-  session,
-  shell,
-} from "electron";
+import { resolve as resolvePath } from "node:path";
+import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
 import {
   DEFAULT_INGEST_PORT,
@@ -17,11 +8,10 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
-import { emptyTrashOlderThan } from "./core/library-ops";
 import {
   type BackfillStatusUpdate,
   subscribeToBackfillStatus,
-} from "./core/pipeline/enqueue";
+} from "./core/pipeline/backfill-screenshots";
 import {
   flushGovernor,
   type GovernorSnapshot,
@@ -32,17 +22,15 @@ import {
   startReconciler,
   subscribeToPipeline,
 } from "./core/pipeline/reconciler";
-import { getPrefs, invalidatePrefs, setPrefs } from "./core/prefs";
+import { getPrefs, invalidatePrefs } from "./core/prefs";
 import {
   type RefreshBackfillStatus,
   subscribeToRefreshBackfillStatus,
 } from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
-import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
 import {
-  isSyncBlockedByStorageGuard,
   startStorageWatcher,
   stopStorageWatcher,
 } from "./core/storage-watcher";
@@ -50,20 +38,38 @@ import {
   recoverInterruptedSyncs,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
-  syncAllSources,
 } from "./core/sync";
+import {
+  registerSyncCron,
+  registerTrashCron,
+  registerYtDlpUpdateCron,
+} from "./crons";
 import { getDb } from "./db";
+import { handleDeepLink } from "./deep-link";
 import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { pruneMissingLibraries, rememberLibrary } from "./lib/library-recents";
-import { schedule } from "./lib/scheduler";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
-import { ensureTray, setTrayVisible, type TrayHandle } from "./tray";
+import { configureSessionDefaults } from "./session-config";
+import { setTrayVisible } from "./tray";
 import { registerAutoUpdater } from "./updater";
+import {
+  beginQuit,
+  createWindow,
+  focusedOrMain,
+  getMainWindow,
+  handleActivate,
+  hasTray,
+  initTray,
+  openLibraryWindow,
+  queueTrayRefresh,
+  setCloseToTray,
+  summonMainWindow,
+} from "./window";
 
 // Force app.name before any menu/dock work; dev falls back to "Electron" otherwise.
 app.setName("Pond");
@@ -82,22 +88,6 @@ log.info("[pond] main starting", {
 });
 
 let httpServer: RunningServer | null = null;
-let mainWindow: BrowserWindow | null = null;
-let tray: TrayHandle | null = null;
-let trayRefreshQueued = false;
-// Mirror the close-to-tray toggle here; close events fire synchronously.
-let closeToTrayEnabled = false;
-// Set during graceful quit so the close handler stops swallowing the event.
-let isQuitting = false;
-
-function queueTrayRefresh() {
-  if (!tray || trayRefreshQueued) return;
-  trayRefreshQueued = true;
-  setTimeout(() => {
-    trayRefreshQueued = false;
-    void tray?.refresh();
-  }, 150);
-}
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
@@ -131,298 +121,21 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient("pond");
 }
 
-let pendingDeepLink: string | null = null;
-function handleDeepLink(url: string): void {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "pond:") return;
-    let route: string | null = null;
-    if (parsed.hostname === "" || parsed.hostname === "library") {
-      route = "/";
-    } else if (parsed.hostname === "item") {
-      const id = parsed.pathname.replace(/^\//, "");
-      if (id) route = `/save/${encodeURIComponent(id)}`;
-    } else if (parsed.hostname === "search") {
-      const q = parsed.searchParams.get("q") ?? "";
-      route = `/?q=${encodeURIComponent(q)}`;
-    } else if (parsed.hostname === "capture") {
-      const target = parsed.searchParams.get("url") ?? "";
-      route = `/?capture=1${target ? `&url=${encodeURIComponent(target)}` : ""}`;
-    } else if (parsed.hostname === "pair") {
-      const token = parsed.searchParams.get("token") ?? "";
-      route = `/settings/general${token ? `?token=${encodeURIComponent(token)}` : ""}`;
-    } else if (parsed.hostname === "settings") {
-      const sub = parsed.pathname.replace(/^\//, "").replace(/\/+$/, "");
-      route = sub ? `/settings/${sub}` : "/settings";
-    }
-    if (!route) {
-      log.info("[pond deep-link] ignored", url);
-      return;
-    }
-    log.info("[pond deep-link] route", route);
-    const target =
-      mainWindow && !mainWindow.isDestroyed()
-        ? mainWindow
-        : (BrowserWindow.getAllWindows().find((w) => !w.isDestroyed()) ?? null);
-    if (!target) {
-      pendingDeepLink = route;
-      return;
-    }
-    if (target.isMinimized()) target.restore();
-    target.show();
-    target.focus();
-    target.webContents.send(IPC.nav, route);
-  } catch (err) {
-    log.warn("[pond deep-link] parse failed", url, err);
-  }
-}
-
 app.on("open-url", (event, url) => {
   event.preventDefault();
-  handleDeepLink(url);
+  handleDeepLink(url, getMainWindow());
 });
 
 app.on("second-instance", (_event, argv) => {
   const url = argv.find((a) => a.startsWith("pond://"));
-  if (url) handleDeepLink(url);
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
+  if (url) handleDeepLink(url, getMainWindow());
+  const win = getMainWindow();
+  if (win && !win.isDestroyed()) {
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
   }
 });
-
-function configureSessionDefaults(): void {
-  const denyAll: Parameters<
-    Electron.Session["setPermissionRequestHandler"]
-  >[0] = (_wc, _permission, callback) => callback(false);
-  // The app session denies everything except HTML fullscreen, which the video
-  // player needs (requestFullscreen() is gated by this handler in Electron).
-  session.defaultSession.setPermissionRequestHandler(
-    (_wc, permission, callback) => callback(permission === "fullscreen"),
-  );
-  session.defaultSession.setPermissionCheckHandler(
-    (_wc, permission) => permission === "fullscreen",
-  );
-  try {
-    session
-      .fromPartition("persist:pond-scrapers")
-      .setPermissionRequestHandler(denyAll);
-  } catch (err) {
-    log.warn("[pond] scrapers session permission handler failed", err);
-  }
-
-  if (app.isPackaged) {
-    const PROD_CSP = [
-      "default-src 'self' pond:",
-      "img-src 'self' data: blob: pond: https:",
-      "media-src 'self' data: blob: pond: https:",
-      "style-src 'self' 'unsafe-inline'",
-      // onnxruntime-web needs wasm-unsafe-eval and blob: for its wasm module/worker.
-      "script-src 'self' 'wasm-unsafe-eval' blob:",
-      "worker-src 'self' blob:",
-      "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
-      "font-src 'self' data:",
-      "frame-src https://www.youtube-nocookie.com",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-    ].join("; ");
-    session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
-      const headers = { ...(details.responseHeaders ?? {}) };
-      for (const key of Object.keys(headers)) {
-        if (key.toLowerCase() === "content-security-policy") {
-          delete headers[key];
-        }
-      }
-      headers["Content-Security-Policy"] = [PROD_CSP];
-      // Mirror the dev server's cross-origin isolation so onnxruntime-web can use
-      // multi-threaded WASM in packaged builds too. `credentialless` keeps remote
-      // images/media loading without requiring CORP on the third party.
-      headers["Cross-Origin-Opener-Policy"] = ["same-origin"];
-      headers["Cross-Origin-Embedder-Policy"] = ["credentialless"];
-      cb({ responseHeaders: headers });
-    });
-  }
-}
-
-interface ShellHint {
-  theme?: "light" | "dark";
-  baseL?: number;
-  baseC?: number;
-  baseH?: number;
-  accentL?: number;
-  accentC?: number;
-  accentH?: number;
-  contrast?: number;
-  fgDir?: number;
-  pointerCursors?: boolean;
-}
-
-async function resolveShellHint(): Promise<ShellHint> {
-  try {
-    const { resolveActiveTheme, themeEngineVars } = await import(
-      "@pond/schema/db"
-    );
-    const prefs = await getPrefs();
-    const def = resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors);
-    const v = themeEngineVars(def);
-    return {
-      theme: v.isDark ? "dark" : "light",
-      baseL: v.baseL,
-      baseC: v.baseC,
-      baseH: v.baseH,
-      accentL: v.accentL,
-      accentC: v.accentC,
-      accentH: v.accentH,
-      contrast: v.contrast,
-      fgDir: v.fgDir,
-      pointerCursors: prefs.preferences.pointerCursors === true,
-    };
-  } catch {
-    return {};
-  }
-}
-
-async function createWindow(): Promise<BrowserWindow> {
-  const isMac = process.platform === "darwin";
-
-  // Resolve before the window exists so the first paint is themed.
-  const shellHint = await resolveShellHint();
-  const prefs = await getPrefs().catch(() => null);
-  const restored =
-    prefs?.window.restorePosition && prefs.window.bounds
-      ? prefs.window.bounds
-      : null;
-
-  const win = new BrowserWindow({
-    width: restored?.width ?? 1280,
-    height: restored?.height ?? 800,
-    x: restored?.x,
-    y: restored?.y,
-    show: false,
-    autoHideMenuBar: true,
-    titleBarStyle: isMac ? "hiddenInset" : "default",
-    trafficLightPosition: isMac ? { x: 16, y: 28 } : undefined,
-    webPreferences: {
-      preload: join(__dirname, "../preload/index.cjs"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-      // Throttle timers/rAF when the window is minimized or fully occluded.
-      // This is Electron's default, but we set it explicitly: combined with the
-      // renderer's visibility-gated enrichment sweep, it keeps a backgrounded
-      // window from heating the machine. (The renderer still pauses on-device
-      // inference itself via `document.hidden` — see lib/enrichment/sweep.ts.)
-      backgroundThrottling: true,
-      additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
-    },
-  });
-
-  win.on("ready-to-show", () => {
-    win.show();
-  });
-
-  // Persist bounds on resize/move (debounced) so the next launch restores them.
-  let saveBoundsTimer: NodeJS.Timeout | null = null;
-  const saveBounds = () => {
-    if (win.isDestroyed()) return;
-    if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
-    saveBoundsTimer = setTimeout(() => {
-      saveBoundsTimer = null;
-      const b = win.getBounds();
-      void setPrefs({ window: { bounds: b } }).catch((err) =>
-        log.warn("[pond] persist window bounds failed", err),
-      );
-    }, 400);
-  };
-  win.on("resize", saveBounds);
-  win.on("move", saveBounds);
-
-  // Close-to-tray: hide the window instead of quitting; tray menu still has Quit.
-  win.on("close", (event) => {
-    if (isQuitting) return;
-    if (!closeToTrayEnabled) return;
-    if (!tray) return;
-    if (win.isDestroyed()) return;
-    if (mainWindow !== win) return;
-    event.preventDefault();
-    win.hide();
-    if (process.platform === "darwin") app.dock?.hide();
-  });
-
-  win.webContents.on("did-finish-load", () => {
-    if (win.isDestroyed()) return;
-    if (pendingDeepLink) {
-      const route = pendingDeepLink;
-      pendingDeepLink = null;
-      win.webContents.send(IPC.nav, route);
-    }
-  });
-
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    // Only hand http(s) to the OS; other schemes via openExternal are an RCE vector.
-    const isHttp = (() => {
-      try {
-        const u = new URL(url);
-        return u.protocol === "http:" || u.protocol === "https:";
-      } catch {
-        return false;
-      }
-    })();
-    if (isHttp) void shell.openExternal(url);
-    else log.warn("[pond] blocked window.open for non-http(s) URL", url);
-    return { action: "deny" };
-  });
-
-  const devUrl = process.env.ELECTRON_RENDERER_URL;
-
-  win.webContents.on("will-navigate", (event, url) => {
-    const allowed = (() => {
-      if (devUrl && url.startsWith(devUrl)) return true;
-      if (url.startsWith("file://")) return true;
-      if (url.startsWith("pond://")) return true;
-      if (url === "about:blank") return true;
-      return false;
-    })();
-    if (!allowed) {
-      event.preventDefault();
-      log.warn("[pond] blocked navigation away from trusted origin", url);
-      const u = (() => {
-        try {
-          return new URL(url);
-        } catch {
-          return null;
-        }
-      })();
-      if (u && (u.protocol === "http:" || u.protocol === "https:")) {
-        void shell.openExternal(u.toString());
-      }
-    }
-  });
-  if (devUrl) {
-    await win.loadURL(devUrl);
-    if (
-      process.env.POND_OPEN_DEVTOOLS === "1" ||
-      process.env.POND_DEVTOOLS === "1"
-    ) {
-      win.webContents.openDevTools({ mode: "detach" });
-    }
-  } else {
-    await win.loadFile(join(__dirname, "../renderer/index.html"));
-  }
-
-  return win;
-}
-
-async function openLibraryWindow(): Promise<void> {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    mainWindow = await createWindow();
-  }
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
-}
 
 app.whenReady().then(async () => {
   const paths = resolvePaths();
@@ -455,25 +168,20 @@ app.whenReady().then(async () => {
   const wantsLaunchHidden = await getPrefs()
     .then((p) => p.window.launchHidden === true)
     .catch(() => false);
-  closeToTrayEnabled = await getPrefs()
-    .then((p) => p.window.closeToTray === true)
-    .catch(() => false);
+  setCloseToTray(
+    await getPrefs()
+      .then((p) => p.window.closeToTray === true)
+      .catch(() => false),
+  );
   const launchedHidden =
     wantsLaunchHidden ||
     loginItem.wasOpenedAsHidden === true ||
     loginItem.wasOpenedAtLogin === true;
   if (!launchedHidden) {
-    mainWindow = await createWindow();
+    await createWindow();
   }
 
-  app.on("activate", async () => {
-    if (process.platform === "darwin") app.dock?.show();
-    if (BrowserWindow.getAllWindows().length === 0) {
-      mainWindow = await createWindow();
-    } else {
-      mainWindow?.show();
-    }
-  });
+  app.on("activate", () => void handleActivate());
 
   void postLaunchInit().catch((err) =>
     log.error("[pond] post-launch init failed", err),
@@ -516,27 +224,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] storage watcher failed to start", err),
   );
 
-  try {
-    tray = await ensureTray({
-      onOpenLibrary: openLibraryWindow,
-      onOpenSettings: async () => {
-        await openLibraryWindow();
-        mainWindow?.webContents.send(IPC.nav, "/settings");
-      },
-      onOpenSave: async (id) => {
-        await openLibraryWindow();
-        mainWindow?.webContents.send(
-          IPC.nav,
-          `/save/${encodeURIComponent(id)}`,
-        );
-      },
-    });
-  } catch (err) {
-    log.error(
-      "[pond] failed to create tray; menu-bar icon will be unavailable",
-      err,
-    );
-  }
+  await initTray();
   registerSyncActionListener(() => queueTrayRefresh());
 
   void applyPrefsAtRuntime().catch((err) =>
@@ -550,101 +238,13 @@ async function postLaunchInit(): Promise<void> {
   subscribeToRefreshBackfillStatus(broadcastRefreshBackfill);
 }
 
-function registerTrashCron() {
-  schedule({
-    name: "trash",
-    every: 60 * 60 * 1000,
-    initialDelay: 30_000,
-    fn: async () => {
-      const prefs = await getPrefs();
-      const days = prefs.trash.autoEmptyDays;
-      if (days === null) return;
-      const purged = await emptyTrashOlderThan(days);
-      if (purged > 0) {
-        log.info(
-          `[pond trash-cron] purged ${purged} items older than ${days}d`,
-        );
-      }
-    },
-  });
-}
-
-function registerYtDlpUpdateCron() {
-  schedule({
-    name: "yt-dlp-update",
-    every: 24 * 60 * 60 * 1000,
-    // yt-dlp isn't bundled; check soon after launch, then daily.
-    initialDelay: 5_000,
-    fn: () => maybeUpdateYtDlp(),
-  });
-}
-
-// Last cron run this session; 0 = never, so the first due-check does a catch-up.
-let lastSyncCronRunAt = 0;
-// Random pre-run delay so many installs don't hit a platform in lockstep.
-const SYNC_CRON_JITTER_MS = 10 * 60_000;
-
-// Background sync scheduler. Unattended traffic is the highest account-risk path,
-// so it short-circuits on disabled-pref / offline / storage-guard / not-yet-due
-// and otherwise defers to the rate governor.
-function registerSyncCron() {
-  schedule({
-    name: "sync-all",
-    // Poll every 30m and decide if a run is due, so the configured interval can
-    // change at runtime without re-registering the job.
-    every: 30 * 60_000,
-    initialDelay: 5 * 60_000,
-    fn: async () => {
-      const prefs = await getPrefs();
-      const cron = prefs.sync.cron;
-      if (!cron.enabled) return;
-      if (isSyncBlockedByStorageGuard()) {
-        log.info("[pond sync-cron] storage guard active, skipping");
-        return;
-      }
-      if (!net.isOnline()) {
-        log.info("[pond sync-cron] offline, skipping");
-        return;
-      }
-      const intervalMs = Math.max(1, cron.intervalHours) * 60 * 60_000;
-      if (Date.now() - lastSyncCronRunAt < intervalMs) return;
-
-      const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
-      await new Promise((resolve) => setTimeout(resolve, jitter));
-      // Re-check online after the jitter wait; connectivity may have dropped.
-      if (!net.isOnline()) return;
-
-      lastSyncCronRunAt = Date.now();
-      log.info("[pond sync-cron] starting background sync", {
-        intervalHours: cron.intervalHours,
-      });
-      await syncAllSources({ trigger: "cron" });
-    },
-  });
-}
-
-function focusedOrMain(): BrowserWindow | null {
-  const target = mainWindow ?? BrowserWindow.getFocusedWindow();
-  if (!target || target.isDestroyed()) return null;
-  if (target.isMinimized()) target.restore();
-  target.show();
-  target.focus();
-  return target;
-}
-
-async function summonMainWindow() {
-  if (!mainWindow || mainWindow.isDestroyed()) {
-    mainWindow = await createWindow();
-  }
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
-}
-
 function registerSummonHotkey() {
   const isMac = process.platform === "darwin";
   const summonAccel = isMac ? "Command+Shift+L" : "Control+Shift+L";
-  const ok = globalShortcut.register(summonAccel, summonMainWindow);
+  const ok = globalShortcut.register(
+    summonAccel,
+    () => void summonMainWindow(),
+  );
   if (!ok) log.warn(`[pond] summon hotkey ${summonAccel} not registered`);
 }
 
@@ -659,13 +259,13 @@ export async function applyPrefsAtRuntime() {
       openAsHidden: true,
     });
   }
-  closeToTrayEnabled = prefs.window.closeToTray === true;
+  setCloseToTray(prefs.window.closeToTray === true);
 }
 
 export async function applyWindowPrefsAtRuntime() {
   invalidatePrefs();
   const prefs = await getPrefs();
-  closeToTrayEnabled = prefs.window.closeToTray === true;
+  setCloseToTray(prefs.window.closeToTray === true);
 }
 
 export async function restartHttpServer(): Promise<{
@@ -693,12 +293,12 @@ app.on("window-all-closed", () => {
     app.dock?.hide();
     return;
   }
-  if (tray) return;
+  if (hasTray()) return;
   app.quit();
 });
 
 app.on("before-quit", async () => {
-  isQuitting = true;
+  beginQuit();
   globalShortcut.unregisterAll();
   try {
     stopStorageWatcher();

@@ -3,7 +3,7 @@
 // the same pipelines as the defaults. Ratings are coarse (1-5) and meant for
 // relative comparison within a catalog, not cross-model benchmarks.
 
-export interface ModelSpec {
+interface ModelSpec {
   label: string;
   value: string;
 }

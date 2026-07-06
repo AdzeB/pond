@@ -49,18 +49,6 @@
   }
 }
 
-.scroller .media-shell {
-  animation: coverflow linear both;
-  animation-timeline: view(inline);
-  will-change: transform, opacity, filter;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .scroller .media-shell {
-    animation: none;
-  }
-}
-
 /* Contain-fit the media against both axes while preserving its true ratio:
    width is the smaller of the horizontal cap and the height-bound width
    (available height x ratio), so the box itself equals the displayed media and
@@ -77,6 +65,18 @@
   background: transparent;
   border-radius: 8px;
   box-shadow: var(--ds-shadow-2);
+}
+
+.scroller .media-shell {
+  animation: coverflow linear both;
+  animation-timeline: view(inline);
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroller .media-shell {
+    animation: none;
+  }
 }
 
 .media {

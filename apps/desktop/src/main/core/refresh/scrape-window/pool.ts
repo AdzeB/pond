@@ -81,7 +81,7 @@ function createHiddenWindow(): BrowserWindow {
   return win;
 }
 
-export interface Lease {
+interface Lease {
   win: BrowserWindow;
   release: () => void;
 }
@@ -128,7 +128,7 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
   };
 }
 
-export interface LeaseOptions {
+interface LeaseOptions {
   /** Apply the stricter first/full-sync pacing profile. */
   firstSync?: boolean;
   /** Abort the governor wait (e.g. on sync cancel). */

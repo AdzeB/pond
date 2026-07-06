@@ -59,7 +59,7 @@ export function ColorSwatch({ color }: { color: string }) {
         render={
           <button
             type="button"
-            className={styles.colorSwatch}
+            className={styles["color-swatch"]}
             style={{ background: color }}
             aria-label={`Color ${color}`}
           />

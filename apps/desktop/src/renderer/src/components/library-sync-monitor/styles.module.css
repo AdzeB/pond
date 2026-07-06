@@ -73,12 +73,12 @@
   color: var(--ok-t);
 }
 
-.activeDot {
+.active-dot {
   width: 7px;
   height: 7px;
   background: var(--ok);
   border-radius: 50%;
-  animation: pulseG 2s infinite;
+  animation: pulse-glow 2s infinite;
 }
 
 .actions {
@@ -94,27 +94,27 @@
   gap: 10px;
 }
 
-.secHead {
+.section-header {
   display: flex;
   gap: 10px;
   align-items: center;
   min-height: 24px;
 }
 
-.secLabel {
+.section-label {
   font-size: 11px;
   color: var(--ink-3);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.secMeta {
+.section-meta {
   margin-left: auto;
   font-size: 11px;
   color: var(--ink-3);
 }
 
-.secAction {
+.section-action {
   margin-left: auto;
 }
 
@@ -126,7 +126,7 @@
 }
 
 /* Trailing add tile — mirrors an icon tile: rounded square + short label. */
-.addTile {
+.add-tile {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -140,16 +140,16 @@
   transition: background 0.15s ease;
 }
 
-.addTile:hover:not(:disabled) {
+.add-tile:hover:not(:disabled) {
   background: var(--hover);
 }
 
-.addTile:disabled {
+.add-tile:disabled {
   cursor: default;
   opacity: 0.55;
 }
 
-.addSquare {
+.add-square {
   display: flex;
   flex: none;
   align-items: center;
@@ -161,35 +161,35 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.addTile:hover:not(:disabled) .addSquare {
+.add-tile:hover:not(:disabled) .add-square {
   color: var(--ink);
   border-color: var(--ink-3);
 }
 
-.addLabel {
+.add-label {
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-2);
 }
 
 /* ── collapsible secondary sections ─────────────────────────────────────── */
-.acc {
+.accordion {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.accItem {
+.accordion-item {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.accHeader {
+.accordion-header {
   margin: 0;
 }
 
-.accTrigger {
+.accordion-trigger {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -205,32 +205,32 @@
   border: 0;
 }
 
-.accLabel {
+.accordion-label {
   font-weight: 500;
 }
 
-.accMeta {
+.accordion-meta {
   font-size: 11px;
   text-transform: none;
   letter-spacing: 0;
 }
 
-.accChevron {
+.accordion-chevron {
   margin-left: auto;
   color: var(--ink-3);
   transition: transform 0.18s ease;
 }
 
-.accTrigger[data-panel-open] .accChevron {
+.accordion-trigger[data-panel-open] .accordion-chevron {
   transform: rotate(180deg);
 }
 
-.accPanel {
+.accordion-panel {
   overflow: hidden;
 }
 
 /* ── keyframes ──────────────────────────────────────────────────────────── */
-@keyframes pulseG {
+@keyframes pulse-glow {
   0% {
     box-shadow: 0 0 0 0 var(--ds-grass-a6);
   }
@@ -243,11 +243,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .activeDot {
+  .active-dot {
     animation: none;
   }
 
-  .accChevron {
+  .accordion-chevron {
     transition: none;
   }
 }

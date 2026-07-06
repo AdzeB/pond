@@ -1,5 +1,5 @@
 /* Trails a group title when that group is off its default. */
-.groupDot {
+.group-dot {
   display: inline-block;
   width: 5px;
   height: 5px;
@@ -17,7 +17,7 @@
   padding: 8px;
 }
 
-.groupHeader {
+.group-header {
   display: flex;
   gap: 8px;
   align-items: baseline;
@@ -25,14 +25,14 @@
   min-height: 14px;
 }
 
-.groupTitle {
+.group-title {
   font-size: 11px;
   font-weight: 600;
   color: var(--ds-gray-10);
   text-transform: uppercase;
 }
 
-.groupValue {
+.group-value {
   font-size: 11px;
   font-weight: 500;
   color: var(--ds-gray-11);

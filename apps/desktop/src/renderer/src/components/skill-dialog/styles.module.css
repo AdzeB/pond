@@ -52,20 +52,20 @@
   }
 }
 
-.itemText {
+.item-text {
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
 
-.itemName {
+.item-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.itemDesc {
+.item-description {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;

@@ -8,7 +8,7 @@
   box-shadow: var(--shadow);
 }
 
-.typepill {
+.type-pill {
   padding: 1px 7px;
   font-size: 11px;
   font-weight: 600;
@@ -18,7 +18,7 @@
   border-radius: 6px;
 }
 
-.fillbar {
+.progress-fill {
   position: relative;
   height: 100%;
   background: var(--run);
@@ -26,7 +26,7 @@
   transition: width 0.3s ease;
 }
 
-.indet {
+.progress-indeterminate {
   position: absolute;
   top: 0;
   left: 0;
@@ -34,12 +34,12 @@
   height: 100%;
   background: linear-gradient(90deg, transparent, var(--run), transparent);
   border-radius: var(--ds-radius-full);
-  animation: indet 1.3s ease-in-out infinite;
+  animation: indeterminate 1.3s ease-in-out infinite;
   will-change: transform;
 }
 
 /* process row */
-.mini {
+.process-row {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -47,16 +47,16 @@
   border-top: 1px solid var(--line-2);
 }
 
-.mini:first-child {
+.process-row:first-child {
   border-top: 0;
 }
 
-.mini .mt {
+.process-row .process-main {
   flex: 1;
   min-width: 0;
 }
 
-.mini .mn {
+.process-row .process-name {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -65,7 +65,7 @@
   color: var(--ink);
 }
 
-.mini .mtrack {
+.process-row .progress-track {
   position: relative;
   max-width: 340px;
   height: 6px;
@@ -75,7 +75,7 @@
   border-radius: var(--ds-radius-full);
 }
 
-.mini .ms {
+.process-row .process-status {
   margin-top: 5px;
   font-size: 11px;
   color: var(--ink-3);
@@ -89,7 +89,7 @@
   padding: 18px 20px;
 }
 
-.idle .ii {
+.idle .idle-icon {
   display: grid;
   flex: none;
   place-items: center;
@@ -100,24 +100,24 @@
   border-radius: 11px;
 }
 
-.idle .it {
+.idle .idle-text {
   flex: 1;
 }
 
-.idle .itn {
+.idle .idle-title {
   font-size: 14px;
   font-weight: 600;
   color: var(--ink);
 }
 
-.idle .its {
+.idle .idle-subtitle {
   margin-top: 2px;
   font-size: 12.5px;
   color: var(--ink-3);
 }
 
 /* ── keyframes ──────────────────────────────────────────────────────────── */
-@keyframes indet {
+@keyframes indeterminate {
   0% {
     transform: translateX(-100%);
   }
@@ -127,7 +127,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .indet {
+  .progress-indeterminate {
     transform: none;
     animation: none;
   }

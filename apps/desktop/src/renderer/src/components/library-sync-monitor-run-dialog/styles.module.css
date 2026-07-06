@@ -1,5 +1,5 @@
 /* ── recent runs status badge (reused) ──────────────────────────────────── */
-.rout {
+.run-outcome {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -9,69 +9,69 @@
   border-radius: var(--ds-radius-full);
 }
 
-.rout .od {
+.run-outcome .outcome-dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
 }
 
-.rout.ok {
+.run-outcome.ok {
   color: var(--ok-t);
   background: var(--ds-grass-a3);
 }
 
-.rout.ok .od {
+.run-outcome.ok .outcome-dot {
   background: var(--ok);
 }
 
-.rout.noop {
+.run-outcome.noop {
   color: var(--ink-2);
   background: var(--hover);
 }
 
-.rout.noop .od {
+.run-outcome.noop .outcome-dot {
   background: var(--ink-3);
 }
 
-.rout.err {
+.run-outcome.err {
   color: var(--err-t);
   background: var(--ds-red-a3);
 }
 
-.rout.err .od {
+.run-outcome.err .outcome-dot {
   background: var(--err);
 }
 
-.rout.warn {
+.run-outcome.warn {
   color: var(--warn-t);
   background: var(--ds-amber-a3);
 }
 
-.rout.warn .od {
+.run-outcome.warn .outcome-dot {
   background: var(--warn);
 }
 
 /* ── dialogs (Dialog.Popup) ─────────────────────────────────────────────── */
-.dlgPopup {
+.dialog-popup {
   width: 100%;
   max-width: 540px;
   padding: 0;
   overflow: hidden;
 }
 
-.dlgHead {
+.dialog-header {
   display: flex;
   gap: 13px;
   align-items: center;
   padding: 18px 20px;
 }
 
-.dlgHead .dh {
+.dialog-header .dialog-heading {
   flex: 1;
   min-width: 0;
 }
 
-.dlgHead .dn {
+.dialog-header .dialog-title {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -80,39 +80,39 @@
   color: var(--ink);
 }
 
-.dlgHead .ds {
+.dialog-header .dialog-subtitle {
   margin-top: 3px;
   font-size: 12.5px;
   color: var(--ink-3);
 }
 
-.dlgActions {
+.dialog-actions {
   display: flex;
   gap: 8px;
   padding: 2px 20px 16px;
 }
 
-.dlgActions > * {
+.dialog-actions > * {
   flex: 1;
 }
 
-.dlgBody {
+.dialog-body {
   max-height: 56vh;
   padding: 4px 20px 8px;
   overflow: auto;
   border-top: 1px solid var(--line-2);
 }
 
-.dsec {
+.dialog-section {
   padding: 14px 0;
   border-bottom: 1px solid var(--line-2);
 }
 
-.dsec:last-child {
+.dialog-section:last-child {
   border-bottom: 0;
 }
 
-.dt {
+.section-title {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -132,35 +132,35 @@
   border-radius: 12px;
 }
 
-.fstep {
+.flow-step {
   flex: 1;
   padding: 11px 13px;
   background: var(--hover);
 }
 
-.fstep + .fstep {
+.flow-step + .flow-step {
   border-left: 1px solid var(--line-2);
 }
 
-.fn {
+.step-name {
   font-size: 11px;
   color: var(--ink-3);
   text-transform: uppercase;
 }
 
-.fv {
+.step-value {
   margin-top: 4px;
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
 }
 
-.fv .dim {
+.step-value .dim {
   font-weight: 400;
   color: var(--ink-2);
 }
 
-.farrow {
+.flow-arrow {
   display: grid;
   place-items: center;
   width: 26px;
@@ -168,7 +168,7 @@
   background: var(--hover);
 }
 
-.kv {
+.key-value-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -177,45 +177,45 @@
   border-bottom: 1px solid var(--line-2);
 }
 
-.kv:last-child {
+.key-value-row:last-child {
   border-bottom: 0;
 }
 
-.kv .kk {
+.key-value-row .key {
   color: var(--ink-2);
 }
 
-.kv .vv {
+.key-value-row .value {
   font-variant-numeric: tabular-nums;
   color: var(--ink);
 }
 
-.kv .vv.ok {
+.key-value-row .value.ok {
   color: var(--ok-t);
 }
 
-.kv .vv.err {
+.key-value-row .value.err {
   color: var(--err-t);
 }
 
-.kv .vv.muted {
+.key-value-row .value.muted {
   color: var(--ink-3);
 }
 
-.errbox {
+.error-box {
   padding: 11px 13px;
   background: var(--ds-red-2);
   border: 1px solid var(--ds-red-a5);
   border-radius: 10px;
 }
 
-.errbox .en {
+.error-box .error-name {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--err-t);
 }
 
-.errbox .em {
+.error-box .error-message {
   margin-top: 3px;
   font-family: ui-monospace, Menlo, monospace;
   font-size: 12px;

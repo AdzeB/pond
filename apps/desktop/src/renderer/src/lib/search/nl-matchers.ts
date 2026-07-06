@@ -21,7 +21,7 @@ import {
 // predicates / sort directives using the vocabulary tables. Pure and stateless;
 // `compileStageA` in nl-query drives these in order.
 
-export interface Candidate {
+interface Candidate {
   // Lowercased phrase to match, longest-first.
   phrase: string;
   field: Predicate["field"];
@@ -65,7 +65,7 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
   return out;
 }
 
-export interface Accumulator {
+interface Accumulator {
   sources: Set<string>;
   types: Set<string>;
   tags: Set<string>;

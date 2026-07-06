@@ -5,7 +5,7 @@
   align-items: center;
 }
 
-.chipAdd {
+.chip-add {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -34,6 +34,6 @@
   }
 }
 
-.chipAddIcon {
+.chip-add-icon {
   color: var(--ds-gray-9);
 }

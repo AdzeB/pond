@@ -71,7 +71,7 @@ function isIndexSection(section: SectionDef): boolean {
   return !section.hidden;
 }
 
-export const SECTIONS_BY_GROUP = new Map<SettingsGroup, SectionDef[]>();
+const SECTIONS_BY_GROUP = new Map<SettingsGroup, SectionDef[]>();
 for (const section of SECTIONS) {
   if (!isIndexSection(section)) continue;
   const list = SECTIONS_BY_GROUP.get(section.group) ?? [];
@@ -79,18 +79,9 @@ for (const section of SECTIONS) {
   SECTIONS_BY_GROUP.set(section.group, list);
 }
 
-const GROUP_BY_PATH = new Map<string, SettingsGroup>(
+const _GROUP_BY_PATH = new Map<string, SettingsGroup>(
   SECTIONS.map((section) => [section.path, section.group]),
 );
-
-export function groupForPath(path: string): SettingsGroup | undefined {
-  return GROUP_BY_PATH.get(path);
-}
-
-export function sectionsForGroup(group: SettingsGroup): SectionDef[] {
-  return SECTIONS_BY_GROUP.get(group) ?? [];
-}
-
 const SECTION_BY_PATH = new Map<string, SectionDef>(
   SECTIONS.map((section) => [section.path, section]),
 );
@@ -107,7 +98,7 @@ export function sectionForId(id: string): SectionDef | undefined {
   return SECTION_BY_ID.get(id);
 }
 
-export interface SettingsMasterGroup {
+interface SettingsMasterGroup {
   group: SettingsGroup;
   label: string;
   sections: SectionDef[];

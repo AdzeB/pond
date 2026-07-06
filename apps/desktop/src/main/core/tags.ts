@@ -11,7 +11,7 @@ import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-export interface CreateTagInput {
+interface CreateTagInput {
   name: string;
 }
 
@@ -185,7 +185,7 @@ export async function mergeTags(
   return { ok: true, affected: txs.length };
 }
 
-export interface TagPatch {
+interface TagPatch {
   starred?: boolean;
   description?: string | null;
   color?: string | null;

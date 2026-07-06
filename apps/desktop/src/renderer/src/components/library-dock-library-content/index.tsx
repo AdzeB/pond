@@ -78,9 +78,8 @@ export function LibraryContent() {
     // `layout` owns the size morph, so this is just the card content.
     <div ref={cardRef} className={styles.card}>
       <Input.Root className={styles.search}>
-        {/* biome-ignore lint/a11y/noAutofocus: opening the switcher should let you type to filter immediately */}
         <Input.Field
-          className={styles.searchField}
+          className={styles["search-field"]}
           placeholder="Search…"
           value={query}
           spellCheck={false}
@@ -117,9 +116,11 @@ export function LibraryContent() {
             >
               <PondGlyph avatar={pond.avatar} name={pond.name} iconSize={18} />
             </span>
-            <span className={styles.rowText}>
-              <span className={styles.rowName}>{pond.name}</span>
-              <span className={styles.rowPath}>{prettyPath(pond.path)}</span>
+            <span className={styles["row-text"]}>
+              <span className={styles["row-name"]}>{pond.name}</span>
+              <span className={styles["row-path"]}>
+                {prettyPath(pond.path)}
+              </span>
             </span>
             {pond.active ? (
               <Check className={styles.check} aria-hidden />
@@ -145,7 +146,7 @@ export function LibraryContent() {
         }}
         onKeyDown={onRowKeyDown}
       >
-        <Pencil className={styles.actionIcon} />
+        <Pencil className={styles["action-icon"]} />
         Edit Pond
       </button>
       <button
@@ -158,9 +159,9 @@ export function LibraryContent() {
         }}
         onKeyDown={onRowKeyDown}
       >
-        <Plus className={styles.actionIcon} />
+        <Plus className={styles["action-icon"]} />
         Create Pond
-        <kbd className={styles.kbd}>L then C</kbd>
+        <kbd className={styles.keyboard}>L then C</kbd>
       </button>
       <button
         type="button"
@@ -169,7 +170,7 @@ export function LibraryContent() {
         onClick={() => void switchExisting()}
         onKeyDown={onRowKeyDown}
       >
-        <FolderOpen className={styles.actionIcon} />
+        <FolderOpen className={styles["action-icon"]} />
         Switch library…
       </button>
 
@@ -185,9 +186,9 @@ export function LibraryContent() {
         }}
         onKeyDown={onRowKeyDown}
       >
-        <Settings className={styles.actionIcon} />
+        <Settings className={styles["action-icon"]} />
         Settings
-        <kbd className={styles.kbd}>⌘,</kbd>
+        <kbd className={styles.keyboard}>⌘,</kbd>
       </button>
 
       <hr className={styles.divider} />

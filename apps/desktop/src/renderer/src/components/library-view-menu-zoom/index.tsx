@@ -35,10 +35,10 @@ export function ZoomSection() {
 
   return (
     <Group title="Zoom" value={label} changed={state.zoom !== ZOOM_DEFAULT}>
-      <div className={styles.zoomRow}>
-        <span className={styles.zoomCue} data-size="sm" aria-hidden />
+      <div className={styles["zoom-row"]}>
+        <span className={styles["zoom-cue"]} data-size="sm" aria-hidden />
         <Slider.Root
-          className={styles.zoomSlider}
+          className={styles["zoom-slider"]}
           aria-label="Zoom"
           min={0}
           max={STEPS.length - 1}
@@ -51,14 +51,14 @@ export function ZoomSection() {
             if (step) actions.setZoom(step.value);
           }}
         >
-          <Slider.Control className={styles.zoomControl}>
-            <Slider.Track className={styles.zoomTrack}>
-              <Slider.Indicator className={styles.zoomIndicator} />
-              <Slider.Thumb className={styles.zoomThumb} />
+          <Slider.Control className={styles["zoom-control"]}>
+            <Slider.Track className={styles["zoom-track"]}>
+              <Slider.Indicator className={styles["zoom-indicator"]} />
+              <Slider.Thumb className={styles["zoom-thumb"]} />
             </Slider.Track>
           </Slider.Control>
         </Slider.Root>
-        <span className={styles.zoomCue} data-size="lg" aria-hidden />
+        <span className={styles["zoom-cue"]} data-size="lg" aria-hidden />
       </div>
     </Group>
   );

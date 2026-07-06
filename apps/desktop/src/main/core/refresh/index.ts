@@ -13,7 +13,7 @@ export type RefreshOutcome =
       reason: "not_found" | "no_url" | "internal_error";
     };
 
-export interface RefreshSaveOptions {
+interface RefreshSaveOptions {
   // Drop already-downloaded media so fetch_blobs re-downloads instead of
   // self-gating on existing covers (a full overwrite re-ingest).
   overwrite?: boolean;

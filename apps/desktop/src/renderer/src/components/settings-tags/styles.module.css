@@ -28,7 +28,7 @@
   color: var(--ds-gray-12);
 }
 
-.table-wrap {
+.table-wrapper {
   min-width: 0;
 }
 
@@ -106,7 +106,7 @@
 
 /* ── Kebab actions ────────────────────────────────────────────────────── */
 
-.action-btn {
+.action-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -125,7 +125,7 @@
     opacity var(--ds-duration-fast, 0.12s) ease;
 }
 
-.action-btn:hover {
+.action-button:hover {
   color: var(--ds-gray-12);
   background: var(--ds-gray-a3);
 }
@@ -171,7 +171,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .action-btn {
+  .action-button {
     transition: none;
   }
 }

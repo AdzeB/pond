@@ -34,7 +34,7 @@ export type SelectItemSpec<Value = unknown> =
  * The wrapped Base UI parts a renderer needs, injected so the same logic can
  * drive any `Select` family that shares these primitives.
  */
-export interface SelectParts<Value> {
+interface SelectParts<Value> {
   Item: React.ComponentType<{
     value: Value;
     disabled?: boolean;

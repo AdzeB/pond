@@ -9,7 +9,7 @@ import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
-export type SignInMode = "external";
+type SignInMode = "external";
 
 export async function signInToSource(
   source: Source,

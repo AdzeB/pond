@@ -23,7 +23,7 @@ import {
   SOURCE_FILE,
 } from "./library-format";
 
-export interface ItemMetadata {
+interface ItemMetadata {
   id: string;
   source: string;
   sourceId: string;

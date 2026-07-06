@@ -315,7 +315,7 @@ function CollapsibleGroup({
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className={styles.toggleTitle}>{title}</span>
+        <span className={styles["toggle-title"]}>{title}</span>
         <ChevronRight
           className={styles.chevron}
           data-open={open || undefined}
@@ -326,7 +326,7 @@ function CollapsibleGroup({
       <AnimatePresence initial={false}>
         {open ? (
           <motion.div
-            className={styles.collapsibleBody}
+            className={styles["collapsible-body"]}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}

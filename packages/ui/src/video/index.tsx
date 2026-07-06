@@ -190,12 +190,12 @@ function TimeDisplay({
   const { state } = useVideo();
   return (
     <div
-      className={cn(styles.timeDisplay, className)}
+      className={cn(styles["time-display"], className)}
       data-visible={state.controlsVisible ? "" : undefined}
       {...props}
     >
       <span>{formatTime(state.currentTime)}</span>
-      <span className={styles.timeDisplaySep}>/</span>
+      <span className={styles["time-display-separator"]}>/</span>
       <span>{formatTime(state.duration)}</span>
     </div>
   );
@@ -250,7 +250,7 @@ function Scrubber({ className }: { className?: string }) {
           />
           {hover !== null ? (
             <div
-              className={styles.hoverFill}
+              className={styles["hover-fill"]}
               style={{ width: `${hover * 100}%` }}
             />
           ) : null}

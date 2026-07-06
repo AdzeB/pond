@@ -10,7 +10,7 @@ interface QuotedTweetRef {
   url: string;
 }
 
-export interface SaveSeed {
+interface SaveSeed {
   rawJson: RawJson;
   title?: string | null;
   description?: string | null;

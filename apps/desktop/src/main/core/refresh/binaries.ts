@@ -4,7 +4,7 @@ import { app } from "electron";
 import log from "electron-log/main.js";
 import which from "which";
 
-export interface ResolvedBinaries {
+interface ResolvedBinaries {
   ytdlp: string | null;
   ffmpeg: string | null;
 }

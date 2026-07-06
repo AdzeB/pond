@@ -22,7 +22,7 @@ import { predicateIsActive } from "@/lib/search/filter-helpers";
 //   color:red              -> color near #e5484d
 //   note:without           -> note does not exist
 
-export interface DatePreset {
+interface DatePreset {
   slug: string;
   label: string;
   iso: string;
@@ -39,7 +39,7 @@ export const DATE_PRESETS: readonly DatePreset[] = [
   { slug: "past-year", label: "Past year", iso: "-P1Y" },
 ];
 
-export interface TokenFieldSpec {
+interface TokenFieldSpec {
   field: FieldId;
   // The first key is canonical (used when serializing); the rest are aliases.
   keys: readonly string[];
@@ -81,14 +81,14 @@ const COLOR_LABEL_TO_HEX = new Map(
 
 // --- Tokenizer ------------------------------------------------------------
 
-export interface RawToken {
+interface RawToken {
   text: string;
   start: number;
   end: number;
 }
 
 // Whitespace-split, but double-quoted runs keep their inner spaces.
-export function tokenize(input: string): RawToken[] {
+function tokenize(input: string): RawToken[] {
   const tokens: RawToken[] = [];
   const n = input.length;
   let i = 0;
@@ -108,9 +108,9 @@ export function tokenize(input: string): RawToken[] {
   return tokens;
 }
 
-export type OpSymbol = ":" | ">" | ">=" | "<" | "<=";
+type OpSymbol = ":" | ">" | ">=" | "<" | "<=";
 
-export interface FieldToken {
+interface FieldToken {
   field: FieldId;
   op: OpSymbol;
   rawValue: string;
@@ -121,7 +121,7 @@ const FIELD_TOKEN_RE = /^(-?)([a-zA-Z]+)(>=|<=|:|>|<)(.*)$/s;
 
 // Parse a token's `key op value` shape, resolving the key to a field. Returns
 // null for free-text words (or `key:` forms whose key isn't a known field).
-export function matchFieldToken(token: string): FieldToken | null {
+function matchFieldToken(token: string): FieldToken | null {
   const m = FIELD_TOKEN_RE.exec(token);
   if (!m) return null;
   const field = fieldForKey(m[2] as string);
@@ -210,7 +210,7 @@ function dateOperator(op: OpSymbol): ComparatorId {
 
 const OPTIONAL_FALSE = new Set(["without", "false", "no", "none", "empty"]);
 
-export function buildPredicate(token: FieldToken): Predicate | null {
+function buildPredicate(token: FieldToken): Predicate | null {
   const { field, op, negate } = token;
   const type = FIELD_META[field].type;
   const raw = token.rawValue.trim();
@@ -272,7 +272,7 @@ export function buildPredicate(token: FieldToken): Predicate | null {
 
 // --- Parse / serialize ----------------------------------------------------
 
-export interface ParsedSearch {
+interface ParsedSearch {
   predicates: Predicate[];
   text: string;
 }

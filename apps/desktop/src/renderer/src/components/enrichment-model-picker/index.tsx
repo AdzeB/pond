@@ -20,7 +20,7 @@ interface Props {
 // this id" candidate is appended as its own "Custom" group.
 type Group = { value: string; items: string[] };
 
-export function ModelPicker({ catalog, value, onChange }: Props) {
+export function EnrichmentModelPicker({ catalog, value, onChange }: Props) {
   const [query, setQuery] = useState("");
 
   const selectedId = value.trim() || catalog.defaultId;
@@ -151,8 +151,8 @@ function InfoPanel({
   if (!model) {
     return (
       <div className={styles.info}>
-        <div className={styles.infoTitle}>Custom model</div>
-        <p className={styles.infoSummary}>
+        <div className={styles["info-title"]}>Custom model</div>
+        <p className={styles["info-summary"]}>
           {fallbackId
             ? `Uses "${fallbackId}". It must be a Transformers.js model with ONNX weights.`
             : "Enter any Transformers.js model id with ONNX weights."}
@@ -163,7 +163,7 @@ function InfoPanel({
 
   return (
     <div className={styles.info}>
-      <div className={styles.infoTitle}>{model.name}</div>
+      <div className={styles["info-title"]}>{model.name}</div>
 
       <Meter label="Speed" value={model.speed} />
       <Meter label="Quality" value={model.quality} />
@@ -177,7 +177,7 @@ function InfoPanel({
         ))}
       </dl>
 
-      <p className={styles.infoSummary}>{model.summary}</p>
+      <p className={styles["info-summary"]}>{model.summary}</p>
     </div>
   );
 }
@@ -185,13 +185,13 @@ function InfoPanel({
 function Meter({ label, value }: { label: string; value: number }) {
   return (
     <div className={styles.meter}>
-      <span className={styles.meterLabel}>{label}</span>
-      <span className={styles.meterTrack} aria-hidden>
+      <span className={styles["meter-label"]}>{label}</span>
+      <span className={styles["meter-track"]} aria-hidden>
         {Array.from({ length: 5 }, (_, i) => (
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length meter
             key={i}
-            className={styles.meterSegment}
+            className={styles["meter-segment"]}
             data-on={i < value || undefined}
           />
         ))}

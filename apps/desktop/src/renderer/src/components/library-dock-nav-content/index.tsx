@@ -25,7 +25,7 @@ export function NavContent() {
     <div className={styles.row}>
       <button
         type="button"
-        className={styles.libraryTrigger}
+        className={styles["library-trigger"]}
         aria-label={`Library menu (${active?.name ?? "Library"})`}
         onClick={dock.openLibrary}
       >

@@ -1,8 +1,8 @@
 import { memo, useCallback, useMemo, useState } from "react";
-import { CardImage } from "@/components/save-card-media-card-image";
 import { DownloadingBadge } from "@/components/save-card-media-downloading-badge";
 import { HoverGallery } from "@/components/save-card-media-hover-gallery";
 import { HoverVideo } from "@/components/save-card-media-hover-video";
+import { CardImage } from "@/components/save-card-media-image";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";

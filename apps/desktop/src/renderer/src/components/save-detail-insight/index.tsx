@@ -36,7 +36,7 @@ function Insight({
   const pending = state !== "ready";
   return (
     <div className={styles.insight} data-state={state}>
-      <div className={styles.head}>
+      <div className={styles.header}>
         <span className={styles.label}>{label}</span>
         {state === "running" ? (
           <span className={styles.spinner} aria-hidden />
@@ -48,7 +48,7 @@ function Insight({
         ) : state === "ready" && onRegenerate ? (
           <button
             type="button"
-            className={styles.iconAction}
+            className={styles["icon-action"]}
             onClick={onRegenerate}
             aria-label={`Regenerate ${label.toLowerCase()}`}
           >

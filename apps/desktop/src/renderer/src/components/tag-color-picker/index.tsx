@@ -141,7 +141,7 @@ export function TagColorPicker({
                     <div className={styles.swatches}>
                       <button
                         type="button"
-                        className={styles.swatchBtn}
+                        className={styles["swatch-button"]}
                         data-default
                         data-active={color === null || undefined}
                         aria-label="Default colour"
@@ -153,7 +153,7 @@ export function TagColorPicker({
                         <button
                           key={c.value}
                           type="button"
-                          className={styles.swatchBtn}
+                          className={styles["swatch-button"]}
                           data-active={color === c.value || undefined}
                           aria-label={c.label}
                           title={c.label}

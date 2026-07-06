@@ -75,7 +75,9 @@ export function FiltersMenu() {
             <ClippedScroll maxHeight={320}>
               {groups.map(({ group, fields }) => (
                 <Fragment key={group}>
-                  <div className={styles.groupLabel}>{GROUP_LABELS[group]}</div>
+                  <div className={styles["group-label"]}>
+                    {GROUP_LABELS[group]}
+                  </div>
                   {fields.map((entry) => {
                     const Icon = FIELD_ICONS[entry.field];
                     return (
@@ -86,13 +88,17 @@ export function FiltersMenu() {
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => pick(entry.key)}
                       >
-                        <span className={styles.rowIcon}>
+                        <span className={styles["row-icon"]}>
                           <Icon width={15} height={15} />
                         </span>
-                        <span className={styles.rowLabel}>{entry.label}</span>
-                        <span className={styles.rowKey}>{entry.key}:</span>
+                        <span className={styles["row-label"]}>
+                          {entry.label}
+                        </span>
+                        <span className={styles["row-key"]}>{entry.key}:</span>
                         {entry.hint ? (
-                          <span className={styles.rowHint}>{entry.hint}</span>
+                          <span className={styles["row-hint"]}>
+                            {entry.hint}
+                          </span>
                         ) : null}
                       </button>
                     );

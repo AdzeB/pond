@@ -6,16 +6,9 @@ import type { ScrapedHarvest } from "../harvest/types";
 import { NAV_TIMEOUT_MS } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
+import { emulateColorScheme, withDeviceScaleFactor } from "./screenshot-cdp";
+import { buildArticleRectExpression } from "./screenshot-dom";
 import { sleep } from "./util";
-
-export interface TweetScreenshotArgs {
-  url: string;
-  sourceId: string;
-  // Forces color scheme; defaults to "dark" for callers predating dual-theme.
-  colorScheme?: "light" | "dark";
-  // Also harvest media off the loaded page; used by the quote walker.
-  harvestMedia?: boolean;
-}
 
 export interface TweetScreenshotResult {
   ok: boolean;
@@ -41,80 +34,18 @@ const SCREENSHOT_VERTICAL_PADDING = 40;
 // Hard cap on hidden-window height; anything beyond is cropped (rare).
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
-// CDP commands and capturePage can hang indefinitely on a wedged hidden window
-// (seen at startup: Emulation.setEmulatedMedia never resolving). Bound them so a
+// capturePage can hang indefinitely on a wedged hidden window; bound it so a
 // stuck capture can't hold its window lease forever and starve the pool.
-const CDP_COMMAND_TIMEOUT_MS = 10_000;
 const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
 
-async function sendCdpCommand(
-  dbg: Electron.Debugger,
-  method: string,
-  params: Record<string, unknown> | undefined,
-  timeoutMs: number,
-): Promise<void> {
-  await Promise.race([
-    params === undefined
-      ? dbg.sendCommand(method)
-      : dbg.sendCommand(method, params),
-    sleep(timeoutMs).then(() => {
-      throw new Error(`CDP ${method} timed out after ${timeoutMs}ms`);
-    }),
-  ]);
-}
-
-// Captures the tweet's <article> from a hidden window; returns ok:false on any miss.
-export async function screenshotTweet(
-  args: TweetScreenshotArgs,
-): Promise<TweetScreenshotResult> {
-  const colorScheme = args.colorScheme ?? "dark";
-  const lease = await leaseWindow("twitter");
-  // Emulate color scheme before navigation: X reads prefers-color-scheme once on mount.
-  let restoreEmulation: (() => Promise<void>) | null = null;
-  try {
-    restoreEmulation = await emulateColorScheme(lease.win, colorScheme);
-    const navOk = await navigateWithTimeout(
-      lease.win,
-      args.url,
-      NAV_TIMEOUT_MS,
-    );
-    if (!navOk) {
-      log.warn("[pond screenshot:tweet] navigate failed", args.url);
-      return { ok: false, reason: "navigate_failed" };
-    }
-
-    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
-      log.info("[pond screenshot:tweet] auth wall hit", args.url);
-      return { ok: false, reason: "auth_required" };
-    }
-
-    const shot = await captureCurrentScheme(
-      lease.win,
-      args.sourceId,
-      colorScheme,
-    );
-    if (shot.ok && args.harvestMedia) {
-      const media = await harvestPageMedia(lease.win, args.sourceId);
-      if (media && media.length > 0) return { ...shot, media };
-    }
-    return shot;
-  } catch (err) {
-    log.warn("[pond screenshot:tweet] unexpected error", args.url, err);
-    return { ok: false, reason: "no_article" };
-  } finally {
-    if (restoreEmulation) await restoreEmulation().catch(() => {});
-    lease.release();
-  }
-}
-
-export interface TweetDualScreenshotArgs {
+interface TweetDualScreenshotArgs {
   url: string;
   sourceId: string;
   // Harvest media off the loaded page (once); used by the quote walker.
   harvestMedia?: boolean;
 }
 
-export interface TweetDualScreenshotResult {
+interface TweetDualScreenshotResult {
   light: TweetScreenshotResult;
   dark: TweetScreenshotResult;
   quotedUrl?: string;
@@ -376,108 +307,6 @@ async function padScreenshot(
   }
 }
 
-async function emulateColorScheme(
-  win: BrowserWindow,
-  scheme: "light" | "dark",
-): Promise<() => Promise<void>> {
-  const dbg = win.webContents.debugger;
-  const alreadyAttached = dbg.isAttached();
-  let attachedHere = false;
-  try {
-    if (!alreadyAttached) {
-      dbg.attach("1.3");
-      attachedHere = true;
-    }
-    await sendCdpCommand(
-      dbg,
-      "Emulation.setEmulatedMedia",
-      { features: [{ name: "prefers-color-scheme", value: scheme }] },
-      CDP_COMMAND_TIMEOUT_MS,
-    );
-  } catch (err) {
-    log.warn(
-      "[pond screenshot:tweet] emulated media setup failed",
-      scheme,
-      err,
-    );
-    if (attachedHere) {
-      try {
-        dbg.detach();
-      } catch {
-        /* attach failed mid-flight; nothing to detach */
-      }
-    }
-    return async () => {};
-  }
-  return async () => {
-    try {
-      await sendCdpCommand(
-        dbg,
-        "Emulation.setEmulatedMedia",
-        { features: [] },
-        CDP_COMMAND_TIMEOUT_MS,
-      );
-    } catch {
-      /* override may already be cleared; safe to ignore */
-    }
-    if (attachedHere) {
-      try {
-        dbg.detach();
-      } catch {
-        /* wc may have been destroyed mid-capture; pool drops it */
-      }
-    }
-  };
-}
-
-// Override device scale factor for `fn` via CDP; the lever for sharper PNGs.
-async function withDeviceScaleFactor<T>(
-  win: BrowserWindow,
-  factor: number,
-  fn: () => Promise<T>,
-): Promise<T> {
-  const dbg = win.webContents.debugger;
-  const alreadyAttached = dbg.isAttached();
-  let attachedHere = false;
-  try {
-    if (!alreadyAttached) {
-      dbg.attach("1.3");
-      attachedHere = true;
-    }
-    const [width, height] = win.getContentSize();
-    await sendCdpCommand(
-      dbg,
-      "Emulation.setDeviceMetricsOverride",
-      {
-        width: width ?? 1280,
-        height: height ?? 1024,
-        deviceScaleFactor: factor,
-        mobile: false,
-      },
-      CDP_COMMAND_TIMEOUT_MS,
-    );
-    return await fn();
-  } finally {
-    try {
-      await sendCdpCommand(
-        dbg,
-        "Emulation.clearDeviceMetricsOverride",
-        undefined,
-        CDP_COMMAND_TIMEOUT_MS,
-      );
-    } catch {
-      /* override may already be cleared; safe to ignore */
-    }
-    if (attachedHere) {
-      try {
-        dbg.detach();
-      } catch {
-        /* detach can throw if the wc was destroyed mid-capture */
-      }
-    }
-  }
-}
-
 interface ArticleRect {
   x: number;
   y: number;
@@ -516,138 +345,4 @@ async function readArticleRect(
     height: r.height,
     ...(typeof r.quotedUrl === "string" ? { quotedUrl: r.quotedUrl } : {}),
   };
-}
-
-function buildArticleRectExpression(tweetId: string): string {
-  // Scroll to top, not center: centering yields a negative top that clips the article.
-  return `(async () => {
-    try {
-      const tweetId = ${JSON.stringify(tweetId)};
-      const findArticle = () => {
-        const anchor = document.querySelector('a[href*="/status/' + tweetId + '"]');
-        return anchor && anchor.closest('article');
-      };
-      const articleDeadline = Date.now() + 10_000;
-      let article = findArticle();
-      while (!article && Date.now() < articleDeadline) {
-        await new Promise(r => setTimeout(r, 200));
-        article = findArticle();
-      }
-      if (!article) return null;
-
-      // Isolate the focused tweet from the surrounding timeline: hide every
-      // other cell (replies, the reply composer, "Discover more"). Defensive
-      // only — the clip is the tweet's height, so cells below rarely matter.
-      try {
-        const cell = article.closest('[data-testid="cellInnerDiv"]');
-        if (cell) {
-          for (const c of document.querySelectorAll('[data-testid="cellInnerDiv"]')) {
-            if (c !== cell) c.style.setProperty('display', 'none', 'important');
-          }
-        }
-      } catch (_) {}
-
-      window.scrollTo(0, 0);
-      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
-      await new Promise(r => requestAnimationFrame(() => r(null)));
-      await new Promise(r => setTimeout(r, 150));
-
-      // Strip the reply-sort ("Relevant") + "View quotes" row that sits inside
-      // the article directly under the action bar. Its top coincides with the
-      // action bar bottom, so the crop's small bottom pad would otherwise catch
-      // a sliver of it. visibility:hidden (not display:none) keeps layout fixed
-      // so the reply composer below can't reflow up into the captured region.
-      try {
-        let barBottom = 0;
-        for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
-          if (b.closest('article') === article) barBottom = Math.max(barBottom, b.getBoundingClientRect().bottom);
-        }
-        if (barBottom === 0) {
-          const g = Array.from(article.querySelectorAll('[role="group"]'))
-            .filter((x) => x.closest('article') === article)
-            .find((x) => x.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"]'));
-          if (g) barBottom = g.getBoundingClientRect().bottom;
-        }
-        if (barBottom > 0) {
-          const walker = document.createTreeWalker(article, NodeFilter.SHOW_ELEMENT);
-          let node;
-          while ((node = walker.nextNode())) {
-            if (node.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"], [data-testid="bookmark"]')) continue;
-            const nr = node.getBoundingClientRect();
-            if (nr.width > 0 && nr.height > 0 && nr.top >= barBottom - 1) {
-              node.style.setProperty('visibility', 'hidden', 'important');
-            }
-          }
-        }
-      } catch (_) {}
-
-      const r = article.getBoundingClientRect();
-
-      // The raw article box includes the conversation thread spine / left
-      // gutter and the footer chrome below the action bar ("Relevant"
-      // reply-sort, "View quotes"). Derive a tight box from the tweet's
-      // actual content instead: left/top/right from the content union and
-      // bottom from the action bar. In-between rows (timestamp, "N Views")
-      // fall inside the rectangle automatically.
-      const inner = Array.from(article.querySelectorAll('article'))
-        .find((a) => a !== article);
-      const focal = (el) => !!el && el.closest('article') === article;
-      const rects = [];
-      const add = (el) => { if (focal(el)) rects.push(el.getBoundingClientRect()); };
-      add(article.querySelector('[data-testid^="UserAvatar-Container"]'));
-      add(article.querySelector('[data-testid="User-Name"]'));
-      for (const sel of ['[data-testid="tweetText"]','[data-testid="tweetPhoto"]','[data-testid="card.wrapper"]','[data-testid="videoPlayer"]','[data-testid="videoComponent"]','video']) {
-        for (const el of article.querySelectorAll(sel)) add(el);
-      }
-      if (inner) rects.push(inner.getBoundingClientRect());
-
-      let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
-      if (rects.length) {
-        left = Math.max(r.left, Math.min(...rects.map((b) => b.left)));
-        top = Math.max(r.top, Math.min(...rects.map((b) => b.top)));
-        right = Math.min(r.right, Math.max(...rects.map((b) => b.right)));
-      }
-
-      // Bottom: prefer the action-bar buttons, then the [role="group"]
-      // that wraps them, then the content union, finally the full article
-      // rect. Each fallback is content-safe.
-      let actionBottom = 0;
-      for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
-        if (focal(b)) actionBottom = Math.max(actionBottom, b.getBoundingClientRect().bottom);
-      }
-      if (actionBottom === 0) {
-        const group = Array.from(article.querySelectorAll('[role="group"]'))
-          .filter((g) => g.closest('article') === article)
-          .find((g) => g.querySelector('[data-testid="reply"], [data-testid="like"], [data-testid="retweet"], [data-testid="unretweet"], [data-testid="unlike"]'));
-        if (group) actionBottom = group.getBoundingClientRect().bottom;
-      }
-      if (actionBottom > top && actionBottom <= r.bottom) {
-        bottom = actionBottom + 6;
-      } else if (rects.length) {
-        bottom = Math.max(...rects.map((b) => b.bottom));
-      }
-
-      // Discover the quoted tweet (the inline nested <article>) so the
-      // caller can walk the quote chain by navigating to it.
-      let quotedUrl;
-      try {
-        const link = inner && inner.querySelector('a[href*="/status/"]');
-        if (link) {
-          const u = new URL(link.href, 'https://x.com');
-          const m = u.pathname.match(/\\/status\\/(\\d+)/);
-          if (m) quotedUrl = 'https://x.com' + u.pathname;
-        }
-      } catch (_) {}
-
-      return {
-        x: left,
-        y: top,
-        width: Math.max(8, right - left),
-        height: Math.max(8, bottom - top),
-        ...(quotedUrl ? { quotedUrl } : {}),
-      };
-    } catch (_) {
-      return null;
-    }
-  })()`;
 }

@@ -57,7 +57,7 @@ const FAIL_OUTCOMES = new Set<SyncRunEvent["outcome"]>([
   "rate_limited",
 ]);
 
-export interface SyncStats {
+interface SyncStats {
   itemsSynced: number;
   itemsSyncedPrev: number;
   newToday: number;

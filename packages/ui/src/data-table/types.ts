@@ -1,6 +1,6 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
-export type ColumnAlign = "start" | "center" | "end";
+type ColumnAlign = "start" | "center" | "end";
 
 export interface CellContext {
   /** Nesting depth of the row (0 = top level). */

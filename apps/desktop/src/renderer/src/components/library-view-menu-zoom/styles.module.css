@@ -1,29 +1,29 @@
 /* Zoom: a discrete slider snapping across the density steps, flanked by a small
    and large square that carry the small -> roomy metaphor. */
-.zoomRow {
+.zoom-row {
   display: flex;
   gap: 10px;
   align-items: center;
   padding: 4px 2px;
 }
 
-.zoomCue {
+.zoom-cue {
   flex-shrink: 0;
   background: var(--ds-gray-a6);
   border-radius: 2px;
 }
 
-.zoomCue[data-size="sm"] {
+.zoom-cue[data-size="sm"] {
   width: 8px;
   height: 8px;
 }
 
-.zoomCue[data-size="lg"] {
+.zoom-cue[data-size="lg"] {
   width: 14px;
   height: 14px;
 }
 
-.zoomSlider {
+.zoom-slider {
   position: relative;
   display: flex;
   flex: 1;
@@ -33,14 +33,14 @@
   user-select: none;
 }
 
-.zoomControl {
+.zoom-control {
   display: flex;
   flex: 1;
   align-items: center;
   height: 16px;
 }
 
-.zoomTrack {
+.zoom-track {
   position: relative;
   flex: 1;
   height: 4px;
@@ -48,14 +48,14 @@
   border-radius: 999px;
 }
 
-.zoomIndicator {
+.zoom-indicator {
   position: absolute;
   height: 100%;
   background: var(--ds-gray-a6);
   border-radius: 999px;
 }
 
-.zoomThumb {
+.zoom-thumb {
   width: 14px;
   height: 14px;
   outline: none;

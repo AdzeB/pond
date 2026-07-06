@@ -31,7 +31,7 @@ import { initials } from "@/lib/util/initials";
 // Prefix that marks an avatar string as a built-in icon (vs an emoji or initials).
 const ICON_PREFIX = "icon:";
 
-export interface PondIcon {
+interface PondIcon {
   key: string;
   label: string;
   Icon: IconComponent;
@@ -83,11 +83,11 @@ export function resolvePondIcon(
   return ICON_MAP.get(avatar.slice(ICON_PREFIX.length)) ?? null;
 }
 
-export function isPondIcon(avatar: string | null | undefined): boolean {
+function isPondIcon(avatar: string | null | undefined): boolean {
   return resolvePondIcon(avatar) !== null;
 }
 
-export type GlyphKind = "icon" | "emoji" | "initials";
+type GlyphKind = "icon" | "emoji" | "initials";
 
 export function glyphKind(avatar: string | null | undefined): GlyphKind {
   if (isPondIcon(avatar)) return "icon";

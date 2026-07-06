@@ -7,8 +7,6 @@ import type { FlorenceTask } from "./inference-core";
 // loading + execution lives in the inference worker (inference-core); this module
 // only resolves the prefs-driven model id and the stamp the sweep keys on.
 
-export type { FlorenceTask };
-
 // onnx-community ships the ONNX weights transformers.js needs; overridable via prefs.
 const DEFAULT_MODEL_ID = "onnx-community/Florence-2-base-ft";
 

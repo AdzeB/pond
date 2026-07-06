@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export interface EnrichmentStatus {
+interface EnrichmentStatus {
   paused: boolean;
   // On-device enricher runs currently executing.
   inflight: number;

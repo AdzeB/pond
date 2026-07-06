@@ -255,7 +255,7 @@ function clampDescription(value: string): string {
   return value.length > 4_000 ? `${value.slice(0, 4_000)}…` : value;
 }
 
-export type ArenaCaptureResult =
+type ArenaCaptureResult =
   | { ok: true; capture: Capture }
   | { ok: false; reason: string };
 

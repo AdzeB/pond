@@ -20,7 +20,7 @@ const COOKIE_HOSTS = [
   "https://m.youtube.com/",
 ] as const;
 
-export interface CookieJar {
+interface CookieJar {
   path: string;
   cleanup: () => Promise<void>;
   count: number;

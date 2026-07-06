@@ -215,7 +215,7 @@ function isVideoFile(file: SaveFile): boolean {
 }
 
 // Broad category for the primary asset, used to color the type badge.
-export type TypeKind = "image" | "video" | "audio" | "link" | "doc" | "other";
+type TypeKind = "image" | "video" | "audio" | "link" | "doc" | "other";
 
 const IMAGE_EXT = /^(png|jpe?g|gif|webp|avif|heic|heif|svg|bmp|tiff?|ico)$/;
 const VIDEO_EXT = /^(mp4|webm|mov|m4v|mkv|avi|gifv|ogv)$/;

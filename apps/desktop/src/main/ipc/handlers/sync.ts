@@ -5,7 +5,7 @@ import {
   getBackfillStatus,
   isBackfillRunning,
   startTweetScreenshotBackfill,
-} from "../../core/pipeline/enqueue";
+} from "../../core/pipeline/backfill-screenshots";
 import {
   governorSnapshot,
   isAllPaused,

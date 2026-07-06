@@ -13,11 +13,11 @@ import { searchScores } from "./text-index";
 
 // Pure-semantic runs (no structured constraints) shouldn't dump the whole
 // library; cap to the most relevant matches above a soft similarity floor.
-export const SEMANTIC_TOP_K = 80;
-export const SEMANTIC_MIN_SCORE = 0.15;
+const SEMANTIC_TOP_K = 80;
+const SEMANTIC_MIN_SCORE = 0.15;
 
 // Best-effort media length in seconds from the capture metadata.
-export function durationOf(save: Save): number {
+function durationOf(save: Save): number {
   const raw = save.rawJson;
   const cap = raw?.capture?.duration;
   if (typeof cap === "number" && cap > 0) return cap;
@@ -30,7 +30,7 @@ export function durationOf(save: Save): number {
   return typeof yt === "number" && yt > 0 ? yt : 0;
 }
 
-function sortValue(save: Save, key: AskSort["key"]): number {
+function _sortValue(save: Save, key: AskSort["key"]): number {
   switch (key) {
     case "savedAt":
       return save.savedAt ?? 0;
@@ -39,17 +39,7 @@ function sortValue(save: Save, key: AskSort["key"]): number {
     case "fileCount":
       return save.files?.length ?? 0;
   }
-}
-
-// Apply an explicit ordering ("newest", "longest"), overriding relevance.
-export function applySort(saves: ReadonlyArray<Save>, sort: AskSort): Save[] {
-  const sign = sort.dir === "asc" ? 1 : -1;
-  return [...saves].sort(
-    (a, b) => sign * (sortValue(a, sort.key) - sortValue(b, sort.key)),
-  );
-}
-
-// Numeric value for any sortable plan field, via the shared field projections so
+} // Numeric value for any sortable plan field, via the shared field projections so
 // dates/duration/fileCount all resolve consistently. Nullish reads as 0.
 function fieldSortValue(save: Save, field: SortableField): number {
   const projected = FIELD_DESCRIPTORS[field].project(save);

@@ -4,7 +4,7 @@ import { app } from "electron";
 import { readLibraryPointer } from "./lib/library-pointer";
 import { resolvePondId } from "./lib/pond-identity";
 
-export interface PondPaths {
+interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
@@ -27,7 +27,7 @@ function ensureDir(p: string): string {
   return p;
 }
 
-export function defaultLibraryRoot(): string {
+function defaultLibraryRoot(): string {
   return join(app.getPath("home"), "Pond", "My Pond.pond");
 }
 

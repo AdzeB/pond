@@ -1,5 +1,5 @@
 /* ── brand tile (reused) ────────────────────────────────────────────────── */
-.brandTile {
+.brand-tile {
   display: block;
   flex-shrink: 0;
   overflow: hidden;
@@ -9,6 +9,6 @@
     0 2px 4px -1px var(--ds-gray-a4);
 }
 
-.brandTile svg {
+.brand-tile svg {
   display: block;
 }

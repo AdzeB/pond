@@ -2,7 +2,7 @@ import { IconXmarkOutline18 as Clear } from "@pond/icons/outline/18";
 import { forwardRef, type ReactNode } from "react";
 import styles from "./styles.module.css";
 
-export type ChipTone = "skill" | "mention" | "tag";
+type ChipTone = "skill" | "mention" | "tag";
 
 interface AskChipProps {
   tone: ChipTone;
@@ -27,13 +27,13 @@ export const AskChip = forwardRef<HTMLSpanElement, AskChipProps>(
         data-selected={selected || undefined}
         title={title ?? label}
       >
-        <span className={styles.chipBody}>
-          <span className={styles.chipLead}>{lead}</span>
-          <span className={styles.chipLabel}>{label}</span>
+        <span className={styles["chip-body"]}>
+          <span className={styles["chip-lead"]}>{lead}</span>
+          <span className={styles["chip-label"]}>{label}</span>
         </span>
         <button
           type="button"
-          className={styles.chipRemove}
+          className={styles["chip-remove"]}
           aria-label={`Remove ${label}`}
           onClick={onRemove}
           onMouseDown={(event) => event.preventDefault()}

@@ -105,15 +105,19 @@ function SourceBody({
   })();
 
   return (
-    <Dialog.Popup className={styles.dlgPopup}>
-      <div className={styles.dlgHead}>
+    <Dialog.Popup className={styles["dialog-popup"]}>
+      <div className={styles["dialog-header"]}>
         <span className={styles.ring}>
           <BrandTile source={source} size={44} />
           <span className={`${styles.dot} ${styles[model.tone]}`} aria-hidden />
         </span>
-        <div className={styles.dh}>
-          <Dialog.Title className={styles.dn}>{def.label}</Dialog.Title>
-          <div className={`${styles.ds} ${styles.st} ${styles[model.tone]}`}>
+        <div className={styles["dialog-heading"]}>
+          <Dialog.Title className={styles["dialog-title"]}>
+            {def.label}
+          </Dialog.Title>
+          <div
+            className={`${styles["dialog-subtitle"]} ${styles["status-text"]} ${styles[model.tone]}`}
+          >
             {model.statusText}
           </div>
         </div>
@@ -124,17 +128,17 @@ function SourceBody({
         </Dialog.Close>
       </div>
 
-      <div className={styles.dlgActions}>
+      <div className={styles["dialog-actions"]}>
         <Button variant="primary" onClick={() => void primary.run()}>
           {primary.label}
         </Button>
       </div>
 
-      <div className={styles.dlgBody}>
+      <div className={styles["dialog-body"]}>
         {last ? (
-          <div className={styles.dsec}>
-            <div className={styles.dt}>Last run</div>
-            <div className={styles.statgrid}>
+          <div className={styles["dialog-section"]}>
+            <div className={styles["section-title"]}>Last run</div>
+            <div className={styles["stat-grid"]}>
               <Stat label="Seen" value={last.harvest?.seen ?? 0} />
               <Stat label="New" value={last.harvest?.fresh ?? 0} />
               <Stat
@@ -152,8 +156,8 @@ function SourceBody({
         ) : null}
 
         {runs.length > 0 ? (
-          <div className={styles.dsec}>
-            <div className={styles.dt}>Recent runs</div>
+          <div className={styles["dialog-section"]}>
+            <div className={styles["section-title"]}>Recent runs</div>
             {runs.map((run) => {
               const tone = runTone(run);
               const dd =
@@ -168,30 +172,32 @@ function SourceBody({
                 <button
                   key={run.id}
                   type="button"
-                  className={styles.drow}
+                  className={styles["source-row"]}
                   onClick={() => onOpenRun(run)}
                 >
-                  <span className={`${styles.dd} ${dd}`} />
-                  <span className={styles.dl}>
+                  <span className={`${styles["status-dot"]} ${dd}`} />
+                  <span className={styles["source-label"]}>
                     {describeRun(run)}{" "}
                     <span className={styles.dim}>· {run.trigger}</span>
                   </span>
-                  <span className={styles.rt}>
+                  <span className={styles["row-time"]}>
                     {formatClock(run.ts)} · {formatRunDuration(run.durationMs)}
                   </span>
-                  <Chevron className={styles.dchev} width={16} height={16} />
+                  <Chevron className={styles.chevron} width={16} height={16} />
                 </button>
               );
             })}
           </div>
         ) : null}
 
-        <div className={styles.dsec}>
-          <div className={styles.dt}>Connection</div>
+        <div className={styles["dialog-section"]}>
+          <div className={styles["section-title"]}>Connection</div>
           <div className={styles.field}>
             <div>
-              <div className={styles.fl}>Account</div>
-              <div className={styles.fh}>Used to read your saved list.</div>
+              <div className={styles["field-label"]}>Account</div>
+              <div className={styles["field-hint"]}>
+                Used to read your saved list.
+              </div>
             </div>
             {handle ? (
               <span className={styles.handle}>@{handle}</span>
@@ -201,8 +207,8 @@ function SourceBody({
           </div>
           <div className={styles.field}>
             <div>
-              <div className={styles.fl}>Session</div>
-              <div className={styles.fh}>
+              <div className={styles["field-label"]}>Session</div>
+              <div className={styles["field-hint"]}>
                 Re-authenticate if syncs start failing.
               </div>
             </div>
@@ -216,14 +222,14 @@ function SourceBody({
           </div>
         </div>
 
-        <div className={styles.dsec}>
-          <div className={styles.dt}>Settings</div>
+        <div className={styles["dialog-section"]}>
+          <div className={styles["section-title"]}>Settings</div>
           <div className={styles.field}>
             <div>
-              <div className={styles.fl}>
+              <div className={styles["field-label"]}>
                 Auto-sync <span className={styles.propose}>PROPOSED</span>
               </div>
-              <div className={styles.fh}>
+              <div className={styles["field-hint"]}>
                 Not in the data model yet — syncs are manual today.
               </div>
             </div>
@@ -235,8 +241,8 @@ function SourceBody({
             <>
               <div className={styles.field}>
                 <div>
-                  <div className={styles.fl}>Backfill</div>
-                  <div className={styles.fh}>
+                  <div className={styles["field-label"]}>Backfill</div>
+                  <div className={styles["field-hint"]}>
                     Re-scan your entire saved list for anything missed, not just
                     new items.
                   </div>
@@ -254,8 +260,8 @@ function SourceBody({
               </div>
               <div className={styles.field}>
                 <div>
-                  <div className={styles.fl}>Refresh metadata</div>
-                  <div className={styles.fh}>
+                  <div className={styles["field-label"]}>Refresh metadata</div>
+                  <div className={styles["field-hint"]}>
                     Re-fetch titles, descriptions, and any covers still missing
                     for saves you already have.
                   </div>
@@ -272,8 +278,10 @@ function SourceBody({
               </div>
               <div className={styles.field}>
                 <div>
-                  <div className={styles.fl}>Re-download at full quality</div>
-                  <div className={styles.fh}>
+                  <div className={styles["field-label"]}>
+                    Re-download at full quality
+                  </div>
+                  <div className={styles["field-hint"]}>
                     Discard existing covers and re-download them at full
                     resolution. Slower, but replaces any low-res media.
                   </div>
@@ -295,12 +303,12 @@ function SourceBody({
           ) : null}
           <div className={styles.field}>
             <div>
-              <div className={styles.fl}>Show in sidebar</div>
-              <div className={styles.fh}>
+              <div className={styles["field-label"]}>Show in sidebar</div>
+              <div className={styles["field-hint"]}>
                 When this source appears in the library nav.
               </div>
             </div>
-            <span className={styles.segm}>
+            <span className={styles.segmented}>
               {VISIBILITY.map((v) => (
                 <button
                   key={v.id}
@@ -316,10 +324,10 @@ function SourceBody({
           {sourceSettingsFor(source).map((field) => (
             <div className={styles.field} key={field.key}>
               <div>
-                <div className={styles.fl}>{field.label}</div>
-                <div className={styles.fh}>{field.description}</div>
+                <div className={styles["field-label"]}>{field.label}</div>
+                <div className={styles["field-hint"]}>{field.description}</div>
               </div>
-              <span className={styles.segm}>
+              <span className={styles.segmented}>
                 {field.options.map((option) => (
                   <button
                     key={option.value}
@@ -357,10 +365,10 @@ function Stat({
   tone?: "ok" | "zero";
 }) {
   return (
-    <div className={styles.sb}>
-      <div className={styles.sl}>{label}</div>
+    <div className={styles["stat-box"]}>
+      <div className={styles["stat-label"]}>{label}</div>
       <div
-        className={`${styles.sv} ${tone === "ok" ? styles.ok : tone === "zero" ? styles.zero : ""}`}
+        className={`${styles["stat-value"]} ${tone === "ok" ? styles.ok : tone === "zero" ? styles.zero : ""}`}
       >
         {value}
       </div>

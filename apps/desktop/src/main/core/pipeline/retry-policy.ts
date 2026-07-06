@@ -9,7 +9,7 @@ import {
   UnsupportedError,
 } from "./extractors/errors";
 
-export interface RetryDecision {
+interface RetryDecision {
   status: TaskStatus;
   nextRunAt: Date;
   recordAttempt: boolean;

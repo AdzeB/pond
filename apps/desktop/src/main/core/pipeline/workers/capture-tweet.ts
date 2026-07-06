@@ -30,7 +30,7 @@ export const CAPTURE_TWEET_VERSION = 9;
 // Quote-chain walk depth cap; keeps navigation bounded.
 const QUOTE_DEPTH_CAP = 3;
 
-export interface CaptureTweetResult {
+interface CaptureTweetResult {
   // Number of screenshot variants written this run.
   captured: number;
   // At least one variant hit X's auth wall; lets the backfill bail early.

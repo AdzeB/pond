@@ -1,7 +1,6 @@
 import {
   $applyNodeReplacement,
   type EditorConfig,
-  type LexicalNode,
   type SerializedTextNode,
   TextNode,
 } from "lexical";
@@ -55,10 +54,4 @@ export class FilterTokenNode extends TextNode {
 
 export function $createFilterTokenNode(text = ""): FilterTokenNode {
   return $applyNodeReplacement(new FilterTokenNode(text));
-}
-
-export function $isFilterTokenNode(
-  node: LexicalNode | null | undefined,
-): node is FilterTokenNode {
-  return node instanceof FilterTokenNode;
 }

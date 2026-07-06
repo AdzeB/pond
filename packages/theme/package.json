@@ -30,7 +30,6 @@
   },
   "scripts": {
     "generate": "node src/colors/gen.ts",
-    "lint": "biome check --fix --unsafe .",
     "typecheck": "tsc --noEmit"
   }
 }

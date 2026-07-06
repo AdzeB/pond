@@ -91,7 +91,7 @@ function validateClause(raw: unknown): Clause | null {
 
 // Sanitize an untrusted model result into a valid Query. Accepts either a full
 // group, a bare array of predicates, or junk; always returns a usable Query.
-export function validateQuery(raw: unknown): Query {
+function validateQuery(raw: unknown): Query {
   if (!raw) return EMPTY_QUERY;
 
   if (Array.isArray(raw)) {

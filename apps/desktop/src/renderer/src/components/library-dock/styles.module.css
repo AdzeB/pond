@@ -80,12 +80,12 @@
   grid-area: 1 / 1;
 }
 
-.askRow {
+.ask-row {
   display: inline-flex;
   align-items: center;
 }
 
-.searchRow {
+.search-row {
   display: inline-flex;
   align-items: center;
 }

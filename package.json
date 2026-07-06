@@ -24,6 +24,7 @@
     "generate": "turbo run generate",
     "lint": "biome check . --write --unsafe",
     "lint:check": "biome ci .",
+    "knip": "knip",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "new-source": "node ./scripts/new-source.mjs",
@@ -37,10 +38,11 @@
     "@biomejs/biome": "2.5.1",
     "@commitlint/cli": "^21.1.0",
     "@commitlint/config-conventional": "^21.1.0",
-    "@types/node": "^26.0.1",
+    "@types/node": "catalog:",
     "husky": "^9.1.7",
+    "knip": "^6.24.0",
     "turbo": "^2.10.0",
-    "typescript": "^6.0.3"
+    "typescript": "catalog:"
   },
   "engines": {
     "node": ">=20.12",

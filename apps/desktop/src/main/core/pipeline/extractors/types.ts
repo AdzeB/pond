@@ -13,7 +13,7 @@ export interface ExtractInput {
 }
 
 // Embedded test cases run generically by the test runner.
-export interface ExtractorTest {
+interface ExtractorTest {
   /** An item URL this extractor must claim via `suitable`. */
   readonly url: string;
   /** Expected `source_id` parsed from `url` (checked offline). */

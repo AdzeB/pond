@@ -196,7 +196,7 @@ export function SourcesPage() {
               {connectedCount} of {SYNCABLE.length} connected
               {activeCount > 0 ? (
                 <span className={styles.active}>
-                  <span className={styles.activeDot} />
+                  <span className={styles["active-dot"]} />
                   {activeCount} active
                 </span>
               ) : null}
@@ -228,15 +228,15 @@ export function SourcesPage() {
         <StorageBanner />
 
         <section className={styles.section}>
-          <div className={styles.secHead}>
-            <span className={styles.secLabel}>Overview</span>
+          <div className={styles["section-header"]}>
+            <span className={styles["section-label"]}>Overview</span>
             <Tooltip label="Customize metrics">
               <Button
                 icon
                 size="sm"
                 variant="ghost"
                 aria-label="Customize metrics"
-                className={styles.secAction}
+                className={styles["section-action"]}
                 onClick={() => setCustomizeOpen(true)}
               >
                 <Sliders width={16} height={16} />
@@ -251,9 +251,11 @@ export function SourcesPage() {
         </section>
 
         <section className={styles.section}>
-          <div className={styles.secHead}>
-            <span className={styles.secLabel}>Sources</span>
-            <span className={styles.secMeta}>{connectedCount} connected</span>
+          <div className={styles["section-header"]}>
+            <span className={styles["section-label"]}>Sources</span>
+            <span className={styles["section-meta"]}>
+              {connectedCount} connected
+            </span>
             <Tooltip label="Add source">
               <Button
                 icon
@@ -277,18 +279,18 @@ export function SourcesPage() {
             ))}
             <button
               type="button"
-              className={styles.addTile}
+              className={styles["add-tile"]}
               onClick={addSource}
               disabled={allConnected}
             >
-              <span className={styles.addSquare}>
+              <span className={styles["add-square"]}>
                 {allConnected ? (
                   <Antenna width={22} height={22} />
                 ) : (
                   <Plus width={22} height={22} />
                 )}
               </span>
-              <span className={styles.addLabel}>
+              <span className={styles["add-label"]}>
                 {allConnected ? "All set" : "Add"}
               </span>
             </button>
@@ -296,37 +298,46 @@ export function SourcesPage() {
         </section>
 
         <Accordion.Root
-          className={styles.acc}
+          className={styles.accordion}
           defaultValue={secondaryOpen}
           multiple
         >
           {hasActivity ? (
-            <Accordion.Item className={styles.accItem} value="activity">
-              <Accordion.Header className={styles.accHeader}>
-                <Accordion.Trigger className={styles.accTrigger}>
-                  <span className={styles.accLabel}>Activity</span>
-                  <span className={styles.accMeta}>{activeCount} running</span>
+            <Accordion.Item
+              className={styles["accordion-item"]}
+              value="activity"
+            >
+              <Accordion.Header className={styles["accordion-header"]}>
+                <Accordion.Trigger className={styles["accordion-trigger"]}>
+                  <span className={styles["accordion-label"]}>Activity</span>
+                  <span className={styles["accordion-meta"]}>
+                    {activeCount} running
+                  </span>
                   <Chevron
-                    className={styles.accChevron}
+                    className={styles["accordion-chevron"]}
                     width={16}
                     height={16}
                   />
                 </Accordion.Trigger>
               </Accordion.Header>
-              <Accordion.Panel className={styles.accPanel}>
+              <Accordion.Panel className={styles["accordion-panel"]}>
                 <LiveMonitor processes={processes} />
               </Accordion.Panel>
             </Accordion.Item>
           ) : null}
 
-          <Accordion.Item className={styles.accItem} value="runs">
-            <Accordion.Header className={styles.accHeader}>
-              <Accordion.Trigger className={styles.accTrigger}>
-                <span className={styles.accLabel}>Recent runs</span>
-                <Chevron className={styles.accChevron} width={16} height={16} />
+          <Accordion.Item className={styles["accordion-item"]} value="runs">
+            <Accordion.Header className={styles["accordion-header"]}>
+              <Accordion.Trigger className={styles["accordion-trigger"]}>
+                <span className={styles["accordion-label"]}>Recent runs</span>
+                <Chevron
+                  className={styles["accordion-chevron"]}
+                  width={16}
+                  height={16}
+                />
               </Accordion.Trigger>
             </Accordion.Header>
-            <Accordion.Panel className={styles.accPanel}>
+            <Accordion.Panel className={styles["accordion-panel"]}>
               <RecentRuns onOpenRun={openRun} />
             </Accordion.Panel>
           </Accordion.Item>

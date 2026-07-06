@@ -20,7 +20,7 @@ import { useSaves } from "./use-saves";
 // the validation gate (Stage D), then an agentic zero-result repair. Each stage
 // degrades to the previous one, so it always returns something usable.
 
-export interface NlCompileResult {
+interface NlCompileResult {
   // The executable query plan (filter + optional rank/group/limit/aggregate).
   // Today's deterministic path emits a one-step plan; capable providers emit a
   // richer one (see the LLM plan path below).

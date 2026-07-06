@@ -5,8 +5,8 @@ import { pickPrimaryFile } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import { clamp } from "@/lib/util/math";
 
-export const MIN_RATIO = 0.4;
-export const MAX_RATIO = 2.5;
+const MIN_RATIO = 0.4;
+const MAX_RATIO = 2.5;
 
 const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, number>();

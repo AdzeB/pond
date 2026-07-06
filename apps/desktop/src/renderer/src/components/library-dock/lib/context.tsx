@@ -7,7 +7,7 @@ import type { DockView } from "./types";
 // cross-fade in lockstep with the pill's width morph. `TargetAndTransition`
 // allows string values (e.g. `filter: "blur(6px)"`) and a per-variant
 // `transition` (e.g. delaying the incoming opacity), Family-style.
-export interface SwapVariants {
+interface SwapVariants {
   initial: TargetAndTransition;
   animate: TargetAndTransition;
   exit: TargetAndTransition;

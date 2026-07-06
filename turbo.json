@@ -28,11 +28,6 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "dependsOn": ["^build", "^generate"],
-      "inputs": ["src/**", "../../biome.json"],
-      "outputs": []
-    },
     "typecheck": {
       "dependsOn": ["^build", "^generate"],
       "inputs": ["src/**", "tsconfig.json"],

@@ -5,7 +5,7 @@ import { app } from "electron";
 // Registry of opened libraries for the switcher; in userData, readable before the DB opens.
 const RECENTS_FILE = "library-recents.json";
 
-export interface KnownLibrary {
+interface KnownLibrary {
   path: string;
   // Name derived from the path basename; the effective display name applies `displayName` on top.
   name: string;

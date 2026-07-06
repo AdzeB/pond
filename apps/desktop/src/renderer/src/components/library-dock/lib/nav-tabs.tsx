@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 
 export type DockTab = "library" | "sources" | "trash" | "settings";
 
-export interface NavTab {
+interface NavTab {
   id: DockTab;
   label: string;
   to: LinkProps["to"];

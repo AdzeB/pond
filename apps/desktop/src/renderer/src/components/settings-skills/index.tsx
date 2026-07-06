@@ -74,7 +74,7 @@ export function SkillsSection() {
       </Settings.Header>
 
       <div className={styles.card}>
-        <div className={styles.cardHead}>
+        <div className={styles["card-header"]}>
           <span className={styles.count}>
             {skills.length} {skills.length === 1 ? "skill" : "skills"}
           </span>
@@ -91,12 +91,12 @@ export function SkillsSection() {
 
         {skills.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles.emptyTitle}>No skills yet</span>
-            <span className={styles.emptyText}>
+            <span className={styles["empty-title"]}>No skills yet</span>
+            <span className={styles["empty-text"]}>
               Create a skill to run a saved prompt with “/” in the composer.
             </span>
             <Button
-              className={styles.emptyAction}
+              className={styles["empty-action"]}
               size="sm"
               variant="primary"
               onClick={() => setEditing({ mode: "new" })}
@@ -110,11 +110,11 @@ export function SkillsSection() {
               <li key={skill.id} className={styles.item}>
                 <button
                   type="button"
-                  className={styles.itemMain}
+                  className={styles["item-main"]}
                   onClick={() => setEditing({ mode: "edit", id: skill.id })}
                 >
-                  <span className={styles.itemName}>/{skill.name}</span>
-                  <span className={styles.itemDesc}>
+                  <span className={styles["item-name"]}>/{skill.name}</span>
+                  <span className={styles["item-description"]}>
                     {skill.description || skill.prompt}
                   </span>
                 </button>

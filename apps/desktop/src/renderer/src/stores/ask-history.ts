@@ -44,12 +44,6 @@ export function recordAsk(question: string): void {
   });
   persist(store.state);
 }
-
-export function clearAskHistory(): void {
-  store.setState(() => []);
-  persist(store.state);
-}
-
 export function useAskHistory(): string[] {
   return useSelector(store, (s) => s);
 }

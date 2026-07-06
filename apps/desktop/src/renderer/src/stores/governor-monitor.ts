@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { GovernorSnapshotWire } from "../../../preload";
 
-export type GovernorSnapshot = GovernorSnapshotWire;
+type GovernorSnapshot = GovernorSnapshotWire;
 
 const INITIAL: GovernorSnapshot = {
   allPaused: false,

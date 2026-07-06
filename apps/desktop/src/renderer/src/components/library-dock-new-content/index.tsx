@@ -66,14 +66,13 @@ export function NewContent() {
     // The dock's AnimatePresence wraps this in the swap motion.div; the pill's
     // `layout` owns the size morph, so this is just the card content.
     <div className={styles.card}>
-      <Input.Root className={styles.inputRoot}>
+      <Input.Root className={styles["input-root"]}>
         <Input.Icon>
           <Link width={16} height={16} />
         </Input.Icon>
-        {/* biome-ignore lint/a11y/noAutofocus: capture surface exists to receive the link immediately */}
         <Input.Field
           ref={inputRef}
-          className={styles.inputField}
+          className={styles["input-field"]}
           value={url}
           placeholder="Paste a link to save…"
           spellCheck={false}
@@ -96,7 +95,7 @@ export function NewContent() {
         onClick={() => void submit()}
       >
         Add
-        <kbd className={styles.kbd} aria-hidden>
+        <kbd className={styles.keyboard} aria-hidden>
           ↵
         </kbd>
       </Button>

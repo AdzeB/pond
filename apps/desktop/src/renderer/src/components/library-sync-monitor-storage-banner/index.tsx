@@ -16,11 +16,11 @@ export function StorageBanner() {
   const paused = exceeded && storage.action === "pauseSync";
 
   return (
-    <div className={styles.sbanner}>
-      <span className={styles.bIco} aria-hidden>
+    <div className={styles.banner}>
+      <span className={styles["banner-icon"]} aria-hidden>
         <Warning width={16} height={16} />
       </span>
-      <span className={styles.bText}>
+      <span className={styles["banner-text"]}>
         <b>
           {paused
             ? "Syncs paused — storage cap reached."
@@ -33,7 +33,7 @@ export function StorageBanner() {
           raise the cap{paused ? " to resume" : ""}.
         </span>
       </span>
-      <span className={styles.bAct}>
+      <span className={styles["banner-actions"]}>
         <Button
           size="sm"
           variant="secondary"

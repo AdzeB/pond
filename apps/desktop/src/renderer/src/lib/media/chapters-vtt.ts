@@ -4,7 +4,7 @@ export interface ChapterCue {
   endSec?: number;
 }
 
-export type ChapterLike =
+type ChapterLike =
   | { title?: string | null; startSec?: number | null; endSec?: number | null }
   | {
       title?: string | null;
@@ -14,7 +14,7 @@ export type ChapterLike =
 
 const SENTINEL_END_SEC = 359_999.999;
 
-export function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
+function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
   const cues: ChapterCue[] = [];
   for (const c of input) {
     if (!c) continue;

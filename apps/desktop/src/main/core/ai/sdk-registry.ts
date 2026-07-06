@@ -13,7 +13,7 @@ import { getPrefs } from "../prefs";
 // go through @ai-sdk/openai-compatible against their OpenAI-style endpoint. The
 // bundled on-device provider has no AI SDK equivalent and is handled separately.
 
-export interface ResolvedModel {
+interface ResolvedModel {
   id: AiProviderId;
   model: LanguageModel;
 }

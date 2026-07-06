@@ -15,7 +15,7 @@ export type SortKey =
   | "type";
 export type SortDir = "asc" | "desc";
 
-export const SORT_KEYS: readonly SortKey[] = [
+const SORT_KEYS: readonly SortKey[] = [
   "savedAt",
   "createdAt",
   "title",

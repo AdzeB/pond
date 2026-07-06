@@ -3,5 +3,6 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.tsx", "svg.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", "svg.d.ts"],
+  "exclude": ["providers/generate.ts"]
 }

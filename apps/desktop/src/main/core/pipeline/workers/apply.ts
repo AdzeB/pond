@@ -29,7 +29,7 @@ export interface WriteFileArgs {
   sourceUrl?: string;
 }
 
-export interface ApplyPatchOptions {
+interface ApplyPatchOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
   replaceFilesWithKind?: SaveFile["kind"];

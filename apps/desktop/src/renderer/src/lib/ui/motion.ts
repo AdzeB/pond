@@ -1,4 +1,4 @@
-import type { TargetAndTransition, Transition, Variants } from "motion/react";
+import type { TargetAndTransition, Transition } from "motion/react";
 
 // Shared motion vocabulary. Mirrors the `--ds-duration-*` / `--ds-easing-*`
 // tokens in CSS so JS-driven motion (motion/react) and CSS transitions feel
@@ -18,24 +18,14 @@ export const snappySpring: Transition = {
   bounce: 0.12,
 };
 
-// Playful overshoot for emphasis/delight moments. Use sparingly.
-export const overshootSpring: Transition = {
-  type: "spring",
-  duration: 0.42,
-  bounce: 0.32,
-};
-
 // Elastic settle for selections/toggles that should "land" with a little
 // bounce rather than slide flat — the Aave "the selection springs into place"
-// feel. Lower bounce than `overshootSpring` since it fires on every switch.
+// feel. Kept moderate since it fires on every switch.
 export const bouncySpring: Transition = {
   type: "spring",
   duration: 0.34,
   bounce: 0.28,
 };
-
-// Default for `layout` animations on persistent elements that reflow.
-export const layoutTransition: Transition = gentleSpring;
 
 // --- Family (connectkit) content crossfade -----------------------------------
 // Ported verbatim from connectkit's `contentVariants`
@@ -52,7 +42,7 @@ export const layoutTransition: Transition = gentleSpring;
 const FAMILY_EASE: [number, number, number, number] = [0.26, 0.08, 0.25, 1];
 const FAMILY_CONTENT_DURATION = 0.22;
 
-export interface DockMotion {
+interface DockMotion {
   pillTransition: Transition;
   swapTransition: Transition;
   swap: {
@@ -99,26 +89,3 @@ export function buildDockMotion(reduceMotion: boolean): DockMotion {
     },
   };
 }
-
-// FLIP-only transition for grid items: position/opacity animate via transform,
-// size deltas snap. Kept as an alias for back-compat with existing call sites.
-export const drawerSpring: Transition = gentleSpring;
-
-export type Direction = "forward" | "backward";
-
-// Directional enter/exit for content that travels in the direction of the
-// action (next = forward/right, prev = backward/left). "We fly instead of
-// teleport." Pair with `<AnimatePresence custom={direction} mode="popLayout">`.
-const DIRECTIONAL_OFFSET = 16;
-
-export const directionalVariants: Variants = {
-  enter: (direction: Direction) => ({
-    opacity: 0,
-    x: direction === "forward" ? DIRECTIONAL_OFFSET : -DIRECTIONAL_OFFSET,
-  }),
-  center: { opacity: 1, x: 0 },
-  exit: (direction: Direction) => ({
-    opacity: 0,
-    x: direction === "forward" ? -DIRECTIONAL_OFFSET : DIRECTIONAL_OFFSET,
-  }),
-};

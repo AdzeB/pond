@@ -31,16 +31,16 @@
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",
     "@webext-core/messaging": "^3.0.2",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.40",
-    "@types/node": "^25.6.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.0.2",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@wxt-dev/module-react": "^1.1.6",
-    "typescript": "^6.0.3",
+    "typescript": "catalog:",
     "wxt": "^0.20.25"
   }
 }

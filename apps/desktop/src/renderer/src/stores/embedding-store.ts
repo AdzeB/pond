@@ -6,7 +6,7 @@ import { Store } from "@tanstack/store";
 // kept current by the embedding sweep. `version` bumps on every mutation so
 // semantic-rank consumers re-run when new vectors arrive.
 
-export interface EmbeddingEntry {
+interface EmbeddingEntry {
   vec: Float32Array;
   model: string;
 }
@@ -64,13 +64,7 @@ export function loadEmbeddings(): Promise<void> {
     }
   })();
   return loadInflight;
-}
-
-export function getEmbedding(id: string): EmbeddingEntry | undefined {
-  return store.state.byId.get(id);
-}
-
-// Record a freshly-computed vector (and persist it through IPC, fire-and-forget).
+} // Record a freshly-computed vector (and persist it through IPC, fire-and-forget).
 export function setEmbedding(
   id: string,
   vec: Float32Array,

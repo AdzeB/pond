@@ -3,7 +3,7 @@ import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 
-export interface ProcessedImage {
+interface ProcessedImage {
   bytes: Buffer;
   mimeType: string;
   filename: string;

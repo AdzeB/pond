@@ -52,7 +52,7 @@ export function writeLibraryPointer(absPath: string): void {
 }
 
 // Reports whether `target` is safe as a library root (exists/creatable, outside userData).
-export interface PointerSafetyReport {
+interface PointerSafetyReport {
   ok: boolean;
   reason?:
     | "inside_user_data"
@@ -119,12 +119,7 @@ const CLOUD_MARKERS: ReadonlyArray<{
   { kind: "Box", patterns: ["/Box/", "/Box Sync/"] },
 ];
 
-export type CloudKind =
-  | "iCloud"
-  | "Dropbox"
-  | "Google Drive"
-  | "OneDrive"
-  | "Box";
+type CloudKind = "iCloud" | "Dropbox" | "Google Drive" | "OneDrive" | "Box";
 
 export function detectCloudKind(absPath: string): CloudKind | null {
   const norm = absPath.endsWith("/") ? absPath : `${absPath}/`;
@@ -135,7 +130,7 @@ export function detectCloudKind(absPath: string): CloudKind | null {
 }
 
 // Detect an existing Pond library (`items/` or `metadata.json`) to default to "adopt".
-export interface ExistingLibraryProbe {
+interface ExistingLibraryProbe {
   exists: boolean;
   hasItemsDir: boolean;
   hasMetadataFile: boolean;

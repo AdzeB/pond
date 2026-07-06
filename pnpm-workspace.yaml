@@ -2,6 +2,16 @@ packages:
   - "apps/*"
   - "packages/*"
 
+# Single source of truth for versions shared across the workspace. Reference
+# with the `catalog:` protocol in each package.json to prevent version drift.
+catalog:
+  "@types/node": ^26.0.1
+  "@types/react": ^19.2.14
+  "@types/react-dom": ^19.0.2
+  react: ^19.2.5
+  react-dom: ^19.2.5
+  typescript: ^6.0.3
+
 allowBuilds:
   # Built solely by electron-rebuild in apps/desktop postinstall (Electron ABI).
   # Letting pnpm run its own node-gyp build produces a plain-Node binary that

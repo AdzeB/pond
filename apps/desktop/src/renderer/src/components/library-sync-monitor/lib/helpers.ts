@@ -1,9 +1,9 @@
-import type { SyncOutcome, SyncRun } from "@/hooks/use-sync-history";
+import type { SyncRun } from "@/hooks/use-sync-history";
 import { relativeTime } from "@/lib/util/relative-time";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
 
 // Coarse tone bucket so a run reads at a glance across pills, dots, and rows.
-export type Tone = "ok" | "warn" | "err" | "noop";
+type Tone = "ok" | "warn" | "err" | "noop";
 
 export function runTone(run: SyncRun): Tone {
   switch (run.outcome) {
@@ -111,7 +111,7 @@ export function titleTrigger(trigger: string): string {
 }
 
 // Card-level health bucket derived from the live store status.
-export type CardTone = "run" | "ok" | "err" | "idle" | "paused";
+type CardTone = "run" | "ok" | "err" | "idle" | "paused";
 
 export interface CardModel {
   tone: CardTone;
@@ -195,4 +195,4 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   };
 }
 
-export type { SyncOutcome, SyncRun };
+export type { SyncRun };

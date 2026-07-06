@@ -6,7 +6,7 @@ export interface EnumOption<T> {
   label: ReactNode;
 }
 
-export interface EnumSelectProps<T> {
+interface EnumSelectProps<T> {
   value: T;
   onValueChange: (value: T) => void;
   options: readonly EnumOption<T>[];

@@ -17,7 +17,7 @@
   background: var(--ds-red-2, var(--ds-gray-2));
 }
 
-.head {
+.header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,7 +58,7 @@
   background: var(--ds-gray-4);
 }
 
-.iconAction {
+.icon-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -73,12 +73,12 @@
     var(--ds-easing-standard, ease);
 }
 
-.insight:hover .iconAction,
-.iconAction:focus-visible {
+.insight:hover .icon-action,
+.icon-action:focus-visible {
   opacity: 1;
 }
 
-.iconAction:hover {
+.icon-action:hover {
   color: var(--ds-gray-12);
   background: var(--ds-gray-4);
 }

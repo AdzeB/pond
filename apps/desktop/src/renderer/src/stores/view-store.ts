@@ -31,7 +31,7 @@ function applyZoomVar(zoom: number): void {
   document.documentElement.style.setProperty("--grid-min", `${zoom}px`);
 }
 
-export interface ViewStoreState {
+interface ViewStoreState {
   q: string;
   // Verbatim text typed into the dock Search field. Kept separate from `q` (the
   // residual after structured terms are parsed out) so the field can re-seed
@@ -98,11 +98,6 @@ export function useLayout(): LayoutValue {
 export function useSearchText(): string {
   return useSelector(store, (s) => s.q);
 }
-
-export function useSearchInput(): string {
-  return useSelector(store, (s) => s.searchInput);
-}
-
 export function useSortKey(): string {
   return useSelector(store, (s) => s.sortKey);
 }
@@ -110,22 +105,9 @@ export function useSortKey(): string {
 export function useSortDir(): SortDir {
   return useSelector(store, (s) => s.sortDir);
 }
-
-export function useActiveViewId(): string | null {
-  return useSelector(store, (s) => s.activeViewId);
-}
-
-export function setSearchText(q: string): void {
+function _setSearchText(q: string): void {
   store.setState((s) => (s.q === q ? s : { ...s, q }));
 }
-
-// Store the verbatim text typed into the dock Search field.
-export function setSearchInputText(searchInput: string): void {
-  store.setState((s) =>
-    s.searchInput === searchInput ? s : { ...s, searchInput },
-  );
-}
-
 export function setQuery(query: Query): void {
   store.setState((s) => {
     const rows = query.rules.filter((c): c is Predicate => !("rules" in c));
@@ -145,24 +127,6 @@ export function setSearchInput(predicates: Predicate[], q: string): void {
     query: deriveQuery(predicates, "and"),
   }));
 }
-
-// Apply a fully compiled query (from the NL "find anything" compiler). Unlike
-// `setSearchInput`, this preserves the compiled query verbatim for filtering —
-// including nested groups / `or` that the flat `rows` model can't represent —
-// while still surfacing its predicates as editable chips (flattened).
-export function applyCompiledQuery(query: Query, residual: string): void {
-  const rows = query.rules.filter((c): c is Predicate => !("rules" in c));
-  const combinator: Combinator = query.combinator === "or" ? "or" : "and";
-  store.setState((s) => ({
-    ...s,
-    q: residual,
-    rows,
-    combinator,
-    query,
-    activeViewId: null,
-  }));
-}
-
 export function resetFilters(): void {
   store.setState((s) => ({
     ...s,
@@ -171,42 +135,7 @@ export function resetFilters(): void {
     rows: [],
     query: EMPTY_QUERY,
   }));
-}
-
-// Apply a saved view: load its query + sort (+ layout) and mark it active.
-export function applySavedView(view: {
-  id: string;
-  query: Query;
-  sortKey: string;
-  sortDir: SortDir;
-  layout?: string | null;
-}): void {
-  const layout =
-    view.layout && isLayoutValue(view.layout) ? view.layout : undefined;
-  if (layout) writeViewPref("view", layout);
-  writeViewPref("sort", view.sortKey);
-  writeViewPref("dir", view.sortDir);
-  const rows = view.query.rules.filter((c): c is Predicate => !("rules" in c));
-  const combinator: Combinator = view.query.combinator === "or" ? "or" : "and";
-  store.setState((s) => ({
-    ...s,
-    rows,
-    combinator,
-    query: deriveQuery(rows, combinator),
-    sortKey: view.sortKey,
-    sortDir: view.sortDir,
-    layout: layout ?? s.layout,
-    activeViewId: view.id,
-  }));
-}
-
-export function clearActiveView(): void {
-  store.setState((s) =>
-    s.activeViewId === null ? s : { ...s, activeViewId: null },
-  );
-}
-
-// Append a fresh draft condition, defaulting to the first field; duplicates allowed, so never no-ops.
+} // Append a fresh draft condition, defaulting to the first field; duplicates allowed, so never no-ops.
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
   if (!next) return;
@@ -319,13 +248,6 @@ export function restoreDefaults(): void {
   }));
 }
 
-function openCapture(): void {
+function _openCapture(): void {
   store.setState((s) => (s.capture ? s : { ...s, capture: true }));
-}
-
-// Translate an inbound URL search payload into store state; filters aren't URL-serialized (use setQuery).
-export function applyViewStateFromParams(params: URLSearchParams): void {
-  if (params.get("capture") === "1") openCapture();
-  const q = params.get("q");
-  if (q) setSearchText(q);
 }

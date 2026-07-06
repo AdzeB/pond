@@ -31,7 +31,7 @@ function Row({ className, ...props }: ComponentProps<"tr">) {
 }
 
 function Head({ className, ...props }: ComponentProps<"th">) {
-  return <th className={cn(styles.head, className)} {...props} />;
+  return <th className={cn(styles.header, className)} {...props} />;
 }
 
 function Cell({ className, ...props }: ComponentProps<"td">) {

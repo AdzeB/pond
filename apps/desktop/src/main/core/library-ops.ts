@@ -25,7 +25,7 @@ import { libraryRoot, resolvePaths, trashRoot } from "../paths";
 import { executeBatch } from "./executor";
 import { recordForUndo } from "./undo";
 
-export interface IntegrityReport {
+interface IntegrityReport {
   orphans: string[];
   missing: string[];
   errors: Record<string, string>;
@@ -78,7 +78,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
 
 export type RelocateMode = "copy" | "adopt";
 
-export interface RelocateResult {
+interface RelocateResult {
   path: string;
   mode: RelocateMode;
   copied: number;
@@ -143,7 +143,7 @@ export async function relocateLibrary(
 }
 
 // Inspect a candidate folder for the relocate confirm dialog.
-export interface RelocatePreview {
+interface RelocatePreview {
   currentPath: string;
   candidatePath: string;
   samePath: boolean;

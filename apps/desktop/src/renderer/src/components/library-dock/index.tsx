@@ -35,17 +35,13 @@ import styles from "./styles.module.css";
 export const Dock = Object.assign(Root, {
   Root,
 });
-
-export type { DockTab } from "./lib/nav-tabs";
-export type { DockPreview, DockView } from "./lib/types";
-
 interface RootProps {
   preview?: DockPreview;
 }
 
 type DockMode = "nav" | "compose" | "search" | "options" | "library";
 
-export function Root({ preview }: RootProps) {
+function Root({ preview }: RootProps) {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
@@ -279,7 +275,7 @@ export function Root({ preview }: RootProps) {
             ) : view === "ask" ? (
               <motion.div
                 key="ask"
-                className={styles.askRow}
+                className={styles["ask-row"]}
                 {...swap}
                 transition={swapTransition}
               >
@@ -292,7 +288,7 @@ export function Root({ preview }: RootProps) {
             ) : view === "search" ? (
               <motion.div
                 key="search"
-                className={styles.searchRow}
+                className={styles["search-row"]}
                 {...swap}
                 transition={swapTransition}
               >
@@ -301,7 +297,7 @@ export function Root({ preview }: RootProps) {
             ) : view === "status" ? (
               <motion.div
                 key="status"
-                className={styles.askRow}
+                className={styles["ask-row"]}
                 {...swap}
                 transition={swapTransition}
               >

@@ -11,7 +11,7 @@ import { getPrefsSnapshot } from "@/stores/prefs";
 
 const DEFAULT_MODEL_ID = "Xenova/all-MiniLM-L6-v2";
 
-export function embedModelId(): string {
+function embedModelId(): string {
   const fromPrefs = getPrefsSnapshot()?.ai?.embedModelId;
   return fromPrefs && fromPrefs.trim().length > 0
     ? fromPrefs

@@ -37,7 +37,7 @@ interface RichTweetMetrics {
   views?: number;
 }
 
-export interface RichTweetCard {
+interface RichTweetCard {
   url?: string;
   domain?: string;
   title?: string;

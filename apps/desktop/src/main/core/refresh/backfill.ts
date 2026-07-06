@@ -70,7 +70,7 @@ function emit(next: RefreshBackfillStatus): void {
   }
 }
 
-export type RefreshBackfillStartResult =
+type RefreshBackfillStartResult =
   | { ok: true; total: number }
   | { ok: false; reason: "already_running" | "no_saves" };
 

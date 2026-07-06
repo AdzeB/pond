@@ -1,6 +1,6 @@
 import { type AiProviderId, modelSupportsAgent } from "@pond/schema";
 import { Settings, Switch } from "@pond/ui";
-import { ModelPicker } from "@/components/model-picker";
+import { EnrichmentModelPicker } from "@/components/enrichment-model-picker";
 import { EMBEDDING_CATALOG } from "@/lib/enrichment/model-catalogs";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 
@@ -59,7 +59,7 @@ function EmbeddingRow({ binding }: { binding: Binding }) {
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <ModelPicker
+        <EnrichmentModelPicker
           catalog={EMBEDDING_CATALOG}
           value={values.embedModelId ?? ""}
           onChange={(id) => binding.patch({ embedModelId: id })}

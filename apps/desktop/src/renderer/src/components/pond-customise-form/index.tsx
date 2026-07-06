@@ -43,7 +43,7 @@ export function PondCustomiseForm({
   return (
     <>
       <div className={styles.card}>
-        <div className={styles.previewWrap}>
+        <div className={styles["preview-wrapper"]}>
           <div
             className={styles.preview}
             style={{ background: color }}
@@ -58,7 +58,7 @@ export function PondCustomiseForm({
               render={
                 <button
                   type="button"
-                  className={styles.glyphButton}
+                  className={styles["glyph-button"]}
                   aria-label="Change icon"
                 />
               }
@@ -67,13 +67,13 @@ export function PondCustomiseForm({
             </Popover.Trigger>
             <Popover.Portal>
               <Popover.Positioner side="bottom" align="center">
-                <Popover.Popup className={styles.emojiPopup}>
-                  <div className={styles.iconGrid}>
+                <Popover.Popup className={styles["emoji-popup"]}>
+                  <div className={styles["icon-grid"]}>
                     {POND_ICONS.map(({ key, label, Icon }) => (
                       <button
                         key={key}
                         type="button"
-                        className={styles.iconOption}
+                        className={styles["icon-option"]}
                         data-selected={key === selectedIconKey || undefined}
                         aria-label={label}
                         aria-pressed={key === selectedIconKey}
@@ -83,12 +83,12 @@ export function PondCustomiseForm({
                       </button>
                     ))}
                   </div>
-                  <div className={styles.emojiGrid}>
+                  <div className={styles["emoji-grid"]}>
                     {QUICK_EMOJI.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
-                        className={styles.emojiOption}
+                        className={styles["emoji-option"]}
                         onClick={() => setAvatar(emoji)}
                       >
                         {emoji}
@@ -107,7 +107,7 @@ export function PondCustomiseForm({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={styles.clearEmoji}
+                    className={styles["clear-emoji"]}
                     onClick={() => {
                       setAvatar(null);
                       setPickerOpen(false);

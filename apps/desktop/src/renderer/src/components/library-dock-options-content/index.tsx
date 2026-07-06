@@ -13,7 +13,7 @@ export function OptionsContent() {
     // `layout` owns the size morph, so this is just the card content.
     <div className={styles.card}>
       <header className={styles.header}>
-        <span className={styles.headerTitle}>View</span>
+        <span className={styles["header-title"]}>View</span>
       </header>
       <hr className={styles.divider} />
       <LayoutSection />

@@ -1,9 +1,31 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
 import type { Source } from "@pond/schema/db";
-import { type RateProfile, syncConfigFor } from "@pond/schema/sources";
-import { app } from "electron";
 import log from "electron-log/main.js";
+import {
+  AT_RISK_PARK_MS,
+  type AtRiskKind,
+  allPaused,
+  atRisk,
+  BREAKER_THRESHOLD,
+  BREAKER_TRIP_MS,
+  BREAKER_WINDOW_MS,
+  breakerCounters,
+  breakerUntil,
+  cooldownUntil,
+  emit,
+  lastRequestAt,
+  loadState,
+  MULTIPLIER_DECREASE,
+  MULTIPLIER_INCREASE,
+  MULTIPLIER_MAX,
+  MULTIPLIER_MIN,
+  manualPaused,
+  multiplier,
+  now,
+  profile,
+  requestLog,
+  schedulePersist,
+} from "./rate-governor-state";
+import { type HeaderBag, parseRateSignal } from "./rate-headers";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate governor: the one account-safe pacing authority for every platform
@@ -18,164 +40,18 @@ import log from "electron-log/main.js";
 // Cooldowns / at-risk / recent requests persist to userData so a restart can't
 // re-hammer an account. Per-source pacing comes from the descriptor's resolved
 // RateProfile. Supersedes the old in-memory `source-gate` (which now re-exports
-// from here).
+// from here). State + persistence live in `rate-governor-state`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
-
-export interface PausedState {
-  source: Source;
-  until: number;
-  reason: PausedReason;
-}
-
-export type AtRiskKind =
-  | "challenge"
-  | "checkpoint"
-  | "captcha"
-  | "login"
-  | "rate_limit";
-
-export interface AtRiskState {
-  source: Source;
-  kind: AtRiskKind;
-  since: number;
-  note: string;
-}
-
-// Circuit breaker: N transient failures inside the window trips a long pause.
-const BREAKER_WINDOW_MS = 60_000;
-const BREAKER_THRESHOLD = 3;
-const BREAKER_TRIP_MS = 10 * 60_000;
-
-// AIMD bounds for the per-source delay multiplier.
-const MULTIPLIER_MIN = 1;
-const MULTIPLIER_MAX = 8;
-const MULTIPLIER_INCREASE = 2; // multiplicative increase under pressure
-const MULTIPLIER_DECREASE = 0.1; // additive decrease on success (slow to speed up)
-
-// How long an at-risk source stays parked before we let it try again.
-const AT_RISK_PARK_MS = 30 * 60_000;
-
-// Persist at most this often; cooldowns/at-risk flush immediately, the hot
-// request log is debounced.
-const PERSIST_DEBOUNCE_MS = 3_000;
-
-interface PersistShape {
-  schemaVersion: 1;
-  cooldownUntil: Partial<Record<Source, number>>;
-  breakerUntil: Partial<Record<Source, number>>;
-  atRisk: Partial<Record<Source, AtRiskState>>;
-  // Recent request timestamps per source, pruned to the largest window.
-  requestLog: Partial<Record<Source, number[]>>;
-  allPausedUntil: number;
-}
-
-// ── In-memory state (authoritative; persisted lazily) ───────────────────────
-const cooldownUntil = new Map<Source, number>();
-const breakerUntil = new Map<Source, number>();
-const breakerCounters = new Map<Source, { count: number; firstAt: number }>();
-const atRisk = new Map<Source, AtRiskState>();
-const requestLog = new Map<Source, number[]>();
-const lastRequestAt = new Map<Source, number>();
-const multiplier = new Map<Source, number>();
-const manualPaused = new Set<Source>();
-let allPaused = false;
-let loaded = false;
-let persistTimer: NodeJS.Timeout | null = null;
-
-// Listeners for UI broadcast (wired in main/index.ts).
-type Listener = (snapshot: GovernorSnapshot) => void;
-const listeners = new Set<Listener>();
-
-function profile(source: Source): RateProfile {
-  return syncConfigFor(source).rate;
-}
-
-function now(): number {
-  return Date.now();
-}
-
-// ── Persistence ─────────────────────────────────────────────────────────────
-function statePath(): string {
-  return join(app.getPath("userData"), "rate-governor.json");
-}
-
-function loadState(): void {
-  if (loaded) return;
-  loaded = true;
-  try {
-    const raw = readFileSync(statePath(), "utf-8");
-    const parsed = JSON.parse(raw) as Partial<PersistShape>;
-    const t = now();
-    for (const [s, until] of Object.entries(parsed.cooldownUntil ?? {})) {
-      if (typeof until === "number" && until > t)
-        cooldownUntil.set(s as Source, until);
-    }
-    for (const [s, until] of Object.entries(parsed.breakerUntil ?? {})) {
-      if (typeof until === "number" && until > t)
-        breakerUntil.set(s as Source, until);
-    }
-    for (const [s, st] of Object.entries(parsed.atRisk ?? {})) {
-      if (st && typeof st === "object")
-        atRisk.set(s as Source, st as AtRiskState);
-    }
-    for (const [s, log_] of Object.entries(parsed.requestLog ?? {})) {
-      if (Array.isArray(log_)) requestLog.set(s as Source, log_.slice(-500));
-    }
-    if (
-      typeof parsed.allPausedUntil === "number" &&
-      parsed.allPausedUntil > t
-    ) {
-      allPaused = true;
-    }
-    log.info("[pond governor] loaded persisted state", {
-      cooldowns: cooldownUntil.size,
-      atRisk: atRisk.size,
-    });
-  } catch {
-    // No prior state (first run) or unreadable — start clean.
-  }
-}
-
-function schedulePersist(immediate = false): void {
-  if (immediate) {
-    if (persistTimer) {
-      clearTimeout(persistTimer);
-      persistTimer = null;
-    }
-    writeState();
-    return;
-  }
-  if (persistTimer) return;
-  persistTimer = setTimeout(() => {
-    persistTimer = null;
-    writeState();
-  }, PERSIST_DEBOUNCE_MS);
-}
-
-function writeState(): void {
-  try {
-    const body: PersistShape = {
-      schemaVersion: 1,
-      cooldownUntil: Object.fromEntries(
-        cooldownUntil,
-      ) as PersistShape["cooldownUntil"],
-      breakerUntil: Object.fromEntries(
-        breakerUntil,
-      ) as PersistShape["breakerUntil"],
-      atRisk: Object.fromEntries(atRisk) as PersistShape["atRisk"],
-      requestLog: Object.fromEntries(requestLog) as PersistShape["requestLog"],
-      allPausedUntil: allPaused ? now() + 365 * 24 * 60 * 60_000 : 0,
-    };
-    const file = statePath();
-    if (!existsSync(dirname(file)))
-      mkdirSync(dirname(file), { recursive: true });
-    writeFileSync(file, JSON.stringify(body));
-  } catch (err) {
-    log.warn("[pond governor] failed to persist state", err);
-  }
-}
+export {
+  type GovernorSnapshot,
+  governorSnapshot,
+  isAllPaused,
+  pauseAll,
+  resumeAll,
+  snapshotSourceGate,
+  subscribeToGovernor,
+} from "./rate-governor-state";
 
 // ── Pause computation ───────────────────────────────────────────────────────
 
@@ -251,41 +127,7 @@ export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   emit();
 }
 
-export function clearAtRisk(source: Source): void {
-  if (atRisk.delete(source)) {
-    schedulePersist(true);
-    emit();
-  }
-}
-
-export function isAtRisk(source: Source): AtRiskState | null {
-  loadState();
-  return atRisk.get(source) ?? null;
-}
-
-// ── Kill switch + manual per-source pause ───────────────────────────────────
-export function pauseAll(): void {
-  allPaused = true;
-  schedulePersist(true);
-  emit();
-}
-
-export function resumeAll(): void {
-  allPaused = false;
-  schedulePersist(true);
-  emit();
-}
-
-export function isAllPaused(): boolean {
-  loadState();
-  return allPaused;
-}
-
-export function pauseSource(source: Source): void {
-  manualPaused.add(source);
-  emit();
-}
-
+// ── Manual per-source pause override ─────────────────────────────────────────
 export function resumeSource(source: Source): void {
   // Clears the manual pause AND any active cooldown/breaker/at-risk so the user
   // can force a retry. This is the "I understand the risk, try now" override.
@@ -297,76 +139,6 @@ export function resumeSource(source: Source): void {
   multiplier.set(source, MULTIPLIER_MIN);
   schedulePersist(true);
   emit();
-}
-
-// ── Header interpretation ───────────────────────────────────────────────────
-export type HeaderBag = Record<string, string> | Headers;
-
-function header(bag: HeaderBag, name: string): string | null {
-  if (bag instanceof Headers) return bag.get(name);
-  const lower = name.toLowerCase();
-  for (const [k, v] of Object.entries(bag)) {
-    if (k.toLowerCase() === lower) return v;
-  }
-  return null;
-}
-
-export interface RateSignal {
-  /** Server-requested wait in seconds, if any (retry-after / reset). */
-  retryAfterSec: number | null;
-  /** Remaining requests in the current platform window, if advertised. */
-  remaining: number | null;
-}
-
-/**
- * Parse the rate-limit signals platforms commonly send. Covers `retry-after`
- * (seconds or HTTP date), Twitter's `x-rate-limit-*`, and the generic
- * `x-ratelimit-*` family.
- */
-export function parseRateSignal(bag: HeaderBag): RateSignal {
-  let retryAfterSec: number | null = null;
-  const retryAfter = header(bag, "retry-after");
-  if (retryAfter) {
-    const asNum = Number(retryAfter);
-    if (Number.isFinite(asNum)) {
-      retryAfterSec = Math.max(0, asNum);
-    } else {
-      const when = Date.parse(retryAfter);
-      if (Number.isFinite(when)) {
-        retryAfterSec = Math.max(0, Math.round((when - Date.now()) / 1000));
-      }
-    }
-  }
-
-  const resetRaw =
-    header(bag, "x-rate-limit-reset") ?? header(bag, "x-ratelimit-reset");
-  const remainingRaw =
-    header(bag, "x-rate-limit-remaining") ??
-    header(bag, "x-ratelimit-remaining");
-  const remaining = remainingRaw != null ? Number(remainingRaw) : null;
-
-  // If remaining is exhausted and a reset epoch is given, treat reset as the
-  // wait even without an explicit retry-after.
-  if (
-    retryAfterSec == null &&
-    remaining != null &&
-    Number.isFinite(remaining) &&
-    remaining <= 1 &&
-    resetRaw
-  ) {
-    const resetEpoch = Number(resetRaw);
-    if (Number.isFinite(resetEpoch)) {
-      // Epoch seconds (10 digits) vs ms — normalize to seconds-from-now.
-      const resetMs = resetEpoch > 1e12 ? resetEpoch : resetEpoch * 1000;
-      retryAfterSec = Math.max(0, Math.round((resetMs - Date.now()) / 1000));
-    }
-  }
-
-  return {
-    retryAfterSec,
-    remaining:
-      remaining != null && Number.isFinite(remaining) ? remaining : null,
-  };
 }
 
 // ── Effective delay + acquire ───────────────────────────────────────────────
@@ -386,7 +158,7 @@ function pruneLog(source: Source): number[] {
   return log_;
 }
 
-export interface AcquireOptions {
+interface AcquireOptions {
   signal?: AbortSignal;
   /** Apply the stricter first/full-sync pacing profile. */
   firstSync?: boolean;
@@ -394,7 +166,7 @@ export interface AcquireOptions {
   maxWaitMs?: number;
 }
 
-export class GovernorAbortError extends Error {
+class GovernorAbortError extends Error {
   constructor() {
     super("rate governor wait aborted");
     this.name = "GovernorAbortError";
@@ -479,7 +251,7 @@ export async function acquire(
 }
 
 // ── Report ──────────────────────────────────────────────────────────────────
-export interface ReportInput {
+interface ReportInput {
   ok: boolean;
   status?: number;
   headers?: HeaderBag;
@@ -488,7 +260,7 @@ export interface ReportInput {
   retryAfterSec?: number;
 }
 
-export interface ReportResult {
+interface ReportResult {
   /** Cooldown applied as a result, in ms (0 = none). */
   cooldownMs: number;
 }
@@ -535,58 +307,6 @@ export function report(source: Source, input: ReportInput): ReportResult {
 function bumpMultiplier(source: Source): void {
   const m = multiplier.get(source) ?? MULTIPLIER_MIN;
   multiplier.set(source, Math.min(MULTIPLIER_MAX, m * MULTIPLIER_INCREASE));
-}
-
-// ── Snapshot + subscription (for UI) ────────────────────────────────────────
-export interface GovernorSnapshot {
-  allPaused: boolean;
-  paused: PausedState[];
-  atRisk: AtRiskState[];
-}
-
-export function snapshotSourceGate(): PausedState[] {
-  loadState();
-  const t = now();
-  const out = new Map<Source, PausedState>();
-  const consider = (
-    source: Source,
-    until: number,
-    reason: PausedReason,
-  ): void => {
-    if (until <= t) return;
-    const prev = out.get(source);
-    if (!prev || until > prev.until) out.set(source, { source, until, reason });
-  };
-  for (const [s, until] of cooldownUntil) consider(s, until, "cooldown");
-  for (const [s, until] of breakerUntil) consider(s, until, "breaker");
-  for (const [s, st] of atRisk)
-    consider(s, st.since + AT_RISK_PARK_MS, "at_risk");
-  for (const s of manualPaused) consider(s, Number.MAX_SAFE_INTEGER, "manual");
-  return [...out.values()];
-}
-
-export function governorSnapshot(): GovernorSnapshot {
-  return {
-    allPaused: isAllPaused(),
-    paused: snapshotSourceGate(),
-    atRisk: [...atRisk.values()],
-  };
-}
-
-export function subscribeToGovernor(cb: Listener): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-function emit(): void {
-  const snap = governorSnapshot();
-  for (const cb of listeners) {
-    try {
-      cb(snap);
-    } catch {
-      /* listener errors must not break the governor */
-    }
-  }
 }
 
 /** Flush state to disk (call on app quit). */

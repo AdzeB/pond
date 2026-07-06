@@ -1,24 +1,24 @@
 /* ── dialogs (Dialog.Popup) ─────────────────────────────────────────────── */
-.dlgPopup {
+.dialog-popup {
   width: 100%;
   max-width: 540px;
   padding: 0;
   overflow: hidden;
 }
 
-.dlgHead {
+.dialog-header {
   display: flex;
   gap: 13px;
   align-items: center;
   padding: 18px 20px;
 }
 
-.dlgHead .dh {
+.dialog-header .dialog-heading {
   flex: 1;
   min-width: 0;
 }
 
-.dlgHead .dn {
+.dialog-header .dialog-title {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -27,23 +27,23 @@
   color: var(--ink);
 }
 
-.dlgHead .ds {
+.dialog-header .dialog-subtitle {
   margin-top: 3px;
   font-size: 12.5px;
   color: var(--ink-3);
 }
 
-.dlgActions {
+.dialog-actions {
   display: flex;
   gap: 8px;
   padding: 2px 20px 16px;
 }
 
-.dlgActions > * {
+.dialog-actions > * {
   flex: 1;
 }
 
-.dlgBody {
+.dialog-body {
   max-height: 56vh;
   padding: 4px 20px 8px;
   overflow: auto;
@@ -58,19 +58,19 @@
   padding: 8px 0;
 }
 
-.field .fl {
+.field .field-label {
   font-size: 13px;
   color: var(--ink);
 }
 
-.field .fh {
+.field .field-hint {
   max-width: 320px;
   margin-top: 2px;
   font-size: 11.5px;
   color: var(--ink-3);
 }
 
-.segm {
+.segmented {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
@@ -78,7 +78,7 @@
   border-radius: 8px;
 }
 
-.segm button {
+.segmented button {
   padding: 5px 10px;
   font-family: inherit;
   font-size: 12px;
@@ -89,7 +89,7 @@
   border-radius: 6px;
 }
 
-.segm button.on {
+.segmented button.on {
   font-weight: 560;
   color: var(--ink);
   background: var(--panel);
@@ -97,7 +97,7 @@
 }
 
 /* ── metric picker ──────────────────────────────────────────────────────── */
-.catgrp {
+.category-group {
   padding: 14px 0 4px;
   font-size: 11px;
   color: var(--ink-3);
@@ -122,19 +122,19 @@
   opacity: 0.55;
 }
 
-.metric .mn {
+.metric .metric-name {
   font-size: 13px;
   font-weight: 540;
   color: var(--ink);
 }
 
-.metric .md {
+.metric .metric-description {
   margin-top: 2px;
   font-size: 11.5px;
   color: var(--ink-3);
 }
 
-.dispseg {
+.display-segmented {
   display: inline-flex;
   gap: 2px;
   padding: 2px;
@@ -142,7 +142,7 @@
   border-radius: 7px;
 }
 
-.dispseg button {
+.display-segmented button {
   padding: 3px 9px;
   font-family: inherit;
   font-size: 11px;
@@ -153,7 +153,7 @@
   border-radius: 5px;
 }
 
-.dispseg button.on {
+.display-segmented button.on {
   font-weight: 560;
   color: var(--ink);
   background: var(--panel);

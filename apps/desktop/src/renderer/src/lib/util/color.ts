@@ -2,7 +2,7 @@
 // Eagle exposes (hex / rgb / rgba / hsl / hsv / hwb / cmyk) so a dominant colour
 // can be lifted into whatever space the user's tool of choice expects.
 
-export interface Rgb {
+interface Rgb {
   r: number;
   g: number;
   b: number;
@@ -10,7 +10,7 @@ export interface Rgb {
 
 // Accepts #rgb, #rrggbb (with or without the leading #). Returns null on junk so
 // callers can skip rendering rather than copy a malformed value.
-export function parseHex(input: string): Rgb | null {
+function parseHex(input: string): Rgb | null {
   const t = input.trim().replace(/^#/, "");
   const short = /^([0-9a-f]{3})$/i.exec(t);
   if (short) {
@@ -98,7 +98,7 @@ function toCmyk({ r, g, b }: Rgb): string {
   return `cmyk(${Math.round(f(rr) * 100)}%, ${Math.round(f(gg) * 100)}%, ${Math.round(f(bb) * 100)}%, ${Math.round(k * 100)}%)`;
 }
 
-export interface ColorFormat {
+interface ColorFormat {
   label: string;
   value: string;
 }

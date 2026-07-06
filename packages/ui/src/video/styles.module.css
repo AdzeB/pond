@@ -98,7 +98,7 @@
   user-select: none;
 }
 
-.timeDisplay {
+.time-display {
   display: flex;
   flex: 0 0 auto;
   gap: 6px;
@@ -111,7 +111,7 @@
   user-select: none;
 }
 
-.timeDisplaySep {
+.time-display-separator {
   color: var(--ds-white-a8);
 }
 
@@ -183,7 +183,7 @@
   background: rgb(255 255 255 / 0.3);
 }
 
-.hoverFill {
+.hover-fill {
   position: absolute;
   inset: 0 auto 0 0;
   background: rgb(255 255 255 / 0.25);

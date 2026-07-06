@@ -1,4 +1,3 @@
-import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 // Bridges the (deeply nested) active <video> back to sibling chrome — the
@@ -29,16 +28,4 @@ export function setActiveMediaTime(currentTime: number): void {
   store.setState((s) =>
     s.currentTime === currentTime ? s : { ...s, currentTime },
   );
-}
-
-export function seekActiveMedia(seconds: number): void {
-  store.state.seek?.(seconds);
-}
-
-export function useActiveMediaSeek(): boolean {
-  return useSelector(store, (s) => s.seek != null);
-}
-
-export function useActiveMediaTime(): number {
-  return useSelector(store, (s) => s.currentTime);
 }

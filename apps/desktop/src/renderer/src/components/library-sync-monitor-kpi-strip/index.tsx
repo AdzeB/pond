@@ -83,27 +83,27 @@ export function KpiStrip({
                   icon
                   size="xs"
                   variant="ghost"
-                  className={styles.kx}
+                  className={styles["kpi-remove"]}
                   aria-label={`Remove ${def.label}`}
                   onClick={() => remove(id)}
                 >
                   <Xmark width={14} height={14} />
                 </Button>
-                <div className={styles.kLabel}>
+                <div className={styles["kpi-label"]}>
                   {def.label}
                   {def.group === "Items" || def.group === "Sync"
                     ? ` · ${days}d`
                     : ""}
                 </div>
-                <div className={styles.kValue}>{m.value}</div>
+                <div className={styles["kpi-value"]}>{m.value}</div>
                 {m.delta ? (
                   <div
-                    className={`${styles.kDelta} ${
+                    className={`${styles["kpi-delta"]} ${
                       dir === "up"
                         ? styles.up
                         : dir === "down"
                           ? styles.down
-                          : styles.neu
+                          : styles.neutral
                     }`}
                   >
                     {m.delta.text}
@@ -117,7 +117,7 @@ export function KpiStrip({
                         key={i}
                         className={
                           i === (m.spark?.length ?? 0) - 1
-                            ? styles.hl
+                            ? styles.highlight
                             : undefined
                         }
                         style={{
@@ -133,22 +133,22 @@ export function KpiStrip({
         </div>
       ) : null}
 
-      <div className={styles.chiprail}>
+      <div className={styles["chip-rail"]}>
         {chips.map((id) => {
           const def = METRIC_BY_ID[id];
           if (!def) return null;
           const m = def.compute(ctx);
           return (
-            <span key={id} className={styles.statchip}>
-              <span className={styles.cl}>{def.label}</span>
+            <span key={id} className={styles["stat-chip"]}>
+              <span className={styles["chip-label"]}>{def.label}</span>
               <span
-                className={`${styles.cv} ${
+                className={`${styles["chip-value"]} ${
                   m.tone === "ok"
                     ? styles.ok
                     : m.tone === "err"
-                      ? styles.err
+                      ? styles.error
                       : m.tone === "warn"
-                        ? styles.warn
+                        ? styles.warning
                         : ""
                 }`}
               >
@@ -160,7 +160,7 @@ export function KpiStrip({
         <Button
           size="sm"
           variant="ghost"
-          className={styles.addmetric}
+          className={styles["add-metric"]}
           onClick={onCustomize}
         >
           <Plus width={14} height={14} />

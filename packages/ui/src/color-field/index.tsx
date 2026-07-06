@@ -233,7 +233,7 @@ function ColorArea({
     >
       <div
         {...thumbProps}
-        className={styles.satHandle}
+        className={styles["saturation-handle"]}
         data-focus={isFocusVisible || undefined}
         style={thumbProps.style}
       >
@@ -287,7 +287,7 @@ function HueSlider({
     >
       <div
         {...thumbProps}
-        className={styles.hueHandle}
+        className={styles["hue-handle"]}
         data-focus={isFocusVisible || undefined}
         style={{ ...thumbProps.style, left: "50%" }}
       >

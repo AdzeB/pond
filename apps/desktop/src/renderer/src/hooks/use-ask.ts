@@ -165,7 +165,7 @@ export function runAskSuggestion(suggestion: AskSuggestion): void {
 
 // Per-turn options: refine within the previous result set, and/or attach a
 // query image for image-to-image visual search.
-export interface AskOptions {
+interface AskOptions {
   refine?: boolean;
   image?: { blob: Blob; meta: AskQueryImage };
   // The composed message as typed, so the transcript renders it back exactly.

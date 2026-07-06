@@ -3,7 +3,7 @@ interface MemoCacheOptions {
   ttlMs?: number;
 }
 
-export interface MemoCache<T> {
+interface MemoCache<T> {
   // Return the cached value or compute it; concurrent callers share one compute.
   get(): Promise<T>;
   // Current cached value without computing; null when empty or stale.

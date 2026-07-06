@@ -1,16 +1,16 @@
 /* Sort row: field select + direction toggle. */
-.sortRow {
+.sort-row {
   display: flex;
   gap: 6px;
   align-items: center;
 }
 
-.sortField {
+.sort-field {
   flex: 1;
   min-width: 0;
 }
 
-.dirButton {
+.direction-button {
   box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;

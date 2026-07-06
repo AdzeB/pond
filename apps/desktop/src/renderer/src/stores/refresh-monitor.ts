@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { RefreshBackfillStatusWire } from "../../../preload";
 
-export type RefreshBackfillStatus = RefreshBackfillStatusWire;
+type RefreshBackfillStatus = RefreshBackfillStatusWire;
 
 const INITIAL: RefreshBackfillStatus = {
   state: "idle",

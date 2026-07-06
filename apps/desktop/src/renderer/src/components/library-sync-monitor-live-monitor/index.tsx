@@ -11,12 +11,12 @@ export function LiveMonitor({ processes }: { processes: ProcessItem[] }) {
     return (
       <div className={styles.monitor}>
         <div className={styles.idle}>
-          <span className={styles.ii} aria-hidden>
+          <span className={styles["idle-icon"]} aria-hidden>
             <CheckIcon width={18} height={18} />
           </span>
-          <div className={styles.it}>
-            <div className={styles.itn}>No background tasks</div>
-            <div className={styles.its}>
+          <div className={styles["idle-text"]}>
+            <div className={styles["idle-title"]}>No background tasks</div>
+            <div className={styles["idle-subtitle"]}>
               Running syncs show their progress in the list above.
             </div>
           </div>
@@ -44,22 +44,25 @@ function ProcessRow({ item }: { item: ProcessItem }) {
   const paused = item.state === "paused";
 
   return (
-    <div className={styles.mini}>
-      <div className={styles.mt}>
-        <div className={styles.mn}>
+    <div className={styles["process-row"]}>
+      <div className={styles["process-main"]}>
+        <div className={styles["process-name"]}>
           {item.label}
-          <span className={styles.typepill}>
+          <span className={styles["type-pill"]}>
             {paused ? "Paused" : "Active"}
           </span>
         </div>
-        <div className={styles.mtrack}>
+        <div className={styles["progress-track"]}>
           {determinate ? (
-            <div className={styles.fillbar} style={{ width: `${pct}%` }} />
+            <div
+              className={styles["progress-fill"]}
+              style={{ width: `${pct}%` }}
+            />
           ) : paused ? null : (
-            <div className={styles.indet} />
+            <div className={styles["progress-indeterminate"]} />
           )}
         </div>
-        <div className={styles.ms}>
+        <div className={styles["process-status"]}>
           {item.message ?? (paused ? "Paused" : "Working…")}
           {determinate && progress
             ? ` · ${progress.current} / ${progress.total}`

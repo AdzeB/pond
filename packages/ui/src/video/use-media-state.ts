@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { bufferedEnd, clamp, FRAME_STEP_SECONDS } from "./lib";
 
-export interface MediaState {
+interface MediaState {
   playing: boolean;
   currentTime: number;
   duration: number;
@@ -14,7 +14,7 @@ export interface MediaState {
   fullscreenSupported: boolean;
 }
 
-export interface MediaActions {
+interface MediaActions {
   togglePlay: () => void;
   play: () => void;
   pause: () => void;

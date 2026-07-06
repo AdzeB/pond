@@ -87,8 +87,8 @@ export function SaveDetails({ save }: { save: Save }) {
   });
 
   return (
-    <div className={styles.detailCard}>
-      <TitleBar.Root className={styles.detailHeader}>
+    <div className={styles["detail-card"]}>
+      <TitleBar.Root className={styles["detail-header"]}>
         <TitleBar.Start>
           <KebabMenu save={save} />
         </TitleBar.Start>
@@ -102,7 +102,7 @@ export function SaveDetails({ save }: { save: Save }) {
         </TitleBar.End>
       </TitleBar.Root>
 
-      <div className={styles.detailScroll}>
+      <div className={styles["detail-scroll"]}>
         {description ? (
           <Section title="Content">
             <ExpandableText text={description} compact />
@@ -114,8 +114,8 @@ export function SaveDetails({ save }: { save: Save }) {
             <div className={styles.metrics}>
               {engagement.map((m) => (
                 <div key={m.id} className={styles.metric}>
-                  <span className={styles.metricLabel}>{m.label}</span>
-                  <span className={styles.metricValue}>{m.value}</span>
+                  <span className={styles["metric-label"]}>{m.label}</span>
+                  <span className={styles["metric-value"]}>{m.value}</span>
                 </div>
               ))}
             </div>
@@ -127,11 +127,11 @@ export function SaveDetails({ save }: { save: Save }) {
                 className={styles.row}
                 data-alt={i % 2 === 1 ? "true" : undefined}
               >
-                <span className={styles.rowLabel}>{row.label}</span>
+                <span className={styles["row-label"]}>{row.label}</span>
                 {row.kind === "author" ? (
-                  <span className={styles.rowInline}>
+                  <span className={styles["row-inline"]}>
                     <span
-                      className={styles.rowAvatar}
+                      className={styles["row-avatar"]}
                       style={{ background: pickAuthorColor(row.value) }}
                       aria-hidden
                     >
@@ -147,19 +147,19 @@ export function SaveDetails({ save }: { save: Save }) {
                         initials(row.value)
                       )}
                     </span>
-                    <span className={styles.rowValue}>{row.value}</span>
+                    <span className={styles["row-value"]}>{row.value}</span>
                   </span>
                 ) : row.kind === "platform" ? (
-                  <span className={styles.rowInline}>
+                  <span className={styles["row-inline"]}>
                     {SourceIcon ? (
-                      <span className={styles.rowSourceIcon} aria-hidden>
+                      <span className={styles["row-source-icon"]} aria-hidden>
                         <SourceIcon width={16} height={16} />
                       </span>
                     ) : null}
-                    <span className={styles.rowValue}>{row.value}</span>
+                    <span className={styles["row-value"]}>{row.value}</span>
                   </span>
                 ) : (
-                  <span className={styles.rowValue} title={row.value}>
+                  <span className={styles["row-value"]} title={row.value}>
                     {row.value}
                   </span>
                 )}

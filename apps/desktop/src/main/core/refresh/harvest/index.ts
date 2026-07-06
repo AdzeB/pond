@@ -10,7 +10,7 @@ import * as twitter from "./twitter";
 import type { ScrapedHarvest } from "./types";
 import * as youtube from "./youtube";
 
-export interface Harvester {
+interface Harvester {
   buildExpression: (sourceId: string) => string;
   adapt: (raw: unknown) => ScrapedHarvest | null;
   sourceIdFromUrl: (url: string) => string | null;

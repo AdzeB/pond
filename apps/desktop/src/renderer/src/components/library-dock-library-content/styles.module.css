@@ -10,7 +10,7 @@
   margin-bottom: 4px;
 }
 
-.searchField {
+.search-field {
   height: 28px;
   min-height: 28px;
 }
@@ -64,20 +64,20 @@
   }
 }
 
-.actionIcon {
+.action-icon {
   flex-shrink: 0;
   width: 16px;
   height: 16px;
 }
 
-.rowText {
+.row-text {
   display: flex;
   flex-direction: column;
   min-width: 0;
   line-height: 1.25;
 }
 
-.rowName {
+.row-name {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
@@ -85,7 +85,7 @@
   white-space: nowrap;
 }
 
-.rowPath {
+.row-path {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
@@ -124,7 +124,7 @@
   color: var(--ds-gray-12);
 }
 
-.kbd {
+.keyboard {
   margin-left: auto;
   font-family: inherit;
   font-size: 11px;

@@ -12,18 +12,6 @@ interface SemanticState {
 }
 
 const store = new Store<SemanticState>({ vector: null, text: "" });
-
-export function setSemanticQuery(
-  vector: Float32Array | null,
-  text: string,
-): void {
-  store.setState(() => ({ vector, text }));
-}
-
-export function clearSemanticQuery(): void {
-  store.setState((s) => (s.vector == null ? s : { vector: null, text: "" }));
-}
-
 export function useSemanticQuery(): SemanticState {
   return useSelector(store, (s) => s);
 }

@@ -23,7 +23,7 @@ import {
 } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
 
-export interface ExecuteOptions {
+interface ExecuteOptions {
   silent?: boolean;
 }
 

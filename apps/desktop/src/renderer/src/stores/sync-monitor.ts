@@ -2,7 +2,7 @@ import type { Source } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type SyncState =
+type SyncState =
   | "idle"
   | "running"
   | "done"
@@ -12,7 +12,7 @@ export type SyncState =
   | "paused";
 
 // Live wire shape pushed over onSyncStatus; mirrors the main process type, kept local to avoid crossing IPC.
-export interface SyncStatusUpdate {
+interface SyncStatusUpdate {
   source: string;
   state: SyncState;
   message?: string;
@@ -78,10 +78,4 @@ export const syncMonitor = {
 
 export function useSyncBySource(): SyncMonitorState["bySource"] {
   return useSelector(store, (s) => s.bySource);
-}
-
-export function useAnySyncRunning(): boolean {
-  return useSelector(store, (s) =>
-    Object.values(s.bySource).some((v) => v?.state === "running"),
-  );
 }

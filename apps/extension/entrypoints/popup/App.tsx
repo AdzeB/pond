@@ -190,7 +190,7 @@ export function App() {
         >
           Open Pond
         </button>
-        <span className={styles["footer-sep"]} aria-hidden>
+        <span className={styles["footer-separator"]} aria-hidden>
           ·
         </span>
         <button

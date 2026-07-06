@@ -1,4 +1,4 @@
-export type ViewPrefKey = "view" | "sort" | "dir" | "inspector" | "sidebar";
+type ViewPrefKey = "view" | "sort" | "dir" | "inspector" | "sidebar";
 
 const STORAGE_KEYS: Record<ViewPrefKey, string> = {
   view: "pond.view",

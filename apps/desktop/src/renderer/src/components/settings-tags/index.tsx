@@ -336,7 +336,7 @@ export function TagsSection() {
           </DataTable.Toolbar>
 
           <TagsTableContext value={ctxValue}>
-            <DataTable.Root className={styles["table-wrap"]}>
+            <DataTable.Root className={styles["table-wrapper"]}>
               <DataTable.ExtraRow>
                 {creating ? (
                   <DraftRow

@@ -68,7 +68,7 @@ export function ActionsCell() {
         render={
           <button
             type="button"
-            className={styles["action-btn"]}
+            className={styles["action-button"]}
             aria-label="More actions"
             onClick={stop}
           />

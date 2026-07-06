@@ -109,11 +109,6 @@ export const selection = {
 export function useSelectionSize(): number {
   return useSelector(selectionStore, (s) => s.ids.size);
 }
-
-export function useSelectedIds(): ReadonlyArray<string> {
-  return useSelector(selectionStore, (s) => s.snapshot);
-}
-
 export function useIsSelected(id: string): boolean {
   return useSelector(selectionStore, (s) => s.ids.has(id));
 }

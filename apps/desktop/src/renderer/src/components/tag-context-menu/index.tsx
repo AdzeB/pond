@@ -8,9 +8,8 @@ import {
   IconPencilOutline18 as Pencil,
   IconTrashOutline18 as Trash,
 } from "@pond/icons/outline/18";
-import { cloneElement, type MouseEvent, type ReactElement } from "react";
 import type { TagGroupOption } from "@/components/settings-tags/lib/context";
-import { type NativeMenuItem, showContextMenu } from "@/lib/ui/native-menu";
+import type { NativeMenuItem } from "@/lib/ui/native-menu";
 
 const ICON = { width: 16, height: 16 } as const;
 
@@ -77,16 +76,4 @@ export function buildTagMenuItems(a: TagMenuActions): NativeMenuItem[] {
     onSelect: a.onDelete,
   });
   return items;
-}
-
-interface TagContextMenuProps extends TagMenuActions {
-  children: ReactElement<{ onContextMenu?: (e: MouseEvent) => void }>;
-}
-
-export function TagContextMenu({ children, ...actions }: TagContextMenuProps) {
-  const onContextMenu = (e: MouseEvent) => {
-    e.preventDefault();
-    void showContextMenu(buildTagMenuItems(actions));
-  };
-  return cloneElement(children, { onContextMenu });
 }

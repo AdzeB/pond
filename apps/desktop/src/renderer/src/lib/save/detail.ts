@@ -39,7 +39,7 @@ export function collectEngagement(save: Save): Metric[] {
   return out;
 }
 
-export type RowKind = "mono" | "author" | "platform" | "text";
+type RowKind = "mono" | "author" | "platform" | "text";
 
 export interface DetailRow {
   id: string;
@@ -49,7 +49,7 @@ export interface DetailRow {
 }
 
 // The link-card destination URL, read from the harvested capture.
-export function readCardUrl(save: Save): string | undefined {
+function readCardUrl(save: Save): string | undefined {
   const raw = save.rawJson as
     | { capture?: { extras?: { card?: { url?: unknown } } } }
     | null

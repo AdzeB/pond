@@ -3,8 +3,6 @@
 export {
   noteSuccess,
   noteTransientFailure,
-  type PausedReason,
-  type PausedState,
   setSourceCooldown,
   snapshotSourceGate,
   sourcePausedUntil,

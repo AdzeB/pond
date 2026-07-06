@@ -77,7 +77,7 @@ interface RelayPin {
   };
 }
 
-export type PinterestCaptureResult =
+type PinterestCaptureResult =
   | { ok: true; capture: Capture }
   | {
       ok: false;

@@ -13,7 +13,7 @@ interface Job {
 const jobs = new Map<string, Job>();
 let shutdownBound = false;
 
-export interface ScheduleOpts {
+interface ScheduleOpts {
   name: string;
   every: number;
   initialDelay?: number;

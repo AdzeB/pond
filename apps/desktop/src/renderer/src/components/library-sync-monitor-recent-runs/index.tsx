@@ -55,13 +55,13 @@ export function RecentRuns({
 
   return (
     <div className={styles.runs}>
-      <div className={styles.rh}>
-        <Toolbar.Root className={styles.seg}>
+      <div className={styles["runs-header"]}>
+        <Toolbar.Root className={styles.segmented}>
           <Toolbar.Group>
             {FILTERS.map(({ id, label }) => (
               <Toolbar.Button
                 key={id}
-                className={styles.segBtn}
+                className={styles["segment-button"]}
                 data-active={filter === id ? "" : undefined}
                 onClick={() => setFilter(id)}
               >
@@ -72,13 +72,13 @@ export function RecentRuns({
         </Toolbar.Root>
       </div>
 
-      <div className={styles.thd}>
+      <div className={styles["table-header"]}>
         <span>Status</span>
         <span>Source</span>
         <span>Result</span>
-        <span className={styles.r}>Items</span>
+        <span className={styles["align-right"]}>Items</span>
         <span>Trigger</span>
-        <span className={styles.r}>Duration · time</span>
+        <span className={styles["align-right"]}>Duration · time</span>
         <span />
       </div>
 
@@ -89,7 +89,7 @@ export function RecentRuns({
       ) : (
         groups.map((group) => (
           <div key={group.label}>
-            <div className={styles.daygrp}>{group.label}</div>
+            <div className={styles["day-group"]}>{group.label}</div>
             {group.runs.map((run) => {
               const tone = runTone(run);
               const items = runItems(run);
@@ -97,30 +97,32 @@ export function RecentRuns({
                 <button
                   key={run.id}
                   type="button"
-                  className={styles.rrow}
+                  className={styles["run-row"]}
                   onClick={() => onOpenRun(run)}
                 >
-                  <span className={`${styles.rout} ${styles[tone]}`}>
-                    <span className={styles.od} />
+                  <span className={`${styles["run-outcome"]} ${styles[tone]}`}>
+                    <span className={styles["outcome-dot"]} />
                     {runLabel(run)}
                   </span>
-                  <span className={styles.src}>
+                  <span className={styles.source}>
                     <BrandTile source={run.source} size={22} />
-                    <span className={styles.sn}>
+                    <span className={styles["source-name"]}>
                       {getSourceDef(run.source).label}
                     </span>
                   </span>
-                  <span className={styles.rmsg}>{describeRun(run)}</span>
-                  <span className={styles.ritems}>
+                  <span className={styles["run-message"]}>
+                    {describeRun(run)}
+                  </span>
+                  <span className={styles["run-items"]}>
                     {items === null ? "—" : <b>{items}</b>}
                   </span>
-                  <span className={styles.rtrig}>
+                  <span className={styles["run-trigger"]}>
                     {prettyTrigger(run.trigger)}
                   </span>
-                  <span className={styles.rt}>
+                  <span className={styles["run-time"]}>
                     {formatRunDuration(run.durationMs)} · {formatClock(run.ts)}
                   </span>
-                  <Chevron className={styles.chev} width={16} height={16} />
+                  <Chevron className={styles.chevron} width={16} height={16} />
                 </button>
               );
             })}

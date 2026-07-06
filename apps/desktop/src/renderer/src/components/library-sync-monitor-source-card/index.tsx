@@ -43,7 +43,7 @@ export function SourceCard({
       onClick={() => onOpen(source)}
       onContextMenu={openMenu}
     >
-      <span className={styles.iconWrap}>
+      <span className={styles["icon-wrapper"]}>
         <BrandTile source={source} size={56} />
         {running ? (
           <span className={styles.badge} aria-hidden>

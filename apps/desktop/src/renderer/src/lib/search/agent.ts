@@ -16,9 +16,9 @@ import { executePlan, type PlanResult } from "./plan-exec";
 // (prose, for counts/comparisons). Every plan passes validatePlan first, and the
 // executor only runs typed steps, so a model can never run arbitrary code.
 
-export type AgentStage = "planning" | "executing";
+type AgentStage = "planning" | "executing";
 
-export interface AgentRunInput {
+interface AgentRunInput {
   question: string;
   pool: ReadonlyArray<Save>;
   // Grounding digest (capFacets output) sent to the model each round.
@@ -30,7 +30,7 @@ export interface AgentRunInput {
   onStage: (stage: AgentStage) => void;
 }
 
-export interface AgentOutcome {
+interface AgentOutcome {
   // Result ids to show in the grid (may be evidence for an answer turn).
   ids: string[];
   // The committed filter, for suggestions/relaxations.

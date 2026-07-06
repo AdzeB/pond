@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { PipelineSnapshotWire } from "../../../preload";
 
-export type PipelineSnapshot = PipelineSnapshotWire;
+type PipelineSnapshot = PipelineSnapshotWire;
 
 const INITIAL: PipelineSnapshot = {
   paused: false,

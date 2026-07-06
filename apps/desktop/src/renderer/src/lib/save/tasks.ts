@@ -10,13 +10,10 @@ import {
   type TaskResult,
   type TaskScope,
 } from "@/lib/enrichment/tasks";
-import { fuzzyRank } from "@/lib/util/fuzzy";
 
-export type { TaskResult, TaskScope } from "@/lib/enrichment/tasks";
+type TaskGroup = "tagging" | "enrichment" | "reprocess";
 
-export type TaskGroup = "tagging" | "enrichment" | "reprocess";
-
-export interface LibraryTask {
+interface LibraryTask {
   id: string;
   label: string;
   description: string;
@@ -119,19 +116,6 @@ export const TASK_GROUPS: readonly { id: TaskGroup; label: string }[] = [
   { id: "enrichment", label: "Enrichment" },
   { id: "reprocess", label: "Reprocess" },
 ];
-
-export function getTask(id: string): LibraryTask | undefined {
-  return TASKS.find((t) => t.id === id);
-}
-
 export function selectableTasks(): LibraryTask[] {
   return TASKS.filter((t) => t.selectable);
-}
-
-// Composer slash-skill ranking: fuzzy-match the typed query against each task's
-// id + label + keywords. An empty query lists everything.
-export function matchTasks(query: string): LibraryTask[] {
-  return fuzzyRank(TASKS, query, (t) =>
-    [t.id, t.label, ...t.keywords].join(" "),
-  );
 }

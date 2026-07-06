@@ -37,7 +37,7 @@ export interface AskSort {
   dir: "asc" | "desc";
 }
 
-export interface NlResult {
+interface NlResult {
   query: Query;
   // Words that didn't resolve to a predicate, for free-text / semantic ranking.
   residual: string;

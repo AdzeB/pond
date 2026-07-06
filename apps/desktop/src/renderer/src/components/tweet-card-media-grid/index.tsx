@@ -42,7 +42,7 @@ export function MediaGrid({
 
   return (
     <div
-      className={styles.mediaGrid}
+      className={styles["media-grid"]}
       data-count={count}
       data-compact={compact ? "true" : undefined}
       data-single-video={singleVideo ? "true" : undefined}
@@ -72,24 +72,24 @@ function Tile({
   // In a 3-tile grid the first image spans the full left column.
   const span = count === 3 && index === 0;
   return (
-    <div className={styles.mediaTile} data-span={span ? "true" : undefined}>
+    <div className={styles["media-tile"]} data-span={span ? "true" : undefined}>
       {src ? (
         <img
           src={src}
           alt={media.altText ?? ""}
-          className={styles.mediaImg}
+          className={styles["media-image"]}
           draggable={false}
         />
       ) : (
-        <div className={styles.mediaPlaceholder} aria-hidden />
+        <div className={styles["media-placeholder"]} aria-hidden />
       )}
       {media.type === "video" ? (
         <>
-          <span className={styles.playBadge} aria-hidden>
+          <span className={styles["play-badge"]} aria-hidden>
             <PlayIcon width={22} height={22} />
           </span>
           {typeof media.durationSec === "number" ? (
-            <span className={styles.durationBadge}>
+            <span className={styles["duration-badge"]}>
               {formatDuration(media.durationSec)}
             </span>
           ) : null}

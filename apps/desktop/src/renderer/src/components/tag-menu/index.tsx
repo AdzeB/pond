@@ -9,7 +9,7 @@ import { useTagGroups } from "@/stores/tag-groups";
 import { useTags } from "@/stores/tags";
 import styles from "./styles.module.css";
 
-export interface TagMenuProps {
+interface TagMenuProps {
   /** Lowercased tag keys that should render as checked. */
   appliedKeys?: ReadonlySet<string>;
   /** Optional trailing counts, keyed by lowercased tag name. */

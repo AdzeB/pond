@@ -12,12 +12,12 @@ import { Store } from "@tanstack/store";
 // composer renders the whole transcript. A follow-up can "refine in place" by
 // searching within the previous turn's result set.
 
-export type AskStatus = "idle" | "thinking" | "done" | "error";
+type AskStatus = "idle" | "thinking" | "done" | "error";
 
 // The optional natural-language summary of a resolved result set. It runs after
 // the result publishes (best-effort, behind a reachable LLM) so the grid never
 // waits on it; the dock falls back to count/question when it's empty.
-export type AskSummaryStatus = "idle" | "loading" | "done" | "error";
+type AskSummaryStatus = "idle" | "loading" | "done" | "error";
 
 // The live pipeline stage, surfaced as the dock's rotating status narration
 // (mirrors the reference's "Reading…/Determining…/Making changes…"). Driven by
@@ -115,7 +115,7 @@ function updateTurn(nonce: number, patch: Partial<AskTurn>): void {
   });
 }
 
-export interface StartTurnInput {
+interface StartTurnInput {
   question: string;
   image?: AskQueryImage | null;
   segments?: ReadonlyArray<AskSegment>;
@@ -145,14 +145,7 @@ export function startTurn(input: StartTurnInput): number {
   };
   store.setState((s) => ({ turns: [...s.turns, turn], nonce }));
   return nonce;
-}
-
-// Back-compat: a plain text turn with no image and no refinement.
-export function startAsk(question: string): number {
-  return startTurn({ question });
-}
-
-// Advance the narrated pipeline stage for a turn.
+} // Advance the narrated pipeline stage for a turn.
 export function setAskStage(nonce: number, stage: AskStage): void {
   updateTurn(nonce, { stage });
 }
@@ -228,7 +221,7 @@ export function clearAsk(): void {
 
 // The latest turn drives the grid; this is the back-compat snapshot shape that
 // `use-narrowed-saves` and the toolbar consume.
-export interface AskResult {
+interface AskResult {
   active: boolean;
   status: AskStatus;
   question: string;
@@ -285,15 +278,4 @@ export function askSnapshot(): { question: string; query: Query } {
     question: last?.question ?? "",
     query: last?.query ?? EMPTY_QUERY,
   };
-}
-
-export function useAskActive(): boolean {
-  return useSelector(store, (s) => s.turns.length > 0);
-}
-
-export function useAskStatus(): AskStatus {
-  return useSelector(
-    store,
-    (s) => s.turns[s.turns.length - 1]?.status ?? "idle",
-  );
 }

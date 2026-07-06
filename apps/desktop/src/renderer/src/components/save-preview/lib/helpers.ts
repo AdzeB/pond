@@ -1,20 +1,3 @@
-import type { Save } from "@/lib/types";
-
-export function descriptionMatchesTitle(save: Save): boolean {
-  if (!save.title || !save.description) return false;
-  const norm = (s: string) =>
-    s
-      .replace(/[…\s]+$/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  const t = norm(save.title);
-  const d = norm(save.description);
-  if (!t || !d) return false;
-  if (t === d) return true;
-  if (d.startsWith(t)) return true;
-  return false;
-}
-
 export function prettifyType(t: string): string {
   const lower = t.toLowerCase();
   if (lower === "video") return "MP4";
@@ -39,29 +22,4 @@ export function pickAuthorColor(name: string): string {
     hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   }
   return palette[hash % palette.length] ?? "#3b82f6";
-}
-
-export function humaniseRefreshReason(
-  reason:
-    | "not_found"
-    | "no_url"
-    | "no_metadata"
-    | "auth_required"
-    | "blocked"
-    | "internal_error",
-): string {
-  switch (reason) {
-    case "not_found":
-      return "This save no longer exists in the library.";
-    case "no_url":
-      return "This save has no source URL to refresh from.";
-    case "blocked":
-      return "Couldn't reach the source. The host may be offline or blocking us.";
-    case "no_metadata":
-      return "The source page didn't expose anything new.";
-    case "auth_required":
-      return "Connect this source to scrape pages that need a sign-in.";
-    case "internal_error":
-      return "Pond hit an unexpected error. Check the logs.";
-  }
 }

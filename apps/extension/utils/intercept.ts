@@ -9,7 +9,7 @@
 
 const POND_EVENT = "pond:capture";
 
-export function emit(message: unknown): void {
+function emit(message: unknown): void {
   window.postMessage({ type: POND_EVENT, message }, "*");
 }
 
@@ -34,14 +34,14 @@ export interface RequestLens {
   readBody(): Promise<string | null>;
 }
 
-export interface ResponseLens {
+interface ResponseLens {
   readonly status: number;
   readonly ok: boolean;
   /** Text body of the response, or null if it could not be read (cached). */
   readText(): Promise<string | null>;
 }
 
-export interface SourceInterceptor {
+interface SourceInterceptor {
   /** Stable id; re-registering the same id is a no-op (double-injection guard). */
   id: string;
   /** Synchronous, cheap predicate over request metadata. */

@@ -22,7 +22,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "biome check --fix --unsafe .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -30,13 +29,13 @@
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",
     "next": "^16.0.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.0.2",
-    "typescript": "^6.0.3"
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -10,7 +10,7 @@ import type { Save } from "@/lib/types";
 // its own store (embeddings, clip vectors) and return an empty patch. Returning
 // `null` marks the save failed for this session (retried after a model upgrade
 // or restart).
-export interface DerivedPatch {
+interface DerivedPatch {
   // Whitelisted AI columns to persist (non-synced) via `saves.patchDerived`.
   derived?: Record<string, unknown>;
   // Fields to merge into the pooled save immediately so the UI reacts now.

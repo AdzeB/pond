@@ -16,7 +16,7 @@ import {
 // `limit` is intentionally NOT applied here; callers apply it after any anchor
 // pinning so pinned items survive the cap (see useAsk). Pure and side-effect free.
 
-export interface PlanExecContext {
+interface PlanExecContext {
   // Candidate set to run the plan over (already restricted to live saves, or to
   // a previous turn's result set when refining).
   pool: ReadonlyArray<Save>;
@@ -28,14 +28,14 @@ export interface PlanExecContext {
   question: string;
 }
 
-export interface PlanGroup {
+interface PlanGroup {
   key: string;
   label: string;
   ids: string[];
 }
 
 // Aggregate facts surfaced for "how many …" style answers (no grid needed).
-export interface PlanFacts {
+interface PlanFacts {
   total: number;
   groups?: { key: string; label: string; count: number }[];
 }

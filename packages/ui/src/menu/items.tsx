@@ -51,7 +51,7 @@ export type MenuItemSpec =
  * The wrapped Base UI parts a renderer needs. Injected so the same logic can
  * drive both `Menu` and `ContextMenu`, which share these primitives.
  */
-export interface MenuParts {
+interface MenuParts {
   Item: React.ComponentType<{
     disabled?: boolean;
     stale?: boolean;

@@ -19,7 +19,7 @@ import {
 import { resolveModel } from "./sdk-registry";
 import type { CompileContext, SummaryItem } from "./types";
 
-export type { CompileContext, CompileFacets, SummaryItem } from "./types";
+export type { CompileFacets, SummaryItem } from "./types";
 
 // The LLM stage of the "find anything" compiler. Networked providers run through
 // the Vercel AI SDK (structured output via generateText + Output.object, prose

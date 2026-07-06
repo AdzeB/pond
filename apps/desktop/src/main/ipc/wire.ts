@@ -32,7 +32,7 @@ interface WireTask {
   updatedAt: number;
 }
 
-export type WireSave = Omit<
+type WireSave = Omit<
   Save,
   | "savedAt"
   | "createdAt"
@@ -50,7 +50,7 @@ export type WireSave = Omit<
   tasks?: WireTask[];
 };
 
-export interface WireSaveOptions {
+interface WireSaveOptions {
   // Replace rawJson with a tiny projection; the grid never reads the full blob.
   slim?: boolean;
 }

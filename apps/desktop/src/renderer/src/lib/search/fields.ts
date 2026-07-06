@@ -22,7 +22,7 @@ import type {
 import type { ComponentType } from "react";
 import { DATE_PRESETS, serializePredicate } from "@/lib/search/syntax";
 
-export type FieldIcon = ComponentType<{
+type FieldIcon = ComponentType<{
   width?: string | number;
   height?: string | number;
 }>;
@@ -68,7 +68,7 @@ const COMPARATOR_SYMBOL: Partial<Record<ComparatorId, string>> = {
   neq: "≠",
 };
 
-export interface PredicateChip {
+interface PredicateChip {
   icon: FieldIcon;
   label: string;
   title: string;

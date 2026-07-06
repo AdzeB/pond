@@ -20,7 +20,7 @@ export function clipModelVersion(): string {
 }
 
 // Fixed style vocabulary for zero-shot aesthetic tagging.
-export const AESTHETIC_LABELS = [
+const AESTHETIC_LABELS = [
   "minimalist",
   "maximalist",
   "vintage",

@@ -15,7 +15,7 @@ import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-export interface TagGroupWithMembers extends TagGroup {
+interface TagGroupWithMembers extends TagGroup {
   tagIds: string[];
   tagNames: string[];
 }

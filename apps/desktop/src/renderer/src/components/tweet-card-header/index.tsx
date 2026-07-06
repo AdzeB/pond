@@ -37,11 +37,11 @@ export function Avatar({
         <img
           src={author.avatarUrl}
           alt=""
-          className={styles.avatarImg}
+          className={styles["avatar-image"]}
           draggable={false}
         />
       ) : (
-        <span className={styles.avatarFallback}>
+        <span className={styles["avatar-fallback"]}>
           {initials(author.name || author.handle || "?")}
         </span>
       )}

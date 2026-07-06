@@ -1,7 +1,4 @@
-import {
-  IconPlusOutline18 as Plus,
-  IconTagsOutline18 as TagsIcon,
-} from "@pond/icons/outline/18";
+import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
 import { useMemo } from "react";
 import { Section } from "@/components/save-detail-section";
 import { TagsEditor } from "@/components/save-preview";
@@ -24,7 +21,7 @@ export function TagsSection({ save }: { save: Save }) {
   };
 
   return (
-    <Section icon={<TagsIcon width={16} height={16} />} title="Tags">
+    <Section title="Tags">
       <div className={styles.tags}>
         <TagsEditor save={save} />
       </div>
@@ -34,12 +31,12 @@ export function TagsSection({ save }: { save: Save }) {
             <button
               key={tag}
               type="button"
-              className={styles.chipAdd}
+              className={styles["chip-add"]}
               aria-label={`Add tag ${tag}`}
               onClick={() => void addTag(tag)}
             >
               {tag}
-              <Plus width={8} height={8} className={styles.chipAddIcon} />
+              <Plus width={8} height={8} className={styles["chip-add-icon"]} />
             </button>
           ))}
         </div>

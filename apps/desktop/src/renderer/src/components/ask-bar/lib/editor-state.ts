@@ -1,9 +1,7 @@
 import {
   $createTextNode,
   $getRoot,
-  $getSelection,
   $isElementNode,
-  $isRangeSelection,
   $isTextNode,
   type LexicalNode,
   type TextNode,
@@ -102,22 +100,4 @@ export function $replaceNodeWithChip(
   const space = $createTextNode(" ");
   chip.insertAfter(space);
   space.select(1, 1);
-}
-
-// Insert a trigger char (`/ @ #`) at the caret so its menu opens, used by the
-// composer toolbar's quick-add buttons. Drops a leading space when the caret
-// isn't already at a token boundary so `$readTrigger` recognizes it.
-export function $insertTrigger(trigger: AskTrigger): void {
-  let selection = $getSelection();
-  if (!$isRangeSelection(selection)) {
-    $getRoot().selectEnd();
-    selection = $getSelection();
-  }
-  if (!$isRangeSelection(selection)) return;
-  const node = selection.anchor.getNode();
-  const before = $isTextNode(node)
-    ? node.getTextContent().slice(0, selection.anchor.offset)
-    : "";
-  const needsSpace = before.length > 0 && !/\s$/.test(before);
-  selection.insertText(needsSpace ? ` ${trigger}` : trigger);
 }

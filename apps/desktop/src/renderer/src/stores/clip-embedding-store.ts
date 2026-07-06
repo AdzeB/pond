@@ -1,11 +1,10 @@
-import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 // In-memory store of per-save CLIP image vectors, mirroring stores/embedding-store.ts.
 // Hydrated once from the DB on startup (vectors are excluded from saves.list) and
 // kept current by the clip enricher. Persistence is non-synced via saves.patchDerived.
 
-export interface ClipEntry {
+interface ClipEntry {
   vec: Float32Array;
   model: string;
 }
@@ -58,13 +57,7 @@ export function loadClipEmbeddings(): Promise<void> {
     }
   })();
   return loadInflight;
-}
-
-export function getClipEmbedding(id: string): ClipEntry | undefined {
-  return store.state.byId.get(id);
-}
-
-// Record a freshly-computed CLIP vector and persist it (non-synced, fire-and-forget).
+} // Record a freshly-computed CLIP vector and persist it (non-synced, fire-and-forget).
 export function setClipEmbedding(
   id: string,
   vec: Float32Array,
@@ -108,8 +101,4 @@ export function clearClipEmbeddings(ids?: readonly string[]): number {
     loaded: s.loaded,
   }));
   return count;
-}
-
-export function useClipEmbeddingVersion(): number {
-  return useSelector(store, (s) => s.version);
 }

@@ -34,7 +34,7 @@
   overflow: hidden;
 }
 
-.groupLabel {
+.group-label {
   padding: 4px 8px 2px;
   font-size: 11px;
   font-weight: 550;
@@ -42,7 +42,7 @@
 }
 
 /* Flat list: every group label after the first doubles as a divider. */
-.groupLabel:not(:first-child) {
+.group-label:not(:first-child) {
   padding-top: 8px;
   margin-top: 6px;
   border-top: 1px solid var(--ds-gray-a3);
@@ -67,7 +67,7 @@
   }
 }
 
-.rowIcon {
+.row-icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -75,21 +75,21 @@
   color: var(--ds-gray-10);
 }
 
-.rowLabel {
+.row-label {
   flex-shrink: 0;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.rowKey {
+.row-key {
   flex-shrink: 0;
   font-family: var(--ds-font-mono, ui-monospace, monospace);
   font-size: 11px;
   color: var(--ds-gray-9);
 }
 
-.rowHint {
+.row-hint {
   margin-left: auto;
   overflow: hidden;
   text-overflow: ellipsis;

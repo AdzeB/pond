@@ -25,21 +25,6 @@ export function useIngestingCount(source?: string): number {
     return count;
   });
 }
-
-// Count of non-trashed saves belonging to a source (lowercase id), for the
-// sync monitor's per-source stats. Cheap selector over the in-memory pool.
-export function useSourceSaveCount(source: string): number {
-  return useSelector(savesStore, (s) => {
-    let count = 0;
-    for (const save of s.byId.values()) {
-      if (save.deletedAt) continue;
-      if (save.source.toLowerCase() !== source) continue;
-      count += 1;
-    }
-    return count;
-  });
-}
-
 export function useBootReady(): boolean {
   return useSelector(bootStore, (s) => s.ready);
 }

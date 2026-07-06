@@ -30,13 +30,13 @@
   },
   "scripts": {
     "generate:providers": "node --experimental-strip-types providers/generate.ts",
-    "lint": "biome check --fix --unsafe ."
+    "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=19"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14"
+    "@types/react": "catalog:"
   },
   "dependencies": {
     "nucleo-social-media": "^1.0.2",

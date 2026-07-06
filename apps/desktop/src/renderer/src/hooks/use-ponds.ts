@@ -9,7 +9,7 @@ export interface Pond {
   color: string | null;
 }
 
-export interface PondDetails {
+interface PondDetails {
   path: string;
   name?: string | null;
   avatar?: string | null;

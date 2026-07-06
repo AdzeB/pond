@@ -10,7 +10,7 @@ export interface TagGroupOption {
 // Global table metadata every row needs but that isn't row-specific: the
 // groups (for the "Move to group" menu). Selection/expansion now live in the
 // DataTable primitive, so they no longer belong here.
-export interface TagsTableValue {
+interface TagsTableValue {
   groups: TagGroupOption[];
 }
 

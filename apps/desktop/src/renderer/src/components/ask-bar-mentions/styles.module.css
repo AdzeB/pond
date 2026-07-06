@@ -25,7 +25,7 @@
 }
 
 /* Same surface as `.menu`, but in normal flow for the component lab. */
-.menuStatic {
+.menu-static {
   display: flex;
   flex-direction: column;
   width: max-content;
@@ -39,7 +39,7 @@
     var(--ds-shadow-3);
 }
 
-.menuGroup {
+.menu-group {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -51,14 +51,14 @@
   }
 }
 
-.menuGroupLabel {
+.menu-group-label {
   padding: 4px 8px 2px;
   font-size: 11px;
   font-weight: 550;
   color: var(--ds-gray-9);
 }
 
-.menuRow {
+.menu-row {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -76,13 +76,13 @@
   }
 }
 
-.menuName {
+.menu-name {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.menuDesc {
+.menu-description {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
@@ -90,7 +90,7 @@
   white-space: nowrap;
 }
 
-.menuMore {
+.menu-more {
   width: 100%;
   padding: 5px 8px;
   font-size: 12px;
@@ -109,7 +109,7 @@
   }
 }
 
-.menuCreate {
+.menu-create {
   display: flex;
   gap: 6px;
   align-items: center;

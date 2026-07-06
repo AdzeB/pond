@@ -1,10 +1,10 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type BackfillState = "idle" | "running" | "done" | "error";
+type BackfillState = "idle" | "running" | "done" | "error";
 
 // Live wire shape pushed over onScreenshotBackfillStatus; mirrors the main process type.
-export interface BackfillStatus {
+interface BackfillStatus {
   state: BackfillState;
   attempted: number;
   captured: number;

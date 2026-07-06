@@ -1,10 +1,10 @@
 /* Link card (summary / summary_large_image) */
-.linkCard {
+.link-card {
   margin-top: 12px;
 }
 
 /* Small "summary" card: bordered row, square thumbnail beside the text. */
-.linkCard:not([data-large="true"]) {
+.link-card:not([data-large="true"]) {
   display: flex;
   flex-direction: row;
   overflow: hidden;
@@ -14,25 +14,25 @@
 
 /* Large "summary_large_image" card: rounded image, title overlaid bottom-left,
    domain in muted text beneath — matching how X renders large previews. */
-.linkCard[data-large="true"] {
+.link-card[data-large="true"] {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.linkCardMedia {
+.link-card-media {
   flex-shrink: 0;
   overflow: hidden;
   background: var(--tw-placeholder);
 }
 
-.linkCard:not([data-large="true"]) .linkCardMedia {
+.link-card:not([data-large="true"]) .link-card-media {
   width: 130px;
   aspect-ratio: 1 / 1;
   border-right: 1px solid var(--tw-border);
 }
 
-.linkCard[data-large="true"] .linkCardMedia {
+.link-card[data-large="true"] .link-card-media {
   position: relative;
   width: 100%;
   aspect-ratio: 1.91 / 1;
@@ -40,14 +40,14 @@
   border-radius: 16px;
 }
 
-.linkCardImg {
+.link-card-image {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.linkCardOverlayTitle {
+.link-card-overlay-title {
   position: absolute;
   bottom: 12px;
   left: 12px;
@@ -63,13 +63,13 @@
   border-radius: 4px;
 }
 
-.linkCardDomainBelow {
+.link-card-domain-below {
   font-size: 15px;
   line-height: 20px;
   color: var(--tw-secondary);
 }
 
-.linkCardDetail {
+.link-card-detail {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -78,7 +78,7 @@
   padding: 12px;
 }
 
-.linkCardDomain {
+.link-card-domain {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 15px;
@@ -87,7 +87,7 @@
   white-space: nowrap;
 }
 
-.linkCardTitle {
+.link-card-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -96,7 +96,7 @@
   line-height: 20px;
 }
 
-.linkCardDescription {
+.link-card-description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;

@@ -14,7 +14,7 @@ export function BrandTile({
   const Icon = getSourceDef(source).icon;
   return (
     <span
-      className={styles.brandTile}
+      className={styles["brand-tile"]}
       style={{ width: size, height: size }}
       aria-hidden
     >

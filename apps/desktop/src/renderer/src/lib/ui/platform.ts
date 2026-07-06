@@ -1,5 +1,3 @@
-import { useSyncExternalStore } from "react";
-
 // navigator.platform is stable for the process lifetime; resolve the reveal label once.
 export const REVEAL_LABEL: string = (() => {
   if (typeof navigator === "undefined") return "Reveal in Finder";
@@ -19,25 +17,11 @@ function emit(): void {
   for (const cb of listeners) cb();
 }
 
-function ensure(): void {
+function _ensure(): void {
   if (platform !== null || pending) return;
   pending = window.pond.appInfo().then((info) => {
     platform = info.platform === "darwin" ? "mac" : "other";
     pending = null;
     emit();
   });
-}
-
-export function usePlatform(): Platform {
-  ensure();
-  return useSyncExternalStore(
-    (cb) => {
-      listeners.add(cb);
-      return () => {
-        listeners.delete(cb);
-      };
-    },
-    () => platform ?? "other",
-    () => "other",
-  );
 }

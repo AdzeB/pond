@@ -12,7 +12,7 @@ import { useEnrichmentStatus } from "@/stores/enrichment-monitor";
 import { usePrefsValue } from "@/stores/prefs";
 import { useSave } from "./use-saves";
 
-export interface EnricherStatus {
+interface EnricherStatus {
   // Feature toggled on in prefs.
   enabled: boolean;
   // Applies to this save and hasn't produced a current result yet (so the sweep

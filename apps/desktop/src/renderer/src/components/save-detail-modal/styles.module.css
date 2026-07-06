@@ -51,15 +51,15 @@
     border-color var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-.popup[data-details="closed"] .detailPane {
-  width: 0;
-  border-left-color: transparent;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .detailPane {
+  .pane {
     transition: none;
   }
+}
+
+.popup[data-details="closed"] .pane {
+  width: 0;
+  border-left-color: transparent;
 }
 
 @media (max-width: 900px) {

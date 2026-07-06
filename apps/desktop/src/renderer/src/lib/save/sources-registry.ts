@@ -19,7 +19,7 @@ import type React from "react";
 
 type BrandIcon = React.ComponentType<{ width?: number; height?: number }>;
 
-export interface SourceDef {
+interface SourceDef {
   source: Source;
   label: string;
   icon: BrandIcon;

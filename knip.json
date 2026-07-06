@@ -1,5 +1,6 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreDependencies": ["@pond/theme", "ffmpeg-static", "drizzle-kit"],
   "workspaces": {
     "apps/desktop": {
       "entry": [
@@ -8,6 +9,7 @@
         "src/preload/index.ts",
         "src/preload/scrape.cjs.ts",
         "src/renderer/src/main.tsx",
+        "src/renderer/src/capture.tsx",
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}"
       ],

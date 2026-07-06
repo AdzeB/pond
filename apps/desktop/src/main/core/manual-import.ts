@@ -57,7 +57,7 @@ function blobFilename(
   return index === 0 ? `cover${ext}` : `media-${index}${ext}`;
 }
 
-export interface ManualSaveInput {
+interface ManualSaveInput {
   title?: string | null;
   url?: string | null;
   note?: string | null;
@@ -66,7 +66,7 @@ export interface ManualSaveInput {
   filePaths?: string[];
 }
 
-export interface ManualSaveResult {
+interface ManualSaveResult {
   ok: boolean;
   id?: string;
   error?: string;

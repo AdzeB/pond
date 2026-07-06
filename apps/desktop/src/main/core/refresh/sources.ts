@@ -1,7 +1,4 @@
 import type { Source } from "@pond/schema/db";
-
-export { sourceLabel } from "@pond/schema/sources";
-
 export function homeUrlForSource(source: Source): string {
   switch (source) {
     case "twitter":

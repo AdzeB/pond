@@ -58,14 +58,14 @@ export function Segmented<T extends string | number>({
               <motion.span
                 aria-hidden
                 layoutId={`${groupId}-active`}
-                className={styles.segmentHighlight}
+                className={styles["segment-highlight"]}
                 transition={reduceMotion ? { duration: 0 } : snappySpring}
               />
             ) : null}
-            <span className={styles.segmentInner}>
+            <span className={styles["segment-inner"]}>
               {option.icon}
               {showLabels ? (
-                <span className={styles.segmentLabel}>{option.label}</span>
+                <span className={styles["segment-label"]}>{option.label}</span>
               ) : null}
             </span>
           </button>

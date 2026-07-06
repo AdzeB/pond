@@ -37,7 +37,7 @@ export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
       >
         {formatNumber(dock.selectionSize)}
         {dock.filteredCount > dock.selectionSize ? (
-          <span className={styles.countTotal}>
+          <span className={styles["count-total"]}>
             /{formatNumber(dock.filteredCount)}
           </span>
         ) : null}

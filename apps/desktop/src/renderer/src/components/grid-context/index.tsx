@@ -1,7 +1,7 @@
 import { createContext, type ReactNode, use } from "react";
 
 // Shared card callbacks, kept separate from grid state so toggling multi-select doesn't re-render memoized cards.
-export interface LibraryCardCallbacks {
+interface LibraryCardCallbacks {
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }

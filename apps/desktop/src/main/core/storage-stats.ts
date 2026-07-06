@@ -20,7 +20,7 @@ interface DeviceDiskInfo {
   usedByOthers: number;
 }
 
-export interface StorageSnapshot {
+interface StorageSnapshot {
   pondBytes: number;
   breakdown: Omit<LibraryBreakdown, "total">;
   deviceTotalBytes: number;

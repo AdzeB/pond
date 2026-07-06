@@ -8,7 +8,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.previewWrap {
+.preview-wrapper {
   position: relative;
   flex-shrink: 0;
 }
@@ -34,7 +34,7 @@
   }
 }
 
-.glyphButton {
+.glyph-button {
   position: absolute;
   right: 0;
   bottom: 0;
@@ -103,7 +103,7 @@
   width: 100%;
 }
 
-.emojiPopup {
+.emoji-popup {
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -111,7 +111,7 @@
   padding: 10px;
 }
 
-.iconGrid {
+.icon-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 4px;
@@ -121,7 +121,7 @@
   border-bottom: 1px solid var(--ds-gray-3);
 }
 
-.iconOption {
+.icon-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -148,13 +148,13 @@
   }
 }
 
-.emojiGrid {
+.emoji-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
 }
 
-.emojiOption {
+.emoji-option {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -170,7 +170,7 @@
   }
 }
 
-.clearEmoji {
+.clear-emoji {
   justify-content: center;
   width: 100%;
 }

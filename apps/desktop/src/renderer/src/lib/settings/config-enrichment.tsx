@@ -1,5 +1,5 @@
 import { Settings } from "@pond/ui";
-import { ModelPicker } from "@/components/model-picker";
+import { EnrichmentModelPicker } from "@/components/enrichment-model-picker";
 import {
   CAPTION_CATALOG,
   CLIP_CATALOG,
@@ -35,7 +35,7 @@ function ModelPickerRow({
         <Settings.ItemDescription>{description}</Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <ModelPicker
+        <EnrichmentModelPicker
           catalog={catalog}
           value={values[field] ?? ""}
           onChange={(id) => binding.patch({ [field]: id })}

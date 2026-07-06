@@ -5,7 +5,7 @@ export interface ListHarvestArgs {
 }
 
 // Per-item list output; only url+sourceId are consumed, the rest is for the progress UI.
-export interface ListEntry {
+interface ListEntry {
   sourceId: string;
   url: string;
   savedAt?: string;

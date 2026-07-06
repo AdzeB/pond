@@ -1,27 +1,29 @@
-import { spawn } from "node:child_process";
-import { mkdtemp, readdir, readFile, rm, stat } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, extname, join } from "node:path";
-import type { Source, VideoDownloadSettings } from "@pond/schema/db";
+import { join } from "node:path";
+import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { getVideoDownloadPrefs } from "../prefs";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
+import { formatSelector, maxFilesizeArg } from "./yt-dlp-format";
+import {
+  pickProducedFile,
+  pickProducedPoster,
+  pickSubtitleFiles,
+  readInfoJson,
+  type SubtitleFile,
+} from "./yt-dlp-output";
+import { runWithTimeout } from "./yt-dlp-process";
 
-export interface DownloadVideoArgs {
+interface DownloadVideoArgs {
   url: string;
   source: Source | null;
   // Abort the in-flight yt-dlp process (e.g. user cancelled the ingest).
   signal?: AbortSignal;
 }
 
-interface SubtitleFile {
-  path: string;
-  filename: string;
-  mimeType: string;
-}
-
-export interface DownloadedVideo {
+interface DownloadedVideo {
   path: string;
   mimeType: string;
   size: number;
@@ -33,64 +35,6 @@ export interface DownloadedVideo {
 }
 
 const HARD_TIMEOUT_MS = 90_000;
-
-// yt-dlp format filters; `~=` regex-matches the codec name variants a platform reports.
-function videoCodecFilter(codec: VideoDownloadSettings["videoCodec"]): string {
-  switch (codec) {
-    case "h264":
-      return "[vcodec~='^(avc1|h264)']";
-    case "hevc":
-      return "[vcodec~='^(hev1|hvc1|h265)']";
-    case "av1":
-      return "[vcodec~='^(av01|av1)']";
-    case "vp9":
-      return "[vcodec~='^(vp09|vp9)']";
-    default:
-      return "";
-  }
-}
-
-function audioCodecFilter(codec: VideoDownloadSettings["audioCodec"]): string {
-  switch (codec) {
-    case "aac":
-      return "[acodec~='^(mp4a|aac)']";
-    case "opus":
-      return "[acodec^=opus]";
-    default:
-      return "";
-  }
-}
-
-function formatSelector(
-  source: Source | null,
-  prefs: VideoDownloadSettings,
-): string {
-  const h = prefs.maxHeight ? `[height<=${prefs.maxHeight}]` : "";
-  const f = prefs.maxFps ? `[fps<=${prefs.maxFps}]` : "";
-  const limits = `${h}${f}`;
-  const vf = videoCodecFilter(prefs.videoCodec);
-  const af = audioCodecFilter(prefs.audioCodec);
-
-  const chain: string[] = [];
-  // TikTok exposes a higher-bitrate "play" rendition; prefer it first.
-  if (source === "tiktok") {
-    chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
-  }
-  chain.push(
-    `bv*${vf}${limits}+ba${af}`,
-    `bv*${limits}+ba`,
-    `b${vf}${limits}`,
-    `b${limits}`,
-    "b",
-  );
-  return chain.join("/");
-}
-
-function maxFilesizeArg(prefs: VideoDownloadSettings): string | null {
-  const mb = prefs.maxFileSizeMb;
-  if (mb === null || mb === undefined || mb <= 0) return null;
-  return `${mb}M`;
-}
 
 export async function downloadVideo(
   args: DownloadVideoArgs,
@@ -227,287 +171,5 @@ export async function downloadVideo(
     log.warn("[pond yt-dlp] unexpected error", args.url, err);
     await cleanup();
     return null;
-  }
-}
-
-async function readInfoJson(
-  dir: string,
-  videoPath: string,
-): Promise<Record<string, unknown> | null> {
-  const stem = basename(videoPath, extname(videoPath));
-  const sidecar = join(dir, `${stem}.info.json`);
-  try {
-    const raw = await readFile(sidecar, "utf8");
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
-    for (const k of YTDLP_KEEP_KEYS) {
-      const v = parsed[k];
-      if (v !== undefined && v !== null) out[k] = v;
-    }
-    return Object.keys(out).length > 0 ? out : null;
-  } catch {
-    return null;
-  }
-}
-
-const YTDLP_KEEP_KEYS = [
-  "id",
-  "title",
-  "description",
-  "thumbnail",
-  "webpage_url",
-  "original_url",
-  "extractor",
-  "extractor_key",
-
-  "view_count",
-  "like_count",
-  "dislike_count",
-  "comment_count",
-  "repost_count",
-  "concurrent_view_count",
-  "average_rating",
-
-  "duration",
-  "uploader",
-  "uploader_id",
-  "uploader_url",
-  "channel",
-  "channel_id",
-  "channel_url",
-
-  "upload_date",
-  "release_date",
-  "release_timestamp",
-  "timestamp",
-  "live_status",
-  "was_live",
-  "availability",
-  "age_limit",
-
-  "width",
-  "height",
-  "fps",
-  "format_note",
-  "vcodec",
-  "acodec",
-  "filesize",
-  "filesize_approx",
-  "tbr",
-
-  "track",
-  "artist",
-  "album",
-  "genre",
-  "release_year",
-
-  "language",
-  "tags",
-  "categories",
-  "chapters",
-
-  "playlist",
-  "playlist_id",
-  "playlist_title",
-  "playlist_index",
-  "n_entries",
-] as const;
-
-interface ProcOutcome {
-  code: number;
-  stderr: string;
-}
-
-function runWithTimeout(
-  bin: string,
-  argv: string[],
-  timeoutMs: number,
-  signal?: AbortSignal,
-): Promise<ProcOutcome> {
-  return new Promise((resolve) => {
-    const child = spawn(bin, argv, { stdio: ["ignore", "pipe", "pipe"] });
-    let stderr = "";
-    let stdout = "";
-    let settled = false;
-
-    const timer = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      cleanupAbort();
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* ignore: process may have already exited */
-      }
-      resolve({ code: 124, stderr: `${stderr}\n[pond yt-dlp] timeout` });
-    }, timeoutMs);
-
-    const onAbort = () => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      try {
-        child.kill("SIGKILL");
-      } catch {
-        /* ignore: process may have already exited */
-      }
-      resolve({ code: 125, stderr: `${stderr}\n[pond yt-dlp] aborted` });
-    };
-    const cleanupAbort = () => signal?.removeEventListener("abort", onAbort);
-    if (signal) {
-      if (signal.aborted) {
-        onAbort();
-        return;
-      }
-      signal.addEventListener("abort", onAbort, { once: true });
-    }
-
-    child.stdout?.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString("utf8");
-      if (stdout.length > 64_000) stdout = stdout.slice(-64_000);
-    });
-    child.stderr?.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString("utf8");
-      if (stderr.length > 64_000) stderr = stderr.slice(-64_000);
-    });
-    child.on("error", (err) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      cleanupAbort();
-      resolve({ code: -1, stderr: String(err) });
-    });
-    child.on("close", (code) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      cleanupAbort();
-      resolve({ code: code ?? -1, stderr });
-    });
-  });
-}
-
-async function pickProducedFile(
-  dir: string,
-): Promise<{ path: string; size: number; mimeType: string } | null> {
-  const entries = await readdir(dir);
-  if (entries.length === 0) return null;
-
-  const sized = await Promise.all(
-    entries
-      .filter((name) => !/\.info\.json$/i.test(name))
-      .filter((name) => !isThumbnail(name))
-      .filter((name) => !isSubtitle(name))
-      .map(async (name) => {
-        const full = join(dir, name);
-        try {
-          const s = await stat(full);
-          return { path: full, size: s.size };
-        } catch {
-          return null;
-        }
-      }),
-  );
-  const valid = sized.filter(
-    (e): e is { path: string; size: number } => e !== null && e.size > 0,
-  );
-  if (valid.length === 0) return null;
-  valid.sort((a, b) => b.size - a.size);
-  const winner = valid[0];
-  if (!winner) return null;
-  return { ...winner, mimeType: mimeFor(winner.path) };
-}
-
-function isThumbnail(name: string): boolean {
-  const ext = extname(name).toLowerCase();
-  return (
-    ext === ".jpg" ||
-    ext === ".jpeg" ||
-    ext === ".png" ||
-    ext === ".webp" ||
-    ext === ".avif"
-  );
-}
-
-function isSubtitle(name: string): boolean {
-  const ext = extname(name).toLowerCase();
-  return ext === ".srt" || ext === ".vtt";
-}
-
-// Collect subtitles, deriving a stable `subtitle.<lang>.<ext>` filename.
-async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
-  const entries = await readdir(dir);
-  const out: SubtitleFile[] = [];
-  for (const name of entries) {
-    if (!isSubtitle(name)) continue;
-    const full = join(dir, name);
-    try {
-      const s = await stat(full);
-      if (s.size === 0) continue;
-    } catch {
-      continue;
-    }
-    const ext = extname(name).toLowerCase();
-    const stem = basename(name, ext);
-    const dot = stem.lastIndexOf(".");
-    const lang = dot >= 0 ? stem.slice(dot + 1) : "";
-    out.push({
-      path: full,
-      filename: lang ? `subtitle.${lang}${ext}` : `subtitle${ext}`,
-      mimeType: ext === ".vtt" ? "text/vtt" : "application/x-subrip",
-    });
-  }
-  return out;
-}
-
-async function pickProducedPoster(
-  dir: string,
-  videoPath: string,
-): Promise<{ path: string; mimeType: string } | null> {
-  const stem = basename(videoPath, extname(videoPath));
-  const entries = await readdir(dir);
-  for (const name of entries) {
-    if (!name.startsWith(stem)) continue;
-    if (!isThumbnail(name)) continue;
-    const full = join(dir, name);
-    try {
-      const s = await stat(full);
-      if (s.size === 0) continue;
-    } catch {
-      continue;
-    }
-    return { path: full, mimeType: imageMimeFor(name) };
-  }
-  return null;
-}
-
-function imageMimeFor(name: string): string {
-  const ext = extname(name).toLowerCase();
-  switch (ext) {
-    case ".png":
-      return "image/png";
-    case ".webp":
-      return "image/webp";
-    case ".avif":
-      return "image/avif";
-    default:
-      return "image/jpeg";
-  }
-}
-
-function mimeFor(path: string): string {
-  const ext = extname(path).toLowerCase();
-  switch (ext) {
-    case ".mp4":
-    case ".m4v":
-      return "video/mp4";
-    case ".webm":
-      return "video/webm";
-    case ".mov":
-      return "video/quicktime";
-    case ".mkv":
-      return "video/x-matroska";
-    default:
-      return "video/mp4";
   }
 }

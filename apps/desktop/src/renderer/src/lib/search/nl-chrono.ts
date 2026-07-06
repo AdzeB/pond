@@ -16,7 +16,7 @@ import { ROLLING_WINDOWS } from "@/lib/search/nl-vocabulary";
 type ChronoResult = ReturnType<typeof chrono.parse>[number];
 type ChronoComponents = ChronoResult["start"];
 
-export interface DateExtraction {
+interface DateExtraction {
   predicates: Predicate[];
   // Input with every matched date span replaced by spaces (offsets preserved).
   rest: string;

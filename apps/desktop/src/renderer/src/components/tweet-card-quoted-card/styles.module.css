@@ -5,14 +5,14 @@
   border-radius: 16px;
 }
 
-.quotedHeader {
+.quoted-header {
   display: flex;
   gap: 6px;
   align-items: center;
   min-width: 0;
 }
 
-.quotedName {
+.quoted-name {
   display: inline-flex;
   gap: 3px;
   align-items: center;
@@ -24,7 +24,7 @@
   white-space: nowrap;
 }
 
-.quotedHandle {
+.quoted-handle {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 15px;
@@ -33,7 +33,7 @@
   white-space: nowrap;
 }
 
-.quotedBody {
+.quoted-body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   margin: 4px 0 0;

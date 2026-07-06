@@ -15,7 +15,7 @@ import { useSave } from "./use-saves";
 
 type SourceIcon = ReturnType<typeof getSourceIcon>;
 
-export interface SaveDetailView {
+interface SaveDetailView {
   save: Save | undefined;
   engagement: Metric[];
   rows: DetailRow[];

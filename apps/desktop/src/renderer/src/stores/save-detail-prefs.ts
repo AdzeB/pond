@@ -17,7 +17,7 @@ function read(): boolean {
 
 const store = new Store<boolean>(read());
 
-export function setSaveDetailsOpen(value: boolean): void {
+function _setSaveDetailsOpen(value: boolean): void {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
@@ -27,11 +27,6 @@ export function setSaveDetailsOpen(value: boolean): void {
   }
   store.setState((s) => (s === value ? s : value));
 }
-
-export function toggleSaveDetails(): void {
-  setSaveDetailsOpen(!store.state);
-}
-
 export function useSaveDetailsOpen(): boolean {
   return useSelector(store, (s) => s);
 }

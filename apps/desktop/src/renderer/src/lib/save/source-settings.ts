@@ -11,7 +11,7 @@ interface SegmentedOption {
 // A single source-specific setting, rendered as a segmented control in the
 // source dialog. Bound to a key on the `preferences` prefs slice — the natural
 // home for per-source display preferences (e.g. how a Tweet's cover renders).
-export interface SourceSettingField {
+interface SourceSettingField {
   key: PreferenceKey;
   label: string;
   description: string;

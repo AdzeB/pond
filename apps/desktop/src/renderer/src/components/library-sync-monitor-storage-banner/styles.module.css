@@ -1,5 +1,5 @@
 /* ── storage banner ─────────────────────────────────────────────────────── */
-.sbanner {
+.banner {
   display: flex;
   gap: 11px;
   align-items: center;
@@ -10,7 +10,7 @@
   box-shadow: var(--shadow);
 }
 
-.sbanner .bIco {
+.banner .banner-icon {
   display: grid;
   flex: none;
   place-items: center;
@@ -21,19 +21,19 @@
   border-radius: 7px;
 }
 
-.bText {
+.banner-text {
   font-size: 13px;
 }
 
-.bText b {
+.banner-text b {
   font-weight: 620;
 }
 
-.bText .dim {
+.banner-text .dim {
   color: var(--ink-2);
 }
 
-.sbanner .bAct {
+.banner .banner-actions {
   display: flex;
   gap: 8px;
   margin-left: auto;

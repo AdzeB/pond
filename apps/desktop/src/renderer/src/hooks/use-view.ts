@@ -24,7 +24,7 @@ import {
 } from "@/stores/view-store";
 import type { SortDir, SortKey } from "./use-filtered-saves";
 
-export type { SortDir, SortKey };
+export type { SortKey };
 
 interface ViewState {
   query: Query;
@@ -51,7 +51,7 @@ interface ViewActions {
   restoreDefaults: () => void;
 }
 
-export interface ViewContextValue {
+interface ViewContextValue {
   state: ViewState;
   actions: ViewActions;
 }

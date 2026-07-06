@@ -157,13 +157,3 @@ export async function exportFile(save: Save): Promise<void> {
     fileIndex: save.coverIndex ?? 0,
   });
 }
-
-// Open the native file picker, then import the chosen images/videos as saves.
-export async function pickAndImportFiles(): Promise<void> {
-  const picked = (await window.pond.query("saves.pickFiles", {})) as {
-    ok: boolean;
-    paths?: string[];
-  };
-  if (!picked.ok || !picked.paths?.length) return;
-  await window.pond.query("saves.importFiles", { paths: picked.paths });
-}
