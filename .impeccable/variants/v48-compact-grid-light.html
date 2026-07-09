@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Compact stat grid · light</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { max-width:980px; padding:40px 32px 80px; margin:0 auto; }
+.bar { display:flex; gap:14px; align-items:center; padding:10px 16px; margin-bottom:18px; font-size:12.5px; }
+.bar b { font-weight:650; font-variant-numeric:tabular-nums; } .bar .sep { color:var(--ink3); }
+.bar .right { display:flex; gap:8px; margin-left:auto; }
+.grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; }
+.cell { padding:12px 13px; }
+.ch { display:flex; gap:8px; align-items:center; } .cn { flex:1; font-size:12px; font-weight:600; }
+.cnum { margin-top:8px; font-size:17px; font-weight:650; font-variant-numeric:tabular-nums; }
+.cst { margin-top:2px; font-size:10.5px; color:var(--ink3); }
+.cst.run { font-weight:600; color:var(--run); } .cst.warn { font-weight:600; color:var(--warn); }
+.ticks { height:16px; margin-top:10px; }</style></head>
+<body class="light"><div class="wrap">
+    <div class="bar panel"><span><b>5,056</b> items</span><span class="sep">·</span><span style="color:var(--ok);font-weight:600">+12 today</span><span class="sep">·</span><span>7 sources</span><span class="sep">·</span><span>enrichment 98%</span><span class="sep">·</span><span style="color:var(--ink3)">last run 2m ago</span>
+    <span class="right"><button class="btn">Add</button><button class="btn primary">Sync all</button></span></div>
+    <div class="grid">
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="twitter.svg" alt=""/></span><span class="cn">Twitter</span><span class="dot "></span></div>
+    <div class="cnum">2,381</div>
+    <div class="cst ">synced 18m ago</div>
+    <div class="ticks"><i class="z"></i><i  style="height:12px"></i><i  style="height:10px"></i><i class="z"></i><i  style="height:19px"></i><i  style="height:12px"></i><i  style="height:13px"></i><i  style="height:12px"></i><i  style="height:13px"></i><i  style="height:10px"></i><i class="z"></i><i  style="height:16px"></i><i class="z"></i><i  style="height:11px"></i><i  style="height:14px"></i><i  style="height:18px"></i><i  style="height:11px"></i><i class="z"></i><i class="z"></i><i  style="height:17px"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="cosmos.svg" alt=""/></span><span class="cn">Cosmos</span><span class="dot run"></span></div>
+    <div class="cnum">312</div>
+    <div class="cst run">syncing · 12 new</div>
+    <div class="ticks"><i class="z"></i><i  style="height:18px"></i><i  style="height:14px"></i><i  style="height:12px"></i><i  style="height:12px"></i><i class="z"></i><i  style="height:16px"></i><i  style="height:13px"></i><i  style="height:13px"></i><i class="z"></i><i  style="height:11px"></i><i class="z"></i><i  style="height:15px"></i><i  style="height:13px"></i><i  style="height:17px"></i><i  style="height:12px"></i><i  style="height:11px"></i><i class="z"></i><i  style="height:11px"></i><i  style="height:20px"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="pinterest.svg" alt=""/></span><span class="cn">Pinterest</span><span class="dot warn"></span></div>
+    <div class="cnum">1,104</div>
+    <div class="cst warn">rate limited · 1:20</div>
+    <div class="ticks"><i class="z"></i><i class="z"></i><i  style="height:19px"></i><i  style="height:18px"></i><i class="z"></i><i  style="height:17px"></i><i  style="height:18px"></i><i  style="height:14px"></i><i  style="height:14px"></i><i  style="height:19px"></i><i  style="height:13px"></i><i  style="height:18px"></i><i class="z"></i><i  style="height:14px"></i><i  style="height:20px"></i><i class="z"></i><i class="w" style="height:12px"></i><i class="z"></i><i class="w" style="height:13px"></i><i class="z"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="instagram.svg" alt=""/></span><span class="cn">Instagram</span><span class="dot "></span></div>
+    <div class="cnum">694</div>
+    <div class="cst ">synced 1h ago</div>
+    <div class="ticks"><i class="z"></i><i  style="height:15px"></i><i class="z"></i><i class="z"></i><i  style="height:15px"></i><i  style="height:11px"></i><i  style="height:20px"></i><i  style="height:14px"></i><i  style="height:14px"></i><i  style="height:16px"></i><i  style="height:16px"></i><i  style="height:11px"></i><i  style="height:15px"></i><i  style="height:16px"></i><i class="z"></i><i  style="height:15px"></i><i  style="height:12px"></i><i class="z"></i><i  style="height:16px"></i><i  style="height:10px"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="arena.svg" alt=""/></span><span class="cn">Are.na</span><span class="dot "></span></div>
+    <div class="cnum">245</div>
+    <div class="cst ">synced 2h ago</div>
+    <div class="ticks"><i class="z"></i><i class="z"></i><i  style="height:11px"></i><i  style="height:14px"></i><i class="z"></i><i class="z"></i><i class="z"></i><i  style="height:15px"></i><i  style="height:15px"></i><i  style="height:13px"></i><i  style="height:18px"></i><i  style="height:20px"></i><i class="z"></i><i  style="height:18px"></i><i class="z"></i><i class="z"></i><i  style="height:12px"></i><i class="z"></i><i  style="height:18px"></i><i  style="height:14px"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="tiktok.svg" alt=""/></span><span class="cn">TikTok</span><span class="dot "></span></div>
+    <div class="cnum">188</div>
+    <div class="cst ">synced 3h ago</div>
+    <div class="ticks"><i class="z"></i><i  style="height:12px"></i><i  style="height:15px"></i><i  style="height:20px"></i><i  style="height:19px"></i><i  style="height:16px"></i><i class="z"></i><i  style="height:15px"></i><i  style="height:16px"></i><i  style="height:10px"></i><i  style="height:21px"></i><i  style="height:13px"></i><i  style="height:15px"></i><i  style="height:19px"></i><i  style="height:11px"></i><i  style="height:17px"></i><i  style="height:12px"></i><i class="z"></i><i  style="height:21px"></i><i  style="height:17px"></i></div></div>
+    <div class="cell panel"><div class="ch"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="youtube.svg" alt=""/></span><span class="cn">YouTube</span><span class="dot "></span></div>
+    <div class="cnum">132</div>
+    <div class="cst ">synced 5h ago</div>
+    <div class="ticks"><i class="z"></i><i  style="height:18px"></i><i  style="height:20px"></i><i  style="height:10px"></i><i  style="height:12px"></i><i  style="height:11px"></i><i  style="height:11px"></i><i  style="height:16px"></i><i  style="height:16px"></i><i class="z"></i><i class="z"></i><i class="z"></i><i class="z"></i><i class="z"></i><i  style="height:14px"></i><i  style="height:11px"></i><i  style="height:12px"></i><i class="z"></i><i class="z"></i><i  style="height:20px"></i></div></div><div class="cell panel" style="display:grid;place-items:center;color:var(--ink3);font-size:12px;box-shadow:none;border:1px dashed var(--line);background:transparent">+ Connect more</div></div>
+  </div></body></html>

@@ -360,6 +360,10 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
                 label: "Open IPC Inspector",
                 click: sendMenuAction("developer.ipc-inspector"),
               },
+              {
+                label: "Open Dock Playground",
+                click: sendMenuAction("developer.dock-playground"),
+              },
             ],
           },
         ] satisfies Electron.MenuItemConstructorOptions[])

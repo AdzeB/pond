@@ -1,42 +1,181 @@
-/* A single capture row: link glyph, the input, and the Add affordance. Sized to
-   a comfortable link-entry width. The pill supplies the surface, so the field
-   sheds its own chrome to melt into the row rather than nesting a box in a box. */
+/* A small capture form morphed out of the pill: link row, note row, then a
+   toolbar with tags on the left and the circular submit on the right. The pill
+   supplies the surface, so the fields shed their own chrome and melt into the
+   card. Anatomy, type size, and the submit button mirror the ask composer so
+   the dock's views read as one family. */
 .card {
+  display: flex;
+  flex-direction: column;
+  width: var(--dock-card-width, 360px);
+  padding: 6px;
+}
+
+.row {
   display: flex;
   gap: 8px;
   align-items: center;
-  width: 360px;
-  padding: 8px;
+  height: 34px;
+  padding-inline: 8px;
 }
 
-.input-root {
+.lead-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-9);
+}
+
+/* The link row's glyph remounts when the typed URL classifies to a source, so
+   the brand mark pops in. The global reduced-motion kill-switch (styles.css)
+   zeroes this animation. */
+.glyph {
+  animation: glyph-in var(--ds-duration-medium) var(--ds-easing-emphasized);
+}
+
+@keyframes glyph-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.input {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.input-root .input-field {
-  height: 24px;
-  min-height: 24px;
-  padding-top: 0;
-  padding-bottom: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 400;
   background: transparent;
   border-radius: 0;
   box-shadow: none;
+
+  &::placeholder {
+    color: var(--ds-gray-9);
+  }
 }
 
-.input-root .input-field:hover {
+.input:hover {
   box-shadow: none;
 }
 
-.input-root .input-field:focus-visible {
+.input:focus-visible {
   outline: none;
   box-shadow: none;
 }
 
-.keyboard {
-  margin-left: 4px;
-  font-family: inherit;
-  font-size: 11px;
-  line-height: 1;
-  opacity: 0.7;
+/* ----- Bottom toolbar: tags on the left, submit on the right ----- */
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px;
+  margin-top: 2px;
+}
+
+.toolbar-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.icon-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover,
+  &[data-popup-open] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+/* A picked tag; clicking removes it. Same vocabulary as the ask bar's
+   suggestion chips. */
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: 22px;
+  padding-inline: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+}
+
+/* Same circular primary submit as the ask composer's send button. */
+.primary {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--ds-gray-1);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-12);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard),
+    transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+
+  &:disabled {
+    color: var(--ds-gray-9);
+    cursor: default;
+    background: var(--ds-gray-4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
 }

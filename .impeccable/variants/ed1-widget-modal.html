@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ED1 — Widget modal (Steep style)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    padding: 40px;
+    font: 13px/1.45 -apple-system, "SF Pro Text", Inter, sans-serif;
+    color: #1b1b1a;
+    background: #f4f4f3;
+  }
+  .backdrop-hint { position: fixed; inset: 0; z-index: -1; background:
+    radial-gradient(circle at 20% 10%, #ececea 0 40%, transparent 60%); }
+
+  .modal {
+    width: 460px;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #e7e7e5;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(20,20,19,.14), 0 2px 8px rgba(20,20,19,.06);
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px;
+  }
+  .modal-head .cancel { font: inherit; color: #8a8a86; cursor: pointer; background: none; border: 0; }
+  .modal-head .title { font-size: 13px; font-weight: 600; }
+  .modal-head .save {
+    padding: 6px 14px; font: inherit; font-weight: 550; color: #fff; cursor: pointer;
+    background: #1b1b1a; border: 0; border-radius: 8px;
+  }
+
+  /* live preview = the actual dashboard card */
+  .preview-stage {
+    padding: 6px 28px 18px;
+    background: linear-gradient(#fafaf9, #f5f5f4);
+    border-bottom: 1px solid #ececea;
+  }
+  .card {
+    padding: 14px 16px 12px; 
+    background: #fff; border: 1px solid #e7e7e5; border-radius: 12px;box-shadow: 0 1px 3px rgba(20,20,19,.05);
+  }
+  .card-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  .card-title b { font-size: 12.5px; font-weight: 600; }
+  .card-title span { font-size: 18px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  svg { display: block; }
+  .legend { display: flex; gap: 12px; margin-top: 8px; font-size: 10.5px; color: #6f6f6c; }
+  .legend i { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 2px; }
+  .dots { display: flex; gap: 5px; justify-content: center; margin-top: 12px; }
+  .dots span { width: 5px; height: 5px; background: #d9d9d6; border-radius: 50%; }
+  .dots span.on { background: #1b1b1a; }
+
+  /* settings rows */
+  .rows { padding: 8px 16px 16px; }
+  .row {
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 42px; padding: 0 4px;
+    border-bottom: 1px solid #f0f0ee;
+  }
+  .row:last-child { border-bottom: 0; }
+  .row .label { color: #6f6f6c; }
+  .row .value { display: flex; gap: 6px; align-items: center; font-weight: 520; cursor: pointer; }
+  .row .value .chev { font-size: 10px; color: #b3b3af; }
+  .row input {
+    width: 220px;font: inherit; font-weight: 520; text-align: right; outline: 0; 
+    border: 0;
+  }
+  .row input::placeholder { font-weight: 400; color: #b3b3af; }
+  .pill {
+    display: inline-flex; gap: 5px;align-items: center; padding: 3px 8px; font-size: 12px;
+    background: #f4f4f3; border-radius: 6px;
+  }
+  .pill i { display: inline-block; width: 6px; height: 6px; background: #12a594; border-radius: 50%; }
+
+  /* display strip: previews, not icons */
+  .display-row { padding: 12px 4px 4px; border-bottom: 1px solid #f0f0ee; }
+  .display-row .label { display: block; margin-bottom: 10px; color: #6f6f6c; }
+  .display-strip { display: flex; gap: 8px; padding-bottom: 10px; overflow-x: auto; }
+  .display-chip {
+    flex: none; width: 74px; font-size: 10.5px;
+    color: #6f6f6c; text-align: center;cursor: pointer;
+  }
+  .display-chip .thumb {
+    display: grid; place-items: center; 
+    height: 44px; margin-bottom: 5px;background: #fafaf9;border: 1px solid #e7e7e5; border-radius: 8px;
+  }
+  .display-chip.on { font-weight: 550; color: #1b1b1a; }
+  .display-chip.on .thumb { background: #fff; border-color: #1b1b1a; box-shadow: 0 0 0 1px #1b1b1a inset; }
+</style>
+</head>
+<body>
+<div class="backdrop-hint"></div>
+
+<div class="modal">
+  <div class="modal-head">
+    <button class="cancel">Cancel</button>
+    <span class="title">Edit insight</span>
+    <button class="save">Save</button>
+  </div>
+
+  <div class="preview-stage">
+    <div class="card">
+      <div class="card-title"><b>Saves by day</b><span>1,204</span></div>
+      <svg width="100%" height="84" viewBox="0 0 380 84" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#0797b9" stop-opacity=".35"/><stop offset="1" stop-color="#0797b9" stop-opacity=".02"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0" stop-color="#5b5bd6" stop-opacity=".3"/><stop offset="1" stop-color="#5b5bd6" stop-opacity=".02"/>
+          </linearGradient>
+        </defs>
+        <path d="M0 62 C40 58 60 40 95 42 C130 44 150 24 190 28 C230 32 250 18 285 14 C320 10 350 20 380 12 L380 84 L0 84 Z" fill="url(#g1)"/>
+        <path d="M0 62 C40 58 60 40 95 42 C130 44 150 24 190 28 C230 32 250 18 285 14 C320 10 350 20 380 12" fill="none" stroke="#0797b9" stroke-width="1.75"/>
+        <path d="M0 74 C50 72 80 66 120 68 C160 70 200 56 240 58 C280 60 330 50 380 52 L380 84 L0 84 Z" fill="url(#g2)"/>
+        <path d="M0 74 C50 72 80 66 120 68 C160 70 200 56 240 58 C280 60 330 50 380 52" fill="none" stroke="#5b5bd6" stroke-width="1.75"/>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#0797b9"></i>Twitter</span>
+        <span><i style="background:#5b5bd6"></i>Cosmos</span>
+        <span><i style="background:#ab4aba"></i>Instagram</span>
+      </div>
+    </div>
+    <div class="dots"><span></span><span class="on"></span><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="rows">
+    <div class="row">
+      <span class="label">Title</span>
+      <input value="" placeholder="Saves by day, split by source" />
+    </div>
+    <div class="row">
+      <span class="label">Data</span>
+      <span class="value">Library saves <span class="chev">▾</span></span>
+    </div>
+    <div class="row">
+      <span class="label">Measure</span>
+      <span class="value">Saves <span class="chev">▾</span></span>
+    </div>
+
+    <div class="display-row">
+      <span class="label">Display</span>
+      <div class="display-strip">
+        <div class="display-chip"><div class="thumb">
+          <svg width="34" height="24"><rect x="2" y="10" width="6" height="14" rx="1.5" fill="#c9c9c5"/><rect x="11" y="4" width="6" height="20" rx="1.5" fill="#c9c9c5"/><rect x="20" y="13" width="6" height="11" rx="1.5" fill="#c9c9c5"/><rect x="29" y="8" width="5" height="16" rx="1.5" fill="#c9c9c5"/></svg>
+        </div>Bars</div>
+        <div class="display-chip on"><div class="thumb">
+          <svg width="36" height="24"><path d="M1 18 C8 16 12 8 18 10 C24 12 28 4 35 5 L35 23 L1 23 Z" fill="#0797b9" opacity=".25"/><path d="M1 18 C8 16 12 8 18 10 C24 12 28 4 35 5" fill="none" stroke="#0797b9" stroke-width="1.75"/></svg>
+        </div>Area</div>
+        <div class="display-chip"><div class="thumb">
+          <svg width="36" height="24"><path d="M1 18 C8 16 12 8 18 10 C24 12 28 4 35 5" fill="none" stroke="#8a8a86" stroke-width="1.75"/></svg>
+        </div>Line</div>
+        <div class="display-chip"><div class="thumb">
+          <svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="9" fill="none" stroke="#d9d9d6" stroke-width="5"/><path d="M13 4 A9 9 0 0 1 21.6 10.4" fill="none" stroke="#8a8a86" stroke-width="5"/></svg>
+        </div>Ring</div>
+        <div class="display-chip"><div class="thumb">
+          <svg width="38" height="22"><g fill="#c9c9c5"><rect x="1" y="1" width="7" height="6" rx="1.5" opacity=".4"/><rect x="10" y="1" width="7" height="6" rx="1.5" opacity=".9"/><rect x="19" y="1" width="7" height="6" rx="1.5" opacity=".6"/><rect x="28" y="1" width="7" height="6" rx="1.5" opacity=".25"/><rect x="1" y="9" width="7" height="6" rx="1.5" opacity=".8"/><rect x="10" y="9" width="7" height="6" rx="1.5" opacity=".3"/><rect x="19" y="9" width="7" height="6" rx="1.5" opacity=".95"/><rect x="28" y="9" width="7" height="6" rx="1.5" opacity=".5"/></g></svg>
+        </div>Heatmap</div>
+        <div class="display-chip"><div class="thumb" style="font: 600 13px -apple-system; color:#8a8a86;">128</div>Metric</div>
+        <div class="display-chip"><div class="thumb">
+          <svg width="34" height="22"><g stroke="#d9d9d6"><line x1="1" y1="5" x2="33" y2="5"/><line x1="1" y1="11" x2="33" y2="11"/><line x1="1" y1="17" x2="33" y2="17"/></g><g fill="#8a8a86"><rect x="1" y="3" width="10" height="3" rx="1"/><rect x="1" y="9" width="14" height="3" rx="1"/><rect x="1" y="15" width="7" height="3" rx="1"/></g></svg>
+        </div>Table</div>
+        <div class="display-chip"><div class="thumb">
+          <svg width="38" height="22"><g fill="#c9c9c5"><rect x="1" y="2" width="10" height="18" rx="2"/><rect x="14" y="2" width="10" height="18" rx="2"/><rect x="27" y="2" width="10" height="18" rx="2"/></g></svg>
+        </div>Recent</div>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">Slice by</span>
+      <span class="value">Day <span class="chev">▾</span></span>
+    </div>
+    <div class="row">
+      <span class="label">Segment by</span>
+      <span class="value">Source <span class="chev">▾</span></span>
+    </div>
+    <div class="row">
+      <span class="label">Filter</span>
+      <span class="value"><span class="pill"><i></i>Source is Twitter, Cosmos</span> <span class="chev">＋</span></span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

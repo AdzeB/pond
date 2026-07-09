@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>V51 — Seline live dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #22262b; background: #f2f4f5; }
+  .content { max-width: 880px; padding: 36px 28px 80px; margin: 0 auto; }
+
+  /* header */
+  .hdr { display: flex; align-items: flex-start; }
+  .site { display: flex; gap: 10px; align-items: center; }
+  .site .fav { display: grid; place-items: center; width: 30px; height: 30px; font-size: 15px; background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(20,30,40,.08), 0 0 0 1px rgba(20,30,40,.05); }
+  .site h1 { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+  .anno { display: flex; gap: 6px; align-items: center; margin: 6px 0 0 14px; font-size: 12px; color: #8a929b; }
+  .anno svg { flex: none; }
+  .anno b { font-weight: 600; color: #4a5057; }
+  .hctl { display: flex; gap: 8px; margin-left: auto; }
+  .pillbtn { display: inline-flex; gap: 7px; align-items: center; padding: 7px 12px; font: inherit; font-size: 12.5px; font-weight: 550; color: #3d434a; cursor: pointer; background: #fff; border: 0; border-radius: 9px; box-shadow: 0 1px 2px rgba(20,30,40,.06), 0 0 0 1px rgba(20,30,40,.05); }
+  .pillbtn .live { width: 7px; height: 7px; background: #34b45f; border-radius: 50%; box-shadow: 0 0 0 3px rgba(52,180,95,.18); }
+  .pillbtn .kbd { padding: 1px 5px; font-size: 10px; font-weight: 600; color: #9aa1a9; background: #f1f3f4; border-radius: 4px; }
+
+  /* kpi strip */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); padding: 15px 18px; margin-top: 22px; background: #fff; border-radius: 13px; box-shadow: 0 1px 2px rgba(20,30,40,.05), 0 0 0 1px rgba(20,30,40,.04); }
+  .kpi .kl { display: flex; gap: 6px; align-items: center; font-size: 12px; font-weight: 550; color: #5b626a; }
+  .kpi .kl svg { color: #a5adb5; }
+  .kpi .kv { margin-top: 5px; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .kpi .kv .delta { margin-left: 6px; font-size: 11px; font-weight: 650; }
+  .up { color: #2f9e57; } .flat { color: #9aa1a9; } .warn { color: #c98a1e; }
+
+  /* chart cards */
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .card { padding: 16px 18px; background: #fff; border-radius: 13px; box-shadow: 0 1px 2px rgba(20,30,40,.05), 0 0 0 1px rgba(20,30,40,.04); }
+  .ch { display: flex; align-items: flex-start; }
+  .ch .t { font-size: 13px; font-weight: 650; }
+  .ch .s { display: flex; gap: 6px; align-items: center; margin-top: 3px; font-size: 11.5px; color: #7d858d; }
+  .ch .s .on { width: 6px; height: 6px; background: #34b45f; border-radius: 50%; }
+  .ch .s .on.run { background: #549df2; }
+  .ch .big { margin-left: auto; text-align: right; }
+  .ch .big .n { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; letter-spacing: -.03em; }
+  .ch .big .d { font-size: 11px; color: #7d858d; }
+  .ch .big .d b { font-weight: 650; color: #2f9e57; }
+  .bars { display: flex; gap: 3px; align-items: flex-end; height: 120px; margin-top: 16px; }
+  .bars i { flex: 1; min-height: 3px; background: #74b1f5; border-radius: 3px 3px 0 0; }
+  .bars i:hover { background: #4f97ee; }
+  .bx { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; font-variant-numeric: tabular-nums; color: #a5adb5; }
+
+  /* list panels */
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; margin-top: 14px; }
+  .ph { display: flex; align-items: flex-start; padding-bottom: 12px; }
+  .ph .t { font-size: 13px; font-weight: 650; }
+  .ph .s { margin-top: 3px; font-size: 11.5px; color: #7d858d; }
+  .tabs { display: flex; padding: 2px; margin-left: auto; background: #f1f3f4; border-radius: 8px; }
+  .tab { padding: 4px 11px; font-size: 11.5px; font-weight: 550; color: #8a929b; cursor: pointer; border-radius: 6px; }
+  .tab.sel { color: #22262b; background: #fff; box-shadow: 0 1px 2px rgba(20,30,40,.08); }
+  .row { position: relative; display: flex; align-items: center; height: 30px; margin-top: 6px; }
+  .row .fill { position: absolute; top: 0; bottom: 0; left: 0; background: #e2eefc; border-radius: 7px; }
+  .row .lab { position: relative; display: flex; gap: 8px; align-items: center; padding: 0 9px; font-size: 12.5px; font-weight: 520; }
+  .row .lab img { display: block; width: 15px; height: 15px; border-radius: 4px; }
+  .row .lab .status { font-size: 10.5px; font-weight: 600; }
+  .row .val { position: relative; padding-right: 2px; margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; color: #5b626a; }
+  .row .val b { font-weight: 650; color: #22262b; }
+  .row.warn .fill { background: #fbeecf; }
+  .row.run .fill { outline: 1.5px dashed #9cc4f2; outline-offset: -1.5px; background: #dcebfd; }
+  .pfoot { display: flex; gap: 7px; align-items: center; margin-top: 14px; font-size: 11px; color: #9aa1a9; }
+  .pfoot .pg { display: grid; place-items: center; width: 20px; height: 20px; font-size: 11px; color: #5b626a; cursor: pointer; background: #f1f3f4; border-radius: 50%; }
+
+  /* events-style rows (no fill) */
+  .ev { display: flex; gap: 8px; align-items: center; height: 30px; margin-top: 6px; font-size: 12.5px; }
+  .ev .pill { display: inline-flex; gap: 7px; align-items: center; padding: 5px 9px; font-weight: 520; background: #eef1f3; border-radius: 7px; }
+  .ev .pill img { width: 14px; height: 14px; border-radius: 4px; }
+  .ev .pill.ok { background: #e3f4e8; } .ev .pill.warn { background: #fbeecf; } .ev .pill.run { background: #dcebfd; }
+  .ev .val { margin-left: auto; font-variant-numeric: tabular-nums; color: #5b626a; }
+
+  /* ask bar */
+  .ask { position: fixed; bottom: 22px; left: 50%; display: flex; gap: 26px; align-items: center; padding: 9px 10px 9px 18px; font-size: 12.5px; color: #a5adb5; background: #fff; border-radius: 999px; box-shadow: 0 6px 24px rgba(20,30,40,.13), 0 0 0 1px rgba(20,30,40,.05); transform: translateX(-50%); }
+  .ask .go { display: grid; place-items: center; width: 24px; height: 24px; font-size: 12px; color: #fff; background: #549df2; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="content">
+
+  <div class="hdr">
+    <div>
+      <div class="site"><span class="fav">◍</span><h1>raphael's pond</h1></div>
+      <div class="anno">
+        <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M3 1 C 3 8, 8 11, 16 11" stroke="#c3cad1" stroke-width="1.2" stroke-linecap="round"/></svg>
+        where it's currently <b>8:06 AM</b>
+      </div>
+    </div>
+    <div class="hctl">
+      <button class="pillbtn"><span class="live"></span>Live</button>
+      <button class="pillbtn">Filter <span class="kbd">F</span></button>
+      <button class="pillbtn">▦ Last 30 days ⌄</button>
+    </div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="kl">♡ Items</div><div class="kv">5,056<span class="delta up">↗ +12</span></div></div>
+    <div class="kpi"><div class="kl">✦ New today</div><div class="kv">12<span class="delta up">↗ all Cosmos</span></div></div>
+    <div class="kpi"><div class="kl">⚭ Sources</div><div class="kv">7<span class="delta warn">1 limited</span></div></div>
+    <div class="kpi"><div class="kl">✓ Enriched</div><div class="kv">98%<span class="delta flat">73 queued</span></div></div>
+  </div>
+
+  <div class="charts">
+    <div class="card">
+      <div class="ch">
+        <div><div class="t">Items collected</div><div class="s"><span class="on run"></span>1 source syncing now</div></div>
+        <div class="big"><div class="n">341</div><div class="d"><b>↗ +8%</b> vs previous 30 days</div></div>
+      </div>
+      <div class="bars">
+        <i style="height:34%"></i><i style="height:52%"></i><i style="height:41%"></i><i style="height:63%"></i><i style="height:38%"></i><i style="height:22%"></i><i style="height:47%"></i><i style="height:58%"></i><i style="height:44%"></i><i style="height:31%"></i><i style="height:69%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:26%"></i><i style="height:49%"></i><i style="height:62%"></i><i style="height:36%"></i><i style="height:53%"></i><i style="height:45%"></i><i style="height:70%"></i><i style="height:57%"></i><i style="height:42%"></i><i style="height:33%"></i><i style="height:61%"></i><i style="height:48%"></i><i style="height:39%"></i><i style="height:66%"></i><i style="height:51%"></i><i style="height:78%"></i><i style="height:92%"></i>
+      </div>
+      <div class="bx"><span>08.</span><span>13.</span><span>18.</span><span>23.</span><span>28.</span><span>03.</span><span>07.</span></div>
+    </div>
+    <div class="card">
+      <div class="ch">
+        <div><div class="t">Sync runs</div><div class="s"><span class="on"></span>142 this month · 1 backed off</div></div>
+        <div class="big"><div class="n">142</div><div class="d"><b>↗ 99%</b> completed cleanly</div></div>
+      </div>
+      <div class="bars">
+        <i style="height:55%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:62%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:62%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:55%"></i><i style="height:48%"></i><i style="height:55%"></i><i style="height:55%"></i><i style="height:62%"></i><i style="height:70%"></i><i style="height:78%"></i>
+      </div>
+      <div class="bx"><span>08.</span><span>13.</span><span>18.</span><span>23.</span><span>28.</span><span>03.</span><span>07.</span></div>
+    </div>
+  </div>
+
+  <div class="panels">
+
+    <div class="card">
+      <div class="ph">
+        <div><div class="t">Sources ⟳</div><div class="s">7 connected</div></div>
+        <div class="tabs"><span class="tab sel">Items</span><span class="tab">Today</span><span class="tab">Issues</span></div>
+      </div>
+      <div class="row"><span class="fill" style="width:100%"></span><span class="lab"><img src="twitter.svg" alt=""/>Twitter</span><span class="val"><b>2,381</b></span></div>
+      <div class="row warn"><span class="fill" style="width:46%"></span><span class="lab"><img src="pinterest.svg" alt=""/>Pinterest <span class="status" style="color:#c98a1e">rate limited</span></span><span class="val"><b>1,104</b></span></div>
+      <div class="row"><span class="fill" style="width:29%"></span><span class="lab"><img src="instagram.svg" alt=""/>Instagram</span><span class="val"><b>694</b></span></div>
+      <div class="row run"><span class="fill" style="width:13%"></span><span class="lab"><img src="cosmos.svg" alt=""/>Cosmos <span class="status" style="color:#3b82d6">syncing +12</span></span><span class="val"><b>312</b></span></div>
+      <div class="row"><span class="fill" style="width:10%"></span><span class="lab"><img src="arena.svg" alt=""/>Are.na</span><span class="val"><b>245</b></span></div>
+      <div class="row"><span class="fill" style="width:8%"></span><span class="lab"><img src="tiktok.svg" alt=""/>TikTok</span><span class="val"><b>188</b></span></div>
+      <div class="row"><span class="fill" style="width:6%"></span><span class="lab"><img src="youtube.svg" alt=""/>YouTube</span><span class="val"><b>132</b></span></div>
+      <div class="pfoot"><span class="pg">＋</span> Connect Reddit or Threads</div>
+    </div>
+
+    <div class="card">
+      <div class="ph">
+        <div><div class="t">Activity ⟳</div><div class="s">6 runs today</div></div>
+        <div class="tabs"><span class="tab sel">All</span><span class="tab">Issues</span></div>
+      </div>
+      <div class="ev"><span class="pill run"><img src="cosmos.svg" alt=""/>cosmos: syncing</span><span class="val">12 so far · now</span></div>
+      <div class="ev"><span class="pill warn"><img src="pinterest.svg" alt=""/>pinterest: backed off</span><span class="val">resumes 1:20</span></div>
+      <div class="ev"><span class="pill ok"><img src="twitter.svg" alt=""/>twitter: synced</span><span class="val">+4 · 1h ago</span></div>
+      <div class="ev"><span class="pill ok"><img src="instagram.svg" alt=""/>instagram: synced</span><span class="val">0 · 1h ago</span></div>
+      <div class="ev"><span class="pill ok"><img src="arena.svg" alt=""/>are.na: synced</span><span class="val">0 · 2h ago</span></div>
+      <div class="ev"><span class="pill ok"><img src="youtube.svg" alt=""/>youtube: refreshed</span><span class="val">22 · 9:31</span></div>
+      <div class="pfoot"><span class="pg">←</span><span class="pg">→</span> Page 1 of 4</div>
+    </div>
+
+    <div class="card">
+      <div class="ph">
+        <div><div class="t">Kinds</div><div class="s">what came in · 30 days</div></div>
+        <div class="tabs"><span class="tab sel">Type</span><span class="tab">Domain</span></div>
+      </div>
+      <div class="row"><span class="fill" style="width:100%"></span><span class="lab">🖼 Images</span><span class="val"><b>214</b></span></div>
+      <div class="row"><span class="fill" style="width:44%"></span><span class="lab">🎞 Videos</span><span class="val"><b>94</b></span></div>
+      <div class="row"><span class="fill" style="width:12%"></span><span class="lab">🔗 Links</span><span class="val"><b>26</b></span></div>
+      <div class="row"><span class="fill" style="width:4%"></span><span class="lab">📄 Text</span><span class="val"><b>7</b></span></div>
+    </div>
+
+    <div class="card">
+      <div class="ph">
+        <div><div class="t">Tags</div><div class="s">most applied · 30 days</div></div>
+        <div class="tabs"><span class="tab sel">Top</span><span class="tab">New</span></div>
+      </div>
+      <div class="row"><span class="fill" style="width:100%"></span><span class="lab">typography</span><span class="val"><b>48</b></span></div>
+      <div class="row"><span class="fill" style="width:71%"></span><span class="lab">layout</span><span class="val"><b>34</b></span></div>
+      <div class="row"><span class="fill" style="width:56%"></span><span class="lab">motion</span><span class="val"><b>27</b></span></div>
+      <div class="row"><span class="fill" style="width:38%"></span><span class="lab">color</span><span class="val"><b>18</b></span></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="ask">Ask your pond… <span class="go">↑</span></div>
+</body>
+</html>

@@ -5,7 +5,8 @@ import {
   IMPORTABLE_EXTENSIONS,
 } from "../../core/manual-import";
 import { persistSave } from "../../core/persist-save";
-import { enqueueSaveByUrl } from "../../core/pipeline/enqueue";
+import { enqueueSaveByUrl, normalizeUrl } from "../../core/pipeline/enqueue";
+import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
@@ -23,6 +24,15 @@ async function importFilesImpl(
 }
 
 export const savesImportQueries: QueryHandlerMap = {
+  // Which source adapter would handle this URL. Cheap synchronous pattern
+  // matching; lets capture UIs preview the classification as the user types.
+  "saves.classifyUrl"(params) {
+    const url = String(params.url ?? "").trim();
+    if (!url) return { source: null };
+    const { source } = classifyUrlToSource(normalizeUrl(url));
+    return { source };
+  },
+
   async "saves.importFiles"(params) {
     const paths = Array.isArray(params.paths)
       ? (params.paths as unknown[]).map(String).filter(Boolean)

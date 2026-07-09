@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Activity log · terminal dark</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { max-width:860px; padding:44px 32px 80px; margin:0 auto; }
+.hdr { padding-bottom:28px; text-align:center; }
+h1 { font-size:24px; font-weight:650; letter-spacing:-.02em; }
+.hsub { margin-top:6px; font-size:12.5px; color:var(--ink2); } .hsub b { font-weight:600; color:var(--ok); }
+.strip { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; padding-bottom:20px; }
+.tile { padding:10px 8px; text-align:center; cursor:pointer; }
+.tn { margin-top:6px; font-size:11px; font-weight:550; } .ts { margin-top:1px; font-size:10px; color:var(--ink3); }
+.ts.ok { color:var(--ok); } .ts.run { color:var(--run); } .ts.warn { color:var(--warn); }
+table { width:100%; overflow:hidden; border-spacing:0; border-collapse:separate; border-radius:12px; }
+thead th { padding:10px 14px; font-size:10.5px; font-weight:600; color:var(--ink3); text-align:left; text-transform:uppercase; letter-spacing:.06em; border-bottom:1px solid var(--hair); }
+tbody td { padding:11px 14px; font-size:12.5px; color:var(--ink2); border-top:1px solid var(--hair); }
+tbody tr:first-child td { border-top:0; } tbody tr:hover td { background:var(--hov); }
+.srccell { display:flex; gap:8px; align-items:center; font-weight:550; color:var(--ink); }
+.time { font-variant-numeric:tabular-nums; color:var(--ink3); text-align:right; white-space:nowrap; }
+.mono body, .mono td, .mono th { font-family: ui-monospace, "SF Mono", monospace; }</style></head>
+<body class="dark"><div class="wrap">
+    <div class="hdr"><h1>Activity</h1><div class="hsub">5,056 items collected · <b>+12 today</b> · 7 sources connected</div></div>
+    <div class="strip">
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="twitter.svg" alt=""/></span><div class="tn">Twitter</div>
+    <div class="ts ok">synced</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="cosmos.svg" alt=""/></span><div class="tn">Cosmos</div>
+    <div class="ts run">syncing</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="pinterest.svg" alt=""/></span><div class="tn">Pinterest</div>
+    <div class="ts warn">limited</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="instagram.svg" alt=""/></span><div class="tn">Instagram</div>
+    <div class="ts ok">synced</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="arena.svg" alt=""/></span><div class="tn">Are.na</div>
+    <div class="ts ok">synced</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="tiktok.svg" alt=""/></span><div class="tn">TikTok</div>
+    <div class="ts ok">synced</div></div>
+    <div class="tile panel"><span class="chip" style="width:22px;height:22px;border-radius:6px"><img src="youtube.svg" alt=""/></span><div class="tn">YouTube</div>
+    <div class="ts ok">synced</div></div></div>
+    <table class="panel"><thead><tr><th>Source</th><th>Run</th><th>Status</th><th style="text-align:right">Time</th></tr></thead>
+    <tbody>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="cosmos.svg" alt=""/></span>Cosmos</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Incremental sync — 12 items, 3 with video</td>
+    <td><span class="st run">RUNNING</span></td>
+    <td class="time">now</td></tr>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="pinterest.svg" alt=""/></span>Pinterest</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Incremental sync — stopped by rate limit after 210 items</td>
+    <td><span class="st warn">BACKED OFF</span></td>
+    <td class="time">38m ago</td></tr>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="twitter.svg" alt=""/></span>Twitter</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Incremental sync — 4 items</td>
+    <td><span class="st ok">COMPLETED</span></td>
+    <td class="time">1h ago</td></tr>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="instagram.svg" alt=""/></span>Instagram</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Incremental sync — no new items</td>
+    <td><span class="st ok">COMPLETED</span></td>
+    <td class="time">1h ago</td></tr>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="arena.svg" alt=""/></span>Are.na</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Incremental sync — no new blocks in 4 channels</td>
+    <td><span class="st ok">COMPLETED</span></td>
+    <td class="time">2h ago</td></tr>
+    <tr><td><span class="srccell"><span class="chip" style="width:16px;height:16px;border-radius:4px"><img src="youtube.svg" alt=""/></span>YouTube</span></td>
+    <td style="font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px">Metadata refresh — 22 items</td>
+    <td><span class="st ok">COMPLETED</span></td>
+    <td class="time">9:31 AM</td></tr></tbody></table></div></body></html>

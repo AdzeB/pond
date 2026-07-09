@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Analytics · Tinted rows</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { display:flex; flex-direction:column; gap:12px; max-width: 860px; padding: 32px 32px 80px; margin: 0 auto; }
+.top { display:flex; gap:10px; align-items:center; margin-bottom:2px; } .top h1 { flex:1; font-size:16px; font-weight:650; }
+.range { padding:4px 10px; font-size:12px; color:var(--ink2); background:var(--panel); border-radius:6px; box-shadow:0 0 0 1px var(--line); }
+.stat-line { display:flex; gap:22px; padding:2px 2px 8px; }
+.sl { display:flex; gap:6px; align-items:baseline; font-size:12px; color:var(--ink2); }
+.sl b { font-size:15px; font-weight:640; font-variant-numeric:tabular-nums; color:var(--ink); }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.panel { padding:0; }
+.ph { display:flex; gap:14px; align-items:center; padding:10px 14px 0; }
+.tab { padding-bottom:8px; font-size:12px; font-weight:600; border-bottom:2px solid var(--ink); }
+.tab.off { font-weight:500; color:var(--ink3); border-bottom-color:transparent; }
+.ph .u { padding-bottom:8px; margin-left:auto; font-size:10.5px; color:var(--ink3); letter-spacing:.06em; }
+.body { display:flex; flex-direction:column; gap:3px; padding:8px 10px 10px; border-top:1px solid var(--hair); }
+.trow { position:relative; display:flex; gap:8px; align-items:center; height:28px; padding:0 8px; overflow:hidden; font-size:12.5px; border-radius:5px; }
+.trow .fill { position:absolute; inset:0; background:var(--rundim); border-radius:5px; }
+.trow .fill.warn { background:var(--warndim); } .trow .fill.err { background:rgba(207,63,63,.10); } .trow .fill.ok { background:var(--okdim); }
+.trow > * { position:relative; } .trow .name { flex:1; } .trow .val { font-weight:550; font-variant-numeric:tabular-nums; }
+.foot { display:flex; justify-content:center; padding:7px 0 9px; font-size:10.5px; font-weight:600; color:var(--ink3); letter-spacing:.08em; border-top:1px solid var(--hair); }
+</style></head>
+<body class="light"><div class="wrap">
+    <div class="top"><h1>Analytics</h1><span class="range">Last 7 days</span></div>
+    <div class="stat-line">
+      <span class="sl"><b>1,284</b> items</span><span class="sl"><b>96</b> runs</span>
+      <span class="sl"><b>94%</b> success</span><span class="sl"><b>42s</b> avg run</span>
+      <span class="sl"><b>4.2 GB</b> on disk</span>
+    </div>
+    <div class="grid2">
+      <div class="panel"><div class="ph"><span class="tab">Sources</span><span class="tab off">Items</span><span class="u">ITEMS</span></div>
+        <div class="body"><div class="trow"><span class="fill " style="width:100%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="twitter.svg" alt=""/></span><span class="name">Twitter</span><span class="val">412</span></div><div class="trow"><span class="fill " style="width:70%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="pinterest.svg" alt=""/></span><span class="name">Pinterest</span><span class="val">288</span></div><div class="trow"><span class="fill " style="width:37%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="instagram.svg" alt=""/></span><span class="name">Instagram</span><span class="val">154</span></div><div class="trow"><span class="fill " style="width:29%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="cosmos.svg" alt=""/></span><span class="name">Cosmos</span><span class="val">121</span></div><div class="trow"><span class="fill " style="width:14%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="arena.svg" alt=""/></span><span class="name">Are.na</span><span class="val">58</span></div><div class="trow"><span class="fill " style="width:8%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="tiktok.svg" alt=""/></span><span class="name">TikTok</span><span class="val">31</span></div></div><div class="foot">VIEW ALL</div></div>
+      <div class="panel"><div class="ph"><span class="tab">Runs</span><span class="tab off">Failures</span><span class="u">RUNS</span></div>
+        <div class="body"><div class="trow"><span class="fill " style="width:100%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="twitter.svg" alt=""/></span><span class="name">Twitter</span><span class="val">28</span></div><div class="trow"><span class="fill " style="width:79%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="pinterest.svg" alt=""/></span><span class="name">Pinterest</span><span class="val">22</span></div><div class="trow"><span class="fill " style="width:57%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="instagram.svg" alt=""/></span><span class="name">Instagram</span><span class="val">16</span></div><div class="trow"><span class="fill " style="width:43%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="cosmos.svg" alt=""/></span><span class="name">Cosmos</span><span class="val">12</span></div><div class="trow"><span class="fill " style="width:32%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="arena.svg" alt=""/></span><span class="name">Are.na</span><span class="val">9</span></div><div class="trow"><span class="fill " style="width:32%"></span><span class="chip" style="width:17px;height:17px;border-radius:5px"><img src="youtube.svg" alt=""/></span><span class="name">YouTube</span><span class="val">9</span></div></div><div class="foot">VIEW ALL</div></div>
+      <div class="panel"><div class="ph"><span class="tab">Outcomes</span><span class="tab off">Errors</span><span class="u">RUNS</span></div>
+        <div class="body"><div class="trow"><span class="fill ok" style="width:100%"></span><span class="name">Completed</span><span class="val">71</span></div><div class="trow"><span class="fill " style="width:20%"></span><span class="name">No new items</span><span class="val">14</span></div><div class="trow"><span class="fill warn" style="width:11%"></span><span class="name">Rate limited</span><span class="val">8</span></div><div class="trow"><span class="fill err" style="width:5%"></span><span class="name">Failed</span><span class="val">3</span></div></div><div class="foot">DETAILS</div></div>
+      <div class="panel"><div class="ph"><span class="tab">Triggers</span><span class="tab off">Schedule</span><span class="u">RUNS</span></div>
+        <div class="body"><div class="trow"><span class="fill " style="width:100%"></span><span class="name">Scheduled</span><span class="val">64</span></div><div class="trow"><span class="fill " style="width:28%"></span><span class="name">App launch</span><span class="val">18</span></div><div class="trow"><span class="fill " style="width:17%"></span><span class="name">Manual</span><span class="val">11</span></div><div class="trow"><span class="fill " style="width:5%"></span><span class="name">Retry</span><span class="val">3</span></div></div><div class="foot">DETAILS</div></div>
+    </div>
+  </div></body></html>

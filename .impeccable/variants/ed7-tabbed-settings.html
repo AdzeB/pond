@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ED7 — Tabbed settings rail (Better Stack style)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: flex;min-height: 100vh;
+    font: 13px/1.45 -apple-system, "SF Pro Text", Inter, sans-serif;color: #1b1b1a; 
+    background: #fbfbfa;
+  }
+
+  /* chart canvas */
+  .canvas { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+  .canvas-top {
+    display: flex; gap: 12px;align-items: center; 
+    padding: 12px 20px; background: #fff;border-bottom: 1px solid #ececea;
+  }
+  .canvas-top input {
+    flex: 1; 
+    padding: 3px 6px; margin-left: -6px; 
+    font-family: inherit; font-size: 14px; font-weight: 600;outline: 0;background: none;border: 0; border-radius: 6px;
+  }
+  .canvas-top input:hover, .canvas-top input:focus { background: #f4f4f3; }
+  .range { display: inline-flex; gap: 6px; align-items: center; padding: 5px 10px; font-size: 12px; font-weight: 520; background: #f4f4f3; border-radius: 7px; }
+  .range .chev { font-size: 9px; color: #a3a39f; }
+  .stage { display: flex; flex: 1; flex-direction: column; padding: 24px 28px; }
+  .headline { display: flex; gap: 10px; align-items: baseline; }
+  .headline .big { font-size: 24px; font-weight: 640; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .headline .sub { font-size: 12px; color: #8a8a86; }
+  .plot { position: relative; flex: 1; min-height: 220px; margin-top: 16px; }
+  svg.chart { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .legend { display: flex; gap: 14px; margin-top: 12px; font-size: 11px; color: #55554f; }
+  .legend i { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 2px; }
+
+  /* tabbed rail */
+  .rail {
+    display: flex; flex: none; flex-direction: column;
+    width: 296px; background: #fff;border-left: 1px solid #ececea;
+  }
+  .rail-head { padding: 14px 16px 0; }
+  .rail-head b { font-size: 13px; font-weight: 600; }
+  .tabs {
+    display: flex; gap: 2px; margin-top: 10px;
+    border-bottom: 1px solid #f0f0ee;
+  }
+  .tab {
+    padding: 7px 10px 9px; margin-bottom: -1px;font-size: 12px; color: #8a8a86; cursor: pointer;
+    border-bottom: 2px solid transparent;
+  }
+  .tab.on { font-weight: 550; color: #1b1b1a; border-bottom-color: #1b1b1a; }
+
+  .rail-body { flex: 1; padding: 16px; overflow-y: auto; }
+  .rail-label { margin-bottom: 8px; font-size: 10.5px; font-weight: 600; color: #9c9c98; text-transform: uppercase; letter-spacing: .04em; }
+  .viz-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  .viz {
+    display: flex; flex-direction: column; gap: 6px;align-items: center; 
+    padding: 13px 4px 10px; 
+    font-size: 11px; color: #6f6f6c; cursor: pointer; background: #fff;border: 1px solid #ececea; border-radius: 10px;
+  }
+  .viz:hover { background: #f9f9f8; }
+  .viz.on { font-weight: 550; color: #1b1b1a; border-color: #1b1b1a; box-shadow: 0 0 0 1px #1b1b1a inset; }
+  .viz svg { height: 22px; }
+  .viz.off { pointer-events: none; opacity: .35; }
+
+  .field { display: flex; align-items: center; justify-content: space-between; min-height: 36px; }
+  .field .key { font-size: 12.5px; color: #55554f; }
+  .select { display: inline-flex; gap: 6px; align-items: center; padding: 5px 10px; font-size: 12px; font-weight: 520; cursor: pointer; background: #f4f4f3; border-radius: 7px; }
+  .select .chev { font-size: 9px; color: #a3a39f; }
+
+  .compare {
+    display: flex; gap: 8px; align-items: center; 
+    padding: 10px 12px; margin-top: 4px; margin-bottom: 16px;font-size: 12px; color: #55554f;background: #f7f7f6; border-radius: 10px;
+  }
+  .switch { position: relative; flex: none; width: 30px; height: 18px; margin-left: auto; cursor: pointer; background: #d9d9d6; border-radius: 9px; }
+  .switch::after { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; content: ""; background: #fff; border-radius: 50%; }
+
+  .rail-foot { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #f0f0ee; }
+  .rail-foot button { flex: 1; padding: 8px 0; font: inherit; cursor: pointer; border-radius: 8px; }
+  .ghost { color: #55554f; background: #fff; border: 1px solid #e0e0dd; }
+  .primary { font-weight: 550; color: #fff; background: #1b1b1a; border: 0; }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="canvas-top">
+    <input value="" placeholder="Saves by day, split by source" />
+    <span class="range">Last 30 days <span class="chev">▾</span></span>
+  </div>
+  <div class="stage">
+    <div class="headline">
+      <span class="big">1,204</span>
+      <span class="sub">saves · last 30 days</span>
+    </div>
+    <div class="plot">
+      <svg class="chart" viewBox="0 0 760 240" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="b1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0797b9" stop-opacity=".3"/><stop offset="1" stop-color="#0797b9" stop-opacity=".02"/></linearGradient>
+          <linearGradient id="b2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5b5bd6" stop-opacity=".26"/><stop offset="1" stop-color="#5b5bd6" stop-opacity=".02"/></linearGradient>
+        </defs>
+        <g stroke="#eeeeec"><line x1="0" y1="60" x2="760" y2="60"/><line x1="0" y1="120" x2="760" y2="120"/><line x1="0" y1="180" x2="760" y2="180"/></g>
+        <path d="M0 176 C90 168 130 104 210 112 C290 120 340 66 430 74 C520 82 590 42 670 36 C710 33 745 42 760 32 L760 240 L0 240 Z" fill="url(#b1)"/>
+        <path d="M0 176 C90 168 130 104 210 112 C290 120 340 66 430 74 C520 82 590 42 670 36 C710 33 745 42 760 32" fill="none" stroke="#0797b9" stroke-width="2"/>
+        <path d="M0 210 C100 206 170 192 260 196 C350 200 460 182 550 186 C640 190 720 178 760 180 L760 240 L0 240 Z" fill="url(#b2)"/>
+        <path d="M0 210 C100 206 170 192 260 196 C350 200 460 182 550 186 C640 190 720 178 760 180" fill="none" stroke="#5b5bd6" stroke-width="2"/>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i style="background:#0797b9"></i>Twitter</span>
+      <span><i style="background:#5b5bd6"></i>Cosmos</span>
+      <span><i style="background:#ab4aba"></i>Instagram</span>
+    </div>
+  </div>
+</div>
+
+<aside class="rail">
+  <div class="rail-head">
+    <b>Chart settings</b>
+    <div class="tabs">
+      <span class="tab on">Chart</span>
+      <span class="tab">Data</span>
+      <span class="tab">Axes</span>
+      <span class="tab">Filters</span>
+    </div>
+  </div>
+
+  <div class="rail-body">
+    <div class="rail-label">Visualize as</div>
+    <div class="viz-grid">
+      <div class="viz on">
+        <svg width="30" height="22"><path d="M1 16 C7 14 10 6 16 8 C22 10 26 3 29 3 L29 21 L1 21 Z" fill="currentColor" opacity=".3"/><path d="M1 16 C7 14 10 6 16 8 C22 10 26 3 29 3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        Area
+      </div>
+      <div class="viz">
+        <svg width="30" height="22"><path d="M1 16 C7 14 10 6 16 8 C22 10 26 3 29 3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        Line
+      </div>
+      <div class="viz">
+        <svg width="28" height="22"><g fill="currentColor"><rect x="1" y="10" width="5" height="12" rx="1.5"/><rect x="8.5" y="4" width="5" height="18" rx="1.5"/><rect x="16" y="12" width="5" height="10" rx="1.5"/><rect x="23.5" y="7" width="4" height="15" rx="1.5"/></g></svg>
+        Bars
+      </div>
+      <div class="viz">
+        <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7.5" fill="none" stroke="currentColor" stroke-width="4" opacity=".3"/><path d="M11 3.5 A7.5 7.5 0 0 1 18.2 8.7" fill="none" stroke="currentColor" stroke-width="4"/></svg>
+        Ring
+      </div>
+      <div class="viz">
+        <svg width="30" height="20"><g fill="currentColor"><rect x="1" y="1" width="8" height="5" rx="1" opacity=".35"/><rect x="11" y="1" width="8" height="5" rx="1" opacity=".9"/><rect x="21" y="1" width="8" height="5" rx="1" opacity=".55"/><rect x="1" y="8" width="8" height="5" rx="1" opacity=".75"/><rect x="11" y="8" width="8" height="5" rx="1" opacity=".25"/><rect x="21" y="8" width="8" height="5" rx="1" opacity="1"/><rect x="1" y="15" width="8" height="5" rx="1" opacity=".5"/><rect x="11" y="15" width="8" height="5" rx="1" opacity=".65"/><rect x="21" y="15" width="8" height="5" rx="1" opacity=".2"/></g></svg>
+        Heatmap
+      </div>
+      <div class="viz"><span style="font-size: 15px; font-weight: 640;">128</span>Number</div>
+      <div class="viz">
+        <svg width="26" height="20"><g fill="currentColor"><rect x="1" y="2" width="11" height="3" rx="1"/><rect x="1" y="8.5" width="17" height="3" rx="1"/><rect x="1" y="15" width="8" height="3" rx="1"/></g></svg>
+        Table
+      </div>
+      <div class="viz off">
+        <svg width="22" height="22" viewBox="0 0 22 22"><path d="M4 17 A9 9 0 1 1 18 17" fill="none" stroke="currentColor" stroke-width="3.6" opacity=".3"/><path d="M4 17 A9 9 0 0 1 6.6 6.6" fill="none" stroke="currentColor" stroke-width="3.6"/></svg>
+        Gauge
+      </div>
+    </div>
+
+    <div class="compare">Compare with previous period <span class="switch"></span></div>
+
+    <div class="field"><span class="key">Data</span><span class="select">Library saves <span class="chev">▾</span></span></div>
+    <div class="field"><span class="key">Measure</span><span class="select">Saves <span class="chev">▾</span></span></div>
+    <div class="field"><span class="key">Slice by</span><span class="select">Day <span class="chev">▾</span></span></div>
+    <div class="field"><span class="key">Segment by</span><span class="select">Source <span class="chev">▾</span></span></div>
+  </div>
+
+  <div class="rail-foot">
+    <button class="ghost">Cancel</button>
+    <button class="primary">Save</button>
+  </div>
+</aside>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { IconChevronRightOutline18 as Chevron } from "@pond/icons/outline/18";
-import { Toolbar } from "@pond/ui";
+import { Toggle, ToggleGroup } from "@pond/ui";
 import { useMemo, useState } from "react";
 import {
   dayBucket,
@@ -56,20 +56,22 @@ export function RecentRuns({
   return (
     <div className={styles.runs}>
       <div className={styles["runs-header"]}>
-        <Toolbar.Root className={styles.segmented}>
-          <Toolbar.Group>
-            {FILTERS.map(({ id, label }) => (
-              <Toolbar.Button
-                key={id}
-                className={styles["segment-button"]}
-                data-active={filter === id ? "" : undefined}
-                onClick={() => setFilter(id)}
-              >
-                {label}
-              </Toolbar.Button>
-            ))}
-          </Toolbar.Group>
-        </Toolbar.Root>
+        <ToggleGroup
+          value={[filter]}
+          aria-label="Filter runs"
+          className={styles.segmented}
+          onValueChange={(next) => {
+            // Single-select: ignore the deselect-to-empty gesture.
+            const pick = next[0] as Filter | undefined;
+            if (pick) setFilter(pick);
+          }}
+        >
+          {FILTERS.map(({ id, label }) => (
+            <Toggle key={id} value={id} size="sm">
+              {label}
+            </Toggle>
+          ))}
+        </ToggleGroup>
       </div>
 
       <div className={styles["table-header"]}>

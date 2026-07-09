@@ -111,4 +111,5 @@ export type MenuActionId =
   | "library.move"
   | "developer.restart-api"
   | "developer.open-logs"
-  | "developer.ipc-inspector";
+  | "developer.ipc-inspector"
+  | "developer.dock-playground";

@@ -1,6 +1,7 @@
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
+  type CSSProperties,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -15,16 +16,17 @@ import { NavContent } from "@/components/library-dock-nav-content";
 import { NewContent } from "@/components/library-dock-new-content";
 import { OptionsContent } from "@/components/library-dock-options-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
+import { SourcesContent } from "@/components/library-dock-sources-content";
 import { SearchComposer } from "@/components/search-bar";
 import { deleteSelectionForever, isAllSelected } from "@/lib/save/selection";
-import { buildDockMotion } from "@/lib/ui/motion";
+import { buildDockMotion, useMotionScaleFactor } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
 import { clearAsk, useAskResult } from "@/stores/ask-store";
+import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
   useViewFilteredCount,
   useViewMode,
 } from "@/stores/library-view-context";
-import { newSave, useNewSaveOpen } from "@/stores/new-save";
 import { selection, useSelectionSize } from "@/stores/selection";
 import { useDockActions } from "./lib/actions";
 import { type DockContextValue, DockProvider } from "./lib/context";
@@ -39,7 +41,19 @@ interface RootProps {
   preview?: DockPreview;
 }
 
-type DockMode = "nav" | "compose" | "search" | "options" | "library";
+// Dock-mode actions are plain store calls, so they're defined once at module
+// level and stay referentially stable without useCallback.
+const openAsk = () => dockMode.open("ask");
+const openSearch = () => dockMode.open("search");
+const openNew = () => dockMode.open("new");
+const openOptions = () => dockMode.open("options");
+const openLibrary = () => dockMode.open("library");
+const openSources = () => dockMode.open("sources");
+const closeToNav = () => dockMode.close();
+const clearResults = () => {
+  clearAsk();
+  dockMode.close();
+};
 
 function Root({ preview }: RootProps) {
   const selectionSize = useSelectionSize();
@@ -48,64 +62,71 @@ function Root({ preview }: RootProps) {
   const ask = useAskResult();
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
-  const [mode, setMode] = useState<DockMode>("nav");
-  const newOpen = useNewSaveOpen();
+  const mode = useDockMode();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const inTrash = viewMode === "trash";
 
   const pillRef = useRef<HTMLDivElement | null>(null);
   // Family (connectkit) morph: the viewport sizes to the active view's content;
-  // we write that measured size onto the pill, which transitions its real
-  // width/height via CSS (see .pill). Content is never scaled/distorted. First
-  // paint is measured before paint (useLayoutEffect) so there's no grow-in on
-  // mount, and CSS only transitions on subsequent size changes.
-  const viewportRef = useRef<HTMLDivElement | null>(null);
+  // we animate the pill's real width/height to that measured size with a
+  // motion spring (pillTransition), so a mid-flight view change retargets
+  // smoothly instead of restarting. Content is never scaled/distorted.
   const [bounds, setBounds] = useState<{
     width: number;
     height: number;
   } | null>(null);
 
-  const openAsk = useCallback(() => setMode("compose"), []);
-  const closeAsk = useCallback(() => setMode("nav"), []);
-  const openSearch = useCallback(() => setMode("search"), []);
-  const closeSearch = useCallback(() => setMode("nav"), []);
-  const openNew = useCallback(() => newSave.open(), []);
-  const closeNew = useCallback(() => newSave.set(false), []);
-  const openOptions = useCallback(() => setMode("options"), []);
-  const closeOptions = useCallback(() => setMode("nav"), []);
-  const openLibrary = useCallback(() => setMode("library"), []);
-  const closeLibrary = useCallback(() => setMode("nav"), []);
-  const closeMenuView = useCallback(() => {
-    newSave.set(false);
-    setMode("nav");
+  // The very first measurement must apply instantly (the pill starts at 0x0
+  // before the viewport is measured); only later size changes animate.
+  const hasMeasured = useRef(false);
+  const isFirstMeasure = bounds !== null && !hasMeasured.current;
+  useEffect(() => {
+    if (bounds) hasMeasured.current = true;
+  }, [bounds]);
+
+  // Measure via a callback ref (not a mount effect): the dock renders null on
+  // some routes (e.g. /settings) without unmounting, so the viewport DOM is
+  // torn down and recreated while the component stays alive. A ref callback
+  // re-measures and re-observes each new element; a mount-only effect would
+  // keep watching the detached node and leave `bounds` stuck at 0x0.
+  const viewportObserver = useRef<ResizeObserver | null>(null);
+  const viewportRef = useCallback((el: HTMLDivElement | null) => {
+    viewportObserver.current?.disconnect();
+    viewportObserver.current = null;
+    if (!el) return;
+    const measure = () =>
+      setBounds({ width: el.offsetWidth, height: el.offsetHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    viewportObserver.current = ro;
   }, []);
-  const clearResults = useCallback(() => {
-    clearAsk();
-    setMode("nav");
-  }, []);
+
+  // Remember the pill's width while resting in the nav view so card views can
+  // match the dock's footprint (the pill then morphs only vertically). Exposed
+  // to the cards as --dock-card-width on the viewport.
+  const [navWidth, setNavWidth] = useState<number | null>(null);
 
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
 
+  // Priority: an active selection commandeers the pill, then whichever surface
+  // the user opened, then the ask status pill, then the resting nav.
   const liveView: DockView =
     selectionSize > 0
       ? "selection"
-      : newOpen
-        ? "new"
-        : mode === "compose"
-          ? "ask"
-          : mode === "search"
-            ? "search"
-            : mode === "options"
-              ? "options"
-              : mode === "library"
-                ? "library"
-                : ask.active
-                  ? "status"
-                  : "nav";
+      : mode !== "nav"
+        ? mode
+        : ask.active
+          ? "status"
+          : "nav";
   const view = preview?.view ?? liveView;
-  const isMenuView = view === "new" || view === "options" || view === "library";
+  const isMenuView =
+    view === "new" ||
+    view === "options" ||
+    view === "library" ||
+    view === "sources";
 
   const effSelectionSize = preview?.selectionSize ?? selectionSize;
   const effFilteredCount = preview
@@ -131,26 +152,8 @@ function Root({ preview }: RootProps) {
     view === "search" ||
     view === "new" ||
     view === "options" ||
-    view === "library";
-
-  // Measure the viewport (which sizes to the active view) and drive the pill's
-  // width/height to match. Runs synchronously on every view change (so the box
-  // starts morphing the same frame the content swaps, no lag) and via a
-  // ResizeObserver for in-view growth (e.g. typing tokens in search).
-  useLayoutEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
-    const measure = () =>
-      setBounds({ width: el.offsetWidth, height: el.offsetHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useLayoutEffect(() => {
-    const el = viewportRef.current;
-    if (el) setBounds({ width: el.offsetWidth, height: el.offsetHeight });
-  }, []);
+    view === "library" ||
+    view === "sources";
 
   const [docVisible, setDocVisible] = useState(
     () => typeof document === "undefined" || !document.hidden,
@@ -167,15 +170,21 @@ function Root({ preview }: RootProps) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        closeMenuView();
+        closeToNav();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [preview, isMenuView, closeMenuView]);
+  }, [preview, isMenuView]);
 
+  useLayoutEffect(() => {
+    if (view === "nav" && bounds) setNavWidth(bounds.width);
+  }, [view, bounds]);
+
+  const timeScale = useMotionScaleFactor();
   const { pillTransition, swapTransition, swap } = buildDockMotion(
     reduceMotion ?? false,
+    timeScale,
   );
 
   const context = useMemo<DockContextValue>(
@@ -189,15 +198,17 @@ function Root({ preview }: RootProps) {
       thinking,
       isCard,
       openAsk,
-      closeAsk,
+      closeAsk: closeToNav,
       openSearch,
-      closeSearch,
+      closeSearch: closeToNav,
       openNew,
-      closeNew,
+      closeNew: closeToNav,
       openOptions,
-      closeOptions,
+      closeOptions: closeToNav,
       openLibrary,
-      closeLibrary,
+      closeLibrary: closeToNav,
+      openSources,
+      closeSources: closeToNav,
       clearResults,
       destructive,
       runSelectionTask,
@@ -218,17 +229,6 @@ function Root({ preview }: RootProps) {
       isTabActive,
       thinking,
       isCard,
-      openAsk,
-      closeAsk,
-      openSearch,
-      closeSearch,
-      openNew,
-      closeNew,
-      openOptions,
-      closeOptions,
-      openLibrary,
-      closeLibrary,
-      clearResults,
       destructive,
       runSelectionTask,
       openTagMenu,
@@ -254,20 +254,28 @@ function Root({ preview }: RootProps) {
           type="button"
           aria-label="Close"
           className={styles.backdrop}
-          onClick={closeMenuView}
+          onClick={closeToNav}
         />
       ) : null}
-      <div
+      <motion.div
         ref={pillRef}
         className={styles.pill}
-        style={
-          bounds ? { width: bounds.width, height: bounds.height } : undefined
-        }
+        initial={false}
+        // Must always be an object: motion ignores an `animate` prop that
+        // mounts as undefined and only later becomes a target, which would
+        // leave the pill collapsed at 0x0 (and the dock invisible).
+        animate={bounds ? { width: bounds.width, height: bounds.height } : {}}
+        transition={isFirstMeasure ? { duration: 0 } : pillTransition}
       >
         <div
           ref={viewportRef}
           className={styles.viewport}
           data-card={isCard || undefined}
+          style={
+            navWidth != null
+              ? ({ "--dock-card-width": `${navWidth}px` } as CSSProperties)
+              : undefined
+          }
         >
           <AnimatePresence initial={false}>
             {view === "selection" ? (
@@ -281,7 +289,7 @@ function Root({ preview }: RootProps) {
               >
                 <AskComposer
                   autoFocus
-                  onCollapse={closeAsk}
+                  onCollapse={closeToNav}
                   onClear={clearAsk}
                 />
               </motion.div>
@@ -292,7 +300,7 @@ function Root({ preview }: RootProps) {
                 {...swap}
                 transition={swapTransition}
               >
-                <SearchComposer autoFocus onCollapse={closeSearch} />
+                <SearchComposer autoFocus onCollapse={closeToNav} />
               </motion.div>
             ) : view === "status" ? (
               <motion.div
@@ -315,6 +323,10 @@ function Root({ preview }: RootProps) {
               <motion.div key="library" {...swap} transition={swapTransition}>
                 <LibraryContent />
               </motion.div>
+            ) : view === "sources" ? (
+              <motion.div key="sources" {...swap} transition={swapTransition}>
+                <SourcesContent />
+              </motion.div>
             ) : (
               <motion.div key="nav" {...swap} transition={swapTransition}>
                 <NavContent />
@@ -322,7 +334,7 @@ function Root({ preview }: RootProps) {
             )}
           </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       <ConfirmDialog
         open={confirmDelete}

@@ -1,6 +1,6 @@
 import { SOURCES, type Source } from "@pond/schema/db";
 import { pipelineEvents, type SyncRunEvent } from "@pond/schema/events";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 import { getDb } from "../../db";
 import type { QueryHandlerMap } from "../helpers";
 
@@ -115,6 +115,33 @@ export const syncHistoryQueries: QueryHandlerMap = {
       .where(eq(pipelineEvents.kind, "sync.run.completed"))
       .orderBy(desc(pipelineEvents.ts))
       .limit(limit)
+      .all();
+
+    return { runs: rows.map(toEntry) };
+  },
+
+  // Every sync run inside a rolling window, newest first. Powers the insight
+  // dashboard, which aggregates in the renderer; capped like sync.stats so a
+  // dense history can't flood the IPC channel.
+  async "sync.runs"(params) {
+    const rawDays = Number(params.days ?? 7);
+    const days = Number.isFinite(rawDays)
+      ? Math.min(Math.max(Math.trunc(rawDays), 1), 90)
+      : 7;
+    const sinceMs = Date.now() - days * 86_400_000;
+
+    const db = await getDb();
+    const rows = db
+      .select()
+      .from(pipelineEvents)
+      .where(
+        and(
+          eq(pipelineEvents.kind, "sync.run.completed"),
+          gte(pipelineEvents.ts, new Date(sinceMs)),
+        ),
+      )
+      .orderBy(desc(pipelineEvents.ts))
+      .limit(2000)
       .all();
 
     return { runs: rows.map(toEntry) };

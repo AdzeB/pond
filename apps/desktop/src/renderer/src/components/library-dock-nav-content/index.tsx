@@ -2,12 +2,14 @@ import {
   IconSparkleFill18 as Ask,
   IconArchivePlusFill18 as New,
   IconGearFill18 as SettingsIcon,
+  IconGlobeFill18 as SourcesIcon,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
+import { Fragment } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
@@ -72,25 +74,38 @@ export function NavContent() {
       {NAV_TABS.map((tab) => {
         const active = dock.isTabActive(tab.id);
         return (
-          <Link
-            key={tab.label}
-            to={tab.to}
-            params={tab.params}
-            className={styles.item}
-            aria-label={tab.label}
-            data-status={active ? "active" : undefined}
-            aria-current={active ? "page" : undefined}
-          >
-            {active ? (
-              <motion.span
-                layoutId="dock-active-tab"
-                className={styles.indicator}
-                transition={gentleSpring}
-                aria-hidden
-              />
+          <Fragment key={tab.label}>
+            <Link
+              to={tab.to}
+              params={tab.params}
+              className={styles.item}
+              aria-label={tab.label}
+              data-status={active ? "active" : undefined}
+              aria-current={active ? "page" : undefined}
+            >
+              {active ? (
+                <motion.span
+                  layoutId="dock-active-tab"
+                  className={styles.indicator}
+                  transition={gentleSpring}
+                  aria-hidden
+                />
+              ) : null}
+              {tab.icon}
+            </Link>
+            {tab.id === "library" ? (
+              <Tooltip label="Sources" side="top">
+                <button
+                  type="button"
+                  className={styles.item}
+                  aria-label="Sources"
+                  onClick={dock.openSources}
+                >
+                  <SourcesIcon />
+                </button>
+              </Tooltip>
             ) : null}
-            {tab.icon}
-          </Link>
+          </Fragment>
         );
       })}
 

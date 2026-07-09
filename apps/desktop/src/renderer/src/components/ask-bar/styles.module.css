@@ -4,7 +4,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 400px;
+  width: var(--dock-card-width, 400px);
   max-height: 72vh;
   padding: 6px;
 }

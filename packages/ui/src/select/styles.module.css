@@ -53,11 +53,16 @@
   composes: backdrop from "../shared/popup.module.css";
 }
 
+/*
+ * At least as wide as the trigger, growing to fit the widest item (a narrow
+ * trigger must not squeeze long option labels into wrapping), capped at the
+ * viewport where labels fall back to ellipsis.
+ */
 .popup {
   composes: popup from "../shared/popup.module.css";
-  width: var(--anchor-width);
-  min-width: min-content;
-  max-width: var(--anchor-width);
+  width: var(--popup-width, max-content);
+  min-width: var(--anchor-width);
+  max-width: var(--available-width);
 }
 
 .arrow {

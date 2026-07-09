@@ -1,0 +1,17 @@
+.root {
+  box-sizing: border-box;
+  display: inline-flex;
+  gap: 2px;
+  align-items: stretch;
+  padding: 2px;
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
+
+  &[data-orientation="vertical"] {
+    flex-direction: column;
+  }
+
+  &[data-disabled] {
+    opacity: 0.5;
+  }
+}

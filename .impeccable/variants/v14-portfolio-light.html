@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Portfolio hero · light</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { max-width:680px; padding:48px 32px 80px; margin:0 auto; }
+h1 { font-size:20px; font-weight:650; letter-spacing:-.02em; }
+.big { display:flex; gap:10px; align-items:baseline; margin-top:10px; }
+.bv { font-size:32px; font-weight:700; font-variant-numeric:tabular-nums; letter-spacing:-.03em; }
+.bd { font-size:13px; font-weight:600; color:var(--ok); } .bs { margin-top:3px; font-size:12.5px; color:var(--ink2); }
+.hdr { display:flex; align-items:flex-end; } .hdr .actions { display:flex; gap:8px; margin-left:auto; }
+.rows { margin-top:24px; }
+.row { display:flex; gap:12px; align-items:center; padding:12px 16px; border-top:1px solid var(--hair); }
+.row:first-child { border-top:0; } .row:hover { background:var(--hov); }
+.rname { width:96px; font-size:13px; font-weight:550; } .rkind { font-size:11px; color:var(--ink3); }
+.rright { display:flex; gap:18px; align-items:center; margin-left:auto; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink3); }
+.rright b { font-weight:600; color:var(--ink); }
+.addrow { padding:11px 16px; font-size:12.5px; color:var(--ink3); cursor:pointer; border-top:1px solid var(--hair); }
+.addrow:hover { color:var(--ink); }
+.cards { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-top:20px; }
+.card { padding:14px 16px; } .ct { font-size:11.5px; color:var(--ink3); } .cv { margin-top:3px; font-size:16px; font-weight:650; font-variant-numeric:tabular-nums; }
+.cs { margin-top:1px; font-size:11px; color:var(--ink3); }</style></head>
+<body class="light"><div class="wrap">
+    <div class="hdr"><div><h1>Sources</h1>
+      <div class="big"><span class="bv">5,056</span><span class="bd">+12 today</span></div>
+      <div class="bs">items collected from 7 sources · all healthy · last run 2m ago</div></div>
+      <div class="actions"><button class="btn">Pause all</button><button class="btn primary">Sync all</button></div></div>
+    
+    <div class="rows panel">
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="twitter.svg" alt=""/></span>
+      <div><div class="rname">Twitter</div><div class="rkind">bookmarks & likes</div></div>
+      <span style="font-size:12px">Synced <span style="color:var(--ink3)">18m ago</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 13.6 L13.7 14.1 L20.1 15.5 L26.5 9.4 L32.8 10.6 L39.2 7.6 L45.5 8.1 L51.9 7.2 L58.3 9.2 L64.6 7.6 L71.0 2.2" stroke="#3c9a52" stroke-width="1.3" stroke-linecap="round"/></svg><b>2,381</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="cosmos.svg" alt=""/></span>
+      <div><div class="rname">Cosmos</div><div class="rkind">saved elements</div></div>
+      <span style="font-size:12px"><span style="color:var(--run);font-weight:550">Syncing</span> <span style="color:var(--ink3)">· 12 new</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 14.4 L13.7 12.6 L20.1 12.3 L26.5 12.6 L32.8 11.9 L39.2 7.8 L45.5 6.2 L51.9 5.2 L58.3 8.8 L64.6 3.9 L71.0 5.3" stroke="#4472d4" stroke-width="1.3" stroke-linecap="round"/></svg><b>312</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="pinterest.svg" alt=""/></span>
+      <div><div class="rname">Pinterest</div><div class="rkind">boards & pins</div></div>
+      <span style="font-size:12px"><span style="color:var(--warn);font-weight:550">Rate limited</span> <span style="color:var(--ink3)">· resumes 1:20</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 15.2 L13.7 11.1 L20.1 15.0 L26.5 9.8 L32.8 13.3 L39.2 8.1 L45.5 10.3 L51.9 9.3 L58.3 8.4 L64.6 6.2 L71.0 2.5" stroke="#b57e1c" stroke-width="1.3" stroke-linecap="round"/></svg><b>1,104</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="instagram.svg" alt=""/></span>
+      <div><div class="rname">Instagram</div><div class="rkind">saved posts</div></div>
+      <span style="font-size:12px">Synced <span style="color:var(--ink3)">1h ago</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 15.9 L13.7 15.7 L20.1 11.8 L26.5 13.0 L32.8 8.6 L39.2 8.4 L45.5 8.4 L51.9 7.4 L58.3 8.0 L64.6 8.5 L71.0 5.6" stroke="#3c9a52" stroke-width="1.3" stroke-linecap="round"/></svg><b>694</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="arena.svg" alt=""/></span>
+      <div><div class="rname">Are.na</div><div class="rkind">channels</div></div>
+      <span style="font-size:12px">Synced <span style="color:var(--ink3)">2h ago</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 16.7 L13.7 14.2 L20.1 14.5 L26.5 10.2 L32.8 9.9 L39.2 8.7 L45.5 6.4 L51.9 5.5 L58.3 7.6 L64.6 4.8 L71.0 2.7" stroke="#3c9a52" stroke-width="1.3" stroke-linecap="round"/></svg><b>245</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="tiktok.svg" alt=""/></span>
+      <div><div class="rname">TikTok</div><div class="rkind">favorites</div></div>
+      <span style="font-size:12px">Synced <span style="color:var(--ink3)">3h ago</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 17.5 L13.7 12.7 L20.1 11.3 L26.5 13.4 L32.8 11.2 L39.2 9.0 L45.5 10.5 L51.9 9.5 L58.3 7.3 L64.6 7.1 L71.0 5.8" stroke="#3c9a52" stroke-width="1.3" stroke-linecap="round"/></svg><b>188</b></span>
+    </div>
+    <div class="row"><span class="chip" style="width:24px;height:24px;border-radius:7px"><img src="youtube.svg" alt=""/></span>
+      <div><div class="rname">YouTube</div><div class="rkind">watch later</div></div>
+      <span style="font-size:12px">Synced <span style="color:var(--ink3)">5h ago</span></span>
+      <span class="rright"><svg class="spark" width="72" height="20" viewBox="0 0 72 20" fill="none"><path d="M1.0 13.0 L7.4 12.3 L13.7 11.3 L20.1 14.0 L26.5 10.6 L32.8 12.5 L39.2 9.3 L45.5 8.6 L51.9 7.6 L58.3 6.9 L64.6 3.4 L71.0 2.9" stroke="#3c9a52" stroke-width="1.3" stroke-linecap="round"/></svg><b>132</b></span>
+    </div><div class="addrow">+ Connect Reddit or Threads</div></div>
+  </div></body></html>

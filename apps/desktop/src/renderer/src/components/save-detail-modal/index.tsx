@@ -21,7 +21,17 @@ export function SaveModal() {
   const save = useSave(renderId);
   useTrackVisit(id);
 
-  if (!save) return null;
+  // Before the first selection there's nothing to render, but the (closed)
+  // root must still mount: Base UI only plays enter transitions when `open`
+  // flips while the root is mounted, so a root that mounts already-open
+  // snaps into place with no animation.
+  if (!save) {
+    return (
+      <Dialog.Root open={false}>
+        <Dialog.Portal />
+      </Dialog.Root>
+    );
+  }
 
   const title = save.title ?? save.author ?? "Untitled";
   const timestamp = formatTimestampLine(save.savedAt ?? save.createdAt);

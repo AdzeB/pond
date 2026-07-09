@@ -1,12 +1,19 @@
 import {
+  IconChartActivity2Fill18 as Analytics,
   IconArchiveContent2Fill18 as Library,
-  IconGlobeFill18 as Sources,
   IconTrash2ContentFill18 as Trash,
 } from "@pond/icons/fill/18";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-export type DockTab = "library" | "sources" | "trash" | "settings";
+// "sources" is a dock view (the sources tray), not a route — it lives in
+// DockTab so previews can still mark it active, but not in NAV_TABS.
+export type DockTab =
+  | "library"
+  | "sources"
+  | "analytics"
+  | "trash"
+  | "settings";
 
 interface NavTab {
   id: DockTab;
@@ -26,11 +33,11 @@ export const NAV_TABS: readonly NavTab[] = [
     match: (p) => p === "/",
   },
   {
-    id: "sources",
-    label: "Sources",
-    to: "/sources",
-    icon: <Sources />,
-    match: (p) => p === "/sources",
+    id: "analytics",
+    label: "Analytics",
+    to: "/analytics",
+    icon: <Analytics />,
+    match: (p) => p === "/analytics",
   },
   {
     id: "trash",

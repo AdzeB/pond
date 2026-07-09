@@ -1,11 +1,12 @@
-/* Flat "view options" panel morphed out of the pill. Groups sit at a
-   comfortable menu width with a small internal padding; the pill supplies the
-   surface (radius + shadow), so no extra ring here. */
+/* Flat "view options" panel morphed out of the pill. Sized to the dock's
+   resting nav width (--dock-card-width, set on the dock viewport) so the pill
+   only morphs vertically, with a comfortable menu width as fallback; the pill
+   supplies the surface (radius + shadow), so no extra ring here. */
 .card {
   display: flex;
   flex-direction: column;
   gap: 0;
-  width: 280px;
+  width: var(--dock-card-width, 280px);
   padding: 4px;
 }
 

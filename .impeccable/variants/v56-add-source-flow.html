@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>V56 — Add source flow (Reddit)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #171717; background: #ececec; }
+  .stack { max-width: 560px; padding: 44px 20px 80px; margin: 0 auto; }
+
+  .kicker { margin: 0 4px 4px; font-size: 11px; font-weight: 700; color: #8f8f8f; text-transform: uppercase; letter-spacing: .07em; }
+  .note { margin: 0 4px 14px; font-size: 13px; line-height: 1.5; color: #616161; }
+  .note b { font-weight: 600; color: #171717; }
+  .gap { height: 44px; }
+
+  .dialog { position: relative; padding: 24px; background: #fff; border-radius: 16px; box-shadow: 0 14px 44px rgba(0,0,0,.13), 0 0 0 1px rgba(0,0,0,.05); }
+  .x { position: absolute; top: 18px; right: 20px; font-size: 15px; color: #a3a3a3; }
+  h1 { font-size: 16px; font-weight: 650; letter-spacing: -.01em; }
+  .desc { margin-top: 8px; font-size: 13px; line-height: 1.55; color: #737373; }
+  .desc b { font-weight: 550; color: #171717; }
+
+  /* picker rows */
+  .list { margin-top: 16px; border: 1px solid #ececec; border-radius: 12px; }
+  .row { display: flex; gap: 12px; align-items: center; padding: 13px 14px; }
+  .row + .row { border-top: 1px solid #f0f0f0; }
+  .row img { flex: none; width: 34px; height: 34px; border-radius: 9px; }
+  .row .t { font-size: 13px; font-weight: 550; }
+  .row .s { margin-top: 1px; font-size: 11.5px; color: #8f8f8f; }
+  .row .go { padding: 7px 13px; margin-left: auto; font-size: 12.5px; font-weight: 550; color: #171717; background: #fff; border: 1px solid #e4e4e4; border-radius: 9px; }
+  .row.hover { background: #fafafa; }
+  .already { margin-top: 12px; font-size: 11.5px; color: #8f8f8f; text-align: center; }
+
+  /* connection hero */
+  .hero { margin-top: 18px; overflow: hidden; border: 1px solid #ececec; border-radius: 12px; }
+  .heroTop { display: flex; align-items: center; justify-content: center; padding: 26px 0; background: #fff; }
+  .app { display: grid; place-items: center; width: 64px; height: 64px; background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.09), 0 0 0 1px rgba(0,0,0,.05); }
+  .app img { width: 34px; height: 34px; border-radius: 8px; }
+  .app.pond { background: linear-gradient(150deg,#eaf6ef,#d3ecdd); }
+  .app.pond span { font-size: 26px; }
+  .wire { width: 44px; height: 0; border-top: 1.5px dashed #d9d9d9; }
+  .wire.solid { border-top: 1.5px solid #bfe3cd; }
+  .link { display: grid; place-items: center; width: 40px; height: 40px; background: #fff; border-radius: 11px; box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.05); transform: rotate(45deg); }
+  .link span { display: grid; place-items: center; font-size: 14px; color: #525252; transform: rotate(-45deg); }
+  .heroCap { padding: 12px 16px; font-size: 12.5px; color: #737373; text-align: center; background: #fafafa; border-top: 1px solid #f0f0f0; }
+  .heroCap b { font-weight: 600; color: #171717; }
+  .spin { display: inline-block; width: 13px; height: 13px; border: 1.5px solid #dcdcdc; border-top-color: #737373; border-radius: 50%; animation: r 1s linear infinite; }
+  @keyframes r { to { transform: rotate(360deg); } }
+
+  .steps { margin-top: 16px; border: 1px solid #ececec; border-radius: 12px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 13px 14px; font-size: 12.5px; color: #737373; }
+  .step + .step { border-top: 1px solid #f0f0f0; }
+  .step .n { display: grid; flex: none; place-items: center; width: 20px; height: 20px; font-size: 11px; font-weight: 600; color: #525252; background: #f1f1f1; border-radius: 50%; }
+  .step.done .n { color: #2f9e57; background: #e7f5ec; }
+  .step.now { color: #171717; }
+  .step.now .n { color: #fff; background: #171717; }
+  .step b { font-weight: 550; color: #171717; }
+
+  .foot { display: flex; align-items: center; margin-top: 18px; }
+  .ghostlink { font-size: 12.5px; font-weight: 550; color: #8f8f8f; }
+  .foot .end { display: flex; gap: 9px; margin-left: auto; }
+  .btn { padding: 8px 14px; font-size: 12.5px; font-weight: 550; color: #171717; background: #fff; border: 1px solid #e0e0e0; border-radius: 9px; }
+  .btn.dark { color: #fff; background: #171717; border-color: #171717; }
+
+  /* progress */
+  .prog { padding: 14px; margin-top: 16px; border: 1px solid #ececec; border-radius: 12px; }
+  .prow { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12.5px; }
+  .prow b { font-weight: 600; }
+  .prow .pc { font-variant-numeric: tabular-nums; color: #737373; }
+  .pbar { height: 6px; overflow: hidden; background: #f0f0f0; border-radius: 99px; }
+  .pbar i { display: block; width: 34%; height: 100%; background: #171717; border-radius: 99px; }
+  .psub { margin-top: 8px; font-size: 11.5px; color: #8f8f8f; }
+</style>
+</head>
+<body>
+<div class="stack">
+
+  <div class="kicker">Step 1</div>
+  <p class="note">Clicking <b>Add New…</b> (or the ghost card) opens the picker — only what Pond supports and isn't connected yet.</p>
+  <div class="dialog">
+    <span class="x">✕</span>
+    <h1>Add a source</h1>
+    <p class="desc">Pond connects with your own account — you sign in once, in your browser, and the extension does the rest. No API keys.</p>
+    <div class="list">
+      <div class="row hover"><img src="reddit.svg" alt=""/><div><div class="t">Reddit</div><div class="s">Saved posts and upvotes</div></div><button class="go">Connect</button></div>
+      <div class="row"><img src="threads.svg" alt=""/><div><div class="t">Threads</div><div class="s">Saved threads</div></div><button class="go">Connect</button></div>
+      <div class="row"><img src="facebook.svg" alt=""/><div><div class="t">Facebook</div><div class="s">Saved items</div></div><button class="go">Connect</button></div>
+    </div>
+    <div class="already">Twitter, Pinterest, Instagram, Cosmos, Are.na, YouTube and TikTok are already connected.</div>
+  </div>
+
+  <div class="gap"></div>
+
+  <div class="kicker">Step 2</div>
+  <p class="note">Hitting <b>Connect</b> opens reddit.com in your browser and the dialog flips to a waiting state. Nothing to paste back — the extension hands the session to Pond when you're signed in.</p>
+  <div class="dialog">
+    <span class="x">✕</span>
+    <h1>Connect Reddit</h1>
+    <p class="desc">We opened <b>reddit.com</b> in your browser. Finish signing in there — this dialog will update on its own.</p>
+    <div class="hero">
+      <div class="heroTop">
+        <div class="app"><img src="reddit.svg" alt=""/></div>
+        <div class="wire"></div>
+        <div class="link"><span><span class="spin"></span></span></div>
+        <div class="wire"></div>
+        <div class="app pond"><span>◍</span></div>
+      </div>
+      <div class="heroCap">Waiting for you to sign in to <b>Reddit</b>…</div>
+    </div>
+    <div class="steps">
+      <div class="step done"><span class="n">✓</span><span><b>reddit.com opened</b> in your default browser</span></div>
+      <div class="step now"><span class="n">2</span><span><b>Sign in to Reddit</b> — same as any other day</span></div>
+      <div class="step"><span class="n">3</span><span>The Pond extension connects your session automatically</span></div>
+    </div>
+    <div class="foot">
+      <span class="ghostlink">Cancel</span>
+      <div class="end"><button class="btn">Reopen reddit.com ↗</button></div>
+    </div>
+  </div>
+
+  <div class="gap"></div>
+
+  <div class="kicker">Step 3</div>
+  <p class="note">The moment the session lands, the wire goes solid and the first sync starts — the dialog becomes the same settings dialog Twitter has.</p>
+  <div class="dialog">
+    <span class="x">✕</span>
+    <h1>Reddit connected</h1>
+    <p class="desc">Signed in as <b>u/raphaelsalaja</b>. First sync is running — items appear in your library as they land.</p>
+    <div class="hero">
+      <div class="heroTop">
+        <div class="app"><img src="reddit.svg" alt=""/></div>
+        <div class="wire solid"></div>
+        <div class="link"><span style="color:#2f9e57">✓</span></div>
+        <div class="wire solid"></div>
+        <div class="app pond"><span>◍</span></div>
+      </div>
+      <div class="heroCap">Syncing saves from <b>Reddit</b> to <b>raphael's pond</b></div>
+    </div>
+    <div class="prog">
+      <div class="prow"><b>First sync</b><span class="pc">68 imported · ~2 min left</span></div>
+      <div class="pbar"><i></i></div>
+      <div class="psub">Importing saved posts, newest first. You can close this — it keeps going in the background.</div>
+    </div>
+    <div class="foot">
+      <span class="ghostlink">Configure what's imported</span>
+      <div class="end"><button class="btn dark">View items so far</button></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

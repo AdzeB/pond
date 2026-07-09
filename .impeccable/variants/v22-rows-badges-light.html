@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Dense rows · badges</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { max-width:900px; padding:40px 32px 80px; margin:0 auto; }
+.hdr { display:flex; align-items:center; padding-bottom:20px; } h1 { flex:1; font-size:21px; font-weight:600; letter-spacing:-.02em; }
+.hdr .actions { display:flex; gap:8px; }
+.list { overflow:hidden; border-radius:10px; }
+.item { display:flex; gap:16px; align-items:center; padding:13px 16px; border-top:1px solid var(--hair); }
+.item:first-child { border-top:0; } .item:hover { background:var(--hov); }
+.cid { width:180px; } .cname { display:flex; gap:8px; align-items:center; font-size:13px; font-weight:550; }
+.csub { margin:2px 0 0 26px; font-size:11.5px; color:var(--ink3); }
+.cstat { width:170px; } .stt { display:flex; gap:7px; align-items:center; font-size:12.5px; color:var(--ink2); }
+.stsub { margin:2px 0 0 13px; font-size:11.5px; color:var(--ink3); }
+.cdet { flex:1; font-size:12.5px; color:var(--ink2); } .cdet .mono { font-family:ui-monospace,"SF Mono",monospace; font-size:11px; color:var(--ink3); }
+.ctime { width:90px; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--ink3); text-align:right; }</style></head>
+<body class="light"><div class="wrap">
+    <div class="hdr"><h1>Sources</h1><div class="actions"><button class="btn">Add source</button><button class="btn primary">Sync all</button></div></div>
+    <div class="list panel">
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="twitter.svg" alt=""/></span>Twitter</div><div class="csub">bookmarks & likes</div></div>
+      <div class="cstat"><span class="badge ok">Synced</span></div>
+      <div class="cdet">+4 items · 2 videos captured<br/><span class="mono">2,381 total</span></div>
+      <div class="ctime">18m ago</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="cosmos.svg" alt=""/></span>Cosmos</div><div class="csub">saved elements</div></div>
+      <div class="cstat"><span class="badge run">Syncing</span></div>
+      <div class="cdet">12 new so far · fetching media<br/><span class="mono">312 total</span></div>
+      <div class="ctime">now</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="pinterest.svg" alt=""/></span>Pinterest</div><div class="csub">boards & pins</div></div>
+      <div class="cstat"><span class="badge warn">Rate limited</span></div>
+      <div class="cdet">Stopped after 210 items · retries automatically<br/><span class="mono">1,104 total</span></div>
+      <div class="ctime">38m ago</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="instagram.svg" alt=""/></span>Instagram</div><div class="csub">saved posts</div></div>
+      <div class="cstat"><span class="badge ok">Synced</span></div>
+      <div class="cdet">No new items<br/><span class="mono">694 total</span></div>
+      <div class="ctime">1h ago</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="arena.svg" alt=""/></span>Are.na</div><div class="csub">channels</div></div>
+      <div class="cstat"><span class="badge ok">Synced</span></div>
+      <div class="cdet">No new blocks in 4 channels<br/><span class="mono">245 total</span></div>
+      <div class="ctime">2h ago</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="tiktok.svg" alt=""/></span>TikTok</div><div class="csub">favorites</div></div>
+      <div class="cstat"><span class="badge ok">Synced</span></div>
+      <div class="cdet">No new items<br/><span class="mono">188 total</span></div>
+      <div class="ctime">3h ago</div>
+    </div>
+    <div class="item">
+      <div class="cid"><div class="cname"><span class="chip" style="width:18px;height:18px;border-radius:5px"><img src="youtube.svg" alt=""/></span>YouTube</div><div class="csub">watch later</div></div>
+      <div class="cstat"><span class="badge ok">Synced</span></div>
+      <div class="cdet">No new items<br/><span class="mono">132 total</span></div>
+      <div class="ctime">5h ago</div>
+    </div></div></div></body></html>

@@ -1,0 +1,82 @@
+.root {
+  box-sizing: border-box;
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition:
+    background var(--ds-duration-snap) var(--ds-easing-standard),
+    color var(--ds-duration-snap) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &[data-size="sm"] {
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    font-size: 12px;
+  }
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a3);
+  }
+
+  &[data-pressed] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-a4);
+  }
+
+  &:focus-visible,
+  &[data-demo-state="focus"] {
+    outline: 2px solid var(--ds-focus-outline);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+/* Inside a ToggleGroup the toggle becomes a segmented-control item: flat
+   until pressed, then a raised card on the group's recessed track. */
+[data-pond-toggle-group] > .root {
+  flex: 1;
+  border-radius: calc(var(--ds-radius-sm) - 2px);
+
+  &:hover,
+  &[data-demo-state="hover"] {
+    background: none;
+  }
+
+  &[data-pressed] {
+    font-weight: 550;
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-1);
+    box-shadow: 0 1px 2px var(--ds-gray-a4);
+  }
+
+  &:focus-visible,
+  &[data-demo-state="focus"] {
+    outline-offset: -2px;
+  }
+}
+
+[data-pond-toggle-group][data-orientation="vertical"] > .root {
+  flex: none;
+  justify-content: flex-start;
+  width: 100%;
+}

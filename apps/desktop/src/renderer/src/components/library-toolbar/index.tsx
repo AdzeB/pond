@@ -14,26 +14,26 @@ export function Toolbar() {
   const filterQuery = useFilterQuery();
   const ask = useAskResult();
 
-  const isSources = pathname === "/sources";
+  const isAnalytics = pathname === "/analytics";
   const base = listBaseFromPath(pathname);
   const mode = parseMode(base) ?? "library";
   const sourceFilter = mode === "source" ? extractSource(base) : "";
 
   const title = ask.active
     ? ask.question.trim() || "Results"
-    : isSources
-      ? "Sources"
+    : isAnalytics
+      ? "Analytics"
       : labelForMode(mode, sourceFilter);
 
   const filterCount = filterQuery.rules.length;
   const meta: string[] = [];
-  if (!ask.active && !isSources) {
+  if (!ask.active && !isAnalytics) {
     if (search) meta.push(`matching “${search}”`);
     if (filterCount > 0) {
       meta.push(`${filterCount} filter${filterCount === 1 ? "" : "s"}`);
     }
   }
-  if (!isSources) {
+  if (!isAnalytics) {
     meta.push(formatNumber(count));
   }
 

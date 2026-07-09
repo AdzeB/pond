@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sources — Calm</title>
+<style>
+  :root {
+    --ink: #18181b; --ink-2: #6b6b70; --ink-3: #96969b;
+    --line: rgba(0,0,0,.07); --line-2: rgba(0,0,0,.045);
+    --panel: #fff; --hover: rgba(0,0,0,.04);
+    --ok: #3f9c56; --ok-soft: #eef7f0; --err: #d33d3d; --err-soft: #fdf0f0;
+    --run: #4c7dd0;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { height: 100%; }
+  body {
+    display: flex; justify-content: center;
+    font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink); background: #fafafa;
+  }
+  .content { display: flex; flex-direction: column; gap: 36px; width: 100%; max-width: 640px; padding: 56px 32px 120px; }
+
+  /* header */
+  header { display: flex; gap: 14px; align-items: flex-start; }
+  .heading { flex: 1; }
+  h1 { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+  .subtitle { margin-top: 3px; font-size: 12.5px; color: var(--ink-2); }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 550;color: var(--ink); cursor: pointer;
+    background: #fff; 
+    border: 0; border-radius: 8px; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04);
+  }
+  .btn.primary { color: #fff; background: var(--ink); box-shadow: none; }
+
+  /* health summary — replaces the KPI wall */
+  .health {
+    display: flex; gap: 14px;align-items: center; 
+    padding: 18px 20px; background: var(--panel);
+    border-radius: 14px; box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(0,0,0,.03);
+  }
+  .health-glyph {
+    display: grid; flex: none; place-items: center;
+    width: 38px; height: 38px; color: var(--ok); 
+    background: var(--ok-soft); border-radius: 50%;
+  }
+  .health-text { flex: 1; min-width: 0; }
+  .health-title { font-size: 13.5px; font-weight: 600; }
+  .health-sub { margin-top: 1px; font-size: 12.5px; color: var(--ink-2); }
+  .health-sub b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+  .health-issue { font-weight: 550; color: #b03535; }
+  .health-action {
+    padding: 6px 4px; font-family: inherit;
+    font-size: 12.5px; font-weight: 550; color: var(--ink-2);cursor: pointer; 
+    background: none; border: 0;
+  }
+
+  /* sources grid — the hero */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 18px 8px; }
+  .tile { display: flex; flex-direction: column; gap: 9px; align-items: center; padding: 8px 4px; cursor: pointer; border-radius: 14px; }
+  .tile:hover { background: var(--hover); }
+  .brand { position: relative; width: 58px; height: 58px; overflow: hidden; border-radius: 14px; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 2px 5px -1px rgba(0,0,0,.10); }
+  .brand img { display: block; width: 100%; height: 100%; }
+  .tile-label { font-size: 12px; font-weight: 500; color: var(--ink-2); }
+  .tile-sub { margin-top: -5px; font-size: 10.5px; color: var(--ink-3); }
+  .badge {
+    position: absolute; right: -4px; bottom: -4px; width: 16px; height: 16px;
+    background: var(--run); border: 2.5px solid #fafafa; border-radius: 50%;
+  }
+  .add .brand { display: grid; place-items: center; font-size: 20px; font-weight: 300; color: var(--ink-3); border: 1.5px dashed rgba(0,0,0,.16); box-shadow: none; }
+
+  /* activity, quiet inline */
+  .activity { display: flex; flex-direction: column; gap: 10px; }
+  .row-label { font-size: 12px; font-weight: 550; color: var(--ink-3); }
+  .proc {
+    display: flex; gap: 14px; align-items: center; padding: 14px 18px;
+    background: var(--panel); border-radius: 14px;
+    box-shadow: 0 0 0 1px var(--line), 0 1px 3px rgba(0,0,0,.03);
+  }
+  .proc-main { flex: 1; min-width: 0; }
+  .proc-name { font-size: 13px; font-weight: 600; }
+  .proc-track { position: relative; max-width: 100%; height: 4px; margin-top: 8px; overflow: hidden; background: rgba(0,0,0,.06); border-radius: 999px; }
+  .proc-fill { position: absolute; inset: 0 auto 0 0; width: 46%; background: var(--run); border-radius: 999px; }
+  .proc-status { margin-top: 6px; font-size: 11.5px; color: var(--ink-3); }
+  .proc .btn { flex: none; }
+
+  /* recent runs, whisper-quiet */
+  .runs { display: flex; flex-direction: column; }
+  .run-row { display: flex; gap: 10px; align-items: center; padding: 9px 2px; font-size: 12.5px; border-top: 1px solid var(--line-2); }
+  .run-row:first-of-type { border-top: 0; }
+  .run-dot { flex: none; width: 6px; height: 6px; background: var(--ok); border-radius: 50%; }
+  .run-dot.err { background: var(--err); }
+  .run-src { font-weight: 550; }
+  .run-meta { color: var(--ink-3); }
+  .run-time { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="content">
+  <header>
+    <div class="heading">
+      <h1>Sources</h1>
+      <p class="subtitle">All quiet — syncing in the background</p>
+    </div>
+    <div class="actions">
+      <button class="btn">Pause</button>
+      <button class="btn primary">Sync all</button>
+    </div>
+  </header>
+
+  <div class="health">
+    <span class="health-glyph">
+      <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <div class="health-text">
+      <div class="health-title">Everything is synced</div>
+      <div class="health-sub"><b>5,056</b> items across 7 sources · last run 2 minutes ago · <span class="health-issue">66 need a retry</span></div>
+    </div>
+    <button class="health-action">Details</button>
+  </div>
+
+  <section class="grid">
+    <div class="tile"><span class="brand"><img src="twitter.svg" alt=""/></span><span class="tile-label">Twitter</span></div>
+    <div class="tile"><span class="brand"><img src="instagram.svg" alt=""/></span><span class="tile-label">Instagram</span></div>
+    <div class="tile"><span class="brand"><img src="pinterest.svg" alt=""/></span><span class="tile-label">Pinterest</span></div>
+    <div class="tile"><span class="brand"><img src="arena.svg" alt=""/></span><span class="tile-label">Are.na</span></div>
+    <div class="tile"><span class="brand"><img src="cosmos.svg" alt=""/><span class="badge"></span></span><span class="tile-label">Cosmos</span></div>
+    <div class="tile"><span class="brand"><img src="tiktok.svg" alt=""/></span><span class="tile-label">TikTok</span></div>
+    <div class="tile"><span class="brand"><img src="youtube.svg" alt=""/></span><span class="tile-label">YouTube</span></div>
+    <div class="tile add"><span class="brand">+</span><span class="tile-label">Add</span></div>
+  </section>
+
+  <section class="activity">
+    <span class="row-label">Happening now</span>
+    <div class="proc">
+      <div class="proc-main">
+        <div class="proc-name">Enrichment</div>
+        <div class="proc-track"><span class="proc-fill"></span></div>
+        <div class="proc-status">73 items processing</div>
+      </div>
+      <button class="btn">Pause</button>
+    </div>
+  </section>
+
+  <section class="activity">
+    <span class="row-label">Recent</span>
+    <div class="runs">
+      <div class="run-row"><span class="run-dot"></span><span class="run-src">Cosmos</span><span class="run-meta">12 new items</span><span class="run-time">2m ago</span></div>
+      <div class="run-row"><span class="run-dot"></span><span class="run-src">Twitter</span><span class="run-meta">4 new items</span><span class="run-time">18m ago</span></div>
+      <div class="run-row"><span class="run-dot err"></span><span class="run-src">Pinterest</span><span class="run-meta">rate limited, retrying at 1:20</span><span class="run-time">31m ago</span></div>
+      <div class="run-row"><span class="run-dot"></span><span class="run-src">YouTube</span><span class="run-meta">no new items</span><span class="run-time">1h ago</span></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

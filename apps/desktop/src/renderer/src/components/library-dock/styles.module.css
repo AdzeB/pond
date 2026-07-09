@@ -10,11 +10,11 @@
   transform: translateX(-50%);
 }
 
-/* Family (connectkit) morph: the pill's real width/height (set from the measured
-   viewport in index.tsx) transition via CSS — matching connectkit's
-   `--duration: 200ms; --ease: cubic-bezier(0.25, 0.1, 0.25, 1)`. Content is never
-   scaled/distorted; `overflow: hidden` clips the incoming/outgoing views to the
-   morphing box while they crossfade. */
+/* Family (connectkit) morph: the pill's real width/height (measured from the
+   viewport) are animated by motion/react in index.tsx (`pillTransition`), not
+   CSS, so mid-flight view changes retarget with preserved velocity. Content is
+   never scaled/distorted; `overflow: hidden` clips the incoming/outgoing views
+   to the morphing box while they crossfade. */
 .pill {
   position: relative;
   z-index: 1;
@@ -24,15 +24,6 @@
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-5);
-  transition:
-    width 200ms cubic-bezier(0.25, 0.1, 0.25, 1),
-    height 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .pill {
-    transition: none;
-  }
 }
 
 /* Invisible full-viewport catcher shown while a menu-like view (new/options/
@@ -52,13 +43,18 @@
 }
 
 /* The viewport is what we measure to drive the pill's size. It's absolutely
-   centered so it keeps its natural (shrink-to-fit) size regardless of the pill's
-   animated size, and so content stays centered while the box morphs. All views
-   share one grid cell so an outgoing + incoming view stack (never sum widths);
-   the viewport then measures only the active view. */
+   positioned so it keeps its natural (shrink-to-fit) size regardless of the
+   pill's animated size — horizontally centered, but pinned to the pill's
+   *bottom* edge: the dock is bottom-fixed, so that edge is the one that stays
+   put while the height morphs. Anchoring content to it means a view whose
+   height changes (or an internal stage swap that resizes the card) doesn't
+   jump by half the height delta the instant the swap happens; new content is
+   revealed from the top as the pill grows upward. All views share one grid
+   cell so an outgoing + incoming view stack (never sum widths); the viewport
+   then measures only the active view. */
 .viewport {
   position: absolute;
-  top: 50%;
+  bottom: 0;
   left: 50%;
   display: grid;
   align-items: center;
@@ -69,7 +65,7 @@
      appears to vanish. */
   width: max-content;
   padding: 4px;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 .viewport[data-card="true"] {

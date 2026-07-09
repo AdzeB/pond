@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sources — Status page layout</title>
+<style>
+  :root {
+    --ink: #19191c; --ink-2: #68686e; --ink-3: #97979d;
+    --line: rgba(0,0,0,.07); --hairline: rgba(0,0,0,.05);
+    --panel: #fff;
+    --ok: #3c9a52; --ok-soft: #edf6ef;
+    --err: #cf3f3f; --warn: #b57e1c;
+    --run: #4472d4;
+    --tick: #46a35c; --tick-idle: rgba(0,0,0,.10); --tick-err: #d66161; --tick-warn: #d9a83f;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: flex; justify-content: center;
+    font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink); background: #fafafa;
+  }
+  .content { display: flex; flex-direction: column; gap: 22px; width: 100%; max-width: 620px; padding: 40px 32px 90px; }
+
+  .topbar { display: flex; gap: 8px; align-items: center; }
+  .topbar h1 { flex: 1; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+  .btn {
+    padding: 4px 11px; font: inherit; font-size: 12px; font-weight: 550;color: var(--ink); cursor: pointer;
+    background: #fff; 
+    border: 0; border-radius: 7px; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04);
+  }
+  .btn.primary { color: #fff; background: var(--ink); box-shadow: none; }
+
+  /* verdict — the whole point of the screen */
+  .verdict { display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 26px 0 10px; text-align: center; }
+  .verdict-glyph { display: grid; place-items: center; width: 44px; height: 44px; color: var(--ok); background: var(--ok-soft); border-radius: 50%; }
+  .verdict-title { font-size: 19px; font-weight: 650; letter-spacing: -0.02em; }
+  .verdict-sub { font-size: 12.5px; color: var(--ink-2); }
+  .verdict-sub b { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+  /* sources panel — one row per source, 30-day tick bar */
+  .panel { overflow: hidden; background: var(--panel); border-radius: 12px; box-shadow: 0 0 0 1px var(--hairline), 0 1px 3px rgba(0,0,0,.03); }
+  .panel-head { display: flex; gap: 8px; align-items: center; padding: 11px 16px; border-bottom: 1px solid var(--hairline); }
+  .panel-title { flex: 1; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+  .panel-meta { font-size: 11.5px; color: var(--ink-3); }
+
+  .src { padding: 12px 16px 13px; border-top: 1px solid var(--hairline); }
+  .src:first-of-type { border-top: 0; }
+  .src-top { display: flex; gap: 10px; align-items: center; }
+  .brand { flex: none; width: 24px; height: 24px; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.05); }
+  .brand img { display: block; width: 100%; height: 100%; }
+  .src-name { flex: 1; font-size: 13px; font-weight: 550; }
+  .src-state { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+  .src-state.ok::before { display: inline-block; width: 5px; height: 5px; margin: 0 6px 1.5px 0; content: ""; background: var(--ok); border-radius: 50%; }
+  .src-state.run { font-weight: 550; color: var(--run); }
+  .src-state.warn { font-weight: 550; color: var(--warn); }
+  .ticks { display: flex; gap: 2.5px; align-items: flex-end; height: 22px; margin: 9px 0 0 34px; }
+  .ticks i { flex: 1; min-height: 4px; background: var(--tick); border-radius: 1.5px; opacity: .85; }
+  .ticks i.z { height: 4px; background: var(--tick-idle); }
+  .ticks i.e { background: var(--tick-err); }
+  .ticks i.w { background: var(--tick-warn); }
+  .src-foot { display: flex; margin: 5px 0 0 34px; font-size: 10.5px; color: var(--ink-3); }
+  .src-foot span:last-child { margin-left: auto; }
+
+  /* footer line: activity woven in */
+  .now { display: flex; gap: 10px; align-items: center; padding: 11px 16px; font-size: 12.5px; background: var(--panel); border-radius: 12px; box-shadow: 0 0 0 1px var(--hairline); }
+  .now-dot { flex: none; width: 7px; height: 7px; background: var(--run); border-radius: 50%; }
+  .now b { font-weight: 600; }
+  .now .meta { color: var(--ink-3); }
+  .now .btn { margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="content">
+  <div class="topbar">
+    <h1>Sources</h1>
+    <button class="btn">Pause all</button>
+    <button class="btn primary">Sync all</button>
+  </div>
+
+  <div class="verdict">
+    <span class="verdict-glyph">
+      <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M2.5 8.5l3.5 3.5 7.5-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </span>
+    <div class="verdict-title">Your pond is healthy</div>
+    <div class="verdict-sub"><b>5,056</b> items from 7 sources · <b>12</b> new today · last run 2 minutes ago</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">Past 30 days</span><span class="panel-meta">items collected per day</span></div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="twitter.svg" alt=""/></span><span class="src-name">Twitter</span><span class="src-state ok">Synced 18m ago</span></div>
+      <div class="ticks">
+        <i style="height:8px"></i><i style="height:12px"></i><i class="z"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:10px"></i><i class="z"></i><i style="height:18px"></i><i style="height:9px"></i><i style="height:6px"></i><i style="height:13px"></i><i class="z"></i><i class="z"></i><i style="height:16px"></i><i style="height:8px"></i><i style="height:11px"></i><i style="height:20px"></i><i class="z"></i><i style="height:9px"></i><i style="height:14px"></i><i style="height:7px"></i><i class="z"></i><i style="height:12px"></i><i style="height:17px"></i><i style="height:8px"></i><i style="height:10px"></i><i class="z"></i><i style="height:13px"></i><i style="height:22px"></i><i style="height:9px"></i>
+      </div>
+      <div class="src-foot"><span>2,381 items</span><span>+4 today</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="cosmos.svg" alt=""/></span><span class="src-name">Cosmos</span><span class="src-state run">Syncing · 12 new</span></div>
+      <div class="ticks">
+        <i class="z"></i><i style="height:6px"></i><i style="height:9px"></i><i class="z"></i><i style="height:12px"></i><i class="z"></i><i style="height:8px"></i><i style="height:14px"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i style="height:10px"></i><i style="height:16px"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i style="height:11px"></i><i style="height:7px"></i><i class="z"></i><i style="height:13px"></i><i class="z"></i><i style="height:8px"></i><i style="height:10px"></i><i class="z"></i><i style="height:15px"></i><i style="height:9px"></i><i class="z"></i><i style="height:12px"></i><i style="height:18px"></i><i style="height:22px"></i>
+      </div>
+      <div class="src-foot"><span>312 items</span><span>+12 today</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="pinterest.svg" alt=""/></span><span class="src-name">Pinterest</span><span class="src-state warn">Rate limited · resumes 1:20</span></div>
+      <div class="ticks">
+        <i style="height:10px"></i><i style="height:7px"></i><i style="height:13px"></i><i class="z"></i><i style="height:9px"></i><i style="height:15px"></i><i class="z"></i><i style="height:8px"></i><i style="height:11px"></i><i class="z"></i><i style="height:14px"></i><i style="height:6px"></i><i style="height:9px"></i><i class="z"></i><i style="height:12px"></i><i style="height:18px"></i><i class="z"></i><i style="height:7px"></i><i style="height:10px"></i><i class="z"></i><i style="height:13px"></i><i style="height:8px"></i><i class="z"></i><i style="height:11px"></i><i style="height:9px"></i><i class="w" style="height:14px"></i><i class="w" style="height:8px"></i><i class="w" style="height:12px"></i><i class="w" style="height:10px"></i><i class="w" style="height:6px"></i>
+      </div>
+      <div class="src-foot"><span>1,104 items</span><span>backing off since 12:40</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="instagram.svg" alt=""/></span><span class="src-name">Instagram</span><span class="src-state ok">Synced 1h ago</span></div>
+      <div class="ticks">
+        <i style="height:7px"></i><i class="z"></i><i style="height:11px"></i><i style="height:8px"></i><i class="z"></i><i style="height:13px"></i><i style="height:9px"></i><i class="z"></i><i style="height:15px"></i><i style="height:7px"></i><i style="height:10px"></i><i class="z"></i><i style="height:12px"></i><i style="height:8px"></i><i class="z"></i><i style="height:14px"></i><i style="height:9px"></i><i style="height:11px"></i><i class="z"></i><i style="height:7px"></i><i style="height:16px"></i><i class="z"></i><i style="height:10px"></i><i style="height:8px"></i><i style="height:12px"></i><i class="z"></i><i style="height:9px"></i><i style="height:13px"></i><i style="height:7px"></i><i style="height:10px"></i>
+      </div>
+      <div class="src-foot"><span>694 items</span><span>+0 today</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="arena.svg" alt=""/></span><span class="src-name">Are.na</span><span class="src-state ok">Synced 2h ago</span></div>
+      <div class="ticks">
+        <i class="z"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i class="z"></i><i style="height:10px"></i><i class="z"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i class="z"></i><i style="height:12px"></i><i class="z"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i style="height:11px"></i><i class="z"></i>
+      </div>
+      <div class="src-foot"><span>245 items</span><span>+0 today</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="tiktok.svg" alt=""/></span><span class="src-name">TikTok</span><span class="src-state ok">Synced 3h ago</span></div>
+      <div class="ticks">
+        <i style="height:6px"></i><i class="z"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i style="height:11px"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i class="z"></i><i style="height:10px"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i style="height:12px"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i class="z"></i><i style="height:7px"></i>
+      </div>
+      <div class="src-foot"><span>188 items</span><span>+0 today</span></div>
+    </div>
+
+    <div class="src">
+      <div class="src-top"><span class="brand"><img src="youtube.svg" alt=""/></span><span class="src-name">YouTube</span><span class="src-state ok">Synced 5h ago</span></div>
+      <div class="ticks">
+        <i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i class="z"></i><i style="height:11px"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i><i style="height:9px"></i><i class="z"></i><i style="height:6px"></i><i class="z"></i><i class="z"></i><i style="height:8px"></i><i class="z"></i><i class="z"></i><i style="height:10px"></i><i class="z"></i><i style="height:7px"></i><i class="z"></i><i class="z"></i>
+      </div>
+      <div class="src-foot"><span>132 items</span><span>+0 today</span></div>
+    </div>
+  </div>
+
+  <div class="now">
+    <span class="now-dot"></span>
+    <span><b>Enrichment</b> running</span>
+    <span class="meta">73 items · tags, colors, screenshots</span>
+    <button class="btn">Pause</button>
+  </div>
+</div>
+</body>
+</html>

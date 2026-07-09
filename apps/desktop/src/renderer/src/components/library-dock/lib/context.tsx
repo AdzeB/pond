@@ -36,6 +36,8 @@ export interface DockContextValue {
   closeOptions: () => void;
   openLibrary: () => void;
   closeLibrary: () => void;
+  openSources: () => void;
+  closeSources: () => void;
   clearResults: () => void;
   destructive: () => void;
   runSelectionTask: () => void;

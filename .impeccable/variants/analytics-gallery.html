@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Analytics — 11 variations</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body {
+  display: flex; flex-direction: column;
+  min-height: 100vh; 
+  font: 400 13px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;color: #1a1a1c;
+  background: #f4f4f5;
+}
+header {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; gap: 14px;align-items: center; 
+  padding: 14px 22px; background: #fff; border-bottom: 1px solid rgba(0,0,0,.08);
+}
+header h1 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+.counter { font-size: 12px; font-variant-numeric: tabular-nums; color: #6b6b70; }
+.spacer { flex: 1; }
+.nav-btn {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; 
+  font-size: 14px; color: #1a1a1c;cursor: pointer;
+  background: #fff; border: 0; border-radius: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+}
+.nav-btn:hover { background: #f4f4f5; }
+.nav-btn:disabled { cursor: default; opacity: .35; }
+.open-live {
+  padding: 5px 12px; 
+  font-size: 12px; font-weight: 550; color: #1a1a1c; text-decoration: none;background: #fff;border-radius: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+}
+.open-live:hover { background: #f4f4f5; }
+.hint { font-size: 11px; color: #9b9ba0; }
+
+.meta { width: 100%; max-width: 1080px; padding: 18px 22px 0; margin: 0 auto; }
+.meta .name { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
+.meta .name small { margin-right: 8px; font-size: 12px; font-weight: 500; color: #9b9ba0; }
+.meta .desc { max-width: 72ch; margin-top: 3px; font-size: 12.5px; color: #55555a; }
+
+.stage { flex: 1; width: 100%; max-width: 1080px; padding: 14px 22px 40px; margin: 0 auto; }
+.frame {
+  overflow: hidden;
+  background: #fff; border-radius: 12px; 
+  box-shadow: 0 0 0 1px rgba(0,0,0,.07), 0 2px 8px rgba(0,0,0,.05);
+}
+.frame img { display: block; width: 100%; height: auto; }
+
+.dots { display: flex; gap: 6px; justify-content: center; padding: 0 0 26px; }
+.dot {
+  width: 26px; height: 6px; padding: 0;cursor: pointer;
+  background: rgba(0,0,0,.12); border: 0; border-radius: 3px;
+}
+.dot:hover { background: rgba(0,0,0,.25); }
+.dot.on { background: #1a1a1c; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Analytics — 11 variations</h1>
+  <span class="counter" id="counter"></span>
+  <span class="spacer"></span>
+  <span class="hint">← → to navigate</span>
+  <a class="open-live" id="openLive" href="#" target="_blank">Open live HTML</a>
+  <button class="nav-btn" id="prev" aria-label="Previous">←</button>
+  <button class="nav-btn" id="next" aria-label="Next">→</button>
+</header>
+
+<div class="meta">
+  <div class="name" id="name"></div>
+  <div class="desc" id="desc"></div>
+</div>
+
+<div class="stage">
+  <div class="frame"><img id="shot" src="" alt=""/></div>
+</div>
+
+<div class="dots" id="dots"></div>
+
+<script>
+const VARIANTS = [
+  { id: "an01", file: "an01-traffic-light.html", img: "an01.png", name: "Traffic panels",
+    desc: "Closest to the Vercel firewall reference: joined KPI strip, “Top …” panels with count + gray proportional bar per row, recent runs as a flat list." },
+  { id: "an02", file: "an02-tinted-tabs.html", img: "an02.png", name: "Tinted rows",
+    desc: "Dub / Plausible style: the proportional bar is the row’s background tint, tabs in each panel header, outcome rows tinted by state color." },
+  { id: "an03", file: "an03-grouped-sections.html", img: "an03.png", name: "Grouped sections",
+    desc: "Cloudflare style: titled bands (Volume, Runs, Breakdown), each cell a number + sparkline. Scannable top-to-bottom." },
+  { id: "an04", file: "an04-chart-hero.html", img: "an04.png", name: "Chart hero",
+    desc: "Vercel Analytics style: KPI tabs driving one big area chart, two tabbed breakdown panels below." },
+  { id: "an05", file: "an05-dark-console.html", img: "an05.png", name: "Dark ops console",
+    desc: "Monospace log table with uppercase outcome states and horizontal bars up top. The most power-user of the set." },
+  { id: "an06", file: "an06-heatmap.html", img: "an06.png", name: "Heatmap + donut",
+    desc: "When syncs happen (day × time grid) plus an outcomes donut; sources as rows with sparklines." },
+  { id: "an07", file: "an07-quiet-ledger.html", img: "an07.png", name: "Quiet ledger",
+    desc: "No cards — a single narrow column with per-source tick bars and hairline dividers. Closest to the calm / Things 3 end." },
+  { id: "an08", file: "an08-stat-cards.html", img: "an08.png", name: "Stat cards + table",
+    desc: "Six compact cards with deltas and mini bar charts, then one source table carrying all per-source detail." },
+  { id: "an09", file: "an09-dense-table.html", img: "an09.png", name: "Dense table",
+    desc: "The whole page is one table: runs, items, avg duration, rate limits, a “last 14 runs” health strip, totals footer. Max info per pixel." },
+  { id: "an12", file: "an12-linear-light.html", img: "an12.png", name: "Linear Insights",
+    desc: "Modeled on Linear's dashboard tiles: stacked bar chart (items per day, colored by source), outcome mini-table, one big median number, a drill-down table with a selected cell, and a run-duration scatter with a hover tooltip." },
+  { id: "an13", file: "an13-pulse.html", img: "an13.png", name: "Laravel Pulse",
+    desc: "Modeled on Laravel Pulse: a slim server-strip up top (items / today / storage donut), then a bento of cards — source usage with zebra rows, multi-line queue chart with legend, runs summary, and monospace “Slow runs” / “Failures” cards with COUNT · SLOWEST style stat pairs." },
+];
+
+let i = 0;
+const $ = (id) => document.getElementById(id);
+
+const dots = VARIANTS.map((_, n) => {
+  const b = document.createElement("button");
+  b.className = "dot";
+  b.setAttribute("aria-label", `Variant ${n + 1}`);
+  b.onclick = () => go(n);
+  $("dots").appendChild(b);
+  return b;
+});
+
+function go(n) {
+  i = Math.max(0, Math.min(VARIANTS.length - 1, n));
+  const v = VARIANTS[i];
+  $("shot").src = v.img;
+  $("shot").alt = v.name;
+  $("name").innerHTML = `<small>${v.id}</small>${v.name}`;
+  $("desc").textContent = v.desc;
+  $("counter").textContent = `${i + 1} / ${VARIANTS.length}`;
+  $("openLive").href = v.file;
+  $("prev").disabled = i === 0;
+  $("next").disabled = i === VARIANTS.length - 1;
+  dots.forEach((d, n2) => d.classList.toggle("on", n2 === i));
+}
+
+$("prev").onclick = () => go(i - 1);
+$("next").onclick = () => go(i + 1);
+document.addEventListener("keydown", (e) => {
+  if (e.key === "ArrowLeft") go(i - 1);
+  if (e.key === "ArrowRight") go(i + 1);
+});
+
+go(0);
+</script>
+</body>
+</html>

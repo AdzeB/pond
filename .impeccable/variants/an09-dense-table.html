@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><title>Analytics · Dense table</title>
+<style>
+* { box-sizing: border-box; margin: 0; }
+body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+body.light { --ink:#1a1a1c; --ink2:#6b6b70; --ink3:#9b9ba0; --panel:#fff; --line:rgba(0,0,0,.07); --hair:rgba(0,0,0,.055); --hov:rgba(0,0,0,.02);
+  --ok:#3c9a52; --okdim:rgba(60,154,82,.12); --warn:#b57e1c; --warndim:rgba(181,126,28,.12); --err:#cf3f3f; --run:#4472d4; --rundim:rgba(68,114,212,.10); color: #1a1a1c; background: #fafafa; }
+body.dark { --ink:#ececee; --ink2:#8a8a90; --ink3:#5b5b61; --panel:#121214; --line:rgba(255,255,255,.07); --hair:rgba(255,255,255,.05); --hov:rgba(255,255,255,.02);
+  --ok:#4ade80; --okdim:rgba(74,222,128,.13); --warn:#fbbf24; --warndim:rgba(251,191,36,.12); --err:#f87171; --run:#7dd3fc; --rundim:rgba(125,211,252,.12); color: #ececee; background: #0c0c0d; }
+.chip { display:inline-block; flex:none; overflow:hidden; vertical-align:middle; background:#fff; box-shadow:0 0 0 1px var(--hair); }
+.chip img { display:block; width:100%; height:100%; }
+.dot { flex:none; width:6px; height:6px; background:var(--ok); border-radius:50%; }
+.dot.run { background:var(--run); } .dot.warn { background:var(--warn); } .dot.err { background:var(--err); }
+.badge { display:inline-block; padding:2px 7px; font-size:11px; font-weight:600; border-radius:5px; }
+.badge.ok { color:var(--ok); background:var(--okdim); } .badge.warn { color:var(--warn); background:var(--warndim); } .badge.run { color:var(--run); background:var(--rundim); }
+.btn { padding:5px 12px; font:inherit; font-size:12.5px; font-weight:550; color:var(--ink); cursor:pointer; background:var(--panel); border:0; border-radius:7px; box-shadow:0 0 0 1px var(--line); }
+.btn.primary { color:var(--panel); background:var(--ink); box-shadow:none; }
+.panel { background:var(--panel); border-radius:12px; box-shadow:0 0 0 1px var(--hair), 0 1px 3px rgba(0,0,0,.03); }
+.ticks { display:flex; gap:2.5px; align-items:flex-end; height:22px; }
+.ticks i { flex:1; min-height:4px; background:var(--ok); border-radius:1.5px; opacity:.8; }
+.ticks i.z { height:4px; background:var(--hair); }
+.ticks i.w { background:var(--warn); }
+.num { font-variant-numeric: tabular-nums; }
+.st { font-size:10.5px; font-weight:700; letter-spacing:.07em; }
+.st.ok { color:var(--ok); } .st.warn { color:var(--warn); } .st.err { color:var(--err); } .st.run { color:var(--run); }
+
+.wrap { display:flex; flex-direction:column; gap:10px; max-width: 920px; padding: 32px 32px 80px; margin: 0 auto; }
+.top { display:flex; gap:10px; align-items:center; } .top h1 { flex:1; font-size:16px; font-weight:650; }
+.chipbar { display:flex; gap:6px; }
+.fchip { padding:3px 9px; font-size:11.5px; color:var(--ink2); background:var(--panel); border-radius:6px; box-shadow:0 0 0 1px var(--line); }
+.fchip.on { font-weight:600; color:var(--ink); }
+.note { padding:0 2px 4px; font-size:12px; color:var(--ink2); }
+.note b { font-weight:600; color:var(--ink); }
+.tbl { padding:0; overflow:hidden; }
+.th { display:grid; grid-template-columns: 1.5fr 64px 64px 76px 100px 1fr 90px; gap:12px; padding:9px 16px; font-size:10.5px; color:var(--ink3); text-transform:uppercase; letter-spacing:.06em; background:var(--hov); border-bottom:1px solid var(--hair); }
+.tr { display:grid; grid-template-columns: 1.5fr 64px 64px 76px 100px 1fr 90px; gap:12px; align-items:center; height:40px; padding:0 16px; font-size:12.5px; border-bottom:1px solid var(--hair); }
+.tr:last-child { border-bottom:0; } .tr:hover { background:var(--hov); }
+.src { display:flex; gap:9px; align-items:center; font-weight:550; }
+.src small { font-size:11px; font-weight:400; color:var(--ink3); }
+.r { font-variant-numeric:tabular-nums; color:var(--ink); text-align:right; }
+.r.mut { color:var(--ink2); }
+.health { display:flex; gap:2px; align-items:center; height:14px; }
+.health i { width:5px; height:14px; background:var(--okdim); border-radius:1.5px; }
+.health i.f { background:var(--ok); } .health i.w { background:var(--warn); } .health i.x { background:var(--err); }
+.last { font-size:12px; color:var(--ink3); text-align:right; }
+.totals { display:grid; grid-template-columns: 1.5fr 64px 64px 76px 100px 1fr 90px; gap:12px; padding:9px 16px; font-size:12px; font-weight:600; background:var(--hov); border-top:1px solid var(--line); }
+</style></head>
+<body class="light"><div class="wrap">
+    <div class="top"><h1>Analytics</h1><div class="chipbar"><span class="fchip on">7 days</span><span class="fchip">30 days</span><span class="fchip">All time</span></div></div>
+    <div class="note"><b>1,284</b> items across <b>96</b> runs · <b>94%</b> success · avg <b>42s</b> · <b>4.2 GB</b> on disk</div>
+    <div class="panel tbl">
+      <div class="th"><span>Source</span><span style="text-align:right">Runs</span><span style="text-align:right">Items</span><span style="text-align:right">Avg run</span><span style="text-align:right">Rate limits</span><span>Last 14 runs</span><span style="text-align:right">Last sync</span></div>
+      <div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="twitter.svg" alt=""/></span>Twitter&nbsp;<small>bookmarks & likes</small></span><span class="r mut">28</span><span class="r">412</span><span class="r mut">48s</span><span class="r mut" style="color:var(--warn);font-weight:600">2</span><div class="health"><i class=""></i><i class=""></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class="f"></i><i class="f"></i><i class=""></i><i class="f"></i><i class=""></i></div><span class="last" style="">18m ago</span></div><div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="pinterest.svg" alt=""/></span>Pinterest&nbsp;<small>boards & pins</small></span><span class="r mut">22</span><span class="r">288</span><span class="r mut">1m 12s</span><span class="r mut" style="color:var(--warn);font-weight:600">6</span><div class="health"><i class=""></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="w"></i><i class="f"></i></div><span class="last" style="">38m ago</span></div><div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="instagram.svg" alt=""/></span>Instagram&nbsp;<small>saved posts</small></span><span class="r mut">16</span><span class="r">154</span><span class="r mut">39s</span><span class="r mut" style="">0</span><div class="health"><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i></div><span class="last" style="">1h ago</span></div><div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="cosmos.svg" alt=""/></span>Cosmos&nbsp;<small>saved elements</small></span><span class="r mut">12</span><span class="r">121</span><span class="r mut">24s</span><span class="r mut" style="">0</span><div class="health"><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class="f"></i><i class=""></i><i class=""></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i></div><span class="last" style="color:var(--run);font-weight:550">syncing</span></div><div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="arena.svg" alt=""/></span>Are.na&nbsp;<small>channels</small></span><span class="r mut">9</span><span class="r">58</span><span class="r mut">11s</span><span class="r mut" style="">0</span><div class="health"><i class=""></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class=""></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i></div><span class="last" style="">2h ago</span></div><div class="tr"><span class="src"><span class="chip" style="width:20px;height:20px;border-radius:6px"><img src="youtube.svg" alt=""/></span>YouTube&nbsp;<small>watch later</small></span><span class="r mut">9</span><span class="r">0</span><span class="r mut">8s</span><span class="r mut" style="">0</span><div class="health"><i class=""></i><i class="f"></i><i class=""></i><i class="f"></i><i class="f"></i><i class="f"></i><i class="f"></i><i class=""></i><i class=""></i><i class="x"></i><i class=""></i><i class="f"></i><i class=""></i><i class="f"></i></div><span class="last" style="">3h ago</span></div>
+      <div class="totals"><span>6 sources</span><span style="text-align:right">96</span><span style="text-align:right">1,064</span><span style="text-align:right">42s</span><span style="text-align:right">8</span><span></span><span></span></div>
+    </div>
+  </div></body></html>

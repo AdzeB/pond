@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sources — Crafted</title>
+<style>
+  :root {
+    --ink: #1d1d1f; --ink-2: #66666b; --ink-3: #98989d;
+    --line: rgba(0,0,0,.08); --hairline: rgba(0,0,0,.06);
+    --panel: #fff; --ok: #34953f; --err: #cf3a3a; --run: #3c76d6;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: flex; justify-content: center;
+    font: 400 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink); background: #f5f5f7;
+  }
+  .content { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 660px; padding: 44px 32px 120px; }
+
+  header { display: flex; gap: 12px; align-items: center; }
+  .heading { flex: 1; }
+  h1 { font-size: 19px; font-weight: 650; letter-spacing: -0.015em; }
+  .subtitle { margin-top: 2px; font-size: 12px; color: var(--ink-2); }
+  .active-dot { display: inline-block; width: 6px; height: 6px; margin: 0 5px 1px 8px; background: var(--ok); border-radius: 50%; }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 4px 11px; font: inherit; font-size: 12.5px; font-weight: 500;color: var(--ink); cursor: pointer;
+    background: #fff; 
+    border: 0; border-radius: 7px; box-shadow: 0 0 0 1px var(--line), 0 1px 1px rgba(0,0,0,.04);
+  }
+  .btn.primary { color: #fff; background: #2f6fe4; box-shadow: 0 0 0 1px rgba(0,0,0,.06), inset 0 1px 0 rgba(255,255,255,.18); }
+
+  .group-label { padding: 0 4px; font-size: 11.5px; font-weight: 550; color: var(--ink-3); }
+  .panel { overflow: hidden; background: var(--panel); border-radius: 10px; box-shadow: 0 0 0 1px var(--hairline), 0 1px 2px rgba(0,0,0,.03); }
+  section { display: flex; flex-direction: column; gap: 7px; }
+
+  /* stats — one row, dividers, like Settings */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stat { padding: 13px 16px; border-left: 1px solid var(--hairline); }
+  .stat:first-child { border-left: 0; }
+  .stat-value { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -0.015em; }
+  .stat-value .unit { margin-left: 1px; font-size: 12px; font-weight: 500; color: var(--ink-3); }
+  .stat-value.bad { color: var(--err); }
+  .stat-label { margin-top: 2px; font-size: 11.5px; color: var(--ink-2); }
+  .stat-action { font-size: 11.5px; font-weight: 550; color: #2f6fe4; text-decoration: none; }
+
+  /* sources — native settings list */
+  .src-row { display: flex; gap: 12px; align-items: center; padding: 10px 14px; cursor: pointer; border-top: 1px solid var(--hairline); }
+  .src-row:first-child { border-top: 0; }
+  .src-row:hover { background: rgba(0,0,0,.025); }
+  .brand { flex: none; width: 30px; height: 30px; overflow: hidden; border-radius: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.07); }
+  .brand img { display: block; width: 100%; height: 100%; }
+  .src-name { flex: 1; font-size: 13px; font-weight: 550; }
+  .src-status { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+  .src-status.ok::before { display: inline-block; width: 5px; height: 5px; margin: 0 6px 1px 0; content: ""; background: var(--ok); border-radius: 50%; }
+  .src-status.run { font-weight: 500; color: var(--run); }
+  .src-status.err { font-weight: 500; color: var(--err); }
+  .chevron { flex: none; color: #c6c6c9; }
+  .src-add { display: flex; gap: 12px; align-items: center; padding: 10px 14px; font-size: 12.5px; font-weight: 500; color: #2f6fe4; cursor: pointer; border-top: 1px solid var(--hairline); }
+  .src-add .plus { display: grid; place-items: center; width: 30px; height: 30px; color: var(--ink-3); border: 1px dashed rgba(0,0,0,.15); border-radius: 7px; }
+
+  /* activity inside a panel */
+  .proc { display: flex; gap: 14px; align-items: center; padding: 12px 16px; }
+  .proc-main { flex: 1; min-width: 0; }
+  .proc-head { display: flex; gap: 8px; align-items: baseline; }
+  .proc-name { font-size: 13px; font-weight: 600; }
+  .proc-count { font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+  .proc-track { position: relative; height: 4px; margin-top: 8px; overflow: hidden; background: rgba(0,0,0,.07); border-radius: 999px; }
+  .proc-fill { position: absolute; inset: 0 auto 0 0; width: 46%; background: var(--run); border-radius: 999px; }
+
+  .run-row { display: flex; gap: 10px; align-items: center; padding: 9px 14px; font-size: 12.5px; border-top: 1px solid var(--hairline); }
+  .run-row:first-child { border-top: 0; }
+  .run-brand { flex: none; width: 20px; height: 20px; overflow: hidden; border-radius: 5px; box-shadow: 0 0 0 1px rgba(0,0,0,.06); }
+  .run-brand img { display: block; width: 100%; height: 100%; }
+  .run-desc { flex: 1; }
+  .run-desc b { font-weight: 550; }
+  .run-desc .err-text { color: var(--err); }
+  .run-time { font-size: 12px; font-variant-numeric: tabular-nums; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div class="content">
+  <header>
+    <div class="heading">
+      <h1>Sources</h1>
+      <p class="subtitle">7 of 9 connected<span class="active-dot"></span>1 active</p>
+    </div>
+    <div class="actions">
+      <button class="btn">Pause all</button>
+      <button class="btn primary">Sync all</button>
+      <button class="btn">···</button>
+    </div>
+  </header>
+
+  <section>
+    <span class="group-label">Overview</span>
+    <div class="panel stats">
+      <div class="stat"><div class="stat-value">5,056</div><div class="stat-label">Items synced</div></div>
+      <div class="stat"><div class="stat-value">91<span class="unit">%</span></div><div class="stat-label">Success rate</div></div>
+      <div class="stat"><div class="stat-value">55<span class="unit">s</span></div><div class="stat-label">Avg run time</div></div>
+      <div class="stat"><div class="stat-value bad">66</div><div class="stat-label">Failed · <a class="stat-action" href="#">Retry</a></div></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="group-label">Connected</span>
+    <div class="panel">
+      <div class="src-row"><span class="brand"><img src="twitter.svg" alt=""/></span><span class="src-name">Twitter</span><span class="src-status ok">Synced 18m ago</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="instagram.svg" alt=""/></span><span class="src-name">Instagram</span><span class="src-status ok">Synced 1h ago</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="pinterest.svg" alt=""/></span><span class="src-name">Pinterest</span><span class="src-status err">Rate limited · retrying 1:20</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="arena.svg" alt=""/></span><span class="src-name">Are.na</span><span class="src-status ok">Synced 2h ago</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="cosmos.svg" alt=""/></span><span class="src-name">Cosmos</span><span class="src-status run">Syncing — 12 new</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="tiktok.svg" alt=""/></span><span class="src-name">TikTok</span><span class="src-status ok">Synced 3h ago</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-row"><span class="brand"><img src="youtube.svg" alt=""/></span><span class="src-name">YouTube</span><span class="src-status ok">Synced 5h ago</span><svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5L8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="src-add"><span class="plus">+</span>Add a source…</div>
+    </div>
+  </section>
+
+  <section>
+    <span class="group-label">Activity</span>
+    <div class="panel">
+      <div class="proc">
+        <div class="proc-main">
+          <div class="proc-head"><span class="proc-name">Enrichment</span><span class="proc-count">73 processing</span></div>
+          <div class="proc-track"><span class="proc-fill"></span></div>
+        </div>
+        <button class="btn">Pause</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <span class="group-label">Recent runs</span>
+    <div class="panel">
+      <div class="run-row"><span class="run-brand"><img src="cosmos.svg" alt=""/></span><span class="run-desc"><b>Cosmos</b> · 12 new items</span><span class="run-time">2m ago</span></div>
+      <div class="run-row"><span class="run-brand"><img src="twitter.svg" alt=""/></span><span class="run-desc"><b>Twitter</b> · 4 new items</span><span class="run-time">18m ago</span></div>
+      <div class="run-row"><span class="run-brand"><img src="pinterest.svg" alt=""/></span><span class="run-desc"><b>Pinterest</b> · <span class="err-text">rate limited</span></span><span class="run-time">31m ago</span></div>
+    </div>
+  </section>
+</div>
+</body>
+</html>

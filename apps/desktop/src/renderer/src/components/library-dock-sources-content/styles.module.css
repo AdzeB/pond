@@ -1,0 +1,699 @@
+/* Sources tray morphed out of the pill (Family-style). The pill supplies the
+   surface (radius + shadow). Stage transitions follow connectkit's Modal: the
+   active stage is the only one in flow (it alone sizes the card, so the pill
+   morph tracks the incoming stage), while the exiting stage is absolutely
+   positioned over it and zooms through (scale 0.85 ↔ 1.1). */
+.card {
+  position: relative;
+  width: 340px;
+}
+
+/* Padding lives on the stage (not the card) so the exiting stage, once
+   absolutely pinned to the card's bottom edge, still lines up pixel-perfect
+   with where it was in flow. */
+.stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 4px;
+  transform-origin: center center;
+  backface-visibility: hidden;
+}
+
+/* ── header ── */
+.header {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 30px;
+  padding: 2px 2px 4px;
+}
+
+.header-title {
+  flex: 1;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+/* Keep the title optically centered when there's no back button. */
+.header-spacer {
+  flex: none;
+  width: 26px;
+}
+
+.header-button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.header-button:hover,
+.header-button:focus-visible {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+
+/* ── list rows ── */
+.list {
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 8px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.row:hover,
+.row:focus-visible {
+  background: var(--ds-gray-3);
+}
+
+.row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.row-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.row-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.row-status[data-tone="run"] {
+  color: var(--ds-accent-11);
+}
+
+.row-status[data-tone="err"],
+.row-status[data-tone="paused"] {
+  color: var(--ds-amber-11);
+}
+
+.row-end {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+}
+
+.row-count {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
+/* Status glyph: quiet check, amber !, or a spinner while running. */
+.glyph {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  color: var(--ds-grass-11);
+  background: var(--ds-grass-a3);
+  border-radius: 50%;
+}
+
+.glyph[data-tone="err"],
+.glyph[data-tone="paused"] {
+  color: var(--ds-amber-11);
+  background: var(--ds-amber-a3);
+}
+
+.glyph[data-tone="run"] {
+  color: var(--ds-accent-11);
+  background: var(--ds-accent-a3);
+}
+
+.glyph[data-tone="idle"] {
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-a3);
+}
+
+.spinner {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--ds-accent-a5);
+  border-top-color: var(--ds-accent-9);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.add-square {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--ds-gray-10);
+  border: 1.5px dashed var(--ds-gray-a6);
+  border-radius: var(--ds-radius-sm);
+}
+
+.row:hover .add-square {
+  color: var(--ds-gray-12);
+  border-color: var(--ds-gray-a8);
+}
+
+.empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--ds-gray-10);
+}
+
+.divider {
+  height: 0;
+  margin: 4px 8px;
+  border: 0;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+/* ── detail (v56 dialog adapted to the tray) ── */
+.cap-dim {
+  font-weight: 450;
+  color: var(--ds-gray-10);
+}
+
+.desc {
+  padding: 0 6px;
+  margin: 2px 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ds-gray-10);
+}
+
+.desc b {
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+/* Source → link → Pond wiring card. */
+.hero-card {
+  overflow: hidden;
+  border: 1px solid var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
+}
+
+.app {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  background: var(--ds-gray-1);
+  border-radius: 13px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.app-pond {
+  font-size: 20px;
+  color: var(--ds-grass-11);
+  background: linear-gradient(150deg, var(--ds-grass-a2), var(--ds-grass-a4));
+}
+
+.wire {
+  width: 26px;
+  height: 0;
+  border-top: 1.5px dashed var(--ds-gray-a6);
+}
+
+.wire[data-solid] {
+  border-top-color: var(--ds-grass-a7);
+  border-top-style: solid;
+}
+
+/* Rotated-square link node between the tiles. */
+.node {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: var(--ds-gray-1);
+  border-radius: 9px;
+  box-shadow: var(--ds-shadow-2);
+  transform: rotate(45deg);
+}
+
+.node-glyph {
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ds-gray-11);
+  transform: rotate(-45deg);
+}
+
+.node[data-tone="err"] .node-glyph,
+.node[data-tone="paused"] .node-glyph {
+  color: var(--ds-amber-11);
+}
+
+.hero-caption {
+  padding: 9px 12px;
+  font-size: 11.5px;
+  color: var(--ds-gray-10);
+  text-align: center;
+  background: var(--ds-gray-2);
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.hero-caption b {
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.hero-caption[data-tone="err"],
+.hero-caption[data-tone="paused"] {
+  color: var(--ds-amber-11);
+}
+
+/* Bordered settings list, one hairline between rows. */
+.rows {
+  margin-top: 8px;
+  border: 1px solid var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.setting-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.setting-row + .setting-row {
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.setting-row-button {
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--ds-gray-a3);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.setting-row-button:first-child {
+  border-top: 0;
+}
+
+.setting-row-button:hover,
+.setting-row-button:focus-visible {
+  background: var(--ds-gray-2);
+}
+
+.setting-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--ds-accent-11);
+  background: var(--ds-accent-a3);
+  border-radius: 8px;
+}
+
+/* Select-styled value chip (opens a menu). */
+.select {
+  display: inline-flex;
+  flex: none;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 9px;
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 8px;
+}
+
+.select svg {
+  color: var(--ds-gray-9);
+}
+
+.field-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.field-label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.field-hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.field-value {
+  flex: none;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+}
+
+.segmented {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  background: var(--ds-gray-3);
+  border-radius: 99px;
+}
+
+.segmented button {
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+  border-radius: 99px;
+}
+
+.segmented button[data-on] {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.session {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  margin: 4px 2px 2px;
+  font-size: 11.5px;
+  white-space: nowrap;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-sm);
+}
+
+.session-dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--ds-grass-9);
+  border-radius: 50%;
+}
+
+.session-dot[data-tone="paused"],
+.session-dot[data-tone="err"] {
+  background: var(--ds-amber-9);
+}
+
+.session-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-12);
+}
+
+.session-link {
+  flex: none;
+  padding: 0;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+}
+
+.session-link:hover {
+  text-decoration: underline;
+}
+
+/* ── connect hero (wait / first sync) ── */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 16px 4px;
+  text-align: center;
+}
+
+.ring {
+  position: relative;
+  width: 84px;
+  height: 84px;
+}
+
+.ring-track {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ds-gray-a4);
+  border-top-color: var(--ds-accent-9);
+  border-radius: 50%;
+  animation: spin 1.4s linear infinite;
+}
+
+.ring-icon {
+  position: absolute;
+  inset: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-3);
+}
+
+.ok-ring {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 2px solid var(--ds-grass-a5);
+  border-radius: 50%;
+}
+
+.ok-ring .ring-icon {
+  position: static;
+  width: 58px;
+  height: 58px;
+}
+
+.hero-title {
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 640;
+  color: var(--ds-gray-12);
+}
+
+.hero-sub {
+  max-width: 250px;
+  margin: 5px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ds-gray-10);
+}
+
+.hero-sub b {
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.progress {
+  width: 100%;
+  height: 5px;
+  margin-top: 14px;
+  overflow: hidden;
+  background: var(--ds-gray-a3);
+  border-radius: 99px;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--ds-gray-12);
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+
+.progress-fill[data-indeterminate] {
+  width: 30%;
+  animation: slide 1.4s ease-in-out infinite;
+}
+
+.progress-sub {
+  margin-top: 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+/* ── footer buttons ── */
+.foot {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 10px 2px 2px;
+}
+
+.foot-end {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.ghost-link {
+  padding: 0 6px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+}
+
+.ghost-link:hover {
+  color: var(--ds-gray-12);
+}
+
+.button {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 570;
+  color: var(--ds-gray-12);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.button:hover {
+  background: var(--ds-gray-4);
+}
+
+.button-primary {
+  color: var(--ds-gray-1);
+  background: var(--ds-gray-12);
+}
+
+.button-primary:hover {
+  background: var(--ds-gray-12);
+  opacity: 0.9;
+}
+
+/* ── pick rows (ConnectKit-style) ── */
+.pick-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 4px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.pick-row:hover,
+.pick-row:focus-visible {
+  background: var(--ds-gray-3);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes slide {
+  0% {
+    margin-left: -30%;
+  }
+  100% {
+    margin-left: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner,
+  .ring-track,
+  .progress-fill[data-indeterminate] {
+    animation: none;
+  }
+}

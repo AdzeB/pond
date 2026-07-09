@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>V06 — Firecrawl warm log</title>
+<style>
+  :root {
+    --bg: #faf9f7; --panel: #fff; --ink: #262421; --ink-2: #75726c; --ink-3: #a3a09a;
+    --hairline: rgba(38,36,33,.08);
+    --accent: #e2571b;
+    --ok: #3d9a50; --warn: #c07f1e; --err: #d24a43; --run: #3f74d1;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: var(--ink); background: var(--bg); }
+  .content { max-width: 900px; padding: 0 32px 90px; margin: 0 auto; }
+
+  /* dotted texture header, centered title */
+  .head {
+    position: relative; padding: 52px 0 36px;text-align: center; 
+    background-image: radial-gradient(rgba(38,36,33,.10) 1px, transparent 1px);
+    background-size: 14px 14px;
+  }
+  .head::after { position: absolute; inset: 0; pointer-events: none; content: ""; background: radial-gradient(ellipse at center, rgba(250,249,247,.4) 30%, #faf9f7 78%); }
+  .head > * { position: relative; z-index: 1; }
+  h1 { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; }
+  .head-sub { margin-top: 6px; font-size: 13px; color: var(--ink-2); }
+  .head-sub b { font-weight: 600; color: var(--ok); }
+
+  .toolbar { display: flex; gap: 8px; padding: 0 0 14px; }
+  .search { flex: 1; padding: 7px 12px; font-size: 12.5px; color: var(--ink-3); background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px; }
+  .chipbtn { padding: 7px 12px; font-size: 12.5px; color: var(--ink-2); background: var(--panel); border: 1px solid var(--hairline); border-radius: 8px; }
+  .primary-btn { padding: 7px 14px; font-size: 12.5px; font-weight: 600; color: #fff; cursor: pointer; background: var(--accent); border: 0; border-radius: 8px; }
+
+  /* sources strip */
+  .strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; padding-bottom: 22px; }
+  .tile { padding: 10px 8px; text-align: center; cursor: pointer; background: var(--panel); border: 1px solid var(--hairline); border-radius: 10px; }
+  .tile:hover { border-color: rgba(38,36,33,.16); }
+  .tile .chip { width: 22px; height: 22px; margin: 0 auto; overflow: hidden; border-radius: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.05); }
+  .tile .chip img { display: block; width: 100%; height: 100%; }
+  .tile-name { margin-top: 6px; font-size: 11px; font-weight: 550; }
+  .tile-state { margin-top: 1px; font-size: 10px; color: var(--ink-3); }
+  .tile-state.ok { color: var(--ok); }
+  .tile-state.run { color: var(--run); }
+  .tile-state.warn { color: var(--warn); }
+
+  /* activity table */
+  table { width: 100%; overflow: hidden; border-spacing: 0; border-collapse: separate; background: var(--panel); border: 1px solid var(--hairline); border-radius: 10px; }
+  thead th { padding: 10px 14px; font-size: 10.5px; font-weight: 600; color: var(--ink-3); text-align: left; text-transform: uppercase; letter-spacing: .06em; background: rgba(38,36,33,.015); border-bottom: 1px solid var(--hairline); }
+  tbody td { padding: 11px 14px; font-size: 12.5px; color: var(--ink-2); border-top: 1px solid var(--hairline); }
+  tbody tr:first-child td { border-top: 0; }
+  tbody tr:hover td { background: rgba(38,36,33,.015); }
+  .src { display: flex; gap: 8px; align-items: center; font-weight: 550; color: var(--ink); }
+  .src .chip { width: 16px; height: 16px; overflow: hidden; border-radius: 4px; }
+  .src .chip img { display: block; width: 100%; height: 100%; }
+  .st { font-size: 10.5px; font-weight: 700; letter-spacing: .07em; }
+  .st.ok { color: var(--ok); }
+  .st.err { color: var(--err); }
+  .st.run { color: var(--run); }
+  .st.warn { color: var(--warn); }
+  .num { font-variant-numeric: tabular-nums; }
+  .time { font-variant-numeric: tabular-nums; color: var(--ink-3); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="content">
+
+  <div class="head">
+    <h1>Activity</h1>
+    <div class="head-sub">5,056 items collected · <b>+12 today</b> · 7 sources connected</div>
+  </div>
+
+  <div class="strip">
+    <div class="tile"><span class="chip"><img src="twitter.svg" alt=""/></span><div class="tile-name">Twitter</div><div class="tile-state ok">synced</div></div>
+    <div class="tile"><span class="chip"><img src="cosmos.svg" alt=""/></span><div class="tile-name">Cosmos</div><div class="tile-state run">syncing</div></div>
+    <div class="tile"><span class="chip"><img src="pinterest.svg" alt=""/></span><div class="tile-name">Pinterest</div><div class="tile-state warn">limited</div></div>
+    <div class="tile"><span class="chip"><img src="instagram.svg" alt=""/></span><div class="tile-name">Instagram</div><div class="tile-state ok">synced</div></div>
+    <div class="tile"><span class="chip"><img src="arena.svg" alt=""/></span><div class="tile-name">Are.na</div><div class="tile-state ok">synced</div></div>
+    <div class="tile"><span class="chip"><img src="tiktok.svg" alt=""/></span><div class="tile-name">TikTok</div><div class="tile-state ok">synced</div></div>
+    <div class="tile"><span class="chip"><img src="youtube.svg" alt=""/></span><div class="tile-name">YouTube</div><div class="tile-state ok">synced</div></div>
+  </div>
+
+  <div class="toolbar">
+    <span class="search">Search runs…</span>
+    <span class="chipbtn">All sources</span>
+    <span class="chipbtn">Last 7 days</span>
+    <button class="primary-btn">Sync all</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Source</th><th>Run</th><th>Items</th><th>Status</th><th style="text-align:right">Time</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="cosmos.svg" alt=""/></span>Cosmos</span></td>
+        <td>Incremental sync</td>
+        <td class="num">12 so far</td>
+        <td><span class="st run">RUNNING</span></td>
+        <td class="time" style="text-align:right">now</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="pinterest.svg" alt=""/></span>Pinterest</span></td>
+        <td>Incremental sync — hit rate limit</td>
+        <td class="num">210</td>
+        <td><span class="st warn">BACKED OFF</span></td>
+        <td class="time" style="text-align:right">12:40 PM</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="twitter.svg" alt=""/></span>Twitter</span></td>
+        <td>Incremental sync</td>
+        <td class="num">4</td>
+        <td><span class="st ok">COMPLETED</span></td>
+        <td class="time" style="text-align:right">12:02 PM</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="instagram.svg" alt=""/></span>Instagram</span></td>
+        <td>Incremental sync</td>
+        <td class="num">0</td>
+        <td><span class="st ok">COMPLETED</span></td>
+        <td class="time" style="text-align:right">11:47 AM</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="arena.svg" alt=""/></span>Are.na</span></td>
+        <td>Incremental sync — 4 channels</td>
+        <td class="num">0</td>
+        <td><span class="st ok">COMPLETED</span></td>
+        <td class="time" style="text-align:right">10:58 AM</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="youtube.svg" alt=""/></span>YouTube</span></td>
+        <td>Metadata refresh — 22 items</td>
+        <td class="num">22</td>
+        <td><span class="st ok">COMPLETED</span></td>
+        <td class="time" style="text-align:right">9:31 AM</td>
+      </tr>
+      <tr>
+        <td><span class="src"><span class="chip"><img src="tiktok.svg" alt=""/></span>TikTok</span></td>
+        <td>Incremental sync — 1 video failed to download</td>
+        <td class="num">3</td>
+        <td><span class="st err">PARTIAL</span></td>
+        <td class="time" style="text-align:right">8:12 AM</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

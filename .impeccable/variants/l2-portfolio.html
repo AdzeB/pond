@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sources — Portfolio layout</title>
+<style>
+  :root {
+    --ink: #19191c; --ink-2: #68686e; --ink-3: #97979d;
+    --line: rgba(0,0,0,.07); --hairline: rgba(0,0,0,.05);
+    --panel: #fff;
+    --ok: #3c9a52; --err: #cf3f3f; --warn: #b57e1c; --run: #4472d4;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: flex; justify-content: center;
+    font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--ink); background: #fafafa;
+  }
+  .content { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 660px; padding: 44px 32px 90px; }
+
+  header { display: flex; gap: 14px; align-items: flex-end; }
+  .heading { flex: 1; }
+  h1 { font-size: 20px; font-weight: 650; letter-spacing: -0.02em; }
+  .big { display: flex; gap: 10px; align-items: baseline; margin-top: 10px; }
+  .big-value { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+  .big-delta { font-size: 13px; font-weight: 600; color: var(--ok); }
+  .big-sub { margin-top: 2px; font-size: 12.5px; color: var(--ink-2); }
+  .actions { display: flex; gap: 8px; }
+  .btn {
+    padding: 5px 12px; font: inherit; font-size: 12.5px; font-weight: 550;color: var(--ink); cursor: pointer;
+    background: #fff; 
+    border: 0; border-radius: 8px; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(0,0,0,.04);
+  }
+  .btn.primary { color: #fff; background: var(--ink); box-shadow: none; }
+
+  .panel { overflow: hidden; background: var(--panel); border-radius: 12px; box-shadow: 0 0 0 1px var(--hairline), 0 1px 3px rgba(0,0,0,.03); }
+  .thead { display: grid; grid-template-columns: 1fr 96px 120px 110px; gap: 12px; padding: 8px 16px; font-size: 10.5px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--hairline); }
+  .thead span:nth-child(n+2) { text-align: right; }
+  .row { display: grid; grid-template-columns: 1fr 96px 120px 110px; gap: 12px; align-items: center; padding: 10px 16px; cursor: pointer; border-top: 1px solid var(--hairline); }
+  .row:first-of-type { border-top: 0; }
+  .row:hover { background: rgba(0,0,0,.02); }
+  .who { display: flex; gap: 10px; align-items: center; min-width: 0; }
+  .brand { flex: none; width: 26px; height: 26px; overflow: hidden; border-radius: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.05); }
+  .brand img { display: block; width: 100%; height: 100%; }
+  .who-name { font-size: 13px; font-weight: 550; }
+  .who-sub { margin-top: 0px; font-size: 11px; color: var(--ink-3); }
+  .who-sub.run { font-weight: 550; color: var(--run); }
+  .who-sub.warn { font-weight: 550; color: var(--warn); }
+  .spark { justify-self: end; }
+  .num { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); text-align: right; }
+  .num b { font-weight: 600; color: var(--ink); }
+  .delta { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+  .delta.up { color: var(--ok); }
+  .delta.flat { font-weight: 500; color: var(--ink-3); }
+  .delta.warn { color: var(--warn); }
+
+  .foot { display: flex; gap: 10px; align-items: center; padding: 10px 16px; font-size: 12px; color: var(--ink-2); border-top: 1px solid var(--hairline); }
+  .foot .add { font-weight: 550; color: var(--ink-2); cursor: pointer; }
+  .foot .add:hover { color: var(--ink); }
+
+  .now { display: flex; gap: 10px; align-items: center; padding: 11px 16px; font-size: 12.5px; background: var(--panel); border-radius: 12px; box-shadow: 0 0 0 1px var(--hairline); }
+  .now-dot { flex: none; width: 7px; height: 7px; background: var(--run); border-radius: 50%; }
+  .now b { font-weight: 600; }
+  .now .meta { color: var(--ink-3); }
+  .now .btn { margin-left: auto; }
+</style>
+</head>
+<body>
+<div class="content">
+  <header>
+    <div class="heading">
+      <h1>Sources</h1>
+      <div class="big"><span class="big-value">5,056</span><span class="big-delta">+12 today</span></div>
+      <div class="big-sub">items collected from 7 sources · all healthy · last run 2m ago</div>
+    </div>
+    <div class="actions">
+      <button class="btn">Pause all</button>
+      <button class="btn primary">Sync all</button>
+    </div>
+  </header>
+
+  <div class="panel">
+    <div class="thead"><span>Source</span><span>30 days</span><span>Items</span><span>Last sync</span></div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="twitter.svg" alt=""/></span><div><div class="who-name">Twitter</div><div class="who-sub">bookmarks &amp; likes</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 18 L8 14 L15 16 L22 10 L29 12 L36 8 L43 11 L50 6 L57 9 L64 5 L71 8 L78 4 L83 6" stroke="#3c9a52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>2,381</b></span>
+      <span class="delta flat">18m ago</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="cosmos.svg" alt=""/></span><div><div class="who-name">Cosmos</div><div class="who-sub run">syncing · 12 new</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 20 L8 19 L15 20 L22 17 L29 18 L36 15 L43 17 L50 13 L57 15 L64 10 L71 12 L78 6 L83 3" stroke="#4472d4" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>312</b></span>
+      <span class="delta up">+12 now</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="pinterest.svg" alt=""/></span><div><div class="who-name">Pinterest</div><div class="who-sub warn">rate limited · resumes 1:20</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 12 L8 14 L15 10 L22 13 L29 9 L36 12 L43 8 L50 11 L57 9 L64 13 L71 16 L78 18 L83 19" stroke="#b57e1c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>1,104</b></span>
+      <span class="delta warn">paused</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="instagram.svg" alt=""/></span><div><div class="who-name">Instagram</div><div class="who-sub">saved posts</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 16 L8 13 L15 15 L22 11 L29 14 L36 10 L43 13 L50 9 L57 12 L64 8 L71 11 L78 9 L83 10" stroke="#3c9a52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>694</b></span>
+      <span class="delta flat">1h ago</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="arena.svg" alt=""/></span><div><div class="who-name">Are.na</div><div class="who-sub">channels</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 19 L8 18 L15 19 L22 16 L29 18 L36 17 L43 15 L50 17 L57 14 L64 16 L71 13 L78 15 L83 14" stroke="#3c9a52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>245</b></span>
+      <span class="delta flat">2h ago</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="tiktok.svg" alt=""/></span><div><div class="who-name">TikTok</div><div class="who-sub">favorites</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 18 L8 17 L15 19 L22 16 L29 17 L36 15 L43 17 L50 14 L57 16 L64 15 L71 17 L78 14 L83 15" stroke="#3c9a52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>188</b></span>
+      <span class="delta flat">3h ago</span>
+    </div>
+
+    <div class="row">
+      <div class="who"><span class="brand"><img src="youtube.svg" alt=""/></span><div><div class="who-name">YouTube</div><div class="who-sub">watch later</div></div></div>
+      <svg class="spark" width="84" height="24" viewBox="0 0 84 24" fill="none"><path d="M1 17 L8 18 L15 16 L22 18 L29 15 L36 17 L43 16 L50 18 L57 15 L64 17 L71 14 L78 16 L83 15" stroke="#3c9a52" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="num"><b>132</b></span>
+      <span class="delta flat">5h ago</span>
+    </div>
+
+    <div class="foot"><span class="add">+ Connect Reddit or Threads</span></div>
+  </div>
+
+  <div class="now">
+    <span class="now-dot"></span>
+    <span><b>Enrichment</b> running</span>
+    <span class="meta">73 items · tags, colors, screenshots</span>
+    <button class="btn">Pause</button>
+  </div>
+</div>
+</body>
+</html>

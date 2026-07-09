@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>ED4 — Form-first builder (Sentry style)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    display: flex;min-height: 100vh;
+    font: 13px/1.45 -apple-system, "SF Pro Text", Inter, sans-serif;color: #1b1b1a; 
+    background: #f4f4f3;
+  }
+
+  /* left form panel */
+  .form {
+    display: flex; flex: none; flex-direction: column;
+    width: 420px; 
+    padding: 0; background: #fff; border-right: 1px solid #e7e7e5;
+  }
+  .form-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid #f0f0ee;
+  }
+  .form-head b { font-size: 13px; font-weight: 600; }
+  .form-head .x { font-size: 12px; color: #8a8a86; cursor: pointer; }
+  .form-body { flex: 1; padding: 18px 20px; overflow-y: auto; }
+
+  .field { margin-bottom: 18px; }
+  .field-label { display: block; margin-bottom: 6px; font-size: 11px; font-weight: 600; color: #55554f; }
+  .field-label small { font-weight: 450; color: #9c9c98; }
+  .field input[type="text"] {
+    width: 100%; padding: 7px 10px; font: inherit; font-family: inherit;outline: none;
+    border: 1px solid #e0e0dd; border-radius: 8px;
+  }
+  .field input[type="text"]:focus { border-color: #1b1b1a; }
+  .link { font-size: 12px; color: #6f6f6c; cursor: pointer; }
+
+  .radio-row { display: flex; flex-wrap: wrap; gap: 14px; }
+  .radio { display: inline-flex; gap: 6px; align-items: center; font-size: 12.5px; cursor: pointer; }
+  .radio i {
+    display: inline-block;
+    width: 14px; height: 14px; 
+    border: 1.5px solid #c9c9c5; border-radius: 50%;
+  }
+  .radio.on i { border: 4.5px solid #1b1b1a; }
+
+  .select {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 7px 10px; font: inherit; font-weight: 500;cursor: pointer; background: #fff;
+    border: 1px solid #e0e0dd; border-radius: 8px;
+  }
+  .select .chev { font-size: 10px; color: #a3a39f; }
+  .select svg { margin-right: 8px; }
+
+  .series-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .series-row .grip { align-self: center; color: #c9c9c5; cursor: grab; }
+  .series-row .select { flex: 1; }
+  .series-row .del { align-self: center; color: #b3b3af; cursor: pointer; }
+
+  .chip {
+    display: inline-flex; gap: 6px;align-items: center; padding: 4px 9px;margin-right: 6px;
+    font-size: 12px; 
+    border: 1px solid #e7e7e5; border-radius: 7px;
+  }
+  .chip i { width: 6px; height: 6px; background: #0797b9; border-radius: 50%; }
+  .chip .x { color: #b3b3af; cursor: pointer; }
+
+  .form-foot { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid #f0f0ee; }
+  .primary { padding: 8px 16px; font: inherit; font-weight: 550; color: #fff; cursor: pointer; background: #1b1b1a; border: 0; border-radius: 8px; }
+  .ghost { padding: 8px 14px; font: inherit; color: #55554f; cursor: pointer; background: #fff; border: 1px solid #e0e0dd; border-radius: 8px; }
+
+  /* right: preview over dimmed dashboard */
+  .stage { position: relative; display: grid; flex: 1; place-items: center; padding: 40px; }
+  .ghost-grid {
+    position: absolute; inset: 24px; 
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-content: start;opacity: .35; filter: saturate(.4);
+  }
+  .ghost-card { height: 150px; background: #fff; border: 1px solid #e7e7e5; border-radius: 12px; }
+
+  .preview {
+    position: relative; z-index: 1;
+    width: 460px; 
+    padding: 16px 18px 14px;background: #fff; border: 1px solid #e7e7e5; border-radius: 14px;
+    box-shadow: 0 24px 60px rgba(20,20,19,.16), 0 2px 8px rgba(20,20,19,.06);
+  }
+  .preview-title { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; }
+  .preview-title b { font-size: 13px; font-weight: 600; }
+  .preview-title span { font-size: 20px; font-weight: 640; font-variant-numeric: tabular-nums; }
+  .preview-sub { margin-bottom: 12px; font-size: 11px; color: #8a8a86; }
+  svg.chart { display: block; }
+  .legend { display: flex; gap: 12px; margin-top: 10px; font-size: 10.5px; color: #6f6f6c; }
+  .legend i { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="form">
+  <div class="form-head"><b>New insight</b><span class="x">✕ Close</span></div>
+  <div class="form-body">
+
+    <div class="field">
+      <span class="field-label">Title</span>
+      <input type="text" placeholder="Saves by day, split by source" />
+      <span class="link">＋ Add description</span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Dataset</span>
+      <div class="radio-row">
+        <span class="radio"><i></i>Sync runs</span>
+        <span class="radio on"><i></i>Library saves</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Display</span>
+      <div class="select">
+        <span style="display:flex;align-items:center;">
+          <svg width="20" height="14"><path d="M1 10 C5 9 7 4 11 5 C15 6 17 2 19 2 L19 13 L1 13 Z" fill="#0797b9" opacity=".25"/><path d="M1 10 C5 9 7 4 11 5 C15 6 17 2 19 2" fill="none" stroke="#0797b9" stroke-width="1.5"/></svg>
+          Area
+        </span>
+        <span class="chev">▾</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Visualize</span>
+      <div class="series-row">
+        <span class="grip">⠿</span>
+        <div class="select"><span>Saves</span><span class="chev">▾</span></div>
+        <div class="select"><span>by Day</span><span class="chev">▾</span></div>
+        <span class="del">🗑</span>
+      </div>
+      <span class="link">＋ Add series</span>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Filter <small>(optional)</small></span>
+      <div>
+        <span class="chip"><i></i>Source is Twitter, Cosmos <span class="x">✕</span></span>
+        <span class="link">＋ Add filter</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <span class="field-label">Group by <small>(optional)</small></span>
+      <div class="select"><span>Source</span><span class="chev">▾</span></div>
+    </div>
+
+  </div>
+  <div class="form-foot">
+    <button class="primary">Add insight</button>
+    <button class="ghost">Cancel</button>
+  </div>
+</div>
+
+<div class="stage">
+  <div class="ghost-grid">
+    <div class="ghost-card"></div><div class="ghost-card"></div>
+    <div class="ghost-card"></div><div class="ghost-card"></div>
+  </div>
+  <div class="preview">
+    <div class="preview-title"><b>Saves by day</b><span>1,204</span></div>
+    <div class="preview-sub">1,204 saves · last 30 days</div>
+    <svg class="chart" width="100%" height="140" viewBox="0 0 424 140" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="f1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#0797b9" stop-opacity=".32"/><stop offset="1" stop-color="#0797b9" stop-opacity=".02"/></linearGradient>
+        <linearGradient id="f2" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#5b5bd6" stop-opacity=".28"/><stop offset="1" stop-color="#5b5bd6" stop-opacity=".02"/></linearGradient>
+      </defs>
+      <path d="M0 100 C50 94 70 60 110 66 C150 72 180 38 220 44 C260 50 300 26 340 22 C375 19 405 30 424 20 L424 140 L0 140 Z" fill="url(#f1)"/>
+      <path d="M0 100 C50 94 70 60 110 66 C150 72 180 38 220 44 C260 50 300 26 340 22 C375 19 405 30 424 20" fill="none" stroke="#0797b9" stroke-width="1.75"/>
+      <path d="M0 122 C60 118 100 106 150 110 C200 114 260 96 310 100 C360 104 400 92 424 94 L424 140 L0 140 Z" fill="url(#f2)"/>
+      <path d="M0 122 C60 118 100 106 150 110 C200 114 260 96 310 100 C360 104 400 92 424 94" fill="none" stroke="#5b5bd6" stroke-width="1.75"/>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#0797b9"></i>Twitter</span>
+      <span><i style="background:#5b5bd6"></i>Cosmos</span>
+      <span><i style="background:#ab4aba"></i>Instagram</span>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -133,24 +133,149 @@ export const DEFAULT_SOURCE_METRICS: string[] = [
   "avgRun",
 ];
 
-export type SourceVisibility = "always" | "when-count" | "hidden";
+// ── Analytics page (insight dashboards) ───────────────────────────────────
+// Named dashboards of user-composed insight cards over the library's saves,
+// Linear Dashboards style: every card counts saves, picking a slice (x-axis)
+// × optional segment (color split), rendered as one of several chart shapes,
+// a single metric, or a table — optionally narrowed by filters. Option ids are owned by the renderer's insight catalog; the
+// schema stays loose so new slices never require a migration.
+export type InsightSlice =
+  | "source"
+  | "day"
+  | "type"
+  | "creator"
+  | "tag"
+  | "domain"
+  | "status";
 
-export interface SidebarSourceEntry {
-  source: Source;
-  visibility: SourceVisibility;
+export type InsightSegment = "source" | "type" | "status";
+
+export type InsightDisplay =
+  | "chart" // stacked bars
+  | "area"
+  | "line"
+  | "ring"
+  | "pie"
+  | "sunburst" // two-level ring: slice inside, segment outside
+  | "radar"
+  | "heatmap" // weekday × hour activity; slice/segment do not apply
+  | "metric"
+  | "table";
+
+export type InsightWidth = "quarter" | "third" | "half" | "full";
+
+// Style knobs for the chart displays. All optional — stored cards render
+// exactly as before when absent.
+export interface InsightVizOptions {
+  /** Interpolation between points: smooth monotone, straight, or stepped. */
+  curve?: "smooth" | "linear" | "step";
+  /** Area fill: gradient wash (default), Linear-style dot texture, or none. */
+  fill?: "gradient" | "dotted" | "none";
+  /** Mark every data point with a dot. */
+  points?: boolean;
+  /** Hidden layer ids for the display (e.g. "grid", "legend", "center"). */
+  hidden?: string[];
+  /** Area/line stroke width (1–4, default 1.75). */
+  lineWidth?: number;
+  /** Ring/pie/sunburst band thickness in px. */
+  thickness?: number;
+  /** Area fill / radar polygon fill opacity (0–1). */
+  fillOpacity?: number;
+  /** Bar end caps: rounded (default) or square. */
+  barCap?: "round" | "square";
+  /** Radar grid ring count (default 4). */
+  gridLevels?: number;
 }
 
-export type SidebarSourcesConfig = SidebarSourceEntry[];
+// Narrow the window by dimension values, e.g. "source include [twitter]" or
+// "tag exclude [inbox]". Dashboard-level filters apply to every card;
+// insight-level filters stack on top.
+export interface InsightFilter {
+  field: "source" | "type" | "tag" | "creator" | "status";
+  op: "include" | "exclude";
+  values: string[];
+}
 
-export const DEFAULT_SIDEBAR_SOURCES: SidebarSourceEntry[] = [
-  { source: "twitter", visibility: "always" },
-  { source: "pinterest", visibility: "always" },
-  { source: "arena", visibility: "always" },
-  { source: "instagram", visibility: "always" },
-  { source: "cosmos", visibility: "hidden" },
-  { source: "tiktok", visibility: "hidden" },
-  { source: "youtube", visibility: "hidden" },
-  { source: "reddit", visibility: "when-count" },
-  { source: "threads", visibility: "when-count" },
-  { source: "local", visibility: "hidden" },
+export interface InsightConfig {
+  id: string;
+  /** Custom title; null falls back to the auto-generated one. */
+  name: string | null;
+  slice: InsightSlice;
+  segment: InsightSegment | null;
+  display: InsightDisplay;
+  /** Column span on the 4-column grid (1-4); missing falls back to `width`. */
+  w?: number;
+  /** Row span (1-4); missing falls back to the display's default height. */
+  h?: number;
+  /** Legacy pre-grid width; superseded by `w`/`h`. */
+  width?: InsightWidth;
+  /** Chart style options; only meaningful for chart/area/line displays. */
+  viz?: InsightVizOptions;
+  filters: InsightFilter[];
+}
+
+export interface DashboardConfig {
+  id: string;
+  name: string;
+  description: string;
+  /** Rolling window (days) every card on this dashboard aggregates over. */
+  days: number;
+  filters: InsightFilter[];
+  insights: InsightConfig[];
+}
+
+// First-open dashboard: a library overview on the 3-column grid — a daily
+// activity hero, a headline count, then composition breakdowns.
+export const DEFAULT_INSIGHTS: InsightConfig[] = [
+  {
+    id: "default-saves-by-day",
+    name: null,
+    slice: "day",
+    segment: "source",
+    display: "area",
+    w: 3,
+    h: 2,
+    filters: [],
+  },
+  {
+    id: "default-saves-count",
+    name: null,
+    slice: "source",
+    segment: null,
+    display: "metric",
+    w: 3,
+    h: 1,
+    filters: [],
+  },
+  {
+    id: "default-saves-by-type",
+    name: null,
+    slice: "type",
+    segment: null,
+    display: "ring",
+    w: 3,
+    h: 2,
+    filters: [],
+  },
+  {
+    id: "default-top-creators",
+    name: null,
+    slice: "creator",
+    segment: null,
+    display: "table",
+    w: 3,
+    h: 2,
+    filters: [],
+  },
+];
+
+export const DEFAULT_DASHBOARDS: DashboardConfig[] = [
+  {
+    id: "default-overview",
+    name: "Overview",
+    description: "What you've been saving across your sources",
+    days: 7,
+    filters: [],
+    insights: DEFAULT_INSIGHTS,
+  },
 ];

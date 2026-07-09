@@ -1,32 +1,6 @@
-/* ── segmented filter (Toolbar) ─────────────────────────────────────────── */
+/* ── segmented filter (ToggleGroup) ─────────────────────────────────────── */
 .segmented {
   margin-left: auto;
-}
-
-.segmented > * {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--hover);
-  border-radius: 8px;
-}
-
-.segment-button {
-  padding: 4px 10px;
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--ink-2);
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-}
-
-.segment-button[data-active] {
-  font-weight: 600;
-  color: var(--ink);
-  background: var(--panel);
-  box-shadow: var(--shadow);
 }
 
 /* ── recent runs table ──────────────────────────────────────────────────── */

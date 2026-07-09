@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>V54 — Source detail (Twitter)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font: 400 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #171717; background: #fafafa; }
+  .wrap { max-width: 980px; padding: 28px 24px 60px; margin: 0 auto; }
+
+  /* header */
+  .crumb { margin-bottom: 14px; font-size: 12px; color: #8f8f8f; }
+  .crumb a { color: #8f8f8f; text-decoration: none; }
+  .crumb b { font-weight: 550; color: #171717; }
+  .head { display: flex; gap: 14px; align-items: center; }
+  .head img { width: 40px; height: 40px; border-radius: 10px; }
+  .head h1 { font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
+  .head .sub { margin-top: 2px; font-size: 12.5px; color: #737373; }
+  .badge { display: inline-flex; gap: 5px; align-items: center; padding: 2.5px 9px; margin-left: 10px; font-size: 11px; font-weight: 600; vertical-align: 2px; color: #2f9e57; background: #f0faf4; border: 1px solid #d3eedd; border-radius: 99px; }
+  .head .end { display: flex; gap: 9px; margin-left: auto; }
+  .btn { padding: 7px 13px; font-size: 12.5px; font-weight: 550; color: #171717; background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; }
+  .btn.dark { color: #fff; background: #171717; border-color: #171717; }
+
+  /* tabs */
+  .tabs { display: flex; gap: 2px; margin: 22px 0 0; border-bottom: 1px solid #ebebeb; }
+  .tabs span { position: relative; padding: 8px 12px 10px; font-size: 12.5px; color: #737373; }
+  .tabs span.sel { font-weight: 550; color: #171717; }
+  .tabs span.sel::after { position: absolute; right: 8px; bottom: -1px; left: 8px; height: 2px; content: ""; background: #171717; border-radius: 2px; }
+  .tabs .n { margin-left: 4px; font-size: 10.5px; color: #a3a3a3; }
+
+  .section { margin-top: 24px; }
+  .h { margin-bottom: 10px; font-size: 12.5px; font-weight: 600; }
+  .h .hint { margin-left: 7px; font-weight: 400; color: #8f8f8f; }
+
+  .card { background: #fff; border: 1px solid #e6e6e6; border-radius: 10px; }
+
+  /* latest sync hero */
+  .hero { display: grid; grid-template-columns: 1fr 300px; }
+  .thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 16px; border-right: 1px solid #f0f0f0; }
+  .th { position: relative; aspect-ratio: 4/5; overflow: hidden; border: 1px solid #ececec; border-radius: 8px; }
+  .th .k { position: absolute; bottom: 6px; left: 7px; padding: 1.5px 6px; font-size: 9.5px; font-weight: 600; color: #fff; background: rgba(0,0,0,.45); border-radius: 4px; backdrop-filter: blur(4px); }
+  .th.more { display: grid; place-items: center; aspect-ratio: auto; font-size: 12px; font-weight: 550; color: #737373; background: #fafafa; }
+  .hmeta { display: flex; flex-direction: column; padding: 16px 18px; }
+  .hrow { display: flex; justify-content: space-between; padding: 6px 0; font-size: 12px; }
+  .hrow .k { color: #737373; }
+  .hrow .v { font-weight: 550; font-variant-numeric: tabular-nums; }
+  .hrow .v.ok { color: #2f9e57; }
+  .hdiv { height: 1px; margin: 7px 0; background: #f0f0f0; }
+  .hfoot { margin-top: auto; font-size: 11.5px; color: #8f8f8f; }
+
+  /* runs list */
+  .run { display: flex; gap: 12px; align-items: center; padding: 12px 16px; font-size: 12.5px; }
+  .run + .run { border-top: 1px solid #f0f0f0; }
+  .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; }
+  .dot.ok { background: #2f9e57; }
+  .dot.zero { background: #d4d4d4; }
+  .dot.err { background: #e5484d; }
+  .run .what { width: 150px; font-weight: 550; }
+  .run .det { flex: 1; color: #737373; }
+  .run .dur { width: 44px; font-variant-numeric: tabular-nums; color: #8f8f8f; text-align: right; }
+  .run .when { width: 110px; font-variant-numeric: tabular-nums; color: #8f8f8f; text-align: right; }
+  .run .trg { padding: 1.5px 8px; font-size: 10.5px; font-weight: 550; color: #737373; background: #f5f5f5; border: 1px solid #ececec; border-radius: 99px; }
+
+  /* config */
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .crow { display: flex; gap: 11px; align-items: center; padding: 12px 16px; font-size: 12.5px; }
+  .crow + .crow { border-top: 1px solid #f0f0f0; }
+  .crow .t { font-weight: 550; }
+  .crow .s { margin-top: 1px; font-size: 11.5px; color: #8f8f8f; }
+  .crow .end { margin-left: auto; }
+  .tgl { position: relative; display: inline-block; flex: none; width: 32px; height: 19px; vertical-align: middle; background: #171717; border-radius: 99px; }
+  .tgl::after { position: absolute; top: 2.5px; right: 2.5px; width: 14px; height: 14px; content: ""; background: #fff; border-radius: 50%; }
+  .tgl.off { background: #d9d9d9; }
+  .tgl.off::after { right: auto; left: 2.5px; }
+  .sel { padding: 5px 10px; font-size: 12px; font-weight: 520; color: #171717; background: #fff; border: 1px solid #e0e0e0; border-radius: 7px; }
+  .danger .t { color: #e5484d; }
+  .btn.warn { color: #e5484d; border-color: #f0caca; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="crumb"><a href="v53-vercel-projects.html">Sources</a> / <b>Twitter</b></div>
+
+  <div class="head">
+    <img src="twitter.svg" alt=""/>
+    <div>
+      <h1>Twitter <span class="badge">● Connected</span></h1>
+      <div class="sub">@raphaelsalaja · bookmarks · 2,381 items</div>
+    </div>
+    <div class="end">
+      <button class="btn">Open twitter.com ↗</button>
+      <button class="btn">Pause</button>
+      <button class="btn dark">Sync Now</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <span class="sel">Overview</span>
+    <span>Items <span class="n">2,381</span></span>
+    <span>Runs <span class="n">142</span></span>
+    <span>Settings</span>
+  </div>
+
+  <div class="section">
+    <div class="h">Latest sync <span class="hint">8:04 AM · automatic</span></div>
+    <div class="card hero">
+      <div class="thumbs">
+        <div class="th" style="background:linear-gradient(160deg,#d8e4f0,#aebfd4)"><span class="k">image</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#e8ddd0,#cbb59d)"><span class="k">video</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#dfe8dc,#b3c9ae)"><span class="k">thread</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#e9dee9,#c5aec7)"><span class="k">image</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#dee6ea,#a9bcc7)"><span class="k">tweet</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#efe6d8,#d3bfa2)"><span class="k">image</span></div>
+        <div class="th" style="background:linear-gradient(160deg,#e2e2ec,#b8b8d1)"><span class="k">tweet</span></div>
+        <div class="th more">+5 more</div>
+      </div>
+      <div class="hmeta">
+        <div class="hrow"><span class="k">Status</span><span class="v ok">✓ Completed</span></div>
+        <div class="hrow"><span class="k">New items</span><span class="v">12 bookmarks</span></div>
+        <div class="hrow"><span class="k">Duration</span><span class="v">41s</span></div>
+        <div class="hrow"><span class="k">Enrichment</span><span class="v">12 of 12 done</span></div>
+        <div class="hdiv"></div>
+        <div class="hrow"><span class="k">Session</span><span class="v ok">Healthy</span></div>
+        <div class="hrow"><span class="k">Next sync</span><span class="v">10:04 AM</span></div>
+        <div class="hfoot">Synced automatically every 2 hours</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="h">Recent syncs <span class="hint">last 24 hours</span></div>
+    <div class="card">
+      <div class="run"><span class="dot ok"></span><span class="what">+12 bookmarks</span><span class="det">3 images · 1 video · 8 tweets</span><span class="trg">auto</span><span class="dur">41s</span><span class="when">8:04 AM</span></div>
+      <div class="run"><span class="dot zero"></span><span class="what">No new items</span><span class="det">checked bookmarks, nothing saved since</span><span class="trg">auto</span><span class="dur">9s</span><span class="when">6:04 AM</span></div>
+      <div class="run"><span class="dot ok"></span><span class="what">+3 bookmarks</span><span class="det">2 images · 1 thread</span><span class="trg">auto</span><span class="dur">18s</span><span class="when">4:04 AM</span></div>
+      <div class="run"><span class="dot zero"></span><span class="what">No new items</span><span class="det">checked bookmarks, nothing saved since</span><span class="trg">auto</span><span class="dur">8s</span><span class="when">2:04 AM</span></div>
+      <div class="run"><span class="dot ok"></span><span class="what">+27 bookmarks</span><span class="det">11 images · 4 videos · 12 tweets</span><span class="trg">manual</span><span class="dur">1m 12s</span><span class="when">Yesterday</span></div>
+    </div>
+  </div>
+
+  <div class="section two">
+    <div>
+      <div class="h">What gets imported</div>
+      <div class="card">
+        <div class="crow"><div><div class="t">Bookmarks</div><div class="s">Everything you bookmark on Twitter</div></div><span class="end"><span class="tgl"></span></span></div>
+        <div class="crow"><div><div class="t">Likes</div><div class="s">Tweets you've liked</div></div><span class="end"><span class="tgl off"></span></span></div>
+        <div class="crow"><div><div class="t">Sync frequency</div><div class="s">How often Pond checks for new saves</div></div><span class="end"><button class="sel">Every 2 hours ⌄</button></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="h">Session</div>
+      <div class="card">
+        <div class="crow"><div><div class="t">Signed in as @raphaelsalaja</div><div class="s">Session healthy · captured Jun 12 via extension</div></div><span class="end"><button class="btn">Re-sign in</button></span></div>
+        <div class="crow danger"><div><div class="t">Disconnect Twitter</div><div class="s">Keeps the 2,381 items already in your pond</div></div><span class="end"><button class="btn warn">Disconnect…</button></span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

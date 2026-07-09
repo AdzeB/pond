@@ -29,6 +29,8 @@ export { Stepper } from "./stepper";
 export { Switch } from "./switch";
 export { Table } from "./table";
 export { TitleBar } from "./title-bar";
+export { Toggle, type ToggleProps } from "./toggle";
+export { ToggleGroup } from "./toggle-group";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
 export { Video } from "./video";

@@ -17,7 +17,6 @@ import {
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
 } from "lexical";
-import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskMentions } from "@/components/ask-bar-mentions";
 import { PromptDialog } from "@/components/prompt-dialog";
@@ -227,8 +226,8 @@ function AskField({
   );
 
   return (
-    <motion.div
-      layout
+    // biome-ignore lint/a11y/noStaticElementInteractions: paste/drop targets for image attachments, not click interactivity; the editor inside stays keyboard-accessible.
+    <div
       className={styles.card}
       data-chat={hasTurns || undefined}
       onPaste={onPaste}
@@ -379,6 +378,6 @@ function AskField({
         confirmLabel="Save view"
         placeholder="View name"
       />
-    </motion.div>
+    </div>
   );
 }

@@ -2,12 +2,12 @@ import { z } from "zod";
 import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
   CUSTOM_THEME_DEFAULT,
+  type DashboardConfig,
+  DEFAULT_DASHBOARDS,
   DEFAULT_PRESET_ID,
-  DEFAULT_SIDEBAR_SOURCES,
   DEFAULT_SOURCE_METRICS,
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
-  type SidebarSourcesConfig,
   type SourceMetricDisplay,
   type SyncHandles,
   type SyncSources,
@@ -69,16 +69,20 @@ const allTags = z.object({
   sort: z.enum(["name", "count", "recent"]).catch("name"),
 });
 
-const sidebar = z.object({
-  sources: z.custom<SidebarSourcesConfig>().default(DEFAULT_SIDEBAR_SOURCES),
-});
-
-// Sources page header: ordered list of pinned metric ids, per-metric display
+// Analytics page header: ordered list of pinned metric ids, per-metric display
 // style (card vs compact chip), and the rolling window the KPIs summarize.
 const sourcesView = z.object({
   metrics: z.custom<string[]>().default(DEFAULT_SOURCE_METRICS),
   metricDisplay: z.custom<Record<string, SourceMetricDisplay>>().default({}),
   days: z.number().catch(7),
+});
+
+// Analytics insight dashboards: named dashboards of user-composed insight
+// cards, each with its own rolling window and filters. `activeId` remembers
+// the last-open dashboard.
+const analyticsView = z.object({
+  dashboards: z.custom<DashboardConfig[]>().default(DEFAULT_DASHBOARDS),
+  activeId: z.string().catch("default-overview"),
 });
 
 const api = z.object({
@@ -223,8 +227,8 @@ const PrefsObject = z.object({
   quickCapture: quickCapture.catch(quickCapture.parse({})),
   tagPicker: tagPicker.catch(tagPicker.parse({})),
   allTags: allTags.catch(allTags.parse({})),
-  sidebar: sidebar.catch(sidebar.parse({})),
   sourcesView: sourcesView.catch(sourcesView.parse({})),
+  analyticsView: analyticsView.catch(analyticsView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
   developer: developer.catch(developer.parse({})),
