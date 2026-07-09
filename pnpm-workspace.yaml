@@ -18,15 +18,14 @@ allowBuilds:
   # clobbers the Electron build and breaks ELECTRON_RUN_AS_NODE tooling.
   better-sqlite3: false
   core-js: false
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  ffmpeg-static: true
   # Optional bundled-AI dependency. Like better-sqlite3, we don't let pnpm run
   # its node-gyp build (that yields a plain-Node binary); node-llama-cpp resolves
   # the correct prebuilt binaries for this Electron ABI itself on first use.
   node-llama-cpp: false
-  nucleo-ui-fill-12: set this to true or false
-  nucleo-ui-fill-18: set this to true or false
-  nucleo-ui-fill-duo-18: set this to true or false
-  nucleo-ui-outline-12: set this to true or false
-  nucleo-ui-outline-18: set this to true or false
   onnxruntime-node: true
   protobufjs: true
   # Native module pulled in transitively by metascraper (via url-regex-safe).
@@ -34,14 +33,7 @@ allowBuilds:
   # Electron's main process, and url-regex-safe falls back to RegExp without it.
   re2: false
   sharp: true
+  spawn-sync: true
 
 minimumReleaseAgeExclude:
   - better-sqlite3@12.11.1
-
-onlyBuiltDependencies:
-  - electron
-  - electron-winstaller
-  - esbuild
-  - ffmpeg-static
-  - sharp
-  - spawn-sync

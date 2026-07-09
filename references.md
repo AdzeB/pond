@@ -150,7 +150,7 @@ Plus the workspace packages `@pond/icons`, `@pond/schema`, `@pond/theme`, `@pond
   are rebuilt for the Electron ABI (or resolve prebuilds), `re2` falls back to
   `RegExp`.
 - `onnxruntime-node` — ONNX inference backend for Transformers.js.
-- `sharp`, `protobufjs`, `esbuild`, `electron-winstaller`, `spawn-sync` — allowed builds.
+- `sharp`, `protobufjs`, `esbuild`, `electron`, `electron-winstaller`, `ffmpeg-static`, `spawn-sync` — `allowBuilds: true`.
 
 ---
 
