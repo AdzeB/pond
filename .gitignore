@@ -48,6 +48,9 @@ apps/extension/.wxt
 # mobbin UI evidence boards (design-exploration scratch)
 .mobbin/
 
+# impeccable design-exploration scratch
+.impeccable/
+
 # TanStack Router cache
 **/.tanstack/
 

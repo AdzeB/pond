@@ -4,9 +4,8 @@ import styles from "../../styles.module.css";
 import { formatCount, type InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Weekday × hour activity grid, in the spirit of Bklit's heatmap but
-// rendered as a plain CSS grid: cell intensity is the accent hue with
-// value-scaled alpha, hover shows the exact figure.
+// Weekday × hour activity grid rendered as a plain CSS grid: cell intensity
+// is the accent hue with value-scaled alpha, hover shows the exact figure.
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOUR_TICKS = [0, 6, 12, 18];

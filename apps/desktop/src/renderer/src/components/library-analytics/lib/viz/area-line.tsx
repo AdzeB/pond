@@ -8,11 +8,11 @@ import { formatCount, type InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 import { useMeasure } from "./use-measure";
 
-// Time-series area/line, ported from Bklit's visx Area/Line series and
-// restyled on ds tokens. Style knobs come from the insight's `viz` options:
-// curve interpolation (smooth/linear/step), area fill (gradient wash,
-// Linear-style dot texture, or none) and per-point dots. The mount reveal is
-// a CSS clip animation so an interrupted mount can't strand it invisible.
+// Time-series area/line built on visx, styled with ds tokens. Style knobs
+// come from the insight's `viz` options: curve interpolation
+// (smooth/linear/step), area fill (gradient wash, dot texture, or none) and
+// per-point dots. The mount reveal is a CSS clip animation so an interrupted
+// mount can't strand it invisible.
 
 const ACCENT = "var(--ds-accent-9)";
 

@@ -87,22 +87,6 @@ export async function retryFailedSelection(
   });
 }
 
-// Re-run every failed save in the library (not just a selection). Used by the
-// sync page's "Retry failed" action.
-export async function retryAllFailed(): Promise<void> {
-  const result = (await window.pond.query("saves.retryFailed", {})) as {
-    ok: boolean;
-    requeued: number;
-  };
-  if (!result.ok || result.requeued === 0) {
-    pushToast("No failed saves to retry.");
-    return;
-  }
-  pushToast(`Retrying ${pluralize(result.requeued, "failed save")}.`, {
-    tone: "success",
-  });
-}
-
 // --- Destructive ------------------------------------------------------------
 
 export async function trashSelection(ids: readonly string[]): Promise<void> {

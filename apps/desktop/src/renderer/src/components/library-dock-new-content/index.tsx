@@ -194,7 +194,6 @@ export function NewContent() {
     // with quiet actions on the left and the circular submit on the right.
     <div className={styles.card}>
       <div className={styles.row}>
-        {/* Keyed by source so a recognized URL pops the brand mark in. */}
         <span
           key={source ?? "link"}
           className={`${styles["lead-icon"]} ${styles.glyph}`}

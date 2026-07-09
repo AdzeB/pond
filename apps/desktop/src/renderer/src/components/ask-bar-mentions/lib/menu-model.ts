@@ -16,7 +16,7 @@ export type AskMenuItem =
   | { kind: "save"; key: string; save: Save }
   | { kind: "tag"; key: string; tag: string; count: number };
 
-export interface AskMenuGroup {
+interface AskMenuGroup {
   id: string;
   label: string;
   items: AskMenuItem[];

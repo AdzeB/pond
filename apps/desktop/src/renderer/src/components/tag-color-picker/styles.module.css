@@ -21,17 +21,6 @@
   outline-offset: 1px;
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  border-radius: var(--ds-radius-full, 999px);
-  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
-}
-
-.pane {
-  position: relative;
-}
-
 .swatches {
   display: flex;
   gap: 8px;
@@ -78,13 +67,6 @@
   outline-offset: 2px;
 }
 
-.divider {
-  flex: none;
-  width: 1px;
-  height: 20px;
-  background: var(--ds-gray-a4);
-}
-
 .wheel {
   flex: none;
   width: 22px;
@@ -116,28 +98,6 @@
 .wheel:focus-visible {
   outline: 2px solid var(--ds-focus-outline);
   outline-offset: 2px;
-}
-
-.custom-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.picker-body {
-  display: flex;
-  gap: 12px;
-  width: fit-content;
-}
-
-.custom-header {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.custom-header .wheel:hover {
-  transform: translateX(5px) scale(1.08);
 }
 
 .swatch {
@@ -188,11 +148,6 @@
     outline-offset: 0px;
     box-shadow: none;
   }
-}
-
-.hex-input:focus {
-  color: var(--ds-gray-12);
-  outline: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

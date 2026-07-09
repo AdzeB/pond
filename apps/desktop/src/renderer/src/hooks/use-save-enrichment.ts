@@ -40,12 +40,12 @@ const REPROCESS: Record<string, (ids: readonly string[]) => unknown> = {
 export function useSaveEnrichment(saveId: string) {
   const save = useSave(saveId);
   const prefs = usePrefsValue();
-  const { activeKeys, failedKeys, paused } = useEnrichmentStatus();
+  const { activeKeys, failedKeys } = useEnrichmentStatus();
 
   // Nudge the sweep to (re)schedule this save's pending enrichments whenever it
   // comes into view, so the item the user is actively looking at gets processed
   // even if the background scan has gone idle (it only re-scans on pool changes
-  // or visibility/resume). No-op when paused.
+  // or visibility/resume).
   useEffect(() => {
     rescanEnrichment([saveId]);
   }, [saveId]);
@@ -91,7 +91,7 @@ export function useSaveEnrichment(saveId: string) {
   );
 
   return useMemo(
-    () => ({ statusOf, regenerate, retry, canRegenerate, paused }),
-    [statusOf, regenerate, retry, canRegenerate, paused],
+    () => ({ statusOf, regenerate, retry, canRegenerate }),
+    [statusOf, regenerate, retry, canRegenerate],
   );
 }

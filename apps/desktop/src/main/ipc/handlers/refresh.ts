@@ -8,7 +8,6 @@ import {
 } from "../../core/refresh";
 import {
   cancelRefreshBackfill,
-  getRefreshBackfillStatus,
   startRefreshBackfill,
 } from "../../core/refresh/backfill";
 import { safeHandle } from "../helpers";
@@ -50,10 +49,6 @@ export function registerRefreshHandlers(): void {
     cancelRefreshBackfill();
     return { ok: true as const };
   });
-
-  safeHandle(IPC.refreshBackfillStatusGet, async () =>
-    getRefreshBackfillStatus(),
-  );
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {

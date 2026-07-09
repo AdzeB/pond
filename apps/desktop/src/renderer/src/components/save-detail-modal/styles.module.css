@@ -32,15 +32,6 @@
   margin-bottom: 24px;
 }
 
-.media {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  padding: 0 16px;
-}
-
 .pane {
   flex: none;
   width: var(--detail-w);

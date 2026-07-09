@@ -1,5 +1,5 @@
-/* Analytics — Linear-style dashboards: named collections of user-configured
-   insight cards (slice × segment save counts) over the library. */
+/* Analytics dashboards: named collections of user-configured insight cards
+   (slice × segment save counts) over the library. */
 .page {
   --panel: var(--ds-gray-1);
   --ink: var(--ds-gray-12);
@@ -436,7 +436,6 @@
   text-align: right;
 }
 
-/* ── scatter ── */
 /* ── legend ── */
 .legend {
   display: flex;
@@ -588,7 +587,7 @@
   font-weight: 500;
 }
 
-/* ── viz (ported Bklit charts) ── */
+/* ── viz charts ── */
 .viz-svg {
   position: absolute;
   inset: 0;

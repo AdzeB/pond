@@ -31,50 +31,6 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
-export interface BackfillStatusWire {
-  state: "idle" | "running" | "done" | "error";
-  attempted: number;
-  captured: number;
-  total: number;
-  message?: string;
-  lastError?: string | null;
-}
-
-export interface PipelineSnapshotWire {
-  paused: boolean;
-  inflight: number;
-  inflightByOp: Record<string, number>;
-  pending: number;
-  ingesting: number;
-}
-
-export interface RefreshBackfillStatusWire {
-  state: "idle" | "running" | "done" | "error" | "cancelled";
-  total: number;
-  current: number;
-  succeeded: number;
-  failed: number;
-  authRequired: string[];
-  startedAt: string | null;
-  finishedAt: string | null;
-  message?: string;
-}
-
-export interface GovernorSnapshotWire {
-  allPaused: boolean;
-  paused: Array<{
-    source: string;
-    until: number;
-    reason: "cooldown" | "breaker" | "at_risk" | "manual";
-  }>;
-  atRisk: Array<{
-    source: string;
-    kind: "challenge" | "checkpoint" | "captcha" | "login" | "rate_limit";
-    since: number;
-    note: string;
-  }>;
-}
-
 const api = {
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);
@@ -209,24 +165,7 @@ const api = {
     return ipcRenderer.invoke(IPC.refreshBackfillCancel);
   },
 
-  refreshBackfillStatusGet(): Promise<RefreshBackfillStatusWire> {
-    return ipcRenderer.invoke(IPC.refreshBackfillStatusGet);
-  },
-
-  onRefreshBackfillStatus(
-    cb: (status: RefreshBackfillStatusWire) => void,
-  ): () => void {
-    const listener = (_: unknown, status: RefreshBackfillStatusWire) =>
-      cb(status);
-    ipcRenderer.on(IPC.refreshBackfillStatus, listener);
-    return () => ipcRenderer.off(IPC.refreshBackfillStatus, listener);
-  },
-
   // ── Ingest pipeline ─────────────────────────────────────────────────────
-  pipelineSnapshot(): Promise<PipelineSnapshotWire> {
-    return ipcRenderer.invoke(IPC.pipelineSnapshot);
-  },
-
   pipelinePause(paused: boolean): Promise<{ ok: true; paused: boolean }> {
     return ipcRenderer.invoke(IPC.pipelinePause, paused);
   },
@@ -237,13 +176,6 @@ const api = {
 
   pipelineCancelAll(): Promise<{ ok: true; cancelled: number }> {
     return ipcRenderer.invoke(IPC.pipelineCancelAll);
-  },
-
-  onPipelineStatus(cb: (snapshot: PipelineSnapshotWire) => void): () => void {
-    const listener = (_: unknown, snapshot: PipelineSnapshotWire) =>
-      cb(snapshot);
-    ipcRenderer.on(IPC.pipelineStatus, listener);
-    return () => ipcRenderer.off(IPC.pipelineStatus, listener);
   },
 
   connectSource(
@@ -280,28 +212,6 @@ const api = {
     return ipcRenderer.invoke(IPC.syncCancel, source);
   },
 
-  screenshotBackfillRun(): Promise<
-    { ok: true } | { ok: false; reason: "already_running" }
-  > {
-    return ipcRenderer.invoke(IPC.screenshotBackfillRun);
-  },
-
-  screenshotBackfillCancel(): Promise<{ ok: true }> {
-    return ipcRenderer.invoke(IPC.screenshotBackfillCancel);
-  },
-
-  screenshotBackfillStatus(): Promise<BackfillStatusWire> {
-    return ipcRenderer.invoke(IPC.screenshotBackfillStatus);
-  },
-
-  onScreenshotBackfillStatus(
-    cb: (status: BackfillStatusWire) => void,
-  ): () => void {
-    const listener = (_: unknown, status: BackfillStatusWire) => cb(status);
-    ipcRenderer.on(IPC.screenshotBackfillStatus, listener);
-    return () => ipcRenderer.off(IPC.screenshotBackfillStatus, listener);
-  },
-
   onSyncStatus(
     cb: (update: {
       source: string;
@@ -325,10 +235,6 @@ const api = {
   },
 
   // ── Rate governor (account safety) ──────────────────────────────────────
-  governorSnapshot(): Promise<GovernorSnapshotWire> {
-    return ipcRenderer.invoke(IPC.governorSnapshot);
-  },
-
   governorSetPaused(
     paused: boolean,
   ): Promise<{ ok: true; allPaused: boolean }> {
@@ -337,13 +243,6 @@ const api = {
 
   governorResumeSource(source: string): Promise<{ ok: true }> {
     return ipcRenderer.invoke(IPC.governorResumeSource, source);
-  },
-
-  onGovernorStatus(cb: (snapshot: GovernorSnapshotWire) => void): () => void {
-    const listener = (_: unknown, snapshot: GovernorSnapshotWire) =>
-      cb(snapshot);
-    ipcRenderer.on(IPC.governorStatus, listener);
-    return () => ipcRenderer.off(IPC.governorStatus, listener);
   },
 };
 

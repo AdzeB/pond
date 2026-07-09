@@ -42,7 +42,7 @@ function newDashboard(): DashboardConfig {
   };
 }
 
-// Linear-style dashboards: named, filterable collections of insight cards
+// Analytics dashboards: named, filterable collections of insight cards
 // over the same window of library saves. Everything persists in prefs.
 export function AnalyticsPage() {
   const [view, patchView, loaded] = usePrefs("analyticsView");

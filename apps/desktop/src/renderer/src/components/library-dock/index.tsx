@@ -68,10 +68,10 @@ function Root({ preview }: RootProps) {
   const inTrash = viewMode === "trash";
 
   const pillRef = useRef<HTMLDivElement | null>(null);
-  // Family (connectkit) morph: the viewport sizes to the active view's content;
-  // we animate the pill's real width/height to that measured size with a
-  // motion spring (pillTransition), so a mid-flight view change retargets
-  // smoothly instead of restarting. Content is never scaled/distorted.
+  // The viewport sizes to the active view's content; we animate the pill's
+  // real width/height to that measured size with a motion spring
+  // (pillTransition), so a mid-flight view change retargets smoothly instead
+  // of restarting. Content is never scaled/distorted.
   const [bounds, setBounds] = useState<{
     width: number;
     height: number;

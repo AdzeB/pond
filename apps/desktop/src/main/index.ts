@@ -8,25 +8,9 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
-import {
-  type BackfillStatusUpdate,
-  subscribeToBackfillStatus,
-} from "./core/pipeline/backfill-screenshots";
-import {
-  flushGovernor,
-  type GovernorSnapshot,
-  subscribeToGovernor,
-} from "./core/pipeline/rate-governor";
-import {
-  type PipelineSnapshot,
-  startReconciler,
-  subscribeToPipeline,
-} from "./core/pipeline/reconciler";
+import { flushGovernor } from "./core/pipeline/rate-governor";
+import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
-import {
-  type RefreshBackfillStatus,
-  subscribeToRefreshBackfillStatus,
-} from "./core/refresh/backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
@@ -91,18 +75,6 @@ let httpServer: RunningServer | null = null;
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
-
-const broadcastBackfillStatus = (status: BackfillStatusUpdate): void =>
-  broadcast(IPC.screenshotBackfillStatus, status);
-
-const broadcastGovernor = (snapshot: GovernorSnapshot): void =>
-  broadcast(IPC.governorStatus, snapshot);
-
-const broadcastPipeline = (snapshot: PipelineSnapshot): void =>
-  broadcast(IPC.pipelineStatus, snapshot);
-
-const broadcastRefreshBackfill = (status: RefreshBackfillStatus): void =>
-  broadcast(IPC.refreshBackfillStatus, status);
 
 registerScheme();
 
@@ -232,10 +204,6 @@ async function postLaunchInit(): Promise<void> {
   );
 
   subscribeToSyncStatus(broadcastSyncStatus);
-  subscribeToBackfillStatus(broadcastBackfillStatus);
-  subscribeToGovernor(broadcastGovernor);
-  subscribeToPipeline(broadcastPipeline);
-  subscribeToRefreshBackfillStatus(broadcastRefreshBackfill);
 }
 
 function registerSummonHotkey() {

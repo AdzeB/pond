@@ -1,16 +1,14 @@
-/* Sources tray morphed out of the pill (Family-style). The pill supplies the
-   surface (radius + shadow). Stage transitions follow connectkit's Modal: the
-   active stage is the only one in flow (it alone sizes the card, so the pill
-   morph tracks the incoming stage), while the exiting stage is absolutely
-   positioned over it and zooms through (scale 0.85 ↔ 1.1). */
+/* Sources tray morphed out of the pill; the pill supplies the surface
+   (radius + shadow). Only the active stage is in flow (it alone sizes the
+   card); the exiting stage is absolutely positioned over it and zooms
+   through (scale 0.85 ↔ 1.1). */
 .card {
   position: relative;
   width: 340px;
 }
 
 /* Padding lives on the stage (not the card) so the exiting stage, once
-   absolutely pinned to the card's bottom edge, still lines up pixel-perfect
-   with where it was in flow. */
+   absolutely pinned, still lines up with where it was in flow. */
 .stage {
   display: flex;
   flex-direction: column;
@@ -215,7 +213,7 @@
   border-top: 1px solid var(--ds-gray-a3);
 }
 
-/* ── detail (v56 dialog adapted to the tray) ── */
+/* ── detail ── */
 .cap-dim {
   font-weight: 450;
   color: var(--ds-gray-10);
@@ -653,7 +651,7 @@
   opacity: 0.9;
 }
 
-/* ── pick rows (ConnectKit-style) ── */
+/* ── pick rows ── */
 .pick-row {
   display: flex;
   gap: 10px;

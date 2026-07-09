@@ -1,13 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { IPC } from "../../../shared/constants";
 import {
-  cancelTweetScreenshotBackfill,
-  getBackfillStatus,
-  isBackfillRunning,
-  startTweetScreenshotBackfill,
-} from "../../core/pipeline/backfill-screenshots";
-import {
-  governorSnapshot,
   isAllPaused,
   pauseAll,
   resumeAll,
@@ -66,24 +59,7 @@ export function registerSyncHandlers(): void {
     return { ok: true as const, running };
   });
 
-  safeHandle(IPC.screenshotBackfillRun, async () => {
-    if (isBackfillRunning()) {
-      return { ok: false as const, reason: "already_running" as const };
-    }
-    void startTweetScreenshotBackfill();
-    return { ok: true as const };
-  });
-
-  safeHandle(IPC.screenshotBackfillCancel, async () => {
-    cancelTweetScreenshotBackfill();
-    return { ok: true as const };
-  });
-
-  safeHandle(IPC.screenshotBackfillStatus, async () => getBackfillStatus());
-
   // ── Rate governor (account safety) ────────────────────────────────────────
-  safeHandle(IPC.governorSnapshot, async () => governorSnapshot());
-
   safeHandle(IPC.governorSetPaused, async (_, paused: boolean) => {
     if (paused) pauseAll();
     else resumeAll();

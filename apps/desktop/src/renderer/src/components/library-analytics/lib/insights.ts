@@ -13,11 +13,10 @@ import type { Save } from "@/lib/types";
 
 // ── Pure insight engine ─────────────────────────────────────────────────────
 // Turns a window of library saves plus a user config (slice × segment) into
-// chart-ready save counts, Linear Insights style. No React, no IO: the page
-// reads the in-memory saves pool once and every card derives from the same
-// array.
+// chart-ready save counts. No React, no IO: the page reads the in-memory
+// saves pool once and every card derives from the same array.
 
-export interface SegmentDef {
+interface SegmentDef {
   key: string;
   label: string;
   color: string;
@@ -38,7 +37,7 @@ export interface InsightGroup {
 }
 
 /** Weekday × hour activity grid; rows are Monday-first. */
-export interface HeatmapData {
+interface HeatmapData {
   cells: number[][];
   max: number;
 }
@@ -185,7 +184,7 @@ export function autoTitle(config: InsightConfig): string {
 // Headline and grid displays have no segments, and a segment equal to the
 // slice adds nothing. Rings, pies, and radars color by slice, so a segment
 // would be invisible; sunburst is the segmented circular shape.
-export function effectiveSegment(config: InsightConfig): InsightSegment | null {
+function effectiveSegment(config: InsightConfig): InsightSegment | null {
   if (
     config.display === "metric" ||
     config.display === "heatmap" ||
@@ -264,7 +263,7 @@ function dayLabel(dayStart: number, days: number): string {
 }
 
 // Day charts need a finite axis; "All time" (0) clamps to 90 days.
-export function windowDays(days: number): number {
+function windowDays(days: number): number {
   return days > 0 ? days : 90;
 }
 

@@ -28,7 +28,7 @@ interface LibraryTask {
   run: (ids?: TaskScope) => TaskResult | Promise<TaskResult>;
 }
 
-export const TASKS: readonly LibraryTask[] = [
+const TASKS: readonly LibraryTask[] = [
   {
     id: "auto-tag",
     label: "Auto-tag",
@@ -111,11 +111,6 @@ export const TASKS: readonly LibraryTask[] = [
   },
 ];
 
-export const TASK_GROUPS: readonly { id: TaskGroup; label: string }[] = [
-  { id: "tagging", label: "Tagging" },
-  { id: "enrichment", label: "Enrichment" },
-  { id: "reprocess", label: "Reprocess" },
-];
 export function selectableTasks(): LibraryTask[] {
   return TASKS.filter((t) => t.selectable);
 }

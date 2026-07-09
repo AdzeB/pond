@@ -1,7 +1,6 @@
 /* Flat "view options" panel morphed out of the pill. Sized to the dock's
-   resting nav width (--dock-card-width, set on the dock viewport) so the pill
-   only morphs vertically, with a comfortable menu width as fallback; the pill
-   supplies the surface (radius + shadow), so no extra ring here. */
+   resting nav width (--dock-card-width) so the pill only morphs vertically;
+   the pill supplies the surface, so no extra ring here. */
 .card {
   display: flex;
   flex-direction: column;

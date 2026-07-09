@@ -1,6 +1,5 @@
-/* Insight editor as a full-page takeover, ConnectKit theme-builder style:
-   one right pane of collapsible sections (General, per-layer style, Layers)
-   and a large dotted canvas where the draft renders as a live card. */
+/* Insight editor as a full-page takeover: one right pane of collapsible
+   sections and a large dotted canvas where the draft renders as a live card. */
 .popup {
   flex-direction: row;
   width: 100vw;
@@ -73,7 +72,7 @@
   overflow-y: auto;
 }
 
-/* ── collapsible sections (theme-builder style) ── */
+/* ── collapsible sections ── */
 .sections {
   display: flex;
   flex-direction: column;
@@ -116,7 +115,7 @@
   rotate: 180deg;
 }
 
-/* Height-animated reveal, Base UI accordion style. */
+/* Height-animated accordion reveal. */
 .section-panel {
   height: var(--accordion-panel-height);
   overflow: hidden;
@@ -259,9 +258,7 @@
   justify-content: space-between;
 }
 
-/* ── preview canvas ── */
-/* Dotted builder canvas: an inset rounded panel floating on the popup
-   background, with a wide sparse dot grid; the card sits centered. */
+/* ── preview canvas: inset dotted panel, card centered ── */
 .stage {
   display: grid;
   flex: 1;
@@ -279,10 +276,8 @@
   border-radius: var(--ds-radius-2xl);
 }
 
-/* A real insight card, lifted: same chrome as the grid's .card but with a
-   dialog-grade shadow. The chart primitives inside read the analytics page's
-   scoped palette, so it's re-declared here (the portal renders outside
-   .page). */
+/* Same chrome as the grid's .card but with a dialog-grade shadow. The chart
+   palette is re-declared here because the portal renders outside .page. */
 .preview {
   --panel: var(--ds-gray-1);
   --ink: var(--ds-gray-12);

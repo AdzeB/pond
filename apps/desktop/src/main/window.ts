@@ -236,15 +236,6 @@ export async function handleActivate(): Promise<void> {
   }
 }
 
-// second-instance: bring an already-running window forward.
-export function focusExistingMain(): void {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.show();
-    mainWindow.focus();
-  }
-}
-
 export function focusedOrMain(): BrowserWindow | null {
   const target = mainWindow ?? BrowserWindow.getFocusedWindow();
   if (!target || target.isDestroyed()) return null;

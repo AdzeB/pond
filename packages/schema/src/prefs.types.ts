@@ -169,7 +169,7 @@ export type InsightWidth = "quarter" | "third" | "half" | "full";
 export interface InsightVizOptions {
   /** Interpolation between points: smooth monotone, straight, or stepped. */
   curve?: "smooth" | "linear" | "step";
-  /** Area fill: gradient wash (default), Linear-style dot texture, or none. */
+  /** Area fill: gradient wash (default), dot texture, or none. */
   fill?: "gradient" | "dotted" | "none";
   /** Mark every data point with a dot. */
   points?: boolean;

@@ -43,7 +43,7 @@ export class WorkerWatchdogError extends Error {
   }
 }
 
-export interface WorkerContext {
+interface WorkerContext {
   signal: AbortSignal;
 }
 

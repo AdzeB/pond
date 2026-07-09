@@ -1,8 +1,6 @@
-/* A small capture form morphed out of the pill: link row, note row, then a
-   toolbar with tags on the left and the circular submit on the right. The pill
-   supplies the surface, so the fields shed their own chrome and melt into the
-   card. Anatomy, type size, and the submit button mirror the ask composer so
-   the dock's views read as one family. */
+/* Capture form morphed out of the pill: link row, note row, tags + submit
+   toolbar. The pill supplies the surface, so fields shed their own chrome;
+   anatomy mirrors the ask composer. */
 .card {
   display: flex;
   flex-direction: column;
@@ -26,9 +24,8 @@
   color: var(--ds-gray-9);
 }
 
-/* The link row's glyph remounts when the typed URL classifies to a source, so
-   the brand mark pops in. The global reduced-motion kill-switch (styles.css)
-   zeroes this animation. */
+/* The link row's glyph remounts when the typed URL classifies to a source,
+   so the brand mark pops in. */
 .glyph {
   animation: glyph-in var(--ds-duration-medium) var(--ds-easing-emphasized);
 }
@@ -119,8 +116,7 @@
   }
 }
 
-/* A picked tag; clicking removes it. Same vocabulary as the ask bar's
-   suggestion chips. */
+/* A picked tag; clicking removes it. */
 .chip {
   display: inline-flex;
   flex-shrink: 0;

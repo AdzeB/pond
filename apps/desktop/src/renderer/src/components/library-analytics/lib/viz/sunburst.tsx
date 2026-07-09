@@ -7,8 +7,8 @@ import styles from "../../styles.module.css";
 import type { InsightGroup, InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Two-level composition wheel in the spirit of Bklit's sunburst: the inner
-// ring is the slice (e.g. source) and the outer ring subdivides each slice
+// Two-level composition wheel: the inner ring is the slice (e.g. source)
+// and the outer ring subdivides each slice
 // arc by the segment (e.g. media type), keeping angular alignment so parent
 // and children read as one wedge. Without a segment it degrades to a plain
 // ring. Hover narrows the center readout to the hovered arc.

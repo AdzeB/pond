@@ -10,7 +10,7 @@ import log from "electron-log/main.js";
 // the maps exported here; the `let` primitives (allPaused / loaded / timer) are
 // only ever reassigned inside this module.
 
-export type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
+type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
 
 export interface PausedState {
   source: Source;
@@ -75,17 +75,6 @@ export const manualPaused = new Set<Source>();
 export let allPaused = false;
 let loaded = false;
 let persistTimer: NodeJS.Timeout | null = null;
-
-// ── Snapshot + subscription (for UI) ────────────────────────────────────────
-export interface GovernorSnapshot {
-  allPaused: boolean;
-  paused: PausedState[];
-  atRisk: AtRiskState[];
-}
-
-// Listeners for UI broadcast (wired in main/index.ts).
-type Listener = (snapshot: GovernorSnapshot) => void;
-const listeners = new Set<Listener>();
 
 export function profile(source: Source): RateProfile {
   return syncConfigFor(source).rate;
@@ -180,13 +169,11 @@ function writeState(): void {
 export function pauseAll(): void {
   allPaused = true;
   schedulePersist(true);
-  emit();
 }
 
 export function resumeAll(): void {
   allPaused = false;
   schedulePersist(true);
-  emit();
 }
 
 export function isAllPaused(): boolean {
@@ -213,28 +200,4 @@ export function snapshotSourceGate(): PausedState[] {
     consider(s, st.since + AT_RISK_PARK_MS, "at_risk");
   for (const s of manualPaused) consider(s, Number.MAX_SAFE_INTEGER, "manual");
   return [...out.values()];
-}
-
-export function governorSnapshot(): GovernorSnapshot {
-  return {
-    allPaused: isAllPaused(),
-    paused: snapshotSourceGate(),
-    atRisk: [...atRisk.values()],
-  };
-}
-
-export function subscribeToGovernor(cb: Listener): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-export function emit(): void {
-  const snap = governorSnapshot();
-  for (const cb of listeners) {
-    try {
-      cb(snap);
-    } catch {
-      /* listener errors must not break the governor */
-    }
-  }
 }

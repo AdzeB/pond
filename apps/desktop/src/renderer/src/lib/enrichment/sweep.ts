@@ -23,19 +23,16 @@ import type { Enricher } from "./types";
 const limit = pLimit(1);
 const inflight = new Set<string>();
 const failed = new Set<string>();
-// User-controlled stop: when paused, no new enricher runs are scheduled;
-// in-flight runs finish naturally.
-let paused = false;
 // Auto-stop when the window is hidden/occluded (tray, another Space, minimized).
 // Background GPU/CPU inference is the worst kind of heat — the machine warms up
-// for work the user can't even see — so we gate scheduling on visibility too,
-// independent of the manual pause toggle. (Best practice: only do heavy on-device
-// inference while the surface is actually on screen.)
+// for work the user can't even see — so we gate scheduling on visibility.
+// (Best practice: only do heavy on-device inference while the surface is
+// actually on screen.)
 let hidden = false;
 
-// No new runs while paused OR hidden; the single in-flight run drains on its own.
+// No new runs while hidden; the single in-flight run drains on its own.
 function suspended(): boolean {
-  return paused || hidden;
+  return hidden;
 }
 
 // Lightweight throughput instrumentation so we can see how fast the on-device
@@ -276,23 +273,8 @@ export function rescanEnrichment(ids?: readonly string[]): void {
   scheduleScan();
 }
 
-// Stop scheduling new enricher runs; in-flight runs drain on their own.
-export function pauseEnrichmentSweep(): void {
-  if (paused) return;
-  paused = true;
-  enrichmentMonitor.set({ paused: true });
-}
-
-export function resumeEnrichmentSweep(): void {
-  if (!paused) return;
-  paused = false;
-  enrichmentMonitor.set({ paused: false });
-  scheduleScan();
-}
-
-// Toggle the visibility gate. Distinct from the manual pause so hiding the
-// window never clobbers (or gets clobbered by) the user's pause state. Becoming
-// visible kicks a fresh scan to resume any remaining backlog.
+// Toggle the visibility gate. Becoming visible kicks a fresh scan to resume
+// any remaining backlog.
 function setHidden(next: boolean): void {
   if (hidden === next) return;
   hidden = next;

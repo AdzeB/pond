@@ -11,7 +11,6 @@ import {
   breakerCounters,
   breakerUntil,
   cooldownUntil,
-  emit,
   lastRequestAt,
   loadState,
   MULTIPLIER_DECREASE,
@@ -44,13 +43,10 @@ import { type HeaderBag, parseRateSignal } from "./rate-headers";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export {
-  type GovernorSnapshot,
-  governorSnapshot,
   isAllPaused,
   pauseAll,
   resumeAll,
   snapshotSourceGate,
-  subscribeToGovernor,
 } from "./rate-governor-state";
 
 // ── Pause computation ───────────────────────────────────────────────────────
@@ -83,7 +79,6 @@ export function setSourceCooldown(source: Source, ms: number): void {
   cooldownUntil.set(source, until);
   log.info("[pond governor] cooldown set", { source, ms });
   schedulePersist(true);
-  emit();
 }
 
 export function noteTransientFailure(source: Source): void {
@@ -103,7 +98,6 @@ export function noteTransientFailure(source: Source): void {
       breakerUntil.set(source, until);
       log.warn("[pond governor] circuit breaker tripped", { source });
       schedulePersist(true);
-      emit();
     }
   }
 }
@@ -124,7 +118,6 @@ export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   atRisk.set(source, { source, kind, since: now(), note });
   log.warn("[pond governor] source marked at-risk", { source, kind, note });
   schedulePersist(true);
-  emit();
 }
 
 // ── Manual per-source pause override ─────────────────────────────────────────
@@ -138,7 +131,6 @@ export function resumeSource(source: Source): void {
   breakerCounters.delete(source);
   multiplier.set(source, MULTIPLIER_MIN);
   schedulePersist(true);
-  emit();
 }
 
 // ── Effective delay + acquire ───────────────────────────────────────────────

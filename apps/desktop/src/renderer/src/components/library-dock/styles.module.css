@@ -10,11 +10,9 @@
   transform: translateX(-50%);
 }
 
-/* Family (connectkit) morph: the pill's real width/height (measured from the
-   viewport) are animated by motion/react in index.tsx (`pillTransition`), not
-   CSS, so mid-flight view changes retarget with preserved velocity. Content is
-   never scaled/distorted; `overflow: hidden` clips the incoming/outgoing views
-   to the morphing box while they crossfade. */
+/* The pill's width/height are animated by motion/react in index.tsx, not CSS,
+   so mid-flight view changes retarget with preserved velocity. `overflow:
+   hidden` clips the crossfading views to the morphing box. */
 .pill {
   position: relative;
   z-index: 1;
@@ -26,9 +24,8 @@
   box-shadow: var(--ds-shadow-5);
 }
 
-/* Invisible full-viewport catcher shown while a menu-like view (new/options/
-   library) is open, so clicking anywhere outside the pill collapses it — the
-   popover-style dismissal, without a popover. Sits below the pill (z-index). */
+/* Invisible full-viewport catcher while a menu-like view is open: clicking
+   outside the pill collapses it. Sits below the pill (z-index). */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -42,16 +39,11 @@
   border: 0;
 }
 
-/* The viewport is what we measure to drive the pill's size. It's absolutely
-   positioned so it keeps its natural (shrink-to-fit) size regardless of the
-   pill's animated size — horizontally centered, but pinned to the pill's
-   *bottom* edge: the dock is bottom-fixed, so that edge is the one that stays
-   put while the height morphs. Anchoring content to it means a view whose
-   height changes (or an internal stage swap that resizes the card) doesn't
-   jump by half the height delta the instant the swap happens; new content is
-   revealed from the top as the pill grows upward. All views share one grid
-   cell so an outgoing + incoming view stack (never sum widths); the viewport
-   then measures only the active view. */
+/* The measured element that drives the pill's size. Absolutely positioned so
+   it keeps its natural size regardless of the pill's animated size, and pinned
+   to the pill's *bottom* edge (the one that stays put while the height morphs)
+   so content doesn't jump during stage swaps. All views share one grid cell so
+   outgoing + incoming stack instead of summing widths. */
 .viewport {
   position: absolute;
   bottom: 0;
@@ -59,10 +51,8 @@
   display: grid;
   align-items: center;
   justify-items: center;
-  /* max-content keeps the natural (unwrapped) size regardless of the pill's
-     animated width — without it, an absolutely-positioned shrink-to-fit element
-     inside the 0-width morphing pill collapses to min-content and the dock
-     appears to vanish. */
+  /* Without max-content the shrink-to-fit element collapses to min-content
+     inside the 0-width morphing pill and the dock appears to vanish. */
   width: max-content;
   padding: 4px;
   transform: translateX(-50%);

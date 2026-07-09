@@ -12,14 +12,10 @@ import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { PondCustomiseDialog } from "./components/pond-customise-dialog";
 import { Toaster } from "./components/toaster";
-import { BackfillStatusBridge } from "./effects/backfill-status-bridge";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
-import { GovernorStatusBridge } from "./effects/governor-status-bridge";
 import { MenuBridge } from "./effects/menu-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { PipelineStatusBridge } from "./effects/pipeline-status-bridge";
-import { RefreshStatusBridge } from "./effects/refresh-status-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
@@ -154,10 +150,6 @@ export function App() {
           <MenuBridge />
           <MenuRecentsBridge />
           <SyncStatusBridge />
-          <BackfillStatusBridge />
-          <PipelineStatusBridge />
-          <RefreshStatusBridge />
-          <GovernorStatusBridge />
           <EnrichmentSweep />
           <ErrorBoundary>
             <RouterProvider router={router} />

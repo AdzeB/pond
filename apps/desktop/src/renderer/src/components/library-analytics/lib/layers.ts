@@ -1,11 +1,10 @@
 import type { InsightDisplay, InsightVizOptions } from "@pond/schema/db";
 
-// Per-display layer catalog for the Studio-style editor, mirroring how
-// Bklit composes charts from layer components (Grid, Area, XAxis, Tooltip,
-// RingCenter, RadarLabels…). Each display lists its layers top-down; the
-// editor renders them as rows with eye toggles and a contextual properties
-// panel. Visibility persists in the insight's `viz.hidden` array, except
-// area/line points which keep their pre-existing `viz.points` flag.
+// Per-display layer catalog for the insight editor (Grid, Area, XAxis,
+// Tooltip, RingCenter, RadarLabels…). Each display lists its layers top-down;
+// the editor renders them as rows with eye toggles and a contextual
+// properties panel. Visibility persists in the insight's `viz.hidden` array,
+// except area/line points which keep their pre-existing `viz.points` flag.
 
 export interface InsightLayer {
   id: string;
@@ -71,16 +70,6 @@ const DISPLAY_LAYERS: Partial<Record<InsightDisplay, InsightLayer[]>> = {
 
 export function layersFor(display: InsightDisplay): InsightLayer[] {
   return DISPLAY_LAYERS[display] ?? [];
-}
-
-/** The display's defining mark — what the properties panel opens on. */
-export function primaryLayer(display: InsightDisplay): string | null {
-  const layers = layersFor(display);
-  return (
-    layers.find((l) => l.primary)?.id ??
-    layers.find((l) => l.locked)?.id ??
-    null
-  );
 }
 
 export function layerVisible(

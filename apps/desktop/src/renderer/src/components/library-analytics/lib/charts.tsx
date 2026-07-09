@@ -7,8 +7,8 @@ import { layerVisible } from "./layers";
 
 // Hand-rolled chart primitives for insight cards. Bars are plain positioned
 // divs (no chart library), scaled against a "nice" rounded axis max so
-// gridline labels stay readable. Hover state drives custom tooltips
-// (Linear-style) instead of native title text.
+// gridline labels stay readable. Hover state drives custom tooltips instead
+// of native title text.
 
 export function niceCeil(value: number): number {
   if (value <= 0) return 1;
@@ -183,14 +183,14 @@ export function MetricBlock({
   );
 }
 
-export function windowLabel(days: number): string {
+function windowLabel(days: number): string {
   if (days === 0) return "all time";
   return days === 1 ? "last day" : `last ${days} days`;
 }
 
 // ── Ranked value table ──────────────────────────────────────────────────────
 // Unsegmented: label / value / proportional bar rows. Segmented: pivots the
-// legend into columns (Linear's "by team and priority" table).
+// legend into columns.
 
 export function ValueTable({ data }: { data: InsightResult }) {
   if (data.legend.length > 0) {

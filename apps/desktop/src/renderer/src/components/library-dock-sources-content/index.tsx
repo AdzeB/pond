@@ -41,8 +41,8 @@ const SYNCABLE: readonly Source[] = SOURCES.filter(
   (s) => s !== "local" && s !== "web",
 );
 
-// The tray's internal steps, Family-style: each stage is one tray of content
-// and the pill morphs between their natural heights.
+// The tray's internal steps: each stage is one tray of content and the pill
+// morphs between their natural heights.
 type Stage =
   | { kind: "list" }
   | { kind: "detail"; source: Source }
@@ -50,8 +50,8 @@ type Stage =
   | { kind: "wait"; source: Source }
   | { kind: "first-sync"; source: Source };
 
-// Navigation depth per stage (connectkit's currentDepth/prevDepth): moving
-// deeper plays the scale-up pair, moving back plays the scale-down pair.
+// Navigation depth per stage: moving deeper plays the scale-up pair, moving
+// back plays the scale-down pair.
 const DEPTH: Record<Stage["kind"], number> = {
   list: 0,
   detail: 1,
@@ -60,15 +60,13 @@ const DEPTH: Record<Stage["kind"], number> = {
   "first-sync": 3,
 };
 
-// connectkit Modal page transition (Common/Modal/styles.ts): 200ms; going
-// deeper the incoming page scales 0.85 → 1 while the outgoing scales 1 → 1.1
-// (zoom *through*), and going back plays the reverse pair. The exiting page
-// goes `position: absolute` so it stops contributing to layout — the card then
-// sizes to the incoming stage alone and the pill's width/height transition
-// glides instead of jumping to max(outgoing, incoming). It's pinned to the
-// card's *bottom* (the dock is bottom-fixed, so the card's bottom edge stays
-// flush with the pill while the height morphs) so the outgoing stage holds
-// exactly the position it had in flow instead of jumping with the resize.
+// Stage transition (200ms): going deeper the incoming page scales 0.85 → 1
+// while the outgoing scales 1 → 1.1 (zoom *through*); going back plays the
+// reverse pair. The exiting page goes `position: absolute` so it stops
+// contributing to layout — the card sizes to the incoming stage alone and the
+// pill's size transition glides instead of jumping to max(outgoing, incoming).
+// It's pinned to the card's *bottom* (the edge that stays put while the height
+// morphs) so it holds the position it had in flow.
 const STAGE_EASE = [0.26, 0.08, 0.25, 1] as const;
 
 // `timeScale` stretches the durations for the playground's slow-motion mode.

@@ -46,8 +46,7 @@ export function SaveDetails({ save }: { save: Save }) {
     if (st.running) state = "running";
     else if (body.hasContent) state = "ready";
     else if (st.failed) state = "failed";
-    else if (st.enabled && st.eligible)
-      state = enrich.paused ? "paused" : "queued";
+    else if (st.enabled && st.eligible) state = "queued";
     if (!state) return;
     insights.push({
       id,

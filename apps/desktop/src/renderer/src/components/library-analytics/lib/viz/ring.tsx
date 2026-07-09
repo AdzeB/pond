@@ -7,8 +7,8 @@ import styles from "../../styles.module.css";
 import type { InsightGroup, InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Composition donut and pie, ported from Bklit's ring/pie: rounded slice
-// corners, hover scale + dim. The ring variant keeps a hollow center with
+// Composition donut and pie: rounded slice corners, hover scale + dim.
+// The ring variant keeps a hollow center with
 // the running total; the pie fills the disc and leans on the legend rows.
 // The engine caps groups at top 6 + "Other" so the wheel stays legible.
 

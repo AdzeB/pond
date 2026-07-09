@@ -11,21 +11,21 @@ import { type RenderedCard, renderTweetCardPng } from "../../render-card";
 import { readSave } from "./apply";
 
 // Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel.
-export const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
-export const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
+const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
+const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
 // Suffixed with 1-based quote depth; renderer matches by prefix.
 function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 
-// Bump when capture output changes so the backfill regenerates stale screenshots.
+// Bump when capture output changes so stale screenshots are regenerated.
 // v5: covers are rasterized from the native TweetCard instead of x.com screenshots.
 // v6: avatar URLs are filtered out of media so they no longer render as a tile.
 // v7: capture page paints the scheme background, killing the white edge hairline.
 // v8: link-card (OG embed) is captured and rendered below the tweet text.
 // v9: large link-cards match X — rounded image, title overlay, domain beneath.
-export const CAPTURE_TWEET_VERSION = 9;
+const CAPTURE_TWEET_VERSION = 9;
 
 // Quote-chain walk depth cap; keeps navigation bounded.
 const QUOTE_DEPTH_CAP = 3;
@@ -33,14 +33,14 @@ const QUOTE_DEPTH_CAP = 3;
 interface CaptureTweetResult {
   // Number of screenshot variants written this run.
   captured: number;
-  // At least one variant hit X's auth wall; lets the backfill bail early.
+  // At least one variant hit X's auth wall; lets the caller bail or retry.
   authWall: boolean;
-  // Quoted media merged into `capture.media`; signals the backfill to run fetch_blobs.
+  // Quoted media merged into `capture.media`; a follow-up fetch_blobs picks it up.
   mediaAdded: boolean;
 }
 
 // Capture version a save was last processed at; absent reads as 0.
-export function readCaptureTweetVersion(rawJson: unknown): number {
+function readCaptureTweetVersion(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
   const extras = (rawJson as RawJson).capture?.extras as
     | Record<string, unknown>

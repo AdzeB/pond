@@ -19,9 +19,9 @@ type AskStatus = "idle" | "thinking" | "done" | "error";
 // waits on it; the dock falls back to count/question when it's empty.
 type AskSummaryStatus = "idle" | "loading" | "done" | "error";
 
-// The live pipeline stage, surfaced as the dock's rotating status narration
-// (mirrors the reference's "Reading…/Determining…/Making changes…"). Driven by
-// the real run: compile the query, search/rank the library, then summarize.
+// The live pipeline stage, surfaced as the dock's rotating status narration.
+// Driven by the real run: compile the query, search/rank the library, then
+// summarize.
 export type AskStage =
   | "compiling"
   | "planning"

@@ -2,7 +2,6 @@ import { IPC } from "../../../shared/constants";
 import {
   cancelAllIngest,
   cancelSaveIngest,
-  getPipelineSnapshot,
   isReconcilerPaused,
   pauseReconciler,
   resumeReconciler,
@@ -10,8 +9,6 @@ import {
 import { safeHandle } from "../helpers";
 
 export function registerPipelineHandlers(): void {
-  safeHandle(IPC.pipelineSnapshot, async () => getPipelineSnapshot());
-
   safeHandle(IPC.pipelinePause, async (_, paused: boolean) => {
     if (paused) pauseReconciler();
     else resumeReconciler();

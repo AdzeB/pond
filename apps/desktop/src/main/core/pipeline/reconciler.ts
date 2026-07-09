@@ -1,6 +1,6 @@
 import { type Op, saves, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { commitEvent, startTaskEvent, toErrorInfo } from "../../lib/wide-event";
@@ -46,71 +46,6 @@ let inflightGlobal = 0;
 const runningTaskIds = new Set<string>();
 const runningTasks = new Map<string, AbortController>();
 
-export interface PipelineSnapshot {
-  paused: boolean;
-  inflight: number;
-  inflightByOp: Record<Op, number>;
-  // Tasks waiting to run (status='pending').
-  pending: number;
-  // Saves still mid-ingest (status='ingesting').
-  ingesting: number;
-}
-
-type PipelineListener = (snapshot: PipelineSnapshot) => void;
-const pipelineListeners = new Set<PipelineListener>();
-let snapshotTimer: NodeJS.Timeout | null = null;
-
-export function subscribeToPipeline(cb: PipelineListener): () => void {
-  pipelineListeners.add(cb);
-  return () => {
-    pipelineListeners.delete(cb);
-  };
-}
-
-export async function getPipelineSnapshot(): Promise<PipelineSnapshot> {
-  const db = await getDb();
-  const pendingRow = db
-    .select({ n: count() })
-    .from(tasks)
-    .where(eq(tasks.status, "pending"))
-    .get();
-  const ingestingRow = db
-    .select({ n: count() })
-    .from(saves)
-    .where(eq(saves.status, "ingesting"))
-    .get();
-  return {
-    paused,
-    inflight: inflightGlobal,
-    inflightByOp: { ...inflightByOp },
-    pending: pendingRow?.n ?? 0,
-    ingesting: ingestingRow?.n ?? 0,
-  };
-}
-
-// Coalesce snapshot pushes: dispatch/settle can fire in bursts, so debounce a
-// single DB read + broadcast instead of one per task transition.
-function emitPipeline(): void {
-  if (pipelineListeners.size === 0) return;
-  if (snapshotTimer) return;
-  snapshotTimer = setTimeout(() => {
-    snapshotTimer = null;
-    void getPipelineSnapshot()
-      .then((snap) => {
-        for (const cb of pipelineListeners) {
-          try {
-            cb(snap);
-          } catch (err) {
-            log.warn("[pond pipeline:reconciler] pipeline listener threw", err);
-          }
-        }
-      })
-      .catch((err) =>
-        log.warn("[pond pipeline:reconciler] snapshot emit failed", err),
-      );
-  }, 250);
-}
-
 export function isReconcilerPaused(): boolean {
   return paused;
 }
@@ -119,14 +54,12 @@ export function pauseReconciler(): void {
   if (paused) return;
   paused = true;
   log.info("[pond pipeline:reconciler] paused");
-  emitPipeline();
 }
 
 export function resumeReconciler(): void {
   if (!paused) return;
   paused = false;
   log.info("[pond pipeline:reconciler] resumed");
-  emitPipeline();
   kickReconciler();
 }
 
@@ -174,7 +107,6 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
     { actorReason: "user:cancel-ingest" },
   );
   log.info("[pond pipeline:reconciler] cancelled save ingest", { saveId });
-  emitPipeline();
   return true;
 }
 
@@ -297,7 +229,6 @@ async function dispatchTask(task: DueTask): Promise<void> {
   inflightByOp[task.op]++;
   inflightGlobal++;
   metrics.tasksDispatched++;
-  emitPipeline();
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
   // One wide event per task attempt, committed in the finally.
@@ -359,7 +290,6 @@ async function dispatchTask(task: DueTask): Promise<void> {
     ev.pipeline = { inflight: inflightGlobal, paused };
     ev.gate = gateForSource(task.source);
     void commitEvent(ev);
-    emitPipeline();
     kickReconciler();
   }
 }

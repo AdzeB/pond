@@ -2,7 +2,6 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface EnrichmentStatus {
-  paused: boolean;
   // On-device enricher runs currently executing.
   inflight: number;
   // Keys (`${enricher.id}:${save.id}`) currently running, so a save's detail
@@ -14,7 +13,6 @@ interface EnrichmentStatus {
 }
 
 const store = new Store<EnrichmentStatus>({
-  paused: false,
   inflight: 0,
   activeKeys: new Set<string>(),
   failedKeys: new Set<string>(),

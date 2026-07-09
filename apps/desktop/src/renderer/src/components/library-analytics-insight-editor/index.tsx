@@ -52,7 +52,7 @@ import {
 import { insightEditor, useInsightEditorState } from "@/stores/insight-editor";
 import styles from "./styles.module.css";
 
-// Insight editor as a full-page takeover, ConnectKit theme-builder style:
+// Insight editor as a full-page takeover:
 // a single left pane of collapsible sections — General (data + placement),
 // one style section per configurable layer, and a Layers visibility list —
 // with the rest of the window a dotted canvas where the draft renders as a
@@ -224,8 +224,8 @@ function Seg<T extends string>({
   );
 }
 
-// One collapsible sidebar section, ConnectKit theme-builder style: a bold
-// header row with a rotating chevron, fields stacked beneath.
+// One collapsible sidebar section: a bold header row with a rotating
+// chevron, fields stacked beneath.
 function Section({
   id,
   label,
@@ -397,9 +397,6 @@ export function InsightEditorDialog() {
             </header>
 
             <div className={styles.body}>
-              {/* Keyed per insight so a quick close→reopen (while the exit
-                  transition still has the popup mounted) can't carry over the
-                  previous session's collapsed sections. */}
               <Accordion.Root
                 key={config.id}
                 multiple
@@ -505,9 +502,6 @@ export function InsightEditorDialog() {
                   </div>
                 </Section>
 
-                {/* One section per layer, theme-builder style: an Enabled
-                    switch on top (hideable layers only), then the layer's
-                    style knobs while it's showing. */}
                 {sectionLayers.map((layer) => {
                   const visible = layerVisible(
                     config.display,
@@ -562,8 +556,6 @@ export function InsightEditorDialog() {
             </div>
           </aside>
 
-          {/* Live preview canvas: the card as it will sit in the grid.
-              Non-interactive by design. */}
           <div className={styles.stage}>
             <section
               className={styles.preview}
@@ -594,7 +586,7 @@ export function InsightEditorDialog() {
 }
 
 // Which (display, layer) pairs have style knobs — these get their own
-// sidebar section, theme-builder style.
+// sidebar section.
 function layerHasKnobs(display: InsightDisplay, layerId: string): boolean {
   return (
     ((display === "area" || display === "line") && layerId === "line") ||

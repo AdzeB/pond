@@ -27,11 +27,7 @@ export const IPC = {
   refreshSave: "pond:refresh-save",
   refreshBackfillStart: "pond:refresh-backfill-start",
   refreshBackfillCancel: "pond:refresh-backfill-cancel",
-  refreshBackfillStatus: "pond:refresh-backfill-status",
-  refreshBackfillStatusGet: "pond:refresh-backfill-status-get",
-  // Ingest pipeline: aggregate status + stop controls.
-  pipelineStatus: "pond:pipeline-status",
-  pipelineSnapshot: "pond:pipeline-snapshot",
+  // Ingest pipeline: stop controls.
   pipelinePause: "pond:pipeline-pause",
   pipelineCancelSave: "pond:pipeline-cancel-save",
   pipelineCancelAll: "pond:pipeline-cancel-all",
@@ -41,12 +37,7 @@ export const IPC = {
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",
   syncCancel: "pond:sync-cancel",
-  screenshotBackfillRun: "pond:screenshot-backfill-run",
-  screenshotBackfillCancel: "pond:screenshot-backfill-cancel",
-  screenshotBackfillStatus: "pond:screenshot-backfill-status",
   // Rate governor: account-safety pause state + kill switch.
-  governorStatus: "pond:governor-status",
-  governorSnapshot: "pond:governor-snapshot",
   governorSetPaused: "pond:governor-set-paused",
   governorResumeSource: "pond:governor-resume-source",
   storageStatus: "pond:storage-status",

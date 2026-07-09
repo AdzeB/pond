@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { ExpandableText } from "@/components/expandable-text";
 import styles from "./styles.module.css";
 
-export type InsightState = "ready" | "running" | "queued" | "paused" | "failed";
+export type InsightState = "ready" | "running" | "queued" | "failed";
 
 export interface InsightSpec {
   id: string;
@@ -21,7 +21,6 @@ export interface InsightSpec {
 const PENDING_LABEL: Record<Exclude<InsightState, "ready">, string> = {
   running: "Generating…",
   queued: "Waiting to process…",
-  paused: "Paused — resume to process.",
   failed: "Couldn’t generate.",
 };
 

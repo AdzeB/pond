@@ -6,7 +6,7 @@ import type { DockView } from "./types";
 // Reduced-motion-aware enter/exit used by every content module so they all
 // cross-fade in lockstep with the pill's width morph. `TargetAndTransition`
 // allows string values (e.g. `filter: "blur(6px)"`) and a per-variant
-// `transition` (e.g. delaying the incoming opacity), Family-style.
+// `transition` (e.g. delaying the incoming opacity).
 interface SwapVariants {
   initial: TargetAndTransition;
   animate: TargetAndTransition;

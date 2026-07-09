@@ -5,8 +5,8 @@ import styles from "../../styles.module.css";
 import type { InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Category radar in the spirit of Bklit's radar chart: one accent-colored
-// polygon over the sliced categories, dashed grid rings at thirds, and a
+// Category radar: one accent-colored polygon over the sliced categories,
+// dashed grid rings at thirds, and a
 // legend-row mirror for exact values. Needs 3+ categories to make a shape;
 // the engine caps spokes at 8 so labels stay apart.
 
