@@ -25,7 +25,7 @@
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "start": "electron-vite preview",
-    "postinstall": "node ./scripts/rebuild-native.mjs || true && node ./scripts/patch-electron-name.mjs || true",
+    "postinstall": "node ./scripts/ensure-electron.mjs || true && node ./scripts/rebuild-native.mjs || true && node ./scripts/patch-electron-name.mjs || true",
     "rebuild": "node ./scripts/rebuild-native.mjs",
     "rebuild:sqlite": "electron-rebuild -f -w better-sqlite3",
     "dist": "electron-vite build && electron-builder",
