@@ -13,14 +13,25 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
+import {
+  applyPrefsPatch,
+  currentPondId,
+  isStoredPrefsV2,
+  mergeStoredPrefs,
+  migrateStoredPrefs,
+  resolveLegacyPrefsOwnerPondId,
+  type StoredPrefsV2,
+} from "./prefs-scope";
 
 interface SettingsCache {
+  pondId: string;
   prefs: Prefs;
   videoDownload: VideoDownloadSettings;
   imageDownload: ImageDownloadSettings;
 }
 
-// Cache parsed settings until invalidate()/set(); a DB failure isn't cached, so it retries.
+// Cache parsed settings until invalidate()/set(); keyed by pond id so a switch
+// never serves the previous library's prefs from memory.
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
 
 export function invalidatePrefs(): void {
@@ -28,6 +39,7 @@ export function invalidatePrefs(): void {
 }
 
 async function fetchSettings(): Promise<SettingsCache> {
+  const pondId = currentPondId();
   const db = await getGlobalDb();
   const rows = await db
     .select({
@@ -38,8 +50,10 @@ async function fetchSettings(): Promise<SettingsCache> {
     .from(settingsTable)
     .where(eq(settingsTable.id, "singleton"));
   const row = rows[0];
+  const stored = await ensureStoredPrefs(row?.prefs, pondId);
   return {
-    prefs: loadPrefs(row?.prefs),
+    pondId,
+    prefs: mergeStoredPrefs(stored, pondId),
     videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
     imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
   };
@@ -47,15 +61,57 @@ async function fetchSettings(): Promise<SettingsCache> {
 
 async function loadSettings(): Promise<SettingsCache> {
   try {
+    const cached = settingsCache.peek();
+    const pondId = currentPondId();
+    if (cached && cached.pondId === pondId) return cached;
+    settingsCache.invalidate();
     return await settingsCache.get();
   } catch (err) {
     log.warn("[pond prefs] failed to read settings, using defaults", err);
     return {
+      pondId: currentPondId(),
       prefs: DEFAULT_PREFS,
       videoDownload: DEFAULT_VIDEO_DOWNLOAD,
       imageDownload: DEFAULT_IMAGE_DOWNLOAD,
     };
   }
+}
+
+async function ensureStoredPrefs(
+  raw: unknown,
+  pondId: string,
+): Promise<StoredPrefsV2> {
+  const legacyOwner = isStoredPrefsV2(raw)
+    ? pondId
+    : await resolveLegacyPrefsOwnerPondId();
+  const stored = migrateStoredPrefs(raw, legacyOwner);
+  if (!isSameStored(raw, stored)) {
+    await persistStoredPrefs(stored);
+  }
+  return stored;
+}
+
+function isSameStored(raw: unknown, stored: StoredPrefsV2): boolean {
+  try {
+    return JSON.stringify(raw) === JSON.stringify(stored);
+  } catch {
+    return false;
+  }
+}
+
+async function persistStoredPrefs(stored: StoredPrefsV2): Promise<void> {
+  const db = await getGlobalDb();
+  await db
+    .insert(settingsTable)
+    .values({
+      id: "singleton",
+      prefs: stored as unknown as Prefs,
+    })
+    .onConflictDoUpdate({
+      target: settingsTable.id,
+      set: { prefs: stored as unknown as Prefs, updatedAt: new Date() },
+    })
+    .run();
 }
 
 export async function getPrefs(): Promise<Prefs> {
@@ -64,10 +120,8 @@ export async function getPrefs(): Promise<Prefs> {
   return seedDefaultSkills(prefs);
 }
 
-// Back-fill the starter skills exactly once. Defaults are prepended, skipping
-// any slug the user already defined, then `seeded` flips true so this never
-// runs again (so deleting a starter skill sticks). Persisted so it survives a
-// reload even though it originates from a read.
+// Back-fill the starter skills exactly once per pond. Defaults are prepended,
+// skipping any slug the user already defined, then `seeded` flips true.
 async function seedDefaultSkills(prefs: Prefs): Promise<Prefs> {
   const existing = new Set(prefs.skills.custom.map((s) => s.name));
   const additions = DEFAULT_SKILLS.filter((s) => !existing.has(s.name));
@@ -85,23 +139,29 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
 }
 
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
+  const pondId = currentPondId();
   const current = await loadSettings();
-  const merged = mergePrefs(current.prefs, patch);
-  const db = await getGlobalDb();
-  await db
-    .insert(settingsTable)
-    .values({
-      id: "singleton",
-      prefs: merged,
-    })
-    .onConflictDoUpdate({
-      target: settingsTable.id,
-      set: { prefs: merged, updatedAt: new Date() },
-    })
-    .run();
-  const cached = settingsCache.peek();
-  if (cached) settingsCache.set({ ...cached, prefs: merged });
+  const legacyOwner = await resolveLegacyPrefsOwnerPondId();
+  const stored = migrateStoredPrefs(await readRawStoredPrefs(), legacyOwner);
+  const nextStored = applyPrefsPatch(stored, pondId, patch);
+  await persistStoredPrefs(nextStored);
+  const merged = mergeStoredPrefs(nextStored, pondId);
+  settingsCache.set({
+    pondId,
+    prefs: merged,
+    videoDownload: current.videoDownload,
+    imageDownload: current.imageDownload,
+  });
   return merged;
+}
+
+async function readRawStoredPrefs(): Promise<unknown> {
+  const db = await getGlobalDb();
+  const rows = await db
+    .select({ prefs: settingsTable.prefs })
+    .from(settingsTable)
+    .where(eq(settingsTable.id, "singleton"));
+  return rows[0]?.prefs;
 }
 
 export async function setVideoDownloadPrefs(
@@ -249,28 +309,4 @@ type DeepPartial<T> = T extends object
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : T;
 
-// Validate stored prefs; PrefsSchema fills missing/corrupt fields from defaults per slice.
-function loadPrefs(stored: unknown): Prefs {
-  const parsed = PrefsSchema.safeParse(stored);
-  return (parsed.success ? parsed.data : DEFAULT_PREFS) as Prefs;
-}
-
-function mergePrefs(
-  base: Prefs,
-  patch: DeepPartial<Prefs> | null | undefined,
-): Prefs {
-  if (!patch || typeof patch !== "object") return base;
-  const baseRec = base as unknown as Record<string, unknown>;
-  const patchRec = patch as unknown as Record<string, unknown>;
-  const out: Record<string, unknown> = { ...baseRec };
-  for (const key of Object.keys(baseRec)) {
-    const baseVal = baseRec[key];
-    const patchVal = patchRec[key];
-    if (patchVal && typeof patchVal === "object" && !Array.isArray(patchVal)) {
-      out[key] = { ...(baseVal as object), ...(patchVal as object) };
-    } else if (patchVal !== undefined) {
-      out[key] = patchVal;
-    }
-  }
-  return out as unknown as Prefs;
-}
+void PrefsSchema;

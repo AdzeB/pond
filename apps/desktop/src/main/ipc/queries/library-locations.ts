@@ -7,9 +7,10 @@ import {
   relocateLibrary,
 } from "../../core/library-ops";
 import { reconcileLibrary } from "../../core/scan";
+import { invalidatePrefs } from "../../core/prefs";
 import { closeDb } from "../../db";
-import { rememberLibrary } from "../../lib/library-recents";
 import { readLibraryPointer } from "../../lib/library-pointer";
+import { rememberLibrary } from "../../lib/library-recents";
 import { invalidatePaths, libraryRoot as libraryRootDir } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
@@ -240,9 +241,9 @@ function relaunchSoon(): void {
 
 async function softRepointInDev(): Promise<void> {
   log.info("[pond library-ops] dev re-point into new library (no relaunch)");
-  // Drop the old index handle and path cache so getDb() opens the new pond's index.
   closeDb();
   invalidatePaths();
+  invalidatePrefs();
   try {
     await reconcileLibrary();
   } catch (err) {
