@@ -8,6 +8,7 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { registerSyncActionListener } from "./core/executor";
+import { syncLibraryRootMetadata } from "./core/library-ops";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
@@ -165,6 +166,7 @@ async function postLaunchInit(): Promise<void> {
   registerAutoUpdater();
 
   try {
+    await syncLibraryRootMetadata();
     const active = libraryRoot();
     // Don't list a not-yet-created library; we remember it on first write.
     if (existsSync(active)) rememberLibrary(active);

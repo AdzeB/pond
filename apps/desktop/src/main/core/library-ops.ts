@@ -11,7 +11,7 @@ import {
 import { join, relative } from "node:path";
 import { saves, settings as settingsTable } from "@pond/schema/db";
 import type { Transaction } from "@pond/schema/tx";
-import { isNotNull } from "drizzle-orm";
+import { isNotNull, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb, getGlobalDb } from "../db";
 import { readItemMetadata } from "../lib/library";
@@ -19,6 +19,7 @@ import {
   checkPointerSafety,
   detectCloudKind,
   probeExistingLibrary,
+  readLibraryPointer,
   writeLibraryPointer,
 } from "../lib/library-pointer";
 import { libraryRoot, resolvePaths, trashRoot } from "../paths";
@@ -123,9 +124,8 @@ export async function relocateLibrary(
     }
   }
 
-  writeLibraryPointer(destResolved);
-
-  // The active-pond pointer is app-global, so it lives in the global DB.
+  // Persist to the global DB first so a failed write never leaves the pointer
+  // ahead of the in-memory path cache (which reads the pointer on resolve).
   const globalDb = await getGlobalDb();
   await globalDb
     .insert(settingsTable)
@@ -136,10 +136,40 @@ export async function relocateLibrary(
     })
     .run();
 
+  writeLibraryPointer(destResolved);
+
   log.info(
     `[pond library-ops] library ${mode === "copy" ? "copied" : "adopted"} → ${destResolved} (copied ${copied}, skipped ${skipped})`,
   );
   return { path: destResolved, mode, copied, skipped };
+}
+
+// Keep the on-disk pointer and global DB library_root aligned. The pointer is
+// authoritative for resolvePaths(); repair drift left by a partial switch.
+export async function syncLibraryRootMetadata(): Promise<void> {
+  const pointer = readLibraryPointer()?.replace(/\/+$/, "");
+  if (!pointer) return;
+
+  const globalDb = await getGlobalDb();
+  const rows = await globalDb
+    .select({ libraryRoot: settingsTable.libraryRoot })
+    .from(settingsTable)
+    .where(eq(settingsTable.id, "singleton"));
+  const stored = rows[0]?.libraryRoot?.replace(/\/+$/, "") ?? "";
+  if (stored === pointer) return;
+
+  await globalDb
+    .insert(settingsTable)
+    .values({ id: "singleton", libraryRoot: pointer })
+    .onConflictDoUpdate({
+      target: settingsTable.id,
+      set: { libraryRoot: pointer, updatedAt: new Date() },
+    })
+    .run();
+  log.info("[pond library-ops] repaired library_root metadata drift", {
+    pointer,
+    stored: stored || null,
+  });
 }
 
 // Inspect a candidate folder for the relocate confirm dialog.

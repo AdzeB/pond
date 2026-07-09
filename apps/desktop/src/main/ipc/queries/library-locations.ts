@@ -9,6 +9,7 @@ import {
 import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { rememberLibrary } from "../../lib/library-recents";
+import { readLibraryPointer } from "../../lib/library-pointer";
 import { invalidatePaths, libraryRoot as libraryRootDir } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
@@ -110,7 +111,24 @@ export const libraryLocationQueries: QueryHandlerMap = {
   async "library.switchTo"(params) {
     const dest = String(params.path ?? "").trim();
     if (!dest) return { ok: false as const, reason: "no_path" as const };
-    if (dest.replace(/\/+$/, "") === libraryRootDir().replace(/\/+$/, "")) {
+
+    const destNorm = dest.replace(/\/+$/, "");
+    const pointerNorm = readLibraryPointer()?.replace(/\/+$/, "") ?? "";
+    const cachedNorm = libraryRootDir().replace(/\/+$/, "");
+
+    // A prior switch can update the pointer on disk while the main process
+    // still holds the old library in its path cache (e.g. dev soft-reload
+    // missed). Reconcile before deciding this is a no-op.
+    if (pointerNorm && pointerNorm !== cachedNorm) {
+      invalidatePaths();
+    }
+
+    const activeNorm = (readLibraryPointer() ?? libraryRootDir()).replace(
+      /\/+$/,
+      "",
+    );
+    if (destNorm === activeNorm) {
+      if (pointerNorm && pointerNorm !== cachedNorm) relaunchSoon();
       return { ok: true as const, path: dest, mode: "adopt" as const };
     }
     try {
@@ -225,12 +243,12 @@ async function softRepointInDev(): Promise<void> {
   // Drop the old index handle and path cache so getDb() opens the new pond's index.
   closeDb();
   invalidatePaths();
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.reload();
-  }
   try {
     await reconcileLibrary();
   } catch (err) {
     log.warn("[pond library-ops] dev re-point reconcile failed", err);
+  }
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.reload();
   }
 }

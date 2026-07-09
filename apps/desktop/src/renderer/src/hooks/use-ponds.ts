@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { pushToast } from "@/stores/toasts";
 
 export interface Pond {
   path: string;
@@ -46,6 +47,14 @@ export function usePonds() {
       })) as ActionResult;
       // Switching relaunches (or reloads in dev), so there's no success state to settle into.
       if (!res.ok) throw new Error(res.reason);
+    },
+    onError: (err) => {
+      pushToast(
+        err instanceof Error
+          ? `Couldn't switch library: ${err.message}`
+          : "Couldn't switch library.",
+        "error",
+      );
     },
   });
 
