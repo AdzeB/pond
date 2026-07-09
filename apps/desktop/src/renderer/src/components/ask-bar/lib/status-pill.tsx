@@ -1,5 +1,5 @@
 import {
-  IconSparkleFill18 as Sparkle,
+  IconSparkle3Fill18 as Sparkle,
   IconCircleStopFill18 as Stop,
 } from "@pond/icons/fill/18";
 import { IconXmarkOutline18 as Clear } from "@pond/icons/outline/18";

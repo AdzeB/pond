@@ -1,5 +1,5 @@
 import {
-  IconFolder2Fill18 as Folder,
+  IconFolderFill18 as Folder,
   IconLabel3Fill18 as Label,
 } from "@pond/icons/fill/18";
 import { ColorPicker, Input, Popover } from "@pond/ui";

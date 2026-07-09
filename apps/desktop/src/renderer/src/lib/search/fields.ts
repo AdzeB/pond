@@ -3,7 +3,7 @@ import {
   IconChatBubbleFill18 as Caption,
   IconFileFill18 as FileIcon,
   IconCloneFill18 as FilesIcon,
-  IconLinkFill18 as LinkIcon,
+  IconLink2Fill18 as LinkIcon,
   IconMicrophoneFill18 as Mic,
   IconColorPaletteFill18 as Palette,
   IconPencilFill18 as Pencil,

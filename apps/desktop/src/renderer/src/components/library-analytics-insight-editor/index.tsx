@@ -7,7 +7,7 @@ import {
   IconChartLineOutline18 as LineIcon,
   IconChartPieOutline18 as PieIcon,
   IconChartRadarOutline18 as RadarIcon,
-  IconChartDonutOutline18 as RingIcon,
+  IconChartDonut2Outline18 as RingIcon,
   IconChartDonut2Outline18 as SunburstIcon,
   IconTableOutline18 as TableIcon,
   IconXmarkOutline18 as Xmark,

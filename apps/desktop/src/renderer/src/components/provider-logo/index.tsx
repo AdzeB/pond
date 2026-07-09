@@ -16,12 +16,12 @@ import {
   IconProviderTogether,
   IconProviderXai,
 } from "@pond/icons/providers";
+import type { IconComponent } from "@pond/icons/types";
 import type { AiProviderId } from "@pond/schema";
-import type { ComponentType, SVGProps } from "react";
 
 // bundled/custom have no brand mark: on-device falls back to a computer, a
 // user-supplied endpoint to a globe.
-const LOGOS: Record<AiProviderId, ComponentType<SVGProps<SVGSVGElement>>> = {
+const LOGOS: Record<AiProviderId, IconComponent> = {
   bundled: Bundled,
   ollama: IconProviderOllama,
   lmstudio: IconProviderLmstudio,

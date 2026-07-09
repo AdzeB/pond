@@ -22,11 +22,11 @@ allowBuilds:
   # its node-gyp build (that yields a plain-Node binary); node-llama-cpp resolves
   # the correct prebuilt binaries for this Electron ABI itself on first use.
   node-llama-cpp: false
-  nucleo-ui-fill-12: true
-  nucleo-ui-fill-18: true
-  nucleo-ui-fill-duo-18: true
-  nucleo-ui-outline-12: true
-  nucleo-ui-outline-18: true
+  nucleo-ui-fill-12: set this to true or false
+  nucleo-ui-fill-18: set this to true or false
+  nucleo-ui-fill-duo-18: set this to true or false
+  nucleo-ui-outline-12: set this to true or false
+  nucleo-ui-outline-18: set this to true or false
   onnxruntime-node: true
   protobufjs: true
   # Native module pulled in transitively by metascraper (via url-regex-safe).

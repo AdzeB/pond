@@ -3,7 +3,7 @@ import {
   IconFolderOpenOutline18 as FolderOpen,
   IconPenOutline18 as Pencil,
   IconArchivePlusOutline18 as Plus,
-  IconGearOutline18 as Settings,
+  IconGear3Outline18 as Settings,
 } from "@pond/icons/outline/18";
 import { IconGithub, IconXTwitter } from "@pond/icons/social-media";
 import { Input } from "@pond/ui";

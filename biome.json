@@ -81,6 +81,26 @@
           }
         }
       }
+    },
+    {
+      "includes": ["packages/icons/generated/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedFunctionParameters": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/icons/lib/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "off"
+          }
+        }
+      }
     }
   ]
 }

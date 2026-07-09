@@ -1,6 +1,6 @@
 import {
   IconPencilOutline18 as Pencil,
-  IconTrashOutline18 as Trash,
+  IconTrash2Outline18 as Trash,
 } from "@pond/icons/outline/18";
 import type { NativeMenuItem } from "@/lib/ui/native-menu";
 

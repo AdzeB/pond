@@ -233,14 +233,18 @@ Thin Base UI wrappers styled with CSS Modules; app-agnostic.
 
 ## `packages/icons` — Icon barrel
 
-Re-exports the Nucleo React packages by family plus local brand marks.
+Vendors **100** Nucleo UI glyphs (fill + outline families) as committed React
+modules under `generated/`, per Nucleo's open-source terms. Social and brand
+marks live in `social-media/custom/` and are outside the 100-icon budget. See
+[`packages/icons/COPYRIGHT-NOTICE.md`](packages/icons/COPYRIGHT-NOTICE.md).
 
-| Package | Version | Purpose |
-|---|---|---|
-| [`nucleo-social-media`](https://nucleoapp.com/) | `^1.0.2` | Social/brand icon family |
-| `nucleo-ui-fill-12` / `nucleo-ui-fill-18` | `^1.4.0` | Fill families |
-| `nucleo-ui-fill-duo-18` | `^1.4.0` | Duotone family |
-| `nucleo-ui-outline-12` / `nucleo-ui-outline-18` | `^1.4.0` | Outline families |
+| Asset | Purpose |
+|---|---|
+| `generated/*` | Vendored Nucleo UI icons (`allowlist.json` enforces the cap) |
+| `social-media/custom/*` | Hand-authored source brand marks (unlimited) |
+| `providers/*` | AI provider logos |
+
+Dev-only (icon regeneration): `react`, `react-dom` (for `scripts/generate-icons.mjs`).
 
 ## `packages/theme` — Design tokens
 
@@ -337,9 +341,10 @@ Model Hub used for AI weights: [Hugging Face](https://huggingface.co/).
 
 - [**Inter**](https://rsms.me/inter/) — primary typeface.
 - [**JetBrains Mono**](https://www.jetbrains.com/lp/mono/) — monospace.
-- [**Nucleo**](https://nucleoapp.com/) — the entire icon language (fill,
-  fill-duo, outline, social-media families) via the `nucleo-*` packages in
-  `@pond/icons`, plus a few local brand marks for sources Nucleo doesn't ship.
+- [**Nucleo**](https://nucleoapp.com/) — up to 100 UI glyphs vendored into
+  `@pond/icons` under the open-source license (see `COPYRIGHT-NOTICE.md`).
+- **Custom brand marks** — Are.na, Cosmos, X, Instagram, etc. in
+  `social-media/custom/` (outside the Nucleo cap).
 
 ### Brand / source marks
 

@@ -12,7 +12,7 @@ import {
   IconServerOutline18 as Storage,
   IconWindowClockOutline18 as Sync,
   IconLabelOutline18 as Tags,
-  IconTrashOutline18 as Trash,
+  IconTrash2Outline18 as Trash,
   IconMovieOutline18 as Videos,
 } from "@pond/icons/outline/18";
 import type { IconComponent } from "@pond/icons/types";

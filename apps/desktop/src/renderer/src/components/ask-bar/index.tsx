@@ -8,7 +8,7 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import {
   IconPenSparkleFill18 as NewChat,
-  IconSparkleFill18 as Sparkle,
+  IconSparkle3Fill18 as Sparkle,
 } from "@pond/icons/fill/18";
 import { IconXmarkOutline18 as Clear } from "@pond/icons/outline/18";
 import {

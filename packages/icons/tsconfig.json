@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts", "**/*.tsx", "svg.d.ts"],
-  "exclude": ["providers/generate.ts"]
+  "exclude": ["providers/generate.ts", "scripts/**"]
 }

@@ -1,6 +1,6 @@
 import { IconArrowUpFill18 as ArrowUp } from "@pond/icons/fill/18";
 import {
-  IconLinkOutline18 as Link,
+  IconLink2Outline18 as Link,
   IconNotepadOutline18 as Notepad,
   IconTagsOutline18 as Tags,
 } from "@pond/icons/outline/18";

@@ -1,7 +1,7 @@
 import {
-  IconSparkleFill18 as Ask,
+  IconSparkle3Fill18 as Ask,
   IconArchivePlusFill18 as New,
-  IconGearFill18 as SettingsIcon,
+  IconGear3Fill18 as SettingsIcon,
   IconGlobeFill18 as SourcesIcon,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
