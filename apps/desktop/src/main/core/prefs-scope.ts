@@ -41,8 +41,14 @@ const APP_PREF_KEYS = Object.keys(DEFAULT_PREFS).filter(
   (key) => !POND_PREF_KEYS.includes(key as PondPrefKey),
 ) as AppPrefKey[];
 
-export const DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
-export const DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
+export const DEFAULT_APP_PREFS: AppPrefs = pickPrefs(
+  DEFAULT_PREFS,
+  APP_PREF_KEYS,
+);
+export const DEFAULT_POND_PREFS: PondPrefs = pickPrefs(
+  DEFAULT_PREFS,
+  POND_PREF_KEYS,
+);
 
 export function currentPondId(): string {
   const paths = resolvePaths();
@@ -85,8 +91,7 @@ export async function resolveLegacyPrefsOwnerPondId(): Promise<string> {
       .select({ libraryRoot: settingsTable.libraryRoot })
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
-    const root =
-      rows[0]?.libraryRoot ?? readLibraryPointer() ?? libraryRoot();
+    const root = rows[0]?.libraryRoot ?? readLibraryPointer() ?? libraryRoot();
     const committed = existsSync(root);
     return resolvePondId(root, committed);
   } catch {
@@ -94,10 +99,7 @@ export async function resolveLegacyPrefsOwnerPondId(): Promise<string> {
   }
 }
 
-export function mergeStoredPrefs(
-  stored: StoredPrefsV2,
-  pondId: string,
-): Prefs {
+export function mergeStoredPrefs(stored: StoredPrefsV2, pondId: string): Prefs {
   const app = mergeSlice(DEFAULT_APP_PREFS, stored.app) as AppPrefs;
   const pond = mergeSlice(
     DEFAULT_POND_PREFS,

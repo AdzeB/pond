@@ -6,8 +6,8 @@ import {
   type RelocateMode,
   relocateLibrary,
 } from "../../core/library-ops";
-import { reconcileLibrary } from "../../core/scan";
 import { invalidatePrefs } from "../../core/prefs";
+import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
 import { readLibraryPointer } from "../../lib/library-pointer";
 import { rememberLibrary } from "../../lib/library-recents";
