@@ -110,3 +110,13 @@ export const SETTINGS_MASTER_GROUPS: SettingsMasterGroup[] =
     if (sections.length === 0) return [];
     return [{ group, label: SETTINGS_GROUP_LABELS[group], sections }];
   });
+
+export function settingsMasterGroupsForPackaged(
+  isPackaged: boolean,
+): SettingsMasterGroup[] {
+  if (!isPackaged) return SETTINGS_MASTER_GROUPS;
+  return SETTINGS_MASTER_GROUPS.map((group) => ({
+    ...group,
+    sections: group.sections.filter((section) => section.id !== "developer"),
+  })).filter((group) => group.sections.length > 0);
+}

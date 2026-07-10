@@ -1,6 +1,7 @@
 import { SETTINGS_SECTION_ALIASES, SETTINGS_SECTIONS } from "@pond/schema";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { SettingsDetail } from "@/components/settings-detail";
+import { loadAppInfo } from "@/lib/app-info";
 
 // Path validation uses the lightweight schema list so redirects don't pull in the registry chunk; only the component below does.
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
@@ -16,7 +17,7 @@ function SectionRoute() {
 }
 
 export const Route = createFileRoute("/settings/$section")({
-  beforeLoad: ({ params }) => {
+  beforeLoad: async ({ params }) => {
     const section = resolveSectionPath(params.section);
     if (section !== params.section) {
       throw redirect({
@@ -31,6 +32,16 @@ export const Route = createFileRoute("/settings/$section")({
         params: { section: DEFAULT_PATH },
         replace: true,
       });
+    }
+    if (section === "developer") {
+      const info = await loadAppInfo();
+      if (info.isPackaged) {
+        throw redirect({
+          to: "/settings/$section",
+          params: { section: DEFAULT_PATH },
+          replace: true,
+        });
+      }
     }
   },
   component: SectionRoute,
