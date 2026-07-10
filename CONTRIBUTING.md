@@ -1,5 +1,13 @@
 # Contributing
 
+## General
+
+- **Node** 22 and **pnpm** 11 (see `.nvmrc` and `package.json` engines).
+- **Style**: [Biome](https://biomejs.dev/) — `pnpm exec biome check .` before pushing.
+- **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
+- **Checks**: `pnpm typecheck`, `pnpm test`, `pnpm build` should pass locally; CI runs the same on every PR.
+- **PRs**: Keep scope focused; link issues when relevant. Generated files (`docs/supported-sources.md`, icons) must stay in sync — run `pnpm generate` after descriptor changes.
+
 ## Add a source
 
 Pond is designed so that adding a new source (a site Pond can capture saves

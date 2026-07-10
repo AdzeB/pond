@@ -56,6 +56,11 @@ afterPack: scripts/verify-binaries.cjs
 # install AND on CI.
 npmRebuild: true
 
+publish:
+  provider: github
+  owner: raphaelsalaja
+  repo: pond
+
 mac:
   category: public.app-category.productivity
   artifactName: ${productName}-${version}-${arch}.${ext}

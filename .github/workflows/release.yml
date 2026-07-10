@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Icon allowlist
+        run: pnpm --filter @pond/icons check:allowlist
+
+      - name: Generated files are up to date
+        run: pnpm generate && git diff --exit-code
+
+      - name: Lint
+        run: pnpm exec biome ci .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build workspace
+        run: pnpm build
+
+      - name: Package macOS app and publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm --filter @pond/desktop exec electron-vite build && pnpm --filter @pond/desktop exec electron-builder --mac --arm64 --x64 --publish always
+
+      - name: Build extension zip
+        run: pnpm --filter @pond/extension zip
+
+      - name: Upload extension zip to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          ZIP=$(find apps/extension/.output -name "*.zip" -type f | head -1)
+          if [ -z "$ZIP" ]; then
+            echo "Extension zip not found under apps/extension/.output"
+            exit 1
+          fi
+          gh release upload "$GITHUB_REF_NAME" "$ZIP" --clobber --rename "pond-extension-${VERSION}.zip"

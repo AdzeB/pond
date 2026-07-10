@@ -1,21 +1,41 @@
 > The web is a sea of information. Everyone deserves their own pond.
 
-## Getting Started
+## Install
 
-Download the latest release.
+Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately).
 
-```bash
-brew install --cask pond
-```
+**First open (unsigned build):** macOS may block the app with "developer cannot be verified." Right-click the app → **Open**, or go to **System Settings → Privacy & Security → Open Anyway**.
 
-Or grab a `.dmg` from [Releases](https://github.com/raphaelsalaja/pond/releases).
+### Browser extension
+
+Capture from the web requires the Pond extension:
+
+1. Download `pond-extension-X.Y.Z.zip` from the same release (or build from source — see [`apps/extension/README.md`](apps/extension/README.md)).
+2. Load unpacked in Chrome (`chrome://extensions` → Developer mode).
+3. Pair: Pond menu bar → **Copy Pairing Token** → paste the `pond://pair?...` link in the extension popup.
 
 ## Development
+
+Requires Node.js 22 (see `.nvmrc`) and pnpm 11.
 
 ```bash
 pnpm install
 pnpm dev
 ```
+
+Extension dev (separate terminal):
+
+```bash
+pnpm --filter @pond/extension dev
+```
+
+If native modules fail after an Electron upgrade:
+
+```bash
+pnpm --filter @pond/desktop rebuild
+```
+
+See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout.
 
 ## How sourcing works (and your responsibility)
 
@@ -41,4 +61,8 @@ adapter authors are expected to respect.
 ## Documentation
 
 - [License](LICENSE)
+- [Privacy](PRIVACY.md)
+- [Security](SECURITY.md)
+- [Releasing](RELEASING.md)
 - [Contributing](CONTRIBUTING.md)
+- [Extension](apps/extension/README.md)
