@@ -31,9 +31,25 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
+// Resolved synchronously once per (re)load so pond-scoped renderer caches can
+// namespace their localStorage keys before any module hydrates.
+let cachedPondId: string | null = null;
+
 const api = {
   tx(tx: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.tx, tx);
+  },
+
+  pondId(): string {
+    if (cachedPondId) return cachedPondId;
+    try {
+      const value = ipcRenderer.sendSync(IPC.pondId) as unknown;
+      cachedPondId =
+        typeof value === "string" && value.length > 0 ? value : "unbound";
+    } catch {
+      cachedPondId = "unbound";
+    }
+    return cachedPondId;
   },
 
   batch(txs: unknown[]): Promise<unknown[]> {
@@ -111,6 +127,7 @@ const api = {
     platform: string;
     arch: string;
     username: string;
+    isPackaged: boolean;
   }> {
     return ipcRenderer.invoke(IPC.appInfo);
   },

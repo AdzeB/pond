@@ -2,6 +2,7 @@ import { debounce } from "@tanstack/pacer";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { pickPrimaryFile } from "@/lib/media/units";
+import { pondScopedKey } from "@/lib/pond-scope";
 import type { Save } from "@/lib/types";
 import { clamp } from "@/lib/util/math";
 
@@ -12,7 +13,8 @@ const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, number>();
 
 // Persist aspect ratios so the masonry doesn't re-pack as dim-less covers lazy-load; stale entries self-correct on next load.
-const STORAGE_KEY = "pond:aspects:v1";
+// Keyed by pond id: save ids are pond-specific, and the cache must not mix ponds.
+const STORAGE_KEY = pondScopedKey("pond:aspects:v1");
 const PERSIST_DEBOUNCE_MS = 800;
 
 export function clampRatio(w: number, h: number): number {

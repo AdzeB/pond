@@ -219,6 +219,25 @@ const skills = z.object({
   seeded: z.boolean().catch(false),
 });
 
+// Recent ask-bar questions, most-recent-first. Pond-scoped: questions typed in
+// one library must never surface in another.
+const askHistory = z.object({
+  entries: z.array(z.string()).catch([]),
+});
+
+const recentSaveVisit = z.object({
+  saveId: z.string(),
+  visitedAt: z.number(),
+});
+
+export type RecentSaveVisit = z.infer<typeof recentSaveVisit>;
+
+// Recently visited saves (feeds the native History menu). Save ids are
+// pond-specific, so this is pond-scoped too.
+const saveRecents = z.object({
+  entries: z.array(recentSaveVisit).catch([]),
+});
+
 // Each slice catches to its own defaults so a corrupt slice resets in isolation.
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
@@ -236,6 +255,8 @@ const PrefsObject = z.object({
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),
   skills: skills.catch(skills.parse({})),
+  askHistory: askHistory.catch(askHistory.parse({})),
+  saveRecents: saveRecents.catch(saveRecents.parse({})),
 });
 
 export type Prefs = z.infer<typeof PrefsObject>;

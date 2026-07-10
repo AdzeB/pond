@@ -1,8 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
+import { readPondIdentity, writePondIdentity } from "./pond-identity";
 
-// Registry of opened libraries for the switcher; in userData, readable before the DB opens.
+// Registry of opened libraries for the switcher; in userData, readable before
+// the DB opens. Identity (displayName/avatar/color) is cached here from the
+// bundle's metadata.json, which is the source of truth.
 const RECENTS_FILE = "library-recents.json";
 
 interface KnownLibrary {
@@ -129,6 +132,7 @@ export function setLibraryAvatar(path: string, avatar: string | null): void {
   const trimmed = avatar?.trim() ?? "";
   lib.avatar = trimmed.length > 0 ? trimmed : null;
   write(libraries);
+  writePondIdentity(abs, { avatar: lib.avatar });
 }
 
 // Update name override, avatar, and color in one shot. Only provided fields change;
@@ -157,6 +161,47 @@ export function setLibraryDetails(
     const trimmed = patch.color?.trim() ?? "";
     lib.color = trimmed.length > 0 ? trimmed : null;
   }
+  write(libraries);
+  writePondIdentity(abs, {
+    ...(patch.name !== undefined ? { displayName: lib.displayName } : {}),
+    ...(patch.avatar !== undefined ? { avatar: lib.avatar } : {}),
+    ...(patch.color !== undefined ? { color: lib.color } : {}),
+  });
+}
+
+// Reconcile a library's identity between its bundle metadata.json (source of
+// truth) and the recents cache. A pre-identity bundle gets seeded from the
+// cache once; afterwards the bundle always wins, so identity travels with the
+// folder across machines.
+export function syncIdentityWithBundle(path: string): void {
+  const abs = normalize(path);
+  if (!existsSync(abs)) return;
+  const identity = readPondIdentity(abs);
+  if (!identity) return;
+
+  const libraries = read();
+  const lib = libraries.find((l) => normalize(l.path) === abs);
+
+  if (!identity.seeded) {
+    writePondIdentity(abs, {
+      displayName: lib?.displayName ?? null,
+      avatar: lib?.avatar ?? null,
+      color: lib?.color ?? null,
+    });
+    return;
+  }
+
+  if (!lib) return;
+  if (
+    lib.displayName === identity.displayName &&
+    lib.avatar === identity.avatar &&
+    lib.color === identity.color
+  ) {
+    return;
+  }
+  lib.displayName = identity.displayName;
+  lib.avatar = identity.avatar;
+  lib.color = identity.color;
   write(libraries);
 }
 

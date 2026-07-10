@@ -1,6 +1,10 @@
 import type { NewSave, Save } from "@pond/schema/db";
 import { writeSaveInfo } from "../lib/library";
 import { patchTouchesInfo } from "../lib/library-format";
+import {
+  patchTouchesEnrichment,
+  writeEnrichmentSidecar,
+} from "./enrichment-sidecar";
 import { applySavePatch, type WriteFileArgs } from "./pipeline/workers/apply";
 
 interface PersistSaveOptions {
@@ -27,6 +31,11 @@ export async function persistSave(
   const wroteFiles = (opts.newFiles?.length ?? 0) > 0;
   if (opts.writeInfo || wroteFiles || patchTouchesInfo(patch)) {
     await writeSaveInfo(updated);
+  }
+  // Pipeline outputs also land in the per-item sidecar so an index rebuild
+  // recovers them from the bundle instead of recomputing.
+  if (patchTouchesEnrichment(patch)) {
+    writeEnrichmentSidecar(updated);
   }
 
   return updated;

@@ -333,18 +333,20 @@ export const libraryScan = sqliteTable("library_scan", {
 
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
+  // Defaults are bound as parameters ($defaultFn), never inlined as raw SQL:
+  // an apostrophe anywhere in the default JSON would break the statement.
   videoDownload: text("video_download", { mode: "json" })
     .$type<VideoDownloadSettings>()
     .notNull()
-    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_VIDEO_DOWNLOAD))}'`),
+    .$defaultFn(() => DEFAULT_VIDEO_DOWNLOAD),
   imageDownload: text("image_download", { mode: "json" })
     .$type<ImageDownloadSettings>()
     .notNull()
-    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_IMAGE_DOWNLOAD))}'`),
+    .$defaultFn(() => DEFAULT_IMAGE_DOWNLOAD),
   prefs: text("prefs", { mode: "json" })
     .$type<Prefs>()
     .notNull()
-    .default(sql`'${sql.raw(JSON.stringify(DEFAULT_PREFS))}'`),
+    .$defaultFn(() => DEFAULT_PREFS),
   libraryRoot: text("library_root"),
   onboarded: integer("onboarded", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })

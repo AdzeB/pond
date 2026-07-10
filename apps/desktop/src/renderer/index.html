@@ -60,7 +60,13 @@
 			(() => {
 				try {
 					const hint = window.__pondShell || {};
-					const raw = localStorage.getItem("pondShell");
+					// Appearance is per-pond; mirror key matches theme-applier's
+					// pondScopedKey("pondShell").
+					let pondId = "unbound";
+					try {
+						pondId = window.pond.pondId();
+					} catch {}
+					const raw = localStorage.getItem(`pondShell:${pondId}`);
 					const stored = raw ? JSON.parse(raw) : {};
 					const shell = { ...stored, ...hint };
 					const doc = document.documentElement;

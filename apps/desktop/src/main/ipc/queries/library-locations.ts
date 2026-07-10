@@ -8,10 +8,19 @@ import {
 } from "../../core/library-ops";
 import { invalidatePrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { closeDb } from "../../db";
+import { rotateBundleBackups } from "../../lib/library-config";
 import { readLibraryPointer } from "../../lib/library-pointer";
-import { rememberLibrary } from "../../lib/library-recents";
-import { invalidatePaths, libraryRoot as libraryRootDir } from "../../paths";
+import {
+  rememberLibrary,
+  syncIdentityWithBundle,
+} from "../../lib/library-recents";
+import {
+  invalidatePaths,
+  libraryRoot as libraryRootDir,
+  resolvePaths,
+} from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryLocationQueries: QueryHandlerMap = {
@@ -241,9 +250,28 @@ function relaunchSoon(): void {
 
 async function softRepointInDev(): Promise<void> {
   log.info("[pond library-ops] dev re-point into new library (no relaunch)");
+  await flushTagsDump().catch((err) =>
+    log.warn("[pond library-ops] tags.json flush failed", err),
+  );
   closeDb();
   invalidatePaths();
   invalidatePrefs();
+  try {
+    syncIdentityWithBundle(libraryRootDir());
+    const paths = resolvePaths();
+    rotateBundleBackups(paths.backupDir, [
+      paths.libraryMetadata,
+      paths.settingsFile,
+      paths.tagsFile,
+    ]);
+  } catch (err) {
+    log.warn("[pond library-ops] identity sync failed", err);
+  }
+  try {
+    await hydrateTagsFromBundle();
+  } catch (err) {
+    log.warn("[pond library-ops] tags.json hydrate failed", err);
+  }
   try {
     await reconcileLibrary();
   } catch (err) {

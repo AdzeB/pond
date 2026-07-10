@@ -9,6 +9,7 @@ import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { scanLibrary } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
+import { readEnrichmentSidecar } from "./enrichment-sidecar";
 import { broadcastSyncAction } from "./executor";
 
 export async function reconcileLibrary(): Promise<{
@@ -53,7 +54,11 @@ export async function reconcileLibrary(): Promise<{
     const tags = metadata.tags ?? [];
 
     try {
+      // Recover pipeline outputs from the per-item sidecar so an index rebuild
+      // only recomputes embeddings, never transcripts/OCR/captions.
+      const enrichment = readEnrichmentSidecar(id) ?? {};
       const insertValues: typeof saves.$inferInsert = {
+        ...enrichment,
         id,
         source:
           metadata.source as unknown as (typeof saves.$inferInsert)["source"],
@@ -82,6 +87,7 @@ export async function reconcileLibrary(): Promise<{
         createdAt: new Date(metadata.btime),
       };
       const updateSet = {
+        ...enrichment,
         title: metadata.name,
         description: metadata.pond.description ?? null,
         author: metadata.pond.author ?? null,

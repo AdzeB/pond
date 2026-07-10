@@ -1,52 +1,43 @@
+import type { RecentSaveVisit } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { loadPrefs, patchPrefsSection } from "@/stores/prefs";
 
-const STORAGE_KEY = "pond.recents.saves";
+// Recently visited saves; feeds the native History menu. Persisted in the pond
+// prefs slice (bundle settings.json) because save ids are pond-specific —
+// shared localStorage would leak one library's recents into another.
+
 const RECENTS_CAP = 20;
 
-interface RecentEntry {
-  saveId: string;
-  visitedAt: number;
-}
+const store = new Store<RecentSaveVisit[]>([]);
 
-function hydrate(): RecentEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const out: RecentEntry[] = [];
-    for (const item of parsed) {
-      if (
-        item &&
-        typeof item === "object" &&
-        typeof (item as RecentEntry).saveId === "string" &&
-        typeof (item as RecentEntry).visitedAt === "number"
-      ) {
-        out.push({
-          saveId: (item as RecentEntry).saveId,
-          visitedAt: (item as RecentEntry).visitedAt,
-        });
+let hydrated = false;
+function hydrate(): void {
+  if (hydrated) return;
+  hydrated = true;
+  void loadPrefs()
+    .then((prefs) => {
+      const entries = prefs.saveRecents?.entries;
+      if (Array.isArray(entries)) {
+        store.setState(() =>
+          entries
+            .filter(
+              (e): e is RecentSaveVisit =>
+                e != null &&
+                typeof e.saveId === "string" &&
+                typeof e.visitedAt === "number",
+            )
+            .slice(0, RECENTS_CAP),
+        );
       }
-    }
-    return out.slice(0, RECENTS_CAP);
-  } catch {
-    return [];
-  }
+    })
+    .catch(() => {
+      /* prefs unavailable: recents start empty this session */
+    });
 }
 
-function persist(next: RecentEntry[]): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* localStorage may be denied (private mode, quota); ignore */
-  }
-}
-
-const store = new Store<RecentEntry[]>(hydrate());
+hydrate();
 
 function recordVisit(saveId: string): void {
   store.setState((state) => {
@@ -59,10 +50,10 @@ function recordVisit(saveId: string): void {
       ...state.filter((e) => e.saveId !== saveId),
     ].slice(0, RECENTS_CAP);
   });
-  persist(store.state);
+  patchPrefsSection("saveRecents", { entries: store.state });
 }
 
-export function useRecents(): RecentEntry[] {
+export function useRecents(): RecentSaveVisit[] {
   return useSelector(store, (s) => s);
 }
 

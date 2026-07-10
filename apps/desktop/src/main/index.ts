@@ -7,6 +7,7 @@ import {
   IPC,
   type RecentMenuEntry,
 } from "../shared/constants";
+import { backfillEnrichmentSidecars } from "./core/enrichment-sidecar";
 import { registerSyncActionListener } from "./core/executor";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { flushGovernor } from "./core/pipeline/rate-governor";
@@ -24,6 +25,7 @@ import {
   type SyncStatusUpdate,
   subscribeToSyncStatus,
 } from "./core/sync";
+import { flushTagsDump, hydrateTagsFromBundle } from "./core/tags-bundle";
 import {
   registerSyncCron,
   registerTrashCron,
@@ -35,7 +37,12 @@ import { type RunningServer, startHttpServer } from "./http/server";
 import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
-import { pruneMissingLibraries, rememberLibrary } from "./lib/library-recents";
+import { rotateBundleBackups } from "./lib/library-config";
+import {
+  pruneMissingLibraries,
+  rememberLibrary,
+  syncIdentityWithBundle,
+} from "./lib/library-recents";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
@@ -169,13 +176,28 @@ async function postLaunchInit(): Promise<void> {
     await syncLibraryRootMetadata();
     const active = libraryRoot();
     // Don't list a not-yet-created library; we remember it on first write.
-    if (existsSync(active)) rememberLibrary(active);
+    if (existsSync(active)) {
+      rememberLibrary(active);
+      syncIdentityWithBundle(active);
+      snapshotBundleJsons();
+    }
     pruneMissingLibraries(active);
   } catch (err) {
     log.warn("[pond] recording active library failed", err);
   }
 
+  // Tag colors/groups live in the bundle's tags.json; a fresh index hydrates
+  // from it before anything queries tags.
+  try {
+    await hydrateTagsFromBundle();
+  } catch (err) {
+    log.warn("[pond] tags.json hydrate failed", err);
+  }
+
   void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
+  void backfillEnrichmentSidecars().catch((err) =>
+    log.warn("[pond] enrichment sidecar backfill failed", err),
+  );
   startReconciler();
 
   try {
@@ -206,6 +228,21 @@ async function postLaunchInit(): Promise<void> {
   );
 
   subscribeToSyncStatus(broadcastSyncStatus);
+}
+
+// Guard the single-writer root JSONs against a bad cloud sync or crash with a
+// rolling snapshot on every open, exactly like Eagle's backup/ folder.
+function snapshotBundleJsons(): void {
+  try {
+    const paths = resolvePaths();
+    rotateBundleBackups(paths.backupDir, [
+      paths.libraryMetadata,
+      paths.settingsFile,
+      paths.tagsFile,
+    ]);
+  } catch (err) {
+    log.warn("[pond] bundle backup snapshot failed", err);
+  }
 }
 
 function registerSummonHotkey() {
@@ -270,6 +307,11 @@ app.on("window-all-closed", () => {
 app.on("before-quit", async () => {
   beginQuit();
   globalShortcut.unregisterAll();
+  try {
+    await flushTagsDump();
+  } catch (err) {
+    log.warn("[pond] tags.json flush failed", err);
+  }
   try {
     stopStorageWatcher();
   } catch (err) {

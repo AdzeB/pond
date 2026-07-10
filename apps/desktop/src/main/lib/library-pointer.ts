@@ -129,7 +129,8 @@ export function detectCloudKind(absPath: string): CloudKind | null {
   return null;
 }
 
-// Detect an existing Pond library (`items/` or `metadata.json`) to default to "adopt".
+// Detect an existing Pond library (`items/`, `metadata.json`, or
+// `settings.json`) to default to "adopt".
 interface ExistingLibraryProbe {
   exists: boolean;
   hasItemsDir: boolean;
@@ -150,7 +151,8 @@ export function probeExistingLibrary(absPath: string): ExistingLibraryProbe {
   out.exists = true;
   const itemsDir = join(absPath, "items");
   const metadataFile = join(absPath, "metadata.json");
-  out.hasMetadataFile = existsSync(metadataFile);
+  const settingsFile = join(absPath, "settings.json");
+  out.hasMetadataFile = existsSync(metadataFile) || existsSync(settingsFile);
   if (existsSync(itemsDir)) {
     out.hasItemsDir = true;
     try {

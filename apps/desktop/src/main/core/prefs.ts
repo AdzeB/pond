@@ -14,13 +14,23 @@ import log from "electron-log/main.js";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
 import {
-  applyPrefsPatch,
+  adoptLegacyPondKeys,
+  applyAppPrefsPatch,
+  applyUnboundPondPatch,
   currentPondId,
   isStoredPrefsV2,
-  mergeStoredPrefs,
+  isUnboundPondId,
+  legacyPondSeed,
+  mergePondSlice,
+  mergePrefs,
   migrateStoredPrefs,
+  type PondPrefs,
+  readBundlePondPrefs,
   resolveLegacyPrefsOwnerPondId,
   type StoredPrefsV2,
+  splitPrefsPatch,
+  stripConsumedPondSlices,
+  writeBundlePondPrefs,
 } from "./prefs-scope";
 
 interface SettingsCache {
@@ -51,12 +61,63 @@ async function fetchSettings(): Promise<SettingsCache> {
     .where(eq(settingsTable.id, "singleton"));
   const row = rows[0];
   const stored = await ensureStoredPrefs(row?.prefs, pondId);
+  const pond = await resolvePondSlice(stored, pondId);
   return {
     pondId,
-    prefs: mergeStoredPrefs(stored, pondId),
+    prefs: mergePrefs(stored.app, pond),
     videoDownload: normalizeVideo(row?.videoDownload ?? DEFAULT_VIDEO_DOWNLOAD),
     imageDownload: normalizeImage(row?.imageDownload ?? DEFAULT_IMAGE_DOWNLOAD),
   };
+}
+
+// The pond slice's source of truth is the bundle's settings.json. An unbound
+// pond (no bundle yet) parks its slice in global.db; the first open of a
+// bundle without settings.json seeds the file from the legacy global.db entry
+// and strips what it consumed.
+async function resolvePondSlice(
+  stored: StoredPrefsV2,
+  pondId: string,
+): Promise<Partial<PondPrefs>> {
+  if (isUnboundPondId(pondId)) return legacyPondSeed(stored, pondId);
+
+  const bundle = readBundlePondPrefs();
+  if (bundle) {
+    // Backfill slices that moved into the pond scope after this bundle's
+    // settings.json was first seeded (e.g. appearance).
+    const { slice, changed } = adoptLegacyPondKeys(bundle, stored, pondId);
+    if (changed) {
+      try {
+        writeBundlePondPrefs(mergePondSlice(slice));
+      } catch (err) {
+        log.warn("[pond prefs] adopting legacy pond keys failed", err);
+      }
+    }
+    await stripMigratedSlices(stored, pondId);
+    return slice;
+  }
+
+  const seed = mergePondSlice(legacyPondSeed(stored, pondId));
+  try {
+    writeBundlePondPrefs(seed);
+  } catch (err) {
+    log.warn("[pond prefs] seeding bundle settings.json failed", err);
+    return seed;
+  }
+  await stripMigratedSlices(stored, pondId);
+  return seed;
+}
+
+async function stripMigratedSlices(
+  stored: StoredPrefsV2,
+  pondId: string,
+): Promise<void> {
+  const { stored: next, changed } = stripConsumedPondSlices(stored, pondId);
+  if (!changed) return;
+  try {
+    await persistStoredPrefs(next);
+  } catch (err) {
+    log.warn("[pond prefs] stripping migrated pond slices failed", err);
+  }
 }
 
 async function loadSettings(): Promise<SettingsCache> {
@@ -140,12 +201,35 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
 
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const pondId = currentPondId();
+  // Ensure migration/seeding has run before we route the patch.
   const current = await loadSettings();
+  const { app, pond } = splitPrefsPatch(patch);
+
   const legacyOwner = await resolveLegacyPrefsOwnerPondId();
-  const stored = migrateStoredPrefs(await readRawStoredPrefs(), legacyOwner);
-  const nextStored = applyPrefsPatch(stored, pondId, patch);
-  await persistStoredPrefs(nextStored);
-  const merged = mergeStoredPrefs(nextStored, pondId);
+  let stored = migrateStoredPrefs(await readRawStoredPrefs(), legacyOwner);
+
+  let pondSlice: PondPrefs;
+  if (isUnboundPondId(pondId)) {
+    // No bundle on disk yet: park the pond slice in global.db until the
+    // bundle materializes and consumes it.
+    if (Object.keys(pond).length > 0) {
+      stored = applyUnboundPondPatch(stored, pond);
+    }
+    pondSlice = mergePondSlice(legacyPondSeed(stored, pondId));
+  } else {
+    const base = readBundlePondPrefs() ?? mergePondSlice({});
+    pondSlice = mergePondSlice(base, pond);
+    if (Object.keys(pond).length > 0) {
+      writeBundlePondPrefs(pondSlice);
+    }
+  }
+
+  if (Object.keys(app).length > 0) {
+    stored = applyAppPrefsPatch(stored, app);
+  }
+  await persistStoredPrefs(stored);
+
+  const merged = mergePrefs(stored.app, pondSlice);
   settingsCache.set({
     pondId,
     prefs: merged,

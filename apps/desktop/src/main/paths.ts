@@ -18,6 +18,11 @@ interface PondPaths {
   itemsDir: string;
   trashDir: string;
   libraryMetadata: string;
+  // Per-pond root JSONs living inside the bundle (Eagle-style): settings,
+  // tags, and rolling backups of both.
+  settingsFile: string;
+  tagsFile: string;
+  backupDir: string;
 }
 
 let cached: PondPaths | null = null;
@@ -65,6 +70,9 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
     itemsDir: join(root, "items"),
     trashDir: join(root, "trash"),
     libraryMetadata: join(root, "metadata.json"),
+    settingsFile: join(root, "settings.json"),
+    tagsFile: join(root, "tags.json"),
+    backupDir: join(root, "backup"),
   };
 
   cached = paths;

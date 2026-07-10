@@ -19,6 +19,7 @@ import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
+import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
 import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
@@ -48,7 +49,10 @@ declare module "@tanstack/react-router" {
   }
 }
 
-const LAST_PATH_KEY = "pond:lastPath";
+// Last path is pond-scoped: a route can point at a save that only exists in
+// one library. The startup-page mirror is app-level, like the window prefs it
+// shadows.
+const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
 // Fixed pages the "On startup" preference can pin to. "continue" is handled

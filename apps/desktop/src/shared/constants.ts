@@ -45,6 +45,10 @@ export const IPC = {
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
   menuPopup: "pond:menu-popup",
+  // Active pond id, fetched synchronously from the preload so pond-scoped
+  // renderer caches (localStorage) can namespace their keys before any module
+  // hydrates. Re-resolved on every reload, so a dev soft-repoint stays fresh.
+  pondId: "pond:pond-id",
   // Recently-visited saves pushed renderer -> main to populate the History menu.
   menuRecents: "pond:menu-recents",
   // A recent chosen from the History menu, sent main -> renderer to open it.

@@ -23,6 +23,35 @@ async function load(): Promise<Prefs> {
   return inflight;
 }
 
+// Imperative section patch for non-React callers (e.g. ask history, recents).
+// Optimistically updates the shared cache and rolls back on IPC failure.
+export function patchPrefsSection<K extends keyof Prefs>(
+  section: K,
+  delta: Partial<Prefs[K]>,
+): void {
+  const cache = prefsStore.state.value;
+  if (!cache) {
+    // Prefs not hydrated yet: load first, then re-apply the patch.
+    void load().then(() => patchPrefsSection(section, delta));
+    return;
+  }
+  const merged: Prefs = {
+    ...cache,
+    [section]: { ...cache[section], ...delta },
+  };
+  prefsStore.setState(() => ({ value: merged }));
+  void window.pond
+    .query("settings.setPrefs", { [section]: delta } as Partial<Prefs>)
+    .catch(() => {
+      // Roll back on failure so the UI stops lying.
+      prefsStore.setState(() => ({ value: cache }));
+    });
+}
+
+export function loadPrefs(): Promise<Prefs> {
+  return load();
+}
+
 export function usePrefs<K extends keyof Prefs>(
   section: K,
 ): [Prefs[K], (patch: Partial<Prefs[K]>) => void, boolean] {
@@ -33,19 +62,7 @@ export function usePrefs<K extends keyof Prefs>(
   const value = useSelector(prefsStore, (s) => s.value?.[section] ?? null);
 
   const patch = (delta: Partial<Prefs[K]>) => {
-    const cache = prefsStore.state.value;
-    if (!cache) return;
-    const merged: Prefs = {
-      ...cache,
-      [section]: { ...cache[section], ...delta },
-    };
-    prefsStore.setState(() => ({ value: merged }));
-    void window.pond
-      .query("settings.setPrefs", { [section]: delta } as Partial<Prefs>)
-      .catch(() => {
-        // Roll back on failure so the UI stops lying.
-        prefsStore.setState(() => ({ value: cache }));
-      });
+    patchPrefsSection(section, delta);
   };
 
   return [value ?? ({} as Prefs[K]), patch, value !== null];

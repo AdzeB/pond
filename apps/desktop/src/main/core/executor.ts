@@ -22,6 +22,7 @@ import {
   writeItemFiles,
 } from "../lib/library";
 import { withRawSlim } from "../lib/raw-slim";
+import { isTagModel, scheduleTagsDump } from "./tags-bundle";
 
 interface ExecuteOptions {
   silent?: boolean;
@@ -100,6 +101,8 @@ export async function executeTransaction(
     return inserted as SyncAction;
   })();
 
+  if (isTagModel(tx.model)) scheduleTagsDump();
+
   writesSinceTrim += 1;
   if (writesSinceTrim >= 500) {
     writesSinceTrim = 0;
@@ -166,6 +169,8 @@ export async function executeBatch(
     }
     return out;
   })();
+
+  if (withBatch.some((tx) => isTagModel(tx.model))) scheduleTagsDump();
 
   writesSinceTrim += actions.length;
   if (writesSinceTrim >= 500) {

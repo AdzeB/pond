@@ -6,10 +6,13 @@ import {
 } from "@pond/schema/db";
 import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
+import { pondScopedKey } from "@/lib/pond-scope";
 import { usePrefs } from "@/stores/prefs";
 
-// Shadowed in localStorage so the index.html boot script can restore the theme before the bundle parses (kills FOUC).
-const SHELL_KEY = "pondShell";
+// Shadowed in localStorage so the index.html boot script can restore the theme
+// before the bundle parses (kills FOUC). Keyed per pond: appearance is a pond
+// pref, so the mirror must not leak the previous library's theme.
+const SHELL_KEY = pondScopedKey("pondShell");
 
 interface ShellPatch {
   theme?: "light" | "dark";

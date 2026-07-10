@@ -1,13 +1,23 @@
 import { userInfo } from "node:os";
 import type { Transaction } from "@pond/schema/tx";
-import { app, shell } from "electron";
+import { app, ipcMain, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { executeBatch, executeTransaction } from "../../core/executor";
+import { currentPondId } from "../../core/prefs-scope";
 import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
+  // Synchronous on purpose: the preload resolves the active pond id before any
+  // renderer module hydrates, so pond-scoped localStorage keys never mix ponds.
+  ipcMain.on(IPC.pondId, (event) => {
+    try {
+      event.returnValue = currentPondId();
+    } catch {
+      event.returnValue = "unbound";
+    }
+  });
   safeHandle(IPC.appInfo, () => {
     let username = "Pond";
     try {
@@ -28,6 +38,7 @@ export function registerAppHandlers(): void {
       platform: process.platform,
       arch: process.arch,
       username,
+      isPackaged: app.isPackaged,
     };
   });
 
