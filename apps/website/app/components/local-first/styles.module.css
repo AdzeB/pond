@@ -53,11 +53,31 @@
   color: var(--ds-gray-11);
 }
 
-.block-body code {
+.block-body code,
+.setup code {
   padding: 1px 5px;
   font-family: var(--site-font-mono);
   font-size: 12px;
   color: var(--ds-gray-12);
   background: var(--ds-gray-a3);
   border-radius: 4px;
+}
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 640px;
+  padding-left: 20px;
+  margin-top: 28px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ds-gray-11);
+  list-style: decimal;
+}
+
+.setup a {
+  color: var(--ds-gray-12);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }

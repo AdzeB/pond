@@ -1,5 +1,4 @@
 import { IconApple, IconGithub } from "@pond/icons/social-media";
-import { CopyBlock } from "../_fragments/copy-block";
 import { Section } from "../_primitives/section";
 import styles from "./styles.module.css";
 
@@ -12,7 +11,6 @@ export function Download() {
         <Section.Lead>Mac-first. Open source. v0.1.0.</Section.Lead>
       </Section.Header>
       <div className={styles.card}>
-        <CopyBlock command="brew install --cask pond" label="Copy" />
         <div className={styles.cta}>
           <a
             className={`${styles.button} ${styles["button-primary"]}`}
@@ -23,16 +21,15 @@ export function Download() {
           </a>
           <a
             className={`${styles.button} ${styles["button-secondary"]}`}
-            href="https://github.com/raphaelsalaja/pond"
-            target="_blank"
-            rel="noreferrer"
+            href="https://github.com/raphaelsalaja/pond/releases/latest"
           >
             <IconGithub width={14} height={14} fill="currentColor" />
-            <span>View on GitHub</span>
+            <span>Extension zip</span>
           </a>
         </div>
         <p className={styles.meta}>
-          Requires macOS 12 or later. Apple Silicon and Intel.
+          Requires macOS 12 or later. Apple Silicon and Intel. On first open,
+          right-click the app and choose Open if macOS blocks an unsigned build.
         </p>
       </div>
     </Section.Root>

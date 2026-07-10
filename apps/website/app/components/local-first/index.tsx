@@ -181,6 +181,23 @@ export function LocalFirst() {
           );
         })}
       </div>
+      <ol className={styles.setup}>
+        <li>
+          Download <code>pond-extension-0.1.0.zip</code> from{" "}
+          <a href="https://github.com/raphaelsalaja/pond/releases/latest">
+            GitHub Releases
+          </a>
+          , unzip, and load unpacked in Chrome.
+        </li>
+        <li>
+          Launch Pond, open the menu bar icon, and choose{" "}
+          <strong>Copy Pairing Token</strong>.
+        </li>
+        <li>
+          Paste the <code>pond://pair?…</code> link into the extension popup.
+          When it shows connected, saves flow straight into your library.
+        </li>
+      </ol>
     </Section.Root>
   );
 }

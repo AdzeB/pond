@@ -29,6 +29,18 @@ const FAQS: FaqItem[] = [
       "No. The browser extension talks to a local server on 127.0.0.1:41610 that only your Mac can reach.",
   },
   {
+    value: "gatekeeper",
+    question: "macOS says the developer cannot be verified.",
+    answer:
+      "v0.1 ships unsigned. Right-click Pond.app and choose Open, or go to System Settings → Privacy & Security → Open Anyway.",
+  },
+  {
+    value: "ai",
+    question: "Does Pond send my data anywhere?",
+    answer:
+      "Your library stays on your Mac. Optional AI features send prompts only to providers you configure (OpenAI, Anthropic, etc.) using keys stored in your Keychain.",
+  },
+  {
     value: "platforms",
     question: "Does it work on Windows or Linux?",
     answer: "Not yet. Mac-first, by design.",
