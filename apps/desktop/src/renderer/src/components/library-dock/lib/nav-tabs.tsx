@@ -2,9 +2,9 @@ import {
   IconChartActivity2Fill18 as Analytics,
   IconArchiveContent2Fill18 as Library,
   IconUploadFill18 as Saves,
+  IconGear3Fill18 as Settings,
   IconGlobeFill18 as Sources,
   IconTrash2ContentFill18 as Trash,
-  IconGear3Fill18 as Settings,
 } from "@pond/icons/fill/18";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";

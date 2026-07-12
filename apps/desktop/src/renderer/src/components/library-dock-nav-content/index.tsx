@@ -102,7 +102,6 @@ export function NavContent() {
           </Link>
         );
       })}
-
     </div>
   );
 }
