@@ -1,11 +1,10 @@
-import type { Prefs, Source } from "@pond/schema/db";
-import { SOURCES } from "@pond/schema/db";
+import type { Prefs } from "@pond/schema/db";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../../shared/constants";
 import { getPrefs } from "./prefs";
 import { getStorageSnapshot } from "./storage-stats";
-import { cancelSync } from "./sync";
+import { cancelAllSyncs } from "./sync";
 
 type StorageGuardAction = "warn" | "pauseSync" | "pauseVideo";
 type StorageGuardState = "ok" | "warn" | "exceeded";
@@ -183,12 +182,10 @@ function applyAction(state: StorageGuardState, action: StorageGuardAction) {
   if (action === "pauseSync") {
     if (!syncBlocked) {
       log.info("[pond storage-watcher] cap exceeded, pausing source syncs");
-      for (const src of SOURCES as readonly Source[]) {
-        try {
-          cancelSync(src);
-        } catch (err) {
-          log.warn("[pond storage-watcher] cancelSync threw", src, err);
-        }
+      try {
+        cancelAllSyncs();
+      } catch (err) {
+        log.warn("[pond storage-watcher] cancelAllSyncs threw", err);
       }
     }
     syncBlocked = true;

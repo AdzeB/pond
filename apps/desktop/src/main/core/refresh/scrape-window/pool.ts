@@ -31,12 +31,16 @@ const PER_SOURCE_CAP: Record<Source, number> = {
 
 interface PoolSlot {
   win: BrowserWindow;
+  // The session partition the window was created on; immutable per window, so
+  // serving a lease for another account means replacing the window.
+  partition: string;
   busy: boolean;
   source: Source | null;
   evictTimer: ReturnType<typeof setTimeout> | null;
 }
 
 interface Waiter {
+  partition: string;
   resolve: (slot: PoolSlot) => void;
 }
 
@@ -50,8 +54,8 @@ const waitQueues: Record<Source, Waiter[]> = Object.fromEntries(
 // Round-robin cursor so a hot queue can't monopolise released slots.
 let roundRobinCursor = 0;
 
-function createHiddenWindow(): BrowserWindow {
-  const persistent = session.fromPartition(PARTITION);
+function createHiddenWindow(partition: string): BrowserWindow {
+  const persistent = session.fromPartition(partition);
   persistent.setUserAgent(
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
       "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
@@ -133,34 +137,63 @@ interface LeaseOptions {
   firstSync?: boolean;
   /** Abort the governor wait (e.g. on sync cancel). */
   signal?: AbortSignal;
+  /**
+   * Session partition the leased window must run on (a connected account's
+   * cookie jar). Defaults to the legacy shared partition.
+   */
+  partition?: string;
+}
+
+// A window's session is fixed at creation, so an idle slot on the wrong
+// partition gets its window swapped rather than reused.
+function retargetSlot(slot: PoolSlot, partition: string): void {
+  if (slot.partition === partition) return;
+  const old = slot.win;
+  slot.win = createHiddenWindow(partition);
+  slot.partition = partition;
+  if (!old.isDestroyed()) old.destroy();
 }
 
 export async function leaseWindow(
   source: Source,
   opts: LeaseOptions = {},
 ): Promise<Lease> {
+  const partition = opts.partition ?? PARTITION;
   // Acquire from the governor before claiming a slot (blocks for cooldown /
   // breaker / spacing / budget), so a paused source never pins a pool window.
   await acquire(source, { firstSync: opts.firstSync, signal: opts.signal });
   if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
     return new Promise<Lease>((resolve) => {
       waitQueues[source].push({
+        partition,
         resolve: (slot) => resolve(claimSlot(slot, source)),
       });
     });
   }
-  const idle = pool.find((s) => !s.busy && !s.win.isDestroyed());
+  // Prefer an idle slot already on the right partition to keep its page cache.
+  const idle =
+    pool.find(
+      (s) => !s.busy && !s.win.isDestroyed() && s.partition === partition,
+    ) ?? pool.find((s) => !s.busy && !s.win.isDestroyed());
   if (idle) {
+    retargetSlot(idle, partition);
     return claimSlot(idle, source);
   }
   if (pool.length < GLOBAL_POOL_CAP) {
-    const win = createHiddenWindow();
-    const slot: PoolSlot = { win, busy: false, source: null, evictTimer: null };
+    const win = createHiddenWindow(partition);
+    const slot: PoolSlot = {
+      win,
+      partition,
+      busy: false,
+      source: null,
+      evictTimer: null,
+    };
     pool.push(slot);
     return claimSlot(slot, source);
   }
   return new Promise<Lease>((resolve) => {
     waitQueues[source].push({
+      partition,
       resolve: (slot) => resolve(claimSlot(slot, source)),
     });
   });
@@ -177,10 +210,16 @@ function drainQueues(): void {
       const queue = waitQueues[source];
       if (queue.length === 0) continue;
       if (busyBySource[source] >= PER_SOURCE_CAP[source]) continue;
-      const idle = pool.find((s) => !s.busy && !s.win.isDestroyed());
-      if (!idle) return;
-      const next = queue.shift();
+      const next = queue[0];
       if (!next) continue;
+      const idle =
+        pool.find(
+          (s) =>
+            !s.busy && !s.win.isDestroyed() && s.partition === next.partition,
+        ) ?? pool.find((s) => !s.busy && !s.win.isDestroyed());
+      if (!idle) return;
+      queue.shift();
+      retargetSlot(idle, next.partition);
       next.resolve(idle);
       roundRobinCursor = (SOURCES.indexOf(source) + 1) % SOURCES.length;
       progress = true;

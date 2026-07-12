@@ -18,7 +18,11 @@ import {
   WorkerWatchdogError,
 } from "./reconciler-config";
 import { noteSuccess } from "./source-gate";
-import { pullDueTasks, sweepOrphanTasks } from "./task-queue";
+import {
+  pullDueTasks,
+  sweepOrphanTasks,
+  sweepTasklessIngestingSaves,
+} from "./task-queue";
 import {
   enrichTaskEventWithSave,
   gateForSource,
@@ -138,6 +142,9 @@ export function startReconciler(): void {
   void sweepOrphanTasks().catch((err) =>
     log.warn("[pond pipeline:reconciler] orphan sweep failed", err),
   );
+  void sweepTasklessIngestingSaves().catch((err) =>
+    log.warn("[pond pipeline:reconciler] taskless sweep failed", err),
+  );
   nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
   schedulePoll(POLL_INTERVAL_MS);
   void tick();
@@ -209,6 +216,12 @@ async function tick(): Promise<void> {
     void recoverOrphanedRunningTasks().catch((err) =>
       log.warn(
         "[pond pipeline:reconciler] periodic stale-running sweep failed",
+        err,
+      ),
+    );
+    void sweepTasklessIngestingSaves().catch((err) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic taskless sweep failed",
         err,
       ),
     );

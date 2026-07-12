@@ -27,6 +27,9 @@ export interface Save {
   id: string;
   source: string;
   sourceId: string;
+  // Connected account or watch that ingested the save; the `account` filter
+  // projects it, so dropping it would blind that filter.
+  accountId?: string | null;
   url: string;
   title: string | null;
   description: string | null;

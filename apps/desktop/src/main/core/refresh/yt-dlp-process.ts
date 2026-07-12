@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 
 export interface ProcOutcome {
   code: number;
+  stdout: string;
   stderr: string;
 }
 
@@ -26,7 +27,11 @@ export function runWithTimeout(
       } catch {
         /* ignore: process may have already exited */
       }
-      resolve({ code: 124, stderr: `${stderr}\n[pond yt-dlp] timeout` });
+      resolve({
+        code: 124,
+        stdout,
+        stderr: `${stderr}\n[pond yt-dlp] timeout`,
+      });
     }, timeoutMs);
 
     const onAbort = () => {
@@ -38,7 +43,11 @@ export function runWithTimeout(
       } catch {
         /* ignore: process may have already exited */
       }
-      resolve({ code: 125, stderr: `${stderr}\n[pond yt-dlp] aborted` });
+      resolve({
+        code: 125,
+        stdout,
+        stderr: `${stderr}\n[pond yt-dlp] aborted`,
+      });
     };
     const cleanupAbort = () => signal?.removeEventListener("abort", onAbort);
     if (signal) {
@@ -49,9 +58,11 @@ export function runWithTimeout(
       signal.addEventListener("abort", onAbort, { once: true });
     }
 
+    // Roomier window than stderr: --dump-json listings emit one large JSON
+    // object per entry on stdout.
     child.stdout?.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
-      if (stdout.length > 64_000) stdout = stdout.slice(-64_000);
+      if (stdout.length > 1_000_000) stdout = stdout.slice(-1_000_000);
     });
     child.stderr?.on("data", (chunk: Buffer) => {
       stderr += chunk.toString("utf8");
@@ -62,14 +73,14 @@ export function runWithTimeout(
       settled = true;
       clearTimeout(timer);
       cleanupAbort();
-      resolve({ code: -1, stderr: String(err) });
+      resolve({ code: -1, stdout, stderr: String(err) });
     });
     child.on("close", (code) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       cleanupAbort();
-      resolve({ code: code ?? -1, stderr });
+      resolve({ code: code ?? -1, stdout, stderr });
     });
   });
 }

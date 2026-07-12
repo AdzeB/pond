@@ -5,6 +5,7 @@ import {
   type QueryHandlerMap,
   safeHandle,
 } from "../helpers";
+import { accountsQueries } from "./accounts";
 import { aiQueries } from "./ai";
 import { developerQueries } from "./developer";
 import { libraryQueries } from "./library";
@@ -15,6 +16,7 @@ import { syncHistoryQueries } from "./sync-history";
 import { tagGroupsQueries } from "./tag-groups";
 import { tagsQueries } from "./tags";
 import { videoQueries } from "./video";
+import { watchesQueries } from "./watches";
 
 const queryRegistry: QueryHandlerMap = {
   ...savesQueries,
@@ -27,6 +29,8 @@ const queryRegistry: QueryHandlerMap = {
   ...videoQueries,
   ...syncHistoryQueries,
   ...aiQueries,
+  ...accountsQueries,
+  ...watchesQueries,
 };
 
 export function registerQueryHandler(): void {

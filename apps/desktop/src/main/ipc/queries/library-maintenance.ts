@@ -1,10 +1,47 @@
+import { basename } from "node:path";
+import { shell } from "electron";
 import log from "electron-log/main.js";
-import { purgeLibrarySubdir } from "../../core/library-ops";
+import {
+  purgeLibrarySubdir,
+  verifyLibraryIntegrity,
+} from "../../core/library-ops";
 import { setPrefs } from "../../core/prefs";
+import { reconcileLibrary } from "../../core/scan";
 import { closeDb } from "../../db";
+import { libraryRoot } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryMaintenanceQueries: QueryHandlerMap = {
+  // The active library's on-disk location, for the settings Storage section.
+  async "library.info"() {
+    const path = libraryRoot();
+    const name = basename(path).replace(/\.(pond|library)$/, "") || "Library";
+    return { path, name };
+  },
+
+  async "library.rescan"() {
+    return await reconcileLibrary();
+  },
+
+  async "library.openInFinder"() {
+    const err = await shell.openPath(libraryRoot());
+    if (err) return { ok: false as const, reason: err };
+    return { ok: true as const };
+  },
+
+  async "library.verifyIntegrity"() {
+    try {
+      const result = await verifyLibraryIntegrity();
+      return { ok: true as const, ...result };
+    } catch (err) {
+      log.warn("[pond ipc] verifyIntegrity failed", err);
+      return {
+        ok: false as const,
+        reason: err instanceof Error ? err.message : "internal_error",
+      };
+    }
+  },
+
   async "reset.preferences"() {
     const { DEFAULT_PREFS } = await import("@pond/schema/db");
     await setPrefs(DEFAULT_PREFS);

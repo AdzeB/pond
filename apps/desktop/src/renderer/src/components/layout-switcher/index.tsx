@@ -9,21 +9,12 @@ interface LayoutSwitcherProps {
   viewMode: ViewMode;
   saves: ReadonlyArray<Save>;
   multiSelectActive: boolean;
-  // Leading "saving N items" placeholder tile for in-flight saves (grid layouts only).
-  placeholderCount: number;
   onClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }
 
 export function LayoutSwitcher(props: LayoutSwitcherProps) {
-  const {
-    viewMode,
-    saves,
-    multiSelectActive,
-    placeholderCount,
-    onClick,
-    onDoubleClick,
-  } = props;
+  const { viewMode, saves, multiSelectActive, onClick, onDoubleClick } = props;
 
   const callbacks = useMemo(
     () => ({ onClick, onDoubleClick }),
@@ -36,11 +27,11 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
       multiSelectActive={multiSelectActive}
     >
       {viewMode === "justified" ? (
-        <JustifiedView saves={saves} placeholderCount={placeholderCount} />
+        <JustifiedView saves={saves} />
       ) : viewMode === "waterfall" ? (
-        <WaterfallView saves={saves} placeholderCount={placeholderCount} />
+        <WaterfallView saves={saves} />
       ) : (
-        <GridView saves={saves} placeholderCount={placeholderCount} />
+        <GridView saves={saves} />
       )}
     </LibraryGridProvider>
   );

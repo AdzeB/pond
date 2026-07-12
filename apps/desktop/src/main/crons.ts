@@ -5,6 +5,7 @@ import { getPrefs } from "./core/prefs";
 import { maybeUpdateYtDlp } from "./core/refresh/yt-dlp-updater";
 import { isSyncBlockedByStorageGuard } from "./core/storage-watcher";
 import { syncAllSources } from "./core/sync";
+import { watchAll } from "./core/watch/run";
 import { schedule } from "./lib/scheduler";
 
 export function registerTrashCron() {
@@ -76,6 +77,9 @@ export function registerSyncCron() {
         intervalHours: cron.intervalHours,
       });
       await syncAllSources({ trigger: "cron" });
+      // Watched public accounts poll on the same cadence; they don't gate on
+      // isAccountConnected (public listings need no session).
+      await watchAll({ trigger: "cron" });
     },
   });
 }

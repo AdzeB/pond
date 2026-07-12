@@ -11,12 +11,11 @@ import {
 } from "react";
 import { AskComposer, AskStatusPill } from "@/components/ask-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { LibraryContent } from "@/components/library-dock-library-content";
 import { NavContent } from "@/components/library-dock-nav-content";
 import { NewContent } from "@/components/library-dock-new-content";
 import { OptionsContent } from "@/components/library-dock-options-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
-import { SourcesContent } from "@/components/library-dock-sources-content";
+import { SavingPill } from "@/components/library-saving-pill";
 import { SearchComposer } from "@/components/search-bar";
 import { deleteSelectionForever, isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion, useMotionScaleFactor } from "@/lib/ui/motion";
@@ -47,8 +46,6 @@ const openAsk = () => dockMode.open("ask");
 const openSearch = () => dockMode.open("search");
 const openNew = () => dockMode.open("new");
 const openOptions = () => dockMode.open("options");
-const openLibrary = () => dockMode.open("library");
-const openSources = () => dockMode.open("sources");
 const closeToNav = () => dockMode.close();
 const clearResults = () => {
   clearAsk();
@@ -122,11 +119,7 @@ function Root({ preview }: RootProps) {
           ? "status"
           : "nav";
   const view = preview?.view ?? liveView;
-  const isMenuView =
-    view === "new" ||
-    view === "options" ||
-    view === "library" ||
-    view === "sources";
+  const isMenuView = view === "new" || view === "options";
 
   const effSelectionSize = preview?.selectionSize ?? selectionSize;
   const effFilteredCount = preview
@@ -148,12 +141,7 @@ function Root({ preview }: RootProps) {
   );
 
   const isCard =
-    view === "ask" ||
-    view === "search" ||
-    view === "new" ||
-    view === "options" ||
-    view === "library" ||
-    view === "sources";
+    view === "ask" || view === "search" || view === "new" || view === "options";
 
   const [docVisible, setDocVisible] = useState(
     () => typeof document === "undefined" || !document.hidden,
@@ -205,10 +193,6 @@ function Root({ preview }: RootProps) {
       closeNew: closeToNav,
       openOptions,
       closeOptions: closeToNav,
-      openLibrary,
-      closeLibrary: closeToNav,
-      openSources,
-      closeSources: closeToNav,
       clearResults,
       destructive,
       runSelectionTask,
@@ -259,11 +243,8 @@ function Root({ preview }: RootProps) {
       ) : null}
       <motion.div
         ref={pillRef}
-        className={styles.pill}
         initial={false}
-        // Must always be an object: motion ignores an `animate` prop that
-        // mounts as undefined and only later becomes a target, which would
-        // leave the pill collapsed at 0x0 (and the dock invisible).
+        className={styles.pill}
         animate={bounds ? { width: bounds.width, height: bounds.height } : {}}
         transition={isFirstMeasure ? { duration: 0 } : pillTransition}
       >
@@ -319,14 +300,6 @@ function Root({ preview }: RootProps) {
               <motion.div key="options" {...swap} transition={swapTransition}>
                 <OptionsContent />
               </motion.div>
-            ) : view === "library" ? (
-              <motion.div key="library" {...swap} transition={swapTransition}>
-                <LibraryContent />
-              </motion.div>
-            ) : view === "sources" ? (
-              <motion.div key="sources" {...swap} transition={swapTransition}>
-                <SourcesContent />
-              </motion.div>
             ) : (
               <motion.div key="nav" {...swap} transition={swapTransition}>
                 <NavContent />
@@ -352,5 +325,10 @@ function Root({ preview }: RootProps) {
 
   if (preview) return body;
 
-  return <div className={styles.dock}>{body}</div>;
+  return (
+    <div className={styles.dock}>
+      <SavingPill />
+      {body}
+    </div>
+  );
 }

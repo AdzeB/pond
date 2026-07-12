@@ -13,6 +13,19 @@ export class InstagramPostExtractor implements Extractor {
   readonly source = "instagram" as const;
   readonly validUrl = INSTAGRAM_PATTERNS;
   readonly cookieDomain = ".instagram.com";
+  // The nav's profile entry wraps the viewer's avatar in a link to
+  // /<handle>/; the embedded viewer config is the markup-independent fallback.
+  readonly probeExpression = `(() => {
+        try {
+          const img = document.querySelector('a[href^="/"] img[alt*="profile picture"]');
+          const href = img?.closest('a')?.getAttribute('href') || '';
+          const m = href.match(/^\\/([A-Za-z0-9._]+)\\/?$/);
+          if (m) return m[1];
+          const scripts = Array.from(document.scripts).map((s) => s.textContent || '').join('\\n');
+          const vm = scripts.match(/"viewer"\\s*:\\s*\\{[^{}]*?"username"\\s*:\\s*"([A-Za-z0-9._]+)"/);
+          return vm ? vm[1] : '';
+        } catch { return ''; }
+      })()`;
 
   authCookies(name: string): boolean {
     return name === "sessionid";

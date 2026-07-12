@@ -8,6 +8,7 @@ interface SyncRunHistoryEntry {
   id: number;
   ts: number;
   source: Source;
+  accountId: string | null;
   trigger: string;
   outcome: SyncRunEvent["outcome"];
   durationMs: number;
@@ -34,6 +35,7 @@ function toEntry(row: {
     id: row.id,
     ts: row.ts instanceof Date ? row.ts.getTime() : Number(row.ts),
     source: payload.source,
+    accountId: payload.accountId ?? null,
     trigger: payload.trigger ?? row.trigger ?? "manual",
     outcome: payload.outcome,
     durationMs: payload.durationMs ?? 0,
@@ -73,10 +75,16 @@ interface SyncStats {
 }
 
 export const syncHistoryQueries: QueryHandlerMap = {
-  // Past sync runs for one source, newest first.
+  // Past sync runs for one source, newest first. Pass `accountId` to narrow
+  // to one connected account's runs (pre-multi-account rows have none and are
+  // only returned when the filter is omitted).
   async "sync.history"(params) {
     const source = params.source;
     if (!isSource(source)) return { runs: [] as SyncRunHistoryEntry[] };
+    const accountId =
+      typeof params.accountId === "string" && params.accountId.length > 0
+        ? params.accountId
+        : null;
 
     const rawLimit = Number(params.limit ?? 25);
     const limit = Number.isFinite(rawLimit)
@@ -91,6 +99,7 @@ export const syncHistoryQueries: QueryHandlerMap = {
         and(
           eq(pipelineEvents.kind, "sync.run.completed"),
           eq(pipelineEvents.source, source),
+          ...(accountId ? [eq(pipelineEvents.accountId, accountId)] : []),
         ),
       )
       .orderBy(desc(pipelineEvents.ts))

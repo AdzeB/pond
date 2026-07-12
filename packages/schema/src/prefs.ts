@@ -9,8 +9,10 @@ import {
   DEFAULT_SYSTEM_DARK_ID,
   DEFAULT_SYSTEM_LIGHT_ID,
   type SourceMetricDisplay,
+  type SyncAccounts,
   type SyncHandles,
   type SyncSources,
+  type SyncWatches,
   type ThemeDef,
   type WindowBounds,
 } from "./prefs.types";
@@ -100,6 +102,12 @@ const developer = z.object({
 });
 
 const sync = z.object({
+  // Connected accounts keyed by account id; several may share one source.
+  accounts: z.custom<SyncAccounts>().default({}),
+  // Watched public accounts keyed by watch id (see WatchedAccount).
+  watches: z.custom<SyncWatches>().default({}),
+  // Legacy single-account-per-source state; drained into `accounts` by the
+  // one-time migration and kept empty afterwards.
   sources: z.custom<SyncSources>().default({}),
   handles: z.custom<SyncHandles>().default({}),
   // Background sync scheduler; conservative default of every 6h, deferring to

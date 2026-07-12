@@ -1,46 +1,72 @@
+import { IconFolderOpenOutline18 as Folder } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
-import { usePonds } from "@/hooks/use-ponds";
-import { glyphKind, PondGlyph } from "@/lib/ui/pond-icons";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { prettyPath } from "@/lib/util/pretty-path";
-import { pondCustomise } from "@/stores/pond-customise";
+import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
-// Active pond identity + on-disk location, with a shortcut into the pond
-// customise sheet (the only place name/path/avatar are edited).
+interface LibraryInfo {
+  path: string;
+  name: string;
+}
+
+type ActionResult = { ok: true } | { ok: false; reason: string };
+
+// The active library's on-disk location, with actions to open another library
+// bundle (relaunches into it) or copy this one somewhere else.
 export function LocationRow() {
-  const { active } = usePonds();
+  const { data: info } = useQuery({
+    queryKey: ["library-info"],
+    queryFn: async () =>
+      (await window.pond.query("library.info", {})) as LibraryInfo,
+  });
+
+  const openExisting = useMutation({
+    mutationFn: async () => {
+      const picked = (await window.pond.query("library.pickExisting", {})) as
+        | { ok: true; path: string }
+        | { ok: false; reason: string };
+      if (!picked.ok) return;
+      // Switching relaunches (or reloads in dev), so there's no success state
+      // to settle into.
+      const res = (await window.pond.query("library.switchTo", {
+        path: picked.path,
+      })) as ActionResult;
+      if (!res.ok) throw new Error(res.reason);
+    },
+    onError: (err) => {
+      pushToast(
+        err instanceof Error
+          ? `Couldn't open library: ${err.message}`
+          : "Couldn't open library.",
+        "error",
+      );
+    },
+  });
 
   return (
     <div className={styles.card}>
-      <span
-        aria-hidden
-        className={styles.avatar}
-        data-emoji={
-          active && glyphKind(active.avatar) === "emoji" ? true : undefined
-        }
-        data-icon={
-          active && glyphKind(active.avatar) === "icon" ? true : undefined
-        }
-        style={active?.color ? { background: active.color } : undefined}
-      >
-        {active ? (
-          <PondGlyph avatar={active.avatar} name={active.name} iconSize={22} />
-        ) : (
-          ""
-        )}
+      <span aria-hidden className={styles.avatar}>
+        <Folder size={20} />
       </span>
       <div className={styles.meta}>
-        <span className={styles.name}>{active?.name ?? "Library"}</span>
-        {active ? (
-          <span className={styles.path}>{prettyPath(active.path)}</span>
+        <span className={styles.name}>{info?.name ?? "Library"}</span>
+        {info ? (
+          <span className={styles.path}>{prettyPath(info.path)}</span>
         ) : null}
       </div>
       <Button
         variant="secondary"
-        disabled={!active}
-        onClick={() => pondCustomise.open(active?.path)}
+        onClick={() => void window.pond.query("library.openInFinder", {})}
       >
-        Edit details
+        Reveal in Finder
+      </Button>
+      <Button
+        variant="secondary"
+        disabled={openExisting.isPending}
+        onClick={() => openExisting.mutate()}
+      >
+        Open Library…
       </Button>
     </div>
   );

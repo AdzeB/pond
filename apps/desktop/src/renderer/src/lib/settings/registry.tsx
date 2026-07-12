@@ -1,5 +1,4 @@
 import {
-  IconCircleUserOutline18 as Account,
   IconColorPaletteOutline18 as Appearance,
   IconNodes3Outline18 as Connections,
   IconCode2Outline18 as Developer,
@@ -27,7 +26,6 @@ import type { SectionConfig } from "@/components/settings-engine";
 import { SECTION_CONFIGS } from "@/lib/settings/sections";
 
 const ICONS: Record<string, IconComponent> = {
-  account: Account,
   general: General,
   appearance: Appearance,
   tags: Tags,
@@ -60,7 +58,7 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
 
 // Bespoke sections bring their own full-page layout; they render full-width and
 // opt their whole tab out of the two-column masonry.
-const BESPOKE_SECTION_IDS = new Set(["account", "tags", "skills"]);
+const BESPOKE_SECTION_IDS = new Set(["tags", "skills"]);
 
 export function isBespokeSection(section: SectionDef): boolean {
   return BESPOKE_SECTION_IDS.has(section.id);

@@ -16,9 +16,18 @@ interface CronPref {
   intervalHours: number;
 }
 
+// Mirrors ConnectedAccount from the schema; only the fields this list shows.
+interface AccountEntry {
+  id: string;
+  source: Source;
+  handle: string | null;
+  label: string | null;
+  addedAt: string;
+}
+
 interface SyncValues {
   cron?: CronPref;
-  handles?: Partial<Record<Source, string>>;
+  accounts?: Record<string, AccountEntry>;
 }
 
 const DEFAULT_CRON: CronPref = { enabled: true, intervalHours: 6 };
@@ -74,23 +83,30 @@ function FrequencyRow({ binding }: { binding: Binding }) {
 }
 
 function ConnectedAccounts({ binding }: { binding: Binding }) {
-  const handles = (binding.values as SyncValues).handles ?? {};
-  const connected = Object.entries(handles) as [Source, string][];
-  if (connected.length === 0) {
+  const registry = (binding.values as SyncValues).accounts ?? {};
+  const accounts = Object.values(registry).sort((a, b) =>
+    a.addedAt.localeCompare(b.addedAt),
+  );
+  if (accounts.length === 0) {
     return (
       <Settings.Empty
         title="No accounts connected"
-        description="Connect a source from the sidebar to start syncing."
+        description="Connect a source from the Sources page to start syncing."
       />
     );
   }
   return (
     <Settings.List>
-      {connected.map(([source, handle]) => (
-        <Settings.Item key={source}>
+      {accounts.map((account) => (
+        <Settings.Item key={account.id}>
           <Settings.ItemDetails>
-            <Settings.ItemTitle>{sourceLabel(source)}</Settings.ItemTitle>
-            <Settings.ItemDescription>{handle}</Settings.ItemDescription>
+            <Settings.ItemTitle>
+              {sourceLabel(account.source)}
+              {account.label ? ` · ${account.label}` : ""}
+            </Settings.ItemTitle>
+            <Settings.ItemDescription>
+              {account.handle ? `@${account.handle}` : "Signed in"}
+            </Settings.ItemDescription>
           </Settings.ItemDetails>
         </Settings.Item>
       ))}

@@ -1,19 +1,11 @@
 import { existsSync } from "node:fs";
-import {
-  DEFAULT_PREFS,
-  type Prefs,
-  PrefsSchema,
-  settings as settingsTable,
-} from "@pond/schema/db";
-import { eq } from "drizzle-orm";
-import { getGlobalDb } from "../db";
+import { DEFAULT_PREFS, type Prefs, PrefsSchema } from "@pond/schema/db";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
-import { readLibraryPointer } from "../lib/library-pointer";
 import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
-import { libraryRoot, resolvePaths } from "../paths";
+import { resolvePaths } from "../paths";
 
-// Prefs slices that describe a single library's data and should not leak across
-// pond switches. Everything else is app-global (window, API, updates, etc.).
+// Prefs slices that describe the library's data and travel with the bundle
+// (settings.json). Everything else is app-global (window, API, updates, etc.).
 export const POND_PREF_KEYS = [
   "preferences",
   "analyticsView",
@@ -35,10 +27,12 @@ export type AppPrefKey = Exclude<keyof Prefs, PondPrefKey>;
 export type PondPrefs = Pick<Prefs, PondPrefKey>;
 export type AppPrefs = Pick<Prefs, AppPrefKey>;
 
-export interface StoredPrefsV2 {
-  version: 2;
+// Stored global.db prefs blob: the app slice, plus the library slice written
+// before the bundle exists on disk ("pending"); the first bundle open consumes it.
+export interface StoredPrefs {
+  version: 3;
   app: Partial<AppPrefs>;
-  ponds: Record<string, Partial<PondPrefs>>;
+  pending: Partial<PondPrefs> | null;
 }
 
 const APP_PREF_KEYS = Object.keys(DEFAULT_PREFS).filter(
@@ -60,51 +54,58 @@ export function currentPondId(): string {
   return resolvePondId(paths.libraryRoot, committed);
 }
 
-export function isStoredPrefsV2(stored: unknown): stored is StoredPrefsV2 {
+export function isUnboundPondId(pondId: string): boolean {
+  return pondId === UNBOUND_POND_ID;
+}
+
+function isStoredPrefs(stored: unknown): stored is StoredPrefs {
   return (
     typeof stored === "object" &&
     stored !== null &&
-    (stored as StoredPrefsV2).version === 2 &&
-    typeof (stored as StoredPrefsV2).app === "object" &&
-    typeof (stored as StoredPrefsV2).ponds === "object"
+    (stored as StoredPrefs).version === 3 &&
+    typeof (stored as StoredPrefs).app === "object"
   );
 }
 
-// Legacy installs persisted one flat prefs blob for every pond. On first read,
-// park that blob under the library that owned it (library_root / pointer), not
-// whichever pond happens to be open during the upgrade.
-export function migrateStoredPrefs(
-  stored: unknown,
-  legacyOwnerPondId: string,
-): StoredPrefsV2 {
-  if (isStoredPrefsV2(stored)) return stored;
+// Coerce whatever is in global.db into the v3 shape. A v2 blob (app slice plus
+// per-pond entries) keeps its app slice and its unbound entry; per-pond entries
+// are dropped because the bundle's settings.json has owned that data since v2.
+// A legacy flat blob is split by scope.
+export function normalizeStoredPrefs(stored: unknown): StoredPrefs {
+  if (isStoredPrefs(stored)) return stored;
 
-  const parsed = PrefsSchema.safeParse(stored);
-  const flat = (parsed.success ? parsed.data : DEFAULT_PREFS) as Prefs;
-  return {
-    version: 2,
-    app: pickPrefs(flat, APP_PREF_KEYS),
-    ponds: { [legacyOwnerPondId]: pickPrefs(flat, POND_PREF_KEYS) },
-  };
-}
-
-export async function resolveLegacyPrefsOwnerPondId(): Promise<string> {
-  try {
-    const db = await getGlobalDb();
-    const rows = await db
-      .select({ libraryRoot: settingsTable.libraryRoot })
-      .from(settingsTable)
-      .where(eq(settingsTable.id, "singleton"));
-    const root = rows[0]?.libraryRoot ?? readLibraryPointer() ?? libraryRoot();
-    const committed = existsSync(root);
-    return resolvePondId(root, committed);
-  } catch {
-    return currentPondId();
+  if (
+    typeof stored === "object" &&
+    stored !== null &&
+    (stored as { version?: unknown }).version === 2
+  ) {
+    const v2 = stored as {
+      app?: Partial<AppPrefs>;
+      ponds?: Record<string, Partial<PondPrefs>>;
+    };
+    return {
+      version: 3,
+      app: v2.app ?? {},
+      pending: v2.ponds?.[UNBOUND_POND_ID] ?? null,
+    };
   }
+
+  if (typeof stored === "object" && stored !== null) {
+    const parsed = PrefsSchema.safeParse(stored);
+    if (parsed.success) {
+      const flat = parsed.data as Prefs;
+      return {
+        version: 3,
+        app: pickPrefs(flat, APP_PREF_KEYS),
+        pending: pickPrefs(flat, POND_PREF_KEYS),
+      };
+    }
+  }
+  return { version: 3, app: {}, pending: null };
 }
 
-// Merge the app slice (global.db) and pond slice (bundle settings.json) over
-// their defaults into one Prefs object.
+// Merge the app slice (global.db) and library slice (bundle settings.json)
+// over their defaults into one Prefs object.
 export function mergePrefs(
   app: Partial<AppPrefs>,
   pond: Partial<PondPrefs>,
@@ -115,7 +116,7 @@ export function mergePrefs(
   };
 }
 
-// Full pond slice from a stored partial plus a patch. mergeSlice only merges
+// Full library slice from a stored partial plus a patch. mergeSlice only merges
 // keys present in its base, so we always widen to the full defaults first.
 export function mergePondSlice(
   base: Partial<PondPrefs>,
@@ -133,12 +134,8 @@ export function mergeAppSlice(
   return mergeSlice(full, patch) as AppPrefs;
 }
 
-// ---- Bundle settings.json: the pond slice lives inside the .pond bundle so
-// it travels with the folder and can never leak across ponds. ----
-
-export function isUnboundPondId(pondId: string): boolean {
-  return pondId === UNBOUND_POND_ID;
-}
+// ---- Bundle settings.json: the library slice lives inside the .pond bundle
+// so it travels with the folder. ----
 
 export function readBundlePondPrefs(): Partial<PondPrefs> | null {
   const paths = resolvePaths();
@@ -158,75 +155,6 @@ export function writeBundlePondPrefs(slice: PondPrefs): void {
   writeBundleJson(resolvePaths().settingsFile, slice);
 }
 
-// A pond key newly moved out of the app slice (e.g. `preferences`) is missing
-// from bundles whose settings.json was seeded before the move. Adopt the
-// legacy value from the stored global.db blob once, instead of silently
-// resetting that slice to defaults.
-export function adoptLegacyPondKeys(
-  bundle: Partial<PondPrefs>,
-  stored: StoredPrefsV2,
-  pondId: string,
-): { slice: Partial<PondPrefs>; changed: boolean } {
-  // The raw app blob may still carry keys that used to be app-scoped; the
-  // pond's own legacy entry wins when both exist.
-  const legacy: Record<string, unknown> = {
-    ...(stored.app as Record<string, unknown>),
-    ...(legacyPondSeed(stored, pondId) as Record<string, unknown>),
-  };
-  const out: Record<string, unknown> = { ...bundle };
-  let changed = false;
-  for (const key of POND_PREF_KEYS) {
-    if (out[key] !== undefined || legacy[key] === undefined) continue;
-    out[key] = legacy[key];
-    changed = true;
-  }
-  return { slice: out as Partial<PondPrefs>, changed };
-}
-
-// Legacy seed for a bundle that has no settings.json yet: the pond's own
-// global.db slice, else the unbound slice (prefs set during onboarding before
-// the bundle materialized).
-export function legacyPondSeed(
-  stored: StoredPrefsV2,
-  pondId: string,
-): Partial<PondPrefs> {
-  return stored.ponds[pondId] ?? stored.ponds[UNBOUND_POND_ID] ?? {};
-}
-
-// While the pond is unbound (no bundle on disk yet) its slice parks in
-// global.db under the sentinel id; the first bundle open consumes it.
-export function applyUnboundPondPatch(
-  stored: StoredPrefsV2,
-  patch: DeepPartial<PondPrefs>,
-): StoredPrefsV2 {
-  return {
-    ...stored,
-    ponds: {
-      ...stored.ponds,
-      [UNBOUND_POND_ID]: mergePondSlice(
-        stored.ponds[UNBOUND_POND_ID] ?? {},
-        patch,
-      ),
-    },
-  };
-}
-
-// Drop legacy per-pond entries from global.db once they've been migrated into
-// the bundle's settings.json. Entries for other (not-yet-opened) ponds stay
-// until their own bundle consumes them.
-export function stripConsumedPondSlices(
-  stored: StoredPrefsV2,
-  pondId: string,
-): { stored: StoredPrefsV2; changed: boolean } {
-  const consumed = [pondId, UNBOUND_POND_ID].filter(
-    (key) => stored.ponds[key] !== undefined,
-  );
-  if (consumed.length === 0) return { stored, changed: false };
-  const ponds = { ...stored.ponds };
-  for (const key of consumed) delete ponds[key];
-  return { stored: { ...stored, ponds }, changed: true };
-}
-
 export function splitPrefsPatch(patch: DeepPartial<Prefs>): {
   app: DeepPartial<AppPrefs>;
   pond: DeepPartial<PondPrefs>;
@@ -244,19 +172,6 @@ export function splitPrefsPatch(patch: DeepPartial<Prefs>): {
   return {
     app: app as DeepPartial<AppPrefs>,
     pond: pond as DeepPartial<PondPrefs>,
-  };
-}
-
-// Apply the app half of a patch to the stored global.db blob. Pond slices no
-// longer live here — they go to the bundle's settings.json.
-export function applyAppPrefsPatch(
-  stored: StoredPrefsV2,
-  appPatch: DeepPartial<AppPrefs>,
-): StoredPrefsV2 {
-  if (Object.keys(appPatch).length === 0) return stored;
-  return {
-    ...stored,
-    app: mergeAppSlice(stored.app, appPatch),
   };
 }
 

@@ -1,21 +1,14 @@
 import { join } from "node:path";
 import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
-import {
-  previewRelocate,
-  type RelocateMode,
-  relocateLibrary,
-} from "../../core/library-ops";
+import { relocateLibrary } from "../../core/library-ops";
 import { invalidatePrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
+import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { closeDb } from "../../db";
 import { rotateBundleBackups } from "../../lib/library-config";
 import { readLibraryPointer } from "../../lib/library-pointer";
-import {
-  rememberLibrary,
-  syncIdentityWithBundle,
-} from "../../lib/library-recents";
 import {
   invalidatePaths,
   libraryRoot as libraryRootDir,
@@ -24,45 +17,7 @@ import {
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryLocationQueries: QueryHandlerMap = {
-  // New-library picker; returns a `<parent>/<name>.pond` path for relocate to create.
-  async "library.pickFolder"() {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOpts = {
-      title: "Create a new pond",
-      nameFieldLabel: "Pond Name:",
-      buttonLabel: "Create",
-      defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
-      properties: ["createDirectory" as const],
-    };
-    const result = win
-      ? await dialog.showSaveDialog(win, dialogOpts)
-      : await dialog.showSaveDialog(dialogOpts);
-    if (result.canceled || !result.filePath) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
-    return { ok: true as const, path: ensurePondSuffix(result.filePath) };
-  },
-
-  // Pick a parent folder only (name comes from the app), then compose `<dir>/<name>.pond`.
-  async "library.pickNewLocation"(params) {
-    const raw = typeof params.name === "string" ? params.name.trim() : "";
-    const name = sanitizePondName(raw) || "My Pond";
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOpts = {
-      title: "Choose where to keep this pond",
-      buttonLabel: "Choose",
-      defaultPath: join(app.getPath("home"), "Pond"),
-      properties: ["openDirectory" as const, "createDirectory" as const],
-    };
-    const result = win
-      ? await dialog.showOpenDialog(win, dialogOpts)
-      : await dialog.showOpenDialog(dialogOpts);
-    const dir = result.canceled ? undefined : result.filePaths[0];
-    if (!dir) return { ok: false as const, reason: "cancelled" as const };
-    return { ok: true as const, path: ensurePondSuffix(join(dir, name)) };
-  },
-
-  // Adopt an existing `.pond` bundle; previewRelocate suggests "adopt" so nothing is copied.
+  // Pick an existing `.pond` bundle to open; pair with `library.switchTo`.
   async "library.pickExisting"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -81,43 +36,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
     return { ok: true as const, path: dest };
   },
 
-  async "library.previewRelocate"(params) {
-    const candidate = String(params.path ?? "").trim();
-    if (!candidate) {
-      return { ok: false as const, reason: "no_path" as const };
-    }
-    try {
-      const preview = previewRelocate(candidate);
-      return { ok: true as const, preview };
-    } catch (err) {
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "preview_failed",
-      };
-    }
-  },
-
-  async "library.relocate"(params) {
-    const dest = String(params.path ?? "").trim();
-    const mode = (params.mode === "adopt" ? "adopt" : "copy") as RelocateMode;
-    const restart = params.restart !== false;
-    if (!dest) {
-      return { ok: false as const, reason: "no_path" as const };
-    }
-    try {
-      const result = await relocateLibrary(dest, mode);
-      rememberLibrary(result.path);
-      if (restart) relaunchSoon();
-      return { ok: true as const, ...result };
-    } catch (err) {
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "relocate_failed",
-      };
-    }
-  },
-
-  // Switch to an existing library (no copy): write pointer, relaunch.
+  // Open an existing library (no copy): write pointer, relaunch.
   async "library.switchTo"(params) {
     const dest = String(params.path ?? "").trim();
     if (!dest) return { ok: false as const, reason: "no_path" as const };
@@ -143,43 +62,12 @@ export const libraryLocationQueries: QueryHandlerMap = {
     }
     try {
       const result = await relocateLibrary(dest, "adopt");
-      rememberLibrary(result.path);
       relaunchSoon();
       return { ok: true as const, ...result };
     } catch (err) {
       return {
         ok: false as const,
         reason: err instanceof Error ? err.message : "switch_failed",
-      };
-    }
-  },
-
-  // Create an empty library via the save dialog, then relaunch into it.
-  async "library.create"() {
-    const win = BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOpts = {
-      title: "Create a new pond",
-      nameFieldLabel: "Pond Name:",
-      buttonLabel: "Create",
-      defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
-      properties: ["createDirectory" as const],
-    };
-    const picked = win
-      ? await dialog.showSaveDialog(win, dialogOpts)
-      : await dialog.showSaveDialog(dialogOpts);
-    if (picked.canceled || !picked.filePath) {
-      return { ok: false as const, reason: "cancelled" as const };
-    }
-    const dest = ensurePondSuffix(picked.filePath);
-    try {
-      const result = await relocateLibrary(dest, "adopt");
-      rememberLibrary(result.path);
-      relaunchSoon();
-      return { ok: true as const, ...result };
-    } catch (err) {
-      return {
-        ok: false as const,
-        reason: err instanceof Error ? err.message : "create_failed",
       };
     }
   },
@@ -192,9 +80,9 @@ export const libraryLocationQueries: QueryHandlerMap = {
     if (!dest) {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const dialogOpts = {
-        title: "Create a new pond",
+        title: "Move library",
         nameFieldLabel: "Pond Name:",
-        buttonLabel: "Create",
+        buttonLabel: "Move",
         defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
         properties: ["createDirectory" as const],
       };
@@ -224,14 +112,6 @@ function ensurePondSuffix(path: string): string {
   return trimmed.endsWith(".pond") ? trimmed : `${trimmed}.pond`;
 }
 
-// Strip filename-illegal chars and any `.pond` suffix from a typed pond name.
-function sanitizePondName(name: string): string {
-  return name
-    .replace(/\.pond$/i, "")
-    .replace(/[/\\:*?"<>|]/g, "")
-    .trim();
-}
-
 // Defer relaunch so the IPC response lands first. Prod relaunches the process;
 // dev soft-repoints in place because app.exit would kill the renderer dev server.
 function relaunchSoon(): void {
@@ -257,7 +137,6 @@ async function softRepointInDev(): Promise<void> {
   invalidatePaths();
   invalidatePrefs();
   try {
-    syncIdentityWithBundle(libraryRootDir());
     const paths = resolvePaths();
     rotateBundleBackups(paths.backupDir, [
       paths.libraryMetadata,
@@ -265,12 +144,19 @@ async function softRepointInDev(): Promise<void> {
       paths.tagsFile,
     ]);
   } catch (err) {
-    log.warn("[pond library-ops] identity sync failed", err);
+    log.warn("[pond library-ops] bundle backup rotation failed", err);
   }
   try {
     await hydrateTagsFromBundle();
   } catch (err) {
     log.warn("[pond library-ops] tags.json hydrate failed", err);
+  }
+  // Prod covers this at relaunch; the dev soft re-point never restarts, so
+  // fold the target library's legacy sync prefs into accounts here.
+  try {
+    await migrateLegacySyncPrefs();
+  } catch (err) {
+    log.warn("[pond library-ops] legacy sync-prefs migration failed", err);
   }
   try {
     await reconcileLibrary();

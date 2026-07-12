@@ -1,0 +1,109 @@
+import type { Source, WatchKind } from "@pond/schema/db";
+import log from "electron-log/main.js";
+import { sourceIdFromUrl } from "../pipeline/url";
+import { binariesAvailable } from "../refresh/binaries";
+import { runWithTimeout } from "../refresh/yt-dlp-process";
+import type { WatchEntry, WatchHarvestResult } from "./types";
+
+// YouTube/TikTok watch listing via yt-dlp's flat-playlist mode: enumerate a
+// public channel, profile, or playlist without downloading anything. Capped
+// so watching a prolific channel stays cheap.
+
+const LIST_TIMEOUT_MS = 60_000;
+const LIST_CAP = 60;
+
+function listUrl(
+  source: Source,
+  handle: string,
+  kind?: WatchKind,
+): string | null {
+  if (source === "youtube") {
+    if (kind === "playlist") {
+      return `https://www.youtube.com/playlist?list=${encodeURIComponent(handle)}`;
+    }
+    // Channel-id targets (UC…) use the /channel/ path; handles use /@handle.
+    // A handle may carry a tab suffix ("mkbhd/shorts") from a pasted tab URL.
+    const [name = handle, tab] = handle.split("/", 2);
+    const base = /^UC[\w-]{10,}$/.test(name)
+      ? `https://www.youtube.com/channel/${encodeURIComponent(name)}`
+      : `https://www.youtube.com/@${encodeURIComponent(name)}`;
+    return `${base}/${tab === "shorts" || tab === "streams" ? tab : "videos"}`;
+  }
+  if (source === "tiktok") {
+    return `https://www.tiktok.com/@${encodeURIComponent(handle)}`;
+  }
+  return null;
+}
+
+interface FlatEntry {
+  id?: string | null;
+  url?: string | null;
+  webpage_url?: string | null;
+}
+
+export async function listYtdlpWatch(
+  source: Source,
+  handle: string,
+  kind?: WatchKind,
+  signal?: AbortSignal,
+): Promise<WatchHarvestResult> {
+  const { ytdlp } = binariesAvailable();
+  if (!ytdlp) {
+    log.warn("[pond watch:ytdlp] binary unavailable");
+    return { ok: false, reason: "unavailable" };
+  }
+  const target = listUrl(source, handle, kind);
+  if (!target) return { ok: false, reason: "unknown" };
+
+  const argv = [
+    "--flat-playlist",
+    "--dump-json",
+    "--no-warnings",
+    "--playlist-end",
+    String(LIST_CAP),
+    "--socket-timeout",
+    "20",
+    target,
+  ];
+  const { code, stdout, stderr } = await runWithTimeout(
+    ytdlp,
+    argv,
+    LIST_TIMEOUT_MS,
+    signal,
+  );
+  if (code === 124) return { ok: false, reason: "timeout" };
+  if (code === 125) return { ok: false, reason: "unknown" };
+  if (code !== 0 && stdout.trim().length === 0) {
+    const tail = stderr.slice(-300);
+    log.warn("[pond watch:ytdlp] listing failed", source, handle, code, tail);
+    if (/404|not found|does not exist|unable to find/i.test(tail)) {
+      return { ok: false, reason: "not_found" };
+    }
+    return { ok: false, reason: "unavailable" };
+  }
+
+  const entries: WatchEntry[] = [];
+  const seen = new Set<string>();
+  for (const line of stdout.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("{")) continue;
+    let parsed: FlatEntry;
+    try {
+      parsed = JSON.parse(trimmed) as FlatEntry;
+    } catch {
+      continue;
+    }
+    const url =
+      parsed.webpage_url ??
+      parsed.url ??
+      (source === "youtube" && parsed.id
+        ? `https://www.youtube.com/watch?v=${parsed.id}`
+        : null);
+    if (!url) continue;
+    const sourceId = sourceIdFromUrl(source, url);
+    if (!sourceId || seen.has(sourceId)) continue;
+    seen.add(sourceId);
+    entries.push({ url, sourceId });
+  }
+  return { ok: true, entries };
+}

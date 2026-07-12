@@ -1,4 +1,4 @@
-import type { Source } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
@@ -7,10 +7,11 @@ import {
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
-import { inferAccountKey, resolveAccountKey } from "./account-key";
+import { inferAccountKey, resolveAccountHandle } from "./account-key";
+import { partitionForAccount } from "./accounts";
 import {
   loadSyncBaseline,
-  patchSourceSync,
+  patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
 import { emit } from "./sync-status";
@@ -25,18 +26,22 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
 ]);
 
 export async function syncListSource(
-  source: Source,
+  account: ConnectedAccount,
   signal: AbortSignal,
   ev: SyncRunEvent,
   maxItems?: number,
   forceFull = false,
 ): Promise<void> {
-  const baseline = await loadSyncBaseline(source, forceFull);
+  const { source } = account;
+  const accountId = account.id;
+  const partition = partitionForAccount(accountId);
+  const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
   log.info(
-    `[pond sync:${source}] starting; ${baseline.total} items already in library (${baseline.full ? "full" : `incremental, ${knownIds.size}-id window`})`,
+    `[pond sync:${source}] starting for @${account.handle ?? accountId}; ${baseline.total} items already in library (${baseline.full ? "full" : `incremental, ${knownIds.size}-id window`})`,
   );
   emit({
+    accountId,
     source,
     state: "running",
     message: `Reading your ${source} list…`,
@@ -44,11 +49,12 @@ export async function syncListSource(
 
   let accountKey: string | undefined;
   if (source === "cosmos" || source === "arena" || source === "tiktok") {
-    accountKey = (await resolveAccountKey(source)) ?? undefined;
+    accountKey = (await resolveAccountHandle(account)) ?? undefined;
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);
-      await patchSourceSync(source, { lastError: "auth_required" });
+      await patchAccountSync(accountId, { lastError: "auth_required" });
       emit({
+        accountId,
         source,
         state: "auth_required",
         message: `Sign in to ${source} to enable background sync.`,
@@ -57,7 +63,7 @@ export async function syncListSource(
       return;
     }
   } else if (source === "pinterest") {
-    accountKey = (await inferAccountKey(source)) || "me";
+    accountKey = account.handle ?? ((await inferAccountKey(source)) || "me");
   }
 
   // On a full walk, hide known ids from the harvester so it doesn't early-stop
@@ -70,8 +76,10 @@ export async function syncListSource(
       accountKey,
     },
     {
+      partition,
       onProgress: (p) => {
         emit({
+          accountId,
           source,
           state: "running",
           message: `Found ${p.collected} saved items${p.fresh > 0 ? ` (${p.fresh} new)` : ""}…`,
@@ -86,8 +94,9 @@ export async function syncListSource(
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
-      await patchSourceSync(source, { lastError: "auth_required" });
+      await patchAccountSync(accountId, { lastError: "auth_required" });
       emit({
+        accountId,
         source,
         state: "auth_required",
         message: `Sign in to ${source} to enable background sync.`,
@@ -100,8 +109,9 @@ export async function syncListSource(
       const waitMin = harvest.retryAfterSec
         ? Math.max(1, Math.round(harvest.retryAfterSec / 60))
         : null;
-      await patchSourceSync(source, { lastError: "rate_limited" });
+      await patchAccountSync(accountId, { lastError: "rate_limited" });
       emit({
+        accountId,
         source,
         state: "paused",
         message: waitMin
@@ -112,8 +122,9 @@ export async function syncListSource(
       ev.outcome = "rate_limited";
       return;
     }
-    await patchSourceSync(source, { lastError: harvest.reason });
+    await patchAccountSync(accountId, { lastError: harvest.reason });
     emit({
+      accountId,
       source,
       state: "error",
       message: `Couldn't read list: ${harvest.reason}.`,
@@ -126,9 +137,12 @@ export async function syncListSource(
 
   const combined = harvest.entries;
   if (source === "youtube") {
-    const liked = await harvestYoutubeLikedList({
-      knownIds: harvestKnownIds,
-    });
+    const liked = await harvestYoutubeLikedList(
+      {
+        knownIds: harvestKnownIds,
+      },
+      { partition },
+    );
     if (liked.ok) {
       const seen = new Set(combined.map((e) => e.sourceId));
       for (const e of liked.entries) {
@@ -153,12 +167,13 @@ export async function syncListSource(
     recovery: 0,
   };
   if (fresh.length === 0) {
-    const lastSyncedAt = await persistWatermark(source, {
+    const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full,
       newestId: null,
       total: baseline.total,
     });
     emit({
+      accountId,
       source,
       state: "done",
       message: "All caught up.",
@@ -174,6 +189,7 @@ export async function syncListSource(
     `[pond sync:${source}] enqueueing ${fresh.length} new URLs into pipeline`,
   );
   emit({
+    accountId,
     source,
     state: "running",
     message: `Queueing ${fresh.length} item${fresh.length === 1 ? "" : "s"}…`,
@@ -184,7 +200,7 @@ export async function syncListSource(
   // pLimit(8) per-URL round-trips.
   const bulk = await enqueueSavesBulk(
     fresh.map((entry) => ({ url: entry.url })),
-    { trigger: `sync:${source}` },
+    { trigger: `sync:${source}`, accountId },
   );
   const succeeded = bulk.created + bulk.existing;
   ev.enqueue = { succeeded, failed: bulk.failed };
@@ -193,12 +209,13 @@ export async function syncListSource(
     return;
   }
 
-  const lastSyncedAt = await persistWatermark(source, {
+  const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,
     newestId: fresh[0]?.sourceId ?? null,
     total: baseline.total + bulk.created,
   });
   emit({
+    accountId,
     source,
     state: "done",
     message: `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`,

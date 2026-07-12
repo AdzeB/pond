@@ -13,6 +13,15 @@ export class TwitterTweetExtractor implements Extractor {
   readonly source = "twitter" as const;
   readonly validUrl = TWITTER_PATTERNS;
   readonly cookieDomain = ".x.com";
+  // The signed-in left nav's Profile tab links to /<handle>; the testid is
+  // stable across the x.com redesigns.
+  readonly probeExpression = `(() => {
+        try {
+          const a = document.querySelector('a[data-testid="AppTabBar_Profile_Link"]');
+          const m = (a?.getAttribute('href') || '').match(/^\\/([A-Za-z0-9_]+)\\/?$/);
+          return m ? m[1] : '';
+        } catch { return ''; }
+      })()`;
 
   authCookies(name: string): boolean {
     return name === "auth_token";

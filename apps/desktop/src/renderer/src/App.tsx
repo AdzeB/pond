@@ -10,7 +10,6 @@ import { useEffect, useMemo } from "react";
 import type { PondApi } from "../../preload";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
-import { PondCustomiseDialog } from "./components/pond-customise-dialog";
 import { Toaster } from "./components/toaster";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
@@ -59,9 +58,7 @@ const STARTUP_PAGE_KEY = "pond:startupPage";
 // separately by restoring the persisted last path.
 const STARTUP_ROUTES: Record<string, string> = {
   library: "/",
-  // "sources" startup pref now lands on the analytics page; the everyday
-  // sources surface lives in the dock tray.
-  sources: "/analytics",
+  sources: "/sources",
   trash: "/trash",
   settings: "/settings",
 };
@@ -157,7 +154,6 @@ export function App() {
           <EnrichmentSweep />
           <ErrorBoundary>
             <RouterProvider router={router} />
-            <PondCustomiseDialog />
           </ErrorBoundary>
           <ContextMenuHost />
           <Toaster />

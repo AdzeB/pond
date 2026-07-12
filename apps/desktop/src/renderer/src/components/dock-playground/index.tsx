@@ -72,8 +72,6 @@ const VIEWS = [
   { id: "search", label: "Search" },
   { id: "new", label: "New save" },
   { id: "options", label: "Options" },
-  { id: "library", label: "Library menu" },
-  { id: "sources", label: "Sources tray" },
 ] as const;
 
 // The status pill only shows while the dock rests in nav with an active ask,
@@ -186,10 +184,6 @@ export function DockPlayground() {
                 {v.label}
               </button>
             ))}
-            <p className={styles.hint}>
-              The sources tray's internal stages (list → detail → picker) are
-              navigated by clicking inside the tray itself.
-            </p>
           </div>
 
           <div className={styles.group}>

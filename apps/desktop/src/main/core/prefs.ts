@@ -14,22 +14,16 @@ import log from "electron-log/main.js";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
 import {
-  adoptLegacyPondKeys,
-  applyAppPrefsPatch,
-  applyUnboundPondPatch,
   currentPondId,
-  isStoredPrefsV2,
   isUnboundPondId,
-  legacyPondSeed,
+  mergeAppSlice,
   mergePondSlice,
   mergePrefs,
-  migrateStoredPrefs,
+  normalizeStoredPrefs,
   type PondPrefs,
   readBundlePondPrefs,
-  resolveLegacyPrefsOwnerPondId,
-  type StoredPrefsV2,
+  type StoredPrefs,
   splitPrefsPatch,
-  stripConsumedPondSlices,
   writeBundlePondPrefs,
 } from "./prefs-scope";
 
@@ -60,7 +54,10 @@ async function fetchSettings(): Promise<SettingsCache> {
     .from(settingsTable)
     .where(eq(settingsTable.id, "singleton"));
   const row = rows[0];
-  const stored = await ensureStoredPrefs(row?.prefs, pondId);
+  const stored = normalizeStoredPrefs(row?.prefs);
+  if (!isSameStored(row?.prefs, stored)) {
+    await persistStoredPrefs(stored);
+  }
   const pond = await resolvePondSlice(stored, pondId);
   return {
     pondId,
@@ -70,54 +67,33 @@ async function fetchSettings(): Promise<SettingsCache> {
   };
 }
 
-// The pond slice's source of truth is the bundle's settings.json. An unbound
-// pond (no bundle yet) parks its slice in global.db; the first open of a
-// bundle without settings.json seeds the file from the legacy global.db entry
-// and strips what it consumed.
+// The library slice's source of truth is the bundle's settings.json. Before
+// the bundle exists (onboarding) the slice parks in global.db as `pending`;
+// the first open of a bundle without settings.json seeds the file from it.
 async function resolvePondSlice(
-  stored: StoredPrefsV2,
+  stored: StoredPrefs,
   pondId: string,
 ): Promise<Partial<PondPrefs>> {
-  if (isUnboundPondId(pondId)) return legacyPondSeed(stored, pondId);
+  if (isUnboundPondId(pondId)) return stored.pending ?? {};
 
   const bundle = readBundlePondPrefs();
-  if (bundle) {
-    // Backfill slices that moved into the pond scope after this bundle's
-    // settings.json was first seeded (e.g. appearance).
-    const { slice, changed } = adoptLegacyPondKeys(bundle, stored, pondId);
-    if (changed) {
-      try {
-        writeBundlePondPrefs(mergePondSlice(slice));
-      } catch (err) {
-        log.warn("[pond prefs] adopting legacy pond keys failed", err);
-      }
-    }
-    await stripMigratedSlices(stored, pondId);
-    return slice;
-  }
+  if (bundle) return bundle;
 
-  const seed = mergePondSlice(legacyPondSeed(stored, pondId));
+  const seed = mergePondSlice(stored.pending ?? {});
   try {
     writeBundlePondPrefs(seed);
   } catch (err) {
     log.warn("[pond prefs] seeding bundle settings.json failed", err);
     return seed;
   }
-  await stripMigratedSlices(stored, pondId);
-  return seed;
-}
-
-async function stripMigratedSlices(
-  stored: StoredPrefsV2,
-  pondId: string,
-): Promise<void> {
-  const { stored: next, changed } = stripConsumedPondSlices(stored, pondId);
-  if (!changed) return;
-  try {
-    await persistStoredPrefs(next);
-  } catch (err) {
-    log.warn("[pond prefs] stripping migrated pond slices failed", err);
+  if (stored.pending) {
+    try {
+      await persistStoredPrefs({ ...stored, pending: null });
+    } catch (err) {
+      log.warn("[pond prefs] clearing pending library prefs failed", err);
+    }
   }
+  return seed;
 }
 
 async function loadSettings(): Promise<SettingsCache> {
@@ -138,21 +114,7 @@ async function loadSettings(): Promise<SettingsCache> {
   }
 }
 
-async function ensureStoredPrefs(
-  raw: unknown,
-  pondId: string,
-): Promise<StoredPrefsV2> {
-  const legacyOwner = isStoredPrefsV2(raw)
-    ? pondId
-    : await resolveLegacyPrefsOwnerPondId();
-  const stored = migrateStoredPrefs(raw, legacyOwner);
-  if (!isSameStored(raw, stored)) {
-    await persistStoredPrefs(stored);
-  }
-  return stored;
-}
-
-function isSameStored(raw: unknown, stored: StoredPrefsV2): boolean {
+function isSameStored(raw: unknown, stored: StoredPrefs): boolean {
   try {
     return JSON.stringify(raw) === JSON.stringify(stored);
   } catch {
@@ -160,7 +122,7 @@ function isSameStored(raw: unknown, stored: StoredPrefsV2): boolean {
   }
 }
 
-async function persistStoredPrefs(stored: StoredPrefsV2): Promise<void> {
+async function persistStoredPrefs(stored: StoredPrefs): Promise<void> {
   const db = await getGlobalDb();
   await db
     .insert(settingsTable)
@@ -201,21 +163,23 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
 
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const pondId = currentPondId();
-  // Ensure migration/seeding has run before we route the patch.
+  // Ensure seeding has run before we route the patch.
   const current = await loadSettings();
   const { app, pond } = splitPrefsPatch(patch);
 
-  const legacyOwner = await resolveLegacyPrefsOwnerPondId();
-  let stored = migrateStoredPrefs(await readRawStoredPrefs(), legacyOwner);
+  let stored = normalizeStoredPrefs(await readRawStoredPrefs());
 
   let pondSlice: PondPrefs;
   if (isUnboundPondId(pondId)) {
-    // No bundle on disk yet: park the pond slice in global.db until the
+    // No bundle on disk yet: park the library slice in global.db until the
     // bundle materializes and consumes it.
     if (Object.keys(pond).length > 0) {
-      stored = applyUnboundPondPatch(stored, pond);
+      stored = {
+        ...stored,
+        pending: mergePondSlice(stored.pending ?? {}, pond),
+      };
     }
-    pondSlice = mergePondSlice(legacyPondSeed(stored, pondId));
+    pondSlice = mergePondSlice(stored.pending ?? {});
   } else {
     const base = readBundlePondPrefs() ?? mergePondSlice({});
     pondSlice = mergePondSlice(base, pond);
@@ -225,7 +189,7 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   }
 
   if (Object.keys(app).length > 0) {
-    stored = applyAppPrefsPatch(stored, app);
+    stored = { ...stored, app: mergeAppSlice(stored.app, app) };
   }
   await persistStoredPrefs(stored);
 

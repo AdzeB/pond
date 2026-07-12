@@ -13,17 +13,14 @@ import { useGridWidth } from "@/stores/shell-state";
 const ITEM_GAP = 16;
 
 // Uniform square-cell grid (ignores aspect ratio). Packed manually so it rides the same PackedGrid windowing path.
-// A leading placeholder cell (when `placeholderCount > 0`) shifts every save by one slot.
 function packUniform(
   saves: ReadonlyArray<Save>,
   containerWidth: number,
   colMin: number,
   gap: number,
   chromeHeight: number,
-  placeholderCount: number,
 ): PackResult {
-  const hasPlaceholder = placeholderCount > 0;
-  if (containerWidth <= 0 || (saves.length === 0 && !hasPlaceholder)) {
+  if (containerWidth <= 0 || saves.length === 0) {
     return { items: [], totalHeight: 0 };
   }
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
@@ -42,41 +39,27 @@ function packUniform(
     };
   };
   const items: PackedItem[] = [];
-  if (hasPlaceholder) {
-    items.push({ kind: "placeholder", count: placeholderCount, ...place(0) });
-  }
-  const offset = hasPlaceholder ? 1 : 0;
   saves.forEach((save, idx) => {
-    items.push({ save, ...place(idx + offset) });
+    items.push({ save, ...place(idx) });
   });
-  const total = saves.length + offset;
-  const rows = Math.ceil(total / cols);
+  const rows = Math.ceil(saves.length / cols);
   const totalHeight = rows > 0 ? rows * cellH + (rows - 1) * gap : 0;
   return { items, totalHeight };
 }
 
 interface GridViewProps {
   saves: ReadonlyArray<Save>;
-  placeholderCount: number;
 }
 
-export function GridView({ saves, placeholderCount }: GridViewProps) {
+export function GridView({ saves }: GridViewProps) {
   const width = useGridWidth();
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
 
   const { items, totalHeight } = useMemo(
-    () =>
-      packUniform(
-        saves,
-        width,
-        colMin,
-        ITEM_GAP,
-        chromeHeight,
-        placeholderCount,
-      ),
-    [saves, width, colMin, chromeHeight, placeholderCount],
+    () => packUniform(saves, width, colMin, ITEM_GAP, chromeHeight),
+    [saves, width, colMin, chromeHeight],
   );
 
   return <PackedGrid layout="grid" items={items} totalHeight={totalHeight} />;

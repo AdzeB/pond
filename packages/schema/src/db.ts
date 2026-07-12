@@ -77,6 +77,9 @@ export const saves = sqliteTable(
     id: text("id").primaryKey(),
     source: text("source").$type<Source>().notNull(),
     sourceId: text("source_id").notNull(),
+    // Connected account (prefs sync.accounts id) that ingested this save; null
+    // for local/web saves and rows that predate multi-account.
+    accountId: text("account_id"),
     url: text("url").notNull(),
     title: text("title"),
     description: text("description"),
@@ -163,6 +166,7 @@ export const saves = sqliteTable(
     ),
     savedAtIdx: index("saves_saved_at_idx").on(t.savedAt),
     sourceIdx: index("saves_source_idx").on(t.source),
+    accountIdx: index("saves_account_idx").on(t.accountId),
     sizeIdx: index("saves_size_idx").on(t.fileSize),
     dimsIdx: index("saves_dims_idx").on(t.width, t.height),
     deletedIdx: index("saves_deleted_idx").on(t.deletedAt),

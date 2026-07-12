@@ -3,8 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Cookie, session } from "electron";
 import log from "electron-log/main.js";
-
-const PARTITION = "persist:pond-scrapers";
+import { LEGACY_PARTITION } from "../sync/accounts";
 
 const COOKIE_HOSTS = [
   "https://x.com/",
@@ -26,7 +25,11 @@ interface CookieJar {
   count: number;
 }
 
-export async function writeNetscapeCookies(): Promise<CookieJar> {
+// Exports the given partition's cookies (the account whose session should own
+// the download); defaults to the legacy shared jar for unmigrated sessions.
+export async function writeNetscapeCookies(
+  partition: string = LEGACY_PARTITION,
+): Promise<CookieJar> {
   const dir = await mkdtemp(join(tmpdir(), "pond-ytdlp-"));
   const filePath = join(dir, "cookies.txt");
   const cleanup = async () => {
@@ -39,7 +42,7 @@ export async function writeNetscapeCookies(): Promise<CookieJar> {
 
   let allCookies: Cookie[] = [];
   try {
-    const persistent = session.fromPartition(PARTITION);
+    const persistent = session.fromPartition(partition);
     const buckets = await Promise.all(
       COOKIE_HOSTS.map((url) =>
         persistent.cookies.get({ url }).catch(() => [] as Cookie[]),

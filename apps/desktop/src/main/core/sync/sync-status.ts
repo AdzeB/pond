@@ -2,6 +2,9 @@ import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 
 export interface SyncStatusUpdate {
+  // Connected account the update is about; the source is kept alongside for
+  // per-platform grouping in the UI.
+  accountId: string;
   source: Source;
   state:
     | "idle"
@@ -41,18 +44,39 @@ export interface InFlight {
   controller: AbortController;
   startedAt: number;
   watchdog: ReturnType<typeof setTimeout>;
+  source: Source;
 }
 
-export const inFlight = new Map<Source, InFlight>();
+// One in-flight run per ACCOUNT; two accounts on the same platform may run,
+// though the scheduler staggers them (see syncAllSources).
+export const inFlight = new Map<string, InFlight>();
 
-export function isSyncing(source: Source): boolean {
-  return inFlight.has(source);
+export function isSyncing(accountId: string): boolean {
+  return inFlight.has(accountId);
 }
 
-export function cancelSync(source: Source): void {
-  const entry = inFlight.get(source);
+export function isSourceSyncing(source: Source): boolean {
+  for (const entry of inFlight.values()) {
+    if (entry.source === source) return true;
+  }
+  return false;
+}
+
+export function cancelAllSyncs(): void {
+  for (const accountId of Array.from(inFlight.keys())) {
+    cancelSync(accountId);
+  }
+}
+
+export function cancelSync(accountId: string): void {
+  const entry = inFlight.get(accountId);
   if (!entry) return;
   entry.controller.abort();
   // Surface "Stopping…" immediately; the run winds down between steps.
-  emit({ source, state: "running", message: "Stopping…" });
+  emit({
+    accountId,
+    source: entry.source,
+    state: "running",
+    message: "Stopping…",
+  });
 }

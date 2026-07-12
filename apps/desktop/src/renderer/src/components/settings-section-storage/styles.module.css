@@ -16,17 +16,9 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-  text-transform: uppercase;
-  background: var(--ds-accent-9);
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-3);
   border-radius: var(--ds-radius-full);
-
-  &[data-emoji] {
-    font-size: 24px;
-    color: inherit;
-  }
 }
 
 .meta {

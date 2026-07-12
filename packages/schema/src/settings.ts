@@ -59,14 +59,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "advanced",
   },
   { id: "developer", path: "developer", label: "Developer", group: "advanced" },
-  // Pinned at the top of the settings sidebar (not shown in a group).
-  {
-    id: "account",
-    path: "account",
-    label: "Account",
-    group: "general",
-    hidden: true,
-  },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [

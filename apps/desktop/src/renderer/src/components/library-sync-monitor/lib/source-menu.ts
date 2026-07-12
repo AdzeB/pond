@@ -2,19 +2,21 @@ import type { Source } from "@pond/schema/db";
 import type { NativeMenuItem } from "@/lib/ui/native-menu";
 import type { CardModel } from "./helpers";
 
-// The per-source action menu for the sources dock tray, kept in lockstep with
-// the live status (`cardModel`).
-export function buildSourceMenu(
-  source: Source,
+// The per-account action menu for a Sources page row, kept in lockstep with
+// the live status (`cardModel`). Sync actions target the account; connect and
+// metadata refresh stay per-platform.
+export function buildAccountMenu(
+  account: { id: string; source: Source },
   model: CardModel,
-  onOpen: (source: Source) => void,
+  onOpen: () => void,
 ): NativeMenuItem[] {
+  const { id, source } = account;
   const running = model.tone === "run";
 
   const primary: NativeMenuItem = running
     ? {
         label: "Cancel sync",
-        onSelect: () => void window.pond.syncCancel(source),
+        onSelect: () => void window.pond.syncCancel(id),
       }
     : model.tone === "paused"
       ? {
@@ -24,7 +26,7 @@ export function buildSourceMenu(
       : model.tone === "err"
         ? {
             label: "Retry now",
-            onSelect: () => void window.pond.syncRunNow(source),
+            onSelect: () => void window.pond.syncRunNow(id),
           }
         : !model.connected
           ? {
@@ -33,7 +35,7 @@ export function buildSourceMenu(
             }
           : {
               label: "Sync now",
-              onSelect: () => void window.pond.syncRunNow(source),
+              onSelect: () => void window.pond.syncRunNow(id),
             };
 
   const items: NativeMenuItem[] = [primary];
@@ -42,8 +44,7 @@ export function buildSourceMenu(
     items.push(
       {
         label: "Backfill",
-        onSelect: () =>
-          void window.pond.syncRunNow(source, { forceFull: true }),
+        onSelect: () => void window.pond.syncRunNow(id, { forceFull: true }),
       },
       {
         label: "Refresh metadata",
@@ -59,7 +60,7 @@ export function buildSourceMenu(
 
   items.push(
     { type: "separator" },
-    { label: "Open settings", onSelect: () => onOpen(source) },
+    { label: "Open settings", onSelect: onOpen },
   );
 
   return items;

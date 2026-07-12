@@ -8,8 +8,6 @@ export type DockView =
   | "status"
   | "new"
   | "options"
-  | "library"
-  | "sources"
   | "nav";
 
 // A forced rendering of the pill, used by the dock playground to drive every

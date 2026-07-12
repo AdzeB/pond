@@ -73,6 +73,8 @@ export interface SyncRunEvent {
   kind: "sync.run.completed";
   ts: number;
   source: Source;
+  /** Connected account the run synced; null for pre-multi-account events. */
+  accountId: string | null;
   trigger: string;
   outcome: SyncOutcome;
   durationMs: number;
@@ -124,6 +126,7 @@ export const pipelineEvents = sqliteTable(
     kind: text("kind").$type<EventKind>().notNull(),
     saveId: text("save_id"),
     source: text("source").$type<Source>(),
+    accountId: text("account_id"),
     op: text("op").$type<Op>(),
     outcome: text("outcome").notNull(),
     durationMs: integer("duration_ms"),

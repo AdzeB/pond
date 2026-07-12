@@ -85,13 +85,6 @@ function ensureLibraryDirs(root: string): void {
   ensureDir(join(root, "trash"));
 }
 
-// Create the active library's bundle on disk (root + items/ + trash/).
-export function materializeLibrary(): string {
-  const root = resolvePaths().libraryRoot;
-  ensureLibraryDirs(root);
-  return root;
-}
-
 export function itemDir(id: string): string {
   return join(resolvePaths().itemsDir, `${id}.info`);
 }

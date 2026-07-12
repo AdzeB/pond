@@ -29,9 +29,13 @@ interface BookmarksHarvestProgress {
 
 export async function harvestTwitterBookmarks(
   args: BookmarksHarvestArgs,
-  opts: { onProgress?: (p: BookmarksHarvestProgress) => void } = {},
+  opts: {
+    onProgress?: (p: BookmarksHarvestProgress) => void;
+    /** Session partition of the account being synced. */
+    partition?: string;
+  } = {},
 ): Promise<BookmarksHarvestResult> {
-  const lease = await leaseWindow("twitter");
+  const lease = await leaseWindow("twitter", { partition: opts.partition });
   try {
     const navOk = await navigateWithTimeout(
       lease.win,

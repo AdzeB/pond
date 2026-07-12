@@ -17,8 +17,6 @@ import { getDb, getGlobalDb } from "../db";
 import { readItemMetadata } from "../lib/library";
 import {
   checkPointerSafety,
-  detectCloudKind,
-  probeExistingLibrary,
   readLibraryPointer,
   writeLibraryPointer,
 } from "../lib/library-pointer";
@@ -170,39 +168,6 @@ export async function syncLibraryRootMetadata(): Promise<void> {
     pointer,
     stored: stored || null,
   });
-}
-
-// Inspect a candidate folder for the relocate confirm dialog.
-interface RelocatePreview {
-  currentPath: string;
-  candidatePath: string;
-  samePath: boolean;
-  safety: {
-    ok: boolean;
-    reason: string | null;
-  };
-  cloudKind: string | null;
-  existing: ReturnType<typeof probeExistingLibrary>;
-  suggestedMode: RelocateMode;
-}
-
-export function previewRelocate(candidate: string): RelocatePreview {
-  const current = libraryRoot();
-  const candidateResolved = candidate.replace(/\/$/, "");
-  const samePath =
-    current.replace(/\/$/, "") === candidateResolved.replace(/\/$/, "");
-  const safety = checkPointerSafety(candidateResolved);
-  const existing = probeExistingLibrary(candidateResolved);
-  const cloudKind = detectCloudKind(candidateResolved);
-  return {
-    currentPath: current,
-    candidatePath: candidateResolved,
-    samePath,
-    safety: { ok: safety.ok, reason: safety.reason ?? null },
-    cloudKind,
-    existing,
-    suggestedMode: existing.looksLikePondLibrary ? "adopt" : "copy",
-  };
 }
 
 export async function emptyTrashOlderThan(days: number): Promise<number> {

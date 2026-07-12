@@ -1,0 +1,266 @@
+import type {
+  ConnectedAccount,
+  Source,
+  WatchedAccount,
+  WatchKind,
+} from "@pond/schema/db";
+import log from "electron-log/main.js";
+import { listAccounts, patchAccount } from "./accounts";
+import { listWatches, patchWatch } from "./watches";
+
+// Best-effort profile pictures for the Sources page cards. Resolution hits
+// each platform's public profile page (og:image) or API, never a session
+// partition — a miss just means the card keeps its plain look.
+
+// Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly;
+// misses retry sooner in case the profile was temporarily unreachable.
+const FOUND_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MISS_TTL_MS = 6 * 60 * 60 * 1000;
+
+const FETCH_TIMEOUT_MS = 10_000;
+// How much profile HTML to scan for meta tags; og tags live in <head>.
+const HTML_SCAN_BYTES = 300_000;
+
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
+// x.com and instagram only serve meta tags to link-preview crawlers, and
+// x.com 404s the better-known ones (Googlebot, facebookexternalhit).
+const CRAWLER_UA =
+  "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)";
+
+interface AvatarSubject {
+  handle: string | null;
+  kind?: WatchKind;
+  avatarUrl?: string | null;
+  avatarCheckedAt?: string | null;
+}
+
+// Site-wide share images (Next.js's opengraph-image convention, Pinterest's
+// default card, X's SSR shell fallback) that pages fall back to when there's
+// no real image — not a pfp.
+function isGenericOgImage(url: string): boolean {
+  return /opengraph-image|default_open_graph|rweb\/ssr\/default/i.test(url);
+}
+
+function needsCheck(row: AvatarSubject): boolean {
+  if (!row.handle) return false;
+  // Heal rows that stored a generic share image before the filter existed.
+  if (row.avatarUrl && isGenericOgImage(row.avatarUrl)) return true;
+  const checked = row.avatarCheckedAt ? Date.parse(row.avatarCheckedAt) : 0;
+  const ttl = row.avatarUrl ? FOUND_TTL_MS : MISS_TTL_MS;
+  return !Number.isFinite(checked) || Date.now() - checked > ttl;
+}
+
+// The profile page whose og:image is the pfp. Owner profile for boards and
+// clusters ("user/board" slugs); null when the slug names no user at all
+// (playlist ids, twitter lists) or the source has no public profile page.
+function profilePageUrl(
+  source: Source,
+  handle: string,
+  kind: WatchKind | undefined,
+): string | null {
+  if (kind === "playlist" || kind === "list") return null;
+  const owner = handle.split("/")[0] ?? handle;
+  const h = encodeURIComponent(owner);
+  switch (source) {
+    case "youtube":
+      // Channel-id slugs (from /channel/UC… URLs) aren't @handles.
+      return /^UC[\w-]{20,}$/.test(owner)
+        ? `https://www.youtube.com/channel/${h}`
+        : `https://www.youtube.com/@${h}`;
+    case "tiktok":
+      return `https://www.tiktok.com/@${h}`;
+    case "instagram":
+      return `https://www.instagram.com/${h}/`;
+    case "threads":
+      return `https://www.threads.com/@${h}`;
+    case "twitter":
+      return `https://x.com/${h}`;
+    case "pinterest":
+      return `https://www.pinterest.com/${h}/`;
+    case "cosmos":
+      return `https://www.cosmos.so/${h}`;
+    default:
+      return null;
+  }
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+function ogImageFrom(html: string): string | null {
+  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+    if (
+      !/(?:property|name)\s*=\s*["']og:image(?::secure_url)?["']/i.test(tag)
+    ) {
+      continue;
+    }
+    const content = /content\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1];
+    if (!content) continue;
+    const url = decodeEntities(content);
+    if (/^https?:\/\//i.test(url) && !isGenericOgImage(url)) return url;
+  }
+  return null;
+}
+
+async function fetchOgImage(pageUrl: string): Promise<string | null> {
+  for (const ua of [BROWSER_UA, CRAWLER_UA]) {
+    try {
+      const res = await fetch(pageUrl, {
+        redirect: "follow",
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        headers: {
+          "user-agent": ua,
+          accept: "text/html,application/xhtml+xml",
+          // Skips the EU consent interstitial on YouTube.
+          cookie: "CONSENT=YES+cb; SOCS=CAI",
+        },
+      });
+      if (!res.ok) continue;
+      const html = (await res.text()).slice(0, HTML_SCAN_BYTES);
+      const image = ogImageFrom(html);
+      if (image) return image;
+    } catch {
+      /* try the next user agent */
+    }
+  }
+  return null;
+}
+
+// Are.na exposes avatars through its v3 API (users and groups share the
+// `avatar` field); profile pages have no useful og tag.
+async function arenaAvatar(
+  slug: string,
+  path: "users" | "groups",
+): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.are.na/v3/${path}/${encodeURIComponent(slug)}`,
+      {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      },
+    );
+    if (!res.ok) return null;
+    const body = (await res.json()) as { avatar?: string };
+    return typeof body.avatar === "string" && body.avatar ? body.avatar : null;
+  } catch {
+    return null;
+  }
+}
+
+// Pinterest's og:image is a site-wide card; the avatar lives in the page's
+// embedded state JSON instead (first occurrence belongs to the profile owner).
+async function pinterestAvatar(user: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.pinterest.com/${encodeURIComponent(user)}/`,
+      {
+        headers: { "user-agent": BROWSER_UA, accept: "text/html" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      },
+    );
+    if (!res.ok) return null;
+    const html = await res.text();
+    const raw = /"image_xlarge_url"\s*:\s*"([^"]+)"/.exec(html)?.[1];
+    if (!raw) return null;
+    const url = decodeEntities(raw.replace(/\\\//g, "/"));
+    return /^https?:\/\//i.test(url) ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+// Reddit's public about endpoint carries the avatar; no page scrape needed.
+async function redditAvatar(name: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.reddit.com/user/${encodeURIComponent(name)}/about.json`,
+      {
+        headers: { "user-agent": BROWSER_UA, accept: "application/json" },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      },
+    );
+    if (!res.ok) return null;
+    const body = (await res.json()) as {
+      data?: { icon_img?: string; snoovatar_img?: string };
+    };
+    const raw = body.data?.icon_img || body.data?.snoovatar_img || null;
+    return raw ? decodeEntities(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveAvatarUrl(
+  source: Source,
+  handle: string,
+  kind?: WatchKind,
+): Promise<string | null> {
+  if (source === "arena") {
+    // Channels have covers, not faces — leave them to the brand tile.
+    if (kind === undefined || kind === "user") {
+      return arenaAvatar(handle, "users");
+    }
+    if (kind === "group") return arenaAvatar(handle, "groups");
+    return null;
+  }
+  if (source === "reddit") return redditAvatar(handle);
+  if (source === "pinterest") {
+    const owner = handle.split("/")[0];
+    return owner ? pinterestAvatar(owner) : null;
+  }
+  const pageUrl = profilePageUrl(source, handle, kind);
+  return pageUrl ? fetchOgImage(pageUrl) : null;
+}
+
+// One background sweep over accounts and watches, sequential so a page of
+// cards never fans out into a burst of profile fetches. Kicked from the list
+// queries; re-entry while a sweep is running is a no-op.
+let sweeping = false;
+
+export function fillMissingAvatars(): void {
+  if (sweeping) return;
+  sweeping = true;
+  void (async () => {
+    try {
+      for (const account of await listAccounts()) {
+        if (!needsCheck(account)) continue;
+        await checkAccount(account);
+      }
+      for (const watch of await listWatches()) {
+        if (!needsCheck(watch)) continue;
+        await checkWatch(watch);
+      }
+    } catch (err) {
+      log.warn("[pond avatars] sweep failed", err);
+    } finally {
+      sweeping = false;
+    }
+  })();
+}
+
+async function checkAccount(account: ConnectedAccount): Promise<void> {
+  const url = account.handle
+    ? await resolveAvatarUrl(account.source, account.handle)
+    : null;
+  await patchAccount(account.id, {
+    avatarUrl: url,
+    avatarCheckedAt: new Date().toISOString(),
+  });
+}
+
+async function checkWatch(watch: WatchedAccount): Promise<void> {
+  const url = await resolveAvatarUrl(watch.source, watch.handle, watch.kind);
+  await patchWatch(watch.id, {
+    avatarUrl: url,
+    avatarCheckedAt: new Date().toISOString(),
+  });
+}

@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { partitionForIngest } from "../../sync/accounts";
 import { harvesterFor } from "../harvest";
 import type { ScrapedHarvest } from "../harvest/types";
 import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS } from "./constants";
@@ -14,6 +15,8 @@ interface HarvestArgs {
   url: string;
   source: Source;
   sourceId?: string;
+  /** Connected account whose session should load the page, when known. */
+  accountId?: string | null;
 }
 
 interface HarvestResult {
@@ -24,7 +27,8 @@ interface HarvestResult {
 }
 
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
-  const lease = await leaseWindow(args.source);
+  const partition = await partitionForIngest(args.source, args.accountId);
+  const lease = await leaseWindow(args.source, { partition });
   const harv = harvesterFor(args.source);
   const sourceId = args.sourceId ?? harv.sourceIdFromUrl(args.url) ?? "";
 

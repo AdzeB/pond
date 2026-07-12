@@ -104,6 +104,7 @@ function migratePond(sqlite: Database.Database): void {
 					id TEXT PRIMARY KEY,
 					source TEXT NOT NULL,
 					source_id TEXT NOT NULL,
+					account_id TEXT,
 					url TEXT NOT NULL,
 					title TEXT,
 					description TEXT,
@@ -245,6 +246,7 @@ function migratePond(sqlite: Database.Database): void {
 					kind TEXT NOT NULL,
 					save_id TEXT,
 					source TEXT,
+					account_id TEXT,
 					op TEXT,
 					outcome TEXT NOT NULL,
 					duration_ms INTEGER,
@@ -287,6 +289,12 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "auto_title_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "suggested_tags", "TEXT");
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
+  // Multi-account: which connected account ingested the save.
+  addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
+  addColumnIfMissing(sqlite, "pipeline_events", "account_id", "TEXT");
+  sqlite.exec(
+    "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",
+  );
 
   // Partial indexes for the embedding columns: most rows have no vector, so
   // these stay tiny and keep "has/needs an embedding" scans cheap.

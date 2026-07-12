@@ -9,6 +9,21 @@ export class PinterestPinExtractor implements Extractor {
   readonly source = "pinterest" as const;
   readonly validUrl = PINTEREST_PATTERNS;
   readonly cookieDomain = ".pinterest.com";
+  // The __PWS_DATA__ state blob carries the signed-in user; the header
+  // profile link is the markup fallback.
+  readonly probeExpression = `(() => {
+        try {
+          const pws = document.getElementById('__PWS_DATA__');
+          if (pws) {
+            const data = JSON.parse(pws.textContent || '{}');
+            const u = data?.props?.context?.user?.username;
+            if (typeof u === 'string' && u) return u;
+          }
+          const a = document.querySelector('a[data-test-id="header-profile"]');
+          const m = (a?.getAttribute('href') || '').match(/^\\/([A-Za-z0-9_]+)\\/?$/);
+          return m ? m[1] : '';
+        } catch { return ''; }
+      })()`;
 
   authCookies(name: string): boolean {
     return name === "_pinterest_sess" || name === "_auth";

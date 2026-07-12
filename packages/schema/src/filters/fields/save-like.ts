@@ -3,6 +3,7 @@ import type { RawJson } from "../../raw";
 export interface SaveLike {
   id: string;
   source: string | null;
+  accountId?: string | null;
   url: string;
   title?: string | null;
   description?: string | null;

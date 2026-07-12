@@ -37,6 +37,8 @@ export interface EnqueueOptions {
   force?: boolean;
   // Pre-extracted capture data; lets harvest_metadata skip its scrape via isFreshHarvest().
   seed?: EnqueueSeed;
+  // Connected account that produced this save (sync runs); stamped on new rows.
+  accountId?: string | null;
 }
 
 export async function enqueueSaveByUrl(
@@ -113,6 +115,7 @@ export async function enqueueSaveByUrl(
     id,
     source,
     sourceId,
+    accountId: opts.accountId ?? null,
     url: normalizedUrl,
     status: "ingesting",
     ingestStartedAt: now,

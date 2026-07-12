@@ -1,8 +1,11 @@
-import type { Source } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { type Cookie, session, shell } from "electron";
 import log from "electron-log/main.js";
 import { extractorFor } from "../../pipeline/extractors";
-import { getPrefs, setPrefs } from "../../prefs";
+import {
+  listAccountsForSource,
+  partitionForAccount,
+} from "../../sync/accounts";
 import { homeUrlForSource } from "../sources";
 import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS, PARTITION } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
@@ -25,25 +28,47 @@ export async function signInToSource(
   }
 }
 
+// True when the account's own partition holds a live auth cookie.
+export async function isAccountConnected(
+  account: ConnectedAccount,
+): Promise<boolean> {
+  const cookies = await listCookiesForSource(
+    account.source,
+    partitionForAccount(account.id),
+  );
+  return cookies.some((c) => isAuthCookie(account.source, c));
+}
+
+// True when any connected account exists for the source. The legacy shared
+// partition is also checked so a not-yet-migrated session still reads as
+// connected.
 export async function isSourceConnected(source: Source): Promise<boolean> {
-  const cookies = await listCookiesForSource(source);
-  return cookies.some((c) => isAuthCookie(source, c));
+  const accounts = await listAccountsForSource(source);
+  for (const account of accounts) {
+    if (await isAccountConnected(account)) return true;
+  }
+  const legacy = await listCookiesForSource(source, PARTITION);
+  return legacy.some((c) => isAuthCookie(source, c));
+}
+
+export interface ImportableCookie {
+  name: string;
+  value: string;
+  domain: string;
+  path?: string;
+  secure?: boolean;
+  httpOnly?: boolean;
+  sameSite?: "unspecified" | "no_restriction" | "lax" | "strict";
+  expirationDate?: number | null;
+  hostOnly?: boolean;
 }
 
 export async function writePartitionCookies(args: {
-  cookies: Array<{
-    name: string;
-    value: string;
-    domain: string;
-    path?: string;
-    secure?: boolean;
-    httpOnly?: boolean;
-    sameSite?: "unspecified" | "no_restriction" | "lax" | "strict";
-    expirationDate?: number | null;
-    hostOnly?: boolean;
-  }>;
+  cookies: ImportableCookie[];
+  /** Target session partition (an account's jar, or a staging jar). */
+  partition: string;
 }): Promise<{ written: number; skipped: number }> {
-  const persistent = session.fromPartition(PARTITION);
+  const persistent = session.fromPartition(args.partition);
   let written = 0;
   let skipped = 0;
   for (const c of args.cookies) {
@@ -75,37 +100,13 @@ export async function writePartitionCookies(args: {
   return { written, skipped };
 }
 
-export async function readStoredHandle(source: Source): Promise<string | null> {
-  try {
-    const prefs = await getPrefs();
-    const raw = prefs.sync.handles?.[source];
-    if (typeof raw !== "string") return null;
-    const trimmed = raw.trim().replace(/^@/, "");
-    return trimmed.length > 0 ? trimmed : null;
-  } catch (err) {
-    log.warn("[pond refresh:signin] readStoredHandle failed", source, err);
-    return null;
-  }
-}
-
-async function _writeStoredHandle(
+// Probe the hidden window for the user's handle off the top-nav profile link;
+// null when unauth. The partition selects whose session is being probed.
+export async function probeUserHandle(
   source: Source,
-  handle: string,
-): Promise<void> {
-  const trimmed = handle.trim().replace(/^@/, "");
-  if (!trimmed) return;
-  try {
-    const prefs = await getPrefs();
-    const nextHandles = { ...(prefs.sync.handles ?? {}), [source]: trimmed };
-    await setPrefs({ sync: { handles: nextHandles } });
-  } catch (err) {
-    log.warn("[pond refresh:signin] writeStoredHandle failed", source, err);
-  }
-}
-
-// Probe the hidden window for the user's handle off the top-nav profile link; null when unauth.
-export async function probeUserHandle(source: Source): Promise<string | null> {
-  const lease = await leaseWindow(source);
+  partition?: string,
+): Promise<string | null> {
+  const lease = await leaseWindow(source, { partition });
   try {
     const url = probeUrlForSource(source);
     const navOk = await navigateWithTimeout(lease.win, url, NAV_TIMEOUT_MS);
@@ -144,6 +145,14 @@ export async function probeUserHandle(source: Source): Promise<string | null> {
 function probeUrlForSource(source: Source): string {
   if (source === "tiktok") return "https://www.tiktok.com/";
   if (source === "arena") return "https://www.are.na/";
+  // /home redirects signed-out sessions to the login flow, which the
+  // auth-wall check catches cleanly.
+  if (source === "twitter") return "https://x.com/home";
+  if (source === "instagram") return "https://www.instagram.com/";
+  if (source === "pinterest") return "https://www.pinterest.com/";
+  // The account settings page shows the channel handle; signed-out it
+  // redirects to accounts.google.com, which reads as an auth wall.
+  if (source === "youtube") return "https://www.youtube.com/account";
   return homeUrlForSource(source);
 }
 
@@ -154,11 +163,18 @@ function buildProbeExpression(source: Source): string {
 
 // Per-source auth-cookie detection lives on each extractor.
 function isAuthCookie(source: Source, cookie: Cookie): boolean {
-  return extractorFor(source)?.authCookies(cookie.name) ?? false;
+  return isAuthCookieName(source, cookie.name);
 }
 
-async function listCookiesForSource(source: Source): Promise<Cookie[]> {
-  const persistent = session.fromPartition(PARTITION);
+export function isAuthCookieName(source: Source, name: string): boolean {
+  return extractorFor(source)?.authCookies(name) ?? false;
+}
+
+export async function listCookiesForSource(
+  source: Source,
+  partition: string,
+): Promise<Cookie[]> {
+  const persistent = session.fromPartition(partition);
   const domain = primaryDomainForSource(source);
   if (!domain) return [];
   const host = domain.replace(/^\./, "").toLowerCase();

@@ -148,6 +148,7 @@ export async function enqueueSavesBulk(
       id,
       source: c.source,
       sourceId: c.sourceId,
+      accountId: opts.accountId ?? null,
       url: c.url,
       status: "ingesting",
       ingestStartedAt: now,

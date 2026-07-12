@@ -1,54 +1,24 @@
 import {
   IconSparkle3Fill18 as Ask,
   IconArchivePlusFill18 as New,
-  IconGear3Fill18 as SettingsIcon,
-  IconGlobeFill18 as SourcesIcon,
   IconSizeFill18 as ViewIcon,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { motion } from "motion/react";
-import { Fragment } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
-import { usePonds } from "@/hooks/use-ponds";
 import { gentleSpring } from "@/lib/ui/motion";
-import { glyphKind, PondGlyph } from "@/lib/ui/pond-icons";
 import styles from "./styles.module.css";
 
 export function NavContent() {
   const dock = useDock();
   const agentAvailable = useAgentAvailable();
-  const { active } = usePonds();
 
   return (
     <div className={styles.row}>
-      <button
-        type="button"
-        className={styles["library-trigger"]}
-        aria-label={`Library menu (${active?.name ?? "Library"})`}
-        onClick={dock.openLibrary}
-      >
-        <span
-          className={styles.glyph}
-          data-icon={
-            active && glyphKind(active.avatar) === "icon" ? true : undefined
-          }
-          style={{ background: active?.color ?? undefined }}
-        >
-          {active ? (
-            <PondGlyph
-              avatar={active.avatar}
-              name={active.name}
-              iconSize={16}
-            />
-          ) : (
-            "P"
-          )}
-        </span>
-      </button>
       <button
         type="button"
         className={styles.item}
@@ -58,59 +28,6 @@ export function NavContent() {
         <New />
       </button>
 
-      <Tooltip label="Settings" side="top">
-        <Link
-          to="/settings"
-          className={styles.item}
-          aria-label="Settings"
-          data-status={dock.isTabActive("settings") ? "active" : undefined}
-        >
-          <SettingsIcon />
-        </Link>
-      </Tooltip>
-
-      <span className={styles.separator} aria-hidden />
-
-      {NAV_TABS.map((tab) => {
-        const active = dock.isTabActive(tab.id);
-        return (
-          <Fragment key={tab.label}>
-            <Link
-              to={tab.to}
-              params={tab.params}
-              className={styles.item}
-              aria-label={tab.label}
-              data-status={active ? "active" : undefined}
-              aria-current={active ? "page" : undefined}
-            >
-              {active ? (
-                <motion.span
-                  layoutId="dock-active-tab"
-                  className={styles.indicator}
-                  transition={gentleSpring}
-                  aria-hidden
-                />
-              ) : null}
-              {tab.icon}
-            </Link>
-            {tab.id === "library" ? (
-              <Tooltip label="Sources" side="top">
-                <button
-                  type="button"
-                  className={styles.item}
-                  aria-label="Sources"
-                  onClick={dock.openSources}
-                >
-                  <SourcesIcon />
-                </button>
-              </Tooltip>
-            ) : null}
-          </Fragment>
-        );
-      })}
-
-      <span className={styles.separator} aria-hidden />
-
       <Tooltip label="Search" side="top">
         <button
           type="button"
@@ -119,6 +36,17 @@ export function NavContent() {
           onClick={dock.openSearch}
         >
           <Search />
+        </button>
+      </Tooltip>
+
+      <Tooltip label="View options" side="top">
+        <button
+          type="button"
+          className={styles.item}
+          aria-label="View options"
+          onClick={dock.openOptions}
+        >
+          <ViewIcon />
         </button>
       </Tooltip>
 
@@ -148,16 +76,33 @@ export function NavContent() {
         </Tooltip>
       )}
 
-      <Tooltip label="View options" side="top">
-        <button
-          type="button"
-          className={styles.item}
-          aria-label="View options"
-          onClick={dock.openOptions}
-        >
-          <ViewIcon />
-        </button>
-      </Tooltip>
+      <span className={styles.separator} aria-hidden />
+
+      {NAV_TABS.map((tab) => {
+        const active = dock.isTabActive(tab.id);
+        return (
+          <Link
+            key={tab.label}
+            to={tab.to}
+            params={tab.params}
+            className={styles.item}
+            aria-label={tab.label}
+            data-status={active ? "active" : undefined}
+            aria-current={active ? "page" : undefined}
+          >
+            {active ? (
+              <motion.span
+                layoutId="dock-active-tab"
+                className={styles.indicator}
+                transition={gentleSpring}
+                aria-hidden
+              />
+            ) : null}
+            {tab.icon}
+          </Link>
+        );
+      })}
+
     </div>
   );
 }

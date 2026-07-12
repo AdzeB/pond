@@ -24,22 +24,10 @@ const SkillsSection = lazy(() =>
     default: m.SkillsSection,
   })),
 );
-const AccountSection = lazy(() =>
-  import("@/components/settings-account").then((m) => ({
-    default: m.AccountSection,
-  })),
-);
-
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   // Bespoke sections render their own page header (Settings.Header) and full
   // layout. Their title/keywords are inert at render time and exist only so the
   // settings search can index them at the section level.
-  account: {
-    component: AccountSection,
-    title: "Account",
-    description: "Your Pond's name, icon, and color.",
-    keywords: ["profile", "avatar", "icon", "emoji", "color", "name", "rename"],
-  },
   general: generalSection,
   appearance: appearanceSection,
   tags: {

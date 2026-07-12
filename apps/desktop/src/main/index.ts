@@ -21,6 +21,7 @@ import {
   stopStorageWatcher,
 } from "./core/storage-watcher";
 import {
+  migrateLegacySyncPrefs,
   recoverInterruptedSyncs,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
@@ -38,11 +39,6 @@ import { registerIpc } from "./ipc";
 import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
-import {
-  pruneMissingLibraries,
-  rememberLibrary,
-  syncIdentityWithBundle,
-} from "./lib/library-recents";
 import { installAppMenu, setMenuRecents } from "./menu";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
@@ -174,14 +170,10 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     await syncLibraryRootMetadata();
-    const active = libraryRoot();
-    // Don't list a not-yet-created library; we remember it on first write.
-    if (existsSync(active)) {
-      rememberLibrary(active);
-      syncIdentityWithBundle(active);
+    // Don't snapshot a not-yet-created library; it materializes on first write.
+    if (existsSync(libraryRoot())) {
       snapshotBundleJsons();
     }
-    pruneMissingLibraries(active);
   } catch (err) {
     log.warn("[pond] recording active library failed", err);
   }
@@ -210,6 +202,13 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] http server failed to start", err);
   }
 
+  // Legacy single-account prefs must fold into the account registry before
+  // recovery/crons touch per-account sync state.
+  try {
+    await migrateLegacySyncPrefs();
+  } catch (err) {
+    log.warn("[pond] legacy sync-prefs migration failed", err);
+  }
   void recoverInterruptedSyncs().catch((err) =>
     log.warn("[pond] interrupted-sync recovery failed", err),
   );

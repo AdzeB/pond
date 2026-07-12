@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { useEffect, useState } from "react";
-import { useSyncBySource } from "@/stores/sync-monitor";
+import { useSyncByAccount } from "@/stores/sync-monitor";
 
 // Mirrors the main-process SyncOutcome so the renderer never imports across IPC.
 type SyncOutcome =
@@ -16,6 +16,7 @@ export interface SyncRun {
   id: number;
   ts: number;
   source: Source;
+  accountId: string | null;
   trigger: string;
   outcome: SyncOutcome;
   durationMs: number;
@@ -29,15 +30,23 @@ export interface SyncRun {
   watchdogTripped: boolean;
 }
 
-// Recorded sync runs for one source, newest first. Re-fetches whenever the
-// source's live state changes so a run that just finished shows up immediately.
+// Recorded sync runs for one account, newest first. Re-fetches whenever the
+// account's live state changes so a run that just finished shows up
+// immediately. Passing no accountId returns every run for the source
+// (including pre-multi-account rows with no attribution).
 export function useSyncHistory(
   source: Source,
   limit = 10,
+  accountId?: string,
 ): { runs: SyncRun[]; loading: boolean } {
   const [runs, setRuns] = useState<SyncRun[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const liveState = useSyncBySource()[source]?.state;
+  const byAccount = useSyncByAccount();
+  const liveState = accountId
+    ? byAccount[accountId]?.state
+    : Object.values(byAccount).find(
+        (s) => s.source === source && s.state === "running",
+      )?.state;
 
   // liveState is a refetch trigger, not read in the effect: re-pull history
   // whenever a run starts/finishes so the timeline stays current.
@@ -49,6 +58,7 @@ export function useSyncHistory(
         const res = (await window.pond.query("sync.history", {
           source,
           limit,
+          ...(accountId ? { accountId } : {}),
         })) as { runs: SyncRun[] };
         if (!cancelled) setRuns(res?.runs ?? []);
       } catch {
@@ -60,7 +70,7 @@ export function useSyncHistory(
     return () => {
       cancelled = true;
     };
-  }, [source, limit, liveState]);
+  }, [source, accountId, limit, liveState]);
 
   return { runs, loading: !loaded };
 }

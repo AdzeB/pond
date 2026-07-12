@@ -8,14 +8,7 @@ import { Store } from "@tanstack/store";
 //
 // Lives in a store (not component state) so surfaces outside the dock — e.g.
 // the application menu — can open a view without threading callbacks.
-export type DockMode =
-  | "nav"
-  | "ask"
-  | "search"
-  | "new"
-  | "options"
-  | "library"
-  | "sources";
+export type DockMode = "nav" | "ask" | "search" | "new" | "options";
 
 const store = new Store<{ mode: DockMode }>({ mode: "nav" });
 

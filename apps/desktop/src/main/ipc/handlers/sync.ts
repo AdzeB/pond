@@ -8,24 +8,32 @@ import {
 } from "../../core/pipeline/rate-governor";
 import {
   cancelSync,
-  getSourceSync,
+  getAccountSync,
   isSyncing,
+  syncAccount,
   syncAllSources,
-  syncSource,
 } from "../../core/sync";
+import { getWatch, getWatchSync } from "../../core/sync/watches";
+import { watchNow } from "../../core/watch/run";
 import { safeHandle } from "../helpers";
 
 export function registerSyncHandlers(): void {
   safeHandle(
     IPC.syncRunNow,
-    async (_, source: string, opts?: { forceFull?: boolean }) => {
-      const src = source as Source;
-      if (isSyncing(src)) {
+    async (_, accountId: string, opts?: { forceFull?: boolean }) => {
+      const id = String(accountId);
+      if (isSyncing(id)) {
         return { ok: false as const, reason: "already_running" as const };
+      }
+      // Watch ids share this entry point (the renderer treats watches as
+      // accounts); route them to the watch engine.
+      if (await getWatch(id)) {
+        void watchNow(id, { trigger: "manual" });
+        return { ok: true as const };
       }
       // forceFull is the "Full re-sync" escape hatch: ignore the incremental
       // watermark and walk the whole remote list (drift recovery).
-      void syncSource(src, {
+      void syncAccount(id, {
         trigger: "manual",
         forceFull: opts?.forceFull ?? false,
       });
@@ -33,12 +41,14 @@ export function registerSyncHandlers(): void {
     },
   );
 
-  safeHandle(IPC.syncStatus, async (_, source: string) => {
-    const src = source as Source;
-    const cfg = await getSourceSync(src);
+  safeHandle(IPC.syncStatus, async (_, accountId: string) => {
+    const id = String(accountId);
+    const cfg = (await getWatch(id))
+      ? await getWatchSync(id)
+      : await getAccountSync(id);
     return {
       ok: true as const,
-      running: isSyncing(src),
+      running: isSyncing(id),
       lastSyncedAt: cfg.lastSyncedAt,
       lastError: cfg.lastError,
     };
@@ -52,10 +62,10 @@ export function registerSyncHandlers(): void {
     return { ok: true as const };
   });
 
-  safeHandle(IPC.syncCancel, async (_, source: string) => {
-    const src = source as Source;
-    const running = isSyncing(src);
-    cancelSync(src);
+  safeHandle(IPC.syncCancel, async (_, accountId: string) => {
+    const id = String(accountId);
+    const running = isSyncing(id);
+    cancelSync(id);
     return { ok: true as const, running };
   });
 

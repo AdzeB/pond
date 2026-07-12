@@ -1,17 +1,27 @@
-import type { Source } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import log from "electron-log/main.js";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
-import { isSourceConnected } from "../refresh/scrape-window";
+import { isAccountConnected } from "../refresh/scrape-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
+import { ensureAccountHandle } from "./account-key";
+import {
+  getAccount,
+  getAccountSync,
+  listAccounts,
+  listAccountsForSource,
+  patchAccountSync,
+} from "./accounts";
 import { LIST_HARVEST_SOURCES, syncListSource } from "./run-list";
 import { syncTwitter } from "./run-twitter";
-import { getSourceSync, patchSourceSync } from "./sync-baseline";
 import { emit, inFlight } from "./sync-status";
 
-export { getSourceSync } from "./sync-baseline";
+export { getAccountSync } from "./accounts";
+export { migrateLegacySyncPrefs } from "./migrate-legacy";
 export {
+  cancelAllSyncs,
   cancelSync,
+  isSourceSyncing,
   isSyncing,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
@@ -19,7 +29,7 @@ export {
 
 interface SyncOptions {
   trigger?: "manual" | "cron";
-  // Cap on new items enqueued per source; the full list is still walked.
+  // Cap on new items enqueued per account; the full list is still walked.
   maxItems?: number;
   // Ignore the incremental watermark and walk the whole remote list (loads the
   // full known-id set, disables early-stop). For drift recovery.
@@ -53,35 +63,72 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "tiktok",
 ];
 
+export function isSyncableSource(source: Source): boolean {
+  return SYNCABLE_SOURCES.includes(source);
+}
+
 export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
+  const accounts = (await listAccounts()).filter((a) =>
+    isSyncableSource(a.source),
+  );
   const connected = await Promise.all(
-    SYNCABLE_SOURCES.map(async (source) =>
-      (await isSourceConnected(source).catch(() => false)) ? source : null,
+    accounts.map(async (account) =>
+      (await isAccountConnected(account).catch(() => false)) ? account : null,
     ),
   );
-  const sources = connected.filter((s): s is Source => s !== null);
-  if (sources.length === 0) return;
-  // Run sources concurrently; real concurrency is bounded by the shared window
-  // pool and the governor. Different sources hit different domains, so cross-
-  // source parallelism doesn't raise per-account risk.
+  const runnable = connected.filter((a): a is ConnectedAccount => a !== null);
+  if (runnable.length === 0) return;
+
+  // Different platforms run concurrently (bounded by the window pool and the
+  // governor), but two accounts on the SAME platform run back to back: rate
+  // limits are largely IP-based and shared, so simultaneous same-domain runs
+  // only raise risk without adding throughput.
+  const bySource = new Map<Source, ConnectedAccount[]>();
+  for (const account of runnable) {
+    const list = bySource.get(account.source) ?? [];
+    list.push(account);
+    bySource.set(account.source, list);
+  }
   await Promise.all(
-    sources.map((source) =>
-      syncSource(source, opts).catch((err) =>
-        log.warn("[pond sync] syncSource threw", source, err),
-      ),
-    ),
+    Array.from(bySource.values()).map(async (group) => {
+      for (const account of group) {
+        await syncAccount(account.id, opts).catch((err) =>
+          log.warn("[pond sync] syncAccount threw", account.id, err),
+        );
+      }
+    }),
   );
 }
 
+// Convenience for per-platform triggers (menu, deep links): sync every
+// connected account on the source, sequentially.
 export async function syncSource(
   source: Source,
   opts: SyncOptions = {},
 ): Promise<void> {
-  const existing = inFlight.get(source);
+  const accounts = await listAccountsForSource(source);
+  for (const account of accounts) {
+    await syncAccount(account.id, opts).catch((err) =>
+      log.warn("[pond sync] syncAccount threw", account.id, err),
+    );
+  }
+}
+
+export async function syncAccount(
+  accountId: string,
+  opts: SyncOptions = {},
+): Promise<void> {
+  const account = await getAccount(accountId);
+  if (!account) {
+    log.warn("[pond sync] unknown account, skipping", accountId);
+    return;
+  }
+  const { source } = account;
+  const existing = inFlight.get(accountId);
   if (existing) {
     const ageSec = Math.round((Date.now() - existing.startedAt) / 1000);
     log.info(
-      `[pond sync] already running (${ageSec}s), ignoring ${source} (${opts.trigger ?? "manual"})`,
+      `[pond sync] already running (${ageSec}s), ignoring ${source}/${accountId} (${opts.trigger ?? "manual"})`,
     );
     return;
   }
@@ -92,6 +139,7 @@ export async function syncSource(
       opts.trigger ?? "manual",
     );
     emit({
+      accountId,
       source,
       state: "error",
       message: "Paused. Pond storage cap reached. Free space or raise the cap.",
@@ -104,42 +152,55 @@ export async function syncSource(
   const watchdog = setTimeout(() => {
     watchdogTripped = true;
     log.warn(
-      `[pond sync] watchdog tripped for ${source} after ${Math.round(SYNC_WATCHDOG_MS[source] / 60_000)}m; aborting`,
+      `[pond sync] watchdog tripped for ${source}/${accountId} after ${Math.round(SYNC_WATCHDOG_MS[source] / 60_000)}m; aborting`,
     );
     controller.abort();
   }, SYNC_WATCHDOG_MS[source]);
   const startedAt = Date.now();
-  inFlight.set(source, {
+  inFlight.set(accountId, {
     controller,
     startedAt,
     watchdog,
+    source,
   });
   // Persist an in-flight marker so a crash/force-quit mid-run is recoverable on
   // next launch (see recoverInterruptedSyncs). Best-effort; never block the run.
-  void patchSourceSync(source, {
+  void patchAccountSync(accountId, {
     runningSince: new Date(startedAt).toISOString(),
   }).catch(() => {});
   // One wide event per sync run, mutated then committed in the finally.
   const ev: SyncRunEvent = startSyncEvent({
     source,
+    accountId,
     trigger: opts.trigger ?? "manual",
     outcome: "ok",
   });
-  emit({ source, state: "running", message: "Starting…" });
+  emit({ accountId, source, state: "running", message: "Starting…" });
   try {
+    // Learn the account's handle when it's still unknown (one probe, then
+    // cached forever). Sync itself doesn't need it, but session matching and
+    // the Sources page profile picture do.
+    await ensureAccountHandle(account);
     if (source === "twitter") {
-      await syncTwitter(controller.signal, ev, opts.maxItems, opts.forceFull);
+      await syncTwitter(
+        account,
+        controller.signal,
+        ev,
+        opts.maxItems,
+        opts.forceFull,
+      );
     } else if (LIST_HARVEST_SOURCES.has(source)) {
       await syncListSource(
-        source,
+        account,
         controller.signal,
         ev,
         opts.maxItems,
         opts.forceFull,
       );
     } else {
-      await patchSourceSync(source, { lastError: "unsupported" });
+      await patchAccountSync(accountId, { lastError: "unsupported" });
       emit({
+        accountId,
         source,
         state: "error",
         message: "This source doesn't support background sync yet.",
@@ -152,8 +213,9 @@ export async function syncSource(
     if (controller.signal.aborted) {
       ev.outcome = "aborted";
       // Push an explicit idle so the UI clears its spinner; watchdog reports an error.
-      const cfg = await getSourceSync(source);
+      const cfg = await getAccountSync(accountId);
       emit({
+        accountId,
         source,
         state: watchdogTripped ? "error" : "idle",
         message: watchdogTripped ? "Sync timed out." : "Sync stopped.",
@@ -163,9 +225,10 @@ export async function syncSource(
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    log.error("[pond sync] fatal error", source, err);
-    await patchSourceSync(source, { lastError: msg });
+    log.error("[pond sync] fatal error", source, accountId, err);
+    await patchAccountSync(accountId, { lastError: msg });
     emit({
+      accountId,
       source,
       state: "error",
       message: msg,
@@ -174,11 +237,11 @@ export async function syncSource(
     ev.outcome = "error";
     ev.error = toErrorInfo(err);
   } finally {
-    const entry = inFlight.get(source);
+    const entry = inFlight.get(accountId);
     if (entry) clearTimeout(entry.watchdog);
-    inFlight.delete(source);
+    inFlight.delete(accountId);
     // Clear the persisted in-flight marker; the run reached a terminal state.
-    void patchSourceSync(source, { runningSince: null }).catch(() => {});
+    void patchAccountSync(accountId, { runningSince: null }).catch(() => {});
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
     ev.watchdogTripped = watchdogTripped;
@@ -187,21 +250,23 @@ export async function syncSource(
   }
 }
 
-// On startup, a source still flagged `runningSince` was interrupted by a crash
-// (a clean finish clears it). Clear the stale marker and record a lastError so
-// the UI doesn't show a stuck spinner; re-running is safe (idempotent watermarks).
-export async function recoverInterruptedSyncs(): Promise<Source[]> {
-  const recovered: Source[] = [];
-  for (const source of SYNCABLE_SOURCES) {
-    const cfg = await getSourceSync(source);
+// On startup, an account still flagged `runningSince` was interrupted by a
+// crash (a clean finish clears it). Clear the stale marker and record a
+// lastError so the UI doesn't show a stuck spinner; re-running is safe
+// (idempotent watermarks).
+export async function recoverInterruptedSyncs(): Promise<string[]> {
+  const recovered: string[] = [];
+  for (const account of await listAccounts()) {
+    const cfg = await getAccountSync(account.id);
     if (!cfg.runningSince) continue;
-    recovered.push(source);
-    await patchSourceSync(source, {
+    recovered.push(account.id);
+    await patchAccountSync(account.id, {
       runningSince: null,
       lastError: "interrupted",
     }).catch(() => {});
     emit({
-      source,
+      accountId: account.id,
+      source: account.source,
       state: "idle",
       message: "Previous sync was interrupted.",
       lastSyncedAt: cfg.lastSyncedAt,

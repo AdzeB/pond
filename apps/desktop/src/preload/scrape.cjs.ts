@@ -166,7 +166,8 @@ const COSMOS_HOOK = `
     const isCosmosGraphqlUrl = (u) => {
       try {
         if (typeof u !== "string") return false;
-        return /(^|\\.)api\\.cosmos\\.so\\/graphql/.test(u);
+        // Matches bare hosts and full URLs ("https://api.cosmos.so/graphql").
+        return /(^|[./])api\\.cosmos\\.so\\/graphql/.test(u);
       } catch (e) {
         return false;
       }

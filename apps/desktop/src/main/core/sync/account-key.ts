@@ -1,10 +1,15 @@
-import { type Source, saves } from "@pond/schema/db";
+import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { extractorFor } from "../pipeline/extractors";
-import { getPrefs, setPrefs } from "../prefs";
-import { probeUserHandle, readStoredHandle } from "../refresh/scrape-window";
+import { probeUserHandle } from "../refresh/scrape-window";
+import {
+  listAccountsForSource,
+  normalizeHandle,
+  partitionForAccount,
+  patchAccount,
+} from "./accounts";
 
 export async function inferAccountKey(source: Source): Promise<string | null> {
   const db = await getDb();
@@ -40,11 +45,14 @@ function isCachedHandleValid(source: Source, handle: string): boolean {
   return fn([handle]) != null;
 }
 
-// Resolve the user's handle (cosmos/arena/tiktok): cache → DB inference → hidden-window probe.
-export async function resolveAccountKey(
-  source: Source,
+// Resolve the account's handle (cosmos/arena/tiktok): registry cache → DB
+// inference (only safe with a single account) → hidden-window probe on the
+// account's own partition. A resolved handle is persisted onto the account.
+export async function resolveAccountHandle(
+  account: ConnectedAccount,
 ): Promise<string | null> {
-  const cached = await readStoredHandle(source);
+  const { source } = account;
+  const cached = normalizeHandle(account.handle);
   if (cached && isCachedHandleValid(source, cached)) return cached;
   if (cached) {
     log.info(
@@ -52,32 +60,64 @@ export async function resolveAccountKey(
     );
   }
 
-  const inferred = await inferAccountKey(source);
-  if (inferred) {
-    await persistAccountKey(source, inferred);
-    return inferred;
+  // DB inference can't tell accounts apart, so only trust it when this is the
+  // source's sole account.
+  const siblings = await listAccountsForSource(source);
+  if (siblings.length === 1) {
+    const inferred = await inferAccountKey(source);
+    if (inferred) {
+      await persistAccountHandle(account, inferred);
+      return inferred;
+    }
   }
 
   log.info(`[pond sync:${source}] probing hidden window for handle`);
-  const probed = await probeUserHandle(source);
+  const probed = await probeUserHandle(source, partitionForAccount(account.id));
   if (probed) {
     log.info(`[pond sync:${source}] probed handle`, probed);
-    await persistAccountKey(source, probed);
+    await persistAccountHandle(account, probed);
     return probed;
   }
   return null;
 }
 
-async function persistAccountKey(
-  source: Source,
+// Opportunistic handle learn for sources that don't need one to sync
+// (twitter/instagram/pinterest/youtube): probe the signed-in page directly.
+// DB inference is deliberately skipped — bookmark-style saves carry the
+// *author's* handle, which would poison the account. Non-fatal by design;
+// the handle feeds session matching and the Sources page profile picture.
+export async function ensureAccountHandle(
+  account: ConnectedAccount,
+): Promise<void> {
+  if (normalizeHandle(account.handle)) return;
+  if (!extractorFor(account.source)?.probeExpression) return;
+  try {
+    const probed = await probeUserHandle(
+      account.source,
+      partitionForAccount(account.id),
+    );
+    if (!probed) return;
+    log.info(`[pond sync:${account.source}] probed handle`, probed);
+    await persistAccountHandle(account, probed);
+  } catch (err) {
+    log.warn(`[pond sync:${account.source}] handle probe failed`, err);
+  }
+}
+
+async function persistAccountHandle(
+  account: ConnectedAccount,
   handle: string,
 ): Promise<void> {
   try {
-    const prefs = await getPrefs();
-    const nextHandles = { ...(prefs.sync.handles ?? {}), [source]: handle };
-    await setPrefs({ sync: { handles: nextHandles } });
+    // A new handle invalidates the cached profile picture; clearing the
+    // stamps makes the next avatar sweep re-resolve under it.
+    await patchAccount(account.id, {
+      handle,
+      avatarUrl: null,
+      avatarCheckedAt: null,
+    });
   } catch (err) {
-    log.warn(`[pond sync:${source}] failed to cache handle`, err);
+    log.warn(`[pond sync:${account.source}] failed to cache handle`, err);
   }
 }
 

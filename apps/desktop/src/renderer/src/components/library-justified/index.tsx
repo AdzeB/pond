@@ -12,55 +12,33 @@ import { useGridWidth } from "@/stores/shell-state";
 
 const TARGET_ROW_HEIGHT = 180;
 
-// A square placeholder cell (when `placeholderCount > 0`) leads the first row.
-type RowCell = { kind: "placeholder" } | { kind: "save"; save: Save };
-
 function packRows(
   saves: ReadonlyArray<Save>,
   containerWidth: number,
   targetHeight: number,
   gap: number,
   chromeHeight: number,
-  placeholderCount: number,
 ): PackResult {
-  const hasPlaceholder = placeholderCount > 0;
-  if (containerWidth <= 0 || (saves.length === 0 && !hasPlaceholder)) {
+  if (containerWidth <= 0 || saves.length === 0) {
     return { items: [], totalHeight: 0 };
   }
 
-  const cells: RowCell[] = [];
-  if (hasPlaceholder) cells.push({ kind: "placeholder" });
-  for (const save of saves) cells.push({ kind: "save", save });
-  const aspectOf = (cell: RowCell): number =>
-    cell.kind === "placeholder" ? 1 : aspectFor(cell.save);
-
   const items: PackedItem[] = [];
-  let current: RowCell[] = [];
+  let current: Save[] = [];
   let aspectSum = 0;
   let cursorTop = 0;
 
   const flushRow = (height: number) => {
     let cursorLeft = 0;
-    for (const cell of current) {
-      const width = aspectOf(cell) * height;
-      if (cell.kind === "placeholder") {
-        items.push({
-          kind: "placeholder",
-          count: placeholderCount,
-          width,
-          height,
-          top: cursorTop,
-          left: cursorLeft,
-        });
-      } else {
-        items.push({
-          save: cell.save,
-          width,
-          height,
-          top: cursorTop,
-          left: cursorLeft,
-        });
-      }
+    for (const save of current) {
+      const width = aspectFor(save) * height;
+      items.push({
+        save,
+        width,
+        height,
+        top: cursorTop,
+        left: cursorLeft,
+      });
       cursorLeft += width + gap;
     }
     // Advance past media + the meta block; without chromeHeight the next row overlaps it.
@@ -69,9 +47,9 @@ function packRows(
     aspectSum = 0;
   };
 
-  for (const cell of cells) {
-    const aspect = aspectOf(cell);
-    current.push(cell);
+  for (const save of saves) {
+    const aspect = aspectFor(save);
+    current.push(save);
     aspectSum += aspect;
     const naturalWidth = aspectSum * targetHeight + gap * (current.length - 1);
     if (naturalWidth >= containerWidth) {
@@ -87,13 +65,11 @@ function packRows(
 
 interface JustifiedViewProps {
   saves: ReadonlyArray<Save>;
-  placeholderCount: number;
   targetHeight?: number;
 }
 
 export function JustifiedView({
   saves,
-  placeholderCount,
   targetHeight = TARGET_ROW_HEIGHT,
 }: JustifiedViewProps) {
   const width = useGridWidth();
@@ -104,22 +80,8 @@ export function JustifiedView({
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packRows(
-      saves,
-      width,
-      targetHeight,
-      itemGap,
-      chromeHeight,
-      placeholderCount,
-    );
-  }, [
-    saves,
-    width,
-    targetHeight,
-    chromeHeight,
-    aspectVersion,
-    placeholderCount,
-  ]);
+    return packRows(saves, width, targetHeight, itemGap, chromeHeight);
+  }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
 
   return (
     <PackedGrid layout="justified" items={items} totalHeight={totalHeight} />

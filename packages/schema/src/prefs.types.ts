@@ -81,8 +81,100 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
   runningSince: null,
 };
 
+// Legacy single-account-per-source maps. Superseded by `SyncAccounts`; kept in
+// the schema so pre-multi-account prefs still parse and can be migrated (see
+// migrateSyncAccounts in the desktop app).
 export type SyncSources = Partial<Record<Source, SourceSyncPrefs>>;
 export type SyncHandles = Partial<Record<Source, string>>;
+
+// ── Multi-account sync ─────────────────────────────────────────────────────
+// A signed-in platform account. Several accounts may share one `source`
+// (e.g. two Instagram accounts); each owns an isolated cookie partition
+// (derived from `id`) and its own sync cursor.
+export interface ConnectedAccount {
+  /** ULID; stable across renames and also the cookie-partition suffix. */
+  id: string;
+  source: Source;
+  /** Resolved username on the platform; null until first probed. */
+  handle: string | null;
+  /**
+   * Stable platform user id derived from identity cookies (twitter `twid`,
+   * instagram/threads `ds_user_id`); matches a pushed browser session to an
+   * account when the handle can't be probed. Null when the platform exposes
+   * no such cookie.
+   */
+  identityKey: string | null;
+  /** Optional user nickname ("work", "memes"). */
+  label: string | null;
+  /**
+   * Profile picture URL resolved from the platform (og:image or a public
+   * API), best effort; null when the last attempt found nothing.
+   */
+  avatarUrl?: string | null;
+  /** ISO timestamp of the last avatar resolution attempt. */
+  avatarCheckedAt?: string | null;
+  /** ISO timestamp of when the account was connected. */
+  addedAt: string;
+  /** Per-account watermark/cursor state (was per-source). */
+  sync: SourceSyncPrefs;
+}
+
+export type SyncAccounts = Record<string, ConnectedAccount>;
+
+// ── Watching ────────────────────────────────────────────────────────────────
+// A public account Pond polls for new posts — no session or cookie partition
+// of its own. Harvested URLs feed the normal ingest pipeline stamped with the
+// watch's id as accountId, so watched items mix into the library and the
+// account filter isolates them.
+
+/**
+ * What a watch points at. Which kinds apply depends on the source:
+ * Are.na channel/user/group, YouTube channel/playlist, Twitter user/list,
+ * Pinterest user/board, Cosmos user/cluster, TikTok/Instagram user.
+ */
+export type WatchKind =
+  | "channel"
+  | "user"
+  | "group"
+  | "playlist"
+  | "board"
+  | "cluster"
+  | "list";
+
+export interface WatchedAccount {
+  /** ULID; also the accountId stamped on saves harvested from this watch. */
+  id: string;
+  source: Source;
+  /**
+   * Identifying slug, shape depending on kind: a bare handle/slug, a playlist
+   * or list id, `user/board` for Pinterest boards, `user/cluster` for Cosmos
+   * clusters, or `handle/shorts` when a YouTube tab URL was pasted.
+   */
+  handle: string;
+  /**
+   * Resolved at add time (from a pasted URL or an API probe) so checks never
+   * guess. Absent on watches created before kinds existed; runners fall back
+   * to the legacy per-source default.
+   */
+  kind?: WatchKind;
+  /** Optional user nickname. */
+  label: string | null;
+  /** Same as ConnectedAccount: best-effort profile picture URL. */
+  avatarUrl?: string | null;
+  /** ISO timestamp of the last avatar resolution attempt. */
+  avatarCheckedAt?: string | null;
+  /**
+   * Connected account whose session the check rides (auth-walled sources like
+   * Instagram/Twitter). Null for sources with public listings.
+   */
+  via: string | null;
+  /** ISO timestamp of when the watch was added. */
+  addedAt: string;
+  /** Watermark/cursor state, same shape as connected accounts. */
+  sync: SourceSyncPrefs;
+}
+
+export type SyncWatches = Record<string, WatchedAccount>;
 
 // Base color (its lightness picks light/dark), accent, and contrast spread for the ramp.
 export interface ThemeDef {

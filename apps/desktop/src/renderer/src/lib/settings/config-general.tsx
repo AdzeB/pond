@@ -20,9 +20,7 @@ export const generalSection = defineCustomSection({
           options: [
             { value: "continue", label: "Last Screen" },
             { value: "library", label: "Library" },
-            // Stored value stays "sources" (no prefs migration); it routes to
-            // the analytics page now that sources live in the dock tray.
-            { value: "sources", label: "Analytics" },
+            { value: "sources", label: "Sources" },
             { value: "trash", label: "Trash" },
             { value: "settings", label: "Settings" },
           ],

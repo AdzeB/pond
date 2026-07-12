@@ -1,7 +1,6 @@
 import {
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   statSync,
   writeFileSync,
@@ -93,75 +92,4 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
     }
     return { ok: false, reason: "unknown_error" };
   }
-}
-
-// Path markers for synced folders; surfaced in the relocate dialog.
-const CLOUD_MARKERS: ReadonlyArray<{
-  kind: CloudKind;
-  patterns: ReadonlyArray<string>;
-}> = [
-  {
-    kind: "iCloud",
-    patterns: [
-      "/Library/Mobile Documents/com~apple~CloudDocs/",
-      "/Library/Mobile Documents/iCloud~",
-    ],
-  },
-  { kind: "Dropbox", patterns: ["/Dropbox/", "/Dropbox (", "/.dropbox/"] },
-  {
-    kind: "Google Drive",
-    patterns: ["/Google Drive/", "/GoogleDrive/", "/CloudStorage/GoogleDrive-"],
-  },
-  {
-    kind: "OneDrive",
-    patterns: ["/OneDrive/", "/OneDrive - ", "/CloudStorage/OneDrive-"],
-  },
-  { kind: "Box", patterns: ["/Box/", "/Box Sync/"] },
-];
-
-type CloudKind = "iCloud" | "Dropbox" | "Google Drive" | "OneDrive" | "Box";
-
-export function detectCloudKind(absPath: string): CloudKind | null {
-  const norm = absPath.endsWith("/") ? absPath : `${absPath}/`;
-  for (const entry of CLOUD_MARKERS) {
-    if (entry.patterns.some((p) => norm.includes(p))) return entry.kind;
-  }
-  return null;
-}
-
-// Detect an existing Pond library (`items/`, `metadata.json`, or
-// `settings.json`) to default to "adopt".
-interface ExistingLibraryProbe {
-  exists: boolean;
-  hasItemsDir: boolean;
-  hasMetadataFile: boolean;
-  itemCount: number;
-  looksLikePondLibrary: boolean;
-}
-
-export function probeExistingLibrary(absPath: string): ExistingLibraryProbe {
-  const out: ExistingLibraryProbe = {
-    exists: false,
-    hasItemsDir: false,
-    hasMetadataFile: false,
-    itemCount: 0,
-    looksLikePondLibrary: false,
-  };
-  if (!existsSync(absPath)) return out;
-  out.exists = true;
-  const itemsDir = join(absPath, "items");
-  const metadataFile = join(absPath, "metadata.json");
-  const settingsFile = join(absPath, "settings.json");
-  out.hasMetadataFile = existsSync(metadataFile) || existsSync(settingsFile);
-  if (existsSync(itemsDir)) {
-    out.hasItemsDir = true;
-    try {
-      const entries = readdirSync(itemsDir).filter((e) => e.endsWith(".info"));
-      out.itemCount = entries.length;
-    } catch {
-      // Best-effort; a permission error reads the same as an empty folder.
-    }
-  }
-  out.looksLikePondLibrary = out.hasItemsDir || out.hasMetadataFile;
-  return out;
 }

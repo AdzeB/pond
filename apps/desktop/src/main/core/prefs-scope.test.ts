@@ -1,19 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
-  adoptLegacyPondKeys,
-  type PondPrefs,
-  type StoredPrefsV2,
+  mergePondSlice,
+  normalizeStoredPrefs,
   splitPrefsPatch,
 } from "./prefs-scope";
 
 const GREEN = { themeMode: "preset", presetId: "mint" };
 
-function storedWith(app: Record<string, unknown>): StoredPrefsV2 {
-  return { version: 2, app, ponds: {} } as StoredPrefsV2;
-}
-
 describe("splitPrefsPatch", () => {
-  it("routes appearance (preferences) to the pond slice", () => {
+  it("routes appearance (preferences) to the library slice", () => {
     const { app, pond } = splitPrefsPatch({
       preferences: { presetId: "mint" },
       window: { restorePosition: false },
@@ -23,47 +18,75 @@ describe("splitPrefsPatch", () => {
   });
 });
 
-describe("adoptLegacyPondKeys", () => {
-  it("adopts a slice that used to be app-scoped when the bundle lacks it", () => {
-    const stored = storedWith({ preferences: GREEN });
-    const bundle: Partial<PondPrefs> = { sync: {} as PondPrefs["sync"] };
-
-    const { slice, changed } = adoptLegacyPondKeys(bundle, stored, "pond-a");
-    expect(changed).toBe(true);
-    expect(slice.preferences).toEqual(GREEN);
-    // Existing bundle keys are untouched.
-    expect(slice.sync).toBe(bundle.sync);
+describe("normalizeStoredPrefs", () => {
+  it("passes a v3 blob through untouched", () => {
+    const stored = { version: 3 as const, app: { window: {} }, pending: null };
+    expect(normalizeStoredPrefs(stored)).toBe(stored);
   });
 
-  it("never overwrites a value already in the bundle", () => {
-    const stored = storedWith({ preferences: GREEN });
-    const bundle = {
-      preferences: { presetId: "ocean" },
-    } as unknown as Partial<PondPrefs>;
-
-    const { slice, changed } = adoptLegacyPondKeys(bundle, stored, "pond-a");
-    expect(changed).toBe(false);
-    expect(
-      (slice.preferences as unknown as { presetId: string }).presetId,
-    ).toBe("ocean");
-  });
-
-  it("prefers the pond's own legacy entry over the stale app value", () => {
-    const stored = {
+  it("keeps the app slice and unbound entry from a v2 blob", () => {
+    const stored = normalizeStoredPrefs({
       version: 2,
-      app: { preferences: GREEN },
-      ponds: { "pond-a": { preferences: { presetId: "ocean" } } },
-    } as unknown as StoredPrefsV2;
-
-    const { slice, changed } = adoptLegacyPondKeys({}, stored, "pond-a");
-    expect(changed).toBe(true);
-    expect(
-      (slice.preferences as unknown as { presetId: string }).presetId,
-    ).toBe("ocean");
+      app: { window: { restorePosition: false } },
+      ponds: {
+        unbound: { preferences: GREEN },
+        "pond-a": { preferences: { presetId: "ocean" } },
+      },
+    });
+    expect(stored.version).toBe(3);
+    expect(stored.app).toEqual({ window: { restorePosition: false } });
+    // Per-pond entries are dropped; bundles own their slice via settings.json.
+    expect(stored.pending).toEqual({ preferences: GREEN });
   });
 
-  it("reports no change when there is nothing to adopt", () => {
-    const { changed } = adoptLegacyPondKeys({}, storedWith({}), "pond-a");
-    expect(changed).toBe(false);
+  it("falls back to empty slices for unrecognized input", () => {
+    const stored = normalizeStoredPrefs("garbage");
+    expect(stored).toEqual({ version: 3, app: {}, pending: null });
+  });
+});
+
+describe("mergePondSlice (sync account registry)", () => {
+  const account = {
+    id: "01ACCOUNT",
+    source: "twitter",
+    handle: "personal",
+    identityKey: "783214",
+    label: null,
+    addedAt: "2026-01-01T00:00:00.000Z",
+    sync: {
+      lastSyncedAt: null,
+      lastError: null,
+      highWaterMark: null,
+      lastFullSyncAt: null,
+      knownCount: 0,
+      runningSince: null,
+    },
+  };
+
+  it("replaces nested sync records wholesale, so the legacy drain empties them", () => {
+    const base = {
+      sync: {
+        handles: { twitter: "personal" },
+        sources: { twitter: { knownCount: 42 } },
+      },
+    } as Parameters<typeof mergePondSlice>[0];
+    // The one-time migration relies on `{}` clearing the whole map rather
+    // than deep-merging into it.
+    const drained = mergePondSlice(base, {
+      sync: { handles: {}, sources: {} },
+    } as Parameters<typeof mergePondSlice>[1]);
+    expect(drained.sync.handles).toEqual({});
+    expect(drained.sync.sources).toEqual({});
+  });
+
+  it("keeps the account registry intact across unrelated sync patches", () => {
+    const base = {
+      sync: { accounts: { [account.id]: account } },
+    } as unknown as Parameters<typeof mergePondSlice>[0];
+    const next = mergePondSlice(base, {
+      sync: { cron: { enabled: false, intervalHours: 12 } },
+    } as Parameters<typeof mergePondSlice>[1]);
+    expect(next.sync.accounts).toEqual({ [account.id]: account });
+    expect(next.sync.cron).toEqual({ enabled: false, intervalHours: 12 });
   });
 });

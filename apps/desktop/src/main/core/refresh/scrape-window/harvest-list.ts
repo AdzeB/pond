@@ -46,13 +46,17 @@ interface ListHarvestProgress {
 export async function harvestSourceList(
   source: Source,
   args: SourceListArgs,
-  opts: { onProgress?: (p: ListHarvestProgress) => void } = {},
+  opts: {
+    onProgress?: (p: ListHarvestProgress) => void;
+    /** Session partition of the account being synced. */
+    partition?: string;
+  } = {},
 ): Promise<ListHarvestResult> {
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };
   }
-  const lease = await leaseWindow(source);
+  const lease = await leaseWindow(source, { partition: opts.partition });
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
     if (!navOk) {
@@ -234,8 +238,9 @@ function buildListExpressionFor(
 
 export async function harvestYoutubeLikedList(
   args: ListHarvestArgs,
+  opts: { partition?: string } = {},
 ): Promise<ListHarvestResult> {
-  const lease = await leaseWindow("youtube");
+  const lease = await leaseWindow("youtube", { partition: opts.partition });
   try {
     const navOk = await navigateWithTimeout(
       lease.win,

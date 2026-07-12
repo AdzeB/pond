@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { getVideoDownloadPrefs } from "../prefs";
+import { partitionForIngest } from "../sync/accounts";
 import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 import { formatSelector, maxFilesizeArg } from "./yt-dlp-format";
@@ -19,6 +20,8 @@ import { runWithTimeout } from "./yt-dlp-process";
 interface DownloadVideoArgs {
   url: string;
   source: Source | null;
+  /** Connected account that owns the save; picks whose cookies to export. */
+  accountId?: string | null;
   // Abort the in-flight yt-dlp process (e.g. user cancelled the ingest).
   signal?: AbortSignal;
 }
@@ -67,7 +70,10 @@ export async function downloadVideo(
 
   try {
     const prefs = await getVideoDownloadPrefs();
-    cookies = await writeNetscapeCookies();
+    const partition = args.source
+      ? await partitionForIngest(args.source, args.accountId)
+      : undefined;
+    cookies = await writeNetscapeCookies(partition);
     outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
 
     const argv = [

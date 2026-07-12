@@ -77,6 +77,7 @@ export type FieldId =
   | "fileCount"
   | "duration"
   | "creator"
+  | "account"
   | "note"
   | "caption"
   | "transcript"

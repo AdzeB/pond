@@ -1,4 +1,5 @@
 import type { FieldId } from "../types";
+import { account } from "./account";
 import { caption } from "./caption";
 import { color } from "./color";
 import { creator } from "./creator";
@@ -29,6 +30,7 @@ export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   fileCount,
   duration,
   creator,
+  account,
   note,
   caption,
   transcript,

@@ -1,0 +1,117 @@
+import { setTimeout as delay } from "node:timers/promises";
+import type { WatchKind } from "@pond/schema/db";
+import log from "electron-log/main.js";
+import type { WatchEntry, WatchHarvestResult } from "./types";
+
+// Are.na watch listing via the public v3 API — no auth, no window. Supports
+// channels, users, and groups; the kind is resolved at add time (resolve.ts).
+// v2 is being wound down: its user-contents endpoint now 301s to a disabled
+// route that returns 410 Gone.
+
+const API_BASE = "https://api.are.na/v3";
+const REQUEST_TIMEOUT_MS = 15_000;
+const PER_PAGE = 60;
+
+interface ArenaV3Item {
+  id?: number | string | null;
+  base_type?: string | null;
+  type?: string | null;
+  created_at?: string | null;
+  connection?: { connected_at?: string | null } | null;
+}
+
+interface ArenaContentsResponse {
+  data?: ArenaV3Item[] | null;
+}
+
+type FetchResult =
+  | { ok: true; value: ArenaContentsResponse }
+  | { ok: false; status: number };
+
+async function fetchContents(url: string, attempt = 0): Promise<FetchResult> {
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      credentials: "omit",
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (err) {
+    log.warn("[pond watch:arena] fetch failed", url, err);
+    return { ok: false, status: 0 };
+  }
+  if (res.status === 429 && attempt === 0) {
+    const retryAfter = Number(res.headers.get("retry-after") ?? "1");
+    await delay(
+      Number.isFinite(retryAfter) ? Math.max(1_000, retryAfter * 1_000) : 1_000,
+    );
+    return fetchContents(url, attempt + 1);
+  }
+  if (!res.ok) return { ok: false, status: res.status };
+  try {
+    return { ok: true, value: (await res.json()) as ArenaContentsResponse };
+  } catch {
+    return { ok: false, status: res.status };
+  }
+}
+
+function entriesFromContents(value: ArenaContentsResponse): WatchEntry[] {
+  const withTime: Array<{ entry: WatchEntry; at: number }> = [];
+  for (const item of value.data ?? []) {
+    const id = item?.id != null ? String(item.id) : null;
+    if (!id) continue;
+    // Skip nested channels — a channel inside a channel isn't a save.
+    const cls = (item.base_type ?? item.type ?? "").toLowerCase();
+    if (cls === "channel") continue;
+    // Newness is when the block landed in this listing: connected_at for
+    // channel contents, created_at for a user's own activity.
+    const stamp = item.connection?.connected_at ?? item.created_at ?? null;
+    withTime.push({
+      entry: { url: `https://www.are.na/block/${id}`, sourceId: id },
+      at: stamp ? Date.parse(stamp) : 0,
+    });
+  }
+  // v3 within-page order is inconsistent between the channel and user
+  // endpoints; the engine expects newest first (entries[0] = watermark).
+  withTime.sort((a, b) => b.at - a.at);
+  return withTime.map((x) => x.entry);
+}
+
+// Newest additions first: position_desc tracks connection order in channels,
+// created_at_desc tracks activity in user/group feeds.
+function contentsUrl(kind: "channel" | "user" | "group", slug: string): string {
+  const s = encodeURIComponent(slug);
+  if (kind === "channel") {
+    return `${API_BASE}/channels/${s}/contents?per=${PER_PAGE}&sort=position_desc`;
+  }
+  const path = kind === "user" ? "users" : "groups";
+  return `${API_BASE}/${path}/${s}/contents?per=${PER_PAGE}&sort=created_at_desc`;
+}
+
+export async function listArenaWatch(
+  handle: string,
+  kind?: WatchKind,
+): Promise<WatchHarvestResult> {
+  // Kind is pinned at add time; watches created before kinds existed fall
+  // back to the old guess order (channel, then user).
+  const order: Array<"channel" | "user" | "group"> =
+    kind === "user"
+      ? ["user"]
+      : kind === "group"
+        ? ["group"]
+        : kind === "channel"
+          ? ["channel"]
+          : ["channel", "user"];
+
+  let sawRateLimit = false;
+  let allNotFound = true;
+  for (const k of order) {
+    const res = await fetchContents(contentsUrl(k, handle));
+    if (res.ok) return { ok: true, entries: entriesFromContents(res.value) };
+    if (res.status === 429) sawRateLimit = true;
+    if (res.status !== 404) allNotFound = false;
+  }
+  if (sawRateLimit) return { ok: false, reason: "rate_limited" };
+  if (allNotFound) return { ok: false, reason: "not_found" };
+  return { ok: false, reason: "unavailable" };
+}

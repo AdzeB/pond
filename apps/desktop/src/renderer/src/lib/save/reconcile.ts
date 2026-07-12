@@ -60,6 +60,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     id: raw.id,
     source: raw.source ?? "twitter",
     sourceId: raw.sourceId ?? "",
+    accountId: raw.accountId ?? null,
     url: raw.url ?? "",
     title: raw.title ?? null,
     description: raw.description ?? null,

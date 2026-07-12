@@ -206,31 +206,32 @@ const api = {
   },
 
   syncRunNow(
-    source: string,
+    accountId: string,
     opts?: { forceFull?: boolean },
   ): Promise<{ ok: true } | { ok: false; reason: "already_running" }> {
-    return ipcRenderer.invoke(IPC.syncRunNow, source, opts);
+    return ipcRenderer.invoke(IPC.syncRunNow, accountId, opts);
   },
 
-  syncStatus(source: string): Promise<{
+  syncStatus(accountId: string): Promise<{
     ok: boolean;
     running: boolean;
     lastSyncedAt: string | null;
     lastError: string | null;
   }> {
-    return ipcRenderer.invoke(IPC.syncStatus, source);
+    return ipcRenderer.invoke(IPC.syncStatus, accountId);
   },
 
   syncRunAll(opts?: { forceFull?: boolean }): Promise<{ ok: true }> {
     return ipcRenderer.invoke(IPC.syncRunAll, opts);
   },
 
-  syncCancel(source: string): Promise<{ ok: true; running: boolean }> {
-    return ipcRenderer.invoke(IPC.syncCancel, source);
+  syncCancel(accountId: string): Promise<{ ok: true; running: boolean }> {
+    return ipcRenderer.invoke(IPC.syncCancel, accountId);
   },
 
   onSyncStatus(
     cb: (update: {
+      accountId: string;
       source: string;
       state: "idle" | "running" | "done" | "error" | "auth_required" | "paused";
       message?: string;

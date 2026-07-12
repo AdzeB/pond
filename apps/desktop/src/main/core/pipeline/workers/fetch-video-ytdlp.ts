@@ -53,6 +53,7 @@ export async function runFetchVideoYtdlp(
   const dl = await downloadVideo({
     url: target,
     source: save.source,
+    accountId: save.accountId,
     ...(ctx?.signal ? { signal: ctx.signal } : {}),
   });
   if (!dl) {

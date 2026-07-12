@@ -1,27 +1,30 @@
-import { type Source, saves } from "@pond/schema/db";
+import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { enqueueSavesBulk } from "../pipeline/enqueue-bulk";
 import { harvestTwitterBookmarks } from "../refresh/scrape-window";
+import { partitionForAccount } from "./accounts";
 import {
   loadSyncBaseline,
-  patchSourceSync,
+  patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
 import { emit } from "./sync-status";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export async function syncTwitter(
+  account: ConnectedAccount,
   signal: AbortSignal,
   ev: SyncRunEvent,
   maxItems?: number,
   forceFull = false,
 ): Promise<void> {
   const source: Source = "twitter";
+  const accountId = account.id;
   const db = await getDb();
-  const baseline = await loadSyncBaseline(source, forceFull);
+  const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
   // Previously-failed tweets we can reseed from GraphQL data when they reappear.
   const failedRows = await db
@@ -30,9 +33,10 @@ export async function syncTwitter(
     .where(and(eq(saves.source, source), eq(saves.status, "failed")));
   const failedSourceIds = new Set<string>(failedRows.map((r) => r.sourceId));
   log.info(
-    `[pond sync:twitter] starting; ${baseline.total} tweets already in library (${failedSourceIds.size} failed, ${baseline.full ? "full" : `incremental ${knownIds.size}-id window`})`,
+    `[pond sync:twitter] starting for @${account.handle ?? accountId}; ${baseline.total} tweets already in library (${failedSourceIds.size} failed, ${baseline.full ? "full" : `incremental ${knownIds.size}-id window`})`,
   );
   emit({
+    accountId,
     source,
     state: "running",
     message: `Looking at your Twitter bookmarks…`,
@@ -45,6 +49,7 @@ export async function syncTwitter(
       knownIds: baseline.full ? [] : Array.from(knownIds),
     },
     {
+      partition: partitionForAccount(accountId),
       onProgress: (p) => {
         if (signal.aborted) return;
         const message =
@@ -53,7 +58,7 @@ export async function syncTwitter(
             : p.fresh > 0
               ? `Found ${p.fresh} new bookmark${p.fresh === 1 ? "" : "s"}…`
               : `Scanned ${p.seen} bookmark${p.seen === 1 ? "" : "s"}…`;
-        emit({ source, state: "running", message });
+        emit({ accountId, source, state: "running", message });
       },
     },
   );
@@ -64,8 +69,9 @@ export async function syncTwitter(
 
   if (!harvest.ok) {
     if (harvest.reason === "auth_required") {
-      await patchSourceSync(source, { lastError: "auth_required" });
+      await patchAccountSync(accountId, { lastError: "auth_required" });
       emit({
+        accountId,
         source,
         state: "auth_required",
         message: "Sign in to Twitter to enable background sync.",
@@ -78,8 +84,9 @@ export async function syncTwitter(
       const waitMin = harvest.retryAfterSec
         ? Math.max(1, Math.round(harvest.retryAfterSec / 60))
         : null;
-      await patchSourceSync(source, { lastError: "rate_limited" });
+      await patchAccountSync(accountId, { lastError: "rate_limited" });
       emit({
+        accountId,
         source,
         state: "paused",
         message: waitMin
@@ -90,8 +97,9 @@ export async function syncTwitter(
       ev.outcome = "rate_limited";
       return;
     }
-    await patchSourceSync(source, { lastError: harvest.reason });
+    await patchAccountSync(accountId, { lastError: harvest.reason });
     emit({
+      accountId,
       source,
       state: "error",
       message: `Couldn't read bookmarks: ${harvest.reason}.`,
@@ -121,12 +129,13 @@ export async function syncTwitter(
     recovery: recovery.length,
   };
   if (total === 0) {
-    const lastSyncedAt = await persistWatermark(source, {
+    const lastSyncedAt = await persistWatermark(accountId, {
       full: baseline.full,
       newestId: null,
       total: baseline.total,
     });
     emit({
+      accountId,
       source,
       state: "done",
       message: "All caught up.",
@@ -142,6 +151,7 @@ export async function syncTwitter(
     `[pond sync:twitter] enqueueing ${fresh.length} new + ${recovery.length} recover`,
   );
   emit({
+    accountId,
     source,
     state: "running",
     message:
@@ -160,7 +170,7 @@ export async function syncTwitter(
       const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
       return { url: entry.url, ...(seed ? { seed } : {}) };
     }),
-    { trigger: "sync:twitter" },
+    { trigger: "sync:twitter", accountId },
   );
   const succeeded = bulk.created + bulk.existing;
   ev.enqueue = { succeeded, failed: bulk.failed };
@@ -169,12 +179,13 @@ export async function syncTwitter(
     return;
   }
 
-  const lastSyncedAt = await persistWatermark(source, {
+  const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,
     newestId: fresh[0]?.tweetId ?? null,
     total: baseline.total + bulk.created,
   });
   emit({
+    accountId,
     source,
     state: "done",
     message:

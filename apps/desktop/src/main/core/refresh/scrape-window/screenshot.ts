@@ -1,6 +1,7 @@
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
+import { partitionForIngest } from "../../sync/accounts";
 import { adapt, buildExpression } from "../harvest/twitter";
 import type { ScrapedHarvest } from "../harvest/types";
 import { NAV_TIMEOUT_MS } from "./constants";
@@ -43,6 +44,8 @@ interface TweetDualScreenshotArgs {
   sourceId: string;
   // Harvest media off the loaded page (once); used by the quote walker.
   harvestMedia?: boolean;
+  /** Connected account whose session should load the page, when known. */
+  accountId?: string | null;
 }
 
 interface TweetDualScreenshotResult {
@@ -59,7 +62,8 @@ interface TweetDualScreenshotResult {
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
-  const lease = await leaseWindow("twitter");
+  const partition = await partitionForIngest("twitter", args.accountId);
+  const lease = await leaseWindow("twitter", { partition });
   let restoreEmulation: (() => Promise<void>) | null = null;
   try {
     restoreEmulation = await emulateColorScheme(lease.win, "light");
