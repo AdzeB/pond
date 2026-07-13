@@ -1,1 +1,1 @@
-export { IconCaretRightFill12 } from "../../generated/fill/12/IconCaretRightFill12";
+export * from "nucleo-ui-fill-12";

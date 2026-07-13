@@ -1,6 +1,4 @@
-/* The page is the vacuum: a full-window backdrop with the control panel on
-   the left. The dock itself is the app's real, globally-mounted pill, which
-   floats bottom-center above this page like on any other route. */
+/* The dock is the app's real, globally-mounted pill floating bottom-center above this page. */
 .page {
   position: relative;
   width: 100%;

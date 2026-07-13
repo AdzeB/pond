@@ -1,31 +1,8 @@
-/* Flat "view options" panel morphed out of the pill. Sized to the dock's
-   resting nav width (--dock-card-width) so the pill only morphs vertically;
-   the pill supplies the surface, so no extra ring here. */
+/* The pill supplies the surface, so no extra ring here. */
 .card {
   display: flex;
   flex-direction: column;
   gap: 0;
   width: var(--dock-card-width, 280px);
   padding: 4px;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 24px;
-  padding: 4px 8px 0;
-}
-
-.header-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
-.divider {
-  height: 0;
-  margin: 4px 8px;
-  border: 0;
-  border-top: 1px solid var(--ds-gray-a3);
 }

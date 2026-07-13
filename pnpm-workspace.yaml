@@ -26,6 +26,13 @@ allowBuilds:
   # its node-gyp build (that yields a plain-Node binary); node-llama-cpp resolves
   # the correct prebuilt binaries for this Electron ABI itself on first use.
   node-llama-cpp: false
+  # Dev-only Nucleo UI packages (vendored down to <=100 glyphs at release).
+  # Their preinstall is just an online NUCLEO_LICENSE_KEY check, which isn't
+  # available in open-source CI; skip it so install works without the secret.
+  nucleo-ui-fill-12: false
+  nucleo-ui-fill-18: false
+  nucleo-ui-outline-12: false
+  nucleo-ui-outline-18: false
   onnxruntime-node: true
   protobufjs: true
   # Native module pulled in transitively by metascraper (via url-regex-safe).

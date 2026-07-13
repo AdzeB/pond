@@ -13,10 +13,7 @@ import { dockMode, useDockMode } from "@/stores/dock-mode";
 import { selection, useSelectionSize } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-// A blank room for the dock. The page renders only a backdrop and this control
-// panel; the real, globally-mounted Dock.Root floats above it (as it does on
-// every route), so every button here drives the live stores and you watch the
-// actual transitions — pill morph, content swap, sources stages — in a vacuum.
+/** Renders only a backdrop and control panel; the globally-mounted Dock.Root floats above, so every button drives the live stores and plays real transitions. */
 
 const ASK_QUESTION = "mountain landscapes at golden hour";
 
@@ -71,12 +68,13 @@ const VIEWS = [
   { id: "ask", label: "Ask composer" },
   { id: "search", label: "Search" },
   { id: "new", label: "New save" },
-  { id: "options", label: "Options" },
+  { id: "layout", label: "Layout" },
+  { id: "zoom", label: "Zoom" },
+  { id: "sort", label: "Sort" },
+  { id: "display", label: "Display" },
 ] as const;
 
-// The status pill only shows while the dock rests in nav with an active ask,
-// so each scenario seeds the store and collapses the dock — you see the
-// nav → status morph play immediately.
+/** The status pill only shows while the dock rests in nav with an active ask, so each scenario seeds the store and collapses the dock. */
 const STATUS_SCENARIOS = [
   { id: "thinking", label: "Thinking", seed: seedAskThinking },
   { id: "results", label: "Results found", seed: seedAskResults },
@@ -98,9 +96,7 @@ export function DockPlayground() {
   const [backdrop, setBackdrop] = useState<Backdrop>("soft");
   const [speed, setSpeed] = useState(1);
 
-  // Leave the live stores exactly as we found them: the playground borrows the
-  // real dock, so stale seeds/selection/slow-motion must not follow the user
-  // back into the app.
+  /** The playground borrows the real dock, so stale seeds, selection, and slow-motion must not follow the user back into the app. */
   useEffect(() => {
     return () => {
       motionScale.set(1);

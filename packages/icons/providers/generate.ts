@@ -2,12 +2,10 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Vendors AI provider brand marks from models.dev as currentColor React
-// components (the same local-brand pattern as social-media/custom). Run with
-// `pnpm --filter @pond/icons generate:providers`.
+/** Vendors AI provider brand marks from models.dev as currentColor React components; run with `pnpm --filter @pond/icons generate:providers`. */
 const here = dirname(fileURLToPath(import.meta.url));
 
-// Our id -> models.dev logo id (mostly identical; Together differs).
+/** Our id -> models.dev logo id; Together's logo id differs. */
 const PROVIDERS: Record<string, { logo: string; label: string }> = {
   openai: { logo: "openai", label: "OpenAI" },
   anthropic: { logo: "anthropic", label: "Anthropic" },
@@ -69,8 +67,7 @@ for (const [id, { logo, label }] of Object.entries(PROVIDERS)) {
       const h = rootTag.match(/\bheight="([^"]+)"/)?.[1] ?? "24";
       return `0 0 ${w} ${h}`;
     })();
-  // Outline marks set fill="none" and stroke the path; solid marks let paths
-  // carry their own fill. Preserve the root value so we don't fill outlines.
+  /** Outline marks set fill="none" and stroke the path; preserve the root value so outlines aren't filled. */
   const rootFill = rootTag.match(/\bfill="([^"]+)"/)?.[1] ?? "currentColor";
 
   const inner = toJsxAttrs(

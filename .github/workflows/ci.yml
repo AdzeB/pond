@@ -27,9 +27,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Icon allowlist
-        run: pnpm --filter @pond/icons check:allowlist
-
       - name: Generated files are up to date
         run: pnpm generate && git diff --exit-code
 

@@ -2,19 +2,24 @@
 
 Icon barrels for Pond.
 
-## UI icon budget
+## Development
 
-Up to **100** Nucleo UI glyphs are vendored under the open-source license terms.
-The canonical list lives in [`allowlist.json`](./allowlist.json).
+The `fill/*` and `outline/*` barrels re-export the `nucleo-ui-*` npm packages
+directly, so every Nucleo UI glyph is available while developing.
 
-To add a UI icon:
+## Release
 
-1. Remove an existing glyph from `allowlist.json` and delete its generated module.
-2. Add the new glyph via `pnpm --filter @pond/icons generate:icons` (requires a
-   one-time local Nucleo install — see `scripts/generate-icons.mjs`).
-3. Run `pnpm --filter @pond/icons check:allowlist`.
+Before release, swap the npm packages for vendored glyphs so the open-source
+repo only ships the icons Pond actually uses (up to 100 under Nucleo's
+open-source terms):
+
+1. Run `pnpm --filter @pond/icons generate:icons` to extract the used glyphs
+   into committed modules under `generated/` and write `allowlist.json`.
+2. Point the barrels at `generated/` instead of the npm packages.
+3. Drop the `nucleo-ui-*` dependencies and re-enable
+   `pnpm --filter @pond/icons check:allowlist` in CI.
 
 ## Social / brand icons
 
 Icons under `social-media/custom/` are hand-authored brand marks. They are
-**outside** the 100-icon budget and can be added freely.
+independent of Nucleo and can be added freely.

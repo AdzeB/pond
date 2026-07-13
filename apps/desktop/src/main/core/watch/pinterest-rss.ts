@@ -3,10 +3,10 @@ import log from "electron-log/main.js";
 import { sourceIdFromUrl } from "../pipeline/url";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
-// Pinterest watch listing via the public RSS feeds — no session, no window.
-// `pinterest.com/{user}/feed.rss` lists a user's newest pins across boards;
-// `pinterest.com/{user}/{board}.rss` lists one board. Both return ~25 items
-// newest-first with /pin/{id}/ links.
+/**
+ * Pinterest watch listing via the public RSS feeds — no session, no window.
+ * @remarks `{user}/feed.rss` lists newest pins across boards, `{user}/{board}.rss` one board; both return ~25 items newest-first.
+ */
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const USER_AGENT =
@@ -22,8 +22,7 @@ function feedUrl(handle: string, kind?: WatchKind): string | null {
   return `https://www.pinterest.com/${encodeURIComponent(handle)}/feed.rss`;
 }
 
-// The feed is flat, tiny XML; a regex over <item> blocks avoids pulling in an
-// XML parser for two element lookups.
+/** The feed is flat, tiny XML; a regex over <item> blocks avoids pulling in an XML parser for two element lookups. */
 function entriesFromRss(xml: string): WatchEntry[] {
   const entries: WatchEntry[] = [];
   const seen = new Set<string>();
@@ -31,7 +30,8 @@ function entriesFromRss(xml: string): WatchEntry[] {
     const link =
       /<link>\s*([^<\s]+)\s*<\/link>/.exec(item)?.[1] ??
       /<guid[^>]*>\s*([^<\s]+)\s*<\/guid>/.exec(item)?.[1];
-    if (!link?.includes("/pin/")) continue;
+    /** Feeds carry a junk item whose /pin/{shareToken}/ link is minted fresh per fetch; only fully numeric pin ids are real, and a token can start with a digit. */
+    if (!link || !/\/pin\/\d+\/?(?:[?#]|$)/.test(link)) continue;
     const sourceId = sourceIdFromUrl("pinterest", link);
     if (!sourceId || seen.has(sourceId)) continue;
     seen.add(sourceId);
@@ -64,8 +64,7 @@ export async function listPinterestWatch(
   if (res.status === 429) return { ok: false, reason: "rate_limited" };
   if (!res.ok) return { ok: false, reason: "unavailable" };
   const body = await res.text();
-  // Missing users/boards sometimes serve the SPA shell with a 200 instead of
-  // an RSS document.
+  /** Missing users/boards sometimes serve the SPA shell with a 200 instead of an RSS document. */
   if (!/<rss[\s>]/i.test(body)) return { ok: false, reason: "not_found" };
   return { ok: true, entries: entriesFromRss(body) };
 }

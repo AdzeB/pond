@@ -16,9 +16,7 @@ export function LibraryView() {
     data.sourceFilter,
   );
 
-  // Mirror the resolved view into a lightweight store so the global dock can
-  // drive select-all / invert and pick the right destructive action without
-  // recomputing the narrowing pipeline.
+  /** Mirrors the resolved view into a lightweight store so the global dock can act on the selection without recomputing the narrowing pipeline. */
   useEffect(() => {
     libraryViewContext.set(data.filteredIds, data.mode);
   }, [data.filteredIds, data.mode]);

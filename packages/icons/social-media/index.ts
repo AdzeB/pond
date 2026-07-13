@@ -3,7 +3,7 @@ export { IconBrandArena } from "./custom/arena";
 export { IconBrandCosmos } from "./custom/cosmos";
 export { IconBrandFacebook } from "./custom/facebook";
 export { IconGithub } from "./custom/github";
-// Legacy names used by the website and older imports.
+/** Legacy names used by the website and older imports. */
 export {
   IconBrandInstagram,
   IconBrandInstagram as IconInstagram,

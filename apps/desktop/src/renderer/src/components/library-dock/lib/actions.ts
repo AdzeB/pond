@@ -33,9 +33,7 @@ interface DockActions {
   openOverflowMenu: () => void;
 }
 
-// All the bulk-action menu builders for the selection surface. These always
-// operate on the live selection store, so in playground/preview mode they
-// simply early-return against an empty selection.
+/** Menu builders operate on the live selection store, so in preview mode they early-return against an empty selection. */
 export function useDockActions(
   setConfirmDelete: (open: boolean) => void,
 ): DockActions {
@@ -50,8 +48,7 @@ export function useDockActions(
     else void trashSelection(selection.snapshot());
   }, [inTrash]);
 
-  // Task menu items, scoped to the current selection. Shared by the wand button
-  // and the overflow menu's "Run task" submenu.
+  /** Shared by the wand button and the overflow menu's "Run task" submenu. */
   const taskItems = useCallback((): NativeMenuItem[] => {
     const scope = selection.snapshot();
     return selectableTasks().map((task) => ({
@@ -67,8 +64,7 @@ export function useDockActions(
     }));
   }, []);
 
-  // Tag menu items: each existing tag adds to every selected save, plus paste
-  // and clear shortcuts. Shared by the tag button and the overflow submenu.
+  /** Shared by the tag button and the overflow submenu. */
   const tagItems = useCallback((): NativeMenuItem[] => {
     const scope = selection.snapshot();
     const items: NativeMenuItem[] = [];
@@ -116,8 +112,7 @@ export function useDockActions(
     ]);
   }, [tagItems]);
 
-  // The long tail of bulk actions, gathered behind the overflow button so the
-  // pill stays compact.
+  /** The long tail of bulk actions sits behind the overflow button so the pill stays compact. */
   const openOverflowMenu = useCallback(() => {
     const scope = selection.snapshot();
     if (scope.length === 0) return;

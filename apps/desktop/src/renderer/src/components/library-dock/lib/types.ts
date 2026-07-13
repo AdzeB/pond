@@ -1,18 +1,32 @@
 import type { DockTab } from "./nav-tabs";
 
-// The mutually exclusive surfaces the pill can show.
+/** The mutually exclusive surfaces the pill can show. */
 export type DockView =
   | "selection"
   | "ask"
   | "search"
   | "status"
   | "new"
-  | "options"
+  | "layout"
+  | "zoom"
+  | "sort"
+  | "display"
   | "nav";
 
-// A forced rendering of the pill, used by the dock playground to drive every
-// state/sub-state without touching the live stores. When absent, the pill
-// derives everything from the real selection/ask/view stores and the router.
+export type ViewMenuSection = "layout" | "zoom" | "sort" | "display";
+
+export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
+  "layout",
+  "zoom",
+  "sort",
+  "display",
+];
+
+export function isViewMenu(view: DockView): view is ViewMenuSection {
+  return (VIEW_MENU_SECTIONS as readonly string[]).includes(view);
+}
+
+/** Forced pill state for the dock playground; when absent, the pill derives everything from the live stores and the router. */
 export interface DockPreview {
   view: DockView;
   activeTab?: DockTab | null;

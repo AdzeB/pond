@@ -1,14 +1,6 @@
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-  type CSSProperties,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskComposer, AskStatusPill } from "@/components/ask-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { NavContent } from "@/components/library-dock-nav-content";
@@ -30,7 +22,12 @@ import { selection, useSelectionSize } from "@/stores/selection";
 import { useDockActions } from "./lib/actions";
 import { type DockContextValue, DockProvider } from "./lib/context";
 import { type DockTab, NAV_TABS } from "./lib/nav-tabs";
-import type { DockPreview, DockView } from "./lib/types";
+import {
+  type DockPreview,
+  type DockView,
+  isViewMenu,
+  type ViewMenuSection,
+} from "./lib/types";
 import styles from "./styles.module.css";
 
 export const Dock = Object.assign(Root, {
@@ -40,12 +37,11 @@ interface RootProps {
   preview?: DockPreview;
 }
 
-// Dock-mode actions are plain store calls, so they're defined once at module
-// level and stay referentially stable without useCallback.
+/** Module-level store calls stay referentially stable without useCallback. */
 const openAsk = () => dockMode.open("ask");
 const openSearch = () => dockMode.open("search");
 const openNew = () => dockMode.open("new");
-const openOptions = () => dockMode.open("options");
+const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 const clearResults = () => {
   clearAsk();
@@ -65,28 +61,20 @@ function Root({ preview }: RootProps) {
   const inTrash = viewMode === "trash";
 
   const pillRef = useRef<HTMLDivElement | null>(null);
-  // The viewport sizes to the active view's content; we animate the pill's
-  // real width/height to that measured size with a motion spring
-  // (pillTransition), so a mid-flight view change retargets smoothly instead
-  // of restarting. Content is never scaled/distorted.
+  /** The pill's real width/height animates to the measured viewport size with a spring, so a mid-flight view change retargets instead of restarting. */
   const [bounds, setBounds] = useState<{
     width: number;
     height: number;
   } | null>(null);
 
-  // The very first measurement must apply instantly (the pill starts at 0x0
-  // before the viewport is measured); only later size changes animate.
+  /** The first measurement must apply instantly because the pill starts at 0x0; only later size changes animate. */
   const hasMeasured = useRef(false);
   const isFirstMeasure = bounds !== null && !hasMeasured.current;
   useEffect(() => {
     if (bounds) hasMeasured.current = true;
   }, [bounds]);
 
-  // Measure via a callback ref (not a mount effect): the dock renders null on
-  // some routes (e.g. /settings) without unmounting, so the viewport DOM is
-  // torn down and recreated while the component stays alive. A ref callback
-  // re-measures and re-observes each new element; a mount-only effect would
-  // keep watching the detached node and leave `bounds` stuck at 0x0.
+  /** Measure via a callback ref: the viewport DOM is torn down and recreated on some routes while the component stays alive, and a mount-only effect would keep watching the detached node. */
   const viewportObserver = useRef<ResizeObserver | null>(null);
   const viewportRef = useCallback((el: HTMLDivElement | null) => {
     viewportObserver.current?.disconnect();
@@ -100,16 +88,10 @@ function Root({ preview }: RootProps) {
     viewportObserver.current = ro;
   }, []);
 
-  // Remember the pill's width while resting in the nav view so card views can
-  // match the dock's footprint (the pill then morphs only vertically). Exposed
-  // to the cards as --dock-card-width on the viewport.
-  const [navWidth, setNavWidth] = useState<number | null>(null);
-
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
 
-  // Priority: an active selection commandeers the pill, then whichever surface
-  // the user opened, then the ask status pill, then the resting nav.
+  /** Priority: an active selection commandeers the pill, then the opened surface, then the ask status pill, then the resting nav. */
   const liveView: DockView =
     selectionSize > 0
       ? "selection"
@@ -119,7 +101,7 @@ function Root({ preview }: RootProps) {
           ? "status"
           : "nav";
   const view = preview?.view ?? liveView;
-  const isMenuView = view === "new" || view === "options";
+  const isMenuView = view === "new" || isViewMenu(view);
 
   const effSelectionSize = preview?.selectionSize ?? selectionSize;
   const effFilteredCount = preview
@@ -141,7 +123,7 @@ function Root({ preview }: RootProps) {
   );
 
   const isCard =
-    view === "ask" || view === "search" || view === "new" || view === "options";
+    view === "ask" || view === "search" || view === "new" || isViewMenu(view);
 
   const [docVisible, setDocVisible] = useState(
     () => typeof document === "undefined" || !document.hidden,
@@ -165,10 +147,6 @@ function Root({ preview }: RootProps) {
     return () => document.removeEventListener("keydown", onKey);
   }, [preview, isMenuView]);
 
-  useLayoutEffect(() => {
-    if (view === "nav" && bounds) setNavWidth(bounds.width);
-  }, [view, bounds]);
-
   const timeScale = useMotionScaleFactor();
   const { pillTransition, swapTransition, swap } = buildDockMotion(
     reduceMotion ?? false,
@@ -191,8 +169,8 @@ function Root({ preview }: RootProps) {
       closeSearch: closeToNav,
       openNew,
       closeNew: closeToNav,
-      openOptions,
-      closeOptions: closeToNav,
+      openViewMenu,
+      closeViewMenu: closeToNav,
       clearResults,
       destructive,
       runSelectionTask,
@@ -252,11 +230,6 @@ function Root({ preview }: RootProps) {
           ref={viewportRef}
           className={styles.viewport}
           data-card={isCard || undefined}
-          style={
-            navWidth != null
-              ? ({ "--dock-card-width": `${navWidth}px` } as CSSProperties)
-              : undefined
-          }
         >
           <AnimatePresence initial={false}>
             {view === "selection" ? (
@@ -296,9 +269,9 @@ function Root({ preview }: RootProps) {
               <motion.div key="new" {...swap} transition={swapTransition}>
                 <NewContent />
               </motion.div>
-            ) : view === "options" ? (
-              <motion.div key="options" {...swap} transition={swapTransition}>
-                <OptionsContent />
+            ) : isViewMenu(view) ? (
+              <motion.div key={view} {...swap} transition={swapTransition}>
+                <OptionsContent section={view} />
               </motion.div>
             ) : (
               <motion.div key="nav" {...swap} transition={swapTransition}>

@@ -8,6 +8,7 @@
   flex: 1;
   flex-direction: column;
   padding: var(--ds-mac-inset);
+  padding-inline: 24px;
   overflow-y: auto;
 }
 

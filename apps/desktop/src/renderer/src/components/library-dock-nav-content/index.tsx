@@ -1,17 +1,29 @@
 import {
   IconSparkle3Fill18 as Ask,
+  IconEyeFill18 as DisplayIcon,
+  IconGridFill18 as LayoutIcon,
   IconArchivePlusFill18 as New,
-  IconSizeFill18 as ViewIcon,
+  IconDescendingSortingFill18 as SortIcon,
+  IconSizeFill18 as ZoomIcon,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
-import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
+import type { ViewMenuSection } from "@/components/library-dock/lib/types";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
-import { gentleSpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
+
+const VIEW_MENUS: Array<{
+  section: ViewMenuSection;
+  label: string;
+  icon: React.JSX.Element;
+}> = [
+  { section: "layout", label: "Layout", icon: <LayoutIcon /> },
+  { section: "zoom", label: "Zoom", icon: <ZoomIcon /> },
+  { section: "sort", label: "Sort", icon: <SortIcon /> },
+  { section: "display", label: "Display", icon: <DisplayIcon /> },
+];
 
 export function NavContent() {
   const dock = useDock();
@@ -39,16 +51,22 @@ export function NavContent() {
         </button>
       </Tooltip>
 
-      <Tooltip label="View options" side="top">
-        <button
-          type="button"
-          className={styles.item}
-          aria-label="View options"
-          onClick={dock.openOptions}
-        >
-          <ViewIcon />
-        </button>
-      </Tooltip>
+      <span className={styles.separator} aria-hidden />
+
+      {VIEW_MENUS.map(({ section, label, icon }) => (
+        <Tooltip key={section} label={label} side="top">
+          <button
+            type="button"
+            className={styles.item}
+            aria-label={label}
+            onClick={() => dock.openViewMenu(section)}
+          >
+            {icon}
+          </button>
+        </Tooltip>
+      ))}
+
+      <span className={styles.separator} aria-hidden />
 
       {agentAvailable ? (
         <Tooltip label="Ask AI" side="top">
@@ -75,33 +93,6 @@ export function NavContent() {
           </Link>
         </Tooltip>
       )}
-
-      <span className={styles.separator} aria-hidden />
-
-      {NAV_TABS.map((tab) => {
-        const active = dock.isTabActive(tab.id);
-        return (
-          <Link
-            key={tab.label}
-            to={tab.to}
-            params={tab.params}
-            className={styles.item}
-            aria-label={tab.label}
-            data-status={active ? "active" : undefined}
-            aria-current={active ? "page" : undefined}
-          >
-            {active ? (
-              <motion.span
-                layoutId="dock-active-tab"
-                className={styles.indicator}
-                transition={gentleSpring}
-                aria-hidden
-              />
-            ) : null}
-            {tab.icon}
-          </Link>
-        );
-      })}
     </div>
   );
 }

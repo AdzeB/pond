@@ -1,6 +1,3 @@
-/* The Sources page, Family-wallet style: one colored card per signed-in
-   account, a per-account dialog for settings, and a pushed picker view for
-   connecting. */
 .page {
   display: flex;
   flex: 1;
@@ -15,13 +12,11 @@
   gap: 16px;
   width: 100%;
   max-width: 560px;
-  /* Natural height, not the flex parent's stretch — otherwise sections shrink
-     to fit the viewport and the last row hides under the dock unscrollably. */
+  /* Natural height, not the flex parent's stretch, otherwise sections shrink to fit the viewport and the last row hides under the dock unscrollably. */
   height: max-content;
   padding: 24px 32px 120px;
 }
 
-/* ── header ── */
 .header {
   display: flex;
   gap: 12px;
@@ -54,7 +49,6 @@
   white-space: nowrap;
 }
 
-/* ── attention banner: only exists when an account needs a human ── */
 .banner {
   display: flex;
   gap: 12px;
@@ -86,116 +80,6 @@
   white-space: nowrap;
 }
 
-/* ── wallet grid ── */
-.wallets {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.wallet {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  height: 110px;
-  padding: 12px;
-  text-align: left;
-  border-radius: 12px;
-  box-shadow: var(--ds-shadow-2);
-  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
-}
-
-.wallet:hover {
-  transform: scale(1.015);
-}
-
-/* Invisible full-bleed click target; siblings stack above it. */
-.wallet-hit {
-  position: absolute;
-  inset: 0;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: inherit;
-}
-
-.wallet-hit:focus-visible {
-  outline: 2px solid var(--ds-focus-outline);
-  outline-offset: 2px;
-}
-
-/* Sits above the hit button but passes clicks through, except the chip. */
-.wallet-top {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  width: 100%;
-  pointer-events: none;
-}
-
-.wallet-name {
-  max-width: 100%;
-  margin-top: auto;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-.wallet-sub {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 10.5px;
-  white-space: nowrap;
-  opacity: 0.72;
-}
-
-/* Brand tile with the profile picture stacked over its right edge. The
-   separation is a notch masked out of the tile — not a border or shadow — so
-   the card's own color shows through the gap. */
-.wallet-mark {
-  --pfp-size: 30px;
-  --pfp-overlap: 9px;
-  --pfp-notch: 2.5px;
-
-  display: flex;
-  align-items: center;
-}
-
-.wallet-mark-tile {
-  display: grid;
-  flex: none;
-}
-
-/* Round the brand tile to match the pfp circle beside it. Border-radius
-   (not clip-path) so the tile keeps its 1px ring shadow on light marks. */
-.wallet-mark .wallet-mark-tile > * {
-  border-radius: 50%;
-}
-
-.wallet-mark-tile[data-notched] {
-  mask: radial-gradient(
-    circle at calc(100% - var(--pfp-overlap) + var(--pfp-size) / 2) 50%,
-    transparent calc(var(--pfp-size) / 2 + var(--pfp-notch)),
-    #000 calc(var(--pfp-size) / 2 + var(--pfp-notch) + 0.5px)
-  );
-}
-
-.wallet-avatar {
-  flex: none;
-  width: var(--pfp-size);
-  height: var(--pfp-size);
-  margin-left: calc(var(--pfp-overlap) * -1);
-  object-fit: cover;
-  background: rgb(255 255 255 / 12%);
-  border-radius: 50%;
-}
-
-/* Ringed circular brand mark used in the account/watch dialog heroes. */
 .wavatar {
   position: relative;
   display: grid;
@@ -217,31 +101,6 @@
   clip-path: circle(50%);
 }
 
-.wallet-spinner {
-  width: 11px;
-  height: 11px;
-  margin: 2px;
-  border: 1.5px solid rgb(255 255 255 / 35%);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-.wallet-chip {
-  padding: 3px 9px;
-  font: inherit;
-  font-size: 10.5px;
-  font-weight: 650;
-  color: var(--ds-amber-11);
-  pointer-events: auto;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: #fff;
-  border: 0;
-  border-radius: 999px;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
-}
-
-/* ── watching section ── */
 .sec-label {
   display: flex;
   gap: 6px;
@@ -278,9 +137,7 @@
   background: var(--ds-gray-4);
 }
 
-/* Watched accounts, Family-style: a row of circular faces with the name and
-   status beneath — visually lighter than the owned-account wallet cards. */
-.watch-strip {
+.tile-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 14px 8px;
@@ -310,8 +167,7 @@
   outline-offset: 2px;
 }
 
-/* The circular face; brand mark fallback is clipped to the same circle. The
-   backing disc keeps light marks (Are.na) from dissolving into the page. */
+/* The backing disc keeps light brand marks from dissolving into the page. */
 .watch-face {
   position: relative;
   display: grid;
@@ -337,7 +193,6 @@
   border-radius: 50%;
 }
 
-/* A running check draws Family's selected-style ring, spinning. */
 .watch-face[data-running]::before {
   position: absolute;
   inset: -5px;
@@ -348,7 +203,7 @@
   animation: spin 1.4s linear infinite;
 }
 
-/* Small platform mark pinned to the face's corner when a pfp covers it. */
+/* Platform mark pinned to the face's corner when a pfp covers it. */
 .watch-badge {
   position: absolute;
   right: -3px;
@@ -385,7 +240,6 @@
   color: var(--ds-amber-11);
 }
 
-/* Handle input on the watch flow's second step. */
 .handle-field {
   display: flex;
   gap: 2px;
@@ -431,7 +285,6 @@
   align-items: center;
 }
 
-/* ── per-account dialog ── */
 .account-dialog {
   gap: 12px;
   width: min(360px, calc(100vw - 32px));
@@ -473,7 +326,6 @@
   margin-left: auto;
 }
 
-/* ── settings rows (shared by dialog) ── */
 .rows {
   display: flex;
   flex-direction: column;
@@ -582,7 +434,7 @@
   color: var(--ds-gray-10);
 }
 
-/* Select-styled value chip (opens a menu). */
+/* Select-styled value chip that opens a menu. */
 .select {
   display: inline-flex;
   flex: none;
@@ -637,7 +489,7 @@
   white-space: nowrap;
 }
 
-/* Detected watch target ("YouTube playlist · …") under the handle field. */
+/* Detected watch target shown under the handle field. */
 .resolve-chip {
   margin: 0;
   overflow: hidden;
@@ -647,7 +499,6 @@
   white-space: nowrap;
 }
 
-/* ── connect / watch flows (dialogs) ── */
 .flow-dialog {
   display: flex;
   flex-direction: column;
@@ -665,7 +516,7 @@
   text-align: center;
 }
 
-/* Inside the dialog the hero is the whole surface — no nested card chrome. */
+/* Inside the dialog the hero is the whole surface, so no nested card chrome. */
 .flow-dialog .wait-hero {
   padding: 20px 8px 8px;
   background: none;
@@ -706,7 +557,6 @@
   display: none;
 }
 
-/* Family's Suggested-apps grid: big icon tile, name underneath. */
 .pick {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -751,7 +601,6 @@
   text-align: center;
 }
 
-/* Sign-in wait: hero card with a spinning halo around the brand tile. */
 .wait-hero {
   display: flex;
   flex-direction: column;
@@ -803,33 +652,6 @@
   margin-top: 12px;
 }
 
-/* ── empty state ── */
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-  padding: 48px 24px;
-  text-align: center;
-  background: var(--ds-gray-1);
-  border: 1px dashed var(--ds-gray-a4);
-  border-radius: var(--ds-radius-md);
-}
-
-.empty-title {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
-.empty-sub {
-  max-width: 320px;
-  margin: 0;
-  font-size: 12px;
-  color: var(--ds-gray-11);
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -837,13 +659,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wallet,
-  .wallet:hover {
-    transform: none;
-    transition: none;
-  }
-
-  .wallet-spinner,
+  .watch-face[data-running]::before,
   .wait-ring::before {
     animation: none;
   }

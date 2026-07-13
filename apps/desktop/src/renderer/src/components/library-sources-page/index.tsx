@@ -39,28 +39,12 @@ import {
 import { setSearchInput } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
-// Connectable platforms; `local` / `web` aren't sources you sign in to.
+/** `local` and `web` aren't sources you sign in to. */
 const SYNCABLE: readonly Source[] = SOURCES.filter(
   (s) => s !== "local" && s !== "web",
 );
 
-// Wallet-card backgrounds: each platform's brand hue, dark enough for white
-// text in both themes (same palette as the design prototypes).
-const _WALLET_HUES: Partial<Record<Source, string>> = {
-  twitter: "oklch(0.22 0.01 250)",
-  instagram: "oklch(0.6 0.21 350)",
-  pinterest: "oklch(0.5 0.19 25)",
-  arena: "oklch(0.27 0.01 250)",
-  cosmos: "oklch(0.35 0.05 290)",
-  tiktok: "oklch(0.22 0.02 250)",
-  youtube: "oklch(0.55 0.21 25)",
-  reddit: "oklch(0.58 0.17 40)",
-  threads: "oklch(0.22 0.01 250)",
-};
-
-const _FALLBACK_HUE = "oklch(0.4 0.03 250)";
-
-// The global background-sync cadence, surfaced per-account (it applies to all).
+/** The global background-sync cadence, surfaced per-account; it applies to all. */
 const FREQUENCY_OPTIONS = [
   { hours: 1, label: "Every hour" },
   { hours: 2, label: "Every 2 hours" },
@@ -69,23 +53,20 @@ const FREQUENCY_OPTIONS = [
   { hours: 24, label: "Once a day" },
 ] as const;
 
-// "Instagram · @work" — the account's display name for menus and the banner.
 function accountName(account: AccountRow): string {
   const suffix = account.label ?? (account.handle ? `@${account.handle}` : "");
   const label = getSourceDef(account.source).label;
   return suffix ? `${label} · ${suffix}` : label;
 }
 
-// The watch's display name for menus, dialogs, and confirms.
 function watchName(watch: WatchRow): string {
   if (watch.label) return watch.label;
-  // Playlist/list ids are opaque tokens, not handles — no @ prefix.
+  /** Playlist/list ids are opaque tokens, not handles, so no @ prefix. */
   return watch.kind === "playlist" || watch.kind === "list"
     ? watch.handle
     : `@${watch.handle}`;
 }
 
-// One-line answer to "is everything okay?" for the page header.
 function healthLine(
   accounts: readonly AccountRow[],
   watches: readonly WatchRow[],
@@ -117,31 +98,22 @@ function healthLine(
   return parts.join(" · ");
 }
 
-// The Sources page, Family-wallet style: one colored card per signed-in
-// account in a 3-up grid, a per-account dialog for settings, and dialogs for
-// the connect and watch flows.
 export function SourcesPage() {
   const { accounts, refetch } = useAccounts();
   const { watches, refetch: refetchWatches } = useWatches();
   const byAccount = useSyncByAccount();
-  // The connect and watch flows are dialogs over the page.
   const [connectOpen, setConnectOpen] = useState(false);
   const [watchOpen, setWatchOpen] = useState(false);
-  // Platform we've sent to the browser for sign-in; polled until an account
-  // for it connects (new id, or an existing one flipping to connected).
+  /** Platform sent to the browser for sign-in; polled until an account for it connects. */
   const [waiting, setWaiting] = useState<Source | null>(null);
-  // Snapshot of connected account ids at the time connect started, so we can
-  // tell a fresh/re-authed account apart from ones that were already healthy.
+  /** Snapshot of connected account ids when connect started, so a fresh or re-authed account is distinguishable from already-healthy ones. */
   const [connectedBefore, setConnectedBefore] = useState<Set<string>>(
     () => new Set(),
   );
-  // Account whose settings dialog is open.
   const [detailId, setDetailId] = useState<string | null>(null);
-  // Watch whose settings dialog is open.
   const [watchDetailId, setWatchDetailId] = useState<string | null>(null);
 
-  // While waiting for the browser sign-in, poll the registry until the
-  // extension delivers the session, then kick that account's first sync.
+  /** Poll the registry until the extension delivers the session, then kick that account's first sync. */
   useEffect(() => {
     if (!waiting) return;
     const source = waiting;
@@ -187,7 +159,7 @@ export function SourcesPage() {
     ? (watches.find((w) => w.id === watchDetailId) ?? null)
     : null;
 
-  // First account that needs a human: session expired or repeated failure.
+  /** First account that needs a human: session expired or repeated failure. */
   const broken = accounts.find((a) => {
     const tone = cardModel(byAccount[a.id]).tone;
     return tone === "err" || tone === "paused";
@@ -214,13 +186,6 @@ export function SourcesPage() {
                 Sync all
               </Button>
             ) : null}
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setConnectOpen(true)}
-            >
-              ＋ Connect
-            </Button>
           </span>
         </header>
 
@@ -252,10 +217,27 @@ export function SourcesPage() {
           </div>
         ) : null}
 
+        <div className={styles["sec-label"]}>
+          Accounts
+          <span
+            className={styles["sec-info"]}
+            title="Accounts you've signed into — Pond syncs your own saves in the background."
+          >
+            ⓘ
+          </span>
+          <button
+            type="button"
+            className={styles["sec-add"]}
+            aria-label="Connect a source"
+            onClick={() => setConnectOpen(true)}
+          >
+            ＋
+          </button>
+        </div>
         {accounts.length > 0 ? (
-          <div className={styles.wallets}>
+          <div className={styles["tile-grid"]}>
             {accounts.map((account) => (
-              <WalletCard
+              <AccountTile
                 key={account.id}
                 account={account}
                 status={byAccount[account.id]}
@@ -264,13 +246,10 @@ export function SourcesPage() {
             ))}
           </div>
         ) : (
-          <div className={styles.empty}>
-            <p className={styles["empty-title"]}>Nothing connected yet</p>
-            <p className={styles["empty-sub"]}>
-              Connect a source — sign in once and Pond keeps your saves syncing
-              in the background.
-            </p>
-          </div>
+          <p className={styles["quiet-line"]}>
+            Connect a source — sign in once and Pond keeps your saves syncing in
+            the background.
+          </p>
         )}
 
         <div className={styles["sec-label"]}>
@@ -291,7 +270,7 @@ export function SourcesPage() {
           </button>
         </div>
         {watches.length > 0 ? (
-          <div className={styles["watch-strip"]}>
+          <div className={styles["tile-grid"]}>
             {watches.map((watch) => (
               <WatchCard
                 key={watch.id}
@@ -356,43 +335,7 @@ export function SourcesPage() {
   );
 }
 
-// ── wallet card ──────────────────────────────────────────────────────────────
-
-// Brand tile with the profile picture stacked onto it. The overlap gap is a
-// transparent notch masked out of the tile (not a border), so the card color
-// shows through. A broken/expired CDN URL drops the avatar and the notch
-// together rather than leaving a bite out of the tile.
-function WalletMark({
-  source,
-  avatarUrl,
-}: {
-  source: Source;
-  avatarUrl: string | null | undefined;
-}) {
-  const [broken, setBroken] = useState(false);
-  const showAvatar = Boolean(avatarUrl) && !broken;
-  return (
-    <span className={styles["wallet-mark"]}>
-      <span
-        className={styles["wallet-mark-tile"]}
-        data-notched={showAvatar || undefined}
-      >
-        <BrandTile source={source} size={30} />
-      </span>
-      {showAvatar ? (
-        <img
-          className={styles["wallet-avatar"]}
-          src={avatarUrl ?? undefined}
-          alt=""
-          referrerPolicy="no-referrer"
-          onError={() => setBroken(true)}
-        />
-      ) : null}
-    </span>
-  );
-}
-
-function WalletCard({
+function AccountTile({
   account,
   status,
   onOpen,
@@ -413,55 +356,58 @@ function WalletCard({
         : model.tone === "err"
           ? "Sync failed"
           : [
+              /** The name line is the platform label unless nicknamed, so only lead with the handle when there is one. */
               account.handle ? `@${account.handle}` : null,
               `${formatNumber(count)} item${count === 1 ? "" : "s"}`,
             ]
               .filter(Boolean)
               .join(" · ");
 
-  // The card is a div with a full-bleed hit-area button underneath, so the
-  // Reconnect chip can be a real button without nesting interactives.
   return (
-    <div className={styles.wallet}>
-      <button
-        type="button"
-        className={styles["wallet-hit"]}
-        aria-label={accountName(account)}
-        onClick={onOpen}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          void showContextMenu(buildAccountMenu(account, model, onOpen));
-        }}
-      />
-      <span className={styles["wallet-top"]}>
-        <WalletMark source={account.source} avatarUrl={account.avatarUrl} />
-        {model.tone === "run" ? (
-          <span className={styles["wallet-spinner"]} />
-        ) : model.tone === "err" || model.tone === "paused" ? (
-          <button
-            type="button"
-            className={styles["wallet-chip"]}
-            onClick={() => {
-              if (model.tone === "paused") {
-                void window.pond.connectSource(account.source);
-              } else {
-                void window.pond.syncRunNow(account.id);
-              }
-            }}
-          >
-            {model.tone === "paused" ? "Reconnect" : "Retry"}
-          </button>
-        ) : null}
+    <button
+      type="button"
+      className={styles["watch-tile"]}
+      onClick={onOpen}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        void showContextMenu(buildAccountMenu(account, model, onOpen));
+      }}
+    >
+      <span
+        className={styles["watch-face"]}
+        data-running={model.tone === "run" || undefined}
+      >
+        {account.avatarUrl ? (
+          <>
+            <img
+              className={styles["watch-pfp"]}
+              src={account.avatarUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                e.currentTarget.hidden = true;
+              }}
+            />
+            <span className={styles["watch-badge"]}>
+              <BrandTile source={account.source} size={16} />
+            </span>
+          </>
+        ) : (
+          <BrandTile source={account.source} size={52} />
+        )}
       </span>
-      <span className={styles["wallet-name"]}>
-        {account.label ?? def.label}
+      <span className={styles["watch-name"]}>{account.label ?? def.label}</span>
+      <span
+        className={styles["watch-sub"]}
+        data-tone={
+          model.tone === "err" || model.tone === "paused" ? "warn" : undefined
+        }
+      >
+        {sub}
       </span>
-      <span className={styles["wallet-sub"]}>{sub}</span>
-    </div>
+    </button>
   );
 }
-
-// ── watch card ───────────────────────────────────────────────────────────────
 
 function WatchCard({
   watch,
@@ -476,8 +422,7 @@ function WatchCard({
   const count = watch.sync?.knownCount ?? 0;
   const def = getSourceDef(watch.source);
 
-  // The name line already carries the handle (unless nicknamed), so the sub
-  // leads with the platform and what kind of thing is being watched.
+  /** The name line already carries the handle, so the sub leads with the platform and the kind of thing being watched. */
   const platformLine = watch.label
     ? watchName({ ...watch, label: null })
     : watch.kind && watch.kind !== "user"
@@ -508,9 +453,6 @@ function WatchCard({
     ]);
   };
 
-  // Family-style tile: big circular face (pfp when resolved, brand mark
-  // otherwise), name and status beneath. A running check draws a spinning
-  // ring around the face; problems tint the sub-line.
   return (
     <button
       type="button"
@@ -556,8 +498,6 @@ function WatchCard({
     </button>
   );
 }
-
-// ── per-account dialog ───────────────────────────────────────────────────────
 
 function AccountDialog({
   account,
@@ -891,8 +831,6 @@ function AccountDialog({
   );
 }
 
-// ── per-watch dialog ─────────────────────────────────────────────────────────
-
 function WatchDialog({
   watch,
   accounts,
@@ -973,7 +911,7 @@ function WatchDialog({
     }
   };
 
-  // What the check rides on: public listing, or a connected account's session.
+  /** The check rides on a public listing or a connected account's session. */
   const viaAccount = watch.via
     ? (accounts.find((a) => a.id === watch.via) ?? null)
     : null;
@@ -1125,8 +1063,6 @@ function WatchDialog({
   );
 }
 
-// ── connect flow (dialog) ────────────────────────────────────────────────────
-
 function ConnectDialog({
   accounts,
   waiting,
@@ -1143,7 +1079,7 @@ function ConnectDialog({
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Search is the whole step; focus it whenever the grid is showing.
+  /** Search is the whole step; focus it whenever the grid is showing. */
   useEffect(() => {
     if (!waiting) searchRef.current?.focus();
   }, [waiting]);
@@ -1244,17 +1180,13 @@ function ConnectDialog({
   );
 }
 
-// ── watch flow (dialog) ──────────────────────────────────────────────────────
-
-// Mirror of the main-process WatchTarget (watches.resolve result).
+/** Mirror of the main-process WatchTarget returned by `watches.resolve`. */
 interface WatchTargetChip {
   kind: WatchRow["kind"];
   handle: string;
   display: string;
 }
 
-// Per-source explainer for the handle step: what "watching" rides on and
-// what kinds of links it understands.
 function watchHint(source: Source, viaHandle: string | null): string {
   switch (source) {
     case "arena":
@@ -1287,7 +1219,6 @@ function WatchAddDialog({
   onClose: () => void;
   onAdded: (watchId: string) => void;
 }) {
-  // Two steps: pick a source, then type a handle or paste a link.
   const [source, setSource] = useState<Source | null>(null);
   const [handle, setHandle] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -1295,8 +1226,7 @@ function WatchAddDialog({
   const [resolved, setResolved] = useState<WatchTargetChip | null>(null);
   const handleRef = useRef<HTMLInputElement>(null);
 
-  // Live "what did we understand?" chip: resolve the input (URL parse, and an
-  // API probe for bare Are.na slugs) shortly after typing stops.
+  /** Resolves the input shortly after typing stops; bare Are.na slugs need an API probe. */
   useEffect(() => {
     const input = handle.trim();
     if (!source || !input) {
@@ -1321,8 +1251,7 @@ function WatchAddDialog({
     };
   }, [source, handle]);
 
-  // Back inside the dialog steps from the handle step to the picker;
-  // Esc / backdrop close the dialog itself (standard dialog behavior).
+  /** Back steps from the handle step to the picker; Esc and backdrop close the dialog itself. */
   const back = () => {
     if (source) {
       setSource(null);
