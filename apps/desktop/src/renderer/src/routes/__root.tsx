@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { Dock } from "@/components/library-dock";
+import { LibraryRail } from "@/components/library-rail";
 import { SaveModal } from "@/components/save-detail-modal";
 
 export const Route = createRootRoute({
@@ -28,6 +29,7 @@ function RootComponent() {
   return (
     <>
       <Outlet />
+      <LibraryRail />
       <Dock.Root />
       <SaveModal />
     </>
