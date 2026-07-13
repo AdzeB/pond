@@ -1,9 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { DockPlayground } from "@/components/dock-playground";
+import { loadAppInfo } from "@/lib/app-info";
 
 export const Route = createFileRoute("/playground")({
-  component: RouteComponent,
+  beforeLoad: async () => {
+    const info = await loadAppInfo();
+    if (info.isPackaged) {
+      throw redirect({ to: "/" });
+    }
+  },
+  component: DockPlayground,
 });
-
-function RouteComponent() {
-  return <div>Hello "/playground"!</div>;
-}
