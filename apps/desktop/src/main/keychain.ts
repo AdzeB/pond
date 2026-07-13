@@ -42,7 +42,7 @@ function encrypt(plain: string): string {
   if (safeStorage.isEncryptionAvailable()) {
     return `enc:${safeStorage.encryptString(plain).toString("base64")}`;
   }
-  // No keychain backend (Linux/first-run); tag the value so reads don't decrypt plaintext.
+  /** No keychain backend (Linux/first-run); tag the value so reads don't decrypt plaintext. */
   log.warn(
     "[pond] safeStorage encryption unavailable, persisting secret in plaintext",
   );
@@ -92,10 +92,7 @@ export async function rotateIngestToken(): Promise<string> {
   return token;
 }
 
-// Per-provider API key for hosted/OpenAI-compatible AI endpoints. Stored
-// encrypted, never in prefs. Keyed by provider id so several can be configured
-// at once and switching providers never overwrites another's key. Returns null
-// when none is set (local servers don't need one).
+/** Per-provider API key, stored encrypted and never in prefs; keyed by provider id so switching providers never overwrites another's key. */
 function aiApiKeyAccount(provider: string): string {
   return `${KEYCHAIN_AI_API_KEY}:${provider}`;
 }
@@ -104,8 +101,7 @@ export async function getAiApiKey(provider: string): Promise<string | null> {
   const all = await readAll();
   const value = all[entryKey(KEYCHAIN_SERVICE, aiApiKeyAccount(provider))];
   if (value) return decrypt(value);
-  // Back-compat: fall back to the legacy single-slot key for the active provider
-  // so keys saved before per-provider storage aren't lost.
+  /** Fall back to the legacy single-slot key so keys saved before per-provider storage aren't lost. */
   const legacy = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY)];
   if (legacy) return decrypt(legacy);
   return null;

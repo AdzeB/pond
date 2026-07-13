@@ -2,7 +2,7 @@ import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
 
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
-// Per-op attempt budget, tuned to each worker's cost and recoverability.
+/** Per-op attempt budget, tuned to each worker's cost and recoverability. */
 const MAX_ATTEMPTS: Record<Op, number> = {
   harvest_metadata: 5,
   capture_tweet: 4,
@@ -18,12 +18,11 @@ export function maxAttemptsFor(op: Op): number {
 }
 
 export function planOps(source: Source): readonly Op[] {
-  // Local saves carry everything at import time; no pipeline ops.
+  /** Local saves carry everything at import time; no pipeline ops. */
   if (source === "local") return [];
-  // Generic web links: fetch metadata + cover only. Skip capture_tweet,
-  // yt-dlp, poster, and avatar so an arbitrary article never triggers them.
+  /** Generic web links fetch metadata + cover only, so an arbitrary article never triggers capture_tweet/yt-dlp/poster/avatar. */
   if (source === "web") return ["harvest_metadata", "fetch_blobs", "finalize"];
-  // capture_tweet is twitter-only; filter it out elsewhere to avoid dead tasks.
+  /** capture_tweet is twitter-only; filter it out elsewhere to avoid dead tasks. */
   if (source === "twitter") return UNIVERSAL_SPEC;
   return UNIVERSAL_SPEC.filter((op) => op !== "capture_tweet");
 }
@@ -85,9 +84,7 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
     ],
   },
   cosmos: {
-    // Cosmos elements are aggregated images (like pinterest); the uploader is
-    // not reliably present on the element page, so grade on the image we can
-    // always resolve from og:image. Author stays a recommended nicety.
+    /** The uploader is not reliably present on a Cosmos element page, so grade on the og:image-resolved media; author stays a recommended nicety. */
     required: ["mediaUrl"],
     recommended: [
       "author",
@@ -116,16 +113,16 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.author.avatarUrl",
     ],
   },
-  // Generic web links: a title is the bar; cover + description are nice-to-have.
+  /** Generic web links: a title is the bar; cover + description are nice-to-have. */
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],
   },
-  // Local imports supply their own metadata; nothing to grade.
+  /** Local imports supply their own metadata; nothing to grade. */
   local: { required: [], recommended: [] },
 };
 
-// Returns the upstream URL when set (embedded host yt-dlp handles); null for pinterest.
+/** Returns the upstream URL when set (an embedded host yt-dlp handles); null for pinterest. */
 export function resolveYtDlpTarget(save: Save): string | null {
   const raw = save.rawJson as {
     capture?: { upstream?: { url?: string } };

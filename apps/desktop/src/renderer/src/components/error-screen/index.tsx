@@ -11,9 +11,7 @@ function stackOf(error: unknown): string | undefined {
   return error instanceof Error ? error.stack : undefined;
 }
 
-// Friendly fallback shown when a render throws. Surfaces the message inline and
-// keeps the full stack (plus React's component stack, when available) one click
-// away so crashes stay diagnosable instead of vanishing behind a generic page.
+/** Keeps the full stack one click away so crashes stay diagnosable instead of vanishing behind a generic page. */
 export function ErrorScreen({
   error,
   reset,

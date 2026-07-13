@@ -52,7 +52,7 @@ function CaptureCard() {
       try {
         if (document.fonts?.ready) await document.fonts.ready;
       } catch {
-        /* fonts API may be unavailable; proceed */
+        /** Fonts API may be unavailable; proceed without waiting. */
       }
       if (ref.current) await waitForImages(ref.current);
       await new Promise((r) => requestAnimationFrame(() => r(null)));

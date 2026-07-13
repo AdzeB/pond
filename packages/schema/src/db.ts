@@ -21,8 +21,7 @@ export * from "./color";
 export * from "./prefs";
 export * from "./theme-presets";
 
-// External source descriptors plus the special-cased `web` (generic-link
-// fallback) and `local` (file imports).
+/** External source descriptors plus the special-cased `web` (generic-link fallback) and `local` (file imports). */
 export const SOURCES = [...EXTERNAL_SOURCE_IDS, "web", "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
@@ -60,8 +59,7 @@ export interface SaveFile {
   mimeType?: string | null;
   width?: number | null;
   height?: number | null;
-  // Origin media URL this file was downloaded from, when applicable. Enables
-  // smart per-URL skip so one failed image doesn't force re-downloading all.
+  /** Origin media URL this file was downloaded from; enables per-URL skip so one failed image doesn't force re-downloading all. */
   sourceUrl?: string | null;
 }
 
@@ -77,8 +75,7 @@ export const saves = sqliteTable(
     id: text("id").primaryKey(),
     source: text("source").$type<Source>().notNull(),
     sourceId: text("source_id").notNull(),
-    // Connected account (prefs sync.accounts id) that ingested this save; null
-    // for local/web saves and rows that predate multi-account.
+    /** Connected account (prefs sync.accounts id) that ingested this save; null for local/web saves and rows that predate multi-account. */
     accountId: text("account_id"),
     url: text("url").notNull(),
     title: text("title"),
@@ -91,9 +88,10 @@ export const saves = sqliteTable(
     mediaUrl: text("media_url"),
     mediaType: text("media_type").$type<MediaType>(),
     rawJson: text("raw_json", { mode: "json" }),
-    // Precomputed slim projection of rawJson (media/duration/avatar/extractor) so
-    // `saves.list` never reads or parses the heavy rawJson blob. Kept in sync on
-    // every write that touches rawJson; rebuildable from rawJson on reconcile.
+    /**
+     * Slim projection of rawJson so `saves.list` never parses the heavy blob;
+     * kept in sync on every rawJson write and rebuildable on reconcile.
+     */
     rawSlim: text("raw_slim", { mode: "json" }),
     tags: text("tags", { mode: "json" })
       .$type<string[]>()
@@ -108,33 +106,27 @@ export const saves = sqliteTable(
     height: integer("height"),
     fileSize: integer("file_size"),
     phash: text("phash"),
-    // On-device semantic-search embedding of the save's text (title/desc/notes/tags),
-    // stored as a JSON float array; null = not yet embedded. DB-only, re-derivable.
+    /** On-device semantic-search embedding of the save's text as a JSON float array; null = not yet embedded. DB-only, re-derivable. */
     embedding: text("embedding", { mode: "json" }).$type<number[]>(),
-    // Embedder that produced `embedding`; bumping re-embeds the library. Null
-    // embeddings (and stale stamps) get picked up by the sweep.
+    /** Embedder that produced `embedding`; null embeddings and stale stamps get picked up by the sweep, so bumping re-embeds the library. */
     embeddingModel: text("embedding_model"),
-    // ---- On-device enrichment (all DB-only, re-derivable; each has a model stamp
-    // so the enrichment sweep re-runs on model upgrades, mirroring embeddings). ----
-    // Vision caption / alt-text for image saves.
+    /** Enrichment columns are DB-only and re-derivable; each model stamp makes the sweep re-run on model upgrades. */
     caption: text("caption"),
     captionModel: text("caption_model"),
-    // OCR text extracted from image saves (screenshots, posters).
     ocrText: text("ocr_text"),
     ocrModel: text("ocr_model"),
-    // Speech transcript for video/audio saves. Excluded from saves.list payload.
+    /** Excluded from the saves.list payload. */
     transcript: text("transcript"),
     transcriptModel: text("transcript_model"),
-    // CLIP image embedding (visual similarity), JSON float array. Loaded separately.
+    /** CLIP image embedding as a JSON float array; loaded separately. */
     clipEmbedding: text("clip_embedding", { mode: "json" }).$type<number[]>(),
     clipModel: text("clip_model"),
-    // Zero-shot aesthetic / style labels for image saves.
+    /** Zero-shot aesthetic / style labels for image saves. */
     aesthetic: text("aesthetic", { mode: "json" }).$type<string[]>(),
     aestheticModel: text("aesthetic_model"),
-    // Stamp recorded when an empty title was auto-filled, so we never re-derive
-    // over a user edit.
+    /** Stamp recorded when an empty title was auto-filled, so we never re-derive over a user edit. */
     autoTitleModel: text("auto_title_model"),
-    // Grounded tag suggestions (existing-vocabulary matches); non-destructive.
+    /** Grounded tag suggestions from the existing vocabulary; non-destructive. */
     suggestedTags: text("suggested_tags", { mode: "json" }).$type<string[]>(),
     suggestedTagsModel: text("suggested_tags_model"),
     videoNotes: text("video_notes", { mode: "json" })
@@ -213,7 +205,7 @@ export const tags = sqliteTable("tags", {
   description: text("description"),
   color: text("color"),
   starred: integer("starred", { mode: "boolean" }).notNull().default(false),
-  // Soft-retire: archived tags drop out of the default list but stay on saves.
+  /** Soft-retire: archived tags drop out of the default list but stay on saves. */
   archived: integer("archived", { mode: "boolean" }).notNull().default(false),
   lastUsedAt: integer("last_used_at", { mode: "timestamp_ms" }),
   usageCount: integer("usage_count").notNull().default(0),
@@ -252,12 +244,11 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
-// A persisted, user-named filter view (query + sort/layout), scoped per-pond.
+/** A persisted, user-named filter view scoped per-pond. */
 export const savedViews = sqliteTable("saved_views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  // Optional natural-language question this view was saved from ("Save as view"
-  // off an Ask). Display/editing metadata; the live query lives in `query`.
+  /** Natural-language question this view was saved from; display metadata only — the live query lives in `query`. */
   question: text("question"),
   query: text("query", { mode: "json" })
     .$type<Query>()
@@ -337,8 +328,7 @@ export const libraryScan = sqliteTable("library_scan", {
 
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey().default("singleton"),
-  // Defaults are bound as parameters ($defaultFn), never inlined as raw SQL:
-  // an apostrophe anywhere in the default JSON would break the statement.
+  /** Defaults are bound as parameters via $defaultFn, never inlined as raw SQL: an apostrophe in the default JSON would break the statement. */
   videoDownload: text("video_download", { mode: "json" })
     .$type<VideoDownloadSettings>()
     .notNull()

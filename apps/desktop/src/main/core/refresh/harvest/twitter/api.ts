@@ -26,14 +26,13 @@ interface BookmarksApiDebug {
 export type BookmarksApiResult =
   | (BookmarksHarvestResult & { ok: true; apiDebug?: BookmarksApiDebug })
   | { ok: false; reason: "auth_required" }
-  // Platform asked us to slow down (HTTP 429 / exhausted budget). The caller
-  // MUST back off and must NOT escalate to the noisier scroll path.
+  /** HTTP 429 / exhausted budget: the caller must back off and must not escalate to the noisier scroll path. */
   | { ok: false; reason: "rate_limited"; retryAfterSec: number | null }
-  // No usable Bookmarks request or first replay failed; caller falls back to scroll.
+  /** No usable Bookmarks request or first replay failed; caller falls back to scroll. */
   | { ok: false; reason: "fallback"; detail: string };
 
 const API_DEADLINE_MS = 5 * 60_000;
-// Throttle between pages; back-to-back requests with no gap trip a rate limit.
+/** Throttle between pages; back-to-back requests with no gap trip a rate limit. */
 const PAGE_THROTTLE_MS = 350;
 const MAX_PAGES = 2000;
 
@@ -72,7 +71,7 @@ async function inPageBookmarksApi(
   const sleep = (ms: number): Promise<void> =>
     new Promise((r) => setTimeout(r, ms));
 
-  // Extract a "please wait N seconds" hint from rate-limit response headers.
+  /** Extracts a "please wait N seconds" hint from rate-limit response headers. */
   const retryAfterFromHeaders = (res: Response): number | null => {
     const retryAfter = res.headers.get("retry-after");
     if (retryAfter) {
@@ -106,7 +105,7 @@ async function inPageBookmarksApi(
     return req;
   };
 
-  // Wait for the preload hook to capture the first Bookmarks request; nudge if slow.
+  /** Wait for the preload hook to capture the first Bookmarks request; nudge with a scroll if slow. */
   let template = getRequest();
   const waitDeadline = Date.now() + 20_000;
   let nudged = false;
@@ -115,9 +114,7 @@ async function inPageBookmarksApi(
       nudged = true;
       try {
         window.scrollBy({ top: 600, behavior: "instant" as ScrollBehavior });
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     }
     await sleep(250);
     template = getRequest();
@@ -138,12 +135,12 @@ async function inPageBookmarksApi(
     const raw = base.searchParams.get("variables");
     if (raw) baseVariables = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    /* keep defaults; cursor injection still works */
+    /** Keep defaults; cursor injection still works. */
   }
 
   const headers: Record<string, string> = {};
   for (const [k, v] of Object.entries(template.headers ?? {})) {
-    // Browser drops forbidden headers; the ones X checks are all settable.
+    /** Browser drops forbidden headers; the ones X checks are all settable. */
     headers[k] = v;
   }
   if (!("accept" in headers)) headers.accept = "*/*";
@@ -205,8 +202,7 @@ async function inPageBookmarksApi(
     }
     return n;
   };
-  // Tweet ids on a page (entryId looks like `tweet-1234567890`), for the
-  // incremental early-stop check below.
+  /** Tweet ids on a page (entryId looks like `tweet-1234567890`), for the incremental early-stop check. */
   const pageTweetIds = (json: unknown): string[] => {
     const ids: string[] = [];
     for (const ix of readInstructions(json)) {
@@ -237,8 +233,7 @@ async function inPageBookmarksApi(
 
   const captures: BookmarksCapture[] = [];
   const deadline = Date.now() + args.deadlineMs;
-  // Incremental early-stop: bookmarks are newest-first, so a run of already-known
-  // tweets means we've hit the synced backlog. Off on full runs (no known ids).
+  /** Bookmarks are newest-first, so a run of already-known tweets means we've hit the synced backlog; off on full runs. */
   const known = new Set<string>((args.knownIds ?? []).map(String));
   const earlyStopEnabled = known.size > 0;
   const STOP_AFTER_KNOWN_PAGES = 2;
@@ -269,8 +264,7 @@ async function inPageBookmarksApi(
     }
     if (pages === 0) firstStatus = res.status;
     if (!res.ok) {
-      // Rate limited: back off with the server's retry hint, never escalate to
-      // scroll (noisier and more detectable).
+      /** Back off with the server's retry hint; never escalate to scroll, which is noisier and more detectable. */
       if (res.status === 429) {
         return {
           ok: false,
@@ -341,7 +335,7 @@ async function inPageBookmarksApi(
 
   if (Date.now() >= deadline) reason = "deadline";
 
-  // Zero tweets on first page may just be client-side rendered; fall back to scroll.
+  /** Zero tweets on the first page may just be client-side rendered; fall back to scroll. */
   if (pages === 1 && tweetTotal === 0) {
     return { ok: false, reason: "fallback", detail: "empty_first_page" };
   }

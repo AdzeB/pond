@@ -48,14 +48,11 @@ declare module "@tanstack/react-router" {
   }
 }
 
-// Last path is pond-scoped: a route can point at a save that only exists in
-// one library. The startup-page mirror is app-level, like the window prefs it
-// shadows.
+/** Last path is pond-scoped because a route can point at a save that exists in only one library; the startup-page mirror is app-level like the window prefs it shadows. */
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
-// Fixed pages the "On startup" preference can pin to. "continue" is handled
-// separately by restoring the persisted last path.
+/** "continue" is not listed; it is handled by restoring the persisted last path. */
 const STARTUP_ROUTES: Record<string, string> = {
   library: "/",
   sources: "/sources",
@@ -72,9 +69,7 @@ function readStored(key: string): string | null {
   }
 }
 
-// Resolve the initial route synchronously (before prefs finish loading over
-// IPC) by reading a localStorage mirror of the startup preference. Defaults to
-// resuming the last route; a full quit or reload both land you back here.
+/** Reads the localStorage mirror of the startup preference so the initial route resolves synchronously, before prefs finish loading over IPC. */
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
   if (startup !== "continue" && STARTUP_ROUTES[startup]) {
@@ -92,14 +87,12 @@ function buildRouter() {
       <ErrorScreen error={error} reset={reset} />
     ),
   });
-  // Memory history lives only in RAM, so a reload (Cmd+R) or relaunch would
-  // otherwise reset us to "/". Persist the resolved path so "Continue where you
-  // left off" can restore it on next launch.
+  /** Memory history resets to "/" on reload or relaunch; persist the resolved path so "Continue where you left off" can restore it. */
   router.subscribe("onResolved", () => {
     try {
       localStorage.setItem(LAST_PATH_KEY, router.state.location.pathname);
     } catch {
-      /* best-effort; navigation still works without persistence */
+      /** Best-effort; navigation still works without persistence. */
     }
   });
   return router;
@@ -108,16 +101,12 @@ function buildRouter() {
 export function App() {
   const router = useMemo(() => buildRouter(), []);
 
-  // Expose the *rendered* router (the committed memo value) to non-context
-  // consumers such as the native History menu. Registering here -- rather than
-  // inside the useMemo factory -- avoids StrictMode's double-invoked factory
-  // leaving the singleton pointed at a discarded orphan router.
+  /** Register the committed router here, not in the useMemo factory, so StrictMode's double-invoked factory cannot leave the singleton pointed at a discarded router. */
   useEffect(() => {
     setAppRouter(router);
   }, [router]);
 
-  // Mirror the startup preference into localStorage so the next cold launch can
-  // resolve the initial route synchronously, before prefs load over IPC.
+  /** Mirror the startup preference into localStorage so the next cold launch resolves the initial route before prefs load over IPC. */
   const [windowPrefs] = usePrefs("window");
   const startupPage = windowPrefs?.startupPage;
   useEffect(() => {
@@ -125,7 +114,7 @@ export function App() {
     try {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
     } catch {
-      /* best-effort; falls back to "continue" when unreadable */
+      /** Best-effort; falls back to "continue" when unreadable. */
     }
   }, [startupPage]);
   const queryClient = useMemo(

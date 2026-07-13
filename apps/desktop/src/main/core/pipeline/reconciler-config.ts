@@ -10,7 +10,7 @@ import { runFinalize } from "./workers/finalize";
 import { runHarvestMetadata } from "./workers/harvest-metadata";
 
 export const POLL_INTERVAL_MS = 5_000;
-// Per-op caps are a second-order limit; the per-source pool budget binds.
+/** Per-op caps are a second-order limit; the per-source pool budget binds. */
 export const MAX_GLOBAL_INFLIGHT = 8;
 export const PER_OP_CONCURRENCY: Record<Op, number> = {
   harvest_metadata: 3,
@@ -22,7 +22,7 @@ export const PER_OP_CONCURRENCY: Record<Op, number> = {
   finalize: 3,
 };
 
-// Per-invocation wall-clock budget; a hung worker would otherwise freeze the queue.
+/** Per-invocation wall-clock budget; a hung worker would otherwise freeze the queue. */
 export const TASK_WATCHDOG_MS: Record<Op, number> = {
   harvest_metadata: 90_000,
   capture_tweet: 120_000,
@@ -33,7 +33,7 @@ export const TASK_WATCHDOG_MS: Record<Op, number> = {
   finalize: 30_000,
 };
 
-// Periodic orphan-sweep cadence (catches strays that appear mid-runtime).
+/** Periodic orphan-sweep cadence; catches strays that appear mid-runtime. */
 export const ORPHAN_SWEEP_INTERVAL_MS = 60_000;
 
 export class WorkerWatchdogError extends Error {
@@ -58,8 +58,7 @@ export const WORKERS: Record<Op, Worker> = {
     runHarvestMetadata(saveId, payload as { force?: boolean }),
   capture_tweet: async (saveId) => {
     const result = await runCaptureTweet(saveId);
-    // A dead/expired X session yields zero screenshots; surface it so the
-    // reconciler retries with backoff (capture_tweet is non-fatal anyway).
+    /** A dead/expired X session yields zero screenshots; surface it so the reconciler retries with backoff. */
     if (result.authWall && result.captured === 0) {
       throw new TransientError(
         "capture_tweet: X auth wall (session may be expired)",
@@ -73,15 +72,14 @@ export const WORKERS: Record<Op, Worker> = {
   finalize: (saveId) => runFinalize(saveId),
 };
 
-// Cosmetic enhancer ops: when these exhaust retries the save still finalizes,
-// unlike core ops (harvest/blobs/video/finalize) whose final failure fails it.
+/** Cosmetic enhancer ops: when these exhaust retries the save still finalizes, unlike core ops whose final failure fails it. */
 export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
   "capture_tweet",
   "ensure_poster",
   "fetch_avatar",
 ]);
 
-// Pipeline-wide counters, shared across the dispatch loop and task settlement.
+/** Pipeline-wide counters, shared across the dispatch loop and task settlement. */
 export const metrics = {
   tasksDispatched: 0,
   tasksCompleted: 0,
@@ -95,12 +93,12 @@ export interface DueTask extends Task {
   source: string;
 }
 
-// Ops that lease a hidden scrape window; gated on per-source pause state.
+/** Ops that lease a hidden scrape window; gated on per-source pause state. */
 export function isSourceTask(op: Op): boolean {
   return op === "harvest_metadata" || op === "capture_tweet";
 }
 
-// Maps op to its `OPS` spec position; two variants for raw alias vs Drizzle column.
+/** Maps op to its `OPS` spec position; two variants for raw alias vs Drizzle column. */
 export function opOrderCase(opCol: typeof tasks.op) {
   return sql`(CASE ${opCol}
     WHEN 'harvest_metadata' THEN 0

@@ -10,8 +10,7 @@ import {
   SunburstChart,
 } from "./lib/viz";
 
-// Single display switch shared by the dashboard card and the editor
-// preview, so both always render a config the same way.
+/** Shared by the dashboard card and the editor preview so both render a config the same way. */
 
 const LEGEND_DISPLAYS = new Set(["chart", "area", "line"]);
 

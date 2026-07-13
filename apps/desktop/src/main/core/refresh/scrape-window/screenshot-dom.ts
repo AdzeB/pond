@@ -1,8 +1,6 @@
-// Page-side script that locates the focused tweet's article, isolates it from the
-// surrounding timeline, and returns a tight bounding box (plus any quoted-tweet
-// URL). Runs inside the hidden scrape window via executeJavaScript.
+/** Page-side script that isolates the focused tweet's article and returns a tight bounding box plus any quoted-tweet URL; runs via executeJavaScript. */
 export function buildArticleRectExpression(tweetId: string): string {
-  // Scroll to top, not center: centering yields a negative top that clips the article.
+  /** Scroll to top, not center: centering yields a negative top that clips the article. */
   return `(async () => {
     try {
       const tweetId = ${JSON.stringify(tweetId)};

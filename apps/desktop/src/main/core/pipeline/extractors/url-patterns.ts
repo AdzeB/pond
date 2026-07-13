@@ -1,6 +1,6 @@
 import { descriptorFor } from "@pond/schema/sources";
 
-// Re-export descriptor URL patterns to keep call sites stable.
+/** Re-export descriptor URL patterns to keep call sites stable. */
 export const TWITTER_PATTERNS = descriptorFor("twitter").urlPatterns;
 export const INSTAGRAM_PATTERNS = descriptorFor("instagram").urlPatterns;
 export const PINTEREST_PATTERNS = descriptorFor("pinterest").urlPatterns;

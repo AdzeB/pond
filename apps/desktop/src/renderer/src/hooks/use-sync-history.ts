@@ -2,7 +2,7 @@ import type { Source } from "@pond/schema/db";
 import { useEffect, useState } from "react";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 
-// Mirrors the main-process SyncOutcome so the renderer never imports across IPC.
+/** Mirrors the main-process SyncOutcome so the renderer never imports across IPC. */
 type SyncOutcome =
   | "ok"
   | "noop"
@@ -11,7 +11,7 @@ type SyncOutcome =
   | "aborted"
   | "error";
 
-// One recorded sync run, as returned by the `sync.history` query.
+/** One recorded sync run, as returned by the `sync.history` query. */
 export interface SyncRun {
   id: number;
   ts: number;
@@ -30,10 +30,7 @@ export interface SyncRun {
   watchdogTripped: boolean;
 }
 
-// Recorded sync runs for one account, newest first. Re-fetches whenever the
-// account's live state changes so a run that just finished shows up
-// immediately. Passing no accountId returns every run for the source
-// (including pre-multi-account rows with no attribution).
+/** Re-fetches whenever the account's live state changes so a just-finished run shows up immediately; no accountId returns every run for the source, including unattributed pre-multi-account rows. */
 export function useSyncHistory(
   source: Source,
   limit = 10,
@@ -48,8 +45,7 @@ export function useSyncHistory(
         (s) => s.source === source && s.state === "running",
       )?.state;
 
-  // liveState is a refetch trigger, not read in the effect: re-pull history
-  // whenever a run starts/finishes so the timeline stays current.
+  /** liveState is a refetch trigger, not read in the effect: re-pull history whenever a run starts or finishes. */
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentional refetch trigger
   useEffect(() => {
     let cancelled = false;

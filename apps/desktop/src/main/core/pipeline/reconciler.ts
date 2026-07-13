@@ -67,10 +67,7 @@ export function resumeReconciler(): void {
   kickReconciler();
 }
 
-// Stop work for a single save: abort any in-flight tasks, fail still-pending
-// ones, and flip the save out of `ingesting` (via persistSave so the renderer
-// pool updates). In-flight workers that ignore the abort signal finish their
-// current attempt, but no further tasks are dispatched for the save.
+/** Workers that ignore the abort signal finish their current attempt, but no further tasks are dispatched for the save. */
 export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   const db = await getDb();
   const save = db
@@ -91,7 +88,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
       try {
         controller.abort();
       } catch {
-        /* worker may already have settled */
+        /** Worker may already have settled. */
       }
     }
   }
@@ -114,8 +111,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   return true;
 }
 
-// Pause dispatch, then cancel every save still ingesting. Returns the count
-// cancelled. Pausing first stops the reconciler from re-leasing slots mid-sweep.
+/** Pausing first stops the reconciler from re-leasing slots mid-sweep. */
 export async function cancelAllIngest(): Promise<number> {
   pauseReconciler();
   const db = await getDb();
@@ -160,15 +156,10 @@ export function kickReconciler(): void {
   });
 }
 
-// Reset `running` tasks orphaned by a dead process back to pending. A task that
-// is `running` in the DB but absent from this process's in-flight set can only
-// be a leftover from a previous process: a fresh process tracks every task it
-// dispatches (added to `runningTaskIds` before `markRunning`), and the watchdog
-// settles its own tasks within their budget. Without this sweep, a restart while
-// a task was mid-flight (common under dev hot-reload) pins the task `running`
-// forever — `pullDueTasks` only pulls `pending`, so the save never finalizes.
-// Runs at startup (when the set is empty, so all running rows recover) and on
-// the periodic sweep cadence to catch strays mid-runtime.
+/**
+ * A task `running` in the DB but absent from this process's in-flight set can only be a leftover from a dead process; without this sweep it stays `running` forever because `pullDueTasks` only pulls `pending`.
+ * Runs at startup (empty set, so all running rows recover) and on the periodic sweep cadence.
+ */
 async function recoverOrphanedRunningTasks(): Promise<void> {
   const db = await getDb();
   const running = db
@@ -188,7 +179,7 @@ async function recoverOrphanedRunningTasks(): Promise<void> {
       nextRunAt: now,
       updatedAt: now,
     })
-    // Guard against a task settling between the read above and this write.
+    /** Guard against a task settling between the read above and this write. */
     .where(and(inArray(tasks.id, orphanIds), eq(tasks.status, "running")))
     .run();
   log.info("[pond pipeline:reconciler] recovered orphaned running tasks", {
@@ -244,7 +235,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
   metrics.tasksDispatched++;
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
-  // One wide event per task attempt, committed in the finally.
+  /** One wide event per task attempt, committed in the finally. */
   const ev: PipelineTaskEvent = startTaskEvent({
     saveId: task.saveId,
     source: task.source as PipelineTaskEvent["source"],
@@ -269,7 +260,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
         try {
           controller.abort();
         } catch {
-          /* worker may already have settled */
+          /** Worker may already have settled. */
         }
         reject(new WorkerWatchdogError(task.op, budget));
       }, budget);

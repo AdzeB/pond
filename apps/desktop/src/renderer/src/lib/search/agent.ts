@@ -9,33 +9,31 @@ import type { Save } from "@/lib/types";
 import { validatePlan } from "./nl-validate";
 import { executePlan, type PlanResult } from "./plan-exec";
 
-// The renderer-side agentic loop. It asks the main process (ai.agentStep) for one
-// action at a time, executes that action's tool over the candidate pool (where
-// the saves + embeddings live), feeds an observation back, and repeats until the
-// model finishes — either with a `final` plan (grid result) or an `answer`
-// (prose, for counts/comparisons). Every plan passes validatePlan first, and the
-// executor only runs typed steps, so a model can never run arbitrary code.
+/**
+ * Renderer-side agentic loop: asks main (ai.agentStep) for one action at a time, executes it over the candidate pool, feeds an observation back, and repeats until a `final` plan or an `answer`.
+ * @remarks Every plan passes validatePlan and the executor only runs typed steps, so a model can never run arbitrary code.
+ */
 
 type AgentStage = "planning" | "executing";
 
 interface AgentRunInput {
   question: string;
   pool: ReadonlyArray<Save>;
-  // Grounding digest (capFacets output) sent to the model each round.
+  /** Grounding digest (capFacets output) sent to the model each round. */
   facets: unknown;
   maxSteps: number;
-  // Embeds the question for semantic ranking; returns null when unavailable.
+  /** Embeds the question for semantic ranking; returns null when unavailable. */
   embed: (text: string) => Promise<Float32Array | null>;
-  // Narrate progress to the dock.
+  /** Narrates progress to the dock. */
   onStage: (stage: AgentStage) => void;
 }
 
 interface AgentOutcome {
-  // Result ids to show in the grid (may be evidence for an answer turn).
+  /** Result ids to show in the grid; may be evidence for an answer turn. */
   ids: string[];
-  // The committed filter, for suggestions/relaxations.
+  /** The committed filter, for suggestions/relaxations. */
   query: Query;
-  // Non-empty for an answer turn (prose result, no grid needed).
+  /** Non-empty for an answer turn (prose result, no grid needed). */
   answer: string;
 }
 
@@ -46,7 +44,6 @@ function applyLimit(ids: string[], limit: number | undefined): string[] {
   return limit != null && limit > 0 ? ids.slice(0, limit) : ids;
 }
 
-// Count distinct projected values across the pool for a field, descending.
 function topValues(
   pool: ReadonlyArray<Save>,
   field: "source" | "type" | "tags" | "creator",
@@ -68,7 +65,7 @@ function topValues(
   return top.length > 0 ? top.join(", ") : "(none)";
 }
 
-// Library digest for an `inspect` action: totals + top facet values with counts.
+/** Library digest for an `inspect` action. */
 function describeLibrary(pool: ReadonlyArray<Save>): string {
   return [
     `Total items: ${pool.length}.`,
@@ -79,8 +76,7 @@ function describeLibrary(pool: ReadonlyArray<Save>): string {
   ].join(" ");
 }
 
-// Observation text for a run_plan: match count, any aggregate facts, and a small
-// title sample so the model can sanity-check relevance before committing.
+/** Includes a small title sample so the model can sanity-check relevance before committing. */
 function describeResult(result: PlanResult, pool: ReadonlyArray<Save>): string {
   const byId = new Map(pool.map((s) => [s.id, s]));
   const total = result.facts?.total ?? result.ids.length;
@@ -150,8 +146,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
       };
     }
 
-    // action.type === "answer": prose result; back it with the last plan's set
-    // (if any) as supporting evidence in the grid.
+    /** An "answer" action is prose; back it with the last plan's set as supporting evidence in the grid. */
     const evidence = lastPlan ? run(lastPlan) : null;
     return {
       ids: evidence ? applyLimit(evidence.ids, lastPlan?.limit) : [],
@@ -160,7 +155,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
     };
   }
 
-  // Steps exhausted or the model gave up: commit the best plan we ran, if any.
+  /** Steps exhausted or the model gave up: commit the best plan that ran, if any. */
   if (lastPlan) {
     const result = run(lastPlan);
     return {

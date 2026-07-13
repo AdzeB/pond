@@ -7,11 +7,7 @@ import styles from "../../styles.module.css";
 import type { InsightGroup, InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Two-level composition wheel: the inner ring is the slice (e.g. source)
-// and the outer ring subdivides each slice
-// arc by the segment (e.g. media type), keeping angular alignment so parent
-// and children read as one wedge. Without a segment it degrades to a plain
-// ring. Hover narrows the center readout to the hovered arc.
+/** The outer ring keeps angular alignment with the inner slice so parent and children read as one wedge; without a segment it degrades to a plain ring. */
 
 const SIZE = 148;
 const INNER_THICKNESS = 15;
@@ -85,8 +81,7 @@ export function SunburstChart({
   const showCenter = layerVisible("sunburst", viz, "center");
   const showRows = layerVisible("sunburst", viz, "rows");
   const r = SIZE / 2;
-  // The thickness knob drives the inner band; the outer ring stays a couple
-  // of px slimmer, matching the default 15/13 relationship.
+  /** The thickness knob drives the inner band; the outer ring stays slimmer, matching the default 15/13 relationship. */
   const innerThickness = viz?.thickness ?? INNER_THICKNESS;
   const outerThickness = Math.max(innerThickness - 2, 4);
 
@@ -113,8 +108,7 @@ export function SunburstChart({
     endAngle: (d) => d.end,
   });
 
-  // Hovering an inner wedge highlights it plus its children; hovering an
-  // outer arc highlights just that arc and its parent.
+  /** Hovering an inner wedge lights it plus its children; hovering an outer arc lights just that arc and its parent. */
   const isLit = (arc: Arc) => {
     if (!hover) return true;
     if (arc.group !== hover.group) return false;

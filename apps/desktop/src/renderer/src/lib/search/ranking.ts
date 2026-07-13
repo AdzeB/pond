@@ -7,16 +7,13 @@ import { annNearest } from "./ann-index";
 import type { AskSort } from "./nl-query";
 import { searchScores } from "./text-index";
 
-// Shared relevance/ordering helpers for the Ask agent. Extracted from use-ask so
-// the deterministic plan executor (plan-exec.ts) and the agent runner can rank
-// the same way the original flow did. Pure functions over the candidate pool.
+/** Shared relevance/ordering helpers so the plan executor and the agent runner rank the same way as use-ask. */
 
-// Pure-semantic runs (no structured constraints) shouldn't dump the whole
-// library; cap to the most relevant matches above a soft similarity floor.
+/** Pure-semantic runs shouldn't dump the whole library; cap to the most relevant matches above a soft similarity floor. */
 const SEMANTIC_TOP_K = 80;
 const SEMANTIC_MIN_SCORE = 0.15;
 
-// Best-effort media length in seconds from the capture metadata.
+/** Best-effort media length in seconds from the capture metadata. */
 function durationOf(save: Save): number {
   const raw = save.rawJson;
   const cap = raw?.capture?.duration;
@@ -39,8 +36,9 @@ function _sortValue(save: Save, key: AskSort["key"]): number {
     case "fileCount":
       return save.files?.length ?? 0;
   }
-} // Numeric value for any sortable plan field, via the shared field projections so
-// dates/duration/fileCount all resolve consistently. Nullish reads as 0.
+}
+
+/** Uses the shared field projections so dates/duration/fileCount resolve consistently; nullish reads as 0. */
 function fieldSortValue(save: Save, field: SortableField): number {
   const projected = FIELD_DESCRIPTORS[field].project(save);
   return typeof projected === "number" && Number.isFinite(projected)
@@ -48,7 +46,6 @@ function fieldSortValue(save: Save, field: SortableField): number {
     : 0;
 }
 
-// Order by an explicit plan field (savedAt/publishedAt/modifiedAt/duration/fileCount).
 export function sortByField(
   saves: ReadonlyArray<Save>,
   field: SortableField,
@@ -60,8 +57,7 @@ export function sortByField(
   );
 }
 
-// Rank candidates by cosine similarity to the query vector; candidates without
-// an embedding keep their (recency) order, appended after the scored ones.
+/** Candidates without an embedding keep their recency order, appended after the scored ones. */
 export function rankByVector(
   candidates: ReadonlyArray<Save>,
   vector: Float32Array,
@@ -77,16 +73,12 @@ export function rankByVector(
   return [...scored.map((s) => s.save), ...unscored];
 }
 
-// Top-K most similar saves above the floor — the "find by meaning" path for
-// questions that don't pin down any concrete filter. Uses the ANN index for the
-// whole-library scan when available, intersecting its global nearest set with
-// the candidate pool; falls back to an exact linear scan otherwise.
+/** The "find by meaning" path: uses the ANN index when available, intersecting its global nearest set with the candidate pool; exact linear scan otherwise. */
 export function rankSemantic(
   candidates: ReadonlyArray<Save>,
   vector: Float32Array,
 ): Save[] {
-  // Over-fetch from the global index since some nearest neighbours may fall
-  // outside the candidate subset.
+  /** Over-fetch from the global index since some nearest neighbours may fall outside the candidate subset. */
   const ann = annNearest(vector, SEMANTIC_TOP_K * 4);
   if (ann) {
     const byId = new Map(candidates.map((s) => [s.id, s]));
@@ -110,11 +102,10 @@ export function rankSemantic(
   return scored.slice(0, SEMANTIC_TOP_K).map((s) => s.save);
 }
 
-// Deterministic, embedding-free relevance ranking — the floor that keeps "Ask"
-// useful when semantic search is off or no vectors exist yet. Backed by the
-// shared Orama BM25 index ("any"-term match), so it ranks identically to the
-// grid search box. Returns the scoring matches (best first) separately from the
-// non-matching remainder (kept in their incoming order).
+/**
+ * Embedding-free floor that keeps "Ask" useful when semantic search is off; backed by the shared Orama BM25 index so it ranks identically to the grid search box.
+ * @remarks Returns the scoring matches best-first, separately from the non-matching remainder in incoming order.
+ */
 export function rankByKeyword(
   candidates: ReadonlyArray<Save>,
   text: string,

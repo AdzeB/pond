@@ -52,7 +52,7 @@ describe("saves insight engine", () => {
     const saves = [
       save(),
       save({ source: "reddit" }),
-      save({ deletedAt: Date.now() }), // trashed: excluded upstream
+      save({ deletedAt: Date.now() }),
     ];
     const windowed = savesInWindow(saves, 7);
     expect(windowed).toHaveLength(2);
@@ -169,11 +169,10 @@ describe("saves insight engine", () => {
 
   it("drops cards from retired configurations", () => {
     expect(isSavesInsight(config())).toBe(true);
-    // Old saves cards stored measure: "saves"; still valid.
+    /** Persisted cards may carry an explicit measure: "saves"; still valid. */
     expect(
       isSavesInsight({ ...config(), measure: "saves" } as InsightConfig),
     ).toBe(true);
-    // Runs-dataset and byte-measure cards are gone.
     expect(
       isSavesInsight({
         ...config(),

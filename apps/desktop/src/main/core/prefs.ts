@@ -34,8 +34,7 @@ interface SettingsCache {
   imageDownload: ImageDownloadSettings;
 }
 
-// Cache parsed settings until invalidate()/set(); keyed by pond id so a switch
-// never serves the previous library's prefs from memory.
+/** Keyed by pond id so a library switch never serves the previous library's prefs from memory. */
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
 
 export function invalidatePrefs(): void {
@@ -67,9 +66,7 @@ async function fetchSettings(): Promise<SettingsCache> {
   };
 }
 
-// The library slice's source of truth is the bundle's settings.json. Before
-// the bundle exists (onboarding) the slice parks in global.db as `pending`;
-// the first open of a bundle without settings.json seeds the file from it.
+/** The library slice's source of truth is the bundle's settings.json; before the bundle exists the slice parks in global.db as `pending`, and the first open of a bundle without settings.json seeds the file from it. */
 async function resolvePondSlice(
   stored: StoredPrefs,
   pondId: string,
@@ -143,8 +140,7 @@ export async function getPrefs(): Promise<Prefs> {
   return seedDefaultSkills(prefs);
 }
 
-// Back-fill the starter skills exactly once per pond. Defaults are prepended,
-// skipping any slug the user already defined, then `seeded` flips true.
+/** Back-fills the starter skills exactly once per pond, skipping slugs the user already defined. */
 async function seedDefaultSkills(prefs: Prefs): Promise<Prefs> {
   const existing = new Set(prefs.skills.custom.map((s) => s.name));
   const additions = DEFAULT_SKILLS.filter((s) => !existing.has(s.name));
@@ -163,7 +159,6 @@ export async function getImageDownloadPrefs(): Promise<ImageDownloadSettings> {
 
 export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   const pondId = currentPondId();
-  // Ensure seeding has run before we route the patch.
   const current = await loadSettings();
   const { app, pond } = splitPrefsPatch(patch);
 
@@ -171,8 +166,7 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
 
   let pondSlice: PondPrefs;
   if (isUnboundPondId(pondId)) {
-    // No bundle on disk yet: park the library slice in global.db until the
-    // bundle materializes and consumes it.
+    /** No bundle on disk yet: park the library slice in global.db until the bundle materializes and consumes it. */
     if (Object.keys(pond).length > 0) {
       stored = {
         ...stored,

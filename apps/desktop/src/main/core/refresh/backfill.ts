@@ -9,7 +9,7 @@ import { GLOBAL_POOL_CAP } from "./scrape-window";
 export interface RefreshBackfillOptions {
   source?: Source | null;
   onlyMissing?: boolean;
-  // Re-download media even when covers already exist (full overwrite).
+  /** Re-download media even when covers already exist. */
   overwrite?: boolean;
 }
 

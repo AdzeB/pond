@@ -39,8 +39,7 @@ export class CosmosTileExtractor implements Extractor {
         } catch { return ''; }
       })()`;
 
-  // Accept standard auth-token shapes; cosmos's cookie name has changed before.
-  // Current cosmos auth uses `csms_*` JWTs (csms_accessToken/csms_refreshToken).
+  /** Cosmos auth uses `csms_*` JWTs; the other shapes are accepted because the cookie name isn't stable. */
   authCookies(name: string): boolean {
     return (
       name === "csms_accessToken" ||
@@ -101,7 +100,7 @@ export class CosmosTileExtractor implements Extractor {
       }
     })();
 
-    // Synthesize a video candidate from the upstream URL so fetch_video_ytdlp fires.
+    /** Synthesize a video candidate from the upstream URL so fetch_video_ytdlp fires. */
     if (upstream && !media.some((m) => m.type === "video")) {
       media.push({
         url: upstream.url,

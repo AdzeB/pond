@@ -1,5 +1,4 @@
-/* Floats above the dock pill, centered on it. Clicking it opens the Saves
-   control screen. */
+/* Floats above the dock pill, centered on it. */
 .pill {
   position: absolute;
   bottom: calc(100% + 10px);
@@ -52,7 +51,7 @@
   stroke: var(--ds-green-9);
 }
 
-/* Ring crossfades into the checkmark when the batch settles. */
+/* The ring crossfades into the checkmark when the batch settles. */
 .pill[data-phase="done"] .ring svg {
   opacity: 0;
 }

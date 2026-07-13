@@ -1,6 +1,6 @@
 import type { Source } from "./db";
 
-// Raw shapes written into `saves.rawJson`. `RawYtdlp` mirrors yt-dlp's JSON dump 1:1.
+/** Mirrors yt-dlp's JSON dump 1:1; written into `saves.rawJson`. */
 export interface RawYtdlp {
   id?: string;
   title?: string;
@@ -71,7 +71,7 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-// v1 capture schema; mirrors the main-process `Capture` so the renderer can read it.
+/** v1 capture schema; mirrors the main-process `Capture` so the renderer can read it. */
 export interface CaptureAuthor {
   name?: string;
   handle?: string;
@@ -90,7 +90,7 @@ export interface CaptureMedia {
   mimeType?: string;
 }
 
-// Superset of public per-item metrics; each extractor fills the subset its source exposes.
+/** Superset of public per-item metrics; each extractor fills the subset its source exposes. */
 export interface CaptureMetrics {
   likes?: number;
   views?: number;

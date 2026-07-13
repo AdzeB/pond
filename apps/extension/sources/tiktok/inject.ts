@@ -4,10 +4,7 @@ import {
   type RequestLens,
 } from "@/utils/intercept";
 
-// The bookmark icon on TikTok is "Add to Favorites" (collect). Match the
-// favorite/collect verb at the end of any /api/ path so we keep working when
-// TikTok reshuffles the prefix (e.g. /api/aweme/favorite/, /api/item/collect/,
-// /api/commit/item/collect/). Likes ("digg") are intentionally excluded.
+/** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching; likes ("digg") are excluded. */
 const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;
 const FEED_RE = /\/api\/(aweme|item|feed|post)/i;
 
@@ -35,7 +32,7 @@ function awemeIdFromUrl(url: string): string | null {
   }
 }
 
-// Newer endpoints send the id in the POST body rather than the query string.
+/** Newer endpoints send the id in the POST body rather than the query string. */
 async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
   let body: string | null;
   try {
@@ -66,8 +63,8 @@ async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
 
 function isFavoriteType(url: string): boolean {
   try {
+    /** type=1 adds, type=0 removes; absent on endpoints that don't use it. */
     const t = new URL(url, location.href).searchParams.get("type");
-    // type=1 adds, type=0 removes; absent on endpoints that don't use it.
     return t === "1" || t === null;
   } catch {
     return true;

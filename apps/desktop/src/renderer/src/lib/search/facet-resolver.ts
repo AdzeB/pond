@@ -3,11 +3,10 @@ import { embedText, embedTexts } from "@/lib/enrichment/embeddings";
 import type { NlFacets } from "@/lib/search/nl-query";
 import { dot } from "@/lib/util/vector";
 
-// Stage B of the compiler: resolve words Stage A couldn't match to the nearest
-// real facet value using embedding similarity (e.g. "tweets" -> source twitter,
-// "clips" -> type video). It only ever returns values that exist in the library,
-// so it cannot hallucinate a facet. The vocabulary is embedded lazily and cached
-// per facet signature; it rebuilds when the library's distinct values change.
+/**
+ * Compiler Stage B: resolves words Stage A couldn't match to the nearest real facet value by embedding similarity ("tweets" -> source twitter); only returns values that exist in the library, so it cannot hallucinate a facet.
+ * @remarks The vocabulary is embedded lazily and cached per facet signature, rebuilding when the library's distinct values change.
+ */
 
 type FacetField = "source" | "type" | "tags" | "creator";
 
@@ -17,7 +16,7 @@ interface VocabEntry {
   vec: Float32Array;
 }
 
-// A word must clear this cosine similarity to a facet value to be accepted.
+/** A word must clear this cosine similarity to a facet value to be accepted. */
 const MATCH_THRESHOLD = 0.55;
 
 let vocabSignature = "";
@@ -36,7 +35,7 @@ async function buildVocab(facets: NlFacets): Promise<VocabEntry[]> {
   const items: { field: FacetField; value: string }[] = [];
   for (const v of facets.sources) items.push({ field: "source", value: v });
   for (const v of facets.types) items.push({ field: "type", value: v });
-  // Cap open-vocabulary fields so vocab embedding stays bounded on huge libraries.
+  /** Open-vocabulary fields are capped so vocab embedding stays bounded on huge libraries. */
   for (const v of facets.tags.slice(0, 200))
     items.push({ field: "tags", value: v });
   for (const v of facets.creators.slice(0, 200))
@@ -77,8 +76,7 @@ function toPredicate(field: FacetField, value: string): Predicate {
   }
 }
 
-// Resolve each residual word to its nearest facet value (if close enough),
-// returning the matched predicates plus the words that stayed unresolved.
+/** Returns the matched predicates plus the words that stayed unresolved. */
 export async function resolveFacets(
   residual: string,
   facets: NlFacets,
@@ -115,7 +113,6 @@ export async function resolveFacets(
   return { predicates, residual: leftover.join(" ") };
 }
 
-// Embed a free-text query once for semantic ranking of results.
 export async function embedQuery(text: string): Promise<Float32Array | null> {
   const trimmed = text.trim();
   if (!trimmed) return null;

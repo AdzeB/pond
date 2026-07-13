@@ -1,7 +1,4 @@
-// Curated catalogs of on-device models for the settings pickers. Every entry is
-// a Transformers.js model published with ONNX weights, so it runs locally via
-// the same pipelines as the defaults. Ratings are coarse (1-5) and meant for
-// relative comparison within a catalog, not cross-model benchmarks.
+/** Every entry is a Transformers.js model published with ONNX weights, so it runs locally via the same pipelines as the defaults; ratings are coarse and only comparable within a catalog. */
 
 interface ModelSpec {
   label: string;
@@ -11,15 +8,15 @@ interface ModelSpec {
 export interface PickerModel {
   id: string;
   name: string;
-  // Provider/family heading used to group the list.
+  /** Provider/family heading used to group the list. */
   group: string;
-  // Relative ratings, 1 (low) to 5 (high).
+  /** Relative ratings, 1 (low) to 5 (high). */
   speed: number;
   quality: number;
   multilingual?: boolean;
-  // Short right-aligned tag shown in the row (e.g. "384d" or "270 MB").
+  /** Short right-aligned tag shown in the row, e.g. "384d" or "270 MB". */
   meta?: string;
-  // Key/value rows shown in the info panel.
+  /** Key/value rows shown in the info panel. */
   specs: ModelSpec[];
   summary: string;
 }
@@ -37,7 +34,6 @@ export function findModel(
   return catalog.models.find((m) => m.id === id);
 }
 
-// Models in display order, grouped by provider/family.
 export function groupedModels(
   models: readonly PickerModel[],
 ): Array<{ group: string; models: PickerModel[] }> {
@@ -52,8 +48,6 @@ export function groupedModels(
   }
   return order.map((group) => ({ group, models: byGroup.get(group) ?? [] }));
 }
-
-// ---- Text embeddings (semantic search) ------------------------------------
 
 export const EMBEDDING_CATALOG: ModelCatalog = {
   defaultId: "Xenova/all-MiniLM-L6-v2",
@@ -216,8 +210,6 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
   ],
 };
 
-// ---- Caption / OCR (Florence-2) -------------------------------------------
-
 export const CAPTION_CATALOG: ModelCatalog = {
   defaultId: "onnx-community/Florence-2-base-ft",
   searchPlaceholder: "Search caption models…",
@@ -281,8 +273,6 @@ export const CAPTION_CATALOG: ModelCatalog = {
   ],
 };
 
-// ---- Visual similarity (CLIP) ---------------------------------------------
-
 export const CLIP_CATALOG: ModelCatalog = {
   defaultId: "Xenova/clip-vit-base-patch32",
   searchPlaceholder: "Search CLIP models…",
@@ -332,8 +322,6 @@ export const CLIP_CATALOG: ModelCatalog = {
     },
   ],
 };
-
-// ---- Transcription (Whisper) ----------------------------------------------
 
 export const WHISPER_CATALOG: ModelCatalog = {
   defaultId: "Xenova/whisper-tiny",

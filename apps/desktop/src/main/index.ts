@@ -59,7 +59,7 @@ import {
   summonMainWindow,
 } from "./window";
 
-// Force app.name before any menu/dock work; dev falls back to "Electron" otherwise.
+/** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
 if (process.platform === "darwin") {
   app.setAboutPanelOptions({
@@ -134,8 +134,7 @@ app.whenReady().then(async () => {
     openLibraryWindow: () => void openLibraryWindow(),
   });
 
-  // The renderer owns the recently-visited saves (localStorage + resolved
-  // titles); mirror them into the native History menu whenever they change.
+  /** The renderer owns the recently-visited saves; mirror them into the native History menu whenever they change. */
   ipcMain.on(IPC.menuRecents, (_event, entries: RecentMenuEntry[]) => {
     setMenuRecents(Array.isArray(entries) ? entries : []);
   });
@@ -170,7 +169,7 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     await syncLibraryRootMetadata();
-    // Don't snapshot a not-yet-created library; it materializes on first write.
+    /** Don't snapshot a not-yet-created library; it materializes on first write. */
     if (existsSync(libraryRoot())) {
       snapshotBundleJsons();
     }
@@ -178,8 +177,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] recording active library failed", err);
   }
 
-  // Tag colors/groups live in the bundle's tags.json; a fresh index hydrates
-  // from it before anything queries tags.
+  /** Tag colors/groups live in the bundle's tags.json; a fresh index hydrates from it before anything queries tags. */
   try {
     await hydrateTagsFromBundle();
   } catch (err) {
@@ -202,8 +200,7 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] http server failed to start", err);
   }
 
-  // Legacy single-account prefs must fold into the account registry before
-  // recovery/crons touch per-account sync state.
+  /** Legacy single-account prefs must fold into the account registry before recovery/crons touch per-account sync state. */
   try {
     await migrateLegacySyncPrefs();
   } catch (err) {
@@ -229,8 +226,7 @@ async function postLaunchInit(): Promise<void> {
   subscribeToSyncStatus(broadcastSyncStatus);
 }
 
-// Guard the single-writer root JSONs against a bad cloud sync or crash with a
-// rolling snapshot on every open, exactly like Eagle's backup/ folder.
+/** Guards the single-writer root JSONs against a bad cloud sync or crash with a rolling snapshot on every open. */
 function snapshotBundleJsons(): void {
   try {
     const paths = resolvePaths();
@@ -258,7 +254,7 @@ export async function applyPrefsAtRuntime() {
   invalidatePrefs();
   const prefs = await getPrefs();
   await setTrayVisible(prefs.quickCapture.menuBarIcon);
-  // Dev binaries can't register a login item; macOS rejects it.
+  /** Dev binaries can't register a login item; macOS rejects it. */
   if (app.isPackaged) {
     app.setLoginItemSettings({
       openAtLogin: prefs.quickCapture.launchAtLogin,

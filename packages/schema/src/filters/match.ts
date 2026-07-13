@@ -11,7 +11,7 @@ export function matches(query: Query, save: SaveLike): boolean {
   return evalClause(query, save);
 }
 
-// Walk the RQB tree; handles nested groups, "or", and per-rule `negate` for generality.
+/** Walks the RQB tree; handles nested groups, "or", and per-rule `negate`. */
 function evalClause(c: Clause, s: SaveLike): boolean {
   if (isGroup(c)) {
     if (c.rules.length === 0) return true;

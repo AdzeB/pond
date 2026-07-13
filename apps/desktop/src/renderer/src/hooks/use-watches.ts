@@ -2,8 +2,7 @@ import type { Source, WatchKind } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
 import { syncMonitor } from "@/stores/sync-monitor";
 
-// Mirrors the main-process WatchedAccount + live status from `watches.list`,
-// kept local so the renderer never imports across IPC.
+/** Mirrors the main-process WatchedAccount + live status from `watches.list`, kept local so the renderer never imports across IPC. */
 export interface WatchRow {
   id: string;
   source: Source;
@@ -24,7 +23,7 @@ export interface WatchRow {
   syncing: boolean;
 }
 
-// Sources that can be watched (must match core/watch/types.ts).
+/** Must match core/watch/types.ts. */
 export const WATCHABLE: readonly Source[] = [
   "arena",
   "youtube",
@@ -35,7 +34,6 @@ export const WATCHABLE: readonly Source[] = [
   "cosmos",
 ];
 
-// Human label for what a watch points at, e.g. "Are.na channel".
 export function watchKindLabel(kind: WatchKind | undefined): string {
   switch (kind) {
     case "channel":
@@ -55,12 +53,10 @@ export function watchKindLabel(kind: WatchKind | undefined): string {
   }
 }
 
-// Sources whose watch checks borrow a connected account's session.
+/** Sources whose watch checks borrow a connected account's session. */
 export const WATCH_NEEDS_SESSION: readonly Source[] = ["instagram", "twitter"];
 
-// Watched public accounts, oldest first, seeded into the sync-monitor store so
-// cards aren't blank before live pushes arrive. Watch status updates ride the
-// same channel as accounts, keyed by the watch id.
+/** Seeds the sync-monitor store so cards aren't blank before live pushes arrive; watch status updates ride the same channel as accounts, keyed by watch id. */
 export function useWatches(): {
   watches: WatchRow[];
   loading: boolean;
@@ -77,8 +73,7 @@ export function useWatches(): {
       const rows = res?.watches ?? [];
       setWatches(rows);
       for (const watch of rows) {
-        // Watches have no session of their own; "connected" keeps cardModel
-        // out of its Not-connected bucket.
+        /** Watches have no session of their own; "connected" keeps cardModel out of its Not-connected bucket. */
         syncMonitor.seed(watch.id, watch.source, {
           connected: true,
           lastSyncedAt: watch.sync?.lastSyncedAt ?? null,
@@ -97,8 +92,7 @@ export function useWatches(): {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     void refetch().then((rows) => {
-      // Avatars resolve in the background on the main side; one delayed
-      // refetch picks them up without polling.
+      /** Avatars resolve in the background on the main side; one delayed refetch picks them up without polling. */
       if (rows.some((row) => row.avatarUrl === undefined)) {
         timer = setTimeout(() => void refetch(), 4000);
       }

@@ -259,7 +259,6 @@ type ArenaCaptureResult =
   | { ok: true; capture: Capture }
   | { ok: false; reason: string };
 
-// Fetches one Are.na block by id and shapes it into a `Capture`.
 export async function fetchArenaCapture(args: {
   sourceId: string;
 }): Promise<ArenaCaptureResult> {
@@ -321,7 +320,7 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  // Upstream URL for yt-dlp: first valid of embed, attachment, source.url.
+  /** Upstream URL for yt-dlp: first valid of embed, attachment, source.url. */
   const upstream = ((): Capture["upstream"] => {
     const candidates = [
       pickNonEmpty(block.embed?.url),
@@ -332,9 +331,7 @@ export async function fetchArenaCapture(args: {
       if (!candidate) continue;
       try {
         return { url: candidate, host: new URL(candidate).host };
-      } catch {
-        // try next candidate
-      }
+      } catch {}
     }
     return undefined;
   })();
@@ -347,7 +344,7 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  // Outward URL is source.url when present (route embeds to the real host), else the permalink.
+  /** source.url routes embeds to the real host; fall back to the block permalink. */
   const url =
     typeof block.source?.url === "string" && block.source.url
       ? block.source.url

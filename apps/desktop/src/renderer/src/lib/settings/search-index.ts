@@ -2,9 +2,7 @@ import type { ReactNode } from "react";
 import type { GroupConfig, Item } from "@/lib/settings/engine-types";
 import { SECTIONS, type SectionDef } from "@/lib/settings/registry";
 
-// A searchable settings entry: either a whole section, or a field within one.
-// `itemKey` is present for field-level entries and drives the scroll anchor
-// (`setting-<sectionId>-<itemKey>`).
+/** Either a whole section or a field within one; `itemKey` drives the scroll anchor (`setting-<sectionId>-<itemKey>`). */
 export interface SettingsSearchEntry {
   id: string;
   sectionId: string;
@@ -17,7 +15,7 @@ export interface SettingsSearchEntry {
   keywords: string[];
 }
 
-// Only plain-string nodes carry indexable text; richer titles/descriptions skip.
+/** Only plain-string nodes carry indexable text; richer titles/descriptions skip. */
 function asText(node: ReactNode): string | undefined {
   return typeof node === "string" ? node : undefined;
 }
@@ -57,7 +55,7 @@ function sectionEntries(section: SectionDef): SettingsSearchEntry[] {
   const { config } = section;
   const entries: SettingsSearchEntry[] = [];
 
-  // Section-level entry so the page name itself stays searchable.
+  /** Section-level entry so the page name itself stays searchable. */
   entries.push({
     id: section.id,
     sectionId: section.id,
@@ -74,6 +72,6 @@ function sectionEntries(section: SectionDef): SettingsSearchEntry[] {
   return entries;
 }
 
-// Flat index over every settings section and field, built once at module load.
+/** Built once at module load. */
 export const SETTINGS_SEARCH_INDEX: SettingsSearchEntry[] =
   SECTIONS.flatMap(sectionEntries);

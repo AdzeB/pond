@@ -7,19 +7,14 @@ import type { LanguageModel } from "ai";
 import { getAiApiKey } from "../../keychain";
 import { getPrefs } from "../prefs";
 
-// Resolves the configured provider into a concrete AI SDK language model. This
-// is the single networked path: OpenAI/Anthropic/Google use their first-party
-// packages; every other vendor (LM Studio, custom, Groq, Mistral, …) and Ollama
-// go through @ai-sdk/openai-compatible against their OpenAI-style endpoint. The
-// bundled on-device provider has no AI SDK equivalent and is handled separately.
+/** Resolves the configured provider to an AI SDK model: first-party packages for OpenAI/Anthropic/Google, @ai-sdk/openai-compatible for every other vendor; the bundled on-device provider is handled separately. */
 
 interface ResolvedModel {
   id: AiProviderId;
   model: LanguageModel;
 }
 
-// @ai-sdk/openai-compatible appends "/chat/completions" to baseURL, so callers
-// must point it at the "…/v1" root. Ollama's registry base omits it.
+/** @ai-sdk/openai-compatible appends "/chat/completions" to baseURL, so it must point at the "…/v1" root; Ollama's registry base omits it. */
 function ensureV1(base: string): string {
   const trimmed = base.replace(/\/+$/, "");
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
@@ -36,9 +31,7 @@ export async function resolveModel(): Promise<ResolvedModel | null> {
     ai.modelId && ai.modelId.trim().length > 0
       ? ai.modelId.trim()
       : meta.defaultModel;
-  // Only honour a user-supplied endpoint as a baseURL override; first-party
-  // providers otherwise use their package defaults (Gemini's native API differs
-  // from the OpenAI-compat shim the registry lists for the legacy HTTP path).
+  /** Only a user-supplied endpoint overrides baseURL; first-party providers otherwise use their package defaults. */
   const override =
     ai.endpoint && ai.endpoint.trim().length > 0 ? ai.endpoint.trim() : "";
 

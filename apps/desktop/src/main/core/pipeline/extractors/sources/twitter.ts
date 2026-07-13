@@ -13,8 +13,7 @@ export class TwitterTweetExtractor implements Extractor {
   readonly source = "twitter" as const;
   readonly validUrl = TWITTER_PATTERNS;
   readonly cookieDomain = ".x.com";
-  // The signed-in left nav's Profile tab links to /<handle>; the testid is
-  // stable across the x.com redesigns.
+  /** The signed-in left nav's Profile tab links to /<handle>; the testid is stable across x.com redesigns. */
   readonly probeExpression = `(() => {
         try {
           const a = document.querySelector('a[data-testid="AppTabBar_Profile_Link"]');
@@ -42,9 +41,7 @@ export class TwitterTweetExtractor implements Extractor {
     const result = await fetchHtmlInWindow(canonical, "twitter", tweetId);
     const meta = (result.meta ?? {}) as Record<string, unknown>;
 
-    // `meta.media` carries width/height/duration harvested from the DOM, which
-    // the flat `mediaUrls` list drops; prefer it so single videos can size to
-    // their real aspect ratio. Fall back to `mediaUrls` when it's absent.
+    /** `meta.media` carries width/height/duration the flat `mediaUrls` list drops; prefer it so single videos can size to their real aspect ratio. */
     const media = buildMedia(meta.media, result.mediaUrls);
 
     const author = {
@@ -71,18 +68,17 @@ export class TwitterTweetExtractor implements Extractor {
       "bookmarks",
     ]);
 
-    // DOM renders only one quote level; record it, the walker discovers deeper ones live.
+    /** The DOM renders only one quote level; record it, the walker discovers deeper ones live. */
     const quotedRaw = (meta.quotedTweet ?? {}) as Record<string, unknown>;
     const quotedTweets =
       typeof quotedRaw.tweetId === "string" && typeof quotedRaw.url === "string"
         ? [{ tweetId: quotedRaw.tweetId, url: quotedRaw.url }]
         : [];
 
-    // Rich quoted content so the native card can render the nested quote inline
-    // instead of a separate screenshot.
+    /** Rich quoted content so the native card can render the nested quote inline instead of a separate screenshot. */
     const quotedTweet = buildQuotedTweet(quotedRaw);
 
-    // Link-card embed (the linked page's OG preview X renders for summary cards).
+    /** Link-card embed: the linked page's OG preview X renders for summary cards. */
     const card = buildLinkCard((meta.card ?? {}) as Record<string, unknown>);
 
     const extras: Record<string, unknown> = {
@@ -120,8 +116,7 @@ interface QuotedTweetExtra {
   media?: MediaCandidate[];
 }
 
-// Shapes the harvested quote DOM into the rich extra the card consumes. Returns
-// undefined when there's nothing renderable (no text, author, or media).
+/** Returns undefined when there's nothing renderable (no text, author, or media). */
 function buildQuotedTweet(
   raw: Record<string, unknown>,
 ): QuotedTweetExtra | undefined {
@@ -175,8 +170,7 @@ interface LinkCardExtra {
   large?: boolean;
 }
 
-// Shapes the scraped card DOM into the link-card extra the card renders. Returns
-// undefined when there's nothing renderable (no url, title, or image).
+/** Returns undefined when there's nothing renderable (no url, title, or image). */
 function buildLinkCard(
   raw: Record<string, unknown>,
 ): LinkCardExtra | undefined {
@@ -200,9 +194,7 @@ function buildLinkCard(
   };
 }
 
-// Shapes captured media into candidates, preferring the dimensioned
-// `meta.media` entries and falling back to the flat `mediaUrls` list. Dedupes
-// by url so the parent/quote passes don't double-count a shared poster.
+/** Prefers the dimensioned `meta.media` entries over the flat `mediaUrls` list; dedupes by url so the parent/quote passes don't double-count a shared poster. */
 function buildMedia(
   metaMedia: unknown,
   mediaUrls: Array<{ url: string; type?: string; poster?: string }> | undefined,

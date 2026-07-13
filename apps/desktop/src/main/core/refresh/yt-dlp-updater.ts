@@ -17,7 +17,7 @@ import {
   YTDLP_FILENAME,
 } from "./binaries";
 
-// Keeps yt-dlp current between releases, with one-version rollback; fails open.
+/** Keeps yt-dlp current between releases, with one-version rollback; fails open. */
 
 const REPO = "yt-dlp/yt-dlp";
 const LATEST_API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -109,7 +109,7 @@ async function runUpdate(force: boolean): Promise<void> {
   }
 }
 
-// Roll back to the backup when the active binary fails the --version smoke test.
+/** Rolls back to the backup when the active binary fails the --version smoke test. */
 async function healthCheckAndRollback(
   dir: string,
   active: string,
@@ -139,7 +139,7 @@ async function healthCheckAndRollback(
   });
 }
 
-// Move the active binary aside as the rollback backup before installing.
+/** Moves the active binary aside as the rollback backup before installing. */
 async function rotateToPrevious(
   dir: string,
   active: string,
@@ -216,7 +216,7 @@ function smokeTest(binaryPath: string): Promise<boolean> {
       try {
         child.kill("SIGKILL");
       } catch {
-        /* already exited */
+        /** Process may have already exited. */
       }
       resolve(false);
     }, SMOKE_TIMEOUT_MS);
@@ -244,7 +244,7 @@ async function markChecked(dir: string): Promise<void> {
     await mkdir(dir, { recursive: true });
     await writeFile(join(dir, LAST_CHECK_FILE), new Date().toISOString());
   } catch {
-    /* best effort */
+    /** Best effort; a missed stamp only means an extra check next launch. */
   }
 }
 

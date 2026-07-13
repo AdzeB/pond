@@ -3,10 +3,10 @@ import type { WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
-// Are.na watch listing via the public v3 API — no auth, no window. Supports
-// channels, users, and groups; the kind is resolved at add time (resolve.ts).
-// v2 is being wound down: its user-contents endpoint now 301s to a disabled
-// route that returns 410 Gone.
+/**
+ * Are.na watch listing via the public v3 API — no auth, no window.
+ * @remarks v2 is being wound down: its user-contents endpoint 301s to a disabled route that returns 410 Gone.
+ */
 
 const API_BASE = "https://api.are.na/v3";
 const REQUEST_TIMEOUT_MS = 15_000;
@@ -60,25 +60,22 @@ function entriesFromContents(value: ArenaContentsResponse): WatchEntry[] {
   for (const item of value.data ?? []) {
     const id = item?.id != null ? String(item.id) : null;
     if (!id) continue;
-    // Skip nested channels — a channel inside a channel isn't a save.
+    /** A channel inside a channel isn't a save. */
     const cls = (item.base_type ?? item.type ?? "").toLowerCase();
     if (cls === "channel") continue;
-    // Newness is when the block landed in this listing: connected_at for
-    // channel contents, created_at for a user's own activity.
+    /** Newness is when the block landed in this listing: connected_at for channel contents, created_at for a user's own activity. */
     const stamp = item.connection?.connected_at ?? item.created_at ?? null;
     withTime.push({
       entry: { url: `https://www.are.na/block/${id}`, sourceId: id },
       at: stamp ? Date.parse(stamp) : 0,
     });
   }
-  // v3 within-page order is inconsistent between the channel and user
-  // endpoints; the engine expects newest first (entries[0] = watermark).
+  /** v3 within-page order is inconsistent between the channel and user endpoints; the engine expects newest first (entries[0] = watermark). */
   withTime.sort((a, b) => b.at - a.at);
   return withTime.map((x) => x.entry);
 }
 
-// Newest additions first: position_desc tracks connection order in channels,
-// created_at_desc tracks activity in user/group feeds.
+/** Newest additions first: position_desc tracks connection order in channels, created_at_desc tracks activity in user/group feeds. */
 function contentsUrl(kind: "channel" | "user" | "group", slug: string): string {
   const s = encodeURIComponent(slug);
   if (kind === "channel") {
@@ -92,8 +89,7 @@ export async function listArenaWatch(
   handle: string,
   kind?: WatchKind,
 ): Promise<WatchHarvestResult> {
-  // Kind is pinned at add time; watches created before kinds existed fall
-  // back to the old guess order (channel, then user).
+  /** Kind is pinned at add time; kindless watches fall back to guessing channel, then user. */
   const order: Array<"channel" | "user" | "group"> =
     kind === "user"
       ? ["user"]

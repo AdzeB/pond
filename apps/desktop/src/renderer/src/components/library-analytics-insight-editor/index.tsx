@@ -52,18 +52,12 @@ import {
 import { insightEditor, useInsightEditorState } from "@/stores/insight-editor";
 import styles from "./styles.module.css";
 
-// Insight editor as a full-page takeover:
-// a single left pane of collapsible sections — General (data + placement),
-// one style section per configurable layer, and a Layers visibility list —
-// with the rest of the window a dotted canvas where the draft renders as a
-// live card. The draft lives in the insight-editor store; the analytics
-// page persists it on save.
+/** Full-page insight editor; the draft lives in the insight-editor store and the analytics page persists it on save. */
 
 const NONE = "__none__";
 type SegmentValue = InsightSegment | typeof NONE;
 
-// Floating preview mirrors the grid's cell metrics (~3 columns of the 960px
-// dashboard) so the card previews at its real size.
+/** Mirrors the dashboard grid's cell metrics so the card previews at its real size. */
 const CELL_W = 240;
 const ROW_H = 128;
 const GAP = 12;
@@ -84,10 +78,10 @@ const DISPLAY_ICONS: Record<
   table: TableIcon,
 };
 
-// Displays that don't chart per-slice groups; slice/segment don't apply.
+/** Displays that don't chart per-slice groups; slice/segment don't apply. */
 const NO_SLICE_DISPLAYS = new Set<InsightDisplay>(["heatmap", "metric"]);
 
-// Single-hue shapes color by slice, so a segment would be invisible.
+/** Single-hue shapes color by slice, so a segment would be invisible. */
 const NO_SEGMENT_DISPLAYS = new Set<InsightDisplay>([
   ...NO_SLICE_DISPLAYS,
   "ring",
@@ -113,7 +107,6 @@ const FILL_OPTIONS: {
   { value: "none", label: "None" },
 ];
 
-// Display picker menu items: icon + label.
 const displayOptions = DISPLAY_OPTIONS.map(({ value, label }) => {
   const Icon = DISPLAY_ICONS[value];
   return {
@@ -131,8 +124,7 @@ function sliderValue(value: number | readonly number[]): number {
   return typeof value === "number" ? value : (value[0] ?? 0);
 }
 
-// Table-picker style size control: a mini 4×4 grid whose cells mirror the
-// dashboard's cell proportions. Hover previews a span, click commits it.
+/** Table-picker style size control; hover previews a span, click commits it. */
 function SizePicker({
   w,
   h,
@@ -183,9 +175,7 @@ function SizePicker({
   );
 }
 
-// One labelled single-select toggle row for the properties panel. Base UI
-// lets a lone pressed toggle be unpressed (empty group value); ignoring the
-// empty pick keeps exactly one option active.
+/** Base UI lets a lone pressed toggle be unpressed; ignoring the empty pick keeps exactly one option active. */
 function Seg<T extends string>({
   label,
   value,
@@ -224,8 +214,6 @@ function Seg<T extends string>({
   );
 }
 
-// One collapsible sidebar section: a bold header row with a rotating
-// chevron, fields stacked beneath.
 function Section({
   id,
   label,
@@ -254,7 +242,6 @@ function Section({
   );
 }
 
-// One labelled slider row for the properties panel.
 function KnobSlider({
   label,
   min,
@@ -297,8 +284,7 @@ function KnobSlider({
 export function InsightEditorDialog() {
   const { draft, isNew, saves, days } = useInsightEditorState();
 
-  // Keep rendering the last draft during the overlay's exit transition —
-  // save/cancel clear the store before the popup finishes animating out.
+  /** Keep rendering the last draft during the exit transition; save/cancel clear the store before the popup finishes animating out. */
   const lastDraft = useRef<InsightConfig | null>(draft);
   if (draft) lastDraft.current = draft;
   const config = draft ?? lastDraft.current;
@@ -322,10 +308,7 @@ export function InsightEditorDialog() {
     [config, saves, days],
   );
 
-  // Before the first draft there's nothing to render, but the (closed) root
-  // must still mount: Base UI only plays enter transitions when `open` flips
-  // while the root is mounted, so a root that mounts already-open snaps into
-  // place with no animation.
+  /** The closed root must still mount: Base UI only plays enter transitions when `open` flips while the root is mounted. */
   if (!config || !data) {
     return (
       <Dialog.Root open={false}>
@@ -338,8 +321,7 @@ export function InsightEditorDialog() {
   const sliceDisabled = NO_SLICE_DISPLAYS.has(config.display);
   const segmentDisabled = NO_SEGMENT_DISPLAYS.has(config.display);
 
-  // Every hideable layer gets a section (its Enabled switch lives there);
-  // locked layers only appear when they have style knobs to offer.
+  /** Every hideable layer gets a section; locked layers only appear when they have style knobs to offer. */
   const sectionLayers = layersFor(config.display).filter(
     (l) => !l.locked || layerHasKnobs(config.display, l.id),
   );
@@ -348,7 +330,7 @@ export function InsightEditorDialog() {
     insightEditor.patch({ viz: { ...config.viz, ...patch } });
 
   const toggleLayer = (id: string) => {
-    // Area/line points predate the layers system and live in `viz.points`.
+    /** Area/line points live in `viz.points`, not the hidden-layers list. */
     if (
       (config.display === "area" || config.display === "line") &&
       id === "points"
@@ -362,7 +344,7 @@ export function InsightEditorDialog() {
       patchViz({ hidden: [...hidden] });
     } else {
       hidden.delete(id);
-      // `fill: "none"` predates the eye; restore a real fill on unhide.
+      /** `fill: "none"` also hides the fill; restore a real fill on unhide. */
       const revive =
         config.display === "area" &&
         id === "fill" &&
@@ -413,11 +395,9 @@ export function InsightEditorDialog() {
                       onValueChange={(display) =>
                         insightEditor.patch({
                           display,
-                          // New drafts pick up the display's natural grid
-                          // size; placed cards keep whatever the user set.
+                          /** New drafts pick up the display's natural grid size; placed cards keep whatever the user set. */
                           ...(isNew ? defaultSize(display) : {}),
-                          // A sunburst is defined by its second level; give
-                          // it one if the draft lacks a usable segment.
+                          /** A sunburst is defined by its second level; give it one if the draft lacks a usable segment. */
                           ...(display === "sunburst" &&
                           (!config.segment || config.segment === config.slice)
                             ? {
@@ -458,7 +438,7 @@ export function InsightEditorDialog() {
                         onValueChange={(slice) =>
                           insightEditor.patch({
                             slice,
-                            // A segment equal to the new slice is meaningless.
+                            /** A segment equal to the new slice is meaningless. */
                             segment:
                               config.segment === slice ? null : config.segment,
                           })
@@ -585,8 +565,6 @@ export function InsightEditorDialog() {
   );
 }
 
-// Which (display, layer) pairs have style knobs — these get their own
-// sidebar section.
 function layerHasKnobs(display: InsightDisplay, layerId: string): boolean {
   return (
     ((display === "area" || display === "line") && layerId === "line") ||
@@ -597,7 +575,7 @@ function layerHasKnobs(display: InsightDisplay, layerId: string): boolean {
   );
 }
 
-// Style knobs for a (display, layer) pair; null when the layer has none.
+/** Style knobs for a (display, layer) pair; null when the layer has none. */
 function layerKnobs(
   display: InsightDisplay,
   layerId: string,

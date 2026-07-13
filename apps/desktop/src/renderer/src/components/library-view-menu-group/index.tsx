@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-// A labelled section of the view-options panel: an uppercase title with an
-// optional right-aligned readout of the current value (e.g. the Zoom step).
-// When `changed` is set, a small dot trails the title so a non-default group
-// reads at a glance (pairs with the panel's Reset).
+/** When `changed` is set, a dot trails the title so a non-default group reads at a glance. */
 export function Group({
   title,
   value,

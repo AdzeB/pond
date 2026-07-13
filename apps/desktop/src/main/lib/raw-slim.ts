@@ -1,8 +1,7 @@
 import type { RawJson } from "@pond/schema/raw";
 import type Database from "better-sqlite3";
 
-// Keep only the rawJson fields the grid/filter/search read (duration, media type,
-// avatar). This is stored in saves.raw_slim so `saves.list` can skip the heavy blob.
+/** Keeps only the rawJson fields the grid/filter/search read; stored in saves.raw_slim so `saves.list` can skip the heavy blob. */
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   if (!raw) return null;
   const cap = raw.capture;
@@ -29,9 +28,7 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   };
 }
 
-// Derive raw_slim whenever a write carries rawJson, so the slim projection stays in
-// lockstep with the source blob. Returns a new object; leaves the value untouched
-// when the patch doesn't include rawJson (so rawSlim is only rewritten when needed).
+/** Derives raw_slim whenever a write carries rawJson so the slim projection stays in lockstep with the source blob; untouched otherwise. */
 export function withRawSlim<T extends { rawJson?: unknown }>(
   values: T,
 ): T & { rawSlim?: RawJson | null } {
@@ -42,7 +39,7 @@ export function withRawSlim<T extends { rawJson?: unknown }>(
   };
 }
 
-// One-time fill for rows written before raw_slim existed. Cheap no-op once done.
+/** One-time fill for rows without raw_slim; cheap no-op once done. */
 export function backfillRawSlim(sqlite: Database.Database): void {
   const rows = sqlite
     .prepare(
@@ -60,8 +57,7 @@ export function backfillRawSlim(sqlite: Database.Database): void {
       } catch {
         slim = null;
       }
-      // Always write a non-NULL value (JSON `null` when there's nothing to slim) so
-      // unparseable rows aren't re-scanned on every boot.
+      /** Always write a non-NULL value so unparseable rows aren't re-scanned on every boot. */
       update.run(JSON.stringify(slim), row.id);
     }
   });

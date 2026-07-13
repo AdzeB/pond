@@ -32,15 +32,10 @@
   min-width: 0;
 }
 
-/* ── Floating bulk-action bar ─────────────────────────────────────────── */
-
-/* The pill itself is styled by the DataTable primitive; we only offset it
-   horizontally so it stays centered over the content beside the settings nav. */
+/* The pill is styled by the DataTable primitive; the offset keeps it centered over the content beside the settings nav. */
 .action-bar {
   --data-table-action-bar-offset: calc(var(--settings-sidebar-width, 0px) / 2);
 }
-
-/* ── Name cell ─────────────────────────────────────────────────────────── */
 
 .name {
   display: flex;
@@ -92,8 +87,6 @@
   border-radius: var(--ds-radius-sm, 6px);
 }
 
-/* ── Saves / last-used / created ──────────────────────────────────────── */
-
 .meta {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -103,8 +96,6 @@
   color: var(--ds-gray-10);
   white-space: nowrap;
 }
-
-/* ── Kebab actions ────────────────────────────────────────────────────── */
 
 .action-button {
   display: inline-flex;
@@ -130,8 +121,6 @@
   background: var(--ds-gray-a3);
 }
 
-/* ── Inline create draft row ──────────────────────────────────────────── */
-
 .draft-row {
   display: grid;
   align-items: center;
@@ -144,8 +133,6 @@
   min-width: 0;
   padding: 0 12px;
 }
-
-/* ── Empty state ──────────────────────────────────────────────────────── */
 
 .empty {
   display: flex;

@@ -1,6 +1,4 @@
-// All ponds share one renderer origin, so bare localStorage keys are a single
-// bucket across libraries. Pond-scoped caches must namespace their keys with
-// the active pond id (resolved synchronously by the preload).
+/** All ponds share one renderer origin, so bare localStorage keys are a single bucket across libraries; pond-scoped caches must namespace keys with the active pond id. */
 
 export function activePondId(): string {
   try {

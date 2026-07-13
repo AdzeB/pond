@@ -13,8 +13,7 @@ export class InstagramPostExtractor implements Extractor {
   readonly source = "instagram" as const;
   readonly validUrl = INSTAGRAM_PATTERNS;
   readonly cookieDomain = ".instagram.com";
-  // The nav's profile entry wraps the viewer's avatar in a link to
-  // /<handle>/; the embedded viewer config is the markup-independent fallback.
+  /** The nav's profile entry wraps the viewer's avatar in a link to /<handle>/; the embedded viewer config is the markup-independent fallback. */
   readonly probeExpression = `(() => {
         try {
           const img = document.querySelector('a[href^="/"] img[alt*="profile picture"]');

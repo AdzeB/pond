@@ -17,21 +17,14 @@ interface SlideProps {
   inView: boolean;
   title?: string | null;
   chapters?: ChapterCue[];
-  // Controlled aspect ratio from the carousel's cache (kept identical for the
-  // player and its placeholder so toggling in-view never resizes the slide).
-  // Omitted on the single-item path, where the leaf manages its own ratio.
+  /** Controlled ratio from the carousel's cache, kept identical for the player and its placeholder so toggling in-view never resizes the slide. */
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
 }
 
-// Blossom's scroller has a zero-width content box (padding-inline: 50% centres
-// the active slide), so the inline space available to each slide is 0. A
-// media-shell that sizes by shrink-to-fit therefore collapses to width 0 and the
-// slide renders invisibly. The shell MUST derive its width from an aspect-ratio
-// instead. We use the known intrinsic size when stored, otherwise a 16/9
-// fallback that is refined to the real ratio once the media reports its natural
-// size on load — so the box is never zero and ends up pixel-accurate.
+/** Blossom's scroller has a zero-width content box, so a shrink-to-fit shell collapses invisibly; the shell must derive its width from an aspect-ratio.
+ * @remarks 16/9 seeds the box until the media reports its natural size, so it is never zero and ends up pixel-accurate. */
 const FALLBACK_RATIO = 16 / 9;
 
 function ratioStyle(ratio: number): CSSProperties {
@@ -58,8 +51,7 @@ export function Slide({
   return (
     <div className={styles.slide} data-blossom-slide>
       {slide.isVideo ? (
-        // Keep VideoPlayer mounted only near the centre; the poster placeholder
-        // reserves the identical box so swapping the two never shifts layout.
+        /** VideoPlayer mounts only near the centre; the poster placeholder reserves the identical box so swapping never shifts layout. */
         inView ? (
           <VideoSlide
             slide={slide}
@@ -86,10 +78,7 @@ export function Slide({
   );
 }
 
-// Resolve the box ratio: the carousel's shared cache wins, else the value the
-// media reports on load (seeded from the stored dims), else a fallback so the
-// box is never zero. The loaded value overrides the stored dims, which can be
-// stale or rotated and would otherwise letterbox the media inside the shell.
+/** The loaded ratio overrides the stored dims, which can be stale or rotated and would otherwise letterbox the media inside the shell. */
 function useResolvedRatio(slide: MediaSlide, override?: number) {
   const [local, setLocal] = useState<number | null>(() => knownRatio(slide));
   const ratio = override ?? local ?? FALLBACK_RATIO;
@@ -172,8 +161,7 @@ function ImageSlide({
   onError: () => void;
 }) {
   const { ratio, setLocal } = useResolvedRatio(slide, ratioOverride);
-  // Capture the natural ratio both on load and on mount: a cached image is
-  // already `complete` before onLoad can attach, so the ref reads it directly.
+  /** A cached image is already `complete` before onLoad can attach, so the ref reads the natural ratio directly. */
   const measure = useCallback(
     (img: HTMLImageElement | null) => {
       if (img?.complete && img.naturalWidth && img.naturalHeight) {

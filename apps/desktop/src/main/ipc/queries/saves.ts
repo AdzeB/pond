@@ -20,7 +20,7 @@ function isHttpUrl(u: string | undefined | null): u is string {
   return u.startsWith("http://") || u.startsWith("https://");
 }
 
-// Public http(s) URL for the save's primary image, for reverse image search.
+/** Public http(s) URL for the save's primary image, for reverse image search. */
 function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (!raw) return null;
   const media = raw.capture?.media ?? [];
@@ -40,8 +40,7 @@ function derivePublicImageUrl(raw: RawJson | null): string | null {
   return ogImage;
 }
 
-// SQLite caps bound parameters (~32k), so chunk the IN list; without a limit on
-// saves.list this would otherwise throw "too many SQL variables" on large libraries.
+/** SQLite caps bound parameters (~32k), so chunk the IN list; large libraries would otherwise throw "too many SQL variables". */
 const TASK_ID_CHUNK = 10_000;
 
 async function loadTasksFor(
@@ -65,10 +64,7 @@ async function loadTasksFor(
   return grouped;
 }
 
-// Every saves column except the heavy rawJson blob and the large vectors/text;
-// raw_slim carries the projection the grid needs, so saves.list never reads or
-// parses rawJson. embedding/clipEmbedding load via `saves.embeddings` /
-// `saves.clipEmbeddings`, and transcript loads lazily in the detail view.
+/** Every saves column except the heavy rawJson blob and large vectors/text; raw_slim carries the grid projection, and vectors/transcript load via their own queries. */
 const {
   rawJson: _omitRawJson,
   embedding: _omitEmbedding,
@@ -77,9 +73,7 @@ const {
   ...SAVE_LIST_COLUMNS
 } = getTableColumns(saves);
 
-// Columns the enrichment pipeline may write back via `saves.patchDerived`. All
-// are on-device-derived (DB-only, non-synced); writing them never emits a sync
-// action. Maps the wire patch key to the drizzle column.
+/** Columns the enrichment pipeline may write back via `saves.patchDerived`; all on-device-derived and non-synced, so writing them never emits a sync action. */
 const DERIVED_COLUMNS = {
   caption: saves.caption,
   captionModel: saves.captionModel,
@@ -116,8 +110,7 @@ export const savesQueries: QueryHandlerMap = {
       db,
       rows.map((r) => r.id),
     );
-    // raw_slim already holds the slim projection, so present it as rawJson directly
-    // instead of re-slimming the (unselected) full blob.
+    /** raw_slim already holds the slim projection, so present it as rawJson directly instead of re-slimming the unselected full blob. */
     const listRows = rows.map(({ rawSlim, ...rest }) => ({
       ...rest,
       rawJson: rawSlim,
@@ -125,7 +118,7 @@ export const savesQueries: QueryHandlerMap = {
     return toWireSaves(listRows, grouped);
   },
 
-  // Full rawJson for one save; the detail view hydrates it lazily.
+  /** Full rawJson for one save; the detail view hydrates it lazily. */
   async "saves.rawJson"(params) {
     const db = await getDb();
     const id = String(params.id ?? "");
@@ -174,8 +167,7 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true, count: txs.length };
   },
 
-  // Re-run saves stuck in `failed`. `ids` scopes the retry to a selection;
-  // omit it to retry every failed save in the library.
+  /** Re-runs saves stuck in `failed`; `ids` scopes the retry to a selection, omitted retries every failed save. */
   async "saves.retryFailed"(params) {
     const ids = Array.isArray(params.ids)
       ? (params.ids as unknown[]).map(String).filter(Boolean)
@@ -199,9 +191,7 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  // All persisted embeddings (id + vector + model stamp), loaded once on startup
-  // into the renderer's in-memory embedding store. Vectors are excluded from
-  // saves.list to keep that payload small, so this is the only path that reads them.
+  /** All persisted embeddings, loaded once on startup into the renderer's in-memory store; vectors are excluded from saves.list, so this is the only path that reads them. */
   async "saves.embeddings"() {
     const db = await getDb();
     const rows = await db
@@ -219,9 +209,7 @@ export const savesQueries: QueryHandlerMap = {
     }));
   },
 
-  // Persist an on-device embedding. Written directly (not via the sync executor)
-  // because the vector is large and would bloat the sync-action ring; embeddings
-  // are cheap to re-derive per device, so they don't need to sync.
+  /** Written directly, not via the sync executor: the vector would bloat the sync-action ring and embeddings are cheap to re-derive per device. */
   async "saves.setEmbedding"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false };
@@ -240,8 +228,7 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  // All persisted CLIP image vectors, hydrated into the renderer's clip store on
-  // startup. Mirrors `saves.embeddings`; vectors are excluded from saves.list.
+  /** All persisted CLIP image vectors, hydrated into the renderer's clip store on startup; mirrors `saves.embeddings`. */
   async "saves.clipEmbeddings"() {
     const db = await getDb();
     const rows = await db
@@ -259,7 +246,7 @@ export const savesQueries: QueryHandlerMap = {
     }));
   },
 
-  // Lazy transcript for one save (excluded from the list payload, like rawJson).
+  /** Lazy transcript for one save; excluded from the list payload, like rawJson. */
   async "saves.transcript"(params) {
     const db = await getDb();
     const id = String(params.id ?? "");
@@ -271,9 +258,7 @@ export const savesQueries: QueryHandlerMap = {
     return { id, transcript: rows[0]?.transcript ?? null };
   },
 
-  // Generic write-back for on-device enrichment. Whitelisted, DB-only (non-synced
-  // like setEmbedding); the saves AFTER UPDATE trigger refreshes the FTS index for
-  // any text columns (caption/ocr_text/transcript) automatically.
+  /** Whitelisted, DB-only write-back for on-device enrichment; the saves AFTER UPDATE trigger refreshes the FTS index for text columns automatically. */
   async "saves.patchDerived"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false as const };
@@ -321,8 +306,7 @@ export const savesQueries: QueryHandlerMap = {
     if (!target.ok) return target;
     try {
       if (process.platform === "darwin") {
-        // Write the file reference to the pasteboard so it can be pasted as a
-        // file into Finder, Mail, etc. (distinct from the image data copy).
+        /** Write the file reference to the pasteboard so it pastes as a file into Finder or Mail, distinct from the image data copy. */
         const url = `file://${encodeURI(target.path)}`;
         clipboard.writeBuffer("public.file-url", Buffer.from(url, "utf8"));
       } else {

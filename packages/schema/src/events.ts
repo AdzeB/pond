@@ -1,4 +1,4 @@
-/* Wide-event shapes: one denormalised row per unit of work (persisted in `pipeline_events`). */
+/** Wide-event shapes: one denormalised row per unit of work, persisted in `pipeline_events`. */
 
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
@@ -38,7 +38,7 @@ export interface ErrorInfo {
   message: string;
 }
 
-/* Pipeline state when the event fired, captured to avoid a metrics join. */
+/** Pipeline state when the event fired, captured to avoid a metrics join. */
 export interface PipelineSnapshot {
   inflight: number;
   paused: boolean;
@@ -59,9 +59,9 @@ export interface PipelineTaskEvent {
   maxAttempts: number;
   error: ErrorInfo | null;
   trigger: string | null;
-  /* For `deferred`, when the task is scheduled to fire next. */
+  /** For `deferred`, when the task is scheduled to fire next. */
   nextRunAt: number | null;
-  /* Rate-governor pause state at commit time, if any. */
+  /** Rate-governor pause state at commit time, if any. */
   gate: {
     reason: "cooldown" | "breaker" | "at_risk" | "manual";
     until: number;
@@ -88,9 +88,9 @@ export interface SyncRunEvent {
     failed: number;
   } | null;
   error: ErrorInfo | null;
-  /* Mutex age at run start; captured so retrospectives can spot ghost holds. */
+  /** Mutex age at run start; captured so retrospectives can spot ghost holds. */
   lockHeldMs: number | null;
-  /* True if the watchdog aborted the run (also sets `outcome=aborted`). */
+  /** True if the watchdog aborted the run and set `outcome=aborted`. */
   watchdogTripped: boolean;
 }
 
@@ -102,11 +102,11 @@ export interface SaveIngestEvent {
   sourceId: string | null;
   url: string;
   outcome: IngestOutcome;
-  /* Time from save creation to terminal status. */
+  /** Time from save creation to terminal status. */
   durationMs: number;
-  /* Sum of `attempts` across every task. */
+  /** Sum of `attempts` across every task. */
   attempts: number;
-  /* For terminal failures, the op that broke the camel's back. */
+  /** For terminal failures, the op whose final failure ended the ingest. */
   failedOp: Op | null;
   error: ErrorInfo | null;
   fileCount: number;
@@ -115,7 +115,7 @@ export interface SaveIngestEvent {
 
 export type WideEvent = PipelineTaskEvent | SyncRunEvent | SaveIngestEvent;
 
-/* SQLite row: common columns pulled out for indexing; full event in `payload`. */
+/** Common columns pulled out for indexing; the full event lives in `payload`. */
 export const pipelineEvents = sqliteTable(
   "pipeline_events",
   {

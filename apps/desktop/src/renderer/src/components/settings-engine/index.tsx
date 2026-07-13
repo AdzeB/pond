@@ -182,9 +182,7 @@ function Group({
 }) {
   if (group.visible && !group.visible(binding.values)) return null;
 
-  // Items bound to their own slice resolve visibility inside their wrapper;
-  // items on the group binding are filtered here so the empty short-circuit and
-  // masonry layout stay correct for the common case.
+  /** Items bound to their own slice resolve visibility in their wrapper; group-bound items are filtered here so the empty short-circuit stays correct. */
   const items = (group.items ?? []).filter(
     (item) =>
       item.prefsKey !== undefined ||
@@ -234,8 +232,7 @@ function Group({
   );
 }
 
-// Renders one item. Items with their own `prefsKey` bind to that slice and
-// self-resolve visibility; everything else uses the group binding.
+/** Items with their own `prefsKey` bind to that slice and self-resolve visibility; everything else uses the group binding. */
 function ItemRow({
   item,
   groupBinding,

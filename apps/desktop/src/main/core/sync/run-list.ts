@@ -66,8 +66,7 @@ export async function syncListSource(
     accountKey = account.handle ?? ((await inferAccountKey(source)) || "me");
   }
 
-  // On a full walk, hide known ids from the harvester so it doesn't early-stop
-  // at the top of the list — we still dedup below via the real `knownIds` set.
+  /** On a full walk, hide known ids from the harvester so it doesn't early-stop at the top of the list; dedup still happens via the real `knownIds` set. */
   const harvestKnownIds = baseline.full ? [] : Array.from(knownIds);
   const harvest = await harvestSourceList(
     source,
@@ -159,8 +158,7 @@ export async function syncListSource(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
-  // Honest seen: the harvester's scanned total (often more than the fresh
-  // entries it returned), floored at the entries we actually have in hand.
+  /** Honest seen: the harvester's scanned total, floored at the entries actually in hand. */
   ev.harvest = {
     seen: Math.max(harvest.seen ?? 0, combined.length),
     fresh: fresh.length,
@@ -196,8 +194,7 @@ export async function syncListSource(
     progress: { current: 0, total: fresh.length },
   });
 
-  // One batched, transactional insert for the whole harvest instead of
-  // pLimit(8) per-URL round-trips.
+  /** One batched, transactional insert for the whole harvest instead of per-URL round-trips. */
   const bulk = await enqueueSavesBulk(
     fresh.map((entry) => ({ url: entry.url })),
     { trigger: `sync:${source}`, accountId },

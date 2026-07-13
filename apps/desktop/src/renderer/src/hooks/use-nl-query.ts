@@ -15,43 +15,31 @@ import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { useSaves } from "./use-saves";
 
-// The "find anything" orchestrator: runs the deterministic resolver (Stage A),
-// the embedding facet resolver (Stage B), and the LLM compiler (Stage C) behind
-// the validation gate (Stage D), then an agentic zero-result repair. Each stage
-// degrades to the previous one, so it always returns something usable.
+/** The "find anything" orchestrator: deterministic resolver (Stage A), embedding facet resolver (B), and LLM compiler (C) behind the validation gate (D), then zero-result repair; each stage degrades to the previous so it always returns something usable. */
 
 interface NlCompileResult {
-  // The executable query plan (filter + optional rank/group/limit/aggregate).
-  // Today's deterministic path emits a one-step plan; capable providers emit a
-  // richer one (see the LLM plan path below).
+  /** The deterministic path emits a one-step plan; capable providers emit a richer one. */
   plan: QueryPlan;
-  // Leftover words that didn't resolve to a predicate, for keyword ranking.
+  /** Leftover words that didn't resolve to a predicate, for keyword ranking. */
   residual: string;
-  // A query vector for semantic ranking of the residual, when available.
+  /** Query vector for semantic ranking of the residual, when available. */
   queryVector: Float32Array | null;
 }
 
-// Token budget for the grounding facet lists fed to the model. The compile
-// prompt enumerates the library's real sources/types/tags/creators so the model
-// picks valid values; this caps that section so a huge library can't blow up the
-// prompt (and cost/latency). Most important facets are allocated first.
+/** Caps the grounding facet section of the compile prompt so a huge library can't blow up prompt size, cost, and latency. */
 const FACET_TOKEN_BUDGET = 1200;
 
 function tokenLength(text: string): number {
   return encode(text).length;
 }
 
-// Size the grounding section to the model's context window when we know it:
-// ~10% of context, clamped so a tiny local model isn't swamped and a huge
-// frontier window doesn't bloat the prompt. Falls back to the fixed budget.
+/** ~10% of the model's context window, clamped so a tiny local model isn't swamped and a huge window doesn't bloat the prompt. */
 export function facetBudgetFor(context: number | undefined): number {
   if (!context) return FACET_TOKEN_BUDGET;
   return Math.max(400, Math.min(4000, Math.round(context * 0.1)));
 }
 
-// Keep the IPC payload bounded by an actual token budget (not a fixed count), so
-// the grounding section stays within a predictable size regardless of value
-// lengths. Hard per-facet caps still guard against pathological inputs.
+/** Bounded by a token budget rather than a fixed count so the grounding section stays a predictable size; hard per-facet caps guard against pathological inputs. */
 export function capFacets(
   facets: NlFacets,
   budget: number = FACET_TOKEN_BUDGET,
@@ -66,8 +54,7 @@ export function capFacets(
     }
     return out;
   };
-  // Allocate to the smallest, most decisive facets first (types, sources), then
-  // the long tail (tags, creators).
+  /** Allocate to the smallest, most decisive facets first, then the long tail. */
   const types = take(facets.types, 20);
   const sources = take(facets.sources, 50);
   const tags = take(facets.tags, 120);
@@ -77,7 +64,7 @@ export function capFacets(
 
 function mergeModelQuery(model: Query, deterministic: Predicate[]): Query {
   const hasGroups = model.rules.some((r) => "rules" in r);
-  // Preserve nested/or queries verbatim; only merge into a flat AND.
+  /** Preserve nested/or queries verbatim; only merge into a flat AND. */
   if (model.combinator !== "and" || hasGroups) return model;
   const merged = dedupePredicates([
     ...(model.rules as Predicate[]),
@@ -91,15 +78,15 @@ function countMatches(query: Query): number {
   for (const save of pool.snapshot()) {
     if (save.deletedAt) continue;
     if (matches(query, save)) n += 1;
-    if (n > 0) break; // we only care whether it's empty
+    /** Only emptiness matters; stop at the first match. */
+    if (n > 0) break;
   }
   return n;
 }
 
-// If a compiled query matches nothing, relax it by dropping its last (most
-// specific) predicate until something matches or it's empty.
+/** Relaxes an empty-matching query by dropping its last (most specific) predicate until something matches. */
 function repairEmpty(query: Query): Query {
-  if (query.rules.some((r) => "rules" in r)) return query; // skip nested
+  if (query.rules.some((r) => "rules" in r)) return query;
   const rules = [...(query.rules as Predicate[])];
   if (rules.length <= 1) return query;
   let current: Query = query;
@@ -124,29 +111,26 @@ export function useNlCompiler(): (input: string) => Promise<NlCompileResult> {
 
   return useCallback(
     async (input: string): Promise<NlCompileResult> => {
-      // Stage A: deterministic.
+      /** Stage A: deterministic. */
       const stageA = compileStageA(input, facets);
       let rules: Predicate[] = [...(stageA.query.rules as Predicate[])];
       let residual = stageA.residual;
 
-      // Stage B: embedding facet resolution over the residual.
+      /** Stage B: embedding facet resolution over the residual. */
       if (ai?.semanticSearch && residual.trim()) {
         try {
           const b = await resolveFacets(residual, facets);
           rules = dedupePredicates([...rules, ...b.predicates]);
           residual = b.residual;
         } catch {
-          // keep deterministic result
+          /** Keep the deterministic result. */
         }
       }
 
       let query: Query = { combinator: "and", rules };
       let modelPlan: QueryPlan | null = null;
 
-      // Stage C + D: LLM compiler, validated. Every provider compiles to a
-      // QueryPlan (filter + optional group/rank/aggregate) via ai.compilePlan;
-      // the bundled model returns a filter-only plan. Deterministic predicates
-      // merge into the (flat AND) filter. validatePlan clamps untrusted output.
+      /** Stage C + D: every provider compiles to a QueryPlan via ai.compilePlan (the bundled model returns filter-only); deterministic predicates merge into the flat AND filter and validatePlan clamps untrusted output. */
       if (ai?.nlCompiler) {
         try {
           const budget = facetBudgetFor(
@@ -160,30 +144,28 @@ export function useNlCompiler(): (input: string) => Promise<NlCompileResult> {
           validated.filter = mergeModelQuery(validated.filter, rules);
           modelPlan = validated;
         } catch {
-          // fall back to deterministic/embedding result
+          /** Fall back to the deterministic/embedding result. */
         }
       }
 
-      // Embed the residual for semantic ranking, if enabled.
       const queryVector =
         ai?.semanticSearch && residual.trim()
           ? await embedQuery(residual)
           : null;
 
-      // Stage A sort/limit fold into the plan as a fallback ordering/cap.
+      /** Stage A sort/limit fold into the plan as a fallback ordering/cap. */
       const stageRank: RankSpec | undefined = stageA.sort
         ? { kind: "field", field: stageA.sort.key, dir: stageA.sort.dir }
         : undefined;
 
       let plan: QueryPlan;
       if (modelPlan) {
-        // Backfill ordering/limit the model omitted from the deterministic pass.
+        /** Backfill ordering/limit the model omitted from the deterministic pass. */
         if (!modelPlan.rank && stageRank) modelPlan.rank = stageRank;
         if (modelPlan.limit == null && stageA.limit != null) {
           modelPlan.limit = stageA.limit;
         }
-        // Relax empty filters so a real ask never reads as "no matches" — but
-        // leave aggregate ("how many") filters exact so the count stays honest.
+        /** Relax empty filters so a real ask never reads as "no matches"; aggregate filters stay exact so the count stays honest. */
         if (!modelPlan.aggregate) {
           modelPlan.filter = repairEmpty(modelPlan.filter);
         }

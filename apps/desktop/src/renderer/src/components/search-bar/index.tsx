@@ -67,8 +67,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
-  // Seed the editor once from the committed query as plain text; the token
-  // entity plugin highlights the recognized tokens on the next transform pass.
+  /** Seed the editor once from the committed query as plain text; the token plugin highlights recognized tokens on the next transform pass. */
   const seedQuery = useFilterQuery();
   useEffect(() => {
     if (seededRef.current) return;
@@ -83,11 +82,10 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       root.append(paragraph);
       paragraph.selectEnd();
     });
-    // Seeding on open only; later edits drive the query, not the reverse.
+    /** Seeding happens on open only; later edits drive the query, not the reverse. */
   }, [editor, seedQuery]);
 
-  // Commit filters live: every edit re-parses the assembled tokens + residual
-  // text and pushes them into the view store, which the grid already reflects.
+  /** Every edit re-parses the tokens and residual text into the view store, which the grid already reflects. */
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
@@ -124,9 +122,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   }, [editor]);
 
   return (
-    // No `layout` here: the dock pill owns the size morph. An inner `layout`
-    // projects from a stale origin inside the pill's popLayout crossfade,
-    // producing a scale/translate slide-in artifact.
+    /** No `layout` here: an inner `layout` projects from a stale origin inside the pill's popLayout crossfade, producing a slide-in artifact. */
     <motion.div className={styles.card}>
       <div className={styles.editor}>
         <Search

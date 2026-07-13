@@ -25,7 +25,7 @@ export function runWithTimeout(
       try {
         child.kill("SIGKILL");
       } catch {
-        /* ignore: process may have already exited */
+        /** Process may have already exited. */
       }
       resolve({
         code: 124,
@@ -41,7 +41,7 @@ export function runWithTimeout(
       try {
         child.kill("SIGKILL");
       } catch {
-        /* ignore: process may have already exited */
+        /** Process may have already exited. */
       }
       resolve({
         code: 125,
@@ -58,8 +58,7 @@ export function runWithTimeout(
       signal.addEventListener("abort", onAbort, { once: true });
     }
 
-    // Roomier window than stderr: --dump-json listings emit one large JSON
-    // object per entry on stdout.
+    /** Roomier window than stderr: --dump-json listings emit one large JSON object per entry on stdout. */
     child.stdout?.on("data", (chunk: Buffer) => {
       stdout += chunk.toString("utf8");
       if (stdout.length > 1_000_000) stdout = stdout.slice(-1_000_000);

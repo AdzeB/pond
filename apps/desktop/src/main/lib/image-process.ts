@@ -23,7 +23,7 @@ const TARGET_MIME: Record<Exclude<ImageFormat, "original">, string> = {
   avif: "image/avif",
 };
 
-// Resize/transcode a still image per download prefs; null on passthrough or non-still input.
+/** Resizes/transcodes a still image per download prefs; null on passthrough or non-still input. */
 export async function processImage(
   bytes: Buffer,
   filename: string,
@@ -41,7 +41,8 @@ export async function processImage(
   try {
     const pipeline = sharp(bytes, { failOn: "none" });
     const metadata = await pipeline.metadata();
-    if ((metadata.pages ?? 1) > 1) return null; // animated; leave untouched
+    /** Animated images are left untouched. */
+    if ((metadata.pages ?? 1) > 1) return null;
 
     if (prefs.maxLongEdge !== null) {
       pipeline.resize(prefs.maxLongEdge, prefs.maxLongEdge, {

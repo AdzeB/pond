@@ -26,19 +26,14 @@ function looksLikeUrl(value: string): boolean {
   return v.startsWith("http://") || v.startsWith("https://");
 }
 
-// Forgive a missing scheme: "example.com/page" should classify as a real URL
-// in the pipeline, not fall through to a manual bookmark. Anything that isn't
-// clearly a bare domain is left untouched (it becomes a manual note/bookmark).
+/** Forgive a missing scheme so "example.com/page" classifies as a real URL; anything that isn't clearly a bare domain stays untouched. */
 function withScheme(value: string): string {
   if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return value;
   if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(value)) return `https://${value}`;
   return value;
 }
 
-// The "new save" surface as a dock view: a small capture form that morphs out
-// of the pill. The link is the primary field; a note and tags ride along on
-// the same `saves.quickAdd` call. A note without a link becomes a manual note
-// save. Enter saves; Escape (handled by the dock) collapses back to nav.
+/** Note and tags ride along on the same `saves.quickAdd` call; a note without a link becomes a manual note save. */
 export function NewContent() {
   const dock = useDock();
   const [url, setUrl] = useState("");
@@ -49,10 +44,7 @@ export function NewContent() {
   const [source, setSource] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Prefill from the clipboard when it holds a link, so paste-and-go is a
-  // single keystroke. The prefill is selected so typing replaces it when it's
-  // not the link the user wanted. Best-effort: ignore unavailable clipboard or
-  // non-URLs.
+  /** Prefill from the clipboard when it holds a link, selected so typing replaces it if it's not the link the user wanted. */
   useEffect(() => {
     let cancelled = false;
     void navigator.clipboard
@@ -68,10 +60,7 @@ export function NewContent() {
     };
   }, []);
 
-  // Recognize the source as the user types so the link glyph can morph into
-  // the matching brand mark — quiet feedback that the URL will be fully
-  // captured (or fall back to the globe for a generic web page). Debounced;
-  // classification is cheap pattern matching in the main process.
+  /** Recognize the source as the user types so the link glyph can morph into the matching brand mark; classification is cheap pattern matching in the main process. */
   useEffect(() => {
     const tokens = url.trim().split(/\s+/).filter(Boolean);
     const candidate = tokens.length === 1 ? withScheme(tokens[0] ?? "") : "";
@@ -142,9 +131,7 @@ export function NewContent() {
   const submitOne = async (u: string) => {
     const res = await quickAdd(u);
     if (res?.ok) {
-      // `created: false` means the link was already in the library; say so
-      // instead of silently closing, so the collapse isn't mistaken for a
-      // second copy being saved.
+      /** Say the link already existed instead of silently closing, so the collapse isn't mistaken for a second copy being saved. */
       if (res.created === false) {
         const id = res.id;
         pushToast("Already in your library.", {
@@ -162,10 +149,7 @@ export function NewContent() {
 
   const submit = async () => {
     if (!canSubmit) return;
-    // A pasted list of links (whitespace-separated) saves each one, with the
-    // note and tags riding along on every save — the same fan-out the library
-    // grid does for a dropped uri-list. Mixed text falls through to the single
-    // path and becomes one manual save.
+    /** A pasted list of links saves each one — the same fan-out the grid does for a dropped uri-list; mixed text becomes one manual save. */
     const tokens = trimmedUrl.split(/\s+/).filter(Boolean).map(withScheme);
     const isMulti = tokens.length > 1 && tokens.every(looksLikeUrl);
     setBusy(true);
@@ -188,10 +172,7 @@ export function NewContent() {
   const SourceIcon = source ? getSourceIcon(source) : null;
 
   return (
-    // The dock's AnimatePresence wraps this in the swap motion.div; the pill's
-    // `layout` owns the size morph, so this is just the card content. The
-    // anatomy mirrors the ask composer: bare fields, then a bottom toolbar
-    // with quiet actions on the left and the circular submit on the right.
+    /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
     <div className={styles.card}>
       <div className={styles.row}>
         <span

@@ -3,14 +3,12 @@ import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { firstMatch, PINTEREST_PATTERNS } from "../url-patterns";
 
-// Thin wrapper over `fetchPinterestCapture` (scrapes the Relay payload).
 export class PinterestPinExtractor implements Extractor {
   readonly id = "pinterest-pin";
   readonly source = "pinterest" as const;
   readonly validUrl = PINTEREST_PATTERNS;
   readonly cookieDomain = ".pinterest.com";
-  // The __PWS_DATA__ state blob carries the signed-in user; the header
-  // profile link is the markup fallback.
+  /** The __PWS_DATA__ state blob carries the signed-in user; the header profile link is the markup fallback. */
   readonly probeExpression = `(() => {
         try {
           const pws = document.getElementById('__PWS_DATA__');

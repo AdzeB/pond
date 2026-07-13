@@ -27,7 +27,7 @@ export async function runFetchVideoYtdlp(
   const target = resolveYtDlpTarget(save);
   if (!target) return;
 
-  // Require explicit `type: "video"` in capture.media before spawning yt-dlp.
+  /** Spawning yt-dlp is expensive; require explicit `type: "video"` in capture.media first. */
   const captureMedia = readCaptureMedia(save.rawJson);
   if (!captureMedia?.some((m) => m.type === "video")) {
     log.debug(

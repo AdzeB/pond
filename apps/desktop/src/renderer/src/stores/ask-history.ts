@@ -2,12 +2,10 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { loadPrefs, patchPrefsSection } from "@/stores/prefs";
 
-// Recent natural-language questions asked of the agent. Kept separate from the
-// structured search history; powers the AskBar's undo/redo (step back/forward
-// through prior questions) and a recent-questions menu.
-//
-// Persisted in the pond prefs slice (bundle settings.json), never in shared
-// localStorage: questions typed in one library must not surface in another.
+/**
+ * Recent agent questions, powering the AskBar's undo/redo and recent-questions menu.
+ * @remarks Persisted in the pond prefs slice, never shared localStorage: questions typed in one library must not surface in another.
+ */
 
 const HISTORY_CAP = 12;
 
@@ -29,13 +27,13 @@ function hydrate(): void {
       }
     })
     .catch(() => {
-      /* prefs unavailable: history starts empty this session */
+      /** Prefs unavailable: history starts empty this session. */
     });
 }
 
 hydrate();
 
-// Most-recent-first; de-dupes so re-asking promotes the existing entry.
+/** Most-recent-first; de-dupes so re-asking promotes the existing entry. */
 export function recordAsk(question: string): void {
   const text = question.trim();
   if (!text) return;

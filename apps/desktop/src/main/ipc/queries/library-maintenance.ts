@@ -12,7 +12,7 @@ import { libraryRoot } from "../../paths";
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryMaintenanceQueries: QueryHandlerMap = {
-  // The active library's on-disk location, for the settings Storage section.
+  /** The active library's on-disk location, for the settings Storage section. */
   async "library.info"() {
     const path = libraryRoot();
     const name = basename(path).replace(/\.(pond|library)$/, "") || "Library";
@@ -60,7 +60,7 @@ export const libraryMaintenanceQueries: QueryHandlerMap = {
 
   async "reset.factory"() {
     const dbPath = (await import("../../paths")).resolvePaths().indexDb;
-    // Close the handle first so we delete the file, not an inode still being written.
+    /** Close the handle first so we delete the file, not an inode still being written. */
     closeDb();
     try {
       const { rm } = await import("node:fs/promises");

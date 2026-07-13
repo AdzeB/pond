@@ -1,6 +1,4 @@
-/* Capture form morphed out of the pill: link row, note row, tags + submit
-   toolbar. The pill supplies the surface, so fields shed their own chrome;
-   anatomy mirrors the ask composer. */
+/* The pill supplies the surface, so fields shed their own chrome. */
 .card {
   display: flex;
   flex-direction: column;
@@ -24,8 +22,7 @@
   color: var(--ds-gray-9);
 }
 
-/* The link row's glyph remounts when the typed URL classifies to a source,
-   so the brand mark pops in. */
+/* The link row's glyph remounts when the typed URL classifies to a source, so the brand mark pops in. */
 .glyph {
   animation: glyph-in var(--ds-duration-medium) var(--ds-easing-emphasized);
 }
@@ -67,8 +64,6 @@
   outline: none;
   box-shadow: none;
 }
-
-/* ----- Bottom toolbar: tags on the left, submit on the right ----- */
 
 .toolbar {
   display: flex;
@@ -116,7 +111,7 @@
   }
 }
 
-/* A picked tag; clicking removes it. */
+/* Clicking a picked tag removes it. */
 .chip {
   display: inline-flex;
   flex-shrink: 0;
@@ -141,7 +136,6 @@
   }
 }
 
-/* Same circular primary submit as the ask composer's send button. */
 .primary {
   display: inline-flex;
   flex-shrink: 0;

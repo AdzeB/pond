@@ -2,9 +2,7 @@ import type { Source } from "@pond/schema/db";
 import type { NativeMenuItem } from "@/lib/ui/native-menu";
 import type { CardModel } from "./helpers";
 
-// The per-account action menu for a Sources page row, kept in lockstep with
-// the live status (`cardModel`). Sync actions target the account; connect and
-// metadata refresh stay per-platform.
+/** Sync actions target the account; connect and metadata refresh stay per-platform. */
 export function buildAccountMenu(
   account: { id: string; source: Source },
   model: CardModel,

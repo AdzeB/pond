@@ -41,7 +41,7 @@ function packRows(
       });
       cursorLeft += width + gap;
     }
-    // Advance past media + the meta block; without chromeHeight the next row overlaps it.
+    /** Without chromeHeight the next row overlaps the meta block. */
     cursorTop += height + chromeHeight + gap;
     current = [];
     aspectSum = 0;
@@ -57,7 +57,7 @@ function packRows(
       flushRow(available / aspectSum);
     }
   }
-  // Last partial row keeps target height so cards trail off rather than over-stretch.
+  /** The last partial row keeps target height so cards trail off rather than over-stretch. */
   if (current.length > 0) flushRow(targetHeight);
   const totalHeight = Math.max(0, cursorTop - gap);
   return { items, totalHeight };

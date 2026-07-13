@@ -47,8 +47,7 @@ async function inPageInstagramList(
     const entries: Entry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
-    // Incremental early-stop: the saved feed is newest-first, so a run of
-    // already-known posts means we've hit the synced backlog. Off on full runs.
+    /** The saved feed is newest-first, so a run of already-known posts means we've hit the synced backlog; off on full runs. */
     const earlyStopEnabled = known.size > 0;
     let knownPageStreak = 0;
     const STOP_AFTER_KNOWN_PAGES = 2;
@@ -84,8 +83,7 @@ async function inPageInstagramList(
         if (res.status === 401 || res.status === 403) {
           return { ok: false, reason: "auth_required" };
         }
-        // Rate limited: back off with the server's retry hint; never keep
-        // hammering the saved-feed API.
+        /** Back off with the server's retry hint; never keep hammering the saved-feed API. */
         if (res.status === 429) {
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
@@ -169,9 +167,7 @@ async function inPageInstagramList(
             kind = m[1];
             id = m[2];
           }
-        } catch {
-          /* unparseable */
-        }
+        } catch {}
         if (!id || seen.has(id)) continue;
         seen.add(id);
         out.push({

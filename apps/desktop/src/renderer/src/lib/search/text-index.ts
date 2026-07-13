@@ -1,16 +1,10 @@
 import { create, insert, remove, search, update } from "@orama/orama";
 import type { Save } from "@/lib/types";
 
-// A single in-memory Orama BM25 index over every save's searchable text. It is
-// the one keyword-relevance source for both the grid search box
-// (use-search-results) and the Ask agent's keyword ranker (ranking.ts), so the
-// two never drift. Maintained incrementally from pool mutations
-// (stores/pool.ts), which also covers enrichment optimistic updates since those
-// funnel through upsertSave.
-//
-// Orama runs synchronously with the default tokenizer, so its insert/search
-// helpers return values directly (their types are `T | Promise<T>` to allow
-// async plugins we don't use); we cast accordingly to keep callers synchronous.
+/**
+ * The one Orama BM25 index for both the grid search box and the Ask keyword ranker, so the two never drift; maintained incrementally from pool mutations.
+ * @remarks Orama runs synchronously with the default tokenizer — its helpers are typed `T | Promise<T>` only for async plugins we don't use, so we cast to keep callers synchronous.
+ */
 
 const schema = {
   id: "string",
@@ -25,7 +19,7 @@ const schema = {
   url: "string",
 } as const;
 
-// Field weights: title/tags/author count most, enrichment text and the url least.
+/** Field weights: title/tags/author count most, enrichment text and the url least. */
 const BOOST = {
   title: 4,
   tags: 3,
@@ -38,8 +32,7 @@ const BOOST = {
   url: 1,
 } as const;
 
-// Generous cap so a query returns every relevant save (consumers re-rank a
-// candidate subset against these scores); Orama defaults to only 10 otherwise.
+/** Generous cap so a query returns every relevant save; Orama defaults to only 10 otherwise. */
 const MAX_HITS = 10_000;
 
 function makeDb() {
@@ -66,8 +59,7 @@ function docOf(save: Save): Record<string, string> {
   };
 }
 
-// Insert or replace a save in the index. Deleted saves are still indexed; the
-// grid/Ask consumers apply their own live/trashed filter over the score map.
+/** Deleted saves stay indexed; consumers apply their own live/trashed filter over the score map. */
 export function indexSave(save: Save): void {
   const doc = docOf(save);
   if (indexed.has(save.id)) {
@@ -95,9 +87,7 @@ export function clearTextIndex(): void {
 
 type KeywordMatchMode = "all" | "any";
 
-// Run a BM25 query and return a map of save id -> relevance score. `mode` "all"
-// requires every query term to match (threshold 0, like the old grid scorer);
-// "any" includes partial matches (threshold 1, like the old keyword ranker).
+/** Mode "all" requires every query term to match (threshold 0); "any" includes partial matches (threshold 1). */
 export function searchScores(
   term: string,
   mode: KeywordMatchMode = "any",

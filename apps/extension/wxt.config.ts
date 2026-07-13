@@ -2,7 +2,7 @@ import { defineConfig } from "wxt";
 
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
-  // Pin to 3001 (fail loud) to avoid colliding with the website's Next dev server.
+  /** Pin to 3001 with strictPort so dev never collides with the website's Next server. */
   dev: {
     server: {
       port: 3001,
@@ -38,7 +38,7 @@ export default defineConfig({
       "storage",
       "activeTab",
       "tabs",
-      // Required by the "Push session to Pond" flow: reads httpOnly cookies the renderer can't see.
+      /** Required by the "Push session to Pond" flow: reads httpOnly cookies the renderer can't see. */
       "cookies",
     ],
     host_permissions: [

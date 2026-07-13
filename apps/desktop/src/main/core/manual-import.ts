@@ -62,7 +62,7 @@ interface ManualSaveInput {
   url?: string | null;
   note?: string | null;
   tags?: string[];
-  // Absolute paths on disk the main process can read.
+  /** Absolute paths on disk the main process can read. */
   filePaths?: string[];
 }
 
@@ -79,13 +79,13 @@ interface ReadableFile {
   bytes: Buffer;
 }
 
-// Build a complete local save without the URL pipeline; no ops enqueued.
+/** Builds a complete local save without the URL pipeline; no ops are enqueued. */
 export async function createManualSave(
   input: ManualSaveInput,
 ): Promise<ManualSaveResult> {
   const db = await getDb();
   const id = ulid();
-  // ulid doubles as the unique sourceId in the local namespace.
+  /** The ulid doubles as the unique sourceId in the local namespace. */
   const sourceId = id;
   const now = new Date();
 
@@ -102,7 +102,7 @@ export async function createManualSave(
       if (!info.isFile() || info.size === 0) continue;
       readable.push({ path, ...cls, bytes: await readFile(path) });
     } catch {
-      // Skip unreadable files rather than failing the whole import.
+      /** Skip unreadable files rather than failing the whole import. */
     }
   }
 

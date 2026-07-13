@@ -19,7 +19,7 @@ interface ConfirmDialogProps {
   extraActions?: ReactNode;
 }
 
-// Shared confirm prompt; `onConfirm` leaves closing to the caller so async work can keep it open via `busy`.
+/** `onConfirm` leaves closing to the caller so async work can keep the dialog open via `busy`. */
 export function ConfirmDialog({
   open,
   onOpenChange,

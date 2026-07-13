@@ -38,7 +38,6 @@ export function MenuBridge() {
           return;
 
         case "view.inspector.toggle": {
-          // Toggle the drawer: close if open, else reopen the anchored save.
           if (primarySelection.get()) {
             primarySelection.set(null);
           } else {

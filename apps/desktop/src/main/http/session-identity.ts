@@ -5,8 +5,7 @@ interface NamedCookie {
   value: string;
 }
 
-// Stable per-account user id straight from the cookie payload, for platforms
-// that expose one. Lets us tell two accounts apart without any page probe.
+/** Stable per-account user id straight from the cookie payload; tells two accounts apart without any page probe. */
 export function identityKeyFromCookies(
   source: Source,
   cookies: NamedCookie[],
@@ -17,7 +16,7 @@ export function identityKeyFromCookies(
   };
   switch (source) {
     case "twitter": {
-      // twid looks like "u%3D783214" (url-encoded `u=<numeric user id>`).
+      /** twid looks like "u%3D783214" — url-encoded `u=<numeric user id>`. */
       const raw = get("twid");
       if (!raw) return null;
       const decoded = decodeURIComponent(raw);

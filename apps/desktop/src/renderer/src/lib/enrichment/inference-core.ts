@@ -9,17 +9,14 @@ import {
 } from "@huggingface/transformers";
 import { pickDevice } from "@/lib/enrichment/inference-device";
 
-// Shared transformers.js model host. This module owns every on-device model
-// (Florence caption/OCR, CLIP vision + zero-shot, text embeddings, Whisper). It
-// is intentionally free of DOM and prefs access — model ids are passed in by the
-// caller — so it runs unchanged both inside the inference Web Worker (the normal
-// path, keeping the UI thread cool) and on the main thread as a fallback when
-// the worker can't start. Models are cached per id so a prefs override loads a
-// second model rather than thrashing the default.
+/**
+ * Shared transformers.js model host, intentionally free of DOM and prefs access so it runs unchanged in the inference Web Worker and on the main thread as a fallback.
+ * @remarks Models are cached per id so a prefs override loads a second model rather than thrashing the default.
+ */
 
 export type FlorenceTask = "<CAPTION>" | "<DETAILED_CAPTION>" | "<OCR>";
 
-// Build on WebGPU when available, falling back to WASM. Shared by every loader.
+/** Builds on WebGPU when available, falling back to WASM. */
 async function withDevice<T>(
   tag: string,
   build: (device: "webgpu" | "wasm") => Promise<T>,
@@ -35,8 +32,7 @@ async function withDevice<T>(
   return build("wasm");
 }
 
-// Memoize a model loader by key, clearing the cache entry on failure so an
-// offline/transient load can be retried on the next call.
+/** Clears the cache entry on failure so an offline/transient load can be retried on the next call. */
 function memo<T>(
   cache: Map<string, Promise<T>>,
   key: string,
@@ -49,8 +45,6 @@ function memo<T>(
   p.catch(() => cache.delete(key));
   return p;
 }
-
-// ---- Florence-2: caption + OCR -------------------------------------------
 
 interface FlorenceProcessor {
   construct_prompts: (task: string) => string | string[];
@@ -139,8 +133,6 @@ export async function coreFlorence(
   return typeof value === "string" ? value.trim() : "";
 }
 
-// ---- CLIP: image embedding + zero-shot aesthetic --------------------------
-
 type ClipVisionModel = (inputs: Record<string, unknown>) => Promise<{
   image_embeds: { normalize: () => { tolist: () => number[][] } };
 }>;
@@ -210,8 +202,6 @@ export async function coreClipAesthetic(
     .map((r) => r.label);
 }
 
-// ---- Text embeddings ------------------------------------------------------
-
 type Extractor = (
   text: string | string[],
   opts?: { pooling?: "mean" | "cls" | "none"; normalize?: boolean },
@@ -251,8 +241,6 @@ export async function coreEmbedTexts(
   );
   return out.map((o) => Float32Array.from(o.data));
 }
-
-// ---- Whisper: speech-to-text ----------------------------------------------
 
 type Transcriber = (
   audio: Float32Array,

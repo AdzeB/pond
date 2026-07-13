@@ -9,23 +9,19 @@ import { getAccountSync, patchAccountSync } from "./accounts";
 
 export { getAccountSync, patchAccountSync } from "./accounts";
 
-// Most-recent known ids loaded for an incremental run. Lists are newest-first,
-// so this window is enough to detect the already-synced backlog and early-stop.
+/** Most-recent known ids loaded for an incremental run; lists are newest-first, so this window is enough to detect the synced backlog and early-stop. */
 const RECENT_KNOWN_WINDOW = 1500;
 
 export interface SyncBaseline {
-  // Known source ids for dedup + harvester early-stop. Full set on a full sync,
-  // a bounded recent window on an incremental sync.
+  /** Known source ids for dedup + harvester early-stop; full set on a full sync, a bounded recent window on an incremental one. */
   knownIds: Set<string>;
-  // True library size for this account (UI + watermark).
+  /** True library size for this account. */
   total: number;
-  // Whether this run is a full walk (first sync or forced).
+  /** Whether this run is a full walk (first sync or forced). */
   full: boolean;
 }
 
-// Saves owned by this account, plus unattributed rows for its source: rows
-// that predate multi-account or arrived via the extension have no account_id,
-// and treating them as unknown would only make the harvester walk further.
+/** Saves owned by this account plus unattributed rows for its source; rows without account_id treated as unknown would only make the harvester walk further. */
 function baselineWhere(account: ConnectedAccount) {
   return and(
     eq(saves.source, account.source),
@@ -33,8 +29,7 @@ function baselineWhere(account: ConnectedAccount) {
   );
 }
 
-// Decide full vs incremental and load the right baseline. A full walk happens on
-// the very first sync (no prior full sync recorded) or when explicitly forced.
+/** Decides full vs incremental and loads the right baseline; a full walk happens on the very first sync or when forced. */
 export async function loadSyncBaseline(
   account: ConnectedAccount,
   forceFull: boolean,
@@ -65,8 +60,7 @@ export async function loadSyncBaseline(
   return { knownIds, total: totalRow?.c ?? knownIds.size, full: false };
 }
 
-// Persist the incremental cursor after a successful run. Only advance
-// `lastFullSyncAt` on a full walk so the next run can go incremental.
+/** Persists the incremental cursor; `lastFullSyncAt` only advances on a full walk so the next run can go incremental. */
 export async function persistWatermark(
   accountId: string,
   opts: { full: boolean; newestId: string | null; total: number },

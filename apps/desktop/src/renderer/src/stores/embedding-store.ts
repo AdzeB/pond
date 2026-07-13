@@ -1,10 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-// In-memory store of per-save embedding vectors. Loaded once from the DB on
-// startup (vectors are excluded from saves.list to keep that payload small) and
-// kept current by the embedding sweep. `version` bumps on every mutation so
-// semantic-rank consumers re-run when new vectors arrive.
+/** Per-save embedding vectors: loaded once on startup (vectors are excluded from saves.list to keep it small), kept current by the sweep; `version` bumps on every mutation so semantic-rank consumers re-run. */
 
 interface EmbeddingEntry {
   vec: Float32Array;
@@ -33,7 +30,7 @@ interface WireEmbedding {
 
 let loadInflight: Promise<void> | null = null;
 
-// Hydrate the store from persisted embeddings. Idempotent.
+/** Idempotent. */
 export function loadEmbeddings(): Promise<void> {
   if (store.state.loaded) return Promise.resolve();
   if (loadInflight) return loadInflight;
@@ -64,7 +61,9 @@ export function loadEmbeddings(): Promise<void> {
     }
   })();
   return loadInflight;
-} // Record a freshly-computed vector (and persist it through IPC, fire-and-forget).
+}
+
+/** Persists through IPC, fire-and-forget. */
 export function setEmbedding(
   id: string,
   vec: Float32Array,
@@ -86,10 +85,7 @@ export function setEmbedding(
     });
 }
 
-// Drop in-memory vectors so the embedding enricher treats those saves as
-// eligible again and re-embeds them. Pass `ids` to scope to a selection; omit to
-// drop everything. Persisted rows are overwritten as each fresh vector lands, so
-// nothing is permanently lost.
+/** Dropping in-memory vectors makes the enricher re-embed those saves; persisted rows are overwritten as each fresh vector lands, so nothing is permanently lost. */
 export function clearEmbeddings(ids?: readonly string[]): number {
   if (ids && ids.length > 0) {
     let count = 0;

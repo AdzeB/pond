@@ -1,5 +1,3 @@
-/* Zoom: a discrete slider snapping across the density steps, flanked by a small
-   and large square that carry the small -> roomy metaphor. */
 .zoom-row {
   display: flex;
   gap: 10px;

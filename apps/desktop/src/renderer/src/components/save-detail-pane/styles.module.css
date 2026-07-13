@@ -1,6 +1,4 @@
-/* The Save Details panel, embedded in the modal's unified surface. It keeps a
-   fixed --detail-w so it clips cleanly while the pane collapses, rather than
-   reflowing its content. */
+/* A fixed --detail-w clips cleanly while the pane collapses instead of reflowing its content. */
 .detail-card {
   position: relative;
   display: flex;
@@ -29,7 +27,6 @@
   overflow-y: auto;
 }
 
-/* Engagement tiles. */
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -63,7 +60,6 @@
   color: var(--ds-gray-12);
 }
 
-/* Identity rows with subtle zebra striping. */
 .rows {
   display: flex;
   flex-direction: column;
@@ -137,14 +133,12 @@
   color: var(--ds-gray-12);
 }
 
-/* Dominant-colour swatches container. */
 .colors {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
 }
 
-/* Read-only style chips inside the Insights section. */
 .tags {
   display: flex;
   flex-wrap: wrap;

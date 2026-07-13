@@ -29,10 +29,7 @@ async function inPagePinterestList(
     return { ok: false, reason: "auth_required" };
   }
 
-  // The Pinterest grid only exposes a tiny thumbnail and (often empty) alt
-  // text per card. We emit bare stub entries so every pin goes through the
-  // per-pin harvester in `inPagePinterestHarvest`, which can read the real
-  // title/description/author/board and full-resolution image.
+  /** The grid only exposes a tiny thumbnail per card; emit bare stubs so every pin goes through the per-pin harvester for real metadata and full-resolution images. */
   function collectFn() {
     const out: Array<{ sourceId: string; url: string }> = [];
     const seen = new Set<string>();
@@ -44,9 +41,7 @@ async function inPagePinterestList(
       try {
         const u = new URL(a.href, location.origin);
         id = u.pathname.match(/\/pin\/(\d+)/)?.[1] ?? null;
-      } catch {
-        /* unparseable */
-      }
+      } catch {}
       if (!id || seen.has(id)) continue;
       seen.add(id);
       out.push({

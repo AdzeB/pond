@@ -27,7 +27,6 @@ export const IPC = {
   refreshSave: "pond:refresh-save",
   refreshBackfillStart: "pond:refresh-backfill-start",
   refreshBackfillCancel: "pond:refresh-backfill-cancel",
-  // Ingest pipeline: stop controls.
   pipelinePause: "pond:pipeline-pause",
   pipelineCancelSave: "pond:pipeline-cancel-save",
   pipelineCancelAll: "pond:pipeline-cancel-all",
@@ -37,7 +36,6 @@ export const IPC = {
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",
   syncCancel: "pond:sync-cancel",
-  // Rate governor: account-safety pause state + kill switch.
   governorSetPaused: "pond:governor-set-paused",
   governorResumeSource: "pond:governor-resume-source",
   storageStatus: "pond:storage-status",
@@ -45,24 +43,19 @@ export const IPC = {
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
   menuPopup: "pond:menu-popup",
-  // Active pond id, fetched synchronously from the preload so pond-scoped
-  // renderer caches (localStorage) can namespace their keys before any module
-  // hydrates. Re-resolved on every reload, so a dev soft-repoint stays fresh.
+  /** Fetched synchronously from the preload so pond-scoped renderer caches can namespace their keys before any module hydrates. */
   pondId: "pond:pond-id",
-  // Recently-visited saves pushed renderer -> main to populate the History menu.
   menuRecents: "pond:menu-recents",
-  // A recent chosen from the History menu, sent main -> renderer to open it.
   menuOpenSave: "pond:menu-open-save",
 } as const;
 
-// A recently-visited save surfaced in the native History menu.
+/** A recently-visited save surfaced in the native History menu. */
 export interface RecentMenuEntry {
   id: string;
   title: string;
 }
 
-// Serializable native context-menu template sent renderer -> main. The renderer
-// keeps the click handlers; main returns the `id` of the chosen item (or null).
+/** Serializable context-menu template sent renderer -> main; the renderer keeps the click handlers and main returns the chosen item's `id`. */
 export interface ContextMenuTemplateItem {
   id?: string;
   type?: "normal" | "separator" | "submenu" | "checkbox";

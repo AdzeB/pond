@@ -14,8 +14,7 @@ export class AskOption extends MenuOption {
   }
 }
 
-// The grouped popup, portaled into the plugin's caret-anchored container so it
-// always sits on the active trigger token. `.menu` positions it above the caret.
+/** Portaled into the plugin's caret-anchored container so it sits on the active trigger token; `.menu` positions it above the caret. */
 export function AskMenuPanel({
   menu,
   options,

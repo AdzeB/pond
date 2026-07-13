@@ -5,7 +5,7 @@ import {
 } from "@/lib/save/skills";
 import type { Save } from "@/lib/types";
 
-// How many skills the "/" menu shows before a "Show N more" expander appears.
+/** Skills shown in the "/" menu before the "Show N more" expander appears. */
 const GROUP_CAP = 5;
 const LOOKUP_CAP = 8;
 

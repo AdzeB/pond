@@ -1,5 +1,3 @@
-/* ----- Inline chips (skill / mention / tag) ----- */
-
 .chip {
   display: inline-flex;
   align-items: center;

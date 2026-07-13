@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
-// has:transcript — video/audio saves with an on-device speech transcript.
+/** has:transcript — video/audio saves with an on-device speech transcript. */
 export const transcript = defineField({
   id: "transcript",
   type: "optional",

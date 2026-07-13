@@ -11,7 +11,7 @@ import {
   YOUTUBE_PATTERNS,
 } from "./extractors/url-patterns";
 
-// Canonical id for `saves.source_id`, matching the extractor's regex capture.
+/** Canonical id for `saves.source_id`, matching the extractor's regex capture. */
 export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
   let url: URL;
   try {
@@ -30,7 +30,7 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
     }
     case "pinterest": {
       const m = firstMatch(url, PINTEREST_PATTERNS);
-      // pin.it short link: no numeric id without a follow; use the slug.
+      /** pin.it short link: no numeric id without a follow; use the slug. */
       return m?.[1] ?? (url.pathname.replace(/^\//, "") || null);
     }
     case "arena": {
@@ -38,7 +38,7 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
       return m?.[1] ?? null;
     }
     case "cosmos": {
-      // Cosmos uses path segments; keep them stable as the id.
+      /** Cosmos uses path segments; keep them stable as the id. */
       return url.pathname.replace(/\/$/, "").replace(/^\//, "") || null;
     }
     case "tiktok": {
@@ -58,10 +58,10 @@ export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
       return m?.[1] ?? null;
     }
     case "web":
-      // Generic links have no upstream id; the normalized href is the dedupe key.
+      /** Generic links have no upstream id; the normalized href is the dedupe key. */
       return url.href;
     case "local":
-      // Local saves mint their own id; no upstream URL.
+      /** Local saves mint their own id; no upstream URL. */
       return null;
   }
 }

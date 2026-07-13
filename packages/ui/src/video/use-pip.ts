@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-// Native HTMLVideoElement PiP; Document PiP is unsupported in Electron (electron#39633).
+/** Native HTMLVideoElement PiP; Document PiP is unsupported in Electron (electron#39633). */
 export function usePip(opts: {
   videoRef: React.RefObject<HTMLVideoElement | null>;
 }): { pipSupported: boolean; pipActive: boolean; requestPip: () => void } {

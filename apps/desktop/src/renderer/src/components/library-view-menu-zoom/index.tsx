@@ -25,9 +25,7 @@ function closestIndex(value: number): number {
   return best;
 }
 
-// Zoom is a discrete, index-driven slider that snaps to the five named density
-// steps. The growing squares on each end carry the small -> roomy metaphor, and
-// the active step's name reads in the group header.
+/** Index-driven slider that snaps to the five named density steps. */
 export function ZoomSection() {
   const { state, actions } = useView();
   const index = closestIndex(state.zoom);

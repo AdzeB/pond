@@ -1,5 +1,4 @@
-// Friendly path for the library switcher: the bundle's parent directory with the
-// user's home collapsed to `~` (the library name is shown separately).
+/** Friendly path for the library switcher: the bundle's parent directory with home collapsed to `~`; the library name is shown separately. */
 export function prettyPath(path: string): string {
   const trimmed = path.replace(/\/+$/, "");
   const slash = trimmed.lastIndexOf("/");

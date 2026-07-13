@@ -59,7 +59,7 @@ export function registerAutoUpdater() {
 
   setInterval(() => {
     void autoUpdater.checkForUpdates().catch(() => {
-      /* polled failures are non-fatal; logged by the handler above */
+      /** Polled failures are non-fatal; logged by the error handler. */
     });
   }, SIX_HOURS_MS);
 }

@@ -2,13 +2,11 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 interface EnrichmentStatus {
-  // On-device enricher runs currently executing.
+  /** On-device enricher runs currently executing. */
   inflight: number;
-  // Keys (`${enricher.id}:${save.id}`) currently running, so a save's detail
-  // view can show which of its enrichments are working right now.
+  /** Keys (`${enricher.id}:${save.id}`) currently running, so a save's detail view can show which of its enrichments are working. */
   activeKeys: ReadonlySet<string>;
-  // Keys that failed this session (retried after a restart/upgrade, or when the
-  // user explicitly retries).
+  /** Keys that failed this session; retried after a restart/upgrade or an explicit user retry. */
   failedKeys: ReadonlySet<string>;
 }
 

@@ -13,8 +13,7 @@ export class TikTokVideoExtractor implements Extractor {
   readonly source = "tiktok" as const;
   readonly validUrl = TIKTOK_PATTERNS;
   readonly cookieDomain = ".tiktok.com";
-  // The left side-nav "Profile" link points to /@<handle> when signed in.
-  // data-e2e is stable and avoids matching the many creator links in the feed.
+  /** The side-nav "Profile" link points to /@<handle> when signed in; data-e2e is stable and avoids matching creator links in the feed. */
   readonly probeExpression = `(() => {
         try {
           const nav = document.querySelector('a[data-e2e="nav-profile"]');
@@ -92,7 +91,7 @@ export class TikTokVideoExtractor implements Extractor {
     if (typeof metricsRaw.shares === "number") {
       metrics.shares = metricsRaw.shares;
     }
-    // TikTok labels this "Plays"; keep the same key so the UI matches.
+    /** TikTok labels this "Plays"; keep the same key so the UI matches. */
     if (typeof metricsRaw.plays === "number") metrics.plays = metricsRaw.plays;
     if (typeof metricsRaw.bookmarks === "number") {
       metrics.bookmarks = metricsRaw.bookmarks;

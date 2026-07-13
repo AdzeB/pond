@@ -10,9 +10,7 @@ interface State {
   componentStack: string | null;
 }
 
-// Top-level safety net for render crashes outside the router's own boundary
-// (effects bridges, portals, global dialogs). Renders ErrorScreen with the
-// captured error + React component stack so the failure stays diagnosable.
+/** Catches render crashes outside the router's own boundary, keeping the error and component stack diagnosable. */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, componentStack: null };
 

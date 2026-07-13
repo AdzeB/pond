@@ -3,9 +3,7 @@ import { type ContextMenuTemplateItem, IPC } from "../../../shared/constants";
 import { safeHandle } from "../helpers";
 
 export function registerMenuHandlers(): void {
-  // Build a native context menu from a serializable template, pop it up at the
-  // cursor, and resolve with the chosen item's `id` (or null when dismissed).
-  // Styling is intentionally native for now — v2 can revisit.
+  /** Builds a native context menu from a serializable template and resolves with the chosen item's `id`, or null when dismissed. */
   safeHandle(
     IPC.menuPopup,
     (event, template: ContextMenuTemplateItem[]): Promise<string | null> => {
@@ -28,7 +26,7 @@ export function registerMenuHandlers(): void {
             };
             if (item.accelerator) {
               out.accelerator = item.accelerator;
-              // Display the shortcut without binding it to the popup.
+              /** Display the shortcut without binding it to the popup. */
               out.registerAccelerator = false;
             }
             if (item.type === "checkbox") {
@@ -54,8 +52,7 @@ export function registerMenuHandlers(): void {
 
         const window = BrowserWindow.fromWebContents(event.sender) ?? undefined;
 
-        // The click handlers fire synchronously before this callback returns;
-        // the deferred null only lands when the menu was dismissed.
+        /** The click handlers fire synchronously before this callback returns; the deferred null only lands when the menu was dismissed. */
         menu.popup({
           window,
           callback: () => setTimeout(() => finish(null), 0),

@@ -9,8 +9,7 @@
   overscroll-behavior: contain;
 }
 
-/* Edge fades — only shown when there's actually content hidden past that edge.
-   They fade to the surface color so the clipped row dissolves into the popup. */
+/* Fades to the surface color so the clipped row dissolves into the popup. */
 .root::before,
 .root::after {
   position: absolute;

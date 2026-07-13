@@ -3,13 +3,10 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { Save } from "@/lib/types";
 
-// The insight being edited in the analytics page's editor. Lives in a store
-// so the editor overlay (form panel + floating preview card) can render from
-// anywhere — it opens whenever a draft exists.
-//
-// The analytics page owns persistence: it registers a save handler while
-// mounted and pushes the dashboard-filtered saves + window that the editor's
-// filter menus and live preview work from.
+/**
+ * The insight being edited; lives in a store so the editor overlay can render from anywhere — it opens whenever a draft exists.
+ * @remarks The analytics page owns persistence: it registers a save handler while mounted and pushes the dashboard-filtered saves + window the editor works from.
+ */
 export interface InsightEditorState {
   draft: InsightConfig | null;
   /** True when the draft isn't on the dashboard yet. */
@@ -37,7 +34,7 @@ export const insightEditor = {
       s.draft ? { ...s, draft: { ...s.draft, ...patch } } : s,
     );
   },
-  // Idempotent: dialog dismissals (Escape, backdrop) also land here.
+  /** Idempotent: dialog dismissals (Escape, backdrop) also land here. */
   cancel(): void {
     store.setState((s) => (s.draft ? { ...s, draft: null } : s));
   },

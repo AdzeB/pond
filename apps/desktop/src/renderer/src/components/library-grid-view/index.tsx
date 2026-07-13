@@ -12,7 +12,7 @@ import { useGridWidth } from "@/stores/shell-state";
 
 const ITEM_GAP = 16;
 
-// Uniform square-cell grid (ignores aspect ratio). Packed manually so it rides the same PackedGrid windowing path.
+/** Uniform square cells packed manually so they ride the same PackedGrid windowing path. */
 function packUniform(
   saves: ReadonlyArray<Save>,
   containerWidth: number,
@@ -25,14 +25,14 @@ function packUniform(
   }
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
-  // Square media: height == column width, plus the meta chrome underneath.
+  /** Square media: height equals column width, plus the meta chrome underneath. */
   const cellH = colW + chromeHeight;
   const place = (idx: number) => {
     const col = idx % cols;
     const row = Math.floor(idx / cols);
     return {
       width: colW,
-      // `height` feeds viewport windowing, so it spans the whole cell, not just media.
+      /** `height` feeds viewport windowing, so it spans the whole cell, not just media. */
       height: cellH,
       top: row * (cellH + gap),
       left: col * (colW + gap),

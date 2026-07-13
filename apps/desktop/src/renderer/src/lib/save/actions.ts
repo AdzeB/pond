@@ -30,7 +30,7 @@ export async function copyUrl(url: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(url);
   } catch {
-    /* clipboard unavailable, drop silently */
+    /** Clipboard unavailable; drop silently. */
   }
 }
 
@@ -38,12 +38,12 @@ export async function copyId(id: string): Promise<void> {
   try {
     await navigator.clipboard.writeText(id);
   } catch {
-    /* clipboard unavailable, drop silently */
+    /** Clipboard unavailable; drop silently. */
   }
 }
 
 export function focusPaneTitle(): void {
-  // Drawer is already open; wait a couple of frames for the title to mount before giving up.
+  /** Drawer is already open; wait a couple of frames for the title to mount before giving up. */
   let tries = 0;
   const tick = () => {
     const el = document.querySelector<HTMLElement>("[data-pane-title]");
@@ -99,7 +99,7 @@ export async function copyFilePath(save: Save): Promise<void> {
   try {
     await navigator.clipboard.writeText(result.path);
   } catch {
-    /* clipboard unavailable, drop silently */
+    /** Clipboard unavailable; drop silently. */
   }
 }
 
@@ -119,7 +119,7 @@ export async function openInBrowser(save: Save): Promise<void> {
       await window.pond.openExternal(parsed.toString());
     }
   } catch {
-    /* malformed URL, drop silently */
+    /** Malformed URL; drop silently. */
   }
 }
 

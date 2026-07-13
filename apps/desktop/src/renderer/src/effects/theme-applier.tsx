@@ -9,9 +9,7 @@ import { useMediaMatch } from "rooks";
 import { pondScopedKey } from "@/lib/pond-scope";
 import { usePrefs } from "@/stores/prefs";
 
-// Shadowed in localStorage so the index.html boot script can restore the theme
-// before the bundle parses (kills FOUC). Keyed per pond: appearance is a pond
-// pref, so the mirror must not leak the previous library's theme.
+/** Shadowed in localStorage so the index.html boot script can restore the theme before the bundle parses; keyed per pond so the mirror never leaks the previous library's theme. */
 const SHELL_KEY = pondScopedKey("pondShell");
 
 interface ShellPatch {
@@ -33,7 +31,7 @@ function persistShell(patch: ShellPatch) {
     const prev = raw ? JSON.parse(raw) : {};
     localStorage.setItem(SHELL_KEY, JSON.stringify({ ...prev, ...patch }));
   } catch {
-    // localStorage can throw in private modes; the shell just won't remember across launches.
+    /** localStorage can throw in private modes; the shell just won't remember across launches. */
   }
 }
 
@@ -54,7 +52,7 @@ export function ThemeApplier() {
         prefersDark,
       );
       const v = themeEngineVars(def);
-      // Match the static ramps' P3 tier: boost accent chroma on wide-gamut displays.
+      /** Match the static ramps' P3 tier: boost accent chroma on wide-gamut displays. */
       const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
       root.style.setProperty("--ds-base-l", String(v.baseL));
       root.style.setProperty("--ds-base-c", String(v.baseC));

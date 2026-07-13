@@ -74,7 +74,7 @@ export function TagMenu({
           name: g.name,
           items: g.tagNames.filter(matches),
         }))
-        // Sections only make sense with rows; submenus stay browsable empty.
+        /** Sections only make sense with rows; submenus stay browsable empty. */
         .filter((g) => (groupsAs === "section" ? g.items.length > 0 : true))
         .filter((g) => (needle ? g.items.length > 0 : true)),
     [groups, matches, needle, groupsAs],

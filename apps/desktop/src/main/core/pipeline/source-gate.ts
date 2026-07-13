@@ -1,5 +1,4 @@
-// Back-compat shim: the pacing gate is now the persistent `rate-governor`. Old
-// callers keep these imports; new code should import the governor directly.
+/** @deprecated Back-compat shim; import from `./rate-governor` directly. */
 export {
   noteSuccess,
   noteTransientFailure,

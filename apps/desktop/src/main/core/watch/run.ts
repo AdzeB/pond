@@ -22,10 +22,10 @@ import { listProfileWatch } from "./profile-scrape";
 import { WATCH_NEEDS_SESSION, type WatchHarvestResult } from "./types";
 import { listYtdlpWatch } from "./ytdlp-list";
 
-// Watch engine: poll a watched public account for new posts and feed fresh
-// URLs into the normal ingest pipeline, attributed to the watch's id. Runs
-// share the sync-status channel and in-flight registry (keyed by watch id), so
-// the renderer's sync monitor and cancel plumbing work unchanged.
+/**
+ * Watch engine: polls a watched public account and feeds fresh URLs into the ingest pipeline, attributed to the watch's id.
+ * @remarks Runs share the sync-status channel and in-flight registry keyed by watch id, so the renderer's sync monitor and cancel plumbing work unchanged.
+ */
 
 interface WatchOptions {
   trigger?: "manual" | "cron";
@@ -33,15 +33,13 @@ interface WatchOptions {
 
 const WATCH_WATCHDOG_MS = 10 * 60_000;
 
-// Cap the very first check of a watch so pointing Pond at a 5k-block channel
-// doesn't ingest its entire history — only what's new from here on.
+/** Cap the very first check so pointing Pond at a 5k-block channel doesn't ingest its entire history. */
 const FIRST_CHECK_CAP = 30;
 
 export async function watchAll(opts: WatchOptions = {}): Promise<void> {
   const watches = await listWatches();
   if (watches.length === 0) return;
-  // Same platform runs back to back (shared, IP-based rate limits); different
-  // platforms run concurrently.
+  /** Same platform runs back to back (shared, IP-based rate limits); different platforms run concurrently. */
   const bySource = new Map<Source, WatchedAccount[]>();
   for (const watch of watches) {
     const list = bySource.get(watch.source) ?? [];
@@ -205,9 +203,7 @@ async function runWatch(
     return;
   }
 
-  // Dedupe against every save on this source (any account): if an item is
-  // already in the library the watch shouldn't re-ingest it, and
-  // enqueueSavesBulk would only route it through the reseed path anyway.
+  /** Dedupe against every save on this source, any account: an item already in the library shouldn't be re-ingested by a watch. */
   const db = await getDb();
   const knownRows = await db
     .select({ sourceId: saves.sourceId })
@@ -236,9 +232,7 @@ async function runWatch(
 
   if (fresh.length === 0) {
     const lastSyncedAt = await persistWatchWatermark(watchId, {
-      // A first check that listed nothing shouldn't burn the first-check
-      // flag: if the listing was broken (or the page empty), the next check
-      // that does see items must still be capped, not flood the library.
+      /** A first check that listed nothing shouldn't burn the first-check flag; the next check that does see items must still be capped. */
       firstCheck: firstCheck && harvest.entries.length > 0,
       newestId: null,
       total: ownedTotal,
@@ -308,8 +302,7 @@ async function harvestWatch(
   return { ok: false, reason: "unknown" };
 }
 
-// The session a scrape-based check borrows: the pinned `via` account when it
-// still exists, else the first connected account on the source.
+/** The session a scrape-based check borrows: the pinned `via` account when it still exists, else the first connected account on the source. */
 async function resolveViaPartition(
   watch: WatchedAccount,
 ): Promise<string | null> {

@@ -2,11 +2,10 @@ import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 
-// A deep link that arrived before any window existed; replayed on first load.
+/** A deep link that arrived before any window existed; replayed on first load. */
 let pendingDeepLink: string | null = null;
 
-// createWindow drains this on `did-finish-load` so the initial route is applied
-// once the renderer is ready.
+/** createWindow drains this on `did-finish-load` so the initial route is applied once the renderer is ready. */
 export function consumePendingDeepLink(): string | null {
   const route = pendingDeepLink;
   pendingDeepLink = null;

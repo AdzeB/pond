@@ -1,19 +1,13 @@
 import type { HierarchicalNSW, HnswlibModule } from "hnswlib-wasm";
 import { embeddingStore } from "@/stores/embedding-store";
 
-// Approximate nearest-neighbour index (HNSW via hnswlib-wasm) over the on-device
-// text embeddings. It accelerates the whole-library "find by meaning" top-K
-// scans. The WASM module loads asynchronously while ranking stays synchronous,
-// so annNearest returns null until the module is ready (and forever if it fails
-// to load); every caller keeps a linear cosine fallback, so search always works.
-//
-// The index is rebuilt lazily when the embedding store's version moves (cheap:
-// at most one rebuild per query, and only when embeddings actually changed),
-// which subsumes maintenance on setEmbedding/loadEmbeddings/clearEmbeddings.
+/**
+ * HNSW (hnswlib-wasm) index over the on-device text embeddings for whole-library top-K scans; the WASM module loads asynchronously while ranking stays synchronous, so annNearest returns null until ready and callers keep a linear cosine fallback.
+ * @remarks Rebuilt lazily when the embedding store's version moves — at most one rebuild per query, only when embeddings changed.
+ */
 
 const SPACE = "cosine" as const;
-// HNSW build params: m (graph degree) / efConstruction (build accuracy) are the
-// library defaults; efSearch trades recall for speed at query time.
+/** m/efConstruction are the library defaults; efSearch trades recall for speed at query time. */
 const HNSW_M = 16;
 const HNSW_EF_CONSTRUCTION = 200;
 const HNSW_EF_SEARCH = 64;
@@ -42,9 +36,7 @@ function kickLoad(): void {
     });
 }
 
-// Rebuild the index from the current embedding store snapshot. Vectors whose
-// dimensionality doesn't match the first one (e.g. mid model-version change) are
-// skipped; the store bumps its version on every mutation, which re-triggers this.
+/** Vectors whose dimensionality differs from the first (mid model-version change) are skipped; the store's version bump re-triggers the rebuild. */
 function rebuild(): void {
   if (!mod) return;
   const entries = embeddingStore.state.byId;
@@ -88,9 +80,7 @@ function ensureFresh(): void {
   }
 }
 
-// Global K nearest saves to a query vector, as {id, similarity}. Returns null
-// when the index isn't ready (module still loading or failed), so callers fall
-// back to a linear scan. Similarity is cosine in [-1, 1] (1 - HNSW distance).
+/** Returns null when the index isn't ready so callers fall back to a linear scan; score is cosine similarity in [-1, 1] (1 - HNSW distance). */
 export function annNearest(
   vector: Float32Array,
   k: number,

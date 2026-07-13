@@ -22,9 +22,9 @@ export interface FieldDescriptor {
   group: FieldGroup;
   presets?: ReadonlyArray<FieldPreset>;
   comparators: readonly ComparatorId[];
-  // In-memory projection used by match.ts.
+  /** In-memory projection used by match.ts. */
   project(save: SaveLike): unknown;
-  // SQL projection for to-sql.ts; absent => in-memory only, no WHERE clause.
+  /** SQL projection for to-sql.ts; absent means in-memory only, no WHERE clause. */
   sqlProjection?: () => SQL | null;
 }
 
@@ -32,7 +32,7 @@ type FieldDescriptorInput = Omit<FieldDescriptor, "comparators"> & {
   comparators?: readonly ComparatorId[];
 };
 
-// Comparators default to the field type's allowed set unless overridden.
+/** Comparators default to the field type's allowed set unless overridden. */
 export function defineField(input: FieldDescriptorInput): FieldDescriptor {
   return {
     ...input,

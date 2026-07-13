@@ -28,16 +28,16 @@ import { sourceIdFromUrl } from "./url";
 interface EnqueueResult {
   id: string;
   created: boolean;
-  // Set when a previously-failed save was reset with a fresh seed.
+  /** Set when a previously-failed save was reset with a fresh seed. */
   reseeded?: boolean;
 }
 
 export interface EnqueueOptions {
   trigger?: string;
   force?: boolean;
-  // Pre-extracted capture data; lets harvest_metadata skip its scrape via isFreshHarvest().
+  /** Pre-extracted capture data; lets harvest_metadata skip its scrape via isFreshHarvest(). */
   seed?: EnqueueSeed;
-  // Connected account that produced this save (sync runs); stamped on new rows.
+  /** Connected account that produced this save (sync runs); stamped on new rows. */
   accountId?: string | null;
 }
 
@@ -66,7 +66,7 @@ export async function enqueueSaveByUrl(
   const current = existing[0];
 
   if (current) {
-    // Failed save + seed = recovery: reset tasks to pending and write the seed.
+    /** Failed save + seed = recovery: reset tasks to pending and write the seed. */
     if (opts.seed && current.status === "failed") {
       await resetTasksForSave(
         current.id,
@@ -84,7 +84,7 @@ export async function enqueueSaveByUrl(
     if (opts.force) {
       await resetTasksForSave(current.id, opts.trigger ?? "enqueue:force");
     } else if (opts.seed) {
-      // Additive enrichment: merge new seed fields into rawJson without overwriting existing.
+      /** Additive enrichment: merge new seed fields into rawJson without overwriting existing. */
       const merge = mergeSeedIntoExistingSave(current, opts.seed);
       if (merge.changed) {
         await persistEnrichment(current.id, merge);
@@ -140,8 +140,7 @@ export async function enqueueSaveByUrl(
     updatedAt: now,
   }));
 
-  // Save row, task rows, and sync_action in one transaction so a crash can't
-  // leave a half-ingested save (and one fsync instead of three).
+  /** One transaction so a crash cannot leave a half-ingested save, and one fsync instead of three. */
   const insertedAction = db.transaction((tx) => {
     tx.insert(saves).values(insertValues).run();
     tx.insert(tasks).values(taskRows).run();
@@ -194,10 +193,7 @@ export async function resetTasksForSave(
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
 }
 
-// Re-run failed saves: reset only each save's `failed` tasks back to pending
-// (done steps stay done) and flip the save to `ingesting` via persistSave so the
-// reconciler picks it up and the change broadcasts to the renderer. `ids` scopes
-// the retry; omit it to retry every failed save. Returns the count requeued.
+/** Resets only each save's failed tasks back to pending (done steps stay done); flipping to `ingesting` via persistSave lets the reconciler pick it up and broadcasts the change. */
 export async function retryFailedSaves(
   ids?: readonly string[],
 ): Promise<number> {
@@ -247,7 +243,7 @@ export function normalizeUrl(rawUrl: string): string {
   try {
     const u = new URL(rawUrl);
     u.hash = "";
-    // Strip common tracking parameters; harmless for canonical equality.
+    /** Strip common tracking parameters; harmless for canonical equality. */
     for (const key of Array.from(u.searchParams.keys())) {
       if (
         key.startsWith("utm_") ||

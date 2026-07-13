@@ -13,8 +13,7 @@ export class YouTubeWatchExtractor implements Extractor {
   readonly source = "youtube" as const;
   readonly validUrl = YOUTUBE_PATTERNS;
   readonly cookieDomain = ".youtube.com";
-  // Probed on /account, where the channel handle renders as "@name". The
-  // leading-boundary guard keeps the account email's "@gmail" from matching.
+  /** Probed on /account, where the channel handle renders as "@name"; the leading-boundary guard keeps the account email's "@gmail" from matching. */
   readonly probeExpression = `(() => {
         try {
           const m = (document.body?.innerText || '').match(/(^|\\s)@([A-Za-z0-9._-]{3,30})/);
@@ -48,7 +47,7 @@ export class YouTubeWatchExtractor implements Extractor {
     const dom = await fetchHtmlInWindow(canonical, "youtube", videoId);
     const meta = (dom.meta ?? {}) as Record<string, unknown>;
 
-    // Always emit a video candidate (fetch_video_ytdlp gates on it); fall back to the ytimg thumbnail.
+    /** Always emit a video candidate (fetch_video_ytdlp gates on it); fall back to the ytimg thumbnail. */
     const posterUrl =
       typeof dom.mediaUrl === "string" && dom.mediaUrl.length > 0
         ? dom.mediaUrl

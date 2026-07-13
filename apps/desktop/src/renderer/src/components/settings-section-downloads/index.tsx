@@ -43,7 +43,7 @@ function useDownloadBinding(
     queryKey: ["settings", "get"],
     queryFn: async () => {
       const row = (await window.pond.query("settings.get", {})) as SettingsRow;
-      // Merge per-field so any missing key falls back to its default (a whole-object fallback would blank stored fields).
+      /** Merge per-field: a whole-object fallback would blank stored fields. */
       return {
         ...row,
         videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, ...row.videoDownload },

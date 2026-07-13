@@ -61,7 +61,7 @@ export type BookmarksHarvestResult =
   | {
       ok: false;
       reason: "auth_required" | "no_match" | "timeout" | "rate_limited";
-      // Server-requested wait (seconds), present on rate_limited.
+      /** Server-requested wait in seconds; present on rate_limited. */
       retryAfterSec?: number;
       debug?: BookmarksHarvestDebug;
     };
@@ -270,9 +270,7 @@ async function inPageBookmarks(
         u.searchParams.set("name", "orig");
         return u.toString();
       }
-    } catch {
-      /* fall through */
-    }
+    } catch {}
     return url;
   };
 

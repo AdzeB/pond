@@ -42,12 +42,7 @@ export function useTagRow(): TagRowContextValue {
   return ctx;
 }
 
-/**
- * Renders one DataTable row for the tags table. Owns all per-row interaction
- * state (inline rename, dialogs, native context menu) and
- * exposes it to the cell components via context. The primitive hands us the
- * already-rendered `cells` (including the built-in select + caret cells).
- */
+/** Owns all per-row interaction state and exposes it to the cell components via context; the primitive hands over the already-rendered `cells`. */
 export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
   const { groups } = useTagsTable();
   const isGroup = row.kind === "group";

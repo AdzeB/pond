@@ -1,8 +1,6 @@
-// Vector similarity helpers shared by the text-embedding and CLIP search paths.
+/** Vector similarity helpers shared by the text-embedding and CLIP search paths. */
 
-// Dot product. For unit-length vectors (our mean-pooled + normalized text
-// embeddings) this equals cosine similarity, so callers ranking normalized
-// vectors use this directly to skip the redundant magnitude division.
+/** For unit-length vectors (our mean-pooled + normalized text embeddings) the dot product equals cosine similarity, skipping the redundant magnitude division. */
 export function dot(a: Float32Array, b: Float32Array): number {
   if (a.length !== b.length) return 0;
   let sum = 0;
@@ -11,8 +9,7 @@ export function dot(a: Float32Array, b: Float32Array): number {
   return sum;
 }
 
-// Cosine similarity that normalizes both operands. Use when the vectors aren't
-// guaranteed unit-length (e.g. CLIP image vectors, unlike our text embeddings).
+/** Normalizes both operands; use when vectors aren't guaranteed unit-length, e.g. CLIP image vectors. */
 export function cosine(a: Float32Array, b: Float32Array): number {
   if (a.length !== b.length) return 0;
   let d = 0;

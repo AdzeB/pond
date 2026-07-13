@@ -12,16 +12,14 @@ export interface TaskResult {
   message: string;
 }
 
-// Optional selection: a list of save ids to scope a task to. Omit (or empty) to
-// run over the whole (non-trashed) library.
+/** Save ids to scope a task to; omit or empty to run over the whole non-trashed library. */
 export type TaskScope = readonly string[] | undefined;
 
 function plural(n: number, one: string, many = `${one}s`): string {
   return n === 1 ? one : many;
 }
 
-// The saves a task should act on: the selection if scoped, otherwise the whole
-// live library. Trashed saves are always excluded.
+/** Trashed saves are always excluded. */
 function targetSaves(ids: TaskScope): Save[] {
   const live = pool.snapshot().filter((s) => !s.deletedAt);
   if (!ids || ids.length === 0) return live;
@@ -33,8 +31,7 @@ function scopeNoun(ids: TaskScope): string {
   return ids && ids.length > 0 ? "selection" : "library";
 }
 
-// Apply each save's AI-suggested tags to its tag set. Non-destructive: existing
-// tags are kept and suggestions are merged uniquely, so re-running is idempotent.
+/** Non-destructive: existing tags are kept and suggestions merge uniquely, so re-running is idempotent. */
 export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
   let changed = 0;
   for (const save of targetSaves(ids)) {
@@ -55,7 +52,7 @@ export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
   };
 }
 
-// Extract dominant colors for images that don't have a palette yet (backend job).
+/** Backend job; only images without a palette are touched. */
 export async function backfillColors(): Promise<TaskResult> {
   const res = (await window.pond.query("saves.backfillColors", {})) as {
     ok: boolean;
@@ -72,17 +69,15 @@ export async function backfillColors(): Promise<TaskResult> {
   };
 }
 
-// Kick the background enrichment sweep: retry failed runs and process saves that
-// newly became eligible (e.g. after enabling a feature).
 export function runEnrichment(): TaskResult {
   rescanEnrichment();
   return { ok: true, message: "Enrichment sweep started." };
 }
 
-// Force a stamped enricher to re-run by nulling its model stamp in the pool
-// (only — the DB row keeps its value until a fresh result lands, so an
-// interrupted run loses nothing). Clearing the stamp makes `eligible()` true,
-// and the pool mutation wakes the sweep, which re-derives and persists.
+/**
+ * Nulls the model stamp in the pool only; the DB row keeps its value until a fresh result lands, so an interrupted run loses nothing.
+ * @remarks Clearing the stamp makes `eligible()` true, and the pool mutation wakes the sweep, which re-derives and persists.
+ */
 function reprocessStamped(
   enabled: boolean,
   disabledHint: string,
@@ -134,8 +129,7 @@ export function retranscribe(ids?: TaskScope): TaskResult {
   );
 }
 
-// Rebuild the semantic-search index: drop in-memory text vectors so every
-// eligible save is re-embedded by the sweep.
+/** Drops in-memory text vectors so the sweep re-embeds every eligible save. */
 export function reembed(ids?: TaskScope): TaskResult {
   if (getPrefsSnapshot()?.ai?.semanticSearch !== true) {
     return { ok: false, message: "Turn on Semantic search in AI first." };
@@ -151,7 +145,6 @@ export function reembed(ids?: TaskScope): TaskResult {
   };
 }
 
-// Rebuild the visual (CLIP) index for image similarity and near-duplicates.
 export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
   if (getPrefsSnapshot()?.ai?.enableClip !== true) {
     return {

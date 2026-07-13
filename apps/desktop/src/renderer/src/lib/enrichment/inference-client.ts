@@ -6,15 +6,10 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-// Main-thread client for the inference Web Worker. Every on-device model call
-// goes through here: it serializes inputs, ships them to the worker, and resolves
-// the typed result. If the worker can't start (or crashes), it transparently
-// falls back to running the same models in-thread via inference-core — so the
-// app degrades to the old behavior rather than losing on-device AI entirely.
+/** Main-thread client for the inference Web Worker; if the worker can't start or crashes, calls transparently fall back to running the same models in-thread via inference-core. */
 
 function serializeImage(image: RawImage): SerializedImage {
-  // Copy into a fresh buffer we can transfer, leaving the caller's RawImage
-  // intact (so the in-thread fallback can still use it if the worker rejects).
+  /** Copy into a fresh transferable buffer, leaving the caller's RawImage intact for the in-thread fallback. */
   const src = image.data as Uint8ClampedArray;
   const copy = src.slice();
   return {
@@ -30,8 +25,7 @@ type Pending = {
   reject: (reason: unknown) => void;
 };
 
-// Distribute Omit across the request union so each variant keeps its own fields
-// (a plain `Omit<Union, "id">` collapses to just the shared keys).
+/** Distributes Omit across the request union; a plain `Omit<Union, "id">` collapses to just the shared keys. */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
   : never;
@@ -70,7 +64,7 @@ function ensureWorker(): Worker | null {
       workerBroken = true;
       worker?.terminate();
       worker = null;
-      // Reject in-flight calls; the worker-broken flag routes retries in-thread.
+      /** Reject in-flight calls; the worker-broken flag routes retries in-thread. */
       failAllPending(new Error("inference worker crashed"));
     };
     worker = w;
@@ -95,9 +89,7 @@ function callWorker<T>(msg: RequestBody, transfer: Transferable[]): Promise<T> {
   });
 }
 
-// Run via the worker; if the worker is (or becomes) broken, run in-thread.
-// A model-level rejection while the worker is healthy propagates as-is, so the
-// caller keeps the existing "mark failed, retry next session" semantics.
+/** A model-level rejection while the worker is healthy propagates as-is, so callers keep the "mark failed, retry next session" semantics. */
 async function viaWorker<T>(
   run: () => Promise<T>,
   fallback: () => Promise<T>,
@@ -194,7 +186,7 @@ export function inferTranscribe(
 ): Promise<string> {
   return viaWorker(
     () => {
-      // Transfer a copy so the caller's buffer survives for the fallback path.
+      /** Transfer a copy so the caller's buffer survives for the fallback path. */
       const copy = audio.slice();
       return callWorker<string>({ op: "transcribe", audio: copy, modelId }, [
         copy.buffer,

@@ -9,8 +9,7 @@ interface SaveContextMenuProps {
   children: ReactElement<{ onContextMenu?: (e: MouseEvent) => void }>;
 }
 
-// Right-click opens a native OS context menu. The action list is built lazily on
-// open so cards don't subscribe to the tag clipboard just to host this menu.
+/** The action list is built lazily on open so cards don't subscribe to the tag clipboard just to host this menu. */
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {
   const onContextMenu = (e: MouseEvent) => {
     e.preventDefault();

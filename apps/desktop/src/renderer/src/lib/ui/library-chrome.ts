@@ -1,12 +1,9 @@
 import type { DisplayPrefs } from "@/stores/display-prefs";
 
-/* `.item` has `flex-direction: column; gap: 12px`. The 12px sits
- * between the media slot and the meta block (when meta is rendered
- * at all). Each meta line (title / time) is ~14px tall (`.title` /
- * `.time` font-size 10px, line-height ~1.3), and `.meta` itself has
- * a 4px inner gap between title and time. Packers need the total
- * chrome height below the media so row/column advances match what
- * the DOM actually consumes. */
+/**
+ * Mirrors the card CSS: `.item` has a 12px gap above the meta block, each meta line is ~14px tall, and `.meta` has a 4px inner gap.
+ * @remarks Packers need the total chrome height below the media so row/column advances match what the DOM actually consumes.
+ */
 const META_GAP_ABOVE = 12;
 const META_LINE_H = 14;
 const META_INNER_GAP = 4;

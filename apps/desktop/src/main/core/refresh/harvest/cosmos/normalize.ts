@@ -10,10 +10,7 @@ export function inPageCosmosNormalize() {
     }
   }
 
-  // Cosmos serves assets through cdn.cosmos.so behind Cloudflare image
-  // resizing, where `w`/`h`/`q`/`dpr` shrink the original. The og:image and
-  // grid thumbnails carry those params, so strip them to fetch the
-  // full-resolution source while preserving the requested output `format`.
+  /** cdn.cosmos.so sits behind Cloudflare image resizing; strip `w`/`h`/`q`/`dpr` params to fetch the full-resolution source while keeping `format`. */
   function upgradeCosmosImage(src: string): string {
     try {
       const u = new URL(src, location.origin);
@@ -77,9 +74,7 @@ export function inPageCosmosNormalize() {
     );
     if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
 
-    // The server-rendered `og:image` is the only reliable per-element image:
-    // the DOM is full of sidebar collection covers and `/_next/static/...`
-    // skeleton placeholders that load before (or instead of) the real element.
+    /** The server-rendered `og:image` is the only reliable per-element image; the DOM is full of sidebar covers and skeleton placeholders. */
     const ogImage = document.querySelector<HTMLMetaElement>(
       'meta[property="og:image"]',
     );

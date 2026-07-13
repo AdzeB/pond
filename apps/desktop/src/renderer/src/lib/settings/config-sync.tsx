@@ -16,7 +16,7 @@ interface CronPref {
   intervalHours: number;
 }
 
-// Mirrors ConnectedAccount from the schema; only the fields this list shows.
+/** Mirrors ConnectedAccount from the schema; only the fields this list shows. */
 interface AccountEntry {
   id: string;
   source: Source;

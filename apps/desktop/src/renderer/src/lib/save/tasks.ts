@@ -17,13 +17,12 @@ interface LibraryTask {
   id: string;
   label: string;
   description: string;
-  // Verb shown on the settings run button (Run / Apply / Rebuild / Re-run).
+  /** Verb shown on the settings run button (Run / Apply / Rebuild / Re-run). */
   action: string;
   group: TaskGroup;
-  // Extra terms matched by the composer slash-skill menu.
+  /** Extra terms matched by the composer slash-skill menu. */
   keywords: string[];
-  // Whether the task can run on a selection subset (and so appears in the
-  // selection menu). Library-wide-only tasks are false.
+  /** Whether the task can run on a selection subset and so appears in the selection menu. */
   selectable: boolean;
   run: (ids?: TaskScope) => TaskResult | Promise<TaskResult>;
 }

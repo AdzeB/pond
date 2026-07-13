@@ -1,6 +1,6 @@
 import type { Save } from "@/lib/types";
 
-// Reverse image search engines, each mapping a public image URL to a search URL (local saves gated upstream).
+/** Each engine maps a public image URL to a search URL; local saves are gated upstream. */
 export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
   key: string;
   label: string;

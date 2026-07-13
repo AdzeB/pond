@@ -8,10 +8,10 @@ type SyncState =
   | "done"
   | "error"
   | "auth_required"
-  // Backed off to protect the account (rate limited / governor cooldown).
+  /** Backed off to protect the account (rate limited / governor cooldown). */
   | "paused";
 
-// Live wire shape pushed over onSyncStatus; mirrors the main process type, kept local to avoid crossing IPC.
+/** Wire shape pushed over onSyncStatus; mirrors the main process type, kept local to avoid crossing IPC. */
 interface SyncStatusUpdate {
   accountId: string;
   source: string;
@@ -32,8 +32,7 @@ export interface SyncAccountStatus {
   connected: boolean;
 }
 
-// Alias kept for shared card helpers that render either an account row or a
-// per-source rollup; the shape is identical.
+/** Alias for shared card helpers that render either an account row or a per-source rollup; the shape is identical. */
 export type SyncSourceStatus = SyncAccountStatus;
 
 interface SyncMonitorState {
@@ -50,7 +49,7 @@ const EMPTY: Omit<SyncAccountStatus, "source"> = {
 const store = new Store<SyncMonitorState>({ byAccount: {} });
 
 export const syncMonitor = {
-  // Apply a live status push; omitted fields keep the last value, but explicit null clears a stale error.
+  /** Omitted fields keep the last value, but explicit null clears a stale error. */
   ingest(update: SyncStatusUpdate): void {
     const source = update.source as Source;
     store.setState((s) => {
@@ -74,7 +73,7 @@ export const syncMonitor = {
       };
     });
   },
-  // Merge a snapshot pulled on open (one-shot `accounts.list` / `syncStatus`).
+  /** Merges a snapshot pulled on open (one-shot `accounts.list` / `syncStatus`). */
   seed(
     accountId: string,
     source: Source,

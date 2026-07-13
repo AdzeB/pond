@@ -1,11 +1,7 @@
-// Runs in the page's MAIN world. MUST NOT touch chrome.* or WXT APIs — only
-// DOM / web platform globals are available here.
-//
-// This module patches `fetch`, `XMLHttpRequest`, and `navigator.sendBeacon`
-// exactly once per page and fans each request out to the registered source
-// interceptors. Each source declares a cheap synchronous `match` (from request
-// metadata) and a lazy `onResponse` that reads the request/response bodies only
-// when it actually needs them.
+/**
+ * Runs in the page's MAIN world: only web platform globals exist here, never chrome.* or WXT APIs.
+ * Patches fetch/XHR/sendBeacon once per page and fans each request out to registered source interceptors.
+ */
 
 const POND_EVENT = "pond:capture";
 
@@ -362,10 +358,7 @@ function patchBeacon(reg: Registry): void {
   };
 }
 
-/**
- * Register a source interceptor and lazily install the network patches.
- * Safe to call multiple times; the same `id` is only registered once.
- */
+/** Register a source interceptor and lazily install the network patches; re-registering an `id` is a no-op. */
 export function installInterceptor(def: SourceInterceptor): void {
   const reg = registry();
   if (reg.ids.has(def.id)) return;

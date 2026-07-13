@@ -56,15 +56,14 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
   return { ...section, icon, config };
 });
 
-// Bespoke sections bring their own full-page layout; they render full-width and
-// opt their whole tab out of the two-column masonry.
+/** Bespoke sections bring their own full-page layout, opting their whole tab out of the two-column masonry. */
 const BESPOKE_SECTION_IDS = new Set(["tags", "skills"]);
 
 export function isBespokeSection(section: SectionDef): boolean {
   return BESPOKE_SECTION_IDS.has(section.id);
 }
 
-// Hidden sections are routable but never shown as their own row in the index.
+/** Hidden sections are routable but never shown as their own row in the index. */
 function isIndexSection(section: SectionDef): boolean {
   return !section.hidden;
 }

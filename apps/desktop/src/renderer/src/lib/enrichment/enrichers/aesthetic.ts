@@ -3,7 +3,6 @@ import { clipAesthetic, clipModelVersion } from "../clip";
 import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
-// Zero-shot aesthetic / style labels for image saves via CLIP.
 export const aestheticEnricher: Enricher = {
   id: "aesthetic",
   enabled: (prefs) => prefs?.ai?.enableAesthetic === true,

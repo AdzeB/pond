@@ -7,9 +7,7 @@ function slideNodes(scroller: HTMLElement) {
   return scroller.querySelectorAll<HTMLElement>(SLIDE_SELECTOR);
 }
 
-// Index of the slide whose centre is nearest the scrollport centre. Blossom is
-// a native scroll container, so we read this off live geometry rather than a
-// carousel API — which also keeps it correct while slides are still resizing.
+/** Blossom is a native scroll container, so live geometry beats a carousel API and stays correct while slides are still resizing. */
 function centeredIndex(scroller: HTMLElement): number {
   const viewportCenter =
     scroller.getBoundingClientRect().left + scroller.clientWidth / 2;
@@ -26,7 +24,6 @@ function centeredIndex(scroller: HTMLElement): number {
   return best;
 }
 
-// Scroll the slide at `index` to the scrollport centre using live geometry.
 function centerSlide(
   scroller: HTMLElement,
   index: number,
@@ -45,10 +42,7 @@ function centerSlide(
     scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior });
 }
 
-// Remember each media's resolved aspect ratio so a slide reserves the SAME box
-// whether it is mounted as the live player or as its placeholder. Without this
-// the placeholder uses the fallback ratio and the slide resizes on every
-// in-view toggle, shifting layout and making the active index oscillate.
+/** A slide must reserve the same box as player and placeholder; otherwise it resizes on every in-view toggle and the active index oscillates. */
 export function useRatioCache() {
   const [ratios, setRatios] = useState<ReadonlyMap<string, number>>(
     () => new Map(),
@@ -65,7 +59,6 @@ export function useRatioCache() {
   return { ratios, reportRatio };
 }
 
-// The slide currently nearest the centre, tracked reactively off scroll/resize.
 export function useActiveSlide(
   scroller: HTMLElement | null,
   _count: number,
@@ -91,14 +84,12 @@ export function useActiveSlide(
   return active;
 }
 
-// Arrow navigation plus initial centring. Both work off live geometry instead
-// of Blossom's cached snap positions, which go stale when slides resize from
-// the fallback ratio (causing arrow presses to skip a slide).
+/** Works off live geometry instead of Blossom's cached snap positions, which go stale when slides resize from the fallback ratio and make arrow presses skip a slide. */
 export function useCarouselNavigation(
   scroller: HTMLElement | null,
   _ratios: ReadonlyMap<string, number>,
 ) {
-  // Once the viewer scrolls/drags we stop re-centring the first slide.
+  /** Once the viewer scrolls or drags, stop re-centring the first slide. */
   const interactedRef = useRef(false);
   useEffect(() => {
     if (!scroller) return;
@@ -113,11 +104,7 @@ export function useCarouselNavigation(
     };
   }, [scroller]);
 
-  // Native scroll-snap doesn't settle the first slide to centre on load, and the
-  // async fallback->real ratio resize shifts layout without re-snapping. Centre
-  // it until the viewer interacts. Instant (not "auto"): Blossom sets
-  // scroll-behavior:smooth, so "auto" would animate this and the slide appears
-  // to slide in from the left on open. Arrows still use "smooth".
+  /** Native scroll-snap doesn't settle the first slide to centre on load; "instant" because Blossom sets scroll-behavior:smooth and "auto" would animate the slide in from the left. */
   useEffect(() => {
     if (!scroller || interactedRef.current) return;
     centerSlide(scroller, 0, "instant");

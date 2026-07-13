@@ -19,12 +19,12 @@ import { clampZoom, ZOOM_DEFAULT, ZOOM_STORAGE_KEY } from "@/lib/ui/zoom";
 
 export type Combinator = "and" | "or";
 
-// Committed query derived from draft rows: only active predicates filter; inactive rows stay mid-edit.
+/** Only active predicates filter; inactive rows stay mid-edit. */
 function deriveQuery(rows: Predicate[], combinator: Combinator): Query {
   return { combinator, rules: rows.filter(predicateIsActive) };
 }
 
-// Library view state. In a store, not the URL (desktop app). Layout/sort/zoom persist via `view-prefs`; q/query/capture are session-only.
+/** Library view state, in a store rather than the URL (desktop app); layout/sort/zoom persist via `view-prefs`, q/query/capture are session-only. */
 
 function applyZoomVar(zoom: number): void {
   if (typeof document === "undefined") return;
@@ -33,21 +33,19 @@ function applyZoomVar(zoom: number): void {
 
 interface ViewStoreState {
   q: string;
-  // Verbatim text typed into the dock Search field. Kept separate from `q` (the
-  // residual after structured terms are parsed out) so the field can re-seed
-  // itself when the dock swaps away and back. Session-only.
+  /** Verbatim dock Search text, kept separate from `q` (the residual after structured terms parse out) so the field can re-seed when the dock swaps back. */
   searchInput: string;
-  // Ordered draft conditions (incomplete rows allowed); `query` is the committed view.
+  /** Ordered draft conditions (incomplete rows allowed); `query` is the committed view. */
   rows: Predicate[];
   combinator: Combinator;
   query: Query;
   layout: LayoutValue;
-  // Broad string: list view sorts by columns the grid filter doesn't model; grid consumers narrow first.
+  /** Broad string: list view sorts by columns the grid filter doesn't model; grid consumers narrow first. */
   sortKey: string;
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
-  // Applied saved view; tabs compare live query/sort against it to show a "modified" state.
+  /** Applied saved view; tabs compare live query/sort against it to show a "modified" state. */
   activeViewId: string | null;
 }
 
@@ -116,8 +114,7 @@ export function setQuery(query: Query): void {
   });
 }
 
-// Apply a parsed structured-search input in one update: predicates become the
-// active filter (combinator stays "and") and the residual words become `q`.
+/** One update: predicates become the active filter (combinator stays "and") and the residual words become `q`. */
 export function setSearchInput(predicates: Predicate[], q: string): void {
   store.setState((s) => ({
     ...s,
@@ -135,7 +132,9 @@ export function resetFilters(): void {
     rows: [],
     query: EMPTY_QUERY,
   }));
-} // Append a fresh draft condition, defaulting to the first field; duplicates allowed, so never no-ops.
+}
+
+/** Duplicates are allowed, so this never no-ops. */
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
   if (!next) return;
@@ -145,7 +144,7 @@ export function addCondition(field?: FieldId): void {
   });
 }
 
-// Replace (or remove, when `next` is null) the row at `idx`.
+/** Replaces the row at `idx`, or removes it when `next` is null. */
 export function updateRow(idx: number, next: Predicate | null): void {
   store.setState((s) => {
     if (idx < 0 || idx >= s.rows.length) return s;
@@ -208,15 +207,14 @@ export function setZoom(zoom: number): void {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(clamped));
     } catch {
-      /* storage denied: keep the in-memory value in sync anyway */
+      /** Storage denied: keep the in-memory value in sync anyway. */
     }
   }
   applyZoomVar(clamped);
   store.setState((s) => ({ ...s, zoom: clamped }));
 }
 
-// The default presentation (layout / sort / zoom) used by the view-options
-// panel to detect a "changed" state per group.
+/** Used by the view-options panel to detect a "changed" state per group. */
 export const VIEW_DEFAULTS = {
   layout: "waterfall" as LayoutValue,
   sortKey: "savedAt",
@@ -232,7 +230,7 @@ export function restoreDefaults(): void {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(ZOOM_DEFAULT));
     } catch {
-      /* storage denied */
+      /** Storage denied. */
     }
   }
   applyZoomVar(ZOOM_DEFAULT);

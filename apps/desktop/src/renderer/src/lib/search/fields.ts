@@ -27,7 +27,7 @@ type FieldIcon = ComponentType<{
   height?: string | number;
 }>;
 
-// One glyph per filterable field, shared by the suggestion list and chips.
+/** Shared by the suggestion list and chips. */
 export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
   tags: Tag,
   source: LinkIcon,
@@ -88,15 +88,12 @@ function isDatePreset(value: unknown): boolean {
   return DATE_PRESETS.some((d) => d.iso === String(value ?? ""));
 }
 
-// The date fields (savedAt/publishedAt/modifiedAt) all share a calendar glyph,
-// so their chips need a short field name to stay distinct. Labels read like
-// "Date Saved"; drop the redundant "Date " prefix.
+/** Date fields share a calendar glyph, so chips need the field name; the "Date " prefix is dropped to keep them short. */
 function shortDateField(field: FieldId): string {
   return FIELD_META[field].label.replace(/^Date\s+/i, "");
 }
 
-// A compact, human-readable chip for a committed predicate. The field icon
-// carries the "what"; the label carries the "value", so chips stay short.
+/** The field icon carries the "what" and the label the "value", so chips stay short. */
 export function describePredicate(predicate: Predicate): PredicateChip {
   const { field, operator, value } = predicate;
   const meta = FIELD_META[field];
@@ -162,8 +159,7 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       }
       const sym = COMPARATOR_SYMBOL[operator];
       const text = dateLabel(value);
-      // A bare preset (operator "gte") already implies a range, so skip the
-      // symbol; only explicit comparators or raw dates get one.
+      /** A bare preset (operator "gte") already implies a range, so only explicit comparators or raw dates get a symbol. */
       const valuePart =
         sym && !(operator === "gte" && isDatePreset(value))
           ? `${sym} ${text}`

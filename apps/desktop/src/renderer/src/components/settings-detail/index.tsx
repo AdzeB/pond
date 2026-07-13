@@ -6,9 +6,7 @@ import { SettingsSectionView } from "@/components/settings-engine";
 import { isBespokeSection, sectionForPath } from "@/lib/settings/registry";
 import styles from "./styles.module.css";
 
-// Scroll to and briefly highlight the field targeted by the location hash
-// (`#setting-<section>-<key>`). Retries across a few frames so it still lands
-// after lazy/Suspense content and prefs-bound rows have mounted.
+/** Retries across a few frames so the hash-targeted field still lands after lazy content and prefs-bound rows have mounted. */
 function useScrollToHashField() {
   const hash = useRouterState({ select: (s) => s.location.hash });
   const reduceMotion = useReducedMotion();
@@ -42,9 +40,7 @@ function useScrollToHashField() {
   }, [hash, reduceMotion]);
 }
 
-// Detail pane for a single settings section. The sidebar conveys location, so
-// field-style sections flow into a centered column; bespoke sections (Tags, AI)
-// bring their own full layout.
+/** Field-style sections flow into a centered column; bespoke sections bring their own full layout. */
 export function SettingsDetail({ section }: { section: string }) {
   useScrollToHashField();
   const def = sectionForPath(section);

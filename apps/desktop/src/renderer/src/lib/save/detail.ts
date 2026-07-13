@@ -48,7 +48,7 @@ export interface DetailRow {
   kind: RowKind;
 }
 
-// The link-card destination URL, read from the harvested capture.
+/** The link-card destination URL, read from the harvested capture. */
 function readCardUrl(save: Save): string | undefined {
   const raw = save.rawJson as
     | { capture?: { extras?: { card?: { url?: unknown } } } }
@@ -83,9 +83,7 @@ export function collectIdentityRows(save: Save): DetailRow[] {
   return rows;
 }
 
-// X strips the trailing link from the tweet's visible text once it becomes a
-// card, so the cover stays clean. Surface that link in the Content text, deduped
-// against any link the harvested text already kept.
+/** X strips the trailing link from a tweet's visible text once it becomes a card; surface that link here, deduped against any link the harvested text kept. */
 export function composeContentDescription(save: Save): string {
   const base = save.description?.trim() ?? "";
   const cardUrl = readCardUrl(save);

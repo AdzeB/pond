@@ -26,21 +26,10 @@ import {
 } from "./rate-governor-state";
 import { type HeaderBag, parseRateSignal } from "./rate-headers";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Rate governor: the one account-safe pacing authority for every platform
-// request Pond makes. The rule is "always better to sync slowly than to risk a
-// user's account."
-//
-//   - acquire(): block until it's safe to hit a source (spacing, rolling budget,
-//     cooldown, breaker, kill switch).
-//   - report(): adapt to the response (rate-limit headers / 429 / challenge) —
-//     cooldowns, AIMD multiplier, at-risk.
-//
-// Cooldowns / at-risk / recent requests persist to userData so a restart can't
-// re-hammer an account. Per-source pacing comes from the descriptor's resolved
-// RateProfile. Supersedes the old in-memory `source-gate` (which now re-exports
-// from here). State + persistence live in `rate-governor-state`.
-// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * The one pacing authority for every platform request: acquire() blocks until a source is safe to hit, report() adapts to the response; better to sync slowly than to risk a user's account.
+ * Cooldowns, at-risk marks, and recent requests persist to userData so a restart cannot re-hammer an account.
+ */
 
 export {
   isAllPaused,
@@ -48,8 +37,6 @@ export {
   resumeAll,
   snapshotSourceGate,
 } from "./rate-governor-state";
-
-// ── Pause computation ───────────────────────────────────────────────────────
 
 /** Earliest time the source is allowed to be hit again (0 = now). */
 export function sourcePausedUntil(source: Source): number {
@@ -102,9 +89,8 @@ export function noteTransientFailure(source: Source): void {
   }
 }
 
+/** Success closes the breaker window and gently relaxes pacing; explicit cooldowns and at-risk parking stay until expiry. */
 export function noteSuccess(source: Source): void {
-  // Success closes the breaker window and gently relaxes pacing. Explicit
-  // cooldowns and at-risk parking stay until they expire.
   breakerCounters.delete(source);
   const m = multiplier.get(source) ?? MULTIPLIER_MIN;
   if (m > MULTIPLIER_MIN) {
@@ -112,7 +98,6 @@ export function noteSuccess(source: Source): void {
   }
 }
 
-// ── At-risk (challenge / checkpoint / captcha / login) ──────────────────────
 export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   loadState();
   atRisk.set(source, { source, kind, since: now(), note });
@@ -120,10 +105,8 @@ export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   schedulePersist(true);
 }
 
-// ── Manual per-source pause override ─────────────────────────────────────────
+/** Clears the manual pause and any active cooldown/breaker/at-risk: the "I understand the risk, try now" override. */
 export function resumeSource(source: Source): void {
-  // Clears the manual pause AND any active cooldown/breaker/at-risk so the user
-  // can force a retry. This is the "I understand the risk, try now" override.
   manualPaused.delete(source);
   cooldownUntil.delete(source);
   breakerUntil.delete(source);
@@ -133,7 +116,6 @@ export function resumeSource(source: Source): void {
   schedulePersist(true);
 }
 
-// ── Effective delay + acquire ───────────────────────────────────────────────
 function effectiveDelay(source: Source, firstSync: boolean): number {
   const p = profile(source);
   const m = multiplier.get(source) ?? MULTIPLIER_MIN;
@@ -179,13 +161,7 @@ const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
     signal?.addEventListener("abort", onAbort, { once: true });
   });
 
-/**
- * Block until it is safe to make a request to `source`, then record it. Honors
- * (in order): kill switch / manual pause / at-risk parking / cooldown / breaker,
- * then per-source minimum spacing and the rolling per-window budget.
- *
- * Throws GovernorAbortError if the signal aborts or maxWaitMs elapses.
- */
+/** Blocks until it is safe to hit `source`, then records the request: hard pauses first, then rolling budget and minimum spacing. Throws GovernorAbortError if the signal aborts or maxWaitMs elapses. */
 export async function acquire(
   source: Source,
   opts: AcquireOptions = {},
@@ -194,15 +170,13 @@ export async function acquire(
   const deadline =
     opts.maxWaitMs != null ? now() + opts.maxWaitMs : Number.MAX_SAFE_INTEGER;
 
-  // 1. Hard pauses (cooldown / breaker / at-risk / manual / all). Loop because
-  //    a long pause may be lifted (resumeSource) while we wait.
+  /** Loop because a long pause may be lifted (resumeSource) while waiting. */
   for (;;) {
     if (opts.signal?.aborted) throw new GovernorAbortError();
     const until = sourcePausedUntil(source);
     if (until === 0) break;
     if (until >= Number.MAX_SAFE_INTEGER) {
-      // Indefinite pause (kill switch / manual / at-risk). Poll so a manual
-      // resume can release us, but bail at the caller's deadline.
+      /** Indefinite pause: poll so a manual resume can release us, but bail at the caller's deadline. */
       const slice = Math.min(2_000, deadline - now());
       if (slice <= 0) throw new GovernorAbortError();
       await wait(slice, opts.signal);
@@ -213,7 +187,7 @@ export async function acquire(
     await wait(Math.min(sleepMs, 5_000), opts.signal);
   }
 
-  // 2. Rolling budget: if the window is full, wait for the oldest to age out.
+  /** Rolling budget: when the window is full, wait for the oldest request to age out. */
   const p = profile(source);
   for (;;) {
     const log_ = pruneLog(source);
@@ -224,7 +198,6 @@ export async function acquire(
     await wait(Math.max(50, Math.min(waitMs, 5_000)), opts.signal);
   }
 
-  // 3. Minimum spacing since the last request to this source.
   const last = lastRequestAt.get(source) ?? 0;
   const gap = effectiveDelay(source, opts.firstSync ?? false);
   const spacingWait = last + gap - now();
@@ -233,7 +206,6 @@ export async function acquire(
     await wait(spacingWait, opts.signal);
   }
 
-  // 4. Record the request.
   const t = now();
   lastRequestAt.set(source, t);
   const log_ = requestLog.get(source) ?? [];
@@ -242,7 +214,6 @@ export async function acquire(
   schedulePersist();
 }
 
-// ── Report ──────────────────────────────────────────────────────────────────
 interface ReportInput {
   ok: boolean;
   status?: number;
@@ -257,11 +228,7 @@ interface ReportResult {
   cooldownMs: number;
 }
 
-/**
- * Feed the outcome of a request back to the governor so it can adapt. Returns
- * the cooldown it applied (if any) so callers can surface an accurate
- * "resuming at" time.
- */
+/** Feeds a request outcome back to the governor; returns the cooldown applied so callers can surface an accurate "resuming at" time. */
 export function report(source: Source, input: ReportInput): ReportResult {
   loadState();
   const signal = input.headers ? parseRateSignal(input.headers) : null;
@@ -272,7 +239,7 @@ export function report(source: Source, input: ReportInput): ReportResult {
     const sec =
       input.retryAfterSec ??
       signal?.retryAfterSec ??
-      // No server hint: exponential-ish default tied to the current multiplier.
+      /** No server hint: exponential-ish default tied to the current multiplier. */
       Math.min(900, 60 * (multiplier.get(source) ?? 1));
     bumpMultiplier(source);
     const ms = Math.max(1_000, sec * 1000);
@@ -280,7 +247,7 @@ export function report(source: Source, input: ReportInput): ReportResult {
     return { cooldownMs: ms };
   }
 
-  // Proactive slow-down when the platform says we're nearly out of budget.
+  /** Proactive slow-down when the platform says we're nearly out of budget. */
   if (
     signal?.remaining != null &&
     signal.remaining <= 2 &&

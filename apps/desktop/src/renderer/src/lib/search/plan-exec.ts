@@ -10,20 +10,17 @@ import {
   sortByField,
 } from "./ranking";
 
-// The deterministic query-plan executor: runs a validated QueryPlan over a
-// candidate pool entirely in the renderer (where the saves + embeddings live).
-// Pipeline: filter -> rank -> group (+ per-group sample) -> aggregate. The global
-// `limit` is intentionally NOT applied here; callers apply it after any anchor
-// pinning so pinned items survive the cap (see useAsk). Pure and side-effect free.
+/**
+ * Deterministic query-plan executor: filter -> rank -> group (+ per-group sample) -> aggregate, run entirely in the renderer where the saves and embeddings live.
+ * @remarks The global `limit` is intentionally not applied here; callers apply it after anchor pinning so pinned items survive the cap.
+ */
 
 interface PlanExecContext {
-  // Candidate set to run the plan over (already restricted to live saves, or to
-  // a previous turn's result set when refining).
+  /** Candidate set: live saves, or a previous turn's result set when refining. */
   pool: ReadonlyArray<Save>;
-  // Query embedding (text/anchor/blended) for semantic ranking, when available.
+  /** Query embedding (text/anchor/blended) for semantic ranking, when available. */
   rankVector: Float32Array | null;
-  // Leftover free-text the compiler couldn't turn into a filter, for keyword
-  // ranking. Falls back to the whole question for pure free-text asks.
+  /** Leftover free-text the compiler couldn't turn into a filter; falls back to the whole question for pure free-text asks. */
   residualText: string;
   question: string;
 }
@@ -34,33 +31,30 @@ interface PlanGroup {
   ids: string[];
 }
 
-// Aggregate facts surfaced for "how many …" style answers (no grid needed).
+/** Aggregate facts surfaced for "how many …" style answers, no grid needed. */
 interface PlanFacts {
   total: number;
   groups?: { key: string; label: string; count: number }[];
 }
 
 export interface PlanResult {
-  // Ordered, de-duplicated save ids after filter/rank/group (pre global limit).
+  /** Ordered, de-duplicated save ids after filter/rank/group, pre global limit. */
   ids: string[];
-  // Present only when the plan groups; the sampled members per group, in order.
+  /** Present only when the plan groups; the sampled members per group, in order. */
   groups: PlanGroup[];
-  // Present only when the plan requests an aggregate.
+  /** Present only when the plan requests an aggregate. */
   facts: PlanFacts | null;
 }
 
 const DEFAULT_DATE_BUCKET: DateBucket = "month";
-// Round-robin / block sampling never needs more than the pool; this bounds the
-// per-group default when a group is requested without an explicit perGroup.
+/** Per-group default when a group is requested without an explicit perGroup. */
 const UNCAPPED = Number.POSITIVE_INFINITY;
 
 function hasPredicates(plan: QueryPlan): boolean {
   return plan.filter.rules.length > 0;
 }
 
-// Order the filtered set per the plan's RankSpec. "relevance" mirrors the
-// original useAsk decision tree (vector -> semantic/by-vector -> keyword floor);
-// "field" overrides with an explicit numeric/date sort.
+/** "relevance" follows the useAsk decision tree (vector -> semantic/by-vector -> keyword floor); "field" overrides with an explicit numeric/date sort. */
 function rankCandidates(
   filtered: ReadonlyArray<Save>,
   plan: QueryPlan,
@@ -100,8 +94,7 @@ function rankRelevance(
   return [];
 }
 
-// Calendar bucket key for a timestamp, e.g. "2024-06" (month) or "2024-W23"
-// (ISO week, via date-fns: RRRR = ISO week-numbering year, II = ISO week).
+/** In date-fns, RRRR is the ISO week-numbering year and II the ISO week, giving "2024-W23". */
 function bucketKey(ms: number, bucket: DateBucket): string {
   const d = new Date(ms);
   switch (bucket) {
@@ -116,9 +109,7 @@ function bucketKey(ms: number, bucket: DateBucket): string {
   }
 }
 
-// The group key(s) a save belongs to for a given field. Arrays (tags) yield one
-// key per element; date fields yield a single bucket; enum/string fields yield
-// their (lowercased) value, with empty values bucketed as "unknown".
+/** Arrays (tags) yield one key per element; date fields a single bucket; enum/string fields their value, with empty values bucketed as "unknown". */
 function groupKeysFor(
   save: Save,
   by: GroupableField,
@@ -143,10 +134,7 @@ interface GroupingResult {
   groups: PlanGroup[];
 }
 
-// Cluster the ranked list by the group field, keep at most `perGroup` per group
-// (in ranked order) and at most `maxGroups` groups (first-appearing), then emit
-// either concatenated blocks or a round-robin interleave. The final id list is
-// de-duplicated (a save can land in several groups via tags).
+/** The final id list is de-duplicated because a save can land in several groups via tags. */
 function applyGrouping(
   ranked: ReadonlyArray<Save>,
   plan: QueryPlan,
@@ -192,7 +180,6 @@ function applyGrouping(
   return { ids: dedupeIds(ordered), groups };
 }
 
-// Round-robin across the group blocks: one from each group, then the next, etc.
 function interleave(blocks: Save[][]): string[] {
   const out: string[] = [];
   const max = blocks.reduce((n, b) => Math.max(n, b.length), 0);
@@ -216,8 +203,7 @@ function dedupeIds(ids: ReadonlyArray<string>): string[] {
   return out;
 }
 
-// Compute aggregate facts over the full filtered set (independent of sampling),
-// for count / count-by answers.
+/** Facts are computed over the full filtered set, independent of sampling. */
 function computeFacts(
   filtered: ReadonlyArray<Save>,
   plan: QueryPlan,

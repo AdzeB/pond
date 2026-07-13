@@ -25,7 +25,7 @@ export interface WriteFileArgs {
   mimeType?: string;
   width?: number;
   height?: number;
-  // Origin URL this file was downloaded from; persisted for smart per-URL skip.
+  /** Origin URL this file was downloaded from; persisted for smart per-URL skip. */
   sourceUrl?: string;
 }
 
@@ -35,15 +35,13 @@ interface ApplyPatchOptions {
   replaceFilesWithKind?: SaveFile["kind"];
 }
 
-// Update a save row, write any new files, and emit a sync_actions row.
 export async function applySavePatch(
   saveId: string,
   patch: Partial<NewSave>,
   opts: ApplyPatchOptions,
 ): Promise<Save | null> {
   const db = await getDb();
-  // Select only the columns this patch needs (`files` + the overwritten keys for
-  // prevData), not the whole row — avoids loading `raw_json` on every patch.
+  /** Select only the columns this patch needs, not the whole row; avoids loading `raw_json` on every patch. */
   const cols: Record<string, SQLiteColumn> = {
     id: saves.id,
     files: saves.files,

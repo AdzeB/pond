@@ -25,14 +25,12 @@ export function registerSyncHandlers(): void {
       if (isSyncing(id)) {
         return { ok: false as const, reason: "already_running" as const };
       }
-      // Watch ids share this entry point (the renderer treats watches as
-      // accounts); route them to the watch engine.
+      /** Watch ids share this entry point because the renderer treats watches as accounts; route them to the watch engine. */
       if (await getWatch(id)) {
         void watchNow(id, { trigger: "manual" });
         return { ok: true as const };
       }
-      // forceFull is the "Full re-sync" escape hatch: ignore the incremental
-      // watermark and walk the whole remote list (drift recovery).
+      /** forceFull is the "Full re-sync" escape hatch: ignore the incremental watermark and walk the whole remote list. */
       void syncAccount(id, {
         trigger: "manual",
         forceFull: opts?.forceFull ?? false,
@@ -69,7 +67,6 @@ export function registerSyncHandlers(): void {
     return { ok: true as const, running };
   });
 
-  // ── Rate governor (account safety) ────────────────────────────────────────
   safeHandle(IPC.governorSetPaused, async (_, paused: boolean) => {
     if (paused) pauseAll();
     else resumeAll();

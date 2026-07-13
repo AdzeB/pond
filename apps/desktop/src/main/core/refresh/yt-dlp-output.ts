@@ -137,7 +137,7 @@ function isSubtitle(name: string): boolean {
   return ext === ".srt" || ext === ".vtt";
 }
 
-// Collect subtitles, deriving a stable `subtitle.<lang>.<ext>` filename.
+/** Derives a stable `subtitle.<lang>.<ext>` filename from yt-dlp's output naming. */
 export async function pickSubtitleFiles(dir: string): Promise<SubtitleFile[]> {
   const entries = await readdir(dir);
   const out: SubtitleFile[] = [];

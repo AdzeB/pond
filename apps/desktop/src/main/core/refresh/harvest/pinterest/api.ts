@@ -6,7 +6,7 @@ const USER_AGENT =
   "(KHTML, like Gecko) Version/17.0 Safari/605.1.15 PondBot/0.1";
 const FETCH_TIMEOUT_MS = 15_000;
 
-// Parse Pinterest's server-rendered Relay payload; richer than OG meta.
+/** Parses Pinterest's server-rendered Relay payload; richer than OG meta. */
 
 interface RelayUser {
   fullName?: string;
@@ -85,7 +85,6 @@ type PinterestCaptureResult =
       status?: number;
     };
 
-// Scrapes the Pinterest Relay payload into a universal `Capture`.
 export async function fetchPinterestCapture({
   sourceId,
 }: {
@@ -123,7 +122,7 @@ export async function fetchPinterestCapture({
 }
 
 function extractPin(html: string): RelayPin | null {
-  // Merge every Relay call, preferring the richest value per key (creator arrives late).
+  /** Merge every Relay call, preferring the richest value per key; the creator arrives late. */
   const candidates: RelayPin[] = [];
   const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";
   let cursor = 0;
@@ -145,9 +144,7 @@ function extractPin(html: string): RelayPin | null {
         if (candidate && typeof candidate === "object") {
           candidates.push(candidate);
         }
-      } catch {
-        // try next call
-      }
+      } catch {}
     }
     cursor = callEnd + 1;
   }
@@ -240,7 +237,6 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
   ]);
   const description = pickDescription(pin);
 
-  // Prefer the richest creator object (nativeCreator / closeupUnifiedAttribution / originPinner).
   const creator = pickCreator(pin);
   const author = ((): Capture["author"] => {
     if (!creator) return undefined;
@@ -268,7 +264,7 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
   const media = ((): CaptureMedia[] => {
     const primary = pickStr([pin.images_orig?.url, pin.imageLargeUrl]);
     if (!primary) return [];
-    // Reuse the 736x variant's dimensions as a cover hint (originals omit dims).
+    /** Originals omit dimensions; reuse a sized variant's as a cover hint. */
     const dims = pin.images_736x ?? pin.images_564x ?? pin.images_474x;
     const entry: CaptureMedia = {
       url: primary,

@@ -14,19 +14,13 @@ import {
 } from "./schema-prompt";
 import type { AiProvider, CompileContext, SummaryItem } from "./types";
 
-// Bundled, fully-offline LLM provider using node-llama-cpp (Metal/CUDA via
-// llama.cpp). The native dependency is loaded through a computed dynamic import
-// so the app builds and runs even when it isn't installed; in that case the
-// provider reports unavailable and the compiler falls back to the deterministic
-// stages. The GGUF model is downloaded to userData on first use, not bundled,
-// to keep the installer small.
+/** Offline LLM provider via node-llama-cpp; the native dep is optional (the app runs without it) and the GGUF model downloads to userData on first use to keep the installer small. */
 
-// Small, permissively-licensed instruct model that's good at structured output.
+/** Small, permissively-licensed instruct model that's good at structured output. */
 const MODEL_FILE = "Llama-3.2-1B-Instruct-Q4_K_M.gguf";
 const MODEL_URL =
   "https://huggingface.co/bartowski/Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf";
 
-// node-llama-cpp is optional and loaded at runtime; keep it untyped.
 // biome-ignore lint/suspicious/noExplicitAny: optional native module
 type LlamaModule = any;
 
@@ -36,7 +30,7 @@ async function loadModule(): Promise<LlamaModule | null> {
   if (!modulePromise) {
     modulePromise = (async () => {
       try {
-        // Computed specifier so bundlers don't try to resolve the optional dep.
+        /** Computed specifier so bundlers don't try to resolve the optional dep. */
         const specifier = ["node", "llama", "cpp"].join("-");
         const mod = (await import(specifier)) as LlamaModule;
         return mod;
@@ -158,15 +152,13 @@ export class LlamaCppProvider implements AiProvider {
     }
   }
 
-  // The bundled model isn't trusted for the richer plan format, so it just emits
-  // a filter-only plan, which the renderer treats as a safe fallback.
+  /** The bundled model isn't trusted for the richer plan format; a filter-only plan is the renderer's safe fallback. */
   async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
     const filter = await this.compileQuery(input, ctx);
     return { filter };
   }
 
-  // Bundled isn't agent-capable; collapse the loop into a single filter-only
-  // result. The accumulated steps are ignored (no multi-step reasoning here).
+  /** Bundled isn't agent-capable; the loop collapses into a single filter-only result. */
   async agentStep(
     question: string,
     ctx: CompileContext,
@@ -183,7 +175,7 @@ export class LlamaCppProvider implements AiProvider {
     const user = formatSummaryItems(question, items);
     // biome-ignore lint/suspicious/noExplicitAny: native session
     const s = session as any;
-    // Drop any prior compile turns so prose isn't biased toward JSON output.
+    /** Drop prior compile turns so prose isn't biased toward JSON output. */
     s.resetChatHistory?.();
     const answer: string = await s.prompt(`${system}\n\n${user}\n\nSummary:`, {
       temperature: 0.3,

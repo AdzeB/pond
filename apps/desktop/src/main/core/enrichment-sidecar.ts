@@ -11,10 +11,7 @@ import { getDb } from "../db";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { itemFile } from "../paths";
 
-// Per-item sidecar (items/<id>.info/enrichment.json) persisting pipeline
-// outputs that would otherwise live only in the disposable index DB. Embedding
-// vectors stay index-only: they are large and cheaper to recompute than
-// transcripts/OCR.
+/** Per-item sidecar (items/<id>.info/enrichment.json) persisting pipeline outputs that would otherwise live only in the disposable index DB; embedding vectors stay index-only because they are large and cheap to recompute. */
 
 const SIDECAR_FILE = "enrichment.json";
 
@@ -53,8 +50,7 @@ function hasValue(value: unknown): boolean {
   return true;
 }
 
-// Snapshot a save row's enrichment fields to its sidecar. Skips the write when
-// there is nothing to persist and no stale file to refresh.
+/** Skips the write when there is nothing to persist and no stale file to refresh. */
 export function writeEnrichmentSidecar(save: Save): void {
   const data: Record<string, unknown> = {};
   let any = false;
@@ -134,9 +130,7 @@ function copyVideoNotes(
   if (notes.length > 0) out.videoNotes = notes;
 }
 
-// Lazy upgrade pass: rows enriched before sidecars existed get their
-// enrichment.json written once, so existing libraries converge without a
-// blocking migration.
+/** Writes missing sidecars for already-enriched rows so existing libraries converge without a blocking migration. */
 export async function backfillEnrichmentSidecars(): Promise<void> {
   const db = await getDb();
   const enriched = await db
@@ -151,7 +145,7 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
         isNotNull(savesTable.aesthetic),
         isNotNull(savesTable.autoTitleModel),
         isNotNull(savesTable.suggestedTags),
-        // Array columns default to '[]' (never null); check length instead.
+        /** Array columns default to '[]' (never null); check length instead. */
         sql`json_array_length(${savesTable.videoNotes}) > 0`,
         sql`json_array_length(${savesTable.dominantColors}) > 0`,
       ),

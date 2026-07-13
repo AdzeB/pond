@@ -7,9 +7,7 @@ import { $createFilterTokenNode, FilterTokenNode } from "./token-node";
 
 const KEYS = TOKEN_FIELDS.flatMap((spec) => spec.keys);
 
-// A `key op value` token restricted to known field keys, with a value that is
-// either a quoted run (`by:"Jane Doe"`) or a whitespace-free word. Group 2 is
-// the token itself (optionally negated), sitting at input start or after space.
+/** A `key op value` token restricted to known field keys; group 2 is the token itself, sitting at input start or after space. */
 const TOKEN_RE = new RegExp(
   `(^|\\s)(-?(?:${KEYS.join("|")})(?::|>=|<=|>|<)(?:"[^"]*"|[^\\s"])+)`,
   "i",
@@ -24,8 +22,7 @@ function getFilterMatch(text: string): { start: number; end: number } | null {
   return { start, end: start + token.length };
 }
 
-// Wraps matching tokens into editable FilterTokenNodes and reverts them the
-// instant they stop matching, so highlighting tracks the text as it's edited.
+/** Reverts tokens the instant they stop matching, so highlighting tracks the text as it's edited. */
 export function FilterTokenPlugin() {
   const [editor] = useLexicalComposerContext();
 

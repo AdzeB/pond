@@ -1,10 +1,7 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
 
-// Resolves what the user typed into the watch-add field — a bare handle or a
-// pasted URL — into a concrete watch target: which kind of thing to follow
-// and the slug that identifies it. Resolved once at add time and stored on
-// the watch, so runners never have to guess.
+/** Resolves watch-add input (bare handle or pasted URL) into a concrete watch target once at add time, so runners never have to guess. */
 
 export interface WatchTarget {
   kind: WatchKind;
@@ -16,7 +13,7 @@ export interface WatchTarget {
 
 const ARENA_PROBE_TIMEOUT_MS = 8_000;
 
-// Profile-page tabs that show up after a user slug but don't name a channel.
+/** Profile-page tabs that show up after a user slug but don't name a channel. */
 const ARENA_USER_TABS = new Set([
   "channels",
   "blocks",
@@ -26,7 +23,7 @@ const ARENA_USER_TABS = new Set([
   "all",
 ]);
 
-// First path segments that are never a Pinterest username.
+/** First path segments that are never a Pinterest username. */
 const PINTEREST_RESERVED = new Set([
   "pin",
   "search",
@@ -37,7 +34,7 @@ const PINTEREST_RESERVED = new Set([
   "news_hub",
 ]);
 
-// First path segments that are never a Cosmos username.
+/** First path segments that are never a Cosmos username. */
 const COSMOS_RESERVED = new Set([
   "e",
   "discover",
@@ -112,8 +109,6 @@ export async function resolveWatchTarget(
   }
 }
 
-// ── Are.na ──────────────────────────────────────────────────────────────────
-
 async function resolveArena(
   input: string,
   url: URL | null,
@@ -125,16 +120,14 @@ async function resolveArena(
     if (!first) return null;
     const second = segs[1];
     if (second && !ARENA_USER_TABS.has(second.toLowerCase())) {
-      // are.na/{user}/{channel-slug}: the channel slug alone identifies it.
+      /** are.na/{user}/{channel-slug}: the channel slug alone identifies it. */
       return target("channel", second, `${first}/${second}`);
     }
-    // Single segment (or a profile tab): a user or a group page — probe.
     return probeArena(first, ["user", "group", "channel"]);
   }
   const slug = cleanHandle(input);
   if (!/^[\w.-]+$/.test(slug)) return null;
-  // Bare slugs are usually channels; a user or group name also fits here, so
-  // pin the kind now instead of guessing on every check.
+  /** Bare slugs are usually channels; a user or group name also fits, so pin the kind now instead of guessing on every check. */
   return probeArena(slug, ["channel", "user", "group"]);
 }
 
@@ -162,8 +155,7 @@ async function probeArena(
       );
       if (res.ok) return target(kind, slug);
       if (res.status !== 404) {
-        // Rate limit / outage: don't block the add — assume the likeliest
-        // kind and let the first check sort it out.
+        /** Rate limit / outage: don't block the add; assume the likeliest kind and let the first check sort it out. */
         return target(order[0], slug);
       }
     } catch (err) {
@@ -173,8 +165,6 @@ async function probeArena(
   }
   return null;
 }
-
-// ── YouTube ─────────────────────────────────────────────────────────────────
 
 function resolveYoutube(input: string, url: URL | null): WatchTarget | null {
   if (url) {
@@ -203,8 +193,6 @@ function resolveYoutube(input: string, url: URL | null): WatchTarget | null {
   return target("channel", handle, `@${handle}`);
 }
 
-// ── TikTok / Instagram ──────────────────────────────────────────────────────
-
 function resolveSimpleUser(
   input: string,
   url: URL | null,
@@ -222,8 +210,6 @@ function resolveSimpleUser(
   const handle = cleanHandle(input);
   return /^[\w.-]+$/.test(handle) ? target("user", handle, `@${handle}`) : null;
 }
-
-// ── Twitter ─────────────────────────────────────────────────────────────────
 
 function resolveTwitter(input: string, url: URL | null): WatchTarget | null {
   if (url) {
@@ -247,8 +233,6 @@ function resolveTwitter(input: string, url: URL | null): WatchTarget | null {
   return /^\w+$/.test(handle) ? target("user", handle, `@${handle}`) : null;
 }
 
-// ── Pinterest ───────────────────────────────────────────────────────────────
-
 function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
   if (url) {
     if (!hostIs(url, "pinterest.com") && !hostIs(url, "pinterest.co.uk")) {
@@ -271,8 +255,6 @@ function resolvePinterest(input: string, url: URL | null): WatchTarget | null {
     ? target("board", `${user}/${m[2]}`)
     : target("user", user, `@${user}`);
 }
-
-// ── Cosmos ──────────────────────────────────────────────────────────────────
 
 function resolveCosmos(input: string, url: URL | null): WatchTarget | null {
   if (url) {

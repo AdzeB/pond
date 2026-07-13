@@ -15,10 +15,7 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-// Dedicated inference worker: hosts every transformers.js model off the UI
-// thread so heavy, sustained model runs never compete with rendering. Pure
-// dispatch — all model logic lives in inference-core (shared with the
-// main-thread fallback in inference-client).
+/** Hosts every transformers.js model off the UI thread; pure dispatch, since all model logic lives in inference-core, shared with the main-thread fallback. */
 
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 

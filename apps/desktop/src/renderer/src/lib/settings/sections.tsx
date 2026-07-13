@@ -13,7 +13,7 @@ import { syncSection } from "@/lib/settings/config-sync";
 import { trashSection } from "@/lib/settings/config-trash";
 import { videosSection } from "@/lib/settings/config-videos";
 
-// Registry of section configs; bespoke sections are lazy so each ships in its own chunk.
+/** Bespoke sections are lazy so each ships in its own chunk. */
 const TagsSection = lazy(() =>
   import("@/components/settings-tags").then((m) => ({
     default: m.TagsSection,
@@ -25,9 +25,7 @@ const SkillsSection = lazy(() =>
   })),
 );
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
-  // Bespoke sections render their own page header (Settings.Header) and full
-  // layout. Their title/keywords are inert at render time and exist only so the
-  // settings search can index them at the section level.
+  /** Bespoke sections render their own header and layout; their title/keywords are inert at render time and exist only for the settings search index. */
   general: generalSection,
   appearance: appearanceSection,
   tags: {

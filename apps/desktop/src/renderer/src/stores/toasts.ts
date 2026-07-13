@@ -30,9 +30,7 @@ interface PushToastOptions {
   action?: ToastAction;
 }
 
-// Show a transient toast. Returns its id so callers can dismiss early. A non-
-// positive `ms` keeps the toast until dismissed manually. Accepts either a tone
-// shorthand (legacy callers) or an options object with an optional action.
+/** Returns the toast id so callers can dismiss early; a non-positive `ms` keeps it until dismissed manually. */
 export function pushToast(
   message: string,
   toneOrOptions: ToastTone | PushToastOptions = "info",

@@ -1,7 +1,6 @@
 import type { RateProfile, SourceDescriptor, SourceSyncConfig } from "./types";
 
-// Conservative, account-safe defaults a new source inherits without tuning:
-// ~1 request / 1.5s, capped at 60/min, paced 2x slower during the first sync.
+/** Account-safe defaults a new source inherits without tuning: ~1 request / 1.5s, capped at 60/min, paced 2x slower during the first sync. */
 export const DEFAULT_RATE_PROFILE: RateProfile = {
   minDelayMs: 1500,
   jitterFraction: 0.4,
@@ -10,14 +9,13 @@ export const DEFAULT_RATE_PROFILE: RateProfile = {
   firstSyncSlowdown: 2,
 };
 
-// A source with no list sync at all. Default for any descriptor that omits `sync`.
+/** Default for any descriptor that omits `sync`. */
 const NO_SYNC: SourceSyncConfig = {
   strategy: "none",
   rate: DEFAULT_RATE_PROFILE,
 };
 
-// Source of truth for cross-runtime source facts. Add an entry (or run
-// `pnpm new-source <id>`); the `Source` union then widens automatically.
+/** Source of truth for cross-runtime source facts; adding an entry (or running `pnpm new-source <id>`) widens the `Source` union automatically. */
 export const SOURCE_DESCRIPTORS = [
   {
     id: "twitter",
@@ -27,7 +25,7 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/i,
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)/i,
     ],
-    // GraphQL bookmark timeline is cursor-paginated and newest-first.
+    /** GraphQL bookmark timeline is cursor-paginated and newest-first. */
     sync: { strategy: "cursor" },
   },
   {
@@ -37,7 +35,7 @@ export const SOURCE_DESCRIPTORS = [
     urlPatterns: [
       /^https?:\/\/(?:www\.)?instagram\.com\/(?:p|reels?|tv)\/([A-Za-z0-9_-]+)/i,
     ],
-    // Saved-feed API is cursor-paginated; IG is aggressive, so pace it slower.
+    /** Saved-feed API is cursor-paginated; IG rate-limits aggressively, so pace it slower. */
     sync: {
       strategy: "cursor",
       rate: { minDelayMs: 2500, maxPerWindow: 30 },
@@ -131,11 +129,8 @@ export function descriptorFor(id: ExternalSource): SourceDescriptor {
 }
 
 /**
- * Resolve the full, defaults-filled sync config for a source. Always returns a
- * complete `SourceSyncConfig`, so callers (the rate governor, the sync
- * orchestrator) never have to special-case a missing field — a source that
- * forgot to declare anything is still account-safe via DEFAULT_RATE_PROFILE.
- * Unknown / non-external ids (e.g. "web", "local") resolve to no-sync.
+ * Always returns a complete `SourceSyncConfig`, so callers never special-case a missing field and an
+ * undeclared source stays account-safe via DEFAULT_RATE_PROFILE. Unknown or non-external ids resolve to no-sync.
  */
 export function syncConfigFor(id: string): SourceSyncConfig {
   const descriptor = BY_ID.get(id);

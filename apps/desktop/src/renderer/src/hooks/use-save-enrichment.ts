@@ -13,19 +13,16 @@ import { usePrefsValue } from "@/stores/prefs";
 import { useSave } from "./use-saves";
 
 interface EnricherStatus {
-  // Feature toggled on in prefs.
+  /** Feature toggled on in prefs. */
   enabled: boolean;
-  // Applies to this save and hasn't produced a current result yet (so the sweep
-  // will run it). Always false once stamped, regardless of output.
+  /** Applies to this save with no current result yet, so the sweep will run it; always false once stamped, regardless of output. */
   eligible: boolean;
-  // Running on this save right now.
   running: boolean;
-  // Failed this session.
+  /** Failed this session. */
   failed: boolean;
 }
 
-// Per-enricher reprocess: clears the stamp/vector for just this save and kicks a
-// scoped rescan. Enrichers without a visible re-run path (aesthetic) are omitted.
+/** Clears the stamp/vector for just this save and kicks a scoped rescan; enrichers without a visible re-run path are omitted. */
 const REPROCESS: Record<string, (ids: readonly string[]) => unknown> = {
   caption: recaption,
   ocr: reocr,
@@ -34,18 +31,12 @@ const REPROCESS: Record<string, (ids: readonly string[]) => unknown> = {
   clip: rebuildVisualIndex,
 };
 
-// Live, per-save view of the on-device enrichment pipeline. Lets the detail pane
-// show whether each enrichment is queued/running/failed and offer scoped
-// regenerate / retry actions without touching the rest of the library.
 export function useSaveEnrichment(saveId: string) {
   const save = useSave(saveId);
   const prefs = usePrefsValue();
   const { activeKeys, failedKeys } = useEnrichmentStatus();
 
-  // Nudge the sweep to (re)schedule this save's pending enrichments whenever it
-  // comes into view, so the item the user is actively looking at gets processed
-  // even if the background scan has gone idle (it only re-scans on pool changes
-  // or visibility/resume).
+  /** The background scan only re-scans on pool changes or visibility/resume, so nudge it here so the save the user is looking at gets processed. */
   useEffect(() => {
     rescanEnrichment([saveId]);
   }, [saveId]);
@@ -72,7 +63,6 @@ export function useSaveEnrichment(saveId: string) {
     [save, saveId, prefs, activeKeys, failedKeys],
   );
 
-  // Force a fresh run of one enricher for this save (clears its stamp + rescans).
   const regenerate = useCallback(
     (enricherId: string) => {
       REPROCESS[enricherId]?.([saveId]);
@@ -80,7 +70,7 @@ export function useSaveEnrichment(saveId: string) {
     [saveId],
   );
 
-  // Retry every failed enricher for this save (clears failure flags + rescans).
+  /** rescanEnrichment clears failure flags before re-running, so this retries every failed enricher. */
   const retry = useCallback(() => {
     rescanEnrichment([saveId]);
   }, [saveId]);

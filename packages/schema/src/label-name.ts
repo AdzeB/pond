@@ -1,5 +1,4 @@
-// User-facing label: trim, strip leading `#`, collapse whitespace, drop
-// disallowed chars. Casing preserved; dedup via `labelKey` below.
+/** Casing is preserved for display; dedup happens through `labelKey`. */
 export function normalizeLabelName(raw: string): string {
   return raw
     .trim()

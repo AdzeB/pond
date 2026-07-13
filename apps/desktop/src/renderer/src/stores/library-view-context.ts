@@ -2,10 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { SaveListMode } from "@/lib/save/list";
 
-// The ids and mode of the currently-rendered library view. Published by the
-// library route and read by the globally-mounted dock, so selection actions
-// (select all, invert) and the context-aware destructive button don't have to
-// re-run the heavy narrowing pipeline a second time.
+/** Published by the library route and read by the globally-mounted dock, so selection actions don't re-run the heavy narrowing pipeline a second time. */
 interface ViewContextState {
   readonly filteredIds: ReadonlyArray<string>;
   readonly mode: SaveListMode;

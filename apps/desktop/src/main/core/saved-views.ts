@@ -11,7 +11,6 @@ import type { Db } from "../db";
 import { getDb } from "../db";
 import { executeBatch, executeTransaction } from "./executor";
 
-// Guard a persisted query value, falling back to the empty query.
 function coerceQuery(raw: unknown): Query {
   if (!raw || typeof raw !== "object") return EMPTY_QUERY;
   return raw as Query;

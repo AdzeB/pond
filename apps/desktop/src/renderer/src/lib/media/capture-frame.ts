@@ -1,6 +1,4 @@
-// Capture the currently displayed frame of a <video> as a PNG data URL, then
-// hand it to the main process. Image clipboard/disk writes go through IPC
-// (nativeImage) rather than the renderer, matching saves.copyImage.
+/** Image clipboard/disk writes go through IPC (nativeImage) rather than the renderer, matching saves.copyImage. */
 
 function captureFrameDataUrl(video: HTMLVideoElement): string | null {
   const width = video.videoWidth;
@@ -15,7 +13,8 @@ function captureFrameDataUrl(video: HTMLVideoElement): string | null {
     ctx.drawImage(video, 0, 0, width, height);
     return canvas.toDataURL("image/png");
   } catch {
-    return null; // tainted canvas (cross-origin frame)
+    /** Tainted canvas (cross-origin frame). */
+    return null;
   }
 }
 

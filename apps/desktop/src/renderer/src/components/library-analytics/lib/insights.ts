@@ -11,10 +11,7 @@ import {
 import { sourceLabel } from "@pond/schema/sources";
 import type { Save } from "@/lib/types";
 
-// ── Pure insight engine ─────────────────────────────────────────────────────
-// Turns a window of library saves plus a user config (slice × segment) into
-// chart-ready save counts. No React, no IO: the page reads the in-memory
-// saves pool once and every card derives from the same array.
+/** Pure insight engine, no React or IO; the page reads the in-memory saves pool once and every card derives from the same array. */
 
 interface SegmentDef {
   key: string;
@@ -53,8 +50,6 @@ export interface InsightResult {
   saveCount: number;
 }
 
-// ── Catalogs (editor options + labels) ──────────────────────────────────────
-
 export const SLICE_OPTIONS: { value: InsightSlice; label: string }[] = [
   { value: "source", label: "Source" },
   { value: "day", label: "Day" },
@@ -91,10 +86,7 @@ function optionLabel<T extends string>(
   return options.find((o) => o.value === value)?.label ?? value;
 }
 
-/** A stored card the current (save-count) engine can compute. Cards from
- * retired configurations — the runs dataset ("Items synced by outcome"…) or
- * the storage/avgSize measures — carry a `measure` other than "saves" and
- * get dropped when the dashboard loads. */
+/** Stored cards with a `measure` other than "saves" can't be computed by the save-count engine and get dropped when the dashboard loads. */
 export function isSavesInsight(config: InsightConfig): boolean {
   const legacyMeasure = (config as { measure?: string }).measure;
   return (
@@ -117,9 +109,7 @@ export function newInsight(): InsightConfig {
   };
 }
 
-// ── Grid sizing ─────────────────────────────────────────────────────────────
-// Cards live on a 3-column grid with fixed-height rows; each card spans
-// `w` columns × `h` rows. Pre-grid cards only stored a fractional `width`.
+/** Cards span `w` columns × `h` rows on a 3-column grid; cards saved before the grid only stored a fractional `width`. */
 
 export const GRID_COLS = 3;
 export const GRID_MAX_ROWS = 3;
@@ -136,8 +126,7 @@ const LEGACY_WIDTH_COLS: Record<InsightWidth, number> = {
   full: 3,
 };
 
-// Default row spans per display: headline numbers read fine short; charts
-// need the taller cell.
+/** Headline numbers read fine short; charts need the taller cell. */
 function defaultRows(display: InsightDisplay): number {
   if (display === "metric") return 1;
   return 2;
@@ -155,15 +144,13 @@ export function sizeOf(config: InsightConfig): InsightSize {
   };
 }
 
-// Sizes an insight picks up when its display changes in the editor; only
-// applied to drafts that haven't been placed on the grid yet.
+/** Only applied to drafts that haven't been placed on the grid yet. */
 export function defaultSize(display: InsightDisplay): InsightSize {
   if (display === "metric") return { w: 1, h: 1 };
   return { w: 2, h: 2 };
 }
 
-// Auto-title, Linear style: "Saves by day, split by source". A custom name
-// set in the editor wins.
+/** A custom name set in the editor wins over the auto-title. */
 export function insightTitle(config: InsightConfig): string {
   if (config.name?.trim()) return config.name.trim();
   return autoTitle(config);
@@ -181,9 +168,7 @@ export function autoTitle(config: InsightConfig): string {
   return `${base}, split by ${segmentLabel}`;
 }
 
-// Headline and grid displays have no segments, and a segment equal to the
-// slice adds nothing. Rings, pies, and radars color by slice, so a segment
-// would be invisible; sunburst is the segmented circular shape.
+/** Headline/grid displays have no segments; rings, pies, and radars color by slice, so a segment would be invisible. */
 function effectiveSegment(config: InsightConfig): InsightSegment | null {
   if (
     config.display === "metric" ||
@@ -198,10 +183,7 @@ function effectiveSegment(config: InsightConfig): InsightSegment | null {
   return config.segment;
 }
 
-// ── Colors ──────────────────────────────────────────────────────────────────
-// Series colors come from the theme's chromatic ramps so they track the
-// user's palette. Sources get a fixed hue each; open-ended dimensions
-// (creators, tags, domains) cycle in rank order.
+/** Series colors come from the theme's chromatic ramps so they track the user's palette; sources get a fixed hue, open-ended dimensions cycle in rank order. */
 
 const SOURCE_COLORS: Record<Source, string> = {
   twitter: "var(--ds-cyan-9)",
@@ -244,8 +226,6 @@ const CYCLE_COLORS = [
 const FALLBACK_COLOR = "var(--ds-accent-9)";
 const OTHER_COLOR = "var(--ds-gray-7)";
 
-// ── Dimension extraction ────────────────────────────────────────────────────
-
 const DAY_MS = 86_400_000;
 
 function startOfDay(ts: number): number {
@@ -262,7 +242,7 @@ function dayLabel(dayStart: number, days: number): string {
   return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
-// Day charts need a finite axis; "All time" (0) clamps to 90 days.
+/** Day charts need a finite axis; "All time" (0) clamps to 90 days. */
 function windowDays(days: number): number {
   return days > 0 ? days : 90;
 }
@@ -316,8 +296,7 @@ function statusOf(save: Save): keyof typeof STATUS_META {
   return s in STATUS_META ? (s as keyof typeof STATUS_META) : "complete";
 }
 
-// Tag is intentionally absent here: it's multi-valued and handled in the
-// bucketing loop (a save lands in every tag bucket it carries).
+/** Tag is absent here: it's multi-valued and handled in the bucketing loop. */
 function dimOf(
   save: Save,
   by: Exclude<InsightSlice, "tag"> | InsightSegment,
@@ -349,10 +328,7 @@ function dimOf(
   }
 }
 
-// ── Filters ─────────────────────────────────────────────────────────────────
-// Dashboard-level filters narrow every card; insight-level filters stack on
-// top. A filter with no values is a no-op (still being edited).
-
+/** A filter with no values is a no-op because it's still being edited. */
 export function applyFilters(
   saves: readonly Save[],
   filters: InsightFilter[],
@@ -400,8 +376,7 @@ export const FILTER_FIELD_OPTIONS: {
   { value: "status", label: "Status" },
 ];
 
-// Value choices for the filter menus. Static catalogs where possible;
-// open-ended fields (tag, creator) offer whatever exists in the current data.
+/** Static catalogs where possible; open-ended fields offer whatever exists in the current data. */
 export function filterValueOptions(
   field: InsightFilter["field"],
   saves: readonly Save[] = [],
@@ -478,21 +453,18 @@ export function formatCount(value: number): string {
   return Math.round(value).toLocaleString();
 }
 
-// ── Compute ─────────────────────────────────────────────────────────────────
-
 interface Bucket {
   dim: Dim;
   rows: Save[];
 }
 
-// Open-ended slices get capped with the remainder rolled into "Other" so
-// charts stay readable; circular shapes cap harder, tables show more.
+/** Open-ended slices get capped with the remainder rolled into "Other" so charts stay readable. */
 const CAPPED_SLICES: InsightSlice[] = ["creator", "tag", "domain"];
 
 function capFor(display: InsightDisplay, slice: InsightSlice): number {
   if (display === "ring" || display === "pie" || display === "sunburst")
     return 6;
-  // Radar needs 3+ spokes to make a shape and gets unreadable past 8.
+  /** Radar needs 3+ spokes to make a shape and gets unreadable past 8. */
   if (display === "radar") return 8;
   if (!CAPPED_SLICES.includes(slice)) return Number.POSITIVE_INFINITY;
   return display === "table" ? 12 : 8;
@@ -516,7 +488,7 @@ function seedDayBuckets(days: number): Map<string, Bucket> {
   return buckets;
 }
 
-// Monday-first weekday × hour counts from raw timestamps.
+/** Monday-first weekday × hour counts. */
 function buildHeatmap(rows: Save[]): HeatmapData {
   const cells: number[][] = Array.from({ length: 7 }, () =>
     Array.from({ length: 24 }, () => 0),
@@ -533,8 +505,7 @@ function buildHeatmap(rows: Save[]): HeatmapData {
   return { cells, max };
 }
 
-// Roll everything past the cap into a single "Other" bucket (already sorted
-// by value desc; day slices are never capped).
+/** Rolls everything past the cap into one "Other" bucket; day slices are never capped. */
 function capBuckets(buckets: Bucket[], config: InsightConfig): Bucket[] {
   if (config.slice === "day") return buckets;
   const cap = capFor(config.display, config.slice);
@@ -561,10 +532,7 @@ export function computeInsight(
   const segment = effectiveSegment(config);
   const axisDays = windowDays(days);
 
-  // Bucket saves by slice value. Day slices pre-seed every day in the window
-  // so quiet days render as gaps instead of vanishing. Tag slices are
-  // multi-valued: a save lands in every tag bucket it carries (untagged
-  // saves get their own bucket).
+  /** Day slices pre-seed every day so quiet days render as gaps instead of vanishing; tag slices land a save in every tag bucket it carries. */
   const buckets: Map<string, Bucket> =
     config.slice === "day"
       ? seedDayBuckets(axisDays)
@@ -573,8 +541,7 @@ export function computeInsight(
   const push = (dim: Dim, save: Save) => {
     let bucket = buckets.get(dim.key);
     if (!bucket) {
-      // The saves window is rolling (N×24h) but day charts show calendar
-      // days; drop the sliver older than the earliest seeded day.
+      /** The saves window is rolling (N×24h) but day charts show calendar days; drop the sliver older than the earliest seeded day. */
       if (config.slice === "day") return;
       bucket = { dim, rows: [] };
       buckets.set(dim.key, bucket);
@@ -605,8 +572,7 @@ export function computeInsight(
     }
   }
 
-  // Legend over the effective segment (source / type / status), ordered by
-  // total desc so stack order matches visual weight.
+  /** Legend is ordered by total desc so stack order matches visual weight. */
   const legend: SegmentDef[] = [];
   if (segment) {
     const totals = new Map<string, { dim: Dim; total: number }>();
@@ -662,7 +628,7 @@ export function computeInsight(
   };
 
   let orderedBuckets = [...buckets.values()];
-  // Day slices stay chronological; everything else sorts by count.
+  /** Day slices stay chronological; everything else sorts by count. */
   if (config.slice !== "day") {
     orderedBuckets.sort((a, b) => b.rows.length - a.rows.length);
   }

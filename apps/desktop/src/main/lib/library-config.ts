@@ -11,9 +11,7 @@ import {
 import { basename, dirname, join } from "node:path";
 import log from "electron-log/main.js";
 
-// Root JSONs inside the .pond bundle (settings.json, tags.json). Every file is
-// a versioned envelope written atomically (tmp + rename) so a crash or a cloud
-// sync racing the write never leaves a truncated file behind.
+/** Root JSONs inside the .pond bundle, written atomically (tmp + rename) so a crash or a cloud sync racing the write never leaves a truncated file. */
 
 export const BUNDLE_JSON_SCHEMA = 1;
 
@@ -40,9 +38,7 @@ export function writeBundleJson<T>(file: string, data: T): void {
   renameSync(tmp, file);
 }
 
-// Read a root JSON; null when the file doesn't exist. A corrupt file falls
-// back to the newest parseable copy in backupDir (when given) instead of
-// silently resetting to defaults.
+/** A corrupt file falls back to the newest parseable copy in backupDir instead of silently resetting to defaults. */
 export function readBundleJson<T>(
   file: string,
   backupDir?: string,
@@ -106,8 +102,7 @@ function listBackupDirsNewestFirst(backupDir: string): string[] {
 
 const BACKUP_KEEP = 10;
 
-// Snapshot the given root JSONs into backup/<ISO-timestamp>/ and prune old
-// snapshots to the last 10, mirroring Eagle's backup/ folder.
+/** Snapshots the given root JSONs into backup/<ISO-timestamp>/ and prunes old snapshots to the last 10. */
 export function rotateBundleBackups(backupDir: string, files: string[]): void {
   const present = files.filter((f) => existsSync(f));
   if (present.length === 0) return;
@@ -139,7 +134,7 @@ interface DebouncedTask {
   flush(): Promise<void>;
 }
 
-// Coalesce bursts of writes (e.g. bulk tag edits) into one disk write ~1s later.
+/** Coalesces bursts of writes, like bulk tag edits, into one disk write. */
 export function createDebouncedTask(
   fn: () => Promise<void>,
   waitMs = 1000,

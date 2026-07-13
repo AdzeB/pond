@@ -7,8 +7,6 @@ import { IconClockRotateClockwiseOutline18 as History } from "@pond/icons/outlin
 import { Popover } from "@pond/ui";
 import styles from "../styles.module.css";
 
-// The composer's bottom action bar: collapse, recent-asks history, attach image
-// (left group) and the primary send button (right group).
 export function ComposerToolbar({
   onCollapse,
   historyOpen,

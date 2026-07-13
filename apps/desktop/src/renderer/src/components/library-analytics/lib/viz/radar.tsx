@@ -5,10 +5,7 @@ import styles from "../../styles.module.css";
 import type { InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 
-// Category radar: one accent-colored polygon over the sliced categories,
-// dashed grid rings at thirds, and a
-// legend-row mirror for exact values. Needs 3+ categories to make a shape;
-// the engine caps spokes at 8 so labels stay apart.
+/** Needs 3+ categories to make a shape; the engine caps spokes at 8 so labels stay apart. */
 
 const SIZE = 148;
 const PLOT_R = 52;
@@ -20,7 +17,7 @@ function pointAt(
   count: number,
   radius: number,
 ): [number, number] {
-  // Start at 12 o'clock, clockwise.
+  /** Starts at 12 o'clock, clockwise. */
   const angle = (index / count) * Math.PI * 2 - Math.PI / 2;
   return [Math.cos(angle) * radius, Math.sin(angle) * radius];
 }
@@ -49,8 +46,7 @@ export function RadarChart({
     Math.round(viz?.gridLevels ?? DEFAULT_GRID_LEVELS),
   );
   const gridLevels = Array.from({ length: levels }, (_, i) => (i + 1) / levels);
-  // Prefer active categories, but pad with zeros if that leaves too few
-  // spokes; hard-cap at 8 (day slices bypass the engine's group cap).
+  /** Prefer active categories but pad with zeros if that leaves too few spokes; hard-cap at 8 because day slices bypass the engine's group cap. */
   const nonZero = data.groups.filter((g) => g.value > 0);
   const groups = (nonZero.length >= 3 ? nonZero : data.groups).slice(0, 8);
   const n = groups.length;

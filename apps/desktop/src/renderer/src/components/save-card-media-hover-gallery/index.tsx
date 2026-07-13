@@ -6,9 +6,7 @@ import { withThumbWidth } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { recordAspect } from "@/stores/aspect";
 
-// Layered, crossfading image stack for multi-image saves. The parent (CardThumb)
-// owns the active index / seen set and drives them from pointer scrubbing, so this
-// stays presentational. `slides[0]` is the primary (resting) image.
+/** The parent owns the active index and seen set driven by pointer scrubbing, so this stays presentational; `slides[0]` is the resting image. */
 export function HoverGallery({
   save,
   slides,
@@ -64,7 +62,7 @@ function GallerySlide({
 }) {
   const ref = useRef<HTMLImageElement>(null);
 
-  // Only the primary slide feeds the card's aspect ratio; secondaries must not override it.
+  /** Only the primary slide feeds the card's aspect ratio; secondaries must not override it. */
   const file = save.files.find((f) => f.path === unit.key);
   const w = primary ? (file?.width ?? save.width ?? undefined) : undefined;
   const h = primary ? (file?.height ?? save.height ?? undefined) : undefined;

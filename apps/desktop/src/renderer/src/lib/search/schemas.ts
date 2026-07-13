@@ -19,11 +19,11 @@ export const librarySearchSchema = z.looseObject({
   dir: z.enum(["asc", "desc"]).optional(),
   capture: z.literal("1").optional(),
   url: z.string().optional(),
-  // Open save id. Drives the detail overlay so opening a save is a history entry.
+  /** Open save id; drives the detail overlay so opening a save is a history entry. */
   detail: z.string().optional(),
 });
 
-// Strip a trailing /detail/:id or /save/:id to get the parent list base.
+/** Strips a trailing /detail/:id or /save/:id to get the parent list base. */
 export function listBaseFromPath(pathname: string): string {
   return (
     pathname.replace(/\/(?:detail|save)\/[^/]+\/?$/, "").replace(/\/+$/, "") ||

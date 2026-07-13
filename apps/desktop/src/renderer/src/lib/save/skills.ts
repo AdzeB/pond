@@ -4,7 +4,6 @@ import { fuzzyRank } from "@/lib/util/fuzzy";
 
 export type { CustomSkill } from "@pond/schema/db";
 
-// Normalize a free-typed name into a slash-token slug (no leading slash).
 export function slugifySkillName(name: string): string {
   return name
     .trim()
@@ -19,8 +18,7 @@ export function makeSkillId(): string {
   return `skill_${ulid()}`;
 }
 
-// Fuzzy-rank custom skills by name + description. Empty query returns all
-// skills in their stored order.
+/** An empty query returns all skills in their stored order. */
 export function matchSkills(
   skills: readonly CustomSkill[],
   query: string,

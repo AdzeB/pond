@@ -1,8 +1,6 @@
 import { capture, log } from "@/utils/intercept";
 
-// Threads renders a real /@user/post/<code> link on every post, so reading it
-// off the DOM when the Save control is clicked is more robust than mapping the
-// internal GraphQL save mutation's media id back to a shortcode.
+/** Threads renders a real /@user/post/<code> link on every post; reading it off the DOM on Save click is more robust than mapping the GraphQL save mutation's media id to a shortcode. */
 function looksLikeSaveLabel(label: string | null): boolean {
   if (!label) return false;
   const l = label.toLowerCase().trim();

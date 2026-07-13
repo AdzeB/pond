@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// HTTP enqueue contract; the desktop pipeline derives everything else from the URL.
+/** HTTP enqueue contract; the desktop pipeline derives everything else from the URL. */
 export const enqueueRequestSchema = z.object({
   url: z.string().url(),
   trigger: z.string().max(64).optional(),

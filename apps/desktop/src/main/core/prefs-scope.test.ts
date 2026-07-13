@@ -35,7 +35,7 @@ describe("normalizeStoredPrefs", () => {
     });
     expect(stored.version).toBe(3);
     expect(stored.app).toEqual({ window: { restorePosition: false } });
-    // Per-pond entries are dropped; bundles own their slice via settings.json.
+    /** Per-pond entries are dropped; bundles own their slice via settings.json. */
     expect(stored.pending).toEqual({ preferences: GREEN });
   });
 
@@ -70,8 +70,7 @@ describe("mergePondSlice (sync account registry)", () => {
         sources: { twitter: { knownCount: 42 } },
       },
     } as Parameters<typeof mergePondSlice>[0];
-    // The one-time migration relies on `{}` clearing the whole map rather
-    // than deep-merging into it.
+    /** The one-time migration relies on `{}` clearing the whole map rather than deep-merging into it. */
     const drained = mergePondSlice(base, {
       sync: { handles: {}, sources: {} },
     } as Parameters<typeof mergePondSlice>[1]);

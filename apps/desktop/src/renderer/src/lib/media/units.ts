@@ -7,7 +7,7 @@ import { buildPondUrl } from "@/lib/media/url";
 import type { Save, SaveFile } from "@/lib/types";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
-// Mirrors capture-tweet.ts kind constants, inlined since the renderer can't reach the main bundle.
+/** Mirrors capture-tweet.ts kind constants, inlined since the renderer can't reach the main bundle. */
 const TWEET_SCREENSHOT_LEGACY_KIND = "tweet_screenshot";
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
@@ -18,7 +18,7 @@ const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
   TWEET_SCREENSHOT_DARK_KIND,
 ]);
 
-// Quote-tweet screenshots, suffixed with 1-based depth, e.g. tweet_screenshot_quote1_light.
+/** Quote-tweet screenshots, suffixed with 1-based depth, e.g. tweet_screenshot_quote1_light. */
 const QUOTE_SCREENSHOT_KIND = /^tweet_screenshot_quote(\d+)_(light|dark)$/;
 
 function isQuoteScreenshotKind(kind: string): boolean {
@@ -37,7 +37,7 @@ interface MediaPickOptions {
   tweetCover?: TweetCover;
 }
 
-// Tweet-cover mode for callers outside React; React callers should pass `tweetCover` so the UI re-picks on change.
+/** Tweet-cover mode for callers outside React; React callers should pass `tweetCover` so the UI re-picks on change. */
 function resolveCurrentTweetCover(): TweetCover {
   return getPrefsSnapshot()?.preferences?.tweetCover ?? "media";
 }
@@ -46,7 +46,7 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  // Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), and avatars.
+  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), and avatars. */
   const files = (save.files ?? []).filter(
     (f) =>
       f.kind !== "avatar" &&
@@ -56,13 +56,13 @@ export function buildMediaUnits(
   const posters = files.filter((f) => f.kind === "poster");
   const slides = files.filter((f) => f.kind !== "poster");
 
-  // Theme-matched quote-tweet screenshots, appended after the parent's extracted media.
+  /** Quote-tweet screenshots are appended after the parent's extracted media. */
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
   const videos = slides.filter(isVideoFile);
   const images = slides.filter((f) => !isVideoFile(f));
 
-  // Single-stream save: one video + optional cover; emit one unit with the cover as poster.
+  /** Single-stream save: one video + optional cover collapses to one unit with the cover as poster. */
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
     const video = videos[0];
     if (!video) return [];
@@ -100,7 +100,7 @@ export function buildMediaUnits(
   units.push(...quoteUnits);
   if (units.length > 0) return units;
 
-  // Twitter saves with no extracted media fall back to the tweet screenshot so the frame isn't blank.
+  /** Twitter saves with no extracted media fall back to the tweet screenshot so the frame isn't blank. */
   const screenshot = pickTweetScreenshot(save, opts.theme);
   if (screenshot) {
     return [
@@ -115,7 +115,7 @@ export function buildMediaUnits(
   return units;
 }
 
-// One slide per quoted tweet, theme-matched (falling back to the other theme), ordered by depth.
+/** One slide per quoted tweet, theme-matched with the other theme as fallback, ordered by depth. */
 function buildQuoteScreenshotUnits(
   save: Save,
   theme: ResolvedTheme | undefined,
@@ -152,14 +152,14 @@ function buildQuoteScreenshotUnits(
   return units;
 }
 
-// The unit driving thumbnails/pane covers. For Twitter, `tweetCover` picks screenshot vs extracted media.
+/** The unit driving thumbnails/pane covers; for Twitter, `tweetCover` picks screenshot vs extracted media. */
 export function pickPrimaryUnit(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit | null {
   const mode = opts.tweetCover ?? resolveCurrentTweetCover();
   const screenshot = pickTweetScreenshot(save, opts.theme);
-  // "screenshot" forces the tweet card; "media" falls through (screenshot is still the text-only fallback).
+  /** "screenshot" forces the tweet card; "media" falls through, with the screenshot still the text-only fallback. */
   if (screenshot && mode === "screenshot") {
     return {
       key: screenshot.path,
@@ -174,7 +174,7 @@ export function pickPrimaryUnit(
   return units[0] ?? null;
 }
 
-// Like pickPrimaryUnit but returns the SaveFile (for dimensions); matches by path since key is the disk path.
+/** Like pickPrimaryUnit but returns the SaveFile (for dimensions); matches by path since key is the disk path. */
 export function pickPrimaryFile(
   save: Save,
   opts: MediaPickOptions = {},
@@ -184,7 +184,7 @@ export function pickPrimaryFile(
   return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
 }
 
-// Theme-appropriate screenshot: matching theme, then the other, then legacy; null for non-twitter.
+/** Matching theme, then the other, then legacy; null for non-twitter. */
 function pickTweetScreenshot(
   save: Save,
   theme: ResolvedTheme | undefined,
@@ -214,7 +214,7 @@ function isVideoFile(file: SaveFile): boolean {
   return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
 }
 
-// Broad category for the primary asset, used to color the type badge.
+/** Broad category for the primary asset, used to color the type badge. */
 type TypeKind = "image" | "video" | "audio" | "link" | "doc" | "other";
 
 const IMAGE_EXT = /^(png|jpe?g|gif|webp|avif|heic|heif|svg|bmp|tiff?|ico)$/;
@@ -243,7 +243,7 @@ export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   return save.url ? "link" : "other";
 }
 
-// Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link".
+/** Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link". */
 export function deriveTypeLabel(
   file: SaveFile | null,
   save: Save,

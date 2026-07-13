@@ -1,6 +1,6 @@
 import type { Save } from "@/lib/types";
 
-// "Downloading" while fetch_video_ytdlp is pending/running AND there's video evidence — the gate stops text/image saves flashing "Queued".
+/** Requires video evidence alongside a pending fetch_video_ytdlp task; the gate stops text/image saves flashing "Queued". */
 export function useIsVideoDownloading(save: Save | null | undefined): boolean {
   if (!save) return false;
   if (save.status === "complete" || save.status === "failed") return false;

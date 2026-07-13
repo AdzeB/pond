@@ -13,9 +13,7 @@ import {
 } from "./lib/insights";
 import styles from "./styles.module.css";
 
-// Filter chips: one chip per filtered field ("Source is Twitter, Reddit ×"),
-// each opening a menu with include/exclude and value checkboxes. Used at both
-// dashboard level and inside the insight editor.
+/** One filter chip per field, shared by the dashboard and the insight editor. */
 
 interface FilterBarProps {
   filters: InsightFilter[];
@@ -65,8 +63,7 @@ export function FilterBar({ filters, saves = [], onChange }: FilterBarProps) {
     patchFilter(index, { values });
   };
 
-  // Adding from the "+ Filter" menu merges into an existing chip for that
-  // field, keeping one chip per field.
+  /** Merges into an existing chip for the field, keeping one chip per field. */
   const addValue = (field: InsightFilter["field"], value: string) => {
     const index = filters.findIndex((f) => f.field === field);
     if (index >= 0) {

@@ -39,7 +39,7 @@ export function SkillsSection() {
     setEditing(null);
   };
 
-  // Editing/creating swaps the whole pane for a full-page editor.
+  /** Editing or creating swaps the whole pane for a full-page editor. */
   if (editing) {
     return (
       <SkillEditor

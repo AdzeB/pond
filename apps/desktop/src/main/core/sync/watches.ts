@@ -10,9 +10,7 @@ import { ulid } from "ulid";
 import { getPrefs, setPrefs } from "../prefs";
 import { normalizeHandle } from "./accounts";
 
-// Registry for watched public accounts. Mirrors accounts.ts minus everything
-// session-related: a watch has no cookie partition, its checks either hit
-// public endpoints or borrow a connected account's partition (see `via`).
+/** Registry for watched public accounts; a watch has no cookie partition, its checks hit public endpoints or borrow a connected account's partition via `via`. */
 
 export async function listWatches(): Promise<WatchedAccount[]> {
   const prefs = await getPrefs();
@@ -28,8 +26,7 @@ export async function getWatch(
   return prefs.sync.watches?.[watchId] ?? null;
 }
 
-// Same handle can be watched as different kinds (a profile and one of its
-// boards, say), so identity is (source, kind, handle).
+/** The same handle can be watched as different kinds, so identity is (source, kind, handle). */
 export async function findWatchByHandle(
   source: Source,
   handle: string,
@@ -117,8 +114,7 @@ export async function patchWatchSync(
   return next;
 }
 
-// Removing a watch keeps its already-ingested items; they stay attributed to
-// the (now dangling) watch id, same as disconnecting an account.
+/** Removing a watch keeps its already-ingested items attributed to the dangling watch id, same as disconnecting an account. */
 export async function removeWatch(watchId: string): Promise<void> {
   await writeWatches((watches) => {
     if (!watches[watchId]) return watches;

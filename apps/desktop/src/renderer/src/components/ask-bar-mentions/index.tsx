@@ -27,8 +27,7 @@ import {
 } from "./lib/menu-model";
 import { AskMenuPanel, AskOption } from "./lib/menu-panel";
 
-// Generic typeahead for one trigger char. The plugin owns caret anchoring and
-// keyboard nav; we supply the options, the popup, and the on-select behavior.
+/** Typeahead for one trigger char; the Lexical plugin owns caret anchoring and keyboard nav. */
 function TriggerMenu({
   triggerChar,
   build,
@@ -45,7 +44,7 @@ function TriggerMenu({
   onClose?: () => void;
 }) {
   const [query, setQuery] = useState<string | null>(null);
-  // minLength 0 so the bare trigger (e.g. just "@") opens the menu.
+  /** minLength 0 so the bare trigger opens the menu. */
   const triggerFn = useBasicTypeaheadTriggerMatch(triggerChar, {
     minLength: 0,
   });
@@ -64,8 +63,7 @@ function TriggerMenu({
       triggerFn={triggerFn}
       onQueryChange={setQuery}
       onClose={onClose}
-      // NORMAL beats the composer's LOW enter/escape handlers while open, so
-      // they only fire (send / collapse) when no menu is showing.
+      /** NORMAL beats the composer's LOW enter/escape handlers, so those only fire when no menu is showing. */
       commandPriority={COMMAND_PRIORITY_NORMAL}
       onSelectOption={(option, nodeToReplace, closeMenu) =>
         onSelect(option.item, nodeToReplace, closeMenu)
@@ -113,7 +111,6 @@ function SkillMenu({
           close();
           break;
         case "more":
-          // Expand the list in place; keep the menu open.
           setExpanded(true);
           break;
         case "create":
@@ -182,13 +179,10 @@ function TagMenu({ tagCounts }: { tagCounts: Map<string, number> }) {
   return <TriggerMenu triggerChar="#" build={build} onSelect={onSelect} />;
 }
 
-// Token chars after a trigger, mirroring $readTrigger: anything but whitespace
-// and the trigger glyphs.
+/** Mirrors $readTrigger: token chars are anything but whitespace and the trigger glyphs. */
 const TAG_TOKEN = /(^|\s)#([^\s#@/]+)(?=\s)/;
 
-// Auto-convert a completed `#knownTag ` token (one followed by whitespace) into
-// a tag chip as the user types, so you don't have to go through the `#` menu.
-// Only exact matches against existing tags convert; unknown `#foo` stays text.
+/** Converts a completed `#knownTag ` token into a chip as the user types; only exact matches against existing tags convert. */
 function AutoTagChips({ tagCounts }: { tagCounts: Map<string, number> }) {
   const [editor] = useLexicalComposerContext();
   const canonical = useMemo(() => {
@@ -216,8 +210,7 @@ function AutoTagChips({ tagCounts }: { tagCounts: Map<string, number> }) {
   return null;
 }
 
-// All three trigger menus (`/` skills, `@` saves, `#` tags), each a Lexical
-// typeahead anchored to the caret. Only one resolves at a time.
+/** The `/`, `@`, and `#` trigger menus; only one resolves at a time. */
 export function AskMentions({
   skills,
   saves,

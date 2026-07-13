@@ -6,7 +6,6 @@ type ChipTone = "skill" | "mention" | "tag";
 
 interface AskChipProps {
   tone: ChipTone;
-  // Leading icon or glyph (e.g. a sparkle, "@", or "#").
   lead: ReactNode;
   label: string;
   title?: string;
@@ -14,9 +13,7 @@ interface AskChipProps {
   onRemove?: () => void;
 }
 
-// A single inline pill rendered inside the Lexical ask editor. Skills, save
-// mentions, and tags all share this shell, differing only by tone + lead glyph.
-// The ref + `selected` flag let the node wire up keyboard selection/deletion.
+/** Shared pill shell for skill, mention, and tag nodes in the Lexical ask editor; the ref and `selected` flag let the node wire up keyboard selection/deletion. */
 export const AskChip = forwardRef<HTMLSpanElement, AskChipProps>(
   function AskChip({ tone, lead, label, title, selected, onRemove }, ref) {
     return (

@@ -28,7 +28,7 @@ const preferences = z.object({
   pointerCursors: z.boolean().catch(false),
   reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
   reduceTransparency: z.boolean().catch(false),
-  // Twitter cover: "media" prefers attached media, "screenshot" always renders the card.
+  /** "media" prefers attached media; "screenshot" always renders the card. */
   tweetCover: z.enum(["media", "screenshot"]).catch("media"),
 });
 
@@ -42,8 +42,7 @@ const windowSlice = z.object({
   launchHidden: z.boolean().catch(false),
   restorePosition: z.boolean().catch(true),
   bounds: z.custom<WindowBounds | null>().default(null),
-  // Which page Pond opens on launch/reload. "continue" restores the last route
-  // you were on; the others jump to a fixed page.
+  /** "continue" restores the last route; the others jump to a fixed page. */
   startupPage: z
     .enum(["continue", "library", "sources", "trash", "settings"])
     .catch("continue"),
@@ -71,17 +70,14 @@ const allTags = z.object({
   sort: z.enum(["name", "count", "recent"]).catch("name"),
 });
 
-// Analytics page header: ordered list of pinned metric ids, per-metric display
-// style (card vs compact chip), and the rolling window the KPIs summarize.
+/** `metrics` is the ordered list of pinned metric ids; `days` is the rolling window the KPIs summarize. */
 const sourcesView = z.object({
   metrics: z.custom<string[]>().default(DEFAULT_SOURCE_METRICS),
   metricDisplay: z.custom<Record<string, SourceMetricDisplay>>().default({}),
   days: z.number().catch(7),
 });
 
-// Analytics insight dashboards: named dashboards of user-composed insight
-// cards, each with its own rolling window and filters. `activeId` remembers
-// the last-open dashboard.
+/** `activeId` remembers the last-open dashboard. */
 const analyticsView = z.object({
   dashboards: z.custom<DashboardConfig[]>().default(DEFAULT_DASHBOARDS),
   activeId: z.string().catch("default-overview"),
@@ -102,16 +98,14 @@ const developer = z.object({
 });
 
 const sync = z.object({
-  // Connected accounts keyed by account id; several may share one source.
+  /** Connected accounts keyed by account id; several may share one source. */
   accounts: z.custom<SyncAccounts>().default({}),
-  // Watched public accounts keyed by watch id (see WatchedAccount).
+  /** Watched public accounts keyed by watch id. */
   watches: z.custom<SyncWatches>().default({}),
-  // Legacy single-account-per-source state; drained into `accounts` by the
-  // one-time migration and kept empty afterwards.
+  /** @deprecated Drained into `accounts` by the one-time migration and kept empty afterwards. */
   sources: z.custom<SyncSources>().default({}),
   handles: z.custom<SyncHandles>().default({}),
-  // Background sync scheduler; conservative default of every 6h, deferring to
-  // the rate governor. Users can disable or retune the interval.
+  /** Background sync scheduler; defers to the rate governor. */
   cron: z
     .object({
       enabled: z.boolean().catch(true),
@@ -128,50 +122,49 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
-// Local AI: the "find anything" NL compiler and on-device semantic search.
-// `provider` selects where the LLM stage runs; embeddings always run on-device
-// in the renderer via Transformers.js. A custom endpoint's API key (if any) is
-// stored in the OS keychain, never here.
+/**
+ * `provider` selects where the LLM stage runs; embeddings always run on-device in the renderer via Transformers.js.
+ * A custom endpoint's API key is stored in the OS keychain, never here.
+ */
 const ai = z.object({
-  // Enable the natural-language -> structured-query compiler (LLM stage).
+  /** Natural-language -> structured-query compiler LLM stage. */
   nlCompiler: z.boolean().catch(false),
-  // Enable the multi-step agentic loop (inspect -> plan -> execute -> answer)
-  // for capable providers. Falls back to single-shot plan compile when off or
-  // when the model can't drive it. See modelSupportsAgent.
+  /**
+   * Multi-step agentic loop; falls back to single-shot plan compile when off or the model can't drive it.
+   * @see modelSupportsAgent
+   */
   agent: z.boolean().catch(false),
-  // Hard cap on agent reasoning steps per turn (bounds latency + token spend).
+  /** Hard cap on agent reasoning steps per turn; bounds latency and token spend. */
   agentMaxSteps: z.number().catch(5),
-  // Enable on-device embeddings + semantic ranking of free-text search.
+  /** On-device embeddings plus semantic ranking of free-text search. */
   semanticSearch: z.boolean().catch(false),
-  // Where the LLM stage runs. "bundled" = node-llama-cpp GGUF in the main
-  // process; local servers (ollama/lmstudio/custom) and hosted vendors
-  // (openai/anthropic/google/...) speak OpenAI-compatible HTTP. See AI_PROVIDERS.
+  /**
+   * "bundled" runs node-llama-cpp GGUF in the main process; local servers and hosted vendors speak OpenAI-compatible HTTP.
+   * @see AI_PROVIDERS
+   */
   provider: z.enum(AI_PROVIDER_IDS).catch("ollama"),
-  // Base URL override for HTTP providers. Empty = the provider's default.
+  /** Base URL override for HTTP providers; empty means the provider's default. */
   endpoint: z.string().catch(""),
-  // Chat/completion model id for the LLM stage (provider-specific).
+  /** Provider-specific chat/completion model id for the LLM stage. */
   modelId: z.string().catch(""),
-  // Transformers.js feature-extraction model for embeddings.
+  /** Transformers.js feature-extraction model for embeddings. */
   embedModelId: z.string().catch("Xenova/all-MiniLM-L6-v2"),
-  // ---- On-device enrichment toggles. Heavy models (caption/OCR, transcript,
-  // CLIP) default OFF given download size; all run locally via Transformers.js. ----
+  /** Heavy enrichers (caption/OCR, transcript, CLIP) default off given download size; all run locally via Transformers.js. */
   enableCaption: z.boolean().catch(false),
   enableOcr: z.boolean().catch(false),
   enableTranscript: z.boolean().catch(false),
   enableClip: z.boolean().catch(false),
   enableAesthetic: z.boolean().catch(false),
-  // Non-destructive text enrichers (suggest only); cheap, but opt-in for clarity.
+  /** Non-destructive text enrichers that only suggest; cheap but opt-in. */
   enableAutoTitle: z.boolean().catch(false),
   enableSuggestedTags: z.boolean().catch(false),
-  // Optional model-id overrides for the heavy enrichers (empty = default).
+  /** Optional model-id overrides for the heavy enrichers; empty means default. */
   captionModelId: z.string().catch(""),
   clipModelId: z.string().catch(""),
   whisperModelId: z.string().catch(""),
 });
 
-// User-defined composer skills: named slash shortcuts that run a saved prompt
-// through the "find anything" Ask flow. `name` is the slash token (no leading
-// slash); `id` is its stable slug.
+/** Named slash shortcut that runs a saved prompt through the Ask flow; `name` is the slash token without the leading slash, `id` its stable slug. */
 const customSkill = z.object({
   id: z.string(),
   name: z.string(),
@@ -181,11 +174,10 @@ const customSkill = z.object({
 
 export type CustomSkill = z.infer<typeof customSkill>;
 
-// Starter slash skills so a new library isn't an empty composer. Each prompt is
-// phrased to resolve through the deterministic NL compiler (type / date /
-// presence / file-count fields) rather than relying on semantic guesses. Stable
-// ids keep them de-duplicated across reloads; a user can delete any of them and
-// the deletion persists (the seed only fills an absent skills slice).
+/**
+ * Starter skills so a new library isn't an empty composer; each prompt is phrased to resolve through the deterministic NL compiler.
+ * Stable ids keep them de-duplicated across reloads; the seed only fills an absent skills slice, so deletions persist.
+ */
 export const DEFAULT_SKILLS: CustomSkill[] = [
   {
     id: "default-untagged",
@@ -221,14 +213,14 @@ export const DEFAULT_SKILLS: CustomSkill[] = [
 
 const skills = z.object({
   custom: z.array(customSkill).catch([]),
-  // One-shot marker: false until the starter skills have been merged in once.
-  // Keeps deletions sticky (we never re-seed once this flips true) while still
-  // back-filling existing libraries whose `skills` slice predates the defaults.
+  /**
+   * One-shot marker: false until the starter skills have been merged in once.
+   * Never re-seeded after it flips true, so deletions stay sticky.
+   */
   seeded: z.boolean().catch(false),
 });
 
-// Recent ask-bar questions, most-recent-first. Pond-scoped: questions typed in
-// one library must never surface in another.
+/** Most-recent-first; pond-scoped so questions typed in one library never surface in another. */
 const askHistory = z.object({
   entries: z.array(z.string()).catch([]),
 });
@@ -240,13 +232,12 @@ const recentSaveVisit = z.object({
 
 export type RecentSaveVisit = z.infer<typeof recentSaveVisit>;
 
-// Recently visited saves (feeds the native History menu). Save ids are
-// pond-specific, so this is pond-scoped too.
+/** Feeds the native History menu; save ids are pond-specific, so this is pond-scoped too. */
 const saveRecents = z.object({
   entries: z.array(recentSaveVisit).catch([]),
 });
 
-// Each slice catches to its own defaults so a corrupt slice resets in isolation.
+/** Each slice catches to its own defaults so a corrupt slice resets in isolation. */
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
   trash: trash.catch(trash.parse({})),
@@ -271,7 +262,7 @@ export type Prefs = z.infer<typeof PrefsObject>;
 
 export const DEFAULT_PREFS: Prefs = PrefsObject.parse({});
 
-// Top-level catch keeps parsing non-throwing for wholly corrupt input.
+/** Top-level catch keeps parsing non-throwing for wholly corrupt input. */
 export const PrefsSchema = PrefsObject.catch(DEFAULT_PREFS);
 
 export type PrefsParsed = z.infer<typeof PrefsSchema>;

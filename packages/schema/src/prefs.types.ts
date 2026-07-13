@@ -62,13 +62,14 @@ export const DEFAULT_IMAGE_DOWNLOAD: ImageDownloadSettings = {
 export interface SourceSyncPrefs {
   lastSyncedAt: string | null;
   lastError: string | null;
-  // Incremental sync cursor: most recent enqueued source id, the gate for
-  // full vs incremental walks, and the library size at last sync.
+  /** Most recent enqueued source id; gates full vs incremental walks. */
   highWaterMark: string | null;
   lastFullSyncAt: string | null;
   knownCount: number;
-  // ISO timestamp while a run is in flight, cleared on finish. Still set at
-  // startup means the previous run was interrupted (see recoverInterruptedSyncs).
+  /**
+   * ISO timestamp while a run is in flight; still set at startup means the previous run was interrupted.
+   * @see recoverInterruptedSyncs
+   */
   runningSince: string | null;
 }
 
@@ -81,16 +82,14 @@ export const DEFAULT_SOURCE_SYNC_PREFS: SourceSyncPrefs = {
   runningSince: null,
 };
 
-// Legacy single-account-per-source maps. Superseded by `SyncAccounts`; kept in
-// the schema so pre-multi-account prefs still parse and can be migrated (see
-// migrateSyncAccounts in the desktop app).
+/**
+ * @deprecated Superseded by `SyncAccounts`; kept so pre-multi-account prefs still parse and can be migrated.
+ * @see migrateSyncAccounts in the desktop app
+ */
 export type SyncSources = Partial<Record<Source, SourceSyncPrefs>>;
 export type SyncHandles = Partial<Record<Source, string>>;
 
-// ── Multi-account sync ─────────────────────────────────────────────────────
-// A signed-in platform account. Several accounts may share one `source`
-// (e.g. two Instagram accounts); each owns an isolated cookie partition
-// (derived from `id`) and its own sync cursor.
+/** A signed-in platform account; several may share one `source`, each owning an isolated cookie partition derived from `id` and its own sync cursor. */
 export interface ConnectedAccount {
   /** ULID; stable across renames and also the cookie-partition suffix. */
   id: string;
@@ -98,18 +97,13 @@ export interface ConnectedAccount {
   /** Resolved username on the platform; null until first probed. */
   handle: string | null;
   /**
-   * Stable platform user id derived from identity cookies (twitter `twid`,
-   * instagram/threads `ds_user_id`); matches a pushed browser session to an
-   * account when the handle can't be probed. Null when the platform exposes
-   * no such cookie.
+   * Stable platform user id from identity cookies (twitter `twid`, instagram/threads `ds_user_id`);
+   * matches a pushed session to an account when the handle can't be probed. Null when the platform has no such cookie.
    */
   identityKey: string | null;
-  /** Optional user nickname ("work", "memes"). */
+  /** Optional user nickname. */
   label: string | null;
-  /**
-   * Profile picture URL resolved from the platform (og:image or a public
-   * API), best effort; null when the last attempt found nothing.
-   */
+  /** Best-effort profile picture URL resolved from the platform; null when the last attempt found nothing. */
   avatarUrl?: string | null;
   /** ISO timestamp of the last avatar resolution attempt. */
   avatarCheckedAt?: string | null;
@@ -121,17 +115,7 @@ export interface ConnectedAccount {
 
 export type SyncAccounts = Record<string, ConnectedAccount>;
 
-// ── Watching ────────────────────────────────────────────────────────────────
-// A public account Pond polls for new posts — no session or cookie partition
-// of its own. Harvested URLs feed the normal ingest pipeline stamped with the
-// watch's id as accountId, so watched items mix into the library and the
-// account filter isolates them.
-
-/**
- * What a watch points at. Which kinds apply depends on the source:
- * Are.na channel/user/group, YouTube channel/playlist, Twitter user/list,
- * Pinterest user/board, Cosmos user/cluster, TikTok/Instagram user.
- */
+/** What a watch points at; valid kinds depend on the source: Are.na channel/user/group, YouTube channel/playlist, Twitter user/list, Pinterest user/board, Cosmos user/cluster, TikTok/Instagram user. */
 export type WatchKind =
   | "channel"
   | "user"
@@ -141,20 +125,22 @@ export type WatchKind =
   | "cluster"
   | "list";
 
+/**
+ * A public account Pond polls for new posts, with no session or cookie partition of its own.
+ * Harvested URLs feed the normal ingest pipeline stamped with the watch's id as accountId.
+ */
 export interface WatchedAccount {
   /** ULID; also the accountId stamped on saves harvested from this watch. */
   id: string;
   source: Source;
   /**
-   * Identifying slug, shape depending on kind: a bare handle/slug, a playlist
-   * or list id, `user/board` for Pinterest boards, `user/cluster` for Cosmos
-   * clusters, or `handle/shorts` when a YouTube tab URL was pasted.
+   * Identifying slug, shape depending on kind: a bare handle/slug, a playlist or list id,
+   * `user/board` for Pinterest, `user/cluster` for Cosmos, or `handle/shorts` when a YouTube tab URL was pasted.
    */
   handle: string;
   /**
-   * Resolved at add time (from a pasted URL or an API probe) so checks never
-   * guess. Absent on watches created before kinds existed; runners fall back
-   * to the legacy per-source default.
+   * Resolved at add time so checks never guess; absent on watches created before kinds existed,
+   * where runners fall back to the legacy per-source default.
    */
   kind?: WatchKind;
   /** Optional user nickname. */
@@ -163,10 +149,7 @@ export interface WatchedAccount {
   avatarUrl?: string | null;
   /** ISO timestamp of the last avatar resolution attempt. */
   avatarCheckedAt?: string | null;
-  /**
-   * Connected account whose session the check rides (auth-walled sources like
-   * Instagram/Twitter). Null for sources with public listings.
-   */
+  /** Connected account whose session the check rides on auth-walled sources; null for sources with public listings. */
   via: string | null;
   /** ISO timestamp of when the watch was added. */
   addedAt: string;
@@ -176,7 +159,7 @@ export interface WatchedAccount {
 
 export type SyncWatches = Record<string, WatchedAccount>;
 
-// Base color (its lightness picks light/dark), accent, and contrast spread for the ramp.
+/** Base color (its lightness picks light/dark), accent, and contrast spread for the ramp. */
 export interface ThemeDef {
   base: string;
   accent: string;
@@ -185,15 +168,15 @@ export interface ThemeDef {
 
 export type ThemeMode = "preset" | "system" | "custom";
 
-// Cover source for Twitter saves in the grid / preview pane.
+/** Cover source for Twitter saves in the grid and preview pane. */
 export type TweetCover = "media" | "screenshot";
 
-// Contrast widens the separation between backgrounds, borders, and text.
+/** Contrast widens the separation between backgrounds, borders, and text. */
 export const CONTRAST_MIN = 0;
 export const CONTRAST_MAX = 100;
 export const CONTRAST_DEFAULT = 30;
 
-// Fallback custom theme and default preset ids (presets in theme-presets.ts).
+/** Fallback custom theme and default preset ids; presets live in theme-presets.ts. */
 export const CUSTOM_THEME_DEFAULT: ThemeDef = {
   base: "#ffffff",
   accent: "#3b82f6",
@@ -203,7 +186,7 @@ export const DEFAULT_PRESET_ID = "light";
 export const DEFAULT_SYSTEM_LIGHT_ID = "light";
 export const DEFAULT_SYSTEM_DARK_ID = "dark";
 
-// Window bounds persisted for restore-position.
+/** Persisted so the window restores to its last position. */
 export interface WindowBounds {
   x: number;
   y: number;
@@ -211,11 +194,7 @@ export interface WindowBounds {
   height: number;
 }
 
-// ── Sources page (KPI strip) ──────────────────────────────────────────────
-// Which aggregate metrics the user pins to the Sources header and whether each
-// renders as a full card or a compact chip. Metric ids are owned by the
-// renderer's metric catalog; the schema stays generic so adding a metric never
-// requires a migration.
+/** Metric ids are owned by the renderer's metric catalog; the schema stays generic so adding a metric never requires a migration. */
 export type SourceMetricDisplay = "card" | "chip";
 
 export const DEFAULT_SOURCE_METRICS: string[] = [
@@ -225,12 +204,10 @@ export const DEFAULT_SOURCE_METRICS: string[] = [
   "avgRun",
 ];
 
-// ── Analytics page (insight dashboards) ───────────────────────────────────
-// Named dashboards of user-composed insight cards over the library's saves,
-// Linear Dashboards style: every card counts saves, picking a slice (x-axis)
-// × optional segment (color split), rendered as one of several chart shapes,
-// a single metric, or a table — optionally narrowed by filters. Option ids are owned by the renderer's insight catalog; the
-// schema stays loose so new slices never require a migration.
+/**
+ * Every insight card counts saves by a slice (x-axis) × optional segment (color split).
+ * Option ids are owned by the renderer's insight catalog; the schema stays loose so new slices never require a migration.
+ */
 export type InsightSlice =
   | "source"
   | "day"
@@ -243,21 +220,23 @@ export type InsightSlice =
 export type InsightSegment = "source" | "type" | "status";
 
 export type InsightDisplay =
-  | "chart" // stacked bars
+  /** Stacked bars. */
+  | "chart"
   | "area"
   | "line"
   | "ring"
   | "pie"
-  | "sunburst" // two-level ring: slice inside, segment outside
+  /** Two-level ring: slice inside, segment outside. */
+  | "sunburst"
   | "radar"
-  | "heatmap" // weekday × hour activity; slice/segment do not apply
+  /** Weekday × hour activity; slice/segment do not apply. */
+  | "heatmap"
   | "metric"
   | "table";
 
 export type InsightWidth = "quarter" | "third" | "half" | "full";
 
-// Style knobs for the chart displays. All optional — stored cards render
-// exactly as before when absent.
+/** All knobs optional; stored cards without them render the defaults. */
 export interface InsightVizOptions {
   /** Interpolation between points: smooth monotone, straight, or stepped. */
   curve?: "smooth" | "linear" | "step";
@@ -279,9 +258,7 @@ export interface InsightVizOptions {
   gridLevels?: number;
 }
 
-// Narrow the window by dimension values, e.g. "source include [twitter]" or
-// "tag exclude [inbox]". Dashboard-level filters apply to every card;
-// insight-level filters stack on top.
+/** Dashboard-level filters apply to every card; insight-level filters stack on top. */
 export interface InsightFilter {
   field: "source" | "type" | "tag" | "creator" | "status";
   op: "include" | "exclude";
@@ -299,7 +276,7 @@ export interface InsightConfig {
   w?: number;
   /** Row span (1-4); missing falls back to the display's default height. */
   h?: number;
-  /** Legacy pre-grid width; superseded by `w`/`h`. */
+  /** @deprecated Superseded by `w`/`h`. */
   width?: InsightWidth;
   /** Chart style options; only meaningful for chart/area/line displays. */
   viz?: InsightVizOptions;
@@ -316,8 +293,6 @@ export interface DashboardConfig {
   insights: InsightConfig[];
 }
 
-// First-open dashboard: a library overview on the 3-column grid — a daily
-// activity hero, a headline count, then composition breakdowns.
 export const DEFAULT_INSIGHTS: InsightConfig[] = [
   {
     id: "default-saves-by-day",

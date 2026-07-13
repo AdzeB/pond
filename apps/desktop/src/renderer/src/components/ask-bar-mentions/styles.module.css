@@ -1,7 +1,4 @@
-/* ----- Trigger menu: grouped skills / saves / tags -----
-   Portaled into the typeahead plugin's caret-anchored container, so it tracks
-   the active `/ @ #` token. The container sits just below the caret; `bottom`
-   lifts the panel above the current line. */
+/* The caret-anchored container sits just below the caret; `bottom` lifts the panel above the current line. */
 
 .menu {
   position: absolute;

@@ -3,11 +3,9 @@ import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferFlorence } from "./inference-client";
 import type { FlorenceTask } from "./inference-core";
 
-// Florence-2: one vision-language model serving both captioning and OCR. Model
-// loading + execution lives in the inference worker (inference-core); this module
-// only resolves the prefs-driven model id and the stamp the sweep keys on.
+/** Florence-2 serves both captioning and OCR; model loading + execution live in the inference worker, and this module resolves the prefs-driven model id and the stamp the sweep keys on. */
 
-// onnx-community ships the ONNX weights transformers.js needs; overridable via prefs.
+/** onnx-community ships the ONNX weights transformers.js needs. */
 const DEFAULT_MODEL_ID = "onnx-community/Florence-2-base-ft";
 
 function modelId(): string {
@@ -21,7 +19,7 @@ export function florenceModelVersion(): string {
   return `${modelId()}@1`;
 }
 
-// Run one Florence task over an image, returning the decoded text (or "").
+/** Returns the decoded text, or "" when decoding produces nothing. */
 export function runFlorence(
   image: RawImage,
   task: FlorenceTask,

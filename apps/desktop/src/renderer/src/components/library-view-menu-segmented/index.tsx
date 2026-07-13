@@ -14,14 +14,11 @@ interface SegmentedProps<T> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onChange: (value: T) => void;
-  // When false, render icon-only cells and rely on the group header / aria for
-  // the label (used by Zoom). Defaults to true (Layout's icon + caption tiles).
+  /** When false, cells are icon-only and rely on the group header and aria for the label. */
   showLabels?: boolean;
 }
 
-// Single-select switch. The active cell is a floating surface shared across
-// options via a motion layoutId, so the selection springs between positions
-// rather than blinking on/off. Honours reduced-motion.
+/** The active cell shares a motion layoutId across options, so the selection springs between positions rather than blinking. */
 export function Segmented<T extends string | number>({
   ariaLabel,
   options,

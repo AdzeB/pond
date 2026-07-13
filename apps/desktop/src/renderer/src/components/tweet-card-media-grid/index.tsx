@@ -3,13 +3,10 @@ import { PlayIcon } from "@/components/tweet-card-icons";
 import { formatDuration } from "@/lib/util/format";
 import styles from "./styles.module.css";
 
-// Twitter caps a tweet at four media tiles; extra items are dropped.
+/** Twitter caps a tweet at four media tiles; extra items are dropped. */
 const MAX_TILES = 4;
 
-// A single video is shown inside Twitter's timeline window: landscape is capped
-// at 16:9 and portrait bottoms out at 9:16, so wider/taller videos letterbox
-// into that range instead of stretching the card. Images keep their natural
-// ratio and multi-media grids use Twitter's fixed 16:9 frame.
+/** Twitter's timeline window clamps a single video between 9:16 and 16:9, so wider or taller videos letterbox instead of stretching the card. */
 const VIDEO_MIN_RATIO = 9 / 16;
 const VIDEO_MAX_RATIO = 16 / 9;
 
@@ -69,7 +66,7 @@ function Tile({
   count: number;
 }) {
   const src = media.type === "video" ? media.posterUrl : media.url;
-  // In a 3-tile grid the first image spans the full left column.
+  /** In a 3-tile grid the first image spans the full left column. */
   const span = count === 3 && index === 0;
   return (
     <div className={styles["media-tile"]} data-span={span ? "true" : undefined}>

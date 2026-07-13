@@ -26,7 +26,7 @@ export const settingsQueries: QueryHandlerMap = {
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
-    // Read through normalizing getters so a partial blob doesn't blank UI controls.
+    /** Read through normalizing getters so a partial blob doesn't blank UI controls. */
     const videoDownload = await getVideoDownloadPrefs();
     const imageDownload = await getImageDownloadPrefs();
     if (rows[0]) {
@@ -78,7 +78,7 @@ export const settingsQueries: QueryHandlerMap = {
 
   async "settings.setPrefs"(params) {
     const next = await setPrefs(params as Parameters<typeof setPrefs>[0]);
-    // AI provider config is cached; drop it so endpoint/model edits take effect.
+    /** AI provider config is cached; drop it so endpoint/model edits take effect. */
     if (params && typeof params === "object" && "ai" in params) resetProvider();
     return { ok: true, prefs: next };
   },

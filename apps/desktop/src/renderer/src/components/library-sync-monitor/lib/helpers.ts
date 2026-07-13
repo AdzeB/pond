@@ -2,7 +2,6 @@ import type { SyncRun } from "@/hooks/use-sync-history";
 import { relativeTime } from "@/lib/util/relative-time";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
 
-// Human result line for the run, mirroring the legacy timeline copy.
 export function describeRun(run: SyncRun): string {
   switch (run.outcome) {
     case "ok": {
@@ -26,7 +25,6 @@ export function describeRun(run: SyncRun): string {
   }
 }
 
-// Local wall-clock HH:MM for run timestamps.
 export function formatClock(ms: number): string {
   const d = new Date(ms);
   if (!Number.isFinite(d.getTime())) return "";
@@ -35,7 +33,6 @@ export function formatClock(ms: number): string {
   ).padStart(2, "0")}`;
 }
 
-// Card-level health bucket derived from the live store status.
 type CardTone = "run" | "ok" | "err" | "idle" | "paused";
 
 export interface CardModel {

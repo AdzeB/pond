@@ -65,9 +65,7 @@ interface SeedMerge {
   rawJson: RawJson | null;
 }
 
-// Additive merge: fills missing `capture.author.*`, `capture.metrics`, and
-// `capture.extras.card` from the seed, never overwriting existing values. Lets a
-// re-sync backfill link cards / metrics onto saves ingested before those existed.
+/** Additive merge: fills missing `capture.author.*`, `capture.metrics`, and `capture.extras.card` from the seed, never overwriting existing values, so a re-sync can backfill cards/metrics. */
 export function mergeSeedIntoExistingSave(
   current: Save,
   seed: EnqueueSeed,
@@ -101,7 +99,6 @@ export function mergeSeedIntoExistingSave(
     }
   }
 
-  // Backfill metrics only when the existing capture has none.
   const existingMetrics = existingCapture?.metrics;
   const seedMetrics = seedCapture?.metrics;
   let nextMetrics = existingMetrics;
@@ -114,7 +111,6 @@ export function mergeSeedIntoExistingSave(
     filled.push("capture.metrics");
   }
 
-  // Backfill the link card only when absent.
   const existingExtras = (existingCapture?.extras ?? {}) as Record<
     string,
     unknown
@@ -169,7 +165,7 @@ export async function persistEnrichment(
   if (inserted) broadcastSyncAction(inserted);
 }
 
-// Re-pend only `done` fetch_avatar rows so the newly-filled URL lands on disk.
+/** Re-pends only `done` fetch_avatar rows so the newly-filled URL lands on disk. */
 export async function rependFetchAvatar(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();

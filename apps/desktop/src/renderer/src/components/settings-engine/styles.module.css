@@ -1,4 +1,4 @@
-/* Collapsible group header: mirrors Settings.SectionTitle, plus a chevron. */
+/* Mirrors Settings.SectionTitle, plus a chevron. */
 .toggle {
   display: flex;
   gap: 6px;

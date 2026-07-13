@@ -1,8 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import styles from "./styles.module.css";
 
-// First-run empty state. A gentle bobbing arrow points toward the dock where
-// new saves land, making the feature feel friendlier (Family's empty-state arrow).
+/** The bobbing arrow points toward the dock where new saves land. */
 export function WelcomeEmpty() {
   const reduce = useReducedMotion();
   return (

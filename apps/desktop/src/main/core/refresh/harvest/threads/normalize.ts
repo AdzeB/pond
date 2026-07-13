@@ -18,8 +18,7 @@ export function inPageThreadsNormalize() {
       'meta[property="og:title"]',
       'meta[name="twitter:title"]',
     ]);
-    // og:title is usually "<name> (@handle) on Threads"; keep the body text as
-    // the description and derive a short title from the first line.
+    /** og:title is usually "<name> (@handle) on Threads"; keep the body text as the description and derive a short title from the first line. */
     const desc = getMeta([
       'meta[property="og:description"]',
       'meta[name="twitter:description"]',

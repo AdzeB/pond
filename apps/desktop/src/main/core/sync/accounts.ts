@@ -9,12 +9,10 @@ import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getPrefs, setPrefs } from "../prefs";
 
-// The pre-multi-account shared cookie jar. Still read as a fallback while a
-// library migrates, and drained by migrateLegacySyncPrefs.
+/** The pre-multi-account shared cookie jar; read as a fallback while a library migrates, drained by migrateLegacySyncPrefs. */
 export const LEGACY_PARTITION = "persist:pond-scrapers";
 
-// Each connected account owns an isolated Electron session partition so two
-// accounts on the same platform never clobber each other's cookies.
+/** Each connected account owns an isolated Electron session partition so two accounts on the same platform never clobber each other's cookies. */
 export function partitionForAccount(accountId: string): string {
   return `persist:pond-acct-${accountId}`;
 }
@@ -134,8 +132,7 @@ export async function patchAccountSync(
   return next;
 }
 
-// Removes the registry entry and wipes the account's cookie partition so a
-// disconnect actually signs the account out.
+/** Removes the registry entry and wipes the account's cookie partition so a disconnect actually signs the account out. */
 export async function removeAccount(accountId: string): Promise<void> {
   await writeAccounts((accounts) => {
     if (!accounts[accountId]) return accounts;
@@ -152,9 +149,7 @@ export async function removeAccount(accountId: string): Promise<void> {
   }
 }
 
-// Partition for ingest-time scraping (metadata harvest, screenshots, video
-// downloads) of a save: the owning account's jar when known, else the first
-// account connected for that source, else the legacy shared jar.
+/** Partition for ingest-time scraping of a save: the owning account's jar when known, else the source's first account, else the legacy shared jar. */
 export async function partitionForIngest(
   source: Source,
   accountId?: string | null,

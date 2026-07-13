@@ -8,23 +8,19 @@ import log from "electron-log/main.js";
 import { listAccounts, patchAccount } from "./accounts";
 import { listWatches, patchWatch } from "./watches";
 
-// Best-effort profile pictures for the Sources page cards. Resolution hits
-// each platform's public profile page (og:image) or API, never a session
-// partition — a miss just means the card keeps its plain look.
+/** Best-effort profile pictures for the Sources page cards, resolved from public profile pages or APIs, never a session partition. */
 
-// Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly;
-// misses retry sooner in case the profile was temporarily unreachable.
+/** Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly; misses retry sooner. */
 const FOUND_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MISS_TTL_MS = 6 * 60 * 60 * 1000;
 
 const FETCH_TIMEOUT_MS = 10_000;
-// How much profile HTML to scan for meta tags; og tags live in <head>.
+/** How much profile HTML to scan; og tags live in <head>. */
 const HTML_SCAN_BYTES = 300_000;
 
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36";
-// x.com and instagram only serve meta tags to link-preview crawlers, and
-// x.com 404s the better-known ones (Googlebot, facebookexternalhit).
+/** x.com and instagram only serve meta tags to link-preview crawlers, and x.com 404s the better-known ones (Googlebot, facebookexternalhit). */
 const CRAWLER_UA =
   "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)";
 
@@ -35,25 +31,21 @@ interface AvatarSubject {
   avatarCheckedAt?: string | null;
 }
 
-// Site-wide share images (Next.js's opengraph-image convention, Pinterest's
-// default card, X's SSR shell fallback) that pages fall back to when there's
-// no real image — not a pfp.
+/** Site-wide share images that pages fall back to when there's no real image; not a pfp. */
 function isGenericOgImage(url: string): boolean {
   return /opengraph-image|default_open_graph|rweb\/ssr\/default/i.test(url);
 }
 
 function needsCheck(row: AvatarSubject): boolean {
   if (!row.handle) return false;
-  // Heal rows that stored a generic share image before the filter existed.
+  /** Rows holding a generic share image need re-resolving. */
   if (row.avatarUrl && isGenericOgImage(row.avatarUrl)) return true;
   const checked = row.avatarCheckedAt ? Date.parse(row.avatarCheckedAt) : 0;
   const ttl = row.avatarUrl ? FOUND_TTL_MS : MISS_TTL_MS;
   return !Number.isFinite(checked) || Date.now() - checked > ttl;
 }
 
-// The profile page whose og:image is the pfp. Owner profile for boards and
-// clusters ("user/board" slugs); null when the slug names no user at all
-// (playlist ids, twitter lists) or the source has no public profile page.
+/** The profile page whose og:image is the pfp; null when the slug names no user or the source has no public profile page. */
 function profilePageUrl(
   source: Source,
   handle: string,
@@ -64,7 +56,7 @@ function profilePageUrl(
   const h = encodeURIComponent(owner);
   switch (source) {
     case "youtube":
-      // Channel-id slugs (from /channel/UC… URLs) aren't @handles.
+      /** Channel-id slugs (from /channel/UC… URLs) aren't @handles. */
       return /^UC[\w-]{20,}$/.test(owner)
         ? `https://www.youtube.com/channel/${h}`
         : `https://www.youtube.com/@${h}`;
@@ -118,7 +110,7 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
         headers: {
           "user-agent": ua,
           accept: "text/html,application/xhtml+xml",
-          // Skips the EU consent interstitial on YouTube.
+          /** Skips the EU consent interstitial on YouTube. */
           cookie: "CONSENT=YES+cb; SOCS=CAI",
         },
       });
@@ -126,15 +118,12 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
       const html = (await res.text()).slice(0, HTML_SCAN_BYTES);
       const image = ogImageFrom(html);
       if (image) return image;
-    } catch {
-      /* try the next user agent */
-    }
+    } catch {}
   }
   return null;
 }
 
-// Are.na exposes avatars through its v3 API (users and groups share the
-// `avatar` field); profile pages have no useful og tag.
+/** Are.na exposes avatars through its v3 API; profile pages have no useful og tag. */
 async function arenaAvatar(
   slug: string,
   path: "users" | "groups",
@@ -155,8 +144,7 @@ async function arenaAvatar(
   }
 }
 
-// Pinterest's og:image is a site-wide card; the avatar lives in the page's
-// embedded state JSON instead (first occurrence belongs to the profile owner).
+/** Pinterest's og:image is a site-wide card; the avatar lives in the page's embedded state JSON, first occurrence owned by the profile. */
 async function pinterestAvatar(user: string): Promise<string | null> {
   try {
     const res = await fetch(
@@ -178,7 +166,7 @@ async function pinterestAvatar(user: string): Promise<string | null> {
   }
 }
 
-// Reddit's public about endpoint carries the avatar; no page scrape needed.
+/** Reddit's public about endpoint carries the avatar; no page scrape needed. */
 async function redditAvatar(name: string): Promise<string | null> {
   try {
     const res = await fetch(
@@ -205,7 +193,7 @@ export async function resolveAvatarUrl(
   kind?: WatchKind,
 ): Promise<string | null> {
   if (source === "arena") {
-    // Channels have covers, not faces — leave them to the brand tile.
+    /** Channels have covers, not faces; leave them to the brand tile. */
     if (kind === undefined || kind === "user") {
       return arenaAvatar(handle, "users");
     }
@@ -221,9 +209,7 @@ export async function resolveAvatarUrl(
   return pageUrl ? fetchOgImage(pageUrl) : null;
 }
 
-// One background sweep over accounts and watches, sequential so a page of
-// cards never fans out into a burst of profile fetches. Kicked from the list
-// queries; re-entry while a sweep is running is a no-op.
+/** One background sweep over accounts and watches, sequential so a page of cards never fans out into a burst of profile fetches; re-entry is a no-op. */
 let sweeping = false;
 
 export function fillMissingAvatars(): void {

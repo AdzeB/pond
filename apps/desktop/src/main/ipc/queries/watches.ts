@@ -16,7 +16,7 @@ import { isWatchableSource, WATCH_NEEDS_SESSION } from "../../core/watch/types";
 import type { QueryHandlerMap } from "../helpers";
 
 export const watchesQueries: QueryHandlerMap = {
-  // Every watched public account, oldest first, with in-flight check state.
+  /** Every watched public account, oldest first, with in-flight check state. */
   async "watches.list"() {
     fillMissingAvatars();
     const watches = await listWatches();
@@ -28,8 +28,7 @@ export const watchesQueries: QueryHandlerMap = {
     };
   },
 
-  // Resolve what the user typed (handle or pasted URL) into a watch target,
-  // for the live detected-kind chip in the add flow.
+  /** Resolves what the user typed into a watch target, for the live detected-kind chip in the add flow. */
   async "watches.resolve"(params) {
     const source = String(params.source ?? "") as Source;
     const input = String(params.input ?? "");
@@ -41,7 +40,7 @@ export const watchesQueries: QueryHandlerMap = {
     return { ok: true as const, target: resolved };
   },
 
-  // Start watching a public target; kicks the first check in the background.
+  /** Starts watching a public target; kicks the first check in the background. */
   async "watches.add"(params) {
     const source = String(params.source ?? "") as Source;
     const input = String(params.handle ?? "");
@@ -61,8 +60,7 @@ export const watchesQueries: QueryHandlerMap = {
     if (existing) {
       return { ok: false as const, reason: "already_watching" as const };
     }
-    // Scrape-based sources borrow a connected account's session; refuse the
-    // add when there's nothing to borrow rather than creating a dead watch.
+    /** Scrape-based sources borrow a connected account's session; refuse the add when there's nothing to borrow rather than creating a dead watch. */
     let via: string | null = null;
     if (WATCH_NEEDS_SESSION.includes(source)) {
       const accounts = await listAccountsForSource(source);
@@ -83,7 +81,7 @@ export const watchesQueries: QueryHandlerMap = {
     return { ok: true as const, watch };
   },
 
-  // Rename the user-facing nickname; null clears it.
+  /** Renames the user-facing nickname; null clears it. */
   async "watches.setLabel"(params) {
     const watchId = String(params.watchId ?? "");
     const raw = params.label;
@@ -93,8 +91,7 @@ export const watchesQueries: QueryHandlerMap = {
     return { ok: watch !== null, watch };
   },
 
-  // Stop watching. Items already ingested stay in the library, still
-  // attributed to the watch id.
+  /** Stops watching; items already ingested stay in the library, still attributed to the watch id. */
   async "watches.remove"(params) {
     const watchId = String(params.watchId ?? "");
     const watch = await getWatch(watchId);

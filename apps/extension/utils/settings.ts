@@ -5,8 +5,7 @@ import {
   type PondSettings,
 } from "./types";
 
-// Typed wrapper around the single `local:settings` key. Values are normalized
-// on read so legacy shapes (e.g. the old `endpoint` URL) keep migrating.
+/** Values are normalized on read so legacy stored shapes keep migrating. */
 const item = storage.defineItem<unknown>("local:settings");
 
 export async function getSettings(): Promise<PondSettings> {
@@ -15,7 +14,9 @@ export async function getSettings(): Promise<PondSettings> {
 
 export async function setSettings(next: PondSettings): Promise<void> {
   await item.setValue(next);
-} // Seed defaults on first install so the popup has a concrete value to edit.
+}
+
+/** Seed defaults on first install so the popup has a concrete value to edit. */
 export async function ensureSettings(): Promise<void> {
   if ((await item.getValue()) == null) {
     await item.setValue(DEFAULT_SETTINGS);

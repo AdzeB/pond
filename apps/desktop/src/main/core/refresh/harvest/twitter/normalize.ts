@@ -22,9 +22,7 @@ export function inPageTwitterNormalize() {
         u.searchParams.set("name", "orig");
         return u.toString();
       }
-    } catch {
-      /* fall through */
-    }
+    } catch {}
     return url;
   }
 

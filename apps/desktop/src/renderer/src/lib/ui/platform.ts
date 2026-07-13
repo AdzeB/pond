@@ -1,4 +1,4 @@
-// navigator.platform is stable for the process lifetime; resolve the reveal label once.
+/** navigator.platform is stable for the process lifetime; resolve the reveal label once. */
 export const REVEAL_LABEL: string = (() => {
   if (typeof navigator === "undefined") return "Reveal in Finder";
   const p = navigator.platform?.toLowerCase() ?? "";

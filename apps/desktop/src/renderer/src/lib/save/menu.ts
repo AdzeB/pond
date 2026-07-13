@@ -23,9 +23,7 @@ interface BuildSaveMenuOptions {
   clipboardEmpty: boolean;
 }
 
-// Build the native context-menu items for a save. Plain function (not a hook) so
-// a card never subscribes to the tag clipboard just to host a menu — the list is
-// assembled lazily when the menu is opened.
+/** Plain function rather than a hook so a card never subscribes to the tag clipboard just to host a menu; the list is assembled lazily on open. */
 export function buildSaveMenu(
   save: Save,
   { clipboardEmpty }: BuildSaveMenuOptions,
@@ -40,7 +38,7 @@ export function buildSaveMenu(
     try {
       await navigator.clipboard.writeText(save.url);
     } catch {
-      /* clipboard unavailable, drop silently */
+      /** Clipboard unavailable; drop silently. */
     }
   };
 

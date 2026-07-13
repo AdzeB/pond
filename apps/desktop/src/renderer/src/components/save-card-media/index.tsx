@@ -29,9 +29,7 @@ export const CardThumb = memo(function CardThumb({
   );
   const isDownloading = useIsVideoDownloading(save);
 
-  // Build the image-only cycle list for multi-image saves. Disabled when the primary
-  // is a video, when there's only one image, or when the cover isn't one of these
-  // images (e.g. a forced tweet-screenshot cover), so the resting frame stays correct.
+  /** The cycle list is disabled when the cover isn't one of these images so the resting frame stays correct. */
   const slides = useMemo(() => {
     if (!unit || unit.isVideo) return null;
     const units = buildMediaUnits(save, {
@@ -52,9 +50,7 @@ export const CardThumb = memo(function CardThumb({
   const [active, setActive] = useState(0);
   const [seen, setSeen] = useState<ReadonlySet<number>>(() => new Set([0]));
 
-  // Map the pointer's horizontal position across the thumb to a slide index, so
-  // hovering "scrubs" through the set. Handlers live here (not on the gallery) so
-  // moves over the badge overlay still bubble up and register.
+  /** Handlers live here rather than on the gallery so moves over the badge overlay still bubble up and register. */
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!slides) return;
@@ -73,7 +69,7 @@ export const CardThumb = memo(function CardThumb({
 
   const onPointerLeave = useCallback(() => setActive(0), []);
 
-  // Track broken src (not a boolean) so swapping unit URL auto-clears the broken state.
+  /** Track the broken src rather than a boolean so swapping the unit URL auto-clears the broken state. */
   const pickedSrc = unit?.url ?? null;
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;

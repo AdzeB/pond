@@ -18,8 +18,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     return;
   }
 
-  // Smart per-URL skip: only fetch URLs not already mapped to a file. Falls back
-  // to a coarse count check for legacy files written before sourceUrl existed.
+  /** Smart per-URL skip: only fetch URLs not already mapped to a file. */
   const existingFiles = save.files ?? [];
   const missing = missingMediaUrls(urls, existingFiles);
   if (missing.length === 0) {
@@ -40,8 +39,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
   const transientMisses = results.filter((r) => r.miss === "transient").length;
 
   if (fetched.length === 0) {
-    // Nothing downloaded: retry if any miss was transient, otherwise the URLs
-    // are unfetchable (404 / oversized / wrong type) so settle as done.
+    /** Retry if any miss was transient; otherwise the URLs are unfetchable (404 / oversized / wrong type), so settle as done. */
     if (transientMisses > 0) {
       throw new TransientError(
         `fetch-blobs: ${transientMisses}/${missing.length} media transiently unavailable`,
@@ -102,8 +100,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
     count: newFiles.length,
   });
 
-  // Some downloaded, others failed transiently: retry to fill in the rest (the
-  // skip above means the retry only re-fetches what's still missing).
+  /** Some downloaded, others failed transiently: retry to fill in the rest; the skip above means only what's still missing is re-fetched. */
   if (transientMisses > 0) {
     throw new TransientError(
       `fetch-blobs: ${transientMisses}/${missing.length} media still pending`,
@@ -111,7 +108,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
   }
 }
 
-// URLs fetchable with a plain GET; non-direct video page URLs stay for fetch_video_ytdlp.
+/** URLs fetchable with a plain GET; non-direct video page URLs stay for fetch_video_ytdlp. */
 function collectMediaUrls(rawJson: unknown): string[] {
   if (!rawJson || typeof rawJson !== "object") return [];
   const v = rawJson as {
@@ -143,8 +140,7 @@ function hasDirectVideoExtension(url: string): boolean {
   }
 }
 
-// Media URLs that don't yet have a downloaded file. Uses the precise
-// sourceUrl->file mapping, falling back to a coarse count for legacy files.
+/** Uses the precise sourceUrl->file mapping, falling back to a coarse count for files without one. */
 function missingMediaUrls(
   urls: string[],
   files: ReadonlyArray<SaveFile>,
@@ -161,8 +157,7 @@ function missingMediaUrls(
   if (mapped.size > 0) {
     return urls.filter((u) => !mapped.has(u));
   }
-  // Legacy fallback: no sourceUrl mapping on any file. If the coarse count says
-  // we're already covered, treat all as present; otherwise fetch everything.
+  /** No sourceUrl mapping on any file: if the coarse count says we're covered, treat all as present; otherwise fetch everything. */
   if (mediaFiles.length >= urls.length) return [];
   return urls;
 }

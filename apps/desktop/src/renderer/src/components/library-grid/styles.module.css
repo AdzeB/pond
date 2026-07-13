@@ -25,9 +25,7 @@
   position: relative;
 }
 
-/* Cards are positioned absolutely by the uniform packer (see
- * features/library/grid-view), matching waterfall/justified so the grid
- * rides the same viewport-windowing path instead of mounting every save. */
+/* Cards are positioned absolutely by the uniform packer so the grid rides the same viewport-windowing path instead of mounting every save. */
 .grid-grid {
   position: relative;
 }

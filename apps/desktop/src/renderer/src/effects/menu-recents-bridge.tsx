@@ -17,13 +17,10 @@ function titleFor(id: string): string | null {
   return save.url || "Untitled";
 }
 
-// Mirrors the renderer's recently-visited saves into the native History menu.
-// The recents list (ids) lives in localStorage; titles are resolved from the
-// pool, so we re-push whenever either changes. Choosing an entry comes back over
-// `onMenuOpenSave`, which opens the save the same way a card click does.
+/** Mirrors recently-visited saves into the native History menu; choosing an entry comes back over `onMenuOpenSave` and opens the save like a card click. */
 export function MenuRecentsBridge(): null {
   const recents = useRecents();
-  // Re-resolve titles whenever the pool changes (saves hydrate lazily).
+  /** Saves hydrate lazily; subscribing to the pool re-resolves titles as they arrive. */
   const byId = useSelector(savesStore, (s) => s.byId);
 
   const entries = useMemo<RecentMenuEntry[]>(() => {

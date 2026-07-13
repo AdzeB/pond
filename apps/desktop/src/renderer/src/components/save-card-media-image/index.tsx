@@ -38,7 +38,7 @@ export function CardImage({
       alt=""
       loading="lazy"
       decoding="async"
-      // Grid thumbs are background work; don't starve the foreground detail image.
+      /** Grid thumbs are background work; don't starve the foreground detail image. */
       fetchPriority="low"
       width={w}
       height={h}

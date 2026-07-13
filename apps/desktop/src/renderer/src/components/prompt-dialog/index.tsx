@@ -17,7 +17,7 @@ interface PromptDialogProps {
   placeholder?: string;
 }
 
-// Shared single-text-field prompt; submits on Enter, leaves closing to the caller's `onConfirm`.
+/** Submits on Enter; closing is left to the caller's `onConfirm`. */
 export function PromptDialog({
   open,
   onOpenChange,

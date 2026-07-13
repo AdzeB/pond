@@ -6,7 +6,7 @@ import { pushToast } from "@/stores/toasts";
 import { setQuery } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
-// Hug the widest copy label but stay menu-sized, mirroring the native menu host.
+/** Hug the widest copy label but stay menu-sized, mirroring the native menu host. */
 const POPUP_STYLE = {
   "--popup-width": "max-content",
   "--popup-min-width": "200px",
@@ -17,12 +17,11 @@ async function copyValue(value: string): Promise<void> {
     await navigator.clipboard.writeText(value);
     pushToast(`Copied ${value}`, "success");
   } catch {
-    // Clipboard can reject without focus; skip the toast.
+    /** Clipboard can reject without focus; skip the toast. */
   }
 }
 
-// Filter the library to items near this colour, then dismiss the detail modal so
-// the freshly-filtered grid is what the user lands on.
+/** Dismisses the detail modal so the freshly-filtered grid is what the user lands on. */
 function findSimilar(hex: string): void {
   setQuery({
     combinator: "and",

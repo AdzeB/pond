@@ -16,10 +16,7 @@
 
   height: 100%;
   padding-inline: 50%;
-  /* Keep the inline-level slides on a single row. Blossom's base stylesheet
-     normally sets this, but we can't depend on that layer being applied — with
-     the default `white-space: normal` and the zero-width content box (50%
-     padding), the slides wrap onto separate lines and stack vertically. */
+  /* Blossom's base stylesheet normally sets this; without it the slides wrap inside the zero-width content box and stack vertically. */
   white-space: nowrap;
   scroll-snap-type: x mandatory;
 }
@@ -49,11 +46,7 @@
   }
 }
 
-/* Contain-fit the media against both axes while preserving its true ratio:
-   width is the smaller of the horizontal cap and the height-bound width
-   (available height x ratio), so the box itself equals the displayed media and
-   the frame hugs it — no letterboxing inside the shell. The 128px insets leave
-   breathing room and give the shadow space within the scroll container. */
+/* Width is the smaller of the horizontal cap and the height-bound width, so the box equals the displayed media with no letterboxing; the 128px insets give the shadow space within the scroll container. */
 .media-shell {
   position: relative;
   display: flex;

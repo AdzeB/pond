@@ -3,8 +3,7 @@ import { sendMessage } from "./messaging";
 import { getSettings } from "./settings";
 import { POND_EVENT, type PondMessage } from "./types";
 
-// Relays page-world capture/log events (received over postMessage) to the
-// background via typed messaging.
+/** Relays page-world capture/log events received over postMessage to the background via typed messaging. */
 export async function bridge(source: Source): Promise<void> {
   const settings = await getSettings();
   if (!settings.enabled[source]) return;

@@ -18,7 +18,7 @@ export function HoverVideo({
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
 
-  // Merge the in-view callback ref with the controllable ref; rootMargin primes media before it scrolls in.
+  /** rootMargin primes media before it scrolls in. */
   const [inViewRef, inView] = useInViewRef({ rootMargin: "200px" });
   const setVideoRef = useMergeRefs<HTMLVideoElement>(internalRef, inViewRef);
 
@@ -43,7 +43,7 @@ export function HoverVideo({
     try {
       el.currentTime = 0;
     } catch {
-      // Seek can throw if metadata hasn't loaded yet; safe to ignore.
+      /* Seek can throw if metadata hasn't loaded yet. */
     }
   }, []);
 

@@ -31,8 +31,7 @@ interface BulkEnqueueResult {
   failed: number;
 }
 
-// SQLite caps bound parameters per statement (~999 on the default build). Keep
-// each multi-row INSERT comfortably under that across the widest row.
+/** SQLite caps bound parameters per statement (~999 on the default build); keep each multi-row INSERT comfortably under that across the widest row. */
 const BULK_INSERT_CHUNK = 100;
 
 function chunk<T>(rows: T[], size: number): T[][] {
@@ -41,10 +40,7 @@ function chunk<T>(rows: T[], size: number): T[][] {
   return out;
 }
 
-// Batch-enqueue many URLs from a single harvest. New saves are inserted with
-// chunked multi-row INSERTs (far cheaper than per-URL round-trips at sync
-// scale); already-known URLs fall back to the per-item path to keep reseed
-// semantics. Every created save still emits exactly one "I" sync_action.
+/** New saves use chunked multi-row INSERTs, far cheaper than per-URL round-trips at sync scale; already-known URLs fall back to the per-item path to keep reseed semantics. */
 export async function enqueueSavesBulk(
   items: BulkEnqueueItem[],
   opts: EnqueueOptions = {},
@@ -52,7 +48,6 @@ export async function enqueueSavesBulk(
   const db = await getDb();
   const result: BulkEnqueueResult = { created: 0, existing: 0, failed: 0 };
 
-  // Classify + dedupe within the batch by (source, sourceId).
   interface Candidate {
     url: string;
     source: Source;
@@ -80,7 +75,6 @@ export async function enqueueSavesBulk(
   }
   if (candidates.length === 0) return result;
 
-  // Find which already exist (one query per source group).
   const bySource = new Map<string, Candidate[]>();
   for (const c of candidates) {
     const list = bySource.get(c.source) ?? [];
@@ -105,7 +99,6 @@ export async function enqueueSavesBulk(
     }
   }
 
-  // Existing → per-item path (reseed / enrich). New → batched insert.
   const fresh: Candidate[] = [];
   const existing: Candidate[] = [];
   for (const c of candidates) {
@@ -131,9 +124,7 @@ export async function enqueueSavesBulk(
     return result;
   }
 
-  // Build a bundle per save (row + tasks + action) and commit in bounded chunks,
-  // yielding between them: better-sqlite3 is synchronous on the main thread, so
-  // one giant transaction would freeze the UI for seconds on a 50k first sync.
+  /** Commit in bounded chunks, yielding between them: better-sqlite3 is synchronous on the main thread, so one giant transaction would freeze the UI for seconds on a 50k first sync. */
   const now = new Date();
   const actorOf = (): "user" | "system" =>
     opts.trigger?.startsWith("user:") ? "user" : "system";
@@ -198,7 +189,7 @@ export async function enqueueSavesBulk(
         .all();
     });
     insertedActions.push(...groupActions);
-    // Yield so the UI thread can paint / handle IPC between commits.
+    /** Yield so the UI thread can paint and handle IPC between commits. */
     await new Promise<void>((resolve) => setImmediate(resolve));
   }
 

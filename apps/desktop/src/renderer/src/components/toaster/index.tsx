@@ -3,8 +3,7 @@ import { gentleSpring } from "@/lib/ui/motion";
 import { dismissToast, useToasts } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
-// Transient task/status notifications, stacked top-center above all content.
-// Click a toast to dismiss it early.
+/** Clicking a toast dismisses it early. */
 export function Toaster() {
   const toasts = useToasts();
   const reduceMotion = useReducedMotion();

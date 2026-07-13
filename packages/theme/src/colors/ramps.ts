@@ -1,13 +1,13 @@
-// Source of truth for the okLCH color system; edit here, then run `pnpm --filter @pond/theme generate`.
-// One 12-step scale (1..12) is shared by every ramp and aligns with the engine's --ds-gray-1..12.
-// Shared luminance per step; per-step chroma taper keeps colors inside the sRGB gamut.
+/**
+ * Source of truth for the okLCH color system; edit here, then run `pnpm --filter @pond/theme generate`.
+ * One shared 12-step scale aligns with the engine's --ds-gray-1..12; per-step chroma taper keeps colors inside the sRGB gamut.
+ */
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-// Lightness per step. Step 9 is the vivid "solid" anchor (~0.55, Radix-style)
-// rather than a dark mid, so saturated colors read bright instead of muddy.
+/** Step 9 is the vivid "solid" anchor (~0.55, Radix-style) rather than a dark mid, so saturated colors read bright instead of muddy. */
 const LIGHTNESS: Record<Step, number> = {
   1: 0.97,
   2: 0.938,
@@ -23,8 +23,7 @@ const LIGHTNESS: Record<Step, number> = {
   12: 0.38,
 };
 
-// Chroma multiplier per step. Holds near peak across the solid steps (7-9) and
-// keeps the dark steps saturated so the ramp never goes muddy.
+/** Holds near peak across the solid steps 7-9 and keeps the dark steps saturated so the ramp never goes muddy. */
 const CHROMA_SCALE: Record<Step, number> = {
   1: 0.16,
   2: 0.32,
@@ -40,7 +39,7 @@ const CHROMA_SCALE: Record<Step, number> = {
   12: 0.62,
 };
 
-// Alpha per step for transparent ramps, derived from the lightness curve.
+/** Alpha per step for transparent ramps, derived from the lightness curve. */
 const ALPHA: Record<Step, number> = {
   1: 0.03,
   2: 0.07,
@@ -61,8 +60,7 @@ interface Ramp {
   chroma: number;
 }
 
-// 17 chromatic ramps; hue in oklch degrees, chroma is the sRGB-safe peak before
-// taper. The P3 tier (below) multiplies these for wide-gamut displays.
+/** Hue in oklch degrees; chroma is the sRGB-safe peak before taper. The P3 tier multiplies these for wide-gamut displays. */
 const HUE_RAMPS = {
   ruby: { hue: 12, chroma: 0.19 },
   red: { hue: 25, chroma: 0.2 },
@@ -85,9 +83,7 @@ const HUE_RAMPS = {
 
 type HueName = keyof typeof HUE_RAMPS;
 
-// Wide-gamut chroma multiplier. On Display P3 screens we push chroma ~40% past
-// the sRGB-safe baseline; the browser gamut-maps any overshoot, so colors land
-// as vivid as the panel allows.
+/** On Display P3 screens push chroma ~40% past the sRGB-safe baseline; the browser gamut-maps any overshoot. */
 const P3_CHROMA_BOOST = 1.4;
 
 function round(value: number, places: number): number {
@@ -145,25 +141,24 @@ export function buildColorsCss(): string {
   return `${HEADER}\n${root}\n\n${p3}\n`;
 }
 
-// --- Theme engine -----------------------------------------------------------
-// All --ds-* tokens are derived at runtime via CSS math from four theme inputs
-// (--ds-base-*, --ds-accent-*, --ds-contrast, --ds-fg-dir). See @pond/schema/color.
-
-// 12-step scale: aL = contrast-scaled lightness delta, bL = fixed readability delta,
-// cT = base-chroma taper (backgrounds keep tint, text drops it).
+/**
+ * Theme engine: every --ds-* token derives at runtime via CSS math from four theme inputs (see @pond/schema/color).
+ * aL = contrast-scaled lightness delta, bL = fixed readability delta, cT = base-chroma taper (backgrounds keep tint, text drops it).
+ */
 const GRAY_AL = [
   0, 0.022, 0.05, 0.078, 0.11, 0.145, 0.19, 0.24, 0.27, 0.3, 0.3, 0.3,
 ];
 const GRAY_BL = [0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.16, 0.34, 0.52];
 const GRAY_CT = [1, 1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.5, 0.42, 0.3, 0.22];
 
-// Accent steps mix solid accent toward the matching gray step; step 9 is pure accent.
+/** Accent steps mix solid accent toward the matching gray step; step 9 is pure accent. */
 const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
 const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
 
-// Scale endpoints. White (#ffffff) is the hard top. SCALE_BLACK_L (#2c2d30) is
-// the minimum ink lightness in light mode; a dark theme whose base is darker
-// than this may go all the way down to its own base (see grayLightness).
+/**
+ * White is the hard top; SCALE_BLACK_L (#2c2d30) is the minimum ink lightness in light mode.
+ * A dark theme whose base is darker than this may go all the way down to its own base.
+ */
 const SCALE_BLACK_L = 0.2974;
 const SCALE_WHITE_L = 1;
 
@@ -182,10 +177,10 @@ function grayStep(i: number): string {
   return `  --ds-gray-${i + 1}: oklch(${l} ${c} var(--ds-base-h));`;
 }
 
-// Mix in oklab, not oklch: blending a hue toward the (achromatic, hue-0) gray
-// in oklch rotates the hue along the 250->360 arc, smearing low steps through
-// violet/magenta/pink. oklab scales chroma toward the neutral axis with no hue
-// rotation, so every step keeps the accent's hue.
+/**
+ * Mix in oklab, not oklch: blending toward the achromatic gray in oklch rotates hue along the 250->360 arc,
+ * smearing low steps through violet/magenta/pink; oklab scales chroma toward neutral with no hue rotation.
+ */
 function accentStep(i: number): string {
   const mix = ACCENT_MIX[i];
   return `  --ds-accent-${i + 1}: color-mix(in oklab, var(--ds-accent-solid) ${mix}%, var(--ds-gray-${i + 1}));`;
@@ -195,13 +190,10 @@ function accentAlpha(i: number): string {
   return `  --ds-accent-a${i + 1}: color-mix(in oklab, var(--ds-accent-solid) ${ACCENT_ALPHA[i]}%, transparent);`;
 }
 
-// gray-a* is the *alpha form of the gray itself* (Radix model), not a pure
-// black/white overlay. gray-aN composited over gray-1 reproduces solid gray-N,
-// and it inherits the theme's tint + light/dark direction via gray-12 (the
-// foreground-extreme step). The required alpha is the step's foreground
-// lightness delta over gray-12's delta, so it tracks --ds-contrast at runtime
-// and lets users author tinted themes. Pure neutral overlays for arbitrary
-// backgrounds stay separate as --ds-black-a*/--ds-white-a*.
+/**
+ * gray-a* is the alpha form of the gray itself (Radix model): gray-aN over gray-1 reproduces solid gray-N and inherits
+ * the theme's tint via gray-12. Alpha is the step's lightness delta over gray-12's, so it tracks --ds-contrast at runtime.
+ */
 function grayAlpha(i: number): string {
   const numerator = `${GRAY_AL[i]} * var(--ds-contrast) + ${GRAY_BL[i]}`;
   const denominator = "0.3 * var(--ds-contrast) + 0.52";
@@ -209,24 +201,15 @@ function grayAlpha(i: number): string {
   return `  --ds-gray-a${i + 1}: color-mix(in srgb, var(--ds-gray-12) ${alpha}, transparent);`;
 }
 
-// --- Scoped overrides -------------------------------------------------------
-// Pure-CSS subtree re-theming (inspired by https://bob.fyi/posts/theming): a
-// `[data-accent="<hue>"]` ancestor recolors the accent ramp, and
-// `[data-neutral="<hue>"]` tints the gray ramp. Each block RE-DECLARES the full
-// scale, not just the engine inputs: a custom property that references var() is
-// substituted at :root (where the scale is declared) and descendants inherit
-// that already-resolved value, so overriding only `--ds-base-*`/`--ds-accent-*`
-// would not propagate. Re-emitting the steps in scope re-runs the calc against
-// the scope's local inputs (and the inherited `--ds-base-l`, so light/dark and
-// contrast are preserved). Components that read the scale tokens directly
-// (e.g. Button's `--ds-accent-a9`) retint automatically.
+/**
+ * Pure-CSS subtree re-theming: a `[data-accent]` ancestor recolors the accent ramp and `[data-neutral]` tints the grays.
+ * Each block re-declares the full scale because var() references resolve at :root; re-emitting the steps re-runs the calc against the scope's inputs.
+ */
 
-// Accent anchor lightness for scoped overrides. Fixed (not tied to the hue
-// ramp curve) so a scoped accent matches the app's default accent weight while
-// taking the hue's peak chroma.
+/** Fixed rather than tied to the hue ramp curve, so a scoped accent matches the app's default accent weight at the hue's peak chroma. */
 const ACCENT_ANCHOR_L = 0.62;
 
-// Subtle chroma applied to tinted neutral ramps.
+/** Subtle chroma applied to tinted neutral ramps. */
 const NEUTRAL_TINT_C = 0.012;
 
 function accentScope(name: string, ramp: Ramp, chromaMul = 1): string {

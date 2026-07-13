@@ -2,11 +2,10 @@
 
 import type { inPageTwitterNormalize } from "./normalize";
 
-// The in-page DOM extraction routine for a single tweet. It is serialised via
-// `.toString()` and injected into the scrape window, so it must remain a single
-// self-contained function referencing only its params (`tweetId`, `norm`) and
-// browser globals — never module-scope identifiers. Kept whole (not split) so
-// the serialised output is byte-identical to what runs in the page.
+/**
+ * In-page DOM extraction for a single tweet, serialised via `.toString()` and injected into the scrape window.
+ * @remarks Must stay one self-contained function referencing only its params and browser globals — never module-scope identifiers.
+ */
 export function harvestSource(): string {
   function inPage(
     tweetId: string,
@@ -84,7 +83,7 @@ export function harvestSource(): string {
       if (dt) meta.publishedAt = dt;
     }
 
-    // Fall back to any <time datetime>; newer X renders it outside User-Name.
+    /** Fall back to any <time datetime>; newer X renders it outside User-Name. */
     if (!meta.publishedAt) {
       const time = Array.from(
         article.querySelectorAll<HTMLTimeElement>("time[datetime]"),
@@ -205,7 +204,7 @@ export function harvestSource(): string {
     }
     if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
 
-    // No stable testid for quote count; parse the "Quotes" link aria-label/text.
+    /** No stable testid for quote count; parse the "Quotes" link aria-label/text. */
     let quotes: number | undefined;
     {
       const quoteCandidates = Array.from(
@@ -306,9 +305,7 @@ export function harvestSource(): string {
       }
     }
 
-    // Second pass over the nested quote <article> to append its media after the
-    // parent's. Quoted media is also recorded separately on `quoted.media` so
-    // the native card can render it inside the nested quote card.
+    /** Append the nested quote's media after the parent's; it is also recorded on `quoted.media` so the native card can render it inside the quote card. */
     if (innerArticle) {
       const quotedMedia: Array<Record<string, unknown>> = [];
       const pushQuoted = (m: Record<string, unknown>) => {
@@ -384,12 +381,11 @@ export function harvestSource(): string {
         'meta[property="og:image"], meta[name="og:image"]',
       );
       const ogSrc = ogMeta?.content?.trim();
-      // Skip X's default SSR og:image; it would mark every text tweet as having media.
+      /** Skip X's default SSR og:image; it would mark every text tweet as having media. */
       const isSsrDefault =
         typeof ogSrc === "string" &&
         /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);
-      // Skip avatars: X serves the author's profile image as og:image for
-      // text/video tweets, which would render as a bogus (and 404-ing) tile.
+      /** X serves the author's profile image as og:image for text/video tweets; it would render as a bogus, 404-ing tile. */
       const isAvatar =
         typeof ogSrc === "string" && /\/profile_images\//i.test(ogSrc);
       if (ogSrc && !isSsrDefault && !isAvatar) {
@@ -412,10 +408,7 @@ export function harvestSource(): string {
 
     if (mediaItems.length > 0) meta.media = mediaItems;
 
-    // Link card (summary / summary_large_image): X renders the linked page's OG
-    // preview as [data-testid="card.wrapper"]. Capture the parts we render so the
-    // native card shows the embed instead of a bare t.co URL. Scoped via
-    // notInNested so a quoted tweet's own card isn't picked up here.
+    /** X renders the linked page's OG preview as [data-testid="card.wrapper"]; capture it so the native card shows the embed instead of a bare t.co URL. */
     const cardWrap = Array.from(
       article.querySelectorAll<HTMLElement>('[data-testid="card.wrapper"]'),
     ).find(notInNested);
@@ -429,10 +422,7 @@ export function harvestSource(): string {
         '[data-testid="card.layoutLarge.media"]',
       );
 
-      // Card image: X renders it as an <img> in some layouts and as a CSS
-      // background on a div in others. Look only inside the media block, and
-      // keep the URL as-is — card_img thumbnails don't support the ?name=orig
-      // upgrade that tweet photos use, so forcing it would 404 the image.
+      /** X renders the card image as an <img> or a CSS background depending on layout; keep the URL as-is because card_img doesn't support the ?name=orig upgrade and forcing it 404s. */
       const mediaBlock =
         cardWrap.querySelector<HTMLElement>('[data-testid$=".media"]') ??
         cardWrap;
@@ -456,9 +446,7 @@ export function harvestSource(): string {
       }
       if (cardImgSrc) card.imageUrl = cardImgSrc;
 
-      // The detail column stacks domain, title, description as separate spans.
-      // Read each span's own (non-nested) text to avoid parent rows that
-      // concatenate every line, then map by X's fixed ordering.
+      /** The detail column stacks domain, title, description as separate spans; read each span's own text to avoid concatenating parent rows, then map by X's fixed ordering. */
       const detail =
         cardWrap.querySelector<HTMLElement>('[data-testid$=".detail"]') ??
         cardWrap;

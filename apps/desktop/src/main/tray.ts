@@ -21,7 +21,7 @@ let lastOpts: TrayOptions | null = null;
 
 const SPINNER_INTERVAL_MS = 90;
 
-// Icon shown when idle; restored after a sync finishes.
+/** Icon shown when idle; restored after a sync finishes. */
 let idleIcon: NativeImage | null = null;
 let spinnerTimer: ReturnType<typeof setInterval> | null = null;
 let spinnerStep = 0;
@@ -87,8 +87,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   return instance;
 }
 
-// Swap the menu-bar icon for an animated throbber while saves are ingesting,
-// mirroring the way editors flip their icon during background work.
+/** Swaps the menu-bar icon for an animated throbber while saves are ingesting. */
 function setTraySyncing(active: boolean): void {
   if (active === syncing) return;
   syncing = active;

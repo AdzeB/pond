@@ -15,34 +15,33 @@ export interface TweetScreenshotResult {
   ok: boolean;
   png?: { bytes: Buffer; width: number; height: number };
   reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
-  // Quoted tweet's canonical URL, for walking the quote chain.
+  /** Quoted tweet's canonical URL, for walking the quote chain. */
   quotedUrl?: string;
-  // Media harvested off the page when `harvestMedia` was requested.
+  /** Media harvested off the page when `harvestMedia` was requested. */
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// Padding around the card in CSS pixels; scaled by the device factor.
+/** Padding around the card in CSS pixels; scaled by the device factor. */
 const SCREENSHOT_PADDING_CSS = 24;
 
 const SCREENSHOT_ARTICLE_TIMEOUT_MS = 12_000;
 
-// Override DPR via CDP so captures stay sharp regardless of host display.
+/** Override DPR via CDP so captures stay sharp regardless of host display. */
 const CAPTURE_DEVICE_SCALE_FACTOR = 3;
 
-// Bottom padding so lazy-loaded media in the last row isn't clipped.
+/** Bottom padding so lazy-loaded media in the last row isn't clipped. */
 const SCREENSHOT_VERTICAL_PADDING = 40;
 
-// Hard cap on hidden-window height; anything beyond is cropped (rare).
+/** Hard cap on hidden-window height; anything beyond is cropped. */
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
-// capturePage can hang indefinitely on a wedged hidden window; bound it so a
-// stuck capture can't hold its window lease forever and starve the pool.
+/** capturePage can hang indefinitely on a wedged hidden window; bound it so a stuck capture can't hold its window lease and starve the pool. */
 const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
 
 interface TweetDualScreenshotArgs {
   url: string;
   sourceId: string;
-  // Harvest media off the loaded page (once); used by the quote walker.
+  /** Harvest media off the loaded page (once); used by the quote walker. */
   harvestMedia?: boolean;
   /** Connected account whose session should load the page, when known. */
   accountId?: string | null;
@@ -55,10 +54,7 @@ interface TweetDualScreenshotResult {
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// Captures both color schemes from a single window lease and, when X cooperates,
-// a single navigation: load light, capture, flip the emulated scheme, and only
-// reload if the page didn't re-theme (`waitForSchemeFlip`). Halves X.com loads
-// per tweet in the common case; worst case matches the old two-navigation path.
+/** Captures both color schemes from one window lease and, when X re-themes live, one navigation — halving X.com loads per tweet; reloads only when the flip doesn't take. */
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
@@ -91,22 +87,19 @@ export async function screenshotTweetDual(
 
     const light = await captureCurrentScheme(lease.win, args.sourceId, "light");
 
-    // Harvest media once while the page is loaded (light pass) to avoid a second
-    // page evaluation on the dark pass.
+    /** Harvest media once on the light pass to avoid a second page evaluation on the dark pass. */
     let media: ScrapedHarvest["mediaUrls"] | undefined;
     if (args.harvestMedia && light.ok) {
       const harvested = await harvestPageMedia(lease.win, args.sourceId);
       if (harvested && harvested.length > 0) media = harvested;
     }
 
-    // Flip to dark. Clear the light override first so the flip detector reads X's
-    // own theme background, not our pinned html background.
+    /** Clear the light override first so the flip detector reads X's own theme background, not our pinned html background. */
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     restoreEmulation = await emulateColorScheme(lease.win, "dark");
     const flipped = await waitForSchemeFlip(lease.win, "dark");
     if (!flipped) {
-      // X ignored the live media change (explicit account theme); reload so it
-      // re-mounts in dark. Still one lease, but a second load — old behaviour.
+      /** X ignores the live media change when the account pins an explicit theme; reload so the page re-mounts in dark. */
       log.debug("[pond screenshot:tweet] scheme flip needed reload", args.url);
       await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
     }
@@ -129,17 +122,15 @@ export async function screenshotTweetDual(
   }
 }
 
-// Captures the focused article in the window's CURRENT navigation + emulated
-// scheme. Assumes the page is already loaded; pins the html background to the
-// scheme for the duration of this capture only (removes its injected CSS after).
+/** Captures the focused article in the window's current navigation and emulated scheme; pins the html background for this capture only. */
 async function captureCurrentScheme(
   win: BrowserWindow,
   sourceId: string,
   colorScheme: "light" | "dark",
 ): Promise<TweetScreenshotResult> {
-  // Pin html background to the scheme so rect rounding doesn't leak edge color.
+  /** Pin html background to the scheme so rect rounding doesn't leak edge color. */
   const htmlBg = colorScheme === "light" ? "#fff" : "#000";
-  // Hide "View quotes" and strip article borders so a divider can't leak into the trim.
+  /** Hide "View quotes" and strip article borders so a divider can't leak into the trim. */
   const cssKey = await win.webContents
     .insertCSS(
       `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
@@ -156,7 +147,7 @@ async function captureCurrentScheme(
       return { ok: false, reason: "no_article" };
     }
 
-    // Resize to fit the whole article (capturePage crops overflow), then re-measure.
+    /** Resize to fit the whole article (capturePage crops overflow), then re-measure. */
     const [contentWidthRaw, originalContentHeightRaw] = win.getContentSize();
     const contentWidth = contentWidthRaw ?? 1280;
     const originalContentHeight = originalContentHeightRaw ?? 1024;
@@ -215,7 +206,7 @@ async function captureCurrentScheme(
         try {
           win.setContentSize(contentWidth, originalContentHeight);
         } catch {
-          /* window may have been destroyed mid-capture; pool drops it */
+          /** Window may have been destroyed mid-capture; pool drops it. */
         }
       }
     }
@@ -224,9 +215,7 @@ async function captureCurrentScheme(
   }
 }
 
-// Polls document.body background luminance until it matches the target scheme
-// or a short deadline passes; returns false (theme didn't flip) so the caller
-// can reload. A transparent/unknown value counts as "not flipped".
+/** Polls body background luminance until it matches the target scheme or the deadline passes; transparent/unknown counts as not flipped. */
 async function waitForSchemeFlip(
   win: BrowserWindow,
   target: "light" | "dark",
@@ -270,7 +259,7 @@ async function readBackgroundLuminance(
   }
 }
 
-// Harvest media off the already-loaded page; best-effort, returns undefined on failure.
+/** Harvests media off the already-loaded page; best-effort, returns undefined on failure. */
 async function harvestPageMedia(
   win: BrowserWindow,
   tweetId: string,
@@ -288,7 +277,7 @@ async function harvestPageMedia(
   }
 }
 
-// Wrap the card in scheme-colored padding, scaled to the capture device factor.
+/** Wraps the card in scheme-colored padding, scaled to the capture device factor. */
 async function padScreenshot(
   bytes: Buffer,
   raw: { width: number; height: number },

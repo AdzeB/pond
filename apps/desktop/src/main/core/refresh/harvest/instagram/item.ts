@@ -35,7 +35,7 @@ async function inPageInstagramHarvest(
       node = items[0] ?? null;
     }
   } catch {
-    /* fall through to DOM scrape */
+    /** Fall through to the DOM scrape. */
   }
 
   if (node) return norm.normalizeMediaNode(node);

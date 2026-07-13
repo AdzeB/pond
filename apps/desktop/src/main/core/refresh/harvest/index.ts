@@ -62,8 +62,7 @@ const REGISTRY: Record<Source, Harvester> = {
     adapt: threads.adapt,
     sourceIdFromUrl: threads.sourceIdFromUrl,
   },
-  // Web links fetch metadata directly in the extractor (no hidden window);
-  // entry exists for the registry total and throws if routed here by mistake.
+  /** Web links fetch metadata directly in the extractor; entry exists for registry totality and throws if routed here. */
   web: {
     buildExpression: () => {
       throw new Error("web source does not harvest via the window pool");
@@ -71,7 +70,7 @@ const REGISTRY: Record<Source, Harvester> = {
     adapt: () => null,
     sourceIdFromUrl: (url) => url,
   },
-  // Local never harvests; entry exists for the registry total and throws if called.
+  /** Local never harvests; entry exists for registry totality and throws if called. */
   local: {
     buildExpression: () => {
       throw new Error("local source is not harvestable");

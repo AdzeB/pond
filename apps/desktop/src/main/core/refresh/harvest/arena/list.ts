@@ -45,9 +45,7 @@ async function inPageArenaList(
       try {
         const u = new URL(a.href, location.origin);
         id = u.pathname.match(/\/block\/(\d+)/)?.[1] ?? null;
-      } catch {
-        /* unparseable */
-      }
+      } catch {}
       if (!id || seen.has(id)) continue;
       seen.add(id);
 
@@ -72,9 +70,7 @@ async function inPageArenaList(
     return out;
   }
 
-  // are.na's `/all` view is an infinite-scroll (virtualized) grid with no
-  // "Load more" button, so paginate by scrolling; the collector accumulates
-  // block ids across renders even as off-screen cards unmount.
+  /** The `/all` view is a virtualized infinite-scroll grid with no "Load more" button; the collector accumulates block ids across renders as off-screen cards unmount. */
   return scroll({
     collectFn,
     knownIds: args.knownIds,

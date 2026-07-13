@@ -1,11 +1,7 @@
 import type { TweetCardLink } from "@/components/tweet-card/lib/data";
 import styles from "./styles.module.css";
 
-// The linked page's OG preview. X renders two shapes:
-// - summary_large_image: a rounded full-width image with the title overlaid
-//   bottom-left and the domain in muted text beneath it (no description).
-// - summary: a bordered row — square thumbnail beside domain, title, and a
-//   clamped description.
+/** X renders two OG-preview shapes: summary_large_image is a full-width image with overlaid title, summary is a bordered thumbnail row. */
 export function LinkCard({ data }: { data: TweetCardLink }) {
   const { domain, title, description, imageUrl, large } = data;
 

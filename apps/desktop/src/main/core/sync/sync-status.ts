@@ -2,8 +2,7 @@ import type { Source } from "@pond/schema/db";
 import log from "electron-log/main.js";
 
 export interface SyncStatusUpdate {
-  // Connected account the update is about; the source is kept alongside for
-  // per-platform grouping in the UI.
+  /** The source is kept alongside for per-platform grouping in the UI. */
   accountId: string;
   source: Source;
   state:
@@ -12,7 +11,7 @@ export interface SyncStatusUpdate {
     | "done"
     | "error"
     | "auth_required"
-    // Backed off to protect the account (rate limited / governor cooldown).
+    /** Backed off to protect the account (rate limited / governor cooldown). */
     | "paused";
   message?: string;
   progress?: { current: number; total: number };
@@ -47,8 +46,7 @@ export interface InFlight {
   source: Source;
 }
 
-// One in-flight run per ACCOUNT; two accounts on the same platform may run,
-// though the scheduler staggers them (see syncAllSources).
+/** One in-flight run per account; the scheduler staggers same-platform runs. @see syncAllSources */
 export const inFlight = new Map<string, InFlight>();
 
 export function isSyncing(accountId: string): boolean {
@@ -72,7 +70,7 @@ export function cancelSync(accountId: string): void {
   const entry = inFlight.get(accountId);
   if (!entry) return;
   entry.controller.abort();
-  // Surface "Stopping…" immediately; the run winds down between steps.
+  /** Surface "Stopping…" immediately; the run winds down between steps. */
   emit({
     accountId,
     source: entry.source,

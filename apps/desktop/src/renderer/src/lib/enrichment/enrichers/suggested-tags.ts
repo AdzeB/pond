@@ -13,8 +13,7 @@ interface VocabEntry {
   vec: Float32Array;
 }
 
-// Tag-vocabulary embeddings, cached per embed-model version so we embed the
-// vocabulary at most once per session.
+/** Cached per embed-model version so the vocabulary is embedded at most once per session. */
 let vocabPromise: Promise<VocabEntry[]> | null = null;
 let vocabKey = "";
 
@@ -39,9 +38,7 @@ async function getVocab(): Promise<VocabEntry[]> {
   return vocabPromise;
 }
 
-// Grounded tag suggestions: cosine-match the save's text embedding against the
-// existing tag vocabulary. Non-destructive — stored in `suggestedTags` for the
-// detail view to confirm, never applied automatically.
+/** Suggestions are stored in `suggestedTags` for the detail view to confirm, never applied automatically. */
 export const suggestedTagsEnricher: Enricher = {
   id: "suggestedTags",
   dependsOn: ["textEmbedding"],

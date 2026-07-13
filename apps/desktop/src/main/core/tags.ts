@@ -23,11 +23,7 @@ async function tagByLowerName(db: Db, lowered: string) {
   return rows[0];
 }
 
-// Candidate saves whose tag list mentions `lowerKey`, fetching only id + tags
-// (never the heavy raw_json) instead of scanning the whole table into JS. The
-// tags column is a JSON array of quoted strings, so matching the quoted,
-// lowercased token avoids substring false positives ("foo" won't match
-// "foobar"); callers still verify each hit in JS before rewriting.
+/** Fetches only id + tags, never the heavy raw_json; matching the quoted lowercased token avoids substring false positives, and callers still verify each hit in JS before rewriting. */
 async function savesWithTag(
   db: Db,
   lowerKey: string,
@@ -77,7 +73,7 @@ export async function renameTag(
   const db = await getDb();
   const fromCanon = await tagByLowerName(db, fromKey);
 
-  // Only merge when canonical keys differ; same-key renames just restyle casing.
+  /** Only merge when canonical keys differ; same-key renames just restyle casing. */
   if (fromKey !== toKey) {
     const toCanon = await tagByLowerName(db, toKey);
     if (fromCanon && toCanon && fromCanon.id !== toCanon.id) {
@@ -191,8 +187,7 @@ interface TagPatch {
   color?: string | null;
 }
 
-// Restyle a single tag (star / description / colour). Name changes go through
-// renameTag because they have to rewrite every save's tag list.
+/** Name changes go through renameTag instead because they must rewrite every save's tag list. */
 export async function updateTag(
   name: string,
   patch: TagPatch,
@@ -308,12 +303,12 @@ export async function setSaveTags(
         meta: { actor: "system", actorReason: "tag-autocreate" },
       });
     } catch {
-      /* race-safe; another concurrent write may have just created it */
+      /** Race-safe: another concurrent write may have just created it. */
     }
   }
   if (normalized.length > 0) {
     await bumpLastUsedAt(normalized).catch(() => {
-      /* best-effort; failing to bump shouldn't fail the tag write */
+      /** Best-effort: failing to bump must not fail the tag write. */
     });
   }
   return { ok: true };
@@ -337,7 +332,7 @@ async function bumpLastUsedAt(names: string[]): Promise<void> {
         before: { lastUsedAt: row.lastUsedAt },
         meta: { actor: "system", actorReason: "tag-bump-last-used" },
       },
-      // Silent: don't broadcast a syncAction storm for a passive bump.
+      /** Silent: a passive bump must not broadcast a syncAction storm. */
       { silent: true },
     );
   }

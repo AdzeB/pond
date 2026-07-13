@@ -5,9 +5,7 @@ import {
   $isTextNode,
 } from "lexical";
 
-// The search string the parser receives: every node's text content concatenated
-// (token nodes contribute their literal `key:value` text) with whitespace
-// collapsed, so `parseSearchInput` sees exactly the tokens the user assembled.
+/** Token nodes contribute their literal `key:value` text, so `parseSearchInput` sees exactly the tokens the user assembled. */
 export function $readSearchString(): string {
   return $getRoot().getTextContent().replace(/\s+/g, " ").trim();
 }
@@ -16,8 +14,7 @@ export function $isEditorEmpty(): boolean {
   return $getRoot().getTextContent().trim().length === 0;
 }
 
-// Drop a `key:` prefix at the caret so the value typeahead opens on it, adding a
-// leading space when the caret isn't already at a token boundary.
+/** Drops a `key:` prefix at the caret so the value typeahead opens on it. */
 export function $insertFieldKey(key: string): void {
   let selection = $getSelection();
   if (!$isRangeSelection(selection)) {

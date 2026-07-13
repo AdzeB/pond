@@ -17,7 +17,7 @@ function sameIndices(a: number[], b: number[]): boolean {
   return true;
 }
 
-// Item indices overlapping the overscanned viewport. Scans all items since waterfall packing isn't monotonic by `top`.
+/** Scans all items since waterfall packing isn't monotonic by `top`. */
 function computeVisible<T extends PositionedItem>(
   items: T[],
   offsetWithinGrid: number,
@@ -36,14 +36,14 @@ function computeVisible<T extends PositionedItem>(
   return out;
 }
 
-// Indices overlapping the overscanned viewport; seeds windowed, recomputes on item-set change, measures geometry once + on resize (per-scroll getBoundingClientRect forces reflow).
+/** Measures geometry once plus on resize because per-scroll getBoundingClientRect forces reflow. */
 export function useVisibleIndices<T extends PositionedItem>(
   ref: React.RefObject<HTMLElement | null>,
   items: T[],
 ): number[] {
   const estViewportH =
     typeof window !== "undefined" ? window.innerHeight : 1000;
-  // Live scroll geometry in a ref so render-time recompute and handlers share one source without extra renders.
+  /** Live scroll geometry in a ref so render-time recompute and handlers share one source without extra renders. */
   const metricsRef = useRef({
     gridOffsetTop: 0,
     scrollTop: 0,
@@ -56,7 +56,7 @@ export function useVisibleIndices<T extends PositionedItem>(
   const visibleRef = useRef<number[]>(visible);
   visibleRef.current = visible;
 
-  // Re-window synchronously on item-set change; cached metrics are still valid since scroll hasn't moved.
+  /** Re-window synchronously on item-set change; cached metrics are still valid since scroll hasn't moved. */
   const lastItemsRef = useRef<T[]>(items);
   if (lastItemsRef.current !== items) {
     lastItemsRef.current = items;

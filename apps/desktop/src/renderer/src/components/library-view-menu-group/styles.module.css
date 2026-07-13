@@ -1,4 +1,4 @@
-/* Trails a group title when that group is off its default. */
+/* Trails a group title when the group is off its default. */
 .group-dot {
   display: inline-block;
   width: 5px;
@@ -9,7 +9,6 @@
   border-radius: 999px;
 }
 
-/* One labelled group within the panel. */
 .group {
   display: flex;
   flex-direction: column;

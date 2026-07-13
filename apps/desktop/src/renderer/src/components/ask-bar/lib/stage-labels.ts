@@ -1,7 +1,6 @@
 import type { AskStage } from "@/stores/ask-store";
 
-// Human phrasing for each live pipeline stage — the rotating narration that
-// mirrors the reference's "Reading…/Determining…/Making changes…".
+/** Rotating narration for each live pipeline stage. */
 export const STAGE_LABELS: Record<NonNullable<AskStage>, string> = {
   compiling: "Understanding your question…",
   planning: "Planning your search…",

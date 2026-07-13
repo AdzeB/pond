@@ -13,7 +13,7 @@ export const YTDLP_FILENAME =
   process.platform === "win32" ? "yt-dlp.exe" : "yt-dlp";
 const FFMPEG_FILENAME = process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg";
 
-// Writable home for runtime-managed yt-dlp, outside the signed bundle.
+/** Writable home for runtime-managed yt-dlp, outside the signed bundle. */
 export function userBinDir(): string {
   return join(app.getPath("userData"), "bin");
 }
@@ -34,7 +34,7 @@ export function invalidateBinariesCache(): void {
   cached = null;
 }
 
-// yt-dlp is fetched at runtime; fall back to a system yt-dlp on PATH.
+/** yt-dlp is fetched at runtime; fall back to a system yt-dlp on PATH. */
 function resolveYtDlp(): string | null {
   const managed = join(userBinDir(), YTDLP_FILENAME);
   if (existsSync(managed)) return managed;

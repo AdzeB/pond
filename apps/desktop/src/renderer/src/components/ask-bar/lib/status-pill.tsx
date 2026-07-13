@@ -16,16 +16,13 @@ interface StatusPillProps {
   onClear?: () => void;
 }
 
-// The collapsed status pill: shows the agent thinking (with a shimmer) and then
-// the result count, inline at the bottom. When a run finds nothing it offers
-// one-tap relaxations; when it finds something it offers actions on the set.
+/** Collapsed status pill; a run that finds nothing offers one-tap relaxations, one that finds something offers actions on the set. */
 export function AskStatusPill({ onReopen, onClear }: StatusPillProps) {
   const ask = useAskResult();
   const reduceMotion = useReducedMotion();
   const thinking = ask.status === "thinking";
   const done = ask.status === "done";
-  // Busy spans the whole pipeline, including the post-search summary pass, so
-  // the narration keeps animating until the prose is ready.
+  /** Busy includes the post-search summary pass so the narration keeps animating until the prose is ready. */
   const busy = thinking || ask.summaryStatus === "loading";
   const stageLabel = ask.stage ? STAGE_LABELS[ask.stage] : "Thinking…";
   const hasAnswer = ask.answer.length > 0;

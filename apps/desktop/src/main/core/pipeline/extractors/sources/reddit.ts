@@ -43,8 +43,7 @@ export class RedditPostExtractor implements Extractor {
     const postId = match?.[1] ?? null;
     if (!postId) throw new TerminalError("could not parse reddit post id");
 
-    // redd.it short links redirect to the canonical permalink; navigating the
-    // original URL lets the scrape window follow the redirect to the post page.
+    /** redd.it short links redirect to the canonical permalink; navigating the original URL lets the scrape window follow the redirect. */
     const canonical = input.url.href;
 
     const result = await fetchHtmlInWindow(canonical, "reddit", postId);

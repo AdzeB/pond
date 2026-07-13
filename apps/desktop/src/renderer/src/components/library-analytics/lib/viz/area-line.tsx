@@ -8,11 +8,7 @@ import { formatCount, type InsightResult } from "../insights";
 import { layerVisible } from "../layers";
 import { useMeasure } from "./use-measure";
 
-// Time-series area/line built on visx, styled with ds tokens. Style knobs
-// come from the insight's `viz` options: curve interpolation
-// (smooth/linear/step), area fill (gradient wash, dot texture, or none) and
-// per-point dots. The mount reveal is a CSS clip animation so an interrupted
-// mount can't strand it invisible.
+/** The mount reveal is a CSS clip animation so an interrupted mount can't strand the chart invisible. */
 
 const ACCENT = "var(--ds-accent-9)";
 
@@ -34,8 +30,7 @@ interface Series {
   points: SeriesPoint[];
 }
 
-// Build stacked (area) or independent (line) series from the insight
-// groups; unsegmented data becomes a single accent-colored series.
+/** Unsegmented data becomes a single accent-colored series. */
 function buildSeries(data: InsightResult, stacked: boolean): Series[] {
   const n = data.groups.length;
   if (data.legend.length === 0) {
@@ -83,7 +78,7 @@ export function AreaLineChart({
   const showXAxis = layerVisible(mode, viz, "x-axis");
   const showTip = layerVisible(mode, viz, "tooltip");
   const lineWidth = viz?.lineWidth ?? 1.75;
-  // Fill opacity scales the wash: the gradient's top stop or the dot alpha.
+  /** Scales the gradient's top stop or the dot alpha. */
   const fillAlpha = viz?.fillOpacity;
 
   const series = useMemo(() => buildSeries(data, stacked), [data, stacked]);
@@ -104,8 +99,7 @@ export function AreaLineChart({
     0,
   );
 
-  // A single bucket can't make a path; mark every point so the chart still
-  // shows something instead of rendering an empty plot.
+  /** A single bucket can't make a path; mark every point so the plot isn't empty. */
   const singleGroup = data.groups.length === 1;
   const dots = showPoints || singleGroup;
 

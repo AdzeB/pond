@@ -74,10 +74,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     height: raw.height ?? null,
     fileSize: raw.fileSize ?? null,
     phash: raw.phash ?? null,
-    // On-device enrichment outputs. These must be carried through: a sync U/A
-    // event merges `{ ...existing, ...patch }` and the patch rarely re-sends
-    // them, so dropping them here would wipe captions/OCR/transcripts (and the
-    // text index built from them) on every unrelated update.
+    /** Enrichment outputs must be carried through: sync U/A patches rarely re-send them, so dropping them here would wipe captions/OCR/transcripts on every unrelated update. */
     caption: raw.caption ?? null,
     captionModel: raw.captionModel ?? null,
     ocrText: raw.ocrText ?? null,

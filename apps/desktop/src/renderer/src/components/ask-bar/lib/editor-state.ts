@@ -11,9 +11,7 @@ import { $isMentionChipNode, $isSkillChipNode, $isTagChipNode } from "./nodes";
 
 export type AskTrigger = "/" | "@" | "#";
 
-// The prompt the agent receives: every node's text content concatenated, with
-// chips contributing their expansion (skill -> saved prompt, tag -> name,
-// mention -> nothing) and whitespace collapsed.
+/** The prompt the agent receives; chips contribute their expansion (skill prompt, tag name, mention nothing) with whitespace collapsed. */
 export function $readPrompt(): string {
   return $getRoot().getTextContent().replace(/\s+/g, " ").trim();
 }
@@ -22,8 +20,7 @@ export function $isEditorEmpty(): boolean {
   return $getRoot().getTextContent().trim().length === 0;
 }
 
-// Walk the tree for mention chips so their saves can be threaded to the agent
-// as anchor ids.
+/** Mention chips' save ids are threaded to the agent as anchor ids. */
 export function $collectMentionIds(): string[] {
   const ids: string[] = [];
   const walk = (node: LexicalNode) => {
@@ -39,9 +36,7 @@ export function $collectMentionIds(): string[] {
   return ids;
 }
 
-// The composed message as ordered display segments — free text interleaved
-// with chips, mirroring exactly what the user typed. Adjacent text is merged
-// and the whole thing is trimmed; an empty/whitespace-only message yields [].
+/** The composed message as ordered display segments mirroring what the user typed; adjacent text merges and a whitespace-only message yields []. */
 export function $readSegments(): AskSegment[] {
   type Mutable =
     | { kind: "text"; text: string }
@@ -87,10 +82,7 @@ export function $readSegments(): AskSegment[] {
   return segments.filter((s) => s.kind !== "text" || s.text.length > 0);
 }
 
-// Replace the matched trigger token node (the `@query` text node the typeahead
-// plugin isolates) with a freshly built chip, followed by a space, landing the
-// caret after it. Any text the plugin split off after the query is preserved as
-// a sibling.
+/** Replaces the trigger token node the typeahead plugin isolates with a chip plus trailing space, landing the caret after it. */
 export function $replaceNodeWithChip(
   node: TextNode,
   makeChip: () => LexicalNode,

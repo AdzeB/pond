@@ -239,13 +239,12 @@ const isCosmos = host === "cosmos.so" || host.endsWith(".cosmos.so");
 
 if (isTwitter) {
   webFrame.executeJavaScript(TWITTER_HOOK).catch(() => {
-    /* hook install failures are non-fatal; the harvester falls back to
-       DOM-only walking with no GraphQL enrichment. */
+    /** Hook install failures are non-fatal; the harvester falls back to DOM-only walking. */
   });
 }
 
 if (isCosmos) {
   webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {
-    /* see note above */
+    /** Hook install failures are non-fatal; capture is best-effort. */
   });
 }

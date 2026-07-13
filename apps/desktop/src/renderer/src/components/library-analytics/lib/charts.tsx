@@ -5,10 +5,7 @@ import styles from "../styles.module.css";
 import { formatCount, type InsightResult } from "./insights";
 import { layerVisible } from "./layers";
 
-// Hand-rolled chart primitives for insight cards. Bars are plain positioned
-// divs (no chart library), scaled against a "nice" rounded axis max so
-// gridline labels stay readable. Hover state drives custom tooltips instead
-// of native title text.
+/** Hand-rolled chart primitives; bars are plain divs scaled against a "nice" rounded axis max so gridline labels stay readable. */
 
 export function niceCeil(value: number): number {
   if (value <= 0) return 1;
@@ -18,7 +15,7 @@ export function niceCeil(value: number): number {
   return nice * pow;
 }
 
-// Thin every Nth x label so long day ranges don't collide.
+/** Thin every Nth x label so long day ranges don't collide. */
 export function labelStep(count: number): number {
   return Math.max(1, Math.ceil(count / 10));
 }
@@ -41,7 +38,7 @@ export function Gridlines({ max }: { max: number }) {
   );
 }
 
-// Anchored tooltip inside the plot; flips horizontal alignment past midpoint.
+/** Flips horizontal alignment past the plot midpoint so the tip never clips. */
 export function ChartTip({
   x,
   y,
@@ -61,8 +58,6 @@ export function ChartTip({
     </div>
   );
 }
-
-// ── Stacked column chart ────────────────────────────────────────────────────
 
 export function BarChart({
   data,
@@ -163,8 +158,6 @@ export function BarChart({
   );
 }
 
-// ── Single headline number ──────────────────────────────────────────────────
-
 export function MetricBlock({
   data,
   days,
@@ -188,10 +181,7 @@ function windowLabel(days: number): string {
   return days === 1 ? "last day" : `last ${days} days`;
 }
 
-// ── Ranked value table ──────────────────────────────────────────────────────
-// Unsegmented: label / value / proportional bar rows. Segmented: pivots the
-// legend into columns.
-
+/** Unsegmented data renders label/value/bar rows; segmented data pivots the legend into columns. */
 export function ValueTable({ data }: { data: InsightResult }) {
   if (data.legend.length > 0) {
     return (
@@ -269,7 +259,6 @@ export function ValueTable({ data }: { data: InsightResult }) {
   );
 }
 
-// Legend chips shared by chart cards.
 export function Legend({ data }: { data: InsightResult }) {
   if (data.legend.length === 0) return null;
   return (

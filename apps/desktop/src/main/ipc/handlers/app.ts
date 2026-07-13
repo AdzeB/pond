@@ -9,8 +9,7 @@ import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
-  // Synchronous on purpose: the preload resolves the active pond id before any
-  // renderer module hydrates, so pond-scoped localStorage keys never mix ponds.
+  /** Synchronous on purpose: the preload resolves the active pond id before any renderer module hydrates, so pond-scoped localStorage keys never mix ponds. */
   ipcMain.on(IPC.pondId, (event) => {
     try {
       event.returnValue = currentPondId();
@@ -29,9 +28,7 @@ export function registerAppHandlers(): void {
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join(" ");
       }
-    } catch {
-      /* fall back to default username */
-    }
+    } catch {}
     return {
       name: "pond",
       version: app.getVersion(),

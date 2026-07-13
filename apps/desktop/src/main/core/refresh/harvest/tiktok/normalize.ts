@@ -104,9 +104,7 @@ export function inPageTiktokNormalize() {
       }
       const win = window as any;
       if (win[varName]) return win[varName];
-    } catch {
-      /* not available */
-    }
+    } catch {}
     return null;
   }
 
@@ -160,7 +158,7 @@ export function inPageTiktokNormalize() {
       if (typeof stats.shareCount === "number")
         metrics.shares = stats.shareCount;
       if (typeof stats.playCount === "number") metrics.plays = stats.playCount;
-      // TikTok's "Favorites" button (equivalent to bookmarks elsewhere).
+      /** collectCount is TikTok's "Favorites" button, the equivalent of bookmarks elsewhere. */
       if (typeof stats.collectCount === "number")
         metrics.bookmarks = stats.collectCount;
       if (Object.keys(metrics).length > 0) meta.metrics = metrics;

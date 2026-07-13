@@ -1,9 +1,7 @@
 import type { NlFacets } from "@/lib/search/nl-query";
 import type { Save } from "@/lib/types";
 
-// Distinct, lowercased facet values present in the library, ordered by frequency
-// (most common first). Shared by the NL compiler (grounding) and the embedding
-// facet resolver, so synonym/value matching can only ever resolve to real data.
+/** Distinct facet values present in the library, ordered by frequency; shared by the NL compiler and facet resolver so matching can only resolve to real data. */
 
 function bump(map: Map<string, number>, key: string): void {
   map.set(key, (map.get(key) ?? 0) + 1);

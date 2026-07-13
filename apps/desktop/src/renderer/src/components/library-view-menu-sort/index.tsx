@@ -41,7 +41,6 @@ const KEY_LABELS: Record<SortKey, string> = Object.fromEntries(
   KEY_GROUPS.flatMap((g) => g.options).map((o) => [o.value, o.label]),
 ) as Record<SortKey, string>;
 
-// Groups, separated by a divider — mirrors the manual JSX it replaced.
 const KEY_ITEMS: SelectItemSpec<SortKey>[] = KEY_GROUPS.flatMap((group, i) => [
   ...(i > 0 ? [{ type: "separator" as const }] : []),
   {

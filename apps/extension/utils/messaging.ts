@@ -6,8 +6,7 @@ import type {
   PushSessionResult,
 } from "./types";
 
-// Typed content/popup -> background message contract. Each entry is
-// `(data) => returnValue`; `sendMessage`/`onMessage` infer both ends.
+/** Content/popup -> background contract; `sendMessage`/`onMessage` infer both ends from each `(data) => returnValue` entry. */
 interface PondProtocol {
   capture(payload: PondCapturePayload): boolean;
   pushSession(source: Source): PushSessionResult;

@@ -1,4 +1,4 @@
-// Up to two uppercase initials for a monogram fallback.
+/** Up to two uppercase initials for a monogram fallback. */
 export function initials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length >= 2) {

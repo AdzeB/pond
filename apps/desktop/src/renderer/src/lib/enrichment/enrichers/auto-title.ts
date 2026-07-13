@@ -9,7 +9,6 @@ function hasTitle(save: Save): boolean {
   return !!save.title && save.title.trim().length > 0;
 }
 
-// First sentence / line of the best available text, trimmed to a title length.
 function deriveTitle(save: Save): string | null {
   const source =
     save.caption ?? firstLine(save.ocrText) ?? firstLine(save.description);
@@ -25,8 +24,7 @@ function firstLine(text: string | null | undefined): string | null {
   return line ? line.trim() : null;
 }
 
-// Fill an empty title from caption / OCR / description. Non-destructive: only
-// writes when the title is still empty at run time, so it never clobbers an edit.
+/** Non-destructive: only writes when the title is still empty at run time, so it never clobbers a user edit. */
 export const autoTitleEnricher: Enricher = {
   id: "autoTitle",
   dependsOn: ["caption", "ocr"],
@@ -40,12 +38,12 @@ export const autoTitleEnricher: Enricher = {
   async run(save: Save) {
     const title = deriveTitle(save);
     if (!title) return null;
-    // Re-check against the live pool so a concurrent user edit always wins.
+    /** Re-check against the live pool so a concurrent user edit always wins. */
     const current = pool.get(save.id) ?? save;
     if (!hasTitle(current)) {
       await mutateSave(save.id, { title }, { actorReason: "ai:auto-title" });
     }
-    // Stamp regardless so we don't retry a save the user intentionally left empty.
+    /** Stamp regardless so a save the user intentionally left empty is never retried. */
     return { derived: { autoTitleModel: AUTO_TITLE_VERSION } };
   },
 };

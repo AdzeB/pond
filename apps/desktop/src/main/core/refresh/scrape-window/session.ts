@@ -28,7 +28,7 @@ export async function signInToSource(
   }
 }
 
-// True when the account's own partition holds a live auth cookie.
+/** True when the account's own partition holds a live auth cookie. */
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
@@ -39,9 +39,7 @@ export async function isAccountConnected(
   return cookies.some((c) => isAuthCookie(account.source, c));
 }
 
-// True when any connected account exists for the source. The legacy shared
-// partition is also checked so a not-yet-migrated session still reads as
-// connected.
+/** True when any connected account exists; the legacy shared partition is also checked so a not-yet-migrated session still reads as connected. */
 export async function isSourceConnected(source: Source): Promise<boolean> {
   const accounts = await listAccountsForSource(source);
   for (const account of accounts) {
@@ -100,8 +98,7 @@ export async function writePartitionCookies(args: {
   return { written, skipped };
 }
 
-// Probe the hidden window for the user's handle off the top-nav profile link;
-// null when unauth. The partition selects whose session is being probed.
+/** Probes the hidden window for the user's handle off the top-nav profile link; null when unauth. The partition selects whose session is probed. */
 export async function probeUserHandle(
   source: Source,
   partition?: string,
@@ -139,29 +136,23 @@ export async function probeUserHandle(
   }
 }
 
-// The probe needs a logged-in page that exposes the user's handle. The login
-// URL trips auth-wall detection (and shows no nav), so probe the site root for
-// sources whose root renders the signed-in shell.
+/** The login URL trips auth-wall detection and shows no nav, so probe a page that renders the signed-in shell with the user's handle. */
 function probeUrlForSource(source: Source): string {
   if (source === "tiktok") return "https://www.tiktok.com/";
   if (source === "arena") return "https://www.are.na/";
-  // /home redirects signed-out sessions to the login flow, which the
-  // auth-wall check catches cleanly.
+  /** /home redirects signed-out sessions to the login flow, which the auth-wall check catches cleanly. */
   if (source === "twitter") return "https://x.com/home";
   if (source === "instagram") return "https://www.instagram.com/";
   if (source === "pinterest") return "https://www.pinterest.com/";
-  // The account settings page shows the channel handle; signed-out it
-  // redirects to accounts.google.com, which reads as an auth wall.
+  /** The account settings page shows the channel handle; signed-out it redirects to accounts.google.com, which reads as an auth wall. */
   if (source === "youtube") return "https://www.youtube.com/account";
   return homeUrlForSource(source);
 }
 
-// The in-page handle probe (cosmos/arena) lives on each extractor.
 function buildProbeExpression(source: Source): string {
   return extractorFor(source)?.probeExpression ?? "''";
 }
 
-// Per-source auth-cookie detection lives on each extractor.
 function isAuthCookie(source: Source, cookie: Cookie): boolean {
   return isAuthCookieName(source, cookie.name);
 }
@@ -179,9 +170,7 @@ export async function listCookiesForSource(
   if (!domain) return [];
   const host = domain.replace(/^\./, "").toLowerCase();
   try {
-    // `cookies.get({ domain })` does NOT return host-only subdomain cookies
-    // (e.g. cosmos auth lives on `www.cosmos.so`), so fetch all partition
-    // cookies and filter by host suffix — symmetric with session-import.
+    /** `cookies.get({ domain })` does not return host-only subdomain cookies (cosmos auth lives on `www.cosmos.so`); fetch all and filter by host suffix. */
     const all = await persistent.cookies.get({});
     return all.filter((c) => {
       const ck = (c.domain ?? "").replace(/^\./, "").toLowerCase();
@@ -193,7 +182,6 @@ export async function listCookiesForSource(
   }
 }
 
-// The cookie domain that gates a source's scraping lives on each extractor.
 export function primaryDomainForSource(source: Source): string | null {
   return extractorFor(source)?.cookieDomain ?? null;
 }

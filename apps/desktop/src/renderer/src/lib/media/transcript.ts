@@ -1,7 +1,6 @@
 import { patchSaveTranscript, pool } from "@/stores/pool";
 
-// The list payload omits the (potentially large) transcript; the detail view
-// calls ensureTranscript(id) once on open to hydrate it from the DB.
+/** The list payload omits the potentially large transcript; the detail view hydrates it from the DB once on open. */
 const inflight = new Set<string>();
 const loaded = new Set<string>();
 
@@ -16,7 +15,7 @@ export async function ensureTranscript(id: string): Promise<void> {
     loaded.add(id);
     if (pool.get(id)) patchSaveTranscript(id, res.transcript);
   } catch {
-    // Best-effort: a failure just hides the transcript block.
+    /** Best-effort; a failure just hides the transcript block. */
   } finally {
     inflight.delete(id);
   }

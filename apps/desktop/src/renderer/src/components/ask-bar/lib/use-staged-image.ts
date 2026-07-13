@@ -1,17 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PendingImage } from "./use-ask-submit";
 
-// Owns the staged query image (image-to-image visual search) before it's sent:
-// the file picker input, paste/drop handlers, and object-URL lifecycle.
+/** Owns the staged query image for image-to-image visual search, including its object-URL lifecycle. */
 export function useStagedImage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
-  // Mirror of the staged image so an unmount (dock collapse) can revoke an
-  // unsent object URL without revoking one already handed to a turn.
+  /** Mirror so unmount can revoke an unsent object URL without revoking one already handed to a turn. */
   const pendingRef = useRef<PendingImage | null>(null);
   pendingRef.current = pendingImage;
 
-  // Stage an image file for the next send (file picker / paste / drop).
   const acceptImageFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
     setPendingImage((prev) => {
@@ -71,8 +68,7 @@ export function useStagedImage() {
     [acceptImageFile],
   );
 
-  // Revoke a staged-but-unsent image URL if the composer unmounts (e.g. the
-  // dock collapses). A sent image is already null here, so its turn keeps it.
+  /** Revokes a staged-but-unsent image URL on unmount; a sent image is already null here, so its turn keeps it. */
   useEffect(() => {
     return () => {
       if (pendingRef.current) {

@@ -38,7 +38,7 @@ export async function enrichTaskEventWithSave(
       ev.url = row.url ?? null;
     }
   } catch {
-    /* enrichment is best-effort */
+    /** Enrichment is best-effort. */
   }
 }
 
@@ -80,7 +80,7 @@ export async function handleFailure(
   err: unknown,
 ): Promise<FailureResult> {
   if (err instanceof FinalizeIncompleteError) {
-    // finalize reset harvest_metadata; re-pend finalize for the next harvest cycle.
+    /** finalize reset harvest_metadata; re-pend finalize for the next harvest cycle. */
     const db = await getDb();
     const nextRun = new Date(Date.now() + 30_000);
     db.update(tasks)
@@ -99,8 +99,7 @@ export async function handleFailure(
     };
   }
 
-  // Rate-limit errors set a source-wide cooldown; only transient/watchdog
-  // trips advance the breaker (other errors are per-URL, not host health).
+  /** Rate-limit errors set a source-wide cooldown; only transient/watchdog trips advance the breaker, since other errors are per-URL, not host health. */
   if (isSourceTask(task.op)) {
     const source = task.source as never;
     if (err instanceof RateLimitedError) {
@@ -121,8 +120,7 @@ export async function handleFailure(
   if (decision.status === "blocked") metrics.tasksBlocked++;
   const db = await getDb();
 
-  // Non-fatal enhancer out of retries: settle as `done` (keeping lastError)
-  // rather than `failed`, so finalize can still complete the save.
+  /** Non-fatal enhancer out of retries settles as `done` (keeping lastError) rather than `failed`, so finalize can still complete the save. */
   const nonFatalTerminal =
     decision.status === "failed" && NON_FATAL_OPS.has(task.op);
   if (nonFatalTerminal) {
@@ -161,21 +159,20 @@ export async function handleFailure(
     : task.attempts;
   if (decision.status === "failed") {
     metrics.tasksFailed++;
-    // Status only moves forward: a re-harvest failure won't downgrade a complete save.
+    /** Status only moves forward: a re-harvest failure won't downgrade a complete save. */
     const current = db
       .select({ status: saves.status })
       .from(saves)
       .where(eq(saves.id, task.saveId))
       .get();
     if (current?.status === "ingesting") {
-      // Via persistSave so the `failed` flip broadcasts to the renderer pool;
-      // a direct write wouldn't reach it until the next hydrate.
+      /** Via persistSave so the `failed` flip broadcasts to the renderer pool; a direct write wouldn't reach it until the next hydrate. */
       await persistSave(
         task.saveId,
         { status: "failed" },
         { actorReason: "pipeline:failed" },
       );
-      // Fail still-pending siblings too: this failure blocks them and they'd starve the window.
+      /** Fail still-pending siblings too: this failure blocks them and they'd starve the window. */
       db.update(tasks)
         .set({
           status: "failed",
@@ -187,7 +184,7 @@ export async function handleFailure(
       metrics.cascadeEvents += 1;
     }
     if (current?.status === "ingesting") {
-      // Save just failed; emit the save-level ingest event (finalize handles success).
+      /** Save just failed; emit the save-level ingest event (finalize handles success). */
       void commitSaveIngestEvent(task.saveId, {
         outcome: "failed",
         failedOp: task.op,
@@ -207,7 +204,7 @@ export async function handleFailure(
   };
 }
 
-// Flips the save to `complete` once all its tasks are `done`.
+/** Flips the save to `complete` once all its tasks are `done`. */
 export async function maybeFinalizeSave(saveId: string): Promise<void> {
   const db = await getDb();
   const save = db

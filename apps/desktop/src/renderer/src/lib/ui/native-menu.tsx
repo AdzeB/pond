@@ -1,7 +1,4 @@
-// Imperative context menu. Callers describe a menu with click handlers attached
-// and call `showContextMenu(items)`; a single mounted `ContextMenuHost` renders
-// our styled `Menu` anchored at the cursor. (Previously this popped the OS menu
-// over IPC — now everything is the in-app surface so it matches the design.)
+/** Imperative context menu: callers pass items with handlers to `showContextMenu`, and a single mounted `ContextMenuHost` renders the styled `Menu` at the cursor. */
 
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
@@ -31,9 +28,7 @@ interface MenuState {
 
 const store = new Store<MenuState | null>(null);
 
-// The popup anchors to wherever the pointer last went down, so a right-click or
-// a button press both open the menu at the cursor without threading coordinates
-// through every call site.
+/** Anchoring to the last pointer-down means right-clicks and button presses both open at the cursor without threading coordinates through call sites. */
 let lastPointer = { x: 0, y: 0 };
 let nonce = 0;
 
@@ -68,8 +63,7 @@ function toSpec(item: NativeMenuItem): MenuItemSpec {
   };
 }
 
-/** Convert the imperative menu description into `Menu.Items` specs so the same
- * builders can drive both the right-click context menu and an anchored dropdown. */
+/** Lets the same builders drive both the right-click context menu and an anchored dropdown. */
 export function toMenuSpecs(items: NativeMenuItem[]): MenuItemSpec[] {
   return items.map(toSpec);
 }
@@ -84,13 +78,13 @@ export function showContextMenu(items: NativeMenuItem[]): Promise<void> {
   return Promise.resolve();
 }
 
-// Sizing mirrors a native menu: hug the widest item but never get too narrow.
+/** Sizing mirrors a native menu: hug the widest item but never get too narrow. */
 const POPUP_STYLE = {
   "--popup-width": "max-content",
   "--popup-min-width": "180px",
 } as CSSProperties;
 
-// Mounted once near the app root. Owns the single live context menu.
+/** Mounted once near the app root; owns the single live context menu. */
 export function ContextMenuHost() {
   const state = useSelector(store, (s) => s);
 

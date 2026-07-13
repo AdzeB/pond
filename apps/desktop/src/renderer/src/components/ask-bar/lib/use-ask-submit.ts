@@ -2,15 +2,13 @@ import { useCallback } from "react";
 import { useAsk } from "@/hooks/use-ask";
 import type { AskSegment } from "@/stores/ask-store";
 
-// A query image staged in the composer before it's sent. `blob` feeds CLIP;
-// `url` is an object URL shown as a thumbnail and handed to the resolved turn.
+/** Staged query image: `blob` feeds CLIP; `url` is an object URL shown as a thumbnail and handed to the resolved turn. */
 export interface PendingImage {
   blob: Blob;
   url: string;
   name: string;
 }
 
-// Trim + validate a question before running it, returning whether it ran.
 export function useAskSubmit() {
   const run = useAsk();
   return useCallback(

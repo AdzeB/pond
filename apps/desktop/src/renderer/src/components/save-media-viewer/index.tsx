@@ -63,8 +63,7 @@ export function MediaViewer({ save }: { save: Save }) {
 
   if (slides.length === 0) return null;
 
-  // A single media item never needs the carousel — render it directly so there
-  // is no scroller, snapping, or coverflow scaling to settle.
+  /** A single media item renders directly so there is no scroller, snapping, or coverflow scaling to settle. */
   if (slides.length === 1) {
     const only = slides[0];
     if (!only) return null;
@@ -93,8 +92,7 @@ export function MediaViewer({ save }: { save: Save }) {
 }
 
 function Frame({ save, children }: { save: Save; children: React.ReactNode }) {
-  // Build the menu lazily on open so we can read the live <video> under the
-  // cursor (frame actions) and the tag clipboard without subscribing to either.
+  /** Built lazily on open so the live <video> under the cursor and the tag clipboard are read without subscribing to either. */
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const slide = (e.target as HTMLElement).closest("[data-blossom-slide]");
@@ -148,7 +146,7 @@ function Carousel({
             key={s.src}
             slide={s}
             active={i === active}
-            // Mount the live player only near the centre; neighbours stay posters.
+            /** The live player mounts only near the centre; neighbours stay posters. */
             inView={Math.abs(i - active) <= 1}
             title={save.title}
             chapters={chapters}

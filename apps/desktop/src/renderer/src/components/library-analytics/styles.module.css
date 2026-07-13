@@ -1,5 +1,3 @@
-/* Analytics dashboards: named collections of user-configured insight cards
-   (slice × segment save counts) over the library. */
 .page {
   --panel: var(--ds-gray-1);
   --ink: var(--ds-gray-12);
@@ -25,7 +23,6 @@
   padding: 24px 32px 120px;
 }
 
-/* ── header ── */
 .header {
   display: flex;
   flex-wrap: wrap;
@@ -41,8 +38,7 @@
   min-width: 200px;
 }
 
-/* Inline-editable dashboard name/description: invisible inputs that only
-   reveal their field chrome on hover/focus. */
+/* Invisible inputs that only reveal their field chrome on hover/focus. */
 .name-input,
 .description-input {
   width: 100%;
@@ -80,7 +76,6 @@
   background: var(--ds-gray-a3);
 }
 
-/* ── filter bar ── */
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
@@ -140,7 +135,6 @@
   align-items: center;
 }
 
-/* ── insight grid: 3 columns × fixed-height rows; cards span w×h cells ── */
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -178,8 +172,7 @@
   grid-row: span 3;
 }
 
-/* Dragged card doubles as the insertion indicator: dimmed body, accent
-   edge marking where it will land. */
+/* The dragged card doubles as the insertion indicator. */
 .card[data-dragging] {
   border-color: var(--ds-accent-8);
   box-shadow:
@@ -276,9 +269,7 @@
   text-align: center;
 }
 
-/* ── bar / scatter chart ── */
-/* Charts stretch to their grid cell: the plot absorbs whatever height is
-   left after the header, x labels and legend. */
+/* The plot absorbs whatever height is left after the header, x labels and legend. */
 .chart {
   display: flex;
   flex: 1;
@@ -288,8 +279,7 @@
   min-height: 0;
 }
 
-/* The plot floor is low enough that a 1-row card still fits its x labels
-   and legend under the header without clipping. */
+/* The plot floor is low enough that a 1-row card still fits its x labels and legend without clipping. */
 .chart-plot {
   position: relative;
   flex: 1;
@@ -372,7 +362,6 @@
   background: var(--ds-gray-a3);
 }
 
-/* ── tooltip ── */
 .tip {
   position: absolute;
   z-index: 2;
@@ -436,7 +425,6 @@
   text-align: right;
 }
 
-/* ── legend ── */
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -458,7 +446,6 @@
   border-radius: 2px;
 }
 
-/* ── metric display ── */
 .metric {
   display: flex;
   flex: 1;
@@ -481,7 +468,6 @@
   color: var(--ink-3);
 }
 
-/* ── table display (label / value / proportional bar) ── */
 .value-rows {
   display: flex;
   flex-direction: column;
@@ -535,7 +521,6 @@
   border-radius: 2px;
 }
 
-/* ── pivot table (segmented table display) ── */
 .pivot-scroll {
   min-width: 0;
   min-height: 0;
@@ -587,7 +572,6 @@
   font-weight: 500;
 }
 
-/* ── viz charts ── */
 .viz-svg {
   position: absolute;
   inset: 0;
@@ -595,9 +579,7 @@
   overflow: visible;
 }
 
-/* Mount reveals are CSS animations (not JS-driven) so an interrupted mount
-   can never strand a chart invisible: the base state is fully visible and
-   the keyframes only describe where the element animates in from. */
+/* Mount reveals animate from keyframes only, so an interrupted mount can never strand a chart invisible. */
 @keyframes viz-wheel-in {
   from {
     opacity: 0;
@@ -658,7 +640,6 @@
   color: var(--ink-3);
 }
 
-/* ring */
 .ring-layout {
   display: flex;
   flex: 1;
@@ -669,8 +650,7 @@
   padding: 6px 0;
 }
 
-/* The wheel shrinks to whatever height the card leaves it (the SVG scales
-   through its viewBox) instead of overflowing a short cell. */
+/* The SVG scales through its viewBox instead of overflowing a short cell. */
 .ring-figure {
   position: relative;
   display: flex;
@@ -688,14 +668,12 @@
   height: 100%;
 }
 
-/* With the value rows hidden the wheel is the layout's only child; center it
-   instead of leaving it hugging the left edge. */
+/* With the value rows hidden, center the wheel instead of hugging the left edge. */
 .ring-figure:only-child {
   margin-inline: auto;
 }
 
-/* The HTML center readout doesn't scale with the SVG; below ~104px the
-   hole is too small for it, so it bows out. */
+/* The HTML center readout doesn't scale with the SVG; below ~104px the hole is too small for it. */
 @container (max-height: 104px) {
   .ring-center {
     display: none;
@@ -779,7 +757,6 @@
   text-align: right;
 }
 
-/* heatmap */
 .heatmap {
   display: flex;
   flex: 1;
@@ -790,8 +767,7 @@
   margin-top: 6px;
 }
 
-/* Rows want their usual 14px but shrink together when the card is short,
-   so the grid squashes instead of clipping. */
+/* Rows shrink together when the card is short, so the grid squashes instead of clipping. */
 .heatmap-grid {
   display: flex;
   flex: 1;
@@ -847,7 +823,6 @@
   color: var(--ink-3);
 }
 
-/* ── empty state ── */
 .empty {
   display: flex;
   flex-direction: column;

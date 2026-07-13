@@ -1,8 +1,6 @@
 import type { ReactNode, SVGProps } from "react";
 
-// Authentic Twitter/X glyphs (24x24) so the rendered card reads as a real tweet.
-// Inlined rather than pulled from @pond/icons because the metric glyphs (reply
-// bubble, retweet, analytics bars) have no close match in the shared set.
+/** Authentic Twitter/X glyphs, inlined because the metric glyphs have no close match in @pond/icons. */
 
 function Glyph({
   title,

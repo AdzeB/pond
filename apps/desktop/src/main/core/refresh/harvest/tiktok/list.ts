@@ -81,9 +81,7 @@ async function inPageTiktokList(
       let pathname = "";
       try {
         pathname = new URL(a.href, location.origin).pathname;
-      } catch {
-        /* unparseable */
-      }
+      } catch {}
 
       const card =
         a.closest(

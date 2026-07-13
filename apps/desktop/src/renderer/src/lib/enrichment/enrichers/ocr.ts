@@ -3,7 +3,6 @@ import { florenceModelVersion, runFlorence } from "../florence";
 import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
-// OCR text extracted from image saves (screenshots, posters) via Florence-2.
 export const ocrEnricher: Enricher = {
   id: "ocr",
   enabled: (prefs) => prefs?.ai?.enableOcr === true,

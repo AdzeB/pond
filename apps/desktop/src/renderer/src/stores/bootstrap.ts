@@ -25,7 +25,7 @@ export function bootPool(): Promise<void> {
   bootPromise = (async () => {
     subscribeToSyncActions();
 
-    // Paint from the cached snapshot before the hydrate returns; hydrateFromMain reconciles stale rows.
+    /** Paint from the cached snapshot before the hydrate returns; hydrateFromMain reconciles stale rows. */
     try {
       const cached = await readSnapshot();
       if (cached.length > 0) {

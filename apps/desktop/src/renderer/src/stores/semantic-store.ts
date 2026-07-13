@@ -1,10 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-// Holds the embedding vector for the active "find anything" query, scoped to the
-// residual free-text it was computed from. The ranking step only applies the
-// vector when the current search text still matches `text`, so it self-clears
-// when the user edits or clears the search without any manual bookkeeping.
+/** Embedding vector for the active query, scoped to the residual text it was computed from; ranking only applies it while the search text still matches, so it self-clears on edit without bookkeeping. */
 
 interface SemanticState {
   readonly vector: Float32Array | null;

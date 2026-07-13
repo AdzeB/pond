@@ -138,14 +138,12 @@ export async function executeBatch(
     (tx) => ({ ...tx, meta: { ...(tx.meta ?? {}), batchId } }) as Transaction,
   );
 
-  // File writes first, outside the transaction (better-sqlite3 can't await
-  // mid-transaction).
+  /** File writes happen outside the transaction; better-sqlite3 cannot await mid-transaction. */
   for (const tx of withBatch) {
     await applyToDisk(tx);
   }
 
-  // Then all index writes + sync_action inserts in one transaction: one fsync
-  // for the batch instead of one per item, and atomic on a mid-batch crash.
+  /** One transaction for all index writes + sync_action inserts: one fsync per batch and atomic on a mid-batch crash. */
   const actions = raw.transaction(() => {
     const out: SyncAction[] = [];
     for (const tx of withBatch) {
@@ -212,7 +210,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       );
       if (patched) return;
 
-      // No item folder; if the update carries files, rebuild it from the DB row.
+      /** No item folder; if the update carries files, rebuild it from the DB row. */
       if (tx.files && tx.files.length > 0) {
         const db = await getDb();
         const rows = await db

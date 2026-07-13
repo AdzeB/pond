@@ -10,17 +10,17 @@ const THUMBS_DIRNAME = "_thumbs";
 const MIN_WIDTH = 64;
 const MAX_WIDTH = 2048;
 const WEBP_QUALITY = 78;
-// Cap concurrent sharp jobs so a fast scroll can't peg every core.
+/** Cap concurrent sharp jobs so a fast scroll can't peg every core. */
 const MAX_CONCURRENT = 4;
 
-// Raster formats safe to downscale; animated/vector are served as the original.
+/** Raster formats safe to downscale; animated/vector are served as the original. */
 const THUMBNAILABLE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif"]);
 
 export function isThumbnailable(ext: string): boolean {
   return THUMBNAILABLE_EXT.has(ext.toLowerCase());
 }
 
-// Clamp a requested width; null on garbage so the caller uses the original.
+/** Clamps a requested width; null on garbage so the caller uses the original. */
 export function clampThumbWidth(raw: number): number | null {
   if (!Number.isFinite(raw)) return null;
   const w = Math.round(raw);
@@ -28,10 +28,10 @@ export function clampThumbWidth(raw: number): number | null {
   return Math.min(Math.max(w, MIN_WIDTH), MAX_WIDTH);
 }
 
-// Per-output in-flight dedupe so concurrent requests share one generation.
+/** Per-output in-flight dedupe so concurrent requests share one generation. */
 const inflight = new Map<string, Promise<string | null>>();
 
-// FIFO semaphore; release() hands the slot straight to the next waiter.
+/** FIFO semaphore; release() hands the slot straight to the next waiter. */
 let active = 0;
 const waiters: Array<() => void> = [];
 
@@ -53,17 +53,17 @@ function release(): void {
 }
 
 interface ThumbnailRequest {
-  // Protocol host; partitions the cache so a deleted save's thumbs drop as a unit.
+  /** Protocol host; partitions the cache so a deleted save's thumbs drop as a unit. */
   saveId: string;
-  // Absolute source path, already validated to live in the items dir.
+  /** Absolute source path, already validated to live in the items dir. */
   sourcePath: string;
-  // Target width in device pixels, already clamped.
+  /** Target width in device pixels, already clamped. */
   width: number;
-  // Content version (sha256 prefix); null falls back to mtime+size.
+  /** Content version (sha256 prefix); null falls back to mtime+size. */
   version: string | null;
 }
 
-// Resolve a cached WebP thumb (generating on demand); null = serve the original.
+/** Resolves a cached WebP thumb, generating on demand; null means serve the original. */
 export async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
@@ -112,16 +112,16 @@ async function generate(
 ): Promise<string | null> {
   await acquire();
   try {
-    // Re-check: another request may have produced it while we queued.
+    /** Re-check: another request may have produced it while we queued. */
     if (existsSync(out)) return out;
 
     const pipeline = sharp(sourcePath, { failOn: "none" });
     const meta = await pipeline.metadata();
-    // Multi-page = animated; resizing would flatten it, so serve the original.
+    /** Multi-page = animated; resizing would flatten it, so serve the original. */
     if ((meta.pages ?? 1) > 1) return null;
 
     await mkdir(dir, { recursive: true });
-    // Write to a temp path then rename so a crash can't leave a truncated cache hit.
+    /** Write to a temp path then rename so a crash can't leave a truncated cache hit. */
     const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
     await pipeline
       .resize({ width, fit: "inside", withoutEnlargement: true })

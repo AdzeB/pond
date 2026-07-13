@@ -16,12 +16,10 @@ interface Swatch {
   score: number;
 }
 
-// Top-N representative colors as #rrggbb; [] if undecodable. Ranking is biased
-// toward vibrancy rather than raw frequency: in most photos the commonest pixels
-// are desaturated background (sky, walls, skin), so a frequency-only sort buries
-// the colors a person actually recognises the image by. We weight each bucket by
-// saturation and damp the near-black / near-white extremes, then fall back to the
-// most frequent neutrals so genuinely greyscale images still return something.
+/**
+ * Top-N representative colors as #rrggbb, ranked by vibrancy rather than raw frequency: the commonest pixels are usually desaturated background.
+ * @remarks Falls back to the most frequent neutrals so greyscale images still return something.
+ */
 export async function extractPalette(
   path: string,
   count = 5,
@@ -41,7 +39,7 @@ export async function extractPalette(
       const g = data[i + 1];
       const b = data[i + 2];
       if (r === undefined || g === undefined || b === undefined) continue;
-      // Quantize to a 4-bit-per-channel grid to merge near-identical pixels.
+      /** Quantize to a 4-bit-per-channel grid to merge near-identical pixels. */
       const key = `${r >> 4}-${g >> 4}-${b >> 4}`;
       const entry = buckets.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
       entry.count++;
@@ -56,15 +54,12 @@ export async function extractPalette(
       const g = Math.round(e.g / e.count);
       const b = Math.round(e.b / e.count);
       const { s, l } = toHsl(r, g, b);
-      // Peaks for mid-tones, tapers toward pure black/white so backgrounds and
-      // blown highlights don't dominate, but never fully zero so they remain
-      // eligible as a fallback.
+      /** Peaks for mid-tones and tapers toward pure black/white so highlights don't dominate, but never fully zero so they stay eligible as a fallback. */
       const lightWeight = 0.15 + 0.85 * (1 - Math.abs(l - 0.5) / 0.5);
       const score = e.count * (0.2 + s) * lightWeight;
       return { r, g, b, count: e.count, saturation: s, score };
     });
 
-    // Colours people actually notice: enough saturation, not crushed/blown.
     const vibrant = swatches
       .filter((sw) => sw.saturation >= 0.15 && isMidtone(sw))
       .sort((a, b) => b.score - a.score);
@@ -77,8 +72,7 @@ export async function extractPalette(
     };
     for (const sw of vibrant) pushUnique(sw);
 
-    // Top up with the most frequent remaining buckets (covers neutral images and
-    // fills any slots left after de-duplicating near-identical vibrant colours).
+    /** Top up with the most frequent remaining buckets so neutral images and de-duplicated slots still fill. */
     if (chosen.length < count) {
       const byFrequency = swatches
         .filter((sw) => !chosen.includes(sw))
@@ -92,7 +86,7 @@ export async function extractPalette(
   }
 }
 
-// Squared-ish RGB distance; cheap dedupe so two adjacent buckets don't both land.
+/** Cheap RGB distance for dedupe so two adjacent buckets don't both land. */
 function distance(a: Swatch, b: Swatch): number {
   return Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
 }

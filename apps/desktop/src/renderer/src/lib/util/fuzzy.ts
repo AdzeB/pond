@@ -1,12 +1,9 @@
 import uFuzzy from "@leeoniya/ufuzzy";
 
-// Shared fuzzy ranker for small in-memory pickers (skills, tasks, command
-// palettes). uFuzzy is tiny, index-free, and tuned for matching a short needle
-// against a list of short phrases — exactly the picker use case.
-//
-// SingleError mode tolerates one typo (substitution / transposition / insertion
-// / deletion) per term while keeping the first char anchored, so "vido" still
-// finds "video" but noise stays out.
+/**
+ * Shared fuzzy ranker for small in-memory pickers; uFuzzy is tiny, index-free, and tuned for short-needle-vs-short-phrase matching.
+ * @remarks SingleError mode tolerates one typo per term with the first char anchored, so "vido" finds "video" but noise stays out.
+ */
 const uf = new uFuzzy({
   intraMode: 1,
   intraSub: 1,
@@ -14,9 +11,7 @@ const uf = new uFuzzy({
   intraDel: 1,
 });
 
-// Rank `items` by fuzzy relevance of `query` over the string each item exposes
-// via `toHaystack`. An empty query returns the items untouched (caller's stored
-// order); no matches returns an empty list.
+/** An empty query returns the items untouched in the caller's stored order; no matches returns an empty list. */
 export function fuzzyRank<T>(
   items: readonly T[],
   query: string,

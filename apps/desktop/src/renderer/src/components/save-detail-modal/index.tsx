@@ -21,10 +21,7 @@ export function SaveModal() {
   const save = useSave(renderId);
   useTrackVisit(id);
 
-  // Before the first selection there's nothing to render, but the (closed)
-  // root must still mount: Base UI only plays enter transitions when `open`
-  // flips while the root is mounted, so a root that mounts already-open
-  // snaps into place with no animation.
+  /** The closed root must still mount: Base UI only plays enter transitions when `open` flips while the root is mounted. */
   if (!save) {
     return (
       <Dialog.Root open={false}>

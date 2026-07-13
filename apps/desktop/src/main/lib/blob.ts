@@ -2,16 +2,17 @@ import { extname } from "node:path";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 
-const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024; // 50 MiB
-const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MiB -- avatars are tiny
+/** 50 MiB. */
+const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
+/** 2 MiB. */
+const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
 interface FetchMediaOptions {
   imageMaxBytes?: number | null;
 }
 
-// transient = network / 408 / 429 / 5xx (retry); permanent = 4xx / oversized /
-// wrong-type (the URL will never succeed, so the worker settles it as done).
+/** Transient misses retry; permanent means the URL will never succeed, so the worker settles it as done. */
 type BlobMiss = "transient" | "permanent";
 
 function classifyHttpStatus(status: number): BlobMiss {
@@ -22,8 +23,7 @@ function classifyHttpStatus(status: number): BlobMiss {
 
 type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
 
-// One downloaded media URL paired with its origin URL so callers can persist a
-// URL->file mapping (smart skip) and tally transient vs permanent misses.
+/** One downloaded media URL paired with its origin URL so callers can persist a URL->file mapping and tally transient vs permanent misses. */
 interface MediaBatchEntry {
   url: string;
   file: TxSaveFile | null;
@@ -209,8 +209,7 @@ export async function fetchMediaBatch(
   return renumberCovers(results);
 }
 
-// Reassigns cover/media filenames across the survivors while preserving each
-// entry's origin url (and leaving missed entries untouched).
+/** Reassigns cover/media filenames across the survivors while preserving each entry's origin url. */
 function renumberCovers(entries: MediaBatchEntry[]): MediaBatchEntry[] {
   let coverAssigned = false;
   let mediaIndex = 1;

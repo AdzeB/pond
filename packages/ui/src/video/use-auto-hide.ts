@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const HIDE_DELAY_MS = 2500;
 
-// Hover-driven: controls show on pointer activity over the player and hide on
-// leave. While playing they also auto-hide after a spell of inactivity.
+/** Controls show on pointer activity and hide on leave; while playing they also auto-hide after inactivity. */
 export function useAutoHide(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;

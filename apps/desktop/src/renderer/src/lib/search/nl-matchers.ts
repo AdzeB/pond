@@ -17,15 +17,13 @@ import {
   WITHOUT_WORDS,
 } from "@/lib/search/nl-vocabulary";
 
-// The phrase-matching half of the Stage A compiler: turns a window of words into
-// predicates / sort directives using the vocabulary tables. Pure and stateless;
-// `compileStageA` in nl-query drives these in order.
+/** Phrase-matching half of the Stage A compiler: pure, stateless matchers driven in order by `compileStageA` in nl-query. */
 
 interface Candidate {
-  // Lowercased phrase to match, longest-first.
+  /** Lowercased phrase to match, longest-first. */
   phrase: string;
   field: Predicate["field"];
-  // Resolved value to accumulate for that field.
+  /** Resolved value to accumulate for that field. */
   value: string;
 }
 
@@ -47,18 +45,18 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
       push(word, "source", source);
     }
   }
-  // Live sources by their literal id, in case of unmapped/new sources.
+  /** Live sources by their literal id, in case of unmapped/new sources. */
   for (const source of facets.sources) push(source, "source", source);
 
   for (const color of COLOR_PRESETS) {
     push(color.label, "color", color.hex.toLowerCase());
   }
 
-  // Open vocabulary: only values that exist in the library.
+  /** Open vocabulary: only values that exist in the library. */
   for (const tag of facets.tags) push(tag, "tags", tag);
   for (const creator of facets.creators) push(creator, "creator", creator);
 
-  // Longest phrase first so "are.na" beats "arena", "past 3 months" beats "month".
+  /** Longest phrase first so "are.na" beats "arena". */
   out.sort(
     (a, b) => b.phrase.split(/\s+/).length - a.phrase.split(/\s+/).length,
   );
@@ -71,7 +69,7 @@ interface Accumulator {
   tags: Set<string>;
   creators: Set<string>;
   colors: string[];
-  // Negated counterparts.
+  /** Negated counterparts. */
   negSources: Set<string>;
   negTypes: Set<string>;
   negTags: Set<string>;
@@ -118,8 +116,6 @@ export function accumulate(
   }
 }
 
-// Merge an accumulator into predicates: enum sets collapse to eq/in (+ neq/nin),
-// tags to some/none, creators to eq/in, colors/dates to one predicate each.
 export function toPredicates(acc: Accumulator): Predicate[] {
   const out: Predicate[] = [];
 
@@ -181,14 +177,13 @@ function parseCount(word: string): number | null {
   return null;
 }
 
-// Spoken quantities for durations ("an hour", "a minute").
+/** Spoken quantities for durations ("an hour", "a minute"). */
 function parseQuantity(word: string): number | null {
   if (word === "a" || word === "an") return 1;
   return parseCount(word);
 }
 
-// Read a duration value starting at i, as either one glued token ("30s") or a
-// number + unit pair ("5 minutes", "an hour"). Returns seconds + tokens used.
+/** Reads either one glued token ("30s") or a number + unit pair ("5 minutes"); returns seconds plus tokens used. */
 function parseDurationAt(
   words: string[],
   i: number,
@@ -210,9 +205,7 @@ function parseDurationAt(
   return null;
 }
 
-// Duration intents over a video/audio's length: "short videos", "longer than 5
-// minutes", "under 2 min", "over an hour", "at least 30s". Runs before the file
-// count intent so "more than 5 minutes" reads as a duration, not a file count.
+/** Runs before the file-count intent so "more than 5 minutes" reads as a duration, not a file count. */
 export function matchDurationIntent(
   words: string[],
   i: number,
@@ -240,9 +233,7 @@ export function matchDurationIntent(
   return null;
 }
 
-// Count intents over the number of attached files, e.g. "more than one image",
-// "at least 3 photos", "multiple images". The trailing media noun (if any) is
-// left for the type matcher, so "more than one image" also constrains type.
+/** The trailing media noun is left for the type matcher, so "more than one image" also constrains type. */
 export function matchCountIntent(
   words: string[],
   i: number,
@@ -270,15 +261,13 @@ export function matchCountIntent(
   return null;
 }
 
-// Recognize ordering / cap phrasing: "newest", "most recent", "top 10",
-// "first 5", "10 newest". Returns a partial directive plus tokens consumed.
+/** Recognizes ordering / cap phrasing ("newest", "top 10", "10 newest"); returns a partial directive plus tokens consumed. */
 export function matchSortLimit(
   words: string[],
   i: number,
 ): { sort?: AskSort; limit?: number; len: number } | null {
   const at = (k: number) => (words[i + k] ?? "").toLowerCase();
 
-  // "most recent" -> newest.
   if (at(0) === "most" && at(1) === "recent") {
     return { sort: { key: "savedAt", dir: "desc" }, len: 2 };
   }
@@ -286,13 +275,12 @@ export function matchSortLimit(
   const sort = SORT_WORDS[at(0)];
   if (sort) return { sort, len: 1 };
 
-  // "top 10" / "first 5".
   if (at(0) === "top" || at(0) === "first") {
     const n = parseCount(at(1));
     if (n !== null && n > 0) return { limit: n, len: 2 };
   }
 
-  // "10 newest" / "5 most recent" -> just the cap; the sort word matches next.
+  /** "10 newest" emits just the cap; the sort word matches on the next pass. */
   const lead = parseCount(at(0));
   if (lead !== null && lead > 0) {
     if (SORT_WORDS[at(1)] || (at(1) === "most" && at(2) === "recent")) {
@@ -302,7 +290,6 @@ export function matchSortLimit(
   return null;
 }
 
-// Nouns that map to an "optional" (exists) field.
 function optionalFieldForNoun(noun: string): FieldId | null {
   if (/^notes?$/.test(noun)) return "note";
   if (/^captions?$/.test(noun)) return "caption";
@@ -310,16 +297,13 @@ function optionalFieldForNoun(noun: string): FieldId | null {
   return null;
 }
 
-// Presence intents that aren't simple value matches: "with a note", "no
-// caption", "untagged", "with subtitles". Handles its own negation, so it must
-// run before the generic negator step (which would otherwise eat "no"/"without").
+/** Handles its own negation, so it must run before the generic negator step which would otherwise eat "no"/"without". */
 export function matchIntent(
   words: string[],
   i: number,
 ): { pred: Predicate; len: number } | null {
   const at = (k: number) => words[i + k] ?? "";
 
-  // Single-word adjectives.
   switch (at(0)) {
     case "untagged":
       return {
@@ -347,13 +331,12 @@ export function matchIntent(
   if (!WITH_WORDS.has(head) && !WITHOUT_WORDS.has(head)) return null;
   const negated = WITHOUT_WORDS.has(head);
 
-  // Skip an optional article: "with a note", "without any captions".
+  /** Skip an optional article: "with a note", "without any captions". */
   let k = 1;
   if (at(k) === "a" || at(k) === "an" || at(k) === "any") k += 1;
   const noun = at(k);
 
   if (/^tags?$/.test(noun)) {
-    // "with tags" -> not empty; "without tags" -> empty.
     return {
       pred: {
         field: "tags",

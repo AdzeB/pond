@@ -4,14 +4,14 @@ const BOOKMARKS_SELECTOR = 'a[href="/i/bookmarks"], a[href="/i/bookmarks/all"]';
 const RELABELED_ATTR = "data-pond-relabeled";
 const NEW_LABEL = "Open Pond";
 
-// X re-applies its own sidebar text on navigation, so we re-assert our label on DOM mutations.
+/** X re-applies its own sidebar text on navigation, so we re-assert our label on DOM mutations. */
 export function mountPondSidebarLink() {
   function openPond() {
     void sendMessage("openPond", undefined).catch(() => {});
   }
 
   function relabel(anchor: HTMLAnchorElement) {
-    // Grab the deepest leaf span reading "Bookmarks" so we don't clobber icons.
+    /** Grab the deepest leaf span reading "Bookmarks" so we don't clobber icons. */
     const spans = Array.from(anchor.querySelectorAll("span"));
     const labelSpan = spans.find(
       (span) =>

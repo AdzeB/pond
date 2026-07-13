@@ -33,7 +33,7 @@ export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
     [totalHeight],
   );
 
-  // Only render items intersecting the overscanned viewport; full `totalHeight` keeps the scrollbar accurate.
+  /** Only items intersecting the overscanned viewport render; the full `totalHeight` keeps the scrollbar accurate. */
   const visible = useVisibleIndices(ref, items);
 
   return (

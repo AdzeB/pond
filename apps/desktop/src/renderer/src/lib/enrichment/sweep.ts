@@ -6,38 +6,24 @@ import { getPrefsSnapshot } from "@/stores/prefs";
 import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
 import type { Enricher } from "./types";
 
-// Generalized on-device enrichment scheduler. One background sweep drives every
-// registered enricher, reusing the concurrency/dedupe/debounce mechanics of the
-// old embedding sweep:
-//   - pLimit caps concurrent model runs across all enrichers
-//   - inflight/failed are keyed `${enricher.id}:${save.id}` so a failure is
-//     retried only after a restart or model upgrade (eligibility-by-stamp)
-//   - pool updates are coalesced into one debounced scan
-// Dependency ordering is emergent: a dependent enricher is skipped for a save
-// while any of its (enabled) prerequisites is still eligible; completing a
-// prerequisite optimistically updates the pool, which reschedules the scan.
+/**
+ * One background sweep drives every registered enricher: pLimit caps concurrent runs, inflight/failed are keyed `${enricherId}:${saveId}` so a failure retries only after restart or model upgrade, and pool updates coalesce into one debounced scan.
+ * @remarks Dependency ordering is emergent: a dependent enricher is skipped while any enabled prerequisite is still eligible; completing a prerequisite updates the pool, which reschedules the scan.
+ */
 
-// Cap on-device model work to a single concurrent run. These models are CPU/GPU
-// heavy and share the UI renderer; one-at-a-time keeps the sweep from starving
-// interactive work. (Raise only if inference moves off the UI thread.)
+/** Models are CPU/GPU heavy and share the UI renderer; one-at-a-time keeps the sweep from starving interactive work. */
 const limit = pLimit(1);
 const inflight = new Set<string>();
 const failed = new Set<string>();
-// Auto-stop when the window is hidden/occluded (tray, another Space, minimized).
-// Background GPU/CPU inference is the worst kind of heat — the machine warms up
-// for work the user can't even see — so we gate scheduling on visibility.
-// (Best practice: only do heavy on-device inference while the surface is
-// actually on screen.)
+/** Inference runs on the UI renderer; pause while hidden so it never burns CPU/GPU invisibly. */
 let hidden = false;
 
-// No new runs while hidden; the single in-flight run drains on its own.
+/** No new runs while hidden; the in-flight run drains on its own. */
 function suspended(): boolean {
   return hidden;
 }
 
-// Lightweight throughput instrumentation so we can see how fast the on-device
-// backlog drains and whether a model path (WebGPU vs WASM) is pulling its
-// weight. Logged at `info`, so it only shows with DevTools open.
+/** Throughput instrumentation: how fast the backlog drains and whether a model path (WebGPU vs WASM) pulls its weight; logged at `info` so it only shows with DevTools open. */
 const stats = {
   done: 0,
   totalMs: 0,
@@ -51,7 +37,6 @@ function recordRun(enricher: Enricher, ms: number): void {
   e.done += 1;
   e.ms += ms;
   stats.byEnricher.set(enricher.id, e);
-  // Summarize every 10 completions to keep the console readable on big libraries.
   if (stats.done % 10 === 0) {
     const avg = Math.round(stats.totalMs / stats.done);
     console.info(
@@ -61,9 +46,7 @@ function recordRun(enricher: Enricher, ms: number): void {
   }
 }
 
-// Publish the current activity snapshot so per-save detail views can show which
-// enrichments are running/failed for a given item. Copies the sets so consumers
-// can rely on referential change to re-render.
+/** Copies the sets so consumers can rely on referential change to re-render. */
 function publishActivity(): void {
   enrichmentMonitor.set({
     inflight: inflight.size,
@@ -76,19 +59,13 @@ function keyFor(enricher: Enricher, save: Save): string {
   return `${enricher.id}:${save.id}`;
 }
 
-// Rest between model runs so the CPU/GPU returns to idle instead of being pinned
-// at ~100% for the whole backlog (the thing that spins the fans). `whenIdle`
-// only yields to the UI; on an otherwise-idle machine requestIdleCallback fires
-// immediately, so heavy runs would otherwise fire back-to-back with no breather.
-// We rest in proportion to the run's own duration (~50% duty cycle), clamped so
-// quick runs still pause a little and long runs (e.g. transcription) don't stall
-// the backlog indefinitely. pLimit(1) means this gap sits *between* runs.
+/**
+ * Rest between runs so the CPU/GPU returns to idle instead of pinning at ~100% for the whole backlog; requestIdleCallback fires immediately on an idle machine, so heavy runs would otherwise go back-to-back.
+ * @remarks Rest is ~50% of the run's own duration, clamped so quick runs still pause and long runs don't stall the backlog; pLimit(1) puts the gap between runs.
+ */
 const COOLDOWN_MIN_MS = 400;
 const COOLDOWN_MAX_MS = 3000;
-// On battery we rest substantially longer between runs: background enrichment
-// shouldn't drain the battery (or cook the lap) when the machine is unplugged.
-// Toggled by the Battery Status API in startEnrichmentSweep; defaults to "plugged
-// in" so we never over-throttle when battery state is unknown.
+/** Battery runs rest longer so background enrichment doesn't drain an unplugged machine; defaults to plugged-in so unknown battery state never over-throttles. */
 let onBattery = false;
 const ON_BATTERY_COOLDOWN_FACTOR = 2.5;
 function cooldown(lastRunMs: number): Promise<void> {
@@ -101,10 +78,7 @@ function cooldown(lastRunMs: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Wait for the renderer to be idle before kicking off a model run, so enrichment
-// always yields to interactive work. Falls back to a macrotask where
-// requestIdleCallback is unavailable. The timeout caps starvation when the user
-// keeps the app busy, so the backlog still drains.
+/** Yields to interactive work before a model run; the timeout caps starvation so the backlog still drains, and a macrotask stands in where requestIdleCallback is unavailable. */
 function whenIdle(timeout = 2000): Promise<void> {
   return new Promise((resolve) => {
     const ric = (
@@ -120,7 +94,7 @@ function whenIdle(timeout = 2000): Promise<void> {
   });
 }
 
-// True when every enabled prerequisite has already stamped this save.
+/** True when every enabled prerequisite has already stamped this save. */
 function dependenciesSatisfied(
   enricher: Enricher,
   save: Save,
@@ -138,7 +112,7 @@ function dependenciesSatisfied(
 async function persist(enricher: Enricher, save: Save): Promise<void> {
   const result = await enricher.run(save);
   if (result == null) {
-    // Could not process this session; don't re-attempt until restart/upgrade.
+    /** Could not process this session; don't re-attempt until restart or model upgrade. */
     failed.add(keyFor(enricher, save));
     return;
   }
@@ -165,7 +139,6 @@ function schedule(enricher: Enricher, save: Save): void {
   inflight.add(key);
   publishActivity();
   void limit(async () => {
-    // Yield to the UI before claiming the CPU/GPU for this run.
     await whenIdle();
     if (suspended()) {
       inflight.delete(key);
@@ -185,25 +158,20 @@ function schedule(enricher: Enricher, save: Save): void {
       inflight.delete(key);
       publishActivity();
     }
-    // Let the chip breathe before the next queued run claims the limit slot.
     await cooldown(elapsed);
   });
 }
 
-// Run the eligibility scan. With no `ids` it sweeps the whole library; with a
-// scope it only considers those saves, so a per-item reprocess re-runs just
-// that save instead of draining the entire backlog.
+/** No `ids` sweeps the whole library; a scope re-runs just those saves instead of draining the entire backlog. */
 function scan(ids?: readonly string[]): void {
   if (suspended()) return;
   const prefs = getPrefsSnapshot();
   const scope = ids && ids.length > 0 ? new Set(ids) : null;
-  // Newest-first: enrich what the user just saved before grinding old backlog,
-  // so fresh items get captions/embeddings while they're still looking at them.
+  /** Newest-first so fresh saves get captions/embeddings while the user is still looking at them. */
   const saves = [...pool.snapshot()]
     .filter((s) => !scope || scope.has(s.id))
     .sort((a, b) => b.savedAt - a.savedAt);
-  // Per-enricher count of work still outstanding this pass — a quick gauge of
-  // how big the on-device backlog is right now.
+  /** Per-enricher count of outstanding work, a quick gauge of the on-device backlog. */
   const backlog: string[] = [];
   for (const enricher of ENRICHERS) {
     if (!enricher.enabled(prefs)) continue;
@@ -225,15 +193,12 @@ function scan(ids?: readonly string[]): void {
 
 let sweepStarted = false;
 let scanScheduled = false;
-// Scope carried by the pending (debounced) scan: `null` means a full-library
-// sweep, a Set means the union of scoped ids. A global request always wins, so
-// a scoped scan landing next to a library-wide one falls back to the full sweep.
+/** Scope carried by the pending debounced scan: `null` means full-library. A global request always wins over a scoped one landing in the same window. */
 let pendingScope: Set<string> | null = null;
 
 function scheduleScan(ids?: readonly string[]): void {
   const scoped = ids && ids.length > 0 ? ids : null;
   if (scanScheduled) {
-    // Merge into the in-flight debounce window.
     if (!scoped) pendingScope = null;
     else if (pendingScope !== null)
       for (const id of scoped) pendingScope.add(id);
@@ -241,7 +206,7 @@ function scheduleScan(ids?: readonly string[]): void {
   }
   scanScheduled = true;
   pendingScope = scoped ? new Set(scoped) : null;
-  // Debounce bursts of pool updates, then run the scan during idle time.
+  /** Debounce bursts of pool updates, then run the scan during idle time. */
   setTimeout(() => {
     void whenIdle().then(() => {
       scanScheduled = false;
@@ -252,12 +217,10 @@ function scheduleScan(ids?: readonly string[]): void {
   }, 250);
 }
 
-// Retry failed runs and pick up newly-enabled enrichers immediately. Clears the
-// per-session failure set so transient failures (offline model load) re-attempt;
-// does not reset stamps, so already-enriched saves are skipped by eligibility.
-// Pass `ids` to scope both the failure-clear and the scan to a selection (e.g. a
-// single item reprocessed from the inspector), leaving the rest of the library
-// untouched; omit for a library-wide rescan.
+/**
+ * Clears the per-session failure set so transient failures re-attempt, without resetting stamps, so already-enriched saves stay skipped.
+ * @remarks Pass `ids` to scope both the failure-clear and the scan to a selection; omit for a library-wide rescan.
+ */
 export function rescanEnrichment(ids?: readonly string[]): void {
   if (ids && ids.length > 0) {
     const scope = new Set(ids);
@@ -273,16 +236,14 @@ export function rescanEnrichment(ids?: readonly string[]): void {
   scheduleScan();
 }
 
-// Toggle the visibility gate. Becoming visible kicks a fresh scan to resume
-// any remaining backlog.
+/** Becoming visible kicks a fresh scan to resume any remaining backlog. */
 function setHidden(next: boolean): void {
   if (hidden === next) return;
   hidden = next;
   if (!hidden) scheduleScan();
 }
 
-// Begin the background enrichment sweep. Idempotent. Hydrates every enricher's
-// persisted state first (vectors), so a restart doesn't re-run the whole library.
+/** Idempotent; hydrates every enricher's persisted state first so a restart doesn't re-run the whole library. */
 export function startEnrichmentSweep(): () => void {
   if (sweepStarted) return () => {};
   sweepStarted = true;
@@ -294,8 +255,7 @@ export function startEnrichmentSweep(): () => void {
   void Promise.all(hydrations).then(() => scheduleScan());
   const sub = savesStore.subscribe(() => scheduleScan());
 
-  // Pause the sweep whenever the window isn't actually on screen, so we never
-  // heat the machine doing inference the user can't see.
+  /** Pause while the window isn't on screen so inference never heats the machine invisibly. */
   let detachVisibility = (): void => {};
   if (typeof document !== "undefined") {
     hidden = document.hidden;
@@ -305,9 +265,7 @@ export function startEnrichmentSweep(): () => void {
       document.removeEventListener("visibilitychange", onVisibility);
   }
 
-  // Track AC vs battery so the cooldown can back off when unplugged. The Battery
-  // Status API is best-effort (absent on some platforms); if it's missing we
-  // stay in the "plugged in" default and just rely on the visibility gate.
+  /** The Battery Status API is absent on some platforms; when missing, stay in the plugged-in default and rely on the visibility gate. */
   let detachBattery = (): void => {};
   const getBattery = (
     navigator as Navigator & {

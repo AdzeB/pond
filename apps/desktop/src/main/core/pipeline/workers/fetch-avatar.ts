@@ -22,8 +22,7 @@ export async function runFetchAvatar(saveId: string): Promise<void> {
 
   const outcome = await fetchAvatarToTxFile(avatarUrl);
   if (!("file" in outcome)) {
-    // Transient: retry. Permanent (404 / not-an-image): settle as done — a
-    // missing avatar is cosmetic and must never fail the save.
+    /** Transient misses retry; permanent ones settle as done because a missing avatar is cosmetic and must never fail the save. */
     if (outcome.miss === "transient") {
       throw new TransientError(`fetch-avatar: ${avatarUrl} transiently failed`);
     }

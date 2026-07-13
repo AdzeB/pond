@@ -14,12 +14,11 @@ export type RefreshOutcome =
     };
 
 interface RefreshSaveOptions {
-  // Drop already-downloaded media so fetch_blobs re-downloads instead of
-  // self-gating on existing covers (a full overwrite re-ingest).
+  /** Drop already-downloaded media so fetch_blobs re-downloads instead of self-gating on existing covers. */
   overwrite?: boolean;
 }
 
-// Refresh = reset task rows to pending and force harvest_metadata to re-run.
+/** Refresh = reset task rows to pending and force harvest_metadata to re-run. */
 export async function refreshSave(
   saveId: string,
   opts: RefreshSaveOptions = {},

@@ -9,10 +9,7 @@ import type { Save } from "@/lib/types";
 import { formatBytes, formatNumber } from "@/lib/util/format";
 import styles from "./styles.module.css";
 
-// Completed saves only appear on this page if they landed after the app
-// started: the page is a control screen for the current session's work, not
-// a second library view. Cleared ("Clear finished") ids stay hidden across
-// route visits but reset with the window.
+/** Completed saves only appear if they landed after app start; cleared ids stay hidden across route visits but reset with the window. */
 const SESSION_START = Date.now();
 const clearedIds = new Set<string>();
 
@@ -45,8 +42,7 @@ const STATUS_LABELS: Record<RowStatus, string> = {
   failed: "Failed",
 };
 
-// Failed first (they need action), then in-flight by progress, then the
-// session's completed saves, newest landing on top.
+/** Failed saves rank first because they need action. */
 const STATUS_RANK: Record<RowStatus, number> = {
   failed: 0,
   saving: 1,
@@ -80,7 +76,7 @@ function toRow(save: Save): Row | null {
       stage ??= STAGE_LABELS[t.op];
     }
   }
-  // Nothing running yet (all pending/blocked): show the first unfinished op.
+  /** Nothing running yet: show the first unfinished op. */
   if (status === "saving" && !stage) {
     const next = tasks.find((t) => t.status !== "done");
     stage = next ? STAGE_LABELS[next.op] : null;
@@ -253,9 +249,6 @@ function SaveRow({ row }: { row: Row }) {
   );
 }
 
-// The Saves control screen: every in-flight and failed save (plus this
-// session's completed ones) in one dense table with search, faceted filters,
-// sortable columns, and bulk retry/clear. Reached by clicking the saving pill.
 export function SavesPage() {
   const saves = useSaves();
   const [query, setQuery] = useState("");
@@ -265,8 +258,7 @@ export function SavesPage() {
     type: new Set(),
   });
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 } | null>(null);
-  // Bumped when "Clear finished" mutates the module-level cleared set, since
-  // that set lives outside React state.
+  /** Bumped when "Clear finished" mutates the module-level cleared set, which lives outside React state. */
   const [, setClearStamp] = useState(0);
 
   const rows = useMemo(() => {

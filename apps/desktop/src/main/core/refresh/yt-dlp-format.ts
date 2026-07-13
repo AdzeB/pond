@@ -1,6 +1,6 @@
 import type { Source, VideoDownloadSettings } from "@pond/schema/db";
 
-// yt-dlp format filters; `~=` regex-matches the codec name variants a platform reports.
+/** yt-dlp format filters; `~=` regex-matches the codec name variants a platform reports. */
 function videoCodecFilter(codec: VideoDownloadSettings["videoCodec"]): string {
   switch (codec) {
     case "h264":
@@ -38,7 +38,7 @@ export function formatSelector(
   const af = audioCodecFilter(prefs.audioCodec);
 
   const chain: string[] = [];
-  // TikTok exposes a higher-bitrate "play" rendition; prefer it first.
+  /** TikTok exposes a higher-bitrate "play" rendition; prefer it first. */
   if (source === "tiktok") {
     chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
   }

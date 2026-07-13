@@ -1,10 +1,10 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
 
-// Re-export the canonical schema types so there's exactly one definition.
+/** Re-export the canonical schema types so there's exactly one definition. */
 export type { Capture, RawJson } from "@pond/schema/raw";
 
-// Back-compat alias; `CaptureMedia` is the same shape.
+/** @deprecated Back-compat alias; `CaptureMedia` is the same shape. */
 export type MediaCandidate = CaptureMedia;
 
 export interface ExtractInput {
@@ -12,7 +12,7 @@ export interface ExtractInput {
   fetch?: typeof fetch;
 }
 
-// Embedded test cases run generically by the test runner.
+/** Embedded test cases run generically by the test runner. */
 interface ExtractorTest {
   /** An item URL this extractor must claim via `suitable`. */
   readonly url: string;

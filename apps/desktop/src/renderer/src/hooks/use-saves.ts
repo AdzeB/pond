@@ -11,10 +11,7 @@ export function useSaves(): ReadonlyArray<Save> {
   return useSelector(savesStore, (s) => s.sorted);
 }
 
-// Count of saves still being ingested (queued/downloading) so the dock's saving
-// pill can surface extension-driven work that the grid filter hides until it
-// reaches "complete".
-// Pass a lowercase `source` to scope the count (e.g. while viewing a single source).
+/** The grid hides ingesting saves until "complete"; this count lets the dock's saving pill surface that in-flight work, optionally scoped to a lowercase source. */
 export function useIngestingCount(source?: string): number {
   return useSelector(savesStore, (s) => {
     let count = 0;
@@ -27,10 +24,7 @@ export function useIngestingCount(source?: string): number {
   });
 }
 
-// Summed per-save pipeline progress (done tasks / total tasks) across all
-// ingesting saves. Combined with useIngestingCount this gives the saving pill
-// a determinate overall progress without re-rendering on unrelated pool
-// changes (the selector returns a primitive).
+/** Summed per-save pipeline progress across ingesting saves; the selector returns a primitive so the saving pill never re-renders on unrelated pool changes. */
 export function useIngestingProgressSum(): number {
   return useSelector(savesStore, (s) => {
     let sum = 0;

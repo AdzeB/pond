@@ -28,7 +28,6 @@
   );
 }
 
-/* Layered, crossfading slides for the hover gallery; only the active one is opaque. */
 .slide {
   position: absolute;
   inset: 0;

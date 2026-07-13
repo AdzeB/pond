@@ -7,12 +7,10 @@ const stub = (p: string) =>
 export default defineConfig({
   resolve: {
     alias: {
-      // The extractor graph touches Electron only at runtime; stub the
-      // bindings so the modules import in a plain Node test process.
+      /** The extractor graph touches Electron only at runtime; stubs let modules import in a plain Node test process. */
       electron: stub("electron.ts"),
       "electron-log/main.js": stub("electron-log.ts"),
-      // Renderer path alias, so renderer modules (e.g. the NL compiler) import
-      // under test the same way they do in the app.
+      /** Renderer path alias so renderer modules import under test the same way they do in the app. */
       "@": fileURLToPath(new URL("./src/renderer/src", import.meta.url)),
     },
   },

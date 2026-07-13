@@ -1,15 +1,12 @@
 import { createContext, use } from "react";
 
-/** A group as offered in the "Move to group" menu — name plus its resolved
- * swatch colour (explicit group colour, or the name-derived fallback). */
+/** The colour is the explicit group colour or the name-derived fallback. */
 export interface TagGroupOption {
   name: string;
   color: string;
 }
 
-// Global table metadata every row needs but that isn't row-specific: the
-// groups (for the "Move to group" menu). Selection/expansion now live in the
-// DataTable primitive, so they no longer belong here.
+/** Global table metadata every row needs but that isn't row-specific. */
 interface TagsTableValue {
   groups: TagGroupOption[];
 }

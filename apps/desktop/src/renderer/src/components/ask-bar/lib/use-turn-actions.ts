@@ -7,8 +7,6 @@ import { selection } from "@/stores/selection";
 import { useTags } from "@/stores/tags";
 import { pushToast } from "@/stores/toasts";
 
-// Conversational actions on the latest turn's result ids, plus the "save as
-// view" prompt state seeded from that turn's question.
 export function useTurnActions(turns: ReadonlyArray<AskTurn>) {
   const tags = useTags();
   const [viewOpen, setViewOpen] = useState(false);

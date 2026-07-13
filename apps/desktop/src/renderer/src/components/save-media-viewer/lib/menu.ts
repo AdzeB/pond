@@ -14,8 +14,7 @@ interface BuildViewerMenuOptions {
   video: HTMLVideoElement | null;
 }
 
-// The save menu, with frame actions prepended when right-clicking a video. The
-// frame items operate on the live element so they capture whatever is on screen.
+/** Frame items operate on the live <video> element so they capture whatever is on screen. */
 export function buildViewerMenu(
   save: Save,
   { clipboardEmpty, video }: BuildViewerMenuOptions,

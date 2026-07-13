@@ -252,6 +252,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Decorative badges only — let hover/scrub events reach the thumb beneath. */
+  /* Decorative badges only; hover/scrub events must reach the thumb beneath. */
   pointer-events: none;
 }

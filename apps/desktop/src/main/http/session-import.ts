@@ -71,8 +71,7 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
     return c.json({ status: "success", data: body });
   }
 
-  // Reject unauthenticated sessions before touching any partition; the
-  // extension pushes whatever the browser has, signed-in or not.
+  /** Reject unauthenticated sessions before touching any partition; the extension pushes whatever the browser has, signed-in or not. */
   if (!filtered.some((cookie) => isAuthCookieName(source, cookie.name))) {
     const body: SessionImportResponse = {
       ok: false,
@@ -83,8 +82,6 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
     return c.json({ status: "success", data: body });
   }
 
-  // Work out WHICH account this browser session belongs to, then write the
-  // cookies into that account's isolated partition.
   const identityKey = identityKeyFromCookies(source, filtered);
   const resolution = await resolveTargetAccount(source, filtered, identityKey);
   const account = resolution.account;
@@ -98,7 +95,7 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
       `wrote ${written} (skipped ${skipped}, filtered out ${cookies.length - filtered.length})`,
   );
 
-  // Persist identity learned during this import (cookie key, probed handle).
+  /** Persist identity learned during this import (cookie key, probed handle). */
   const patch: { identityKey?: string; handle?: string } = {};
   if (identityKey && account.identityKey !== identityKey) {
     patch.identityKey = identityKey;
@@ -130,9 +127,7 @@ interface AccountResolution {
   probedHandle: string | null;
 }
 
-// Match the pushed session to a ConnectedAccount, creating one for a new
-// identity. Matching strength, in order: stable identity cookie → probed
-// handle → sole-account re-auth → first account (ambiguous, logged).
+/** Matches the pushed session to a ConnectedAccount, creating one for a new identity; strength order: identity cookie, probed handle, sole-account re-auth, first account. */
 async function resolveTargetAccount(
   source: Source,
   cookies: ExtensionCookie[],
@@ -147,9 +142,7 @@ async function resolveTargetAccount(
 
   const accounts = await listAccountsForSource(source);
 
-  // For sources with an in-page handle probe (and no identity cookie), the
-  // probed handle is the only way to tell accounts apart. Costs one hidden-
-  // window navigation against a staging partition.
+  /** For sources without an identity cookie, the probed handle is the only way to tell accounts apart; costs one hidden-window navigation against a staging partition. */
   let probedHandle: string | null = null;
   if (extractorFor(source)?.probeExpression) {
     probedHandle = await probeStagedHandle(source, cookies);
@@ -161,10 +154,7 @@ async function resolveTargetAccount(
     }
   }
 
-  // A migrated (pre-multi-account) account carries no identityKey, so a fresh
-  // push from its owner matches nothing above. When the source has exactly one
-  // such unclaimed account — and the probed handle doesn't contradict it —
-  // adopt it instead of minting a duplicate; the caller stamps the identityKey.
+  /** A migrated account carries no identityKey, so a fresh push from its owner matches nothing above; adopt a sole unclaimed account the probed handle doesn't contradict instead of minting a duplicate. */
   const sole = accounts.length === 1 ? accounts[0] : undefined;
   if (
     sole &&
@@ -174,7 +164,7 @@ async function resolveTargetAccount(
     return { account: sole, kind: "reauth", probedHandle };
   }
 
-  // A distinct identity signal that matched nothing → a genuinely new account.
+  /** A distinct identity signal that matched nothing is a genuinely new account. */
   if (identityKey || probedHandle) {
     const account = await createAccount({
       source,
@@ -184,7 +174,6 @@ async function resolveTargetAccount(
     return { account, kind: "created", probedHandle };
   }
 
-  // No identity signal at all (no identity cookie, no probe support).
   if (accounts.length === 0) {
     const account = await createAccount({ source });
     return { account, kind: "created", probedHandle };
@@ -200,8 +189,7 @@ async function resolveTargetAccount(
   return { account: first, kind: "reauth", probedHandle };
 }
 
-// Stage the pushed cookies into a throwaway in-memory partition and run the
-// source's handle probe against it, leaving every real account jar untouched.
+/** Stages the pushed cookies into a throwaway in-memory partition and probes the handle there, leaving every real account jar untouched. */
 async function probeStagedHandle(
   source: Source,
   cookies: ExtensionCookie[],

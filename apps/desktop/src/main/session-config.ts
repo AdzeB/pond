@@ -5,8 +5,7 @@ export function configureSessionDefaults(): void {
   const denyAll: Parameters<
     Electron.Session["setPermissionRequestHandler"]
   >[0] = (_wc, _permission, callback) => callback(false);
-  // The app session denies everything except HTML fullscreen, which the video
-  // player needs (requestFullscreen() is gated by this handler in Electron).
+  /** The app session denies everything except HTML fullscreen, which the video player needs; requestFullscreen() is gated by this handler in Electron. */
   session.defaultSession.setPermissionRequestHandler(
     (_wc, permission, callback) => callback(permission === "fullscreen"),
   );
@@ -27,7 +26,7 @@ export function configureSessionDefaults(): void {
       "img-src 'self' data: blob: pond: https:",
       "media-src 'self' data: blob: pond: https:",
       "style-src 'self' 'unsafe-inline'",
-      // onnxruntime-web needs wasm-unsafe-eval and blob: for its wasm module/worker.
+      /** onnxruntime-web needs wasm-unsafe-eval and blob: for its wasm module/worker. */
       "script-src 'self' 'wasm-unsafe-eval' blob:",
       "worker-src 'self' blob:",
       "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
@@ -45,9 +44,7 @@ export function configureSessionDefaults(): void {
         }
       }
       headers["Content-Security-Policy"] = [PROD_CSP];
-      // Mirror the dev server's cross-origin isolation so onnxruntime-web can use
-      // multi-threaded WASM in packaged builds too. `credentialless` keeps remote
-      // images/media loading without requiring CORP on the third party.
+      /** Cross-origin isolation lets onnxruntime-web use multi-threaded WASM; `credentialless` keeps remote media loading without requiring CORP on the third party. */
       headers["Cross-Origin-Opener-Policy"] = ["same-origin"];
       headers["Cross-Origin-Embedder-Policy"] = ["credentialless"];
       cb({ responseHeaders: headers });

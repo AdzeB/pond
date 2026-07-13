@@ -1,5 +1,4 @@
-/* Display properties: wrapping pill toggles. A filled chip is on, an outlined
-   muted chip is off, so the whole enabled set reads at a glance. */
+/* A filled chip is on, an outlined muted chip is off, so the whole enabled set reads at a glance. */
 .chip-list {
   display: flex;
   flex-wrap: wrap;

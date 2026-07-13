@@ -22,7 +22,7 @@ export type {
 } from "./descriptor";
 export { tagsDistinctCount, tagsEmpty, tagsExists } from "./sql";
 
-// Insertion order is the field display order (FIELD_IDS, filter bar chips).
+/** Insertion order is the field display order for FIELD_IDS and the filter bar chips. */
 export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   tags,
   source,

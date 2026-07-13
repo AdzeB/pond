@@ -23,9 +23,7 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
   }
 }
 
-// Anti-abuse interstitials (challenge / checkpoint / captcha). Unlike a normal
-// sign-in wall, hitting one means the platform is suspicious of the account, so
-// callers should hard-stop and mark the source at-risk rather than retry.
+/** Anti-abuse interstitials mean the platform is suspicious of the account; callers should hard-stop and mark the source at-risk rather than retry. */
 export function looksLikeChallenge(currentUrl: string): null | {
   kind: "challenge" | "checkpoint" | "captcha";
 } {
@@ -75,7 +73,7 @@ export async function navigateWithTimeout(
     wc.once("did-fail-load", onFail);
   });
 
-  // loadURL can hang on stalled hosts; race the whole nav against a timeout and stop on miss.
+  /** loadURL can hang on stalled hosts; race the whole nav against a timeout and stop on miss. */
   const navPromise = wc.loadURL(url).then(
     () => finished,
     () => false as const,
@@ -89,7 +87,7 @@ export async function navigateWithTimeout(
     try {
       wc.stop();
     } catch {
-      /* wc may be destroyed mid-flight; pool drops it */
+      /** wc may be destroyed mid-flight; pool drops it. */
     }
     return false;
   }

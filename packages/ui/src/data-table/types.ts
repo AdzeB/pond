@@ -5,9 +5,8 @@ type ColumnAlign = "start" | "center" | "end";
 export interface CellContext {
   /** Nesting depth of the row (0 = top level). */
   depth: number;
-  /** Whether this row is currently expanded (only meaningful for rows with sub-rows). */
+  /** Only meaningful for rows with sub-rows. */
   expanded: boolean;
-  /** Whether the row can expand (has sub-rows). */
   canExpand: boolean;
 }
 
@@ -16,15 +15,13 @@ export interface HeaderContext {
 }
 
 /**
- * A single column definition. Feature enablement is intentionally column-level
- * (e.g. `accessor` enables sorting, `resizable` enables resizing) rather than a
- * pile of table-wide boolean props.
+ * A single column definition. Feature enablement is intentionally column-level —
+ * `accessor` enables sorting, `resizable` enables resizing — rather than table-wide boolean props.
  */
 export interface TableColumn<T> {
   id: string;
   /** Header content. A function receives sort state for custom rendering. */
   header?: ReactNode | ((ctx: HeaderContext) => ReactNode);
-  /** Cell renderer. Receives the row and per-row context. */
   cell: (row: T, ctx: CellContext) => ReactNode;
   /** Presence enables sorting on this column. */
   accessor?: (row: T) => string | number | null | undefined;
@@ -33,11 +30,8 @@ export interface TableColumn<T> {
   /** Minimum width in px used while resizing. */
   minWidth?: number;
   align?: ColumnAlign;
-  /** Per-column opt-in to resizing. */
   resizable?: boolean;
-  /** Per-column opt-in to reordering. */
   reorderable?: boolean;
-  /** Hide the header label (used for select/actions style columns). */
   headerHidden?: boolean;
 }
 

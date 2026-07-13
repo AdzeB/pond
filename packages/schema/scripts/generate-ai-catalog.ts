@@ -2,12 +2,10 @@ import { writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// Pulls per-model capability + context window from models.dev and writes a
-// vendored snapshot the app reads offline. Capability ("can drive the agentic
-// loop") is tool calling — the signal for multi-step reasoning; single-shot JSON
-// is handled by the SDK + jsonrepair fallback, and models.dev barely populates
-// `structured_output`. Context sizes the grounding-facet budget. Maps our
-// provider ids onto models.dev's where they differ.
+/**
+ * Pulls per-model capability and context window from models.dev into a vendored snapshot the app reads offline.
+ * Agent capability keys off tool calling; models.dev barely populates `structured_output`, so that flag is unused.
+ */
 const PROVIDER_MAP: Record<string, string> = {
   openai: "openai",
   anthropic: "anthropic",

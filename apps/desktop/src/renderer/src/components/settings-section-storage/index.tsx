@@ -12,8 +12,6 @@ interface LibraryInfo {
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
 
-// The active library's on-disk location, with actions to open another library
-// bundle (relaunches into it) or copy this one somewhere else.
 export function LocationRow() {
   const { data: info } = useQuery({
     queryKey: ["library-info"],
@@ -27,8 +25,7 @@ export function LocationRow() {
         | { ok: true; path: string }
         | { ok: false; reason: string };
       if (!picked.ok) return;
-      // Switching relaunches (or reloads in dev), so there's no success state
-      // to settle into.
+      /** Switching relaunches, so there's no success state to settle into. */
       const res = (await window.pond.query("library.switchTo", {
         path: picked.path,
       })) as ActionResult;

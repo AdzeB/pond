@@ -9,18 +9,10 @@ import type {
 import { isPredicate } from "@pond/schema/filters/types";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
-// The structured-search grammar. A query string is a sequence of whitespace
-// separated tokens; a token is either a `key:value` filter (parsed into a
-// `Predicate`) or a free-text word (collected into the residual search text).
-//
-//   tag:design,brutalist   -> tags some [design, brutalist]
-//   -type:video            -> type is not video
-//   files>2                -> fileCount greater than 2
-//   files:2..10            -> fileCount between 2 and 10
-//   saved:past-week        -> savedAt on or after one week ago
-//   by:"Jane Doe"          -> creator is Jane Doe
-//   color:red              -> color near #e5484d
-//   note:without           -> note does not exist
+/**
+ * The structured-search grammar: whitespace-separated tokens, each either a `key:value` filter (a `Predicate`) or a free-text word collected into the residual.
+ * @remarks Examples: `tag:design,brutalist`, `-type:video`, `files>2`, `files:2..10`, `saved:past-week`, `by:"Jane Doe"`, `color:red`, `note:without`.
+ */
 
 interface DatePreset {
   slug: string;
@@ -28,8 +20,7 @@ interface DatePreset {
   iso: string;
 }
 
-// Relative-date presets. The stored predicate value is the ISO duration, which
-// `match.ts` resolves against `Date.now()` at evaluation time.
+/** The stored predicate value is the ISO duration, which `match.ts` resolves against `Date.now()` at evaluation time. */
 export const DATE_PRESETS: readonly DatePreset[] = [
   { slug: "today", label: "Today", iso: "-P1D" },
   { slug: "past-3-days", label: "Past 3 days", iso: "-P3D" },
@@ -41,7 +32,7 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 
 interface TokenFieldSpec {
   field: FieldId;
-  // The first key is canonical (used when serializing); the rest are aliases.
+  /** The first key is canonical (used when serializing); the rest are aliases. */
   keys: readonly string[];
 }
 
@@ -79,15 +70,13 @@ const COLOR_LABEL_TO_HEX = new Map(
   COLOR_PRESETS.map((c) => [c.label.toLowerCase(), c.hex.toLowerCase()]),
 );
 
-// --- Tokenizer ------------------------------------------------------------
-
 interface RawToken {
   text: string;
   start: number;
   end: number;
 }
 
-// Whitespace-split, but double-quoted runs keep their inner spaces.
+/** Whitespace-split, but double-quoted runs keep their inner spaces. */
 function tokenize(input: string): RawToken[] {
   const tokens: RawToken[] = [];
   const n = input.length;
@@ -119,8 +108,7 @@ interface FieldToken {
 
 const FIELD_TOKEN_RE = /^(-?)([a-zA-Z]+)(>=|<=|:|>|<)(.*)$/s;
 
-// Parse a token's `key op value` shape, resolving the key to a field. Returns
-// null for free-text words (or `key:` forms whose key isn't a known field).
+/** Returns null for free-text words and `key:` forms whose key isn't a known field. */
 function matchFieldToken(token: string): FieldToken | null {
   const m = FIELD_TOKEN_RE.exec(token);
   if (!m) return null;
@@ -133,8 +121,6 @@ function matchFieldToken(token: string): FieldToken | null {
     negate: m[1] === "-",
   };
 }
-
-// --- Value parsing --------------------------------------------------------
 
 function unquote(value: string): string {
   const t = value.trim();
@@ -167,7 +153,7 @@ function toDateValue(value: string): string | null {
 
 function toColorValue(value: string): string | null {
   const t = value.trim();
-  // Expand 3-digit shorthand (#f00 -> #ff0000) so both forms are accepted.
+  /** Expand 3-digit shorthand (#f00 -> #ff0000) so both forms are accepted. */
   const short = /^#?([0-9a-f]{3})$/i.exec(t);
   if (short) {
     const [r, g, b] = short[1] as string;
@@ -203,7 +189,7 @@ function dateOperator(op: OpSymbol): ComparatorId {
     case "<=":
       return "lte";
     default:
-      // A bare `saved:past-week` reads as "on or after".
+      /** A bare `saved:past-week` reads as "on or after". */
       return "gte";
   }
 }
@@ -270,16 +256,12 @@ function buildPredicate(token: FieldToken): Predicate | null {
   }
 }
 
-// --- Parse / serialize ----------------------------------------------------
-
 interface ParsedSearch {
   predicates: Predicate[];
   text: string;
 }
 
-// Split a raw input string into structured predicates plus residual free text.
-// Recognized-but-incomplete tokens (e.g. a half-typed `tag:`) are dropped from
-// both outputs so mid-edit state never leaks into the free-text search.
+/** Recognized-but-incomplete tokens (a half-typed `tag:`) are dropped from both outputs so mid-edit state never leaks into the free-text search. */
 export function parseSearchInput(input: string): ParsedSearch {
   const predicates: Predicate[] = [];
   const free: string[] = [];
@@ -295,9 +277,9 @@ export function parseSearchInput(input: string): ParsedSearch {
       predicates.push(predicate);
       continue;
     }
-    // Known key but no value yet -> mid-edit, ignore entirely.
+    /** Known key but no value yet -> mid-edit, ignore entirely. */
     if (matched.rawValue.trim() === "") continue;
-    // Known key with an unparseable value -> fall back to free text.
+    /** Known key with an unparseable value -> fall back to free text. */
     free.push(token.text);
   }
 
@@ -377,8 +359,7 @@ export function serializePredicate(predicate: Predicate): string | null {
   }
 }
 
-// Render a committed query back into the token syntax, so an externally applied
-// query (e.g. a saved view) round-trips into the search input.
+/** Renders a committed query back into token syntax so an externally applied query round-trips into the search input. */
 export function serializeQuery(query: Query | null | undefined): string {
   if (!query) return "";
   const parts: string[] = [];

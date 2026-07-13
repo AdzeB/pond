@@ -20,9 +20,9 @@ import {
 import styles from "./styles.module.css";
 
 interface SkillEditorProps {
-  // The skill being edited, or null when creating a new one.
+  /** Null when creating a new skill. */
   skill: CustomSkill | null;
-  // Slugs of the other skills, used to guard against duplicate commands.
+  /** Slugs of the other skills, guarding against duplicate commands. */
   existingNames: string[];
   onCancel: () => void;
   onSave: (skill: CustomSkill) => void;

@@ -18,7 +18,6 @@ export async function runHarvestMetadata(
   const save = await readSave(saveId);
   if (!save) return;
 
-  // Self-gate: skip when a fresh capture exists and force wasn't set.
   if (!payload.force && isFreshHarvest(save.rawJson)) {
     log.debug(
       "[pond pipeline:harvest] fresh capture present, skipping",
@@ -85,7 +84,7 @@ function safeDate(value: string): Date | null {
   return Number.isFinite(ms) ? new Date(ms) : null;
 }
 
-// "mixed" for carousels with both videos and images; else majority type.
+/** "mixed" for carousels with both videos and images; else majority type. */
 function pickMediaType(capture: Capture): MediaType | null {
   const media = capture.media ?? [];
   if (media.length === 0) return null;

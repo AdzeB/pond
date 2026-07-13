@@ -1,33 +1,28 @@
-// Single source of truth for the LLM providers that power the "find anything"
-// NL query compiler. Shared by the renderer (labels, hints, placeholders) and
-// the main process (base URLs, transport, key requirement) so the two never
-// drift. Embeddings are unrelated and always run on-device.
+/** Single source of truth for the LLM providers, shared by the renderer and main process so the two never drift; embeddings are unrelated and always run on-device. */
 
-// How a provider is reached:
-// - "bundled": node-llama-cpp GGUF in the main process (no network).
-// - "ollama":  Ollama's native /api/chat with structured `format`.
-// - "openai":  OpenAI-compatible /v1/chat/completions. Hosted vendors (Anthropic,
-//              Google, etc.) are reached through their official OpenAI-compat
-//              shims, so a single code path covers all of them.
+/**
+ * "bundled" runs node-llama-cpp GGUF in the main process; "ollama" uses Ollama's native /api/chat with structured `format`;
+ * "openai" is OpenAI-compatible /v1/chat/completions — hosted vendors ship OpenAI-compat shims, so one code path covers them all.
+ */
 export type AiProviderTransport = "bundled" | "ollama" | "openai";
 
 export interface AiProviderMeta {
   label: string;
   hint: string;
   transport: AiProviderTransport;
-  // Base URL up to (and including) the version segment. Empty for "bundled"
-  // (no endpoint) and "custom" (the user supplies it). The HTTP layer appends
-  // the transport-specific path (e.g. "/chat/completions").
+  /**
+   * Base URL up to and including the version segment; empty for "bundled" and "custom" (user-supplied).
+   * The HTTP layer appends the transport-specific path.
+   */
   baseUrl: string;
-  // Default chat/completion model id when the user hasn't set one.
+  /** Default chat/completion model id when the user hasn't set one. */
   defaultModel: string;
-  // Hosted providers need an API key; local servers do not.
+  /** Hosted providers need an API key; local servers do not. */
   requiresKey: boolean;
-  // Placeholder shown in the API-key field.
   keyPlaceholder: string;
 }
 
-// Ordering drives the picker: local options first, then hosted vendors.
+/** Ordering drives the picker: local options first, then hosted vendors. */
 export const AI_PROVIDER_IDS = [
   "bundled",
   "ollama",

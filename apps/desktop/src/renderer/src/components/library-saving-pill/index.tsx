@@ -9,15 +9,12 @@ import styles from "./styles.module.css";
 
 const RADIUS = 7;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
-// How long the green "Saved n items" state lingers before the pill sinks away.
+/** How long the "Saved n items" state lingers before the pill sinks away. */
 const DONE_HOLD_MS = 2200;
 
 type Phase = "idle" | "saving" | "done";
 
-// Tracks one "batch" of saves: from the first ingesting item appearing until
-// the last one settles. The total only grows while the batch is live, so the
-// label stays stable ("Saving 3 items" -> "Saved 3 items") instead of counting
-// down as items finish.
+/** The batch total only grows while live, so the label stays stable instead of counting down as items finish. */
 function useSavingBatch(): { phase: Phase; total: number; progress: number } {
   const count = useIngestingCount();
   const progressSum = useIngestingProgressSum();
@@ -37,7 +34,7 @@ function useSavingBatch(): { phase: Phase; total: number; progress: number } {
         doneTimer.current = null;
       }
       if (phase !== "saving") {
-        // Fresh batch (from idle, or new saves arriving while "done" lingers).
+        /** Fresh batch: from idle, or new saves arriving while "done" lingers. */
         setTotal(count);
         setPhase("saving");
       } else if (count > prev) {
@@ -74,10 +71,6 @@ function useSavingBatch(): { phase: Phase; total: number; progress: number } {
   return { phase, total, progress };
 }
 
-// Floating status pill above the dock while extension saves are ingesting:
-// a determinate ring fills with overall batch progress, then greens into a
-// check with "Saved n items" before sinking away. Replaces the synthetic
-// "Saving item" grid tile. Clicking it opens the Saves control screen.
 export function SavingPill() {
   const { phase, total, progress } = useSavingBatch();
   const reduceMotion = useReducedMotion();

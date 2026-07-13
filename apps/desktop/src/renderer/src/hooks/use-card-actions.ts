@@ -23,7 +23,7 @@ export function useCardActions(
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  // Opening a save sets the primary selection, which the inline SaveModal renders.
+  /** The inline SaveModal renders whatever the primary selection points at. */
   const select = useCallback((id: string) => {
     primarySelection.set(id);
   }, []);
@@ -80,7 +80,7 @@ export function useCardActions(
     const dt = e.dataTransfer;
     if (!dt) return;
 
-    // Electron 41 removed File.path; resolve absolute paths via the preload bridge.
+    /** Electron 41 removed File.path; resolve absolute paths via the preload bridge. */
     const paths = Array.from(dt.files ?? [])
       .map((f) => {
         try {

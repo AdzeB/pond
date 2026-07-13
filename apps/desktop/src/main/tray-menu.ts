@@ -15,7 +15,6 @@ import { getIngestToken, rotateIngestToken } from "./keychain";
 import { itemFile, libraryRoot } from "./paths";
 import type { TrayOptions } from "./tray";
 
-// How many recent saves to surface in the menu.
 const RECENTS_LIMIT = 6;
 
 export async function buildTooltip(): Promise<string> {
@@ -186,8 +185,7 @@ function hostFromUrl(url: string | null | undefined): string | null {
   }
 }
 
-// A small color thumbnail for the save's cover, sized for a menu item. Returns
-// null for non-image covers or missing files so the item simply renders text.
+/** A small color thumbnail for the save's cover; null for non-image covers or missing files so the item simply renders text. */
 function loadThumb(
   id: string,
   files: SaveFile[] | null | undefined,

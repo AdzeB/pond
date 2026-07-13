@@ -14,24 +14,20 @@ import {
 import { FILLER, NEGATORS } from "@/lib/search/nl-vocabulary";
 import { serializePredicate } from "@/lib/search/syntax";
 
-// Stage A of the "find anything" compiler: a deterministic natural-language ->
-// structured-query resolver. It strips filler words and maps the rest onto the
-// existing filter fields using only values that actually exist (live facets,
-// known sources/types, curated presets), so it can never invent a facet. It
-// runs instantly, offline, with no model, and is the floor every other stage
-// falls back to. The vocabulary tables live in nl-vocabulary; the phrase
-// matchers live in nl-matchers; this module is the orchestration + public API.
+/**
+ * Compiler Stage A: a deterministic natural-language -> structured-query resolver that only maps onto values that actually exist, so it can never invent a facet; it runs offline with no model and is the floor every other stage falls back to.
+ * @remarks Vocabulary tables live in nl-vocabulary, phrase matchers in nl-matchers; this module is the orchestration and public API.
+ */
 
 export interface NlFacets {
-  // Distinct values present in the library, lowercased. Drive open-vocabulary
-  // matching (tags/creators) and ground source matching to real data.
+  /** Distinct lowercased values present in the library; ground matching to real data. */
   sources: string[];
   tags: string[];
   types: string[];
   creators: string[];
 }
 
-// An explicit ordering pulled from phrasing like "newest" / "longest videos".
+/** An explicit ordering pulled from phrasing like "newest" / "longest videos". */
 export interface AskSort {
   key: "savedAt" | "duration" | "fileCount";
   dir: "asc" | "desc";
@@ -39,9 +35,9 @@ export interface AskSort {
 
 interface NlResult {
   query: Query;
-  // Words that didn't resolve to a predicate, for free-text / semantic ranking.
+  /** Words that didn't resolve to a predicate, for free-text / semantic ranking. */
   residual: string;
-  // Explicit ordering / cap pulled from the phrasing, when present.
+  /** Explicit ordering / cap pulled from the phrasing, when present. */
   sort: AskSort | null;
   limit: number | null;
 }
@@ -65,11 +61,8 @@ export function dedupePredicates(predicates: Predicate[]): Predicate[] {
   return out;
 }
 
-// Resolve a natural-language string into a structured query plus residual text,
-// using only deterministic lookups grounded in the supplied live facets.
 export function compileStageA(input: string, facets: NlFacets): NlResult {
-  // Dates are pulled out first by chrono (+ the curated rolling-window table),
-  // leaving the token walker a date-free string to reason about.
+  /** Dates are pulled out first, leaving the token walker a date-free string to reason about. */
   const { predicates: datePreds, rest } = extractDates(input);
 
   const words = rest
@@ -90,7 +83,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   while (i < words.length) {
     const word = words[i] as string;
 
-    // Ordering / cap phrasing ("newest", "top 10"). Last write wins.
+    /** Ordering / cap phrasing; last write wins. */
     const order = matchSortLimit(words, i);
     if (order) {
       if (order.sort) sort = order.sort;
@@ -100,7 +93,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    // Duration before count so "more than 5 minutes" is a length, not a tally.
+    /** Duration before count so "more than 5 minutes" is a length, not a tally. */
     const dur = matchDurationIntent(words, i);
     if (dur) {
       intentPreds.push(dur.pred);
@@ -109,7 +102,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    // Count intents run before the negator so "no more than 3" isn't eaten.
+    /** Count intents run before the negator so "no more than 3" isn't eaten. */
     const count = matchCountIntent(words, i);
     if (count) {
       intentPreds.push(count.pred);
@@ -118,8 +111,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    // Presence intents own their negation ("no caption"), so they precede the
-    // generic negator that would otherwise consume "no" / "without".
+    /** Presence intents own their negation ("no caption"), so they precede the generic negator. */
     const intent = matchIntent(words, i);
     if (intent) {
       intentPreds.push(intent.pred);
@@ -134,7 +126,6 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    // Greedy longest-phrase match against candidates.
     const matched = matchCandidate(words, i, candidates);
     if (matched) {
       accumulate(acc, matched.candidate, negateNext);
@@ -157,7 +148,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   return { query, residual: residual.join(" "), sort, limit };
 }
 
-// Flatten a (possibly nested) query into its predicates, for chip display.
+/** Flattens a possibly nested query into its predicates, for chip display. */
 export function flattenPredicates(clause: Clause): Predicate[] {
   if ("rules" in clause) return clause.rules.flatMap(flattenPredicates);
   return [clause];

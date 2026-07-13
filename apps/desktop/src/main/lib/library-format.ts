@@ -1,6 +1,6 @@
 import type { Save } from "@pond/schema/db";
 
-// Each item is an `items/<id>.info/` folder: clean info.json + raw source.json.
+/** Each item is an `items/<id>.info/` folder: clean info.json + raw source.json. */
 export const INFO_FILE = "info.json";
 export const SOURCE_FILE = "source.json";
 export const INFO_SCHEMA = 3 as const;
@@ -80,7 +80,7 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
   };
 }
 
-// Export whitelist: Save columns that surface in info.json (deletedAt included for trash state).
+/** Export whitelist: Save columns that surface in info.json; deletedAt included for trash state. */
 const EXPORTED_SAVE_FIELDS = [
   "url",
   "title",
@@ -104,7 +104,7 @@ export function patchTouchesInfo(patch: object): boolean {
   return Object.keys(patch).some((key) => EXPORTED_FIELD_SET.has(key));
 }
 
-// Merge a Save patch onto an existing InfoDoc, honoring the export whitelist.
+/** Merges a Save patch onto an existing InfoDoc, honoring the export whitelist. */
 export function applyPatchToInfo(info: InfoDoc, patch: Partial<Save>): InfoDoc {
   const next: InfoDoc = { ...info };
   if (patch.url !== undefined) next.url = patch.url;

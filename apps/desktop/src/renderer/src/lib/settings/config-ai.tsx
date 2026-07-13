@@ -17,8 +17,7 @@ function aiValues(binding: Binding): AiValues {
   return binding.values as AiValues;
 }
 
-// Agent mode keeps a state-dependent description and disable rule, so it renders
-// as a custom row rather than a plain switch field.
+/** Agent mode keeps a state-dependent description and disable rule, so it renders as a custom row rather than a plain switch field. */
 function AgentRow({ binding }: { binding: Binding }) {
   const values = aiValues(binding);
   const provider = values.provider ?? "ollama";

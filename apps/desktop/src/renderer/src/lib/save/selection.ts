@@ -38,8 +38,6 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-// --- Selection set helpers -------------------------------------------------
-
 export function selectAllInView(): void {
   selection.set(libraryViewContext.filteredIds());
 }
@@ -55,18 +53,14 @@ export function isAllSelected(): boolean {
   return all.length > 0 && selection.size() >= all.length;
 }
 
-// --- Pipeline ---------------------------------------------------------------
-
-// Ids in the set whose ingest ended in `failed` — the subset "Retry failed" acts on.
+/** The subset "Retry failed" acts on. */
 export function failedIdsIn(ids: readonly string[]): string[] {
   return resolve(ids)
     .filter((s) => s.status === "failed")
     .map((s) => s.id);
 }
 
-// Re-run only the failed saves in the selection; complete and in-progress saves
-// are left untouched. The main process resets each save's failed tasks and
-// flips it back to ingesting, broadcasting the change to the pool.
+/** The main process resets each failed save's tasks and flips it back to ingesting, broadcasting the change to the pool. */
 export async function retryFailedSelection(
   ids: readonly string[],
 ): Promise<void> {
@@ -86,8 +80,6 @@ export async function retryFailedSelection(
     tone: "success",
   });
 }
-
-// --- Destructive ------------------------------------------------------------
 
 export async function trashSelection(ids: readonly string[]): Promise<void> {
   if (ids.length === 0) return;
@@ -127,8 +119,6 @@ export async function deleteSelectionForever(
   if (count === 0) return;
   pushToast(`Deleted ${pluralize(count, "item")} forever.`);
 }
-
-// --- Tagging ----------------------------------------------------------------
 
 export async function addTagToSelection(
   ids: readonly string[],
@@ -189,8 +179,6 @@ export async function clearTagsFromSelection(
   pushToast(`Removed tags from ${pluralize(changed, "item")}.`);
 }
 
-// --- Clipboard --------------------------------------------------------------
-
 export async function copyUrlsForSelection(
   ids: readonly string[],
 ): Promise<void> {
@@ -224,8 +212,6 @@ export async function copyFilePathsForSelection(
   const ok = await writeClipboard(paths.join("\n"));
   if (ok) pushToast(`Copied ${pluralize(paths.length, "file path")}.`);
 }
-
-// --- Export -----------------------------------------------------------------
 
 export async function exportSelectionFiles(
   ids: readonly string[],

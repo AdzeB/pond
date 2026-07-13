@@ -4,8 +4,7 @@ import { VerifiedIcon } from "@/components/tweet-card-icons";
 import { MediaGrid } from "@/components/tweet-card-media-grid";
 import styles from "./styles.module.css";
 
-// Compact nested rendering of a quoted tweet: inline header, clamped text, and
-// at most a single media tile, matching X's embedded-quote treatment.
+/** Matches X's embedded-quote treatment: inline header, clamped text, at most one media tile. */
 export function QuotedCard({ data }: { data: TweetCardData }) {
   const { author, text, media } = data;
   return (

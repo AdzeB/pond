@@ -1,4 +1,4 @@
-// Minimal RFC-4180 CSV; quotes fields with comma/quote/CR/LF and doubles quotes.
+/** Minimal RFC-4180 CSV; quotes fields with comma/quote/CR/LF and doubles quotes. */
 export function toCsv(
   rows: ReadonlyArray<Record<string, unknown>>,
   columns: ReadonlyArray<string>,

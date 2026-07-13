@@ -11,11 +11,11 @@ interface PersistSaveOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
   replaceFilesWithKind?: WriteFileArgs["kind"];
-  // Force an info.json refresh even for DB-only patches; used by finalize.
+  /** Forces an info.json refresh even for DB-only patches; used by finalize. */
   writeInfo?: boolean;
 }
 
-// Single write path for a save: update the row, then refresh info.json when needed.
+/** Single write path for a save, so info.json and the sidecar stay in step with the row. */
 export async function persistSave(
   id: string,
   patch: Partial<NewSave>,
@@ -32,8 +32,7 @@ export async function persistSave(
   if (opts.writeInfo || wroteFiles || patchTouchesInfo(patch)) {
     await writeSaveInfo(updated);
   }
-  // Pipeline outputs also land in the per-item sidecar so an index rebuild
-  // recovers them from the bundle instead of recomputing.
+  /** Pipeline outputs also land in the per-item sidecar so an index rebuild recovers them instead of recomputing. */
   if (patchTouchesEnrichment(patch)) {
     writeEnrichmentSidecar(updated);
   }

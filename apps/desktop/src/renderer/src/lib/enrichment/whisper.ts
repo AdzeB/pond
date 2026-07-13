@@ -1,9 +1,7 @@
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferTranscribe } from "./inference-client";
 
-// Whisper speech-to-text for video/audio saves. Audio is decoded to 16 kHz mono
-// here on the main thread (Web Audio API is window-only), then the PCM buffer is
-// handed to the inference worker for the actual ASR run (inference-core).
+/** Audio is decoded to 16 kHz mono here on the main thread (Web Audio API is window-only), then the PCM buffer is handed to the inference worker for the ASR run. */
 
 const DEFAULT_MODEL_ID = "Xenova/whisper-tiny";
 
@@ -18,8 +16,7 @@ export function whisperModelVersion(): string {
   return `${modelId()}@1`;
 }
 
-// Decode an audio/video URL into a 16 kHz mono PCM buffer. The AudioContext
-// sample rate forces resampling on decode; channels are averaged to mono.
+/** The AudioContext sample rate forces resampling on decode; channels are averaged to mono. */
 async function decodeMono16k(url: string): Promise<Float32Array> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
@@ -52,7 +49,7 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
   }
 }
 
-// Transcribe one audio/video URL to plain text ("" when there's no speech).
+/** Returns "" when there's no speech. */
 export async function transcribeAudio(url: string): Promise<string> {
   const audio = await decodeMono16k(url);
   return inferTranscribe(audio, modelId());

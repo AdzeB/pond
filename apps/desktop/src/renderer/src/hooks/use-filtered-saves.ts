@@ -87,7 +87,7 @@ function cmp(a: Save, b: Save, key: SortKey): number {
   }
 }
 
-// Missing values sort last regardless of direction's sign convention.
+/** Missing values sort last regardless of direction's sign convention. */
 function nullableNumber(a: number | null, b: number | null): number {
   if (a == null && b == null) return 0;
   if (a == null) return 1;

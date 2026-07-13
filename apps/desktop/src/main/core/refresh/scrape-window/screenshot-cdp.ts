@@ -2,9 +2,7 @@ import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { sleep } from "./util";
 
-// CDP commands and capturePage can hang indefinitely on a wedged hidden window
-// (seen at startup: Emulation.setEmulatedMedia never resolving). Bound them so a
-// stuck capture can't hold its window lease forever and starve the pool.
+/** CDP commands can hang indefinitely on a wedged hidden window; bound them so a stuck capture can't hold its window lease and starve the pool. */
 const CDP_COMMAND_TIMEOUT_MS = 10_000;
 
 async function sendCdpCommand(
@@ -51,7 +49,7 @@ export async function emulateColorScheme(
       try {
         dbg.detach();
       } catch {
-        /* attach failed mid-flight; nothing to detach */
+        /** Attach failed mid-flight; nothing to detach. */
       }
     }
     return async () => {};
@@ -65,19 +63,19 @@ export async function emulateColorScheme(
         CDP_COMMAND_TIMEOUT_MS,
       );
     } catch {
-      /* override may already be cleared; safe to ignore */
+      /** Override may already be cleared. */
     }
     if (attachedHere) {
       try {
         dbg.detach();
       } catch {
-        /* wc may have been destroyed mid-capture; pool drops it */
+        /** wc may have been destroyed mid-capture; pool drops it. */
       }
     }
   };
 }
 
-// Override device scale factor for `fn` via CDP; the lever for sharper PNGs.
+/** Overrides device scale factor for `fn` via CDP; the lever for sharper PNGs. */
 export async function withDeviceScaleFactor<T>(
   win: BrowserWindow,
   factor: number,
@@ -113,13 +111,13 @@ export async function withDeviceScaleFactor<T>(
         CDP_COMMAND_TIMEOUT_MS,
       );
     } catch {
-      /* override may already be cleared; safe to ignore */
+      /** Override may already be cleared. */
     }
     if (attachedHere) {
       try {
         dbg.detach();
       } catch {
-        /* detach can throw if the wc was destroyed mid-capture */
+        /** Detach can throw if the wc was destroyed mid-capture. */
       }
     }
   }

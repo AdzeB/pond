@@ -5,11 +5,10 @@ import {
   type RequestLens,
 } from "@/utils/intercept";
 
-// Reddit's "save" action posts to /api/save with the post's fullname (t3_<id36>).
-// /api/unsave never matches this pattern, so toggling off is ignored.
+/** Reddit's "save" posts to /api/save with the post fullname; /api/unsave never matches, so unsaves are ignored. */
 const SAVE_RE = /\/api\/save\b/i;
 
-// t3_ = link/post, t1_ = comment. Only posts map to a saveable item URL.
+/** t3_ = link/post, t1_ = comment; only posts map to a saveable item URL. */
 function fullnameToUrl(id: string | null): string | null {
   const m = id ? id.match(/^t3_([a-z0-9]+)$/i) : null;
   return m ? `https://redd.it/${m[1]}` : null;

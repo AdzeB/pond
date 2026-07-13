@@ -40,13 +40,10 @@ import {
   useNlFacets,
 } from "./use-nl-query";
 
-// How many of the top results we describe to the summarizer. Bounded to keep
-// the prompt small and the round-trip quick.
+/** Bounded to keep the summarizer prompt small and the round-trip quick. */
 const SUMMARY_TOP_K = 12;
 
-// Best-effort prose summary of a resolved result set. Fired after the result
-// publishes so the grid never waits on it; failures leave the summary empty and
-// the dock falls back to the count/question line.
+/** Fired after the result publishes so the grid never waits on it; failures leave the summary empty and the dock falls back to the count line. */
 async function runAskSummary(
   nonce: number,
   question: string,
@@ -70,8 +67,6 @@ async function runAskSummary(
   }
 }
 
-// Average the embeddings of the anchored saves into one "more like these"
-// vector; ids without an embedding are skipped.
 function meanAnchorVector(ids: readonly string[]): Float32Array | null {
   const vecs: Float32Array[] = [];
   for (const id of ids) {
@@ -88,8 +83,7 @@ function meanAnchorVector(ids: readonly string[]): Float32Array | null {
   return out;
 }
 
-// Blend the question vector with the anchor vector when both exist, so a
-// question about referenced saves stays grounded in their meaning.
+/** Blending question and anchor vectors keeps a question about referenced saves grounded in their meaning. */
 function blendVectors(
   a: Float32Array | null,
   b: Float32Array | null,
@@ -102,8 +96,6 @@ function blendVectors(
   return out;
 }
 
-// Float the explicitly anchored saves to the front, preserving the ranked
-// order for everything else.
 function pinAnchors(
   ordered: ReadonlyArray<Save>,
   ids: readonly string[],
@@ -119,13 +111,9 @@ function pinAnchors(
   return [...pinned, ...ordered.filter((s) => !pinnedIds.has(s.id))];
 }
 
-// At most this many relaxations are offered for an empty result.
 const SUGGESTION_CAP = 4;
 
-// When a multi-predicate query matches nothing, offer to drop each predicate
-// that, on its own removal, would surface something — ranked by how much it
-// opens up. Single-predicate queries relax to the whole library, so we skip
-// them (not a useful "did you mean").
+/** Offers to drop each predicate whose removal surfaces results; single-predicate queries relax to the whole library, so they get no suggestions. */
 function buildSuggestions(
   query: Query,
   live: ReadonlyArray<Save>,
@@ -153,7 +141,6 @@ function buildSuggestions(
   return out.slice(0, SUGGESTION_CAP);
 }
 
-// Re-run a relaxation: filter by its (looser) query, order by recency, publish.
 export function runAskSuggestion(suggestion: AskSuggestion): void {
   const ids = pool
     .snapshot()
@@ -163,19 +150,14 @@ export function runAskSuggestion(suggestion: AskSuggestion): void {
   commitAskResult(suggestion.label, ids, suggestion.query);
 }
 
-// Per-turn options: refine within the previous result set, and/or attach a
-// query image for image-to-image visual search.
 interface AskOptions {
   refine?: boolean;
   image?: { blob: Blob; meta: AskQueryImage };
-  // The composed message as typed, so the transcript renders it back exactly.
+  /** The composed message as typed, so the transcript renders it back exactly. */
   segments?: ReadonlyArray<AskSegment>;
 }
 
-// The "Ask anything" agent: turn a question into an ordered result set of save
-// ids and append it to the ask-store transcript. Structured constraints (from
-// the NL compiler) filter; a query embedding (text, anchor, or CLIP image)
-// ranks by meaning. A refining turn searches within the previous turn's set.
+/** Compiled constraints filter, a query embedding (text, anchor, or CLIP image) ranks by meaning, and a refining turn searches within the previous turn's set. */
 export function useAsk(): (
   question: string,
   anchorIds?: readonly string[],
@@ -195,11 +177,10 @@ export function useAsk(): (
       const image = opts.image ?? null;
       if (!question && anchorIds.length === 0 && !image) return;
 
-      // Anchor-only runs ("@save" with no question) read as "find similar".
+      /** Anchor-only runs ("@save" with no question) read as "find similar". */
       const label =
         question || (image ? "Similar to this image" : "Similar items");
 
-      // Refine within the previous turn's resolved set when asked and possible.
       const prev = askStore.state.turns[askStore.state.turns.length - 1];
       const refining =
         (opts.refine ?? false) &&
@@ -221,8 +202,7 @@ export function useAsk(): (
               .filter((s): s is Save => s != null && !s.deletedAt)
           : live;
 
-        // Image-to-image visual search: rank the candidate pool by CLIP
-        // similarity to the query image, skipping the NL compile entirely.
+        /** Image queries rank by CLIP similarity and skip the NL compile entirely. */
         if (image) {
           setAskStage(nonce, "ranking");
           const vec = await embedQueryImage(image.blob);
@@ -242,9 +222,7 @@ export function useAsk(): (
           return;
         }
 
-        // Agent mode: a capable provider reasons in steps (inspect → plan →
-        // execute → answer), handling open-ended asks the single-shot compile
-        // can't. Falls through to the deterministic path on any failure.
+        /** Agent mode handles open-ended asks the single-shot compile can't; any failure falls through to the deterministic path. */
         const agentOn =
           question.length > 0 &&
           (ai?.agent ?? false) &&
@@ -294,7 +272,7 @@ export function useAsk(): (
             }
             return;
           } catch {
-            // fall through to the deterministic single-shot path
+            /** Fall through to the deterministic single-shot path. */
           }
         }
 
@@ -304,13 +282,11 @@ export function useAsk(): (
         const residual = compiled?.residual ?? "";
         const queryVector = compiled?.queryVector ?? null;
 
-        // Query is compiled; narrate the search → rank stages next.
         setAskStage(nonce, "searching");
         const anchorVector = meanAnchorVector(anchorIds);
         const rankVector = blendVectors(queryVector, anchorVector);
 
         setAskStage(nonce, "ranking");
-        // Run the whole plan (filter → rank → group/sample) deterministically.
         const result = executePlan(plan, {
           pool: basePool,
           rankVector,
@@ -323,15 +299,12 @@ export function useAsk(): (
 
         ordered = pinAnchors(ordered, anchorIds);
 
-        // "top N / first N" caps the result set after ordering + pinning so
-        // pinned anchors survive the cap.
+        /** "top N" caps after ordering and pinning so pinned anchors survive the cap. */
         if (plan.limit != null && plan.limit > 0) {
           ordered = ordered.slice(0, plan.limit);
         }
 
-        // Nothing matched: offer one-tap relaxations instead of a dead end.
-        // Relax against whatever pool this turn searched (the refined set or
-        // the whole library).
+        /** Empty results offer one-tap relaxations against whatever pool this turn searched. */
         const suggestions =
           ordered.length === 0 ? buildSuggestions(query, basePool) : [];
 
@@ -344,8 +317,7 @@ export function useAsk(): (
           suggestions,
         );
 
-        // Behind a configured LLM (the nlCompiler toggle), describe the result
-        // set in prose for the dock card. Fire-and-forget; never blocks the run.
+        /** Summaries need the configured LLM (nlCompiler toggle); fire-and-forget so the run never blocks. */
         if (ordered.length > 0 && ai?.nlCompiler) {
           void runAskSummary(nonce, label, ordered);
         }

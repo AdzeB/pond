@@ -22,7 +22,7 @@ interface DownloadVideoArgs {
   source: Source | null;
   /** Connected account that owns the save; picks whose cookies to export. */
   accountId?: string | null;
-  // Abort the in-flight yt-dlp process (e.g. user cancelled the ingest).
+  /** Aborts the in-flight yt-dlp process. */
   signal?: AbortSignal;
 }
 
@@ -100,7 +100,7 @@ export async function downloadVideo(
     const filesize = maxFilesizeArg(prefs);
     if (filesize) argv.unshift("--max-filesize", filesize);
 
-    // Muxing/embedding/SponsorBlock need ffmpeg; without it, fall back to progressive mp4.
+    /** Muxing/embedding/SponsorBlock need ffmpeg; without it, fall back to progressive mp4. */
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
       if (prefs.container !== "auto") {

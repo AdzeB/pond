@@ -15,7 +15,7 @@ import type {
   MediaCandidate,
 } from "../types";
 
-// Single shared instance; rule bundles are stateless and reused per fetch.
+/** Single shared instance; rule bundles are stateless and reused per fetch. */
 const scrape = metascraper([
   metascraperTitle(),
   metascraperDescription(),
@@ -29,14 +29,12 @@ const scrape = metascraper([
 
 const FETCH_TIMEOUT_MS = 15_000;
 
-// Browser-like UA so servers that vary markup by client still emit OG tags.
+/** Browser-like UA so servers that vary markup by client still emit OG tags. */
 const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
-// Catch-all extractor for arbitrary web pages: plain fetch + metascraper for
-// title/description/cover. Kept OUT of EXTRACTOR_LIST so it never shadows the
-// source-specific extractors; index.ts wires it in as the explicit fallback.
+/** Catch-all for arbitrary web pages; kept out of EXTRACTOR_LIST so it never shadows the source-specific extractors. */
 export class WebPageExtractor implements Extractor {
   readonly id = "web-page";
   readonly source = "web" as const;
@@ -107,7 +105,7 @@ async function fetchHtml(url: string): Promise<string> {
   }
 
   if (!res.ok) {
-    // 4xx is unlikely to recover; 5xx may. Treat 5xx/429 as transient.
+    /** 4xx is unlikely to recover; 5xx may. Treat 5xx/429 as transient. */
     if (res.status >= 500 || res.status === 429) {
       throw new TransientError(`web fetch ${res.status}`);
     }

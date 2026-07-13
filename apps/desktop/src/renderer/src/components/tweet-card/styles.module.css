@@ -1,5 +1,4 @@
-/* Chirp is Twitter's typeface. Bundled from the woff files so the card matches
-   the real thing; font-family stays global even from this CSS module. */
+/* Chirp is Twitter's typeface, bundled so the card matches the real thing; font-family stays global even from this CSS module. */
 @font-face {
   font-family: Chirp;
   font-style: normal;
@@ -32,8 +31,7 @@
   src: url("../../assets/fonts/chirp/chirp-Heavy.woff") format("woff");
 }
 
-/* The card carries its own Twitter-accurate palette per scheme rather than the
-   app's --ds tokens, so it reads as a real tweet regardless of app theme. */
+/* The card carries its own Twitter-accurate palette rather than --ds tokens, so it reads as a real tweet regardless of app theme. */
 .card {
   --tw-bg: #fff;
   --tw-text: #0f1419;
@@ -70,7 +68,6 @@
   box-sizing: border-box;
 }
 
-/* Reply context */
 .reply-context {
   margin: 12px 0 0;
   font-size: 15px;
@@ -81,7 +78,6 @@
   color: var(--tw-link);
 }
 
-/* Timestamp */
 .timestamp {
   margin: 16px 0 0;
   font-size: 15px;

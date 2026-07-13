@@ -12,8 +12,10 @@ const MAX_RATIO = 2.5;
 const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, number>();
 
-// Persist aspect ratios so the masonry doesn't re-pack as dim-less covers lazy-load; stale entries self-correct on next load.
-// Keyed by pond id: save ids are pond-specific, and the cache must not mix ponds.
+/**
+ * Persisting aspect ratios keeps the masonry from re-packing as dim-less covers lazy-load; stale entries self-correct on next load.
+ * @remarks Keyed by pond id: save ids are pond-specific and the cache must not mix ponds.
+ */
 const STORAGE_KEY = pondScopedKey("pond:aspects:v1");
 const PERSIST_DEBOUNCE_MS = 800;
 
@@ -33,7 +35,7 @@ function hydrateFromStorage(): void {
       }
     }
   } catch {
-    // Storage corrupt / unavailable: start with an empty cache.
+    /** Storage corrupt / unavailable: start with an empty cache. */
   }
 }
 
@@ -45,7 +47,7 @@ const persistSoon = debounce(
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
     } catch {
-      // Storage full / private browsing: drop the persistence pass.
+      /** Storage full / private browsing: drop the persistence pass. */
     }
   },
   { wait: PERSIST_DEBOUNCE_MS },
@@ -66,7 +68,7 @@ export function aspectFor(save: Save): number {
   return ratio;
 }
 
-// Version bumped once per rAF in which any aspect changed; coalesces a burst of measurements into one re-pack.
+/** Version bumps once per rAF in which any aspect changed, coalescing a burst of measurements into one re-pack. */
 const versionStore = new Store(0);
 let scheduled = 0;
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-// Highlight the entities Twitter colors: URLs, @mentions, #hashtags, $cashtags.
+/** The entities Twitter colors: URLs, @mentions, #hashtags, $cashtags. */
 const ENTITY = /(https?:\/\/[^\s]+|www\.[^\s]+|[@#$][\w]+)/g;
 
 function renderTokens(text: string): ReactNode[] {
@@ -26,7 +26,7 @@ function renderTokens(text: string): ReactNode[] {
   return out;
 }
 
-// Twitter shows links without protocol and trims overly long paths.
+/** Twitter shows links without protocol and trims overly long paths. */
 function prettifyUrl(url: string): string {
   const bare = url.replace(/^https?:\/\//, "").replace(/^www\./, "");
   return bare.length > 30 ? `${bare.slice(0, 30)}\u2026` : bare;

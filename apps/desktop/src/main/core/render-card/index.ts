@@ -11,28 +11,27 @@ export interface RenderedCard {
   height: number;
 }
 
-// Fixed card width in CSS px; matches the capture entry's default.
+/** Fixed card width in CSS px; matches the capture entry's default. */
 const CARD_WIDTH = 550;
-// Starting window height; grows to fit a taller card before capture.
+/** Starting window height; grows to fit a taller card before capture. */
 const INITIAL_HEIGHT = 1400;
-// Hard cap so a runaway card can't allocate an enormous surface.
+/** Hard cap so a runaway card can't allocate an enormous surface. */
 const MAX_HEIGHT = 8192;
-// Capture at 2x so the cover stays crisp on retina displays.
+/** Capture at 2x so the cover stays crisp on retina displays. */
 const SCALE = 2;
-// Scheme-colored padding around the card, in CSS px (scaled at capture time).
+/** Scheme-colored padding around the card, in CSS px (scaled at capture time). */
 const PAD_CSS = 24;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
 const CDP_TIMEOUT_MS = 10_000;
 const CAPTURE_TIMEOUT_MS = 15_000;
-// Whole-render budget; on overrun the window is torn down for a clean retry.
+/** Whole-render budget; on overrun the window is torn down for a clean retry. */
 const RENDER_TIMEOUT_MS = 30_000;
-// The hidden window runs un-throttled (backgroundThrottling: false), so tear it
-// down once renders stop arriving rather than keeping a renderer process warm.
+/** The hidden window runs un-throttled, so tear it down once renders stop arriving rather than keeping a renderer process warm. */
 const IDLE_DISPOSE_MS = 60_000;
 
 let win: BrowserWindow | null = null;
-// Serialize renders through the single hidden window.
+/** Serialize renders through the single hidden window. */
 let chain: Promise<unknown> = Promise.resolve();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -75,7 +74,7 @@ function ensureWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      // Hidden windows otherwise throttle timers/rAF, stalling image loads.
+      /** Hidden windows otherwise throttle timers/rAF, stalling image loads. */
       backgroundThrottling: false,
     },
   });
@@ -141,8 +140,7 @@ async function readCardRect(target: BrowserWindow): Promise<CardRect | null> {
   return { x: r.x, y: r.y, width: r.width, height: r.height };
 }
 
-// Capture `rect` at SCALE via CDP device-metrics override (capturePage rect is
-// in CSS px; the resulting NativeImage is at the overridden device scale).
+/** Captures `rect` at SCALE via CDP device-metrics override; capturePage takes CSS px but returns a NativeImage at the overridden device scale. */
 async function captureAtScale(
   target: BrowserWindow,
   rect: CardRect,
@@ -165,7 +163,7 @@ async function captureAtScale(
       CDP_TIMEOUT_MS,
       "setDeviceMetricsOverride",
     );
-    // Let the override settle into a repaint before grabbing the surface.
+    /** Let the override settle into a repaint before grabbing the surface. */
     await sleep(50);
     return await withTimeout(
       target.webContents.capturePage({
@@ -185,13 +183,13 @@ async function captureAtScale(
         "clearDeviceMetricsOverride",
       );
     } catch {
-      /* override may already be cleared */
+      /** Override may already be cleared. */
     }
     if (attached) {
       try {
         dbg.detach();
       } catch {
-        /* wc may be gone */
+        /** wc may be gone. */
       }
     }
   }
@@ -226,7 +224,7 @@ async function renderOne(
     return null;
   }
 
-  // capturePage crops overflow, so grow the window to fit a taller card.
+  /** capturePage crops overflow, so grow the window to fit a taller card. */
   const [, contentHeight] = target.getContentSize();
   const needed = Math.ceil(rect.y + rect.height + 8);
   if (needed > (contentHeight ?? INITIAL_HEIGHT)) {
@@ -242,19 +240,18 @@ async function renderOne(
   return pad(raw, scheme);
 }
 
-// Render a tweet's card to a padded cover PNG. Returns null when the capture
-// lacks enough data or rendering fails, so callers can fall back.
+/** Renders a tweet's card to a padded cover PNG; null when the capture lacks enough data or rendering fails, so callers can fall back. */
 export async function renderTweetCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
 ): Promise<RenderedCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
-  // Need at least an author plus some content to be worth rendering.
+  /** Need at least an author plus some content to be worth rendering. */
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
-  // A render is queued: cancel any pending teardown so the window survives.
+  /** A render is queued: cancel any pending teardown so the window survives. */
   clearIdleDispose();
   const run = chain.then(async () => {
     try {
@@ -265,11 +262,11 @@ export async function renderTweetCardPng(
       );
     } catch (err) {
       log.warn("[pond render-card] render failed", scheme, err);
-      // A wedged window would stall every later render; drop it for a fresh one.
+      /** A wedged window would stall every later render; drop it for a fresh one. */
       disposeRenderCardWindow();
       return null;
     } finally {
-      // Re-arm teardown; a later render clears it before the window is dropped.
+      /** Re-arm teardown; a later render clears it before the window is dropped. */
       scheduleIdleDispose();
     }
   });

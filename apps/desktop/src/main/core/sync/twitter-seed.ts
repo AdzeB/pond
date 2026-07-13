@@ -2,7 +2,7 @@ import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
-// Cap on quote-chain depth to keep media merges and the screenshot walker bounded.
+/** Cap on quote-chain depth to keep media merges and the screenshot walker bounded. */
 const QUOTE_DEPTH_CAP = 3;
 
 interface QuotedTweetRef {
@@ -21,7 +21,7 @@ interface SaveSeed {
   lang?: string | null;
 }
 
-// Build a seed from GraphQL data so the pipeline skips the rate-limited re-scrape.
+/** Builds a seed from GraphQL data so the pipeline skips the rate-limited re-scrape. */
 export function buildTwitterBookmarkSeed(
   entry: BookmarksEntry,
 ): SaveSeed | null {
@@ -53,7 +53,7 @@ export function buildTwitterBookmarkSeed(
   };
   pushMedia(rich.media);
 
-  // Walk the quote chain, merging media and recording it for the screenshot walker.
+  /** Walk the quote chain, merging media and recording it for the screenshot walker. */
   const quotedTweets: QuotedTweetRef[] = [];
   let quoted = rich.quoted;
   for (let depth = 0; quoted && depth < QUOTE_DEPTH_CAP; depth += 1) {

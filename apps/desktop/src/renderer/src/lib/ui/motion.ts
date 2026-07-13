@@ -2,9 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { TargetAndTransition, Transition } from "motion/react";
 
-// Global time scale for the dock's motion (1 = real time). The playground
-// raises it to slow every dock transition down for inspection; nothing in the
-// product UI ever changes it.
+/** Global time scale for the dock's motion (1 = real time); only the playground changes it, to slow transitions for inspection. */
 const scaleStore = new Store({ factor: 1 });
 
 export const motionScale = {
@@ -35,8 +33,7 @@ export const bouncySpring: Transition = {
   bounce: 0.28,
 };
 
-// One shared easeOutExpo-style curve for the whole dock transition: the pill's
-// box morph and the content crossfade ride the same curve so they land as one.
+/** One shared easeOutExpo-style curve: the pill's box morph and the content crossfade ride the same curve so they land as one. */
 const DOCK_EASE: [number, number, number, number] = [0.19, 1, 0.22, 1];
 const FAMILY_CONTENT_DURATION = 0.22;
 
@@ -50,9 +47,7 @@ interface DockMotion {
   };
 }
 
-// `timeScale` stretches every duration (1 = real time); the playground's
-// slow-motion control feeds it from `motionScale` so the box morph and the
-// content swap stay in lockstep while slowed.
+/** `timeScale` stretches every duration so the box morph and the content swap stay in lockstep while slowed. */
 export function buildDockMotion(
   reduceMotion: boolean,
   timeScale = 1,

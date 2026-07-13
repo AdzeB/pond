@@ -11,10 +11,7 @@ import {
 import { leaseWindow } from "../refresh/scrape-window/pool";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
-// Instagram/Twitter watch listing: open the public profile (or a Twitter
-// list) in a hidden window on a connected account's cookie partition (both
-// platforms auth-wall logged-out visitors), scroll a little, and collect
-// post links in DOM order (newest-first, modulo pins).
+/** Instagram/Twitter watch listing scrolls the profile in a hidden window on a connected account's partition; both platforms auth-wall logged-out visitors. */
 
 const COLLECT_TIMEOUT_MS = 60_000;
 
@@ -33,8 +30,7 @@ function profileUrl(
   return null;
 }
 
-// In-page collector: a few scroll passes, gathering matching anchors in
-// document order. Serialized as an expression for executeJavaScript.
+/** In-page collector, serialized as an expression for executeJavaScript. */
 function buildCollectorExpression(source: Source): string {
   const pattern =
     source === "instagram"

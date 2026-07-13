@@ -1,9 +1,7 @@
 import { type AiProviderId, modelSupportsAgent } from "@pond/schema";
 import { usePrefs } from "@/stores/prefs";
 
-// Whether the "Ask AI" agent surface can run: the configured model must support
-// tool-calling. Local providers without tool support resolve to false. The dock
-// uses this to disable the Ask entry and point the user at Settings.
+/** The Ask agent requires a tool-calling model; local providers without tool support resolve to false. */
 export function useAgentAvailable(): boolean {
   const [ai] = usePrefs("ai");
   const provider = (ai?.provider ?? "ollama") as AiProviderId;

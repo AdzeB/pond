@@ -1,21 +1,12 @@
-// The query-plan IR: the richer output the Ask agent compiles to, replacing the
-// old "flat filter + one global sort/limit" ceiling. A plan is a small, typed
-// pipeline that a deterministic renderer executor runs over the library:
-//
-//   filter -> rank -> group (+ per-group sample) -> limit -> aggregate
-//
-// It is intentionally NOT a general program: only these typed steps exist, so a
-// model can never make the app execute arbitrary logic. `filter` reuses the
-// existing boolean Query tree (re-validated by Stage D); the rest is shape-
-// checked here and clamped by the renderer's validatePlan. Shared by the main
-// process (which prompts a model to emit a plan) and the renderer (which runs it).
+/**
+ * Query-plan IR the Ask agent compiles to: filter -> rank -> group -> limit -> aggregate, run by a deterministic renderer executor.
+ * Intentionally not a general program: only these typed steps exist, so a model can never make the app execute arbitrary logic.
+ */
 
 import { z } from "zod";
 import type { Query } from "./filters/types";
 
-// Fields a plan can group results by. Enum/string fields group by their value;
-// `tags` puts a save in one group per tag; date fields group by a calendar
-// bucket (see DateBucket).
+/** Enum/string fields group by their value; `tags` puts a save in one group per tag; date fields group by a calendar bucket. */
 export const GROUPABLE_FIELDS = [
   "source",
   "type",
@@ -27,8 +18,7 @@ export const GROUPABLE_FIELDS = [
 ] as const;
 export type GroupableField = (typeof GROUPABLE_FIELDS)[number];
 
-// Numeric/date fields a plan can sort by. "relevance" (the other RankSpec arm)
-// uses the semantic/keyword ranker instead.
+/** "relevance", the other RankSpec arm, uses the semantic/keyword ranker instead of these fields. */
 export const SORTABLE_FIELDS = [
   "savedAt",
   "publishedAt",
@@ -41,27 +31,27 @@ export type SortableField = (typeof SORTABLE_FIELDS)[number];
 export const DATE_BUCKETS = ["day", "week", "month", "year"] as const;
 export type DateBucket = (typeof DATE_BUCKETS)[number];
 
-// How the filtered set is ordered before grouping/limiting.
+/** How the filtered set is ordered before grouping/limiting. */
 export type RankSpec =
   | { kind: "relevance" }
   | { kind: "field"; field: SortableField; dir: "asc" | "desc" };
 
 export interface GroupSpec {
   by: GroupableField;
-  // Calendar granularity, only meaningful when `by` is a date field.
+  /** Calendar granularity; only meaningful when `by` is a date field. */
   bucket?: DateBucket;
-  // Keep at most this many items per group ("a few from each source" -> 3).
+  /** Keep at most this many items per group. */
   perGroup?: number;
-  // Round-robin across groups instead of concatenating whole group blocks.
+  /** Round-robin across groups instead of concatenating whole group blocks. */
   interleave?: boolean;
-  // Keep at most this many groups (the largest / earliest-appearing ones).
+  /** Keep at most this many groups, the largest or earliest-appearing ones. */
   maxGroups?: number;
 }
 
 export interface AggregateSpec {
-  // Emit the total match count as a fact (for "how many …" answers).
+  /** Emit the total match count as a fact. */
   count?: boolean;
-  // Emit per-group counts as facts (for "how many … by source" answers).
+  /** Emit per-group counts as facts. */
   countBy?: GroupableField;
 }
 
@@ -72,11 +62,6 @@ export interface QueryPlan {
   limit?: number;
   aggregate?: AggregateSpec;
 }
-
-// ---- Lenient parsing of untrusted model output ----------------------------
-// `filter` is passed through as unknown and re-validated by the renderer's
-// validateQuery (Stage D); everything else is shape-checked here. The renderer's
-// validatePlan then clamps numeric bounds. Unknown extra keys are stripped.
 
 const rankSchema = z.union([
   z.object({ kind: z.literal("relevance") }),
@@ -100,6 +85,10 @@ const aggregateSchema = z.object({
   countBy: z.enum(GROUPABLE_FIELDS).optional(),
 });
 
+/**
+ * Lenient parse of untrusted model output: `filter` passes through as unknown and is re-validated by the
+ * renderer's validateQuery; validatePlan then clamps numeric bounds. Unknown extra keys are stripped.
+ */
 export const rawQueryPlanSchema = z.object({
   filter: z.unknown().optional(),
   rank: rankSchema.optional(),
@@ -108,8 +97,7 @@ export const rawQueryPlanSchema = z.object({
   aggregate: aggregateSchema.optional(),
 });
 
-// A plan as parsed from untrusted JSON: structurally valid but with `filter`
-// still unknown and numbers unclamped. The renderer turns this into a QueryPlan.
+/** Structurally valid but with `filter` still unknown and numbers unclamped; the renderer turns this into a QueryPlan. */
 export type RawQueryPlan = z.infer<typeof rawQueryPlanSchema>;
 
 export function parseQueryPlan(raw: unknown): RawQueryPlan | null {
@@ -117,14 +105,10 @@ export function parseQueryPlan(raw: unknown): RawQueryPlan | null {
   return res.success ? res.data : null;
 }
 
-// ---- Structured-output schemas (for the AI SDK `generateObject` path) ------
-// `rawQueryPlanSchema` keeps `filter` as `unknown` so any text/JSON the model
-// produces survives to the renderer's validateQuery gate. But `generateObject`
-// turns the schema into a provider JSON schema the model must satisfy, so it
-// needs concrete shapes. These mirror the prompt: a flat (one-level) boolean
-// filter plus the same rank/group/limit/aggregate steps. Anything the model
-// emits is STILL re-validated + clamped by validatePlan, so these are about
-// guiding structured output, never trust.
+/**
+ * `generateObject` compiles the schema into a provider JSON schema the model must satisfy, so these need concrete shapes.
+ * Anything the model emits is still re-validated and clamped by validatePlan; these guide structured output, never trust.
+ */
 const filterValueSchema = z.union([
   z.string(),
   z.number(),
@@ -145,10 +129,10 @@ const filterSchema = z.object({
   rules: z.array(predicateSchema),
 });
 
-// Concrete plan schema handed to `generateObject`. Object-rooted (so OpenAI's
-// strict structured outputs accept it) and recursion-free (so Gemini's
-// restricted response schema accepts it). Providers that still reject it fall
-// back to free-text JSON + jsonrepair in the main process.
+/**
+ * Object-rooted so OpenAI's strict structured outputs accept it; recursion-free so Gemini's restricted response
+ * schema accepts it. Providers that still reject it fall back to free-text JSON + jsonrepair in the main process.
+ */
 export const queryPlanSchema = z.object({
   filter: filterSchema,
   rank: rankSchema.optional(),
@@ -157,12 +141,10 @@ export const queryPlanSchema = z.object({
   aggregate: aggregateSchema.optional(),
 });
 
-// ---- Agentic loop protocol ------------------------------------------------
-// For capable providers, the agent reasons in steps, emitting ONE action per
-// round (ReAct-style). The renderer executes the action's tool over the pool and
-// feeds an observation back for the next round, until the model finishes with a
-// `final` plan (grid result) or an `answer` (prose, e.g. counts/comparisons).
-
+/**
+ * Agentic loop protocol: the model emits one action per round; the renderer executes it over the pool and
+ * feeds an observation back, until the model finishes with a `final` plan (grid result) or an `answer` (prose).
+ */
 export const AGENT_ACTION_TYPES = [
   "inspect",
   "run_plan",
@@ -172,13 +154,13 @@ export const AGENT_ACTION_TYPES = [
 export type AgentActionType = (typeof AGENT_ACTION_TYPES)[number];
 
 export type AgentAction =
-  // Request a digest of the library (top facets + total) before deciding.
+  /** Request a digest of the library before deciding. */
   | { type: "inspect" }
-  // Execute a plan and observe match count + a small sample, then keep going.
+  /** Execute a plan and observe match count plus a small sample, then keep going. */
   | { type: "run_plan"; plan: RawQueryPlan }
-  // Finish: the result set this plan produces takes over the grid.
+  /** Finish: the result set this plan produces takes over the grid. */
   | { type: "final"; plan: RawQueryPlan }
-  // Finish: a short prose answer (no grid), for "how many / which is more".
+  /** Finish: a short prose answer with no grid. */
   | { type: "answer"; text: string };
 
 export const agentActionSchema: z.ZodType<AgentAction> = z.union([
@@ -193,8 +175,7 @@ export function parseAgentAction(raw: unknown): AgentAction | null {
   return res.success ? res.data : null;
 }
 
-// One completed step in the loop, sent back to the model so it can build on what
-// it has already observed. The observation is the tool result rendered as text.
+/** One completed loop step sent back to the model; the observation is the tool result rendered as text. */
 export interface AgentStepRecord {
   action: AgentAction;
   observation?: string;

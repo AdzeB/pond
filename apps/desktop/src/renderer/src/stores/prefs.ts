@@ -23,15 +23,14 @@ async function load(): Promise<Prefs> {
   return inflight;
 }
 
-// Imperative section patch for non-React callers (e.g. ask history, recents).
-// Optimistically updates the shared cache and rolls back on IPC failure.
+/** Imperative section patch for non-React callers; optimistically updates the shared cache and rolls back on IPC failure. */
 export function patchPrefsSection<K extends keyof Prefs>(
   section: K,
   delta: Partial<Prefs[K]>,
 ): void {
   const cache = prefsStore.state.value;
   if (!cache) {
-    // Prefs not hydrated yet: load first, then re-apply the patch.
+    /** Prefs not hydrated yet: load first, then re-apply the patch. */
     void load().then(() => patchPrefsSection(section, delta));
     return;
   }
@@ -43,7 +42,7 @@ export function patchPrefsSection<K extends keyof Prefs>(
   void window.pond
     .query("settings.setPrefs", { [section]: delta } as Partial<Prefs>)
     .catch(() => {
-      // Roll back on failure so the UI stops lying.
+      /** Roll back on failure so the UI stops lying. */
       prefsStore.setState(() => ({ value: cache }));
     });
 }
@@ -68,9 +67,7 @@ export function usePrefs<K extends keyof Prefs>(
   return [value ?? ({} as Prefs[K]), patch, value !== null];
 }
 
-// Reactive access to the whole prefs object (loads on first use). Use when a
-// consumer needs more than one section, e.g. evaluating enricher `enabled()`
-// predicates that read across `prefs.ai`.
+/** For consumers needing more than one section, e.g. enricher `enabled()` predicates that read across `prefs.ai`. */
 export function usePrefsValue(): Prefs | null {
   useEffect(() => {
     void load();

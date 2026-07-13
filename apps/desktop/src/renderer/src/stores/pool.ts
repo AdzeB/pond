@@ -26,7 +26,7 @@ export const savesStore = new Store<SavesState>({
   sorted: [],
 });
 
-// Non-React read facade; mutations go through the helpers below so React consumers wake via `useSelector`.
+/** Non-React read facade; mutations go through the helpers below so React consumers wake via `useSelector`. */
 export const pool = {
   get(id: string): Save | undefined {
     return savesStore.state.byId.get(id);
@@ -52,8 +52,7 @@ export const pool = {
 };
 
 export function upsertSave(save: Save): void {
-  // Keep the BM25 text index current. Enrichment optimistic updates also funnel
-  // through here, so captions/OCR/transcripts get indexed as they land.
+  /** Enrichment optimistic updates also funnel through here, so captions/OCR/transcripts get indexed as they land. */
   indexSave(save);
   savesStore.setState((s) => {
     const prev = s.byId.get(save.id);
@@ -95,7 +94,7 @@ function clearSaves(): void {
   );
 }
 
-// Merge a lazily-fetched full `rawJson` into a pooled save; keeps `sorted` identity stable so only useSave(id) consumers wake.
+/** Keeps `sorted` identity stable so only useSave(id) consumers wake. */
 export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   savesStore.setState((s) => {
     const prev = s.byId.get(id);
@@ -106,7 +105,7 @@ export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   });
 }
 
-// Hydrate the lazily-loaded transcript (omitted from the list payload).
+/** Hydrates the lazily-loaded transcript, which is omitted from the list payload. */
 export function patchSaveTranscript(
   id: string,
   transcript: Save["transcript"],
@@ -117,8 +116,7 @@ export function patchSaveTranscript(
     const byId = new Map(s.byId);
     const next = { ...prev, transcript };
     byId.set(id, next);
-    // Transcript is a searchable field and arrives lazily (omitted from the list
-    // payload), so fold it into the text index when it hydrates.
+    /** Transcript is a searchable field, so fold it into the text index when it hydrates. */
     indexSave(next);
     return { byId, sorted: s.sorted };
   });

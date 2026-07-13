@@ -3,10 +3,7 @@ import { searchScores } from "@/lib/search/text-index";
 import type { Save } from "@/lib/types";
 import { useSaves } from "./use-saves";
 
-// Grid search box: ranks the pool by the shared Orama BM25 index (the same index
-// the Ask agent's keyword ranker uses). "all"-term matching keeps the old
-// "every word must hit" behaviour; results are intersected with the live/trashed
-// scope and capped.
+/** Ranks by the shared Orama BM25 index (the same one the Ask agent's keyword ranker uses); "all"-term matching keeps every-word-must-hit behaviour. */
 const MAX_RESULTS = 500;
 
 export function useSearchResults(

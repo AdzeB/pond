@@ -11,7 +11,7 @@ import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
 
-// Import each file as its own save so a multi-file drop becomes individual items.
+/** Imports each file as its own save so a multi-file drop becomes individual items. */
 async function importFilesImpl(
   paths: string[],
 ): Promise<{ ok: boolean; ids: string[] }> {
@@ -24,8 +24,7 @@ async function importFilesImpl(
 }
 
 export const savesImportQueries: QueryHandlerMap = {
-  // Which source adapter would handle this URL. Cheap synchronous pattern
-  // matching; lets capture UIs preview the classification as the user types.
+  /** Which source adapter would handle this URL; cheap synchronous matching lets capture UIs preview the classification as the user types. */
   "saves.classifyUrl"(params) {
     const url = String(params.url ?? "").trim();
     if (!url) return { source: null };
@@ -89,7 +88,7 @@ export const savesImportQueries: QueryHandlerMap = {
     const tags = Array.isArray(params.tags) ? (params.tags as string[]) : [];
 
     if (!url) {
-      // No URL: treat as a manual note entry rather than rejecting it.
+      /** No URL: treat as a manual note entry rather than rejecting it. */
       const res = await createManualSave({ title: note, note, tags });
       return res.ok
         ? { ok: true, id: res.id }
@@ -108,7 +107,7 @@ export const savesImportQueries: QueryHandlerMap = {
       return { ok: true, id: result.id, created: result.created };
     } catch (err) {
       if (err instanceof UnsupportedError) {
-        // Unsupported URL: keep it as a manual save instead of dropping it.
+        /** Unsupported URL: keep it as a manual save instead of dropping it. */
         const res = await createManualSave({
           url,
           title: note ?? url,

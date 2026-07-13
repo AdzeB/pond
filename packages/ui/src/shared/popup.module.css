@@ -1,12 +1,4 @@
-/*
- * Canonical popup surface + item styling shared by menu, context-menu,
- * popover, and select. The `menu` component is the source of truth for how
- * these look. Defaults match the anchored components (context-menu / popover /
- * select); `menu` re-declares the few properties where it differs.
- *
- * `--popup-width` and `--popup-min-width` are the only consumer-facing knobs
- * (set on the positioner/popup to size a specific menu).
- */
+/* Shared by menu, context-menu, popover, and select; defaults match the anchored components and `menu` re-declares where it differs. `--popup-width` and `--popup-min-width` are the only consumer-facing knobs. */
 
 .positioner {
   z-index: 9999999999;

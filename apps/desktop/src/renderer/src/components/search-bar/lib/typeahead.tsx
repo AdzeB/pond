@@ -35,9 +35,7 @@ interface ValueSuggestion {
   label: string;
 }
 
-// The concrete values a field offers for autocomplete. Enum/date fields expose
-// their presets; tags come from the live library; free-form fields (numbers,
-// text) return null so the caret keeps plain text.
+/** Free-form fields return null so the caret keeps plain text. */
 function valueSuggestionsFor(
   field: FieldId,
   tags: ReadonlyArray<string>,
@@ -68,8 +66,7 @@ type MenuItem =
       token: string;
     };
 
-// Parse the token under the caret and produce the matching suggestions: field
-// keys while typing the key, concrete values once a `key:` prefix is present.
+/** Suggests field keys while typing the key, concrete values once a `key:` prefix is present. */
 function buildMenu(
   raw: string,
   tags: ReadonlyArray<string>,
@@ -138,9 +135,7 @@ class FilterOption extends MenuOption {
   }
 }
 
-// Match the token immediately before the caret. Only fires on a run that starts
-// with a letter (a possible field key) or its negation, so ordinary words don't
-// pop the menu.
+/** Only fires on a run that starts with a letter or its negation, so ordinary words don't pop the menu. */
 function triggerFn(text: string): MenuTextMatch | null {
   const match = /(?:^|\s)(-?[A-Za-z][^\s]*)$/.exec(text);
   if (!match) return null;
@@ -166,7 +161,7 @@ export function FilterTypeahead({ tags }: { tags: ReadonlyArray<string> }) {
     (option: FilterOption, node: TextNode | null, close: () => void) => {
       const item = option.item;
       if (item.kind === "field") {
-        // Drop the `key:` and reopen for value suggestions rather than closing.
+        /** Drop the `key:` and reopen for value suggestions rather than closing. */
         editor.update(() => {
           if (node) {
             node.setTextContent(item.token);
@@ -175,8 +170,7 @@ export function FilterTypeahead({ tags }: { tags: ReadonlyArray<string> }) {
         });
         return;
       }
-      // Insert the token as plain text + trailing space; the token entity plugin
-      // wraps it into an editable highlighted token on the next transform.
+      /** Inserted as plain text; the token entity plugin wraps it into an editable highlighted token on the next transform. */
       editor.update(() => {
         if (!node) return;
         const replacement = $createTextNode(`${item.token} `);

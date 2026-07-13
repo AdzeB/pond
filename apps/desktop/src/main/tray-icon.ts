@@ -5,7 +5,6 @@ import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { appDataRoot } from "./paths";
 
-// Working-state animation geometry.
 const SPINNER_SIZE = 22;
 const SPINNER_DOTS = 8;
 
@@ -26,9 +25,7 @@ export function loadTrayIcon(): NativeImage {
         if (img.isEmpty()) continue;
         log.info("[pond tray] loaded icon", { path: p });
         return img;
-      } catch {
-        /* ignore and fall through */
-      }
+      } catch {}
     }
   }
   log.warn("[pond tray] no packaged icon found, drawing runtime placeholder");
@@ -100,8 +97,7 @@ export function getSpinnerFrames(): NativeImage[] {
   return frames;
 }
 
-// A ring of dots with a bright "head" that rotates and a fading trail; rendered
-// as an alpha-only template image so macOS tints it like any other menu glyph.
+/** A ring of dots with a rotating bright head and fading trail; alpha-only template image so macOS tints it like any other menu glyph. */
 function makeSpinnerFrame(size: number, head: number): NativeImage {
   const rgba = Buffer.alloc(size * size * 4);
   const cx = size / 2 - 0.5;

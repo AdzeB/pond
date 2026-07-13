@@ -1,9 +1,7 @@
-/* Link card (summary / summary_large_image) */
 .link-card {
   margin-top: 12px;
 }
 
-/* Small "summary" card: bordered row, square thumbnail beside the text. */
 .link-card:not([data-large="true"]) {
   display: flex;
   flex-direction: row;
@@ -12,8 +10,7 @@
   border-radius: 16px;
 }
 
-/* Large "summary_large_image" card: rounded image, title overlaid bottom-left,
-   domain in muted text beneath — matching how X renders large previews. */
+/* Matches how X renders large previews: title overlaid bottom-left, domain beneath. */
 .link-card[data-large="true"] {
   display: flex;
   flex-direction: column;

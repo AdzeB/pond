@@ -102,7 +102,7 @@ export async function harvestTwitterBookmarks(
 
     let result: Extract<BookmarksHarvestResult, { ok: true }>;
     try {
-      // Replay the page's own Bookmarks GraphQL request; fall back to scroll-and-scrape.
+      /** Replay the page's own Bookmarks GraphQL request; fall back to scroll-and-scrape. */
       const apiRaw = await runExpr(buildBookmarksApiExpression(args));
       if (apiRaw === "__pond_bookmarks_timeout__") {
         log.warn("[pond bookmarks] api harvest timed out; falling back");
@@ -125,8 +125,7 @@ export async function harvestTwitterBookmarks(
       } else if (api && api.reason === "auth_required") {
         return { ok: false, reason: "auth_required" };
       } else if (api && api.reason === "rate_limited") {
-        // Set the governor cooldown and stop. Do NOT fall back to scroll — it
-        // hits the live timeline harder and risks the account further.
+        /** Set the governor cooldown and stop; scroll fallback hits the live timeline harder and risks the account further. */
         const { cooldownMs } = report("twitter", {
           ok: false,
           rateLimited: true,

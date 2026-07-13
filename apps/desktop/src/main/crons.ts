@@ -31,25 +31,22 @@ export function registerYtDlpUpdateCron() {
   schedule({
     name: "yt-dlp-update",
     every: 24 * 60 * 60 * 1000,
-    // yt-dlp isn't bundled; check soon after launch, then daily.
+    /** yt-dlp isn't bundled; check soon after launch, then daily. */
     initialDelay: 5_000,
     fn: () => maybeUpdateYtDlp(),
   });
 }
 
-// Last cron run this session; 0 = never, so the first due-check does a catch-up.
+/** Last cron run this session; 0 = never, so the first due-check does a catch-up. */
 let lastSyncCronRunAt = 0;
-// Random pre-run delay so many installs don't hit a platform in lockstep.
+/** Random pre-run delay so many installs don't hit a platform in lockstep. */
 const SYNC_CRON_JITTER_MS = 10 * 60_000;
 
-// Background sync scheduler. Unattended traffic is the highest account-risk path,
-// so it short-circuits on disabled-pref / offline / storage-guard / not-yet-due
-// and otherwise defers to the rate governor.
+/** Unattended traffic is the highest account-risk path, so this short-circuits on disabled-pref / offline / storage-guard / not-yet-due and defers to the rate governor. */
 export function registerSyncCron() {
   schedule({
     name: "sync-all",
-    // Poll every 30m and decide if a run is due, so the configured interval can
-    // change at runtime without re-registering the job.
+    /** Poll and decide if a run is due, so the configured interval can change at runtime without re-registering the job. */
     every: 30 * 60_000,
     initialDelay: 5 * 60_000,
     fn: async () => {
@@ -69,7 +66,7 @@ export function registerSyncCron() {
 
       const jitter = Math.floor(Math.random() * SYNC_CRON_JITTER_MS);
       await new Promise((resolve) => setTimeout(resolve, jitter));
-      // Re-check online after the jitter wait; connectivity may have dropped.
+      /** Re-check online after the jitter wait; connectivity may have dropped. */
       if (!net.isOnline()) return;
 
       lastSyncCronRunAt = Date.now();
@@ -77,8 +74,7 @@ export function registerSyncCron() {
         intervalHours: cron.intervalHours,
       });
       await syncAllSources({ trigger: "cron" });
-      // Watched public accounts poll on the same cadence; they don't gate on
-      // isAccountConnected (public listings need no session).
+      /** Watched public accounts poll on the same cadence; public listings need no session. */
       await watchAll({ trigger: "cron" });
     },
   });

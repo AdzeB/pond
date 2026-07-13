@@ -5,10 +5,10 @@ import styles from "./styles.module.css";
 
 interface Props {
   provider: AiProviderId;
-  // Empty string means "use the provider default" (placeholder).
+  /** Empty string means "use the provider default". */
   value: string;
   onChange: (id: string) => void;
-  // The provider's default model id, shown when nothing is selected.
+  /** The provider's default model id, shown when nothing is selected. */
   placeholder: string;
 }
 

@@ -1,6 +1,3 @@
-/* The Saves control screen: a dense ops-style table (30px rows, live stage
-   column, colored-text status) for every in-flight, failed, and
-   session-completed save. */
 .page {
   --panel: var(--ds-gray-1);
   --ink: var(--ds-gray-12);
@@ -25,7 +22,6 @@
   padding: 24px 32px 120px;
 }
 
-/* ── header ── */
 .header {
   display: flex;
   flex-direction: column;
@@ -47,7 +43,6 @@
   color: var(--ink-2);
 }
 
-/* ── toolbar ── */
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -79,7 +74,6 @@
   margin-left: auto;
 }
 
-/* ── table ── */
 .table {
   overflow: hidden;
   font-variant-numeric: tabular-nums;
@@ -121,7 +115,7 @@
   border: none;
 }
 
-/* Stage column header is a plain span, not sortable. */
+/* The Stage column header is a plain span because it isn't sortable. */
 span.th {
   cursor: default;
 }
@@ -179,7 +173,6 @@ button.th:hover {
   white-space: nowrap;
 }
 
-/* ── status cell ── */
 .status-cell {
   display: flex;
   gap: 7px;
@@ -228,7 +221,6 @@ button.th:hover {
   border-top: 1px solid var(--line-2);
 }
 
-/* ── empty state ── */
 .empty {
   display: flex;
   flex-direction: column;

@@ -8,10 +8,7 @@ import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
 import type { CompileContext, SummaryItem } from "./types";
 
-// Builds the grounding prompt + JSON schema for the LLM query compiler. The
-// model is told the exact fields, their allowed operators, and the user's real
-// facet values, then constrained to emit a Query object. Whatever it returns is
-// still re-validated by Stage D, so the schema/prompt are about quality, not safety.
+/** Grounding prompts + JSON schema for the LLM query compiler; Stage D re-validates all output, so these affect quality, not safety. */
 
 function fieldLines(): string {
   return FIELD_IDS.map((id) => {
@@ -65,11 +62,7 @@ export function buildSystemPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-// ---- Query-plan prompt (the richer agent output) --------------------------
-// Capable providers compile to a plan: a small pipeline of filter -> rank ->
-// group (+ per-group sample) -> limit -> aggregate. This lets the agent express
-// "a few from each source", "group by month", "how many X vs Y", etc., which the
-// flat filter alone cannot. Whatever it returns is still validated + clamped.
+/** Plan prompt: a filter -> rank -> group -> limit -> aggregate pipeline for requests the flat filter cannot express; output is still validated and clamped. */
 
 const PLAN_RULES = `
 You translate a user's natural-language request into a JSON "query plan" that runs over their saved items.
@@ -123,9 +116,10 @@ export function buildPlanPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-// ---- Agentic loop prompt --------------------------------------------------
-// The agent reasons in steps, emitting ONE action per round; the renderer runs
-// the action over the library and feeds an observation back. See AgentAction.
+/**
+ * Agent prompt: one action per round; the renderer runs it and feeds an observation back.
+ * @see AgentAction
+ */
 
 const AGENT_RULES = `
 You are a search agent over the user's saved items (bookmarks, images, videos, articles, posts). Answer the request by reasoning in steps, emitting exactly ONE action per step as a JSON object (no prose, no markdown).
@@ -175,8 +169,6 @@ export function buildAgentPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-// Render the question + the steps taken so far into the user message for the
-// next agent round. Keeps observations the model can build on.
 export function formatAgentHistory(
   question: string,
   steps: ReadonlyArray<AgentStepRecord>,
@@ -195,8 +187,7 @@ export function formatAgentHistory(
   return lines.join("\n");
 }
 
-// System prompt for the result summarizer. The model only ever sees the items
-// we hand it, so it can't invent results; we ask for one or two plain sentences.
+/** The summarizer only ever sees the items we hand it, so it cannot invent results. */
 export function buildSummaryPrompt(): string {
   return [
     "You help a user understand the results of a search over their saved items",
@@ -213,7 +204,6 @@ export function buildSummaryPrompt(): string {
   ].join("\n");
 }
 
-// Render the question + matched items into the user message for the summarizer.
 export function formatSummaryItems(
   question: string,
   items: SummaryItem[],
@@ -234,8 +224,7 @@ export function formatSummaryItems(
   ].join("\n");
 }
 
-// JSON schema describing the Query object, for providers that support
-// structured output (Ollama `format`, OpenAI-compatible `json_schema`).
+/** Query JSON schema for providers with structured output (Ollama `format`, OpenAI-compatible `json_schema`). */
 export function queryJsonSchema(): Record<string, unknown> {
   return {
     type: "object",

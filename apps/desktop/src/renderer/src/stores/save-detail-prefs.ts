@@ -22,7 +22,7 @@ function _setSaveDetailsOpen(value: boolean): void {
     try {
       window.localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
     } catch {
-      /* storage denied: keep the in-memory store in sync anyway */
+      /** Storage denied: keep the in-memory store in sync anyway. */
     }
   }
   store.setState((s) => (s === value ? s : value));

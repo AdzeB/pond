@@ -45,13 +45,7 @@ export default defineConfig({
       externalizeDeps: { exclude: ["@pond/schema"] },
       rollupOptions: {
         input: resolve(__dirname, "src/main/index.ts"),
-        // Native modules must stay external so they resolve their
-        // platform-specific .node binaries from node_modules at runtime
-        // instead of being inlined into the bundle. `re2` (pulled in by
-        // metascraper via url-regex-safe) is intentionally not built in this
-        // repo; keeping it external lets url-regex-safe fall back to a plain
-        // RegExp at runtime instead of the bundler choking on its missing
-        // `re2.node`.
+        /** Native modules resolve their platform .node binaries at runtime; `re2` isn't built here, so external lets url-regex-safe fall back to plain RegExp. */
         external: ["electron", "better-sqlite3", "sharp", "re2"],
       },
     },
@@ -75,20 +69,16 @@ export default defineConfig({
   },
   renderer: {
     root: resolve(__dirname, "src/renderer"),
-    // Cross-origin isolation unlocks SharedArrayBuffer, which onnxruntime-web
-    // needs for multi-threaded WASM. Without it, on-device enrichment falls back
-    // to a single thread and pins one core (see lib/inference-device.ts). COEP
-    // `credentialless` keeps cross-origin images/media loading without the third
-    // party having to send CORP. (Prod mirrors these via onHeadersReceived.)
+    /**
+     * Cross-origin isolation unlocks SharedArrayBuffer for onnxruntime-web's multi-threaded WASM; COEP `credentialless` keeps cross-origin media loading without CORP.
+     * @see onHeadersReceived mirrors these in prod
+     */
     server: {
       headers: {
         "Cross-Origin-Opener-Policy": "same-origin",
         "Cross-Origin-Embedder-Policy": "credentialless",
       },
-      // chokidar (via Vite) defaults `usePolling` to true on macOS in some
-      // versions, which pins a CPU core on the dev-server `node` process even
-      // when idle — a big, easy-to-miss source of fan noise during `pnpm dev`.
-      // FS events are reliable here, so force the event-based watcher.
+      /** chokidar's macOS polling default pins a CPU core even when idle; FS events are reliable here. */
       watch: { usePolling: false },
     },
     plugins: [
@@ -106,19 +96,12 @@ export default defineConfig({
         "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
       },
     },
-    // transformers.js (the on-device enrichment models) imports
-    // `onnxruntime-web` / `onnxruntime-web/webgpu` as bare specifiers. Excluding
-    // it from optimization leaves those unresolved in dev ("Failed to resolve
-    // module specifier"), so the models never load. Pre-bundling it (and
-    // its deps) with esbuild resolves the subpaths — mirroring the prod Rollup
-    // build. The ORT wasm binaries are fetched from a CDN at runtime, not
-    // imported, so esbuild doesn't choke on them.
+    /** transformers.js imports `onnxruntime-web` subpaths as bare specifiers; pre-bundling resolves them in dev, mirroring the prod Rollup build. */
     optimizeDeps: {
       include: ["@huggingface/transformers"],
     },
     build: {
-      // Electron ships a recent Chromium; skip legacy transforms and
-      // module-preload polyfills.
+      /** Electron ships a recent Chromium; skip legacy transforms and module-preload polyfills. */
       target: "esnext",
       modulePreload: { polyfill: false },
       rollupOptions: {
@@ -127,9 +110,7 @@ export default defineConfig({
           capture: resolve(__dirname, "src/renderer/capture.html"),
         },
         output: {
-          // One chunk per npm package: bumping a dependency invalidates
-          // a single hash instead of vendor.js, and chunks parse in
-          // parallel on cold start.
+          /** One chunk per npm package: a dependency bump invalidates one hash instead of vendor.js, and chunks parse in parallel on cold start. */
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
             const match = id.match(

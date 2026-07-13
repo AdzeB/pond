@@ -47,11 +47,11 @@ export interface DataTableProviderProps<T> {
   /** Controlled expansion: list of expanded row ids. */
   expandedIds?: string[];
   onToggleExpand?: (id: string, next: boolean) => void;
-  /** Present => virtualized. */
+  /** Presence enables virtualization. */
   height?: number;
   rowHeight?: number;
   overscan?: number;
-  /** Escape hatch to wrap each row (e.g. per-row context + dialogs). */
+  /** Escape hatch to wrap each row. */
   renderRow?: (args: RenderRowArgs<T>) => ReactNode;
   onRowClick?: (row: T, e: ReactMouseEvent) => void;
   children: ReactNode;
@@ -122,7 +122,7 @@ export function DataTableProvider<T>({
   const rows = table.getRowModel().rows;
   const flatRows = table.getRowModel().flatRows;
 
-  // Kept in refs so selection actions stay referentially stable.
+  /** Kept in refs so selection actions stay referentially stable. */
   const orderedIdsRef = useRef<string[]>([]);
   const anchorRef = useRef<string | null>(null);
   const rowChildrenRef = useRef<Map<string, string[]>>(new Map());

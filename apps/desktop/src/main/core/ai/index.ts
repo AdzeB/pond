@@ -21,14 +21,9 @@ import type { CompileContext, SummaryItem } from "./types";
 
 export type { CompileFacets, SummaryItem } from "./types";
 
-// The LLM stage of the "find anything" compiler. Networked providers run through
-// the Vercel AI SDK (structured output via generateText + Output.object, prose
-// via generateText); the on-device bundled model keeps its own node-llama-cpp path.
-// Embeddings are unrelated and always run on-device in the renderer.
+/** LLM stage of the "find anything" compiler: networked providers via the AI SDK, the bundled model via its own node-llama-cpp path. */
 
-// The bundled provider holds an expensive native session, so it's cached;
-// networked models are cheap config objects resolved fresh each call (keys and
-// endpoints can change between calls).
+/** The bundled provider holds an expensive native session, so it's cached; networked models are resolved fresh so key/endpoint changes apply. */
 let bundled: LlamaCppProvider | null = null;
 
 function getBundled(): LlamaCppProvider {
@@ -40,34 +35,27 @@ async function isBundled(): Promise<boolean> {
   return (await getPrefs()).ai.provider === "bundled";
 }
 
-// Invalidate the cached bundled session after a settings change.
+/** Invalidates the cached bundled session after a settings change. */
 export function resetProvider(): void {
   bundled = null;
 }
 
-// Best-effort JSON recovery for providers where structured output isn't available
-// or the model wraps its output in prose/markdown despite instructions.
+/** Best-effort JSON recovery for models that wrap output in prose/markdown despite instructions. */
 function parseLenient(text: string): unknown {
   const trimmed = text.trim();
   try {
     return JSON.parse(trimmed);
-  } catch {
-    // fall through
-  }
+  } catch {}
   try {
     return JSON.parse(jsonrepair(trimmed));
-  } catch {
-    // fall through
-  }
+  } catch {}
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   if (start >= 0 && end > start) {
     const slice = trimmed.slice(start, end + 1);
     try {
       return JSON.parse(slice);
-    } catch {
-      // fall through
-    }
+    } catch {}
     try {
       return JSON.parse(jsonrepair(slice));
     } catch {
@@ -77,10 +65,7 @@ function parseLenient(text: string): unknown {
   return null;
 }
 
-// Ask the model for a JSON object: try the SDK's structured-output path first
-// (fast-fail with one retry), then fall back to free-text + jsonrepair so even
-// providers that reject the JSON schema (e.g. Gemini's restricted shapes) work.
-// The result is untrusted and re-validated by the renderer regardless.
+/** Tries the SDK structured-output path, then free text + jsonrepair for providers that reject the JSON schema (e.g. Gemini's restricted shapes); the renderer re-validates the result regardless. */
 async function generateJson(
   model: LanguageModel,
   schema: z.ZodType,
@@ -109,8 +94,7 @@ async function generateJson(
   return parseLenient(text);
 }
 
-// Compile NL -> raw QueryPlan JSON via the active provider. Returns null on
-// failure so the renderer falls back to its deterministic one-step plan.
+/** Returns null on failure so the renderer falls back to its deterministic one-step plan. */
 export async function compilePlan(
   input: string,
   ctx: CompileContext,
@@ -131,8 +115,7 @@ export async function compilePlan(
   }
 }
 
-// One round of the agentic loop via the active provider. Returns null on failure
-// so the renderer can end the loop and fall back to a single-shot plan.
+/** Returns null on failure so the renderer ends the loop and falls back to a single-shot plan. */
 export async function agentStep(
   question: string,
   ctx: CompileContext,
@@ -156,8 +139,7 @@ export async function agentStep(
   }
 }
 
-// Summarize a result set via the active provider. Returns null on failure so
-// the renderer simply omits the summary and falls back to the count/question.
+/** Returns null on failure so the renderer omits the summary and falls back to the count/question. */
 export async function summarize(
   question: string,
   items: SummaryItem[],

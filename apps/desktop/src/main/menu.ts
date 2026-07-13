@@ -15,15 +15,14 @@ interface AppMenuDeps {
   openLibraryWindow: () => void;
 }
 
-// How many recently-visited saves to surface in the History menu.
+/** How many recently-visited saves to surface in the History menu. */
 const RECENTS_MENU_CAP = 12;
 
-// Kept at module scope so `setMenuRecents` can rebuild the menu in place after
-// `installAppMenu` has run, without the caller re-threading its dependencies.
+/** Kept at module scope so `setMenuRecents` can rebuild the menu in place without the caller re-threading its dependencies. */
 let activeDeps: AppMenuDeps | null = null;
 let recentEntries: RecentMenuEntry[] = [];
 
-// Replace the History menu's recents from the renderer and rebuild in place.
+/** Replaces the History menu's recents from the renderer and rebuilds in place. */
 export function setMenuRecents(entries: RecentMenuEntry[]): void {
   recentEntries = entries.slice(0, RECENTS_MENU_CAP);
   if (activeDeps) buildAndSetMenu(activeDeps);
@@ -56,7 +55,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
     focusedOrMain()?.webContents.send(IPC.menuOpenSave, id);
   };
 
-  // Recently-visited saves, browser-history style.
   const recentsItems = (): Electron.MenuItemConstructorOptions[] => {
     if (recentEntries.length === 0) {
       return [{ label: "No Recent Items", enabled: false }];
@@ -67,10 +65,9 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
     }));
   };
 
-  // Sync source remotes and refresh the metadata those sources feed.
   const sourcesSubmenu = (): Electron.MenuItemConstructorOptions[] => {
     const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
-      // Local imports have no remote to sync from.
+      /** Local imports have no remote to sync from. */
       (source) => source !== "local",
     ).map((source) => ({
       label: `Sync ${sourceLabel(source)}`,

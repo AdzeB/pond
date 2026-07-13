@@ -1,5 +1,3 @@
-/* ----- Expanded composer card ----- */
-
 .card {
   position: relative;
   display: flex;
@@ -41,8 +39,6 @@
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
 }
-
-/* ----- Chat transcript ----- */
 
 .chat-header {
   display: flex;
@@ -130,8 +126,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-/* A chip rendered inline within the sent message bubble, mirroring the
-   composer's chips so the transcript reads back exactly as typed. */
+/* Mirrors the composer's chips so the transcript reads back exactly as typed. */
 .user-chip {
   display: inline;
   padding: 1px 5px;
@@ -186,8 +181,6 @@
   user-select: text;
 }
 
-/* ----- Inline result thumbnails ----- */
-
 .thumbs {
   display: flex;
   flex-wrap: wrap;
@@ -238,8 +231,6 @@
   color: var(--ds-gray-10);
 }
 
-/* ----- Per-turn action row ----- */
-
 .actions {
   display: flex;
   flex-wrap: wrap;
@@ -274,8 +265,6 @@
   color: var(--ds-red-1, var(--ds-gray-1));
   background: var(--ds-red-9, var(--ds-gray-11));
 }
-
-/* ----- Recent-asks history popover ----- */
 
 .history-popup {
   --popup-min-width: 240px;
@@ -317,8 +306,6 @@
     background: var(--ds-gray-4);
   }
 }
-
-/* ----- Staged query image ----- */
 
 .attach-row {
   display: flex;
@@ -377,8 +364,6 @@
   }
 }
 
-/* ----- Lexical editor surface ----- */
-
 .editor {
   position: relative;
   width: 100%;
@@ -418,8 +403,6 @@
   pointer-events: none;
   user-select: none;
 }
-
-/* ----- Bottom toolbar: quick-add actions · mode chip · send ----- */
 
 .toolbar {
   display: flex;
@@ -473,8 +456,6 @@
 .result-label {
   color: var(--ds-gray-11);
 }
-
-/* ----- Collapsed status pill ----- */
 
 .status-pill {
   position: relative;
@@ -539,8 +520,6 @@
   flex-shrink: 0;
   color: var(--ds-gray-7);
 }
-
-/* ----- Zero-result relaxation chips ----- */
 
 .suggestions {
   display: inline-flex;

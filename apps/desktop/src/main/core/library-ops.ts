@@ -43,9 +43,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   let entries: string[] = [];
   try {
     entries = await readdir(paths.itemsDir);
-  } catch {
-    /* libraryRoot/items missing; leave entries empty */
-  }
+  } catch {}
   const onDiskIds = entries
     .filter((e) => e.endsWith(".info"))
     .map((e) => e.slice(0, -".info".length));
@@ -84,8 +82,7 @@ interface RelocateResult {
   skipped: number;
 }
 
-// copy: clone the current library into dest then switch (source left intact).
-// adopt: just switch to dest, which already holds a Pond library.
+/** "copy" clones the current library into dest then switches, leaving the source intact; "adopt" just switches to dest, which must already hold a Pond library. */
 export async function relocateLibrary(
   dest: string,
   mode: RelocateMode,
@@ -122,8 +119,7 @@ export async function relocateLibrary(
     }
   }
 
-  // Persist to the global DB first so a failed write never leaves the pointer
-  // ahead of the in-memory path cache (which reads the pointer on resolve).
+  /** Persist to the global DB first so a failed write never leaves the pointer ahead of the in-memory path cache. */
   const globalDb = await getGlobalDb();
   await globalDb
     .insert(settingsTable)
@@ -142,8 +138,7 @@ export async function relocateLibrary(
   return { path: destResolved, mode, copied, skipped };
 }
 
-// Keep the on-disk pointer and global DB library_root aligned. The pointer is
-// authoritative for resolvePaths(); repair drift left by a partial switch.
+/** The pointer is authoritative for resolvePaths(); repairs global-DB drift left by a partial switch. */
 export async function syncLibraryRootMetadata(): Promise<void> {
   const pointer = readLibraryPointer()?.replace(/\/+$/, "");
   if (!pointer) return;

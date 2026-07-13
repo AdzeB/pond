@@ -9,7 +9,6 @@ import { pool } from "@/stores/pool";
 import styles from "../styles.module.css";
 import { STAGE_LABELS } from "./stage-labels";
 
-// How many result thumbnails to show inline under an assistant turn.
 const MAX_THUMBS = 6;
 
 interface TurnActionHandlers {
@@ -19,8 +18,7 @@ interface TurnActionHandlers {
   onSaveView: () => void;
 }
 
-// Render one piece of the sent message: free text inline, or a chip styled to
-// match how it looked in the composer (mention `@`, tag `#`, skill `/`).
+/** Chips are styled to match how they looked in the composer. */
 function TurnSegment({ segment }: { segment: AskSegment }) {
   if (segment.kind === "text") return <>{segment.text}</>;
   const label =
@@ -36,9 +34,6 @@ function TurnSegment({ segment }: { segment: AskSegment }) {
   );
 }
 
-// One conversation exchange: the user's question (+ optional image) above the
-// assistant's status, prose summary, inline result thumbnails, and — on the
-// latest turn — actions on the result set.
 export function TurnView({
   turn,
   isLast,
@@ -80,8 +75,7 @@ export function TurnView({
         {turn.segments.length > 0 ? (
           <span className={styles["user-text"]}>
             {turn.segments.map((seg, i) => (
-              // Segments are a fixed, ordered snapshot of the sent message; the
-              // index is a stable identity here.
+              /** Segments are a fixed snapshot of the sent message, so the index is a stable identity. */
               // biome-ignore lint/suspicious/noArrayIndexKey: positional segments
               <TurnSegment key={`${seg.kind}-${i}`} segment={seg} />
             ))}
@@ -201,7 +195,6 @@ export function TurnView({
   );
 }
 
-// Inline thumbnail strip of the top matches for a resolved turn.
 function TurnResults({
   ids,
   onOpenSave,

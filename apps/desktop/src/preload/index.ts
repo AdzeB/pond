@@ -31,8 +31,7 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
-// Resolved synchronously once per (re)load so pond-scoped renderer caches can
-// namespace their localStorage keys before any module hydrates.
+/** Resolved synchronously once per (re)load so pond-scoped renderer caches can namespace their localStorage keys before any module hydrates. */
 let cachedPondId: string | null = null;
 
 const api = {
@@ -68,14 +67,12 @@ const api = {
     return ipcRenderer.invoke(IPC.query, name, params);
   },
 
-  // Pop up a native context menu; resolves with the chosen item id or null.
+  /** Resolves with the chosen item id, or null when the menu is dismissed. */
   popupMenu(template: ContextMenuTemplateItem[]): Promise<string | null> {
     return ipcRenderer.invoke(IPC.menuPopup, template);
   },
 
-  // Electron 41 removed File.path. Resolve a dropped/picked File to its
-  // absolute path here so the main process can read it without the bytes
-  // ever crossing IPC.
+  /** Electron 41 removed File.path; resolve dropped/picked files here so main can read them without the bytes crossing IPC. */
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);
   },
@@ -110,7 +107,7 @@ const api = {
     return () => ipcRenderer.off(IPC.menuAction, listener);
   },
 
-  // Push the recently-visited saves so main can render them in the History menu.
+  /** Main renders these entries in the History menu. */
   sendMenuRecents(entries: RecentMenuEntry[]): void {
     ipcRenderer.send(IPC.menuRecents, entries);
   },
@@ -182,7 +179,6 @@ const api = {
     return ipcRenderer.invoke(IPC.refreshBackfillCancel);
   },
 
-  // ── Ingest pipeline ─────────────────────────────────────────────────────
   pipelinePause(paused: boolean): Promise<{ ok: true; paused: boolean }> {
     return ipcRenderer.invoke(IPC.pipelinePause, paused);
   },
@@ -252,7 +248,6 @@ const api = {
     return () => ipcRenderer.off(IPC.storageStatus, listener);
   },
 
-  // ── Rate governor (account safety) ──────────────────────────────────────
   governorSetPaused(
     paused: boolean,
   ): Promise<{ ok: true; allPaused: boolean }> {
@@ -277,10 +272,8 @@ interface ShellHint {
   pointerCursors?: boolean;
 }
 
+/** Main forwards `--pond-shell=<json>` via additionalArguments; the inline boot script in index.html reads `window.__pondShell` to set theme and pointer cursors before any bundle parses. */
 function readShellHint(): ShellHint {
-  // Main forwards `--pond-shell=<json>` via additionalArguments; the
-  // inline boot script in index.html reads `window.__pondShell` to set
-  // theme + pointer cursors before any bundle parses.
   const prefix = "--pond-shell=";
   const arg = process.argv.find((a) => a.startsWith(prefix));
   if (!arg) return {};

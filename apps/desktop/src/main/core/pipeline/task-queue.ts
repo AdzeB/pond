@@ -13,8 +13,7 @@ import {
 import { sourcePausedUntil } from "./source-gate";
 import { maxAttemptsFor, planOps } from "./specs";
 
-// NOT EXISTS enforces the sequential op gate in SQL so the window isn't
-// filled with non-runnable tasks. Pull 3x the dispatch window for round-robin.
+/** NOT EXISTS enforces the sequential op gate in SQL so the window isn't filled with non-runnable tasks; pulls 3x the dispatch window for round-robin. */
 export async function pullDueTasks(): Promise<DueTask[]> {
   const db = await getDb();
   const now = new Date();
@@ -53,8 +52,7 @@ export async function pullDueTasks(): Promise<DueTask[]> {
 
   if (rows.length === 0) return rows;
 
-  // Per-save round-robin so progress is shared, not monopolised by one save.
-  // Skip paused sources so we don't pin inflight slots on stalled work.
+  /** Per-save round-robin so one save can't monopolise progress; paused sources are skipped so inflight slots aren't pinned on stalled work. */
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
     if (isSourceTask(row.op) && sourcePausedUntil(row.source as never) > 0) {
@@ -79,7 +77,7 @@ export async function pullDueTasks(): Promise<DueTask[]> {
   return interleaved;
 }
 
-// Fail `pending` tasks on non-ingesting saves; they can't run and starve the window.
+/** Fails `pending` tasks on non-ingesting saves; they can't run and starve the window. */
 export async function sweepOrphanTasks(): Promise<void> {
   const db = await getDb();
   const orphans = db
@@ -107,12 +105,10 @@ export async function sweepOrphanTasks(): Promise<void> {
   });
 }
 
-// Heal `ingesting` saves that have no task rows at all. Nothing can ever move
-// them: `pullDueTasks` finds no work and `maybeFinalizeSave` bails on an empty
-// task list, so they'd sit in the saving pill forever. (Task rows are local:
-// a save row synced in from another device mid-ingest arrives taskless.)
-// Re-seed the source's op plan so the pipeline can run the save to completion;
-// sources with no plan (local) just settle as complete.
+/**
+ * Heals `ingesting` saves with no task rows (a save synced in from another device mid-ingest arrives taskless); nothing else can ever move them, so they'd sit in the saving pill forever.
+ * Re-seeds the source's op plan; sources with no plan settle as complete.
+ */
 export async function sweepTasklessIngestingSaves(): Promise<void> {
   const db = await getDb();
   const stuck = db
@@ -136,7 +132,7 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
   for (const { id, source } of stuck) {
     const ops = planOps(source as Source);
     if (ops.length === 0) {
-      // Via persistSave so the flip broadcasts to the renderer pool.
+      /** Via persistSave so the flip broadcasts to the renderer pool. */
       await persistSave(
         id,
         { status: "complete", ingestCompletedAt: now },

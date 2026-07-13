@@ -11,9 +11,7 @@ import {
 import { getAiApiKey, setAiApiKey } from "../../keychain";
 import type { QueryHandlerMap } from "../helpers";
 
-// IPC surface for the local AI query compiler. The renderer owns the
-// deterministic + embedding stages and the Stage D validation gate; the main
-// process only runs the LLM stage (which may need native/network access).
+/** IPC surface for the local AI query compiler; the renderer owns the deterministic/embedding stages and validation, main only runs the LLM stage. */
 
 function asStringArray(value: unknown, cap: number): string[] {
   if (!Array.isArray(value)) return [];
@@ -34,8 +32,7 @@ function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-// Parse + bound the summary payload: at most 12 items, each trimmed to the few
-// fields the model needs. Anything malformed is dropped.
+/** Bounds the summary payload to 12 items trimmed to the few fields the model needs; malformed entries are dropped. */
 function asSummaryItems(raw: unknown): SummaryItem[] {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -54,9 +51,7 @@ function asSummaryItems(raw: unknown): SummaryItem[] {
 }
 
 export const aiQueries: QueryHandlerMap = {
-  // Natural language -> raw QueryPlan JSON (untrusted; validated + clamped by
-  // the renderer's validatePlan). The single LLM compile entry point: networked
-  // providers emit a full plan; the bundled model returns a filter-only plan.
+  /** Natural language to raw QueryPlan JSON, untrusted and validated by the renderer; networked providers emit a full plan, the bundled model a filter-only one. */
   async "ai.compilePlan"(params) {
     const input = String(params.input ?? "").slice(0, 500);
     if (!input.trim()) return { plan: null };
@@ -65,9 +60,7 @@ export const aiQueries: QueryHandlerMap = {
     return { plan };
   },
 
-  // One round of the agentic loop -> a raw AgentAction JSON object (untrusted;
-  // parsed/validated by the renderer). The renderer runs the action's tool over
-  // the pool and sends the accumulated steps back for the next round.
+  /** One round of the agentic loop; the renderer validates the action, runs its tool, and sends the accumulated steps back for the next round. */
   async "ai.agentStep"(params) {
     const question = String(params.question ?? "").slice(0, 500);
     if (!question.trim()) return { action: null };
@@ -79,7 +72,7 @@ export const aiQueries: QueryHandlerMap = {
     return { action };
   },
 
-  // Result set + question -> a short prose summary (best-effort; "" on failure).
+  /** Result set + question to a short prose summary; best-effort, "" on failure. */
   async "ai.summarize"(params) {
     const question = String(params.question ?? "").slice(0, 500);
     const items = asSummaryItems(params.items);
@@ -88,12 +81,11 @@ export const aiQueries: QueryHandlerMap = {
     return { summary: summary ?? "" };
   },
 
-  // Whether the configured provider is reachable/usable right now.
   async "ai.providerStatus"() {
     return { available: await providerAvailable() };
   },
 
-  // Persist (or clear) a provider's API key in the OS keychain.
+  /** Persists (or clears) a provider's API key in the OS keychain. */
   async "ai.setApiKey"(params) {
     const provider = String(params.provider ?? "").trim();
     if (!provider) return { ok: false };
@@ -103,8 +95,7 @@ export const aiQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  // Whether a key is stored for the given provider (so the UI can show state
-  // without ever exposing the key itself).
+  /** Whether a key is stored for the provider, so the UI can show state without ever exposing the key itself. */
   async "ai.hasApiKey"(params) {
     const provider = String(params.provider ?? "").trim();
     if (!provider) return { present: false };

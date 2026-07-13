@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
 
-// POND_LIVE=1 also hits the network to confirm sample URLs are reachable.
+/** POND_LIVE=1 also hits the network to confirm sample URLs are reachable. */
 const LIVE = process.env.POND_LIVE === "1";
 
 describe("extractor registry", () => {
@@ -25,9 +25,7 @@ describe("extractor registry", () => {
   });
 });
 
-// Every source must resolve to a complete, account-safe sync config: a source
-// that omits `sync` still gets a conservative profile, and one that declares it
-// can't ship invalid pacing.
+/** Every source must resolve to a complete, account-safe sync config: omitting `sync` still yields a conservative profile, and declaring it can't ship invalid pacing. */
 describe("sync config totality", () => {
   for (const source of SOURCES) {
     it(`resolves a valid sync config for ${source}`, () => {

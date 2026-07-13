@@ -19,8 +19,7 @@ import {
 import type { IconComponent } from "@pond/icons/types";
 import type { AiProviderId } from "@pond/schema";
 
-// bundled/custom have no brand mark: on-device falls back to a computer, a
-// user-supplied endpoint to a globe.
+/** bundled/custom have no brand mark: on-device falls back to a computer, a user-supplied endpoint to a globe. */
 const LOGOS: Record<AiProviderId, IconComponent> = {
   bundled: Bundled,
   ollama: IconProviderOllama,

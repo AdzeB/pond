@@ -30,9 +30,7 @@ interface SaveDetailView {
   hasInsights: boolean;
 }
 
-// Owns the detail view's data: selects the pooled save, lazily hydrates the
-// heavy fields the list omits (full rawJson + transcript), and derives the
-// memoized view-model the panel renders.
+/** Lazily hydrates the heavy fields the list omits (full rawJson + transcript) and derives the memoized view-model the panel renders. */
 export function useSaveDetail(id: string): SaveDetailView {
   const save = useSave(id);
 

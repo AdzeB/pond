@@ -71,13 +71,11 @@ export function useNarrowedSaves(
   }, [mode, viewSortKey, viewSortDir]);
 
   const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
-  // Hybrid step: reorder by semantic similarity when a find-anything query is
-  // active; a no-op otherwise, so the chosen sort is preserved.
+  /** Reorders by semantic similarity only while a find-anything query is active; otherwise a no-op so the chosen sort is preserved. */
   const ranked = useSemanticRank(filteredFresh);
   const normal = useStableById(ranked);
 
-  // The agent result is a frozen, ranked answer that overrides the normal view
-  // while active; it ignores manual filters/sort by design (they're separate).
+  /** The agent result is a frozen, ranked answer that overrides the normal view and ignores manual filters/sort by design. */
   const askFresh = useMemo(() => {
     if (!ask.active) return EMPTY;
     const byId = new Map(saves.map((s) => [s.id, s]));
@@ -90,11 +88,7 @@ export function useNarrowedSaves(
   }, [ask.active, ask.ids, saves]);
   const askSaves = useStableById(askFresh);
 
-  // A run begins in `thinking` with no ids yet; switching to it immediately
-  // flashes an empty grid before the answer lands. Hold the last resolved view
-  // through the thinking phase so the grid only changes once there's something
-  // to show. `done` (even zero hits, so "no matches" + suggestions surface) and
-  // `error` resolve immediately.
+  /** Hold the last resolved view through the `thinking` phase so switching never flashes an empty grid; `done` (even zero hits) and `error` resolve immediately. */
   const lastResolvedRef = useRef<ReadonlyArray<Save>>(EMPTY);
   useEffect(() => {
     if (!ask.active) {
@@ -106,8 +100,7 @@ export function useNarrowedSaves(
 
   if (!ask.active) return normal;
   if (ask.status === "thinking") {
-    // Keep the previous answer if we have one; otherwise stay on the current
-    // view (never an empty grid) until the first result resolves.
+    /** Keep the previous answer, else the current view, so the grid is never empty before the first result. */
     return lastResolvedRef.current.length > 0
       ? lastResolvedRef.current
       : normal;

@@ -25,7 +25,7 @@ export function registerScheme() {
         secure: true,
         supportFetchAPI: true,
         stream: true,
-        // Allow cross-origin reads (ACAO header below) so the renderer can fetch item bytes.
+        /** Allow cross-origin reads (ACAO header below) so the renderer can fetch item bytes. */
         corsEnabled: true,
       },
     },
@@ -47,7 +47,7 @@ export function registerProtocol() {
         return new Response("forbidden", { status: 403 });
       }
 
-      // Serve a generated WebP thumb when `?w=` is set on a still raster; else the original.
+      /** Serve a generated WebP thumb when `?w=` is set on a still raster; else the original. */
       const version = url.searchParams.get("v");
       let target = resolved;
       let immutable = version !== null;
@@ -67,7 +67,7 @@ export function registerProtocol() {
             version,
           });
           if (thumb) {
-            // Keyed by version + width, so the bytes never change: cache forever.
+            /** Keyed by version + width, so the bytes never change: cache forever. */
             target = thumb.path;
             immutable = true;
           }
@@ -86,9 +86,9 @@ export function registerProtocol() {
       const headers = new Headers();
       headers.set("content-type", contentType);
       headers.set("accept-ranges", "bytes");
-      // ACAO header so the renderer can read bytes into a canvas without tainting it.
+      /** ACAO header so the renderer can read bytes into a canvas without tainting it. */
       headers.set("access-control-allow-origin", "*");
-      // Content-addressed (`?v=`) URLs and thumbs are immutable; others get a short window.
+      /** Content-addressed (`?v=`) URLs and thumbs are immutable; others get a short window. */
       headers.set(
         "cache-control",
         immutable

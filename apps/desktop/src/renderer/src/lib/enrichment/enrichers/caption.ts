@@ -3,7 +3,6 @@ import { florenceModelVersion, runFlorence } from "../florence";
 import { loadImage, representativeImageUrl } from "../image";
 import type { Enricher } from "../types";
 
-// Vision caption / alt-text for image (and video-poster) saves via Florence-2.
 export const captionEnricher: Enricher = {
   id: "caption",
   enabled: (prefs) => prefs?.ai?.enableCaption === true,

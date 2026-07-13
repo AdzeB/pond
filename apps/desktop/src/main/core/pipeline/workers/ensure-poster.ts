@@ -26,8 +26,7 @@ export async function runEnsurePoster(saveId: string): Promise<void> {
   const videoPath = join(itemDir(saveId), video.path);
   const frame = await extractFirstFrame(videoPath);
   if (!frame) {
-    // ffmpeg produced nothing; retry as transient (it can flake). A poster is
-    // non-fatal, so giving up afterwards won't fail the save.
+    /** ffmpeg can flake; retry as transient. A poster is non-fatal, so giving up afterwards won't fail the save. */
     throw new TransientError(`ensure-poster: no frame produced for ${saveId}`);
   }
   try {

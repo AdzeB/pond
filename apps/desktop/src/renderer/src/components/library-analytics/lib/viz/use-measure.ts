@@ -1,7 +1,6 @@
 import { type RefObject, useEffect, useState } from "react";
 
-// Pixel size of a container, ResizeObserver-driven, for SVG charts that
-// need real coordinates (visx scales) rather than percentage divs.
+/** ResizeObserver-driven pixel size for SVG charts that need real coordinates rather than percentage divs. */
 export function useMeasure(ref: RefObject<HTMLElement | null>): {
   width: number;
   height: number;

@@ -4,7 +4,7 @@ export interface ListHarvestArgs {
   knownIds: string[];
 }
 
-// Per-item list output; only url+sourceId are consumed, the rest is for the progress UI.
+/** Only url+sourceId are consumed; the rest feeds the progress UI. */
 interface ListEntry {
   sourceId: string;
   url: string;
@@ -22,8 +22,7 @@ export type ListHarvestResult =
       ok: true;
       entries: ListEntry[];
       reachedEnd: boolean;
-      // Total items scanned this run (not just the fresh entries returned), for
-      // honest sync.seen metrics; falls back to entries.length when unset.
+      /** Total items scanned this run, for honest sync.seen metrics; falls back to entries.length when unset. */
       seen?: number;
     }
   | {
@@ -34,6 +33,6 @@ export type ListHarvestResult =
         | "timeout"
         | "unknown"
         | "rate_limited";
-      // Server-requested wait (seconds), present on rate_limited.
+      /** Server-requested wait in seconds; present on rate_limited. */
       retryAfterSec?: number;
     };

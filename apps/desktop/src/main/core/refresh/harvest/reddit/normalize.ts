@@ -14,7 +14,7 @@ export function inPageRedditNormalize() {
     const out: Record<string, unknown> = {};
     const meta: Record<string, unknown> = {};
 
-    // shreddit renders the post as a custom element carrying structured attrs.
+    /** shreddit renders the post as a custom element carrying structured attrs. */
     const post = document.querySelector("shreddit-post");
 
     const title =

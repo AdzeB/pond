@@ -42,22 +42,19 @@ function newDashboard(): DashboardConfig {
   };
 }
 
-// Analytics dashboards: named, filterable collections of insight cards
-// over the same window of library saves. Everything persists in prefs.
+/** Dashboards and their insight cards persist in prefs. */
 export function AnalyticsPage() {
   const [view, patchView, loaded] = usePrefs("analyticsView");
   const dashboards = view.dashboards ?? [];
   const fallback = (dashboards[0] ?? DEFAULT_DASHBOARDS[0]) as DashboardConfig;
   const dashboard = dashboards.find((d) => d.id === view.activeId) ?? fallback;
-  // Cards saved before insights went saves-only (the retired sync-runs
-  // dataset) can't be computed anymore; hide them, and the next edit to the
-  // dashboard persists the pruned list.
+  /** Cards on non-saves datasets can't be computed; hide them, and the next dashboard edit persists the pruned list. */
   const insights = useMemo(
     () => dashboard.insights.filter(isSavesInsight),
     [dashboard.insights],
   );
 
-  // The saves pool is already fully in memory; every card derives from it.
+  /** The saves pool is already fully in memory; every card derives from it. */
   const saves = useSaves();
   const dashboardSaves = useMemo(
     () => applyFilters(savesInWindow(saves, dashboard.days), dashboard.filters),
@@ -66,7 +63,6 @@ export function AnalyticsPage() {
 
   const nameRef = useRef<HTMLInputElement>(null);
 
-  // Drag-to-reorder: track the picked-up card and swap on hover.
   const [dragId, setDragId] = useState<string | null>(null);
   const dragFrom = useRef<number>(-1);
 
@@ -94,8 +90,7 @@ export function AnalyticsPage() {
     );
   };
 
-  // The dialog persists through this handler; keep the latest closure
-  // without re-registering every render.
+  /** Keep the latest closure without re-registering the save handler every render. */
   const saveRef = useRef(saveInsight);
   saveRef.current = saveInsight;
   useEffect(
@@ -104,13 +99,12 @@ export function AnalyticsPage() {
     [],
   );
 
-  // The editor's filter menus and live preview work from the dashboard's
-  // filtered saves and window.
+  /** The editor's filter menus and live preview work from the dashboard's filtered saves and window. */
   useEffect(() => {
     insightEditor.setData(dashboardSaves, dashboard.days);
   }, [dashboardSaves, dashboard.days]);
 
-  // The editor previews this dashboard's data; close it when leaving.
+  /** The editor previews this dashboard's data; close it when leaving. */
   useEffect(() => () => insightEditor.cancel(), []);
 
   const duplicateInsight = (id: string) => {

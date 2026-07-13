@@ -3,7 +3,7 @@ import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { ARENA_PATTERNS, firstMatch } from "../url-patterns";
 
-// First path segments on are.na that are routes, not user slugs.
+/** First path segments on are.na that are routes, not user slugs. */
 const ARENA_RESERVED_ROOTS = new Set([
   "block",
   "blocks",
@@ -32,13 +32,12 @@ const ARENA_RESERVED_ROOTS = new Set([
   "settings",
 ]);
 
-// Thin wrapper over `fetchArenaCapture` for the extractor registry.
 export class ArenaBlockExtractor implements Extractor {
   readonly id = "arena-block";
   readonly source = "arena" as const;
   readonly validUrl = ARENA_PATTERNS;
   readonly cookieDomain = ".are.na";
-  // Accept iron-session and legacy Rails cookies; cf_clearance tolerated for first sync.
+  /** Accept iron-session and legacy Rails cookies; cf_clearance tolerated for first sync. */
   readonly probeExpression = `(() => {
         try {
           const reserved = ['block','blocks','about','blog','log-in','login','sign-up','signup','channels','search','explore','feed','index','me','notifications','messages','pricing','jobs','privacy','terms','team','press','help','support','settings'];
@@ -75,12 +74,9 @@ export class ArenaBlockExtractor implements Extractor {
   handleFromPath(segments: string[]): string | null {
     const first = segments[0];
     if (!first) return null;
-    // `/block/{id}` and other reserved roots don't encode the owner's slug;
-    // returning them as a "handle" sends the v3 users API to a 404. Bail so
-    // account resolution falls through to the hidden-window profile probe.
+    /** Reserved roots don't encode the owner's slug and would 404 the v3 users API; bail so account resolution falls through to the hidden-window profile probe. */
     if (ARENA_RESERVED_ROOTS.has(first.toLowerCase())) return null;
-    // are.na slugs are lowercase alphanumerics + hyphens; anything else (a
-    // display name like "Stephanie Zabala") is not a real slug.
+    /** are.na slugs are lowercase alphanumerics + hyphens; anything else is a display name, not a slug. */
     if (!/^[a-z0-9][a-z0-9-]*$/.test(first)) return null;
     return first;
   }

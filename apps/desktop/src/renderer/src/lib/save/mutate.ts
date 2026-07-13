@@ -85,7 +85,7 @@ export async function purgeSave(id: string): Promise<void> {
   );
 }
 
-// Bulk trash, batched so the whole set restores with a single undo.
+/** Batched so the whole set restores with a single undo. */
 export async function trashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
@@ -114,7 +114,7 @@ export async function trashSaves(
   return changes.length;
 }
 
-// Bulk restore from trash, batched so the whole set can be re-trashed in one undo.
+/** Batched so the whole set can be re-trashed in one undo. */
 export async function untrashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
@@ -142,7 +142,7 @@ export async function untrashSaves(
   return changes.length;
 }
 
-// Bulk permanent delete. Irreversible, so no undo path is offered.
+/** Irreversible, so no undo path is offered. */
 export async function purgeSaves(ids: readonly string[]): Promise<number> {
   const changes: { prev: Save; tx: unknown }[] = [];
   for (const id of ids) {

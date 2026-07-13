@@ -12,8 +12,7 @@ import {
 import { getPrefsSnapshot } from "@/stores/prefs";
 import type { Enricher } from "../types";
 
-// Build the embedding text from the save's own fields plus any enriched visual /
-// audio text (caption, OCR, transcript) so semantic search reaches inside media.
+/** Folds enriched visual/audio text (caption, OCR, transcript) into the embedding so semantic search reaches inside media. */
 function embeddingTextFor(save: Save): string {
   const base = saveEmbeddingText(save);
   const extra = [save.caption, save.ocrText, save.transcript]
@@ -22,8 +21,7 @@ function embeddingTextFor(save: Save): string {
   return [base, extra].filter((s) => s.trim().length > 0).join(" \u2014 ");
 }
 
-// Text embeddings for semantic search. Depends on caption/ocr/transcript so the
-// vector includes visual/audio text once those enrichers have stamped the save.
+/** Depends on caption/ocr/transcript so the vector includes visual/audio text once those enrichers have stamped the save. */
 export const textEmbeddingEnricher: Enricher = {
   id: "textEmbedding",
   dependsOn: ["caption", "ocr", "transcript"],
@@ -39,7 +37,7 @@ export const textEmbeddingEnricher: Enricher = {
     const text = embeddingTextFor(save);
     if (!text) return null;
     const vec = await embedText(text);
-    // Self-persists into the embedding store + DB (non-synced).
+    /** Self-persists into the embedding store + DB (non-synced), so no derived fields are returned. */
     setEmbedding(save.id, vec, embedModelVersion());
     return {};
   },

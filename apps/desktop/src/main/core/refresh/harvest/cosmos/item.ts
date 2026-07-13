@@ -17,9 +17,7 @@ async function inPageCosmosHarvest(
   norm: ReturnType<typeof inPageCosmosNormalize>,
 ): Promise<unknown> {
   const deadline = Date.now() + 12_000;
-  // The element image comes from the server-rendered `og:image`, so wait for
-  // that meta tag (or a hydrated <video>) rather than DOM <img>s, which are
-  // sidebar collection covers / `/_next/static/...` skeletons that mislead us.
+  /** Wait for the server-rendered `og:image` meta or a hydrated <video>; DOM <img>s are sidebar covers and skeletons that mislead. */
   const ready = (): boolean =>
     !!document.querySelector('meta[property="og:image"]') ||
     !!document.querySelector("main video[src], video[src]");

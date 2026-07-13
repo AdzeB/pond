@@ -5,9 +5,9 @@ import {
   LIBRARY_SCHEMA_VERSION,
 } from "../../shared/constants";
 
-// A bundle's metadata.json id keys its local SQLite index (kept in userData, not the synced bundle).
+/** A bundle's metadata.json id keys its local SQLite index (kept in userData, not the synced bundle). */
 
-// Sentinel id for an uncommitted pond, used until the first write materializes the bundle.
+/** Sentinel id for an uncommitted pond, used until the first write materializes the bundle. */
 export const UNBOUND_POND_ID = "unbound";
 
 interface LibraryMetadata {
@@ -18,7 +18,7 @@ interface LibraryMetadata {
   appVersion: string;
 }
 
-// Index key for a library root: the bundle's metadata id, else the unbound sentinel.
+/** Index key for a library root: the bundle's metadata id, else the unbound sentinel. */
 export function resolvePondId(root: string, committed: boolean): string {
   if (committed && existsSync(root)) {
     const id = readOrCreatePondId(root);
@@ -27,7 +27,7 @@ export function resolvePondId(root: string, committed: boolean): string {
   return UNBOUND_POND_ID;
 }
 
-// Read the bundle id from metadata.json, writing a fresh file if missing.
+/** Reads the bundle id from metadata.json, writing a fresh file if missing. */
 export function readOrCreatePondId(root: string): string {
   const file = join(root, "metadata.json");
   try {
@@ -37,9 +37,7 @@ export function readOrCreatePondId(root: string): string {
     if (typeof parsed?.id === "string" && parsed.id.length > 0) {
       return parsed.id;
     }
-  } catch {
-    // Missing or corrupt: fall through and write a fresh metadata file.
-  }
+  } catch {}
   const body: LibraryMetadata = {
     id: randomId(),
     name: DEFAULT_LIBRARY_NAME,
@@ -51,7 +49,7 @@ export function readOrCreatePondId(root: string): string {
     mkdirSync(root, { recursive: true });
     writeFileSync(file, JSON.stringify(body, null, 2));
   } catch {
-    // Best-effort; the returned id still keys the index this session.
+    /** Best-effort; the returned id still keys the index this session. */
   }
   return body.id;
 }

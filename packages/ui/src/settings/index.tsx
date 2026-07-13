@@ -116,8 +116,7 @@ interface EmptyProps
   action?: React.ReactNode;
 }
 
-// Shared empty-state row: a titled explanation with an optional trailing action,
-// styled to match a single list card ("No X yet" — Action).
+/** Shared empty-state row styled to match a single list card. */
 function Empty({
   title,
   description,

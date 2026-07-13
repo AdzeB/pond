@@ -7,14 +7,11 @@
   --ds-radius-2xl: 16px;
   --ds-radius-full: 9999px;
 
-  /* Superellipse exponent for squircle corners (see .ds-squircle below). */
+  /* Superellipse exponent for squircle corners; used by .ds-squircle. */
   --ds-superellipse: 1.4;
 }
 
-/* Squircle corners as a progressive enhancement. `corner-shape` ships in
-   Chromium 139+ (so it's available in our Electron runtime) and degrades to
-   the plain rounded `border-radius` everywhere else. Opt in per element with
-   the `ds-squircle` class; the exponent is tunable via --ds-superellipse. */
+/* corner-shape ships in Chromium 139+ (our Electron runtime) and degrades to plain border-radius elsewhere. */
 @supports (corner-shape: superellipse(1)) {
   .ds-squircle {
     corner-shape: superellipse(var(--ds-superellipse));

@@ -116,12 +116,10 @@ function AskField({
 
   const { scrollRef, onScroll: onTranscriptScroll } = useStickyScroll(turns);
 
-  // Mirror the editor's emptiness into React state.
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
-        // A lone @mention reads as empty text but is still sendable ("find
-        // similar"), so count mention chips toward having content.
+        /** A lone @mention reads as empty text but is still sendable, so mention chips count as content. */
         setHasContent(!$isEditorEmpty() || $collectMentionIds().length > 0);
       });
     });
@@ -132,12 +130,12 @@ function AskField({
     const prompt = state.read($readPrompt);
     const anchors = state.read($collectMentionIds);
     const segments = state.read($readSegments);
-    // A follow-up (any turn already exists) refines the current result set.
+    /** A follow-up refines the current result set. */
     const refine = turns.length > 0;
     const image = pendingImage ?? undefined;
     if (submit(prompt, anchors, { refine, image, segments })) {
       editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-      // The turn now owns the object URL; drop our handle without revoking it.
+      /** The turn now owns the object URL; drop our handle without revoking it. */
       setPendingImage(null);
       onSubmitted?.();
     }
@@ -150,8 +148,7 @@ function AskField({
     setPendingImage,
   ]);
 
-  // Send a literal string (starter chips / recent questions). Starts a fresh
-  // conversation rather than refining.
+  /** Sends a literal string as a fresh conversation rather than a refinement. */
   const runText = useCallback(
     (text: string) => {
       if (submit(text, [], { refine: false })) onSubmitted?.();
@@ -159,15 +156,13 @@ function AskField({
     [submit, onSubmitted],
   );
 
-  // Open the "create skill" dialog seeded with a slug (from the `/` menu).
   const openCreateSkill = useCallback((name: string) => {
     setCreateName(name);
     setCreateOpen(true);
   }, []);
 
-  // Refs let the command handlers read the latest values without re-registering
-  // on every keystroke. The typeahead plugin intercepts enter/escape at a higher
-  // priority while a menu is open, so these LOW handlers only run otherwise.
+  /** Refs let the command handlers read latest values without re-registering per keystroke.
+   * @remarks The typeahead plugin intercepts enter/escape at higher priority while a menu is open, so these LOW handlers only run otherwise. */
   const sendRef = useRef(sendNow);
   const emptyRef = useRef(!hasContent);
   const onCollapseRef = useRef(onCollapse);

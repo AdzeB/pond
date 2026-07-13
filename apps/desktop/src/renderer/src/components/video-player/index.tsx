@@ -16,29 +16,23 @@ interface VideoPlayerProps {
   src: string;
   poster?: string;
   chapters?: readonly ChapterCue[];
-  // When set, this player publishes its seek handle + current time to the
-  // active-media store so out-of-tree chrome (the detail chapter list) can
-  // drive it. The carousel marks only the in-view slide active.
+  /** Publishes the seek handle and current time to the active-media store so out-of-tree chrome can drive this player. */
   active?: boolean;
-  // Intrinsic media dimensions; seed the aspect ratio so it's known before
-  // metadata loads and reported through onRatio.
+  /** Seeds the aspect ratio so it's known before metadata loads. */
   width?: number | null;
   height?: number | null;
-  // Reports the resolved aspect ratio (from props or loaded metadata) so the
-  // slide can size its box; the player itself doesn't know the slide layout.
+  /** Reports the resolved aspect ratio so the slide can size its box; the player doesn't know the slide layout. */
   onRatio?: (ratio: number) => void;
   onError?: () => void;
 }
 
-// Lives inside Video.Root so it can read the player context; pushes the seek
-// action and time to the active-media store while this slide is active.
+/** Lives inside Video.Root so it can read the player context and push seek/time to the active-media store. */
 function MediaBridge({ active }: { active: boolean }) {
   const { state, actions } = useVideo();
   const { seek, play, pause } = actions;
   const { currentTime } = state;
 
-  // Autoplay the active (centered, in-view) slide and pause the rest so only
-  // one video ever plays. Keyed on `active` so a manual pause isn't overridden.
+  /** Only one video ever plays; keyed on `active` so a manual pause isn't overridden. */
   useEffect(() => {
     if (active) play();
     else pause();
@@ -61,7 +55,7 @@ function MediaBridge({ active }: { active: boolean }) {
   return null;
 }
 
-// Build an object-URL WebVTT chapters track, revoked when chapters change or the player unmounts.
+/** The object URL is revoked when chapters change or the player unmounts. */
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -75,7 +69,7 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   return url;
 }
 
-// Desktop skin composing the @pond/ui Video compound parts; playback/controls/hotkeys live in @pond/ui.
+/** Desktop skin over the @pond/ui Video compound parts; playback, controls, and hotkeys live in @pond/ui. */
 export function VideoPlayer({
   src,
   poster,
@@ -88,8 +82,7 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const trackUrl = useChaptersTrackUrl(chapters);
 
-  // Seeded from the stored dimensions, then corrected to the true frame ratio
-  // on load and reported so the slide can size its box without letterboxing.
+  /** Seeded from stored dimensions, then corrected to the true frame ratio on load so the slide's box avoids letterboxing. */
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
   );

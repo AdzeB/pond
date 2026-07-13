@@ -29,7 +29,7 @@ export async function reconcileLibrary(): Promise<{
 
     if (existing[0] && existing[0].mtimeMs === mtimeMs) continue;
     if (!metadata) {
-      // Stamp the scan row so we don't re-read unreadable metadata every tick.
+      /** Stamp the scan row so unreadable metadata isn't re-read every tick. */
       await stampScan(db, id, mtimeMs);
       continue;
     }
@@ -54,8 +54,7 @@ export async function reconcileLibrary(): Promise<{
     const tags = metadata.tags ?? [];
 
     try {
-      // Recover pipeline outputs from the per-item sidecar so an index rebuild
-      // only recomputes embeddings, never transcripts/OCR/captions.
+      /** Recover pipeline outputs from the sidecar so an index rebuild only recomputes embeddings, never transcripts/OCR/captions. */
       const enrichment = readEnrichmentSidecar(id) ?? {};
       const insertValues: typeof saves.$inferInsert = {
         ...enrichment,
@@ -101,7 +100,7 @@ export async function reconcileLibrary(): Promise<{
           metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
       };
 
-      // Check row presence to emit I vs U so the renderer reconciles without re-hydrating.
+      /** Row presence decides I vs U so the renderer reconciles without re-hydrating. */
       const prior = await db
         .select({ id: saves.id })
         .from(saves)
@@ -133,7 +132,7 @@ export async function reconcileLibrary(): Promise<{
       await stampScan(db, id, mtimeMs);
       updated++;
     } catch (err) {
-      // One bad row shouldn't abort reconciliation; stamp it so we don't retry forever.
+      /** One bad row must not abort reconciliation; stamp it so it isn't retried forever. */
       log.warn("[pond scan] upsert failed", { id, err });
       await stampScan(db, id, mtimeMs);
     }

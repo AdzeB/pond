@@ -51,8 +51,7 @@
   }
 }
 
-/* Inside a ToggleGroup the toggle becomes a segmented-control item: flat
-   until pressed, then a raised card on the group's recessed track. */
+/* Inside a ToggleGroup the toggle becomes a segmented-control item: flat until pressed, then a raised card on the group's recessed track. */
 [data-pond-toggle-group] > .root {
   flex: 1;
   border-radius: calc(var(--ds-radius-sm) - 2px);

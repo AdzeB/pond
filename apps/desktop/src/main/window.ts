@@ -9,9 +9,9 @@ import { ensureTray, type TrayHandle } from "./tray";
 let mainWindow: BrowserWindow | null = null;
 let tray: TrayHandle | null = null;
 let trayRefreshQueued = false;
-// Mirror the close-to-tray toggle here; close events fire synchronously.
+/** Mirrors the close-to-tray pref here because close events fire synchronously. */
 let closeToTrayEnabled = false;
-// Set during graceful quit so the close handler stops swallowing the event.
+/** Set during graceful quit so the close handler stops swallowing the event. */
 let isQuitting = false;
 
 export function getMainWindow(): BrowserWindow | null {
@@ -84,7 +84,7 @@ async function resolveShellHint(): Promise<ShellHint> {
 export async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
-  // Resolve before the window exists so the first paint is themed.
+  /** Resolve before the window exists so the first paint is themed. */
   const shellHint = await resolveShellHint();
   const prefs = await getPrefs().catch(() => null);
   const restored =
@@ -106,11 +106,7 @@ export async function createWindow(): Promise<BrowserWindow> {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      // Throttle timers/rAF when the window is minimized or fully occluded.
-      // This is Electron's default, but we set it explicitly: combined with the
-      // renderer's visibility-gated enrichment sweep, it keeps a backgrounded
-      // window from heating the machine. (The renderer still pauses on-device
-      // inference itself via `document.hidden` — see lib/enrichment/sweep.ts.)
+      /** Explicit so a backgrounded window can't heat the machine; pairs with the renderer's visibility-gated enrichment sweep. */
       backgroundThrottling: true,
       additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
@@ -120,7 +116,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     win.show();
   });
 
-  // Persist bounds on resize/move (debounced) so the next launch restores them.
+  /** Persist bounds on resize/move, debounced, so the next launch restores them. */
   let saveBoundsTimer: NodeJS.Timeout | null = null;
   const saveBounds = () => {
     if (win.isDestroyed()) return;
@@ -136,7 +132,7 @@ export async function createWindow(): Promise<BrowserWindow> {
   win.on("resize", saveBounds);
   win.on("move", saveBounds);
 
-  // Close-to-tray: hide the window instead of quitting; tray menu still has Quit.
+  /** Close-to-tray: hide the window instead of quitting; the tray menu still has Quit. */
   win.on("close", (event) => {
     if (isQuitting) return;
     if (!closeToTrayEnabled) return;
@@ -157,7 +153,7 @@ export async function createWindow(): Promise<BrowserWindow> {
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    // Only hand http(s) to the OS; other schemes via openExternal are an RCE vector.
+    /** Only hand http(s) to the OS; other schemes via openExternal are an RCE vector. */
     const isHttp = (() => {
       try {
         const u = new URL(url);
@@ -226,7 +222,7 @@ export async function openLibraryWindow(): Promise<void> {
   win.focus();
 }
 
-// macOS `activate`: re-show or recreate the window when the dock icon is clicked.
+/** macOS `activate`: re-shows or recreates the window when the dock icon is clicked. */
 export async function handleActivate(): Promise<void> {
   if (process.platform === "darwin") app.dock?.show();
   if (BrowserWindow.getAllWindows().length === 0) {

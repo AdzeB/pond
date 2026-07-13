@@ -1,5 +1,3 @@
-/* ── List card ────────────────────────────────────────────────────────── */
-
 .card {
   display: flex;
   flex-direction: column;
@@ -101,8 +99,6 @@
   opacity: 1;
 }
 
-/* ── Empty state ──────────────────────────────────────────────────────── */
-
 .empty {
   display: flex;
   flex-direction: column;
@@ -129,8 +125,6 @@
 .empty-action {
   margin-top: 12px;
 }
-
-/* ── Editor page ──────────────────────────────────────────────────────── */
 
 .editor-header {
   align-items: center;

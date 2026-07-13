@@ -10,36 +10,31 @@ import {
 import { type RenderedCard, renderTweetCardPng } from "../../render-card";
 import { readSave } from "./apply";
 
-// Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel.
+/** Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel. */
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
-// Suffixed with 1-based quote depth; renderer matches by prefix.
+/** Suffixed with 1-based quote depth; renderer matches by prefix. */
 function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 
-// Bump when capture output changes so stale screenshots are regenerated.
-// v5: covers are rasterized from the native TweetCard instead of x.com screenshots.
-// v6: avatar URLs are filtered out of media so they no longer render as a tile.
-// v7: capture page paints the scheme background, killing the white edge hairline.
-// v8: link-card (OG embed) is captured and rendered below the tweet text.
-// v9: large link-cards match X — rounded image, title overlay, domain beneath.
+/** Bump when capture output changes so stale screenshots are regenerated. */
 const CAPTURE_TWEET_VERSION = 9;
 
-// Quote-chain walk depth cap; keeps navigation bounded.
+/** Quote-chain walk depth cap; keeps navigation bounded. */
 const QUOTE_DEPTH_CAP = 3;
 
 interface CaptureTweetResult {
-  // Number of screenshot variants written this run.
+  /** Number of screenshot variants written this run. */
   captured: number;
-  // At least one variant hit X's auth wall; lets the caller bail or retry.
+  /** At least one variant hit X's auth wall; lets the caller bail or retry. */
   authWall: boolean;
-  // Quoted media merged into `capture.media`; a follow-up fetch_blobs picks it up.
+  /** Quoted media merged into `capture.media`; a follow-up fetch_blobs picks it up. */
   mediaAdded: boolean;
 }
 
-// Capture version a save was last processed at; absent reads as 0.
+/** Capture version the save was last processed at; absent reads as 0. */
 function readCaptureTweetVersion(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
   const extras = (rawJson as RawJson).capture?.extras as
@@ -49,9 +44,7 @@ function readCaptureTweetVersion(rawJson: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
-// Captures light+dark screenshots of a twitter save and walks its quote chain.
-// Idempotent via `CAPTURE_TWEET_VERSION`. Returns silently on any failure so
-// a screenshot miss never fails the save.
+/** Idempotent via `CAPTURE_TWEET_VERSION`; returns silently on any failure so a screenshot miss never fails the save. */
 export async function runCaptureTweet(
   saveId: string,
 ): Promise<CaptureTweetResult> {
@@ -65,16 +58,12 @@ export async function runCaptureTweet(
   if (save.source !== "twitter") return idle;
   if (!save.sourceId) return idle;
 
-  // Already processed at the current version.
   if (readCaptureTweetVersion(save.rawJson) >= CAPTURE_TWEET_VERSION) {
     log.debug("[pond pipeline:capture-tweet] up to date, skipping", saveId);
     return idle;
   }
 
-  // Preferred path: rasterize the native TweetCard from captured data. It's
-  // deterministic, offline, and embeds quoted tweets inline (so no quote-chain
-  // walk is needed). Falls through to live screenshots when there isn't enough
-  // captured data or rendering fails.
+  /** Preferred path: rasterize the native TweetCard — deterministic, offline, and embeds quotes inline; falls through to live screenshots when captured data or rendering is missing. */
   const rendered = await tryNativeRender(saveId, save);
   if (rendered) {
     await finalizeRawJson(saveId, save.rawJson, [], { stampVersion: true });
@@ -86,7 +75,7 @@ export async function runCaptureTweet(
   let authWall = false;
   const harvested: NonNullable<ScrapedHarvest["mediaUrls"]> = [];
 
-  // Main tweet; replace existing files so a version bump regenerates them.
+  /** Replace existing files so a version bump regenerates them. */
   const main = await captureVariants(saveId, {
     url: save.url,
     sourceId: save.sourceId,
@@ -99,12 +88,12 @@ export async function runCaptureTweet(
   captured += main.captured;
   if (main.authWall) authWall = true;
 
-  // Session dead: bail before walking the chain, leave unstamped to retry.
+  /** Session dead: bail before walking the chain, leave unstamped to retry. */
   if (main.authWall && main.captured === 0) {
     return { captured, authWall: true, mediaAdded: false };
   }
 
-  // Only stamp once both variants exist; a single-variant capture stays unstamped to retry.
+  /** Only stamp once both variants exist; a single-variant capture stays unstamped to retry. */
   let completed = main.complete;
   let nextUrl = main.quotedUrl;
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
@@ -126,12 +115,12 @@ export async function runCaptureTweet(
       completed = false;
       break;
     }
-    // A one-scheme quote capture keeps the save unstamped to retry.
+    /** A one-scheme quote capture keeps the save unstamped to retry. */
     if (!quote.complete) completed = false;
     nextUrl = quote.quotedUrl;
   }
 
-  // Merge quoted media and stamp the version in one write; only stamp if the walk completed.
+  /** Merge quoted media and stamp the version in one write; only stamp if the walk completed. */
   const mediaAdded = await finalizeRawJson(saveId, save.rawJson, harvested, {
     stampVersion: completed,
   });
@@ -145,8 +134,7 @@ export async function runCaptureTweet(
   return { captured, authWall, mediaAdded };
 }
 
-// Renders the card to light+dark cover PNGs from the save's captured data.
-// Returns true only when both schemes succeed; any miss falls back to x.com.
+/** Returns true only when both schemes succeed; any miss falls back to x.com. */
 async function tryNativeRender(
   saveId: string,
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
@@ -210,15 +198,14 @@ interface CaptureVariantsArgs {
 
 interface CaptureVariantsResult {
   captured: number;
-  // Both variants written this run; drives the version stamp.
+  /** Both variants written this run; drives the version stamp. */
   complete: boolean;
   authWall: boolean;
   quotedUrl?: string;
   media?: ScrapedHarvest["mediaUrls"];
 }
 
-// Screenshots one tweet in both schemes from a single navigation; returns the
-// quoted-tweet URL for chain walking.
+/** Both schemes come from a single navigation; returns the quoted-tweet URL for chain walking. */
 async function captureVariants(
   saveId: string,
   args: CaptureVariantsArgs,
@@ -291,7 +278,7 @@ async function writeScreenshot(
   );
 }
 
-// Appends deduped quoted media and/or stamps the version in one write; returns whether media was added.
+/** Appends deduped quoted media and/or stamps the version in one write; returns whether media was added. */
 async function finalizeRawJson(
   saveId: string,
   rawJsonRaw: unknown,

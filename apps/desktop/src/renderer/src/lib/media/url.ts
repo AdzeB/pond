@@ -6,7 +6,7 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
-// Request a downscaled WebP preview (width in device px) for grid cards; the detail view keeps the original via `buildPondUrl`.
+/** Requests a downscaled WebP preview (width in device px) for grid cards; the detail view keeps the original via `buildPondUrl`. */
 export function withThumbWidth(url: string, width: number): string {
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}w=${Math.round(width)}`;

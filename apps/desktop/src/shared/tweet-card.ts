@@ -1,8 +1,6 @@
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
 
-// Normalized shape the TweetCard renders from. Shared by the renderer (preview
-// + live card) and the main process (offscreen rasterization for covers), so
-// the card always reflects the same data regardless of where it's drawn.
+/** Normalized shape the TweetCard renders from; shared by the renderer and main so the card matches wherever it's drawn. */
 export interface TweetCardAuthor {
   name: string;
   handle: string;
@@ -28,9 +26,7 @@ export interface TweetCardMetrics {
   bookmarks?: number;
 }
 
-// Link-card embed: the linked page's OG preview X renders below a tweet for
-// summary / summary_large_image cards. `url` is the destination; the rest is
-// best-effort, so every field is optional.
+/** The linked page's OG preview X renders below a tweet; `url` is the destination, the rest is best-effort. */
 export interface TweetCardLink {
   url?: string;
   domain?: string;
@@ -53,8 +49,7 @@ export interface TweetCardData {
   card?: TweetCardLink;
 }
 
-// Rich quoted-tweet content persisted by the extractor (Phase 3). Older saves
-// only carry { tweetId, url }, so every field is optional.
+/** Rich quoted-tweet content persisted by the extractor; older saves only carry { tweetId, url }, so every field is optional. */
 interface QuotedExtra {
   tweetId?: string;
   url?: string;
@@ -72,9 +67,7 @@ function handleFromUrl(url: string): string | undefined {
   }
 }
 
-// twimg avatar URLs (`/profile_images/`) sometimes leak into media via the
-// harvest's og:image fallback. They're never tweet media and 404 once a sizing
-// param is appended, so drop them before they render as a broken tile.
+/** twimg avatar URLs leak into media via the og:image fallback and 404 once a sizing param is appended; drop them before they render broken. */
 function isAvatarUrl(url: string): boolean {
   try {
     const u = new URL(url);
@@ -113,7 +106,6 @@ function buildQuoted(
 ): TweetCardData | undefined {
   if (!extras) return undefined;
 
-  // Preferred: the rich quoted-tweet object (Phase 3).
   const rich = extras.quotedTweet as QuotedExtra | undefined;
   if (rich && (rich.text || rich.author || rich.media)) {
     const handle =
@@ -133,7 +125,7 @@ function buildQuoted(
     };
   }
 
-  // Fallback: the legacy { tweetId, url } list yields only a handle.
+  /** Legacy { tweetId, url } saves yield only a handle. */
   const list = extras.quotedTweets;
   if (Array.isArray(list) && list[0]) {
     const q = list[0] as { url?: string };
@@ -167,8 +159,7 @@ function buildCard(
   };
 }
 
-// Pure adapter from a captured tweet to the card model. Returns null when the
-// capture is missing entirely. `fallbackAuthor` is the save's `@handle` string.
+/** Adapts a captured tweet to the card model; `fallbackAuthor` is the save's `@handle` string. */
 export function buildTweetCardData(
   capture: Capture | undefined | null,
   fallbackAuthor?: string | null,
@@ -202,8 +193,7 @@ export function buildTweetCardData(
   const card = buildCard(capture.extras as Record<string, unknown> | undefined);
   if (card) data.card = card;
 
-  // Parent media excludes anything also shown inside the quoted card, since the
-  // harvester merges quoted media into the parent capture list.
+  /** The harvester merges quoted media into the parent capture list, so exclude anything already shown in the quoted card. */
   const quotedUrls = new Set((quoted?.media ?? []).map((m) => m.url));
   const media = mapMedia(capture.media).filter((m) => !quotedUrls.has(m.url));
   if (media.length > 0) data.media = media;

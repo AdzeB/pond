@@ -69,8 +69,7 @@ export function ColorField({
     setText(value);
   }, [value]);
 
-  // Auto-apply as the user types: any keystroke that resolves to a real colour
-  // is committed immediately; incomplete/invalid input just stays in the field.
+  /** Auto-apply as the user types: input that resolves to a real colour commits immediately; invalid input stays in the field. */
   const handleChange = (next: string) => {
     setText(next);
     const normalized = normalize(next);
@@ -132,8 +131,7 @@ function usePicker(): PickerContextValue {
 }
 
 /**
- * Headless colour-picker state provider. Compose the visual parts inside it:
- * `<ColorPicker.Root><ColorPicker.Area /><ColorPicker.Hue /></ColorPicker.Root>`.
+ * Headless colour-picker state provider; compose the visual parts inside it.
  * For the common bundled layout use `<ColorPicker />` directly.
  */
 function ColorPickerRoot({

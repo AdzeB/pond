@@ -13,7 +13,7 @@ import { WebPageExtractor } from "./sources/web";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
-// One extractor per source; missing one = compile error. Order = URL match order.
+/** One extractor per source; missing one is a compile error. Order = URL match order. */
 const EXTRACTORS = {
   twitter: new TwitterTweetExtractor(),
   instagram: new InstagramPostExtractor(),
@@ -26,8 +26,7 @@ const EXTRACTORS = {
   threads: new ThreadsPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
-// Generic-link fallback. Catch-all, so it lives outside EXTRACTOR_LIST to avoid
-// shadowing the source-specific extractors; wired in explicitly below.
+/** Generic-link catch-all; lives outside EXTRACTOR_LIST so it can't shadow the source-specific extractors. */
 const WEB_EXTRACTOR = new WebPageExtractor();
 
 /** All extractors in URL-resolution order. Exported for the test runner. */
@@ -50,7 +49,6 @@ export function resolveExtractor(rawUrl: string): Extractor {
   for (const ex of EXTRACTOR_LIST) {
     if (ex.suitable(url)) return ex;
   }
-  // Any remaining http(s) URL falls back to the generic web extractor.
   if (WEB_EXTRACTOR.suitable(url)) return WEB_EXTRACTOR;
   throw new UnsupportedError(`no extractor for ${rawUrl}`);
 }

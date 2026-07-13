@@ -13,9 +13,7 @@ function isAudioVisual(save: Save): boolean {
   return kind === "video" || kind === "audio";
 }
 
-// On-device speech-to-text for video/audio saves via Whisper. The transcript is
-// excluded from the saves.list payload (persisted via saves.patchDerived) but is
-// mirrored into FTS by the saves update trigger.
+/** The transcript is excluded from the saves.list payload but is mirrored into FTS by the saves update trigger. */
 export const transcriptEnricher: Enricher = {
   id: "transcript",
   enabled: (prefs) => prefs?.ai?.enableTranscript === true,

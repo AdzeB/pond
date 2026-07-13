@@ -10,7 +10,7 @@ export interface SettingsSection {
   path: string;
   label: string;
   group: SettingsGroup;
-  // Hide from the top-level settings index (still routable directly).
+  /** Hidden from the top-level settings index but still routable directly. */
   hidden?: boolean;
 }
 

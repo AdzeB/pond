@@ -15,7 +15,7 @@ import styles from "./styles.module.css";
 interface SkillDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  // Pre-seed the name field (e.g. from the text typed after "/").
+  /** Pre-seeds the name field from the text typed after "/". */
   initialName?: string;
 }
 
@@ -42,7 +42,6 @@ function SkillForm({ initialName }: { initialName?: string }) {
   const [description, setDescription] = useState("");
   const [prompt, setPrompt] = useState("");
 
-  // Seed once when the dialog mounts with a suggested name.
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only seed
   useEffect(() => {
     if (initialName) setName(initialName);

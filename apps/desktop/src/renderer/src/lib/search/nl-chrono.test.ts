@@ -2,8 +2,7 @@ import type { Predicate } from "@pond/schema/filters/types";
 import { describe, expect, it } from "vitest";
 import { extractDates } from "@/lib/search/nl-chrono";
 
-// A fixed reference so relative expressions ("two weeks ago") are deterministic.
-// Saturday, 15 June 2024 (local time).
+/** A fixed reference (Saturday, 15 June 2024, local time) so relative expressions are deterministic. */
 const REF = new Date(2024, 5, 15);
 
 const preds = (input: string): Predicate[] =>

@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
 
-// One harvested public post, newest-first in a listing.
+/** One harvested public post, newest-first in a listing. */
 export interface WatchEntry {
   url: string;
   sourceId: string;
@@ -19,8 +19,7 @@ export type WatchHarvestResult =
         | "unknown";
     };
 
-// Sources a watch can target. Everything is public except Instagram/Twitter,
-// whose checks ride a connected account's session (`via`).
+/** Sources a watch can target; everything is public except Instagram/Twitter, whose checks ride a connected account's session. */
 export const WATCHABLE_SOURCES: readonly Source[] = [
   "arena",
   "youtube",
@@ -35,5 +34,5 @@ export function isWatchableSource(source: Source): boolean {
   return WATCHABLE_SOURCES.includes(source);
 }
 
-// Sources whose watch checks need a signed-in session to borrow.
+/** Sources whose watch checks need a signed-in session to borrow. */
 export const WATCH_NEEDS_SESSION: readonly Source[] = ["instagram", "twitter"];

@@ -16,8 +16,7 @@ export interface PondLogEntry {
   data?: unknown;
 }
 
-// Shape posted by injected MAIN-world scripts over `window.postMessage`, before
-// the content-script bridge relays it to the background via typed messaging.
+/** Shape posted by injected MAIN-world scripts over `window.postMessage` before the content-script bridge relays it to the background. */
 export type PondMessage =
   | { kind: "capture"; payload: PondCapturePayload }
   | { kind: "pushSession"; source: Source }
@@ -56,13 +55,13 @@ export const DEFAULT_SETTINGS: PondSettings = {
     youtube: true,
     reddit: true,
     threads: true,
-    // Generic web links are a desktop-side fallback, not an extension toggle.
+    /** Generic web links are a desktop-side fallback, not an extension toggle. */
     web: false,
     local: false,
   },
 };
 
-// Migrate legacy `endpoint` URL to the stored `port`, salvaging the port when possible.
+/** Migrate legacy `endpoint` URL to the stored `port`, salvaging the port when possible. */
 export function normalizeStoredSettings(stored: unknown): PondSettings {
   const base = (stored ?? {}) as Partial<PondSettings> & {
     endpoint?: string;

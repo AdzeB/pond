@@ -48,8 +48,8 @@ export type MenuItemSpec =
   | MenuCustomItem;
 
 /**
- * The wrapped Base UI parts a renderer needs. Injected so the same logic can
- * drive both `Menu` and `ContextMenu`, which share these primitives.
+ * The wrapped Base UI parts a renderer needs; injected so the same logic drives
+ * both `Menu` and `ContextMenu`, which share these primitives.
  */
 interface MenuParts {
   Item: React.ComponentType<{

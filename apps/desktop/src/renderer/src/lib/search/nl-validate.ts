@@ -11,11 +11,7 @@ import {
 } from "@pond/schema/filters/types";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
-// Stage D: the safety gate. Whatever a model (bundled, Ollama, or a user's own
-// endpoint) returns is untrusted, so we re-validate every predicate against the
-// real field schema and drop anything that doesn't fit. A model literally cannot
-// inject an unknown field, an operator that field doesn't support, or a
-// malformed value. Invalid pieces are pruned; the rest survives.
+/** Stage D safety gate: model output is untrusted, so every predicate is re-validated against the real field schema — a model cannot inject an unknown field, unsupported operator, or malformed value. */
 
 function isFieldId(value: unknown): value is FieldId {
   return typeof value === "string" && value in FIELD_META;
@@ -62,7 +58,7 @@ function validatePredicate(raw: unknown): Predicate | null {
   const op = operator as ComparatorId;
 
   let value = obj.value;
-  // `empty` carries no value; normalize so predicateIsActive accepts it.
+  /** `empty` carries no value; normalize so predicateIsActive accepts it. */
   if (op === "empty") value = true;
   if (!valueOkForOperator(op, value)) return null;
 
@@ -89,8 +85,7 @@ function validateClause(raw: unknown): Clause | null {
   return validatePredicate(raw);
 }
 
-// Sanitize an untrusted model result into a valid Query. Accepts either a full
-// group, a bare array of predicates, or junk; always returns a usable Query.
+/** Accepts a full group, a bare array of predicates, or junk; always returns a usable Query. */
 function validateQuery(raw: unknown): Query {
   if (!raw) return EMPTY_QUERY;
 
@@ -105,10 +100,7 @@ function validateQuery(raw: unknown): Query {
   return { combinator: "and", rules: [clause] };
 }
 
-// ---- Query-plan validation (Stage D for the richer agent output) ----------
-// A model-emitted plan is untrusted: its `filter` runs through validateQuery and
-// its numeric bounds are clamped so the executor can never be handed a runaway
-// per-group/limit. Structurally invalid plans degrade to a filter-only plan.
+/** A model-emitted plan gets its filter validated and its numeric bounds clamped so the executor is never handed a runaway per-group/limit; structurally invalid plans degrade to filter-only. */
 
 const MAX_PER_GROUP = 50;
 const MAX_GROUPS = 100;

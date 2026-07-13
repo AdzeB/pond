@@ -8,11 +8,7 @@ import styles from "../styles.module.css";
 
 const TOKEN_CLASS = styles.token ?? "filter-token";
 
-// A structured-filter token (e.g. `source:twitter`) rendered as highlighted but
-// still fully editable text — the same pattern Lexical uses for hashtags. The
-// `registerLexicalTextEntity` transform (see token-plugin) wraps matching text
-// into this node and reverts it to plain text the moment the syntax breaks, so
-// the caret can move into a token and edit its value inline.
+/** Highlighted but fully editable text, the same pattern Lexical uses for hashtags; the token-plugin transform reverts it to plain text the moment the syntax breaks. */
 export class FilterTokenNode extends TextNode {
   static getType(): string {
     return "filter-token";
@@ -42,7 +38,7 @@ export class FilterTokenNode extends TextNode {
     return { ...super.exportJSON(), type: "filter-token", version: 1 };
   }
 
-  // Typing right before a token shouldn't merge into it (matches hashtag).
+  /** Typing right before a token must not merge into it, matching hashtag behavior. */
   canInsertTextBefore(): boolean {
     return false;
   }

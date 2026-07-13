@@ -68,7 +68,7 @@ function normaliseRow(
   };
 }
 
-// tag_group_member rows always refetch: no stable sync-log IDs and membership lists need a join the store can't rebuild.
+/** tag_group_member rows always refetch: no stable sync-log IDs, and membership lists need a join the store can't rebuild. */
 let refetchScheduled = false;
 function scheduleRefetch(): void {
   if (refetchScheduled) return;

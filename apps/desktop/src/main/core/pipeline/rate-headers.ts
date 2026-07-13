@@ -1,5 +1,4 @@
-// Pure parsing of the rate-limit signals platforms send back on a response.
-// Stateless: the governor feeds these into cooldown / multiplier decisions.
+/** Stateless parsing of platform rate-limit response signals; the governor feeds these into cooldown/multiplier decisions. */
 
 export type HeaderBag = Record<string, string> | Headers;
 
@@ -19,11 +18,7 @@ export interface RateSignal {
   remaining: number | null;
 }
 
-/**
- * Parse the rate-limit signals platforms commonly send. Covers `retry-after`
- * (seconds or HTTP date), Twitter's `x-rate-limit-*`, and the generic
- * `x-ratelimit-*` family.
- */
+/** Covers `retry-after` (seconds or HTTP date), Twitter's `x-rate-limit-*`, and the generic `x-ratelimit-*` family. */
 export function parseRateSignal(bag: HeaderBag): RateSignal {
   let retryAfterSec: number | null = null;
   const retryAfter = header(bag, "retry-after");
@@ -46,8 +41,7 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
     header(bag, "x-ratelimit-remaining");
   const remaining = remainingRaw != null ? Number(remainingRaw) : null;
 
-  // If remaining is exhausted and a reset epoch is given, treat reset as the
-  // wait even without an explicit retry-after.
+  /** When remaining is exhausted and a reset epoch is given, treat reset as the wait even without an explicit retry-after. */
   if (
     retryAfterSec == null &&
     remaining != null &&
@@ -57,7 +51,7 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
   ) {
     const resetEpoch = Number(resetRaw);
     if (Number.isFinite(resetEpoch)) {
-      // Epoch seconds (10 digits) vs ms — normalize to seconds-from-now.
+      /** Platforms send epoch seconds or ms; normalize to seconds-from-now. */
       const resetMs = resetEpoch > 1e12 ? resetEpoch : resetEpoch * 1000;
       retryAfterSec = Math.max(0, Math.round((resetMs - Date.now()) / 1000));
     }

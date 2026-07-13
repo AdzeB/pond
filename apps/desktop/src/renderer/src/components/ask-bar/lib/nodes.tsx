@@ -20,8 +20,7 @@ import {
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { AskChip } from "@/components/ask-bar-chip";
 
-// Shared keyboard/selection behavior for the inline chip decorators: click to
-// select (highlight), then Backspace/Delete removes the selected chip.
+/** Shared chip behavior: click selects, then Backspace/Delete removes the selected chip. */
 function useChipSelection(nodeKey: NodeKey) {
   const [editor] = useLexicalComposerContext();
   const [isSelected, setSelected, clearSelected] =
@@ -72,8 +71,6 @@ function useChipSelection(nodeKey: NodeKey) {
   return { ref, isSelected };
 }
 
-// ---- Skill chip: expands to its saved prompt when the editor is read ----
-
 type SerializedSkillChipNode = Spread<
   { skillId: string; name: string; prompt: string },
   SerializedLexicalNode
@@ -116,8 +113,7 @@ export class SkillChipNode extends DecoratorNode<ReactNode> {
     return this.__name;
   }
 
-  // Reading the editor expands the chip to the skill's saved prompt, so a skill
-  // composed with trailing text sends as `<prompt> trailing`.
+  /** Expands to the skill's saved prompt, so a skill composed with trailing text sends as `<prompt> trailing`. */
   getTextContent(): string {
     return this.__prompt;
   }
@@ -195,8 +191,6 @@ export function $isSkillChipNode(
   return node instanceof SkillChipNode;
 }
 
-// ---- Mention chip: a referenced save, threaded to the agent by id ----
-
 type SerializedMentionChipNode = Spread<
   { saveId: string; title: string },
   SerializedLexicalNode
@@ -236,8 +230,7 @@ export class MentionChipNode extends DecoratorNode<ReactNode> {
     return this.__title;
   }
 
-  // The mention contributes no text to the prompt; the save is passed to the
-  // agent as a structured anchor id instead.
+  /** Contributes no prompt text; the save reaches the agent as a structured anchor id instead. */
   getTextContent(): string {
     return "";
   }
@@ -316,8 +309,6 @@ export function $isMentionChipNode(
   return node instanceof MentionChipNode;
 }
 
-// ---- Tag chip: expands to the bare tag name, which Stage A resolves ----
-
 type SerializedTagChipNode = Spread<{ tag: string }, SerializedLexicalNode>;
 
 export class TagChipNode extends DecoratorNode<ReactNode> {
@@ -348,8 +339,7 @@ export class TagChipNode extends DecoratorNode<ReactNode> {
     return this.__tag;
   }
 
-  // The deterministic compiler matches live tag names in free text, so the chip
-  // reads back as its bare name and resolves to a tags predicate.
+  /** The deterministic compiler matches live tag names in free text, so the chip reads back as its bare name and resolves to a tags predicate. */
   getTextContent(): string {
     return this.__tag;
   }

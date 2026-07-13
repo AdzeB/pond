@@ -1,6 +1,4 @@
-// Pure colour-space conversions for the swatch copy menu. Mirrors the formats
-// Eagle exposes (hex / rgb / rgba / hsl / hsv / hwb / cmyk) so a dominant colour
-// can be lifted into whatever space the user's tool of choice expects.
+/** Colour-space conversions for the swatch copy menu, mirroring the formats Eagle exposes (hex / rgb / rgba / hsl / hsv / hwb / cmyk). */
 
 interface Rgb {
   r: number;
@@ -8,8 +6,7 @@ interface Rgb {
   b: number;
 }
 
-// Accepts #rgb, #rrggbb (with or without the leading #). Returns null on junk so
-// callers can skip rendering rather than copy a malformed value.
+/** Accepts #rgb and #rrggbb with or without the leading #; returns null on junk so callers skip rendering rather than copy a malformed value. */
 function parseHex(input: string): Rgb | null {
   const t = input.trim().replace(/^#/, "");
   const short = /^([0-9a-f]{3})$/i.exec(t);
@@ -103,8 +100,7 @@ interface ColorFormat {
   value: string;
 }
 
-// The copy options shown in the swatch menu, grouped the way Eagle groups them:
-// the everyday spaces first, then the print/specialist trio.
+/** Grouped the way Eagle groups them: everyday spaces first, then the print/specialist trio. */
 export function colorCopyFormats(
   input: string,
 ): { primary: ColorFormat[]; secondary: ColorFormat[] } | null {

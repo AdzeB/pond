@@ -8,9 +8,9 @@ interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
-  // App-global state (settings, prefs, onboarded); one file shared by every pond.
+  /** App-global state (settings, prefs, onboarded); one file shared by every pond. */
   globalDb: string;
-  // Active pond's index cache; switching ponds swaps this file.
+  /** Active pond's index cache; switching ponds swaps this file. */
   indexDb: string;
   indexesDir: string;
   config: string;
@@ -18,8 +18,7 @@ interface PondPaths {
   itemsDir: string;
   trashDir: string;
   libraryMetadata: string;
-  // Per-pond root JSONs living inside the bundle (Eagle-style): settings,
-  // tags, and rolling backups of both.
+  /** Per-pond root JSONs living inside the bundle: settings, tags, and rolling backups of both. */
   settingsFile: string;
   tagsFile: string;
   backupDir: string;
@@ -36,7 +35,7 @@ function defaultLibraryRoot(): string {
   return join(app.getPath("home"), "Pond", "My Pond.pond");
 }
 
-// Bust the cache after writing a new pointer; usually paired with a relaunch.
+/** Busts the cache after writing a new pointer; usually paired with a relaunch. */
 export function invalidatePaths(): void {
   cached = null;
 }
@@ -51,7 +50,7 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
 
   const pointer = readLibraryPointer();
   const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
-  // Only materialize the bundle once committed (override, pointer, or existing root).
+  /** Only materialize the bundle once committed (override, pointer, or existing root). */
   const committed =
     libraryRootOverride != null || pointer != null || existsSync(root);
   if (committed) ensureLibraryDirs(root);

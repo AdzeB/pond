@@ -8,9 +8,7 @@ export function inPageYoutubeNormalize() {
       if (u.pathname.startsWith("/shorts/")) {
         return u.pathname.split("/")[2] ?? null;
       }
-    } catch {
-      /* unparseable */
-    }
+    } catch {}
     return null;
   }
 

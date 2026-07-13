@@ -26,7 +26,7 @@ export async function syncTwitter(
   const db = await getDb();
   const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
-  // Previously-failed tweets we can reseed from GraphQL data when they reappear.
+  /** Previously-failed tweets can be reseeded from GraphQL data when they reappear. */
   const failedRows = await db
     .select({ sourceId: saves.sourceId })
     .from(saves)
@@ -42,8 +42,7 @@ export async function syncTwitter(
     message: `Looking at your Twitter bookmarks…`,
   });
 
-  // On a full walk, hide known ids so the harvester scans the whole bookmark
-  // history instead of early-stopping; dedup still happens via `knownIds` below.
+  /** On a full walk, hide known ids so the harvester scans the whole bookmark history instead of early-stopping; dedup still happens via `knownIds`. */
   const harvest = await harvestTwitterBookmarks(
     {
       knownIds: baseline.full ? [] : Array.from(knownIds),
@@ -110,7 +109,6 @@ export async function syncTwitter(
     return;
   }
 
-  // fresh: unseen tweets (new saves). recovery: failed tweets reseeded with metadata.
   const allFresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
   const recovery = harvest.entries.filter((e) =>
     failedSourceIds.has(e.tweetId),
@@ -161,9 +159,7 @@ export async function syncTwitter(
     progress: { current: 0, total },
   });
 
-  // Batched insert for the whole bookmark harvest (fresh + recovery), each
-  // carrying its GraphQL seed so harvest_metadata can skip a re-scrape. Recovery
-  // items already exist, so the bulk path routes them to the reseed path.
+  /** Each entry carries its GraphQL seed so harvest_metadata can skip a re-scrape; recovery items already exist, so the bulk path routes them to reseed. */
   const queue = [...fresh, ...recovery];
   const bulk = await enqueueSavesBulk(
     queue.map((entry) => {

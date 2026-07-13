@@ -50,9 +50,7 @@ function buildGroups(): { group: FieldGroup; fields: FieldEntry[] }[] {
   }));
 }
 
-// A browsable list of every filter the search grammar understands, grouped by
-// area. Picking one drops its `key:` into the editor and refocuses so the value
-// typeahead opens on it.
+/** Picking a filter drops its `key:` into the editor and refocuses so the value typeahead opens on it. */
 export function FiltersMenu() {
   const [editor] = useLexicalComposerContext();
   const [open, setOpen] = useState(false);

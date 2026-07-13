@@ -1,8 +1,6 @@
 import { Store } from "@tanstack/store";
 
-// Bridges the (deeply nested) active <video> back to sibling chrome — the
-// detail modal's chapter list lives outside the player's Video.Root, so the
-// in-view player publishes its seek handle and current time here.
+/** The detail modal's chapter list lives outside the player's Video.Root, so the in-view player publishes its seek handle and current time here. */
 
 interface ActiveMediaState {
   readonly seek: ((seconds: number) => void) | null;
@@ -17,9 +15,7 @@ export function setActiveMediaSeek(
   store.setState((s) => (s.seek === seek ? s : { ...s, seek }));
 }
 
-// Clear only if the registered handle is still the one we're tearing down, so a
-// fast slide swap (new player mounts before old unmounts) doesn't wipe the live
-// handle.
+/** Clears only if the registered handle is the one being torn down, so a fast slide swap doesn't wipe the live handle. */
 export function clearActiveMediaSeek(seek: (seconds: number) => void): void {
   store.setState((s) => (s.seek === seek ? { seek: null, currentTime: 0 } : s));
 }

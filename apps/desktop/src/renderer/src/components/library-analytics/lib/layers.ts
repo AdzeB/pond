@@ -1,10 +1,6 @@
 import type { InsightDisplay, InsightVizOptions } from "@pond/schema/db";
 
-// Per-display layer catalog for the insight editor (Grid, Area, XAxis,
-// Tooltip, RingCenter, RadarLabels…). Each display lists its layers top-down;
-// the editor renders them as rows with eye toggles and a contextual
-// properties panel. Visibility persists in the insight's `viz.hidden` array,
-// except area/line points which keep their pre-existing `viz.points` flag.
+/** Per-display layer catalog for the insight editor; visibility persists in `viz.hidden`, except area/line points which use `viz.points`. */
 
 export interface InsightLayer {
   id: string;
@@ -77,12 +73,12 @@ export function layerVisible(
   viz: InsightVizOptions | undefined,
   id: string,
 ): boolean {
-  // Area/line points predate the layers system and live in `viz.points`.
+  /** Area/line points live in `viz.points`, not `viz.hidden`. */
   if ((display === "area" || display === "line") && id === "points") {
     return viz?.points ?? false;
   }
   if (viz?.hidden?.includes(id)) return false;
-  // `fill: "none"` predates the fill layer; treat it as hidden.
+  /** `fill: "none"` also counts as a hidden fill layer. */
   if (display === "area" && id === "fill") {
     return (viz?.fill ?? "gradient") !== "none";
   }

@@ -30,9 +30,9 @@ export const SaveCard = memo(function SaveCard({
   packedTop,
   packedLeft,
 }: SaveCardProps) {
-  // Callbacks from grid context so this memoized card doesn't re-render on a sibling's selection change.
+  /** Callbacks come from grid context so this memoized card doesn't re-render on a sibling's selection change. */
   const { onClick, onDoubleClick } = useLibraryCardCallbacks();
-  // Per-id subscription: edits to this save wake only this card; the parent grid keeps a stable snapshot.
+  /** Per-id subscription: edits to this save wake only this card. */
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
@@ -128,7 +128,7 @@ const SaveCardBody = memo(function SaveCardBody({
   );
   const w = primary?.width ?? save.width ?? null;
   const h = primary?.height ?? save.height ?? null;
-  // Clamp so panoramas / extreme portraits don't distort justified rows or waterfall cards.
+  /** Clamp so panoramas and extreme portraits don't distort justified rows or waterfall cards. */
   const ratio = w && h ? clampRatio(w, h) : 1;
   const mediaStyle = useMemo<React.CSSProperties>(
     () =>
