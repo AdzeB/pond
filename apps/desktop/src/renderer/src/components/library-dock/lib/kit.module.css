@@ -119,6 +119,9 @@
 
 /* 28px transparent icon button used in card toolbars and headers. */
 .icon-button {
+  position: absolute;
+  top: 50%;
+  right: 12px;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -132,6 +135,7 @@
   background: none;
   border: 0;
   border-radius: var(--ds-radius-full);
+  transform: translateY(-50%);
   transition:
     color var(--ds-duration-medium) var(--ds-easing-standard),
     background var(--ds-duration-medium) var(--ds-easing-standard);

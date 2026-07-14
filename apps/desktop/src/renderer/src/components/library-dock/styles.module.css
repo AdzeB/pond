@@ -46,7 +46,7 @@
   justify-items: center;
   /* Without max-content the element collapses to min-content inside the 0-width morphing pill and the dock appears to vanish. */
   width: max-content;
-  padding: 8px;
+  padding: 4px;
   transform: translateX(-50%);
 }
 
