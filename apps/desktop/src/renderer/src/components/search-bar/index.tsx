@@ -6,24 +6,22 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import {
-  IconXmarkOutline18 as Clear,
-  IconMagnifierOutline18 as Search,
-} from "@pond/icons/outline/18";
+import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import {
   $createParagraphNode,
   $createTextNode,
   $getRoot,
   CLEAR_EDITOR_COMMAND,
   COMMAND_PRIORITY_LOW,
+  INSERT_LINE_BREAK_COMMAND,
+  INSERT_PARAGRAPH_COMMAND,
   KEY_ESCAPE_COMMAND,
+  LineBreakNode,
 } from "lexical";
-import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { Dock } from "@/components/library-view-menu-group";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
-import { formatNumber } from "@/lib/util/format";
 import { useViewFilteredCount } from "@/stores/library-view-context";
 import { useTags } from "@/stores/tags";
 import { setSearchInput, useFilterQuery } from "@/stores/view-store";
@@ -62,7 +60,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
   const dock = useDock();
   const tags = useTags();
-  const count = useViewFilteredCount();
+  const _count = useViewFilteredCount();
   const [hasContent, setHasContent] = useState(false);
   const seededRef = useRef(false);
 
@@ -97,11 +95,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
     });
   }, [editor]);
 
-  const clearAll = useCallback(() => {
-    editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-    queueMicrotask(() => editor.focus());
-  }, [editor]);
-
   const onCollapseRef = useRef(onCollapse);
   const emptyRef = useRef(!hasContent);
   onCollapseRef.current = onCollapse;
@@ -120,6 +113,31 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       },
       COMMAND_PRIORITY_LOW,
     );
+  }, [editor]);
+
+  /** Single-line query: swallow Enter and flatten pasted newlines to spaces. */
+  useEffect(() => {
+    const unregisterBreak = editor.registerCommand(
+      INSERT_LINE_BREAK_COMMAND,
+      () => true,
+      COMMAND_PRIORITY_LOW,
+    );
+    const unregisterParagraph = editor.registerCommand(
+      INSERT_PARAGRAPH_COMMAND,
+      () => true,
+      COMMAND_PRIORITY_LOW,
+    );
+    const unregisterTransform = editor.registerNodeTransform(
+      LineBreakNode,
+      (node) => {
+        node.replace($createTextNode(" "));
+      },
+    );
+    return () => {
+      unregisterBreak();
+      unregisterParagraph();
+      unregisterTransform();
+    };
   }, [editor]);
 
   return (
@@ -162,35 +180,8 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
             {autoFocus ? <AutoFocusPlugin /> : null}
             <FilterTokenPlugin />
             <FilterTypeahead tags={tagNames} />
-            <AnimatePresence>
-              {hasContent && (
-                <motion.button
-                  type="button"
-                  className={styles["clear-button"]}
-                  aria-label="Clear filters"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onClick={clearAll}
-                >
-                  <Clear width={14} height={14} />
-                </motion.button>
-              )}
-            </AnimatePresence>
           </div>
         </div>
-        <Dock.Footer>
-          <Dock.Cancel
-            onClick={() => {
-              /** Reset the store directly: the editor's update listener may not flush before the card unmounts. */
-              editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-              setSearchInput([], "");
-            }}
-          >
-            Clear
-          </Dock.Cancel>
-          <Dock.Confirm>
-            Show {formatNumber(count)} {count === 1 ? "Result" : "Results"}
-          </Dock.Confirm>
-        </Dock.Footer>
       </Dock.Root>
     </div>
   );

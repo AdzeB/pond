@@ -9,35 +9,53 @@
   gap: 8px;
 }
 
-/* Inset well around the query field; min-height matches the other cards' 44px rows while the editor can grow multiline. */
+/* Inset well around the query field; min-height matches the other cards' 44px rows. */
 .editor {
   position: relative;
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  align-items: center;
   width: 100%;
   height: 44px;
-  padding: 12px 16px;
+  padding-inline: 12px;
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-lg);
 }
 
 .lead-icon {
   composes: lead-icon from "../library-dock/lib/kit.module.css";
-  margin-top: 2px;
 }
 
+/* Single-line query: long input scrolls horizontally behind a hidden scrollbar instead of wrapping. */
 .input {
   display: block;
   flex: 1;
   min-width: 0;
-  max-height: 200px;
-  overflow-y: auto;
+
+  /* Breathing room at the scroll end so the caret and last glyph never sit clipped against the well's rounded edge. */
+  padding-inline-end: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
   font: inherit;
   font-size: 14px;
   line-height: 1.5;
   color: var(--ds-gray-12);
-  word-break: break-word;
+  word-break: normal;
+
+  /* Lexical inlines `pre-wrap`/`break-word` on the root element; !important beats the inline style, and `pre` keeps its space handling while never wrapping. */
+  white-space: pre;
   outline: none;
+  scroll-padding-inline-end: 24px;
+  scrollbar-width: none;
+}
+
+/* The @pond/ui reset's `* { text-wrap: pretty }` re-enables wrapping on every descendant (text-wrap and white-space share text-wrap-mode), so pin the whole subtree. */
+.input * {
+  white-space: pre;
+}
+
+.input::-webkit-scrollbar {
+  display: none;
 }
 
 .paragraph {
