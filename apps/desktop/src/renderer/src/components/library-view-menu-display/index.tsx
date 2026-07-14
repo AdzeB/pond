@@ -42,7 +42,11 @@ export function DisplaySection() {
       </Dock.Header>
       <div className={styles.rows}>
         {TOGGLES.map(({ key, label, icon }) => (
-          <label key={key} htmlFor={`display-pref-${key}`} className={styles.row}>
+          <label
+            key={key}
+            htmlFor={`display-pref-${key}`}
+            className={styles.row}
+          >
             <span className={styles["row-icon"]}>{icon}</span>
             <span className={styles["row-label"]}>{label}</span>
             <Switch.Root
