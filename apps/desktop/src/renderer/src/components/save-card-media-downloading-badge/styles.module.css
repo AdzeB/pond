@@ -10,7 +10,6 @@
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  letter-spacing: 0.02em;
   pointer-events: none;
   background: rgba(0, 0, 0, 0.62);
   border-radius: var(--ds-radius-full);
@@ -29,7 +28,6 @@
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  letter-spacing: 0.02em;
   background: rgba(220, 38, 38, 0.85);
   border-radius: var(--ds-radius-full);
   -webkit-backdrop-filter: blur(6px);

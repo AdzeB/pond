@@ -37,9 +37,41 @@
 }
 
 .header {
+  position: relative;
   padding: 16px 16px 12px;
   border-bottom: 1px solid var(--ds-gray-3);
   -webkit-app-region: drag;
+}
+
+.exit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full, 99px);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+  /* The header is a drag region; the button must stay clickable. */
+  -webkit-app-region: no-drag;
+}
+
+.exit:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+
+.exit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
 }
 
 .title {
@@ -73,7 +105,6 @@
   font-weight: 600;
   color: var(--ds-gray-8);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .showing {
@@ -87,7 +118,7 @@
   display: block;
   width: 100%;
   padding: 6px 8px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-11);
   text-align: left;
@@ -189,7 +220,7 @@
   font-weight: 600;
   color: var(--ds-gray-9);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+
 }
 
 /* Bottom-anchored like the real dock, so height morphs read the same way. */

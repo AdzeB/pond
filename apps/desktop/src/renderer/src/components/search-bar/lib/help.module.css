@@ -1,0 +1,89 @@
+/* Occupies the same corner slot as Dock.Close; in a subview the corner action navigates back instead of closing. */
+.back {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  z-index: 1;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover,
+  &:active {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.list {
+  width: 100%;
+}
+
+.group-label {
+  padding: 4px 8px 2px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--ds-gray-9);
+}
+
+.group-label:not(:first-child) {
+  padding-top: 8px;
+  margin-top: 6px;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+}
+
+.row-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-10);
+}
+
+.row-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.row-key {
+  flex-shrink: 0;
+  font-family: var(--ds-font-mono, ui-monospace, monospace);
+  font-size: 11px;
+  color: var(--ds-gray-9);
+}
+
+.row-hint {
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}

@@ -1,3 +1,4 @@
+import { IconAlertQuestionFill12 } from "@pond/icons/fill/12";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { Button, type ButtonProps, cn } from "@pond/ui";
 import type { ButtonHTMLAttributes, HTMLAttributes } from "react";
@@ -8,8 +9,18 @@ function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(styles.root, className)} {...props} />;
 }
 
-function Header({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <header className={cn(styles.header, className)} {...props} />;
+interface HeaderProps extends HTMLAttributes<HTMLDivElement> {
+  position?: "start" | "center";
+}
+
+function Header({ className, position = "start", ...props }: HeaderProps) {
+  return (
+    <header
+      data-position={position}
+      className={cn(styles.header, className)}
+      {...props}
+    />
+  );
 }
 
 function Title({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
@@ -29,6 +40,23 @@ function Separator({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 
 function Footer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(styles.footer, className)} {...props} />;
+}
+
+/** Navigation is the caller's: pass onClick to open the card's help view. */
+function Help({
+  className,
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      type="button"
+      aria-label="Help"
+      className={cn(styles.help, className)}
+      {...props}
+    >
+      <IconAlertQuestionFill12 strokeWidth={2} />
+    </button>
+  );
 }
 
 function Close({
@@ -114,6 +142,7 @@ export const Dock = {
   Separator,
   Footer,
   Close,
+  Help,
   Cancel,
   Confirm,
 };

@@ -27,73 +27,23 @@
   }
 }
 
+/* ClippedScroll owns the inner padding and needs the corner radius to clip its fades. */
 .popup {
-  --popup-min-width: 260px;
+  --popup-min-width: 288px;
 
   padding: 0;
   overflow: hidden;
 }
 
-.group-label {
-  padding: 4px 8px 2px;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--ds-gray-9);
-}
-
-/* Flat list: every group label after the first doubles as a divider. */
-.group-label:not(:first-child) {
-  padding-top: 8px;
-  margin-top: 6px;
-  border-top: 1px solid var(--ds-gray-a3);
-}
-
-.row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  padding: 6px 8px;
-  text-align: left;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
-  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
-
-  &:hover,
-  &[data-active] {
-    background: var(--ds-gray-4);
-  }
-}
-
-.row-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--ds-gray-10);
-}
-
-.row-label {
-  flex-shrink: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
-.row-key {
-  flex-shrink: 0;
+.key {
+  margin-left: 6px;
   font-family: var(--ds-font-mono, ui-monospace, monospace);
   font-size: 11px;
   color: var(--ds-gray-9);
 }
 
-.row-hint {
-  margin-left: auto;
+.hint {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 11px;
-  color: var(--ds-gray-9);
   white-space: nowrap;
 }

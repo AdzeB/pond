@@ -6,7 +6,6 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconChevronDownFill18 as Collapse } from "@pond/icons/fill/18";
 import {
   IconXmarkOutline18 as Clear,
   IconMagnifierOutline18 as Search,
@@ -19,15 +18,16 @@ import {
   COMMAND_PRIORITY_LOW,
   KEY_ESCAPE_COMMAND,
 } from "lexical";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDock } from "@/components/library-dock/lib/context";
+import { Dock } from "@/components/library-view-menu-group";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import { formatNumber } from "@/lib/util/format";
 import { useViewFilteredCount } from "@/stores/library-view-context";
 import { useTags } from "@/stores/tags";
 import { setSearchInput, useFilterQuery } from "@/stores/view-store";
 import { $isEditorEmpty, $readSearchString } from "./lib/editor-state";
-import { FiltersMenu } from "./lib/filters-menu";
 import { FilterTokenNode } from "./lib/token-node";
 import { FilterTokenPlugin } from "./lib/token-plugin";
 import { FilterTypeahead } from "./lib/typeahead";
@@ -60,6 +60,7 @@ export function SearchComposer(props: ComposerProps) {
 
 function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
+  const dock = useDock();
   const tags = useTags();
   const count = useViewFilteredCount();
   const [hasContent, setHasContent] = useState(false);
@@ -122,68 +123,75 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   }, [editor]);
 
   return (
-    /** No `layout` here: an inner `layout` projects from a stale origin inside the pill's popLayout crossfade, producing a slide-in artifact. */
-    <motion.div className={styles.card}>
-      <div className={styles.editor}>
-        <Search
-          className={styles["lead-icon"]}
-          width={16}
-          height={16}
-          aria-hidden
-        />
-        <PlainTextPlugin
-          contentEditable={
-            <ContentEditable
-              className={styles.input}
-              spellCheck={false}
-              ariaLabel="Search filters"
+    <div className={styles.card}>
+      <Dock.Root>
+        <Dock.Help onClick={() => dock.openViewMenu("search-help")} />
+        <Dock.Close />
+        <Dock.Header data-position="center">
+          <Dock.Title>Search Library</Dock.Title>
+          <Dock.Separator />
+          <Dock.Description>
+            Results update live as you type. Mix plain words with filters like
+            source:twitter, tag:design, or saved:past-week to narrow things
+            down.
+          </Dock.Description>
+        </Dock.Header>
+        <div className={styles.fields}>
+          <div className={styles.editor}>
+            <Search
+              className={styles["lead-icon"]}
+              width={16}
+              height={16}
+              aria-hidden
             />
-          }
-          placeholder={
-            <span className={styles.placeholder}>
-              Filter by source:twitter, tag:design, saved:past-week…
-            </span>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        <HistoryPlugin />
-        <ClearEditorPlugin />
-        {autoFocus ? <AutoFocusPlugin /> : null}
-        <FilterTokenPlugin />
-        <FilterTypeahead tags={tagNames} />
-      </div>
-
-      <div className={styles.toolbar}>
-        <div className={styles["toolbar-group"]}>
-          <button
-            type="button"
-            className={styles["icon-button"]}
-            aria-label="Collapse"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => onCollapse?.()}
+            <PlainTextPlugin
+              contentEditable={
+                <ContentEditable
+                  className={styles.input}
+                  spellCheck={false}
+                  ariaLabel="Search filters"
+                />
+              }
+              placeholder={
+                <span className={styles.placeholder}>Filter your library…</span>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <HistoryPlugin />
+            <ClearEditorPlugin />
+            {autoFocus ? <AutoFocusPlugin /> : null}
+            <FilterTokenPlugin />
+            <FilterTypeahead tags={tagNames} />
+            <AnimatePresence>
+              {hasContent && (
+                <motion.button
+                  type="button"
+                  className={styles["clear-button"]}
+                  aria-label="Clear filters"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={clearAll}
+                >
+                  <Clear width={14} height={14} />
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+        <Dock.Footer>
+          <Dock.Cancel
+            onClick={() => {
+              /** Reset the store directly: the editor's update listener may not flush before the card unmounts. */
+              editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+              setSearchInput([], "");
+            }}
           >
-            <Collapse width={16} height={16} />
-          </button>
-          <FiltersMenu />
-        </div>
-
-        <div className={styles["toolbar-group"]}>
-          <span className={styles.count}>
-            {formatNumber(count)} {count === 1 ? "result" : "results"}
-          </span>
-          {hasContent ? (
-            <button
-              type="button"
-              className={styles["clear-button"]}
-              aria-label="Clear filters"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={clearAll}
-            >
-              <Clear width={14} height={14} />
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </motion.div>
+            Clear
+          </Dock.Cancel>
+          <Dock.Confirm>
+            Show {formatNumber(count)} {count === 1 ? "Result" : "Results"}
+          </Dock.Confirm>
+        </Dock.Footer>
+      </Dock.Root>
+    </div>
   );
 }

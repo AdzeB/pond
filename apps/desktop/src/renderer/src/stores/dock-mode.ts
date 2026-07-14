@@ -9,6 +9,7 @@ export type DockMode =
   | "nav"
   | "ask"
   | "search"
+  | "search-help"
   | "new"
   | "layout"
   | "zoom"

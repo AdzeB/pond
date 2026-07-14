@@ -1,4 +1,6 @@
+import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LibraryTray } from "@/components/library-dock";
 import type { DockPreview } from "@/components/library-dock/lib/types";
@@ -114,11 +116,27 @@ const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
 ];
 
 export function DockPlayground() {
+  const navigate = useNavigate();
   const mode = useDockMode();
   const selectionSize = useSelectionSize();
   const ask = useAskResult();
   const [backdrop, setBackdrop] = useState<Backdrop>("soft");
   const [speed, setSpeed] = useState(1);
+
+  /** The dock owns Escape while a view menu is open, so only exit from the rest state. */
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "Escape" &&
+        !e.defaultPrevented &&
+        dockMode.current() === "nav"
+      ) {
+        void navigate({ to: "/" });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navigate]);
 
   /** The playground borrows the real dock, so stale seeds, selection, and slow-motion must not follow the user back into the app. */
   useEffect(() => {
@@ -159,6 +177,15 @@ export function DockPlayground() {
             The grid shows every dock state at once; the buttons drive the live
             dock below with real transitions.
           </p>
+          <button
+            type="button"
+            aria-label="Exit playground"
+            title="Exit playground (Esc)"
+            className={styles.exit}
+            onClick={() => void navigate({ to: "/" })}
+          >
+            <IconXmarkOutline12 strokeWidth={2} />
+          </button>
         </header>
 
         <div className={styles.groups}>

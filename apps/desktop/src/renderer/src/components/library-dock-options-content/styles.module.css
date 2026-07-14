@@ -3,3 +3,8 @@
   composes: card from "../library-dock/lib/kit.module.css";
   width: var(--dock-card-width, 280px);
 }
+
+/* Matches the search card's width so the drill-down morph holds its shape. */
+.card[data-section="search-help"] {
+  --dock-card-width: 400px;
+}

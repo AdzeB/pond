@@ -17,7 +17,7 @@
   align-items: center;
   max-width: min(420px, calc(100vw - 32px));
   padding: 7px 8px 7px 14px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   line-height: 1.35;
   color: var(--ds-gray-12);

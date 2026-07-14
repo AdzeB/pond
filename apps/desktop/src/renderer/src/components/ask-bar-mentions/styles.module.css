@@ -59,7 +59,7 @@
 }
 
 .menu-name {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
@@ -97,7 +97,7 @@
   align-items: center;
   width: 100%;
   padding: 5px 8px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-11);
   text-align: left;

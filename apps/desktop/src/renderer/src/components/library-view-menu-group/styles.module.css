@@ -12,6 +12,11 @@
   gap: 16px;
   align-items: flex-start;
   justify-content: flex-start;
+
+  &[data-position="center"] {
+    align-items: center;
+    justify-content: center;
+  }
 }
 
 .title {
@@ -49,10 +54,9 @@
   background: var(--ds-gray-3);
 }
 
-.close {
+.close,
+.help {
   position: absolute;
-  top: 24px;
-  right: 24px;
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -79,6 +83,16 @@
   &:focus-visible {
     box-shadow: 0 0 0 2px var(--ds-gray-a8);
   }
+}
+
+.close {
+  top: 24px;
+  right: 24px;
+}
+
+.help {
+  top: 24px;
+  left: 24px;
 }
 
 .footer {

@@ -5,6 +5,7 @@ export type DockView =
   | "selection"
   | "ask"
   | "search"
+  | "search-help"
   | "status"
   | "new"
   | "layout"
@@ -16,6 +17,7 @@ export type DockView =
   | "display"
   | "nav";
 
+/** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
 export type ViewMenuSection =
   | "layout"
   | "zoom"
@@ -23,7 +25,8 @@ export type ViewMenuSection =
   | "sort-date"
   | "sort-content"
   | "sort-file"
-  | "display";
+  | "display"
+  | "search-help";
 
 export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "layout",
@@ -33,6 +36,7 @@ export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "sort-content",
   "sort-file",
   "display",
+  "search-help",
 ];
 
 export function isViewMenu(view: DockView): view is ViewMenuSection {

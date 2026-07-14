@@ -6,6 +6,7 @@ import {
   SortSection,
 } from "@/components/library-view-menu-sort";
 import { ZoomSection } from "@/components/library-view-menu-zoom";
+import { SearchHelpSection } from "@/components/search-bar/lib/help";
 import styles from "./styles.module.css";
 
 const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element> = {
@@ -16,13 +17,14 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element> = {
   "sort-content": () => <SortGroupSection group="content" />,
   "sort-file": () => <SortGroupSection group="file" />,
   display: DisplaySection,
+  "search-help": SearchHelpSection,
 };
 
 export function OptionsContent({ section }: { section: ViewMenuSection }) {
   const Section = SECTIONS[section];
   return (
     /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
-    <div className={styles.card}>
+    <div className={styles.card} data-section={section}>
       <Section />
     </div>
   );
