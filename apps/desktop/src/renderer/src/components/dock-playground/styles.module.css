@@ -220,7 +220,6 @@
   font-weight: 600;
   color: var(--ds-gray-9);
   text-transform: uppercase;
-
 }
 
 /* Bottom-anchored like the real dock, so height morphs read the same way. */

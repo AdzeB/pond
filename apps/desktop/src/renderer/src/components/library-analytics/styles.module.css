@@ -54,7 +54,6 @@
   font-size: 19px;
   font-weight: 640;
   color: var(--ink);
-  
 }
 
 .description-input {
@@ -460,7 +459,6 @@
   font-weight: 640;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
-  
 }
 
 .metric-sub {
