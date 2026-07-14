@@ -1,13 +1,9 @@
-import { IconArrowUpFill18 as ArrowUp } from "@pond/icons/fill/18";
-import {
-  IconLink2Outline18 as Link,
-  IconNotepadOutline18 as Notepad,
-  IconTagsOutline18 as Tags,
-} from "@pond/icons/outline/18";
-import { Input, Menu } from "@pond/ui";
+import { IconXmarkOutline12 as Remove } from "@pond/icons/outline/12";
+import { IconLink2Outline18 as Link } from "@pond/icons/outline/18";
+import { Input } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { TagMenu } from "@/components/tag-menu";
+import { Dock } from "@/components/library-view-menu-group";
 import { getSourceIcon } from "@/lib/save/sources-registry";
 import { primarySelection } from "@/stores/selection";
 import { pushToast } from "@/stores/toasts";
@@ -33,16 +29,98 @@ function withScheme(value: string): string {
   return value;
 }
 
-/** Note and tags ride along on the same `saves.quickAdd` call; a note without a link becomes a manual note save. */
+/** Splits free text into normalized URLs, or null when any part isn't clearly a link. */
+function asUrlList(value: string): string[] | null {
+  const tokens = value.trim().split(/\s+/).filter(Boolean).map(withScheme);
+  if (tokens.length === 0) return null;
+  return tokens.every(looksLikeUrl) ? tokens : null;
+}
+
+/** Classification is cheap pattern matching in the main process, debounced for typing. */
+function useUrlSource(candidate: string): string | null {
+  const [source, setSource] = useState<string | null>(null);
+  useEffect(() => {
+    if (!looksLikeUrl(candidate)) {
+      setSource(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void window.pond
+        .query("saves.classifyUrl", { url: candidate })
+        .then((res) => {
+          if (cancelled) return;
+          setSource((res as { source?: string | null })?.source ?? null);
+        })
+        .catch(() => {});
+    }, 120);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [candidate]);
+  return source;
+}
+
+function SourceGlyph({ url }: { url: string }) {
+  const source = useUrlSource(url);
+  const SourceIcon = source ? getSourceIcon(source) : null;
+  return (
+    /** The glyph remounts when the URL classifies to a source, so the brand mark pops in. */
+    <span
+      key={source ?? "link"}
+      className={`${styles["lead-icon"]} ${styles.glyph}`}
+      aria-hidden
+    >
+      {SourceIcon ? (
+        <SourceIcon width={16} height={16} />
+      ) : (
+        <Link width={16} height={16} />
+      )}
+    </span>
+  );
+}
+
+function LinkRow({ url, onRemove }: { url: string; onRemove: () => void }) {
+  return (
+    <div className={styles.link}>
+      <SourceGlyph url={url} />
+      <span className={styles["link-text"]}>
+        {url.replace(/^https?:\/\//, "")}
+      </span>
+      <button
+        type="button"
+        aria-label={`Remove ${url}`}
+        className={styles["link-remove"]}
+        onClick={onRemove}
+      >
+        <Remove strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+/** Pasting on top of a pending link, or pasting a whitespace-separated list, commits links to visible rows instead of mashing them into one string. */
 export function NewContent() {
   const dock = useDock();
   const [url, setUrl] = useState("");
-  const [note, setNote] = useState("");
-  const [tags, setTags] = useState<readonly string[]>([]);
-  const [tagsOpen, setTagsOpen] = useState(false);
+  const [links, setLinks] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState(false);
-  const [source, setSource] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const addLinks = (urls: readonly string[]) => {
+    setLinks((prev) => {
+      const seen = new Set(prev);
+      const next = [...prev];
+      for (const u of urls) {
+        if (!seen.has(u)) {
+          seen.add(u);
+          next.push(u);
+        }
+      }
+      return next;
+    });
+  };
 
   /** Prefill from the clipboard when it holds a link, selected so typing replaces it if it's not the link the user wanted. */
   useEffect(() => {
@@ -60,52 +138,38 @@ export function NewContent() {
     };
   }, []);
 
-  /** Recognize the source as the user types so the link glyph can morph into the matching brand mark; classification is cheap pattern matching in the main process. */
-  useEffect(() => {
-    const tokens = url.trim().split(/\s+/).filter(Boolean);
-    const candidate = tokens.length === 1 ? withScheme(tokens[0] ?? "") : "";
-    if (!looksLikeUrl(candidate)) {
-      setSource(null);
+  const trimmedUrl = url.trim();
+  const draftUrls = asUrlList(trimmedUrl);
+  const draftUrl =
+    draftUrls && draftUrls.length === 1 ? (draftUrls[0] ?? "") : "";
+  const pendingCount = links.length + (trimmedUrl ? 1 : 0);
+  const canSubmit = pendingCount > 0 && !busy;
+
+  const onPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const pasted = asUrlList(e.clipboardData.getData("text"));
+    if (!pasted) return;
+    const input = e.currentTarget;
+    const replacesAll =
+      input.selectionStart === 0 && input.selectionEnd === input.value.length;
+    const kept = replacesAll ? null : asUrlList(input.value);
+    if (pasted.length === 1 && !kept) return;
+    e.preventDefault();
+    addLinks(kept ? [...kept, ...pasted] : pasted);
+    setUrl("");
+  };
+
+  const onChange = (value: string) => {
+    const pasted = asUrlList(value);
+    if (pasted && pasted.length > 1) {
+      addLinks(pasted);
+      setUrl("");
       return;
     }
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      void window.pond
-        .query("saves.classifyUrl", { url: candidate })
-        .then((res) => {
-          if (cancelled) return;
-          const next = (res as { source?: string | null })?.source ?? null;
-          setSource(next);
-        })
-        .catch(() => {});
-    }, 120);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [url]);
-
-  const trimmedUrl = url.trim();
-  const trimmedNote = note.trim();
-  const canSubmit = (trimmedUrl.length > 0 || trimmedNote.length > 0) && !busy;
-
-  const toggleTag = (rawName: string) => {
-    const name = rawName.trim();
-    if (!name) return;
-    const lower = name.toLowerCase();
-    setTags((prev) =>
-      prev.some((t) => t.toLowerCase() === lower)
-        ? prev.filter((t) => t.toLowerCase() !== lower)
-        : [...prev, name],
-    );
+    setUrl(value);
   };
 
   const quickAdd = (u: string) =>
-    window.pond.query("saves.quickAdd", {
-      url: u,
-      ...(trimmedNote ? { note: trimmedNote } : {}),
-      ...(tags.length > 0 ? { tags: [...tags] } : {}),
-    }) as Promise<QuickAddResult>;
+    window.pond.query("saves.quickAdd", { url: u }) as Promise<QuickAddResult>;
 
   const submitMany = async (urls: readonly string[]) => {
     let saved = 0;
@@ -149,13 +213,11 @@ export function NewContent() {
 
   const submit = async () => {
     if (!canSubmit) return;
-    /** A pasted list of links saves each one — the same fan-out the grid does for a dropped uri-list; mixed text becomes one manual save. */
-    const tokens = trimmedUrl.split(/\s+/).filter(Boolean).map(withScheme);
-    const isMulti = tokens.length > 1 && tokens.every(looksLikeUrl);
+    const all = [...links, ...(trimmedUrl ? [withScheme(trimmedUrl)] : [])];
     setBusy(true);
     try {
-      if (isMulti) await submitMany(tokens);
-      else await submitOne(trimmedUrl ? withScheme(trimmedUrl) : "");
+      if (all.length > 1) await submitMany(all);
+      else await submitOne(all[0] ?? "");
     } finally {
       setBusy(false);
     }
@@ -168,95 +230,61 @@ export function NewContent() {
     }
   };
 
-  const appliedKeys = new Set(tags.map((t) => t.toLowerCase()));
-  const SourceIcon = source ? getSourceIcon(source) : null;
-
   return (
     /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
     <div className={styles.card}>
-      <div className={styles.row}>
-        <span
-          key={source ?? "link"}
-          className={`${styles["lead-icon"]} ${styles.glyph}`}
-          aria-hidden
-        >
-          {SourceIcon ? (
-            <SourceIcon width={16} height={16} />
-          ) : (
-            <Link width={16} height={16} />
-          )}
-        </span>
-        <Input.Field
-          ref={inputRef}
-          className={styles.input}
-          value={url}
-          placeholder="Paste a link to save…"
-          spellCheck={false}
-          autoComplete="off"
-          autoFocus
-          onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={onFieldKeyDown}
-        />
-      </div>
-
-      <div className={styles.row}>
-        <Notepad width={16} height={16} className={styles["lead-icon"]} />
-        <Input.Field
-          className={styles.input}
-          value={note}
-          placeholder="Add a note…"
-          autoComplete="off"
-          onChange={(e) => setNote(e.target.value)}
-          onKeyDown={onFieldKeyDown}
-        />
-      </div>
-
-      <div className={styles.toolbar}>
-        <div className={styles["toolbar-group"]}>
-          <Menu.Root open={tagsOpen} onOpenChange={setTagsOpen}>
-            <Menu.Trigger
-              className={styles["icon-button"]}
-              aria-label="Add tags"
-            >
-              <Tags width={16} height={16} />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner side="top" align="start" sideOffset={8}>
-                <Menu.Popup>
-                  <TagMenu
-                    appliedKeys={appliedKeys}
-                    onToggle={toggleTag}
-                    allowCreate
-                    groupsAs="submenu"
-                  />
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
-          {tags.map((tag) => (
-            <button
-              key={tag}
-              type="button"
-              className={styles.chip}
-              title={`Remove “${tag}”`}
-              onClick={() => toggleTag(tag)}
-            >
-              {tag}
-            </button>
+      <Dock.Root>
+        <Dock.Close />
+        <Dock.Header>
+          <Dock.Title>New Save</Dock.Title>
+          <Dock.Separator />
+          <Dock.Description>
+            Paste a link to add it to your library. Keep pasting to build a
+            list, and everything saves together.
+          </Dock.Description>
+        </Dock.Header>
+        <div className={styles.fields}>
+          {links.map((link) => (
+            <LinkRow
+              key={link}
+              url={link}
+              onRemove={() =>
+                setLinks((prev) => prev.filter((l) => l !== link))
+              }
+            />
           ))}
+          <div className={styles.row}>
+            <SourceGlyph url={draftUrl} />
+            <Input.Field
+              ref={inputRef}
+              className={styles.input}
+              value={url}
+              placeholder={
+                links.length > 0 ? "Add another link…" : "Paste a link to save…"
+              }
+              spellCheck={false}
+              autoComplete="off"
+              autoFocus
+              onChange={(e) => onChange(e.target.value)}
+              onKeyDown={onFieldKeyDown}
+              onPaste={onPaste}
+            />
+          </div>
         </div>
-
-        <button
-          type="button"
-          className={styles.primary}
-          aria-label="Save"
-          disabled={!canSubmit}
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => void submit()}
-        >
-          <ArrowUp width={16} height={16} />
-        </button>
-      </div>
+        <Dock.Footer>
+          <Dock.Cancel />
+          <Dock.Confirm
+            disabled={!canSubmit}
+            onClick={(e) => {
+              /** Submit closes the dock itself on success and keeps the card open on failure. */
+              e.preventDefault();
+              void submit();
+            }}
+          >
+            {pendingCount > 1 ? `Save ${pendingCount} Links` : "Save"}
+          </Dock.Confirm>
+        </Dock.Footer>
+      </Dock.Root>
     </div>
   );
 }

@@ -93,9 +93,10 @@ function Confirm({
   return (
     <Button
       variant="accent"
+      /** onClick may preventDefault to keep the card open, for async submits that close themselves on success. */
       onClick={(e) => {
         onClick?.(e);
-        dock.closeViewMenu();
+        if (!e.defaultPrevented) dock.closeViewMenu();
       }}
       {...CommonButtonProps}
       {...props}
