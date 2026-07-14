@@ -1,37 +1,36 @@
-import { createRootRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { Dock } from "@/components/library-dock";
-import { LibraryRail } from "@/components/library-rail";
-import { SaveModal } from "@/components/save-detail-modal";
+import { SaveDetailModal } from "@/components/save-detail-modal";
+import { SettingsModal } from "@/components/settings-modal";
+import { Tray } from "@/components/tray";
+import { settingsModal } from "@/stores/settings-modal";
 
 export const Route = createRootRoute({
   component: RootComponent,
 });
 
 function RootComponent() {
-  const navigate = useNavigate();
-
-  /** Menu / tray / deep-link navigation arrives over `IPC.nav` as a path string; settings is its own page, so route it here. */
+  /** Menu / tray / deep-link navigation arrives over `IPC.nav` as a path string; settings lives in a modal, so its paths open it instead of routing. */
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";
       if (pathname === "/settings") {
-        void navigate({ to: "/settings" });
+        settingsModal.open();
         return;
       }
       if (pathname.startsWith("/settings/")) {
-        const section = pathname.slice("/settings/".length);
-        void navigate({ to: "/settings/$section", params: { section } });
+        settingsModal.open(pathname.slice("/settings/".length));
       }
     });
-  }, [navigate]);
+  }, []);
 
   return (
     <>
       <Outlet />
-      <LibraryRail />
-      <Dock.Root />
-      <SaveModal />
+      <Tray.Navigation />
+      <Tray.Library />
+      <SaveDetailModal />
+      <SettingsModal />
     </>
   );
 }

@@ -1,8 +1,5 @@
 /* The pill supplies the surface, so no extra ring here. */
 .card {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+  composes: card from "../library-dock/lib/kit.module.css";
   width: var(--dock-card-width, 280px);
-  padding: 4px;
 }

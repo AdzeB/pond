@@ -33,9 +33,9 @@ export const bouncySpring: Transition = {
   bounce: 0.28,
 };
 
-/** One shared easeOutExpo-style curve: the pill's box morph and the content crossfade ride the same curve so they land as one. */
-const DOCK_EASE: [number, number, number, number] = [0.19, 1, 0.22, 1];
-const FAMILY_CONTENT_DURATION = 0.22;
+/** One shared easeOutQuart-style curve: the pill's box morph and the content crossfade ride the same curve so they land as one. */
+const DOCK_EASE: [number, number, number, number] = [0.25, 1, 0.5, 1];
+const FAMILY_CONTENT_DURATION = 0.4;
 
 interface DockMotion {
   pillTransition: Transition;
@@ -71,8 +71,7 @@ export function buildDockMotion(
   };
   return {
     pillTransition: {
-      type: "tween",
-      duration: 0.25 * timeScale,
+      duration: 0.4 * timeScale,
       ease: DOCK_EASE,
     },
     swapTransition: enterTransition,

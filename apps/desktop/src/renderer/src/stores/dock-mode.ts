@@ -13,6 +13,9 @@ export type DockMode =
   | "layout"
   | "zoom"
   | "sort"
+  | "sort-date"
+  | "sort-content"
+  | "sort-file"
   | "display";
 
 const store = new Store<{ mode: DockMode }>({ mode: "nav" });

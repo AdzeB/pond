@@ -1,43 +1,10 @@
 .card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: var(--dock-card-width, 400px);
+  composes: card from "../library-dock/lib/kit.module.css";
   max-height: 72vh;
-  padding: 6px;
 }
 
 .icon-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover:not(:disabled) {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:disabled {
-    color: var(--ds-gray-6);
-    cursor: default;
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: icon-button from "../library-dock/lib/kit.module.css";
 }
 
 .chat-header {
@@ -48,12 +15,10 @@
 }
 
 .chat-title {
+  composes: title from "../library-dock/lib/kit.module.css";
   display: inline-flex;
   gap: 6px;
   align-items: center;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ds-gray-11);
 
   & svg {
     color: var(--ds-gray-10);
@@ -240,25 +205,7 @@
 }
 
 .action {
-  display: inline-flex;
-  align-items: center;
-  height: 26px;
-  padding-inline: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-3);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-4);
-  }
+  composes: chip from "../library-dock/lib/kit.module.css";
 }
 
 .action-danger:hover {
@@ -299,7 +246,7 @@
   background: none;
   border: 0;
   border-radius: var(--ds-radius-sm);
-  transition: background var(--ds-duration-fast) var(--ds-easing-standard);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 
   &:hover,
   &[data-active] {
@@ -364,11 +311,14 @@
   }
 }
 
+/* Family-style inset well around the prompt field. */
 .editor {
+  composes: well from "../library-dock/lib/kit.module.css";
   position: relative;
   width: 100%;
   min-height: 76px;
-  padding: 8px 6px 4px;
+  padding: 10px;
+  margin-bottom: 4px;
 }
 
 /* Once a conversation exists the input is a compact follow-up bar. */
@@ -395,8 +345,8 @@
 
 .placeholder {
   position: absolute;
-  top: 8px;
-  left: 6px;
+  top: 10px;
+  left: 10px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--ds-gray-9);
@@ -405,52 +355,15 @@
 }
 
 .toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px;
+  composes: toolbar from "../library-dock/lib/kit.module.css";
 }
 
 .toolbar-group {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 2px;
-  align-items: center;
+  composes: toolbar-group from "../library-dock/lib/kit.module.css";
 }
 
 .primary {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--ds-gray-1);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-12);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard),
-    transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-
-  &:active:not(:disabled) {
-    transform: scale(0.9);
-  }
-
-  &:disabled {
-    color: var(--ds-gray-9);
-    cursor: default;
-    background: var(--ds-gray-4);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: primary from "../library-dock/lib/kit.module.css";
 }
 
 .result-label {
@@ -537,26 +450,7 @@
 }
 
 .suggestion {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 5px;
-  align-items: center;
-  height: 22px;
-  padding-inline: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-  white-space: nowrap;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-3);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-4);
-  }
+  composes: chip from "../library-dock/lib/kit.module.css";
 }
 
 .suggestion-count {
@@ -574,29 +468,5 @@
 }
 
 .end-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: icon-button from "../library-dock/lib/kit.module.css";
 }

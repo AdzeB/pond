@@ -10,7 +10,7 @@ import { useSaveDetailsOpen } from "@/stores/save-detail-prefs";
 import { primarySelection, primarySelectionStore } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-export function SaveModal() {
+export function SaveDetailModal() {
   const id = useSelector(primarySelectionStore, (s) => s.id);
   const detailsOpen = useSaveDetailsOpen();
 

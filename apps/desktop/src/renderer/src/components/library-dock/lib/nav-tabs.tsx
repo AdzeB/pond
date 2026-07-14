@@ -8,6 +8,7 @@ import {
 } from "@pond/icons/fill/18";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { settingsModal } from "@/stores/settings-modal";
 
 export type DockTab =
   | "library"
@@ -20,8 +21,10 @@ export type DockTab =
 interface NavTab {
   id: DockTab;
   label: string;
-  to: LinkProps["to"];
+  to?: LinkProps["to"];
   params?: LinkProps["params"];
+  /** Tabs that open an overlay instead of navigating. */
+  action?: () => void;
   icon: ReactNode;
   match: (pathname: string) => boolean;
 }
@@ -66,8 +69,8 @@ export const NAV_TABS: readonly NavTab[] = [
   {
     id: "settings",
     label: "Settings",
-    to: "/settings",
+    action: () => settingsModal.open(),
     icon: <Settings />,
-    match: (p) => p === "/settings",
+    match: () => false,
   },
 ] as const;

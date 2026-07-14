@@ -56,7 +56,7 @@ export function DockProvider({
 export function useDock(): DockContextValue {
   const ctx = use(DockContext);
   if (!ctx) {
-    throw new Error("useDock must be used within a Dock.Root");
+    throw new Error("useDock must be used within a Tray.Library");
   }
   return ctx;
 }

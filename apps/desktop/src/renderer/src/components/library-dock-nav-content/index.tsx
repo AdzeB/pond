@@ -8,10 +8,10 @@ import {
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
 import { Tooltip } from "@pond/ui";
-import { Link } from "@tanstack/react-router";
 import { useDock } from "@/components/library-dock/lib/context";
 import type { ViewMenuSection } from "@/components/library-dock/lib/types";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
+import { settingsModal } from "@/stores/settings-modal";
 import styles from "./styles.module.css";
 
 const VIEW_MENUS: Array<{
@@ -81,16 +81,15 @@ export function NavContent() {
         </Tooltip>
       ) : (
         <Tooltip label="Connect an AI model to ask" side="top">
-          <Link
-            to="/settings/$section"
-            params={{ section: "ai-models" }}
+          <button
+            type="button"
             className={styles.item}
             aria-label="Connect an AI model to ask"
-            aria-disabled="true"
             data-disabled="true"
+            onClick={() => settingsModal.open("ai-models")}
           >
             <Ask />
-          </Link>
+          </button>
         </Tooltip>
       )}
     </div>

@@ -1,0 +1,58 @@
+.popup {
+  /* settings-tags reads this var to offset its action bar. */
+  --settings-sidebar-width: 240px;
+
+  flex-direction: row;
+  width: min(1080px, calc(100vw - 96px));
+  height: min(720px, calc(100vh - 96px));
+  padding: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  display: flex;
+  flex: none;
+  width: var(--settings-sidebar-width);
+  min-height: 0;
+  background: var(--ds-gray-2);
+  border-right: 1px solid var(--ds-gray-a3);
+}
+
+/* Sidebar.Root carries a titlebar inset meant for the full-page layout; neutralize it inside the modal. */
+.sidebar > div {
+  width: 100%;
+  margin-top: 0;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-10);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+}
+
+.close:hover,
+.close:focus-visible {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}

@@ -10,15 +10,28 @@ export type DockView =
   | "layout"
   | "zoom"
   | "sort"
+  | "sort-date"
+  | "sort-content"
+  | "sort-file"
   | "display"
   | "nav";
 
-export type ViewMenuSection = "layout" | "zoom" | "sort" | "display";
+export type ViewMenuSection =
+  | "layout"
+  | "zoom"
+  | "sort"
+  | "sort-date"
+  | "sort-content"
+  | "sort-file"
+  | "display";
 
 export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "layout",
   "zoom",
   "sort",
+  "sort-date",
+  "sort-content",
+  "sort-file",
   "display",
 ];
 

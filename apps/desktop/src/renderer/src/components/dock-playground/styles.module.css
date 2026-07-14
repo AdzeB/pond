@@ -160,3 +160,45 @@
   outline: none;
   box-shadow: 0 0 0 2px var(--ds-gray-a8);
 }
+
+.grid {
+  position: absolute;
+  inset: 16px 16px 16px 280px;
+  display: grid;
+  /* 3 columns */
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  align-content: start;
+  /* Keeps the live floating dock clear of the last row. */
+  padding-bottom: 112px;
+  overflow-y: auto;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px dashed var(--ds-gray-a5);
+  border-radius: var(--ds-radius-md);
+}
+
+.cellLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ds-gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Bottom-anchored like the real dock, so height morphs read the same way. */
+.cellStage {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  justify-content: center;
+  min-height: 128px;
+  padding: 8px 4px 4px;
+  overflow: hidden;
+}

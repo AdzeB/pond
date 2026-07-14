@@ -30,10 +30,7 @@ import {
 } from "./lib/types";
 import styles from "./styles.module.css";
 
-export const Dock = Object.assign(Root, {
-  Root,
-});
-interface RootProps {
+interface LibraryTrayProps {
   preview?: DockPreview;
 }
 
@@ -48,7 +45,7 @@ const clearResults = () => {
   dockMode.close();
 };
 
-function Root({ preview }: RootProps) {
+export function LibraryTray({ preview }: LibraryTrayProps) {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
@@ -115,7 +112,6 @@ function Root({ preview }: RootProps) {
   const isTabActive = useCallback(
     (tab: DockTab): boolean => {
       if (preview) return preview.activeTab === tab;
-      if (tab === "settings") return pathname.startsWith("/settings");
       const navTab = NAV_TABS.find((t) => t.id === tab);
       return navTab ? navTab.match(pathname) : false;
     },
@@ -202,10 +198,7 @@ function Root({ preview }: RootProps) {
     ],
   );
 
-  if (
-    !preview &&
-    (pathname === "/components" || pathname.startsWith("/settings"))
-  ) {
+  if (!preview && pathname === "/components") {
     return null;
   }
 
@@ -242,7 +235,7 @@ function Root({ preview }: RootProps) {
                 transition={swapTransition}
               >
                 <AskComposer
-                  autoFocus
+                  autoFocus={!preview}
                   onCollapse={closeToNav}
                   onClear={clearAsk}
                 />
@@ -254,7 +247,7 @@ function Root({ preview }: RootProps) {
                 {...swap}
                 transition={swapTransition}
               >
-                <SearchComposer autoFocus onCollapse={closeToNav} />
+                <SearchComposer autoFocus={!preview} onCollapse={closeToNav} />
               </motion.div>
             ) : view === "status" ? (
               <motion.div

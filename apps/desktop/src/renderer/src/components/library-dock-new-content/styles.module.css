@@ -1,25 +1,22 @@
 /* The pill supplies the surface, so fields shed their own chrome. */
 .card {
-  display: flex;
-  flex-direction: column;
+  composes: card from "../library-dock/lib/kit.module.css";
+  gap: 4px;
   width: var(--dock-card-width, 360px);
-  padding: 6px;
 }
 
+/* Each field sits in its own Family-style well. */
 .row {
+  composes: well from "../library-dock/lib/kit.module.css";
   display: flex;
   gap: 8px;
   align-items: center;
-  height: 34px;
-  padding-inline: 8px;
+  height: 38px;
+  padding-inline: 10px;
 }
 
 .lead-icon {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  color: var(--ds-gray-9);
+  composes: lead-icon from "../library-dock/lib/kit.module.css";
 }
 
 /* The link row's glyph remounts when the typed URL classifies to a source, so the brand mark pops in. */
@@ -66,106 +63,25 @@
 }
 
 .toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px;
-  margin-top: 2px;
+  composes: toolbar from "../library-dock/lib/kit.module.css";
 }
 
+/* Picked tag chips wrap to new lines instead of clipping. */
 .toolbar-group {
-  display: inline-flex;
+  composes: toolbar-group from "../library-dock/lib/kit.module.css";
+  flex-shrink: 1;
   flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  min-width: 0;
 }
 
 .icon-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover,
-  &[data-popup-open] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: icon-button from "../library-dock/lib/kit.module.css";
 }
 
 /* Clicking a picked tag removes it. */
 .chip {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  height: 22px;
-  padding-inline: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-11);
-  white-space: nowrap;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-3);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-4);
-  }
+  composes: chip from "../library-dock/lib/kit.module.css";
 }
 
 .primary {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--ds-gray-1);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-12);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard),
-    transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-
-  &:active:not(:disabled) {
-    transform: scale(0.9);
-  }
-
-  &:disabled {
-    color: var(--ds-gray-9);
-    cursor: default;
-    background: var(--ds-gray-4);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: primary from "../library-dock/lib/kit.module.css";
 }

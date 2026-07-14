@@ -23,6 +23,7 @@ import { setAppRouter } from "./lib/ui/app-router";
 import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
 import { usePrefs } from "./stores/prefs";
+import { settingsModal } from "./stores/settings-modal";
 
 declare global {
   interface Window {
@@ -52,12 +53,11 @@ declare module "@tanstack/react-router" {
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
-/** "continue" is not listed; it is handled by restoring the persisted last path. */
+/** "continue" is not listed; it is handled by restoring the persisted last path. "settings" is not listed either; it lands on "/" and opens the settings modal after mount. */
 const STARTUP_ROUTES: Record<string, string> = {
   library: "/",
   sources: "/sources",
   trash: "/trash",
-  settings: "/settings",
 };
 
 function readStored(key: string): string | null {
@@ -72,10 +72,13 @@ function readStored(key: string): string | null {
 /** Reads the localStorage mirror of the startup preference so the initial route resolves synchronously, before prefs finish loading over IPC. */
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
+  if (startup === "settings") return "/";
   if (startup !== "continue" && STARTUP_ROUTES[startup]) {
     return STARTUP_ROUTES[startup];
   }
-  return readStored(LAST_PATH_KEY) || "/";
+  const last = readStored(LAST_PATH_KEY) || "/";
+  /** Persisted paths from before settings moved into a modal would 404. */
+  return last.startsWith("/settings") ? "/" : last;
 }
 
 function buildRouter() {
@@ -105,6 +108,11 @@ export function App() {
   useEffect(() => {
     setAppRouter(router);
   }, [router]);
+
+  /** The "settings" startup page lands on "/" and opens the modal on top. */
+  useEffect(() => {
+    if (readStored(STARTUP_PAGE_KEY) === "settings") settingsModal.open();
+  }, []);
 
   /** Mirror the startup preference into localStorage so the next cold launch resolves the initial route before prefs load over IPC. */
   const [windowPrefs] = usePrefs("window");

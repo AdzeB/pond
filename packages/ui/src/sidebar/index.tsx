@@ -43,6 +43,12 @@ function Anchor({ ...props }: AnchorProps) {
   return <Link className={styles.item} {...props} />;
 }
 
+interface ResultButtonProps extends Button.Props {}
+
+function ResultButton({ ...props }: ResultButtonProps) {
+  return <Button className={styles.result} {...props} />;
+}
+
 interface IconProps extends React.ComponentPropsWithoutRef<"span"> {
   source?: boolean | undefined;
 }
@@ -229,6 +235,7 @@ export const Sidebar = {
   Count,
   Anchor,
   Result,
+  ResultButton,
   Empty,
   Footer,
   Group,

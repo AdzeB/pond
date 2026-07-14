@@ -23,7 +23,7 @@ export function useCardActions(
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  /** The inline SaveModal renders whatever the primary selection points at. */
+  /** The globally-mounted SaveDetailModal renders whatever the primary selection points at. */
   const select = useCallback((id: string) => {
     primarySelection.set(id);
   }, []);

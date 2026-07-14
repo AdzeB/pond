@@ -3,14 +3,14 @@ import {
   IconGridLayoutRowsFill18 as JustifiedIcon,
   IconGridLayoutColsFill18 as WaterfallIcon,
 } from "@pond/icons/fill/18";
-import { Group } from "@/components/library-view-menu-group";
+import { useRef } from "react";
+import { Dock } from "@/components/library-view-menu-group";
 import {
   Segmented,
   type SegmentedOption,
 } from "@/components/library-view-menu-segmented";
 import { useView } from "@/hooks/use-view";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
-import { VIEW_DEFAULTS } from "@/stores/view-store";
 
 const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
   { value: "waterfall", label: "Waterfall", icon: <WaterfallIcon size={18} /> },
@@ -20,15 +20,31 @@ const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
 
 export function LayoutSection() {
   const { state, actions } = useView();
+  /** Layout applies live while the card is open; Cancel restores this snapshot. */
+  const initialLayout = useRef(state.layout);
 
   return (
-    <Group title="Layout" changed={state.layout !== VIEW_DEFAULTS.layout}>
+    <Dock.Root>
+      <Dock.Close />
+      <Dock.Header>
+        <Dock.Title>Library Layout</Dock.Title>
+        <Dock.Separator />
+        <Dock.Description>
+          Choose how items are arranged in your library. Waterfall keeps natural
+          heights, Grid keeps everything uniform, and Justified fills each row
+          edge to edge.
+        </Dock.Description>
+      </Dock.Header>
       <Segmented
         ariaLabel="Layout"
         options={options}
         value={state.layout}
         onChange={actions.setLayout}
       />
-    </Group>
+      <Dock.Footer>
+        <Dock.Cancel onClick={() => actions.setLayout(initialLayout.current)} />
+        <Dock.Confirm />
+      </Dock.Footer>
+    </Dock.Root>
   );
 }

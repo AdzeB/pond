@@ -1,4 +1,3 @@
-import { IconArrowLeftOutline18 as Back } from "@pond/icons/outline/18";
 import { Sidebar } from "@pond/ui";
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
@@ -12,6 +11,7 @@ import {
   SETTINGS_SEARCH_INDEX,
   type SettingsSearchEntry,
 } from "@/lib/settings/search-index";
+import { settingsModal, useSettingsModal } from "@/stores/settings-modal";
 
 interface SectionResult {
   section: SectionDef;
@@ -21,6 +21,7 @@ interface SectionResult {
 export function SettingsSidebar() {
   const [query, setQuery] = useState("");
   const [isPackaged, setIsPackaged] = useState(false);
+  const activeSection = useSettingsModal().section;
   const needle = query.trim();
 
   useEffect(() => {
@@ -66,19 +67,25 @@ export function SettingsSidebar() {
     return [...bySection.values()];
   }, [needle, fuse, isPackaged]);
 
+  const sectionItem = (section: SectionDef) => {
+    const active = section.path === activeSection;
+    return (
+      <Sidebar.Item
+        key={section.path}
+        onClick={() => settingsModal.open(section.path)}
+        data-status={active ? "active" : undefined}
+        aria-current={active ? "page" : undefined}
+      >
+        <Sidebar.Icon>
+          <section.icon />
+        </Sidebar.Icon>
+        {section.label}
+      </Sidebar.Item>
+    );
+  };
+
   return (
     <Sidebar.Root>
-      <Sidebar.Header>
-        <Sidebar.Group>
-          <Sidebar.Anchor to="/">
-            <Sidebar.Icon>
-              <Back />
-            </Sidebar.Icon>
-            Back to Library
-          </Sidebar.Anchor>
-        </Sidebar.Group>
-      </Sidebar.Header>
-
       <Sidebar.Group>
         <Sidebar.Search
           value={query}
@@ -92,18 +99,7 @@ export function SettingsSidebar() {
           masterGroups.map((group) => (
             <Sidebar.Group key={group.group}>
               <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-              {group.sections.map((section) => (
-                <Sidebar.Anchor
-                  key={section.path}
-                  to="/settings/$section"
-                  params={{ section: section.path }}
-                >
-                  <Sidebar.Icon>
-                    <section.icon />
-                  </Sidebar.Icon>
-                  {section.label}
-                </Sidebar.Anchor>
-              ))}
+              {group.sections.map(sectionItem)}
             </Sidebar.Group>
           ))
         ) : results.length === 0 ? (
@@ -113,24 +109,19 @@ export function SettingsSidebar() {
         ) : (
           results.map(({ section, items }) => (
             <Sidebar.Group key={section.id}>
-              <Sidebar.Anchor
-                to="/settings/$section"
-                params={{ section: section.path }}
-              >
-                <Sidebar.Icon>
-                  <section.icon />
-                </Sidebar.Icon>
-                {section.label}
-              </Sidebar.Anchor>
+              {sectionItem(section)}
               {items.map((item) => (
-                <Sidebar.Result
+                <Sidebar.ResultButton
                   key={item.id}
-                  to="/settings/$section"
-                  params={{ section: section.path }}
-                  hash={`setting-${item.sectionId}-${item.itemKey}`}
+                  onClick={() =>
+                    settingsModal.open(
+                      section.path,
+                      `setting-${item.sectionId}-${item.itemKey}`,
+                    )
+                  }
                 >
                   {item.title}
-                </Sidebar.Result>
+                </Sidebar.ResultButton>
               ))}
             </Sidebar.Group>
           ))

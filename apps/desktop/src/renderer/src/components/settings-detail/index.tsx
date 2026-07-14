@@ -1,5 +1,4 @@
 import { Settings } from "@pond/ui";
-import { useRouterState } from "@tanstack/react-router";
 import { useReducedMotion } from "motion/react";
 import { Suspense, useEffect } from "react";
 import { SettingsSectionView } from "@/components/settings-engine";
@@ -7,8 +6,7 @@ import { isBespokeSection, sectionForPath } from "@/lib/settings/registry";
 import styles from "./styles.module.css";
 
 /** Retries across a few frames so the hash-targeted field still lands after lazy content and prefs-bound rows have mounted. */
-function useScrollToHashField() {
-  const hash = useRouterState({ select: (s) => s.location.hash });
+function useScrollToHashField(hash: string | null) {
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -41,8 +39,14 @@ function useScrollToHashField() {
 }
 
 /** Field-style sections flow into a centered column; bespoke sections bring their own full layout. */
-export function SettingsDetail({ section }: { section: string }) {
-  useScrollToHashField();
+export function SettingsDetail({
+  section,
+  hash = null,
+}: {
+  section: string;
+  hash?: string | null;
+}) {
+  useScrollToHashField(hash);
   const def = sectionForPath(section);
   if (!def) return null;
 

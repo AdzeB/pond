@@ -1,5 +1,7 @@
 import { EMPTY_QUERY } from "@pond/schema/filters/types";
 import { useEffect, useState } from "react";
+import { LibraryTray } from "@/components/library-dock";
+import type { DockPreview } from "@/components/library-dock/lib/types";
 import { motionScale } from "@/lib/ui/motion";
 import {
   clearAsk,
@@ -13,7 +15,7 @@ import { dockMode, useDockMode } from "@/stores/dock-mode";
 import { selection, useSelectionSize } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-/** Renders only a backdrop and control panel; the globally-mounted Dock.Root floats above, so every button drives the live stores and plays real transitions. */
+/** Left panel drives the live, globally-mounted Tray.Library (real transitions); the grid renders one forced preview per dock state so all of them can be styled at once. */
 
 const ASK_QUESTION = "mountain landscapes at golden hour";
 
@@ -89,6 +91,28 @@ const SELECTIONS = [
   { count: 240, label: "240 items" },
 ] as const;
 
+/** The status cell renders from the live ask store, so the Status pill scenario buttons drive it. */
+const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
+  {
+    id: "nav",
+    label: "Nav (rest)",
+    preview: { view: "nav", activeTab: "library" },
+  },
+  { id: "ask", label: "Ask composer", preview: { view: "ask" } },
+  { id: "search", label: "Search", preview: { view: "search" } },
+  { id: "status", label: "Status pill", preview: { view: "status" } },
+  { id: "new", label: "New save", preview: { view: "new" } },
+  { id: "layout", label: "Layout", preview: { view: "layout" } },
+  { id: "zoom", label: "Zoom", preview: { view: "zoom" } },
+  { id: "sort", label: "Sort", preview: { view: "sort" } },
+  { id: "display", label: "Display", preview: { view: "display" } },
+  {
+    id: "selection",
+    label: "Selection",
+    preview: { view: "selection", selectionSize: 12, filteredCount: 240 },
+  },
+];
+
 export function DockPlayground() {
   const mode = useDockMode();
   const selectionSize = useSelectionSize();
@@ -104,6 +128,11 @@ export function DockPlayground() {
       selection.clear();
       dockMode.close();
     };
+  }, []);
+
+  /** The status-pill grid cell is empty without an active ask; give it content on arrival. */
+  useEffect(() => {
+    seedAskResults();
   }, []);
 
   const resolvedView =
@@ -127,7 +156,8 @@ export function DockPlayground() {
         <header className={styles.header}>
           <h1 className={styles.title}>Dock playground</h1>
           <p className={styles.subtitle}>
-            Drives the live dock below — every click plays the real transition.
+            The grid shows every dock state at once; the buttons drive the live
+            dock below with real transitions.
           </p>
         </header>
 
@@ -251,6 +281,17 @@ export function DockPlayground() {
           </div>
         </div>
       </aside>
+
+      <main className={styles.grid} aria-label="Dock states">
+        {GRID_STATES.map((state) => (
+          <section key={state.id} className={styles.cell}>
+            <div className={styles.cellLabel}>{state.label}</div>
+            <div className={styles.cellStage}>
+              <LibraryTray preview={state.preview} />
+            </div>
+          </section>
+        ))}
+      </main>
     </div>
   );
 }

@@ -1,6 +1,10 @@
-import { Slider } from "@pond/ui";
-import { Group } from "@/components/library-view-menu-group";
+import { Toggle } from "@base-ui/react/toggle";
+import { ToggleGroup } from "@base-ui/react/toggle-group";
+import { motion, useReducedMotion } from "motion/react";
+import { useId, useRef } from "react";
+import { Dock } from "@/components/library-view-menu-group";
 import { useView } from "@/hooks/use-view";
+import { snappySpring } from "@/lib/ui/motion";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/ui/zoom";
 import styles from "./styles.module.css";
 
@@ -8,6 +12,7 @@ const STEPS: ReadonlyArray<{ value: number; label: string }> = [
   { value: ZOOM_MIN, label: "Compact" },
   { value: 105, label: "Cozy" },
   { value: ZOOM_DEFAULT, label: "Comfortable" },
+  { value: 155, label: "Relaxed" },
   { value: 185, label: "Spacious" },
   { value: ZOOM_MAX, label: "Roomy" },
 ];
@@ -25,39 +30,57 @@ function closestIndex(value: number): number {
   return best;
 }
 
-/** Index-driven slider that snaps to the five named density steps. */
 export function ZoomSection() {
   const { state, actions } = useView();
-  const index = closestIndex(state.zoom);
-  const label = STEPS[index]?.label;
+  const groupId = useId();
+  const reduceMotion = useReducedMotion();
+  const activeIndex = closestIndex(state.zoom);
+  const initialZoom = useRef(state.zoom);
 
   return (
-    <Group title="Zoom" value={label} changed={state.zoom !== ZOOM_DEFAULT}>
-      <div className={styles["zoom-row"]}>
-        <span className={styles["zoom-cue"]} data-size="sm" aria-hidden />
-        <Slider.Root
-          className={styles["zoom-slider"]}
-          aria-label="Zoom"
-          min={0}
-          max={STEPS.length - 1}
-          step={1}
-          value={index}
-          onValueChange={(value) => {
-            const next = Array.isArray(value) ? value[0] : value;
-            if (next == null) return;
-            const step = STEPS[next];
-            if (step) actions.setZoom(step.value);
-          }}
-        >
-          <Slider.Control className={styles["zoom-control"]}>
-            <Slider.Track className={styles["zoom-track"]}>
-              <Slider.Indicator className={styles["zoom-indicator"]} />
-              <Slider.Thumb className={styles["zoom-thumb"]} />
-            </Slider.Track>
-          </Slider.Control>
-        </Slider.Root>
-        <span className={styles["zoom-cue"]} data-size="lg" aria-hidden />
-      </div>
-    </Group>
+    <Dock.Root>
+      <Dock.Close />
+      <Dock.Header>
+        <Dock.Title>Library Zoom Level</Dock.Title>
+        <Dock.Separator />
+        <Dock.Description>
+          Control how large items appear in your library. Pick a denser step to
+          fit more on screen at once, or a roomier one for bigger,
+          easier-to-scan cards.
+        </Dock.Description>
+      </Dock.Header>
+      <ToggleGroup
+        role="radiogroup"
+        aria-label="Zoom"
+        className={styles.options}
+      >
+        {STEPS.map((step, index) => {
+          const active = index === activeIndex;
+          return (
+            <Toggle
+              key={step.value}
+              title={step.label}
+              className={styles.toggle}
+              onClick={() => actions.setZoom(step.value)}
+            >
+              {active ? (
+                <motion.span
+                  aria-hidden
+                  layoutId={`${groupId}-highlight`}
+                  className={styles.highlight}
+                  transition={reduceMotion ? { duration: 0 } : snappySpring}
+                />
+              ) : null}
+
+              <span className={styles.label}>{step.label}</span>
+            </Toggle>
+          );
+        })}
+      </ToggleGroup>
+      <Dock.Footer>
+        <Dock.Cancel onClick={() => actions.setZoom(initialZoom.current)} />
+        <Dock.Confirm />
+      </Dock.Footer>
+    </Dock.Root>
   );
 }

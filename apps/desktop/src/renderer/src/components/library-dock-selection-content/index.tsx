@@ -8,9 +8,7 @@ import {
 import { motion } from "motion/react";
 import { forwardRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { selectAllInView } from "@/lib/save/selection";
 import { snappySpring } from "@/lib/ui/motion";
-import { formatNumber } from "@/lib/util/format";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
@@ -25,24 +23,6 @@ export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
       transition={dock.swapTransition}
       {...dock.swap}
     >
-      <button
-        type="button"
-        className={styles.count}
-        aria-label={
-          dock.allSelected
-            ? `${formatNumber(dock.selectionSize)} selected`
-            : `${formatNumber(dock.selectionSize)} selected, select all`
-        }
-        onClick={() => selectAllInView()}
-      >
-        {formatNumber(dock.selectionSize)}
-        {dock.filteredCount > dock.selectionSize ? (
-          <span className={styles["count-total"]}>
-            /{formatNumber(dock.filteredCount)}
-          </span>
-        ) : null}
-      </button>
-
       <motion.button
         type="button"
         className={styles.item}

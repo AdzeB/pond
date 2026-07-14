@@ -1,24 +1,22 @@
 .card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: var(--dock-card-width, 400px);
-  padding: 6px;
+  composes: card from "../library-dock/lib/kit.module.css";
 }
 
+/* Family-style inset well around the query field. */
 .editor {
+  composes: well from "../library-dock/lib/kit.module.css";
   position: relative;
   display: flex;
   gap: 8px;
   width: 100%;
   min-height: 40px;
-  padding: 10px 8px 8px;
+  padding: 10px 10px 8px;
+  margin-bottom: 4px;
 }
 
 .lead-icon {
-  flex: none;
+  composes: lead-icon from "../library-dock/lib/kit.module.css";
   margin-top: 2px;
-  color: var(--ds-gray-9);
 }
 
 .input {
@@ -53,7 +51,7 @@
 .placeholder {
   position: absolute;
   top: 10px;
-  left: 32px;
+  left: 34px;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
@@ -65,79 +63,21 @@
 }
 
 .toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px;
+  composes: toolbar from "../library-dock/lib/kit.module.css";
 }
 
 .toolbar-group {
-  display: inline-flex;
-  flex-shrink: 0;
-  gap: 6px;
-  align-items: center;
+  composes: toolbar-group from "../library-dock/lib/kit.module.css";
 }
 
 .icon-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: icon-button from "../library-dock/lib/kit.module.css";
 }
 
 .count {
-  font-size: 12px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
+  composes: count from "../library-dock/lib/kit.module.css";
 }
 
 .clear-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  composes: icon-button from "../library-dock/lib/kit.module.css";
 }
