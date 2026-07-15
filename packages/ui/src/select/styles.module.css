@@ -46,39 +46,39 @@
 }
 
 .positioner {
-  composes: positioner from "../shared/popup.module.css";
+  composes: positioner from "../shared/styles/popup/styles.module.css";
 }
 
 .backdrop {
-  composes: backdrop from "../shared/popup.module.css";
+  composes: backdrop from "../shared/styles/popup/styles.module.css";
 }
 
 /* At least as wide as the trigger, growing to fit the widest item so long labels never wrap, capped at the viewport where labels ellipsize. */
 .popup {
-  composes: popup from "../shared/popup.module.css";
+  composes: popup from "../shared/styles/popup/styles.module.css";
   width: var(--popup-width, max-content);
   min-width: var(--anchor-width);
   max-width: var(--available-width);
 }
 
 .arrow {
-  composes: arrow from "../shared/popup.module.css";
+  composes: arrow from "../shared/styles/popup/styles.module.css";
 }
 
 .item {
-  composes: item from "../shared/popup.module.css";
+  composes: item from "../shared/styles/popup/styles.module.css";
 }
 
 .item-label {
-  composes: item-label from "../shared/popup.module.css";
+  composes: item-label from "../shared/styles/popup/styles.module.css";
 }
 
 .indicator {
-  composes: indicator from "../shared/popup.module.css";
+  composes: indicator from "../shared/styles/popup/styles.module.css";
 }
 
 .group-label {
-  composes: group-label from "../shared/popup.module.css";
+  composes: group-label from "../shared/styles/popup/styles.module.css";
 }
 
 .group-label-sticky {
@@ -89,5 +89,5 @@
 }
 
 .separator {
-  composes: separator from "../shared/popup.module.css";
+  composes: separator from "../shared/styles/popup/styles.module.css";
 }

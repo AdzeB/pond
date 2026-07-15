@@ -1,0 +1,89 @@
+/* Floating capsule surface shared by every tray (dock, navigation rail). */
+.pill {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: auto;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-2xl);
+  box-shadow: var(--ds-shadow-5);
+}
+
+.pill[data-orientation="vertical"] {
+  flex-direction: column;
+}
+
+.item {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+
+  > svg {
+    position: relative;
+    z-index: 1;
+    width: 18px;
+    height: 18px;
+    transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
+  }
+
+  &:hover,
+  &[data-status="active"] {
+    color: var(--ds-gray-12);
+  }
+
+  &:active > svg {
+    transform: scale(0.82);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &[data-disabled="true"] {
+    color: var(--ds-gray-7);
+
+    &:hover {
+      color: var(--ds-gray-8);
+    }
+  }
+}
+
+/* Active-tab backdrop inside an item; a full circle to match the capsule pill. */
+.indicator {
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.separator {
+  flex-shrink: 0;
+  align-self: center;
+  width: 1px;
+  height: 16px;
+  margin-inline: 4px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.pill[data-orientation="vertical"] .separator {
+  width: 16px;
+  height: 1px;
+  margin-block: 4px;
+  margin-inline: 0;
+}

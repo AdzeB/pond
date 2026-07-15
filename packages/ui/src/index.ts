@@ -33,5 +33,11 @@ export { Toggle, type ToggleProps } from "./toggle";
 export { ToggleGroup } from "./toggle-group";
 export { Toolbar } from "./toolbar";
 export { Tooltip } from "./tooltip";
+export { Tray } from "./tray";
+export { TrayCard } from "./tray-card";
+export {
+  type TrayCardContextValue,
+  useTrayCard,
+} from "./tray-card/context";
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";

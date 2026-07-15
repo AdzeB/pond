@@ -2,9 +2,10 @@
   position: fixed;
   inset: 0;
   z-index: 1000;
-  background: var(--ds-black-a10);
+  background: var(--ds-black-a8);
   transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
   -webkit-app-region: no-drag;
+  backdrop-filter: blur(4px);
 
   &[data-starting-style],
   &[data-ending-style] {

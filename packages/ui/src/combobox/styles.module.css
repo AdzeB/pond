@@ -30,20 +30,20 @@
 }
 
 .positioner {
-  composes: positioner from "../shared/popup.module.css";
+  composes: positioner from "../shared/styles/popup/styles.module.css";
 }
 
 .backdrop {
-  composes: backdrop from "../shared/popup.module.css";
+  composes: backdrop from "../shared/styles/popup/styles.module.css";
 }
 
 .popup {
-  composes: popup from "../shared/popup.module.css";
+  composes: popup from "../shared/styles/popup/styles.module.css";
   gap: 4px;
 }
 
 .arrow {
-  composes: arrow from "../shared/popup.module.css";
+  composes: arrow from "../shared/styles/popup/styles.module.css";
 }
 
 .input {
@@ -90,12 +90,12 @@
 }
 
 .item {
-  composes: item from "../shared/popup.module.css";
+  composes: item from "../shared/styles/popup/styles.module.css";
   gap: 8px;
 }
 
 .item-label {
-  composes: item-label from "../shared/popup.module.css";
+  composes: item-label from "../shared/styles/popup/styles.module.css";
   font-variant-numeric: tabular-nums;
 }
 
@@ -115,7 +115,7 @@
 }
 
 .indicator {
-  composes: indicator from "../shared/popup.module.css";
+  composes: indicator from "../shared/styles/popup/styles.module.css";
 }
 
 .group {
@@ -124,9 +124,9 @@
 }
 
 .group-label {
-  composes: group-label from "../shared/popup.module.css";
+  composes: group-label from "../shared/styles/popup/styles.module.css";
 }
 
 .separator {
-  composes: separator from "../shared/popup.module.css";
+  composes: separator from "../shared/styles/popup/styles.module.css";
 }

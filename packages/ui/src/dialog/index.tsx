@@ -1,7 +1,7 @@
 import { Dialog as Base } from "@base-ui/react/dialog";
 import { clsx as cn } from "clsx";
-import { Content, Footer, Header } from "./parts";
-import styles from "./styles.module.css";
+import { Content, Footer, Header } from "../shared/parts/dialog";
+import styles from "../shared/styles/dialog/styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;

@@ -1,7 +1,7 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
 import { clsx as cn } from "clsx";
-import { Content, Footer, Header } from "../dialog/parts";
-import dialogStyles from "../dialog/styles.module.css";
+import { Content, Footer, Header } from "../shared/parts/dialog";
+import styles from "../shared/styles/popup/styles.module.css";
 
 function Root(props: Base.Root.Props) {
   return <Base.Root {...props} />;
@@ -17,29 +17,22 @@ function Portal(props: Base.Portal.Props) {
 
 function Backdrop({ className, ...props }: Base.Backdrop.Props) {
   return (
-    <Base.Backdrop
-      className={cn(dialogStyles.backdrop, className)}
-      {...props}
-    />
+    <Base.Backdrop className={cn(styles.backdrop, className)} {...props} />
   );
 }
 
 function Popup({ className, ...props }: Base.Popup.Props) {
-  return (
-    <Base.Popup {...props} className={cn(dialogStyles.popup, className)} />
-  );
+  return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
 function Title({ className, ...props }: Base.Title.Props) {
-  return (
-    <Base.Title className={cn(dialogStyles.title, className)} {...props} />
-  );
+  return <Base.Title className={cn(styles.title, className)} {...props} />;
 }
 
 function Description({ className, ...props }: Base.Description.Props) {
   return (
     <Base.Description
-      className={cn(dialogStyles.description, className)}
+      className={cn(styles.description, className)}
       {...props}
     />
   );

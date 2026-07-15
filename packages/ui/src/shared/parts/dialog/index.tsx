@@ -1,6 +1,6 @@
 import { clsx as cn } from "clsx";
 import type React from "react";
-import styles from "./styles.module.css";
+import styles from "../../styles/dialog/styles.module.css";
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {
   leading?: React.ReactNode;

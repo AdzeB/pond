@@ -1,49 +1,49 @@
 .positioner {
-  composes: positioner from "../shared/popup.module.css";
+  composes: positioner from "../shared/styles/popup/styles.module.css";
   z-index: 1100;
 }
 
 .popup {
-  composes: popup from "../shared/popup.module.css";
+  composes: popup from "../shared/styles/popup/styles.module.css";
   width: var(--popup-width, auto);
   min-width: var(--popup-min-width, calc(100% + 43px));
   max-width: 512px;
 }
 
 .arrow {
-  composes: arrow from "../shared/popup.module.css";
+  composes: arrow from "../shared/styles/popup/styles.module.css";
 }
 
 .item {
-  composes: item from "../shared/popup.module.css";
+  composes: item from "../shared/styles/popup/styles.module.css";
 }
 
 .item-icon {
-  composes: item-icon from "../shared/popup.module.css";
+  composes: item-icon from "../shared/styles/popup/styles.module.css";
 }
 
 .item-label {
-  composes: item-label from "../shared/popup.module.css";
+  composes: item-label from "../shared/styles/popup/styles.module.css";
 }
 
 .item-keyboard {
-  composes: item-keyboard from "../shared/popup.module.css";
+  composes: item-keyboard from "../shared/styles/popup/styles.module.css";
 }
 
 .key {
-  composes: key from "../shared/popup.module.css";
+  composes: key from "../shared/styles/popup/styles.module.css";
 }
 
 .indicator {
-  composes: indicator from "../shared/popup.module.css";
+  composes: indicator from "../shared/styles/popup/styles.module.css";
 }
 
 .group-label {
-  composes: group-label from "../shared/popup.module.css";
+  composes: group-label from "../shared/styles/popup/styles.module.css";
 }
 
 .separator {
-  composes: separator from "../shared/popup.module.css";
+  composes: separator from "../shared/styles/popup/styles.module.css";
 }
 
 .secondary-label {

@@ -1,15 +1,15 @@
 .positioner {
-  composes: positioner from "../shared/popup.module.css";
+  composes: positioner from "../shared/styles/popup/styles.module.css";
 }
 
 .backdrop {
-  composes: backdrop from "../shared/popup.module.css";
+  composes: backdrop from "../shared/styles/popup/styles.module.css";
 }
 
 .popup {
-  composes: popup from "../shared/popup.module.css";
+  composes: popup from "../shared/styles/popup/styles.module.css";
 }
 
 .arrow {
-  composes: arrow from "../shared/popup.module.css";
+  composes: arrow from "../shared/styles/popup/styles.module.css";
 }
