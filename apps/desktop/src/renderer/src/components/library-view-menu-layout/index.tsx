@@ -3,8 +3,8 @@ import {
   IconGridLayoutRowsFill18 as JustifiedIcon,
   IconGridLayoutColsFill18 as WaterfallIcon,
 } from "@pond/icons/fill/18";
+import { TrayCard } from "@pond/ui";
 import { useRef } from "react";
-import { Dock } from "@/components/library-view-menu-group";
 import {
   Segmented,
   type SegmentedOption,
@@ -24,27 +24,29 @@ export function LayoutSection() {
   const initialLayout = useRef(state.layout);
 
   return (
-    <Dock.Root>
-      <Dock.Close />
-      <Dock.Header>
-        <Dock.Title>Library Layout</Dock.Title>
-        <Dock.Separator />
-        <Dock.Description>
+    <>
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>Library Layout</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
           Choose how items are arranged in your library. Waterfall keeps natural
           heights, Grid keeps everything uniform, and Justified fills each row
           edge to edge.
-        </Dock.Description>
-      </Dock.Header>
+        </TrayCard.Description>
+      </TrayCard.Header>
       <Segmented
         ariaLabel="Layout"
         options={options}
         value={state.layout}
         onChange={actions.setLayout}
       />
-      <Dock.Footer>
-        <Dock.Cancel onClick={() => actions.setLayout(initialLayout.current)} />
-        <Dock.Confirm />
-      </Dock.Footer>
-    </Dock.Root>
+      <TrayCard.Footer>
+        <TrayCard.Cancel
+          onClick={() => actions.setLayout(initialLayout.current)}
+        />
+        <TrayCard.Confirm />
+      </TrayCard.Footer>
+    </>
   );
 }

@@ -1,20 +1,20 @@
 import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
+import { TrayCard } from "@pond/ui";
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useRef } from "react";
-import { Dock } from "@/components/library-view-menu-group";
 import { useView } from "@/hooks/use-view";
 import { snappySpring } from "@/lib/ui/motion";
 import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/ui/zoom";
 import styles from "./styles.module.css";
 
 const STEPS: ReadonlyArray<{ value: number; label: string }> = [
-  { value: ZOOM_MIN, label: "Compact" },
-  { value: 105, label: "Cozy" },
-  { value: ZOOM_DEFAULT, label: "Comfortable" },
-  { value: 155, label: "Relaxed" },
-  { value: 185, label: "Spacious" },
-  { value: ZOOM_MAX, label: "Roomy" },
+  { value: ZOOM_MIN, label: "Tiny" },
+  { value: 105, label: "Small" },
+  { value: ZOOM_DEFAULT, label: "Medium" },
+  { value: 155, label: "Large" },
+  { value: 185, label: "Huge" },
+  { value: ZOOM_MAX, label: "Giant" },
 ];
 
 function closestIndex(value: number): number {
@@ -38,17 +38,17 @@ export function ZoomSection() {
   const initialZoom = useRef(state.zoom);
 
   return (
-    <Dock.Root>
-      <Dock.Close />
-      <Dock.Header>
-        <Dock.Title>Library Zoom Level</Dock.Title>
-        <Dock.Separator />
-        <Dock.Description>
+    <>
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>Library Zoom Level</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
           Control how large items appear in your library. Pick a denser step to
           fit more on screen at once, or a roomier one for bigger,
           easier-to-scan cards.
-        </Dock.Description>
-      </Dock.Header>
+        </TrayCard.Description>
+      </TrayCard.Header>
       <ToggleGroup
         role="radiogroup"
         aria-label="Zoom"
@@ -77,10 +77,10 @@ export function ZoomSection() {
           );
         })}
       </ToggleGroup>
-      <Dock.Footer>
-        <Dock.Cancel onClick={() => actions.setZoom(initialZoom.current)} />
-        <Dock.Confirm />
-      </Dock.Footer>
-    </Dock.Root>
+      <TrayCard.Footer>
+        <TrayCard.Cancel onClick={() => actions.setZoom(initialZoom.current)} />
+        <TrayCard.Confirm />
+      </TrayCard.Footer>
+    </>
   );
 }

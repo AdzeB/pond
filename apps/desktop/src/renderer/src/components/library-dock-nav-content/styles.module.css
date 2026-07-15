@@ -2,15 +2,3 @@
   display: inline-flex;
   align-items: center;
 }
-
-.item {
-  composes: item from "../library-dock/lib/kit.module.css";
-}
-
-.indicator {
-  composes: indicator from "../library-dock/lib/kit.module.css";
-}
-
-.separator {
-  composes: separator from "../library-dock/lib/kit.module.css";
-}

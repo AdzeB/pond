@@ -109,6 +109,26 @@ const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
   { id: "sort", label: "Sort", preview: { view: "sort" } },
   { id: "display", label: "Display", preview: { view: "display" } },
   {
+    id: "connect-source",
+    label: "Connect a source",
+    preview: { view: "connect-source" },
+  },
+  {
+    id: "connect-wait",
+    label: "Connect sign-in wait",
+    preview: { view: "connect-wait" },
+  },
+  {
+    id: "watch-source",
+    label: "Watch an account",
+    preview: { view: "watch-source" },
+  },
+  {
+    id: "watch-target",
+    label: "Watch handle entry",
+    preview: { view: "watch-target" },
+  },
+  {
     id: "selection",
     label: "Selection",
     preview: { view: "selection", selectionSize: 12, filteredCount: 240 },

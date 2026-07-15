@@ -132,6 +132,11 @@
   color: var(--ds-gray-12);
 }
 
+.row-source-icon img {
+  display: block;
+  border-radius: 4px;
+}
+
 .colors {
   display: flex;
   flex-wrap: wrap;

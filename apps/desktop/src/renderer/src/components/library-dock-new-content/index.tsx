@@ -1,10 +1,9 @@
 import { IconXmarkOutline12 as Remove } from "@pond/icons/outline/12";
 import { IconLink2Outline18 as Link } from "@pond/icons/outline/18";
-import { Input } from "@pond/ui";
+import { Input, TrayCard } from "@pond/ui";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { Dock } from "@/components/library-view-menu-group";
-import { getSourceIcon } from "@/lib/save/sources-registry";
+import { getSourceLogo } from "@/lib/save/sources-registry";
 import { primarySelection } from "@/stores/selection";
 import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
@@ -64,7 +63,7 @@ function useUrlSource(candidate: string): string | null {
 
 function SourceGlyph({ url }: { url: string }) {
   const source = useUrlSource(url);
-  const SourceIcon = source ? getSourceIcon(source) : null;
+  const logo = source ? getSourceLogo(source) : null;
   return (
     /** The glyph remounts when the URL classifies to a source, so the brand mark pops in. */
     <span
@@ -72,8 +71,8 @@ function SourceGlyph({ url }: { url: string }) {
       className={`${styles["lead-icon"]} ${styles.glyph}`}
       aria-hidden
     >
-      {SourceIcon ? (
-        <SourceIcon width={16} height={16} />
+      {logo ? (
+        <img src={logo} alt="" width={16} height={16} />
       ) : (
         <Link width={16} height={16} />
       )}
@@ -232,59 +231,55 @@ export function NewContent() {
 
   return (
     /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
-    <div className={styles.card}>
-      <Dock.Root>
-        <Dock.Close />
-        <Dock.Header>
-          <Dock.Title>New Save</Dock.Title>
-          <Dock.Separator />
-          <Dock.Description>
-            Paste a link to add it to your library. Keep pasting to build a
-            list, and everything saves together.
-          </Dock.Description>
-        </Dock.Header>
-        <div className={styles.fields}>
-          {links.map((link) => (
-            <LinkRow
-              key={link}
-              url={link}
-              onRemove={() =>
-                setLinks((prev) => prev.filter((l) => l !== link))
-              }
-            />
-          ))}
-          <div className={styles.row}>
-            <SourceGlyph url={draftUrl} />
-            <Input.Field
-              ref={inputRef}
-              className={styles.input}
-              value={url}
-              placeholder={
-                links.length > 0 ? "Add another link…" : "Paste a link to save…"
-              }
-              spellCheck={false}
-              autoComplete="off"
-              autoFocus
-              onChange={(e) => onChange(e.target.value)}
-              onKeyDown={onFieldKeyDown}
-              onPaste={onPaste}
-            />
-          </div>
+    <TrayCard.Root className={styles.card}>
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>New Save</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
+          Paste a link to add it to your library. Keep pasting to build a list,
+          and everything saves together.
+        </TrayCard.Description>
+      </TrayCard.Header>
+      <div className={styles.fields}>
+        {links.map((link) => (
+          <LinkRow
+            key={link}
+            url={link}
+            onRemove={() => setLinks((prev) => prev.filter((l) => l !== link))}
+          />
+        ))}
+        <div className={styles.row}>
+          <SourceGlyph url={draftUrl} />
+          <Input.Field
+            ref={inputRef}
+            className={styles.input}
+            value={url}
+            placeholder={
+              links.length > 0 ? "Add another link…" : "Paste a link to save…"
+            }
+            spellCheck={false}
+            autoComplete="off"
+            autoFocus
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={onFieldKeyDown}
+            onPaste={onPaste}
+          />
         </div>
-        <Dock.Footer>
-          <Dock.Cancel />
-          <Dock.Confirm
-            disabled={!canSubmit}
-            onClick={(e) => {
-              /** Submit closes the dock itself on success and keeps the card open on failure. */
-              e.preventDefault();
-              void submit();
-            }}
-          >
-            {pendingCount > 1 ? `Save ${pendingCount} Links` : "Save"}
-          </Dock.Confirm>
-        </Dock.Footer>
-      </Dock.Root>
-    </div>
+      </div>
+      <TrayCard.Footer>
+        <TrayCard.Cancel />
+        <TrayCard.Confirm
+          disabled={!canSubmit}
+          onClick={(e) => {
+            /** Submit closes the dock itself on success and keeps the card open on failure. */
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          {pendingCount > 1 ? `Save ${pendingCount} Links` : "Save"}
+        </TrayCard.Confirm>
+      </TrayCard.Footer>
+    </TrayCard.Root>
   );
 }

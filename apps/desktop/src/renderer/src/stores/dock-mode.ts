@@ -17,7 +17,15 @@ export type DockMode =
   | "sort-date"
   | "sort-content"
   | "sort-file"
-  | "display";
+  | "display"
+  | "connect-source"
+  | "connect-wait"
+  | "watch-source"
+  | "watch-target"
+  | "account-detail"
+  | "watch-detail"
+  | "sync-frequency"
+  | "source-new";
 
 const store = new Store<{ mode: DockMode }>({ mode: "nav" });
 

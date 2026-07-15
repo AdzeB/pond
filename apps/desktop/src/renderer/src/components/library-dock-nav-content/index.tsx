@@ -7,7 +7,8 @@ import {
   IconSizeFill18 as ZoomIcon,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
-import { Tooltip } from "@pond/ui";
+import { Tooltip, Tray } from "@pond/ui";
+import { motion } from "motion/react";
 import { useDock } from "@/components/library-dock/lib/context";
 import type { ViewMenuSection } from "@/components/library-dock/lib/types";
 import { useAgentAvailable } from "@/hooks/use-agent-available";
@@ -30,68 +31,53 @@ export function NavContent() {
   const agentAvailable = useAgentAvailable();
 
   return (
-    <div className={styles.row}>
-      <button
-        type="button"
-        className={styles.item}
-        aria-label="New"
-        onClick={dock.openNew}
-      >
+    <motion.div
+      className={styles.row}
+      transition={dock.swapTransition}
+      {...dock.swap}
+    >
+      <Tray.Item aria-label="New" onClick={dock.openNew}>
         <New />
-      </button>
+      </Tray.Item>
 
-      <Tooltip label="Search" side="top">
-        <button
-          type="button"
-          className={styles.item}
-          aria-label="Search"
-          onClick={dock.openSearch}
-        >
-          <Search />
-        </button>
-      </Tooltip>
-
-      <span className={styles.separator} aria-hidden />
+      <Tray.Separator />
 
       {VIEW_MENUS.map(({ section, label, icon }) => (
         <Tooltip key={section} label={label} side="top">
-          <button
-            type="button"
-            className={styles.item}
+          <Tray.Item
             aria-label={label}
             onClick={() => dock.openViewMenu(section)}
           >
             {icon}
-          </button>
+          </Tray.Item>
         </Tooltip>
       ))}
 
-      <span className={styles.separator} aria-hidden />
+      <Tray.Separator />
+
+      <Tooltip label="Search" side="top">
+        <Tray.Item aria-label="Search" onClick={dock.openSearch}>
+          <Search />
+        </Tray.Item>
+      </Tooltip>
 
       {agentAvailable ? (
         <Tooltip label="Ask AI" side="top">
-          <button
-            type="button"
-            className={styles.item}
-            aria-label="Ask AI"
-            onClick={dock.openAsk}
-          >
+          <Tray.Item aria-label="Ask AI" onClick={dock.openAsk}>
             <Ask />
-          </button>
+          </Tray.Item>
         </Tooltip>
       ) : (
         <Tooltip label="Connect an AI model to ask" side="top">
-          <button
-            type="button"
-            className={styles.item}
+          <Tray.Item
             aria-label="Connect an AI model to ask"
             data-disabled="true"
             onClick={() => settingsModal.open("ai-models")}
           >
             <Ask />
-          </button>
+          </Tray.Item>
         </Tooltip>
       )}
-    </div>
+    </motion.div>
   );
 }

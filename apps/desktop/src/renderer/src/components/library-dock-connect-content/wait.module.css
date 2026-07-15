@@ -1,0 +1,39 @@
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  padding-block: 8px 4px;
+  text-align: center;
+}
+
+.ring {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  padding: 9px;
+  margin-bottom: 8px;
+}
+
+.ring::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border: 2px solid var(--ds-gray-a4);
+  border-top-color: var(--ds-accent-9);
+  border-radius: 50%;
+  animation: spin 1.4s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring::before {
+    animation: none;
+  }
+}

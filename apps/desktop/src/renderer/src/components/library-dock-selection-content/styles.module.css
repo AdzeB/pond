@@ -3,26 +3,6 @@
   align-items: center;
 }
 
-.item {
-  composes: item from "../library-dock/lib/kit.module.css";
-}
-
-/* Non-svg glyph wrapper; mirrors the kit item's svg treatment. */
-.icon {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-}
-
-.item:active .icon {
-  transform: scale(0.82);
-}
-
 .clear {
   display: inline-flex;
   align-items: center;
@@ -49,6 +29,7 @@
   }
 }
 
+/* Compound with .item so the red hover outranks the tray item's gray hover. */
 .item.danger {
   &:hover {
     color: var(--ds-red-1, var(--ds-gray-1));

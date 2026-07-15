@@ -1,3 +1,4 @@
+import { Tray, TrayCard } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -203,90 +204,99 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   }
 
   const body = (
-    <DockProvider value={context}>
-      {!preview && isMenuView ? (
-        <button
-          type="button"
-          aria-label="Close"
-          className={styles.backdrop}
-          onClick={closeToNav}
-        />
-      ) : null}
-      <motion.div
-        ref={pillRef}
-        initial={false}
-        className={styles.pill}
-        animate={bounds ? { width: bounds.width, height: bounds.height } : {}}
-        transition={isFirstMeasure ? { duration: 0 } : pillTransition}
-      >
-        <div
-          ref={viewportRef}
-          className={styles.viewport}
-          data-card={isCard || undefined}
+    <TrayCard.Provider onDismiss={closeToNav}>
+      <DockProvider value={context}>
+        {!preview && isMenuView ? (
+          <button
+            type="button"
+            aria-label="Close"
+            className={styles.backdrop}
+            onClick={closeToNav}
+          />
+        ) : null}
+        <Tray.Pill
+          className={styles.pill}
+          render={
+            <motion.div
+              ref={pillRef}
+              initial={false}
+              animate={
+                bounds ? { width: bounds.width, height: bounds.height } : {}
+              }
+              transition={isFirstMeasure ? { duration: 0 } : pillTransition}
+            />
+          }
         >
-          <AnimatePresence initial={false}>
-            {view === "selection" ? (
-              <SelectionContent key="selection" />
-            ) : view === "ask" ? (
-              <motion.div
-                key="ask"
-                className={styles["ask-row"]}
-                {...swap}
-                transition={swapTransition}
-              >
-                <AskComposer
-                  autoFocus={!preview}
-                  onCollapse={closeToNav}
-                  onClear={clearAsk}
-                />
-              </motion.div>
-            ) : view === "search" ? (
-              <motion.div
-                key="search"
-                className={styles["search-row"]}
-                {...swap}
-                transition={swapTransition}
-              >
-                <SearchComposer autoFocus={!preview} onCollapse={closeToNav} />
-              </motion.div>
-            ) : view === "status" ? (
-              <motion.div
-                key="status"
-                className={styles["ask-row"]}
-                {...swap}
-                transition={swapTransition}
-              >
-                <AskStatusPill onReopen={openAsk} onClear={clearResults} />
-              </motion.div>
-            ) : view === "new" ? (
-              <motion.div key="new" {...swap} transition={swapTransition}>
-                <NewContent />
-              </motion.div>
-            ) : isViewMenu(view) ? (
-              <motion.div key={view} {...swap} transition={swapTransition}>
-                <OptionsContent section={view} />
-              </motion.div>
-            ) : (
-              <motion.div key="nav" {...swap} transition={swapTransition}>
-                <NavContent />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </motion.div>
+          <div
+            ref={viewportRef}
+            className={styles.viewport}
+            data-card={isCard || undefined}
+          >
+            <AnimatePresence initial={false}>
+              {view === "selection" ? (
+                <SelectionContent key="selection" />
+              ) : view === "ask" ? (
+                <motion.div
+                  key="ask"
+                  className={styles["ask-row"]}
+                  {...swap}
+                  transition={swapTransition}
+                >
+                  <AskComposer
+                    autoFocus={!preview}
+                    onCollapse={closeToNav}
+                    onClear={clearAsk}
+                  />
+                </motion.div>
+              ) : view === "search" ? (
+                <motion.div
+                  key="search"
+                  className={styles["search-row"]}
+                  {...swap}
+                  transition={swapTransition}
+                >
+                  <SearchComposer
+                    autoFocus={!preview}
+                    onCollapse={closeToNav}
+                  />
+                </motion.div>
+              ) : view === "status" ? (
+                <motion.div
+                  key="status"
+                  className={styles["ask-row"]}
+                  {...swap}
+                  transition={swapTransition}
+                >
+                  <AskStatusPill onReopen={openAsk} onClear={clearResults} />
+                </motion.div>
+              ) : view === "new" ? (
+                <motion.div key="new" {...swap} transition={swapTransition}>
+                  <NewContent />
+                </motion.div>
+              ) : isViewMenu(view) ? (
+                <motion.div key={view} {...swap} transition={swapTransition}>
+                  <OptionsContent section={view} />
+                </motion.div>
+              ) : (
+                <NavContent key="nav" />
+              )}
+            </AnimatePresence>
+          </div>
+        </Tray.Pill>
 
-      <ConfirmDialog
-        open={confirmDelete}
-        onOpenChange={setConfirmDelete}
-        title={`Delete ${formatNumber(selectionSize)} ${selectionSize === 1 ? "item" : "items"} forever?`}
-        description="This permanently removes the selected items and their files. This can't be undone."
-        confirmLabel="Delete Forever"
-        onConfirm={() => {
-          void deleteSelectionForever(selection.snapshot());
-          setConfirmDelete(false);
-        }}
-      />
-    </DockProvider>
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={`Delete ${formatNumber(selectionSize)} ${selectionSize === 1 ? "item" : "items"} forever?`}
+          description="This permanently removes the selected items and their files. This can't be undone."
+          confirmLabel="Delete Forever"
+          onConfirm={() => {
+            void deleteSelectionForever(selection.snapshot());
+            setConfirmDelete(false);
+          }}
+        />
+      </DockProvider>
+    </TrayCard.Provider>
   );
 
   if (preview) return body;

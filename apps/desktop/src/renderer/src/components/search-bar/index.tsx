@@ -7,6 +7,7 @@ import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
+import { TrayCard } from "@pond/ui";
 import {
   $createParagraphNode,
   $createTextNode,
@@ -20,7 +21,6 @@ import {
 } from "lexical";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { Dock } from "@/components/library-view-menu-group";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import { useViewFilteredCount } from "@/stores/library-view-context";
 import { useTags } from "@/stores/tags";
@@ -141,48 +141,45 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   }, [editor]);
 
   return (
-    <div className={styles.card}>
-      <Dock.Root>
-        <Dock.Help onClick={() => dock.openViewMenu("search-help")} />
-        <Dock.Close />
-        <Dock.Header data-position="center">
-          <Dock.Title>Search Library</Dock.Title>
-          <Dock.Separator />
-          <Dock.Description>
-            Results update live as you type. Mix plain words with filters like
-            source:twitter, tag:design, or saved:past-week to narrow things
-            down.
-          </Dock.Description>
-        </Dock.Header>
-        <div className={styles.fields}>
-          <div className={styles.editor}>
-            <Search
-              className={styles["lead-icon"]}
-              width={16}
-              height={16}
-              aria-hidden
-            />
-            <PlainTextPlugin
-              contentEditable={
-                <ContentEditable
-                  className={styles.input}
-                  spellCheck={false}
-                  ariaLabel="Search filters"
-                />
-              }
-              placeholder={
-                <span className={styles.placeholder}>Filter your library…</span>
-              }
-              ErrorBoundary={LexicalErrorBoundary}
-            />
-            <HistoryPlugin />
-            <ClearEditorPlugin />
-            {autoFocus ? <AutoFocusPlugin /> : null}
-            <FilterTokenPlugin />
-            <FilterTypeahead tags={tagNames} />
-          </div>
+    <TrayCard.Root className={styles.card}>
+      <TrayCard.Help onClick={() => dock.openViewMenu("search-help")} />
+      <TrayCard.Close />
+      <TrayCard.Header position="center">
+        <TrayCard.Title>Search Library</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
+          Results update live as you type. Mix plain words with filters like
+          source:twitter, tag:design, or saved:past-week to narrow things down.
+        </TrayCard.Description>
+      </TrayCard.Header>
+      <div className={styles.fields}>
+        <div className={styles.editor}>
+          <Search
+            className={styles["lead-icon"]}
+            width={16}
+            height={16}
+            aria-hidden
+          />
+          <PlainTextPlugin
+            contentEditable={
+              <ContentEditable
+                className={styles.input}
+                spellCheck={false}
+                ariaLabel="Search filters"
+              />
+            }
+            placeholder={
+              <span className={styles.placeholder}>Filter your library…</span>
+            }
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          <HistoryPlugin />
+          <ClearEditorPlugin />
+          {autoFocus ? <AutoFocusPlugin /> : null}
+          <FilterTokenPlugin />
+          <FilterTypeahead tags={tagNames} />
         </div>
-      </Dock.Root>
-    </div>
+      </div>
+    </TrayCard.Root>
   );
 }

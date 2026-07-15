@@ -15,6 +15,14 @@ export type DockView =
   | "sort-content"
   | "sort-file"
   | "display"
+  | "connect-source"
+  | "connect-wait"
+  | "watch-source"
+  | "watch-target"
+  | "account-detail"
+  | "watch-detail"
+  | "sync-frequency"
+  | "source-new"
   | "nav";
 
 /** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
@@ -26,7 +34,15 @@ export type ViewMenuSection =
   | "sort-content"
   | "sort-file"
   | "display"
-  | "search-help";
+  | "search-help"
+  | "connect-source"
+  | "connect-wait"
+  | "watch-source"
+  | "watch-target"
+  | "account-detail"
+  | "watch-detail"
+  | "sync-frequency"
+  | "source-new";
 
 export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "layout",
@@ -37,6 +53,14 @@ export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "sort-file",
   "display",
   "search-help",
+  "connect-source",
+  "connect-wait",
+  "watch-source",
+  "watch-target",
+  "account-detail",
+  "watch-detail",
+  "sync-frequency",
+  "source-new",
 ];
 
 export function isViewMenu(view: DockView): view is ViewMenuSection {

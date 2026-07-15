@@ -1,8 +1,7 @@
-import { IconChevronLeftOutline12 as BackIcon } from "@pond/icons/outline/12";
+import { TrayCard } from "@pond/ui";
 import { Fragment, useMemo } from "react";
 import { ClippedScroll } from "@/components/clipped-scroll";
 import { useDock } from "@/components/library-dock/lib/context";
-import { Dock } from "@/components/library-view-menu-group";
 import { FIELD_ICONS } from "@/lib/search/fields";
 import { buildGroups, GROUP_LABELS } from "./filters-menu";
 import styles from "./help.module.css";
@@ -13,24 +12,21 @@ export function SearchHelpSection() {
   const groups = useMemo(buildGroups, []);
 
   return (
-    <Dock.Root>
-      <button
-        type="button"
+    <>
+      <TrayCard.Back
         aria-label="Back to search"
-        className={styles.back}
         onClick={() => dock.openSearch()}
-      >
-        <BackIcon strokeWidth={2} />
-      </button>
-      <Dock.Header>
-        <Dock.Title>Search Help</Dock.Title>
-        <Dock.Separator />
-        <Dock.Description>
+      />
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>Search Help</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
           Plain words match titles, notes, and captions. Add key:value filters
           to narrow things down — combine as many as you need, and press Esc to
           clear.
-        </Dock.Description>
-      </Dock.Header>
+        </TrayCard.Description>
+      </TrayCard.Header>
       <ClippedScroll maxHeight={300} className={styles.list}>
         {groups.map(({ group, fields }) => (
           <Fragment key={group}>
@@ -53,6 +49,6 @@ export function SearchHelpSection() {
           </Fragment>
         ))}
       </ClippedScroll>
-    </Dock.Root>
+    </>
   );
 }

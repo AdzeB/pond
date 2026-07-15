@@ -2,39 +2,45 @@ import {
   IconFolderFill18 as LocalIcon,
   IconEarthFill18 as WebIcon,
 } from "@pond/icons/fill/18";
-import {
-  IconBrandArena,
-  IconBrandCosmos,
-  IconBrandInstagram,
-  IconBrandPinterest,
-  IconBrandReddit,
-  IconBrandThreads,
-  IconBrandTikTok,
-  IconBrandTwitter,
-  IconBrandYoutube,
-} from "@pond/icons/social-media";
 import type { Source } from "@pond/schema/db";
 import { isSource, sourceLabel } from "@pond/schema/sources";
 import type React from "react";
+import arenaLogo from "@/assets/logos/arena.png";
+import cosmosLogo from "@/assets/logos/cosmos.png";
+import instagramLogo from "@/assets/logos/instagram.png";
+import pinterestLogo from "@/assets/logos/pinterest.png";
+import redditLogo from "@/assets/logos/reddit.png";
+import threadsLogo from "@/assets/logos/threads.png";
+import tiktokLogo from "@/assets/logos/tiktok.png";
+import twitterLogo from "@/assets/logos/twitter.png";
+import youtubeLogo from "@/assets/logos/youtube.png";
 
-type BrandIcon = React.ComponentType<{ width?: number; height?: number }>;
+type GlyphIcon = React.ComponentType<{ width?: number; height?: number }>;
 
 interface SourceDef {
   source: Source;
   label: string;
-  icon: BrandIcon;
+  /** Full-bleed 512px app-icon PNG; null for sources without a brand image. */
+  logo: string | null;
+  /** Generic glyph for sources without a brand logo. */
+  icon: GlyphIcon | null;
 }
 
-const SOURCE_ICONS: Record<Source, BrandIcon> = {
-  twitter: IconBrandTwitter,
-  pinterest: IconBrandPinterest,
-  arena: IconBrandArena,
-  instagram: IconBrandInstagram,
-  cosmos: IconBrandCosmos,
-  tiktok: IconBrandTikTok,
-  youtube: IconBrandYoutube,
-  reddit: IconBrandReddit,
-  threads: IconBrandThreads,
+const SOURCE_LOGOS: Record<Source, string | null> = {
+  twitter: twitterLogo,
+  pinterest: pinterestLogo,
+  arena: arenaLogo,
+  instagram: instagramLogo,
+  cosmos: cosmosLogo,
+  tiktok: tiktokLogo,
+  youtube: youtubeLogo,
+  reddit: redditLogo,
+  threads: threadsLogo,
+  web: null,
+  local: null,
+};
+
+const GLYPH_ICONS: Partial<Record<Source, GlyphIcon>> = {
   web: WebIcon,
   local: LocalIcon,
 };
@@ -43,7 +49,8 @@ export function getSourceDef(source: Source): SourceDef {
   return {
     source,
     label: sourceLabel(source),
-    icon: SOURCE_ICONS[source],
+    logo: SOURCE_LOGOS[source],
+    icon: GLYPH_ICONS[source] ?? null,
   };
 }
 
@@ -52,10 +59,18 @@ const SOURCE_ALIASES: Record<string, Source> = {
   "are.na": "arena",
 };
 
-/** Null for unknown sources; callers fall back to a text label. */
-export function getSourceIcon(source: string): BrandIcon | null {
+/** Null for unknown or logo-less sources; callers fall back to a glyph or text label. */
+export function getSourceLogo(source: string): string | null {
   const key = source.toLowerCase();
   const normalized = SOURCE_ALIASES[key] ?? key;
-  if (isSource(normalized)) return SOURCE_ICONS[normalized];
+  if (isSource(normalized)) return SOURCE_LOGOS[normalized];
+  return null;
+}
+
+/** Null for unknown sources; callers fall back to a text label. */
+export function getSourceIcon(source: string): GlyphIcon | null {
+  const key = source.toLowerCase();
+  const normalized = SOURCE_ALIASES[key] ?? key;
+  if (isSource(normalized)) return GLYPH_ICONS[normalized] ?? null;
   return null;
 }

@@ -9,7 +9,7 @@ import {
   type Metric,
 } from "@/lib/save/detail";
 import { ensureRawJson } from "@/lib/save/raw-json";
-import { getSourceIcon } from "@/lib/save/sources-registry";
+import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
 import type { Save } from "@/lib/types";
 import { useSave } from "./use-saves";
 
@@ -26,6 +26,7 @@ interface SaveDetailView {
   style: string[];
   colors: string[];
   avatarUrl: string | null;
+  sourceLogo: string | null;
   sourceIcon: SourceIcon;
   hasInsights: boolean;
 }
@@ -52,6 +53,7 @@ export function useSaveDetail(id: string): SaveDetailView {
         style: [],
         colors: [],
         avatarUrl: null,
+        sourceLogo: null,
         sourceIcon: null,
         hasInsights: false,
       };
@@ -73,6 +75,7 @@ export function useSaveDetail(id: string): SaveDetailView {
       style,
       colors: save.dominantColors?.slice(0, 8) ?? [],
       avatarUrl: pickAuthorAvatarUrl(save),
+      sourceLogo: getSourceLogo(save.source),
       sourceIcon: getSourceIcon(save.source),
       hasInsights: !!caption || !!ocr || !!transcript || style.length > 0,
     };

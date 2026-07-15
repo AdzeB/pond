@@ -1,13 +1,9 @@
 .brand-tile {
   display: block;
   flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--ds-radius-lg);
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a3),
-    0 2px 4px -1px var(--ds-gray-a4);
 }
 
-.brand-tile svg {
+.brand-tile svg,
+.brand-tile img {
   display: block;
 }

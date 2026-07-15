@@ -6,10 +6,10 @@ import {
   IconFileFill18 as FileIcon,
 } from "@pond/icons/fill/18";
 import { IconChevronLeftOutline12 as BackIcon } from "@pond/icons/outline/12";
+import { TrayCard } from "@pond/ui";
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useId } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { Dock } from "@/components/library-view-menu-group";
 import type { SortDir } from "@/hooks/use-filtered-saves";
 import { type SortKey, useView } from "@/hooks/use-view";
 import { snappySpring } from "@/lib/ui/motion";
@@ -88,16 +88,16 @@ export function SortSection() {
   snapshot ??= state.sort;
 
   return (
-    <Dock.Root>
-      <Dock.Close />
-      <Dock.Header>
-        <Dock.Title>Sort Library</Dock.Title>
-        <Dock.Separator />
-        <Dock.Description>
+    <>
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>Sort Library</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
           Pick which detail your library is ordered by, and flip the direction
           to show the newest, largest, or first alphabetically at the top.
-        </Dock.Description>
-      </Dock.Header>
+        </TrayCard.Description>
+      </TrayCard.Header>
       <div className={styles.groups}>
         {KEY_GROUPS.map((group) => {
           const selected = group.options.find((option) => option.value === key);
@@ -148,15 +148,15 @@ export function SortSection() {
           );
         })}
       </ToggleGroup>
-      <Dock.Footer>
-        <Dock.Cancel
+      <TrayCard.Footer>
+        <TrayCard.Cancel
           onClick={() => {
             if (snapshot) actions.setSort(snapshot);
           }}
         />
-        <Dock.Confirm />
-      </Dock.Footer>
-    </Dock.Root>
+        <TrayCard.Confirm />
+      </TrayCard.Footer>
+    </>
   );
 }
 
@@ -172,7 +172,7 @@ export function SortGroupSection({ group }: { group: SortGroupId }) {
   if (!spec) return null;
 
   return (
-    <Dock.Root>
+    <>
       <button
         type="button"
         aria-label="Back"
@@ -181,10 +181,10 @@ export function SortGroupSection({ group }: { group: SortGroupId }) {
       >
         <BackIcon strokeWidth={2} />
       </button>
-      <Dock.Header>
-        <Dock.Title>{spec.label}</Dock.Title>
-        <Dock.Separator />
-      </Dock.Header>
+      <TrayCard.Header>
+        <TrayCard.Title>{spec.label}</TrayCard.Title>
+        <TrayCard.Separator />
+      </TrayCard.Header>
       <div className={styles.rows}>
         {spec.options.map((option) => {
           const active = option.value === key;
@@ -212,6 +212,6 @@ export function SortGroupSection({ group }: { group: SortGroupId }) {
           );
         })}
       </div>
-    </Dock.Root>
+    </>
   );
 }

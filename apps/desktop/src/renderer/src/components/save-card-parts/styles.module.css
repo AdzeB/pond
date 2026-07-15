@@ -158,6 +158,10 @@
   box-shadow: var(--ds-shadow-2);
 }
 
+.source img {
+  display: block;
+}
+
 .count {
   position: absolute;
   top: 0px;

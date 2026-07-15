@@ -1,6 +1,5 @@
 .card {
-  composes: card from "../library-dock/lib/kit.module.css";
-  width: var(--dock-card-width, 400px);
+  width: 384px;
 }
 
 .fields {
@@ -22,8 +21,13 @@
   border-radius: var(--ds-radius-lg);
 }
 
+/* Leading glyph beside the query field. */
 .lead-icon {
-  composes: lead-icon from "../library-dock/lib/kit.module.css";
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-9);
 }
 
 /* Single-line query: long input scrolls horizontally behind a hidden scrollbar instead of wrapping. */
@@ -85,24 +89,4 @@
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
-}
-
-/* Filters trigger on the left, live result tally on the right. */
-.toolbar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: space-between;
-  padding-inline: 2px;
-}
-
-.count {
-  composes: count from "../library-dock/lib/kit.module.css";
-}
-
-.clear-button {
-  composes: icon-button from "../library-dock/lib/kit.module.css";
-  align-self: flex-start;
-  width: 20px;
-  height: 20px;
 }

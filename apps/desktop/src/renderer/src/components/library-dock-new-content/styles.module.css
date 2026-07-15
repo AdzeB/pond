@@ -1,7 +1,6 @@
 /* The pill supplies the surface, so fields shed their own chrome. */
 .card {
-  composes: card from "../library-dock/lib/kit.module.css";
-  width: var(--dock-card-width, 360px);
+  width: 384px;
 }
 
 .fields {
@@ -69,8 +68,18 @@
   }
 }
 
+/* Leading glyph beside the input. */
 .lead-icon {
-  composes: lead-icon from "../library-dock/lib/kit.module.css";
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  color: var(--ds-gray-9);
+}
+
+.lead-icon img {
+  display: block;
+  border-radius: 4px;
 }
 
 /* The glyph remounts when the typed URL classifies to a source, so the brand mark pops in. */

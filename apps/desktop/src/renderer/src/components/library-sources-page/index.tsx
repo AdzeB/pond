@@ -1,117 +1,39 @@
-import {
-  IconArrowUpRightOutline18 as ArrowUpRight,
-  IconChevronDownOutline18 as ChevronDown,
-  IconChevronRightOutline18 as ChevronRight,
-  IconClockOutline18 as Clock,
-  IconMagnifierOutline18 as Magnifier,
-} from "@pond/icons/outline/18";
-import { type Prefs, SOURCES, type Source } from "@pond/schema/db";
-import { Button, Dialog } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import {
-  cardModel,
-  describeRun,
-  formatClock,
-} from "@/components/library-sync-monitor/lib/helpers";
-import { buildAccountMenu } from "@/components/library-sync-monitor/lib/source-menu";
+import { IconDotsFill18 as Dots } from "@pond/icons/fill/18";
+import type { Source } from "@pond/schema/db";
+import { Button, Menu } from "@pond/ui";
+import { useEffect, useState } from "react";
+import { cardModel } from "@/components/library-sync-monitor/lib/helpers";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
-import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
-import { useSyncHistory } from "@/hooks/use-sync-history";
-import {
-  useWatches,
-  WATCH_NEEDS_SESSION,
-  WATCHABLE,
-  type WatchRow,
-  watchKindLabel,
-} from "@/hooks/use-watches";
-import { sourceSettingsFor } from "@/lib/save/source-settings";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useWatches } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { showContextMenu } from "@/lib/ui/native-menu";
-import { formatNumber } from "@/lib/util/format";
-import { usePrefs } from "@/stores/prefs";
 import {
-  type SyncAccountStatus,
-  syncMonitor,
-  useSyncByAccount,
-} from "@/stores/sync-monitor";
-import { setSearchInput } from "@/stores/view-store";
+  connectFlow,
+  useConnectedBefore,
+  useConnectWaiting,
+} from "@/stores/connect-flow";
+import { dockMode } from "@/stores/dock-mode";
+import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
+import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
+import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
+import {
+  accountName,
+  accountSub,
+  healthLine,
+  watchName,
+  watchSub,
+} from "./lib/helpers";
 import styles from "./styles.module.css";
-
-/** `local` and `web` aren't sources you sign in to. */
-const SYNCABLE: readonly Source[] = SOURCES.filter(
-  (s) => s !== "local" && s !== "web",
-);
-
-/** The global background-sync cadence, surfaced per-account; it applies to all. */
-const FREQUENCY_OPTIONS = [
-  { hours: 1, label: "Every hour" },
-  { hours: 2, label: "Every 2 hours" },
-  { hours: 6, label: "Every 6 hours" },
-  { hours: 12, label: "Every 12 hours" },
-  { hours: 24, label: "Once a day" },
-] as const;
-
-function accountName(account: AccountRow): string {
-  const suffix = account.label ?? (account.handle ? `@${account.handle}` : "");
-  const label = getSourceDef(account.source).label;
-  return suffix ? `${label} · ${suffix}` : label;
-}
-
-function watchName(watch: WatchRow): string {
-  if (watch.label) return watch.label;
-  /** Playlist/list ids are opaque tokens, not handles, so no @ prefix. */
-  return watch.kind === "playlist" || watch.kind === "list"
-    ? watch.handle
-    : `@${watch.handle}`;
-}
-
-function healthLine(
-  accounts: readonly AccountRow[],
-  watches: readonly WatchRow[],
-  byAccount: Record<string, SyncAccountStatus>,
-): string {
-  if (accounts.length === 0 && watches.length === 0) {
-    return "Nothing connected yet — add a source to start collecting.";
-  }
-  const sources = new Set(accounts.map((a) => a.source));
-  const all = [...accounts, ...watches];
-  const running = all.filter(
-    (a) => byAccount[a.id]?.state === "running",
-  ).length;
-  const broken = all.filter((a) => {
-    const tone = cardModel(byAccount[a.id]).tone;
-    return tone === "err" || tone === "paused";
-  }).length;
-  const parts = [
-    `${accounts.length} account${accounts.length === 1 ? "" : "s"}`,
-    ...(watches.length > 0
-      ? [`watching ${watches.length}`]
-      : [`${sources.size} source${sources.size === 1 ? "" : "s"}`]),
-    broken > 0
-      ? `${broken} need${broken === 1 ? "s" : ""} attention`
-      : running > 0
-        ? `syncing ${running}`
-        : "all healthy",
-  ];
-  return parts.join(" · ");
-}
 
 export function SourcesPage() {
   const { accounts, refetch } = useAccounts();
   const { watches, refetch: refetchWatches } = useWatches();
   const byAccount = useSyncByAccount();
-  const [connectOpen, setConnectOpen] = useState(false);
-  const [watchOpen, setWatchOpen] = useState(false);
-  /** Platform sent to the browser for sign-in; polled until an account for it connects. */
-  const [waiting, setWaiting] = useState<Source | null>(null);
-  /** Snapshot of connected account ids when connect started, so a fresh or re-authed account is distinguishable from already-healthy ones. */
-  const [connectedBefore, setConnectedBefore] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const [watchDetailId, setWatchDetailId] = useState<string | null>(null);
+  /** Connect and watch flows live in the dock tray; this page polls for the outcome and opens the detail card. */
+  const waiting = useConnectWaiting();
+  const connectedBefore = useConnectedBefore();
+  const addedWatchId = useWatchAdded();
+  const detailRevision = useSourceDetailRevision();
 
   /** Poll the registry until the extension delivers the session, then kick that account's first sync. */
   useEffect(() => {
@@ -130,9 +52,8 @@ export function SourcesPage() {
           if (!arrived) return;
           syncMonitor.seed(arrived.id, source, { connected: true });
           void window.pond.syncRunNow(arrived.id);
-          setWaiting(null);
-          setConnectOpen(false);
-          setDetailId(arrived.id);
+          connectFlow.clear();
+          sourceDetail.openAccount(arrived.id);
         } catch {
           /* keep polling */
         }
@@ -144,20 +65,20 @@ export function SourcesPage() {
     };
   }, [waiting, connectedBefore, refetch]);
 
-  const startConnect = (source: Source) => {
-    setConnectedBefore(
-      new Set(accounts.filter((a) => a.connected).map((a) => a.id)),
-    );
-    void window.pond.connectSource(source);
-    setWaiting(source);
-  };
+  /** A watch added from the tray card lands here: refresh the grid and open its detail. */
+  useEffect(() => {
+    if (!addedWatchId) return;
+    void refetchWatches();
+    sourceDetail.openWatch(addedWatchId);
+    watchFlow.consumeAdded();
+  }, [addedWatchId, refetchWatches]);
 
-  const detailAccount = detailId
-    ? (accounts.find((a) => a.id === detailId) ?? null)
-    : null;
-  const detailWatch = watchDetailId
-    ? (watches.find((w) => w.id === watchDetailId) ?? null)
-    : null;
+  /** Edits made inside the tray's detail card refresh this page's list copies. */
+  useEffect(() => {
+    if (detailRevision === 0) return;
+    void refetch();
+    void refetchWatches();
+  }, [detailRevision, refetch, refetchWatches]);
 
   /** First account that needs a human: session expired or repeated failure. */
   const broken = accounts.find((a) => {
@@ -170,38 +91,47 @@ export function SourcesPage() {
     <div className={styles.page}>
       <div className={styles.content}>
         <header className={styles.header}>
-          <div className={styles["header-text"]}>
-            <h1 className={styles.title}>Sources</h1>
-            <p className={styles.subline}>
-              {healthLine(accounts, watches, byAccount)}
-            </p>
-          </div>
+          <h1 className={styles.title}>Sources</h1>
+          <p className={styles.subline}>
+            {healthLine(accounts, watches, byAccount)}
+          </p>
           <span className={styles["header-actions"]}>
-            {accounts.length > 0 ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => void window.pond.syncRunAll()}
-              >
-                Sync all
-              </Button>
-            ) : null}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => dockMode.open("source-new")}
+            >
+              New
+            </Button>
+            <Menu.Root>
+              <Menu.Trigger icon variant="secondary" size="sm">
+                <Dots />
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Positioner side="bottom" align="end">
+                  <Menu.Popup>
+                    <Menu.Item onClick={() => void window.pond.syncRunAll()}>
+                      Sync All
+                    </Menu.Item>
+                  </Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
           </span>
         </header>
 
         {broken && brokenModel ? (
           <div className={styles.banner}>
-            <span className={styles["banner-text"]}>
-              <span className={styles["banner-title"]}>
-                {accountName(broken)} needs attention
-              </span>
-              <span className={styles["banner-sub"]}>
-                {brokenModel.tone === "paused"
-                  ? "Session expired — sign back into that account to resume syncing."
-                  : "Last sync failed — retry, or open the account for details."}
-              </span>
+            <span className={styles["banner-title"]}>
+              {accountName(broken)} needs attention
+            </span>
+            <span className={styles["banner-sub"]}>
+              {brokenModel.tone === "paused"
+                ? "Session expired — sign back into that account to resume syncing."
+                : "Last sync failed — retry, or open the account for details."}
             </span>
             <Button
+              className={styles["banner-action"]}
               variant="secondary"
               size="sm"
               onClick={() => {
@@ -217,1179 +147,98 @@ export function SourcesPage() {
           </div>
         ) : null}
 
-        <div className={styles["sec-label"]}>
-          Accounts
-          <span
-            className={styles["sec-info"]}
-            title="Accounts you've signed into — Pond syncs your own saves in the background."
-          >
-            ⓘ
-          </span>
-          <button
-            type="button"
-            className={styles["sec-add"]}
-            aria-label="Connect a source"
-            onClick={() => setConnectOpen(true)}
-          >
-            ＋
-          </button>
-        </div>
-        {accounts.length > 0 ? (
+        {accounts.length > 0 || watches.length > 0 ? (
           <div className={styles["tile-grid"]}>
-            {accounts.map((account) => (
-              <AccountTile
-                key={account.id}
-                account={account}
-                status={byAccount[account.id]}
-                onOpen={() => setDetailId(account.id)}
-              />
-            ))}
+            {accounts.map((account) => {
+              const model = cardModel(byAccount[account.id]);
+              return (
+                <SourceTile
+                  key={account.id}
+                  source={account.source}
+                  avatarUrl={account.avatarUrl}
+                  name={account.label ?? getSourceDef(account.source).label}
+                  sub={accountSub(account, model)}
+                  tone={model.tone}
+                  onOpen={() => sourceDetail.openAccount(account.id)}
+                />
+              );
+            })}
+            {watches.map((watch) => {
+              const model = cardModel(byAccount[watch.id]);
+              return (
+                <SourceTile
+                  key={watch.id}
+                  source={watch.source}
+                  avatarUrl={watch.avatarUrl}
+                  name={watchName(watch)}
+                  sub={watchSub(watch, model)}
+                  tone={model.tone}
+                  onOpen={() => sourceDetail.openWatch(watch.id)}
+                />
+              );
+            })}
           </div>
         ) : (
           <p className={styles["quiet-line"]}>
-            Connect a source — sign in once and Pond keeps your saves syncing in
-            the background.
-          </p>
-        )}
-
-        <div className={styles["sec-label"]}>
-          Watching
-          <span
-            className={styles["sec-info"]}
-            title="Public accounts you follow — their new posts flow into your library. Read-only, no sign-in."
-          >
-            ⓘ
-          </span>
-          <button
-            type="button"
-            className={styles["sec-add"]}
-            aria-label="Watch an account"
-            onClick={() => setWatchOpen(true)}
-          >
-            ＋
-          </button>
-        </div>
-        {watches.length > 0 ? (
-          <div className={styles["tile-grid"]}>
-            {watches.map((watch) => (
-              <WatchCard
-                key={watch.id}
-                watch={watch}
-                status={byAccount[watch.id]}
-                onOpen={() => setWatchDetailId(watch.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className={styles["quiet-line"]}>
-            Follow a public account — new posts land in your library on their
-            own.
+            Connect a source or watch a public account — Pond keeps your library
+            filling up in the background.
           </p>
         )}
       </div>
-
-      {detailAccount ? (
-        <AccountDialog
-          account={detailAccount}
-          status={byAccount[detailAccount.id]}
-          onClose={() => setDetailId(null)}
-          onChanged={() => void refetch()}
-        />
-      ) : null}
-
-      {detailWatch ? (
-        <WatchDialog
-          watch={detailWatch}
-          accounts={accounts}
-          status={byAccount[detailWatch.id]}
-          onClose={() => setWatchDetailId(null)}
-          onChanged={() => void refetchWatches()}
-        />
-      ) : null}
-
-      {connectOpen ? (
-        <ConnectDialog
-          accounts={accounts}
-          waiting={waiting}
-          onClose={() => {
-            setWaiting(null);
-            setConnectOpen(false);
-          }}
-          onPick={startConnect}
-          onCancelWait={() => setWaiting(null)}
-        />
-      ) : null}
-
-      {watchOpen ? (
-        <WatchAddDialog
-          accounts={accounts}
-          onClose={() => setWatchOpen(false)}
-          onAdded={(watchId) => {
-            void refetchWatches();
-            setWatchOpen(false);
-            setWatchDetailId(watchId);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
 
-function AccountTile({
-  account,
-  status,
+/** Accounts and watches render identically; only the derived name and sub differ. */
+function SourceTile({
+  source,
+  avatarUrl,
+  name,
+  sub,
+  tone,
   onOpen,
 }: {
-  account: AccountRow;
-  status: SyncAccountStatus | undefined;
+  source: Source;
+  avatarUrl: string | null | undefined;
+  name: string;
+  sub: string;
+  tone: ReturnType<typeof cardModel>["tone"];
   onOpen: () => void;
 }) {
-  const model = cardModel(status);
-  const count = account.sync?.knownCount ?? 0;
-  const def = getSourceDef(account.source);
-
-  const sub =
-    model.tone === "run"
-      ? model.statusText
-      : model.tone === "paused"
-        ? "Session expired"
-        : model.tone === "err"
-          ? "Sync failed"
-          : [
-              /** The name line is the platform label unless nicknamed, so only lead with the handle when there is one. */
-              account.handle ? `@${account.handle}` : null,
-              `${formatNumber(count)} item${count === 1 ? "" : "s"}`,
-            ]
-              .filter(Boolean)
-              .join(" · ");
+  /** Avatar CDN URLs are signed and expire; a failed one falls back to the brand mark and retries automatically when a fresh URL arrives. */
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const pfp = avatarUrl && avatarUrl !== failedUrl ? avatarUrl : null;
 
   return (
-    <button
-      type="button"
-      className={styles["watch-tile"]}
-      onClick={onOpen}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        void showContextMenu(buildAccountMenu(account, model, onOpen));
-      }}
-    >
+    <button type="button" className={styles["watch-tile"]} onClick={onOpen}>
       <span
         className={styles["watch-face"]}
-        data-running={model.tone === "run" || undefined}
+        data-running={tone === "run" || undefined}
       >
-        {account.avatarUrl ? (
+        {pfp ? (
           <>
             <img
               className={styles["watch-pfp"]}
-              src={account.avatarUrl}
+              src={pfp}
               alt=""
               referrerPolicy="no-referrer"
-              onError={(e) => {
-                e.currentTarget.hidden = true;
-              }}
+              onError={() => setFailedUrl(pfp)}
             />
             <span className={styles["watch-badge"]}>
-              <BrandTile source={account.source} size={16} />
+              <BrandTile source={source} size={16} />
             </span>
           </>
         ) : (
-          <BrandTile source={account.source} size={52} />
+          <BrandTile source={source} size={52} />
         )}
       </span>
-      <span className={styles["watch-name"]}>{account.label ?? def.label}</span>
+      <span className={styles["watch-name"]}>{name}</span>
       <span
         className={styles["watch-sub"]}
-        data-tone={
-          model.tone === "err" || model.tone === "paused" ? "warn" : undefined
-        }
+        data-tone={tone === "err" || tone === "paused" ? "warn" : undefined}
       >
         {sub}
       </span>
     </button>
-  );
-}
-
-function WatchCard({
-  watch,
-  status,
-  onOpen,
-}: {
-  watch: WatchRow;
-  status: SyncAccountStatus | undefined;
-  onOpen: () => void;
-}) {
-  const model = cardModel(status);
-  const count = watch.sync?.knownCount ?? 0;
-  const def = getSourceDef(watch.source);
-
-  /** The name line already carries the handle, so the sub leads with the platform and the kind of thing being watched. */
-  const platformLine = watch.label
-    ? watchName({ ...watch, label: null })
-    : watch.kind && watch.kind !== "user"
-      ? `${def.label} ${watchKindLabel(watch.kind)}`
-      : def.label;
-  const sub =
-    model.tone === "run"
-      ? model.statusText
-      : model.tone === "paused"
-        ? "Needs an account"
-        : model.tone === "err"
-          ? "Check failed"
-          : `${platformLine} · ${formatNumber(count)} item${count === 1 ? "" : "s"}`;
-
-  const openMenu = () => {
-    void showContextMenu([
-      model.tone === "run"
-        ? {
-            label: "Cancel check",
-            onSelect: () => void window.pond.syncCancel(watch.id),
-          }
-        : {
-            label: "Check now",
-            onSelect: () => void window.pond.syncRunNow(watch.id),
-          },
-      { type: "separator" },
-      { label: "Open settings", onSelect: onOpen },
-    ]);
-  };
-
-  return (
-    <button
-      type="button"
-      className={styles["watch-tile"]}
-      onClick={onOpen}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        openMenu();
-      }}
-    >
-      <span
-        className={styles["watch-face"]}
-        data-running={model.tone === "run" || undefined}
-      >
-        {watch.avatarUrl ? (
-          <>
-            <img
-              className={styles["watch-pfp"]}
-              src={watch.avatarUrl}
-              alt=""
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                e.currentTarget.hidden = true;
-              }}
-            />
-            <span className={styles["watch-badge"]}>
-              <BrandTile source={watch.source} size={16} />
-            </span>
-          </>
-        ) : (
-          <BrandTile source={watch.source} size={52} />
-        )}
-      </span>
-      <span className={styles["watch-name"]}>{watchName(watch)}</span>
-      <span
-        className={styles["watch-sub"]}
-        data-tone={
-          model.tone === "err" || model.tone === "paused" ? "warn" : undefined
-        }
-      >
-        {sub}
-      </span>
-    </button>
-  );
-}
-
-function AccountDialog({
-  account,
-  status,
-  onClose,
-  onChanged,
-}: {
-  account: AccountRow;
-  status: SyncAccountStatus | undefined;
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const navigate = useNavigate();
-  const model = cardModel(status);
-  const { source } = account;
-  const { runs } = useSyncHistory(source, 1, account.id);
-  const last = runs[0];
-  const [confirming, setConfirming] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  const nickRef = useRef<HTMLInputElement>(null);
-  const handleRef = useRef<HTMLInputElement>(null);
-
-  const [sync, patchSync] = usePrefs("sync");
-  const [preferences, patchPreferences] = usePrefs("preferences");
-  const count = account.sync?.knownCount ?? 0;
-  const def = getSourceDef(source);
-
-  const cron = sync.cron ?? { enabled: true, intervalHours: 6 };
-  const frequencyLabel = cron.enabled
-    ? (FREQUENCY_OPTIONS.find((o) => o.hours === cron.intervalHours)?.label ??
-      `Every ${cron.intervalHours} hours`)
-    : "Manual only";
-
-  const openFrequencyMenu = () => {
-    void showContextMenu([
-      ...FREQUENCY_OPTIONS.map((option) => ({
-        type: "checkbox" as const,
-        label: option.label,
-        checked: cron.enabled && cron.intervalHours === option.hours,
-        onSelect: () =>
-          patchSync({ cron: { enabled: true, intervalHours: option.hours } }),
-      })),
-      { type: "separator" as const },
-      {
-        type: "checkbox" as const,
-        label: "Manual only",
-        checked: !cron.enabled,
-        onSelect: () => patchSync({ cron: { ...cron, enabled: false } }),
-      },
-    ]);
-  };
-
-  const saveNickname = async () => {
-    const raw = nickRef.current?.value.trim() ?? "";
-    const next = raw.length > 0 ? raw : null;
-    if (next === account.label) return;
-    await window.pond.query("accounts.setLabel", {
-      accountId: account.id,
-      label: next,
-    });
-    onChanged();
-  };
-
-  const saveHandle = async () => {
-    const raw = handleRef.current?.value.trim().replace(/^@/, "") ?? "";
-    const next = raw.length > 0 ? raw : null;
-    if (next === account.handle) return;
-    await window.pond.query("accounts.setHandle", {
-      accountId: account.id,
-      handle: next,
-    });
-    onChanged();
-  };
-
-  const viewItems = () => {
-    setSearchInput(
-      [{ field: "account", operator: "eq", value: account.id }],
-      "",
-    );
-    onClose();
-    void navigate({ to: "/" });
-  };
-
-  const disconnect = async () => {
-    setRemoving(true);
-    try {
-      await window.pond.query("accounts.disconnect", {
-        accountId: account.id,
-      });
-      onChanged();
-      setConfirming(false);
-      onClose();
-    } finally {
-      setRemoving(false);
-    }
-  };
-
-  const openMore = () => {
-    void showContextMenu([
-      {
-        label: "Backfill",
-        enabled: model.connected && model.tone !== "run",
-        onSelect: () =>
-          void window.pond.syncRunNow(account.id, { forceFull: true }),
-      },
-      {
-        label: "Refresh metadata",
-        enabled: model.connected,
-        onSelect: () => void window.pond.refreshBackfillStart({ source }),
-      },
-      {
-        label: "Re-download at full quality",
-        enabled: model.connected,
-        onSelect: () =>
-          void window.pond.refreshBackfillStart({ source, overwrite: true }),
-      },
-    ]);
-  };
-
-  const primary = (() => {
-    switch (model.tone) {
-      case "run":
-        return {
-          label: "Cancel sync",
-          run: () => window.pond.syncCancel(account.id),
-        };
-      case "paused":
-        return {
-          label: "Reconnect",
-          run: () => window.pond.connectSource(source),
-        };
-      case "err":
-        return {
-          label: "Retry now",
-          run: () => window.pond.syncRunNow(account.id),
-        };
-      default:
-        return model.connected
-          ? {
-              label: "Sync Now",
-              run: () => window.pond.syncRunNow(account.id),
-            }
-          : { label: "Connect", run: () => window.pond.connectSource(source) };
-    }
-  })();
-
-  return (
-    <>
-      <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-        <Dialog.Portal>
-          <Dialog.Backdrop />
-          <Dialog.Popup className={styles["account-dialog"]}>
-            <div className={styles["dialog-hero"]}>
-              <BrandTile source={source} size={52} />
-              <Dialog.Title className={styles["dialog-name"]}>
-                {account.label ?? def.label}
-              </Dialog.Title>
-              <span className={styles["dialog-sub"]}>
-                {account.handle ? `@${account.handle} · ` : ""}
-                {formatNumber(count)} item{count === 1 ? "" : "s"}
-                {status?.lastSyncedAt ? ` · synced ${model.lastText}` : ""}
-              </span>
-            </div>
-
-            <div className={styles.rows}>
-              <div className={styles["setting-row"]}>
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Nickname</span>
-                </span>
-                <input
-                  ref={nickRef}
-                  className={styles["nick-input"]}
-                  placeholder="None"
-                  defaultValue={account.label ?? ""}
-                  onBlur={() => void saveNickname()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                  }}
-                />
-              </div>
-
-              <div className={styles["setting-row"]}>
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Handle</span>
-                  <span className={styles["field-hint"]}>
-                    Your username — unlocks the profile picture
-                  </span>
-                </span>
-                <input
-                  ref={handleRef}
-                  className={styles["nick-input"]}
-                  placeholder="@username"
-                  defaultValue={account.handle ? `@${account.handle}` : ""}
-                  onBlur={() => void saveHandle()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                  }}
-                />
-              </div>
-
-              <button
-                type="button"
-                className={`${styles["setting-row"]} ${styles["setting-row-button"]}`}
-                onClick={openFrequencyMenu}
-              >
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Sync frequency</span>
-                  <span className={styles["field-hint"]}>
-                    Applies to all accounts
-                  </span>
-                </span>
-                <span className={styles.select}>
-                  {frequencyLabel}
-                  <ChevronDown width={12} height={12} />
-                </span>
-              </button>
-
-              {sourceSettingsFor(source).map((field) => (
-                <div className={styles["setting-row"]} key={field.key}>
-                  <span className={styles["field-text"]}>
-                    <span className={styles["field-label"]}>{field.label}</span>
-                  </span>
-                  <span className={styles.segmented}>
-                    {field.options.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        data-on={
-                          preferences[field.key] === option.value || undefined
-                        }
-                        onClick={() =>
-                          patchPreferences({
-                            [field.key]: option.value,
-                          } as Partial<Prefs["preferences"]>)
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </span>
-                </div>
-              ))}
-
-              <div className={styles["setting-row"]}>
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Session</span>
-                </span>
-                <span
-                  className={styles["session-value"]}
-                  data-tone={model.tone}
-                >
-                  ●{" "}
-                  {model.connected
-                    ? model.tone === "paused"
-                      ? "Sign-in required"
-                      : "Healthy"
-                    : "Not connected"}
-                </span>
-              </div>
-
-              {last ? (
-                <div className={styles["setting-row"]}>
-                  <span className={styles["field-text"]}>
-                    <span className={styles["field-label"]}>Last run</span>
-                    <span className={styles["field-hint"]}>
-                      {describeRun(last)}
-                    </span>
-                  </span>
-                  <span className={styles["field-value"]}>
-                    <Clock width={12} height={12} /> {formatClock(last.ts)}
-                  </span>
-                </div>
-              ) : null}
-
-              <button
-                type="button"
-                className={`${styles["setting-row"]} ${styles["setting-row-button"]}`}
-                onClick={viewItems}
-              >
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>
-                    View items in library
-                  </span>
-                </span>
-                <ChevronRight width={13} height={13} />
-              </button>
-            </div>
-
-            <div className={styles["dialog-foot"]}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirming(true)}
-              >
-                Disconnect…
-              </Button>
-              <Button variant="ghost" size="sm" onClick={openMore}>
-                More…
-              </Button>
-              <span className={styles["dialog-foot-end"]}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    void primary.run();
-                    if (model.tone !== "run") onClose();
-                  }}
-                >
-                  {primary.label}
-                </Button>
-              </span>
-            </div>
-
-            {model.tone === "err" && status?.lastError ? (
-              <p className={styles["error-line"]}>{status.lastError}</p>
-            ) : null}
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={`Disconnect ${accountName(account)}?`}
-        description={`Pond signs this account out and stops its syncing. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
-        confirmLabel="Disconnect"
-        busy={removing}
-        onConfirm={() => void disconnect()}
-      />
-    </>
-  );
-}
-
-function WatchDialog({
-  watch,
-  accounts,
-  status,
-  onClose,
-  onChanged,
-}: {
-  watch: WatchRow;
-  accounts: readonly AccountRow[];
-  status: SyncAccountStatus | undefined;
-  onClose: () => void;
-  onChanged: () => void;
-}) {
-  const navigate = useNavigate();
-  const model = cardModel(status);
-  const { source } = watch;
-  const { runs } = useSyncHistory(source, 1, watch.id);
-  const last = runs[0];
-  const [confirming, setConfirming] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  const nickRef = useRef<HTMLInputElement>(null);
-
-  const [sync, patchSync] = usePrefs("sync");
-  const count = watch.sync?.knownCount ?? 0;
-  const def = getSourceDef(source);
-
-  const cron = sync.cron ?? { enabled: true, intervalHours: 6 };
-  const frequencyLabel = cron.enabled
-    ? (FREQUENCY_OPTIONS.find((o) => o.hours === cron.intervalHours)?.label ??
-      `Every ${cron.intervalHours} hours`)
-    : "Manual only";
-
-  const openFrequencyMenu = () => {
-    void showContextMenu([
-      ...FREQUENCY_OPTIONS.map((option) => ({
-        type: "checkbox" as const,
-        label: option.label,
-        checked: cron.enabled && cron.intervalHours === option.hours,
-        onSelect: () =>
-          patchSync({ cron: { enabled: true, intervalHours: option.hours } }),
-      })),
-      { type: "separator" as const },
-      {
-        type: "checkbox" as const,
-        label: "Manual only",
-        checked: !cron.enabled,
-        onSelect: () => patchSync({ cron: { ...cron, enabled: false } }),
-      },
-    ]);
-  };
-
-  const saveNickname = async () => {
-    const raw = nickRef.current?.value.trim() ?? "";
-    const next = raw.length > 0 ? raw : null;
-    if (next === watch.label) return;
-    await window.pond.query("watches.setLabel", {
-      watchId: watch.id,
-      label: next,
-    });
-    onChanged();
-  };
-
-  const viewItems = () => {
-    setSearchInput([{ field: "account", operator: "eq", value: watch.id }], "");
-    onClose();
-    void navigate({ to: "/" });
-  };
-
-  const stopWatching = async () => {
-    setRemoving(true);
-    try {
-      await window.pond.query("watches.remove", { watchId: watch.id });
-      onChanged();
-      setConfirming(false);
-      onClose();
-    } finally {
-      setRemoving(false);
-    }
-  };
-
-  /** The check rides on a public listing or a connected account's session. */
-  const viaAccount = watch.via
-    ? (accounts.find((a) => a.id === watch.via) ?? null)
-    : null;
-  const accessText = WATCH_NEEDS_SESSION.includes(source)
-    ? viaAccount
-      ? `Via ${viaAccount.handle ? `@${viaAccount.handle}` : accountName(viaAccount)}`
-      : "Needs a connected account"
-    : "Public";
-
-  return (
-    <>
-      <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-        <Dialog.Portal>
-          <Dialog.Backdrop />
-          <Dialog.Popup className={styles["account-dialog"]}>
-            <div className={styles["dialog-hero"]}>
-              <span className={styles.wavatar}>
-                <BrandTile source={source} size={52} />
-              </span>
-              <Dialog.Title className={styles["dialog-name"]}>
-                {watchName(watch)}
-              </Dialog.Title>
-              <span className={styles["dialog-sub"]}>
-                Watching{" "}
-                {watch.kind && watch.kind !== "user"
-                  ? `a ${def.label} ${watchKindLabel(watch.kind)}`
-                  : `on ${def.label}`}{" "}
-                · {formatNumber(count)} item
-                {count === 1 ? "" : "s"}
-                {status?.lastSyncedAt ? ` · checked ${model.lastText}` : ""}
-              </span>
-            </div>
-
-            <div className={styles.rows}>
-              <div className={styles["setting-row"]}>
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Nickname</span>
-                </span>
-                <input
-                  ref={nickRef}
-                  className={styles["nick-input"]}
-                  placeholder="None"
-                  defaultValue={watch.label ?? ""}
-                  onBlur={() => void saveNickname()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") e.currentTarget.blur();
-                  }}
-                />
-              </div>
-
-              <div className={styles["setting-row"]}>
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Access</span>
-                  <span className={styles["field-hint"]}>
-                    Read-only — Pond never posts or follows
-                  </span>
-                </span>
-                <span className={styles["field-value"]}>{accessText}</span>
-              </div>
-
-              <button
-                type="button"
-                className={`${styles["setting-row"]} ${styles["setting-row-button"]}`}
-                onClick={openFrequencyMenu}
-              >
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>Check frequency</span>
-                  <span className={styles["field-hint"]}>
-                    Applies to all accounts
-                  </span>
-                </span>
-                <span className={styles.select}>
-                  {frequencyLabel}
-                  <ChevronDown width={12} height={12} />
-                </span>
-              </button>
-
-              {last ? (
-                <div className={styles["setting-row"]}>
-                  <span className={styles["field-text"]}>
-                    <span className={styles["field-label"]}>Last check</span>
-                    <span className={styles["field-hint"]}>
-                      {describeRun(last)}
-                    </span>
-                  </span>
-                  <span className={styles["field-value"]}>
-                    <Clock width={12} height={12} /> {formatClock(last.ts)}
-                  </span>
-                </div>
-              ) : null}
-
-              <button
-                type="button"
-                className={`${styles["setting-row"]} ${styles["setting-row-button"]}`}
-                onClick={viewItems}
-              >
-                <span className={styles["field-text"]}>
-                  <span className={styles["field-label"]}>
-                    View items in library
-                  </span>
-                </span>
-                <ChevronRight width={13} height={13} />
-              </button>
-            </div>
-
-            <div className={styles["dialog-foot"]}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirming(true)}
-              >
-                Stop Watching…
-              </Button>
-              <span className={styles["dialog-foot-end"]}>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    if (model.tone === "run") {
-                      void window.pond.syncCancel(watch.id);
-                    } else {
-                      void window.pond.syncRunNow(watch.id);
-                      onClose();
-                    }
-                  }}
-                >
-                  {model.tone === "run" ? "Cancel check" : "Check Now"}
-                </Button>
-              </span>
-            </div>
-
-            {model.tone === "err" && status?.lastError ? (
-              <p className={styles["error-line"]}>{status.lastError}</p>
-            ) : null}
-          </Dialog.Popup>
-        </Dialog.Portal>
-      </Dialog.Root>
-
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={`Stop watching ${watchName(watch)}?`}
-        description={`Pond stops checking for new posts. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
-        confirmLabel="Stop Watching"
-        busy={removing}
-        onConfirm={() => void stopWatching()}
-      />
-    </>
-  );
-}
-
-function ConnectDialog({
-  accounts,
-  waiting,
-  onClose,
-  onPick,
-  onCancelWait,
-}: {
-  accounts: readonly AccountRow[];
-  waiting: Source | null;
-  onClose: () => void;
-  onPick: (source: Source) => void;
-  onCancelWait: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const searchRef = useRef<HTMLInputElement>(null);
-
-  /** Search is the whole step; focus it whenever the grid is showing. */
-  useEffect(() => {
-    if (!waiting) searchRef.current?.focus();
-  }, [waiting]);
-
-  const q = query.trim().toLowerCase();
-  const matches = SYNCABLE.filter((source) => {
-    if (!q) return true;
-    const def = getSourceDef(source);
-    return (
-      def.label.toLowerCase().includes(q) ||
-      source.includes(q) ||
-      accounts.some(
-        (a) =>
-          a.source === source &&
-          ((a.handle ?? "").toLowerCase().includes(q) ||
-            (a.label ?? "").toLowerCase().includes(q)),
-      )
-    );
-  });
-
-  return (
-    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup className={styles["flow-dialog"]}>
-          {waiting ? (
-            <div className={styles["wait-hero"]}>
-              <span className={styles["wait-ring"]}>
-                <BrandTile source={waiting} size={44} />
-              </span>
-              <Dialog.Title className={styles["wait-title"]}>
-                Sign in to {getSourceDef(waiting).label}
-              </Dialog.Title>
-              <p className={styles["wait-sub"]}>
-                We opened {getSourceDef(waiting).label} in your browser. Sign in
-                as usual, then push the session with the Pond extension — this
-                updates on its own.
-              </p>
-              <span className={styles["wait-actions"]}>
-                <Button variant="ghost" size="sm" onClick={onCancelWait}>
-                  Back
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => void window.pond.connectSource(waiting)}
-                >
-                  <ArrowUpRight width={14} height={14} />
-                  Reopen in browser
-                </Button>
-              </span>
-            </div>
-          ) : (
-            <>
-              <Dialog.Title className={styles["flow-dialog-title"]}>
-                Connect a Source
-              </Dialog.Title>
-              <div className={styles.search}>
-                <Magnifier width={15} height={15} />
-                <input
-                  ref={searchRef}
-                  type="search"
-                  placeholder="Search sources…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-
-              {matches.length > 0 ? (
-                <div className={styles.pick}>
-                  {matches.map((source) => (
-                    <button
-                      key={source}
-                      type="button"
-                      className={styles["pick-tile"]}
-                      onClick={() => onPick(source)}
-                    >
-                      <BrandTile source={source} size={54} />
-                      <span className={styles["pick-name"]}>
-                        {getSourceDef(source).label}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles["quiet-line"]}>
-                  No source found — try a different name.
-                </p>
-              )}
-              <p className={styles["quiet-line"]}>
-                Sign in once — Pond syncs your saves from then on.
-              </p>
-            </>
-          )}
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
-  );
-}
-
-/** Mirror of the main-process WatchTarget returned by `watches.resolve`. */
-interface WatchTargetChip {
-  kind: WatchRow["kind"];
-  handle: string;
-  display: string;
-}
-
-function watchHint(source: Source, viaHandle: string | null): string {
-  switch (source) {
-    case "arena":
-      return "A channel, profile, or group — paste a link or type a slug. Public, no sign-in.";
-    case "youtube":
-      return "A channel handle like @mkbhd, or paste a channel, tab, or playlist link.";
-    case "tiktok":
-      return "A public profile handle — no sign-in.";
-    case "pinterest":
-      return "A profile or board — paste a link or type user or user/board. Public, no sign-in.";
-    case "cosmos":
-      return "A profile or cluster — paste a link or type user or user/cluster. Public, no sign-in.";
-    case "twitter":
-      return viaHandle
-        ? `A profile or list link — checks through your @${viaHandle} session, the account never knows.`
-        : "Connect a Twitter account first — watching here rides your own session.";
-    default:
-      return viaHandle
-        ? `Checks through your @${viaHandle} session — the account never knows.`
-        : `Connect a ${getSourceDef(source).label} account first — watching here rides your own session.`;
-  }
-}
-
-function WatchAddDialog({
-  accounts,
-  onClose,
-  onAdded,
-}: {
-  accounts: readonly AccountRow[];
-  onClose: () => void;
-  onAdded: (watchId: string) => void;
-}) {
-  const [source, setSource] = useState<Source | null>(null);
-  const [handle, setHandle] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [resolved, setResolved] = useState<WatchTargetChip | null>(null);
-  const handleRef = useRef<HTMLInputElement>(null);
-
-  /** Resolves the input shortly after typing stops; bare Are.na slugs need an API probe. */
-  useEffect(() => {
-    const input = handle.trim();
-    if (!source || !input) {
-      setResolved(null);
-      return;
-    }
-    let stale = false;
-    const timer = setTimeout(async () => {
-      try {
-        const res = (await window.pond.query("watches.resolve", {
-          source,
-          input,
-        })) as { ok: boolean; target?: WatchTargetChip };
-        if (!stale) setResolved(res.ok ? (res.target ?? null) : null);
-      } catch {
-        if (!stale) setResolved(null);
-      }
-    }, 350);
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
-  }, [source, handle]);
-
-  /** Back steps from the handle step to the picker; Esc and backdrop close the dialog itself. */
-  const back = () => {
-    if (source) {
-      setSource(null);
-      setHandle("");
-      setError(null);
-    } else {
-      onClose();
-    }
-  };
-
-  useEffect(() => {
-    if (source) handleRef.current?.focus();
-  }, [source]);
-
-  const viaAccount = source
-    ? (accounts.find((a) => a.source === source) ?? null)
-    : null;
-  const needsAccount = source
-    ? WATCH_NEEDS_SESSION.includes(source) && !viaAccount
-    : false;
-  const canStart =
-    source !== null && handle.trim().length > 0 && !needsAccount && !busy;
-
-  const start = async () => {
-    if (!source || !canStart) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const res = (await window.pond.query("watches.add", {
-        source,
-        handle: handle.trim(),
-      })) as { ok: boolean; reason?: string; watch?: { id: string } };
-      if (res.ok && res.watch) {
-        onAdded(res.watch.id);
-        return;
-      }
-      setError(
-        res.reason === "already_watching"
-          ? "You're already watching this."
-          : res.reason === "needs_account"
-            ? `Connect a ${getSourceDef(source).label} account first.`
-            : res.reason === "invalid"
-              ? "Couldn't recognise that handle or link."
-              : "Couldn't start watching — try again.",
-      );
-    } catch {
-      setError("Couldn't start watching — try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Dialog.Root open onOpenChange={(open) => !open && onClose()}>
-      <Dialog.Portal>
-        <Dialog.Backdrop />
-        <Dialog.Popup className={styles["flow-dialog"]}>
-          {source ? (
-            <div className={styles["wait-hero"]}>
-              <span className={styles.wavatar}>
-                <BrandTile source={source} size={44} />
-              </span>
-              <Dialog.Title className={styles["wait-title"]}>
-                Who do you want to watch?
-              </Dialog.Title>
-              <p className={styles["wait-sub"]}>
-                {watchHint(source, viaAccount?.handle ?? null)}
-              </p>
-              <div className={styles["handle-field"]}>
-                {/* The @ prefix only makes sense for bare handles, not links. */}
-                {!/[:./]/.test(handle) ? (
-                  <span className={styles["handle-at"]}>@</span>
-                ) : null}
-                <input
-                  ref={handleRef}
-                  type="text"
-                  placeholder="handle or link"
-                  value={handle}
-                  disabled={needsAccount}
-                  onChange={(e) => {
-                    setHandle(e.target.value);
-                    setError(null);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void start();
-                  }}
-                />
-              </div>
-              {error ? (
-                <p className={styles["error-line"]}>{error}</p>
-              ) : resolved ? (
-                <p className={styles["resolve-chip"]}>
-                  {getSourceDef(source).label} {watchKindLabel(resolved.kind)} ·{" "}
-                  {resolved.display}
-                </p>
-              ) : null}
-              <span className={styles["wait-actions"]}>
-                <Button variant="ghost" size="sm" onClick={back}>
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={!canStart}
-                  onClick={() => void start()}
-                >
-                  {busy ? "Starting…" : "Start Watching"}
-                </Button>
-              </span>
-            </div>
-          ) : (
-            <>
-              <Dialog.Title className={styles["flow-dialog-title"]}>
-                Watch an Account
-              </Dialog.Title>
-              <div className={styles.pick}>
-                {WATCHABLE.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={styles["pick-tile"]}
-                    onClick={() => setSource(s)}
-                  >
-                    <BrandTile source={s} size={54} />
-                    <span className={styles["pick-name"]}>
-                      {getSourceDef(s).label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <p className={styles["quiet-line"]}>
-                Follow someone's public posts — read-only, nothing is posted or
-                followed on your behalf.
-              </p>
-            </>
-          )}
-        </Dialog.Popup>
-      </Dialog.Portal>
-    </Dialog.Root>
   );
 }

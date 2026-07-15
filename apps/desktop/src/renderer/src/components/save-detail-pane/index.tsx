@@ -29,6 +29,7 @@ export function SaveDetails({ save }: { save: Save }) {
     style,
     colors,
     avatarUrl,
+    sourceLogo,
     sourceIcon: SourceIcon,
   } = useSaveDetail(save.id);
 
@@ -150,7 +151,11 @@ export function SaveDetails({ save }: { save: Save }) {
                   </span>
                 ) : row.kind === "platform" ? (
                   <span className={styles["row-inline"]}>
-                    {SourceIcon ? (
+                    {sourceLogo ? (
+                      <span className={styles["row-source-icon"]} aria-hidden>
+                        <img src={sourceLogo} alt="" width={16} height={16} />
+                      </span>
+                    ) : SourceIcon ? (
                       <span className={styles["row-source-icon"]} aria-hidden>
                         <SourceIcon width={16} height={16} />
                       </span>

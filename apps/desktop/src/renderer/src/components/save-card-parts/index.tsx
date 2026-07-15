@@ -7,7 +7,7 @@ import {
   deriveTypeLabel,
 } from "@/lib/media/units";
 import { getSourceLabel } from "@/lib/save/source-labels";
-import { getSourceIcon } from "@/lib/save/sources-registry";
+import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
 import type { Save, SaveFile } from "@/lib/types";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import styles from "./styles.module.css";
@@ -124,6 +124,7 @@ const Overlay = memo(function Overlay({
     [primary, save],
   );
   const sourceLabel = prefs.source ? getSourceLabel(save.source) : null;
+  const sourceLogo = prefs.source ? getSourceLogo(save.source) : null;
   const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
   const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
 
@@ -139,7 +140,13 @@ const Overlay = memo(function Overlay({
           aria-label={`Saved from ${sourceLabel}`}
           title={`Saved from ${sourceLabel}`}
         >
-          {SourceIcon ? <SourceIcon /> : sourceLabel}
+          {sourceLogo ? (
+            <img src={sourceLogo} alt="" width={18} height={18} />
+          ) : SourceIcon ? (
+            <SourceIcon />
+          ) : (
+            sourceLabel
+          )}
         </Source>
       ) : null}
       {prefs.fileCount && mediaUnitCount > 1 ? (

@@ -1,0 +1,42 @@
+.list {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 0px;
+  font: inherit;
+  text-align: start;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.row:hover {
+  background: var(--ds-gray-2);
+}
+
+.row:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ds-gray-10);
+  text-align: center;
+}

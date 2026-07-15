@@ -5,9 +5,8 @@ import {
   IconGlobe2Outline18 as SourceIcon,
   IconDocumentScanOutline18 as TypeIcon,
 } from "@pond/icons/outline/18";
-import { Switch } from "@pond/ui";
+import { Switch, TrayCard } from "@pond/ui";
 import { type ReactNode, useRef } from "react";
-import { Dock } from "@/components/library-view-menu-group";
 import { useView } from "@/hooks/use-view";
 import type { DisplayPrefKey } from "@/stores/display-prefs";
 import styles from "./styles.module.css";
@@ -30,16 +29,16 @@ export function DisplaySection() {
   const initialPrefs = useRef(state.displayPrefs);
 
   return (
-    <Dock.Root>
-      <Dock.Close />
-      <Dock.Header>
-        <Dock.Title>Display Details</Dock.Title>
-        <Dock.Separator />
-        <Dock.Description>
+    <>
+      <TrayCard.Close />
+      <TrayCard.Header>
+        <TrayCard.Title>Display Details</TrayCard.Title>
+        <TrayCard.Separator />
+        <TrayCard.Description>
           Choose which details are shown beneath each item in your library.
           Toggle off anything you don't need for a cleaner view.
-        </Dock.Description>
-      </Dock.Header>
+        </TrayCard.Description>
+      </TrayCard.Header>
       <div className={styles.rows}>
         {TOGGLES.map(({ key, label, icon }) => (
           <label
@@ -60,16 +59,16 @@ export function DisplaySection() {
           </label>
         ))}
       </div>
-      <Dock.Footer>
-        <Dock.Cancel
+      <TrayCard.Footer>
+        <TrayCard.Cancel
           onClick={() => {
             for (const { key } of TOGGLES) {
               actions.setDisplayPref(key, initialPrefs.current[key]);
             }
           }}
         />
-        <Dock.Confirm />
-      </Dock.Footer>
-    </Dock.Root>
+        <TrayCard.Confirm />
+      </TrayCard.Footer>
+    </>
   );
 }
