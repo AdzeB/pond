@@ -44,7 +44,8 @@
 
 .close,
 .help,
-.back {
+.back,
+.action {
   position: absolute;
   z-index: 1;
   display: inline-flex;
@@ -83,6 +84,16 @@
 .back {
   top: var(--tray-card-padding);
   left: var(--tray-card-padding);
+}
+
+.action[data-position="start"] {
+  top: var(--tray-card-padding);
+  left: var(--tray-card-padding);
+}
+
+.action[data-position="end"] {
+  top: var(--tray-card-padding);
+  right: var(--tray-card-padding);
 }
 
 .footer {

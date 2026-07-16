@@ -11,7 +11,6 @@ import {
   setAskResult,
   setAskSummary,
   startTurn,
-  useAskResult,
 } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import { selection, useSelectionSize } from "@/stores/selection";
@@ -78,8 +77,8 @@ const VIEWS = [
   { id: "display", label: "Display" },
 ] as const;
 
-/** The status pill only shows while the dock rests in nav with an active ask, so each scenario seeds the store and collapses the dock. */
-const STATUS_SCENARIOS = [
+/** Each scenario seeds the ask store, then the composer renders that state. */
+const ASK_SCENARIOS = [
   { id: "thinking", label: "Thinking", seed: seedAskThinking },
   { id: "results", label: "Results found", seed: seedAskResults },
   { id: "empty", label: "No matches", seed: seedAskEmpty },
@@ -93,7 +92,7 @@ const SELECTIONS = [
   { count: 240, label: "240 items" },
 ] as const;
 
-/** The status cell renders from the live ask store, so the Status pill scenario buttons drive it. */
+/** The ask cell renders from the live ask store, so the Ask scenario buttons drive it. */
 const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
   {
     id: "nav",
@@ -102,7 +101,6 @@ const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
   },
   { id: "ask", label: "Ask composer", preview: { view: "ask" } },
   { id: "search", label: "Search", preview: { view: "search" } },
-  { id: "status", label: "Status pill", preview: { view: "status" } },
   { id: "new", label: "New save", preview: { view: "new" } },
   { id: "layout", label: "Layout", preview: { view: "layout" } },
   { id: "zoom", label: "Zoom", preview: { view: "zoom" } },
@@ -139,7 +137,6 @@ export function DockPlayground() {
   const navigate = useNavigate();
   const mode = useDockMode();
   const selectionSize = useSelectionSize();
-  const ask = useAskResult();
   const [backdrop, setBackdrop] = useState<Backdrop>("soft");
   const [speed, setSpeed] = useState(1);
 
@@ -168,19 +165,13 @@ export function DockPlayground() {
     };
   }, []);
 
-  /** The status-pill grid cell is empty without an active ask; give it content on arrival. */
+  /** The ask composer grid cell is empty without an active ask; give it content on arrival. */
   useEffect(() => {
     seedAskResults();
   }, []);
 
   const resolvedView =
-    selectionSize > 0
-      ? "selection"
-      : mode !== "nav"
-        ? mode
-        : ask.active
-          ? "status"
-          : "nav";
+    selectionSize > 0 ? "selection" : mode !== "nav" ? mode : "nav";
 
   const rest = () => {
     selection.clear();
@@ -260,15 +251,15 @@ export function DockPlayground() {
           </div>
 
           <div className={styles.group}>
-            <div className={styles.groupLabel}>Status pill</div>
-            {STATUS_SCENARIOS.map((s) => (
+            <div className={styles.groupLabel}>Ask scenarios</div>
+            {ASK_SCENARIOS.map((s) => (
               <button
                 key={s.id}
                 type="button"
                 className={styles.item}
                 onClick={() => {
                   s.seed();
-                  dockMode.close();
+                  dockMode.open("ask");
                 }}
               >
                 {s.label}

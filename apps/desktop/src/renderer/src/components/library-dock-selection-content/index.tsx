@@ -5,11 +5,10 @@ import {
   IconTrash2ContentFill18 as Trash,
   IconWandSparkleFill18 as Wand,
 } from "@pond/icons/fill/18";
-import { Tray } from "@pond/ui";
+import { Tooltip, Tray } from "@pond/ui";
 import { motion } from "motion/react";
 import { forwardRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
-import { snappySpring } from "@/lib/ui/motion";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
@@ -24,64 +23,40 @@ export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
       transition={dock.swapTransition}
       {...dock.swap}
     >
-      <Tray.Item
-        render={
-          <motion.button
-            type="button"
-            whileTap={{ rotate: -8 }}
-            transition={snappySpring}
-          />
-        }
-        aria-label="Run task on selection"
-        onClick={dock.runSelectionTask}
-      >
-        <Wand />
-      </Tray.Item>
+      <Tooltip label="Run task" side="top">
+        <Tray.Item
+          aria-label="Run task on selection"
+          onClick={dock.runSelectionTask}
+        >
+          <Wand />
+        </Tray.Item>
+      </Tooltip>
 
-      <Tray.Item
-        render={
-          <motion.button
-            type="button"
-            whileTap={{ rotate: -8 }}
-            transition={snappySpring}
-          />
-        }
-        aria-label="Tag selection"
-        onClick={dock.openTagMenu}
-      >
-        <TagAdd />
-      </Tray.Item>
+      <Tooltip label="Tag" side="top">
+        <Tray.Item aria-label="Tag selection" onClick={dock.openTagMenu}>
+          <TagAdd />
+        </Tray.Item>
+      </Tooltip>
 
-      <Tray.Item
-        render={
-          <motion.button
-            type="button"
-            whileTap={{ rotate: -8 }}
-            transition={snappySpring}
-          />
-        }
-        className={dock.inTrash ? undefined : `${styles.item} ${styles.danger}`}
-        aria-label={
-          dock.inTrash ? "Restore selection" : "Move selection to trash"
-        }
-        onClick={dock.destructive}
-      >
-        {dock.inTrash ? <Restore /> : <Trash />}
-      </Tray.Item>
+      <Tooltip label={dock.inTrash ? "Restore" : "Trash"} side="top">
+        <Tray.Item
+          className={dock.inTrash ? undefined : styles.danger}
+          aria-label={
+            dock.inTrash ? "Restore selection" : "Move selection to trash"
+          }
+          onClick={dock.destructive}
+        >
+          {dock.inTrash ? <Restore /> : <Trash />}
+        </Tray.Item>
+      </Tooltip>
 
-      <Tray.Item
-        render={
-          <motion.button
-            type="button"
-            whileTap={{ scale: 0.9 }}
-            transition={snappySpring}
-          />
-        }
-        aria-label="More actions"
-        onClick={dock.openOverflowMenu}
-      >
-        <More />
-      </Tray.Item>
+      <Tooltip label="More" side="top">
+        <Tray.Item aria-label="More actions" onClick={dock.openOverflowMenu}>
+          <More />
+        </Tray.Item>
+      </Tooltip>
+
+      <Tray.Separator />
 
       <button
         type="button"

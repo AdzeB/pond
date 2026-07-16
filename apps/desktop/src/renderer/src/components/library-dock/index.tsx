@@ -2,7 +2,7 @@ import { Tray, TrayCard } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AskComposer, AskStatusPill } from "@/components/ask-bar";
+import { AskComposer } from "@/components/ask-bar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { NavContent } from "@/components/library-dock-nav-content";
 import { NewContent } from "@/components/library-dock-new-content";
@@ -89,15 +89,9 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
     useDockActions(setConfirmDelete);
 
-  /** Priority: an active selection commandeers the pill, then the opened surface, then the ask status pill, then the resting nav. */
+  /** Priority: an active selection commandeers the pill, then the opened surface, then the resting nav. */
   const liveView: DockView =
-    selectionSize > 0
-      ? "selection"
-      : mode !== "nav"
-        ? mode
-        : ask.active
-          ? "status"
-          : "nav";
+    selectionSize > 0 ? "selection" : mode !== "nav" ? mode : "nav";
   const view = preview?.view ?? liveView;
   const isMenuView = view === "new" || isViewMenu(view);
 
@@ -161,14 +155,12 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       thinking,
       isCard,
       openAsk,
-      closeAsk: closeToNav,
       openSearch,
       closeSearch: closeToNav,
       openNew,
       closeNew: closeToNav,
       openViewMenu,
       closeViewMenu: closeToNav,
-      clearResults,
       destructive,
       runSelectionTask,
       openTagMenu,
@@ -242,11 +234,14 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
                   {...swap}
                   transition={swapTransition}
                 >
-                  <AskComposer
-                    autoFocus={!preview}
-                    onCollapse={closeToNav}
-                    onClear={clearAsk}
-                  />
+                  {/** Leaving the ask card ends the conversation: results clear so the grid never stays silently filtered. */}
+                  <TrayCard.Provider onDismiss={clearResults}>
+                    <AskComposer
+                      autoFocus={!preview}
+                      onCollapse={clearResults}
+                      onClear={clearAsk}
+                    />
+                  </TrayCard.Provider>
                 </motion.div>
               ) : view === "search" ? (
                 <motion.div
@@ -259,15 +254,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
                     autoFocus={!preview}
                     onCollapse={closeToNav}
                   />
-                </motion.div>
-              ) : view === "status" ? (
-                <motion.div
-                  key="status"
-                  className={styles["ask-row"]}
-                  {...swap}
-                  transition={swapTransition}
-                >
-                  <AskStatusPill onReopen={openAsk} onClear={clearResults} />
                 </motion.div>
               ) : view === "new" ? (
                 <motion.div key="new" {...swap} transition={swapTransition}>

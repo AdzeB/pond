@@ -3,25 +3,24 @@
   align-items: center;
 }
 
+/* Text sibling of Tray.Item: same metrics and hover, just a label instead of a glyph. */
 .clear {
   display: inline-flex;
   align-items: center;
   height: 32px;
   padding-inline: 10px;
   font-size: 13px;
-  color: var(--ds-gray-6);
+  font-weight: 500;
+  color: var(--ds-gray-9);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
   background: none;
   border: 0;
   border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
 
   &:hover {
-    color: var(--ds-gray-1);
-    background: var(--ds-gray-11);
+    color: var(--ds-gray-12);
   }
 
   &:focus-visible {
@@ -29,10 +28,6 @@
   }
 }
 
-/* Compound with .item so the red hover outranks the tray item's gray hover. */
-.item.danger {
-  &:hover {
-    color: var(--ds-red-1, var(--ds-gray-1));
-    background: var(--ds-red-9, var(--ds-gray-11));
-  }
+.danger:hover {
+  color: var(--ds-red-9, var(--ds-gray-12));
 }

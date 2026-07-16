@@ -8,6 +8,7 @@ import { Store } from "@tanstack/store";
 export type DockMode =
   | "nav"
   | "ask"
+  | "ask-history"
   | "search"
   | "search-help"
   | "new"

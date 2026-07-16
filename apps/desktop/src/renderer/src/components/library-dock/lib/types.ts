@@ -4,9 +4,9 @@ import type { DockTab } from "./nav-tabs";
 export type DockView =
   | "selection"
   | "ask"
+  | "ask-history"
   | "search"
   | "search-help"
-  | "status"
   | "new"
   | "layout"
   | "zoom"
@@ -25,8 +25,9 @@ export type DockView =
   | "source-new"
   | "nav";
 
-/** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
+/** Includes drill-down subviews (sort groups, search help, ask history) so they render through the same registry and swap transition. */
 export type ViewMenuSection =
+  | "ask-history"
   | "layout"
   | "zoom"
   | "sort"
@@ -45,6 +46,7 @@ export type ViewMenuSection =
   | "source-new";
 
 export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
+  "ask-history",
   "layout",
   "zoom",
   "sort",

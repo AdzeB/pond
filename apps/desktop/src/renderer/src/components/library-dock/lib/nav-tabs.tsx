@@ -1,5 +1,5 @@
 import {
-  IconChartActivity2Fill18 as Analytics,
+  IconChartFill18 as Analytics,
   IconArchiveContent2Fill18 as Library,
   IconUploadFill18 as Saves,
   IconGear3Fill18 as Settings,

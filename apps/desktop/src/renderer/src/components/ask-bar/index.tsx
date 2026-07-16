@@ -6,11 +6,11 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import {
-  IconPenSparkleFill18 as NewChat,
-  IconSparkle3Fill18 as Sparkle,
-} from "@pond/icons/fill/18";
+import { IconPen2Fill12 as NewChat } from "@pond/icons/fill/12";
+import { IconChevronDownFill18 as JumpDown } from "@pond/icons/fill/18";
 import { IconXmarkOutline18 as Clear } from "@pond/icons/outline/18";
+import { TrayCard } from "@pond/ui";
+import { MessageScroller } from "@shadcn/react/message-scroller";
 import {
   CLEAR_EDITOR_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -19,10 +19,9 @@ import {
 } from "lexical";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskMentions } from "@/components/ask-bar-mentions";
-import { PromptDialog } from "@/components/prompt-dialog";
+import { useDock } from "@/components/library-dock/lib/context";
 import { SkillDialog } from "@/components/skill-dialog";
 import { useSaves } from "@/hooks/use-saves";
-import { useAskHistory } from "@/stores/ask-history";
 import { clearAsk, useAskTurns } from "@/stores/ask-store";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection } from "@/stores/selection";
@@ -37,11 +36,7 @@ import { MentionChipNode, SkillChipNode, TagChipNode } from "./lib/nodes";
 import { TurnView } from "./lib/turn-view";
 import { useAskSubmit } from "./lib/use-ask-submit";
 import { useStagedImage } from "./lib/use-staged-image";
-import { useStickyScroll } from "./lib/use-sticky-scroll";
-import { useTurnActions } from "./lib/use-turn-actions";
 import styles from "./styles.module.css";
-
-export { AskStatusPill } from "./lib/status-pill";
 
 interface ComposerProps {
   autoFocus?: boolean;
@@ -77,9 +72,9 @@ function AskField({
   onClear,
 }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
+  const dock = useDock();
   const saves = useSaves();
   const turns = useAskTurns();
-  const recents = useAskHistory();
   const [skillsPrefs] = usePrefs("skills");
   const skills = useMemo(() => skillsPrefs.custom ?? [], [skillsPrefs.custom]);
 
@@ -89,7 +84,6 @@ function AskField({
   const [hasContent, setHasContent] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [createName, setCreateName] = useState("");
-  const [historyOpen, setHistoryOpen] = useState(false);
 
   const {
     fileInputRef,
@@ -101,20 +95,6 @@ function AskField({
     onPaste,
     onDrop,
   } = useStagedImage();
-
-  const {
-    viewOpen,
-    setViewOpen,
-    viewName,
-    setViewName,
-    selectInGrid,
-    openTagMenu,
-    trashCurrent,
-    openSaveView,
-    confirmSaveView,
-  } = useTurnActions(turns);
-
-  const { scrollRef, onScroll: onTranscriptScroll } = useStickyScroll(turns);
 
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
@@ -212,17 +192,8 @@ function AskField({
 
   const openSave = useCallback((id: string) => primarySelection.set(id), []);
 
-  const replayAsk = useCallback(
-    (question: string) => {
-      setHistoryOpen(false);
-      runText(question);
-    },
-    [runText],
-  );
-
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: paste/drop targets for image attachments, not click interactivity; the editor inside stays keyboard-accessible.
-    <div
+    <TrayCard.Root
       className={styles.card}
       data-chat={hasTurns || undefined}
       onPaste={onPaste}
@@ -233,58 +204,74 @@ function AskField({
       }}
     >
       {hasTurns ? (
-        <div className={styles["chat-header"]}>
-          <span className={styles["chat-title"]}>
-            <Sparkle width={13} height={13} />
-            Chat
-          </span>
-          <button
-            type="button"
-            className={styles["chat-new"]}
+        <>
+          <TrayCard.Action
+            position="start"
             aria-label="New chat"
-            onMouseDown={(e) => e.preventDefault()}
             onClick={newChat}
           >
-            <NewChat width={14} height={14} />
-            New
-          </button>
-        </div>
-      ) : null}
+            <NewChat width={12} height={12} />
+          </TrayCard.Action>
+          <TrayCard.Close />
+          <TrayCard.Header position="center">
+            <TrayCard.Title>Chat</TrayCard.Title>
+          </TrayCard.Header>
+        </>
+      ) : (
+        <>
+          <TrayCard.Close />
+          <TrayCard.Header position="center">
+            <TrayCard.Title>Ask Anything</TrayCard.Title>
+            <TrayCard.Separator />
+            <TrayCard.Description>
+              Answers come from your own library. Mix plain words with / for
+              skills, @ for saves, # for tags, or drop in an image.
+            </TrayCard.Description>
+          </TrayCard.Header>
+        </>
+      )}
 
       {hasTurns ? (
-        <div
-          className={styles.transcript}
-          ref={scrollRef}
-          onScroll={onTranscriptScroll}
-        >
-          {turns.map((turn, i) => (
-            <TurnView
-              key={turn.id}
-              turn={turn}
-              isLast={i === turns.length - 1}
-              onOpenSave={openSave}
-              onRetry={
-                i === turns.length - 1 &&
-                turn.status === "error" &&
-                turn.question
-                  ? () => runText(turn.question)
-                  : undefined
-              }
-              actions={
-                i === turns.length - 1 &&
-                turn.status === "done" &&
-                turn.count > 0
-                  ? {
-                      onSelect: selectInGrid,
-                      onTag: openTagMenu,
-                      onTrash: trashCurrent,
-                      onSaveView: openSaveView,
-                    }
-                  : null
-              }
-            />
-          ))}
-        </div>
+        <MessageScroller.Provider autoScroll>
+          <MessageScroller.Root className={styles.transcript}>
+            <MessageScroller.Viewport
+              className={styles["transcript-viewport"]}
+              aria-label="Chat transcript"
+            >
+              <MessageScroller.Content
+                className={styles["transcript-content"]}
+                aria-busy={busy || undefined}
+              >
+                {turns.map((turn, i) => (
+                  /** A whole turn anchors: sending scrolls the question near the top with a peek of the previous exchange. */
+                  <MessageScroller.Item
+                    key={turn.id}
+                    messageId={turn.id}
+                    scrollAnchor
+                  >
+                    <TurnView
+                      turn={turn}
+                      onOpenSave={openSave}
+                      onRetry={
+                        i === turns.length - 1 &&
+                        turn.status === "error" &&
+                        turn.question
+                          ? () => runText(turn.question)
+                          : undefined
+                      }
+                    />
+                  </MessageScroller.Item>
+                ))}
+              </MessageScroller.Content>
+            </MessageScroller.Viewport>
+            <MessageScroller.Button
+              className={styles["transcript-jump"]}
+              aria-label="Jump to latest"
+            >
+              <JumpDown width={14} height={14} />
+            </MessageScroller.Button>
+          </MessageScroller.Root>
+        </MessageScroller.Provider>
       ) : null}
 
       {pendingImage ? (
@@ -306,43 +293,40 @@ function AskField({
       ) : null}
 
       <div className={styles.editor}>
-        <PlainTextPlugin
-          contentEditable={
-            <ContentEditable
-              className={styles.input}
-              spellCheck={false}
-              ariaLabel="Ask anything, or use / @ #"
-            />
-          }
-          placeholder={
-            <span className={styles.placeholder}>
-              {hasTurns
-                ? "Ask a follow-up, or drop an image…"
-                : "Ask anything, / for skills, @ for context…"}
-            </span>
-          }
-          ErrorBoundary={LexicalErrorBoundary}
-        />
-        <HistoryPlugin />
-        <ClearEditorPlugin />
-        {autoFocus ? <AutoFocusPlugin /> : null}
-        <AskMentions
-          skills={skills}
-          saves={saves}
-          onCreateSkill={openCreateSkill}
+        <div className={styles["editor-field"]}>
+          <PlainTextPlugin
+            contentEditable={
+              <ContentEditable
+                className={styles.input}
+                spellCheck={false}
+                ariaLabel="Ask anything, or use / @ #"
+              />
+            }
+            placeholder={
+              <span className={styles.placeholder}>
+                {hasTurns
+                  ? "Ask a follow-up…"
+                  : "Ask anything, / for skills, @ for context…"}
+              </span>
+            }
+            ErrorBoundary={LexicalErrorBoundary}
+          />
+          <HistoryPlugin />
+          <ClearEditorPlugin />
+          {autoFocus ? <AutoFocusPlugin /> : null}
+          <AskMentions
+            skills={skills}
+            saves={saves}
+            onCreateSkill={openCreateSkill}
+          />
+        </div>
+        <ComposerToolbar
+          onHistory={() => dock.openViewMenu("ask-history")}
+          onPickImage={onPickImage}
+          canSend={canSend}
+          onSend={sendNow}
         />
       </div>
-
-      <ComposerToolbar
-        onCollapse={onCollapse}
-        historyOpen={historyOpen}
-        onHistoryOpenChange={setHistoryOpen}
-        recents={recents}
-        onReplay={replayAsk}
-        onPickImage={onPickImage}
-        canSend={canSend}
-        onSend={sendNow}
-      />
 
       <input
         ref={fileInputRef}
@@ -361,18 +345,6 @@ function AskField({
         onOpenChange={setCreateOpen}
         initialName={createName}
       />
-
-      <PromptDialog
-        open={viewOpen}
-        onOpenChange={setViewOpen}
-        title="Save as view"
-        description="Name this result set to pin it as a saved view."
-        value={viewName}
-        onValueChange={setViewName}
-        onConfirm={confirmSaveView}
-        confirmLabel="Save view"
-        placeholder="View name"
-      />
-    </div>
+    </TrayCard.Root>
   );
 }

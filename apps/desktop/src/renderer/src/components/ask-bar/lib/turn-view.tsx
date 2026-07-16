@@ -11,13 +11,6 @@ import { STAGE_LABELS } from "./stage-labels";
 
 const MAX_THUMBS = 6;
 
-interface TurnActionHandlers {
-  onSelect: () => void;
-  onTag: () => void;
-  onTrash: () => void;
-  onSaveView: () => void;
-}
-
 /** Chips are styled to match how they looked in the composer. */
 function TurnSegment({ segment }: { segment: AskSegment }) {
   if (segment.kind === "text") return <>{segment.text}</>;
@@ -36,16 +29,12 @@ function TurnSegment({ segment }: { segment: AskSegment }) {
 
 export function TurnView({
   turn,
-  isLast,
   onOpenSave,
   onRetry,
-  actions,
 }: {
   turn: AskTurn;
-  isLast: boolean;
   onOpenSave: (id: string) => void;
   onRetry?: () => void;
-  actions: TurnActionHandlers | null;
 }) {
   const reduceMotion = useReducedMotion();
   const busy = turn.status === "thinking" || turn.summaryStatus === "loading";
@@ -151,43 +140,6 @@ export function TurnView({
                 <span className={styles["suggestion-count"]}>{s.count}</span>
               </button>
             ))}
-          </div>
-        ) : null}
-
-        {isLast && actions ? (
-          <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.action}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={actions.onSelect}
-            >
-              Select
-            </button>
-            <button
-              type="button"
-              className={styles.action}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={actions.onTag}
-            >
-              Tag…
-            </button>
-            <button
-              type="button"
-              className={styles.action}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={actions.onSaveView}
-            >
-              Save as view
-            </button>
-            <button
-              type="button"
-              className={`${styles.action} ${styles["action-danger"]}`}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={actions.onTrash}
-            >
-              Trash
-            </button>
           </div>
         ) : null}
       </div>

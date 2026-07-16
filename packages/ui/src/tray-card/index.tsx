@@ -103,6 +103,32 @@ function Help({
   );
 }
 
+interface ActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  position?: "start" | "end";
+}
+
+function Action({
+  className,
+  onClick,
+  children,
+  position = "start",
+  ...props
+}: ActionProps) {
+  return (
+    <button
+      type="button"
+      className={cn(styles.action, className)}
+      data-position={position}
+      {...props}
+      onClick={(e) => {
+        onClick?.(e);
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function Close({
   className,
   onClick,
@@ -189,6 +215,7 @@ export const TrayCard = {
   Back,
   Close,
   Help,
+  Action,
   Cancel,
   Confirm,
 };

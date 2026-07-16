@@ -1,4 +1,5 @@
 import { TrayCard } from "@pond/ui";
+import { AskHistorySection } from "@/components/ask-bar/lib/history";
 import type { ViewMenuSection } from "@/components/library-dock/lib/types";
 import { ConnectSourceSection } from "@/components/library-dock-connect-content";
 import { ConnectWaitSection } from "@/components/library-dock-connect-content/wait";
@@ -19,6 +20,7 @@ import { SearchHelpSection } from "@/components/search-bar/lib/help";
 import styles from "./styles.module.css";
 
 const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element> = {
+  "ask-history": AskHistorySection,
   layout: LayoutSection,
   zoom: ZoomSection,
   sort: SortSection,

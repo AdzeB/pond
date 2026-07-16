@@ -241,12 +241,3 @@ export function commitAskResult(
   const nonce = startTurn({ question });
   setAskResult(nonce, question, ids, query);
 }
-
-/** Snapshot of the latest ask for "Save as view". */
-export function askSnapshot(): { question: string; query: Query } {
-  const last = store.state.turns[store.state.turns.length - 1];
-  return {
-    question: last?.question ?? "",
-    query: last?.query ?? EMPTY_QUERY,
-  };
-}

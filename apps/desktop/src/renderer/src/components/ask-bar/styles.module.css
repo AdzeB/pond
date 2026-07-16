@@ -1,7 +1,4 @@
 .card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
   width: 384px;
   max-height: 72vh;
 }
@@ -41,57 +38,64 @@
   }
 }
 
-.chat-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px 2px;
-}
-
-.chat-title {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-
-  & svg {
-    color: var(--ds-gray-10);
-  }
-}
-
-.chat-new {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-  height: 24px;
-  padding-inline: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-10);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-}
-
+/* MessageScroller frame: caps the transcript height while the headless viewport owns scrolling. */
 .transcript {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 340px;
+  overflow: hidden;
+}
+
+.transcript-viewport {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+.transcript-content {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  max-height: 340px;
-  padding: 6px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+}
+
+/* Self-managing jump-to-latest control; the scroller marks it inert when the reader is at the live edge. */
+.transcript-jump {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  box-shadow:
+    var(--ds-shadow-3),
+    inset 0 0 0 0.5px var(--ds-gray-a4);
+  transform: translateX(-50%);
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-2);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &[inert] {
+    opacity: 0;
+  }
 }
 
 .turn {
@@ -232,15 +236,7 @@
   color: var(--ds-gray-10);
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-  margin-top: 2px;
-}
-
-/* 24px filled pill chip (turn actions, relaxation suggestions). */
+/* 24px filled pill chip (relaxation suggestions). */
 .chip {
   display: inline-flex;
   flex-shrink: 0;
@@ -271,62 +267,11 @@
   }
 }
 
-.action {
-  composes: chip;
-}
-
-.action-danger:hover {
-  color: var(--ds-red-1, var(--ds-gray-1));
-  background: var(--ds-red-9, var(--ds-gray-11));
-}
-
-.history-popup {
-  --popup-min-width: 240px;
-
-  max-width: 320px;
-  padding-inline: 4px;
-}
-
-.history-label {
-  padding: 4px 8px 2px;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--ds-gray-9);
-}
-
-.history-empty {
-  padding: 4px 8px 6px;
-  font-size: 12px;
-  color: var(--ds-gray-10);
-}
-
-.history-item {
-  width: 100%;
-  padding: 5px 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  color: var(--ds-gray-12);
-  text-align: left;
-  white-space: nowrap;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover,
-  &[data-active] {
-    background: var(--ds-gray-4);
-  }
-}
-
 .attach-row {
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 6px;
-  margin: 2px 4px;
   background: var(--ds-gray-2);
   border-radius: var(--ds-radius-md);
 }
@@ -378,20 +323,27 @@
   }
 }
 
-/* Family-style inset well around the prompt field; 14px radius stays concentric with the 20px pill and 6px card padding. */
+/* Inset well around the prompt field; the action row lives inside the well. */
 .editor {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
-  min-height: 76px;
   padding: 10px;
-  margin-bottom: 4px;
   background: var(--ds-gray-2);
-  border-radius: 14px;
+  border-radius: var(--ds-radius-lg);
 }
 
-/* Once a conversation exists the input is a compact follow-up bar. */
-.card[data-chat] .editor {
-  min-height: 40px;
+.editor-field {
+  position: relative;
+  min-height: 42px;
+  padding: 2px 2px 0;
+}
+
+/* Once a conversation exists the input is a compact follow-up field. */
+.card[data-chat] .editor-field {
+  min-height: 21px;
 }
 
 .input {
@@ -413,8 +365,8 @@
 
 .placeholder {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 2px;
+  left: 2px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--ds-gray-9);
@@ -422,13 +374,12 @@
   user-select: none;
 }
 
-/* Bottom action row of the card. */
+/* Action row inside the editor well. */
 .toolbar {
   display: flex;
   gap: 8px;
   align-items: center;
   justify-content: space-between;
-  padding: 2px;
 }
 
 .toolbar-group {
@@ -478,53 +429,6 @@
   color: var(--ds-gray-11);
 }
 
-.status-pill {
-  position: relative;
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  height: 32px;
-  padding-inline: 4px 4px;
-  overflow: hidden;
-}
-
-.avatar-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-11);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-3);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    background: var(--ds-gray-4);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
-}
-
-.status-text {
-  display: inline-flex;
-  gap: 5px;
-  align-items: baseline;
-  min-width: 0;
-  max-width: 320px;
-  overflow: hidden;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
 .count {
   flex-shrink: 0;
   font-weight: 600;
@@ -532,29 +436,12 @@
   color: var(--ds-gray-12);
 }
 
-.label {
-  flex-shrink: 0;
-  color: var(--ds-gray-11);
-}
-
-.separator {
-  flex-shrink: 0;
-  color: var(--ds-gray-7);
-}
-
 .suggestions {
   display: inline-flex;
-  flex-shrink: 1;
+  flex-wrap: wrap;
   gap: 4px;
   align-items: center;
   min-width: 0;
-  overflow: hidden;
-}
-
-/* In the transcript, relaxation chips wrap instead of clipping to one line. */
-.assistant-message .suggestions {
-  flex-wrap: wrap;
-  overflow: visible;
 }
 
 .suggestion {
@@ -564,17 +451,4 @@
 .suggestion-count {
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-9);
-}
-
-.detail {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--ds-gray-9);
-  white-space: nowrap;
-}
-
-.end-button {
-  composes: icon-button;
 }

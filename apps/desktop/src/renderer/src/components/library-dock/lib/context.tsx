@@ -21,14 +21,12 @@ export interface DockContextValue {
   thinking: boolean;
   isCard: boolean;
   openAsk: () => void;
-  closeAsk: () => void;
   openSearch: () => void;
   closeSearch: () => void;
   openNew: () => void;
   closeNew: () => void;
   openViewMenu: (section: ViewMenuSection) => void;
   closeViewMenu: () => void;
-  clearResults: () => void;
   destructive: () => void;
   runSelectionTask: () => void;
   openTagMenu: () => void;
