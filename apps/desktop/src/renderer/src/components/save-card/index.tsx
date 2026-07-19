@@ -1,3 +1,4 @@
+import { motion } from "motion/react";
 import { memo, useCallback, useMemo } from "react";
 import { useLibraryCardCallbacks } from "@/components/grid-context";
 import { type CardLayout, CardThumb } from "@/components/save-card-media";
@@ -7,11 +8,18 @@ import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { useSave } from "@/hooks/use-saves";
 import { pickPrimaryFile } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
+import { gentleSpring } from "@/lib/ui/motion";
 import { formatAbsolute } from "@/lib/util/format";
 import { clampRatio } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { usePrefs } from "@/stores/prefs";
 import { selection, useIsPrimary, useIsSelected } from "@/stores/selection";
+
+/** FLIP-capable card root: repacks (sort, filter, zoom, ask results) glide instead of teleporting. */
+const MotionCardRoot = motion.create(Card.Root);
+
+const ENTER_INITIAL = { opacity: 0, y: 12, scale: 0.96 };
+const ENTER_ANIMATE = { opacity: 1, y: 0, scale: 1 };
 
 interface SaveCardProps {
   id: string;
@@ -20,6 +28,8 @@ interface SaveCardProps {
   packedHeight?: number;
   packedTop?: number;
   packedLeft?: number;
+  /** True only for saves that joined the list after first paint, so scroll-in mounts stay quiet. */
+  entering?: boolean;
 }
 
 export const SaveCard = memo(function SaveCard({
@@ -29,6 +39,7 @@ export const SaveCard = memo(function SaveCard({
   packedHeight,
   packedTop,
   packedLeft,
+  entering,
 }: SaveCardProps) {
   /** Callbacks come from grid context so this memoized card doesn't re-render on a sibling's selection change. */
   const { onClick, onDoubleClick } = useLibraryCardCallbacks();
@@ -88,12 +99,16 @@ export const SaveCard = memo(function SaveCard({
 
   return (
     <SaveContextMenu save={save}>
-      <Card.Root
+      <MotionCardRoot
         selected={isPrimary}
         multi={isMulti}
         style={liStyle}
         draggable={save.files.length > 0}
-        onDragStart={onDragStart}
+        onNativeDragStart={onDragStart}
+        layout="position"
+        initial={entering ? ENTER_INITIAL : false}
+        animate={entering ? ENTER_ANIMATE : undefined}
+        transition={gentleSpring}
       >
         <Card.Checkbox
           checked={isMulti}
@@ -107,7 +122,7 @@ export const SaveCard = memo(function SaveCard({
         >
           <SaveCardBody save={save} layout={layout} />
         </Card.Select>
-      </Card.Root>
+      </MotionCardRoot>
     </SaveContextMenu>
   );
 });

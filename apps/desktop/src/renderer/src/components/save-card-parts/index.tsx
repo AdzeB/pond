@@ -16,15 +16,25 @@ interface RootProps extends React.ComponentPropsWithRef<"li"> {
   selected?: boolean;
   multi?: boolean;
   dimmed?: boolean;
+  /** Native dragstart under a non-colliding name: Motion wrappers consume `onDragStart` as their pan-gesture prop. */
+  onNativeDragStart?: React.DragEventHandler<HTMLLIElement>;
 }
 
-function Root({ selected, multi, dimmed, className, ...props }: RootProps) {
+function Root({
+  selected,
+  multi,
+  dimmed,
+  className,
+  onNativeDragStart,
+  ...props
+}: RootProps) {
   return (
     <li
       className={cn(styles.item, className)}
       data-selected={selected ? "true" : undefined}
       data-multi={multi ? "true" : undefined}
       data-dimmed={dimmed ? "true" : undefined}
+      onDragStart={onNativeDragStart}
       {...props}
     />
   );

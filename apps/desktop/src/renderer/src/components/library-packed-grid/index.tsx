@@ -6,6 +6,27 @@ import type { CardLayout } from "@/components/save-card-media";
 import { useVisibleIndices } from "@/hooks/use-visible-indices";
 import type { Save } from "@/lib/types";
 
+const NO_NEW_IDS: ReadonlySet<string> = new Set();
+
+/** Ids that joined the list after first paint; scroll-in mounts from windowing must not replay the enter animation. */
+function useNewIds(items: PackedItem[]): ReadonlySet<string> {
+  const seen = useRef<Set<string> | null>(null);
+  return useMemo(() => {
+    if (seen.current === null) {
+      seen.current = new Set(items.map((it) => it.save.id));
+      return NO_NEW_IDS;
+    }
+    const fresh = new Set<string>();
+    for (const it of items) {
+      if (!seen.current.has(it.save.id)) {
+        fresh.add(it.save.id);
+        seen.current.add(it.save.id);
+      }
+    }
+    return fresh.size > 0 ? fresh : NO_NEW_IDS;
+  }, [items]);
+}
+
 export interface PackedItem {
   top: number;
   left: number;
@@ -35,6 +56,7 @@ export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
 
   /** Only items intersecting the overscanned viewport render; the full `totalHeight` keeps the scrollbar accurate. */
   const visible = useVisibleIndices(ref, items);
+  const newIds = useNewIds(items);
 
   return (
     <LibraryGrid.Grid
@@ -55,6 +77,7 @@ export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
             packedHeight={it.height}
             packedTop={it.top}
             packedLeft={it.left}
+            entering={newIds.has(it.save.id)}
           />
         );
       })}
