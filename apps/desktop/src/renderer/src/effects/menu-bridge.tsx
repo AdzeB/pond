@@ -21,6 +21,7 @@ import { dockMode } from "@/stores/dock-mode";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";
+import { tumbleToTrash } from "@/stores/trash-tumble";
 import { cycleLayout, setLayout } from "@/stores/view-store";
 
 export function MenuBridge() {
@@ -112,6 +113,18 @@ export function MenuBridge() {
           void getAppRouter()?.navigate({ to: "/playground" });
           return;
 
+        case "developer.saves-playground":
+          void getAppRouter()?.navigate({ to: "/saves-playground" });
+          return;
+
+        case "developer.dock-merge-playground":
+          void getAppRouter()?.navigate({ to: "/dock-merge-playground" });
+          return;
+
+        case "developer.tooltip-playground":
+          void getAppRouter()?.navigate({ to: "/tooltip-playground" });
+          return;
+
         case "save.new":
           dockMode.open("new");
           return;
@@ -171,7 +184,7 @@ export function MenuBridge() {
         case "save.trash": {
           const save = currentSave();
           if (!save) return;
-          void trashSave(save);
+          void tumbleToTrash([save.id]).then(() => trashSave(save));
           return;
         }
 
@@ -192,7 +205,7 @@ export function MenuBridge() {
         case "save.bulk-trash": {
           const ids = selection.snapshot();
           if (ids.length === 0) return;
-          void trashSelection(ids);
+          void tumbleToTrash(ids).then(() => trashSelection(ids));
           return;
         }
 

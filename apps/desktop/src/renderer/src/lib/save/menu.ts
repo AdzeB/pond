@@ -10,6 +10,7 @@ import {
   revealFile,
 } from "@/lib/save/actions";
 import { purgeSave, trashSave, untrashSave } from "@/lib/save/mutate";
+import { tumbleToTrash } from "@/stores/trash-tumble";
 import {
   REVERSE_SEARCH_ENGINES,
   reverseImageSearch,
@@ -66,7 +67,8 @@ export function buildSaveMenu(
         {
           label: "Move to Trash",
           shortcut: ["⌫"],
-          onSelect: () => trashSave(save.id),
+          onSelect: () =>
+            void tumbleToTrash([save.id]).then(() => trashSave(save.id)),
         },
       ];
 
@@ -124,7 +126,7 @@ export function buildSaveMenu(
       submenu: reverseSearchItems,
     },
     {
-      label: "Export…",
+      label: "Export",
       enabled: hasFiles,
       shortcut: ["⌘", "E"],
       onSelect: () => exportFileAction(save),
@@ -139,6 +141,11 @@ export function buildSaveMenu(
       onSelect: () => {
         if (save.url) void window.pond.refreshSave(save.id);
       },
+    },
+    {
+      label: "Archive Full Site",
+      enabled: hasUrl && save.source === "web" && !isTrashed,
+      onSelect: () => void window.pond.archiveSite(save.id),
     },
     {
       label: "Open Original URL in Browser",

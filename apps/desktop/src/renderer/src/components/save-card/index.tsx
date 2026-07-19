@@ -14,12 +14,24 @@ import { clampRatio } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { usePrefs } from "@/stores/prefs";
 import { selection, useIsPrimary, useIsSelected } from "@/stores/selection";
+import { useIsTumbling } from "@/stores/trash-tumble";
 
 /** FLIP-capable card root: repacks (sort, filter, zoom, ask results) glide instead of teleporting. */
 const MotionCardRoot = motion.create(Card.Root);
 
 const ENTER_INITIAL = { opacity: 0, y: 12, scale: 0.96 };
 const ENTER_ANIMATE = { opacity: 1, y: 0, scale: 1 };
+
+const TUMBLE_TRANSITION = {
+  duration: 0.34,
+  ease: [0.5, 0, 0.85, 0.4] as const,
+};
+
+/** Direction is derived from the id so a batch tumbles both ways instead of in lockstep. */
+function tumbleTarget(id: string) {
+  const lean = (id.charCodeAt(id.length - 1) ?? 0) % 2 === 0 ? 1 : -1;
+  return { opacity: 0, y: 120, scale: 0.55, rotate: 8 * lean };
+}
 
 interface SaveCardProps {
   id: string;
@@ -47,6 +59,7 @@ export const SaveCard = memo(function SaveCard({
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
+  const tumbling = useIsTumbling(id);
 
   const liStyle = useMemo<React.CSSProperties | undefined>(() => {
     if (packedWidth == null || packedHeight == null) return undefined;
@@ -107,8 +120,10 @@ export const SaveCard = memo(function SaveCard({
         onNativeDragStart={onDragStart}
         layout="position"
         initial={entering ? ENTER_INITIAL : false}
-        animate={entering ? ENTER_ANIMATE : undefined}
-        transition={gentleSpring}
+        animate={
+          tumbling ? tumbleTarget(id) : entering ? ENTER_ANIMATE : undefined
+        }
+        transition={tumbling ? TUMBLE_TRANSITION : gentleSpring}
       >
         <Card.Checkbox
           checked={isMulti}

@@ -64,6 +64,7 @@
     "@tanstack/store": "^0.11.0",
     "@visx/curve": "^4.0.0",
     "@visx/shape": "^4.0.0",
+    "@web-kits/audio": "^0.1.0",
     "ai": "^7.0.4",
     "better-sqlite3": "^12.11.1",
     "calligraph": "^1.4.1",
