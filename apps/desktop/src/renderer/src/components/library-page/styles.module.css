@@ -1,0 +1,7 @@
+/* Transparent flex column so routed pages lay out exactly as direct Shell.Main children. */
+.route {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}

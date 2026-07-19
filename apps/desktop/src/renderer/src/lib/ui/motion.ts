@@ -37,8 +37,16 @@ export const bouncySpring: Transition = {
 const DOCK_EASE: [number, number, number, number] = [0.25, 1, 0.5, 1];
 const FAMILY_CONTENT_DURATION = 0.4;
 
-interface DockMotion {
+/** Directional route swaps ride the dock curve at content pace so tab changes fly instead of teleporting. */
+export const routeSwapTransition: Transition = {
+  duration: FAMILY_CONTENT_DURATION * 0.75,
+  ease: DOCK_EASE,
+};
+
+export interface DockMotion {
   pillTransition: Transition;
+  /** For size changes within one view (nav unfold, composer growth): quick, unlike the deliberate view morph. */
+  quickTransition: Transition;
   swapTransition: Transition;
   swap: {
     initial: TargetAndTransition;
@@ -55,6 +63,7 @@ export function buildDockMotion(
   if (reduceMotion) {
     return {
       pillTransition: { duration: 0 },
+      quickTransition: { duration: 0 },
       swapTransition: { duration: 0 },
       swap: {
         initial: { opacity: 0 },
@@ -73,6 +82,11 @@ export function buildDockMotion(
     pillTransition: {
       duration: 0.4 * timeScale,
       ease: DOCK_EASE,
+    },
+    quickTransition: {
+      type: "spring",
+      duration: 0.22 * timeScale,
+      bounce: 0.1,
     },
     swapTransition: enterTransition,
     swap: {
