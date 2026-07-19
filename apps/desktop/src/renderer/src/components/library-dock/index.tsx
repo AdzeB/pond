@@ -3,23 +3,21 @@ import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskComposer } from "@/components/ask-bar";
-import { ConfirmDialog } from "@/components/confirm-dialog";
 import { NavContent } from "@/components/library-dock-nav-content";
 import { NewContent } from "@/components/library-dock-new-content";
 import { OptionsContent } from "@/components/library-dock-options-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
 import { SavingPill } from "@/components/library-saving-pill";
 import { SearchComposer } from "@/components/search-bar";
-import { deleteSelectionForever, isAllSelected } from "@/lib/save/selection";
+import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion, useMotionScaleFactor } from "@/lib/ui/motion";
-import { formatNumber } from "@/lib/util/format";
 import { clearAsk, useAskResult } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
   useViewFilteredCount,
   useViewMode,
 } from "@/stores/library-view-context";
-import { selection, useSelectionSize } from "@/stores/selection";
+import { useSelectionSize } from "@/stores/selection";
 import { useDockActions } from "./lib/actions";
 import { type DockContextValue, DockProvider } from "./lib/context";
 import { type DockTab, NAV_TABS } from "./lib/nav-tabs";
@@ -27,6 +25,7 @@ import {
   type DockPreview,
   type DockView,
   isViewMenu,
+  SELECTION_CARD_MODES,
   type ViewMenuSection,
 } from "./lib/types";
 import styles from "./styles.module.css";
@@ -54,7 +53,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
   const mode = useDockMode();
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const inTrash = viewMode === "trash";
 
@@ -86,12 +84,18 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     viewportObserver.current = ro;
   }, []);
 
-  const { destructive, runSelectionTask, openTagMenu, openOverflowMenu } =
-    useDockActions(setConfirmDelete);
+  const { destructive, confirmDeleteForever } = useDockActions();
 
-  /** Priority: an active selection commandeers the pill, then the opened surface, then the resting nav. */
-  const liveView: DockView =
-    selectionSize > 0 ? "selection" : mode !== "nav" ? mode : "nav";
+  /** Priority: an active selection commandeers the pill, then the opened surface, then the resting nav. Cards opened from the selection (confirm, run, tag, copy, export) outrank it so drilling in doesn't bounce back. */
+  const liveView: DockView = (
+    SELECTION_CARD_MODES as readonly string[]
+  ).includes(mode)
+    ? (mode as DockView)
+    : selectionSize > 0
+      ? "selection"
+      : mode !== "nav"
+        ? mode
+        : "nav";
   const view = preview?.view ?? liveView;
   const isMenuView = view === "new" || isViewMenu(view);
 
@@ -139,10 +143,25 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   }, [preview, isMenuView]);
 
   const timeScale = useMotionScaleFactor();
-  const { pillTransition, swapTransition, swap } = buildDockMotion(
-    reduceMotion ?? false,
-    timeScale,
-  );
+  const { pillTransition, quickTransition, swapTransition, swap } =
+    buildDockMotion(reduceMotion ?? false, timeScale);
+
+  /** View swaps get the deliberate morph (timed by when the view last changed); in the resting nav view the pill tracks the content per frame, so the unfold's own spring is the only timing; other within-view growth rides the quick spring. */
+  const lastView = useRef(view);
+  const viewChangedAt = useRef(0);
+  if (lastView.current !== view) {
+    lastView.current = view;
+    viewChangedAt.current = performance.now();
+  }
+  const inViewMorph =
+    performance.now() - viewChangedAt.current < 450 * timeScale;
+  const boundsTransition = isFirstMeasure
+    ? { duration: 0 }
+    : inViewMorph
+      ? pillTransition
+      : view === "nav"
+        ? { duration: 0 }
+        : quickTransition;
 
   const context = useMemo<DockContextValue>(
     () => ({
@@ -162,13 +181,12 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       openViewMenu,
       closeViewMenu: closeToNav,
       destructive,
-      runSelectionTask,
-      openTagMenu,
-      openOverflowMenu,
+      confirmDeleteForever,
       isPreview: preview != null,
       swap,
       swapTransition,
       sizeTransition: pillTransition,
+      quickTransition,
       pillRef,
     }),
     [
@@ -181,17 +199,21 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       thinking,
       isCard,
       destructive,
-      runSelectionTask,
-      openTagMenu,
-      openOverflowMenu,
+      confirmDeleteForever,
       preview,
       swap,
       swapTransition,
       pillTransition,
+      quickTransition,
     ],
   );
 
-  if (!preview && pathname === "/components") {
+  if (
+    !preview &&
+    (pathname === "/components" ||
+      pathname === "/dock-merge-playground" ||
+      pathname === "/tooltip-playground")
+  ) {
     return null;
   }
 
@@ -211,11 +233,12 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
           render={
             <motion.div
               ref={pillRef}
+              data-thinking={thinking || undefined}
               initial={false}
               animate={
                 bounds ? { width: bounds.width, height: bounds.height } : {}
               }
-              transition={isFirstMeasure ? { duration: 0 } : pillTransition}
+              transition={boundsTransition}
             />
           }
         >
@@ -269,18 +292,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
             </AnimatePresence>
           </div>
         </Tray.Pill>
-
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          title={`Delete ${formatNumber(selectionSize)} ${selectionSize === 1 ? "item" : "items"} forever?`}
-          description="This permanently removes the selected items and their files. This can't be undone."
-          confirmLabel="Delete Forever"
-          onConfirm={() => {
-            void deleteSelectionForever(selection.snapshot());
-            setConfirmDelete(false);
-          }}
-        />
       </DockProvider>
     </TrayCard.Provider>
   );

@@ -12,11 +12,14 @@ interface ConnectFlowState {
   waiting: Source | null;
   /** Snapshot of connected account ids when connect started, so a fresh or re-authed account is distinguishable from already-healthy ones. */
   connectedBefore: ReadonlySet<string>;
+  /** The account arrived; the wait card ticks its remaining steps before the flow moves on. */
+  completed: boolean;
 }
 
 const store = new Store<ConnectFlowState>({
   waiting: null,
   connectedBefore: new Set<string>(),
+  completed: false,
 });
 
 export const connectFlow = {
@@ -25,10 +28,16 @@ export const connectFlow = {
     store.setState(() => ({
       waiting: source,
       connectedBefore: new Set(connectedIds),
+      completed: false,
     }));
   },
+  complete(): void {
+    store.setState((s) => (s.completed ? s : { ...s, completed: true }));
+  },
   clear(): void {
-    store.setState((s) => (s.waiting === null ? s : { ...s, waiting: null }));
+    store.setState((s) =>
+      s.waiting === null ? s : { ...s, waiting: null, completed: false },
+    );
   },
 };
 
@@ -43,4 +52,8 @@ export function useConnectWaiting(): Source | null {
 
 export function useConnectedBefore(): ReadonlySet<string> {
   return useSelector(store, (s) => s.connectedBefore);
+}
+
+export function useConnectCompleted(): boolean {
+  return useSelector(store, (s) => s.completed);
 }

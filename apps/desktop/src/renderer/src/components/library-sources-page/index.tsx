@@ -1,9 +1,7 @@
-import { IconDotsFill18 as Dots } from "@pond/icons/fill/18";
 import type { Source } from "@pond/schema/db";
-import { Button, Menu } from "@pond/ui";
-import { useEffect, useState } from "react";
+import { Button } from "@pond/ui";
+import React, { useEffect, useState } from "react";
 import { cardModel } from "@/components/library-sync-monitor/lib/helpers";
-import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useWatches } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
@@ -12,14 +10,13 @@ import {
   useConnectedBefore,
   useConnectWaiting,
 } from "@/stores/connect-flow";
-import { dockMode } from "@/stores/dock-mode";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import {
   accountName,
   accountSub,
-  healthLine,
+  itemCount,
   watchName,
   watchSub,
 } from "./lib/helpers";
@@ -40,20 +37,26 @@ export function SourcesPage() {
     if (!waiting) return;
     const source = waiting;
     let cancelled = false;
+    let arrivedOnce = false;
     const timer = setInterval(() => {
       void (async () => {
         try {
           const rows = await refetch();
-          if (cancelled) return;
+          if (cancelled || arrivedOnce) return;
           const arrived = rows.find(
             (a) =>
               a.source === source && a.connected && !connectedBefore.has(a.id),
           );
           if (!arrived) return;
+          arrivedOnce = true;
           syncMonitor.seed(arrived.id, source, { connected: true });
           void window.pond.syncRunNow(arrived.id);
-          connectFlow.clear();
-          sourceDetail.openAccount(arrived.id);
+          /** Let the wait card tick its remaining steps done before the detail card takes over. */
+          connectFlow.complete();
+          window.setTimeout(() => {
+            connectFlow.clear();
+            sourceDetail.openAccount(arrived.id);
+          }, 1100);
         } catch {
           /* keep polling */
         }
@@ -90,36 +93,6 @@ export function SourcesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.content}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>Sources</h1>
-          <p className={styles.subline}>
-            {healthLine(accounts, watches, byAccount)}
-          </p>
-          <span className={styles["header-actions"]}>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => dockMode.open("source-new")}
-            >
-              New
-            </Button>
-            <Menu.Root>
-              <Menu.Trigger icon variant="secondary" size="sm">
-                <Dots />
-              </Menu.Trigger>
-              <Menu.Portal>
-                <Menu.Positioner side="bottom" align="end">
-                  <Menu.Popup>
-                    <Menu.Item onClick={() => void window.pond.syncRunAll()}>
-                      Sync All
-                    </Menu.Item>
-                  </Menu.Popup>
-                </Menu.Positioner>
-              </Menu.Portal>
-            </Menu.Root>
-          </span>
-        </header>
-
         {broken && brokenModel ? (
           <div className={styles.banner}>
             <span className={styles["banner-title"]}>
@@ -127,8 +100,8 @@ export function SourcesPage() {
             </span>
             <span className={styles["banner-sub"]}>
               {brokenModel.tone === "paused"
-                ? "Session expired — sign back into that account to resume syncing."
-                : "Last sync failed — retry, or open the account for details."}
+                ? "Session expired. Sign back into that account to resume syncing."
+                : "Last sync failed. Retry, or open the account for details."}
             </span>
             <Button
               className={styles["banner-action"]}
@@ -158,6 +131,7 @@ export function SourcesPage() {
                   avatarUrl={account.avatarUrl}
                   name={account.label ?? getSourceDef(account.source).label}
                   sub={accountSub(account, model)}
+                  value={itemCount(account.sync?.knownCount ?? 0)}
                   tone={model.tone}
                   onOpen={() => sourceDetail.openAccount(account.id)}
                 />
@@ -172,6 +146,7 @@ export function SourcesPage() {
                   avatarUrl={watch.avatarUrl}
                   name={watchName(watch)}
                   sub={watchSub(watch, model)}
+                  value={itemCount(watch.sync?.knownCount ?? 0)}
                   tone={model.tone}
                   onOpen={() => sourceDetail.openWatch(watch.id)}
                 />
@@ -180,7 +155,7 @@ export function SourcesPage() {
           </div>
         ) : (
           <p className={styles["quiet-line"]}>
-            Connect a source or watch a public account — Pond keeps your library
+            Connect a source or watch a public account. Pond keeps your library
             filling up in the background.
           </p>
         )}
@@ -189,12 +164,12 @@ export function SourcesPage() {
   );
 }
 
-/** Accounts and watches render identically; only the derived name and sub differ. */
 function SourceTile({
   source,
   avatarUrl,
   name,
   sub,
+  value,
   tone,
   onOpen,
 }: {
@@ -202,42 +177,60 @@ function SourceTile({
   avatarUrl: string | null | undefined;
   name: string;
   sub: string;
+  value: string;
   tone: ReturnType<typeof cardModel>["tone"];
   onOpen: () => void;
 }) {
-  /** Avatar CDN URLs are signed and expire; a failed one falls back to the brand mark and retries automatically when a fresh URL arrives. */
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const pfp = avatarUrl && avatarUrl !== failedUrl ? avatarUrl : null;
+  const { logo } = getSourceDef(source);
+
+  /** The count is the resting line; status only takes it over while something is happening or wrong. */
+  const warn = tone === "err" || tone === "paused";
+  const line = tone === "run" || warn ? sub : value;
 
   return (
-    <button type="button" className={styles["watch-tile"]} onClick={onOpen}>
+    <button type="button" className={styles.tile} onClick={onOpen}>
       <span
-        className={styles["watch-face"]}
+        className={styles.cover}
         data-running={tone === "run" || undefined}
+        data-pfp={pfp ? "" : undefined}
       >
         {pfp ? (
-          <>
+          <React.Fragment>
             <img
-              className={styles["watch-pfp"]}
               src={pfp}
               alt=""
+              className={styles.image}
               referrerPolicy="no-referrer"
               onError={() => setFailedUrl(pfp)}
+              data-variant="account"
             />
-            <span className={styles["watch-badge"]}>
-              <BrandTile source={source} size={16} />
-            </span>
-          </>
+            <img
+              width={16}
+              height={16}
+              src={logo ?? undefined}
+              alt=""
+              className={styles.badge}
+            />
+          </React.Fragment>
         ) : (
-          <BrandTile source={source} size={52} />
+          <img
+            width={16}
+            height={16}
+            src={logo ?? undefined}
+            alt=""
+            className={styles.image}
+            data-variant="source"
+          />
         )}
       </span>
-      <span className={styles["watch-name"]}>{name}</span>
+      <span className={styles["tile-name"]}>{name}</span>
       <span
-        className={styles["watch-sub"]}
-        data-tone={tone === "err" || tone === "paused" ? "warn" : undefined}
+        className={styles["tile-sub"]}
+        data-tone={warn ? "warn" : undefined}
       >
-        {sub}
+        {line}
       </span>
     </button>
   );

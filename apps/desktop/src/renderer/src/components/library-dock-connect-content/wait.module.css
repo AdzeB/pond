@@ -1,29 +1,61 @@
-.hero {
+.steps {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  gap: 10px;
   align-items: center;
-  padding-block: 8px 4px;
-  text-align: center;
+  min-height: 40px;
+  padding-inline: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  border-radius: var(--ds-radius-lg);
 }
 
-.ring {
-  position: relative;
-  display: grid;
+.step[data-state="active"] {
+  background: var(--ds-gray-2);
+}
+
+.step[data-state="todo"] {
+  color: var(--ds-gray-9);
+}
+
+.check {
   flex: none;
-  place-items: center;
-  padding: 9px;
-  margin-bottom: 8px;
+  color: var(--ds-accent-9);
+  animation: check-pop var(--ds-duration-emphasized) var(--ds-easing-emphasized);
 }
 
-.ring::before {
-  position: absolute;
-  inset: 0;
-  content: "";
+@keyframes check-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+.spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
   border: 2px solid var(--ds-gray-a4);
   border-top-color: var(--ds-accent-9);
   border-radius: 50%;
   animation: spin 1.4s linear infinite;
+}
+
+.dot {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ds-gray-a5);
+  border-radius: 50%;
 }
 
 @keyframes spin {
@@ -33,7 +65,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring::before {
+  .spinner,
+  .check {
     animation: none;
   }
 }
