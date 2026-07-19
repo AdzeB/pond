@@ -1,5 +1,10 @@
-import type { Source } from "@pond/schema/db";
+import {
+  IconCircleCheckFill18 as MatchCheck,
+  IconTelescopeFill18 as Telescope,
+} from "@pond/icons/fill/18";
+import type { Source, WatchKind } from "@pond/schema/db";
 import { TrayCard } from "@pond/ui";
+import { Calligraph } from "calligraph";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
@@ -7,41 +12,84 @@ import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useAccounts } from "@/hooks/use-accounts";
 import {
   WATCH_NEEDS_SESSION,
-  type WatchRow,
   watchKindLabel,
+  watchKindsFor,
 } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { useWatchSource, watchFlow } from "@/stores/watch-flow";
+import { useWatchKind, useWatchSource, watchFlow } from "@/stores/watch-flow";
 import styles from "./target.module.css";
 
-/** Mirror of the main-process WatchTarget returned by `watches.resolve`. */
-interface WatchTargetChip {
-  kind: WatchRow["kind"];
+/** Mirrors the main-process WatchTarget from `watches.resolve`. */
+interface WatchTargetMatch {
+  kind?: WatchKind;
   handle: string;
   display: string;
 }
 
-function watchHint(source: Source, viaHandle: string | null): string {
-  switch (source) {
-    case "arena":
-      return "A channel, profile, or group — paste a link or type a slug. Public, no sign-in.";
-    case "youtube":
-      return "A channel handle like @mkbhd, or paste a channel, tab, or playlist link.";
-    case "tiktok":
-      return "A public profile handle — no sign-in.";
-    case "pinterest":
-      return "A profile or board — paste a link or type user or user/board. Public, no sign-in.";
-    case "cosmos":
-      return "A profile or cluster — paste a link or type user or user/cluster. Public, no sign-in.";
-    case "twitter":
-      return viaHandle
-        ? `A profile or list link — checks through your @${viaHandle} session, the account never knows.`
-        : "Connect a Twitter account first — watching here rides your own session.";
-    default:
-      return viaHandle
-        ? `Checks through your @${viaHandle} session — the account never knows.`
-        : `Connect a ${getSourceDef(source).label} account first — watching here rides your own session.`;
+const KIND_TITLES: Record<WatchKind, string> = {
+  user: "Watch an Account",
+  channel: "Watch a Channel",
+  group: "Watch a Group",
+  playlist: "Watch a Playlist",
+  board: "Watch a Board",
+  cluster: "Watch a Cluster",
+  list: "Watch a List",
+};
+
+function watchHint(
+  source: Source,
+  kind: WatchKind,
+  viaHandle: string | null,
+): string {
+  if (WATCH_NEEDS_SESSION.includes(source) && !viaHandle) {
+    return `Connect a ${getSourceDef(source).label} account first. Watching here rides your own session.`;
   }
+  switch (kind) {
+    case "channel":
+      return "Search a handle or paste a link to\nstart watching a channel.";
+    case "group":
+      return "Search a slug or paste a link to\nstart watching a group.";
+    case "playlist":
+      return "Paste a playlist link to\nstart watching it.";
+    case "board":
+      return "Type user/board or paste a link to\nstart watching a board.";
+    case "cluster":
+      return "Type user/cluster or paste a link to\nstart watching a cluster.";
+    case "list":
+      return "Paste a list link to\nstart watching it.";
+    default:
+      return "Search a handle to\nstart watching a public account.";
+  }
+}
+
+function watchPlaceholder(kind: WatchKind): string {
+  switch (kind) {
+    case "channel":
+      return "Search Channels…";
+    case "group":
+      return "Search Groups…";
+    case "playlist":
+      return "Paste a playlist link…";
+    case "board":
+      return "Search Boards…";
+    case "cluster":
+      return "Search Clusters…";
+    case "list":
+      return "Paste a list link…";
+    default:
+      return "Search Accounts…";
+  }
+}
+
+/** Repeating the handle under an identical display name reads as a glitch; fall back to the source and kind. */
+function matchSub(source: Source, match: WatchTargetMatch): string {
+  const handleText = /[:./]/.test(match.handle)
+    ? match.handle
+    : `@${match.handle}`;
+  const kind = watchKindLabel(match.kind);
+  return handleText === match.display
+    ? `${getSourceDef(source).label} ${kind}`
+    : `${handleText} · ${kind}`;
 }
 
 /** Handle-entry card for a new watch; a successful add hands the id to the sources page through the watch-flow store. */
@@ -51,47 +99,56 @@ export function WatchTargetSection() {
   const picked = useWatchSource();
   /** Playground previews open this card without a pick; any watchable brand keeps the layout honest. */
   const source = picked ?? "youtube";
+  const kinds = watchKindsFor(source);
+  const pickedKind = useWatchKind();
+  const kind = pickedKind ?? kinds[0] ?? "user";
   const [handle, setHandle] = useState("");
+  const [resolved, setResolved] = useState<WatchTargetMatch | null>(null);
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [resolved, setResolved] = useState<WatchTargetChip | null>(null);
   const handleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!dock.isPreview) handleRef.current?.focus();
   }, [dock.isPreview]);
 
-  /** Resolves the input shortly after typing stops; bare Are.na slugs need an API probe. */
+  const viaAccount = accounts.find((a) => a.source === source) ?? null;
+  const needsAccount = WATCH_NEEDS_SESSION.includes(source) && !viaAccount;
+
   useEffect(() => {
     const input = handle.trim();
-    if (!input) {
-      setResolved(null);
+    setResolved(null);
+    if (!input || needsAccount) {
+      setChecking(false);
       return;
     }
-    let stale = false;
+    setChecking(true);
+    let cancelled = false;
     const timer = setTimeout(async () => {
       try {
         const res = (await window.pond.query("watches.resolve", {
           source,
           input,
-        })) as { ok: boolean; target?: WatchTargetChip };
-        if (!stale) setResolved(res.ok ? (res.target ?? null) : null);
+        })) as { ok: boolean; target?: WatchTargetMatch };
+        if (!cancelled && res.ok && res.target) setResolved(res.target);
       } catch {
-        if (!stale) setResolved(null);
+        /** Resolution is a preview; add re-resolves and reports its own errors. */
+      } finally {
+        if (!cancelled) setChecking(false);
       }
-    }, 350);
+    }, 250);
     return () => {
-      stale = true;
+      cancelled = true;
       clearTimeout(timer);
     };
-  }, [source, handle]);
+  }, [handle, source, needsAccount]);
 
-  const viaAccount = accounts.find((a) => a.source === source) ?? null;
-  const needsAccount = WATCH_NEEDS_SESSION.includes(source) && !viaAccount;
-  const canStart = handle.trim().length > 0 && !needsAccount && !busy;
+  const canStart =
+    resolved !== null && handle.trim().length > 0 && !needsAccount && !busy;
 
   const start = async () => {
-    if (!canStart) return;
+    if (handle.trim().length === 0 || needsAccount || busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -111,35 +168,48 @@ export function WatchTargetSection() {
             ? `Connect a ${getSourceDef(source).label} account first.`
             : res.reason === "invalid"
               ? "Couldn't recognise that handle or link."
-              : "Couldn't start watching — try again.",
+              : "Couldn't start watching. Try again.",
       );
     } catch {
-      setError("Couldn't start watching — try again.");
+      setError("Couldn't start watching. Try again.");
     } finally {
       setBusy(false);
     }
   };
 
+  const paste = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.trim()) {
+        setHandle(text.trim());
+        setError(null);
+      }
+    } finally {
+      handleRef.current?.focus();
+    }
+  };
+
   return (
     <>
-      <TrayCard.Back onClick={() => dock.openViewMenu("watch-source")} />
-      <TrayCard.Close />
-      <div className={styles.hero}>
-        <span className={styles.avatar}>
-          <BrandTile source={source} size={44} />
-        </span>
-        <TrayCard.Title>Who do you want to watch?</TrayCard.Title>
-        <TrayCard.Description>
-          {watchHint(source, viaAccount?.handle ?? null)}
-        </TrayCard.Description>
-      </div>
+      <TrayCard.Header>
+        <TrayCard.Back
+          onClick={() =>
+            dock.openViewMenu(kinds.length > 1 ? "watch-kind" : "watch-source")
+          }
+        />
+        <TrayCard.Title position="center">
+          {kinds.length > 1
+            ? KIND_TITLES[kind]
+            : `Watch on ${getSourceDef(source).label}`}
+        </TrayCard.Title>
+        <TrayCard.Close />
+        <TrayCard.Separator />
+      </TrayCard.Header>
       <div className={styles.field}>
-        {/* The @ prefix only makes sense for bare handles, not links. */}
-        {!/[:./]/.test(handle) ? <span className={styles.at}>@</span> : null}
         <input
           ref={handleRef}
           type="text"
-          placeholder="handle or link"
+          placeholder={watchPlaceholder(kind)}
           value={handle}
           disabled={needsAccount}
           onChange={(e) => {
@@ -150,17 +220,87 @@ export function WatchTargetSection() {
             if (e.key === "Enter") void start();
           }}
         />
+        {checking ? <span className={styles["field-spinner"]} /> : null}
+        <button
+          type="button"
+          className={styles.paste}
+          disabled={needsAccount}
+          onClick={() => void paste()}
+        >
+          Paste
+        </button>
       </div>
-      {error ? (
-        <p className={cn(styles.chip, styles.error)}>{error}</p>
-      ) : resolved ? (
-        <p className={cn(styles.chip, styles.resolved)}>
-          {getSourceDef(source).label} {watchKindLabel(resolved.kind)} ·{" "}
-          {resolved.display}
-        </p>
-      ) : null}
+      <div
+        className={styles.body}
+        data-state={
+          error
+            ? "error"
+            : resolved
+              ? "match"
+              : checking
+                ? "checking"
+                : handle.trim() && !needsAccount
+                  ? "none"
+                  : "hint"
+        }
+      >
+        {error ? (
+          <p className={cn(styles.chip, styles.error)}>{error}</p>
+        ) : resolved ? (
+          <div className={styles.match}>
+            <span className={styles.eyebrow}>Exact match</span>
+            <div className={styles.row}>
+              <span className={styles.avatar}>
+                <BrandTile source={source} size={32} />
+              </span>
+              <span className={styles.meta}>
+                <span className={styles.name}>{resolved.display}</span>
+                <span className={styles.sub}>{matchSub(source, resolved)}</span>
+              </span>
+              <MatchCheck className={styles.tick} width={18} height={18} />
+            </div>
+          </div>
+        ) : checking ? (
+          <div className={styles.skeleton} aria-hidden="true">
+            <div className={styles["skeleton-row"]}>
+              <span className={styles["skeleton-circle"]} />
+              <span className={styles["skeleton-bars"]}>
+                <span
+                  className={styles["skeleton-bar"]}
+                  style={{ width: 120 }}
+                />
+                <span
+                  className={styles["skeleton-bar"]}
+                  style={{ width: 84 }}
+                />
+              </span>
+            </div>
+            <div className={styles["skeleton-row"]}>
+              <span className={styles["skeleton-circle"]} />
+              <span className={styles["skeleton-bars"]}>
+                <span
+                  className={styles["skeleton-bar"]}
+                  style={{ width: 150 }}
+                />
+                <span
+                  className={styles["skeleton-bar"]}
+                  style={{ width: 96 }}
+                />
+              </span>
+            </div>
+          </div>
+        ) : handle.trim() && !needsAccount ? (
+          <div className={styles["no-match"]}>No results found</div>
+        ) : (
+          <div className={styles.empty}>
+            <Telescope width={24} height={24} />
+            <p className={styles.hint}>
+              {watchHint(source, kind, viaAccount?.handle ?? null)}
+            </p>
+          </div>
+        )}
+      </div>
       <TrayCard.Footer>
-        <TrayCard.Cancel />
         <TrayCard.Confirm
           disabled={!canStart}
           onClick={(e) => {
@@ -169,7 +309,7 @@ export function WatchTargetSection() {
             void start();
           }}
         >
-          {busy ? "Starting…" : "Start Watching"}
+          <Calligraph>{busy ? "Starting" : "Start Watching"}</Calligraph>
         </TrayCard.Confirm>
       </TrayCard.Footer>
     </>

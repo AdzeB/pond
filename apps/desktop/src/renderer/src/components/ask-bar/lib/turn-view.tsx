@@ -1,8 +1,7 @@
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Calligraph } from "calligraph";
 import { useMemo } from "react";
 import { runAskSuggestion } from "@/hooks/use-ask";
 import { representativeImageUrl } from "@/lib/enrichment/image";
-import { bouncySpring } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
 import type { AskSegment, AskTurn } from "@/stores/ask-store";
 import { pool } from "@/stores/pool";
@@ -36,9 +35,8 @@ export function TurnView({
   onOpenSave: (id: string) => void;
   onRetry?: () => void;
 }) {
-  const reduceMotion = useReducedMotion();
   const busy = turn.status === "thinking" || turn.summaryStatus === "loading";
-  const stageLabel = turn.stage ? STAGE_LABELS[turn.stage] : "Thinking…";
+  const stageLabel = turn.stage ? STAGE_LABELS[turn.stage] : "Thinking";
   const hasAnswer = turn.answer.length > 0;
   const hasSummary = turn.summaryStatus === "done" && turn.summary.length > 0;
   const showSuggestions =
@@ -46,14 +44,6 @@ export function TurnView({
     turn.count === 0 &&
     !hasAnswer &&
     turn.suggestions.length > 0;
-
-  const labelMotion = reduceMotion
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 } }
-    : {
-        initial: { opacity: 0, y: 6 },
-        animate: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -6 },
-      };
 
   return (
     <div className={styles.turn}>
@@ -78,15 +68,9 @@ export function TurnView({
         <div className={styles["turn-status"]}>
           {busy ? (
             <span className={styles["status-line"]} role="status">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.span
-                  key={stageLabel}
-                  {...labelMotion}
-                  transition={bouncySpring}
-                >
-                  {stageLabel}
-                </motion.span>
-              </AnimatePresence>
+              <Calligraph animation="bouncy" trend={1}>
+                {stageLabel}
+              </Calligraph>
             </span>
           ) : turn.status === "error" ? (
             <span className={styles["status-line"]}>
@@ -108,7 +92,9 @@ export function TurnView({
             )
           ) : (
             <span className={styles["status-line"]}>
-              <span className={styles.count}>{formatNumber(turn.count)}</span>
+              <Calligraph className={styles.count} variant="number">
+                {formatNumber(turn.count)}
+              </Calligraph>
               <span className={styles["result-label"]}>found</span>
             </span>
           )}

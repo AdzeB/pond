@@ -1,10 +1,11 @@
 import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
-import { useNavigate } from "@tanstack/react-router";
+import { Calligraph } from "calligraph";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useIngestingCount, useIngestingProgressSum } from "@/hooks/use-saves";
 import { bouncySpring } from "@/lib/ui/motion";
 import { formatNumber } from "@/lib/util/format";
+import { settingsModal } from "@/stores/settings-modal";
 import styles from "./styles.module.css";
 
 const RADIUS = 7;
@@ -74,7 +75,6 @@ function useSavingBatch(): { phase: Phase; total: number; progress: number } {
 export function SavingPill() {
   const { phase, total, progress } = useSavingBatch();
   const reduceMotion = useReducedMotion();
-  const navigate = useNavigate();
 
   const pillMotion = reduceMotion
     ? {
@@ -99,7 +99,7 @@ export function SavingPill() {
           className={styles.pill}
           data-phase={phase}
           aria-label="Show saves"
-          onClick={() => void navigate({ to: "/saves" })}
+          onClick={() => settingsModal.open("saves")}
           {...pillMotion}
           transition={bouncySpring}
         >
@@ -129,8 +129,11 @@ export function SavingPill() {
             </span>
           </span>
           <span className={styles.label}>
-            {phase === "done" ? "Saved" : "Saving"}{" "}
-            <span className={styles.count}>{formatNumber(total)}</span> {noun}
+            <Calligraph>{phase === "done" ? "Saved" : "Saving"}</Calligraph>{" "}
+            <Calligraph className={styles.count} variant="number">
+              {formatNumber(total)}
+            </Calligraph>{" "}
+            <Calligraph>{noun}</Calligraph>
           </span>
         </motion.button>
       ) : null}

@@ -1,6 +1,7 @@
 import { IconXmarkOutline12 as Remove } from "@pond/icons/outline/12";
 import { IconLink2Outline18 as Link } from "@pond/icons/outline/18";
 import { Input, TrayCard } from "@pond/ui";
+import { Calligraph } from "calligraph";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { getSourceLogo } from "@/lib/save/sources-registry";
@@ -232,13 +233,12 @@ export function NewContent() {
   return (
     /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
     <TrayCard.Root className={styles.card}>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>New Save</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Paste a link to add it to your library. Keep pasting to build a list,
-          and everything saves together.
+          Paste links to add them to your library.
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.fields}>
@@ -256,7 +256,7 @@ export function NewContent() {
             className={styles.input}
             value={url}
             placeholder={
-              links.length > 0 ? "Add another link…" : "Paste a link to save…"
+              links.length > 0 ? "Add another link" : "Paste a link to save"
             }
             spellCheck={false}
             autoComplete="off"
@@ -277,7 +277,9 @@ export function NewContent() {
             void submit();
           }}
         >
-          {pendingCount > 1 ? `Save ${pendingCount} Links` : "Save"}
+          <Calligraph>
+            {pendingCount > 1 ? `Save ${pendingCount} Links` : "Save"}
+          </Calligraph>
         </TrayCard.Confirm>
       </TrayCard.Footer>
     </TrayCard.Root>
