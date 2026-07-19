@@ -5,8 +5,10 @@ import {
 } from "@pond/icons/outline/18";
 import type { InsightConfig } from "@pond/schema/db";
 import { Menu } from "@pond/ui";
+import { motion } from "motion/react";
 import { useMemo } from "react";
 import type { Save } from "@/lib/types";
+import { gentleSpring } from "@/lib/ui/motion";
 import { InsightBody } from "./insight-body";
 import {
   applyFilters,
@@ -21,9 +23,39 @@ import styles from "./styles.module.css";
 const COL_SPANS = Array.from({ length: GRID_COLS }, (_, i) => i + 1);
 const ROW_SPANS = Array.from({ length: GRID_MAX_ROWS }, (_, i) => i + 1);
 
+interface SectionBaseProps extends React.ComponentPropsWithRef<"section"> {
+  /** Native drag events under non-colliding names: Motion consumes `onDragStart`/`onDragOver`/`onDragEnd` as pan-gesture props. */
+  onNativeDragStart?: React.DragEventHandler<HTMLElement>;
+  onNativeDragOver?: React.DragEventHandler<HTMLElement>;
+  onNativeDrop?: React.DragEventHandler<HTMLElement>;
+  onNativeDragEnd?: React.DragEventHandler<HTMLElement>;
+}
+
+function SectionBase({
+  onNativeDragStart,
+  onNativeDragOver,
+  onNativeDrop,
+  onNativeDragEnd,
+  ...props
+}: SectionBaseProps) {
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: drag handlers are a pointer-only reorder affordance; all actions have real buttons.
+    <section
+      onDragStart={onNativeDragStart}
+      onDragOver={onNativeDragOver}
+      onDrop={onNativeDrop}
+      onDragEnd={onNativeDragEnd}
+      {...props}
+    />
+  );
+}
+
+/** Layout-animated card so neighbors spring aside during drag-reorder instead of teleporting. */
+const MotionSection = motion.create(SectionBase);
+
 interface InsightCardProps {
   config: InsightConfig;
-  /** Dashboard-filtered, windowed saves; the card stacks its own filters on top. */
+  /** Windowed saves; the card applies its own filters on top. */
   saves: Save[];
   days: number;
   onChange: (patch: Partial<InsightConfig>) => void;
@@ -60,17 +92,18 @@ export function InsightCard({
   const size = sizeOf(config);
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: drag handlers are a pointer-only reorder affordance; all actions have real buttons.
-    <section
+    <MotionSection
+      layout
+      transition={gentleSpring}
       className={styles.card}
       data-w={size.w}
       data-h={size.h}
       data-dragging={dragging || undefined}
       draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      onNativeDragStart={onDragStart}
+      onNativeDragOver={onDragOver}
+      onNativeDrop={onDrop}
+      onNativeDragEnd={onDragEnd}
     >
       <div className={styles["card-header"]}>
         <span className={styles["card-grip"]} aria-hidden>
@@ -132,6 +165,6 @@ export function InsightCard({
           <InsightBody config={config} data={data} days={days} />
         </div>
       )}
-    </section>
+    </MotionSection>
   );
 }

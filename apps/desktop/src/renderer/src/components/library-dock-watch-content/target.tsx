@@ -6,6 +6,7 @@ import type { Source, WatchKind } from "@pond/schema/db";
 import { TrayCard } from "@pond/ui";
 import { Calligraph } from "calligraph";
 import { clsx as cn } from "clsx";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
@@ -90,6 +91,30 @@ function matchSub(source: Source, match: WatchTargetMatch): string {
   return handleText === match.display
     ? `${getSourceDef(source).label} ${kind}`
     : `${handleText} · ${kind}`;
+}
+
+/** The idle telescope slowly scans the horizon, hinting at what watching does. */
+function TelescopeSweep() {
+  const reduce = useReducedMotion();
+  return (
+    <motion.span
+      style={{ display: "inline-flex", transformOrigin: "50% 80%" }}
+      animate={reduce ? undefined : { rotate: [0, -9, 6, -3, 0] }}
+      transition={
+        reduce
+          ? undefined
+          : {
+              duration: 7,
+              repeat: Number.POSITIVE_INFINITY,
+              repeatDelay: 2,
+              ease: "easeInOut",
+            }
+      }
+      aria-hidden
+    >
+      <Telescope width={24} height={24} />
+    </motion.span>
+  );
 }
 
 /** Handle-entry card for a new watch; a successful add hands the id to the sources page through the watch-flow store. */
@@ -293,7 +318,7 @@ export function WatchTargetSection() {
           <div className={styles["no-match"]}>No results found</div>
         ) : (
           <div className={styles.empty}>
-            <Telescope width={24} height={24} />
+            <TelescopeSweep />
             <p className={styles.hint}>
               {watchHint(source, kind, viaAccount?.handle ?? null)}
             </p>
