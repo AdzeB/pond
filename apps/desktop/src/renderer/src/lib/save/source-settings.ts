@@ -20,7 +20,7 @@ const SOURCE_SETTINGS: Partial<Record<Source, SourceSettingField[]>> = {
   twitter: [
     {
       key: "tweetCover",
-      label: "Tweet cover",
+      label: "Tweet Cover",
       description: "Image used as the card cover.",
       options: [
         { value: "media", label: "Media" },

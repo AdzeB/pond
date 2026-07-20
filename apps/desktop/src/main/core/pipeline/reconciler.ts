@@ -41,6 +41,7 @@ const inflightByOp: Record<Op, number> = {
   harvest_metadata: 0,
   capture_tweet: 0,
   fetch_blobs: 0,
+  archive_page: 0,
   fetch_video_ytdlp: 0,
   ensure_poster: 0,
   fetch_avatar: 0,
@@ -111,8 +112,9 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   return true;
 }
 
-/** Pausing first stops the reconciler from re-leasing slots mid-sweep. */
+/** Pausing first stops the reconciler from re-leasing slots mid-sweep; resumed after so new saves still ingest. */
 export async function cancelAllIngest(): Promise<number> {
+  const wasPaused = paused;
   pauseReconciler();
   const db = await getDb();
   const rows = db
@@ -124,6 +126,7 @@ export async function cancelAllIngest(): Promise<number> {
   for (const { id } of rows) {
     if (await cancelSaveIngest(id)) cancelled += 1;
   }
+  if (!wasPaused) resumeReconciler();
   log.info("[pond pipeline:reconciler] cancelled all ingest", { cancelled });
   return cancelled;
 }

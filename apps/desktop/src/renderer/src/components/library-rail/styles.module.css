@@ -1,8 +1,0 @@
-.rail {
-  position: fixed;
-  top: 50%;
-  left: calc(var(--ds-mac-inset, 16px) - 4px);
-  z-index: 20;
-  padding: 4px;
-  transform: translateY(-50%);
-}

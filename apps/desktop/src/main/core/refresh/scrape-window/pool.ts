@@ -21,8 +21,8 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   arena: 2,
   reddit: 2,
   threads: 2,
-  /** Web links fetch over HTTP without a window; present only to complete the record. */
-  web: 0,
+  /** Web metadata fetches over HTTP; the window budget serves archive_page crawls. */
+  web: 2,
   /** Local never leases a window; present only to complete the record. */
   local: 0,
 };
@@ -146,6 +146,34 @@ function retargetSlot(slot: PoolSlot, partition: string): void {
   if (!old.isDestroyed()) old.destroy();
 }
 
+/** Queued waiters must honor the caller's abort signal, or a watchdog-killed task waits here forever and its retry piles up behind it. */
+function enqueueWaiter(
+  source: Source,
+  partition: string,
+  signal: AbortSignal | undefined,
+): Promise<Lease> {
+  return new Promise<Lease>((resolve, reject) => {
+    const waiter: Waiter = {
+      partition,
+      resolve: (slot) => {
+        signal?.removeEventListener("abort", onAbort);
+        resolve(claimSlot(slot, source));
+      },
+    };
+    const onAbort = (): void => {
+      const idx = waitQueues[source].indexOf(waiter);
+      if (idx !== -1) waitQueues[source].splice(idx, 1);
+      reject(new Error("window lease wait aborted"));
+    };
+    if (signal?.aborted) {
+      reject(new Error("window lease wait aborted"));
+      return;
+    }
+    signal?.addEventListener("abort", onAbort, { once: true });
+    waitQueues[source].push(waiter);
+  });
+}
+
 export async function leaseWindow(
   source: Source,
   opts: LeaseOptions = {},
@@ -154,12 +182,7 @@ export async function leaseWindow(
   /** Acquire from the governor before claiming a slot, so a paused source never pins a pool window. */
   await acquire(source, { firstSync: opts.firstSync, signal: opts.signal });
   if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
-    return new Promise<Lease>((resolve) => {
-      waitQueues[source].push({
-        partition,
-        resolve: (slot) => resolve(claimSlot(slot, source)),
-      });
-    });
+    return enqueueWaiter(source, partition, opts.signal);
   }
   /** Prefer an idle slot already on the right partition to keep its page cache. */
   const idle =
@@ -182,12 +205,7 @@ export async function leaseWindow(
     pool.push(slot);
     return claimSlot(slot, source);
   }
-  return new Promise<Lease>((resolve) => {
-    waitQueues[source].push({
-      partition,
-      resolve: (slot) => resolve(claimSlot(slot, source)),
-    });
-  });
+  return enqueueWaiter(source, partition, opts.signal);
 }
 
 /** Round-robin, one grant per source per pass, until nothing can be served. */

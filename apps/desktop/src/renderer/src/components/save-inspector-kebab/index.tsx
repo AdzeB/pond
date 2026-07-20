@@ -23,12 +23,12 @@ import { useRouter } from "@tanstack/react-router";
 import { useCallback, useMemo } from "react";
 import type { useSave } from "@/hooks/use-saves";
 import {
-  autoTag,
   rebuildVisualIndex,
   reembed,
-  type TaskResult,
+  TASK_ENABLED,
 } from "@/lib/enrichment/tasks";
 import {
+  copyableImageIndex,
   copyFile,
   copyFilePath,
   copyImage,
@@ -45,9 +45,9 @@ import {
   REVERSE_SEARCH_ENGINES,
   reverseImageSearch,
 } from "@/lib/save/reverse-image-search";
+import { shortcutGlyphs } from "@/lib/save/shortcuts";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
-import { useTagClipboard } from "@/stores/tag-clipboard";
-import { pushToast } from "@/stores/toasts";
+import { usePrefsValue } from "@/stores/prefs";
 
 export function KebabMenu({
   save,
@@ -55,11 +55,10 @@ export function KebabMenu({
   save: ReturnType<typeof useSave> | null;
 }) {
   const router = useRouter();
-  const _clipboardEmpty = useTagClipboard().length === 0;
+  const prefs = usePrefsValue();
 
   const hasUrl = !!save?.url;
   const hasFiles = (save?.files ?? []).length > 0;
-  const _hasTags = (save?.tags ?? []).length > 0;
   const hasRawJson = !!save?.rawJson;
   const isTrashed = !!save?.deletedAt;
 
@@ -80,30 +79,15 @@ export function KebabMenu({
     router.history.back();
   }, [save, router]);
 
-  const reprocess = useCallback(
-    (run: (ids?: readonly string[]) => TaskResult) => {
-      if (!save) return;
-      const res = run([save.id]);
-      pushToast(res.message, res.ok ? "info" : "error");
-    },
-    [save],
-  );
-
-  const _onAutoTag = useCallback(async () => {
-    if (!save) return;
-    const res = await autoTag([save.id]);
-    pushToast(res.message, res.ok ? "success" : "error");
-  }, [save]);
-
+  /** Silent, matching the system convention that Cmd+C confirms nothing. */
   const copyRawJson = useCallback(async () => {
     if (!save?.rawJson) return;
     try {
       await navigator.clipboard.writeText(
         JSON.stringify(save.rawJson, null, 2),
       );
-      pushToast("Copied raw JSON", "success");
     } catch {
-      pushToast("Could not copy", "error");
+      /** Clipboard can reject without focus; nothing to confirm. */
     }
   }, [save]);
 
@@ -118,7 +102,7 @@ export function KebabMenu({
           {
             label: "Default App",
             icon: <OpenExternal />,
-            shortcut: "O",
+            shortcut: shortcutGlyphs("save.open"),
             disabled: !hasFiles,
             onClick: () => save && void openDefaultApp(save),
           },
@@ -146,20 +130,20 @@ export function KebabMenu({
           {
             label: "File",
             icon: <File />,
-            shortcut: "⌘C",
             disabled: !hasFiles,
             onClick: () => save && void copyFile(save),
           },
           {
             label: "Image",
             icon: <Image />,
-            disabled: !hasFiles,
+            shortcut: shortcutGlyphs("save.copy-image"),
+            disabled: !save || copyableImageIndex(save) == null,
             onClick: () => save && void copyImage(save),
           },
           {
             label: "Link",
             icon: <Link />,
-            shortcut: "C",
+            shortcut: shortcutGlyphs("save.copy-url"),
             disabled: !hasUrl,
             onClick: () => save?.url && void copyUrl(save.url),
           },
@@ -183,7 +167,8 @@ export function KebabMenu({
         type: "submenu",
         label: "Search",
         icon: <Search />,
-        disabled: !hasFiles && !hasUrl,
+        /** Reverse search needs a public image URL from the capture metadata; local-only saves have none. */
+        disabled: !hasUrl,
         items: REVERSE_SEARCH_ENGINES.map((engine) => ({
           label: engine.label,
           onClick: () => save && void reverseImageSearch(save, engine.key),
@@ -198,7 +183,7 @@ export function KebabMenu({
           {
             label: "Metadata",
             icon: <Refresh />,
-            shortcut: "R",
+            shortcut: shortcutGlyphs("save.refresh"),
             disabled: !hasUrl,
             onClick: () => save && void refreshSaveMetadata(save),
           },
@@ -206,12 +191,14 @@ export function KebabMenu({
           {
             label: "Semantic Index",
             icon: <Vector />,
-            onClick: () => reprocess(reembed),
+            disabled: !TASK_ENABLED.reembed(prefs),
+            onClick: () => save && void reembed([save.id]),
           },
           {
             label: "Visual Index",
             icon: <ScanImage />,
-            onClick: () => reprocess(rebuildVisualIndex),
+            disabled: !TASK_ENABLED.clip(prefs),
+            onClick: () => save && void rebuildVisualIndex([save.id]),
           },
         ],
       },
@@ -221,23 +208,23 @@ export function KebabMenu({
             {
               label: "Restore from Trash",
               icon: <Restore />,
-              shortcut: "⌫",
+              shortcut: shortcutGlyphs("save.restore"),
               disabled: !save,
               onClick: onRestore,
             },
             {
               label: "Delete Forever",
               icon: <DeleteForever />,
-              shortcut: "⌘⌫",
+              shortcut: shortcutGlyphs("save.delete-forever"),
               disabled: !save,
               onClick: onPurge,
             },
           ] satisfies MenuItemSpec[])
         : ([
             {
-              label: "Delete",
+              label: "Move to Trash",
               icon: <Trash />,
-              shortcut: "⌫",
+              shortcut: shortcutGlyphs("save.trash"),
               disabled: !save,
               onClick: onTrash,
             },
@@ -252,7 +239,7 @@ export function KebabMenu({
       onTrash,
       onRestore,
       onPurge,
-      reprocess,
+      prefs,
       copyRawJson,
     ],
   );

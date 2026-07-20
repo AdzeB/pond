@@ -1,9 +1,9 @@
+/* No inner scroller: the page grows and Shell.Main scrolls, so content slides under the toolbar like the library grid. */
 .page {
   display: flex;
   flex: 1;
   justify-content: center;
   width: 100%;
-  overflow-y: auto;
 }
 
 .content {
@@ -11,39 +11,9 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-  max-width: 560px;
   /* Natural height, not the flex parent's stretch, otherwise sections shrink to fit the viewport and the last row hides under the dock unscrollably. */
   height: max-content;
   padding: 24px 32px 120px;
-}
-
-/* Two-column grid stacks title over subline with the actions spanning both rows, so no text wrapper is needed. */
-.header {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  row-gap: 1px;
-  column-gap: 12px;
-  align-items: center;
-}
-
-.title {
-  grid-column: 1;
-  margin: 0;
-  font-size: 19px;
-  font-weight: 640;
-  color: var(--ds-gray-12);
-}
-
-.subline {
-  grid-column: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
-  white-space: nowrap;
 }
 
 /* Same two-column grid as the header: text rows on the left, the action spanning both on the right. */
@@ -83,11 +53,11 @@
 
 .tile-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 14px 8px;
 }
 
-.watch-tile {
+.tile {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -102,65 +72,16 @@
   transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-.watch-tile:hover {
+.tile:hover {
   background: var(--ds-gray-2);
 }
 
-.watch-tile:focus-visible {
+.tile:focus-visible {
   outline: 2px solid var(--ds-focus-outline);
   outline-offset: 2px;
 }
 
-/* The backing disc keeps light brand marks from dissolving into the page. */
-.watch-face {
-  position: relative;
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  margin-bottom: 6px;
-  background: var(--ds-gray-3);
-  border: 1px solid var(--ds-gray-a3);
-  border-radius: 50%;
-}
-
-.watch-face > :first-child {
-  clip-path: circle(50%);
-}
-
-.watch-pfp {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: var(--ds-gray-3);
-  border-radius: 50%;
-}
-
-.watch-face[data-running]::before {
-  position: absolute;
-  inset: -5px;
-  content: "";
-  border: 2px solid var(--ds-gray-a4);
-  border-top-color: var(--ds-accent-9);
-  border-radius: 50%;
-  animation: spin 1.4s linear infinite;
-}
-
-/* Platform mark pinned to the face's corner when a pfp covers it. */
-.watch-badge {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  background: var(--ds-gray-1);
-  border-radius: 6px;
-  box-shadow: var(--ds-shadow-2);
-}
-
-.watch-name {
+.tile-name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -171,25 +92,18 @@
   white-space: nowrap;
 }
 
-.watch-sub {
+.tile-sub {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
   white-space: nowrap;
 }
 
-.watch-sub[data-tone="warn"] {
+.tile-sub[data-tone="warn"] {
   color: var(--ds-amber-11);
-}
-
-.header-actions {
-  display: flex;
-  grid-row: 1 / span 2;
-  grid-column: 2;
-  gap: 8px;
-  align-items: center;
 }
 
 .quiet-line {
@@ -199,14 +113,102 @@
   text-align: center;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+@media (prefers-reduced-motion: reduce) {
+  .wipe[data-pulse] {
+    opacity: 0.4;
+    animation: none;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .watch-face[data-running]::before {
-    animation: none;
+.cover {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 6px;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  box-shadow: var(--ds-shadow-2);
+
+  &[data-variant="account"] {
+    border-radius: 100%;
   }
+
+  &[data-variant="source"] {
+    border-radius: var(--ds-radius-app-icon);
+    corner-shape: superellipse(var(--ds-superellipse));
+  }
+}
+
+/* Broken or in-flight artwork drains to grayscale; the wipe layer pours color back in with progress. */
+.image[data-drained] {
+  opacity: 0.92;
+  filter: grayscale(1);
+}
+
+/* Registered so progress ticks tween instead of jumping; @property is global, hence the prefixed name. */
+@property --sources-wipe-p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.wipe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Soft edge on the reveal; masks composite on the GPU, so this is the cheap version of a shader. */
+  mask-image: linear-gradient(
+    to top,
+    black calc(var(--sources-wipe-p) * 108% - 8%),
+    transparent calc(var(--sources-wipe-p) * 108% + 4%)
+  );
+  transition: --sources-wipe-p 0.4s var(--ds-easing-standard, ease);
+
+  &[data-variant="account"] {
+    border-radius: 100%;
+  }
+
+  &[data-variant="source"] {
+    border-radius: var(--ds-radius-app-icon);
+    corner-shape: superellipse(var(--ds-superellipse));
+  }
+}
+
+/* No total yet: the color layer breathes instead of filling. */
+.wipe[data-pulse] {
+  mask-image: none;
+  animation: wipe-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes wipe-pulse {
+  from,
+  to {
+    opacity: 0.15;
+  }
+
+  50% {
+    opacity: 0.65;
+  }
+}
+
+.badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: 2px solid var(--ds-gray-1);
+  background: var(--ds-gray-1);
+  border-radius: 6px;
+  box-shadow: var(--ds-shadow-2);
 }

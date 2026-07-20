@@ -171,12 +171,14 @@ export async function providerAvailable(): Promise<boolean> {
     await generateText({
       model: resolved.model,
       prompt: "ping",
-      maxOutputTokens: 1,
+      /** OpenAI's Responses API rejects max_output_tokens below 16 with a 400. */
+      maxOutputTokens: 16,
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(8000),
     });
     return true;
-  } catch {
+  } catch (err) {
+    log.warn("[ai] provider ping failed", err);
     return false;
   }
 }

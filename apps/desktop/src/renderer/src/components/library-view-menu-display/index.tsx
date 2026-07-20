@@ -30,13 +30,12 @@ export function DisplaySection() {
 
   return (
     <>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>Display Details</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Choose which details are shown beneath each item in your library.
-          Toggle off anything you don't need for a cleaner view.
+          Choose which details show beneath each item.
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>

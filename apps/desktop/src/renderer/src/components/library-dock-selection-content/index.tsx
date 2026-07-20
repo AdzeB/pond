@@ -1,17 +1,19 @@
 import {
-  IconDotsFill18 as More,
+  IconCircleXmarkFill18 as Clear,
+  IconCopyFill18 as Copy,
+  IconFileExportFill18 as Export,
   IconArrowRotateAnticlockwiseFill18 as Restore,
   IconTagPlusFill18 as TagAdd,
   IconTrash2ContentFill18 as Trash,
   IconWandSparkleFill18 as Wand,
 } from "@pond/icons/fill/18";
-import { Tooltip, Tray } from "@pond/ui";
 import { motion } from "motion/react";
 import { forwardRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
+/** Every selection action as a labeled tile, so nothing hides behind a menu. */
 export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
   const dock = useDock();
 
@@ -19,52 +21,81 @@ export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
     <motion.div
       ref={ref}
       key="selection"
-      className={styles.row}
+      className={styles.tiles}
       transition={dock.swapTransition}
       {...dock.swap}
     >
-      <Tooltip label="Run task" side="top">
-        <Tray.Item
-          aria-label="Run task on selection"
-          onClick={dock.runSelectionTask}
-        >
-          <Wand />
-        </Tray.Item>
-      </Tooltip>
-
-      <Tooltip label="Tag" side="top">
-        <Tray.Item aria-label="Tag selection" onClick={dock.openTagMenu}>
-          <TagAdd />
-        </Tray.Item>
-      </Tooltip>
-
-      <Tooltip label={dock.inTrash ? "Restore" : "Trash"} side="top">
-        <Tray.Item
-          className={dock.inTrash ? undefined : styles.danger}
-          aria-label={
-            dock.inTrash ? "Restore selection" : "Move selection to trash"
-          }
-          onClick={dock.destructive}
-        >
-          {dock.inTrash ? <Restore /> : <Trash />}
-        </Tray.Item>
-      </Tooltip>
-
-      <Tooltip label="More" side="top">
-        <Tray.Item aria-label="More actions" onClick={dock.openOverflowMenu}>
-          <More />
-        </Tray.Item>
-      </Tooltip>
-
-      <Tray.Separator />
-
       <button
         type="button"
-        className={styles.clear}
-        aria-label="Clear selection"
+        className={styles.tile}
+        onClick={() => dock.openViewMenu("selection-run")}
+      >
+        <Wand size={18} />
+        <span>Run</span>
+      </button>
+      <button
+        type="button"
+        className={styles.tile}
+        onClick={() => dock.openViewMenu("selection-tag")}
+      >
+        <TagAdd size={18} />
+        <span>Tag</span>
+      </button>
+      <button
+        type="button"
+        className={styles.tile}
+        onClick={() => dock.openViewMenu("selection-copy")}
+      >
+        <Copy size={18} />
+        <span>Copy</span>
+      </button>
+      <button
+        type="button"
+        className={styles.tile}
+        onClick={() => dock.openViewMenu("selection-export")}
+      >
+        <Export size={18} />
+        <span>Export</span>
+      </button>
+      {dock.inTrash ? (
+        <>
+          <button
+            type="button"
+            className={styles.tile}
+            onClick={dock.destructive}
+          >
+            <Restore size={18} />
+            <span>Restore</span>
+          </button>
+          <button
+            type="button"
+            className={styles.tile}
+            data-danger
+            onClick={dock.confirmDeleteForever}
+          >
+            <Trash size={18} />
+            <span>Delete</span>
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          className={styles.tile}
+          data-danger
+          onClick={dock.destructive}
+        >
+          <Trash size={18} />
+          <span>Delete</span>
+        </button>
+      )}
+      <div className={styles.separator} />
+      <button
+        type="button"
+        className={styles.tile}
         onClick={() => selection.clear()}
       >
-        Clear
+        <Clear size={18} />
+        <span>Clear</span>
       </button>
     </motion.div>
   );

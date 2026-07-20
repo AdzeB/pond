@@ -26,12 +26,6 @@
   -webkit-app-region: no-drag;
 }
 
-.select:focus-visible {
-  box-shadow:
-    0 0 0 2px var(--ds-gray-1),
-    0 0 0 4px light-dark(rgba(0, 0, 0, 0.4), rgba(255, 255, 255, 0.45));
-}
-
 .media {
   position: relative;
   display: flex;
@@ -51,6 +45,15 @@
   border: 2px solid transparent;
   border-radius: 6px;
   transition: all var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.select:focus-visible .media::before {
+  border-color: color-mix(in srgb, var(--ds-accent-9), transparent 50%);
+}
+
+/* Keyboard cursor: dimmer than a real selection so arrows have a visible landing spot. */
+.item[data-cursor] .media::before {
+  border-color: color-mix(in srgb, var(--ds-accent-9), transparent 60%);
 }
 
 .item[data-selected] .media::before,

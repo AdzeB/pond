@@ -137,12 +137,14 @@ function Content({
         sideOffset={sideOffset}
       >
         <Menu.Popup>
-          <TagMenu
-            appliedKeys={appliedSet}
-            onToggle={(name) => void toggle(name)}
-            allowCreate
-            groupsAs="submenu"
-          />
+          <Menu.Viewport>
+            <TagMenu
+              appliedKeys={appliedSet}
+              onToggle={(name) => void toggle(name)}
+              allowCreate
+              groupsAs="submenu"
+            />
+          </Menu.Viewport>
         </Menu.Popup>
       </Menu.Positioner>
     </Menu.Portal>

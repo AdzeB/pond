@@ -1,0 +1,128 @@
+/* Positioning shells for each merged-dock prototype; pills reuse the real Tray surface. */
+
+.bottom-center {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  transform: translateX(-50%);
+}
+
+.bottom-left {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 10;
+}
+
+.left-center {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+  z-index: 10;
+  transform: translateY(-50%);
+}
+
+.pill {
+  padding: 4px;
+}
+
+/* Two storeys inside one capsule; the divider spans the full width. */
+.stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.stacked-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stacked-divider {
+  align-self: stretch;
+  width: auto;
+  height: 1px;
+  margin-block: 4px;
+  margin-inline: 6px;
+}
+
+/* Collapsed nav group: width animates via motion, so clip the flow. */
+.expand {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.expand-inner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.expand-zone {
+  display: flex;
+  align-items: center;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+}
+
+/* Copy of the real dock's viewport: content measured for the morph, views stacked in one grid cell so swaps crossfade in place. */
+.morph-viewport {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  width: max-content;
+  padding: 4px;
+  transform: translateX(-50%);
+}
+
+.morph-viewport > * {
+  grid-area: 1 / 1;
+}
+
+/* Height animates via motion, so clip the sliding storey. */
+.drawer {
+  overflow: hidden;
+}
+
+/* Doubled class outweighs the Tray.Item base width without relying on import order. */
+.labeled-item.labeled-item {
+  width: auto;
+  min-width: 32px;
+  padding-inline: 7px;
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.label-text {
+  padding-left: 5px;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.fan-anchor {
+  position: relative;
+}
+
+.fan {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  transform-origin: bottom left;
+}

@@ -3,6 +3,51 @@ import styles from "./styles.module.css";
 
 const NOW = new Date().getFullYear();
 
+const COLUMNS = [
+  {
+    label: "Product",
+    links: [
+      { label: "Save", href: "#save" },
+      { label: "Browse", href: "#browse" },
+      { label: "Find", href: "#find" },
+      { label: "Own", href: "#own" },
+      { label: "FAQs", href: "#faqs" },
+    ],
+  },
+  {
+    label: "Get",
+    links: [
+      { label: "Early access", href: "#get" },
+      { label: "Updates", href: "#updates" },
+    ],
+  },
+  {
+    label: "Project",
+    links: [
+      {
+        label: "GitHub",
+        href: "https://github.com/raphaelsalaja/pond",
+        external: true,
+      },
+      {
+        label: "Security",
+        href: "https://github.com/raphaelsalaja/pond/blob/main/SECURITY.md",
+        external: true,
+      },
+      {
+        label: "Privacy",
+        href: "https://github.com/raphaelsalaja/pond/blob/main/PRIVACY.md",
+        external: true,
+      },
+      {
+        label: "License",
+        href: "https://github.com/raphaelsalaja/pond/blob/main/LICENSE",
+        external: true,
+      },
+    ],
+  },
+] as const;
+
 export function Footer() {
   return (
     <footer className={styles.footer}>
@@ -12,62 +57,29 @@ export function Footer() {
           <p className={styles.tagline}>
             A local-first archive for the open web.
           </p>
+          <p className={styles.build}>
+            <span className={styles.version}>v0.1.0</span>
+            <span className={styles.muted}>{NOW} · MIT</span>
+          </p>
         </div>
         <nav className={styles.columns} aria-label="Footer">
-          <div className={styles.column}>
-            <p className={styles["column-label"]}>Get</p>
-            <a className={styles.link} href="#download">
-              Download
-            </a>
-            <a
-              className={styles.link}
-              href="https://github.com/raphaelsalaja/pond/releases"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Releases
-            </a>
-          </div>
-          <div className={styles.column}>
-            <p className={styles["column-label"]}>Project</p>
-            <a
-              className={styles.link}
-              href="https://github.com/raphaelsalaja/pond"
-              target="_blank"
-              rel="noreferrer"
-            >
-              GitHub
-            </a>
-            <a
-              className={styles.link}
-              href="https://github.com/raphaelsalaja/pond/blob/main/SECURITY.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Security
-            </a>
-            <a
-              className={styles.link}
-              href="https://github.com/raphaelsalaja/pond/blob/main/PRIVACY.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Privacy
-            </a>
-            <a
-              className={styles.link}
-              href="https://github.com/raphaelsalaja/pond/blob/main/LICENSE"
-              target="_blank"
-              rel="noreferrer"
-            >
-              License
-            </a>
-          </div>
-          <div className={styles.column}>
-            <p className={styles["column-label"]}>Build</p>
-            <span className={styles.version}>v0.1.0</span>
-            <span className={styles.muted}>{NOW}, MIT</span>
-          </div>
+          {COLUMNS.map((column) => (
+            <div key={column.label} className={styles.column}>
+              <p className={styles["column-label"]}>{column.label}</p>
+              {column.links.map((link) => (
+                <a
+                  key={link.label}
+                  className={styles.link}
+                  href={link.href}
+                  {...("external" in link && link.external
+                    ? { target: "_blank", rel: "noreferrer" }
+                    : {})}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
+          ))}
         </nav>
       </div>
     </footer>

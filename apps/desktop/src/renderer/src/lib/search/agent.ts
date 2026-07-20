@@ -86,7 +86,7 @@ function describeResult(result: PlanResult, pool: ReadonlyArray<Save>): string {
       .slice(0, TOP_FACETS)
       .map((g) => `${g.label}: ${g.count}`)
       .join(", ");
-    parts.push(`Counts — ${groups}.`);
+    parts.push(`Counts: ${groups}.`);
   }
   const sample = result.ids
     .slice(0, SAMPLE_SIZE)

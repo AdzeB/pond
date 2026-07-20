@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { getSourceLogo } from "@/lib/save/sources-registry";
 import { primarySelection } from "@/stores/selection";
-import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
 interface QuickAddResult {
@@ -100,12 +99,20 @@ function LinkRow({ url, onRemove }: { url: string; onRemove: () => void }) {
   );
 }
 
+interface Notice {
+  text: string;
+  tone: "error" | "info";
+  /** Save to reveal from the "View" link on "Already in your library". */
+  viewId?: string;
+}
+
 /** Pasting on top of a pending link, or pasting a whitespace-separated list, commits links to visible rows instead of mashing them into one string. */
 export function NewContent() {
   const dock = useDock();
   const [url, setUrl] = useState("");
   const [links, setLinks] = useState<readonly string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const addLinks = (urls: readonly string[]) => {
@@ -159,6 +166,7 @@ export function NewContent() {
   };
 
   const onChange = (value: string) => {
+    setNotice(null);
     const pasted = asUrlList(value);
     if (pasted && pasted.length > 1) {
       addLinks(pasted);
@@ -181,32 +189,41 @@ export function NewContent() {
       else saved += 1;
     }
     if (saved === 0 && existing === 0) {
-      pushToast("Couldn't save those links.", "error");
+      setNotice({ text: "Couldn't save those links.", tone: "error" });
       inputRef.current?.focus();
       return;
     }
-    const parts: string[] = [];
-    if (saved > 0) parts.push(`Saved ${saved} link${saved === 1 ? "" : "s"}.`);
-    if (existing > 0) parts.push(`${existing} already in your library.`);
-    pushToast(parts.join(" "));
+    if (saved === 0) {
+      /** Say the links already existed instead of silently closing, so the collapse isn't mistaken for new copies being saved. */
+      setNotice({
+        text: `${existing === 1 ? "That link is" : "Those links are"} already in your library.`,
+        tone: "info",
+      });
+      setLinks([]);
+      setUrl("");
+      return;
+    }
+    /** The grid and the saving pill confirm the new saves. */
     dock.closeNew();
   };
 
   const submitOne = async (u: string) => {
     const res = await quickAdd(u);
     if (res?.ok) {
-      /** Say the link already existed instead of silently closing, so the collapse isn't mistaken for a second copy being saved. */
       if (res.created === false) {
-        const id = res.id;
-        pushToast("Already in your library.", {
-          action: id
-            ? { label: "View", onAction: () => primarySelection.set(id) }
-            : undefined,
+        setNotice({
+          text: "Already in your library.",
+          tone: "info",
+          viewId: res.id,
         });
+        return;
       }
       dock.closeNew();
     } else {
-      pushToast("Couldn't save. Check the link and try again.", "error");
+      setNotice({
+        text: "Couldn't save. Check the link and try again.",
+        tone: "error",
+      });
       inputRef.current?.focus();
     }
   };
@@ -215,12 +232,18 @@ export function NewContent() {
     if (!canSubmit) return;
     const all = [...links, ...(trimmedUrl ? [withScheme(trimmedUrl)] : [])];
     setBusy(true);
+    setNotice(null);
     try {
       if (all.length > 1) await submitMany(all);
       else await submitOne(all[0] ?? "");
     } finally {
       setBusy(false);
     }
+  };
+
+  const viewExisting = (id: string) => {
+    dock.closeNew();
+    primarySelection.set(id);
   };
 
   const onFieldKeyDown = (e: React.KeyboardEvent) => {
@@ -266,6 +289,20 @@ export function NewContent() {
             onPaste={onPaste}
           />
         </div>
+        {notice ? (
+          <p className={styles.notice} data-tone={notice.tone} role="status">
+            {notice.text}
+            {notice.viewId ? (
+              <button
+                type="button"
+                className={styles["notice-link"]}
+                onClick={() => notice.viewId && viewExisting(notice.viewId)}
+              >
+                View
+              </button>
+            ) : null}
+          </p>
+        ) : null}
       </div>
       <TrayCard.Footer>
         <TrayCard.Cancel />

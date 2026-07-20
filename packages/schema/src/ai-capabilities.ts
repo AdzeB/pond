@@ -48,6 +48,15 @@ export function modelSupportsAgent(
   return provider in AI_MODEL_CATALOG;
 }
 
+/** Human-readable model label from the catalog; unknown models fall back to the raw id. */
+export function modelDisplayName(
+  provider: AiProviderId,
+  modelId?: string,
+): string {
+  const id = resolveModelId(provider, modelId);
+  return AI_MODEL_CATALOG[provider]?.[id]?.name ?? id;
+}
+
 /** Context window in tokens for the selected model, or undefined when unknown. */
 export function modelContextLimit(
   provider: AiProviderId,

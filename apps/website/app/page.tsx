@@ -1,13 +1,13 @@
-import { Archive } from "./components/archive";
-import { Download } from "./components/download";
+import { Browse } from "./components/browse";
 import { Faqs } from "./components/faqs";
+import { Find } from "./components/find";
 import { Footer } from "./components/footer";
+import { Get } from "./components/get";
 import { Header } from "./components/header";
 import { Hero } from "./components/hero";
-import { Library } from "./components/library";
-import { LocalFirst } from "./components/local-first";
-import { Search } from "./components/search";
-import { Sources } from "./components/sources";
+import { Own } from "./components/own";
+import { Save } from "./components/save";
+import { Setup } from "./components/setup";
 
 export default function Page() {
   return (
@@ -15,13 +15,13 @@ export default function Page() {
       <Header />
       <main>
         <Hero />
-        <Sources />
-        <Library />
-        <Archive />
-        <Search />
-        <LocalFirst />
-        <Download />
+        <Save />
+        <Browse />
+        <Find />
+        <Own />
+        <Setup />
         <Faqs />
+        <Get />
       </main>
       <Footer />
     </>

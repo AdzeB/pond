@@ -70,11 +70,11 @@ export function cancelSync(accountId: string): void {
   const entry = inFlight.get(accountId);
   if (!entry) return;
   entry.controller.abort();
-  /** Surface "Stopping…" immediately; the run winds down between steps. */
+  /** Surface "Stopping" immediately; the run winds down between steps. */
   emit({
     accountId,
     source: entry.source,
     state: "running",
-    message: "Stopping…",
+    message: "Stopping",
   });
 }

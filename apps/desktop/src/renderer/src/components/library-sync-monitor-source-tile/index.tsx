@@ -16,6 +16,7 @@ export function BrandTile({
     <span
       className={styles["brand-tile"]}
       style={{ width: size, height: size }}
+      data-logo={logo ? "" : undefined}
       aria-hidden
     >
       {logo ? (

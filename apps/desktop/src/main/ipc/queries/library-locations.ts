@@ -70,7 +70,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
     }
   },
 
-  /** Backs "Move Library…"; prompts for a destination then copies the library there. */
+  /** Backs "Move Library"; prompts for a destination then copies the library there. */
   async "library.move"(params) {
     const explicitDest =
       typeof params.path === "string" ? params.path.trim() : "";

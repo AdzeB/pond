@@ -1,8 +1,8 @@
+import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { Menu, type MenuItemSpec } from "@pond/ui";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { colorCopyFormats } from "@/lib/util/color";
 import { primarySelection } from "@/stores/selection";
-import { pushToast } from "@/stores/toasts";
 import { setQuery } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
@@ -12,14 +12,8 @@ const POPUP_STYLE = {
   "--popup-min-width": "200px",
 } as CSSProperties;
 
-async function copyValue(value: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(value);
-    pushToast(`Copied ${value}`, "success");
-  } catch {
-    /** Clipboard can reject without focus; skip the toast. */
-  }
-}
+/** How long the swatch wears the checkmark after a copy. */
+const COPIED_HOLD_MS = 1200;
 
 /** Dismisses the detail modal so the freshly-filtered grid is what the user lands on. */
 function findSimilar(hex: string): void {
@@ -32,6 +26,22 @@ function findSimilar(hex: string): void {
 
 export function ColorSwatch({ color }: { color: string }) {
   const formats = colorCopyFormats(color);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), COPIED_HOLD_MS);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copyValue = async (value: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+    } catch {
+      /** Clipboard can reject without focus; nothing to confirm. */
+    }
+  };
 
   const items: MenuItemSpec[] = formats
     ? [
@@ -60,8 +70,14 @@ export function ColorSwatch({ color }: { color: string }) {
             type="button"
             className={styles["color-swatch"]}
             style={{ background: color }}
-            aria-label={`Color ${color}`}
-          />
+            aria-label={copied ? `Copied ${color}` : `Color ${color}`}
+          >
+            {copied ? (
+              <span className={styles["copied-check"]} aria-hidden>
+                <Check width={12} height={12} strokeWidth={2.5} />
+              </span>
+            ) : null}
+          </button>
         }
       />
       <Menu.Portal>

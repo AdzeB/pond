@@ -18,10 +18,14 @@ export function AskHistorySection() {
 
   return (
     <>
-      <TrayCard.Back aria-label="Back to ask" onClick={() => dock.openAsk()} />
-      <TrayCard.Close />
-      <TrayCard.Header position="center">
-        <TrayCard.Title>Recent Asks</TrayCard.Title>
+      <TrayCard.Header>
+        <TrayCard.Back
+          aria-label="Back to ask"
+          onClick={() => dock.openAsk()}
+        />
+        <TrayCard.Title position="center">Recent Asks</TrayCard.Title>
+        <TrayCard.Close />
+        <TrayCard.Separator />
       </TrayCard.Header>
       {recents.length === 0 ? (
         <p className={styles.empty}>No recent asks yet.</p>

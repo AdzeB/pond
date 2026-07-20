@@ -11,11 +11,11 @@ export function describeRun(run: SyncRun): string {
       return failed > 0 ? `${base} · ${failed} failed` : base;
     }
     case "noop":
-      return "Caught up — nothing new";
+      return "Caught up, nothing new";
     case "auth_required":
-      return "Sign-in required — source paused";
+      return "Sign-in required, source paused";
     case "rate_limited":
-      return "Rate limited — backing off";
+      return "Rate limited, backing off";
     case "aborted":
       return run.watchdogTripped
         ? "Watchdog reset stalled run, retried"
@@ -54,7 +54,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
     const p = status?.progress;
     const statusText =
       status?.message ??
-      (p?.total ? `Syncing · ${p.current}/${p.total}` : "Syncing…");
+      (p?.total ? `Syncing · ${p.current}/${p.total}` : "Syncing");
     return {
       tone: "run",
       statusText,

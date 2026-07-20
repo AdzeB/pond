@@ -4,9 +4,10 @@ import {
   IconGripDotsVerticalOutline18 as Grip,
 } from "@pond/icons/outline/18";
 import type { InsightConfig } from "@pond/schema/db";
-import { Menu } from "@pond/ui";
+import { Menu, type MenuItemSpec } from "@pond/ui";
 import { motion } from "motion/react";
 import { useMemo } from "react";
+import { SpecContextMenu } from "@/components/spec-context-menu";
 import type { Save } from "@/lib/types";
 import { gentleSpring } from "@/lib/ui/motion";
 import { InsightBody } from "./insight-body";
@@ -91,80 +92,90 @@ export function InsightCard({
   const empty = data.saveCount === 0;
   const size = sizeOf(config);
 
-  return (
-    <MotionSection
-      layout
-      transition={gentleSpring}
-      className={styles.card}
-      data-w={size.w}
-      data-h={size.h}
-      data-dragging={dragging || undefined}
-      draggable
-      onNativeDragStart={onDragStart}
-      onNativeDragOver={onDragOver}
-      onNativeDrop={onDrop}
-      onNativeDragEnd={onDragEnd}
-    >
-      <div className={styles["card-header"]}>
-        <span className={styles["card-grip"]} aria-hidden>
-          <Grip width={12} height={12} />
-        </span>
-        <button type="button" className={styles["card-title"]} onClick={onEdit}>
-          <span className={styles["card-title-text"]}>
-            {insightTitle(config)}
-          </span>
-          <Chevron width={11} height={11} className={styles["card-chevron"]} />
-        </button>
-        <div className={styles["card-actions"]}>
-          <Menu.Root>
-            <Menu.Trigger icon variant="ghost" aria-label="Insight actions">
-              <Dots width={14} height={14} />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner align="end">
-                <Menu.Popup>
-                  <Menu.Items
-                    items={[
-                      { label: "Edit", onClick: onEdit },
-                      { label: "Duplicate", onClick: onDuplicate },
-                      {
-                        type: "submenu",
-                        label: "Width",
-                        items: COL_SPANS.map((w) => ({
-                          label: `${w} column${w === 1 ? "" : "s"}`,
-                          disabled: size.w === w,
-                          onClick: () => onChange({ w, h: size.h }),
-                        })),
-                      },
-                      {
-                        type: "submenu",
-                        label: "Height",
-                        items: ROW_SPANS.map((h) => ({
-                          label: `${h} row${h === 1 ? "" : "s"}`,
-                          disabled: size.h === h,
-                          onClick: () => onChange({ w: size.w, h }),
-                        })),
-                      },
-                      { type: "separator" },
-                      { label: "Remove", onClick: onRemove },
-                    ]}
-                  />
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
-        </div>
-      </div>
+  const buildMenuItems = (): MenuItemSpec[] => [
+    { label: "Edit", onClick: onEdit },
+    { label: "Duplicate", onClick: onDuplicate },
+    {
+      type: "submenu",
+      label: "Width",
+      items: COL_SPANS.map((w) => ({
+        label: `${w} column${w === 1 ? "" : "s"}`,
+        disabled: size.w === w,
+        onClick: () => onChange({ w, h: size.h }),
+      })),
+    },
+    {
+      type: "submenu",
+      label: "Height",
+      items: ROW_SPANS.map((h) => ({
+        label: `${h} row${h === 1 ? "" : "s"}`,
+        disabled: size.h === h,
+        onClick: () => onChange({ w: size.w, h }),
+      })),
+    },
+    { type: "separator" },
+    { label: "Remove", onClick: onRemove },
+  ];
 
-      {empty ? (
-        <div className={styles["card-empty"]}>
-          No saves match this window yet.
+  return (
+    <SpecContextMenu buildItems={buildMenuItems}>
+      <MotionSection
+        layout
+        transition={gentleSpring}
+        className={styles.card}
+        data-w={size.w}
+        data-h={size.h}
+        data-dragging={dragging || undefined}
+        draggable
+        onNativeDragStart={onDragStart}
+        onNativeDragOver={onDragOver}
+        onNativeDrop={onDrop}
+        onNativeDragEnd={onDragEnd}
+      >
+        <div className={styles["card-header"]}>
+          <span className={styles["card-grip"]} aria-hidden>
+            <Grip width={12} height={12} />
+          </span>
+          <button
+            type="button"
+            className={styles["card-title"]}
+            onClick={onEdit}
+          >
+            <span className={styles["card-title-text"]}>
+              {insightTitle(config)}
+            </span>
+            <Chevron
+              width={11}
+              height={11}
+              className={styles["card-chevron"]}
+            />
+          </button>
+          <div className={styles["card-actions"]}>
+            <Menu.Root>
+              <Menu.Trigger icon variant="ghost" aria-label="Insight actions">
+                <Dots width={14} height={14} />
+              </Menu.Trigger>
+              <Menu.Portal>
+                <Menu.Positioner align="end">
+                  <Menu.Popup>
+                    <Menu.Items items={buildMenuItems()} />
+                  </Menu.Popup>
+                </Menu.Positioner>
+              </Menu.Portal>
+            </Menu.Root>
+          </div>
         </div>
-      ) : (
-        <div className={styles["card-body"]}>
-          <InsightBody config={config} data={data} days={days} />
-        </div>
-      )}
-    </MotionSection>
+
+        {empty ? (
+          <div className={styles["card-empty"]}>
+            No saves match this window yet.
+          </div>
+        ) : (
+          <div className={styles["card-body"]}>
+            <InsightBody config={config} data={data} days={days} />
+          </div>
+        )}
+      </MotionSection>
+    </SpecContextMenu>
   );
 }

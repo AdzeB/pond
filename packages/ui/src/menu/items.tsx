@@ -33,6 +33,29 @@ interface MenuSubmenuItem {
   items: MenuItemSpec[];
 }
 
+interface MenuCheckboxItem {
+  type: "checkbox";
+  label: ReactNode;
+  checked: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  shortcut?: MenuShortcut;
+  disabled?: boolean;
+  /** Keep the menu open after toggling (defaults to closing). */
+  closeOnClick?: boolean;
+}
+
+interface MenuLinkItem {
+  type: "link";
+  label: ReactNode;
+  /** Real destination, exposed for a11y and platform affordances. */
+  href: string;
+  icon?: ReactNode;
+  shortcut?: MenuShortcut;
+  disabled?: boolean;
+  /** Invoked with the default navigation prevented; delegate opening to the platform. */
+  onClick?: () => void;
+}
+
 /** Escape hatch for dynamic/stateful content (search inputs, empty states). */
 interface MenuCustomItem {
   type: "custom";
@@ -45,6 +68,8 @@ export type MenuItemSpec =
   | MenuSeparatorItem
   | MenuGroupItem
   | MenuSubmenuItem
+  | MenuCheckboxItem
+  | MenuLinkItem
   | MenuCustomItem;
 
 /**
@@ -62,6 +87,20 @@ interface MenuParts {
   ItemIcon: React.ComponentType<{ children?: ReactNode }>;
   ItemLabel: React.ComponentType<{ children?: ReactNode }>;
   ItemKeyboard: React.ComponentType<{ children?: ReactNode }>;
+  CheckboxItem: React.ComponentType<{
+    checked?: boolean;
+    onCheckedChange?: (checked: boolean) => void;
+    disabled?: boolean;
+    closeOnClick?: boolean;
+    children?: ReactNode;
+  }>;
+  CheckboxItemIndicator: React.ComponentType<{ children?: ReactNode }>;
+  LinkItem: React.ComponentType<{
+    href?: string;
+    disabled?: boolean;
+    onClick?: (event: React.MouseEvent) => void;
+    children?: ReactNode;
+  }>;
   Separator: React.ComponentType;
   Group: React.ComponentType<{ children?: ReactNode }>;
   GroupLabel: React.ComponentType<{ children?: ReactNode }>;
@@ -106,6 +145,55 @@ function renderSpec(
         ) : null}
         {spec.items.map((child, i) => renderSpec(child, i, parts))}
       </parts.Group>
+    );
+  }
+
+  if (spec.type === "checkbox") {
+    return (
+      <parts.CheckboxItem
+        key={key}
+        checked={spec.checked}
+        onCheckedChange={spec.onCheckedChange}
+        disabled={spec.disabled}
+        closeOnClick={spec.closeOnClick}
+      >
+        <parts.CheckboxItemIndicator />
+        <parts.ItemLabel>{spec.label}</parts.ItemLabel>
+        {spec.shortcut != null ? (
+          <parts.ItemKeyboard>
+            {shortcutToString(spec.shortcut)}
+          </parts.ItemKeyboard>
+        ) : null}
+      </parts.CheckboxItem>
+    );
+  }
+
+  if (spec.type === "link") {
+    const onClick = spec.onClick;
+    return (
+      <parts.LinkItem
+        key={key}
+        href={spec.href}
+        disabled={spec.disabled}
+        onClick={
+          onClick
+            ? (event) => {
+                event.preventDefault();
+                onClick();
+              }
+            : undefined
+        }
+      >
+        {spec.icon != null ? (
+          <parts.ItemIcon>{spec.icon}</parts.ItemIcon>
+        ) : null}
+        <parts.ItemLabel>{spec.label}</parts.ItemLabel>
+        {spec.shortcut != null ? (
+          <parts.ItemKeyboard>
+            {shortcutToString(spec.shortcut)}
+          </parts.ItemKeyboard>
+        ) : null}
+      </parts.LinkItem>
     );
   }
 

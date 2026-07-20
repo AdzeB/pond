@@ -7,6 +7,10 @@ import {
   signInToSource,
 } from "../../core/refresh";
 import {
+  archiveSiteForSave,
+  startArchiveBackfill,
+} from "../../core/refresh/archive-backfill";
+import {
   cancelRefreshBackfill,
   startRefreshBackfill,
 } from "../../core/refresh/backfill";
@@ -48,6 +52,24 @@ export function registerRefreshHandlers(): void {
   safeHandle(IPC.refreshBackfillCancel, async () => {
     cancelRefreshBackfill();
     return { ok: true as const };
+  });
+
+  safeHandle(IPC.archiveBackfillStart, async () => {
+    try {
+      return await startArchiveBackfill();
+    } catch (err) {
+      log.error("[pond ipc] archiveBackfillStart failed", err);
+      return { ok: true as const, queued: 0 };
+    }
+  });
+
+  safeHandle(IPC.archiveSite, async (_, id: string) => {
+    try {
+      return await archiveSiteForSave(String(id));
+    } catch (err) {
+      log.error("[pond ipc] archiveSite failed", err);
+      return { ok: false as const };
+    }
   });
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {

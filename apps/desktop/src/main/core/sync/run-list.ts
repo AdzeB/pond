@@ -44,7 +44,7 @@ export async function syncListSource(
     accountId,
     source,
     state: "running",
-    message: `Reading your ${source} list…`,
+    message: `Reading your ${source} list`,
   });
 
   let accountKey: string | undefined;
@@ -81,7 +81,7 @@ export async function syncListSource(
           accountId,
           source,
           state: "running",
-          message: `Found ${p.collected} saved items${p.fresh > 0 ? ` (${p.fresh} new)` : ""}…`,
+          message: `Found ${p.collected} saved items${p.fresh > 0 ? ` (${p.fresh} new)` : ""}`,
         });
       },
     },
@@ -190,7 +190,7 @@ export async function syncListSource(
     accountId,
     source,
     state: "running",
-    message: `Queueing ${fresh.length} item${fresh.length === 1 ? "" : "s"}…`,
+    message: `Queueing ${fresh.length} item${fresh.length === 1 ? "" : "s"}`,
     progress: { current: 0, total: fresh.length },
   });
 

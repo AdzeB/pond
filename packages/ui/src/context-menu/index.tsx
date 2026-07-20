@@ -1,6 +1,8 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
+import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
+import { Checkbox } from "../checkbox";
 import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
 import styles from "./styles.module.css";
 
@@ -52,6 +54,10 @@ function Item({ className, stale = false, ...props }: ItemProps) {
       {...props}
     />
   );
+}
+
+function LinkItem({ className, ...props }: Base.LinkItem.Props) {
+  return <Base.LinkItem className={cn(styles.item, className)} {...props} />;
 }
 
 function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
@@ -127,11 +133,26 @@ function CheckboxItem({ className, ...props }: Base.CheckboxItem.Props) {
 
 function CheckboxItemIndicator({
   className,
+  keepMounted = true,
   ...props
 }: Base.CheckboxItemIndicator.Props) {
   return (
     <Base.CheckboxItemIndicator
+      keepMounted={keepMounted}
       className={cn(styles.indicator, className)}
+      render={(renderProps, state) => (
+        <Checkbox.Root
+          checked={state.checked}
+          readOnly
+          tabIndex={-1}
+          aria-hidden
+          {...renderProps}
+        >
+          <Checkbox.Indicator>
+            <Check strokeWidth={2} />
+          </Checkbox.Indicator>
+        </Checkbox.Root>
+      )}
       {...props}
     />
   );
@@ -158,6 +179,9 @@ function Items({ items }: { items: MenuItemSpec[] }) {
         ItemIcon,
         ItemLabel,
         ItemKeyboard,
+        CheckboxItem,
+        CheckboxItemIndicator,
+        LinkItem,
         Separator,
         Group,
         GroupLabel,
@@ -180,6 +204,7 @@ export const ContextMenu = {
   Popup,
   Arrow,
   Item,
+  LinkItem,
   ItemIcon,
   ItemLabel,
   ItemKeyboard,

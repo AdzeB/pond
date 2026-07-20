@@ -60,6 +60,12 @@ function Popup({ className, ...props }: Base.Popup.Props) {
   return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
+function Viewport({ className, ...props }: Base.Viewport.Props) {
+  return (
+    <Base.Viewport className={cn(styles.viewport, className)} {...props} />
+  );
+}
+
 function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={cn(styles.arrow, className)} {...props} />;
 }
@@ -76,6 +82,10 @@ function Item({ className, stale = false, ...props }: ItemProps) {
       {...props}
     />
   );
+}
+
+function LinkItem({ className, ...props }: Base.LinkItem.Props) {
+  return <Base.LinkItem className={cn(styles.item, className)} {...props} />;
 }
 
 function ItemIcon({ className, ...props }: React.ComponentProps<"span">) {
@@ -226,6 +236,9 @@ function Items({ items }: { items: MenuItemSpec[] }) {
         ItemIcon,
         ItemLabel,
         ItemKeyboard,
+        CheckboxItem,
+        CheckboxItemIndicator,
+        LinkItem,
         Separator,
         Group,
         GroupLabel,
@@ -267,8 +280,10 @@ export const Menu = {
   Portal,
   Positioner,
   Popup,
+  Viewport,
   Arrow,
   Item,
+  LinkItem,
   ItemIcon,
   ItemLabel,
   ItemKeyboard,

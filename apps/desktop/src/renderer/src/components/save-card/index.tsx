@@ -13,7 +13,12 @@ import { formatAbsolute } from "@/lib/util/format";
 import { clampRatio } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { usePrefs } from "@/stores/prefs";
-import { selection, useIsPrimary, useIsSelected } from "@/stores/selection";
+import {
+  selection,
+  useIsAnchor,
+  useIsPrimary,
+  useIsSelected,
+} from "@/stores/selection";
 import { useIsTumbling } from "@/stores/trash-tumble";
 
 /** FLIP-capable card root: repacks (sort, filter, zoom, ask results) glide instead of teleporting. */
@@ -59,6 +64,7 @@ export const SaveCard = memo(function SaveCard({
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);
+  const isAnchor = useIsAnchor(id);
   const tumbling = useIsTumbling(id);
 
   const liStyle = useMemo<React.CSSProperties | undefined>(() => {
@@ -115,6 +121,8 @@ export const SaveCard = memo(function SaveCard({
       <MotionCardRoot
         selected={isPrimary}
         multi={isMulti}
+        data-save-id={id}
+        data-cursor={isAnchor || undefined}
         style={liStyle}
         draggable={save.files.length > 0}
         onNativeDragStart={onDragStart}

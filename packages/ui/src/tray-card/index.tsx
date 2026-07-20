@@ -32,26 +32,26 @@ function Root({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(styles.root, className)} {...props} />;
 }
 
-export interface TrayCardHeaderProps extends HTMLAttributes<HTMLDivElement> {
+function Header({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <header className={cn(styles.header, className)} {...props} />;
+}
+
+export interface TrayCardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
   position?: "start" | "center";
 }
 
-function Header({
+function Title({
   className,
   position = "start",
   ...props
-}: TrayCardHeaderProps) {
+}: TrayCardTitleProps) {
   return (
-    <header
+    <h1
       data-position={position}
-      className={cn(styles.header, className)}
+      className={cn(styles.title, className)}
       {...props}
     />
   );
-}
-
-function Title({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h1 className={cn(styles.title, className)} {...props} />;
 }
 
 function Description({
@@ -69,85 +69,60 @@ function Footer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(styles.footer, className)} {...props} />;
 }
 
-/** Navigation is the caller's: pass onClick to step back to the previous card. */
-function Back({
+export interface TrayCardActionProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
+  position?: "start" | "end";
+}
+
+/** Corner circle button; anchors to the enclosing Header, or to the card when there is none. */
+function Action({
   className,
+  position = "start",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+}: TrayCardActionProps) {
   return (
     <button
       type="button"
-      aria-label="Back"
-      className={cn(styles.back, className)}
+      data-position={position}
+      className={cn(styles.action, className)}
       {...props}
-    >
+    />
+  );
+}
+
+/** Navigation is the caller's: pass onClick to step back to the previous card. */
+function Back(props: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <Action aria-label="Back" {...props}>
       <IconChevronLeftOutline12 strokeWidth={2} />
-    </button>
+    </Action>
   );
 }
 
 /** Navigation is the caller's: pass onClick to open the card's help view. */
-function Help({
-  className,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+function Help(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
-      type="button"
-      aria-label="Help"
-      className={cn(styles.help, className)}
-      {...props}
-    >
+    <Action aria-label="Help" {...props}>
       <IconAlertQuestionFill12 strokeWidth={2} />
-    </button>
+    </Action>
   );
 }
 
-interface ActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  position?: "start" | "end";
-}
-
-function Action({
-  className,
-  onClick,
-  children,
-  position = "start",
-  ...props
-}: ActionProps) {
-  return (
-    <button
-      type="button"
-      className={cn(styles.action, className)}
-      data-position={position}
-      {...props}
-      onClick={(e) => {
-        onClick?.(e);
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Close({
-  className,
-  onClick,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+function Close({ onClick, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
   const { actions } = useTrayCard();
   return (
-    <button
-      type="button"
+    <Action
+      position="end"
       aria-label="Close"
-      className={cn(styles.close, className)}
+      /** onClick may preventDefault to take over, for cards that step back instead of dismissing. */
       onClick={(e) => {
         onClick?.(e);
-        actions.dismiss();
+        if (!e.defaultPrevented) actions.dismiss();
       }}
       {...props}
     >
       <IconXmarkOutline12 strokeWidth={2} />
-    </button>
+    </Action>
   );
 }
 

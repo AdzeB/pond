@@ -1,7 +1,6 @@
 import { lazy } from "react";
 import type { SectionConfig } from "@/components/settings-engine";
 import { aiSection } from "@/lib/settings/config-ai";
-import { aiModelsSection } from "@/lib/settings/config-ai-models";
 import { appearanceSection } from "@/lib/settings/config-appearance";
 import { connectionsSection } from "@/lib/settings/config-connections";
 import { developerSection } from "@/lib/settings/config-developer";
@@ -24,6 +23,16 @@ const SkillsSection = lazy(() =>
     default: m.SkillsSection,
   })),
 );
+const AiProvidersSection = lazy(() =>
+  import("@/components/settings-ai-providers").then((m) => ({
+    default: m.AiProvidersSection,
+  })),
+);
+const SavesSection = lazy(() =>
+  import("@/components/settings-saves").then((m) => ({
+    default: m.SavesSection,
+  })),
+);
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   /** Bespoke sections render their own header and layout; their title/keywords are inert at render time and exist only for the settings search index. */
   general: generalSection,
@@ -37,11 +46,41 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   trash: trashSection,
   storage: storageSection,
   connections: connectionsSection,
+  saves: {
+    component: SavesSection,
+    title: "Saves",
+    description:
+      "Everything saving this session: progress, failures, and what just landed.",
+    keywords: [
+      "downloads",
+      "queue",
+      "progress",
+      "saving",
+      "failed",
+      "retry",
+      "ingest",
+    ],
+  },
   sync: syncSection,
   videos: videosSection,
   images: imagesSection,
   ai: aiSection,
-  "ai-models": aiModelsSection,
+  /** Nested page reached from AI -> Model; renders its own header with a back button. */
+  "ai-providers": {
+    component: AiProvidersSection,
+    description: "Choose the provider and model that power AI features.",
+    keywords: [
+      "provider",
+      "model",
+      "openai",
+      "anthropic",
+      "ollama",
+      "gemini",
+      "api key",
+      "endpoint",
+      "keychain",
+    ],
+  },
   enrichment: enrichmentSection,
   skills: {
     title: "Skills",

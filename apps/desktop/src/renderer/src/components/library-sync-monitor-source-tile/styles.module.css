@@ -1,4 +1,5 @@
 .brand-tile {
+  position: relative;
   display: block;
   flex-shrink: 0;
 }
@@ -6,4 +7,17 @@
 .brand-tile svg,
 .brand-tile img {
   display: block;
+}
+
+/* Full-bleed logos clip to an app-icon tile; the ring keeps light marks from dissolving into the page. */
+.brand-tile img {
+  border-radius: var(--ds-radius-app-icon);
+}
+
+.brand-tile[data-logo]::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  border-radius: var(--ds-radius-app-icon);
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a4);
 }

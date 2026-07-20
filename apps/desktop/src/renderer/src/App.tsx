@@ -8,19 +8,22 @@ import {
 import { MotionConfig } from "motion/react";
 import { useEffect, useMemo } from "react";
 import type { PondApi } from "../../preload";
+import { ConfirmDialogHost } from "./components/confirm-dialog";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
-import { Toaster } from "./components/toaster";
+import { PromptDialogHost } from "./components/prompt-dialog";
+import { ShortcutsSheetHost } from "./components/shortcuts-sheet";
+import { AppHotkeys } from "./effects/app-hotkeys";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { MenuBridge } from "./effects/menu-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
+import { SaveHotkeys } from "./effects/save-hotkeys";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
-import { ContextMenuHost } from "./lib/ui/native-menu";
 import { routeTree } from "./routeTree.gen";
 import { usePrefs } from "./stores/prefs";
 import { settingsModal } from "./stores/settings-modal";
@@ -147,13 +150,16 @@ export function App() {
           <UndoRedoBridge />
           <MenuBridge />
           <MenuRecentsBridge />
+          <SaveHotkeys />
+          <AppHotkeys />
           <SyncStatusBridge />
           <EnrichmentSweep />
           <ErrorBoundary>
             <RouterProvider router={router} />
           </ErrorBoundary>
-          <ContextMenuHost />
-          <Toaster />
+          <ConfirmDialogHost />
+          <PromptDialogHost />
+          <ShortcutsSheetHost />
         </Tooltip.Provider>
       </QueryClientProvider>
     </MotionConfig>

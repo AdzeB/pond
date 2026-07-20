@@ -1,4 +1,8 @@
-import { type AiProviderId, providerModels } from "@pond/schema";
+import {
+  type AiProviderId,
+  modelDisplayName,
+  providerModels,
+} from "@pond/schema";
 import { Combobox } from "@pond/ui";
 import { useMemo, useState } from "react";
 import styles from "./styles.module.css";
@@ -38,6 +42,11 @@ export function AiModelPicker({
   const customCandidate =
     trimmed.length > 0 && !byId.has(trimmed) ? trimmed : null;
 
+  /** Catalog name when known; custom/unknown ids stay verbatim. */
+  const nameFor = (id: string) => modelDisplayName(provider, id) || id;
+
+  const triggerLabel = selectedId ? nameFor(selectedId) : nameFor(placeholder);
+
   return (
     <Combobox.Root
       items={ids}
@@ -47,11 +56,12 @@ export function AiModelPicker({
       onOpenChange={(open) => {
         if (open) setQuery("");
       }}
+      itemToStringLabel={(id: string) =>
+        byId.has(id) ? `${nameFor(id)} ${id}` : id
+      }
     >
-      <Combobox.Trigger aria-label={`Model: ${selectedId || placeholder}`}>
-        <Combobox.Value>
-          {(id: string | null) => id || placeholder}
-        </Combobox.Value>
+      <Combobox.Trigger aria-label={`Model: ${triggerLabel}`}>
+        <Combobox.Value>{() => triggerLabel}</Combobox.Value>
       </Combobox.Trigger>
 
       <Combobox.Portal>
@@ -64,7 +74,9 @@ export function AiModelPicker({
             <Combobox.Input autoFocus placeholder="Search models…" />
             <Combobox.List>
               <Combobox.Item value="">
-                <Combobox.ItemLabel>Default · {placeholder}</Combobox.ItemLabel>
+                <Combobox.ItemLabel>
+                  Default · {nameFor(placeholder)}
+                </Combobox.ItemLabel>
                 <Combobox.ItemEnd>
                   <Combobox.ItemIndicator />
                 </Combobox.ItemEnd>
@@ -75,7 +87,7 @@ export function AiModelPicker({
                   const model = byId.get(id);
                   return (
                     <Combobox.Item key={id} value={id}>
-                      <Combobox.ItemLabel>{id}</Combobox.ItemLabel>
+                      <Combobox.ItemLabel>{nameFor(id)}</Combobox.ItemLabel>
                       <Combobox.ItemEnd>
                         {model?.agent ? (
                           <span className={styles.badge}>agent</span>

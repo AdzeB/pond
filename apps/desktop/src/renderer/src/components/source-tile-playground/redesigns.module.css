@@ -1,0 +1,649 @@
+/* Ten structural redesigns of the source tile; shared artwork/status primitives at the top. */
+
+.art {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  background: var(--ds-gray-3);
+  border-radius: 100%;
+}
+
+.art[data-shape="squircle"] {
+  border-radius: var(--ds-radius-app-icon, 12px);
+  corner-shape: superellipse(var(--ds-superellipse));
+}
+
+.art[data-shape="square"] {
+  border-radius: var(--ds-radius-sm, 8px);
+}
+
+.artImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  corner-shape: inherit;
+}
+
+.artLogo {
+  width: 45%;
+  height: 45%;
+  object-fit: contain;
+}
+
+.artBrand {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  z-index: 1;
+  outline: 2px solid var(--ds-gray-1);
+  border-radius: 100%;
+}
+
+.statusDot {
+  display: inline-block;
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.statusDot[data-tone="run"] {
+  background: var(--ds-accent-9);
+  animation: redesign-pulse 1.2s ease-in-out infinite;
+}
+
+.statusDot[data-tone="ok"] {
+  background: var(--ds-green-9);
+}
+
+.statusDot[data-tone="err"] {
+  background: var(--ds-red-9);
+}
+
+.statusDot[data-tone="paused"] {
+  background: var(--ds-yellow-9);
+}
+
+@keyframes redesign-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.blurImg {
+  position: absolute;
+  inset: -25%;
+  width: 150%;
+  height: 150%;
+  object-fit: cover;
+  filter: blur(24px) saturate(1.3);
+}
+
+/* R1 · List row */
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.row:hover {
+  background: var(--ds-gray-3);
+}
+
+.rowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rowName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.rowSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.rowValue {
+  flex: none;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}
+
+/* R2 · Profile card */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 0 0 12px;
+  overflow: hidden;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-md);
+  transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.card:hover {
+  border-color: var(--ds-gray-6);
+}
+
+.cardBand {
+  position: relative;
+  width: 100%;
+  height: 44px;
+  overflow: hidden;
+  background: var(--ds-gray-3);
+}
+
+.cardArt {
+  z-index: 1;
+  margin: -22px 0 0 12px;
+}
+
+/* Outline must live on the rounded art itself so it follows the circle. */
+.cardArt > * {
+  outline: 3px solid var(--ds-gray-1);
+}
+
+.cardName {
+  padding: 8px 12px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.cardSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  max-width: 100%;
+  padding: 2px 12px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.cardMeta {
+  padding: 6px 12px 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-8);
+}
+
+/* R3 · Poster */
+
+.poster {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 10px;
+  overflow: hidden;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-4);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+}
+
+.posterImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: scale var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.poster:hover .posterImg {
+  scale: 1.04;
+}
+
+.posterLogo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36%;
+  height: 36%;
+  object-fit: contain;
+  translate: -50% -60%;
+}
+
+.posterScrim {
+  position: absolute;
+  inset: 40% 0 0;
+  background: linear-gradient(rgb(0 0 0 / 0%), rgb(0 0 0 / 62%));
+}
+
+.posterText {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.posterName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+}
+
+.posterSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: rgb(255 255 255 / 75%);
+  white-space: nowrap;
+}
+
+/* R4 · Editorial */
+
+.editorial {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.editorial:hover {
+  background: var(--ds-gray-3);
+}
+
+.editorialName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.editorialSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+/* R5 · App icon */
+
+.appIcon {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 4px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-md);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.appIcon:hover {
+  background: var(--ds-gray-3);
+}
+
+.appIconName {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.appIconSub {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10.5px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+/* R6 · Split card */
+
+.split {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-md);
+  transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.split:hover {
+  border-color: var(--ds-gray-6);
+}
+
+.splitText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.splitName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.splitSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.splitValue {
+  margin-top: 3px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-8);
+}
+
+/* R7 · Stat card */
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-md);
+  transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.stat:hover {
+  border-color: var(--ds-gray-6);
+}
+
+.statValue {
+  font-size: 19px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--ds-gray-12);
+  letter-spacing: -0.02em;
+}
+
+.statWho {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.statSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+/* R8 · Chip */
+
+.chip {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  max-width: 100%;
+  padding: 5px 11px 5px 6px;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-5);
+  border-radius: 99px;
+  transition: border-color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.chip:hover {
+  border-color: var(--ds-gray-7);
+}
+
+.chipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.chipMeta {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+/* R9 · Table row */
+
+.tableRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  padding: 0 8px;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--ds-gray-3);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.tableRow:hover {
+  background: var(--ds-gray-2);
+}
+
+.tableName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.tableStatus {
+  display: flex;
+  flex: none;
+  gap: 5px;
+  align-items: center;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.tableValue {
+  flex: none;
+  min-width: 56px;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+  text-align: right;
+}
+
+/* R10 · Banner */
+
+.banner {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  height: 60px;
+  padding: 0 14px;
+  overflow: hidden;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-md);
+}
+
+/* Blurred artwork sits on the left edge and fades into the surface so text stays legible. */
+.bannerBackdrop {
+  position: absolute;
+  inset: 0 60% 0 0;
+  overflow: hidden;
+  opacity: 0.5;
+  mask-image: linear-gradient(to right, black, transparent);
+}
+
+.bannerContent {
+  position: relative;
+  display: flex;
+  flex: 1;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+
+.bannerText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.bannerName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.bannerSub {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.bannerValue {
+  flex: none;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusDot[data-tone="run"] {
+    animation: none;
+  }
+}

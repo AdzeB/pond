@@ -14,6 +14,8 @@ interface ClippedScrollProps {
   maxHeight: number;
   children: ReactNode;
   className?: string;
+  /** Rows must be direct children of the scroll element, so layout (e.g. grid) goes here, not on a wrapper. */
+  contentClassName?: string;
   /** How much of the first clipped row to leave peeking below the fold. */
   peek?: number;
   /** Fade height at each overflowing edge. */
@@ -27,6 +29,7 @@ export function ClippedScroll({
   maxHeight,
   children,
   className,
+  contentClassName,
   peek = 22,
   fade = 28,
   pad = 4,
@@ -95,7 +98,7 @@ export function ClippedScroll({
     >
       <div
         ref={scrollRef}
-        className={styles.scroll}
+        className={`${styles.scroll}${contentClassName ? ` ${contentClassName}` : ""}`}
         style={{ padding: pad }}
         onScroll={updateOverflow}
       >

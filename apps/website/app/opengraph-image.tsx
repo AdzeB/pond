@@ -14,8 +14,8 @@ export default function OpengraphImage() {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: "72px",
-        background: "#0a0a0a",
-        color: "#f5f5f5",
+        background: "#fcfcfc",
+        color: "#171717",
         fontFamily: "system-ui, sans-serif",
       }}
     >
@@ -23,13 +23,31 @@ export default function OpengraphImage() {
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "16px",
-          fontSize: "28px",
-          letterSpacing: "-0.01em",
+          justifyContent: "space-between",
         }}
       >
-        <PondMark />
-        <span style={{ fontWeight: 600 }}>Pond</span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+            fontSize: "28px",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          <PondMark />
+          <span style={{ fontWeight: 600 }}>Pond</span>
+        </div>
+        <span
+          style={{
+            fontSize: "18px",
+            color: "#8f8f8f",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
+        >
+          v0.1.0 · Mac · Open source
+        </span>
       </div>
       <div
         style={{
@@ -44,7 +62,9 @@ export default function OpengraphImage() {
             lineHeight: 1.05,
             letterSpacing: "-0.025em",
             fontWeight: 500,
-            maxWidth: "920px",
+            maxWidth: "980px",
+            display: "flex",
+            flexWrap: "wrap",
           }}
         >
           The web is a sea of information. Everyone deserves their own pond.
@@ -52,7 +72,7 @@ export default function OpengraphImage() {
         <div
           style={{
             fontSize: "26px",
-            color: "#a1a1a1",
+            color: "#6f6f6f",
             letterSpacing: "-0.005em",
             maxWidth: "880px",
           }}
@@ -69,13 +89,13 @@ function PondMark() {
   return (
     <svg width="40" height="40" viewBox="0 0 32 32" fill="none">
       <title>Pond</title>
-      <rect width="32" height="32" rx="7" fill="#f5f5f5" />
+      <rect width="32" height="32" rx="7" fill="#171717" />
       <circle
         cx="16"
         cy="16"
         r="6"
         fill="none"
-        stroke="#0a0a0a"
+        stroke="#fcfcfc"
         strokeWidth="2"
       />
       <circle
@@ -83,7 +103,7 @@ function PondMark() {
         cy="16"
         r="10"
         fill="none"
-        stroke="#0a0a0a"
+        stroke="#fcfcfc"
         strokeOpacity="0.5"
         strokeWidth="1"
       />
@@ -92,7 +112,7 @@ function PondMark() {
         cy="16"
         r="13.5"
         fill="none"
-        stroke="#0a0a0a"
+        stroke="#fcfcfc"
         strokeOpacity="0.25"
         strokeWidth="1"
       />

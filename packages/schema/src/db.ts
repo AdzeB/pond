@@ -35,6 +35,7 @@ export const OPS = [
   "harvest_metadata",
   "capture_tweet",
   "fetch_blobs",
+  "archive_page",
   "fetch_video_ytdlp",
   "ensure_poster",
   "fetch_avatar",

@@ -1,6 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import {
-  type ContextMenuTemplateItem,
   IPC,
   type MenuActionId,
   type RecentMenuEntry,
@@ -65,11 +64,6 @@ const api = {
 
   query(name: string, params?: unknown): Promise<unknown> {
     return ipcRenderer.invoke(IPC.query, name, params);
-  },
-
-  /** Resolves with the chosen item id, or null when the menu is dismissed. */
-  popupMenu(template: ContextMenuTemplateItem[]): Promise<string | null> {
-    return ipcRenderer.invoke(IPC.menuPopup, template);
   },
 
   /** Electron 41 removed File.path; resolve dropped/picked files here so main can read them without the bytes crossing IPC. */
@@ -256,6 +250,23 @@ const api = {
 
   governorResumeSource(source: string): Promise<{ ok: true }> {
     return ipcRenderer.invoke(IPC.governorResumeSource, source);
+  },
+
+  /** Fired when an archive webview guest tries to navigate off pond://; payload carries the guest webContents id and target URL. */
+  onArchiveNavigate(
+    cb: (payload: { guestId: number; url: string }) => void,
+  ): () => void {
+    const listener = (_: unknown, payload: { guestId: number; url: string }) =>
+      cb(payload);
+    ipcRenderer.on(IPC.archiveNavigate, listener);
+    return () => ipcRenderer.off(IPC.archiveNavigate, listener);
+  },
+
+  archiveBackfillStart(): Promise<{ ok: true; queued: number }> {
+    return ipcRenderer.invoke(IPC.archiveBackfillStart);
+  },
+  archiveSite(id: string): Promise<{ ok: boolean }> {
+    return ipcRenderer.invoke(IPC.archiveSite, id);
   },
 };
 

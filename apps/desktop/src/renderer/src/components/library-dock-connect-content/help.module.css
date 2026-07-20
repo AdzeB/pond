@@ -1,0 +1,22 @@
+/* Prose body shared by the connect and watch help drill-downs. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.body h2 {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ds-gray-12);
+}
+
+.body p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 20px;
+  color: var(--ds-gray-10);
+}

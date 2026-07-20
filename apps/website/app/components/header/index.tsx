@@ -2,6 +2,14 @@ import { IconGithub } from "@pond/icons/social-media";
 import { Wordmark } from "../_fragments/mark";
 import styles from "./styles.module.css";
 
+const NAV = [
+  { label: "Save", href: "#save" },
+  { label: "Browse", href: "#browse" },
+  { label: "Find", href: "#find" },
+  { label: "Own", href: "#own" },
+  { label: "FAQs", href: "#faqs" },
+] as const;
+
 export function Header() {
   return (
     <header className={styles.header}>
@@ -10,19 +18,26 @@ export function Header() {
           <Wordmark size={14} />
         </a>
         <nav className={styles.nav} aria-label="Primary">
-          <a className={styles["nav-link"]} href="#download">
-            Download
-          </a>
+          {NAV.map((item) => (
+            <a key={item.href} className={styles["nav-link"]} href={item.href}>
+              {item.label}
+            </a>
+          ))}
+        </nav>
+        <div className={styles.actions}>
           <a
             className={styles["nav-link"]}
             href="https://github.com/raphaelsalaja/pond"
             target="_blank"
             rel="noreferrer"
+            aria-label="GitHub"
           >
             <IconGithub width={14} height={14} fill="currentColor" />
-            <span>GitHub</span>
           </a>
-        </nav>
+          <a className={styles.cta} href="#get">
+            Early access
+          </a>
+        </div>
       </div>
     </header>
   );

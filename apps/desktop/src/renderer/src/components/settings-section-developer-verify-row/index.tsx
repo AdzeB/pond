@@ -44,7 +44,7 @@ export function VerifyRow() {
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <Button size="sm" disabled={busy} onClick={() => void verify()}>
-          {busy ? "Checking…" : "Run Check"}
+          {busy ? "Checking" : "Run Check"}
         </Button>
       </Settings.ItemControl>
     </>

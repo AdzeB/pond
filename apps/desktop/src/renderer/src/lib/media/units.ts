@@ -3,6 +3,7 @@ import {
   type ResolvedTheme,
   resolveCurrentTheme,
 } from "@/hooks/use-resolved-theme";
+import { isArchiveFile } from "@/lib/media/archive";
 import { buildPondUrl } from "@/lib/media/url";
 import type { Save, SaveFile } from "@/lib/types";
 import { getPrefsSnapshot } from "@/stores/prefs";
@@ -46,10 +47,11 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), and avatars. */
+  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), avatars, and site-archive files (rendered by the archive viewer). */
   const files = (save.files ?? []).filter(
     (f) =>
       f.kind !== "avatar" &&
+      !isArchiveFile(f) &&
       !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
       !isQuoteScreenshotKind(f.kind),
   );
@@ -212,6 +214,13 @@ function isVideoFile(file: SaveFile): boolean {
   if (file.kind === "video") return true;
   if (file.mimeType?.startsWith("video/") === true) return true;
   return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
+}
+
+/** Extension/mime only; kind stays out because tweet screenshots and posters are images too. */
+export function isImageFile(file: SaveFile): boolean {
+  const ext = file.path.split(".").pop()?.toLowerCase() ?? "";
+  if (IMAGE_EXT.test(ext)) return true;
+  return file.mimeType?.startsWith("image/") === true;
 }
 
 /** Broad category for the primary asset, used to color the type badge. */

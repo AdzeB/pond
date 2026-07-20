@@ -1,6 +1,7 @@
 import type { Op, Task, tasks } from "@pond/schema/db";
 import { sql } from "drizzle-orm";
 import { TransientError } from "./extractors/errors";
+import { runArchivePage } from "./workers/archive-page";
 import { runCaptureTweet } from "./workers/capture-tweet";
 import { runEnsurePoster } from "./workers/ensure-poster";
 import { runFetchAvatar } from "./workers/fetch-avatar";
@@ -16,6 +17,7 @@ export const PER_OP_CONCURRENCY: Record<Op, number> = {
   harvest_metadata: 3,
   capture_tweet: 3,
   fetch_blobs: 4,
+  archive_page: 1,
   fetch_video_ytdlp: 2,
   ensure_poster: 3,
   fetch_avatar: 4,
@@ -27,6 +29,8 @@ export const TASK_WATCHDOG_MS: Record<Op, number> = {
   harvest_metadata: 90_000,
   capture_tweet: 120_000,
   fetch_blobs: 5 * 60_000,
+  /** Crawls up to ARCHIVE_MAX_PAGES navigations in one attempt; headroom over CRAWL_BUDGET_MS covers the final flush + WARC persist. */
+  archive_page: 8 * 60_000,
   fetch_video_ytdlp: 10 * 60_000,
   ensure_poster: 60_000,
   fetch_avatar: 60_000,
@@ -66,6 +70,8 @@ export const WORKERS: Record<Op, Worker> = {
     }
   },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
+  archive_page: (saveId, payload, ctx) =>
+    runArchivePage(saveId, payload as { scope?: "page" | "site" }, ctx),
   fetch_video_ytdlp: (saveId, _payload, ctx) => runFetchVideoYtdlp(saveId, ctx),
   ensure_poster: (saveId) => runEnsurePoster(saveId),
   fetch_avatar: (saveId) => runFetchAvatar(saveId),
@@ -75,6 +81,7 @@ export const WORKERS: Record<Op, Worker> = {
 /** Cosmetic enhancer ops: when these exhaust retries the save still finalizes, unlike core ops whose final failure fails it. */
 export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
   "capture_tweet",
+  "archive_page",
   "ensure_poster",
   "fetch_avatar",
 ]);
@@ -95,7 +102,9 @@ export interface DueTask extends Task {
 
 /** Ops that lease a hidden scrape window; gated on per-source pause state. */
 export function isSourceTask(op: Op): boolean {
-  return op === "harvest_metadata" || op === "capture_tweet";
+  return (
+    op === "harvest_metadata" || op === "capture_tweet" || op === "archive_page"
+  );
 }
 
 /** Maps op to its `OPS` spec position; two variants for raw alias vs Drizzle column. */
@@ -104,10 +113,11 @@ export function opOrderCase(opCol: typeof tasks.op) {
     WHEN 'harvest_metadata' THEN 0
     WHEN 'capture_tweet' THEN 1
     WHEN 'fetch_blobs' THEN 2
-    WHEN 'fetch_video_ytdlp' THEN 3
-    WHEN 'ensure_poster' THEN 4
-    WHEN 'fetch_avatar' THEN 5
-    WHEN 'finalize' THEN 6
+    WHEN 'archive_page' THEN 3
+    WHEN 'fetch_video_ytdlp' THEN 4
+    WHEN 'ensure_poster' THEN 5
+    WHEN 'fetch_avatar' THEN 6
+    WHEN 'finalize' THEN 7
   END)`;
 }
 
@@ -116,9 +126,10 @@ export function opOrderCaseRaw(rawCol: string) {
     WHEN 'harvest_metadata' THEN 0
     WHEN 'capture_tweet' THEN 1
     WHEN 'fetch_blobs' THEN 2
-    WHEN 'fetch_video_ytdlp' THEN 3
-    WHEN 'ensure_poster' THEN 4
-    WHEN 'fetch_avatar' THEN 5
-    WHEN 'finalize' THEN 6
+    WHEN 'archive_page' THEN 3
+    WHEN 'fetch_video_ytdlp' THEN 4
+    WHEN 'ensure_poster' THEN 5
+    WHEN 'fetch_avatar' THEN 6
+    WHEN 'finalize' THEN 7
   END)`);
 }

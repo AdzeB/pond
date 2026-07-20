@@ -82,7 +82,7 @@ function ApplyRow() {
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <Button size="sm" onClick={() => void applyServer()} disabled={apiBusy}>
-          {apiBusy ? "Restarting…" : "Restart Server"}
+          {apiBusy ? "Restarting" : "Restart Server"}
         </Button>
       </Settings.ItemControl>
     </>

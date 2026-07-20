@@ -1,13 +1,24 @@
 import { TrayCard } from "@pond/ui";
 import { AskHistorySection } from "@/components/ask-bar/lib/history";
 import type { ViewMenuSection } from "@/components/library-dock/lib/types";
+import { AnalyticsDuplicateSection } from "@/components/library-dock-analytics-content/duplicate";
+import { AnalyticsRangeSection } from "@/components/library-dock-analytics-content/range";
+import { AnalyticsRenameSection } from "@/components/library-dock-analytics-content/rename";
+import { ConfirmSection } from "@/components/library-dock-confirm-content";
 import { ConnectSourceSection } from "@/components/library-dock-connect-content";
+import { ConnectHelpSection } from "@/components/library-dock-connect-content/help";
 import { ConnectWaitSection } from "@/components/library-dock-connect-content/wait";
 import { AccountDetailSection } from "@/components/library-dock-detail-content";
 import { FrequencySection } from "@/components/library-dock-detail-content/frequency";
 import { WatchDetailSection } from "@/components/library-dock-detail-content/watch";
+import { SelectionCopySection } from "@/components/library-dock-selection-content/copy";
+import { SelectionExportSection } from "@/components/library-dock-selection-content/export";
+import { SelectionRunSection } from "@/components/library-dock-selection-content/run";
+import { SelectionTagSection } from "@/components/library-dock-selection-content/tag";
 import { SourceNewSection } from "@/components/library-dock-source-new-content";
 import { WatchSourceSection } from "@/components/library-dock-watch-content";
+import { WatchHelpSection } from "@/components/library-dock-watch-content/help";
+import { WatchKindSection } from "@/components/library-dock-watch-content/kind";
 import { WatchTargetSection } from "@/components/library-dock-watch-content/target";
 import { DisplaySection } from "@/components/library-view-menu-display";
 import { LayoutSection } from "@/components/library-view-menu-layout";
@@ -30,13 +41,24 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element> = {
   display: DisplaySection,
   "search-help": SearchHelpSection,
   "connect-source": ConnectSourceSection,
+  "connect-help": ConnectHelpSection,
   "connect-wait": ConnectWaitSection,
   "watch-source": WatchSourceSection,
+  "watch-help": WatchHelpSection,
+  "watch-kind": WatchKindSection,
   "watch-target": WatchTargetSection,
   "account-detail": AccountDetailSection,
   "watch-detail": WatchDetailSection,
   "sync-frequency": FrequencySection,
   "source-new": SourceNewSection,
+  "analytics-range": AnalyticsRangeSection,
+  "analytics-rename": AnalyticsRenameSection,
+  "analytics-duplicate": AnalyticsDuplicateSection,
+  confirm: ConfirmSection,
+  "selection-run": SelectionRunSection,
+  "selection-tag": SelectionTagSection,
+  "selection-copy": SelectionCopySection,
+  "selection-export": SelectionExportSection,
 };
 
 export function OptionsContent({ section }: { section: ViewMenuSection }) {

@@ -8,9 +8,9 @@ import {
 import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
 import { Button, TrayCard } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
+import { openTrayConfirm } from "@/components/library-dock-confirm-content";
 import { openFrequencyPage } from "@/components/library-dock-detail-content/frequency";
 import {
   accountName,
@@ -74,8 +74,6 @@ function WatchDetail({
   const { source } = watch;
   const { runs } = useSyncHistory(source, 1, watch.id);
   const last = runs[0];
-  const [confirming, setConfirming] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const nickRef = useRef<HTMLInputElement>(null);
 
   const count = watch.sync?.knownCount ?? 0;
@@ -99,16 +97,17 @@ function WatchDetail({
     void navigate({ to: "/" });
   };
 
-  const stopWatching = async () => {
-    setRemoving(true);
-    try {
-      await window.pond.query("watches.remove", { watchId: watch.id });
-      onChanged();
-      setConfirming(false);
-      dock.closeViewMenu();
-    } finally {
-      setRemoving(false);
-    }
+  const confirmStopWatching = () => {
+    openTrayConfirm({
+      title: "Stop Watching",
+      description: `Pond stops checking ${watchName(watch)} for new posts. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`,
+      confirmLabel: "Stop Watching",
+      returnTo: "watch-detail",
+      onConfirm: async () => {
+        await window.pond.query("watches.remove", { watchId: watch.id });
+        onChanged();
+      },
+    });
   };
 
   /** The check rides on a public listing or a connected account's session. */
@@ -160,7 +159,7 @@ function WatchDetail({
 
         <div
           className={styles.row}
-          title="Read-only — Pond never posts or follows"
+          title="Read-only. Pond never posts or follows"
         >
           <span className={styles["row-icon"]}>
             <Key size={18} />
@@ -178,7 +177,7 @@ function WatchDetail({
           <span className={styles["row-icon"]}>
             <Clock size={18} />
           </span>
-          <span className={styles["row-label"]}>Check frequency</span>
+          <span className={styles["row-label"]}>Check Frequency</span>
           <span className={styles["row-value"]}>
             {frequency.label}
             <ChevronRight width={13} height={13} />
@@ -190,7 +189,7 @@ function WatchDetail({
             <span className={styles["row-icon"]}>
               <History size={18} />
             </span>
-            <span className={styles["row-label"]}>Last check</span>
+            <span className={styles["row-label"]}>Last Check</span>
             <span className={styles["row-value"]}>{formatClock(last.ts)}</span>
           </div>
         ) : null}
@@ -203,7 +202,7 @@ function WatchDetail({
           <span className={styles["row-icon"]}>
             <Grid size={18} />
           </span>
-          <span className={styles["row-label"]}>View items in library</span>
+          <span className={styles["row-label"]}>View Items in Library</span>
           <span className={styles["row-value"]}>
             <ChevronRight width={13} height={13} />
           </span>
@@ -215,9 +214,9 @@ function WatchDetail({
           variant="tertiary"
           size="lg"
           style={{ width: "100%" }}
-          onClick={() => setConfirming(true)}
+          onClick={confirmStopWatching}
         >
-          Stop Watching…
+          Stop Watching
         </Button>
         <TrayCard.Confirm
           onClick={(e) => {
@@ -237,16 +236,6 @@ function WatchDetail({
       {model.tone === "err" && status?.lastError ? (
         <p className={styles["error-line"]}>{status.lastError}</p>
       ) : null}
-
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={`Stop watching ${watchName(watch)}?`}
-        description={`Pond stops checking for new posts. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
-        confirmLabel="Stop Watching"
-        busy={removing}
-        onConfirm={() => void stopWatching()}
-      />
     </>
   );
 }

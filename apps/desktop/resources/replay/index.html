@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Archive</title>
+    <style>
+      html,
+      body {
+        height: 100%;
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+      replay-web-page {
+        display: block;
+        height: 100vh;
+      }
+    </style>
+    <script src="./ui.js"></script>
+  </head>
+  <body>
+    <script>
+      (async () => {
+        /* When the SW misses the replay iframe request this page gets re-served inside it; bail so it can't recurse. */
+        if (window.parent !== window) return;
+        const params = new URLSearchParams(location.search);
+        const source = params.get("source");
+        const url = params.get("url");
+        const coll = params.get("coll");
+        if (!source) return;
+        /* replay-web-page resolves SW registration before activation, so its iframe can race past the SW on cold start; pre-activate it here. serviceWorker.ready can't be used: its scope match is this page, which sits outside ./replay/. */
+        if ("serviceWorker" in navigator) {
+          try {
+            const reg = await navigator.serviceWorker.register(
+              "./replay/sw.js?serveIndex=1",
+              { scope: "./replay/" },
+            );
+            const sw = reg.active || reg.waiting || reg.installing;
+            if (sw && sw.state !== "activated") {
+              await new Promise((resolve) => {
+                const check = () => {
+                  if (sw.state === "activated" || sw.state === "redundant") {
+                    sw.removeEventListener("statechange", check);
+                    resolve();
+                  }
+                };
+                sw.addEventListener("statechange", check);
+                check();
+              });
+            }
+          } catch (err) {
+            console.error("replay sw pre-registration failed", err);
+          }
+        }
+        const el = document.createElement("replay-web-page");
+        el.setAttribute("source", source);
+        if (url) el.setAttribute("url", url);
+        /* wabac caches indexed collections by id; a fresh id per archive version keeps re-archived saves from replaying the stale index. */
+        if (coll) el.setAttribute("coll", coll);
+        el.setAttribute("embed", "replayonly");
+        document.body.appendChild(el);
+      })();
+    </script>
+  </body>
+</html>

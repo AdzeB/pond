@@ -1,4 +1,5 @@
 import type { BrowserWindow } from "electron";
+import log from "electron-log/main.js";
 import { sleep } from "./util";
 
 export function looksLikeAuthWall(currentUrl: string): boolean {
@@ -61,7 +62,16 @@ export async function navigateWithTimeout(
       cleanup();
       resolve(true);
     };
-    const onFail = () => {
+    const onFail = (
+      _e: unknown,
+      code: number,
+      desc: string,
+      failedUrl: string,
+      isMainFrame: boolean,
+    ) => {
+      /** Subframe misses (blocked trackers, dead ad iframes) and ERR_ABORTED from the page's own redirects don't fail the navigation. */
+      if (!isMainFrame || code === -3) return;
+      log.info("[pond scrape] nav load failed", { code, desc, failedUrl });
       cleanup();
       resolve(false);
     };
@@ -70,13 +80,23 @@ export async function navigateWithTimeout(
       wc.off("did-fail-load", onFail);
     };
     wc.once("did-finish-load", onDone);
-    wc.once("did-fail-load", onFail);
+    wc.on("did-fail-load", onFail);
   });
 
   /** loadURL can hang on stalled hosts; race the whole nav against a timeout and stop on miss. */
   const navPromise = wc.loadURL(url).then(
     () => finished,
-    () => false as const,
+    (err: unknown) => {
+      /** ERR_ABORTED means the page replaced the navigation (JS redirect, SPA takeover); wait for the successor load instead of failing. */
+      if (err instanceof Error && err.message.includes("ERR_ABORTED")) {
+        return finished;
+      }
+      log.info("[pond scrape] loadURL rejected", {
+        url,
+        err: err instanceof Error ? err.message : String(err),
+      });
+      return false as const;
+    },
   );
   const TIMEOUT = Symbol("nav-timeout");
   const result = await Promise.race([

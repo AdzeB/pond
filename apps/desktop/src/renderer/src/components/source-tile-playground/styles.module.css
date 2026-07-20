@@ -1,0 +1,195 @@
+.page {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+}
+
+.panel {
+  position: absolute;
+  top: 16px;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 248px;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-3);
+}
+
+.header {
+  position: relative;
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--ds-gray-3);
+  -webkit-app-region: drag;
+}
+
+.exit {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  color: var(--ds-gray-9);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-full, 99px);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+  /* The header is a drag region; the button must stay clickable. */
+  -webkit-app-region: no-drag;
+}
+
+.exit:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+
+.exit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ds-gray-9);
+}
+
+.groups {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 10px 20px;
+  overflow-y: auto;
+}
+
+.group {
+  margin-bottom: 14px;
+}
+
+.groupLabel {
+  padding: 6px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ds-gray-8);
+  text-transform: uppercase;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: var(--ds-radius-sm);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.item:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+
+.item[data-active] {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-4);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.hint {
+  padding: 2px 8px 0;
+  margin: 2px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ds-gray-9);
+}
+
+.stage {
+  position: absolute;
+  inset: 0 0 0 280px;
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 640px;
+  max-width: calc(100% - 48px);
+  height: max-content;
+  margin-block: 48px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sectionTitle {
+  padding-inline: 4px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
+}
+
+/* Same column count as the real sources grid so density reads true. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px 8px;
+  padding: 16px 12px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.grid[data-dense] {
+  gap: 6px 8px;
+}
+
+.specimen {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+  min-width: 0;
+  margin: 0;
+}
+
+.caption {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--ds-gray-8);
+  text-align: center;
+}

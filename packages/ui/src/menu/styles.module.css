@@ -10,6 +10,12 @@
   max-width: 512px;
 }
 
+/* Transition container per Base UI guidance: clip morphing content while the popup resizes. */
+.viewport {
+  position: relative;
+  overflow: clip;
+}
+
 .arrow {
   composes: arrow from "../shared/styles/popup/styles.module.css";
 }

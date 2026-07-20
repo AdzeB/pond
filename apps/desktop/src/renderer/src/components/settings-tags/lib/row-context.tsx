@@ -3,9 +3,11 @@
 
 import { normalizeLabelName } from "@pond/schema/label-name";
 import type { MenuItemSpec, RenderRowArgs } from "@pond/ui";
-import { createContext, use, useState } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { PromptDialog } from "@/components/prompt-dialog";
+import { useHotkey } from "@tanstack/react-hotkeys";
+import { createContext, use, useRef, useState } from "react";
+import { confirm } from "@/components/confirm-dialog";
+import { prompt } from "@/components/prompt-dialog";
+import { SpecContextMenu } from "@/components/spec-context-menu";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -14,11 +16,7 @@ import {
   buildTagGroupMenuItems,
   type TagGroupMenuActions,
 } from "@/components/tag-group-context-menu";
-import {
-  type NativeMenuItem,
-  showContextMenu,
-  toMenuSpecs,
-} from "@/lib/ui/native-menu";
+import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { useTagsTable } from "./context";
 import type { TagsRowData } from "./types";
 
@@ -50,15 +48,18 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
 
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(name);
-  const [merging, setMerging] = useState(false);
-  const [mergeTarget, setMergeTarget] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [confirmConvert, setConfirmConvert] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
 
   function startRename() {
     setRenameDraft(name);
     setRenaming(true);
   }
+
+  /** Scoped to the focused row so E only renames the row the user is on. */
+  useHotkey(SHORTCUTS["tags.rename"].keys, () => startRename(), {
+    target: rowRef,
+    enabled: !renaming,
+  });
 
   async function commitRename() {
     setRenaming(false);
@@ -73,12 +74,47 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
     await window.pond.query("tags.rename", { from: name, to: cleaned });
   }
 
-  async function commitMerge() {
-    const target = normalizeLabelName(mergeTarget);
-    setMerging(false);
-    setMergeTarget("");
+  async function commitMerge(raw: string) {
+    const target = normalizeLabelName(raw);
     if (!target || target.toLowerCase() === name.toLowerCase()) return;
     await window.pond.query("tags.merge", { from: name, to: target });
+  }
+
+  function confirmDelete() {
+    if (isGroup) {
+      confirm({
+        title: "Remove tag group?",
+        description: `"${name}" will be removed. The tags inside it stay in your library; they just won't belong to this group anymore.`,
+        confirmLabel: "Remove",
+        onConfirm: () => void window.pond.query("tagGroups.delete", { name }),
+      });
+      return;
+    }
+    confirm({
+      title: "Delete tag?",
+      description: `"${name}" will be removed from every save. This cannot be undone.`,
+      confirmLabel: "Delete",
+      onConfirm: () => void window.pond.query("tags.delete", { name }),
+    });
+  }
+
+  function confirmConvert() {
+    confirm({
+      title: "Convert to group?",
+      description: `"${name}" will become a label group. It can no longer be applied to saves directly, and the label will be removed from every save it's on.`,
+      confirmLabel: "Convert",
+      onConfirm: () => void window.pond.query("tags.convertToGroup", { name }),
+    });
+  }
+
+  function promptMerge() {
+    prompt({
+      title: `Merge "${name}"`,
+      description: `Every save tagged "${name}" will be re-tagged with the target, and "${name}" will be removed.`,
+      confirmLabel: "Merge",
+      placeholder: "Target tag name",
+      onConfirm: (value) => void commitMerge(value),
+    });
   }
 
   function setColor(color: string | null) {
@@ -88,11 +124,11 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
     });
   }
 
-  function buildMenuItems(): NativeMenuItem[] {
+  function buildMenuItems(): MenuItemSpec[] {
     if (isGroup) {
       const actions: TagGroupMenuActions = {
         onRename: startRename,
-        onRequestDelete: () => setConfirmDelete(true),
+        onRequestDelete: confirmDelete,
       };
       return buildTagGroupMenuItems(actions);
     }
@@ -112,17 +148,14 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
       onRemoveFromGroup: (g) =>
         void window.pond.query("tagGroups.removeTag", { tag: name, group: g }),
       onRename: startRename,
-      onConvertToGroup: () => setConfirmConvert(true),
-      onMerge: () => {
-        setMergeTarget("");
-        setMerging(true);
-      },
-      onDelete: () => setConfirmDelete(true),
+      onConvertToGroup: confirmConvert,
+      onMerge: promptMerge,
+      onDelete: confirmDelete,
     };
     return buildTagMenuItems(actions);
   }
 
-  const nativeItems = buildMenuItems();
+  const menuItems = buildMenuItems();
 
   const value: TagRowContextValue = {
     row,
@@ -132,71 +165,17 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
     commitRename: () => void commitRename(),
     cancelRename: () => setRenaming(false),
     setColor,
-    menuItems: toMenuSpecs(nativeItems),
+    menuItems,
   };
 
   return (
     <TagRowContext value={value}>
-      <div
-        {...rowProps}
-        title={name}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          void showContextMenu(nativeItems);
-        }}
-      >
-        {cells}
-      </div>
-
-      {isGroup ? (
-        <ConfirmDialog
-          open={confirmDelete}
-          onOpenChange={setConfirmDelete}
-          title="Remove tag group?"
-          description={`"${name}" will be removed. The tags inside it stay in your library; they just won't belong to this group anymore.`}
-          confirmLabel="Remove"
-          onConfirm={() => {
-            void window.pond.query("tagGroups.delete", { name });
-            setConfirmDelete(false);
-          }}
-        />
-      ) : (
-        <>
-          <PromptDialog
-            open={merging}
-            onOpenChange={setMerging}
-            title={`Merge "${name}" into…`}
-            description={`Every save tagged "${name}" will be re-tagged with the target, and "${name}" will be removed.`}
-            value={mergeTarget}
-            onValueChange={setMergeTarget}
-            onConfirm={() => void commitMerge()}
-            confirmLabel="Merge"
-            placeholder="Target tag name"
-          />
-          <ConfirmDialog
-            open={confirmDelete}
-            onOpenChange={setConfirmDelete}
-            title="Delete tag?"
-            description={`"${name}" will be removed from every save. This cannot be undone.`}
-            confirmLabel="Delete"
-            onConfirm={() => {
-              void window.pond.query("tags.delete", { name });
-              setConfirmDelete(false);
-            }}
-          />
-          <ConfirmDialog
-            open={confirmConvert}
-            onOpenChange={setConfirmConvert}
-            title="Convert to group?"
-            description={`"${name}" will become a label group. It can no longer be applied to saves directly, and the label will be removed from every save it's on.`}
-            confirmLabel="Convert"
-            onConfirm={() => {
-              void window.pond.query("tags.convertToGroup", { name });
-              setConfirmConvert(false);
-            }}
-          />
-        </>
-      )}
+      <SpecContextMenu buildItems={buildMenuItems}>
+        {/* Focus (via tabIndex -1) scopes the E rename hotkey to the clicked row. */}
+        <div {...rowProps} ref={rowRef} title={name} tabIndex={-1}>
+          {cells}
+        </div>
+      </SpecContextMenu>
     </TagRowContext>
   );
 }

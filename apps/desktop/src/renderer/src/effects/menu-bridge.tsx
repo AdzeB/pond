@@ -3,6 +3,7 @@ import {
   DEFAULT_SYSTEM_LIGHT_ID,
 } from "@pond/schema/db";
 import { useEffect } from "react";
+import { openShortcutsSheet } from "@/components/shortcuts-sheet";
 import {
   copyId,
   copyUrl,
@@ -14,15 +15,22 @@ import {
   trashSave,
   untrashSave,
 } from "@/lib/save/actions";
+import { confirmEmptyTrash } from "@/lib/save/empty-trash";
 import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
+import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
 import { dockMode } from "@/stores/dock-mode";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";
 import { tumbleToTrash } from "@/stores/trash-tumble";
-import { cycleLayout, setLayout } from "@/stores/view-store";
+import {
+  adjustZoom,
+  cycleLayout,
+  setLayout,
+  setZoom,
+} from "@/stores/view-store";
 
 export function MenuBridge() {
   const [, patchPreferences] = usePrefs("preferences");
@@ -50,6 +58,30 @@ export function MenuBridge() {
 
         case "view.layout.cycle":
           cycleLayout();
+          return;
+
+        case "view.zoom-in":
+          adjustZoom(20);
+          return;
+
+        case "view.zoom-out":
+          adjustZoom(-20);
+          return;
+
+        case "view.zoom-reset":
+          setZoom(ZOOM_DEFAULT);
+          return;
+
+        case "help.shortcuts":
+          openShortcutsSheet();
+          return;
+
+        case "dock.ask":
+          dockMode.open("ask");
+          return;
+
+        case "dock.search":
+          dockMode.open("search");
           return;
 
         case "view.layout.waterfall":
@@ -86,7 +118,7 @@ export function MenuBridge() {
           return;
 
         case "trash.empty":
-          void window.pond.query("saves.emptyTrash", {});
+          confirmEmptyTrash();
           return;
 
         case "trash.restore-all":
@@ -123,6 +155,14 @@ export function MenuBridge() {
 
         case "developer.tooltip-playground":
           void getAppRouter()?.navigate({ to: "/tooltip-playground" });
+          return;
+
+        case "developer.source-tile-playground":
+          void getAppRouter()?.navigate({ to: "/source-tile-playground" });
+          return;
+
+        case "developer.toast-playground":
+          void getAppRouter()?.navigate({ to: "/toast-playground" });
           return;
 
         case "save.new":

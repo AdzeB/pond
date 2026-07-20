@@ -30,7 +30,7 @@ export function DownloadingBadge({
       className={styles.downloading}
       role="status"
       aria-label={`${label} video`}
-      title={`${label} video…`}
+      title={`${label} video`}
     >
       <span className={styles["downloading-dot"]} aria-hidden="true" />
       {label}

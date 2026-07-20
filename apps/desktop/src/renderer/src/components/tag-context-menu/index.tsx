@@ -8,8 +8,9 @@ import {
   IconPencilOutline18 as Pencil,
   IconTrash2Outline18 as Trash,
 } from "@pond/icons/outline/18";
+import type { MenuItemSpec } from "@pond/ui";
 import type { TagGroupOption } from "@/components/settings-tags/lib/context";
-import type { NativeMenuItem } from "@/lib/ui/native-menu";
+import { shortcutGlyphs } from "@/lib/save/shortcuts";
 
 const ICON = { width: 16, height: 16 } as const;
 
@@ -25,47 +26,48 @@ export interface TagMenuActions {
   onDelete: () => void;
 }
 
-export function buildTagMenuItems(a: TagMenuActions): NativeMenuItem[] {
-  const items: NativeMenuItem[] = [];
+export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
+  const items: MenuItemSpec[] = [];
 
   items.push({
-    label: "Edit label name",
+    label: "Edit Label Name",
     icon: <Pencil {...ICON} />,
-    shortcut: ["E"],
-    onSelect: a.onRename,
+    shortcut: shortcutGlyphs("tags.rename"),
+    onClick: a.onRename,
   });
 
   const moveTargets = a.groups.filter((g) => g.name !== a.inGroup);
-  const moveSubmenu: NativeMenuItem[] = moveTargets.map((g) => ({
+  const moveSubmenu: MenuItemSpec[] = moveTargets.map((g) => ({
     label: g.name,
     icon: <Folder {...ICON} style={{ color: g.color }} />,
-    onSelect: () => a.onAddToGroup(g.name),
+    onClick: () => a.onAddToGroup(g.name),
   }));
   if (a.inGroup) {
     if (moveSubmenu.length > 0) moveSubmenu.push({ type: "separator" });
     moveSubmenu.push({
-      label: "Remove from group",
-      onSelect: () => a.onRemoveFromGroup(a.inGroup as string),
+      label: "Remove from Group",
+      onClick: () => a.onRemoveFromGroup(a.inGroup as string),
     });
   }
   if (moveSubmenu.length > 0) {
     items.push({
-      label: "Move to group",
+      type: "submenu",
+      label: "Move to Group",
       icon: <ArrowRight {...ICON} />,
-      submenu: moveSubmenu,
+      items: moveSubmenu,
     });
   }
 
   items.push({
-    label: "Convert to group",
+    label: "Convert to Group",
     icon: <Clover {...ICON} />,
-    onSelect: a.onConvertToGroup,
+    onClick: a.onConvertToGroup,
   });
 
   items.push({
-    label: "Merge into…",
+    label: "Merge Into",
     icon: <Merge {...ICON} />,
-    onSelect: a.onMerge,
+    onClick: a.onMerge,
   });
 
   items.push({ type: "separator" });
@@ -73,7 +75,7 @@ export function buildTagMenuItems(a: TagMenuActions): NativeMenuItem[] {
   items.push({
     label: "Delete",
     icon: <Trash {...ICON} />,
-    onSelect: a.onDelete,
+    onClick: a.onDelete,
   });
   return items;
 }

@@ -2,7 +2,6 @@ import { IconFolderOpenOutline18 as Folder } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { prettyPath } from "@/lib/util/pretty-path";
-import { pushToast } from "@/stores/toasts";
 import styles from "./styles.module.css";
 
 interface LibraryInfo {
@@ -31,15 +30,13 @@ export function LocationRow() {
       })) as ActionResult;
       if (!res.ok) throw new Error(res.reason);
     },
-    onError: (err) => {
-      pushToast(
-        err instanceof Error
-          ? `Couldn't open library: ${err.message}`
-          : "Couldn't open library.",
-        "error",
-      );
-    },
   });
+
+  const openError = openExisting.isError
+    ? openExisting.error instanceof Error
+      ? `Couldn't open library: ${openExisting.error.message}`
+      : "Couldn't open library."
+    : null;
 
   return (
     <div className={styles.card}>
@@ -50,6 +47,11 @@ export function LocationRow() {
         <span className={styles.name}>{info?.name ?? "Library"}</span>
         {info ? (
           <span className={styles.path}>{prettyPath(info.path)}</span>
+        ) : null}
+        {openError ? (
+          <span className={styles.error} role="alert">
+            {openError}
+          </span>
         ) : null}
       </div>
       <Button
@@ -63,7 +65,7 @@ export function LocationRow() {
         disabled={openExisting.isPending}
         onClick={() => openExisting.mutate()}
       >
-        Open Library…
+        Open Library
       </Button>
     </div>
   );

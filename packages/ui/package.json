@@ -32,7 +32,7 @@
     "react-dom": ">=19"
   },
   "dependencies": {
-    "@base-ui/react": "^1.5.0",
+    "@base-ui/react": "^1.6.0",
     "@pond/icons": "workspace:*",
     "@tanstack/react-router": "^1.170.8",
     "@tanstack/react-store": "^0.11.0",

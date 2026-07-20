@@ -1,6 +1,6 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { type ReactNode, useState } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { confirm } from "@/components/confirm-dialog";
 import { VerifyRow } from "@/components/settings-section-developer-verify-row";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 import { reloadPrefs } from "@/stores/prefs";
@@ -78,17 +78,6 @@ function BusyActionRow({
 }
 
 function FactoryResetRow() {
-  const [busy, setBusy] = useState(false);
-  const [confirm, setConfirm] = useState(false);
-  async function factoryReset() {
-    setBusy(true);
-    try {
-      await query("reset.factory");
-    } finally {
-      setBusy(false);
-      setConfirm(false);
-    }
-  }
   return (
     <>
       <Settings.ItemDetails>
@@ -98,18 +87,21 @@ function FactoryResetRow() {
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <Button variant="destructive" onClick={() => setConfirm(true)}>
-          Factory Reset…
+        <Button
+          variant="destructive"
+          onClick={() =>
+            confirm({
+              title: "Factory Reset?",
+              description:
+                "This wipes the SQLite index and prefs. Saves on disk stay put.",
+              confirmLabel: "Wipe & Restart",
+              busyLabel: "Resetting",
+              onConfirm: () => query("reset.factory").then(() => undefined),
+            })
+          }
+        >
+          Factory Reset
         </Button>
-        <ConfirmDialog
-          open={confirm}
-          onOpenChange={setConfirm}
-          title="Factory Reset?"
-          description="This wipes the SQLite index and prefs. Saves on disk stay put."
-          confirmLabel={busy ? "Resetting…" : "Wipe & Restart"}
-          busy={busy}
-          onConfirm={() => void factoryReset()}
-        />
       </Settings.ItemControl>
     </>
   );
@@ -162,7 +154,7 @@ export const developerSection = defineSection("developer", {
               title="Rescan Library"
               description="Re-read library files from disk and refresh the index."
               label="Rescan"
-              busyLabel="Rescanning…"
+              busyLabel="Rescanning"
               run={() => query("library.rescan")}
             />
           ),
@@ -173,6 +165,28 @@ export const developerSection = defineSection("developer", {
           title: "Verify Integrity",
           keywords: ["integrity", "check", "database"],
           render: () => <VerifyRow />,
+        },
+        {
+          control: "custom",
+          key: "archive-backfill",
+          title: "Archive Web Saves",
+          keywords: [
+            "archive",
+            "warc",
+            "replay",
+            "site",
+            "snapshot",
+            "backfill",
+          ],
+          render: () => (
+            <BusyActionRow
+              title="Archive Web Saves"
+              description="Capture a browsable archive of the saved page for web saves that don't have one yet."
+              label="Archive"
+              busyLabel="Queueing"
+              run={() => window.pond.archiveBackfillStart()}
+            />
+          ),
         },
       ],
     },
@@ -193,7 +207,7 @@ export const developerSection = defineSection("developer", {
                 </>
               }
               label="Clear Cache"
-              busyLabel="Clearing…"
+              busyLabel="Clearing"
               variant="ghost"
               run={() => query("reset.clearVideoCache")}
             />
@@ -213,7 +227,7 @@ export const developerSection = defineSection("developer", {
                 </>
               }
               label="Clear Thumbnails"
-              busyLabel="Clearing…"
+              busyLabel="Clearing"
               variant="ghost"
               run={() => query("reset.clearThumbnails")}
             />
@@ -234,7 +248,7 @@ export const developerSection = defineSection("developer", {
               title="Reset Preferences"
               description="Restore every Settings knob to its default."
               label="Reset"
-              busyLabel="Resetting…"
+              busyLabel="Resetting"
               variant="ghost"
               run={async () => {
                 await query("reset.preferences");

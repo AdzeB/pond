@@ -1,20 +1,62 @@
 @import "@pond/ui/reset.css";
 @import "@pond/theme/theme.css";
 
+/* Same files the desktop renderer ships, so app replicas render with identical metrics. */
+@font-face {
+  font-family: inter-variable;
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/fonts/inter-variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: jetbrains-mono;
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-600.woff2") format("woff2");
+}
+
 :root {
+  /** Warms the generated gray ramp toward the paper tones of Aave/Family/Lens. */
+  --ds-base-c: 0.0042;
+  --ds-base-h: 84;
+
   --site-font-sans:
     ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Inter,
     sans-serif;
-  --site-font-display: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+  --site-font-display: ui-rounded, var(--site-font-sans);
   --site-font-mono: var(--ds-font-mono);
 
-  --site-page-max: 1120px;
+  --site-page-max: 1200px;
   --site-page-padding: 24px;
-  --site-section-gap: 88px;
+  --site-section-gap: 128px;
 
-  --site-radius-card: 14px;
   --site-radius-pill: 999px;
-  --site-radius-chip: 6px;
+
+  --site-text-display: clamp(40px, 6vw, 72px);
+  --site-text-title: clamp(28px, 3.6vw, 44px);
+  --site-text-lead: clamp(15px, 1.7vw, 18px);
+  --site-text-body: 14px;
+  --site-text-small: 13px;
+  --site-text-micro: 11.5px;
 }
 
 html {
@@ -22,7 +64,7 @@ html {
   font-size: 16px;
   line-height: 1.5;
   color: var(--ds-gray-12);
-  color-scheme: light dark;
+  color-scheme: light;
   background: var(--ds-gray-1);
 }
 
@@ -49,6 +91,6 @@ body {
 @media (max-width: 720px) {
   :root {
     --site-page-padding: 20px;
-    --site-section-gap: 64px;
+    --site-section-gap: 72px;
   }
 }

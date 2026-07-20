@@ -18,6 +18,7 @@ import {
 } from "@pond/icons/providers";
 import type { IconComponent } from "@pond/icons/types";
 import type { AiProviderId } from "@pond/schema";
+import styles from "./styles.module.css";
 
 /** bundled/custom have no brand mark: on-device falls back to a computer, a user-supplied endpoint to a globe. */
 const LOGOS: Record<AiProviderId, IconComponent> = {
@@ -39,10 +40,20 @@ const LOGOS: Record<AiProviderId, IconComponent> = {
 
 interface Props {
   provider: AiProviderId;
+  /** Tile box size; the glyph is scaled inside it. */
   size?: number;
 }
 
 export function ProviderLogo({ provider, size = 16 }: Props) {
   const Logo = LOGOS[provider];
-  return <Logo width={size} height={size} />;
+  const glyph = Math.round(size * 0.62);
+  return (
+    <span
+      className={styles.tile}
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      <Logo width={glyph} height={glyph} />
+    </span>
+  );
 }

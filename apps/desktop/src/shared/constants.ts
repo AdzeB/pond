@@ -42,11 +42,13 @@ export const IPC = {
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
-  menuPopup: "pond:menu-popup",
   /** Fetched synchronously from the preload so pond-scoped renderer caches can namespace their keys before any module hydrates. */
   pondId: "pond:pond-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
+  archiveNavigate: "pond:archive-navigate",
+  archiveBackfillStart: "pond:archive-backfill-start",
+  archiveSite: "pond:archive-site",
 } as const;
 
 /** A recently-visited save surfaced in the native History menu. */
@@ -55,22 +57,17 @@ export interface RecentMenuEntry {
   title: string;
 }
 
-/** Serializable context-menu template sent renderer -> main; the renderer keeps the click handlers and main returns the chosen item's `id`. */
-export interface ContextMenuTemplateItem {
-  id?: string;
-  type?: "normal" | "separator" | "submenu" | "checkbox";
-  label?: string;
-  enabled?: boolean;
-  checked?: boolean;
-  accelerator?: string;
-  submenu?: ContextMenuTemplateItem[];
-}
-
 export type MenuActionId =
   | "history.back"
   | "history.forward"
   | "view.inspector.toggle"
   | "view.layout.cycle"
+  | "view.zoom-in"
+  | "view.zoom-out"
+  | "view.zoom-reset"
+  | "dock.ask"
+  | "dock.search"
+  | "help.shortcuts"
   | "view.layout.waterfall"
   | "view.layout.grid"
   | "view.layout.justified"
@@ -100,4 +97,9 @@ export type MenuActionId =
   | "developer.restart-api"
   | "developer.open-logs"
   | "developer.ipc-inspector"
-  | "developer.dock-playground";
+  | "developer.dock-playground"
+  | "developer.saves-playground"
+  | "developer.dock-merge-playground"
+  | "developer.tooltip-playground"
+  | "developer.toast-playground"
+  | "developer.source-tile-playground";

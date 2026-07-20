@@ -4,6 +4,7 @@ import { WelcomeEmpty } from "@/components/library-empty";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useDetailRouteSync } from "@/hooks/use-detail-route";
+import { useGridHotkeys } from "@/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/hooks/use-library-state";
 import { libraryViewContext } from "@/stores/library-view-context";
 
@@ -15,6 +16,7 @@ export function LibraryView() {
     data.mode,
     data.sourceFilter,
   );
+  useGridHotkeys(data.filteredIds);
 
   /** Mirrors the resolved view into a lightweight store so the global dock can act on the selection without recomputing the narrowing pipeline. */
   useEffect(() => {

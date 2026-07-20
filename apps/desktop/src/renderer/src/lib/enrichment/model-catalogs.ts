@@ -55,7 +55,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
   models: [
     {
       id: "Xenova/all-MiniLM-L6-v2",
-      name: "all-MiniLM-L6-v2",
+      name: "MiniLM L6 v2",
       group: "Sentence Transformers",
       speed: 5,
       quality: 3,
@@ -70,7 +70,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/all-MiniLM-L12-v2",
-      name: "all-MiniLM-L12-v2",
+      name: "MiniLM L12 v2",
       group: "Sentence Transformers",
       speed: 4,
       quality: 3,
@@ -85,7 +85,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/all-mpnet-base-v2",
-      name: "all-mpnet-base-v2",
+      name: "MPNet Base v2",
       group: "Sentence Transformers",
       speed: 2,
       quality: 4,
@@ -100,7 +100,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/paraphrase-multilingual-MiniLM-L12-v2",
-      name: "paraphrase-multilingual-MiniLM-L12-v2",
+      name: "Multilingual MiniLM L12",
       group: "Sentence Transformers",
       speed: 3,
       quality: 3,
@@ -116,7 +116,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/bge-small-en-v1.5",
-      name: "bge-small-en-v1.5",
+      name: "BGE Small v1.5",
       group: "BAAI · BGE",
       speed: 4,
       quality: 4,
@@ -131,7 +131,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/bge-base-en-v1.5",
-      name: "bge-base-en-v1.5",
+      name: "BGE Base v1.5",
       group: "BAAI · BGE",
       speed: 2,
       quality: 5,
@@ -146,7 +146,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/gte-small",
-      name: "gte-small",
+      name: "GTE Small",
       group: "Alibaba · GTE",
       speed: 4,
       quality: 4,
@@ -161,7 +161,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/gte-base",
-      name: "gte-base",
+      name: "GTE Base",
       group: "Alibaba · GTE",
       speed: 2,
       quality: 4,
@@ -176,7 +176,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/multilingual-e5-small",
-      name: "multilingual-e5-small",
+      name: "Multilingual E5 Small",
       group: "intfloat · E5",
       speed: 3,
       quality: 3,
@@ -193,7 +193,7 @@ export const EMBEDDING_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/multilingual-e5-base",
-      name: "multilingual-e5-base",
+      name: "Multilingual E5 Base",
       group: "intfloat · E5",
       speed: 2,
       quality: 4,
@@ -216,7 +216,7 @@ export const CAPTION_CATALOG: ModelCatalog = {
   models: [
     {
       id: "onnx-community/Florence-2-base-ft",
-      name: "Florence-2-base-ft",
+      name: "Florence-2 Base",
       group: "Microsoft · Florence-2",
       speed: 4,
       quality: 4,
@@ -229,22 +229,8 @@ export const CAPTION_CATALOG: ModelCatalog = {
       summary: "Default. Fine-tuned base model with good captions and OCR.",
     },
     {
-      id: "onnx-community/Florence-2-base",
-      name: "Florence-2-base",
-      group: "Microsoft · Florence-2",
-      speed: 4,
-      quality: 3,
-      meta: "270 MB",
-      specs: [
-        { label: "Size", value: "~270 MB" },
-        { label: "Tasks", value: "Caption + OCR" },
-        { label: "Tuning", value: "Base" },
-      ],
-      summary: "Base pretrained model. Rougher than the fine-tuned variant.",
-    },
-    {
       id: "onnx-community/Florence-2-large-ft",
-      name: "Florence-2-large-ft",
+      name: "Florence-2 Large",
       group: "Microsoft · Florence-2",
       speed: 2,
       quality: 5,
@@ -256,20 +242,6 @@ export const CAPTION_CATALOG: ModelCatalog = {
       ],
       summary: "Best quality. Large download and slow first run.",
     },
-    {
-      id: "onnx-community/Florence-2-large",
-      name: "Florence-2-large",
-      group: "Microsoft · Florence-2",
-      speed: 2,
-      quality: 4,
-      meta: "770 MB",
-      specs: [
-        { label: "Size", value: "~770 MB" },
-        { label: "Tasks", value: "Caption + OCR" },
-        { label: "Tuning", value: "Base" },
-      ],
-      summary: "Large base model. Heavy; prefer the fine-tuned variant.",
-    },
   ],
 };
 
@@ -279,7 +251,7 @@ export const CLIP_CATALOG: ModelCatalog = {
   models: [
     {
       id: "Xenova/clip-vit-base-patch32",
-      name: "clip-vit-base-patch32",
+      name: "CLIP ViT-B/32",
       group: "OpenAI · CLIP",
       speed: 5,
       quality: 3,
@@ -294,7 +266,7 @@ export const CLIP_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/clip-vit-base-patch16",
-      name: "clip-vit-base-patch16",
+      name: "CLIP ViT-B/16",
       group: "OpenAI · CLIP",
       speed: 3,
       quality: 4,
@@ -308,7 +280,7 @@ export const CLIP_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/clip-vit-large-patch14",
-      name: "clip-vit-large-patch14",
+      name: "CLIP ViT-L/14",
       group: "OpenAI · CLIP",
       speed: 2,
       quality: 5,
@@ -329,7 +301,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
   models: [
     {
       id: "Xenova/whisper-tiny",
-      name: "whisper-tiny",
+      name: "Whisper Tiny",
       group: "OpenAI · Whisper",
       speed: 5,
       quality: 2,
@@ -344,11 +316,11 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/whisper-tiny.en",
-      name: "whisper-tiny.en",
+      name: "Whisper Tiny",
       group: "OpenAI · Whisper",
       speed: 5,
       quality: 2,
-      meta: "40 MB",
+      meta: "English · 40 MB",
       specs: [
         { label: "Size", value: "~40 MB" },
         { label: "Parameters", value: "39M" },
@@ -359,7 +331,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/whisper-base",
-      name: "whisper-base",
+      name: "Whisper Base",
       group: "OpenAI · Whisper",
       speed: 4,
       quality: 3,
@@ -374,11 +346,11 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/whisper-base.en",
-      name: "whisper-base.en",
+      name: "Whisper Base",
       group: "OpenAI · Whisper",
       speed: 4,
       quality: 3,
-      meta: "80 MB",
+      meta: "English · 80 MB",
       specs: [
         { label: "Size", value: "~80 MB" },
         { label: "Parameters", value: "74M" },
@@ -389,7 +361,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/whisper-small",
-      name: "whisper-small",
+      name: "Whisper Small",
       group: "OpenAI · Whisper",
       speed: 2,
       quality: 4,
@@ -404,11 +376,11 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
     {
       id: "Xenova/whisper-small.en",
-      name: "whisper-small.en",
+      name: "Whisper Small",
       group: "OpenAI · Whisper",
       speed: 2,
       quality: 4,
-      meta: "250 MB",
+      meta: "English · 250 MB",
       specs: [
         { label: "Size", value: "~250 MB" },
         { label: "Parameters", value: "244M" },

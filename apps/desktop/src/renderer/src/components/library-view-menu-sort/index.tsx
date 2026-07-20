@@ -5,7 +5,6 @@ import {
   IconCalendarFill18 as DateIcon,
   IconFileFill18 as FileIcon,
 } from "@pond/icons/fill/18";
-import { IconChevronLeftOutline12 as BackIcon } from "@pond/icons/outline/12";
 import { TrayCard } from "@pond/ui";
 import { motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useId } from "react";
@@ -89,13 +88,12 @@ export function SortSection() {
 
   return (
     <>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>Sort Library</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Pick which detail your library is ordered by, and flip the direction
-          to show the newest, largest, or first alphabetically at the top.
+          Pick which detail orders your library.
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.groups}>
@@ -173,16 +171,9 @@ export function SortGroupSection({ group }: { group: SortGroupId }) {
 
   return (
     <>
-      <button
-        type="button"
-        aria-label="Back"
-        className={styles.back}
-        onClick={() => dock.openViewMenu("sort")}
-      >
-        <BackIcon strokeWidth={2} />
-      </button>
       <TrayCard.Header>
-        <TrayCard.Title>{spec.label}</TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu("sort")} />
+        <TrayCard.Title position="center">{spec.label}</TrayCard.Title>
         <TrayCard.Separator />
       </TrayCard.Header>
       <div className={styles.rows}>

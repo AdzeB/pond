@@ -27,7 +27,6 @@ function RootComponent() {
   return (
     <>
       <Outlet />
-      <Tray.Navigation />
       <Tray.Library />
       <SaveDetailModal />
       <SettingsModal />

@@ -13,18 +13,17 @@ export function SearchHelpSection() {
 
   return (
     <>
-      <TrayCard.Back
-        aria-label="Back to search"
-        onClick={() => dock.openSearch()}
-      />
-      <TrayCard.Close />
       <TrayCard.Header>
-        <TrayCard.Title>Search Help</TrayCard.Title>
+        <TrayCard.Back
+          aria-label="Back to search"
+          onClick={() => dock.openSearch()}
+        />
+        <TrayCard.Title position="center">Search Help</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
           Plain words match titles, notes, and captions. Add key:value filters
-          to narrow things down — combine as many as you need, and press Esc to
-          clear.
+          to narrow down.
         </TrayCard.Description>
       </TrayCard.Header>
       <ClippedScroll maxHeight={300} className={styles.list}>

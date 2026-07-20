@@ -16,13 +16,24 @@ export type DockView =
   | "sort-file"
   | "display"
   | "connect-source"
+  | "connect-help"
   | "connect-wait"
   | "watch-source"
+  | "watch-help"
+  | "watch-kind"
   | "watch-target"
   | "account-detail"
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
+  | "analytics-range"
+  | "analytics-rename"
+  | "analytics-duplicate"
+  | "confirm"
+  | "selection-run"
+  | "selection-tag"
+  | "selection-copy"
+  | "selection-export"
   | "nav";
 
 /** Includes drill-down subviews (sort groups, search help, ask history) so they render through the same registry and swap transition. */
@@ -37,13 +48,24 @@ export type ViewMenuSection =
   | "display"
   | "search-help"
   | "connect-source"
+  | "connect-help"
   | "connect-wait"
   | "watch-source"
+  | "watch-help"
+  | "watch-kind"
   | "watch-target"
   | "account-detail"
   | "watch-detail"
   | "sync-frequency"
-  | "source-new";
+  | "source-new"
+  | "analytics-range"
+  | "analytics-rename"
+  | "analytics-duplicate"
+  | "confirm"
+  | "selection-run"
+  | "selection-tag"
+  | "selection-copy"
+  | "selection-export";
 
 export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "ask-history",
@@ -56,13 +78,33 @@ export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "display",
   "search-help",
   "connect-source",
+  "connect-help",
   "connect-wait",
   "watch-source",
+  "watch-help",
+  "watch-kind",
   "watch-target",
   "account-detail",
   "watch-detail",
   "sync-frequency",
   "source-new",
+  "analytics-range",
+  "analytics-rename",
+  "analytics-duplicate",
+  "confirm",
+  "selection-run",
+  "selection-tag",
+  "selection-copy",
+  "selection-export",
+];
+
+/** Card modes opened from the selection pill; they must outrank the selection in the pill's priority so drilling in doesn't bounce back. */
+export const SELECTION_CARD_MODES: readonly ViewMenuSection[] = [
+  "confirm",
+  "selection-run",
+  "selection-tag",
+  "selection-copy",
+  "selection-export",
 ];
 
 export function isViewMenu(view: DockView): view is ViewMenuSection {

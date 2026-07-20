@@ -1,3 +1,4 @@
+import { isImageFile, pickPrimaryFile } from "@/lib/media/units";
 import {
   trashSave as applyTrash,
   untrashSave as applyUntrash,
@@ -128,12 +129,20 @@ export async function refreshSaveMetadata(save: Save): Promise<void> {
   await window.pond.refreshSave(save.id);
 }
 
+/** Index of the file "Copy Image" targets; null (e.g. videos, docs, link-only saves) means the item should not be offered. */
+export function copyableImageIndex(save: Save): number | null {
+  const cover = save.files[save.coverIndex ?? 0];
+  if (cover && isImageFile(cover)) return save.coverIndex ?? 0;
+  /** Falls back to the primary visual (e.g. tweet screenshot); never avatars or video posters. */
+  const primary = pickPrimaryFile(save);
+  if (primary && isImageFile(primary)) return save.files.indexOf(primary);
+  return null;
+}
+
 export async function copyImage(save: Save): Promise<void> {
-  if (save.files.length === 0) return;
-  await window.pond.query("saves.copyImage", {
-    id: save.id,
-    fileIndex: save.coverIndex ?? 0,
-  });
+  const fileIndex = copyableImageIndex(save);
+  if (fileIndex == null) return;
+  await window.pond.query("saves.copyImage", { id: save.id, fileIndex });
 }
 
 export function copyTags(save: Save): void {

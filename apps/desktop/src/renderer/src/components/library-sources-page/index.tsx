@@ -1,10 +1,15 @@
 import type { Source } from "@pond/schema/db";
-import { Button } from "@pond/ui";
+import { Button, type MenuItemSpec } from "@pond/ui";
 import React, { useEffect, useState } from "react";
-import { cardModel } from "@/components/library-sync-monitor/lib/helpers";
-import { useAccounts } from "@/hooks/use-accounts";
-import { useWatches } from "@/hooks/use-watches";
+import {
+  type CardModel,
+  cardModel,
+} from "@/components/library-sync-monitor/lib/helpers";
+import { SpecContextMenu } from "@/components/spec-context-menu";
+import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
+import { useWatches, type WatchRow } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
+import { getAppRouter } from "@/lib/ui/app-router";
 import {
   connectFlow,
   useConnectedBefore,
@@ -12,15 +17,56 @@ import {
 } from "@/stores/connect-flow";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
+import { setSearchInput } from "@/stores/view-store";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
+import { buildAccountMenu } from "./lib/account-menu";
 import {
   accountName,
   accountSub,
   itemCount,
+  syncFraction,
   watchName,
   watchSub,
 } from "./lib/helpers";
 import styles from "./styles.module.css";
+
+function viewItemsFor(id: string): void {
+  setSearchInput([{ field: "account", operator: "eq", value: id }], "");
+  void getAppRouter()?.navigate({ to: "/" });
+}
+
+function buildAccountTileMenu(
+  account: AccountRow,
+  model: CardModel,
+): MenuItemSpec[] {
+  return [
+    {
+      label: "Sync Now",
+      disabled: !(model.connected && model.tone !== "run"),
+      onClick: () => void window.pond.syncRunNow(account.id),
+    },
+    {
+      label: "View Items in Library",
+      onClick: () => viewItemsFor(account.id),
+    },
+    { type: "separator" },
+    ...buildAccountMenu(account, model),
+  ];
+}
+
+function buildWatchTileMenu(watch: WatchRow, model: CardModel): MenuItemSpec[] {
+  return [
+    {
+      label: "Check Now",
+      disabled: model.tone === "run",
+      onClick: () => void window.pond.syncRunNow(watch.id),
+    },
+    {
+      label: "View Items in Library",
+      onClick: () => viewItemsFor(watch.id),
+    },
+  ];
+}
 
 export function SourcesPage() {
   const { accounts, refetch } = useAccounts();
@@ -123,7 +169,8 @@ export function SourcesPage() {
         {accounts.length > 0 || watches.length > 0 ? (
           <div className={styles["tile-grid"]}>
             {accounts.map((account) => {
-              const model = cardModel(byAccount[account.id]);
+              const status = byAccount[account.id];
+              const model = cardModel(status);
               return (
                 <SourceTile
                   key={account.id}
@@ -133,12 +180,15 @@ export function SourcesPage() {
                   sub={accountSub(account, model)}
                   value={itemCount(account.sync?.knownCount ?? 0)}
                   tone={model.tone}
+                  progress={syncFraction(model.tone, status)}
                   onOpen={() => sourceDetail.openAccount(account.id)}
+                  menu={() => buildAccountTileMenu(account, model)}
                 />
               );
             })}
             {watches.map((watch) => {
-              const model = cardModel(byAccount[watch.id]);
+              const status = byAccount[watch.id];
+              const model = cardModel(status);
               return (
                 <SourceTile
                   key={watch.id}
@@ -148,7 +198,9 @@ export function SourcesPage() {
                   sub={watchSub(watch, model)}
                   value={itemCount(watch.sync?.knownCount ?? 0)}
                   tone={model.tone}
+                  progress={syncFraction(model.tone, status)}
                   onOpen={() => sourceDetail.openWatch(watch.id)}
+                  menu={() => buildWatchTileMenu(watch, model)}
                 />
               );
             })}
@@ -164,14 +216,17 @@ export function SourcesPage() {
   );
 }
 
-function SourceTile({
+/** Exported for the source tile playground; the page is its only production caller. */
+export function SourceTile({
   source,
   avatarUrl,
   name,
   sub,
   value,
   tone,
+  progress = null,
   onOpen,
+  menu,
 }: {
   source: Source;
   avatarUrl: string | null | undefined;
@@ -179,7 +234,10 @@ function SourceTile({
   sub: string;
   value: string;
   tone: ReturnType<typeof cardModel>["tone"];
+  /** 0..1 while syncing with a known total; null when indeterminate or resting. */
+  progress?: number | null;
   onOpen: () => void;
+  menu?: () => MenuItemSpec[];
 }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const pfp = avatarUrl && avatarUrl !== failedUrl ? avatarUrl : null;
@@ -189,13 +247,31 @@ function SourceTile({
   const warn = tone === "err" || tone === "paused";
   const line = tone === "run" || warn ? sub : value;
 
-  return (
+  /** Broken or in-flight artwork drains to grayscale; syncing pours color back in. */
+  const drained = tone === "run" || warn;
+  const artSrc = pfp ?? logo ?? undefined;
+  const artVariant = pfp ? "account" : "source";
+
+  const wipe =
+    tone === "run" && artSrc ? (
+      <img
+        src={artSrc}
+        alt=""
+        className={styles.wipe}
+        referrerPolicy="no-referrer"
+        data-variant={artVariant}
+        data-pulse={progress == null ? "" : undefined}
+        style={
+          progress != null
+            ? ({ "--sources-wipe-p": progress } as React.CSSProperties)
+            : undefined
+        }
+      />
+    ) : null;
+
+  const tile = (
     <button type="button" className={styles.tile} onClick={onOpen}>
-      <span
-        className={styles.cover}
-        data-running={tone === "run" || undefined}
-        data-pfp={pfp ? "" : undefined}
-      >
+      <span className={styles.cover}>
         {pfp ? (
           <React.Fragment>
             <img
@@ -205,7 +281,9 @@ function SourceTile({
               referrerPolicy="no-referrer"
               onError={() => setFailedUrl(pfp)}
               data-variant="account"
+              data-drained={drained || undefined}
             />
+            {wipe}
             <img
               width={16}
               height={16}
@@ -215,14 +293,18 @@ function SourceTile({
             />
           </React.Fragment>
         ) : (
-          <img
-            width={16}
-            height={16}
-            src={logo ?? undefined}
-            alt=""
-            className={styles.image}
-            data-variant="source"
-          />
+          <React.Fragment>
+            <img
+              width={16}
+              height={16}
+              src={logo ?? undefined}
+              alt=""
+              className={styles.image}
+              data-variant="source"
+              data-drained={drained || undefined}
+            />
+            {wipe}
+          </React.Fragment>
         )}
       </span>
       <span className={styles["tile-name"]}>{name}</span>
@@ -234,4 +316,7 @@ function SourceTile({
       </span>
     </button>
   );
+
+  if (!menu) return tile;
+  return <SpecContextMenu buildItems={menu}>{tile}</SpecContextMenu>;
 }

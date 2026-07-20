@@ -24,7 +24,6 @@ import { SkillDialog } from "@/components/skill-dialog";
 import { useSaves } from "@/hooks/use-saves";
 import { clearAsk, useAskTurns } from "@/stores/ask-store";
 import { usePrefs } from "@/stores/prefs";
-import { primarySelection } from "@/stores/selection";
 import { ComposerToolbar } from "./lib/composer-toolbar";
 import {
   $collectMentionIds,
@@ -190,8 +189,6 @@ function AskField({
     queueMicrotask(() => editor.focus());
   }, [onClear, editor, removePendingImage]);
 
-  const openSave = useCallback((id: string) => primarySelection.set(id), []);
-
   return (
     <TrayCard.Root
       className={styles.card}
@@ -203,33 +200,24 @@ function AskField({
           e.preventDefault();
       }}
     >
-      {hasTurns ? (
-        <>
-          <TrayCard.Action
-            position="start"
-            aria-label="New chat"
-            onClick={newChat}
-          >
-            <NewChat width={12} height={12} />
-          </TrayCard.Action>
-          <TrayCard.Close />
-          <TrayCard.Header position="center">
-            <TrayCard.Title>Chat</TrayCard.Title>
-          </TrayCard.Header>
-        </>
-      ) : (
-        <>
-          <TrayCard.Close />
-          <TrayCard.Header position="center">
-            <TrayCard.Title>Ask Anything</TrayCard.Title>
-            <TrayCard.Separator />
-            <TrayCard.Description>
-              Answers come from your own library. Mix plain words with / for
-              skills, @ for saves, # for tags, or drop in an image.
-            </TrayCard.Description>
-          </TrayCard.Header>
-        </>
-      )}
+      <TrayCard.Header>
+        <TrayCard.Action
+          position="start"
+          aria-label="New chat"
+          onClick={newChat}
+        >
+          <NewChat width={12} height={12} />
+        </TrayCard.Action>
+        <TrayCard.Title position="center">Chat</TrayCard.Title>
+        <TrayCard.Close />
+        <TrayCard.Separator />
+        {!hasTurns ? (
+          <TrayCard.Description>
+            Answers come from your library. Use / for skills, @ for saves, # for
+            tags.
+          </TrayCard.Description>
+        ) : null}
+      </TrayCard.Header>
 
       {hasTurns ? (
         <MessageScroller.Provider autoScroll>
@@ -251,7 +239,6 @@ function AskField({
                   >
                     <TurnView
                       turn={turn}
-                      onOpenSave={openSave}
                       onRetry={
                         i === turns.length - 1 &&
                         turn.status === "error" &&
@@ -305,8 +292,8 @@ function AskField({
             placeholder={
               <span className={styles.placeholder}>
                 {hasTurns
-                  ? "Ask a follow-up…"
-                  : "Ask anything, / for skills, @ for context…"}
+                  ? "Ask a follow-up"
+                  : "Ask anything, / for skills, @ for context"}
               </span>
             }
             ErrorBoundary={LexicalErrorBoundary}

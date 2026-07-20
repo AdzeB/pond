@@ -1,6 +1,7 @@
+import { existsSync } from "node:fs";
 import { open, stat } from "node:fs/promises";
 import { extname, join, normalize, resolve } from "node:path";
-import { net, protocol } from "electron";
+import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
@@ -16,6 +17,29 @@ const ONE_YEAR_SECONDS = 31_536_000;
 const META_HOST = "_meta";
 const META_DIR = "_meta";
 
+/** Hosts the replayweb.page viewer for the archive webview. */
+const REPLAY_HOST = "_replay";
+/**
+ * sw.js is exposed under replay/ so its scope excludes index.html; a scope-wide worker would hijack viewer reloads with the full ReplayWeb.page app.
+ */
+const REPLAY_ASSETS = new Map([
+  ["index.html", "index.html"],
+  ["ui.js", "ui.js"],
+  ["replay/ui.js", "ui.js"],
+  ["replay/sw.js", "sw.js"],
+]);
+
+function replayAssetsDir(): string | null {
+  const roots = [
+    process.resourcesPath ? join(process.resourcesPath, "replay") : "",
+    join(app.getAppPath(), "resources", "replay"),
+  ].filter(Boolean);
+  for (const root of roots) {
+    if (existsSync(join(root, "index.html"))) return root;
+  }
+  return null;
+}
+
 export function registerScheme() {
   protocol.registerSchemesAsPrivileged([
     {
@@ -27,6 +51,8 @@ export function registerScheme() {
         stream: true,
         /** Allow cross-origin reads (ACAO header below) so the renderer can fetch item bytes. */
         corsEnabled: true,
+        /** wabac.js replays archives through a service worker registered from pond://_replay. */
+        allowServiceWorkers: true,
       },
     },
   ]);
@@ -164,6 +190,15 @@ function resolveTarget(
   if (host === META_HOST) {
     const base = join(libraryRoot(), META_DIR);
     return { resolved: resolve(join(base, file)), prefix: normalize(base) };
+  }
+  if (host === REPLAY_HOST) {
+    const base = replayAssetsDir();
+    /** Allowlist beats prefix checks here; the viewer only ever needs these files. */
+    const asset = base ? REPLAY_ASSETS.get(file) : undefined;
+    if (!base || !asset) {
+      return { resolved: "", prefix: "\u0000" };
+    }
+    return { resolved: join(base, asset), prefix: normalize(base) };
   }
   return {
     resolved: resolve(itemFile(host, file)),

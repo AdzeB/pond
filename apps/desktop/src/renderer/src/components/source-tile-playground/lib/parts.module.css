@@ -1,0 +1,117 @@
+/* Mirrors the shipping tile's metrics so proposals compare against the real thing, not a redraw. */
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 6px 8px;
+  font: inherit;
+  text-align: center;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: 14px;
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.tile:hover {
+  background: var(--ds-gray-2);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--ds-focus-outline);
+  outline-offset: 2px;
+}
+
+.cover {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 6px;
+}
+
+.frame {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pfp {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 100%;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.appicon {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--ds-radius-app-icon);
+  corner-shape: superellipse(var(--ds-superellipse));
+  box-shadow: var(--ds-shadow-2);
+}
+
+/* The wipe variant drains broken or in-flight artwork; the color overlay restores it with progress. */
+.pfp[data-drained],
+.appicon[data-drained] {
+  opacity: 0.92;
+  filter: grayscale(1);
+}
+
+.brand {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: 2px solid var(--ds-gray-1);
+  background: var(--ds-gray-1);
+  border-radius: 6px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.sub {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.sub[data-tone="warn"] {
+  color: var(--ds-yellow-11);
+}
+
+.sub[data-tone="err"] {
+  color: var(--ds-red-11);
+}
+
+.sub[data-tone="run"] {
+  color: var(--ds-accent-11);
+}
+
+.sub[data-tone="ok"] {
+  color: var(--ds-green-11);
+}

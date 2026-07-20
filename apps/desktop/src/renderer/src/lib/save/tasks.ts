@@ -1,12 +1,15 @@
+import type { Prefs } from "@pond/schema/db";
 import {
   autoTag,
   backfillColors,
+  DISABLED_HINTS,
   rebuildVisualIndex,
   recaption,
   reembed,
   reocr,
   retranscribe,
   runEnrichment,
+  TASK_ENABLED,
   type TaskResult,
   type TaskScope,
 } from "@/lib/enrichment/tasks";
@@ -24,14 +27,22 @@ interface LibraryTask {
   keywords: string[];
   /** Whether the task can run on a selection subset and so appears in the selection menu. */
   selectable: boolean;
+  /** Hint shown on a disabled row when a required pref is off; null means runnable. */
+  precondition?: (prefs: Prefs | null) => string | null;
   run: (ids?: TaskScope) => TaskResult | Promise<TaskResult>;
+}
+
+function gate(
+  key: keyof typeof TASK_ENABLED,
+): (prefs: Prefs | null) => string | null {
+  return (prefs) => (TASK_ENABLED[key](prefs) ? null : DISABLED_HINTS[key]);
 }
 
 const TASKS: readonly LibraryTask[] = [
   {
     id: "auto-tag",
-    label: "Auto-tag",
-    description: "Apply each item's AI-suggested tags. Existing tags are kept.",
+    label: "Apply Suggested Tags",
+    description: "Tag each item with its AI suggestions.",
     action: "Apply",
     group: "tagging",
     keywords: ["autotag", "tag", "tags"],
@@ -40,8 +51,8 @@ const TASKS: readonly LibraryTask[] = [
   },
   {
     id: "run-enrichment",
-    label: "Run enrichment",
-    description: "Retry failed runs and process newly eligible items.",
+    label: "Run Enrichment",
+    description: "Retry failed runs and process new items.",
     action: "Run",
     group: "enrichment",
     keywords: ["enrich", "sweep", "run"],
@@ -50,8 +61,8 @@ const TASKS: readonly LibraryTask[] = [
   },
   {
     id: "backfill-colors",
-    label: "Backfill colors",
-    description: "Extract dominant colors for images missing a palette.",
+    label: "Backfill Colors",
+    description: "Extract colors for images missing a palette.",
     action: "Run",
     group: "enrichment",
     keywords: ["colors", "colours", "palette"],
@@ -60,52 +71,57 @@ const TASKS: readonly LibraryTask[] = [
   },
   {
     id: "caption",
-    label: "Caption images",
-    description: "Re-run captioning, overwriting existing captions.",
+    label: "Caption Images",
+    description: "Write new captions for every image.",
     action: "Re-run",
     group: "reprocess",
     keywords: ["caption", "alt", "describe"],
     selectable: true,
+    precondition: gate("caption"),
     run: recaption,
   },
   {
     id: "ocr",
-    label: "Extract text (OCR)",
-    description: "Re-read text from images, overwriting existing OCR.",
+    label: "Extract Text (OCR)",
+    description: "Read text from images again.",
     action: "Re-run",
     group: "reprocess",
     keywords: ["ocr", "text"],
     selectable: true,
+    precondition: gate("ocr"),
     run: reocr,
   },
   {
     id: "transcribe",
-    label: "Transcribe media",
-    description: "Re-transcribe audio and video, overwriting transcripts.",
+    label: "Transcribe Media",
+    description: "Transcribe audio and video again.",
     action: "Re-run",
     group: "reprocess",
     keywords: ["transcribe", "transcript", "whisper", "subtitle"],
     selectable: true,
+    precondition: gate("transcribe"),
     run: retranscribe,
   },
   {
     id: "re-embed",
-    label: "Re-embed",
-    description: "Rebuild the semantic-search index from scratch.",
+    label: "Rebuild Search Index",
+    description: "Rebuild the semantic search index.",
     action: "Rebuild",
     group: "reprocess",
     keywords: ["embed", "embeddings", "semantic", "reindex"],
     selectable: true,
+    precondition: gate("reembed"),
     run: reembed,
   },
   {
     id: "rebuild-visual",
-    label: "Rebuild visual index",
-    description: "Recompute CLIP vectors for visual similarity.",
+    label: "Rebuild Visual Index",
+    description: "Recompute visual similarity vectors.",
     action: "Rebuild",
     group: "reprocess",
     keywords: ["clip", "visual", "similarity"],
     selectable: true,
+    precondition: gate("clip"),
     run: rebuildVisualIndex,
   },
 ];

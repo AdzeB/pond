@@ -3,16 +3,16 @@ import {
   type BlossomCarouselHandle,
 } from "@blossom-carousel/react";
 import "@blossom-carousel/react/style.css";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { NavButtons } from "@/components/save-media-viewer-controls";
 import { type MediaSlide, Slide } from "@/components/save-media-viewer-slide";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
+import { copyVideoFrame, saveVideoFrame } from "@/lib/media/capture-frame";
 import { type ChapterCue, chaptersForSave } from "@/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/lib/media/units";
+import { SHORTCUTS } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
-import { showContextMenu } from "@/lib/ui/native-menu";
-import { tagClipboard } from "@/stores/tag-clipboard";
-import { buildViewerMenu } from "./lib/menu";
 import {
   useActiveSlide,
   useCarouselNavigation,
@@ -68,7 +68,7 @@ export function MediaViewer({ save }: { save: Save }) {
     const only = slides[0];
     if (!only) return null;
     return (
-      <Frame save={save}>
+      <Frame>
         <Slide
           slide={only}
           active
@@ -91,23 +91,47 @@ export function MediaViewer({ save }: { save: Save }) {
   );
 }
 
-function Frame({ save, children }: { save: Save; children: React.ReactNode }) {
-  /** Built lazily on open so the live <video> under the cursor and the tag clipboard are read without subscribing to either. */
-  const onContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const slide = (e.target as HTMLElement).closest("[data-blossom-slide]");
-    const video = slide?.querySelector<HTMLVideoElement>("video") ?? null;
-    void showContextMenu(
-      buildViewerMenu(save, {
-        clipboardEmpty: tagClipboard.get().length === 0,
-        video,
-      }),
-    );
+/** The right-click menu lives one level up on the detail modal, covering media and chrome alike. */
+function Frame({
+  activeIndex = 0,
+  children,
+}: {
+  /** Index of the slide the frame shortcuts act on. */
+  activeIndex?: number;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  const activeVideo = () => {
+    const slides = ref.current?.querySelectorAll("[data-blossom-slide]");
+    const video = slides?.[activeIndex]?.querySelector("video") ?? null;
+    return video?.videoWidth ? video : null;
   };
 
+  /** preventDefault only when a live video is under the keys, so Shift+C/S stay inert on image slides. */
+  useHotkey(
+    SHORTCUTS["viewer.copy-frame"].keys,
+    (event) => {
+      const video = activeVideo();
+      if (!video) return;
+      event.preventDefault();
+      void copyVideoFrame(video);
+    },
+    { preventDefault: false },
+  );
+  useHotkey(
+    SHORTCUTS["viewer.save-frame"].keys,
+    (event) => {
+      const video = activeVideo();
+      if (!video) return;
+      event.preventDefault();
+      void saveVideoFrame(video);
+    },
+    { preventDefault: false },
+  );
+
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: context menu container, not a control
-    <div className={styles.carousel} onContextMenu={onContextMenu}>
+    <div ref={ref} className={styles.carousel}>
       {children}
     </div>
   );
@@ -135,7 +159,7 @@ function Carousel({
   }, []);
 
   return (
-    <Frame save={save}>
+    <Frame activeIndex={active}>
       <BlossomCarousel
         ref={handleRef}
         className={styles.scroller}

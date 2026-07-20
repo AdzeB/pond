@@ -21,8 +21,8 @@ export function IconBrandInstagram(props: SVGProps<SVGSVGElement>) {
         fill="white"
       />
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M185.208 115.027C146.212 115.027 114.596 146.643 114.596 185.639C114.596 224.634 146.212 256.236 185.208 256.236C224.204 256.236 255.813 224.634 255.813 185.639C255.813 146.643 224.204 115.027 185.208 115.027ZM185.494 231.094C210.412 231.094 230.611 210.894 230.611 185.977C230.611 161.059 210.412 140.86 185.494 140.86C160.577 140.86 140.377 161.059 140.377 185.977C140.377 210.894 160.577 231.094 185.494 231.094Z"
         fill="white"
       />
@@ -35,9 +35,9 @@ export function IconBrandInstagram(props: SVGProps<SVGSVGElement>) {
           y2="0"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="#FFDC80" />
-          <stop offset="0.5" stop-color="#F56040" />
-          <stop offset="1" stop-color="#833AB4" />
+          <stop stopColor="#FFDC80" />
+          <stop offset="0.5" stopColor="#F56040" />
+          <stop offset="1" stopColor="#833AB4" />
         </linearGradient>
       </defs>
     </svg>

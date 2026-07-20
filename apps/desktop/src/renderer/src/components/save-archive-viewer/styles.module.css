@@ -1,0 +1,26 @@
+.root {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  padding: 0 48px 48px;
+}
+
+.frame {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  /* A white canvas fringes dark sites at the rounded corners; a theme surface stays invisible while the page paints. */
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: 8px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.webview {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}

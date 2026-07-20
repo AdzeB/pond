@@ -13,7 +13,7 @@ import {
 } from "./lib/insights";
 import styles from "./styles.module.css";
 
-/** One filter chip per field, shared by the dashboard and the insight editor. */
+/** One filter chip per field, used by the insight editor. */
 
 interface FilterBarProps {
   filters: InsightFilter[];

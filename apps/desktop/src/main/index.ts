@@ -13,6 +13,7 @@ import { syncLibraryRootMetadata } from "./core/library-ops";
 import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
+import { startArchiveBackfill } from "./core/refresh/archive-backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
@@ -184,7 +185,11 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] tags.json hydrate failed", err);
   }
 
-  void reconcileLibrary().catch((err) => log.warn("[pond] scan failed", err));
+  void reconcileLibrary()
+    .catch((err) => log.warn("[pond] scan failed", err))
+    /** Self-heal saves whose archives predate the current WARC format; no-op when everything is current. */
+    .then(() => startArchiveBackfill())
+    .catch((err) => log.warn("[pond] archive backfill failed", err));
   void backfillEnrichmentSidecars().catch((err) =>
     log.warn("[pond] enrichment sidecar backfill failed", err),
   );

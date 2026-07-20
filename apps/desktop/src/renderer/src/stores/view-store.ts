@@ -201,6 +201,10 @@ export function setSort(next: { key: string; dir: SortDir }): void {
   store.setState((s) => ({ ...s, sortKey: next.key, sortDir: next.dir }));
 }
 
+export function adjustZoom(delta: number): void {
+  setZoom(store.state.zoom + delta);
+}
+
 export function setZoom(zoom: number): void {
   const clamped = clampZoom(zoom);
   if (typeof window !== "undefined") {

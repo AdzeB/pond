@@ -13,13 +13,12 @@ export function SourceNewSection() {
 
   return (
     <>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>New Source</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Connect an account you own to sync your saves, or watch someone public
-          and collect their posts as they land.
+          Sync an account you own, or watch someone public.
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
@@ -31,7 +30,7 @@ export function SourceNewSection() {
           <span className={styles["row-icon"]}>
             <UserPlus size={18} />
           </span>
-          <span className={styles["row-label"]}>Connect a source</span>
+          <span className={styles["row-label"]}>Connect a Source</span>
           <span className={styles["row-value"]}>
             <ChevronRight width={13} height={13} />
           </span>
@@ -44,7 +43,7 @@ export function SourceNewSection() {
           <span className={styles["row-icon"]}>
             <Eye size={18} />
           </span>
-          <span className={styles["row-label"]}>Watch someone</span>
+          <span className={styles["row-label"]}>Watch Someone</span>
           <span className={styles["row-value"]}>
             <ChevronRight width={13} height={13} />
           </span>

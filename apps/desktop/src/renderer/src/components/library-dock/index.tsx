@@ -11,7 +11,7 @@ import { SavingPill } from "@/components/library-saving-pill";
 import { SearchComposer } from "@/components/search-bar";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion, useMotionScaleFactor } from "@/lib/ui/motion";
-import { clearAsk, useAskResult } from "@/stores/ask-store";
+import { clearAsk } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
   useViewFilteredCount,
@@ -49,7 +49,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
-  const ask = useAskResult();
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
   const mode = useDockMode();
@@ -120,16 +119,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const isCard =
     view === "ask" || view === "search" || view === "new" || isViewMenu(view);
 
-  const [docVisible, setDocVisible] = useState(
-    () => typeof document === "undefined" || !document.hidden,
-  );
-  useEffect(() => {
-    const onVisibility = () => setDocVisible(!document.hidden);
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
-  }, []);
-  const thinking = ask.status === "thinking" && docVisible;
-
   useEffect(() => {
     if (preview || !isMenuView) return;
     const onKey = (e: KeyboardEvent) => {
@@ -171,7 +160,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       inTrash: effInTrash,
       allSelected: effAllSelected,
       isTabActive,
-      thinking,
       isCard,
       openAsk,
       openSearch,
@@ -196,7 +184,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       effInTrash,
       effAllSelected,
       isTabActive,
-      thinking,
       isCard,
       destructive,
       confirmDeleteForever,
@@ -212,7 +199,8 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     !preview &&
     (pathname === "/components" ||
       pathname === "/dock-merge-playground" ||
-      pathname === "/tooltip-playground")
+      pathname === "/tooltip-playground" ||
+      pathname === "/toast-playground")
   ) {
     return null;
   }
@@ -233,7 +221,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
           render={
             <motion.div
               ref={pillRef}
-              data-thinking={thinking || undefined}
               initial={false}
               animate={
                 bounds ? { width: bounds.width, height: bounds.height } : {}

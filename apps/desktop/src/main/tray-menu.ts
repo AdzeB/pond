@@ -79,7 +79,7 @@ export async function buildMenu(
 
   const headerLabel =
     ingesting > 0
-      ? `Saving ${ingesting} item${ingesting === 1 ? "" : "s"}…`
+      ? `Saving ${ingesting} item${ingesting === 1 ? "" : "s"}`
       : `${libraryName} · ${active} saves`;
 
   const recentItems: MenuItemConstructorOptions[] = recents.map((r) => {
@@ -105,12 +105,12 @@ export async function buildMenu(
 
   template.push(
     {
-      label: "Open Library…",
+      label: "Open Library",
       accelerator: "CommandOrControl+Shift+P",
       click: () => void opts.onOpenLibrary(),
     },
     {
-      label: "Settings…",
+      label: "Settings",
       click: () => void (opts.onOpenSettings ?? opts.onOpenLibrary)(),
     },
     {
@@ -131,7 +131,7 @@ export async function buildMenu(
       },
     },
     {
-      label: "Rotate Ingest Token…",
+      label: "Rotate Ingest Token",
       click: async () => {
         await rotateIngestToken();
         refresh();

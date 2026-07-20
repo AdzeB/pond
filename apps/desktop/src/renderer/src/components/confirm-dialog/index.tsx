@@ -1,70 +1,86 @@
 import { AlertDialog, Button } from "@pond/ui";
-import type { ComponentProps, ReactNode } from "react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];
 
-interface ConfirmDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface ConfirmOptions {
   title: ReactNode;
   description?: ReactNode;
   confirmLabel: ReactNode;
   cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
-  busy?: boolean;
-  onConfirm: () => void;
-  /** Extra content rendered between the description and the action row. */
-  children?: ReactNode;
-  /** Buttons rendered between Cancel and the primary confirm button. */
-  extraActions?: ReactNode;
+  /** Swapped in for confirmLabel while an async onConfirm is pending. */
+  busyLabel?: ReactNode;
+  onConfirm: () => void | Promise<void>;
 }
 
-/** `onConfirm` leaves closing to the caller so async work can keep the dialog open via `busy`. */
-export function ConfirmDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel,
-  cancelLabel = "Cancel",
-  confirmVariant = "destructive",
-  busy = false,
-  onConfirm,
-  children,
-  extraActions,
-}: ConfirmDialogProps) {
+const handle = AlertDialog.createHandle<ConfirmOptions>();
+
+/** Opens the app-wide confirm dialog; a single host near the root renders every request. */
+export function confirm(options: ConfirmOptions): void {
+  handle.openWithPayload(options);
+}
+
+export function ConfirmDialogHost() {
+  const [busy, setBusy] = useState(false);
+
+  const run = async (options: ConfirmOptions) => {
+    setBusy(true);
+    try {
+      await options.onConfirm();
+    } finally {
+      setBusy(false);
+    }
+    handle.close();
+  };
+
   return (
-    <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
-      <AlertDialog.Portal>
-        <AlertDialog.Backdrop />
-        <AlertDialog.Popup>
-          <AlertDialog.Title>{title}</AlertDialog.Title>
-          {description ? (
-            <AlertDialog.Description>{description}</AlertDialog.Description>
-          ) : null}
-          {children}
-          <AlertDialog.Footer>
-            <AlertDialog.Close
-              render={
-                <Button variant="ghost" disabled={busy}>
-                  {cancelLabel}
+    <AlertDialog.Root
+      handle={handle}
+      onOpenChange={(open) => {
+        if (!open) setBusy(false);
+      }}
+    >
+      {({ payload }) =>
+        payload ? (
+          <AlertDialog.Portal>
+            <AlertDialog.Backdrop />
+            <AlertDialog.Popup>
+              <AlertDialog.Header>
+                <AlertDialog.Title>{payload.title}</AlertDialog.Title>
+              </AlertDialog.Header>
+              {payload.description ? (
+                <AlertDialog.Content>
+                  <AlertDialog.Description>
+                    {payload.description}
+                  </AlertDialog.Description>
+                </AlertDialog.Content>
+              ) : null}
+              <AlertDialog.Footer>
+                <AlertDialog.Close
+                  render={
+                    <Button variant="ghost" disabled={busy}>
+                      {payload.cancelLabel ?? "Cancel"}
+                    </Button>
+                  }
+                />
+                <Button
+                  variant={payload.confirmVariant ?? "destructive"}
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    void run(payload);
+                  }}
+                >
+                  {busy
+                    ? (payload.busyLabel ?? payload.confirmLabel)
+                    : payload.confirmLabel}
                 </Button>
-              }
-            />
-            {extraActions}
-            <Button
-              variant={confirmVariant}
-              disabled={busy}
-              onClick={(e) => {
-                e.preventDefault();
-                onConfirm();
-              }}
-            >
-              {confirmLabel}
-            </Button>
-          </AlertDialog.Footer>
-        </AlertDialog.Popup>
-      </AlertDialog.Portal>
+              </AlertDialog.Footer>
+            </AlertDialog.Popup>
+          </AlertDialog.Portal>
+        ) : null
+      }
     </AlertDialog.Root>
   );
 }

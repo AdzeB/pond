@@ -12,6 +12,8 @@ export interface SettingsSection {
   group: SettingsGroup;
   /** Hidden from the top-level settings index but still routable directly. */
   hidden?: boolean;
+  /** Path of the owning section for hidden nested pages; keeps the parent's sidebar row highlighted. */
+  parent?: string;
 }
 
 export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
@@ -25,6 +27,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },
+  { id: "saves", path: "saves", label: "Saves", group: "capture" },
   { id: "sync", path: "sync", label: "Sync", group: "capture" },
   { id: "videos", path: "videos", label: "Videos", group: "capture" },
   { id: "images", path: "images", label: "Images", group: "capture" },
@@ -35,10 +38,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "intelligence",
   },
   {
-    id: "ai-models",
-    path: "ai-models",
-    label: "Models",
+    id: "ai-providers",
+    path: "ai-providers",
+    label: "Provider & Model",
     group: "intelligence",
+    hidden: true,
+    parent: "ai",
   },
   {
     id: "enrichment",
@@ -79,4 +84,5 @@ export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
 
 export const SETTINGS_SECTION_ALIASES: Readonly<Record<string, string>> = {
   downloads: "videos",
+  "ai-models": "ai",
 };

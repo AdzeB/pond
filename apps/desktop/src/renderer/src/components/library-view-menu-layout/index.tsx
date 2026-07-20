@@ -25,14 +25,12 @@ export function LayoutSection() {
 
   return (
     <>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>Library Layout</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Choose how items are arranged in your library. Waterfall keeps natural
-          heights, Grid keeps everything uniform, and Justified fills each row
-          edge to edge.
+          Choose how items are arranged in your library.
         </TrayCard.Description>
       </TrayCard.Header>
       <Segmented

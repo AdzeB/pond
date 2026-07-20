@@ -47,10 +47,10 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
 
 export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
   tags: "any tag",
-  source: "twitter, arena, local…",
-  type: "image, video, url…",
+  source: "twitter, arena, local",
+  type: "image, video, url",
   fileCount: "3, >2, 2..5",
-  duration: "<30s, <3min…",
+  duration: "<30s, <3min",
   creator: "by name",
   account: "@handle",
   note: "with, without",

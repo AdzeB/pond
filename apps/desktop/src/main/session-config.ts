@@ -31,12 +31,17 @@ export function configureSessionDefaults(): void {
       "worker-src 'self' blob:",
       "connect-src 'self' blob: http://127.0.0.1:* pond: https:",
       "font-src 'self' data:",
-      "frame-src https://www.youtube-nocookie.com",
+      "frame-src pond: https://www.youtube-nocookie.com",
       "object-src 'none'",
       "frame-ancestors 'none'",
       "base-uri 'self'",
     ].join("; ");
     session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
+      /** pond:// serves the archive viewer and wabac's service worker; injecting the app CSP/COEP there breaks replay. The app document itself loads from file://, so its CSP is unaffected. */
+      if (details.url.startsWith("pond://")) {
+        cb({ responseHeaders: details.responseHeaders });
+        return;
+      }
       const headers = { ...(details.responseHeaders ?? {}) };
       for (const key of Object.keys(headers)) {
         if (key.toLowerCase() === "content-security-policy") {

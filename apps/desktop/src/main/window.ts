@@ -2,6 +2,8 @@ import { join } from "node:path";
 import { app, BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
+import { attachEditableContextMenu } from "./context-menu";
+import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
 import { ensureTray, type TrayHandle } from "./tray";
@@ -108,9 +110,14 @@ export async function createWindow(): Promise<BrowserWindow> {
       sandbox: true,
       /** Explicit so a backgrounded window can't heat the machine; pairs with the renderer's visibility-gated enrichment sweep. */
       backgroundThrottling: true,
+      /** Guests are locked to pond:// archives via the will/did-attach-webview policy below. */
+      webviewTag: true,
       additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
   });
+
+  hardenArchiveWebviews(win);
+  attachEditableContextMenu(win.webContents);
 
   win.on("ready-to-show", () => {
     win.show();

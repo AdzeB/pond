@@ -1,0 +1,140 @@
+.window {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 840px;
+  margin-inline: auto;
+  container-type: inline-size;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px var(--ds-gray-a3),
+    0 16px 32px -8px var(--ds-gray-a4);
+}
+
+.chrome {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 40px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.lights {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.light {
+  width: 9px;
+  height: 9px;
+  background: var(--ds-gray-5);
+  border-radius: 50%;
+}
+
+.path {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--site-font-mono);
+  font-size: 11px;
+  color: var(--ds-gray-10);
+
+  svg {
+    color: var(--ds-gray-8);
+  }
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 120px 165px 145px minmax(0, 1fr);
+  min-height: 300px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 8px 6px;
+  overflow: hidden;
+  border-right: 1px solid var(--ds-gray-a3);
+}
+
+.row {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  width: 100%;
+  padding: 5px 8px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  border-radius: 7px;
+
+  svg {
+    flex-shrink: 0;
+    color: #58aeef;
+  }
+
+  &[data-kind="file"] {
+    padding-left: 10px;
+    color: var(--ds-gray-10);
+  }
+
+  &[data-selected] {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-3);
+  }
+}
+
+.row-meta {
+  margin-left: auto;
+  font-family: var(--site-font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-8);
+}
+
+.mono {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--site-font-mono);
+  font-size: 11px;
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+}
+
+/* Column view degrades by dropping columns as the window narrows. */
+@container (max-width: 660px) {
+  .columns {
+    grid-template-columns: 150px 135px minmax(0, 1fr);
+  }
+
+  .column[data-role="root"] {
+    display: none;
+  }
+}
+
+@container (max-width: 450px) {
+  .columns {
+    grid-template-columns: 1fr minmax(0, 1.3fr);
+  }
+
+  .column[data-role="files"] {
+    display: none;
+  }
+}

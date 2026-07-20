@@ -20,6 +20,11 @@
   translate: -50% 0;
 }
 
+/* The @pond/ui reset's `* { text-wrap: pretty }` re-enables wrapping on every descendant (text-wrap and white-space share text-wrap-mode), so pin the whole subtree. */
+.pill * {
+  white-space: nowrap;
+}
+
 .pill:hover {
   color: var(--ds-gray-12);
 }
@@ -35,6 +40,30 @@
   display: block;
   transform: rotate(-90deg);
   transition: opacity 180ms ease-out;
+}
+
+/* Indeterminate arc for activity with no measurable progress. */
+.ring svg[data-indeterminate] {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+.warn {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: var(--ds-red-9);
+}
+
+.pill[data-phase="error"] {
+  color: var(--ds-red-11);
 }
 
 .track {
@@ -78,4 +107,10 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring svg[data-indeterminate] {
+    animation: none;
+  }
 }

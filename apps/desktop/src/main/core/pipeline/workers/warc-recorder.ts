@@ -1,0 +1,391 @@
+/** Records a scrape window's network traffic into a .warc.gz via CDP; wabac.js replays it in the archive viewer with working JavaScript. */
+
+import { once } from "node:events";
+import { createWriteStream, type WriteStream } from "node:fs";
+import type { WebContents } from "electron";
+import log from "electron-log/main.js";
+import { WARCRecord, WARCSerializer } from "warcio";
+
+/** A single body above this is skipped (typically video); replay shows the page without it. */
+const MAX_BODY_BYTES = 30 * 1024 * 1024;
+/** Total archive budget; once exceeded, later resources are dropped rather than ballooning the library. */
+const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
+/** CDP commands can hang forever on a wedged window; a hung getResponseBody would otherwise stall the crawl into the watchdog. */
+const CDP_TIMEOUT_MS = 10_000;
+/** Sites with constant chatter (analytics beacons, looping video) never go quiet, so a flush must give up rather than chase them. */
+const FLUSH_BUDGET_MS = 15_000;
+
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+): Promise<T> {
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`timed out after ${ms}ms`)),
+          ms,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+    /** A promise that loses to the timeout may still reject later; keep that off the unhandled-rejection channel. */
+    promise.catch(() => {});
+  }
+}
+
+interface CdpResponse {
+  url: string;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+}
+
+interface FetchRequestPaused {
+  requestId: string;
+  request: { url: string };
+  responseStatusCode?: number;
+  responseStatusText?: string;
+  responseHeaders?: { name: string; value: string }[];
+}
+
+function isArchivableUrl(url: string): boolean {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
+
+/**
+ * CDP returns decoded bodies, so encoding/length headers would lie after re-serialization.
+ */
+const DROPPED_HEADERS = new Set([
+  "content-encoding",
+  "transfer-encoding",
+  "content-length",
+]);
+
+function toHttpHeaders(
+  raw: Record<string, string>,
+  bodyLength: number,
+): [string, string][] {
+  const entries: [string, string][] = [];
+  for (const [name, value] of Object.entries(raw)) {
+    if (DROPPED_HEADERS.has(name.toLowerCase())) continue;
+    /** CDP folds duplicate headers into one \n-joined value. */
+    for (const part of value.split("\n")) {
+      entries.push([name, part]);
+    }
+  }
+  entries.push(["Content-Length", String(bodyLength)]);
+  return entries;
+}
+
+export class WarcRecorder {
+  private readonly wc: WebContents;
+  private readonly stream: WriteStream;
+  private readonly responses = new Map<string, CdpResponse>();
+  private readonly writtenUrls = new Set<string>();
+  private readonly pending = new Set<Promise<void>>();
+  /** Serializes record writes so gzip members land whole and ordered. */
+  private writeChain: Promise<void> = Promise.resolve();
+  private totalBytes = 0;
+  private attached = false;
+  private lastNetworkActivity = Date.now();
+
+  private constructor(wc: WebContents, filePath: string) {
+    this.wc = wc;
+    this.stream = createWriteStream(filePath);
+  }
+
+  static async start(wc: WebContents, filePath: string): Promise<WarcRecorder> {
+    const recorder = new WarcRecorder(wc, filePath);
+    const dbg = wc.debugger;
+    if (!dbg.isAttached()) dbg.attach("1.3");
+    recorder.attached = true;
+    dbg.on("message", recorder.onMessage);
+    try {
+      await withTimeout(
+        dbg.sendCommand("Network.enable", {
+          maxTotalBufferSize: 200_000_000,
+          maxResourceBufferSize: 60_000_000,
+        }),
+        CDP_TIMEOUT_MS,
+      );
+      /** Cached responses have no retrievable body over CDP; forcing network keeps the capture complete. */
+      await withTimeout(
+        dbg.sendCommand("Network.setCacheDisabled", { cacheDisabled: true }),
+        CDP_TIMEOUT_MS,
+      );
+      /**
+       * Network.getResponseBody loses bodies for the document and parse-time subresources across the navigation process swap; pausing those responses captures them where they're guaranteed available.
+       * Only these four types lose bodies retrievably; Electron rejects Manifest/Prefetch as filter types, and wider interception overloads the debugger bridge (segfaults observed).
+       */
+      const interceptedTypes = ["Document", "Stylesheet", "Script", "Font"];
+      await withTimeout(
+        dbg.sendCommand("Fetch.enable", {
+          patterns: interceptedTypes.map((resourceType) => ({
+            requestStage: "Response",
+            resourceType,
+          })),
+        }),
+        CDP_TIMEOUT_MS,
+      );
+    } catch (err) {
+      dbg.off("message", recorder.onMessage);
+      try {
+        dbg.detach();
+      } catch {
+        /** Window may already be gone. */
+      }
+      recorder.attached = false;
+      recorder.stream.destroy();
+      throw err;
+    }
+    return recorder;
+  }
+
+  private onMessage = (
+    _event: unknown,
+    method: string,
+    params: unknown,
+  ): void => {
+    try {
+      if (method.startsWith("Network.")) {
+        this.lastNetworkActivity = Date.now();
+      }
+      if (method === "Network.responseReceived") {
+        const p = params as {
+          requestId: string;
+          response: CdpResponse;
+        };
+        if (isArchivableUrl(p.response.url)) {
+          this.responses.set(p.requestId, p.response);
+        }
+        return;
+      }
+      if (method === "Network.requestWillBeSent") {
+        const p = params as {
+          redirectResponse?: CdpResponse;
+        };
+        /** Redirect hops never get loadingFinished; record them here so replayed links follow Location. */
+        if (p.redirectResponse && isArchivableUrl(p.redirectResponse.url)) {
+          this.enqueueWrite(p.redirectResponse, new Uint8Array(0));
+        }
+        return;
+      }
+      if (method === "Network.loadingFinished") {
+        const p = params as { requestId: string };
+        const meta = this.responses.get(p.requestId);
+        if (!meta) return;
+        this.responses.delete(p.requestId);
+        const task = this.captureBody(p.requestId, meta).catch((err) => {
+          log.debug("[pond warc] body capture failed", meta.url, err);
+        });
+        this.pending.add(task);
+        void task.finally(() => this.pending.delete(task));
+        return;
+      }
+      if (method === "Network.loadingFailed") {
+        const p = params as { requestId: string };
+        this.responses.delete(p.requestId);
+        return;
+      }
+      if (method === "Fetch.requestPaused") {
+        const p = params as FetchRequestPaused;
+        const task = this.capturePausedResponse(p).catch((err) => {
+          log.debug("[pond warc] paused capture failed", p.request.url, err);
+        });
+        this.pending.add(task);
+        void task.finally(() => this.pending.delete(task));
+      }
+    } catch (err) {
+      log.debug("[pond warc] event handling failed", method, err);
+    }
+  };
+
+  /** Writes the paused response, then always resumes it; a request left paused would hang the page. */
+  private async capturePausedResponse(p: FetchRequestPaused): Promise<void> {
+    try {
+      const status = p.responseStatusCode;
+      /** Redirect hops have no body here; the Network redirectResponse path records them. */
+      if (
+        status != null &&
+        (status < 300 || status >= 400) &&
+        isArchivableUrl(p.request.url) &&
+        !this.writtenUrls.has(p.request.url)
+      ) {
+        const res = (await withTimeout(
+          this.wc.debugger.sendCommand("Fetch.getResponseBody", {
+            requestId: p.requestId,
+          }) as Promise<{ body: string; base64Encoded: boolean }>,
+          CDP_TIMEOUT_MS,
+        )) as { body: string; base64Encoded: boolean };
+        const body = res.base64Encoded
+          ? new Uint8Array(Buffer.from(res.body, "base64"))
+          : new Uint8Array(Buffer.from(res.body, "utf8"));
+        const headers: Record<string, string> = {};
+        for (const h of p.responseHeaders ?? []) {
+          headers[h.name] = headers[h.name]
+            ? `${headers[h.name]}\n${h.value}`
+            : h.value;
+        }
+        const meta = {
+          url: p.request.url,
+          status,
+          statusText: p.responseStatusText ?? "",
+          headers,
+        };
+        /** Same lost-body rule as captureBody: an empty 200 script poisons replay, so leave a hole instead. */
+        const lost = body.byteLength === 0 && this.expectsBody(meta);
+        if (!lost && body.byteLength <= MAX_BODY_BYTES) {
+          this.enqueueWrite(meta, body);
+        }
+      }
+    } finally {
+      try {
+        await withTimeout(
+          this.wc.debugger.sendCommand("Fetch.continueRequest", {
+            requestId: p.requestId,
+          }),
+          CDP_TIMEOUT_MS,
+        );
+      } catch {
+        /** Already continued, detached, or the window is gone. */
+      }
+    }
+  }
+
+  private async captureBody(
+    requestId: string,
+    meta: CdpResponse,
+  ): Promise<void> {
+    if (this.writtenUrls.has(meta.url)) return;
+    let body = new Uint8Array(0);
+    let bodyRetrieved = false;
+    try {
+      const res = (await withTimeout(
+        this.wc.debugger.sendCommand("Network.getResponseBody", {
+          requestId,
+        }) as Promise<{ body: string; base64Encoded: boolean }>,
+        CDP_TIMEOUT_MS,
+      )) as { body: string; base64Encoded: boolean };
+      body = res.base64Encoded
+        ? new Uint8Array(Buffer.from(res.body, "base64"))
+        : new Uint8Array(Buffer.from(res.body, "utf8"));
+      bodyRetrieved = true;
+    } catch {
+      /** 204s, opaque and evicted bodies land here. */
+    }
+    /**
+     * A lost body must become a hole, not an empty 200: replay 404s fail soft, but an empty script/stylesheet poisons the replayed page's JS.
+     * getResponseBody "succeeds" with an empty string for prefetch-cache serves, so an empty result counts as lost too; skipping also keeps writtenUrls clear for a later real capture of the same URL.
+     */
+    if ((!bodyRetrieved || body.byteLength === 0) && this.expectsBody(meta)) {
+      return;
+    }
+    if (body.byteLength > MAX_BODY_BYTES) return;
+    this.enqueueWrite(meta, body);
+  }
+
+  /** True when the response should carry a body, so an empty capture means the body was lost rather than absent. */
+  private expectsBody(meta: CdpResponse): boolean {
+    if (meta.status === 204 || meta.status === 205 || meta.status === 304) {
+      return false;
+    }
+    for (const [name, value] of Object.entries(meta.headers)) {
+      if (name.toLowerCase() === "content-length" && value.trim() === "0") {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private enqueueWrite(meta: CdpResponse, body: Uint8Array): void {
+    if (this.writtenUrls.has(meta.url)) return;
+    if (this.totalBytes >= MAX_TOTAL_BYTES) return;
+    this.writtenUrls.add(meta.url);
+    const task = this.writeChain.then(async () => {
+      const record = WARCRecord.create(
+        {
+          url: meta.url,
+          date: new Date().toISOString(),
+          type: "response",
+          warcVersion: "WARC/1.1",
+          statusline: `HTTP/1.1 ${meta.status} ${meta.statusText || "OK"}`,
+          httpHeaders: toHttpHeaders(meta.headers, body.byteLength),
+        },
+        [body],
+      );
+      const bytes = await WARCSerializer.serialize(record, { gzip: true });
+      this.totalBytes += bytes.byteLength;
+      if (!this.stream.write(bytes)) {
+        await once(this.stream, "drain");
+      }
+    });
+    this.writeChain = task.catch((err) => {
+      log.warn("[pond warc] record write failed", meta.url, err);
+    });
+    this.pending.add(task);
+    void task.catch(() => {}).finally(() => this.pending.delete(task));
+  }
+
+  /** Waits until the page has gone quietMs without network events, so lazy data fetches (pricing APIs, deferred JSON) land in the capture; SPAs that render from runtime fetches replay blank without them. */
+  async waitForNetworkIdle(quietMs: number, budgetMs: number): Promise<void> {
+    const deadline = Date.now() + budgetMs;
+    while (Date.now() < deadline) {
+      const quietFor = Date.now() - this.lastNetworkActivity;
+      if (quietFor >= quietMs && this.responses.size === 0) return;
+      await new Promise((r) => setTimeout(r, Math.min(250, quietMs)));
+    }
+  }
+
+  /** Await in-flight body fetches and writes; call before navigating away or the bodies are evicted. Time-bounded because chatty pages enqueue new work faster than old work settles. */
+  async flush(budgetMs: number = FLUSH_BUDGET_MS): Promise<void> {
+    const deadline = Date.now() + budgetMs;
+    while (this.pending.size > 0 && Date.now() < deadline) {
+      const remaining = deadline - Date.now();
+      await Promise.race([
+        Promise.allSettled([...this.pending]),
+        new Promise((r) => setTimeout(r, remaining)),
+      ]);
+    }
+  }
+
+  async stop(): Promise<void> {
+    await this.flush();
+    const dbg = this.wc.debugger;
+    dbg.off("message", this.onMessage);
+    if (this.attached) {
+      try {
+        await withTimeout(
+          (async () => {
+            await dbg.sendCommand("Fetch.disable");
+            await dbg.sendCommand("Network.setCacheDisabled", {
+              cacheDisabled: false,
+            });
+            await dbg.sendCommand("Network.disable");
+          })(),
+          CDP_TIMEOUT_MS,
+        );
+      } catch {
+        /** The window may have been destroyed mid-crawl; the pool recycles it. */
+      }
+      try {
+        dbg.detach();
+      } catch {
+        /** Already detached or destroyed. */
+      }
+      this.attached = false;
+    }
+    await new Promise<void>((resolvePromise, reject) => {
+      this.stream.end((err?: Error | null) =>
+        err ? reject(err) : resolvePromise(),
+      );
+    });
+  }
+
+  get bytesWritten(): number {
+    return this.totalBytes;
+  }
+}

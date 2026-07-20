@@ -16,6 +16,9 @@ allowBuilds:
   # Built solely by electron-rebuild in apps/desktop postinstall (Electron ABI).
   # Letting pnpm run its own node-gyp build produces a plain-Node binary that
   # clobbers the Electron build and breaks ELECTRON_RUN_AS_NODE tooling.
+  # Icon assets pulled in transitively by replaywebpage; its postinstall is
+  # funding output only, nothing needs building.
+  "@fortawesome/fontawesome-free": false
   better-sqlite3: false
   core-js: false
   electron: true

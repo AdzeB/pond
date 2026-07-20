@@ -1,11 +1,12 @@
+import type { MenuItemSpec } from "@pond/ui";
 import {
   copyVideoFrame,
   saveVideoFrame,
   setVideoThumbnail,
 } from "@/lib/media/capture-frame";
 import { buildSaveMenu } from "@/lib/save/menu";
+import { shortcutGlyphs } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
-import type { NativeMenuItem } from "@/lib/ui/native-menu";
 
 interface BuildViewerMenuOptions {
   /** Whether the tag clipboard is empty (controls the Paste Tags item). */
@@ -18,24 +19,24 @@ interface BuildViewerMenuOptions {
 export function buildViewerMenu(
   save: Save,
   { clipboardEmpty, video }: BuildViewerMenuOptions,
-): NativeMenuItem[] {
+): MenuItemSpec[] {
   const base = buildSaveMenu(save, { clipboardEmpty });
   if (!video?.videoWidth) return base;
 
-  const frameItems: NativeMenuItem[] = [
+  const frameItems: MenuItemSpec[] = [
     {
       label: "Set as Video Thumbnail",
-      onSelect: () => setVideoThumbnail(save.id, video),
+      onClick: () => void setVideoThumbnail(save.id, video),
     },
     {
       label: "Copy Current Frame",
-      shortcut: ["⇧", "C"],
-      onSelect: () => copyVideoFrame(video),
+      shortcut: shortcutGlyphs("viewer.copy-frame"),
+      onClick: () => void copyVideoFrame(video),
     },
     {
-      label: "Save Current Frame…",
-      shortcut: ["⇧", "S"],
-      onSelect: () => saveVideoFrame(video),
+      label: "Save Current Frame",
+      shortcut: shortcutGlyphs("viewer.save-frame"),
+      onClick: () => void saveVideoFrame(video),
     },
     { type: "separator" },
   ];

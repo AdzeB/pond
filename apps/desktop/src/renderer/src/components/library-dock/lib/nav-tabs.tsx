@@ -1,7 +1,6 @@
 import {
   IconChartFill18 as Analytics,
   IconArchiveContent2Fill18 as Library,
-  IconUploadFill18 as Saves,
   IconGear3Fill18 as Settings,
   IconGlobeFill18 as Sources,
   IconTrash2ContentFill18 as Trash,
@@ -14,7 +13,6 @@ export type DockTab =
   | "library"
   | "sources"
   | "analytics"
-  | "saves"
   | "trash"
   | "settings";
 
@@ -57,14 +55,7 @@ export const NAV_TABS: readonly NavTab[] = [
     label: "Analytics",
     to: "/analytics",
     icon: <Analytics />,
-    match: (p) => p === "/analytics",
-  },
-  {
-    id: "saves",
-    label: "Saves",
-    to: "/saves",
-    icon: <Saves />,
-    match: (p) => p === "/saves",
+    match: (p) => p === "/analytics" || p.startsWith("/analytics/"),
   },
   {
     id: "settings",

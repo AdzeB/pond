@@ -1,8 +1,8 @@
 .positioner {
   width: var(--positioner-width);
   max-width: var(--available-width);
-
   height: var(--positioner-height);
+
   transition:
     top 0.35s cubic-bezier(0.22, 1, 0.36, 1),
     left 0.35s cubic-bezier(0.22, 1, 0.36, 1),
@@ -19,7 +19,7 @@
 .popup {
   box-shadow: var(--ds-shadow-1);
   max-width: 256px;
-  padding: 4px 8px;
+  padding: 2px;
   font-size: 10px;
   font-weight: 500;
   color: var(--ds-gray-11);

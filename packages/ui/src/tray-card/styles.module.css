@@ -11,22 +11,20 @@
 }
 
 .header {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: flex-start;
-  justify-content: flex-start;
-
-  &[data-position="center"] {
-    align-items: center;
-    justify-content: center;
-  }
 }
 
 .title {
   font-size: 14px;
   font-weight: 600;
   color: var(--ds-gray-12);
+
+  &[data-position="center"] {
+    text-align: center;
+  }
 }
 
 .description {
@@ -42,11 +40,9 @@
   background: var(--ds-gray-3);
 }
 
-.close,
-.help,
-.back,
 .action {
   position: absolute;
+  top: var(--tray-card-padding);
   z-index: 1;
   display: inline-flex;
   align-items: center;
@@ -75,25 +71,25 @@
   }
 }
 
-.close {
-  top: var(--tray-card-padding);
-  right: var(--tray-card-padding);
-}
-
-.help,
-.back {
-  top: var(--tray-card-padding);
-  left: var(--tray-card-padding);
-}
-
 .action[data-position="start"] {
-  top: var(--tray-card-padding);
   left: var(--tray-card-padding);
 }
 
 .action[data-position="end"] {
-  top: var(--tray-card-padding);
   right: var(--tray-card-padding);
+}
+
+/* Nested in a header, corners anchor to the header instead of the card. */
+.header .action {
+  top: 0;
+
+  &[data-position="start"] {
+    left: 0;
+  }
+
+  &[data-position="end"] {
+    right: 0;
+  }
 }
 
 .footer {

@@ -133,7 +133,7 @@ export function SkillEditor({
             <Field.Label className={styles.label}>Description</Field.Label>
             <Input.Field
               data-size="sm"
-              placeholder="Optional — shown in the menu"
+              placeholder="Optional, shown in the menu"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />

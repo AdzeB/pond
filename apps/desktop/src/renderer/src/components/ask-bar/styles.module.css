@@ -48,10 +48,46 @@
   overflow: hidden;
 }
 
+/* Registered so the fade heights animate when the scroll-state attribute flips. */
+@property --ask-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --ask-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Mask, not overlay: fades to transparent so it holds up over any dock surface. */
 .transcript-viewport {
+  --ask-fade-top: 0px;
+  --ask-fade-bottom: 0px;
+
   overflow-y: auto;
   overscroll-behavior: contain;
   outline: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--ask-fade-top),
+    black calc(100% - var(--ask-fade-bottom)),
+    transparent
+  );
+  transition:
+    --ask-fade-top var(--ds-duration-medium) var(--ds-easing-standard),
+    --ask-fade-bottom var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+/* MessageScroller marks the viewport with data-scrollable="start end" as content clips past each edge. */
+.transcript-viewport[data-scrollable~="start"] {
+  --ask-fade-top: 32px;
+}
+
+.transcript-viewport[data-scrollable~="end"] {
+  --ask-fade-bottom: 32px;
 }
 
 .transcript-content {
@@ -177,6 +213,38 @@
   border: 0;
 }
 
+/* Cursor-style thinking label: a light band sweeps through the text while work runs. */
+.shimmer {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--ds-gray-9) 35%,
+    var(--ds-gray-12) 50%,
+    var(--ds-gray-9) 65%
+  );
+  background-clip: text;
+  background-size: 300% 100%;
+  animation: shimmer-sweep 2s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    color: var(--ds-gray-11);
+    background: none;
+    animation: none;
+  }
+}
+
 .turn-body {
   margin: 0;
   font-size: 13px;
@@ -184,56 +252,6 @@
   color: var(--ds-gray-12);
   word-break: break-word;
   user-select: text;
-}
-
-.thumbs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
-}
-
-.thumb {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 52px;
-  height: 52px;
-  padding: 0;
-  overflow: hidden;
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-3);
-  border: 0;
-  border-radius: var(--ds-radius-md);
-  box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
-  transition: transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-
-  & img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
-  &:hover {
-    transform: scale(1.04);
-  }
-
-  &:active {
-    transform: scale(0.96);
-  }
-}
-
-.thumb-blank {
-  width: 100%;
-  height: 100%;
-  background: var(--ds-gray-4);
-}
-
-.thumb-more {
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
 }
 
 /* 24px filled pill chip (relaxation suggestions). */

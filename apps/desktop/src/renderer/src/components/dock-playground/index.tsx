@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { LibraryTray } from "@/components/library-dock";
 import type { DockPreview } from "@/components/library-dock/lib/types";
 import { motionScale } from "@/lib/ui/motion";
+import { activity } from "@/stores/activity";
 import {
   clearAsk,
   setAskError,
@@ -85,6 +86,40 @@ const ASK_SCENARIOS = [
   { id: "error", label: "Error", seed: seedAskError },
 ] as const;
 
+/** Drives the dock activity pill, which replaced toasts as the ambient feedback surface. */
+const ACTIVITY_SCENARIOS = [
+  {
+    id: "job",
+    label: "Job (3s, succeeds)",
+    fire: () => {
+      const job = activity.start("Exporting files");
+      window.setTimeout(() => activity.done(job, "Exported 12 files"), 3000);
+    },
+  },
+  {
+    id: "failing-job",
+    label: "Job (3s, fails)",
+    fire: () => {
+      const job = activity.start("Backfilling colors");
+      window.setTimeout(
+        () => activity.fail(job, "Color backfill failed."),
+        3000,
+      );
+    },
+  },
+  {
+    id: "error-flash",
+    label: "Error flash",
+    fire: () =>
+      activity.error("Retry failed items", "Couldn't retry failed items."),
+  },
+  {
+    id: "note",
+    label: "Background note",
+    fire: () => activity.note("Reprocessing 240 items in the background"),
+  },
+] as const;
+
 const SELECTIONS = [
   { count: 0, label: "None" },
   { count: 1, label: "1 item" },
@@ -98,6 +133,16 @@ const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
     id: "nav",
     label: "Nav (rest)",
     preview: { view: "nav", activeTab: "library" },
+  },
+  {
+    id: "nav-sources",
+    label: "Nav (sources)",
+    preview: { view: "nav", activeTab: "sources" },
+  },
+  {
+    id: "nav-utility",
+    label: "Nav (analytics)",
+    preview: { view: "nav", activeTab: "analytics" },
   },
   { id: "ask", label: "Ask composer", preview: { view: "ask" } },
   { id: "search", label: "Search", preview: { view: "search" } },
@@ -122,14 +167,69 @@ const GRID_STATES: { id: string; label: string; preview: DockPreview }[] = [
     preview: { view: "watch-source" },
   },
   {
+    id: "watch-kind",
+    label: "Watch kind chooser",
+    preview: { view: "watch-kind" },
+  },
+  {
     id: "watch-target",
     label: "Watch handle entry",
     preview: { view: "watch-target" },
   },
   {
+    id: "analytics-range",
+    label: "Analytics time range",
+    preview: { view: "analytics-range" },
+  },
+  {
+    id: "analytics-rename",
+    label: "Analytics rename dashboard",
+    preview: { view: "analytics-rename" },
+  },
+  {
+    id: "analytics-duplicate",
+    label: "Analytics duplicate dashboard",
+    preview: { view: "analytics-duplicate" },
+  },
+  {
     id: "selection",
     label: "Selection",
     preview: { view: "selection", selectionSize: 12, filteredCount: 240 },
+  },
+  {
+    id: "selection-trash",
+    label: "Selection (in trash)",
+    preview: {
+      view: "selection",
+      selectionSize: 12,
+      filteredCount: 240,
+      inTrash: true,
+    },
+  },
+  {
+    id: "selection-run",
+    label: "Selection run task",
+    preview: { view: "selection-run", selectionSize: 12 },
+  },
+  {
+    id: "selection-tag",
+    label: "Selection add tags",
+    preview: { view: "selection-tag", selectionSize: 12 },
+  },
+  {
+    id: "selection-copy",
+    label: "Selection copy",
+    preview: { view: "selection-copy", selectionSize: 12 },
+  },
+  {
+    id: "selection-export",
+    label: "Selection export",
+    preview: { view: "selection-export", selectionSize: 12 },
+  },
+  {
+    id: "confirm",
+    label: "Confirm",
+    preview: { view: "confirm" },
   },
 ];
 
@@ -272,6 +372,20 @@ export function DockPlayground() {
             >
               Clear ask
             </button>
+          </div>
+
+          <div className={styles.group}>
+            <div className={styles.groupLabel}>Activity</div>
+            {ACTIVITY_SCENARIOS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                className={styles.item}
+                onClick={t.fire}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
           <div className={styles.group}>

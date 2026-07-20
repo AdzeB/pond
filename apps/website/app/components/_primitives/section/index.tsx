@@ -1,4 +1,4 @@
-import { cn } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 import styles from "./styles.module.css";
 
@@ -47,37 +47,33 @@ function Lead({ children }: { children: ReactNode }) {
   return <p className={styles.lead}>{children}</p>;
 }
 
-interface GridProps {
+function Grid({
+  children,
+  className,
+}: {
   children: ReactNode;
-  columns?: 12;
   className?: string;
-}
-
-function Grid({ children, className }: GridProps) {
+}) {
   return <div className={cn(styles.grid, className)}>{children}</div>;
 }
 
 type CardSpan = 4 | 5 | 6 | 7 | 8 | 12;
-type CardTone = "default" | "muted" | "feature";
 
 interface CardProps {
   children?: ReactNode;
   span?: CardSpan;
   spanMd?: CardSpan;
-  tone?: CardTone;
-  padded?: boolean;
   className?: string;
   title?: ReactNode;
   description?: ReactNode;
   fragment?: ReactNode;
 }
 
+/** Compact feature card: optional visual on top, title plus one line below. */
 function Card({
   children,
   span = 6,
   spanMd,
-  tone = "default",
-  padded = true,
   className,
   title,
   description,
@@ -85,46 +81,22 @@ function Card({
 }: CardProps) {
   const style: CSSProperties = {
     ["--card-span" as string]: String(span),
-    ["--card-span-md" as string]: String(spanMd ?? Math.min(span, 6)),
+    ["--card-span-md" as string]: String(spanMd ?? (span >= 8 ? 12 : span)),
   };
 
-  if (title || description || fragment) {
-    return (
-      <article
-        className={cn(
-          styles.card,
-          styles[`card-${tone}`],
-          padded && styles["card-padded"],
-          className,
-        )}
-        style={style}
-      >
-        {fragment ? (
-          <div className={styles["card-fragment"]}>{fragment}</div>
-        ) : null}
-        {(title || description) && (
-          <div className={styles["card-body"]}>
-            {title ? <h3 className={styles["card-title"]}>{title}</h3> : null}
-            {description ? (
-              <p className={styles["card-description"]}>{description}</p>
-            ) : null}
-          </div>
-        )}
-        {children}
-      </article>
-    );
-  }
-
   return (
-    <article
-      className={cn(
-        styles.card,
-        styles[`card-${tone}`],
-        padded && styles["card-padded"],
-        className,
+    <article className={cn(styles.card, className)} style={style}>
+      {fragment ? (
+        <div className={styles["card-fragment"]}>{fragment}</div>
+      ) : null}
+      {(title || description) && (
+        <div className={styles["card-body"]}>
+          {title ? <h3 className={styles["card-title"]}>{title}</h3> : null}
+          {description ? (
+            <p className={styles["card-description"]}>{description}</p>
+          ) : null}
+        </div>
       )}
-      style={style}
-    >
       {children}
     </article>
   );

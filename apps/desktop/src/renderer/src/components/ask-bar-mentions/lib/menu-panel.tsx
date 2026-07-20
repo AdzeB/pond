@@ -88,7 +88,7 @@ function AskMenuRow({
     return (
       <button className={styles["menu-create"]} {...common}>
         <Plus width={14} height={14} />
-        {item.name ? `Create skill “/${item.name}”` : "Create skill…"}
+        {item.name ? `Create skill “/${item.name}”` : "Create skill"}
       </button>
     );
   }

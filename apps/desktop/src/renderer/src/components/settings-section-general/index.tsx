@@ -54,7 +54,7 @@ export function CheckNowRow() {
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <Button size="sm" onClick={() => void checkNow()} disabled={busy}>
-          {busy ? "Checking…" : "Check Now"}
+          {busy ? "Checking" : "Check Now"}
         </Button>
       </Settings.ItemControl>
     </>

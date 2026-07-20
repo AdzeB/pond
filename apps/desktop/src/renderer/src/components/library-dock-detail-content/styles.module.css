@@ -12,13 +12,12 @@
   color: var(--ds-gray-11);
 }
 
-/* Ringed circular face for watches, matching the watch tiles. */
+/* Ringed app-icon face for watches; the brand tile rounds itself, this adds the outer keyline. */
 .wavatar {
   position: relative;
   display: grid;
   flex: none;
   place-items: center;
-  border-radius: 50%;
 }
 
 .wavatar::before {
@@ -26,12 +25,7 @@
   inset: -4px;
   content: "";
   border: 1.5px solid var(--ds-gray-a5);
-  border-radius: 50%;
-}
-
-/* clip-path sidesteps the tile's own border-radius without !important. */
-.wavatar > * {
-  clip-path: circle(50%);
+  border-radius: calc(var(--ds-radius-app-icon) + 2px);
 }
 
 /* Option list matching the tray's other cards: separate 44px rounded rows. */

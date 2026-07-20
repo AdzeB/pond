@@ -44,8 +44,8 @@ export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
 
 export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   bundled: {
-    label: "Bundled (on-device)",
-    hint: "Runs a small model fully on-device. Downloaded on first use.",
+    label: "Minnow",
+    hint: "Pond's built-in model. Small, private, runs fully on-device. Downloaded on first use.",
     transport: "bundled",
     baseUrl: "",
     defaultModel: "",
@@ -71,8 +71,8 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
     keyPlaceholder: "",
   },
   custom: {
-    label: "Custom (OpenAI-compatible)",
-    hint: "Any OpenAI-compatible endpoint. Enter the base URL up to /v1. An API key is optional.",
+    label: "Custom Endpoint",
+    hint: "Connect any server that speaks the OpenAI API. Enter the base URL up to /v1. An API key is optional.",
     transport: "openai",
     baseUrl: "",
     defaultModel: "local-model",
@@ -129,7 +129,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
     hint: "Grok via xAI's API. Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.x.ai/v1",
-    defaultModel: "grok-2-latest",
+    defaultModel: "grok-4.5",
     requiresKey: true,
     keyPlaceholder: "xai-…",
   },

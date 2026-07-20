@@ -2,3 +2,16 @@
   display: inline-flex;
   align-items: center;
 }
+
+/* Unfolded tab group: width animates via motion, so clip the flow. */
+.expand {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.expand-inner {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}

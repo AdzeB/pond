@@ -39,14 +39,12 @@ export function ZoomSection() {
 
   return (
     <>
-      <TrayCard.Close />
       <TrayCard.Header>
         <TrayCard.Title>Library Zoom Level</TrayCard.Title>
+        <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
-          Control how large items appear in your library. Pick a denser step to
-          fit more on screen at once, or a roomier one for bigger,
-          easier-to-scan cards.
+          Control how large items appear in your library.
         </TrayCard.Description>
       </TrayCard.Header>
       <ToggleGroup

@@ -1,0 +1,12 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  padding-top: 6px;
+}
+
+.mark {
+  margin-bottom: 6px;
+  color: var(--ds-red-6);
+}

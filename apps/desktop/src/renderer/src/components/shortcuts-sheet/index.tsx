@@ -1,0 +1,50 @@
+import { Dialog, Keyboard } from "@pond/ui";
+import {
+  SHORTCUT_GROUPS,
+  SHORTCUTS,
+  type ShortcutId,
+  shortcutGlyphs,
+} from "@/lib/save/shortcuts";
+import styles from "./styles.module.css";
+
+const handle = Dialog.createHandle();
+
+export function openShortcutsSheet(): void {
+  handle.open(null);
+}
+
+const IDS = Object.keys(SHORTCUTS) as ShortcutId[];
+
+export function ShortcutsSheetHost() {
+  return (
+    <Dialog.Root handle={handle}>
+      <Dialog.Portal>
+        <Dialog.Backdrop />
+        <Dialog.Popup className={styles.popup}>
+          <Dialog.Header>
+            <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
+          </Dialog.Header>
+          <Dialog.Content className={styles.content}>
+            <div className={styles.columns}>
+              {SHORTCUT_GROUPS.map((group) => (
+                <section key={group} className={styles.group}>
+                  <h3 className={styles["group-title"]}>{group}</h3>
+                  {IDS.filter((id) => SHORTCUTS[id].group === group).map(
+                    (id) => (
+                      <div key={id} className={styles.row}>
+                        <span className={styles.label}>
+                          {SHORTCUTS[id].label}
+                        </span>
+                        <Keyboard.Cluster keys={shortcutGlyphs(id)} />
+                      </div>
+                    ),
+                  )}
+                </section>
+              ))}
+            </div>
+          </Dialog.Content>
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}

@@ -7,6 +7,7 @@ const MAX_ATTEMPTS: Record<Op, number> = {
   harvest_metadata: 5,
   capture_tweet: 4,
   fetch_blobs: 5,
+  archive_page: 3,
   fetch_video_ytdlp: 3,
   ensure_poster: 4,
   fetch_avatar: 3,
@@ -20,11 +21,17 @@ export function maxAttemptsFor(op: Op): number {
 export function planOps(source: Source): readonly Op[] {
   /** Local saves carry everything at import time; no pipeline ops. */
   if (source === "local") return [];
-  /** Generic web links fetch metadata + cover only, so an arbitrary article never triggers capture_tweet/yt-dlp/poster/avatar. */
-  if (source === "web") return ["harvest_metadata", "fetch_blobs", "finalize"];
-  /** capture_tweet is twitter-only; filter it out elsewhere to avoid dead tasks. */
-  if (source === "twitter") return UNIVERSAL_SPEC;
-  return UNIVERSAL_SPEC.filter((op) => op !== "capture_tweet");
+  /** Generic web links fetch metadata + cover, plus a replayable WARC site archive. */
+  if (source === "web") {
+    return ["harvest_metadata", "fetch_blobs", "archive_page", "finalize"];
+  }
+  /** capture_tweet is twitter-only and archive_page is web-only; filter them out to avoid dead tasks. */
+  if (source === "twitter") {
+    return UNIVERSAL_SPEC.filter((op) => op !== "archive_page");
+  }
+  return UNIVERSAL_SPEC.filter(
+    (op) => op !== "capture_tweet" && op !== "archive_page",
+  );
 }
 
 interface CaptureExpectation {

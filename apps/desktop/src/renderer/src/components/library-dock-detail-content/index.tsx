@@ -9,12 +9,13 @@ import {
 } from "@pond/icons/fill/18";
 import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
 import type { Prefs } from "@pond/schema/db";
-import { Button, TrayCard } from "@pond/ui";
+import { Button, Menu, TrayCard } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
+import { openTrayConfirm } from "@/components/library-dock-confirm-content";
 import { openFrequencyPage } from "@/components/library-dock-detail-content/frequency";
+import { buildAccountMenu } from "@/components/library-sources-page/lib/account-menu";
 import {
   accountName,
   FREQUENCY_OPTIONS,
@@ -29,7 +30,6 @@ import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
 import { useSyncHistory } from "@/hooks/use-sync-history";
 import { sourceSettingsFor } from "@/lib/save/source-settings";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { showContextMenu } from "@/lib/ui/native-menu";
 import { formatNumber } from "@/lib/util/format";
 import { usePrefs } from "@/stores/prefs";
 import { sourceDetail, useDetailAccountId } from "@/stores/source-detail";
@@ -84,8 +84,6 @@ function AccountDetail({
   const { source } = account;
   const { runs } = useSyncHistory(source, 1, account.id);
   const last = runs[0];
-  const [confirming, setConfirming] = useState(false);
-  const [removing, setRemoving] = useState(false);
   const nickRef = useRef<HTMLInputElement>(null);
   const handleRef = useRef<HTMLInputElement>(null);
 
@@ -125,47 +123,26 @@ function AccountDetail({
     void navigate({ to: "/" });
   };
 
-  const disconnect = async () => {
-    setRemoving(true);
-    try {
-      await window.pond.query("accounts.disconnect", {
-        accountId: account.id,
-      });
-      onChanged();
-      setConfirming(false);
-      dock.closeViewMenu();
-    } finally {
-      setRemoving(false);
-    }
-  };
-
-  const openMore = () => {
-    void showContextMenu([
-      {
-        label: "Backfill",
-        enabled: model.connected && model.tone !== "run",
-        onSelect: () =>
-          void window.pond.syncRunNow(account.id, { forceFull: true }),
+  const confirmDisconnect = () => {
+    openTrayConfirm({
+      title: "Disconnect",
+      description: `Pond signs ${accountName(account)} out and stops its syncing. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`,
+      confirmLabel: "Disconnect",
+      returnTo: "account-detail",
+      onConfirm: async () => {
+        await window.pond.query("accounts.disconnect", {
+          accountId: account.id,
+        });
+        onChanged();
       },
-      {
-        label: "Refresh metadata",
-        enabled: model.connected,
-        onSelect: () => void window.pond.refreshBackfillStart({ source }),
-      },
-      {
-        label: "Re-download at full quality",
-        enabled: model.connected,
-        onSelect: () =>
-          void window.pond.refreshBackfillStart({ source, overwrite: true }),
-      },
-    ]);
+    });
   };
 
   const primary = (() => {
     switch (model.tone) {
       case "run":
         return {
-          label: "Cancel sync",
+          label: "Cancel Sync",
           run: () => window.pond.syncCancel(account.id),
         };
       case "paused":
@@ -175,7 +152,7 @@ function AccountDetail({
         };
       case "err":
         return {
-          label: "Retry now",
+          label: "Retry Now",
           run: () => window.pond.syncRunNow(account.id),
         };
       default:
@@ -245,7 +222,7 @@ function AccountDetail({
           <span className={styles["row-icon"]}>
             <Clock size={18} />
           </span>
-          <span className={styles["row-label"]}>Sync frequency</span>
+          <span className={styles["row-label"]}>Sync Frequency</span>
           <span className={styles["row-value"]}>
             {frequency.label}
             <ChevronRight width={13} height={13} />
@@ -296,7 +273,7 @@ function AccountDetail({
             <span className={styles["row-icon"]}>
               <History size={18} />
             </span>
-            <span className={styles["row-label"]}>Last run</span>
+            <span className={styles["row-label"]}>Last Run</span>
             <span className={styles["row-value"]}>{formatClock(last.ts)}</span>
           </div>
         ) : null}
@@ -309,7 +286,7 @@ function AccountDetail({
           <span className={styles["row-icon"]}>
             <Grid size={18} />
           </span>
-          <span className={styles["row-label"]}>View items in library</span>
+          <span className={styles["row-label"]}>View Items in Library</span>
           <span className={styles["row-value"]}>
             <ChevronRight width={13} height={13} />
           </span>
@@ -321,18 +298,22 @@ function AccountDetail({
           variant="tertiary"
           size="lg"
           style={{ width: "100%" }}
-          onClick={() => setConfirming(true)}
+          onClick={confirmDisconnect}
         >
-          Disconnect…
+          Disconnect
         </Button>
-        <Button
-          variant="tertiary"
-          size="lg"
-          style={{ width: "100%" }}
-          onClick={openMore}
-        >
-          More…
-        </Button>
+        <Menu.Root>
+          <Menu.Trigger variant="tertiary" size="lg" style={{ width: "100%" }}>
+            More
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Positioner side="top" align="center">
+              <Menu.Popup>
+                <Menu.Items items={buildAccountMenu(account, model)} />
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
         <TrayCard.Confirm
           onClick={(e) => {
             void primary.run();
@@ -347,16 +328,6 @@ function AccountDetail({
       {model.tone === "err" && status?.lastError ? (
         <p className={styles["error-line"]}>{status.lastError}</p>
       ) : null}
-
-      <ConfirmDialog
-        open={confirming}
-        onOpenChange={setConfirming}
-        title={`Disconnect ${accountName(account)}?`}
-        description={`Pond signs this account out and stops its syncing. The ${formatNumber(count)} item${count === 1 ? "" : "s"} already saved stay in your library.`}
-        confirmLabel="Disconnect"
-        busy={removing}
-        onConfirm={() => void disconnect()}
-      />
     </>
   );
 }

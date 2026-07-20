@@ -32,7 +32,7 @@ export interface WriteFileArgs {
 interface ApplyPatchOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
-  replaceFilesWithKind?: SaveFile["kind"];
+  replaceFilesWithKind?: SaveFile["kind"] | SaveFile["kind"][];
 }
 
 export async function applySavePatch(
@@ -58,6 +58,19 @@ export async function applySavePatch(
     return null;
   }
 
+  const replaceKinds =
+    opts.replaceFilesWithKind == null
+      ? null
+      : new Set<SaveFile["kind"]>(
+          Array.isArray(opts.replaceFilesWithKind)
+            ? opts.replaceFilesWithKind
+            : [opts.replaceFilesWithKind],
+        );
+  /** Replaced kinds free their filenames, so regenerations overwrite in place instead of accumulating suffixed copies. */
+  const baseFiles = replaceKinds
+    ? (current.files ?? []).filter((f) => !replaceKinds.has(f.kind))
+    : (current.files ?? []);
+
   const written: SaveFile[] = [];
   if (opts.newFiles && opts.newFiles.length > 0) {
     const dir = itemDir(saveId);
@@ -71,11 +84,7 @@ export async function applySavePatch(
         );
         continue;
       }
-      const target = uniqueFilename(
-        file.filename,
-        current.files ?? [],
-        written,
-      );
+      const target = uniqueFilename(file.filename, baseFiles, written);
       await writeFile(join(dir, target), file.bytes);
       const entry: SaveFile = {
         kind: file.kind,
@@ -90,13 +99,6 @@ export async function applySavePatch(
       written.push(entry);
     }
   }
-
-  const baseFiles =
-    opts.replaceFilesWithKind != null
-      ? (current.files ?? []).filter(
-          (f) => f.kind !== opts.replaceFilesWithKind,
-        )
-      : (current.files ?? []);
   const nextFiles =
     written.length > 0 ? [...baseFiles, ...written] : current.files;
 

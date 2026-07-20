@@ -27,15 +27,14 @@ export function FrequencySection() {
 
   return (
     <>
-      <TrayCard.Back onClick={() => dock.openViewMenu(returnTo)} />
       <TrayCard.Header>
-        <TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu(returnTo)} />
+        <TrayCard.Title position="center">
           {returnTo === "watch-detail" ? "Check Frequency" : "Sync Frequency"}
         </TrayCard.Title>
         <TrayCard.Separator />
         <TrayCard.Description>
-          How often Pond checks for new items in the background. Applies to all
-          connected sources.
+          How often Pond checks for new items in the background.
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
@@ -63,7 +62,7 @@ export function FrequencySection() {
           onClick={() => pick({ ...cron, enabled: false })}
         >
           {!cron.enabled ? <span aria-hidden className={styles.ring} /> : null}
-          <span className={styles["row-label"]}>Manual only</span>
+          <span className={styles["row-label"]}>Manual Only</span>
         </button>
       </div>
     </>

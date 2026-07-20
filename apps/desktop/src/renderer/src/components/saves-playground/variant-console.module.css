@@ -1,0 +1,175 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.counts {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 0 10px;
+}
+
+.count {
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
+.count[data-tone="run"] {
+  color: var(--ds-accent-11);
+}
+
+.count[data-tone="err"] {
+  color: var(--ds-red-11);
+}
+
+.count[data-tone="ok"] {
+  color: var(--ds-green-11);
+}
+
+.countActions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.row[data-status="failed"] {
+  background: var(--ds-red-a2);
+}
+
+.head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 40px;
+  padding: 4px 10px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+  border-radius: 10px;
+}
+
+.head:disabled {
+  cursor: default;
+}
+
+.head:not(:disabled):hover {
+  background: var(--ds-gray-2);
+}
+
+.statusDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--ds-gray-6);
+  border-radius: 999px;
+}
+
+.row[data-status="saving"] .statusDot {
+  background: var(--ds-accent-9);
+}
+
+.row[data-status="failed"] .statusDot {
+  background: var(--ds-red-9);
+}
+
+.row[data-status="saved"] .statusDot {
+  background: var(--ds-green-9);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.pct,
+.when {
+  min-width: 34px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+  text-align: right;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 10px 10px 50px;
+}
+
+.step {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 11.5px;
+  color: var(--ds-gray-10);
+}
+
+.step[data-state="done"] {
+  color: var(--ds-gray-11);
+}
+
+.step[data-state="active"] {
+  color: var(--ds-accent-11);
+}
+
+.step[data-state="failed"] {
+  color: var(--ds-red-11);
+}
+
+.stepMark {
+  display: inline-flex;
+  justify-content: center;
+  width: 12px;
+  font-size: 11px;
+}
+
+.stepsError {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--ds-red-11);
+}
+
+.empty {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ds-gray-10);
+  text-align: center;
+}

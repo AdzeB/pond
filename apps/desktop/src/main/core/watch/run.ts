@@ -105,7 +105,7 @@ export async function watchNow(
     accountId: watchId,
     source,
     state: "running",
-    message: `Checking @${watch.handle}…`,
+    message: `Checking @${watch.handle}`,
   });
   try {
     await runWatch(watch, controller.signal, ev);
@@ -254,7 +254,7 @@ async function runWatch(
     accountId: watchId,
     source,
     state: "running",
-    message: `Queueing ${fresh.length} new post${fresh.length === 1 ? "" : "s"}…`,
+    message: `Queueing ${fresh.length} new post${fresh.length === 1 ? "" : "s"}`,
     progress: { current: 0, total: fresh.length },
   });
   const bulk = await enqueueSavesBulk(

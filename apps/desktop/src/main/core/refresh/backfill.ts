@@ -82,7 +82,7 @@ export async function startRefreshBackfill(
     startedAt: new Date().toISOString(),
     finishedAt: null,
     options: opts,
-    message: `Refreshing ${ids.length} save${ids.length === 1 ? "" : "s"}…`,
+    message: `Refreshing ${ids.length} save${ids.length === 1 ? "" : "s"}`,
   };
   emit(start);
 

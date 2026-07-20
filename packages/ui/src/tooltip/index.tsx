@@ -11,7 +11,7 @@ function Provider(props: Base.Provider.Props) {
   return <Base.Provider {...props} />;
 }
 
-function Trigger(props: Base.Trigger.Props) {
+function Trigger<Payload>(props: Base.Trigger.Props<Payload>) {
   return (
     <Base.Trigger
       className={clsx(styles.trigger, props.className)}
@@ -57,6 +57,30 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={clsx(styles.arrow, className)} {...props} />;
 }
 
+interface SharedProps {
+  handle: Base.Handle<ReactNode>;
+  side?: Base.Positioner.Props["side"];
+  align?: Base.Positioner.Props["align"];
+  sideOffset?: number;
+}
+
+/** Single popup for many detached triggers; the positioner transitions let it glide between them. */
+function Shared({ handle, side, align, sideOffset }: SharedProps) {
+  return (
+    <Base.Root handle={handle}>
+      {({ payload }) => (
+        <Portal>
+          <Positioner side={side} align={align} sideOffset={sideOffset}>
+            <Popup>
+              <Viewport>{payload}</Viewport>
+            </Popup>
+          </Positioner>
+        </Portal>
+      )}
+    </Base.Root>
+  );
+}
+
 interface TooltipProps {
   label: ReactNode;
   children: ReactElement;
@@ -97,6 +121,7 @@ export const Tooltip = Object.assign(TooltipWrapper, {
   Positioner,
   Popup,
   Arrow,
+  Shared,
   createHandle: Base.createHandle,
   Handle: Base.Handle,
 });

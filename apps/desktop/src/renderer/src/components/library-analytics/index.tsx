@@ -1,53 +1,24 @@
-import {
-  IconDotsOutline18 as Dots,
-  IconPlusOutline18 as Plus,
-} from "@pond/icons/outline/18";
-import {
-  type DashboardConfig,
-  DEFAULT_DASHBOARDS,
-  type InsightConfig,
-} from "@pond/schema/db";
-import { Button, Menu, Tooltip } from "@pond/ui";
+import type { InsightConfig } from "@pond/schema/db";
+import { Button } from "@pond/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { EnumSelect } from "@/components/enum-select";
 import { InsightEditorDialog } from "@/components/library-analytics-insight-editor";
 import { useSaves } from "@/hooks/use-saves";
 import { insightEditor } from "@/stores/insight-editor";
-import { usePrefs } from "@/stores/prefs";
-import { FilterBar } from "./filter-bar";
 import { InsightCard } from "./insight-card";
-import {
-  applyFilters,
-  isSavesInsight,
-  newInsight,
-  savesInWindow,
-} from "./lib/insights";
+import { useDashboards } from "./lib/dashboards";
+import { isSavesInsight, newInsight, savesInWindow } from "./lib/insights";
 import styles from "./styles.module.css";
 
-const RANGE_OPTIONS = [
-  { value: 7, label: "Last 7 days" },
-  { value: 30, label: "Last 30 days" },
-  { value: 90, label: "Last 90 days" },
-  { value: 0, label: "All time" },
-];
+/** One dashboard's insight grid; the dashboard index page and the dock's analytics cards handle switching and management. */
+export function AnalyticsPage({ id }: { id: string }) {
+  const { loaded, dashboard, activeId, switchDashboard, setInsights } =
+    useDashboards(id);
 
-function newDashboard(): DashboardConfig {
-  return {
-    id: crypto.randomUUID(),
-    name: "New dashboard",
-    description: "",
-    days: 7,
-    filters: [],
-    insights: [],
-  };
-}
+  /** The dock's range and edit cards act on `activeId`; keep it pointed at the routed dashboard. */
+  useEffect(() => {
+    if (loaded && activeId !== id) switchDashboard(id);
+  }, [loaded, activeId, id, switchDashboard]);
 
-/** Dashboards and their insight cards persist in prefs. */
-export function AnalyticsPage() {
-  const [view, patchView, loaded] = usePrefs("analyticsView");
-  const dashboards = view.dashboards ?? [];
-  const fallback = (dashboards[0] ?? DEFAULT_DASHBOARDS[0]) as DashboardConfig;
-  const dashboard = dashboards.find((d) => d.id === view.activeId) ?? fallback;
   /** Cards on non-saves datasets can't be computed; hide them, and the next dashboard edit persists the pruned list. */
   const insights = useMemo(
     () => dashboard.insights.filter(isSavesInsight),
@@ -57,25 +28,12 @@ export function AnalyticsPage() {
   /** The saves pool is already fully in memory; every card derives from it. */
   const saves = useSaves();
   const dashboardSaves = useMemo(
-    () => applyFilters(savesInWindow(saves, dashboard.days), dashboard.filters),
-    [saves, dashboard.days, dashboard.filters],
+    () => savesInWindow(saves, dashboard.days),
+    [saves, dashboard.days],
   );
-
-  const nameRef = useRef<HTMLInputElement>(null);
 
   const [dragId, setDragId] = useState<string | null>(null);
   const dragFrom = useRef<number>(-1);
-
-  const patchDashboard = (patch: Partial<DashboardConfig>) => {
-    const exists = dashboards.some((d) => d.id === dashboard.id);
-    const next = exists
-      ? dashboards.map((d) => (d.id === dashboard.id ? { ...d, ...patch } : d))
-      : [...dashboards, { ...dashboard, ...patch }];
-    patchView({ dashboards: next, activeId: dashboard.id });
-  };
-
-  const setInsights = (next: InsightConfig[]) =>
-    patchDashboard({ insights: next });
 
   const patchInsight = (id: string, patch: Partial<InsightConfig>) => {
     setInsights(insights.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -99,7 +57,7 @@ export function AnalyticsPage() {
     [],
   );
 
-  /** The editor's filter menus and live preview work from the dashboard's filtered saves and window. */
+  /** The editor's filter menus and live preview work from the dashboard's windowed saves. */
   useEffect(() => {
     insightEditor.setData(dashboardSaves, dashboard.days);
   }, [dashboardSaves, dashboard.days]);
@@ -132,115 +90,17 @@ export function AnalyticsPage() {
     setInsights(next);
   };
 
-  const addDashboard = () => {
-    const created = newDashboard();
-    patchView({ dashboards: [...dashboards, created], activeId: created.id });
-  };
-
-  const duplicateDashboard = () => {
-    const copy: DashboardConfig = {
-      ...dashboard,
-      id: crypto.randomUUID(),
-      name: `${dashboard.name} copy`,
-      insights: dashboard.insights.map((c) => ({
-        ...c,
-        id: crypto.randomUUID(),
-      })),
-    };
-    patchView({ dashboards: [...dashboards, copy], activeId: copy.id });
-  };
-
-  const deleteDashboard = () => {
-    const rest = dashboards.filter((d) => d.id !== dashboard.id);
-    const next = rest.length > 0 ? rest : [newDashboard()];
-    patchView({ dashboards: next, activeId: next[0]?.id ?? "" });
-  };
-
   return (
     <div className={styles.page}>
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles.heading}>
-            <input
-              ref={nameRef}
-              className={styles["name-input"]}
-              value={dashboard.name}
-              aria-label="Dashboard name"
-              onChange={(e) => patchDashboard({ name: e.target.value })}
-            />
-            <input
-              className={styles["description-input"]}
-              value={dashboard.description}
-              placeholder="Add a description…"
-              aria-label="Dashboard description"
-              onChange={(e) => patchDashboard({ description: e.target.value })}
-            />
+            <h1 className={styles.name}>{dashboard.name}</h1>
+            {dashboard.description ? (
+              <p className={styles.description}>{dashboard.description}</p>
+            ) : null}
           </div>
-
-          {dashboards.length > 1 ? (
-            <EnumSelect<string>
-              value={dashboard.id}
-              options={dashboards.map((d) => ({
-                value: d.id,
-                label: d.name,
-              }))}
-              onValueChange={(activeId) => patchView({ activeId })}
-              aria-label="Switch dashboard"
-            />
-          ) : null}
-
-          <EnumSelect<number>
-            value={dashboard.days}
-            options={RANGE_OPTIONS}
-            onValueChange={(days) => patchDashboard({ days })}
-            aria-label="Time range"
-          />
-
-          <Menu.Root>
-            <Menu.Trigger icon variant="ghost" aria-label="Dashboard actions">
-              <Dots width={14} height={14} />
-            </Menu.Trigger>
-            <Menu.Portal>
-              <Menu.Positioner align="end">
-                <Menu.Popup>
-                  <Menu.Items
-                    items={[
-                      { label: "New dashboard", onClick: addDashboard },
-                      {
-                        label: "Rename",
-                        onClick: () => nameRef.current?.select(),
-                      },
-                      { label: "Duplicate", onClick: duplicateDashboard },
-                      { type: "separator" },
-                      {
-                        label: "Delete dashboard",
-                        disabled: dashboards.length <= 1,
-                        onClick: deleteDashboard,
-                      },
-                    ]}
-                  />
-                </Menu.Popup>
-              </Menu.Positioner>
-            </Menu.Portal>
-          </Menu.Root>
-
-          <Tooltip label="Add insight">
-            <Button
-              icon
-              variant="secondary"
-              aria-label="Add insight"
-              onClick={() => insightEditor.open(newInsight(), true)}
-            >
-              <Plus width={16} height={16} />
-            </Button>
-          </Tooltip>
         </header>
-
-        <FilterBar
-          filters={dashboard.filters}
-          saves={saves}
-          onChange={(filters) => patchDashboard({ filters })}
-        />
 
         {loaded && insights.length === 0 ? (
           <div className={styles.empty}>

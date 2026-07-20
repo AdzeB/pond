@@ -10,7 +10,7 @@ import { applySavePatch, type WriteFileArgs } from "./pipeline/workers/apply";
 interface PersistSaveOptions {
   actorReason: string;
   newFiles?: WriteFileArgs[];
-  replaceFilesWithKind?: WriteFileArgs["kind"];
+  replaceFilesWithKind?: WriteFileArgs["kind"] | WriteFileArgs["kind"][];
   /** Forces an info.json refresh even for DB-only patches; used by finalize. */
   writeInfo?: boolean;
 }

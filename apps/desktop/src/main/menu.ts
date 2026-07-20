@@ -85,7 +85,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       ...syncItems,
       { type: "separator" },
       {
-        label: "Refresh All Metadata…",
+        label: "Refresh All Metadata",
         click: sendMenuAction("refresh.all"),
       },
       {
@@ -96,7 +96,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
   };
 
   const settingsItem: Electron.MenuItemConstructorOptions = {
-    label: "Settings…",
+    label: "Settings",
     accelerator: "CmdOrCtrl+,",
     click: navTo("/settings"),
   };
@@ -110,7 +110,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
               { role: "about" as const, label: `About ${app.name}` },
               { type: "separator" as const },
               {
-                label: "Check for Updates…",
+                label: "Check for Updates",
                 click: navTo("/settings/general"),
               },
               { type: "separator" as const },
@@ -131,17 +131,20 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "File",
       submenu: [
         {
-          label: "New Save…",
+          label: "New Save",
           accelerator: "CmdOrCtrl+N",
           click: sendMenuAction("save.new"),
         },
         {
-          label: "Open Library…",
+          label: "Open Library",
           click: () => openLibraryWindow(),
         },
         { type: "separator" },
         {
           label: "Open with Default App",
+          /** Display-only: the renderer's save hotkeys own the key so it stays scoped to a selected save. */
+          accelerator: "O",
+          registerAccelerator: false,
           click: sendMenuAction("save.open-with-default"),
         },
         {
@@ -163,11 +166,15 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         {
           label: "Refresh Details",
+          accelerator: "R",
+          registerAccelerator: false,
           click: sendMenuAction("save.refresh"),
         },
         { type: "separator" },
         {
           label: "Move to Trash",
+          accelerator: "Backspace",
+          registerAccelerator: false,
           click: sendMenuAction("save.trash"),
         },
         {
@@ -176,6 +183,8 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         {
           label: "Delete Forever",
+          accelerator: "CmdOrCtrl+Backspace",
+          registerAccelerator: false,
           click: sendMenuAction("save.delete-forever"),
         },
         { type: "separator" },
@@ -213,6 +222,8 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           label: "Copy URL",
+          accelerator: "C",
+          registerAccelerator: false,
           click: sendMenuAction("save.copy-url"),
         },
         {
@@ -236,6 +247,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       submenu: [
         {
           label: "Cycle Layout",
+          accelerator: "CmdOrCtrl+Shift+L",
           click: sendMenuAction("view.layout.cycle"),
         },
         {
@@ -251,6 +263,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           label: "Toggle Details",
+          accelerator: "CmdOrCtrl+I",
           click: sendMenuAction("view.inspector.toggle"),
         },
         {
@@ -262,11 +275,66 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           ],
         },
         { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
+        /** Grid zoom, not page zoom: the roles would scale the whole chrome. */
+        {
+          label: "Zoom In",
+          accelerator: "CmdOrCtrl+=",
+          click: sendMenuAction("view.zoom-in"),
+        },
+        {
+          label: "Zoom Out",
+          accelerator: "CmdOrCtrl+-",
+          click: sendMenuAction("view.zoom-out"),
+        },
+        {
+          label: "Reset Zoom",
+          accelerator: "CmdOrCtrl+0",
+          click: sendMenuAction("view.zoom-reset"),
+        },
         { type: "separator" },
         { role: "togglefullscreen" },
+      ],
+    },
+    {
+      label: "Go",
+      submenu: [
+        {
+          label: "Back",
+          accelerator: "CmdOrCtrl+[",
+          click: sendMenuAction("history.back"),
+        },
+        {
+          label: "Forward",
+          accelerator: "CmdOrCtrl+]",
+          click: sendMenuAction("history.forward"),
+        },
+        { type: "separator" },
+        { label: "Library", accelerator: "CmdOrCtrl+1", click: navTo("/") },
+        {
+          label: "Sources",
+          accelerator: "CmdOrCtrl+2",
+          click: navTo("/sources"),
+        },
+        {
+          label: "Analytics",
+          accelerator: "CmdOrCtrl+3",
+          click: navTo("/analytics"),
+        },
+        { label: "Trash", accelerator: "CmdOrCtrl+4", click: navTo("/trash") },
+        { type: "separator" },
+        {
+          label: "Ask Your Library",
+          /** Display-only: the renderer owns the key so it works while a field is focused. */
+          accelerator: "CmdOrCtrl+K",
+          registerAccelerator: false,
+          click: sendMenuAction("dock.ask"),
+        },
+        {
+          label: "Search",
+          accelerator: "CmdOrCtrl+F",
+          registerAccelerator: false,
+          click: sendMenuAction("dock.search"),
+        },
       ],
     },
     {
@@ -281,7 +349,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: () => void shell.openPath(libraryRoot()),
         },
         {
-          label: "Move Library…",
+          label: "Move Library",
           click: sendMenuAction("library.move"),
         },
         { type: "separator" },
@@ -313,6 +381,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         { type: "separator" },
         {
           label: "Empty Trash",
+          accelerator: "CmdOrCtrl+Shift+Backspace",
           click: sendMenuAction("trash.empty"),
         },
         {
@@ -361,6 +430,26 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
                 label: "Open Dock Playground",
                 click: sendMenuAction("developer.dock-playground"),
               },
+              {
+                label: "Open Saves Playground",
+                click: sendMenuAction("developer.saves-playground"),
+              },
+              {
+                label: "Open Dock Merge Playground",
+                click: sendMenuAction("developer.dock-merge-playground"),
+              },
+              {
+                label: "Open Tooltip Playground",
+                click: sendMenuAction("developer.tooltip-playground"),
+              },
+              {
+                label: "Open Source Tile Playground",
+                click: sendMenuAction("developer.source-tile-playground"),
+              },
+              {
+                label: "Open Toast Playground",
+                click: sendMenuAction("developer.toast-playground"),
+              },
             ],
           },
         ] satisfies Electron.MenuItemConstructorOptions[])
@@ -370,11 +459,17 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       role: "help",
       submenu: [
         {
+          label: "Keyboard Shortcuts",
+          accelerator: "CmdOrCtrl+/",
+          click: sendMenuAction("help.shortcuts"),
+        },
+        { type: "separator" },
+        {
           label: "Pond on GitHub",
           click: openExternalUrl("https://github.com/raphaelsalaja/pond"),
         },
         {
-          label: "Report an Issue…",
+          label: "Report an Issue",
           click: openExternalUrl(
             "https://github.com/raphaelsalaja/pond/issues/new",
           ),

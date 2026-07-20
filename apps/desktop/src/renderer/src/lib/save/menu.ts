@@ -1,8 +1,11 @@
+import type { MenuItemSpec } from "@pond/ui";
 import {
+  copyableImageIndex,
   copyFile as copyFileAction,
   copyFilePath,
   copyImage as copyImageAction,
   copyTags as copyTagsAction,
+  copyUrl,
   exportFile as exportFileAction,
   openDefaultApp,
   openInBrowser,
@@ -10,14 +13,14 @@ import {
   revealFile,
 } from "@/lib/save/actions";
 import { purgeSave, trashSave, untrashSave } from "@/lib/save/mutate";
-import { tumbleToTrash } from "@/stores/trash-tumble";
 import {
   REVERSE_SEARCH_ENGINES,
   reverseImageSearch,
 } from "@/lib/save/reverse-image-search";
+import { shortcutGlyphs } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
-import type { NativeMenuItem } from "@/lib/ui/native-menu";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
+import { tumbleToTrash } from "@/stores/trash-tumble";
 
 interface BuildSaveMenuOptions {
   /** Whether the tag clipboard is empty (controls the Paste Tags item). */
@@ -28,46 +31,39 @@ interface BuildSaveMenuOptions {
 export function buildSaveMenu(
   save: Save,
   { clipboardEmpty }: BuildSaveMenuOptions,
-): NativeMenuItem[] {
+): MenuItemSpec[] {
   const hasFiles = save.files.length > 0;
   const hasTags = save.tags.length > 0;
   const isTrashed = Boolean(save.deletedAt);
   const hasUrl = Boolean(save.url);
+  /** Videos and other non-image saves never get a Copy Image item; the viewer offers Copy Current Frame instead. */
+  const hasImage = copyableImageIndex(save) != null;
 
-  const copyUrl = async () => {
-    if (!save.url) return;
-    try {
-      await navigator.clipboard.writeText(save.url);
-    } catch {
-      /** Clipboard unavailable; drop silently. */
-    }
-  };
-
-  const reverseSearchItems: NativeMenuItem[] = REVERSE_SEARCH_ENGINES.map(
+  const reverseSearchItems: MenuItemSpec[] = REVERSE_SEARCH_ENGINES.map(
     (engine) => ({
       label: engine.label,
-      onSelect: () => reverseImageSearch(save, engine.key),
+      onClick: () => void reverseImageSearch(save, engine.key),
     }),
   );
 
-  const restoreItems: NativeMenuItem[] = isTrashed
+  const restoreItems: MenuItemSpec[] = isTrashed
     ? [
         {
           label: "Restore from Trash",
-          shortcut: ["⌫"],
-          onSelect: () => untrashSave(save.id),
+          shortcut: shortcutGlyphs("save.restore"),
+          onClick: () => void untrashSave(save.id),
         },
         {
           label: "Delete Forever",
-          shortcut: ["⌘", "⌫"],
-          onSelect: () => purgeSave(save.id),
+          shortcut: shortcutGlyphs("save.delete-forever"),
+          onClick: () => void purgeSave(save.id),
         },
       ]
     : [
         {
           label: "Move to Trash",
-          shortcut: ["⌫"],
-          onSelect: () =>
+          shortcut: shortcutGlyphs("save.trash"),
+          onClick: () =>
             void tumbleToTrash([save.id]).then(() => trashSave(save.id)),
         },
       ];
@@ -75,82 +71,95 @@ export function buildSaveMenu(
   return [
     {
       label: "Open with Default App",
-      enabled: hasFiles,
-      shortcut: ["O"],
-      onSelect: () => openDefaultApp(save),
+      disabled: !hasFiles,
+      shortcut: shortcutGlyphs("save.open"),
+      onClick: () => void openDefaultApp(save),
     },
     {
       label: REVEAL_LABEL,
-      enabled: hasFiles,
-      onSelect: () => revealFile(save),
+      disabled: !hasFiles,
+      onClick: () => void revealFile(save),
     },
     { type: "separator" },
     {
       label: "Copy URL",
-      enabled: hasUrl,
-      shortcut: ["C"],
-      onSelect: copyUrl,
+      disabled: !hasUrl,
+      shortcut: shortcutGlyphs("save.copy-url"),
+      onClick: () => {
+        if (save.url) void copyUrl(save.url);
+      },
     },
-    {
-      label: "Copy Image",
-      enabled: hasFiles,
-      shortcut: ["⌘", "C"],
-      onSelect: () => copyImageAction(save),
-    },
+    ...(hasImage
+      ? [
+          {
+            label: "Copy Image",
+            shortcut: shortcutGlyphs("save.copy-image"),
+            onClick: () => void copyImageAction(save),
+          } satisfies MenuItemSpec,
+        ]
+      : []),
     {
       label: "Copy File",
-      enabled: hasFiles,
-      onSelect: () => copyFileAction(save),
+      disabled: !hasFiles,
+      onClick: () => void copyFileAction(save),
     },
     {
       label: "Copy File Path",
-      enabled: hasFiles,
-      onSelect: () => copyFilePath(save),
+      disabled: !hasFiles,
+      onClick: () => void copyFilePath(save),
     },
     {
       label: "Copy Tags",
-      enabled: hasTags,
-      shortcut: ["⌘", "⇧", "C"],
-      onSelect: () => copyTagsAction(save),
+      disabled: !hasTags,
+      shortcut: shortcutGlyphs("save.copy-tags"),
+      onClick: () => copyTagsAction(save),
     },
     {
       label: "Paste Tags",
-      enabled: !clipboardEmpty,
-      shortcut: ["⌘", "⇧", "V"],
-      onSelect: () => pasteTagsAction(save),
+      disabled: clipboardEmpty,
+      shortcut: shortcutGlyphs("save.paste-tags"),
+      onClick: () => void pasteTagsAction(save),
     },
     { type: "separator" },
     {
+      type: "submenu",
       label: "Reverse Image Search",
-      enabled: hasFiles || hasUrl,
-      submenu: reverseSearchItems,
+      /** Reverse search needs a public image URL from the capture metadata; local-only saves have none. */
+      disabled: !hasUrl,
+      items: reverseSearchItems,
     },
     {
       label: "Export",
-      enabled: hasFiles,
-      shortcut: ["⌘", "E"],
-      onSelect: () => exportFileAction(save),
+      disabled: !hasFiles,
+      shortcut: shortcutGlyphs("save.export"),
+      onClick: () => void exportFileAction(save),
     },
     { type: "separator" },
     ...restoreItems,
     { type: "separator" },
     {
-      label: "Refresh details",
-      enabled: hasUrl,
-      shortcut: ["R"],
-      onSelect: () => {
+      label: "Refresh Details",
+      disabled: !hasUrl,
+      shortcut: shortcutGlyphs("save.refresh"),
+      onClick: () => {
         if (save.url) void window.pond.refreshSave(save.id);
       },
     },
     {
       label: "Archive Full Site",
-      enabled: hasUrl && save.source === "web" && !isTrashed,
-      onSelect: () => void window.pond.archiveSite(save.id),
+      disabled: !(hasUrl && save.source === "web" && !isTrashed),
+      onClick: () => void window.pond.archiveSite(save.id),
     },
-    {
-      label: "Open Original URL in Browser",
-      enabled: hasUrl,
-      onSelect: () => openInBrowser(save),
-    },
+    save.url
+      ? {
+          type: "link",
+          label: "Open Original URL in Browser",
+          href: save.url,
+          onClick: () => void openInBrowser(save),
+        }
+      : {
+          label: "Open Original URL in Browser",
+          disabled: true,
+        },
   ];
 }

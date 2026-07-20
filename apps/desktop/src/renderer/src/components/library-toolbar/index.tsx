@@ -28,6 +28,24 @@ function SourcesTitle() {
   );
 }
 
+function AnalyticsTitle() {
+  const { dashboards } = useDashboards();
+
+  return (
+    <TitleBar.Root>
+      <TitleBar.Title>
+        <TitleBar.Label>Analytics</TitleBar.Label>
+        {dashboards.length > 0 ? (
+          <TitleBar.Meta>
+            {formatNumber(dashboards.length)}{" "}
+            {dashboards.length === 1 ? "dashboard" : "dashboards"}
+          </TitleBar.Meta>
+        ) : null}
+      </TitleBar.Title>
+    </TitleBar.Root>
+  );
+}
+
 /** Breadcrumb title for an open dashboard; the leading crumb steps back to the index. */
 function DashboardTitle({ id }: { id: string }) {
   const { dashboard } = useDashboards(id);
@@ -52,6 +70,7 @@ function DashboardTitle({ id }: { id: string }) {
 export function Toolbar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (pathname === "/sources") return <SourcesTitle />;
+  if (pathname === "/analytics") return <AnalyticsTitle />;
   const dashboardId = pathname.startsWith("/analytics/")
     ? pathname.slice("/analytics/".length)
     : "";
@@ -65,27 +84,23 @@ function DefaultTitle({ pathname }: { pathname: string }) {
   const filterQuery = useFilterQuery();
   const ask = useAskResult();
 
-  /** Pages without a save list; the filtered-count meta would be the library's, not theirs. */
-  const staticTitle = pathname === "/analytics" ? "Analytics" : null;
   const base = listBaseFromPath(pathname);
   const mode = parseMode(base) ?? "library";
   const sourceFilter = mode === "source" ? extractSource(base) : "";
 
   const title = ask.active
     ? ask.question.trim() || "Results"
-    : (staticTitle ?? labelForMode(mode, sourceFilter));
+    : labelForMode(mode, sourceFilter);
 
   const filterCount = filterQuery.rules.length;
   const meta: string[] = [];
-  if (!ask.active && !staticTitle) {
+  if (!ask.active) {
     if (search) meta.push(`matching “${search}”`);
     if (filterCount > 0) {
       meta.push(`${filterCount} filter${filterCount === 1 ? "" : "s"}`);
     }
   }
-  if (!staticTitle) {
-    meta.push(formatNumber(count));
-  }
+  meta.push(formatNumber(count));
 
   return (
     <TitleBar.Root>

@@ -8,8 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { ConfirmDialog } from "@/components/confirm-dialog";
-import { PromptDialog } from "@/components/prompt-dialog";
+import { confirm } from "@/components/confirm-dialog";
+import { prompt } from "@/components/prompt-dialog";
 import { useSaves } from "@/hooks/use-saves";
 import { type TagGroupRow, useTagGroups } from "@/stores/tag-groups";
 import { type TagRow, useTags } from "@/stores/tags";
@@ -90,10 +90,6 @@ export function TagsSection() {
   const [creating, setCreating] = useState<Creating>(null);
   const [draft, setDraft] = useState("");
 
-  const [merging, setMerging] = useState(false);
-  const [mergeTarget, setMergeTarget] = useState("");
-  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
-  const [pendingIds, setPendingIds] = useState<string[]>([]);
   const clearRef = useRef<() => void>(() => {});
 
   const counts = useMemo(() => {
@@ -268,23 +264,43 @@ export function TagsSection() {
     setCreating(kind);
   }
 
-  async function bulkDelete() {
-    for (const name of namesFromIds(pendingIds))
+  async function bulkDelete(ids: string[]) {
+    for (const name of namesFromIds(ids))
       await window.pond.query("tags.delete", { name });
     clearRef.current();
-    setConfirmBulkDelete(false);
   }
 
-  async function bulkMerge() {
-    const target = normalizeLabelName(mergeTarget);
-    setMerging(false);
-    setMergeTarget("");
+  async function bulkMerge(ids: string[], raw: string) {
+    const target = normalizeLabelName(raw);
     if (!target) return;
-    for (const name of namesFromIds(pendingIds)) {
+    for (const name of namesFromIds(ids)) {
       if (name.toLowerCase() === target.toLowerCase()) continue;
       await window.pond.query("tags.merge", { from: name, to: target });
     }
     clearRef.current();
+  }
+
+  function promptBulkMerge(ids: string[]) {
+    const count = namesFromIds(ids).length;
+    prompt({
+      title: `Merge ${count} ${count === 1 ? "tag" : "tags"}`,
+      description:
+        "Every save using the selected tags will be re-tagged with the target, and the originals removed.",
+      confirmLabel: "Merge",
+      placeholder: "Target tag name",
+      onConfirm: (value) => void bulkMerge(ids, value),
+    });
+  }
+
+  function confirmBulkDelete(ids: string[]) {
+    const count = namesFromIds(ids).length;
+    confirm({
+      title: `Delete ${count} ${count === 1 ? "tag" : "tags"}?`,
+      description:
+        "They will be removed from every save. This cannot be undone.",
+      confirmLabel: "Delete",
+      onConfirm: () => void bulkDelete(ids),
+    });
   }
 
   const onSelectionChange = useCallback(() => {}, []);
@@ -382,9 +398,7 @@ export function TagsSection() {
                 variant="ghost"
                 onClick={() => {
                   clearRef.current = selection.clear;
-                  setPendingIds(selection.ids);
-                  setMergeTarget("");
-                  setMerging(true);
+                  promptBulkMerge(selection.ids);
                 }}
               >
                 Merge
@@ -394,8 +408,7 @@ export function TagsSection() {
                 variant="ghost"
                 onClick={() => {
                   clearRef.current = selection.clear;
-                  setPendingIds(selection.ids);
-                  setConfirmBulkDelete(true);
+                  confirmBulkDelete(selection.ids);
                 }}
               >
                 Delete
@@ -407,30 +420,6 @@ export function TagsSection() {
           );
         }}
       </DataTable.ActionBar>
-
-      <PromptDialog
-        open={merging}
-        onOpenChange={setMerging}
-        title={`Merge ${namesFromIds(pendingIds).length} ${
-          namesFromIds(pendingIds).length === 1 ? "tag" : "tags"
-        } into…`}
-        description="Every save using the selected tags will be re-tagged with the target, and the originals removed."
-        value={mergeTarget}
-        onValueChange={setMergeTarget}
-        onConfirm={() => void bulkMerge()}
-        confirmLabel="Merge"
-        placeholder="Target tag name"
-      />
-      <ConfirmDialog
-        open={confirmBulkDelete}
-        onOpenChange={setConfirmBulkDelete}
-        title={`Delete ${namesFromIds(pendingIds).length} ${
-          namesFromIds(pendingIds).length === 1 ? "tag" : "tags"
-        }?`}
-        description="They will be removed from every save. This cannot be undone."
-        confirmLabel="Delete"
-        onConfirm={() => void bulkDelete()}
-      />
     </DataTable.Provider>
   );
 }

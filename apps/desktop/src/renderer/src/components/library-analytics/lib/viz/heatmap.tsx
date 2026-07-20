@@ -78,7 +78,7 @@ export function HeatmapChart({
       </div>
       <div className={styles["heatmap-caption"]}>
         {hover && hoverValue != null
-          ? `${WEEKDAYS[hover.day]} · ${hourLabel(hover.hour)} — ${formatCount(hoverValue)} saves`
+          ? `${WEEKDAYS[hover.day]} · ${hourLabel(hover.hour)} · ${formatCount(hoverValue)} saves`
           : `Peak ${formatCount(heatmap.max)} saves`}
       </div>
     </div>

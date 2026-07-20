@@ -1,9 +1,9 @@
 import { AlertDialog as Base } from "@base-ui/react/alert-dialog";
 import { clsx as cn } from "clsx";
 import { Content, Footer, Header } from "../shared/parts/dialog";
-import styles from "../shared/styles/popup/styles.module.css";
+import styles from "../shared/styles/dialog/styles.module.css";
 
-function Root(props: Base.Root.Props) {
+function Root<Payload = unknown>(props: Base.Root.Props<Payload>) {
   return <Base.Root {...props} />;
 }
 

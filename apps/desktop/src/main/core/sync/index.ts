@@ -169,7 +169,7 @@ export async function syncAccount(
     trigger: opts.trigger ?? "manual",
     outcome: "ok",
   });
-  emit({ accountId, source, state: "running", message: "Starting…" });
+  emit({ accountId, source, state: "running", message: "Starting" });
   try {
     /** Sync doesn't need the handle, but session matching and the Sources page profile picture do; one probe, then cached. */
     await ensureAccountHandle(account);

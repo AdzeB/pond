@@ -18,7 +18,6 @@ export interface DockContextValue {
   inTrash: boolean;
   allSelected: boolean;
   isTabActive: (tab: DockTab) => boolean;
-  thinking: boolean;
   isCard: boolean;
   openAsk: () => void;
   openSearch: () => void;
@@ -28,14 +27,14 @@ export interface DockContextValue {
   openViewMenu: (section: ViewMenuSection) => void;
   closeViewMenu: () => void;
   destructive: () => void;
-  runSelectionTask: () => void;
-  openTagMenu: () => void;
-  openOverflowMenu: () => void;
+  confirmDeleteForever: () => void;
   isPreview: boolean;
   swap: SwapVariants;
   swapTransition: Transition;
   /** Spring for a card view's nested `layout` scale-correction, matched to the pill so the box morph and its content settle together. */
   sizeTransition: Transition;
+  /** For size changes within one view (nav unfold), matched to the pill's quick within-view spring. */
+  quickTransition: Transition;
   pillRef: RefObject<HTMLDivElement | null>;
 }
 

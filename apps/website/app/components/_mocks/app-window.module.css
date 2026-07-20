@@ -1,0 +1,116 @@
+/* Native-resolution replica of the desktop shell: 1280x800, hiddenInset traffic lights at (16, 28), Shell.Main insets, floating Tray rail and dock. */
+
+/* The window carries data-neutral="pure" so the theme re-derives the app's neutral gray ramp inside, overriding the site's warmed ramp. */
+.window {
+  --ds-mac-inset: 16px;
+  --ds-ui-font-family:
+    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  --ds-code-font-family:
+    jetbrains-mono, ui-monospace, "SF Mono", "Menlo", "Consolas", monospace;
+  --ds-cursor-interactive: default;
+
+  position: relative;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  font-family: var(--ds-ui-font-family);
+  font-size: 13px;
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1,
+    "cv11" 1,
+    "ss01" 1;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px var(--ds-gray-a3),
+    0 32px 64px -16px var(--ds-gray-a5);
+}
+
+.lights {
+  position: absolute;
+  top: 28px;
+  left: 16px;
+  z-index: 30;
+  display: inline-flex;
+  gap: 8px;
+}
+
+/* Shell.Mask equivalent: the app always paints a 96px top fade over the scrolling grid. */
+.fade {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  height: 96px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--ds-gray-1), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent);
+  mask-image: linear-gradient(to bottom, black 40%, transparent);
+}
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+
+  &[data-tone="close"] {
+    background: #ff5f57;
+  }
+
+  &[data-tone="min"] {
+    background: #febc2e;
+  }
+
+  &[data-tone="max"] {
+    background: #28c840;
+  }
+}
+
+/* Shell.Main: 16px mac inset, 24px inline. */
+.main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--ds-mac-inset);
+  padding-inline: 24px;
+  overflow: hidden;
+}
+
+/* Shell.Header: sticky z-30 in the app, so it paints above the top fade. */
+.title-bar {
+  z-index: 30;
+  flex-shrink: 0;
+  margin-bottom: 24px;
+}
+
+.grid {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.cell {
+  position: absolute;
+}
+
+.rail {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--ds-mac-inset) - 4px);
+  z-index: 20;
+  padding: 4px;
+  transform: translateY(-50%);
+}
+
+.dock-slot {
+  position: absolute;
+  bottom: calc(var(--ds-mac-inset) + 4px);
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+}

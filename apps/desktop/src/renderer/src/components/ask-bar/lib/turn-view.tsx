@@ -1,14 +1,9 @@
 import { Calligraph } from "calligraph";
-import { useMemo } from "react";
 import { runAskSuggestion } from "@/hooks/use-ask";
-import { representativeImageUrl } from "@/lib/enrichment/image";
 import { formatNumber } from "@/lib/util/format";
 import type { AskSegment, AskTurn } from "@/stores/ask-store";
-import { pool } from "@/stores/pool";
 import styles from "../styles.module.css";
 import { STAGE_LABELS } from "./stage-labels";
-
-const MAX_THUMBS = 6;
 
 /** Chips are styled to match how they looked in the composer. */
 function TurnSegment({ segment }: { segment: AskSegment }) {
@@ -28,11 +23,9 @@ function TurnSegment({ segment }: { segment: AskSegment }) {
 
 export function TurnView({
   turn,
-  onOpenSave,
   onRetry,
 }: {
   turn: AskTurn;
-  onOpenSave: (id: string) => void;
   onRetry?: () => void;
 }) {
   const busy = turn.status === "thinking" || turn.summaryStatus === "loading";
@@ -68,9 +61,7 @@ export function TurnView({
         <div className={styles["turn-status"]}>
           {busy ? (
             <span className={styles["status-line"]} role="status">
-              <Calligraph animation="bouncy" trend={1}>
-                {stageLabel}
-              </Calligraph>
+              <span className={styles.shimmer}>{stageLabel}</span>
             </span>
           ) : turn.status === "error" ? (
             <span className={styles["status-line"]}>
@@ -108,10 +99,6 @@ export function TurnView({
           <p className={styles["turn-body"]}>{turn.summary}</p>
         ) : null}
 
-        {turn.status === "done" && turn.count > 0 ? (
-          <TurnResults ids={turn.ids} onOpenSave={onOpenSave} />
-        ) : null}
-
         {showSuggestions ? (
           <div className={styles.suggestions}>
             {turn.suggestions.map((s) => (
@@ -129,51 +116,6 @@ export function TurnView({
           </div>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function TurnResults({
-  ids,
-  onOpenSave,
-}: {
-  ids: ReadonlyArray<string>;
-  onOpenSave: (id: string) => void;
-}) {
-  const items = useMemo(() => {
-    const out: { id: string; url: string | null }[] = [];
-    for (const id of ids.slice(0, MAX_THUMBS)) {
-      const save = pool.get(id);
-      if (!save) continue;
-      out.push({ id, url: representativeImageUrl(save) });
-    }
-    return out;
-  }, [ids]);
-
-  if (items.length === 0) return null;
-  const more = ids.length - items.length;
-
-  return (
-    <div className={styles.thumbs}>
-      {items.map((it) => (
-        <button
-          key={it.id}
-          type="button"
-          className={styles.thumb}
-          aria-label="Open save"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => onOpenSave(it.id)}
-        >
-          {it.url ? (
-            <img src={it.url} alt="" />
-          ) : (
-            <span className={styles["thumb-blank"]} />
-          )}
-        </button>
-      ))}
-      {more > 0 ? (
-        <span className={styles["thumb-more"]}>+{formatNumber(more)}</span>
-      ) : null}
     </div>
   );
 }

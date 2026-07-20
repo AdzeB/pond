@@ -5,6 +5,7 @@ import { loadAppInfo } from "@/lib/app-info";
 import {
   type SectionDef,
   sectionForId,
+  sectionForPath,
   settingsMasterGroupsForPackaged,
 } from "@/lib/settings/registry";
 import {
@@ -67,8 +68,13 @@ export function SettingsSidebar() {
     return [...bySection.values()];
   }, [needle, fuse, isPackaged]);
 
+  /** Hidden nested pages highlight their parent's row instead of nothing. */
+  const highlightPath = activeSection
+    ? (sectionForPath(activeSection)?.parent ?? activeSection)
+    : null;
+
   const sectionItem = (section: SectionDef) => {
-    const active = section.path === activeSection;
+    const active = section.path === highlightPath;
     return (
       <Sidebar.Item
         key={section.path}

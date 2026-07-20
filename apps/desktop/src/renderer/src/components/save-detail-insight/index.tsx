@@ -19,8 +19,8 @@ export interface InsightSpec {
 }
 
 const PENDING_LABEL: Record<Exclude<InsightState, "ready">, string> = {
-  running: "Generating…",
-  queued: "Waiting to process…",
+  running: "Generating",
+  queued: "Waiting to process",
   failed: "Couldn’t generate.",
 };
 

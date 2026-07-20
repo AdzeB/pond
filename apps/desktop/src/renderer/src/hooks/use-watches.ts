@@ -34,6 +34,19 @@ export const WATCHABLE: readonly Source[] = [
   "cosmos",
 ];
 
+/** Must match the per-source kinds resolveWatchTarget can produce (core/watch/resolve). */
+export const WATCH_KINDS: Partial<Record<Source, readonly WatchKind[]>> = {
+  arena: ["channel", "user", "group"],
+  youtube: ["channel", "playlist"],
+  twitter: ["user", "list"],
+  pinterest: ["user", "board"],
+  cosmos: ["user", "cluster"],
+};
+
+export function watchKindsFor(source: Source): readonly WatchKind[] {
+  return WATCH_KINDS[source] ?? ["user"];
+}
+
 export function watchKindLabel(kind: WatchKind | undefined): string {
   switch (kind) {
     case "channel":

@@ -11,7 +11,6 @@
   flex: 1;
   justify-content: center;
   width: 100%;
-  overflow-y: auto;
 }
 
 .content {
@@ -38,41 +37,17 @@
   min-width: 200px;
 }
 
-/* Invisible inputs that only reveal their field chrome on hover/focus. */
-.name-input,
-.description-input {
-  width: 100%;
-  padding: 1px 6px;
-  margin-left: -6px;
-  outline: none;
-  background: none;
-  border: none;
-  border-radius: var(--ds-radius-sm);
-}
-
-.name-input {
+.name {
+  margin: 0;
   font-size: 19px;
   font-weight: 640;
   color: var(--ink);
 }
 
-.description-input {
+.description {
+  margin: 0;
   font-size: 12px;
   color: var(--ink-2);
-}
-
-.description-input::placeholder {
-  color: var(--ink-3);
-}
-
-.name-input:hover,
-.description-input:hover {
-  background: var(--ds-gray-a2);
-}
-
-.name-input:focus,
-.description-input:focus {
-  background: var(--ds-gray-a3);
 }
 
 .filter-bar {
