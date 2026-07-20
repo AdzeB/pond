@@ -22,6 +22,9 @@
     "apps/extension": {
       "entry": ["entrypoints/**/*.{ts,tsx}", "scripts/*.mjs"],
       "project": ["**/*.{ts,tsx}"]
+    },
+    "packages/icons": {
+      "entry": ["lib/create-icon.tsx", "scripts/*.mjs"]
     }
   }
 }

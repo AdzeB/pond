@@ -164,16 +164,7 @@
 
 .check {
   flex: none;
-  opacity: 0;
   scale: 0.8;
-  transition: opacity var(--ds-duration-fast, 0.12s) ease;
-}
-
-.row:hover .check,
-.header-row:hover .check,
-.check[data-active],
-.check[data-checked] {
-  opacity: 1;
 }
 
 .caret {
@@ -247,7 +238,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .check,
   .caret,
   .row {
     transition: none;

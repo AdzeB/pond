@@ -12,8 +12,8 @@ export function AnalyticsRenameSection() {
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!dock.isPreview) nameRef.current?.select();
-  }, [dock.isPreview]);
+    nameRef.current?.select();
+  }, []);
 
   const canRename = name.trim().length > 0;
 

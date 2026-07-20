@@ -58,7 +58,7 @@ interface TagsBundle {
   members: WireTagGroupMember[];
 }
 
-export async function dumpTagsToBundle(): Promise<void> {
+async function dumpTagsToBundle(): Promise<void> {
   const db = await getDb();
   const [tagRows, groupRows, memberRows] = await Promise.all([
     db.select().from(tagsTable),

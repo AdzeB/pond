@@ -10,7 +10,6 @@ interface SwapVariants {
   exit: TargetAndTransition;
 }
 
-/** `Root` is the only place that resolves preview-vs-live state, so content modules stay dumb consumers. */
 export interface DockContextValue {
   view: DockView;
   selectionSize: number;
@@ -28,7 +27,6 @@ export interface DockContextValue {
   closeViewMenu: () => void;
   destructive: () => void;
   confirmDeleteForever: () => void;
-  isPreview: boolean;
   swap: SwapVariants;
   swapTransition: Transition;
   /** Spring for a card view's nested `layout` scale-correction, matched to the pill so the box morph and its content settle together. */

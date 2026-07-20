@@ -14,7 +14,7 @@ import { Button, type ButtonProps } from "../button";
 import { TrayCardContext, useTrayCard } from "./context";
 import styles from "./styles.module.css";
 
-export interface TrayCardProviderProps {
+interface TrayCardProviderProps {
   onDismiss: () => void;
   children: ReactNode;
 }
@@ -36,7 +36,7 @@ function Header({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <header className={cn(styles.header, className)} {...props} />;
 }
 
-export interface TrayCardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
+interface TrayCardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
   position?: "start" | "center";
 }
 
@@ -69,8 +69,7 @@ function Footer({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn(styles.footer, className)} {...props} />;
 }
 
-export interface TrayCardActionProps
-  extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface TrayCardActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   position?: "start" | "end";
 }
 

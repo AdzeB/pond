@@ -1,4 +1,3 @@
-/* The dialog popup's centering transform makes it the fixed-position anchor, so this pins to the popup's corner past the sidebar, like Linear's breadcrumb. */
 .crumb {
   position: fixed;
   top: 14px;

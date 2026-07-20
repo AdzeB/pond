@@ -23,7 +23,7 @@ export function ConnectWaitSection() {
   const dock = useDock();
   const waiting = useConnectWaiting();
   const completed = useConnectCompleted();
-  /** Playground previews have no in-flight connect; any brand keeps the layout honest. */
+  /** The store clears before the card swaps out; any brand keeps the exit render intact. */
   const source = waiting ?? "twitter";
   const label = getSourceDef(source).label;
 

@@ -43,6 +43,7 @@ function extensionFor(mimeType: string | null, url: string): string {
   if (mimeType.includes("webm")) return ".webm";
   if (mimeType.includes("quicktime")) return ".mov";
   if (mimeType.includes("svg")) return ".svg";
+  if (mimeType.includes("icon")) return ".ico";
   return ".bin";
 }
 
@@ -129,54 +130,72 @@ function nameFor(
   return index === 0 ? `cover${ext}` : `media-${index}${ext}`;
 }
 
-export async function fetchAvatarToTxFile(
-  avatarUrl: string,
+/** Small auxiliary image (avatar, favicon): 2 MiB cap and image MIME required. */
+async function fetchSmallImageToTxFile(
+  imageUrl: string,
+  baseName: string,
 ): Promise<MediaFetchOutcome> {
   let res: Response;
   try {
-    res = await fetch(avatarUrl, {
+    res = await fetch(imageUrl, {
       redirect: "follow",
       signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
     });
   } catch (err) {
-    log.warn("[pond blob] avatar fetch failed", avatarUrl, err);
+    log.warn(`[pond blob] ${baseName} fetch failed`, imageUrl, err);
     return { miss: "transient" };
   }
   if (!res.ok) {
-    log.warn("[pond blob] avatar non-2xx", res.status, avatarUrl);
+    log.warn(`[pond blob] ${baseName} non-2xx`, res.status, imageUrl);
     return { miss: classifyHttpStatus(res.status) };
   }
 
   const contentLength = Number(res.headers.get("content-length") ?? 0);
   if (contentLength > MAX_AVATAR_BYTES) {
-    log.warn("[pond blob] avatar too big, skipping", contentLength, avatarUrl);
+    log.warn(
+      `[pond blob] ${baseName} too big, skipping`,
+      contentLength,
+      imageUrl,
+    );
     return { miss: "permanent" };
   }
 
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.byteLength > MAX_AVATAR_BYTES) {
     log.warn(
-      "[pond blob] avatar declared size mismatch, skipping",
+      `[pond blob] ${baseName} declared size mismatch, skipping`,
       buf.byteLength,
-      avatarUrl,
+      imageUrl,
     );
     return { miss: "permanent" };
   }
 
   const mime = res.headers.get("content-type")?.split(";")[0]?.trim() ?? null;
   if (mime && !mime.startsWith("image/")) {
-    log.warn("[pond blob] avatar not an image, skipping", mime, avatarUrl);
+    log.warn(`[pond blob] ${baseName} not an image, skipping`, mime, imageUrl);
     return { miss: "permanent" };
   }
 
-  const ext = extensionFor(mime, avatarUrl);
+  const ext = extensionFor(mime, imageUrl);
   return {
     file: {
-      filename: `avatar${ext}`,
+      filename: `${baseName}${ext}`,
       bytes: buf,
       mimeType: mime ?? undefined,
     },
   };
+}
+
+export function fetchAvatarToTxFile(
+  avatarUrl: string,
+): Promise<MediaFetchOutcome> {
+  return fetchSmallImageToTxFile(avatarUrl, "avatar");
+}
+
+export function fetchSourceIconToTxFile(
+  iconUrl: string,
+): Promise<MediaFetchOutcome> {
+  return fetchSmallImageToTxFile(iconUrl, "source-icon");
 }
 
 export async function fetchMediaBatch(

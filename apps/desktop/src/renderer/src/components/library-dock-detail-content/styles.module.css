@@ -134,33 +134,6 @@
   color: var(--ds-gray-9);
 }
 
-.segmented {
-  display: inline-flex;
-  flex: none;
-  gap: 2px;
-  padding: 2px;
-  background: var(--ds-gray-4);
-  border-radius: 99px;
-}
-
-.segmented button {
-  padding: 3px 9px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 550;
-  color: var(--ds-gray-10);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-  border-radius: 99px;
-}
-
-.segmented button[data-on] {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
-  box-shadow: var(--ds-shadow-2);
-}
-
 .error-line {
   margin: 0;
   overflow: hidden;

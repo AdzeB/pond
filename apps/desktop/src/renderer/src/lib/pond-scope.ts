@@ -1,6 +1,6 @@
 /** All ponds share one renderer origin, so bare localStorage keys are a single bucket across libraries; pond-scoped caches must namespace keys with the active pond id. */
 
-export function activePondId(): string {
+function activePondId(): string {
   try {
     return window.pond.pondId();
   } catch {

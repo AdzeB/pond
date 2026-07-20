@@ -1,5 +1,5 @@
 import type { Source } from "@pond/schema/db";
-import { Button, type MenuItemSpec } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import React, { useEffect, useState } from "react";
 import {
   type CardModel,
@@ -20,14 +20,7 @@ import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { setSearchInput } from "@/stores/view-store";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import { buildAccountMenu } from "./lib/account-menu";
-import {
-  accountName,
-  accountSub,
-  itemCount,
-  syncFraction,
-  watchName,
-  watchSub,
-} from "./lib/helpers";
+import { itemCount, syncFraction, watchName } from "./lib/helpers";
 import styles from "./styles.module.css";
 
 function viewItemsFor(id: string): void {
@@ -129,43 +122,9 @@ export function SourcesPage() {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  /** First account that needs a human: session expired or repeated failure. */
-  const broken = accounts.find((a) => {
-    const tone = cardModel(byAccount[a.id]).tone;
-    return tone === "err" || tone === "paused";
-  });
-  const brokenModel = broken ? cardModel(byAccount[broken.id]) : null;
-
   return (
     <div className={styles.page}>
       <div className={styles.content}>
-        {broken && brokenModel ? (
-          <div className={styles.banner}>
-            <span className={styles["banner-title"]}>
-              {accountName(broken)} needs attention
-            </span>
-            <span className={styles["banner-sub"]}>
-              {brokenModel.tone === "paused"
-                ? "Session expired. Sign back into that account to resume syncing."
-                : "Last sync failed. Retry, or open the account for details."}
-            </span>
-            <Button
-              className={styles["banner-action"]}
-              variant="secondary"
-              size="sm"
-              onClick={() => {
-                if (brokenModel.tone === "paused") {
-                  void window.pond.connectSource(broken.source);
-                } else {
-                  void window.pond.syncRunNow(broken.id);
-                }
-              }}
-            >
-              {brokenModel.tone === "paused" ? "Reconnect" : "Retry"}
-            </Button>
-          </div>
-        ) : null}
-
         {accounts.length > 0 || watches.length > 0 ? (
           <div className={styles["tile-grid"]}>
             {accounts.map((account) => {
@@ -177,7 +136,6 @@ export function SourcesPage() {
                   source={account.source}
                   avatarUrl={account.avatarUrl}
                   name={account.label ?? getSourceDef(account.source).label}
-                  sub={accountSub(account, model)}
                   value={itemCount(account.sync?.knownCount ?? 0)}
                   tone={model.tone}
                   progress={syncFraction(model.tone, status)}
@@ -195,7 +153,6 @@ export function SourcesPage() {
                   source={watch.source}
                   avatarUrl={watch.avatarUrl}
                   name={watchName(watch)}
-                  sub={watchSub(watch, model)}
                   value={itemCount(watch.sync?.knownCount ?? 0)}
                   tone={model.tone}
                   progress={syncFraction(model.tone, status)}
@@ -216,12 +173,10 @@ export function SourcesPage() {
   );
 }
 
-/** Exported for the source tile playground; the page is its only production caller. */
-export function SourceTile({
+function SourceTile({
   source,
   avatarUrl,
   name,
-  sub,
   value,
   tone,
   progress = null,
@@ -231,7 +186,6 @@ export function SourceTile({
   source: Source;
   avatarUrl: string | null | undefined;
   name: string;
-  sub: string;
   value: string;
   tone: ReturnType<typeof cardModel>["tone"];
   /** 0..1 while syncing with a known total; null when indeterminate or resting. */
@@ -243,9 +197,7 @@ export function SourceTile({
   const pfp = avatarUrl && avatarUrl !== failedUrl ? avatarUrl : null;
   const { logo } = getSourceDef(source);
 
-  /** The count is the resting line; status only takes it over while something is happening or wrong. */
   const warn = tone === "err" || tone === "paused";
-  const line = tone === "run" || warn ? sub : value;
 
   /** Broken or in-flight artwork drains to grayscale; syncing pours color back in. */
   const drained = tone === "run" || warn;
@@ -312,7 +264,7 @@ export function SourceTile({
         className={styles["tile-sub"]}
         data-tone={warn ? "warn" : undefined}
       >
-        {line}
+        {value}
       </span>
     </button>
   );

@@ -10,21 +10,15 @@ import { useTags } from "@/stores/tags";
 import styles from "./styles.module.css";
 
 interface TagMenuProps {
-  /** Lowercased tag keys that should render as checked. */
   appliedKeys?: ReadonlySet<string>;
-  /** Optional trailing counts, keyed by lowercased tag name. */
   counts?: ReadonlyMap<string, number>;
-  /** Click/Enter behavior for a row (and for plain create). */
   onToggle: (name: string) => void;
-  /** Show the create affordance when the query has no exact match. */
   allowCreate?: boolean;
-  /** Tag groups as nested submenus (Linear look) or inline sections. */
   groupsAs?: "submenu" | "section";
   placeholder?: string;
   emptyLabel?: ReactNode;
 }
 
-/** Shared multi-select tag list; renders the contents of a `Menu.Popup` (search + labels + groups + create). */
 export function TagMenu({
   appliedKeys,
   counts,

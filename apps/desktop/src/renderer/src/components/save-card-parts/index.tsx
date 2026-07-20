@@ -6,6 +6,7 @@ import {
   deriveTypeKind,
   deriveTypeLabel,
 } from "@/lib/media/units";
+import { pickSourceIconUrl } from "@/lib/media/url";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
 import type { Save, SaveFile } from "@/lib/types";
@@ -134,7 +135,9 @@ const Overlay = memo(function Overlay({
     [primary, save],
   );
   const sourceLabel = prefs.source ? getSourceLabel(save.source) : null;
-  const sourceLogo = prefs.source ? getSourceLogo(save.source) : null;
+  const sourceLogo =
+    (prefs.source ? getSourceLogo(save.source) : null) ??
+    (prefs.source && save.source === "web" ? pickSourceIconUrl(save) : null);
   const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
   const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
 

@@ -43,21 +43,21 @@ const MAX_NAV_ATTEMPTS = 40;
 /** Wall-clock budget kept under the reconciler watchdog so partial crawls persist instead of being killed mid-write. */
 const CRAWL_BUDGET_MS = 4 * 60_000;
 
-export const ARCHIVE_KIND = "archive";
-export const ARCHIVE_MANIFEST_KIND = "archive_manifest";
-export const ARCHIVE_MANIFEST_FILENAME = "archive-manifest.json";
-export const ARCHIVE_WARC_FILENAME = "archive.warc.gz";
+const ARCHIVE_KIND = "archive";
+const ARCHIVE_MANIFEST_KIND = "archive_manifest";
+const ARCHIVE_MANIFEST_FILENAME = "archive-manifest.json";
+const ARCHIVE_WARC_FILENAME = "archive.warc.gz";
 /** v8: lazy images, srcset variants and CSS backgrounds force-loaded during capture; older archives replay with image holes. */
 export const ARCHIVE_VERSION = 8;
 
 export type ArchiveScope = "page" | "site";
 
-export interface ArchiveManifestPage {
+interface ArchiveManifestPage {
   url: string;
   title: string;
 }
 
-export interface ArchiveManifest {
+interface ArchiveManifest {
   version: number;
   rootUrl: string;
   archivedAt: string;

@@ -96,10 +96,4 @@ export type MenuActionId =
   | "library.move"
   | "developer.restart-api"
   | "developer.open-logs"
-  | "developer.ipc-inspector"
-  | "developer.dock-playground"
-  | "developer.saves-playground"
-  | "developer.dock-merge-playground"
-  | "developer.tooltip-playground"
-  | "developer.toast-playground"
-  | "developer.source-tile-playground";
+  | "developer.ipc-inspector";

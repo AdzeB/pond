@@ -56,7 +56,6 @@ const ORDERED_TABS = NAV_ORDER.flatMap((id) =>
 export function NavContent() {
   const dock = useDock();
   const askAvailable = useAskAvailable();
-  /** One handle per instance so playground previews don't fight over the same popup. */
   const [tip] = useState(() => Tooltip.createHandle<React.ReactNode>());
   const [navOpen, setNavOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -76,8 +75,7 @@ export function NavContent() {
     });
   };
 
-  /** Previews keep the richer per-dashboard set so the playground cell stays representative. */
-  const onDashboard = dock.isPreview || pathname.startsWith("/analytics/");
+  const onDashboard = pathname.startsWith("/analytics/");
 
   /** The unfold is transient: pointer-down outside the pill or Escape puts the tabs away. */
   useEffect(() => {
@@ -109,19 +107,18 @@ export function NavContent() {
 
   const actionSet = activeTab.id;
 
-  /** Previews render inert buttons so playground cells never drive the real router or modals. */
   const renderTab = (tab: (typeof NAV_TABS)[number]) => (
     <Tooltip.Trigger
       key={tab.id}
       handle={tip}
       payload={tab.label}
       render={
-        tab.action || dock.isPreview ? (
+        tab.action ? (
           <Tray.Item
             aria-label={tab.label}
             onClick={() => {
               setNavOpen(false);
-              if (!dock.isPreview) tab.action?.();
+              tab.action?.();
             }}
           >
             {tab.icon}
@@ -148,12 +145,7 @@ export function NavContent() {
       handle={tip}
       payload={label}
       render={
-        <Tray.Item
-          aria-label={label}
-          onClick={() => {
-            if (!dock.isPreview) onClick();
-          }}
-        >
+        <Tray.Item aria-label={label} onClick={onClick}>
           {icon}
         </Tray.Item>
       }

@@ -68,6 +68,22 @@ export const appearanceSection = defineSection("preferences", {
       ],
     },
     {
+      title: "Cards",
+      items: [
+        {
+          control: "select",
+          key: "tweetCover",
+          title: "Tweet Cover",
+          description: "Image used as the card cover for saved tweets.",
+          keywords: ["twitter", "x", "screenshot", "media", "thumbnail"],
+          options: [
+            { value: "media", label: "Media" },
+            { value: "screenshot", label: "Screenshot" },
+          ],
+        },
+      ],
+    },
+    {
       title: "Accessibility",
       items: [
         {

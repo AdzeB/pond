@@ -10,7 +10,6 @@ import {
   IconCommandOutline18 as Skills,
   IconMsg2Outline18 as Sparkle,
   IconServerOutline18 as Storage,
-  IconWindowClockOutline18 as Sync,
   IconLabelOutline18 as Tags,
   IconTrash2Outline18 as Trash,
   IconMovieOutline18 as Videos,
@@ -33,8 +32,7 @@ const ICONS: Record<string, IconComponent> = {
   trash: Trash,
   storage: Storage,
   connections: Connections,
-  saves: Downloads,
-  sync: Sync,
+  funnel: Downloads,
   videos: Videos,
   images: Images,
   ai: Sparkle,
@@ -103,7 +101,7 @@ interface SettingsMasterGroup {
   sections: SectionDef[];
 }
 
-export const SETTINGS_MASTER_GROUPS: SettingsMasterGroup[] =
+const SETTINGS_MASTER_GROUPS: SettingsMasterGroup[] =
   SETTINGS_GROUP_ORDER.flatMap((group) => {
     const sections = SECTIONS_BY_GROUP.get(group) ?? [];
     if (sections.length === 0) return [];

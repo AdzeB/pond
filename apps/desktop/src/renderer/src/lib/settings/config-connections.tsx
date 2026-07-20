@@ -81,7 +81,12 @@ function ApplyRow() {
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <Button size="sm" onClick={() => void applyServer()} disabled={apiBusy}>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => void applyServer()}
+          disabled={apiBusy}
+        >
           {apiBusy ? "Restarting" : "Restart Server"}
         </Button>
       </Settings.ItemControl>
@@ -125,10 +130,19 @@ function IngestTokenRow() {
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <div style={{ display: "flex", gap: 6 }}>
-          <Button size="sm" onClick={() => copy(token ?? "")} disabled={!token}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => copy(token ?? "")}
+            disabled={!token}
+          >
             Copy
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => void rotateToken()}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void rotateToken()}
+          >
             Rotate
           </Button>
         </div>
@@ -223,7 +237,7 @@ function CorsAllowList({ binding }: { binding: Binding }) {
           }}
           style={{ flex: 1, minWidth: 200 }}
         />
-        <Button size="sm" onClick={addOrigin}>
+        <Button size="sm" variant="secondary" onClick={addOrigin}>
           Add
         </Button>
       </div>

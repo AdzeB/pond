@@ -7,11 +7,8 @@ const TWITTER_HOOK = `
     if (globalThis.__pondBookmarksHookInstalled) return;
     globalThis.__pondBookmarksHookInstalled = true;
     globalThis.__pondBookmarksCaptures = [];
-    // The first real Bookmarks request the page makes, captured verbatim so
-    // we can replay it with our own pagination cursor. X validates auth via
-    // the bearer + x-csrf-token + a per-request x-client-transaction-id, so
-    // cloning the page's own headers is far more robust than reconstructing
-    // them by hand (and lets us walk every page without scrolling the UI).
+    // Capture the page's first Bookmarks request verbatim; X validates auth via
+    // bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them.
     globalThis.__pondBookmarksRequest = null;
 
     const isBookmarksUrl = (u) => {

@@ -8,7 +8,6 @@ import { enrichmentSection } from "@/lib/settings/config-enrichment";
 import { generalSection } from "@/lib/settings/config-general";
 import { imagesSection } from "@/lib/settings/config-images";
 import { storageSection } from "@/lib/settings/config-storage";
-import { syncSection } from "@/lib/settings/config-sync";
 import { trashSection } from "@/lib/settings/config-trash";
 import { videosSection } from "@/lib/settings/config-videos";
 
@@ -28,9 +27,9 @@ const AiProvidersSection = lazy(() =>
     default: m.AiProvidersSection,
   })),
 );
-const SavesSection = lazy(() =>
-  import("@/components/settings-saves").then((m) => ({
-    default: m.SavesSection,
+const FunnelSection = lazy(() =>
+  import("@/components/settings-funnel").then((m) => ({
+    default: m.FunnelSection,
   })),
 );
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
@@ -46,12 +45,14 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   trash: trashSection,
   storage: storageSection,
   connections: connectionsSection,
-  saves: {
-    component: SavesSection,
-    title: "Saves",
+  funnel: {
+    component: FunnelSection,
+    title: "Funnel",
     description:
       "Everything saving this session: progress, failures, and what just landed.",
+    width: "wide",
     keywords: [
+      "saves",
       "downloads",
       "queue",
       "progress",
@@ -61,7 +62,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
       "ingest",
     ],
   },
-  sync: syncSection,
   videos: videosSection,
   images: imagesSection,
   ai: aiSection,

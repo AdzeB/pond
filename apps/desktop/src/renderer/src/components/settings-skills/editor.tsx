@@ -152,10 +152,15 @@ export function SkillEditor({
         </div>
 
         <div className={styles.footer}>
-          <Button variant="ghost" onClick={onCancel}>
+          <Button size="sm" variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="primary" disabled={!canSave} onClick={save}>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={!canSave}
+            onClick={save}
+          >
             Save
           </Button>
         </div>

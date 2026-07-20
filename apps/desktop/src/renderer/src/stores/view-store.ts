@@ -218,14 +218,6 @@ export function setZoom(zoom: number): void {
   store.setState((s) => ({ ...s, zoom: clamped }));
 }
 
-/** Used by the view-options panel to detect a "changed" state per group. */
-export const VIEW_DEFAULTS = {
-  layout: "waterfall" as LayoutValue,
-  sortKey: "savedAt",
-  sortDir: "desc" as SortDir,
-  zoom: ZOOM_DEFAULT,
-};
-
 export function restoreDefaults(): void {
   writeViewPref("view", "waterfall");
   writeViewPref("sort", "savedAt");

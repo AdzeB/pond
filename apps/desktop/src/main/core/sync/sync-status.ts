@@ -53,13 +53,6 @@ export function isSyncing(accountId: string): boolean {
   return inFlight.has(accountId);
 }
 
-export function isSourceSyncing(source: Source): boolean {
-  for (const entry of inFlight.values()) {
-    if (entry.source === source) return true;
-  }
-  return false;
-}
-
 export function cancelAllSyncs(): void {
   for (const accountId of Array.from(inFlight.keys())) {
     cancelSync(accountId);

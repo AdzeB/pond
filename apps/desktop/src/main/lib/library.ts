@@ -68,6 +68,7 @@ function inferKindFromFilename(filename: string): string {
   if (filename.startsWith("video")) return "video";
   if (filename.startsWith("media-")) return "media";
   if (filename.startsWith("avatar")) return "avatar";
+  if (filename.startsWith("source-icon")) return "source_icon";
   if (filename === "archive-manifest.json") return "archive_manifest";
   if (filename.startsWith("archive")) return "archive";
   return "other";

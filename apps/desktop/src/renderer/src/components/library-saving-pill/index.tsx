@@ -151,7 +151,7 @@ export function SavingPill() {
           className={styles.pill}
           data-phase={view.kind === "batch" ? view.phase : view.kind}
           aria-label="Show activity"
-          onClick={() => settingsModal.open("saves")}
+          onClick={() => settingsModal.open("funnel")}
           {...pillMotion}
           transition={bouncySpring}
         >

@@ -70,8 +70,8 @@ function ButtonControl({
 }) {
   return (
     <Button
-      size={item.size ?? "sm"}
-      variant={item.variant}
+      size="sm"
+      variant={item.variant ?? "secondary"}
       disabled={item.disabled?.(binding.values) ?? false}
       onClick={item.onClick}
     >

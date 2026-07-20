@@ -188,6 +188,7 @@ function ApiKeyRow({ binding }: { binding: Binding }) {
           />
           <Button
             size="sm"
+            variant="secondary"
             disabled={!keyPresent && apiKey.trim().length === 0}
             onClick={() => void saveApiKey()}
           >

@@ -44,7 +44,7 @@ export function WatchDetailSection() {
   const watchId = useDetailWatchId();
   const watch = watches.find((w) => w.id === watchId) ?? watches[0];
 
-  /** Nothing to show while the list loads or in playground previews without data. */
+  /** Nothing to show while the list loads. */
   if (!watch) return <TrayCard.Close />;
   return (
     <WatchDetail

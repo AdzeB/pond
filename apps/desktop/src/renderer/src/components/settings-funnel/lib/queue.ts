@@ -13,7 +13,7 @@ const clearedIds = new Set<string>();
 /** The cleared set lives outside React; bumping this store re-renders every subscriber. */
 const clearRevision = new Store(0);
 
-export type RowStatus = "saving" | "saved" | "failed";
+type RowStatus = "saving" | "saved" | "failed";
 
 export interface QueueRow {
   save: Save;

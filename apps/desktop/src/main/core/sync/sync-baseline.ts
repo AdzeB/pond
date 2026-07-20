@@ -7,7 +7,7 @@ import { and, count, desc, eq, isNull, or } from "drizzle-orm";
 import { getDb } from "../../db";
 import { getAccountSync, patchAccountSync } from "./accounts";
 
-export { getAccountSync, patchAccountSync } from "./accounts";
+export { patchAccountSync } from "./accounts";
 
 /** Most-recent known ids loaded for an incremental run; lists are newest-first, so this window is enough to detect the synced backlog and early-stop. */
 const RECENT_KNOWN_WINDOW = 1500;

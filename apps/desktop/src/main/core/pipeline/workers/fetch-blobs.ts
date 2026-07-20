@@ -7,10 +7,20 @@ import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
 import { TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
+import { fetchSourceIcon } from "./source-icon";
 
 export async function runFetchBlobs(saveId: string): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
+
+  /** Cosmetic favicon for the source badge; never blocks or fails media fetching. */
+  if (save.source === "web") {
+    try {
+      await fetchSourceIcon(saveId, save);
+    } catch (err) {
+      log.warn("[pond pipeline:fetch-blobs] source icon failed", saveId, err);
+    }
+  }
 
   const urls = collectMediaUrls(save.rawJson);
   if (urls.length === 0) {

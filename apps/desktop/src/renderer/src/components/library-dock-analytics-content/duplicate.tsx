@@ -13,8 +13,8 @@ export function AnalyticsDuplicateSection() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!dock.isPreview) inputRef.current?.select();
-  }, [dock.isPreview]);
+    inputRef.current?.select();
+  }, []);
 
   const canDuplicate = name.trim().length > 0;
 

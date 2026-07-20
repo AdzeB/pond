@@ -426,30 +426,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
                 label: "Open IPC Inspector",
                 click: sendMenuAction("developer.ipc-inspector"),
               },
-              {
-                label: "Open Dock Playground",
-                click: sendMenuAction("developer.dock-playground"),
-              },
-              {
-                label: "Open Saves Playground",
-                click: sendMenuAction("developer.saves-playground"),
-              },
-              {
-                label: "Open Dock Merge Playground",
-                click: sendMenuAction("developer.dock-merge-playground"),
-              },
-              {
-                label: "Open Tooltip Playground",
-                click: sendMenuAction("developer.tooltip-playground"),
-              },
-              {
-                label: "Open Source Tile Playground",
-                click: sendMenuAction("developer.source-tile-playground"),
-              },
-              {
-                label: "Open Toast Playground",
-                click: sendMenuAction("developer.toast-playground"),
-              },
             ],
           },
         ] satisfies Electron.MenuItemConstructorOptions[])

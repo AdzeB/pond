@@ -1,5 +1,3 @@
-import type { DockTab } from "./nav-tabs";
-
 /** The mutually exclusive surfaces the pill can show. */
 export type DockView =
   | "selection"
@@ -67,7 +65,7 @@ export type ViewMenuSection =
   | "selection-copy"
   | "selection-export";
 
-export const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
+const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "ask-history",
   "layout",
   "zoom",
@@ -109,14 +107,4 @@ export const SELECTION_CARD_MODES: readonly ViewMenuSection[] = [
 
 export function isViewMenu(view: DockView): view is ViewMenuSection {
   return (VIEW_MENU_SECTIONS as readonly string[]).includes(view);
-}
-
-/** Forced pill state for the dock playground; when absent, the pill derives everything from the live stores and the router. */
-export interface DockPreview {
-  view: DockView;
-  activeTab?: DockTab | null;
-  selectionSize?: number;
-  filteredCount?: number;
-  inTrash?: boolean;
-  allSelected?: boolean;
 }

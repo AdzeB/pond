@@ -187,7 +187,7 @@ async function redditAvatar(name: string): Promise<string | null> {
   }
 }
 
-export async function resolveAvatarUrl(
+async function resolveAvatarUrl(
   source: Source,
   handle: string,
   kind?: WatchKind,

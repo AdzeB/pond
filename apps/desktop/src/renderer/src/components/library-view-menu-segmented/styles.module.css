@@ -1,5 +1,3 @@
-/* Family-style tile picker: soft gray tiles, with a white blue-ringed tile
-   springing to the active option. */
 .segmented {
   display: grid;
   grid-auto-columns: 1fr;

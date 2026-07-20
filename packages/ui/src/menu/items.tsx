@@ -9,6 +9,8 @@ interface MenuActionItem {
   icon?: ReactNode;
   shortcut?: MenuShortcut;
   disabled?: boolean;
+  /** Omit entirely instead of rendering disabled; for actions the target can never support. */
+  hidden?: boolean;
   stale?: boolean;
   /** Keep the menu open after selecting (defaults to closing). */
   closeOnClick?: boolean;
@@ -22,6 +24,7 @@ interface MenuSeparatorItem {
 interface MenuGroupItem {
   type: "group";
   label?: ReactNode;
+  hidden?: boolean;
   items: MenuItemSpec[];
 }
 
@@ -30,6 +33,7 @@ interface MenuSubmenuItem {
   label: ReactNode;
   icon?: ReactNode;
   disabled?: boolean;
+  hidden?: boolean;
   items: MenuItemSpec[];
 }
 
@@ -40,6 +44,7 @@ interface MenuCheckboxItem {
   onCheckedChange?: (checked: boolean) => void;
   shortcut?: MenuShortcut;
   disabled?: boolean;
+  hidden?: boolean;
   /** Keep the menu open after toggling (defaults to closing). */
   closeOnClick?: boolean;
 }
@@ -52,6 +57,7 @@ interface MenuLinkItem {
   icon?: ReactNode;
   shortcut?: MenuShortcut;
   disabled?: boolean;
+  hidden?: boolean;
   /** Invoked with the default navigation prevented; delegate opening to the platform. */
   onClick?: () => void;
 }
@@ -124,6 +130,25 @@ function shortcutToString(shortcut: MenuShortcut): string {
   return Array.isArray(shortcut) ? shortcut.join("") : shortcut;
 }
 
+/** Drop hidden items, then collapse the leading/trailing/doubled separators they leave behind. */
+function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
+  const visible = items.filter(
+    (spec) =>
+      spec.type === "separator" || spec.type === "custom" || !spec.hidden,
+  );
+  const out: MenuItemSpec[] = [];
+  for (const spec of visible) {
+    if (spec.type === "separator") {
+      if (out.length === 0 || out[out.length - 1]?.type === "separator") {
+        continue;
+      }
+    }
+    out.push(spec);
+  }
+  while (out[out.length - 1]?.type === "separator") out.pop();
+  return out;
+}
+
 function renderSpec(
   spec: MenuItemSpec,
   key: number,
@@ -143,7 +168,7 @@ function renderSpec(
         {spec.label != null ? (
           <parts.GroupLabel>{spec.label}</parts.GroupLabel>
         ) : null}
-        {spec.items.map((child, i) => renderSpec(child, i, parts))}
+        {pruneSpecs(spec.items).map((child, i) => renderSpec(child, i, parts))}
       </parts.Group>
     );
   }
@@ -214,7 +239,9 @@ function renderSpec(
             alignOffset={-4}
           >
             <parts.Popup>
-              {spec.items.map((child, i) => renderSpec(child, i, parts))}
+              {pruneSpecs(spec.items).map((child, i) =>
+                renderSpec(child, i, parts),
+              )}
             </parts.Popup>
           </parts.Positioner>
         </parts.Portal>
@@ -246,5 +273,5 @@ export function renderMenuSpec(
   items: MenuItemSpec[],
   parts: MenuParts,
 ): ReactNode {
-  return items.map((spec, i) => renderSpec(spec, i, parts));
+  return pruneSpecs(items).map((spec, i) => renderSpec(spec, i, parts));
 }

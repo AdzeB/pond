@@ -1,6 +1,6 @@
 import type { CardModel } from "@/components/library-sync-monitor/lib/helpers";
 import type { AccountRow } from "@/hooks/use-accounts";
-import { type WatchRow, watchKindLabel } from "@/hooks/use-watches";
+import type { WatchRow } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { formatNumber } from "@/lib/util/format";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
@@ -23,27 +23,6 @@ export function accountName(account: AccountRow): string {
 export function watchName(watch: WatchRow): string {
   if (watch.label) return watch.label;
   /** Playlist/list ids are opaque tokens, not handles, so no @ prefix. */
-  return watch.kind === "playlist" || watch.kind === "list"
-    ? watch.handle
-    : `@${watch.handle}`;
-}
-
-/** The item count lives in the row's trailing value, so the idle sub shows identity instead. */
-export function accountSub(account: AccountRow, model: CardModel): string {
-  if (model.tone === "run") return model.statusText;
-  if (model.tone === "paused") return "Session expired";
-  if (model.tone === "err") return "Sync failed";
-  if (account.handle) return `@${account.handle}`;
-  return getSourceDef(account.source).label;
-}
-
-export function watchSub(watch: WatchRow, model: CardModel): string {
-  if (model.tone === "run") return model.statusText;
-  if (model.tone === "paused") return "Needs an account";
-  if (model.tone === "err") return "Check failed";
-  const kind = watchKindLabel(watch.kind);
-  /** Unlabeled watches already show the handle as their name. */
-  if (!watch.label) return `${getSourceDef(watch.source).label} ${kind}`;
   return watch.kind === "playlist" || watch.kind === "list"
     ? watch.handle
     : `@${watch.handle}`;

@@ -22,13 +22,10 @@ export class CosmosTileExtractor implements Extractor {
             const m = href.match(/^\\/([A-Za-z0-9_-]{2,40})(\\?.*)?$/);
             if (!m) continue;
             const handle = m[1];
-            // Filter obvious non-user paths.
             if (['login','signup','signin','about','pricing','settings','explore','search','feed','home','clusters'].includes(handle.toLowerCase())) continue;
-            // Prefer a link in the top nav / header.
             const inNav = a.closest('header, nav, [role="navigation"]');
             if (inNav) return handle;
           }
-          // Fallback: any plausible match.
           for (const a of links) {
             const href = a.getAttribute('href') || '';
             const m = href.match(/^\\/([A-Za-z0-9_-]{2,40})(\\?.*)?$/);

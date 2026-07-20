@@ -38,14 +38,12 @@ function BusyActionRow({
   description,
   label,
   busyLabel,
-  variant,
   run,
 }: {
   title: string;
   description: ReactNode;
   label: string;
   busyLabel: string;
-  variant?: "ghost";
   run: () => Promise<unknown>;
 }) {
   const [busy, setBusy] = useState(false);
@@ -66,7 +64,7 @@ function BusyActionRow({
       <Settings.ItemControl>
         <Button
           size="sm"
-          variant={variant}
+          variant="secondary"
           onClick={() => void onClick()}
           disabled={busy}
         >
@@ -88,6 +86,7 @@ function FactoryResetRow() {
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <Button
+          size="sm"
           variant="destructive"
           onClick={() =>
             confirm({
@@ -208,7 +207,6 @@ export const developerSection = defineSection("developer", {
               }
               label="Clear Cache"
               busyLabel="Clearing"
-              variant="ghost"
               run={() => query("reset.clearVideoCache")}
             />
           ),
@@ -228,7 +226,6 @@ export const developerSection = defineSection("developer", {
               }
               label="Clear Thumbnails"
               busyLabel="Clearing"
-              variant="ghost"
               run={() => query("reset.clearThumbnails")}
             />
           ),
@@ -249,7 +246,6 @@ export const developerSection = defineSection("developer", {
               description="Restore every Settings knob to its default."
               label="Reset"
               busyLabel="Resetting"
-              variant="ghost"
               run={async () => {
                 await query("reset.preferences");
                 await reloadPrefs();

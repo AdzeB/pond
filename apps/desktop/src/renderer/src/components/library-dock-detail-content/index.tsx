@@ -3,12 +3,10 @@ import {
   IconClockFill18 as Clock,
   IconGridFill18 as Grid,
   IconClockRotateClockwiseFill18 as History,
-  IconImageFill18 as Image,
   IconKeyFill18 as Key,
   IconSignatureFill18 as Signature,
 } from "@pond/icons/fill/18";
 import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
-import type { Prefs } from "@pond/schema/db";
 import { Button, Menu, TrayCard } from "@pond/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef } from "react";
@@ -28,7 +26,6 @@ import {
 import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
 import { useSyncHistory } from "@/hooks/use-sync-history";
-import { sourceSettingsFor } from "@/lib/save/source-settings";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { formatNumber } from "@/lib/util/format";
 import { usePrefs } from "@/stores/prefs";
@@ -55,7 +52,7 @@ export function AccountDetailSection() {
   const accountId = useDetailAccountId();
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
 
-  /** Nothing to show while the list loads or in playground previews without data. */
+  /** Nothing to show while the list loads. */
   if (!account) return <TrayCard.Close />;
   return (
     <AccountDetail
@@ -87,7 +84,6 @@ function AccountDetail({
   const nickRef = useRef<HTMLInputElement>(null);
   const handleRef = useRef<HTMLInputElement>(null);
 
-  const [preferences, patchPreferences] = usePrefs("preferences");
   const count = account.sync?.knownCount ?? 0;
   const def = getSourceDef(source);
   const frequency = useFrequencyRow();
@@ -228,31 +224,6 @@ function AccountDetail({
             <ChevronRight width={13} height={13} />
           </span>
         </button>
-
-        {sourceSettingsFor(source).map((field) => (
-          <div className={styles.row} key={field.key} title={field.description}>
-            <span className={styles["row-icon"]}>
-              <Image size={18} />
-            </span>
-            <span className={styles["row-label"]}>{field.label}</span>
-            <span className={styles.segmented}>
-              {field.options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  data-on={preferences[field.key] === option.value || undefined}
-                  onClick={() =>
-                    patchPreferences({
-                      [field.key]: option.value,
-                    } as Partial<Prefs["preferences"]>)
-                  }
-                >
-                  {option.label}
-                </button>
-              ))}
-            </span>
-          </div>
-        ))}
 
         <div className={styles.row}>
           <span className={styles["row-icon"]}>

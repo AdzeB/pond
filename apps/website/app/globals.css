@@ -35,7 +35,6 @@
 }
 
 :root {
-  /** Warms the generated gray ramp toward the paper tones of Aave/Family/Lens. */
   --ds-base-c: 0.0042;
   --ds-base-h: 84;
 

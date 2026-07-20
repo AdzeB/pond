@@ -319,7 +319,7 @@ export function TagsSection() {
       onToggleExpand={onToggleExpand}
       renderRow={(args) => <TagRowRenderer {...args} />}
     >
-      <Settings.Page width="wide" inset={80}>
+      <Settings.Page width="wide">
         <Settings.Header>
           <Settings.HeaderText>
             <Settings.Title>Tags</Settings.Title>
@@ -343,10 +343,18 @@ export function TagsSection() {
               />
             </Input.Root>
             <div className={styles.spacer} />
-            <Button variant="secondary" onClick={() => startCreate("group")}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => startCreate("group")}
+            >
               New Group
             </Button>
-            <Button variant="primary" onClick={() => startCreate("tag")}>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => startCreate("tag")}
+            >
               New Tag
             </Button>
           </DataTable.Toolbar>
@@ -395,7 +403,7 @@ export function TagsSection() {
               <DataTable.ActionBarDivider />
               <Button
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                   clearRef.current = selection.clear;
                   promptBulkMerge(selection.ids);
@@ -405,7 +413,7 @@ export function TagsSection() {
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
+                variant="secondary"
                 onClick={() => {
                   clearRef.current = selection.clear;
                   confirmBulkDelete(selection.ids);

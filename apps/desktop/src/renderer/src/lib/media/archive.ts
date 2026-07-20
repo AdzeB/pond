@@ -2,12 +2,12 @@
 import { buildPondUrl } from "@/lib/media/url";
 import type { Save, SaveFile } from "@/lib/types";
 
-export const ARCHIVE_KIND = "archive";
-export const ARCHIVE_MANIFEST_KIND = "archive_manifest";
+const ARCHIVE_KIND = "archive";
+const ARCHIVE_MANIFEST_KIND = "archive_manifest";
 
-export type ArchiveScope = "page" | "site";
+type ArchiveScope = "page" | "site";
 
-export interface ArchiveManifestPage {
+interface ArchiveManifestPage {
   url: string;
   title: string;
 }
@@ -24,14 +24,14 @@ export function isArchiveFile(file: SaveFile): boolean {
   return file.kind === ARCHIVE_KIND || file.kind === ARCHIVE_MANIFEST_KIND;
 }
 
-export function archiveManifestFile(save: Save): SaveFile | null {
+function archiveManifestFile(save: Save): SaveFile | null {
   return (
     (save.files ?? []).find((f) => f.kind === ARCHIVE_MANIFEST_KIND) ?? null
   );
 }
 
 /** The replayable WARC; MHTML-era archive files don't qualify and are ignored by the viewer. */
-export function archiveWarcFile(save: Save): SaveFile | null {
+function archiveWarcFile(save: Save): SaveFile | null {
   return (
     (save.files ?? []).find(
       (f) => f.kind === ARCHIVE_KIND && f.path.endsWith(".warc.gz"),

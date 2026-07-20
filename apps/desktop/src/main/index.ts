@@ -15,6 +15,7 @@ import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import { startArchiveBackfill } from "./core/refresh/archive-backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
+import { backfillSourceIcons } from "./core/refresh/source-icon-backfill";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
 import {
@@ -189,7 +190,10 @@ async function postLaunchInit(): Promise<void> {
     .catch((err) => log.warn("[pond] scan failed", err))
     /** Self-heal saves whose archives predate the current WARC format; no-op when everything is current. */
     .then(() => startArchiveBackfill())
-    .catch((err) => log.warn("[pond] archive backfill failed", err));
+    .catch((err) => log.warn("[pond] archive backfill failed", err))
+    /** Web saves ingested before favicon capture get their source icon filled in; no-op once every save has one. */
+    .then(() => backfillSourceIcons())
+    .catch((err) => log.warn("[pond] source icon backfill failed", err));
   void backfillEnrichmentSidecars().catch((err) =>
     log.warn("[pond] enrichment sidecar backfill failed", err),
   );

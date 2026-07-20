@@ -1,19 +1,4 @@
-import { useSelector } from "@tanstack/react-store";
-import { Store } from "@tanstack/store";
 import type { TargetAndTransition, Transition } from "motion/react";
-
-/** Global time scale for the dock's motion (1 = real time); only the playground changes it, to slow transitions for inspection. */
-const scaleStore = new Store({ factor: 1 });
-
-export const motionScale = {
-  set(factor: number): void {
-    scaleStore.setState((s) => (s.factor === factor ? s : { factor }));
-  },
-};
-
-export function useMotionScaleFactor(): number {
-  return useSelector(scaleStore, (s) => s.factor);
-}
 
 export const gentleSpring: Transition = {
   type: "spring",
@@ -55,11 +40,7 @@ export interface DockMotion {
   };
 }
 
-/** `timeScale` stretches every duration so the box morph and the content swap stay in lockstep while slowed. */
-export function buildDockMotion(
-  reduceMotion: boolean,
-  timeScale = 1,
-): DockMotion {
+export function buildDockMotion(reduceMotion: boolean): DockMotion {
   if (reduceMotion) {
     return {
       pillTransition: { duration: 0 },
@@ -72,7 +53,7 @@ export function buildDockMotion(
       },
     };
   }
-  const contentDuration = FAMILY_CONTENT_DURATION * timeScale;
+  const contentDuration = FAMILY_CONTENT_DURATION;
   const enterTransition: Transition = {
     duration: contentDuration * 0.75,
     delay: contentDuration * 0.25,
@@ -80,12 +61,12 @@ export function buildDockMotion(
   };
   return {
     pillTransition: {
-      duration: 0.4 * timeScale,
+      duration: 0.4,
       ease: DOCK_EASE,
     },
     quickTransition: {
       type: "spring",
-      duration: 0.22 * timeScale,
+      duration: 0.22,
       bounce: 0.1,
     },
     swapTransition: enterTransition,

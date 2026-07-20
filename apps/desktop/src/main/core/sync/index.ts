@@ -21,7 +21,6 @@ export { migrateLegacySyncPrefs } from "./migrate-legacy";
 export {
   cancelAllSyncs,
   cancelSync,
-  isSourceSyncing,
   isSyncing,
   type SyncStatusUpdate,
   subscribeToSyncStatus,
@@ -62,7 +61,7 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "tiktok",
 ];
 
-export function isSyncableSource(source: Source): boolean {
+function isSyncableSource(source: Source): boolean {
   return SYNCABLE_SOURCES.includes(source);
 }
 

@@ -14,7 +14,7 @@ export const RANGE_OPTIONS = [
   { value: 0, label: "All time" },
 ] as const;
 
-export function newDashboard(): DashboardConfig {
+function newDashboard(): DashboardConfig {
   return {
     id: crypto.randomUUID(),
     name: "New dashboard",

@@ -35,7 +35,7 @@ export const WATCHABLE: readonly Source[] = [
 ];
 
 /** Must match the per-source kinds resolveWatchTarget can produce (core/watch/resolve). */
-export const WATCH_KINDS: Partial<Record<Source, readonly WatchKind[]>> = {
+const WATCH_KINDS: Partial<Record<Source, readonly WatchKind[]>> = {
   arena: ["channel", "user", "group"],
   youtube: ["channel", "playlist"],
   twitter: ["user", "list"],

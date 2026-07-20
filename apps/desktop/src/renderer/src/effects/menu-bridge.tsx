@@ -141,30 +141,6 @@ export function MenuBridge() {
           void window.pond.query("developer.openIpcInspector", {});
           return;
 
-        case "developer.dock-playground":
-          void getAppRouter()?.navigate({ to: "/playground" });
-          return;
-
-        case "developer.saves-playground":
-          void getAppRouter()?.navigate({ to: "/saves-playground" });
-          return;
-
-        case "developer.dock-merge-playground":
-          void getAppRouter()?.navigate({ to: "/dock-merge-playground" });
-          return;
-
-        case "developer.tooltip-playground":
-          void getAppRouter()?.navigate({ to: "/tooltip-playground" });
-          return;
-
-        case "developer.source-tile-playground":
-          void getAppRouter()?.navigate({ to: "/source-tile-playground" });
-          return;
-
-        case "developer.toast-playground":
-          void getAppRouter()?.navigate({ to: "/toast-playground" });
-          return;
-
         case "save.new":
           dockMode.open("new");
           return;

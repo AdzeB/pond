@@ -23,13 +23,11 @@ export function SelectCell({
   onToggle: (extend: boolean) => void;
 }) {
   const selected = useSelector(store, (s) => s.selectedIds.has(rowId));
-  const selecting = useSelector(store, (s) => s.selectedIds.size > 0);
   return (
     <div className={styles["select-cell"]} role="gridcell" onClick={stop}>
       <Checkbox.Root
         className={styles.check}
         checked={selected}
-        data-active={selecting || undefined}
         aria-label={selected ? "Deselect row" : "Select row"}
         onClick={stop}
         onCheckedChange={() => onToggle(false)}

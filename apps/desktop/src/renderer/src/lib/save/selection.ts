@@ -44,10 +44,6 @@ async function writeClipboard(text: string): Promise<boolean> {
   }
 }
 
-export function selectAllInView(): void {
-  selection.set(libraryViewContext.filteredIds());
-}
-
 export function isAllSelected(): boolean {
   const all = libraryViewContext.filteredIds();
   return all.length > 0 && selection.size() >= all.length;

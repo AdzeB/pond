@@ -27,8 +27,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },
-  { id: "saves", path: "saves", label: "Saves", group: "capture" },
-  { id: "sync", path: "sync", label: "Sync", group: "capture" },
+  { id: "funnel", path: "funnel", label: "Funnel", group: "capture" },
   { id: "videos", path: "videos", label: "Videos", group: "capture" },
   { id: "images", path: "images", label: "Images", group: "capture" },
   {

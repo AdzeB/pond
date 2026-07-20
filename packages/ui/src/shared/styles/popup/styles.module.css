@@ -82,7 +82,7 @@
   user-select: none;
   background: transparent;
   border: 0;
-  border-radius: 8px;
+  border-radius: 6px;
   isolation: isolate;
 
   &::before {

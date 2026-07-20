@@ -1,7 +1,7 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-export type ActivityState = "running" | "done" | "error";
+type ActivityState = "running" | "done" | "error";
 
 export interface ActivityEntry {
   readonly id: number;

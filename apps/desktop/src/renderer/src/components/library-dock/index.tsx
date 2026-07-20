@@ -10,7 +10,7 @@ import { SelectionContent } from "@/components/library-dock-selection-content";
 import { SavingPill } from "@/components/library-saving-pill";
 import { SearchComposer } from "@/components/search-bar";
 import { isAllSelected } from "@/lib/save/selection";
-import { buildDockMotion, useMotionScaleFactor } from "@/lib/ui/motion";
+import { buildDockMotion } from "@/lib/ui/motion";
 import { clearAsk } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
@@ -22,17 +22,12 @@ import { useDockActions } from "./lib/actions";
 import { type DockContextValue, DockProvider } from "./lib/context";
 import { type DockTab, NAV_TABS } from "./lib/nav-tabs";
 import {
-  type DockPreview,
   type DockView,
   isViewMenu,
   SELECTION_CARD_MODES,
   type ViewMenuSection,
 } from "./lib/types";
 import styles from "./styles.module.css";
-
-interface LibraryTrayProps {
-  preview?: DockPreview;
-}
 
 /** Module-level store calls stay referentially stable without useCallback. */
 const openAsk = () => dockMode.open("ask");
@@ -45,7 +40,7 @@ const clearResults = () => {
   dockMode.close();
 };
 
-export function LibraryTray({ preview }: LibraryTrayProps) {
+export function LibraryTray() {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
@@ -86,41 +81,32 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const { destructive, confirmDeleteForever } = useDockActions();
 
   /** Priority: an active selection commandeers the pill, then the opened surface, then the resting nav. Cards opened from the selection (confirm, run, tag, copy, export) outrank it so drilling in doesn't bounce back. */
-  const liveView: DockView = (
-    SELECTION_CARD_MODES as readonly string[]
-  ).includes(mode)
+  const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
+    mode,
+  )
     ? (mode as DockView)
     : selectionSize > 0
       ? "selection"
       : mode !== "nav"
         ? mode
         : "nav";
-  const view = preview?.view ?? liveView;
   const isMenuView = view === "new" || isViewMenu(view);
 
-  const effSelectionSize = preview?.selectionSize ?? selectionSize;
-  const effFilteredCount = preview
-    ? (preview.filteredCount ?? 0)
-    : filteredCount;
-  const effInTrash = preview ? (preview.inTrash ?? false) : inTrash;
-  const effAllSelected = preview
-    ? (preview.allSelected ?? false)
-    : isAllSelected();
+  const allSelected = isAllSelected();
 
   const isTabActive = useCallback(
     (tab: DockTab): boolean => {
-      if (preview) return preview.activeTab === tab;
       const navTab = NAV_TABS.find((t) => t.id === tab);
       return navTab ? navTab.match(pathname) : false;
     },
-    [preview, pathname],
+    [pathname],
   );
 
   const isCard =
     view === "ask" || view === "search" || view === "new" || isViewMenu(view);
 
   useEffect(() => {
-    if (preview || !isMenuView) return;
+    if (!isMenuView) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
@@ -129,11 +115,10 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [preview, isMenuView]);
+  }, [isMenuView]);
 
-  const timeScale = useMotionScaleFactor();
   const { pillTransition, quickTransition, swapTransition, swap } =
-    buildDockMotion(reduceMotion ?? false, timeScale);
+    buildDockMotion(reduceMotion ?? false);
 
   /** View swaps get the deliberate morph (timed by when the view last changed); in the resting nav view the pill tracks the content per frame, so the unfold's own spring is the only timing; other within-view growth rides the quick spring. */
   const lastView = useRef(view);
@@ -142,8 +127,7 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     lastView.current = view;
     viewChangedAt.current = performance.now();
   }
-  const inViewMorph =
-    performance.now() - viewChangedAt.current < 450 * timeScale;
+  const inViewMorph = performance.now() - viewChangedAt.current < 450;
   const boundsTransition = isFirstMeasure
     ? { duration: 0 }
     : inViewMorph
@@ -155,10 +139,10 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
   const context = useMemo<DockContextValue>(
     () => ({
       view,
-      selectionSize: effSelectionSize,
-      filteredCount: effFilteredCount,
-      inTrash: effInTrash,
-      allSelected: effAllSelected,
+      selectionSize,
+      filteredCount,
+      inTrash,
+      allSelected,
       isTabActive,
       isCard,
       openAsk,
@@ -170,7 +154,6 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
       closeViewMenu: closeToNav,
       destructive,
       confirmDeleteForever,
-      isPreview: preview != null,
       swap,
       swapTransition,
       sizeTransition: pillTransition,
@@ -179,15 +162,14 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     }),
     [
       view,
-      effSelectionSize,
-      effFilteredCount,
-      effInTrash,
-      effAllSelected,
+      selectionSize,
+      filteredCount,
+      inTrash,
+      allSelected,
       isTabActive,
       isCard,
       destructive,
       confirmDeleteForever,
-      preview,
       swap,
       swapTransition,
       pillTransition,
@@ -195,100 +177,81 @@ export function LibraryTray({ preview }: LibraryTrayProps) {
     ],
   );
 
-  if (
-    !preview &&
-    (pathname === "/components" ||
-      pathname === "/dock-merge-playground" ||
-      pathname === "/tooltip-playground" ||
-      pathname === "/toast-playground")
-  ) {
-    return null;
-  }
-
-  const body = (
-    <TrayCard.Provider onDismiss={closeToNav}>
-      <DockProvider value={context}>
-        {!preview && isMenuView ? (
-          <button
-            type="button"
-            aria-label="Close"
-            className={styles.backdrop}
-            onClick={closeToNav}
-          />
-        ) : null}
-        <Tray.Pill
-          className={styles.pill}
-          render={
-            <motion.div
-              ref={pillRef}
-              initial={false}
-              animate={
-                bounds ? { width: bounds.width, height: bounds.height } : {}
-              }
-              transition={boundsTransition}
-            />
-          }
-        >
-          <div
-            ref={viewportRef}
-            className={styles.viewport}
-            data-card={isCard || undefined}
-          >
-            <AnimatePresence initial={false}>
-              {view === "selection" ? (
-                <SelectionContent key="selection" />
-              ) : view === "ask" ? (
-                <motion.div
-                  key="ask"
-                  className={styles["ask-row"]}
-                  {...swap}
-                  transition={swapTransition}
-                >
-                  {/** Leaving the ask card ends the conversation: results clear so the grid never stays silently filtered. */}
-                  <TrayCard.Provider onDismiss={clearResults}>
-                    <AskComposer
-                      autoFocus={!preview}
-                      onCollapse={clearResults}
-                      onClear={clearAsk}
-                    />
-                  </TrayCard.Provider>
-                </motion.div>
-              ) : view === "search" ? (
-                <motion.div
-                  key="search"
-                  className={styles["search-row"]}
-                  {...swap}
-                  transition={swapTransition}
-                >
-                  <SearchComposer
-                    autoFocus={!preview}
-                    onCollapse={closeToNav}
-                  />
-                </motion.div>
-              ) : view === "new" ? (
-                <motion.div key="new" {...swap} transition={swapTransition}>
-                  <NewContent />
-                </motion.div>
-              ) : isViewMenu(view) ? (
-                <motion.div key={view} {...swap} transition={swapTransition}>
-                  <OptionsContent section={view} />
-                </motion.div>
-              ) : (
-                <NavContent key="nav" />
-              )}
-            </AnimatePresence>
-          </div>
-        </Tray.Pill>
-      </DockProvider>
-    </TrayCard.Provider>
-  );
-
-  if (preview) return body;
-
   return (
     <div className={styles.dock}>
       <SavingPill />
-      {body}
+      <TrayCard.Provider onDismiss={closeToNav}>
+        <DockProvider value={context}>
+          {isMenuView ? (
+            <button
+              type="button"
+              aria-label="Close"
+              className={styles.backdrop}
+              onClick={closeToNav}
+            />
+          ) : null}
+          <Tray.Pill
+            className={styles.pill}
+            render={
+              <motion.div
+                ref={pillRef}
+                initial={false}
+                animate={
+                  bounds ? { width: bounds.width, height: bounds.height } : {}
+                }
+                transition={boundsTransition}
+              />
+            }
+          >
+            <div
+              ref={viewportRef}
+              className={styles.viewport}
+              data-card={isCard || undefined}
+            >
+              <AnimatePresence initial={false}>
+                {view === "selection" ? (
+                  <SelectionContent key="selection" />
+                ) : view === "ask" ? (
+                  <motion.div
+                    key="ask"
+                    className={styles["ask-row"]}
+                    {...swap}
+                    transition={swapTransition}
+                  >
+                    {/** Leaving the ask card ends the conversation: results clear so the grid never stays silently filtered. */}
+                    <TrayCard.Provider onDismiss={clearResults}>
+                      <AskComposer
+                        autoFocus
+                        onCollapse={clearResults}
+                        onClear={clearAsk}
+                      />
+                    </TrayCard.Provider>
+                  </motion.div>
+                ) : view === "search" ? (
+                  <motion.div
+                    key="search"
+                    className={styles["search-row"]}
+                    {...swap}
+                    transition={swapTransition}
+                  >
+                    <SearchComposer autoFocus onCollapse={closeToNav} />
+                  </motion.div>
+                ) : view === "new" ? (
+                  <motion.div key="new" {...swap} transition={swapTransition}>
+                    <NewContent />
+                  </motion.div>
+                ) : isViewMenu(view) ? (
+                  <motion.div key={view} {...swap} transition={swapTransition}>
+                    <OptionsContent section={view} />
+                  </motion.div>
+                ) : (
+                  <NavContent key="nav" />
+                )}
+              </AnimatePresence>
+            </div>
+          </Tray.Pill>
+        </DockProvider>
+      </TrayCard.Provider>
     </div>
   );
 }

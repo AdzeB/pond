@@ -98,7 +98,7 @@ export function SkillsSection() {
             <Button
               className={styles["empty-action"]}
               size="sm"
-              variant="primary"
+              variant="secondary"
               onClick={() => setEditing({ mode: "new" })}
             >
               New skill

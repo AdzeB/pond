@@ -21,6 +21,16 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
   return null;
 }
 
+/** Downloaded favicon for web saves; remote fallback covers saves still mid-pipeline. */
+export function pickSourceIconUrl(save: Save): string | null {
+  const local = (save.files ?? []).find((f) => f.kind === "source_icon");
+  if (local) return buildPondUrl(save.id, local);
+
+  const url = save.rawJson?.capture?.extras?.faviconUrl;
+  if (typeof url === "string" && url.trim().length > 0) return url;
+  return null;
+}
+
 function cacheBuster(file: SaveFile): string | null {
   if (file.sha256 && file.sha256.length >= 8) {
     return file.sha256.slice(0, 12);

@@ -55,12 +55,14 @@ export function LocationRow() {
         ) : null}
       </div>
       <Button
+        size="sm"
         variant="secondary"
         onClick={() => void window.pond.query("library.openInFinder", {})}
       >
         Reveal in Finder
       </Button>
       <Button
+        size="sm"
         variant="secondary"
         disabled={openExisting.isPending}
         onClick={() => openExisting.mutate()}

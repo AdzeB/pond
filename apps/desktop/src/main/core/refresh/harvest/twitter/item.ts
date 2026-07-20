@@ -51,10 +51,8 @@ export function buildExpression(tweetId: string): string {
       await new Promise(r => setTimeout(r, 250));
     }
     if (article) {
-      // Twitter lazy-loads each image in a multi-image grid/carousel, so the
-      // first <img> can appear well before the rest. Bailing on the first
-      // match would capture only one image. Instead, wait until the media
-      // element count stops growing (stable for a short window) or we time out.
+      // Twitter lazy-loads grid/carousel images, so the first <img> appears well before
+      // the rest; wait until the media element count stays stable or the deadline hits.
       const countMedia = () => article.querySelectorAll(
         '[data-testid="tweetPhoto"] img, video, [data-testid="videoPlayer"] img, [data-testid="videoComponent"] img'
       ).length;

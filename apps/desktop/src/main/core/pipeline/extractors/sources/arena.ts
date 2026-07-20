@@ -53,7 +53,6 @@ export class ArenaBlockExtractor implements Extractor {
             .find((a) => a.querySelector('img[src*="avatars.are.na"]'));
           const fromAvatar = slugOf(avatarLink?.getAttribute('href') || '');
           if (fromAvatar) return fromAvatar;
-          // Fallback: first non-reserved /<slug> link in the nav.
           for (const a of Array.from(document.querySelectorAll('a[href^="/"]'))) {
             const slug = slugOf(a.getAttribute('href') || '');
             if (slug) return slug;

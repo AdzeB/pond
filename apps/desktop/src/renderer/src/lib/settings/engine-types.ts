@@ -63,8 +63,8 @@ export interface ButtonItem {
   /** Extra terms fed to the settings search index. */
   keywords?: string[];
   label: ReactNode;
-  variant?: "primary" | "ghost" | "destructive";
-  size?: "xs" | "sm";
+  /** Defaults to "secondary"; settings rows never use primary or ghost. */
+  variant?: "secondary" | "destructive";
   visible?: (values: Record<string, unknown>) => boolean;
   disabled?: (values: Record<string, unknown>) => boolean;
   /** Binds this single item to a different prefs slice than its group. */

@@ -24,8 +24,8 @@ export function openTrayConfirm(spec: TrayConfirmSpec): void {
   dockMode.open("confirm");
 }
 
-/** Playground previews open this card without a spec; a sample keeps the layout honest. */
-const PREVIEW: TrayConfirmSpec = {
+/** Confirming clears the spec before the card swaps out; the sample keeps the exit render intact. */
+const FALLBACK: TrayConfirmSpec = {
   title: "Delete Forever",
   description:
     "Deleting removes the 12 selected items and their files from your library for good. This can't be undone. Proceed carefully.",
@@ -37,7 +37,7 @@ const PREVIEW: TrayConfirmSpec = {
 export function ConfirmSection() {
   const dock = useDock();
   const [busy, setBusy] = useState(false);
-  const spec = current ?? PREVIEW;
+  const spec = current ?? FALLBACK;
 
   const cancel = () => {
     if (spec.returnTo) dock.openViewMenu(spec.returnTo);

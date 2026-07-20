@@ -32,7 +32,7 @@ const KIND_ROWS: Record<WatchKind, { label: string; icon: ReactNode }> = {
 export function WatchKindSection() {
   const dock = useDock();
   const picked = useWatchSource();
-  /** Playground previews open this card without a pick; any multi-kind brand keeps the layout honest. */
+  /** The pick clears before the card swaps out; any multi-kind brand keeps the exit render intact. */
   const source = picked ?? "youtube";
 
   const pick = (kind: WatchKind) => {

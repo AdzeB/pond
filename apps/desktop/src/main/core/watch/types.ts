@@ -20,7 +20,7 @@ export type WatchHarvestResult =
     };
 
 /** Sources a watch can target; everything is public except Instagram/Twitter, whose checks ride a connected account's session. */
-export const WATCHABLE_SOURCES: readonly Source[] = [
+const WATCHABLE_SOURCES: readonly Source[] = [
   "arena",
   "youtube",
   "tiktok",

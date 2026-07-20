@@ -19,7 +19,7 @@ const STORAGE_KEYS: Record<DisplayPrefKey, string> = {
   type: "pond.display.type",
 };
 
-export const DISPLAY_DEFAULTS: DisplayPrefs = {
+const DISPLAY_DEFAULTS: DisplayPrefs = {
   name: true,
   date: true,
   fileCount: true,

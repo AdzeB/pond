@@ -5,7 +5,7 @@ import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
 import { resolvePaths } from "../paths";
 
 /** Prefs slices that travel with the bundle (settings.json); everything else is app-global. */
-export const POND_PREF_KEYS = [
+const POND_PREF_KEYS = [
   "preferences",
   "analyticsView",
   "sourcesView",
@@ -20,8 +20,8 @@ export const POND_PREF_KEYS = [
   "saveRecents",
 ] as const satisfies readonly (keyof Prefs)[];
 
-export type PondPrefKey = (typeof POND_PREF_KEYS)[number];
-export type AppPrefKey = Exclude<keyof Prefs, PondPrefKey>;
+type PondPrefKey = (typeof POND_PREF_KEYS)[number];
+type AppPrefKey = Exclude<keyof Prefs, PondPrefKey>;
 
 export type PondPrefs = Pick<Prefs, PondPrefKey>;
 export type AppPrefs = Pick<Prefs, AppPrefKey>;
@@ -37,14 +37,8 @@ const APP_PREF_KEYS = Object.keys(DEFAULT_PREFS).filter(
   (key) => !POND_PREF_KEYS.includes(key as PondPrefKey),
 ) as AppPrefKey[];
 
-export const DEFAULT_APP_PREFS: AppPrefs = pickPrefs(
-  DEFAULT_PREFS,
-  APP_PREF_KEYS,
-);
-export const DEFAULT_POND_PREFS: PondPrefs = pickPrefs(
-  DEFAULT_PREFS,
-  POND_PREF_KEYS,
-);
+const DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
+const DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
 
 export function currentPondId(): string {
   const paths = resolvePaths();

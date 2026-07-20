@@ -13,7 +13,7 @@ import log from "electron-log/main.js";
 
 /** Root JSONs inside the .pond bundle, written atomically (tmp + rename) so a crash or a cloud sync racing the write never leaves a truncated file. */
 
-export const BUNDLE_JSON_SCHEMA = 1;
+const BUNDLE_JSON_SCHEMA = 1;
 
 interface BundleEnvelope<T> {
   schemaVersion: number;

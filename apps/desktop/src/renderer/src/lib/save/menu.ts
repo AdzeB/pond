@@ -71,51 +71,49 @@ export function buildSaveMenu(
   return [
     {
       label: "Open with Default App",
-      disabled: !hasFiles,
+      hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
       onClick: () => void openDefaultApp(save),
     },
     {
       label: REVEAL_LABEL,
-      disabled: !hasFiles,
+      hidden: !hasFiles,
       onClick: () => void revealFile(save),
     },
     { type: "separator" },
     {
       label: "Copy URL",
-      disabled: !hasUrl,
+      hidden: !hasUrl,
       shortcut: shortcutGlyphs("save.copy-url"),
       onClick: () => {
         if (save.url) void copyUrl(save.url);
       },
     },
-    ...(hasImage
-      ? [
-          {
-            label: "Copy Image",
-            shortcut: shortcutGlyphs("save.copy-image"),
-            onClick: () => void copyImageAction(save),
-          } satisfies MenuItemSpec,
-        ]
-      : []),
+    {
+      label: "Copy Image",
+      hidden: !hasImage,
+      shortcut: shortcutGlyphs("save.copy-image"),
+      onClick: () => void copyImageAction(save),
+    },
     {
       label: "Copy File",
-      disabled: !hasFiles,
+      hidden: !hasFiles,
       onClick: () => void copyFileAction(save),
     },
     {
       label: "Copy File Path",
-      disabled: !hasFiles,
+      hidden: !hasFiles,
       onClick: () => void copyFilePath(save),
     },
     {
       label: "Copy Tags",
-      disabled: !hasTags,
+      hidden: !hasTags,
       shortcut: shortcutGlyphs("save.copy-tags"),
       onClick: () => copyTagsAction(save),
     },
     {
       label: "Paste Tags",
+      /** Stays visible but disabled: the clipboard is transient app state, not a missing capability. */
       disabled: clipboardEmpty,
       shortcut: shortcutGlyphs("save.paste-tags"),
       onClick: () => void pasteTagsAction(save),
@@ -125,12 +123,12 @@ export function buildSaveMenu(
       type: "submenu",
       label: "Reverse Image Search",
       /** Reverse search needs a public image URL from the capture metadata; local-only saves have none. */
-      disabled: !hasUrl,
+      hidden: !hasUrl,
       items: reverseSearchItems,
     },
     {
       label: "Export",
-      disabled: !hasFiles,
+      hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.export"),
       onClick: () => void exportFileAction(save),
     },
@@ -139,7 +137,7 @@ export function buildSaveMenu(
     { type: "separator" },
     {
       label: "Refresh Details",
-      disabled: !hasUrl,
+      hidden: !hasUrl,
       shortcut: shortcutGlyphs("save.refresh"),
       onClick: () => {
         if (save.url) void window.pond.refreshSave(save.id);
@@ -147,19 +145,15 @@ export function buildSaveMenu(
     },
     {
       label: "Archive Full Site",
-      disabled: !(hasUrl && save.source === "web" && !isTrashed),
+      hidden: !(hasUrl && save.source === "web" && !isTrashed),
       onClick: () => void window.pond.archiveSite(save.id),
     },
-    save.url
-      ? {
-          type: "link",
-          label: "Open Original URL in Browser",
-          href: save.url,
-          onClick: () => void openInBrowser(save),
-        }
-      : {
-          label: "Open Original URL in Browser",
-          disabled: true,
-        },
+    {
+      type: "link",
+      label: "Open Original URL in Browser",
+      hidden: !hasUrl,
+      href: save.url ?? "",
+      onClick: () => void openInBrowser(save),
+    },
   ];
 }

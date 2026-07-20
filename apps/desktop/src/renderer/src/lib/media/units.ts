@@ -47,10 +47,11 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), avatars, and site-archive files (rendered by the archive viewer). */
+  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), avatars, source icons, and site-archive files (rendered by the archive viewer). */
   const files = (save.files ?? []).filter(
     (f) =>
       f.kind !== "avatar" &&
+      f.kind !== "source_icon" &&
       !isArchiveFile(f) &&
       !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
       !isQuoteScreenshotKind(f.kind),

@@ -5,7 +5,6 @@ import {
 import type { Source, WatchKind } from "@pond/schema/db";
 import { TrayCard } from "@pond/ui";
 import { Calligraph } from "calligraph";
-import { clsx as cn } from "clsx";
 import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
@@ -122,7 +121,7 @@ export function WatchTargetSection() {
   const dock = useDock();
   const { accounts } = useAccounts();
   const picked = useWatchSource();
-  /** Playground previews open this card without a pick; any watchable brand keeps the layout honest. */
+  /** The pick clears before the card swaps out; any watchable brand keeps the exit render intact. */
   const source = picked ?? "youtube";
   const kinds = watchKindsFor(source);
   const pickedKind = useWatchKind();
@@ -135,8 +134,8 @@ export function WatchTargetSection() {
   const handleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!dock.isPreview) handleRef.current?.focus();
-  }, [dock.isPreview]);
+    handleRef.current?.focus();
+  }, []);
 
   const viaAccount = accounts.find((a) => a.source === source) ?? null;
   const needsAccount = WATCH_NEEDS_SESSION.includes(source) && !viaAccount;
@@ -270,7 +269,7 @@ export function WatchTargetSection() {
         }
       >
         {error ? (
-          <p className={cn(styles.chip, styles.error)}>{error}</p>
+          <p className={`${styles.chip} ${styles.error}`}>{error}</p>
         ) : resolved ? (
           <div className={styles.match}>
             <span className={styles.eyebrow}>Exact match</span>

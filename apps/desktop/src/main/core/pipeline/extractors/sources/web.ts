@@ -55,7 +55,8 @@ export class WebPageExtractor implements Extractor {
 
     const canonical = pickString(meta.url) ?? input.url.href;
 
-    const coverUrl = pickString(meta.image) ?? pickString(meta.logo);
+    const faviconUrl = pickString(meta.logo);
+    const coverUrl = pickString(meta.image) ?? faviconUrl;
     const media: MediaCandidate[] = coverUrl
       ? [{ url: coverUrl, type: "image" }]
       : [];
@@ -65,6 +66,11 @@ export class WebPageExtractor implements Extractor {
 
     const publishedAt = pickString(meta.date);
     const publisher = pickString(meta.publisher);
+
+    const extras = {
+      ...(publisher ? { publisher } : {}),
+      ...(faviconUrl ? { faviconUrl } : {}),
+    };
 
     return {
       id: canonical,
@@ -77,7 +83,7 @@ export class WebPageExtractor implements Extractor {
       ...(author ? { author } : {}),
       ...(publishedAt ? { publishedAt } : {}),
       media,
-      ...(publisher ? { extras: { publisher } } : {}),
+      ...(Object.keys(extras).length > 0 ? { extras } : {}),
     };
   }
 }

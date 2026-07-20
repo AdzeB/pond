@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { ensureTranscript } from "@/lib/media/transcript";
-import { pickAuthorAvatarUrl } from "@/lib/media/url";
+import { pickAuthorAvatarUrl, pickSourceIconUrl } from "@/lib/media/url";
 import {
   collectEngagement,
   collectIdentityRows,
@@ -75,7 +75,9 @@ export function useSaveDetail(id: string): SaveDetailView {
       style,
       colors: save.dominantColors?.slice(0, 8) ?? [],
       avatarUrl: pickAuthorAvatarUrl(save),
-      sourceLogo: getSourceLogo(save.source),
+      sourceLogo:
+        getSourceLogo(save.source) ??
+        (save.source === "web" ? pickSourceIconUrl(save) : null),
       sourceIcon: getSourceIcon(save.source),
       hasInsights: !!caption || !!ocr || !!transcript || style.length > 0,
     };
