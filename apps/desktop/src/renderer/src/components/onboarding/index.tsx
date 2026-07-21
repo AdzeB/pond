@@ -368,10 +368,12 @@ function Wall({ dimmed }: { dimmed: boolean }) {
 function domainOf(url: string): string | null {
   const trimmed = url.trim();
   if (!trimmed) return null;
-  return withScheme(trimmed)
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .split("/")[0];
+  return (
+    withScheme(trimmed)
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .split("/")[0] ?? null
+  );
 }
 
 /** First displayable image from the pipeline, skipping avatars and favicons. */
@@ -423,7 +425,10 @@ function PreviewCard({
       }}
       exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.25 } }}
     >
-      <div className={styles["preview-media"]} data-active={active || undefined}>
+      <div
+        className={styles["preview-media"]}
+        data-active={active || undefined}
+      >
         {image && save ? (
           <motion.img
             className={styles["preview-photo"]}
@@ -490,7 +495,11 @@ function PreviewCard({
           <motion.span
             className={styles["preview-sub"]}
             initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0, transition: { duration: 0.3, delay: 0.08 } }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              transition: { duration: 0.3, delay: 0.08 },
+            }}
           >
             {byline}
           </motion.span>
@@ -506,7 +515,7 @@ function PreviewCard({
   );
 }
 
-function WelcomeStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
+function WelcomeStep({ onNext }: { onNext: () => void }) {
   return (
     <motion.div
       key="welcome"
@@ -527,9 +536,6 @@ function WelcomeStep({ onNext, onSkip }: { onNext: () => void; onSkip: () => voi
         videos, and files, saved on your Mac.
       </motion.p>
       <motion.div className={styles.actions} variants={rise}>
-        <Button variant="secondary" size="lg" onClick={onSkip}>
-          Skip
-        </Button>
         <Button variant="accent" size="lg" onClick={onNext}>
           Get Started
         </Button>
@@ -542,12 +548,10 @@ function FirstSaveStep({
   url,
   onUrlChange,
   dragging,
-  onSkip,
 }: {
   url: string;
   onUrlChange: (value: string) => void;
   dragging: boolean;
-  onSkip: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -613,31 +617,25 @@ function FirstSaveStep({
         />
         <Button
           variant="accent"
-          size="md"
+          size="lg"
           disabled={!canSubmit}
           onClick={() => void submit()}
+          style={{ width: "100%" }}
         >
           {busy ? "Saving" : "Save"}
         </Button>
       </motion.div>
+
       {error ? (
         <p className={styles.error} role="alert">
           {error}
         </p>
       ) : null}
-      <motion.button
-        type="button"
-        className={styles.skip}
-        variants={rise}
-        onClick={onSkip}
-      >
-        Skip for now
-      </motion.button>
     </motion.div>
   );
 }
 
-function CreatingStep({ onDone }: { onDone: () => void }) {
+function CreatingStep() {
   return (
     <motion.div
       key="creating"
@@ -654,14 +652,6 @@ function CreatingStep({ onDone }: { onDone: () => void }) {
         Pond is pulling in the details: title, cover, and where it came from.
         Watch it fill in on the right.
       </motion.p>
-      <motion.button
-        type="button"
-        className={styles.skip}
-        variants={rise}
-        onClick={onDone}
-      >
-        Dive in without waiting
-      </motion.button>
     </motion.div>
   );
 }
@@ -782,19 +772,11 @@ function Onboarding({ onDone }: { onDone: () => void }) {
       <div className={styles.pane}>
         <AnimatePresence initial={false} mode="popLayout">
           {step === "welcome" ? (
-            <WelcomeStep
-              onNext={() => setStep("first-save")}
-              onSkip={onDone}
-            />
+            <WelcomeStep onNext={() => setStep("first-save")} />
           ) : step === "first-save" ? (
-            <FirstSaveStep
-              url={url}
-              onUrlChange={setUrl}
-              dragging={dragging}
-              onSkip={onDone}
-            />
+            <FirstSaveStep url={url} onUrlChange={setUrl} dragging={dragging} />
           ) : !settled ? (
-            <CreatingStep onDone={onDone} />
+            <CreatingStep />
           ) : (
             <LandedStep onDone={onDone} />
           )}
@@ -805,7 +787,11 @@ function Onboarding({ onDone }: { onDone: () => void }) {
             const currentIdx = STEPPER_ITEMS.findIndex((s) => s.step === step);
             const active = idx <= currentIdx;
             return (
-              <span key={item.step} className={styles["stepper-item"]} data-active={active || undefined}>
+              <span
+                key={item.step}
+                className={styles["stepper-item"]}
+                data-active={active || undefined}
+              >
                 {i > 0 ? (
                   <span className={styles["stepper-sep"]} aria-hidden>
                     <ChevronRight width={10} height={10} />
@@ -818,7 +804,10 @@ function Onboarding({ onDone }: { onDone: () => void }) {
           })}
         </nav>
       </div>
-      <div className={styles.canvas} data-quiet={step === "welcome" || undefined}>
+      <div
+        className={styles.canvas}
+        data-quiet={step === "welcome" || undefined}
+      >
         {/* The camera pushes in as the flow narrows from the whole library to one card. */}
         <motion.div
           className={styles["canvas-zoom"]}
@@ -875,5 +864,9 @@ export function OnboardingGate() {
     setShow(false);
   };
 
-  return <AnimatePresence>{show ? <Onboarding onDone={done} /> : null}</AnimatePresence>;
+  return (
+    <AnimatePresence>
+      {show ? <Onboarding onDone={done} /> : null}
+    </AnimatePresence>
+  );
 }
