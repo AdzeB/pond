@@ -17,7 +17,7 @@
   border-radius: 10px;
   box-shadow: 0 0 0 1px var(--ds-gray-a3);
 
-  svg {
+  img {
     border-radius: 4px;
   }
 }

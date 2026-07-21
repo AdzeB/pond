@@ -42,14 +42,15 @@ export function SaveDetailModal() {
 
   useHotkeys([
     {
+      /** Mod+Arrow is home/end in macOS text fields; never step saves while typing in the details pane. */
       hotkey: SHORTCUTS["viewer.prev-save"].keys,
       callback: () => stepSave(-1),
-      options: { enabled: id != null },
+      options: { enabled: id != null, ignoreInputs: true },
     },
     {
       hotkey: SHORTCUTS["viewer.next-save"].keys,
       callback: () => stepSave(1),
-      options: { enabled: id != null },
+      options: { enabled: id != null, ignoreInputs: true },
     },
   ]);
 

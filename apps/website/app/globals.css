@@ -35,8 +35,14 @@
 }
 
 :root {
-  --ds-base-c: 0.0042;
-  --ds-base-h: 84;
+  /* The desktop "Light" preset (base #ffffff, accent #008FFF, contrast 30) as themeEngineVars emits it. */
+  --ds-base-l: 1;
+  --ds-base-c: 0;
+  --ds-base-h: 0;
+  --ds-accent-l: 0.6471;
+  --ds-accent-c: 0.1941;
+  --ds-accent-h: 252.09;
+  --ds-contrast: 0.84;
 
   --site-font-sans:
     ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Inter,
@@ -75,6 +81,13 @@ body {
 ::selection {
   color: var(--ds-gray-12);
   background: color-mix(in srgb, var(--ds-accent-9) 25%, transparent);
+}
+
+/* Mirrors the desktop's P3_CHROMA_BOOST: wide-gamut panels get the same richer accent. */
+@media (color-gamut: p3) {
+  :root {
+    --ds-accent-c: 0.2717;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

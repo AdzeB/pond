@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { resolve as resolvePath } from "node:path";
+import { existsSync, mkdirSync } from "node:fs";
+import { join, resolve as resolvePath } from "node:path";
 import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
 import {
@@ -63,6 +63,22 @@ import {
 
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
+
+/** POND_SANDBOX redirects all app state for first-run testing; dev and packaged builds otherwise share ~/Library/Application Support/Pond and ~/Pond. */
+if (process.env.POND_SANDBOX) {
+  const sandbox = resolvePath(process.env.POND_SANDBOX);
+  /** setPath does not create directories, and Chromium expects sessionData to exist. */
+  for (const [name, dir] of [
+    ["userData", join(sandbox, "app-data")],
+    ["sessionData", join(sandbox, "chromium")],
+    ["logs", join(sandbox, "logs")],
+    /** Home too, so the default ~/Pond/My Pond.pond bundle lands in the sandbox instead of adopting the real one. */
+    ["home", join(sandbox, "home")],
+  ] as const) {
+    mkdirSync(dir, { recursive: true });
+    app.setPath(name, dir);
+  }
+}
 if (process.platform === "darwin") {
   app.setAboutPanelOptions({
     applicationName: "Pond",

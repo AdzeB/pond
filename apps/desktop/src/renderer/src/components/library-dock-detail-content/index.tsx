@@ -13,6 +13,7 @@ import { useRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { openTrayConfirm } from "@/components/library-dock-confirm-content";
 import { openFrequencyPage } from "@/components/library-dock-detail-content/frequency";
+import { HeroAvatar } from "@/components/library-dock-detail-content/hero-avatar";
 import { buildAccountMenu } from "@/components/library-sources-page/lib/account-menu";
 import {
   accountName,
@@ -23,7 +24,6 @@ import {
   describeRun,
   formatClock,
 } from "@/components/library-sync-monitor/lib/helpers";
-import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
 import { useSyncHistory } from "@/hooks/use-sync-history";
 import { getSourceDef } from "@/lib/save/sources-registry";
@@ -165,7 +165,7 @@ function AccountDetail({
     <>
       <TrayCard.Close />
       <div className={styles.hero}>
-        <BrandTile source={source} size={52} />
+        <HeroAvatar source={source} avatarUrl={account.avatarUrl} />
         <TrayCard.Title>{account.label ?? def.label}</TrayCard.Title>
         <span className={styles["hero-sub"]}>
           {account.handle ? `@${account.handle} · ` : ""}

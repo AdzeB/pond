@@ -6,7 +6,6 @@ import {
   IconGear3Fill18,
   IconGlobeFill18,
   IconTrash2ContentFill18,
-  IconUploadFill18,
 } from "@pond/icons/fill/18";
 import { TitleBar, Tray } from "@pond/ui";
 import {
@@ -33,7 +32,6 @@ const RAIL_MAIN: RailItem[] = [
   { icon: IconArchiveContent2Fill18, label: "Library", active: true },
   { icon: IconGlobeFill18, label: "Sources" },
   { icon: IconChartFill18, label: "Analytics" },
-  { icon: IconUploadFill18, label: "Saves" },
 ];
 
 const RAIL_UTILITY: RailItem[] = [
@@ -189,13 +187,7 @@ export function AppWindow() {
     : "1,284";
 
   return (
-    <div
-      ref={rootRef}
-      className={styles.window}
-      data-neutral="pure"
-      aria-hidden
-      inert
-    >
+    <div ref={rootRef} className={styles.window} aria-hidden inert>
       <span className={styles.lights}>
         <span className={styles.light} data-tone="close" />
         <span className={styles.light} data-tone="min" />

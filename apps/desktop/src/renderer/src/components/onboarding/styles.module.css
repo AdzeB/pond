@@ -1,0 +1,474 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  background: var(--ds-background-1);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* The window is frameless; keep the titlebar area draggable while onboarding covers it. */
+.drag {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 4;
+  height: 44px;
+  -webkit-app-region: drag;
+}
+
+/* Left pane: the quiet, editorial half. Copy sits at the optical center, left-aligned. */
+.pane {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 46%;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 360px;
+  padding: 0 64px;
+  background: var(--ds-background-1);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 380px;
+  text-align: left;
+}
+
+/* A pond seen from above: dark disc, one ripple ring. */
+.mark {
+  position: relative;
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 8px;
+  background: var(--ds-gray-12);
+  border-radius: var(--ds-radius-full);
+}
+
+.mark-ring {
+  position: absolute;
+  inset: 9px;
+  border: 2px solid var(--ds-gray-1);
+  border-radius: var(--ds-radius-full);
+}
+
+.title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: var(--ds-text-primary);
+}
+
+.body {
+  max-width: 40ch;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ds-gray-11);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.field-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.input {
+  flex: 1;
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ds-red-11);
+}
+
+.skip {
+  margin-top: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+  color: var(--ds-gray-10);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.skip:hover {
+  color: var(--ds-gray-12);
+}
+
+.stepper {
+  position: absolute;
+  bottom: 32px;
+  left: 64px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stepper-item {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-a7);
+  transition: color var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.stepper-item[data-active] {
+  color: var(--ds-gray-12);
+}
+
+.stepper-sep {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  color: var(--ds-gray-a5);
+}
+
+/* Right pane: the user's future library, inset as a floating rounded panel. */
+.canvas {
+  position: relative;
+  flex: 1;
+  margin: 16px 16px 16px 0;
+  overflow: hidden;
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-a4);
+  border-radius: var(--ds-radius-xl);
+  transition: filter 0.8s ease;
+}
+
+.canvas[data-quiet] {
+  filter: saturate(0.5) brightness(0.96);
+}
+
+.canvas-zoom {
+  position: absolute;
+  inset: 0;
+}
+
+.wall {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  height: 100%;
+  padding: 0 20px;
+  transition: opacity var(--ds-duration-slow) var(--ds-easing-standard);
+}
+
+.wall[data-dimmed] {
+  opacity: 0.45;
+}
+
+.wall-column {
+  display: flex;
+  flex: 0 0 156px;
+  flex-direction: column;
+  /* Content height, not stretched to the container: the -50% wrap must measure the doubled content for a seamless loop. */
+  height: max-content;
+  animation: drift 80s linear infinite;
+}
+
+.wall-column[data-direction="down"] {
+  animation-direction: reverse;
+}
+
+/* Desynced speeds and phases so the columns never align into a visible grid. */
+.wall-column:nth-child(2) {
+  animation-duration: 105s;
+  animation-delay: -34s;
+}
+
+.wall-column:nth-child(3) {
+  animation-duration: 88s;
+  animation-delay: -61s;
+}
+
+.wall-column:nth-child(4) {
+  animation-duration: 118s;
+  animation-delay: -17s;
+}
+@keyframes drift {
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+.wall-half {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+}
+
+.ghost {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ghost-frame {
+  position: relative;
+}
+
+.ghost-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-xs);
+  box-shadow: var(--ds-shadow-2);
+}
+
+/* Mirrors the real save card's source badge, bottom-right of the media. */
+.ghost-badge {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.ghost-badge img {
+  display: block;
+}
+
+.ghost-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  padding: 0 2px 2px;
+  text-align: center;
+}
+
+.ghost-title {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghost-stat {
+  font-size: 10px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+.ghost-line {
+  display: block;
+  width: 72%;
+  height: 8px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-full);
+}
+
+.ghost-line[data-short] {
+  width: 44%;
+}
+
+.ghost-line[data-shimmer] {
+  animation: shimmer 2.2s var(--ds-easing-standard) infinite;
+}
+
+@keyframes shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.preview {
+  position: absolute;
+  top: calc(50% - 104px);
+  left: calc(50% - 104px);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 208px;
+  padding: 10px;
+  background: var(--ds-background-1);
+  border: 1px solid var(--ds-gray-a5);
+  border-radius: 14px;
+  box-shadow: var(--ds-shadow-4);
+  transition:
+    border-color var(--ds-duration-medium) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.preview[data-dragging] {
+  border-color: var(--ds-accent-8);
+  box-shadow:
+    var(--ds-shadow-4),
+    0 0 0 4px var(--ds-accent-a3);
+}
+
+.preview-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 124px;
+  overflow: hidden;
+  color: var(--ds-gray-9);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-lg);
+  transition: background-color var(--ds-duration-medium)
+    var(--ds-easing-standard);
+}
+
+/* The saved item's real cover, streamed in from the pipeline as it lands. */
+.preview-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-media[data-active] {
+  color: var(--ds-gray-11);
+  background: var(--ds-gray-2);
+}
+
+/* The glyph remounts when the URL classifies to a source, so the brand mark pops in. */
+.preview-glyph {
+  display: inline-flex;
+}
+
+.preview-glyph img {
+  border-radius: var(--ds-radius-xs);
+}
+
+.preview-check {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  color: var(--ds-gray-1);
+  background: var(--ds-accent-9);
+  border-radius: var(--ds-radius-full);
+  box-shadow: 0 2px 8px var(--ds-gray-a6);
+}
+
+/* Indeterminate state while the pipeline is still fetching the save's details. */
+.preview-working {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--ds-background-1);
+  border-radius: var(--ds-radius-full);
+  box-shadow: 0 2px 8px var(--ds-gray-a6);
+}
+
+.preview-working-ring {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--ds-gray-a4);
+  border-top-color: var(--ds-accent-9);
+  border-radius: var(--ds-radius-full);
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.burst {
+  position: absolute;
+  inset: 0;
+  border: 1.5px solid var(--ds-accent-a7);
+  border-radius: var(--ds-radius-full);
+  animation: burst 1.2s var(--ds-easing-decelerate) both;
+}
+
+.burst[data-ring="2"] {
+  animation-delay: 180ms;
+  animation-duration: 1.4s;
+}
+
+@keyframes burst {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: scale(3);
+  }
+}
+
+.preview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 2px 2px 4px;
+}
+
+.preview-domain {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.preview-sub {
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-column,
+  .ghost-line[data-shimmer],
+  .preview-working-ring,
+  .burst {
+    animation: none;
+  }
+
+  .burst {
+    opacity: 0;
+  }
+}

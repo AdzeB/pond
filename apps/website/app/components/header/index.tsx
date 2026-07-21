@@ -3,10 +3,8 @@ import { Wordmark } from "../_fragments/mark";
 import styles from "./styles.module.css";
 
 const NAV = [
-  { label: "Save", href: "#save" },
-  { label: "Browse", href: "#browse" },
-  { label: "Find", href: "#find" },
-  { label: "Own", href: "#own" },
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#setup" },
   { label: "FAQs", href: "#faqs" },
 ] as const;
 

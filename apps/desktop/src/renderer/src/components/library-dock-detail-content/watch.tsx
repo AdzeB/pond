@@ -12,6 +12,7 @@ import { useRef } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { openTrayConfirm } from "@/components/library-dock-confirm-content";
 import { openFrequencyPage } from "@/components/library-dock-detail-content/frequency";
+import { HeroAvatar } from "@/components/library-dock-detail-content/hero-avatar";
 import {
   accountName,
   watchName,
@@ -21,16 +22,13 @@ import {
   describeRun,
   formatClock,
 } from "@/components/library-sync-monitor/lib/helpers";
-import { BrandTile } from "@/components/library-sync-monitor-source-tile";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useSyncHistory } from "@/hooks/use-sync-history";
 import {
   useWatches,
   WATCH_NEEDS_SESSION,
   type WatchRow,
-  watchKindLabel,
 } from "@/hooks/use-watches";
-import { getSourceDef } from "@/lib/save/sources-registry";
 import { formatNumber } from "@/lib/util/format";
 import { sourceDetail, useDetailWatchId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
@@ -77,7 +75,6 @@ function WatchDetail({
   const nickRef = useRef<HTMLInputElement>(null);
 
   const count = watch.sync?.knownCount ?? 0;
-  const def = getSourceDef(source);
   const frequency = useFrequencyRow();
 
   const saveNickname = async () => {
@@ -124,19 +121,8 @@ function WatchDetail({
     <>
       <TrayCard.Close />
       <div className={styles.hero}>
-        <span className={styles.wavatar}>
-          <BrandTile source={source} size={52} />
-        </span>
+        <HeroAvatar source={source} avatarUrl={watch.avatarUrl} ring />
         <TrayCard.Title>{watchName(watch)}</TrayCard.Title>
-        <span className={styles["hero-sub"]}>
-          Watching{" "}
-          {watch.kind && watch.kind !== "user"
-            ? `a ${def.label} ${watchKindLabel(watch.kind)}`
-            : `on ${def.label}`}{" "}
-          · {formatNumber(count)} item
-          {count === 1 ? "" : "s"}
-          {status?.lastSyncedAt ? ` · checked ${model.lastText}` : ""}
-        </span>
       </div>
 
       <div className={styles.rows}>

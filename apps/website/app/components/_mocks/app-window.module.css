@@ -1,6 +1,5 @@
 /* Native-resolution replica of the desktop shell: 1280x800, hiddenInset traffic lights at (16, 28), Shell.Main insets, floating Tray rail and dock. */
 
-/* The window carries data-neutral="pure" so the theme re-derives the app's neutral gray ramp inside, overriding the site's warmed ramp. */
 .window {
   --ds-mac-inset: 16px;
   --ds-ui-font-family:

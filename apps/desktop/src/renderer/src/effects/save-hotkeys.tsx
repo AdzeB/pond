@@ -72,19 +72,20 @@ export function SaveHotkeys() {
       },
     },
     {
+      /** Mod combos fire in inputs by library default; keep tag/export/delete shortcuts out of text editing. */
       hotkey: SHORTCUTS["save.copy-tags"].keys,
       callback: withPrimary((save) => copyTags(save)),
-      options: { enabled: hasPrimary },
+      options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
       hotkey: SHORTCUTS["save.paste-tags"].keys,
       callback: withPrimary((save) => void pasteTags(save)),
-      options: { enabled: hasPrimary },
+      options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
       hotkey: SHORTCUTS["save.export"].keys,
       callback: withPrimary((save) => void exportFile(save)),
-      options: { enabled: hasPrimary },
+      options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
       hotkey: SHORTCUTS["save.refresh"].keys,
@@ -108,9 +109,10 @@ export function SaveHotkeys() {
       options: { enabled: hasPrimary || hasMulti },
     },
     {
+      /** Mod+Backspace is delete-to-line-start in macOS text fields; never purge while typing. */
       hotkey: SHORTCUTS["save.delete-forever"].keys,
       callback: withPrimary((save) => void purgeForever(save)),
-      options: { enabled: hasPrimary },
+      options: { enabled: hasPrimary, ignoreInputs: true },
     },
   ]);
 

@@ -7,7 +7,9 @@ export type SaveSource =
   | "arena"
   | "cosmos"
   | "tiktok"
-  | "youtube";
+  | "youtube"
+  | "reddit"
+  | "threads";
 
 export type SaveKind = "image" | "video" | "post";
 

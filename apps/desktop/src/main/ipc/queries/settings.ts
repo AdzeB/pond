@@ -72,6 +72,30 @@ export const settingsQueries: QueryHandlerMap = {
     return { token: await rotateIngestToken() };
   },
 
+  async "settings.getOnboarded"() {
+    const db = await getGlobalDb();
+    const rows = await db
+      .select({ onboarded: settingsTable.onboarded })
+      .from(settingsTable)
+      .where(eq(settingsTable.id, "singleton"));
+    return { onboarded: rows[0]?.onboarded ?? false };
+  },
+
+  async "settings.setOnboarded"() {
+    const db = await getGlobalDb();
+    await db
+      .insert(settingsTable)
+      .values({ id: "singleton" })
+      .onConflictDoNothing()
+      .run();
+    await db
+      .update(settingsTable)
+      .set({ onboarded: true, updatedAt: new Date() })
+      .where(eq(settingsTable.id, "singleton"))
+      .run();
+    return { ok: true };
+  },
+
   async "settings.getPrefs"() {
     return await getPrefs();
   },

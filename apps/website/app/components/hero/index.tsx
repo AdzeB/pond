@@ -17,8 +17,8 @@ export function Hero() {
         </h1>
         <p className={styles.lead}>
           Pond is a local-first archive for everything you save. One library
-          across X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and
-          any web article. On your Mac, owned by you.
+          across X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube,
+          Reddit, Threads, and any web article. On your Mac, owned by you.
         </p>
         <div className={styles.cta}>
           <SubscribeForm />

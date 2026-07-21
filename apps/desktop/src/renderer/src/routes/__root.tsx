@@ -1,5 +1,6 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { OnboardingGate } from "@/components/onboarding";
 import { SaveDetailModal } from "@/components/save-detail-modal";
 import { SettingsModal } from "@/components/settings-modal";
 import { Tray } from "@/components/tray";
@@ -30,6 +31,7 @@ function RootComponent() {
       <Tray.Library />
       <SaveDetailModal />
       <SettingsModal />
+      <OnboardingGate />
     </>
   );
 }

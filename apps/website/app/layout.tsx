@@ -5,7 +5,7 @@ import "./globals.css";
 const SITE_URL = "https://pond.app";
 const TITLE = "Pond";
 const DESCRIPTION =
-  "A local-first archive for everything you save across X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and any web article.";
+  "A local-first archive for everything you save across X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and any web article.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -32,6 +32,8 @@ export const metadata: Metadata = {
     "Cosmos",
     "TikTok",
     "YouTube",
+    "Reddit",
+    "Threads",
     "Mac",
   ],
   openGraph: {

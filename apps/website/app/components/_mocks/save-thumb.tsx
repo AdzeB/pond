@@ -17,6 +17,8 @@ const SOURCE_LOGOS: Record<string, string> = {
   cosmos: "/demo/logos/cosmos.png",
   tiktok: "/demo/logos/tiktok.png",
   youtube: "/demo/logos/youtube.png",
+  reddit: "/demo/logos/reddit.png",
+  threads: "/demo/logos/threads.png",
 };
 
 export interface SaveThumbProps {
