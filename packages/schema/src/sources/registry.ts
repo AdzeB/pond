@@ -98,6 +98,8 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:[a-z]+\.)?reddit\.com\/comments\/([a-z0-9]+)/i,
       /^https?:\/\/redd\.it\/([a-z0-9]+)/i,
     ],
+    /** Saved listing `.json` is cursor-paginated and newest-first. */
+    sync: { strategy: "cursor" },
   },
   {
     id: "threads",
@@ -107,6 +109,8 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?threads\.(?:net|com)\/@[^/]+\/post\/([A-Za-z0-9_-]+)/i,
       /^https?:\/\/(?:www\.)?threads\.(?:net|com)\/t\/([A-Za-z0-9_-]+)/i,
     ],
+    /** Saved collection is infinite-scroll DOM with no stable public list API. */
+    sync: { strategy: "scroll" },
   },
 ] as const satisfies readonly SourceDescriptor[];
 

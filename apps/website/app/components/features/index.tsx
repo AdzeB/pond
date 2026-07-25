@@ -2,7 +2,6 @@ import Image from "next/image";
 import { FinderStatic } from "../_mocks/finder-static";
 import { LibraryStatic } from "../_mocks/library-static";
 import { SaveStatic } from "../_mocks/save-static";
-import { demoImage } from "../_mocks/saves";
 import { SearchStatic } from "../_mocks/search-static";
 import { Section } from "../_primitives/section";
 import styles from "./styles.module.css";
@@ -32,15 +31,6 @@ function SourcesRow() {
   );
 }
 
-function MediaFragment() {
-  return (
-    <span className={styles.media} aria-hidden>
-      <Image src={demoImage(5)} alt="" width={220} height={165} />
-      <span className={styles["media-badge"]}>3024 × 4032 · original</span>
-    </span>
-  );
-}
-
 function HandoffFragment() {
   return (
     <span className={styles.handoff} aria-hidden>
@@ -52,6 +42,14 @@ function HandoffFragment() {
         <span className={styles["handoff-verb"]}>201</span>
         written to My Pond.pond
       </span>
+    </span>
+  );
+}
+
+function DepthChip({ label }: { label: string }) {
+  return (
+    <span className={styles.chip} aria-hidden>
+      {label}
     </span>
   );
 }
@@ -74,16 +72,16 @@ export function Features() {
         <Section.Card
           span={5}
           spanMd={12}
-          title="Ten sources"
-          description="X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and any web article."
+          title="Nine platforms, plus the web"
+          description="Connect an account and Pond syncs new saves in the background. Drop any web article beside them."
           fragment={<SourcesRow />}
         />
         <Section.Card
           span={5}
           spanMd={12}
-          title="Full-resolution media"
-          description="Originals, not platform thumbnails. Metadata written next to the file."
-          fragment={<MediaFragment />}
+          title="Watch feeds and boards"
+          description="Follow a public account, playlist, or board. Pond pulls new posts into your library on a schedule."
+          fragment={<DepthChip label="Sources → Watch" />}
         />
         <Section.Card
           span={7}
@@ -94,27 +92,45 @@ export function Features() {
         />
         <Section.Card
           span={4}
+          title="Analytics"
+          description="Build dashboards over what you save: sources, kinds, and trends across a date range."
+          fragment={<DepthChip label="Insights" />}
+        />
+        <Section.Card
+          span={4}
+          title="On-device enrichment"
+          description="Captions, OCR, transcripts, and visual search run locally. Nothing leaves your Mac unless you ask."
+          fragment={<DepthChip label="Florence · Whisper · CLIP" />}
+        />
+        <Section.Card
+          span={4}
+          title="Skills"
+          description="Reusable slash prompts in Ask. Type / and run the searches you use most."
+          fragment={<DepthChip label="/find · /tag" />}
+        />
+        <Section.Card
+          span={4}
+          title="Funnel"
+          description="See every save in flight: in progress, failed, and landed. Nothing disappears silently."
+          fragment={<DepthChip label="Queue" />}
+        />
+        <Section.Card
+          span={4}
+          title="Filters that stack"
+          description="Combine source, type, tag, and date with stacking filter tokens."
+          fragment={<LibraryStatic variant="filters" />}
+        />
+        <Section.Card
+          span={4}
           title="Three layouts"
           description="Waterfall, grid, or justified rows. Thumbnails keep their aspect."
           fragment={<LibraryStatic variant="layouts" />}
         />
         <Section.Card
-          span={4}
-          title="Continuous zoom"
-          description="From 80 to 240 pixels, and the columns re-pack as you drag."
-          fragment={<LibraryStatic variant="zoom" />}
-        />
-        <Section.Card
-          span={4}
-          title="Filters that stack"
-          description="Combine source, kind, tag, and date. Pin a filter to keep it one click away."
-          fragment={<LibraryStatic variant="filters" />}
-        />
-        <Section.Card
           span={7}
           spanMd={12}
           title="A folder you own"
-          description="Everything lives in ~/Pond/My Pond.pond. Browse it in Finder; the folder is the source of truth."
+          description="Everything lives in ~/Pond/My Pond.pond. Back it up, move it, or browse it in Finder. The folder is the source of truth."
           fragment={<FinderStatic />}
         />
         <Section.Card

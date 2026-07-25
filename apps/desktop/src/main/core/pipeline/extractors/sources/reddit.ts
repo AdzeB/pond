@@ -13,6 +13,19 @@ export class RedditPostExtractor implements Extractor {
   readonly source = "reddit" as const;
   readonly validUrl = REDDIT_PATTERNS;
   readonly cookieDomain = ".reddit.com";
+  /** Header avatar / user drawer link to /user/<name>/; shreddit-app `user` attr is the markup-independent fallback. */
+  readonly probeExpression = `(() => {
+        try {
+          const app = document.querySelector('shreddit-app');
+          const fromApp = app?.getAttribute('user') || app?.getAttribute('username') || '';
+          if (fromApp && fromApp !== 'null') return fromApp.replace(/^u\\//, '');
+          const link = document.querySelector('a[href^="/user/"][id*="expand-user-drawer"], a#expand-user-drawer-button, faceplate-tracker[noun="account"] a[href^="/user/"]');
+          const href = link?.getAttribute('href') || '';
+          const m = href.match(/^\\/user\\/([^/?#]+)/i);
+          if (m) return decodeURIComponent(m[1]);
+          return '';
+        } catch { return ''; }
+      })()`;
 
   authCookies(name: string): boolean {
     return name === "reddit_session" || name === "token_v2";
@@ -21,6 +34,14 @@ export class RedditPostExtractor implements Extractor {
   handleFromPath(segments: string[]): string | null {
     if ((segments[0] === "user" || segments[0] === "u") && segments[1]) {
       return segments[1];
+    }
+    /** Bare handle for cache validation via `isCachedHandleValid`. */
+    if (
+      segments.length === 1 &&
+      segments[0] &&
+      !["r", "user", "u", "comments", "login", "register"].includes(segments[0])
+    ) {
+      return segments[0];
     }
     return null;
   }

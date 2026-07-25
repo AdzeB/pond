@@ -112,5 +112,21 @@ export function inPageRedditNormalize() {
     return out;
   }
 
-  return { extractPostMeta };
+  function extractPostId(rawUrl: string): string | null {
+    try {
+      const u = new URL(rawUrl, location.origin);
+      if (/(?:^|\.)redd\.it$/i.test(u.hostname)) {
+        return u.pathname.replace(/^\//, "").split("/")[0] || null;
+      }
+      return (
+        u.pathname.match(/\/comments\/([a-z0-9]+)/i)?.[1] ??
+        u.pathname.match(/\/r\/[^/]+\/comments\/([a-z0-9]+)/i)?.[1] ??
+        null
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  return { extractPostMeta, extractPostId };
 }

@@ -27,20 +27,18 @@ export async function untrashSave(save: Save): Promise<void> {
   await toggleTrash(save);
 }
 
+/** Pasteboard writes go through main; renderer clipboard rejects once a closing menu steals focus. */
+async function writeClipboardText(text: string): Promise<void> {
+  if (!text) return;
+  await window.pond.query("clipboard.writeText", { text });
+}
+
 export async function copyUrl(url: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch {
-    /** Clipboard unavailable; drop silently. */
-  }
+  await writeClipboardText(url);
 }
 
 export async function copyId(id: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(id);
-  } catch {
-    /** Clipboard unavailable; drop silently. */
-  }
+  await writeClipboardText(id);
 }
 
 export function focusPaneTitle(): void {
@@ -97,11 +95,7 @@ export async function copyFilePath(save: Save): Promise<void> {
     fileIndex: save.coverIndex ?? 0,
   })) as { ok: true; path: string } | { ok: false; reason: string };
   if (!result.ok) return;
-  try {
-    await navigator.clipboard.writeText(result.path);
-  } catch {
-    /** Clipboard unavailable; drop silently. */
-  }
+  await writeClipboardText(result.path);
 }
 
 export async function copyFile(save: Save): Promise<void> {

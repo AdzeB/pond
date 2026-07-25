@@ -319,6 +319,19 @@ export const savesQueries: QueryHandlerMap = {
     }
   },
 
+  /** Main-process pasteboard write; renderer clipboard rejects once a closing menu steals focus. */
+  async "clipboard.writeText"(params) {
+    const text = String(params.text ?? "");
+    if (!text) return { ok: false as const };
+    try {
+      clipboard.writeText(text);
+      return { ok: true as const };
+    } catch (err) {
+      log.warn("[pond ipc] clipboard.writeText failed", err);
+      return { ok: false as const };
+    }
+  },
+
   async "saves.backfillColors"() {
     const { extractPalette } = await import("../../lib/palette");
     const { itemFile } = await import("../../paths");

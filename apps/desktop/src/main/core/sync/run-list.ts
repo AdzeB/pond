@@ -23,6 +23,8 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "pinterest",
   "instagram",
   "tiktok",
+  "reddit",
+  "threads",
 ]);
 
 export async function syncListSource(
@@ -48,7 +50,12 @@ export async function syncListSource(
   });
 
   let accountKey: string | undefined;
-  if (source === "cosmos" || source === "arena" || source === "tiktok") {
+  if (
+    source === "cosmos" ||
+    source === "arena" ||
+    source === "tiktok" ||
+    source === "reddit"
+  ) {
     accountKey = (await resolveAccountHandle(account)) ?? undefined;
     if (!accountKey) {
       log.info(`[pond sync:${source}] could not resolve account from session`);

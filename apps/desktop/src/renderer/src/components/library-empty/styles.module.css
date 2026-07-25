@@ -1,57 +1,11 @@
 .welcome {
-  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 28px;
   align-items: center;
   max-width: 420px;
-  padding: 60px 0;
+  padding: 60px 0 80px;
   margin: 0 auto;
-}
-
-/* Water-ripple easter egg: three concentric rings spreading from the click point. */
-.splash {
-  position: absolute;
-  pointer-events: none;
-}
-
-.ring {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  margin: -7px;
-  border: 1.5px solid var(--ds-gray-a6);
-  border-radius: 50%;
-  animation: ripple 1s var(--ds-easing-decelerate) both;
-}
-
-.ring[data-ring="2"] {
-  animation-duration: 1.1s;
-  animation-delay: 140ms;
-}
-
-.ring[data-ring="3"] {
-  animation-duration: 1.1s;
-  animation-delay: 280ms;
-}
-
-@keyframes ripple {
-  from {
-    opacity: 0.9;
-    transform: scale(0.4);
-  }
-
-  to {
-    opacity: 0;
-    transform: scale(9);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ring {
-    opacity: 0;
-    animation: none;
-  }
 }
 
 .text {
@@ -62,7 +16,41 @@
   text-align: center;
 }
 
-.arrow {
-  display: inline-flex;
+.guide {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
   color: var(--ds-gray-9);
+}
+
+.guideLabel {
+  font-size: 12px;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.arrow {
+  display: flex;
+  color: var(--ds-gray-8);
+  animation: guide-bob var(--ds-duration-slow) var(--ds-easing-decelerate)
+    infinite alternate;
+}
+
+@keyframes guide-bob {
+  from {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arrow {
+    opacity: 0.7;
+    animation: none;
+  }
 }

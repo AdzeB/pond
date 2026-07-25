@@ -17,7 +17,7 @@ export default defineConfig({
     name: "Pond",
     version: "0.1.0",
     description:
-      "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, and web articles into one place.",
+      "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and web articles into one place.",
     icons: {
       16: "icons/16.png",
       32: "icons/32.png",

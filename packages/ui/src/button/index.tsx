@@ -13,17 +13,20 @@ export interface ButtonProps extends Base.Props {
     | "link";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: boolean;
+  width?: "full" | "auto";
 }
 
 export function Button({
   className,
   variant = "primary",
   size = "md",
+  width = "auto",
   icon,
   ...props
 }: ButtonProps) {
   return (
     <Base
+      data-width={width}
       data-variant={variant}
       data-size={size}
       data-icon={icon ? "" : undefined}

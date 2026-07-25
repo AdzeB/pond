@@ -146,11 +146,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
         <TrayCard.Help onClick={() => dock.openViewMenu("search-help")} />
         <TrayCard.Title position="center">Search Library</TrayCard.Title>
         <TrayCard.Close />
-        <TrayCard.Separator />
-        <TrayCard.Description>
-          Results update live. Mix words with filters like source:twitter or
-          tag:design.
-        </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.fields}>
         <div className={styles.editor}>

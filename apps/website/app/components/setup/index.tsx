@@ -5,12 +5,12 @@ const STEPS = [
   {
     index: "01",
     title: "Get Pond",
-    body: "Request early access and the build arrives by email. Drag it to Applications. Free, MIT licensed.",
+    body: "Download the Mac DMG from this site or GitHub Releases. Drag it to Applications. Free, MIT licensed.",
   },
   {
     index: "02",
     title: "Pair the extension",
-    body: "Load the extension in Chrome, then paste the pairing link from Pond's menu bar icon. It connects once and stays connected.",
+    body: "Download the extension zip from the same release, load it unpacked in Chrome, then paste the pairing link from Pond's menu bar icon.",
   },
   {
     index: "03",

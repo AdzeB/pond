@@ -13,6 +13,7 @@
     "next.config.ts",
     "app/**/*.ts",
     "app/**/*.tsx",
+    "lib/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules", ".next"]

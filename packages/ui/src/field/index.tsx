@@ -23,7 +23,7 @@ function Description({ className, ...props }: Base.Description.Props) {
   );
 }
 
-function Error_({ className, ...props }: Base.Error.Props) {
+function FieldError({ className, ...props }: Base.Error.Props) {
   return <Base.Error className={cn(styles.error, className)} {...props} />;
 }
 
@@ -32,5 +32,5 @@ export const Field = {
   Label,
   Control,
   Description,
-  Error: Error_,
+  Error: FieldError,
 };

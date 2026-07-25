@@ -16,6 +16,11 @@ import {
   buildPinterestListExpression,
   pinterestProfileUrl,
 } from "../harvest/pinterest";
+import { buildRedditListExpression, redditSavedUrl } from "../harvest/reddit";
+import {
+  buildThreadsListExpression,
+  THREADS_LIST_URL,
+} from "../harvest/threads";
 import {
   buildTiktokListExpression,
   tiktokFavouritesUrl,
@@ -190,9 +195,9 @@ function listUrlForSource(
     case "twitter":
       return null;
     case "reddit":
-      return null;
+      return accountKey ? redditSavedUrl(accountKey) : null;
     case "threads":
-      return null;
+      return THREADS_LIST_URL;
     case "web":
       return null;
     case "local":
@@ -220,9 +225,9 @@ function buildListExpressionFor(
     case "twitter":
       return null;
     case "reddit":
-      return null;
+      return buildRedditListExpression(args);
     case "threads":
-      return null;
+      return buildThreadsListExpression(args);
     case "web":
       return null;
     case "local":

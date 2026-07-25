@@ -7,7 +7,8 @@ const guardsOn = (v: Values) => v.guardsEnabled === true;
 
 export const storageSection = defineSection("storage", {
   title: "Storage",
-  description: "Where your library lives and how much space it may use.",
+  description:
+    "Where your library lives, how to back it up, and how much space it may use.",
   groups: [
     {
       title: "Location",

@@ -13,6 +13,18 @@ export class ThreadsPostExtractor implements Extractor {
   readonly source = "threads" as const;
   readonly validUrl = THREADS_PATTERNS;
   readonly cookieDomain = ".threads.com";
+  /** Profile nav / avatar link to /@<handle>; embedded viewer username is the markup-independent fallback. */
+  readonly probeExpression = `(() => {
+        try {
+          const link = document.querySelector('a[href^="/@"] img')?.closest('a') || document.querySelector('a[href^="/@"][role="link"]');
+          const href = link?.getAttribute('href') || '';
+          const m = href.match(/^\\/@([A-Za-z0-9._]+)/);
+          if (m) return m[1];
+          const scripts = Array.from(document.scripts).map((s) => s.textContent || '').join('\\n');
+          const vm = scripts.match(/"username"\\s*:\\s*"([A-Za-z0-9._]+)"/);
+          return vm ? vm[1] : '';
+        } catch { return ''; }
+      })()`;
 
   authCookies(name: string): boolean {
     return name === "sessionid";
@@ -20,7 +32,11 @@ export class ThreadsPostExtractor implements Extractor {
 
   handleFromPath(segments: string[]): string | null {
     const first = segments[0];
-    return first?.startsWith("@") ? first.slice(1) : null;
+    if (!first) return null;
+    if (first.startsWith("@")) return first.slice(1);
+    /** Bare handle for cache validation via `isCachedHandleValid`. */
+    if (!["t", "post", "login", "search"].includes(first)) return first;
+    return null;
   }
 
   readonly tests = [

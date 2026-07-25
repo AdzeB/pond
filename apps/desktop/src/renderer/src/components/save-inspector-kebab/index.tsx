@@ -82,13 +82,9 @@ export function KebabMenu({
   /** Silent, matching the system convention that Cmd+C confirms nothing. */
   const copyRawJson = useCallback(async () => {
     if (!save?.rawJson) return;
-    try {
-      await navigator.clipboard.writeText(
-        JSON.stringify(save.rawJson, null, 2),
-      );
-    } catch {
-      /** Clipboard can reject without focus; nothing to confirm. */
-    }
+    await window.pond.query("clipboard.writeText", {
+      text: JSON.stringify(save.rawJson, null, 2),
+    });
   }, [save]);
 
   const items = useMemo<MenuItemSpec[]>(

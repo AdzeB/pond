@@ -2,9 +2,23 @@ import { Input as Base } from "@base-ui/react/input";
 import { clsx as cn } from "clsx";
 import styles from "./styles.module.css";
 
-function Root({ className, ...props }: React.ComponentProps<"div">) {
+type InputSize = "xs" | "sm" | "md" | "lg" | "xl";
+type InputVariant = "primary" | "secondary";
+
+function Root({
+  className,
+  size = "md",
+  variant = "primary",
+  ...props
+}: React.ComponentProps<"div"> & { size?: InputSize; variant?: InputVariant }) {
   return (
-    <div data-slot="root" className={cn(styles.root, className)} {...props} />
+    <div
+      data-slot="root"
+      data-size={size}
+      data-variant={variant}
+      className={cn(styles.root, className)}
+      {...props}
+    />
   );
 }
 

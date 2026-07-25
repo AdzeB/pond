@@ -33,7 +33,7 @@ export function Header() {
             <IconGithub width={14} height={14} fill="currentColor" />
           </a>
           <a className={styles.cta} href="#get">
-            Early access
+            Download
           </a>
         </div>
       </div>

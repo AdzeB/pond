@@ -26,12 +26,19 @@
   gap: 6px;
   align-items: center;
   justify-content: center;
-  width: fit-content;
   font-weight: 550;
   line-height: 1;
   text-wrap: nowrap;
   user-select: none;
   transition: all var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:where([data-width="full"]) {
+    width: 100%;
+  }
+
+  &:where([data-width="auto"]) {
+    width: fit-content;
+  }
 
   &:where([data-disabled]),
   &:where([data-loading]) {

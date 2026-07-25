@@ -80,5 +80,18 @@ export function inPageThreadsNormalize() {
     return out;
   }
 
-  return { extractPostMeta };
+  function extractPostCode(rawUrl: string): string | null {
+    try {
+      const u = new URL(rawUrl, location.origin);
+      return (
+        u.pathname.match(/\/post\/([A-Za-z0-9_-]+)/)?.[1] ??
+        u.pathname.match(/\/t\/([A-Za-z0-9_-]+)/)?.[1] ??
+        null
+      );
+    } catch {
+      return null;
+    }
+  }
+
+  return { extractPostMeta, extractPostCode };
 }

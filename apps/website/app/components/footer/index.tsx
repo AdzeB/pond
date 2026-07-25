@@ -1,3 +1,4 @@
+import { POND_VERSION, RELEASES_PAGE } from "@/lib/release";
 import { Wordmark } from "../_fragments/mark";
 import styles from "./styles.module.css";
 
@@ -15,8 +16,12 @@ const COLUMNS = [
   {
     label: "Get",
     links: [
-      { label: "Early access", href: "#get" },
-      { label: "Updates", href: "#updates" },
+      { label: "Download", href: "#get" },
+      {
+        label: "Releases",
+        href: RELEASES_PAGE,
+        external: true,
+      },
     ],
   },
   {
@@ -56,7 +61,7 @@ export function Footer() {
             A local-first archive for the open web.
           </p>
           <p className={styles.build}>
-            <span className={styles.version}>v0.1.0</span>
+            <span className={styles.version}>v{POND_VERSION}</span>
             <span className={styles.muted}>{NOW} · MIT</span>
           </p>
         </div>

@@ -59,6 +59,8 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "pinterest",
   "instagram",
   "tiktok",
+  "reddit",
+  "threads",
 ];
 
 function isSyncableSource(source: Source): boolean {

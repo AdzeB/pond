@@ -37,8 +37,10 @@ function resolve(ids: readonly string[]): Save[] {
 async function writeClipboard(text: string): Promise<boolean> {
   if (!text) return false;
   try {
-    await navigator.clipboard.writeText(text);
-    return true;
+    const result = (await window.pond.query("clipboard.writeText", {
+      text,
+    })) as { ok: boolean };
+    return result.ok;
   } catch {
     return false;
   }

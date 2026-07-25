@@ -306,10 +306,10 @@ export function NavContent() {
                 ) : (
                   <Tooltip.Trigger
                     handle={tip}
-                    payload="Connect an AI model to ask"
+                    payload="Open Settings → AI to connect a model"
                     render={
                       <Tray.Item
-                        aria-label="Connect an AI model to ask"
+                        aria-label="Open Settings, AI to connect a model"
                         data-disabled="true"
                         onClick={() => settingsModal.open("ai")}
                       >

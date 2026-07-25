@@ -20,11 +20,17 @@ const FAQS: FaqItem[] = [
     value: "where",
     question: "Where do my saves live?",
     answer:
-      "In ~/Pond/My Pond.pond on your Mac. Move it, back it up, browse it in Finder. Pond reads the bundle; the bundle is the source of truth.",
+      "In ~/Pond/My Pond.pond on your Mac. Move it, back it up from Settings → Storage, or browse it in Finder. Pond reads the bundle; the bundle is the source of truth.",
+  },
+  {
+    value: "sources",
+    question: "Which sources sync in the background?",
+    answer:
+      "X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, and Threads sync saved lists once you connect an account. Any web URL can still be saved one at a time via the extension.",
   },
   {
     value: "sync",
-    question: "Does anything sync to a server?",
+    question: "Does anything sync to a Pond server?",
     answer:
       "No. The browser extension talks to a local server on 127.0.0.1:41610 that only your Mac can reach.",
   },
@@ -38,7 +44,7 @@ const FAQS: FaqItem[] = [
     value: "ai",
     question: "Does Pond send my data anywhere?",
     answer:
-      "Your library stays on your Mac. Optional AI features send prompts only to providers you configure (OpenAI, Anthropic, etc.) using keys stored in your Keychain.",
+      "Your library stays on your Mac. On-device enrichment (captions, OCR, transcripts, visual search) never leaves the machine. Optional Ask AI sends prompts only to providers you configure, using keys stored in your Keychain.",
   },
   {
     value: "platforms",

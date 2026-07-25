@@ -11,9 +11,9 @@ Update the version string in all of these before tagging:
 | [`apps/desktop/package.json`](apps/desktop/package.json) | `"version"` |
 | [`apps/extension/package.json`](apps/extension/package.json) | `"version"` |
 | [`apps/extension/wxt.config.ts`](apps/extension/wxt.config.ts) | `manifest.version` |
-| [`apps/website/app/components/download/index.tsx`](apps/website/app/components/download/index.tsx) | Lead copy |
-| [`apps/website/app/components/hero/index.tsx`](apps/website/app/components/hero/index.tsx) | Eyebrow |
-| [`apps/website/app/components/footer/index.tsx`](apps/website/app/components/footer/index.tsx) | Version span |
+| [`apps/website/lib/release.ts`](apps/website/lib/release.ts) | `POND_VERSION` |
+
+Hero and footer read the version from `POND_VERSION`, so they update with that file.
 
 Commit the bump on `main`.
 
@@ -31,6 +31,12 @@ Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](.github/w
 3. Builds the extension zip and uploads it as `pond-extension-<version>.zip`
 
 Release tag format must be `vX.Y.Z` (e.g. `v0.1.0`).
+
+Artifact names (used by the website download links):
+
+- `Pond-<version>-arm64.dmg`
+- `Pond-<version>-x64.dmg`
+- `pond-extension-<version>.zip`
 
 ## Local packaging (without publish)
 
@@ -53,6 +59,7 @@ Run these before announcing a release:
 
 - [ ] GitHub Release contains arm64 + x64 `.dmg`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
 - [ ] Fresh Mac: download arm64 DMG → right-click → **Open** → app launches (unsigned build)
+- [ ] Website Download buttons hit the new artifacts
 - [ ] Menu bar → **Copy Pairing Token** → paste in extension popup → status shows connected
 - [ ] Save a tab from the extension → item appears in Pond
 - [ ] Settings → **Check for Updates** → shows "You're on the latest version"

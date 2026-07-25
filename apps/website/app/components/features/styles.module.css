@@ -91,3 +91,18 @@
     background: color-mix(in oklab, var(--ds-green-9) 12%, transparent);
   }
 }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  font-family: var(--site-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  letter-spacing: 0.01em;
+  background: var(--ds-gray-1);
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--ds-gray-a3);
+}
