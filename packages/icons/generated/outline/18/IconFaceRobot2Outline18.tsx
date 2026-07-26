@@ -1,6 +1,26 @@
 /** Generated from Nucleo. Do not edit by hand. */
 import { createIcon } from "../../../lib/create-icon";
 
-const inner = ({ strokeWidth = 1.5 }) => (<><path d="M5.658,2.99l-1.263-.421-.421-1.263c-.137-.408-.812-.408-.949,0l-.421,1.263-1.263,.421c-.204,.068-.342,.259-.342,.474s.138,.406,.342,.474l1.263,.421,.421,1.263c.068,.204,.26,.342,.475,.342s.406-.138,.475-.342l.421-1.263,1.263-.421c.204-.068,.342-.259,.342-.474s-.138-.406-.342-.474Z" fill="currentColor" data-color="color-2" data-stroke="none"></path><polygon points="9.5 2.75 11.412 7.587 16.25 9.5 11.412 11.413 9.5 16.25 7.587 11.413 2.75 9.5 7.587 7.587 9.5 2.75" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={strokeWidth}></polygon></>);
+const inner = ({ strokeWidth = 1.5 }) => (
+  <>
+    <path
+      d="M5.658,2.99l-1.263-.421-.421-1.263c-.137-.408-.812-.408-.949,0l-.421,1.263-1.263,.421c-.204,.068-.342,.259-.342,.474s.138,.406,.342,.474l1.263,.421,.421,1.263c.068,.204,.26,.342,.475,.342s.406-.138,.475-.342l.421-1.263,1.263-.421c.204-.068,.342-.259,.342-.474s-.138-.406-.342-.474Z"
+      fill="currentColor"
+      data-color="color-2"
+      data-stroke="none"
+    ></path>
+    <polygon
+      points="9.5 2.75 11.412 7.587 16.25 9.5 11.412 11.413 9.5 16.25 7.587 11.413 2.75 9.5 7.587 7.587 9.5 2.75"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={strokeWidth}
+    ></polygon>
+  </>
+);
 
-export const IconFaceRobot2Outline18 = createIcon(inner, { strokeWidth: 1.5, size: 18 });
+export const IconFaceRobot2Outline18 = createIcon(inner, {
+  strokeWidth: 1.5,
+  size: 18,
+});

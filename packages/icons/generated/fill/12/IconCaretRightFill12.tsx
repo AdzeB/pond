@@ -1,6 +1,14 @@
 /** Generated from Nucleo. Do not edit by hand. */
 import { createIcon } from "../../../lib/create-icon";
 
-const inner = ({ strokeWidth = 1.5 }) => (<><path d="m9.479,4.752L4.832,1.653c-.459-.307-1.049-.336-1.54-.074-.488.261-.792.768-.792,1.322v6.197c0,.554.304,1.061.792,1.322.223.119.466.178.708.178.291,0,.581-.085.832-.252l4.647-3.099c.418-.279.668-.746.668-1.248s-.25-.969-.668-1.248Z" strokeWidth="0" fill="currentColor"></path></>);
+const inner = ({ strokeWidth = 1.5 }) => (
+  <>
+    <path
+      d="m9.479,4.752L4.832,1.653c-.459-.307-1.049-.336-1.54-.074-.488.261-.792.768-.792,1.322v6.197c0,.554.304,1.061.792,1.322.223.119.466.178.708.178.291,0,.581-.085.832-.252l4.647-3.099c.418-.279.668-.746.668-1.248s-.25-.969-.668-1.248Z"
+      strokeWidth="0"
+      fill="currentColor"
+    ></path>
+  </>
+);
 
 export const IconCaretRightFill12 = createIcon(inner, { size: 12 });
