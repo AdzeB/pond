@@ -35,7 +35,7 @@
     "dist:linux": "electron-vite build && electron-builder --linux",
     "db:generate": "ELECTRON_RUN_AS_NODE=1 pnpm exec electron ./node_modules/drizzle-kit/bin.cjs generate",
     "db:push": "ELECTRON_RUN_AS_NODE=1 pnpm exec electron ./node_modules/drizzle-kit/bin.cjs push",
-    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "tsr generate && tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "test": "vitest run",
     "test:live": "POND_LIVE=1 vitest run"
   },
@@ -107,6 +107,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
+    "@tanstack/router-cli": "1.167.10",
     "@tanstack/router-plugin": "^1.168.11",
     "@types/better-sqlite3": "^7.6.12",
     "@types/mime-types": "^3.0.1",
