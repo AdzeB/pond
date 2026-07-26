@@ -4,8 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement as h } from "react";
 /**
- * One-time generator: extract Nucleo icon SVG children into committed TSX modules.
- * Requires nucleo-ui-* packages to be installed. Run before removing them.
+ * Extract Nucleo icon SVG children into committed TSX modules under generated/.
+ * Requires the nucleo-ui-* packages installed temporarily; see README.md.
  */
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -143,7 +143,7 @@ async function main() {
     const defaultArgs = strokeWidth
       ? `, { strokeWidth: 1.5, size: ${iconSize} }`
       : `, { size: ${iconSize} }`;
-    const content = `// Generated from Nucleo — do not edit by hand.
+    const content = `/** Generated from Nucleo. Do not edit by hand. */
 import { createIcon } from "../../../lib/create-icon";
 
 const inner = ({ strokeWidth = 1.5 }) => (${body});

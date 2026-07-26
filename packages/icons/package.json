@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "description": "Pond's icon barrel: Nucleo UI packages during development (vendored ≤100 glyphs at release) plus custom social/brand marks.",
+  "description": "Pond's icon barrel: <=100 vendored Nucleo UI glyphs plus custom social/brand marks.",
   "license": "MIT",
   "author": {
     "name": "Raphael Salaja",
@@ -35,12 +35,6 @@
   },
   "peerDependencies": {
     "react": ">=19"
-  },
-  "dependencies": {
-    "nucleo-ui-fill-12": "^1.5.0",
-    "nucleo-ui-fill-18": "^1.5.0",
-    "nucleo-ui-outline-12": "^1.5.0",
-    "nucleo-ui-outline-18": "^1.5.0"
   },
   "devDependencies": {
     "@types/react": "catalog:",

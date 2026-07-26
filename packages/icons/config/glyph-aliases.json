@@ -9,11 +9,17 @@
   "IconChartLine": "IconChartActivity2",
   "IconChartPie": "IconChartDonut2",
   "IconChartRadar": "IconChartActivity2",
+  "IconCheck": "IconCheck3",
   "IconCircleUser": "IconUser",
+  "IconClone": "IconClone2",
+  "IconEarth": "IconGlobe2",
   "IconFaceRobot2": "IconSparkle3",
   "IconFileRefresh": "IconRefresh",
+  "IconGlobe": "IconGlobe2",
   "IconGrid": "IconGridLayoutCols",
   "IconGridLayoutRows": "IconGridLayoutCols",
   "IconLabel": "IconTag",
-  "IconLabel3": "IconTag"
+  "IconLabel3": "IconTag",
+  "IconPencil": "IconPen2",
+  "IconTrash2Content": "IconTrash2"
 }

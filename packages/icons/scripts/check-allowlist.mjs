@@ -8,12 +8,24 @@ const repoRoot = join(root, "../..");
 const allowlist = new Set(
   JSON.parse(readFileSync(join(root, "allowlist.json"), "utf8")),
 );
+const importRewrites = JSON.parse(
+  readFileSync(join(root, "config/import-rewrites.json"), "utf8"),
+);
+const aliases = JSON.parse(
+  readFileSync(join(root, "config/glyph-aliases.json"), "utf8"),
+);
 
 const pat =
   /import\s*(?:type\s*)?\{([^}]*)\}\s*from\s*"@pond\/icons\/(fill\/12|fill\/18|outline\/12|outline\/18)"/gs;
 
 function baseName(exportName) {
   return exportName.replace(/(Outline|Fill|Duo)?(12|18)$/, "");
+}
+
+function resolveGlyph(exportName) {
+  const rewritten = importRewrites[exportName] ?? exportName;
+  const base = baseName(rewritten);
+  return aliases[base] ?? base;
 }
 
 function walk(dir, out) {
@@ -40,16 +52,12 @@ for (const file of files) {
   for (const m of src.matchAll(pat)) {
     for (const item of m[1].split(",")) {
       const name = item.trim().split(" as ")[0].trim();
-      if (name.startsWith("Icon")) used.add(baseName(name));
+      if (name.startsWith("Icon")) used.add(resolveGlyph(name));
     }
   }
 }
 
-const aliases = JSON.parse(
-  readFileSync(join(root, "config/glyph-aliases.json"), "utf8"),
-);
-
-const unresolved = [...used].filter((g) => !allowlist.has(g) && !aliases[g]);
+const unresolved = [...used].filter((g) => !allowlist.has(g));
 if (unresolved.length) {
   console.error("Glyphs used in app but missing from allowlist:", unresolved);
   process.exit(1);

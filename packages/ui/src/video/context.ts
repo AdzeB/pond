@@ -9,8 +9,6 @@ interface VideoState {
   volume: number;
   muted: boolean;
   rate: number;
-  pipSupported: boolean;
-  pipActive: boolean;
   fullscreen: boolean;
   fullscreenSupported: boolean;
   controlsVisible: boolean;
@@ -25,7 +23,6 @@ export interface VideoActions {
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   setRate: (rate: number) => void;
-  requestPip: () => void;
   toggleFullscreen: () => void;
   stepFrame: (delta: number) => void;
   showControls: () => void;

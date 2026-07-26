@@ -1,6 +1,6 @@
 import {
   IconFolderFill18 as Folder,
-  IconLinkFill18 as Link,
+  IconLink2Fill18 as Link,
 } from "@pond/icons/fill/18";
 import { TrayCard } from "@pond/ui";
 import { useEffect, useState } from "react";

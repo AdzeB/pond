@@ -2,7 +2,6 @@ import { Slider as SliderBase } from "@base-ui/react/slider";
 import {
   IconFullScreenFill18 as FullscreenIcon,
   IconMediaPauseFill18 as PauseIcon,
-  IconWindowBottomRightFill18 as PipIcon,
   IconMediaPlayFill18 as PlayIcon,
   IconVolumeFill18 as VolumeIcon,
   IconVolumeOffFill18 as VolumeOffIcon,
@@ -19,7 +18,6 @@ import { clamp, formatTime, SPEED_OPTIONS } from "./lib";
 import styles from "./styles.module.css";
 import { useAutoHide } from "./use-auto-hide";
 import { useMediaState } from "./use-media-state";
-import { usePip } from "./use-pip";
 
 const ICON = 16;
 
@@ -37,29 +35,19 @@ function Root({ className, children, ...props }: RootProps) {
     rootRef,
     videoRef,
   });
-  const { pipSupported, pipActive, requestPip } = usePip({ videoRef });
 
   const actions = useMemo<VideoActions>(
-    () => ({ ...mediaActions, requestPip, showControls }),
-    [mediaActions, requestPip, showControls],
+    () => ({ ...mediaActions, showControls }),
+    [mediaActions, showControls],
   );
 
   const value = useMemo<VideoContextValue>(
     () => ({
-      state: { ...state, controlsVisible, pipSupported, pipActive },
+      state: { ...state, controlsVisible },
       actions,
       meta: { videoRef, rootRef, registerVideo },
     }),
-    [
-      state,
-      controlsVisible,
-      pipSupported,
-      pipActive,
-      actions,
-      videoRef,
-      rootRef,
-      registerVideo,
-    ],
+    [state, controlsVisible, actions, videoRef, rootRef, registerVideo],
   );
 
   return (
@@ -285,23 +273,6 @@ function SpeedSelect({ className, options = SPEED_OPTIONS }: SpeedSelectProps) {
   );
 }
 
-function PiPButton({ className, ...props }: ButtonProps) {
-  const { state, actions } = useVideo();
-  if (!state.pipSupported) return null;
-  return (
-    <button
-      type="button"
-      className={cn(styles.button, className)}
-      onClick={actions.requestPip}
-      aria-label={state.pipActive ? "Exit pop-out" : "Pop out"}
-      aria-pressed={state.pipActive}
-      {...props}
-    >
-      <PipIcon width={ICON} height={ICON} />
-    </button>
-  );
-}
-
 function FullscreenButton({ className, ...props }: ButtonProps) {
   const { state, actions } = useVideo();
   if (!state.fullscreenSupported) return null;
@@ -335,7 +306,6 @@ export const Video = {
   TimeDisplay,
   Scrubber,
   SpeedSelect,
-  PiPButton,
   FullscreenButton,
   Spacer,
 };

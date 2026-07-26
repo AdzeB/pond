@@ -1,25 +1,18 @@
 # @pond/icons
 
-Icon barrels for Pond.
+Icon barrels for Pond. UI glyphs under `fill/*` and `outline/*` are vendored
+Nucleo SVGs (≤100 unique glyphs). Social and brand marks live under
+`social-media/custom/` and `providers/` and are outside that cap.
 
-## Development
+## Regenerating UI glyphs
 
-The `fill/*` and `outline/*` barrels re-export the `nucleo-ui-*` npm packages
-directly, so every Nucleo UI glyph is available while developing.
+Requires the `nucleo-ui-*` packages installed temporarily (with a
+`NUCLEO_LICENSE_KEY`):
 
-## Release
+1. Add the four `nucleo-ui-*` dependencies back to this package.
+2. Run `pnpm install` with the license key available.
+3. Run `pnpm --filter @pond/icons generate:icons`.
+4. Drop the `nucleo-ui-*` dependencies again and reinstall.
 
-Before release, swap the npm packages for vendored glyphs so the open-source
-repo only ships the icons Pond actually uses (up to 100 under Nucleo's
-open-source terms):
-
-1. Run `pnpm --filter @pond/icons generate:icons` to extract the used glyphs
-   into committed modules under `generated/` and write `allowlist.json`.
-2. Point the barrels at `generated/` instead of the npm packages.
-3. Drop the `nucleo-ui-*` dependencies and re-enable
-   `pnpm --filter @pond/icons check:allowlist` in CI.
-
-## Social / brand icons
-
-Icons under `social-media/custom/` are hand-authored brand marks. They are
-independent of Nucleo and can be added freely.
+`pnpm --filter @pond/icons check:allowlist` runs in CI and fails if the app
+imports a glyph outside `allowlist.json`.
