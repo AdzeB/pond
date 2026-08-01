@@ -136,6 +136,27 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("save.new"),
         },
         {
+          label: "New Tab",
+          accelerator: "CmdOrCtrl+T",
+          click: () => {
+            focusedOrMain()?.webContents.send(IPC.tabNew);
+          },
+        },
+        {
+          label: "Close Tab",
+          accelerator: "CmdOrCtrl+W",
+          click: () => {
+            focusedOrMain()?.webContents.send(IPC.tabClose);
+          },
+        },
+        {
+          label: "Reopen Closed Tab",
+          accelerator: "CmdOrCtrl+Shift+T",
+          click: () => {
+            focusedOrMain()?.webContents.send(IPC.tabReopen);
+          },
+        },
+        {
           label: "Open Library",
           click: () => openLibraryWindow(),
         },

@@ -57,6 +57,34 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
+  reduceTransparency?: boolean;
+  /** Platform can draw vibrancy/tabbed material; boot script mirrors this for CSS gating. */
+  shellBackdropCapable?: boolean;
+  /** True when native backdrop is active so the boot script can clear the page fill. */
+  shellBackdrop?: boolean;
+}
+
+function supportsShellBackdrop(): boolean {
+  return process.platform === "darwin" || process.platform === "win32";
+}
+
+/** macOS vibrancy / Windows tabbed material behind the chrome frame; stage stays opaque in CSS. */
+export function syncShellBackdrop(reduceTransparency: boolean): void {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return;
+  if (!supportsShellBackdrop()) return;
+
+  const enabled = !reduceTransparency;
+  win.setBackgroundColor("#00000000");
+
+  if (process.platform === "darwin") {
+    win.setVibrancy(enabled ? "sidebar" : null);
+    return;
+  }
+
+  if (process.platform === "win32") {
+    win.setBackgroundMaterial(enabled ? "tabbed" : "none");
+  }
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
@@ -64,10 +92,14 @@ async function resolveShellHint(): Promise<ShellHint> {
   if (!resolved) return {};
   const { mode, ...vars } = resolved;
   const prefs = await getPrefs().catch(() => null);
+  const reduceTransparency = prefs?.preferences.reduceTransparency === true;
   return {
     theme: mode,
     ...vars,
     pointerCursors: prefs?.preferences.pointerCursors === true,
+    reduceTransparency,
+    shellBackdropCapable: supportsShellBackdrop(),
+    shellBackdrop: supportsShellBackdrop() && !reduceTransparency,
   };
 }
 
@@ -90,15 +122,23 @@ export async function createWindow(): Promise<BrowserWindow> {
     show: false,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
-    trafficLightPosition: isMac ? { x: 16, y: 28 } : undefined,
+    trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
+    ...(shellHint.shellBackdropCapable ? { backgroundColor: "#00000000" } : {}),
+    ...(isMac && shellHint.shellBackdrop
+      ? {
+          vibrancy: "sidebar" as const,
+          visualEffectState: "active" as const,
+        }
+      : {}),
+    ...(process.platform === "win32" && shellHint.shellBackdrop
+      ? { backgroundMaterial: "tabbed" as const }
+      : {}),
     webPreferences: {
       preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      /** Explicit so a backgrounded window can't heat the machine; pairs with the renderer's visibility-gated enrichment sweep. */
       backgroundThrottling: true,
-      /** Guests are locked to pond:// archives via the will/did-attach-webview policy below. */
       webviewTag: true,
       additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
@@ -111,7 +151,6 @@ export async function createWindow(): Promise<BrowserWindow> {
     win.show();
   });
 
-  /** Persist bounds on resize/move, debounced, so the next launch restores them. */
   let saveBoundsTimer: NodeJS.Timeout | null = null;
   const saveBounds = () => {
     if (win.isDestroyed()) return;

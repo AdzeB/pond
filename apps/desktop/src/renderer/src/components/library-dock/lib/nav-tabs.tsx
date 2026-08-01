@@ -1,20 +1,13 @@
 import {
   IconChartFill18 as Analytics,
   IconArchiveContent2Fill18 as Library,
-  IconGear3Fill18 as Settings,
   IconGlobeFill18 as Sources,
   IconTrash2ContentFill18 as Trash,
 } from "@pond/icons/fill/18";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { settingsModal } from "@/stores/settings-modal";
 
-export type DockTab =
-  | "library"
-  | "sources"
-  | "analytics"
-  | "trash"
-  | "settings";
+export type DockTab = "library" | "sources" | "analytics" | "trash";
 
 interface NavTab {
   id: DockTab;
@@ -33,7 +26,7 @@ export const NAV_TABS: readonly NavTab[] = [
     label: "Library",
     to: "/",
     icon: <Library />,
-    match: (p) => p === "/",
+    match: (p) => p === "/" || p.startsWith("/save/"),
   },
   {
     id: "trash",
@@ -56,12 +49,5 @@ export const NAV_TABS: readonly NavTab[] = [
     to: "/analytics",
     icon: <Analytics />,
     match: (p) => p === "/analytics" || p.startsWith("/analytics/"),
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    action: () => settingsModal.open(),
-    icon: <Settings />,
-    match: () => false,
   },
 ] as const;

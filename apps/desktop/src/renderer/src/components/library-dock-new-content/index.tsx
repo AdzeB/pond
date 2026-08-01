@@ -5,7 +5,7 @@ import { Calligraph } from "calligraph";
 import { useEffect, useRef, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { getSourceLogo } from "@/lib/save/sources-registry";
-import { primarySelection } from "@/stores/selection";
+import { openSave } from "@/lib/ui/save-nav";
 import styles from "./styles.module.css";
 
 interface QuickAddResult {
@@ -243,7 +243,7 @@ export function NewContent() {
 
   const viewExisting = (id: string) => {
     dock.closeNew();
-    primarySelection.set(id);
+    openSave(id);
   };
 
   const onFieldKeyDown = (e: React.KeyboardEvent) => {

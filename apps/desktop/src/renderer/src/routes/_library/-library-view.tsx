@@ -1,15 +1,17 @@
+import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { LayoutSwitcher } from "@/components/layout-switcher";
 import { WelcomeEmpty } from "@/components/library-empty";
 import { LibraryGrid } from "@/components/library-grid";
 import { useCardActions } from "@/hooks/use-card-actions";
-import { useDetailRouteSync } from "@/hooks/use-detail-route";
 import { useGridHotkeys } from "@/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/hooks/use-library-state";
+import { getAppRouter } from "@/lib/ui/app-router";
 import { libraryViewContext } from "@/stores/library-view-context";
+import { tabs } from "@/stores/tabs";
 
 export function LibraryView() {
-  useDetailRouteSync();
+  const router = useRouter();
   const data = useLibraryState();
   const actions = useCardActions(
     data.filteredIds,
@@ -18,10 +20,15 @@ export function LibraryView() {
   );
   useGridHotkeys(data.filteredIds);
 
-  /** Mirrors the resolved view into a lightweight store so the global dock can act on the selection without recomputing the narrowing pipeline. */
+  /** Only the active tab's view owns the dock/context snapshot; background tabs stay mounted for state but must not overwrite it. */
   useEffect(() => {
-    libraryViewContext.set(data.filteredIds, data.mode);
-  }, [data.filteredIds, data.mode]);
+    const sync = () => {
+      if (getAppRouter() !== router) return;
+      libraryViewContext.set(data.filteredIds, data.mode);
+    };
+    sync();
+    return tabs.subscribe(sync);
+  }, [router, data.filteredIds, data.mode]);
 
   return (
     <LibraryGrid.Root
@@ -44,6 +51,7 @@ export function LibraryView() {
           saves={data.filtered}
           multiSelectActive={actions.multiSelectActive}
           onClick={actions.handleCardClick}
+          onAuxClick={actions.handleCardAuxClick}
           onDoubleClick={actions.focus}
         />
       )}

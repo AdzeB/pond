@@ -1,35 +1,48 @@
 .pane-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   width: 100%;
 }
 
 .pane-tag {
   display: inline-flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
+  max-width: 100%;
   height: 24px;
-  padding: 0 12px;
-  font-size: 12px;
+  padding: 0 8px 0 7px;
+  font-size: 13px;
   font-weight: 500;
   font-feature-settings:
     "lnum" 1,
     "tnum" 1;
-  color: var(--ds-gray-11);
-
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-full);
+  color: var(--ds-gray-12);
+  cursor: default;
+  background: color-mix(in oklab, var(--ds-gray-12) 4%, transparent);
+  border: none;
+  border-radius: 9999px;
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
-  transition: box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
+  transition:
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    box-shadow var(--ds-duration-fast) var(--ds-easing-standard);
+}
 
-  &:hover {
-    box-shadow: 0 0 0 1px var(--ds-gray-a6);
-  }
+.pane-tag:hover {
+  background: color-mix(in oklab, var(--ds-gray-12) 7%, transparent);
+  box-shadow: 0 0 0 1px var(--ds-gray-a6);
+}
+
+.pane-tag-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
 }
 
 .pane-tag-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -44,7 +57,7 @@
   height: 14px;
   padding: 0;
   overflow: hidden;
-  color: var(--ds-gray-11);
+  color: var(--ds-gray-10);
   pointer-events: none;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
@@ -73,7 +86,7 @@
 
 .pane-tag:hover .pane-tag-remove {
   width: 14px;
-  margin-right: -8px;
+  margin-right: -2px;
   pointer-events: auto;
   opacity: 1;
 }
@@ -86,24 +99,24 @@
   width: 24px;
   height: 24px;
   padding: 0;
-  color: var(--ds-gray-11);
+  color: var(--ds-gray-10);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
-  background: var(--ds-gray-1);
+  background: transparent;
   border: 0;
-  border-radius: var(--ds-radius-full);
-  box-shadow: 0 0 0 1px var(--ds-gray-a4);
+  border-radius: 9999px;
   transition:
-    box-shadow var(--ds-duration-fast) var(--ds-easing-standard),
-    color var(--ds-duration-fast) var(--ds-easing-standard);
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:hover {
     color: var(--ds-gray-12);
-    box-shadow: 0 0 0 1px var(--ds-gray-a6);
+    background: color-mix(in oklab, var(--ds-gray-12) 7%, transparent);
   }
 
   &:focus-visible {
     color: var(--ds-gray-12);
+    background: color-mix(in oklab, var(--ds-gray-12) 7%, transparent);
     box-shadow: 0 0 0 1px var(--ds-gray-a8);
   }
 }

@@ -5,6 +5,7 @@ import {
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Menu } from "@pond/ui";
 import { type ReactNode, useMemo, useState } from "react";
+import { colorForName } from "@/lib/tags/color";
 import { useTagGroups } from "@/stores/tag-groups";
 import { useTags } from "@/stores/tags";
 import styles from "./styles.module.css";
@@ -25,7 +26,7 @@ export function TagMenu({
   onToggle,
   allowCreate = false,
   groupsAs = "submenu",
-  placeholder = "Search…",
+  placeholder = "Change or add tags…",
   emptyLabel = "No tags yet.",
 }: TagMenuProps) {
   const tags = useTags();
@@ -37,6 +38,14 @@ export function TagMenu({
   const tagsByLower = useMemo(() => {
     const map = new Map<string, (typeof tags)[number]>();
     for (const t of tags) map.set(t.name.toLowerCase(), t);
+    return map;
+  }, [tags]);
+
+  const colorByLower = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const t of tags) {
+      map.set(t.name.toLowerCase(), t.color ?? colorForName(t.name));
+    }
     return map;
   }, [tags]);
 
@@ -126,11 +135,21 @@ export function TagMenu({
     return (
       <Menu.CheckboxItem
         key={name}
-        closeOnClick={false}
+        closeOnClick
         checked={applied}
         onCheckedChange={() => onToggle(name)}
       >
         <Menu.CheckboxItemIndicator />
+        <Menu.ItemIcon>
+          <span
+            className={styles.dot}
+            style={{
+              background:
+                colorByLower.get(name.toLowerCase()) ?? colorForName(name),
+            }}
+            aria-hidden
+          />
+        </Menu.ItemIcon>
         <Menu.ItemLabel>{name}</Menu.ItemLabel>
         {trailing}
       </Menu.CheckboxItem>
@@ -200,7 +219,7 @@ export function TagMenu({
       )}
 
       {createInfo ? (
-        <Menu.Item closeOnClick={false} onClick={() => void commitCreate()}>
+        <Menu.Item onClick={() => void commitCreate()}>
           <Menu.ItemIcon>
             <Plus width={14} height={14} />
           </Menu.ItemIcon>

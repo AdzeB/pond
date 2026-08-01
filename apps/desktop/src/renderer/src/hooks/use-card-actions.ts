@@ -1,15 +1,13 @@
 import { useCallback, useEffect } from "react";
-import {
-  primarySelection,
-  selection,
-  useSelectionSize,
-} from "@/stores/selection";
+import { openSave } from "@/lib/ui/save-nav";
+import { selection, useSelectionSize } from "@/stores/selection";
 import type { SavesMode } from "./use-library-state";
 
 interface CardActions {
   selectionSize: number;
   multiSelectActive: boolean;
   handleCardClick: (id: string, e: React.MouseEvent) => void;
+  handleCardAuxClick: (id: string, e: React.MouseEvent) => void;
   focus: (id: string) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => Promise<void>;
@@ -23,13 +21,14 @@ export function useCardActions(
   const selectionSize = useSelectionSize();
   const multiSelectActive = selectionSize > 0;
 
-  /** The globally-mounted SaveDetailModal renders whatever the primary selection points at. */
-  const select = useCallback((id: string) => {
-    primarySelection.set(id);
+  const focus = useCallback((id: string) => {
+    openSave(id);
   }, []);
 
-  const focus = useCallback((id: string) => {
-    primarySelection.set(id);
+  const handleCardAuxClick = useCallback((id: string, e: React.MouseEvent) => {
+    if (e.button !== 1) return;
+    e.preventDefault();
+    openSave(id, { background: true });
   }, []);
 
   const handleCardClick = useCallback(
@@ -50,16 +49,15 @@ export function useCardActions(
       }
       if (multiSelectActive) selection.clear();
       selection.setAnchor(id);
-      select(id);
+      openSave(id);
     },
-    [filteredIds, multiSelectActive, select],
+    [filteredIds, multiSelectActive],
   );
 
   useEffect(() => {
     void mode;
     void sourceFilter;
     selection.clear();
-    primarySelection.set(null);
   }, [mode, sourceFilter]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -111,6 +109,7 @@ export function useCardActions(
     selectionSize,
     multiSelectActive,
     handleCardClick,
+    handleCardAuxClick,
     focus,
     onDragOver,
     onDrop,

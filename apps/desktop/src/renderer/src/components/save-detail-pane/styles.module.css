@@ -1,14 +1,13 @@
-/* A fixed --detail-w clips cleanly while the pane collapses instead of reflowing its content. */
 .detail-card {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0;
-  width: var(--detail-w, 384px);
   height: 100%;
-  padding-top: var(--ds-mac-inset);
   overflow: hidden;
   background: var(--ds-gray-1);
+  border-radius: 12px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .detail-header {
@@ -27,36 +26,25 @@
   overflow-y: auto;
 }
 
-.metrics {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.metric {
+.heading {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  align-items: center;
-  padding: 13px 14px;
+  gap: 4px;
+}
+
+.heading-title {
+  margin: 0;
   overflow: hidden;
-  text-align: center;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-md, 8px);
-}
-
-.metric-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--ds-gray-9);
-  text-transform: capitalize;
-}
-
-.metric-value {
+  text-overflow: ellipsis;
   font-size: 13px;
-  font-weight: 550;
-  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1.35;
   color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.detail-header .header-label {
+  font-size: 13px;
 }
 
 .rows {
@@ -69,13 +57,8 @@
   gap: 16px;
   align-items: center;
   justify-content: space-between;
-  height: 38px;
-  padding-inline: 12px;
+  height: 36px;
   border-radius: 12px;
-
-  &[data-alt="true"] {
-    background: var(--ds-gray-2);
-  }
 }
 
 .row-label {
@@ -90,7 +73,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
-  font-weight: 550;
+  font-weight: 500;
   color: var(--ds-gray-12);
   text-align: right;
 
@@ -141,25 +124,4 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding-inline: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 28px;
-  color: var(--ds-gray-11);
-
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-full);
 }

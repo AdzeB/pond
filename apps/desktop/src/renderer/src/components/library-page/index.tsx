@@ -2,7 +2,7 @@ import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { useRef } from "react";
-import { Toolbar } from "@/components/library-toolbar";
+import { AppShell } from "@/components/app-shell";
 import { routeSwapTransition } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
@@ -53,13 +53,16 @@ function RoutedContent() {
 }
 
 export function Library() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isSave = pathname.startsWith("/save/");
+
+  if (isSave) return <Outlet />;
+
   return (
-    <Shell.Main>
-      <Shell.Mask />
-      <Shell.Header>
-        <Toolbar />
-      </Shell.Header>
-      <RoutedContent />
-    </Shell.Main>
+    <AppShell.Content>
+      <Shell.Main className={styles.main}>
+        <RoutedContent />
+      </Shell.Main>
+    </AppShell.Content>
   );
 }

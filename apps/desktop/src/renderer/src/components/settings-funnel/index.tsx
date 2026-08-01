@@ -8,10 +8,10 @@ import { withThumbWidth } from "@/lib/media/url";
 import { retryFailedSelection } from "@/lib/save/selection";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import type { Save } from "@/lib/types";
+import { openSave as navigateToSave } from "@/lib/ui/save-nav";
 import { formatBytes, formatNumber } from "@/lib/util/format";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import { type ActivityEntry, useActivityEntries } from "@/stores/activity";
-import { primarySelection } from "@/stores/selection";
 import { settingsModal } from "@/stores/settings-modal";
 import {
   clearAllFinished,
@@ -106,10 +106,10 @@ function StatusCell({ row }: { row: QueueRow }) {
   );
 }
 
-/** Detail opens in its own modal; the settings dialog closes first so the item isn't revealed underneath it. */
+/** Settings closes first so the save page isn't revealed underneath the dialog. */
 function openSave(id: string): void {
   settingsModal.close();
-  primarySelection.set(id);
+  navigateToSave(id);
 }
 
 const funnelColumns: TableColumn<QueueRow>[] = [

@@ -3,6 +3,7 @@ import { createContext, type ReactNode, use } from "react";
 /** Kept separate from grid state so toggling multi-select doesn't re-render memoized cards. */
 interface LibraryCardCallbacks {
   onClick: (id: string, e: React.MouseEvent) => void;
+  onAuxClick: (id: string, e: React.MouseEvent) => void;
   onDoubleClick: (id: string) => void;
 }
 

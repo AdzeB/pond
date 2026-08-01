@@ -59,7 +59,7 @@ export const SaveCard = memo(function SaveCard({
   entering,
 }: SaveCardProps) {
   /** Callbacks come from grid context so this memoized card doesn't re-render on a sibling's selection change. */
-  const { onClick, onDoubleClick } = useLibraryCardCallbacks();
+  const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
   /** Per-id subscription: edits to this save wake only this card. */
   const save = useSave(id);
   const isMulti = useIsSelected(id);
@@ -109,6 +109,10 @@ export const SaveCard = memo(function SaveCard({
     (e: React.MouseEvent<HTMLButtonElement>) => onClick(id, e),
     [onClick, id],
   );
+  const onSelectAuxClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => onAuxClick(id, e),
+    [onAuxClick, id],
+  );
   const onSelectDoubleClick = useCallback(
     () => onDoubleClick(id),
     [onDoubleClick, id],
@@ -141,6 +145,7 @@ export const SaveCard = memo(function SaveCard({
         <Card.Select
           aria-pressed={isPrimary}
           onClick={onSelectClick}
+          onAuxClick={onSelectAuxClick}
           onDoubleClick={onSelectDoubleClick}
         >
           <SaveCardBody save={save} layout={layout} />

@@ -47,9 +47,9 @@ import {
 import { shortcutGlyphs } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
+import { closeSave } from "@/lib/ui/save-nav";
 import { activity } from "@/stores/activity";
 import { usePrefsValue } from "@/stores/prefs";
-import { primarySelection } from "@/stores/selection";
 
 export function KebabMenu({
   save,
@@ -79,7 +79,7 @@ export function KebabMenu({
   const hasImage = copyableImageIndex(save, fileIndex) != null;
 
   const closeDetail = useCallback(() => {
-    primarySelection.set(null);
+    closeSave();
   }, []);
 
   const onTrash = useCallback(async () => {

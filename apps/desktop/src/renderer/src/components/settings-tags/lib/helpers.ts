@@ -1,4 +1,7 @@
+import { colorForName } from "@/lib/tags/color";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
+
+export { colorForName };
 
 /** Values are theme tokens so they adapt to light/dark automatically. */
 export const GROUP_COLORS: ReadonlyArray<{ label: string; value: string }> = [
@@ -11,14 +14,6 @@ export const GROUP_COLORS: ReadonlyArray<{ label: string; value: string }> = [
   { label: "Violet", value: "var(--ds-violet-9)" },
   { label: "Pink", value: "var(--ds-pink-9)" },
 ];
-
-/** Tags don't store a color; the name hash gives every tag a stable, distinct dot for free. */
-export function colorForName(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i += 1)
-    h = (h * 31 + name.charCodeAt(i)) >>> 0;
-  return `hsl(${h % 360} 58% 55%)`;
-}
 
 /** Callback ref that focuses and selects on mount, giving autofocus behaviour without the lint. */
 export function focusInput(el: HTMLInputElement | null): void {

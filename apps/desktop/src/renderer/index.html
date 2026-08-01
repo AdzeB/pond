@@ -42,6 +42,11 @@
 				color-scheme: dark;
 				background: #000000;
 			}
+			html[data-shell-backdrop="native"],
+			html[data-shell-backdrop="native"] body,
+			html[data-shell-backdrop="native"] #root {
+				background: transparent;
+			}
 			html,
 			body {
 				height: 100%;
@@ -95,6 +100,13 @@
 
 					if (shell.pointerCursors)
 						doc.setAttribute("data-pointer-cursors", "true");
+
+					if (shell.shellBackdropCapable)
+						doc.setAttribute("data-shell-backdrop-capable", "");
+					if (shell.shellBackdrop)
+						doc.setAttribute("data-shell-backdrop", "native");
+					if (shell.reduceTransparency)
+						doc.setAttribute("data-reduce-transparency", "true");
 
 					const ua = navigator.userAgent || "";
 					const platform = /Mac|iPhone|iPad/i.test(ua) ? "mac" : "other";

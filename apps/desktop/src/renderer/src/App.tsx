@@ -6,13 +6,15 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { MotionConfig } from "motion/react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PondApi } from "../../preload";
+import { AppShell } from "./components/app-shell";
 import { ConfirmDialogHost } from "./components/confirm-dialog";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
 import { PromptDialogHost } from "./components/prompt-dialog";
 import { ShortcutsSheetHost } from "./components/shortcuts-sheet";
+import { TabBar } from "./components/tab-bar";
 import { AppHotkeys } from "./effects/app-hotkeys";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
@@ -20,13 +22,16 @@ import { MenuBridge } from "./effects/menu-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
 import { SaveHotkeys } from "./effects/save-hotkeys";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
+import { TabShortcuts } from "./effects/tab-shortcuts";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
+import { syncPrimaryFromPath } from "./lib/ui/save-nav";
 import { routeTree } from "./routeTree.gen";
 import { usePrefs } from "./stores/prefs";
 import { settingsModal } from "./stores/settings-modal";
+import { tabs, useActiveTabId, useTabs } from "./stores/tabs";
 
 declare global {
   interface Window {
@@ -56,7 +61,9 @@ declare module "@tanstack/react-router" {
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
-/** "continue" is not listed; it is handled by restoring the persisted last path. "settings" is not listed either; it lands on "/" and opens the settings modal after mount. */
+/** Cap live routers so many background tabs do not keep every grid tree mounted. */
+const LIVE_TAB_CAP = 10;
+
 const STARTUP_ROUTES: Record<string, string> = {
   library: "/",
   sources: "/sources",
@@ -80,37 +87,124 @@ function initialPath(): string {
     return STARTUP_ROUTES[startup];
   }
   const last = readStored(LAST_PATH_KEY) || "/";
-  /** Persisted paths from before settings moved into a modal would 404. */
   return last.startsWith("/settings") ? "/" : last;
 }
 
-function buildRouter() {
-  const router = createRouter({
+function buildRouter(entry: string) {
+  return createRouter({
     routeTree,
-    history: createMemoryHistory({ initialEntries: [initialPath()] }),
+    history: createMemoryHistory({ initialEntries: [entry] }),
     defaultPreload: "intent",
     defaultErrorComponent: ({ error, reset }) => (
       <ErrorScreen error={error} reset={reset} />
     ),
   });
-  /** Memory history resets to "/" on reload or relaunch; persist the resolved path so "Continue where you left off" can restore it. */
-  router.subscribe("onResolved", () => {
-    try {
-      localStorage.setItem(LAST_PATH_KEY, router.state.location.pathname);
-    } catch {
-      /** Best-effort; navigation still works without persistence. */
-    }
-  });
+}
+
+type AppRouter = ReturnType<typeof buildRouter>;
+
+const routerCache = new Map<string, AppRouter>();
+
+function getOrCreateRouter(tabId: string, path: string): AppRouter {
+  let router = routerCache.get(tabId);
+  if (!router) {
+    router = buildRouter(path);
+    routerCache.set(tabId, router);
+  }
   return router;
 }
 
-export function App() {
-  const router = useMemo(() => buildRouter(), []);
+function removeRouterForTab(tabId: string): void {
+  const router = routerCache.get(tabId);
+  if (!router) return;
+  routerCache.delete(tabId);
+}
 
-  /** Register the committed router here, not in the useMemo factory, so StrictMode's double-invoked factory cannot leave the singleton pointed at a discarded router. */
+function TabContent({
+  tabId,
+  path,
+  active,
+}: {
+  tabId: string;
+  path: string;
+  active: boolean;
+}) {
+  const router = useMemo(() => getOrCreateRouter(tabId, path), [tabId, path]);
+
   useEffect(() => {
+    const unsub = router.subscribe("onResolved", () => {
+      const loc = router.state.location;
+      const next = loc.pathname + loc.searchStr;
+      tabs.updatePath(tabId, next);
+      if (tabs.getState().activeId === tabId) {
+        try {
+          localStorage.setItem(LAST_PATH_KEY, loc.pathname);
+        } catch {
+          /** Best-effort; navigation still works without persistence. */
+        }
+        syncPrimaryFromPath(loc.pathname);
+        setAppRouter(router);
+      }
+    });
+    return unsub;
+  }, [router, tabId]);
+
+  useEffect(() => {
+    if (!active) return;
     setAppRouter(router);
-  }, [router]);
+    syncPrimaryFromPath(router.state.location.pathname);
+  }, [active, router]);
+
+  return (
+    <div style={{ display: active ? "contents" : "none" }}>
+      <RouterProvider router={router} />
+    </div>
+  );
+}
+
+export function App() {
+  /** Seed once before the first tab routers mount so the startup path wins over the default "/". */
+  useState(() => {
+    tabs.ensureInitial(initialPath());
+  });
+
+  const tabList = useTabs();
+  const activeId = useActiveTabId();
+
+  const lruRef = useRef<string[]>([activeId]);
+  const [liveIds, setLiveIds] = useState<Set<string>>(
+    () => new Set([activeId]),
+  );
+
+  useEffect(() => {
+    const existing = new Set(tabList.map((t) => t.id));
+    const next = [
+      activeId,
+      ...lruRef.current.filter((id) => id !== activeId && existing.has(id)),
+    ];
+    for (const t of tabList) {
+      if (!next.includes(t.id)) next.push(t.id);
+    }
+    lruRef.current = next;
+
+    const live = new Set(next.slice(0, LIVE_TAB_CAP));
+    for (const id of routerCache.keys()) {
+      if (!live.has(id)) removeRouterForTab(id);
+    }
+    setLiveIds((prev) => {
+      if (prev.size === live.size) {
+        let same = true;
+        for (const id of live) {
+          if (!prev.has(id)) {
+            same = false;
+            break;
+          }
+        }
+        if (same) return prev;
+      }
+      return live;
+    });
+  }, [activeId, tabList]);
 
   /** The "settings" startup page lands on "/" and opens the modal on top. */
   useEffect(() => {
@@ -128,6 +222,7 @@ export function App() {
       /** Best-effort; falls back to "continue" when unreadable. */
     }
   }, [startupPage]);
+
   const queryClient = useMemo(
     () =>
       new QueryClient({
@@ -152,10 +247,22 @@ export function App() {
           <MenuRecentsBridge />
           <SaveHotkeys />
           <AppHotkeys />
+          <TabShortcuts />
           <SyncStatusBridge />
           <EnrichmentSweep />
           <ErrorBoundary>
-            <RouterProvider router={router} />
+            <AppShell.Root header={<TabBar />}>
+              {tabList.map((tab) =>
+                liveIds.has(tab.id) ? (
+                  <TabContent
+                    key={tab.id}
+                    tabId={tab.id}
+                    path={tab.path}
+                    active={tab.id === activeId}
+                  />
+                ) : null,
+              )}
+            </AppShell.Root>
           </ErrorBoundary>
           <ConfirmDialogHost />
           <PromptDialogHost />

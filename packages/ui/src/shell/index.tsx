@@ -10,8 +10,8 @@ function Body({ ...props }: BodyProps) {
 
 interface MainProps extends React.ComponentPropsWithoutRef<"main"> {}
 
-function Main({ ...props }: MainProps) {
-  return <main className={styles.main} {...props} />;
+function Main({ className, ...props }: MainProps) {
+  return <main className={cn(styles.main, className)} {...props} />;
 }
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"header"> {}

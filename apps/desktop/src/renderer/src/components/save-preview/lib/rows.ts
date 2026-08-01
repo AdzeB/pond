@@ -3,7 +3,7 @@ import {
   formatBytes,
   formatCount,
   formatDuration,
-  formatShortDate,
+  formatTimestampLine,
 } from "@/lib/util/format";
 import { prettifyType } from "./helpers";
 
@@ -123,7 +123,7 @@ export function collectInfoRows(save: Save): PaneRow[] {
     out.push({
       id: "published",
       label: "Published",
-      value: formatShortDate(capture.publishedAt),
+      value: formatTimestampLine(capture.publishedAt),
     });
   }
 
@@ -131,7 +131,7 @@ export function collectInfoRows(save: Save): PaneRow[] {
     out.push({
       id: "imported",
       label: "Imported",
-      value: formatShortDate(save.savedAt),
+      value: formatTimestampLine(save.savedAt),
     });
   }
 
@@ -139,7 +139,7 @@ export function collectInfoRows(save: Save): PaneRow[] {
     out.push({
       id: "modified",
       label: "Modified",
-      value: formatShortDate(save.createdAt),
+      value: formatTimestampLine(save.createdAt),
     });
   }
 

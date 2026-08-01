@@ -23,6 +23,8 @@ interface ShellPatch {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
+  reduceTransparency?: boolean;
+  shellBackdrop?: boolean;
 }
 
 function persistShell(patch: ShellPatch) {
@@ -105,11 +107,19 @@ export function ThemeApplier() {
 
   useEffect(() => {
     const root = document.documentElement;
+    const capable = root.hasAttribute("data-shell-backdrop-capable");
+    const backdrop = capable && !prefs.reduceTransparency;
     if (prefs.reduceTransparency) {
       root.setAttribute("data-reduce-transparency", "true");
     } else {
       root.removeAttribute("data-reduce-transparency");
     }
+    if (backdrop) {
+      root.setAttribute("data-shell-backdrop", "native");
+    } else {
+      root.removeAttribute("data-shell-backdrop");
+    }
+    persistShell({ shellBackdrop: backdrop });
   }, [prefs.reduceTransparency]);
 
   useEffect(() => {

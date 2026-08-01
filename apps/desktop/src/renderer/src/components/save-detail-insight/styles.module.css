@@ -25,13 +25,13 @@
 }
 
 .label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--ds-gray-9);
 }
 
 .pending {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ds-gray-9);
 }
 
@@ -44,7 +44,7 @@
   gap: 4px;
   align-items: center;
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--ds-gray-11);
   cursor: pointer;

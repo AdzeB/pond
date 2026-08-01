@@ -1,12 +1,12 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .title {
   margin: 0;
-  font-size: 12px;
-  font-weight: 550;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--ds-gray-12);
 }

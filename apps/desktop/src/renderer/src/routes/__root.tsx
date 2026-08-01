@@ -1,9 +1,10 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { OnboardingGate } from "@/components/onboarding";
-import { SaveDetailModal } from "@/components/save-detail-modal";
 import { SettingsModal } from "@/components/settings-modal";
 import { Tray } from "@/components/tray";
+import { getAppRouter } from "@/lib/ui/app-router";
+import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { settingsModal } from "@/stores/settings-modal";
 
 export const Route = createRootRoute({
@@ -21,7 +22,14 @@ function RootComponent() {
       }
       if (pathname.startsWith("/settings/")) {
         settingsModal.open(pathname.slice("/settings/".length));
+        return;
       }
+      const saveId = saveIdFromPath(pathname);
+      if (saveId) {
+        openSave(saveId);
+        return;
+      }
+      getAppRouter()?.history.push(pathname);
     });
   }, []);
 
@@ -29,7 +37,6 @@ function RootComponent() {
     <>
       <Outlet />
       <Tray.Library />
-      <SaveDetailModal />
       <SettingsModal />
       <OnboardingGate />
     </>

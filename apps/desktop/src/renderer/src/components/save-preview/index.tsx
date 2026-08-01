@@ -3,13 +3,14 @@ import {
   IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { SpecContextMenu } from "@/components/spec-context-menu";
 import { TagPicker } from "@/components/tag-picker";
 import { setSaveTags } from "@/lib/save/mutate";
+import { colorForName } from "@/lib/tags/color";
 import type { Save } from "@/lib/types";
-import { getAppRouter } from "@/lib/ui/app-router";
-import { primarySelection } from "@/stores/selection";
+import { closeSave } from "@/lib/ui/save-nav";
+import { useTags } from "@/stores/tags";
 import { setSearchInput } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
@@ -23,8 +24,7 @@ function buildTagPillMenu(
       label: "Search Tag",
       onClick: () => {
         setSearchInput([{ field: "tags", operator: "some", value: [tag] }], "");
-        primarySelection.set(null);
-        void getAppRouter()?.navigate({ to: "/" });
+        closeSave();
       },
     },
     {
@@ -45,6 +45,15 @@ function buildTagPillMenu(
 
 export function TagsEditor({ save }: { save: Save }) {
   const [busy, setBusy] = useState(false);
+  const catalog = useTags();
+
+  const colorByName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const tag of catalog) {
+      map.set(tag.name.toLowerCase(), tag.color ?? colorForName(tag.name));
+    }
+    return map;
+  }, [catalog]);
 
   const remove = useCallback(
     async (name: string) => {
@@ -69,6 +78,14 @@ export function TagsEditor({ save }: { save: Save }) {
           buildItems={() => buildTagPillMenu(tag, remove)}
         >
           <span className={styles["pane-tag"]}>
+            <span
+              className={styles["pane-tag-dot"]}
+              style={{
+                background:
+                  colorByName.get(tag.toLowerCase()) ?? colorForName(tag),
+              }}
+              aria-hidden
+            />
             <span className={styles["pane-tag-label"]}>{tag}</span>
             <button
               type="button"
@@ -91,7 +108,7 @@ export function TagsEditor({ save }: { save: Save }) {
               aria-label="Add tag"
               data-tag-add
             >
-              <Plus width={10} height={10} />
+              <Plus width={12} height={12} />
             </button>
           }
         />

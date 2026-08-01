@@ -119,7 +119,7 @@ export function MediaViewer({
   );
 }
 
-/** The right-click menu lives one level up on the detail modal, covering media and chrome alike. */
+/** The right-click menu lives one level up on the save page, covering media and chrome alike. */
 function Frame({
   activeIndex = 0,
   children,

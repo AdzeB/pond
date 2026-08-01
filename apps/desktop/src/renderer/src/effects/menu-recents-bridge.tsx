@@ -1,8 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo } from "react";
+import { openSave } from "@/lib/ui/save-nav";
 import { pool, savesStore } from "@/stores/pool";
 import { useRecents } from "@/stores/recents";
-import { primarySelection } from "@/stores/selection";
 
 interface RecentMenuEntry {
   id: string;
@@ -39,7 +39,7 @@ export function MenuRecentsBridge(): null {
 
   useEffect(() => {
     return window.pond.onMenuOpenSave((id) => {
-      primarySelection.set(id);
+      openSave(id);
     });
   }, []);
 

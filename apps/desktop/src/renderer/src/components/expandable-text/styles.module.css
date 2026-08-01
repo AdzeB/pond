@@ -6,7 +6,7 @@
 }
 
 .text {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 20px;
   color: var(--ds-gray-11);
   word-break: break-word;
@@ -44,7 +44,7 @@
   align-items: center;
   align-self: flex-start;
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 550;
   color: var(--ds-gray-12);
   cursor: var(--ds-cursor-interactive, pointer);

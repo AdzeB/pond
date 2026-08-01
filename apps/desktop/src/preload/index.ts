@@ -112,6 +112,24 @@ const api = {
     return () => ipcRenderer.off(IPC.menuOpenSave, listener);
   },
 
+  onTabNew(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabNew, listener);
+    return () => ipcRenderer.off(IPC.tabNew, listener);
+  },
+
+  onTabClose(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabClose, listener);
+    return () => ipcRenderer.off(IPC.tabClose, listener);
+  },
+
+  onTabReopen(cb: () => void): () => void {
+    const listener = () => cb();
+    ipcRenderer.on(IPC.tabReopen, listener);
+    return () => ipcRenderer.off(IPC.tabReopen, listener);
+  },
+
   appInfo(): Promise<{
     name: string;
     version: string;
@@ -285,6 +303,9 @@ interface ShellHint {
   contrast?: number;
   fgDir?: number;
   pointerCursors?: boolean;
+  reduceTransparency?: boolean;
+  shellBackdropCapable?: boolean;
+  shellBackdrop?: boolean;
 }
 
 /** Main forwards `--pond-shell=<json>` via additionalArguments; the inline boot script in index.html reads `window.__pondShell` to set theme and pointer cursors before any bundle parses. */

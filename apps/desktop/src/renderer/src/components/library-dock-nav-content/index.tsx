@@ -23,10 +23,18 @@ import { type DockTab, NAV_TABS } from "@/components/library-dock/lib/nav-tabs";
 import type { ViewMenuSection } from "@/components/library-dock/lib/types";
 import { openTrayConfirm } from "@/components/library-dock-confirm-content";
 import { useAskAvailable } from "@/hooks/use-ask-available";
+import { openInNewTabIfMeta } from "@/hooks/use-tab-navigate";
 import { dockMode } from "@/stores/dock-mode";
 import { insightEditor } from "@/stores/insight-editor";
 import { settingsModal } from "@/stores/settings-modal";
+import { tabs } from "@/stores/tabs";
 import styles from "./styles.module.css";
+
+function pathForTab(tab: (typeof NAV_TABS)[number]): string | null {
+  if (tab.id === "trash") return "/trash";
+  if (typeof tab.to === "string") return tab.to;
+  return null;
+}
 
 const VIEW_MENUS: Array<{
   section: ViewMenuSection;
@@ -45,7 +53,6 @@ const NAV_ORDER: readonly DockTab[] = [
   "sources",
   "analytics",
   "trash",
-  "settings",
 ];
 
 const ORDERED_TABS = NAV_ORDER.flatMap((id) =>
@@ -130,7 +137,18 @@ export function NavContent() {
           <Tray.Item
             render={<Link to={tab.to} params={tab.params} />}
             aria-label={tab.label}
-            onClick={() => setNavOpen(false)}
+            onClick={(e) => {
+              setNavOpen(false);
+              const path = pathForTab(tab);
+              if (path) openInNewTabIfMeta(e, path, () => {});
+            }}
+            onAuxClick={(e) => {
+              if (e.button !== 1) return;
+              const path = pathForTab(tab);
+              if (!path) return;
+              e.preventDefault();
+              tabs.open(path, { background: true });
+            }}
           >
             {tab.icon}
           </Tray.Item>

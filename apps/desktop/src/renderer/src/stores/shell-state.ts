@@ -1,8 +1,9 @@
 import { useWindowSize } from "rooks";
 
-/** Shell.Main pads 16px per side; this must match the real content width or absolutely-positioned columns overflow. */
-const SHELL_MAIN_PADDING = 16;
-const GRID_HORIZONTAL_INSET = SHELL_MAIN_PADDING * 2;
+/** AppShell `--shell-inset` + library `Shell.Main` padding-inline; keep in sync with those styles. */
+const SHELL_INSET = 12;
+const MAIN_PADDING_INLINE = 20;
+const GRID_HORIZONTAL_INSET = (SHELL_INSET + MAIN_PADDING_INLINE) * 2;
 
 export function useGridWidth(): number {
   const { innerWidth } = useWindowSize();

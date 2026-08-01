@@ -1,14 +1,21 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useRef } from "react";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
+import { getAppRouter } from "@/lib/ui/app-router";
+import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { dockMode } from "@/stores/dock-mode";
-import { primarySelection, selection } from "@/stores/selection";
+import { selection } from "@/stores/selection";
 
 /** Arrows and Enter must not fire while focus sits in toolbars, dialogs, or the dock. */
 function gridFocusFree(): boolean {
   const el = document.activeElement;
   if (!el || el === document.body) return true;
   return el.closest("[data-save-id]") != null;
+}
+
+function saveRouteOpen(): boolean {
+  const path = getAppRouter()?.state.location.pathname ?? "";
+  return saveIdFromPath(path) != null;
 }
 
 function scrollToCard(id: string): void {
@@ -28,7 +35,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
   const cursorRef = useRef<string | null>(null);
 
   const move = (delta: number, extend: boolean, event: KeyboardEvent) => {
-    if (primarySelection.get()) return;
+    if (saveRouteOpen()) return;
     if (!gridFocusFree()) return;
     const ids = idsRef.current;
     if (ids.length === 0) return;
@@ -59,12 +66,12 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
   };
 
   const open = (event: KeyboardEvent) => {
-    if (primarySelection.get()) return;
+    if (saveRouteOpen()) return;
     if (!gridFocusFree()) return;
     const anchor = selection.getAnchor();
     if (!anchor || !idsRef.current.includes(anchor)) return;
     event.preventDefault();
-    primarySelection.set(anchor);
+    openSave(anchor);
   };
 
   useHotkeys([
@@ -101,7 +108,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     {
       hotkey: SHORTCUTS["grid.select-all"].keys,
       callback: (event) => {
-        if (primarySelection.get()) return;
+        if (saveRouteOpen()) return;
         if (!gridFocusFree()) return;
         const ids = idsRef.current;
         if (ids.length === 0) return;
@@ -113,11 +120,11 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       options: { preventDefault: false },
     },
     {
-      /** Modal, dock, and expanded pill own Escape while open; only a bare grid clears. */
+      /** Save page, dock, and expanded pill own Escape while open; only a bare grid clears. */
       hotkey: SHORTCUTS["grid.clear"].keys,
       callback: (event) => {
         if (event.defaultPrevented) return;
-        if (primarySelection.get()) return;
+        if (saveRouteOpen()) return;
         if (dockMode.current() !== "nav") return;
         if (selection.size() === 0 && !selection.getAnchor()) return;
         selection.clear();

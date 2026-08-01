@@ -1,8 +1,8 @@
 import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { type CSSProperties, useEffect, useState } from "react";
+import { closeSave } from "@/lib/ui/save-nav";
 import { colorCopyFormats } from "@/lib/util/color";
-import { primarySelection } from "@/stores/selection";
 import { setQuery } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
@@ -15,13 +15,13 @@ const POPUP_STYLE = {
 /** How long the swatch wears the checkmark after a copy. */
 const COPIED_HOLD_MS = 1200;
 
-/** Dismisses the detail modal so the freshly-filtered grid is what the user lands on. */
+/** Leaves the save page so the freshly-filtered grid is what the user lands on. */
 function findSimilar(hex: string): void {
   setQuery({
     combinator: "and",
     rules: [{ field: "color", operator: "near", value: hex }],
   });
-  primarySelection.set(null);
+  closeSave();
 }
 
 export function ColorSwatch({ color }: { color: string }) {
