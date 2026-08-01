@@ -16,3 +16,8 @@ Requires the `nucleo-ui-*` packages installed temporarily (with a
 
 `pnpm --filter @pond/icons check:allowlist` runs in CI and fails if the app
 imports a glyph outside `allowlist.json`.
+
+Layout variants `IconGridFill18` and `IconGridLayoutRowsFill18`, and
+`IconArchiveContent2Fill18` (real Nucleo ArchiveContent2, slot aliased to
+ArchivePlus), are hand-authored (see `config/hand-authored.json`) so they
+stay distinct while sharing one Nucleo allowlist slot via `glyph-aliases.json`.

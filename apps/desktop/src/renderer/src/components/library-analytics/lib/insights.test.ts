@@ -139,15 +139,7 @@ describe("saves insight engine", () => {
   });
 
   it("segments day slices by source", () => {
-    /** Noon today so `Date.now() - HOUR` never lands on yesterday near midnight. */
-    const noon = new Date();
-    noon.setHours(12, 0, 0, 0);
-    const at = noon.getTime();
-    const saves = [
-      save({ savedAt: at, createdAt: at }),
-      save({ savedAt: at, createdAt: at }),
-      save({ source: "reddit", savedAt: at, createdAt: at }),
-    ];
+    const saves = [save(), save(), save({ source: "reddit" })];
     const result = computeInsight(
       config({ slice: "day", segment: "source", display: "area" }),
       saves,

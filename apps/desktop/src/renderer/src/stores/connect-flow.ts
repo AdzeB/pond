@@ -35,9 +35,11 @@ export const connectFlow = {
     store.setState((s) => (s.completed ? s : { ...s, completed: true }));
   },
   clear(): void {
+    const waiting = store.state.waiting;
     store.setState((s) =>
       s.waiting === null ? s : { ...s, waiting: null, completed: false },
     );
+    if (waiting) void window.pond.clearPendingSession(waiting);
   },
 };
 

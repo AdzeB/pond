@@ -13,7 +13,7 @@ interface AskChipProps {
   onRemove?: () => void;
 }
 
-/** Shared pill shell for skill, mention, and tag nodes in the Lexical ask editor; the ref and `selected` flag let the node wire up keyboard selection/deletion. */
+/** Shared pill for skill, mention, and tag chips in the ask composer and transcript. */
 export const AskChip = forwardRef<HTMLSpanElement, AskChipProps>(
   function AskChip({ tone, lead, label, title, selected, onRemove }, ref) {
     return (
@@ -22,21 +22,24 @@ export const AskChip = forwardRef<HTMLSpanElement, AskChipProps>(
         className={styles.chip}
         data-tone={tone}
         data-selected={selected || undefined}
+        data-static={!onRemove || undefined}
         title={title ?? label}
       >
         <span className={styles["chip-body"]}>
           <span className={styles["chip-lead"]}>{lead}</span>
           <span className={styles["chip-label"]}>{label}</span>
         </span>
-        <button
-          type="button"
-          className={styles["chip-remove"]}
-          aria-label={`Remove ${label}`}
-          onClick={onRemove}
-          onMouseDown={(event) => event.preventDefault()}
-        >
-          <Clear width={11} height={11} />
-        </button>
+        {onRemove ? (
+          <button
+            type="button"
+            className={styles["chip-remove"]}
+            aria-label={`Remove ${label}`}
+            onClick={onRemove}
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            <Clear width={11} height={11} />
+          </button>
+        ) : null}
       </span>
     );
   },

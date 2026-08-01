@@ -3,6 +3,7 @@ import { count, isNull } from "drizzle-orm";
 import type { Context } from "hono";
 import { getDb } from "../db";
 import { libraryRoot } from "../paths";
+import { resolveTheme } from "../theme";
 
 export async function libraryInfoHandler(c: Context) {
   const db = await getDb();
@@ -22,6 +23,7 @@ export async function libraryInfoHandler(c: Context) {
       counts: {
         active: Number(total?.n ?? 0),
       },
+      theme: await resolveTheme(),
     },
   });
 }

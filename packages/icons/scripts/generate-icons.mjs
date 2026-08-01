@@ -19,6 +19,9 @@ const glyphAliases = JSON.parse(
 const importRewrites = JSON.parse(
   readFileSync(join(root, "config/import-rewrites.json"), "utf8"),
 );
+const handAuthored = new Set(
+  JSON.parse(readFileSync(join(root, "config/hand-authored.json"), "utf8")),
+);
 
 const PACKAGES = {
   "outline/18": "nucleo-ui-outline-18",
@@ -126,6 +129,10 @@ async function main() {
 
     const key = `${family}:${exportName}`;
     if (generated.has(key)) continue;
+    if (handAuthored.has(key)) {
+      generated.set(key, join(root, "generated", family, `${exportName}.tsx`));
+      continue;
+    }
 
     const Comp = await loadComponent(pkg, nucleoName);
     const inner = extractInnerMarkup(Comp);

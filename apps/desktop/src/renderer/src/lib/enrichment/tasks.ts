@@ -172,18 +172,12 @@ export function reembed(ids?: TaskScope): TaskResult {
   }
   const n = clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
   rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
-  if (n > 0) {
-    activity.note(
-      `Embedding ${n} ${plural(n, "item")} again in the background`,
-    );
-  }
-  return {
-    ok: true,
-    message:
-      n > 0
-        ? `Embedding ${n} ${plural(n, "item")} again in the background`
-        : `No embeddings to rebuild in the ${scopeNoun(ids)} yet.`,
-  };
+  const message =
+    n > 0
+      ? `Embedding ${n} ${plural(n, "item")} again in the background`
+      : `No embeddings to rebuild in the ${scopeNoun(ids)} yet.`;
+  activity.note("Semantic Index", message);
+  return { ok: true, message };
 }
 
 export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
@@ -192,14 +186,10 @@ export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
   }
   const n = clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
   rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
-  if (n > 0) {
-    activity.note(`Rebuilding the visual index for ${n} ${plural(n, "item")}`);
-  }
-  return {
-    ok: true,
-    message:
-      n > 0
-        ? `Rebuilding the visual index for ${n} ${plural(n, "item")}`
-        : `No visual index to rebuild in the ${scopeNoun(ids)} yet.`,
-  };
+  const message =
+    n > 0
+      ? `Rebuilding the visual index for ${n} ${plural(n, "item")}`
+      : `No visual index to rebuild in the ${scopeNoun(ids)} yet.`;
+  activity.note("Visual Index", message);
+  return { ok: true, message };
 }

@@ -143,10 +143,13 @@
 .user-message {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-  align-self: flex-end;
-  max-width: 85%;
+  gap: 8px;
+  align-items: flex-start;
+  align-self: stretch;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-lg);
 }
 
 .user-image {
@@ -158,27 +161,10 @@
 }
 
 .user-text {
-  padding: 7px 11px;
   font-size: 13px;
   line-height: 1.45;
   color: var(--ds-gray-12);
   word-break: break-word;
-  background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-lg);
-}
-
-/* Mirrors the composer's chips so the transcript reads back exactly as typed. */
-.user-chip {
-  display: inline;
-  padding: 1px 5px;
-  margin: 0 1px;
-  font-weight: 550;
-  color: var(--ds-gray-12);
-  white-space: nowrap;
-  background: var(--ds-gray-a4);
-  border-radius: var(--ds-radius-sm);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
 }
 
 .assistant-message {
@@ -186,7 +172,8 @@
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
-  max-width: 100%;
+  align-self: stretch;
+  width: 100%;
 }
 
 .turn-status {

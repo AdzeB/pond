@@ -1,13 +1,41 @@
-import { isImageFile, pickPrimaryFile } from "@/lib/media/units";
+import {
+  isImageFile,
+  pickPrimaryFile,
+  pickPrimaryUnit,
+} from "@/lib/media/units";
 import {
   trashSave as applyTrash,
   untrashSave as applyUntrash,
   purgeSave,
   setSaveTags,
 } from "@/lib/save/mutate";
-import type { Save } from "@/lib/types";
+import type { Save, SaveFile } from "@/lib/types";
+import { activity } from "@/stores/activity";
 import { pool } from "@/stores/pool";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
+
+/** Prefer an explicit slide index, else the primary visual, else the cover slot. */
+export function resolveFileIndex(
+  save: Save,
+  preferred?: number | null,
+): number | null {
+  if (
+    preferred != null &&
+    preferred >= 0 &&
+    preferred < save.files.length &&
+    save.files[preferred]
+  ) {
+    return preferred;
+  }
+  const primary = pickPrimaryFile(save);
+  if (primary) {
+    const idx = save.files.indexOf(primary);
+    if (idx >= 0) return idx;
+  }
+  if (save.files.length === 0) return null;
+  const cover = save.coverIndex ?? 0;
+  return save.files[cover] ? cover : 0;
+}
 
 async function toggleTrash(save: Save): Promise<void> {
   const prev = pool.get(save.id);
@@ -79,30 +107,55 @@ export async function purgeForever(save: Save): Promise<void> {
   await purgeSave(save.id);
 }
 
-export async function openDefaultApp(save: Save): Promise<void> {
-  if (save.files.length === 0) return;
-  await window.pond.openSaveFile(save.id, save.coverIndex ?? 0);
+export async function openDefaultApp(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
+  const result = (await window.pond.openSaveFile(save.id, fileIndex)) as {
+    ok: boolean;
+  };
+  if (!result?.ok) activity.error("Open", "Couldn't open this file.");
 }
 
-export async function revealFile(save: Save): Promise<void> {
-  if (save.files.length === 0) return;
-  await window.pond.revealSave(save.id, save.coverIndex ?? 0);
+export async function revealFile(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
+  const result = (await window.pond.revealSave(save.id, fileIndex)) as {
+    ok: boolean;
+  };
+  if (!result?.ok) {
+    activity.error("Reveal", "Couldn't find this file on disk.");
+  }
 }
 
-export async function copyFilePath(save: Save): Promise<void> {
+export async function copyFilePath(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
   const result = (await window.pond.query("saves.filePath", {
     id: save.id,
-    fileIndex: save.coverIndex ?? 0,
+    fileIndex,
   })) as { ok: true; path: string } | { ok: false; reason: string };
   if (!result.ok) return;
   await writeClipboardText(result.path);
 }
 
-export async function copyFile(save: Save): Promise<void> {
-  if (save.files.length === 0) return;
+export async function copyFile(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
   await window.pond.query("saves.copyFile", {
     id: save.id,
-    fileIndex: save.coverIndex ?? 0,
+    fileIndex,
   });
 }
 
@@ -120,21 +173,41 @@ export async function openInBrowser(save: Save): Promise<void> {
 
 export async function refreshSaveMetadata(save: Save): Promise<void> {
   if (!save.url) return;
+  activity.note("Refreshing metadata");
   await window.pond.refreshSave(save.id);
 }
 
-/** Index of the file "Copy Image" targets; null (e.g. videos, docs, link-only saves) means the item should not be offered. */
-export function copyableImageIndex(save: Save): number | null {
-  const cover = save.files[save.coverIndex ?? 0];
-  if (cover && isImageFile(cover)) return save.coverIndex ?? 0;
-  /** Falls back to the primary visual (e.g. tweet screenshot); never avatars or video posters. */
+/** Index of the file "Copy Image" targets; null for videos (use Copy Current Frame), posters, docs, and link-only saves. */
+export function copyableImageIndex(
+  save: Save,
+  preferredIndex?: number | null,
+): number | null {
+  if (preferredIndex != null) {
+    const file = save.files[preferredIndex];
+    return file && isCopyableImageFile(file) ? preferredIndex : null;
+  }
+  if (pickPrimaryUnit(save)?.isVideo) return null;
   const primary = pickPrimaryFile(save);
-  if (primary && isImageFile(primary)) return save.files.indexOf(primary);
+  if (primary && isCopyableImageFile(primary)) {
+    return save.files.indexOf(primary);
+  }
   return null;
 }
 
-export async function copyImage(save: Save): Promise<void> {
-  const fileIndex = copyableImageIndex(save);
+function isCopyableImageFile(file: SaveFile): boolean {
+  if (!isImageFile(file)) return false;
+  return (
+    file.kind !== "poster" &&
+    file.kind !== "avatar" &&
+    file.kind !== "source_icon"
+  );
+}
+
+export async function copyImage(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = copyableImageIndex(save, preferredIndex);
   if (fileIndex == null) return;
   await window.pond.query("saves.copyImage", { id: save.id, fileIndex });
 }
@@ -153,10 +226,14 @@ export async function pasteTags(save: Save): Promise<void> {
   await setSaveTags(save.id, next);
 }
 
-export async function exportFile(save: Save): Promise<void> {
-  if (save.files.length === 0) return;
+export async function exportFile(
+  save: Save,
+  preferredIndex?: number | null,
+): Promise<void> {
+  const fileIndex = resolveFileIndex(save, preferredIndex);
+  if (fileIndex == null) return;
   await window.pond.query("saves.exportFile", {
     id: save.id,
-    fileIndex: save.coverIndex ?? 0,
+    fileIndex,
   });
 }

@@ -21,6 +21,23 @@
   }
 }
 
+.link {
+  color: var(--ds-blue-11, var(--ds-gray-12));
+  word-break: break-all;
+  text-decoration: none;
+  cursor: var(--ds-cursor-interactive, pointer);
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ds-blue-8, var(--ds-gray-a8));
+    outline-offset: 1px;
+    border-radius: 2px;
+  }
+}
+
 .button {
   display: inline-flex;
   gap: 6px;

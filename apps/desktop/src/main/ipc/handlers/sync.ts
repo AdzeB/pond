@@ -14,7 +14,7 @@ import {
   syncAllSources,
 } from "../../core/sync";
 import { getWatch, getWatchSync } from "../../core/sync/watches";
-import { watchNow } from "../../core/watch/run";
+import { watchAll, watchNow } from "../../core/watch/run";
 import { safeHandle } from "../helpers";
 
 export function registerSyncHandlers(): void {
@@ -53,10 +53,14 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.syncRunAll, async (_, opts?: { forceFull?: boolean }) => {
-    void syncAllSources({
-      trigger: "manual",
-      forceFull: opts?.forceFull ?? false,
-    });
+    /** Same sequence as the sync cron: connected accounts first, then watched public accounts. */
+    void (async () => {
+      await syncAllSources({
+        trigger: "manual",
+        forceFull: opts?.forceFull ?? false,
+      });
+      await watchAll({ trigger: "manual" });
+    })();
     return { ok: true as const };
   });
 

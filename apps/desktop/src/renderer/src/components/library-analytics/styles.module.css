@@ -425,8 +425,10 @@
   flex: 1;
   flex-direction: column;
   gap: 4px;
+  align-items: center;
   justify-content: center;
   min-height: 0;
+  text-align: center;
 }
 
 .metric-value {

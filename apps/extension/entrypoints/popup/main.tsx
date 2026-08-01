@@ -1,5 +1,3 @@
-import "@pond/ui/reset.css";
-import "@pond/theme/theme.css";
 import "./popup.css";
 
 import { createRoot } from "react-dom/client";

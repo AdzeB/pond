@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import { isSource } from "@pond/schema/sources";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import {
@@ -14,6 +15,10 @@ import {
   cancelRefreshBackfill,
   startRefreshBackfill,
 } from "../../core/refresh/backfill";
+import {
+  clearPendingSessionSource,
+  setPendingSessionSource,
+} from "../../pending-session";
 import { safeHandle } from "../helpers";
 
 export function registerRefreshHandlers(): void {
@@ -74,9 +79,9 @@ export function registerRefreshHandlers(): void {
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
-      return await signInToSource(
-        source as Parameters<typeof signInToSource>[0],
-      );
+      if (!isSource(source)) return { ok: false as const };
+      setPendingSessionSource(source);
+      return await signInToSource(source);
     } catch (err) {
       log.warn("[pond ipc] sourceConnect failed", err);
       return { ok: false as const };
@@ -93,5 +98,14 @@ export function registerRefreshHandlers(): void {
       log.warn("[pond ipc] sourceStatus failed", err);
       return { ok: false as const, connected: false };
     }
+  });
+
+  safeHandle(IPC.sessionPendingClear, async (_, source?: string) => {
+    if (typeof source === "string" && isSource(source)) {
+      clearPendingSessionSource(source);
+    } else {
+      clearPendingSessionSource();
+    }
+    return { ok: true as const };
   });
 }

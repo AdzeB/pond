@@ -24,6 +24,7 @@ import {
   partitionForAccount,
   patchAccount,
 } from "../core/sync/accounts";
+import { clearPendingSessionSource } from "../pending-session";
 import { identityKeyFromCookies } from "./session-identity";
 
 export async function sessionImportHandler(c: Context): Promise<Response> {
@@ -112,6 +113,8 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
   void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
     log.warn("[pond http] session/import follow-up sync threw", source, err),
   );
+
+  clearPendingSessionSource(source);
 
   const body: SessionImportResponse = {
     ok: true,

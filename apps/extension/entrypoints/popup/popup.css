@@ -10,28 +10,23 @@
   font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
     "Segoe UI", sans-serif;
-
-  font-feature-settings:
-    "liga" 1,
-    "calt" 1,
-    "cv11" 1,
-    "ss01" 1;
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 html,
-body {
+body,
+#root {
+  width: 360px;
+  min-height: 420px;
   padding: 0;
   margin: 0;
 }
 
 body {
-  width: 400px;
-  padding: 24px 24px 16px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
+  color: #111;
+  background: #fff;
 }
 
-a {
-  color: inherit;
+* {
+  box-sizing: border-box;
 }

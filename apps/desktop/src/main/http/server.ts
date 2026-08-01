@@ -7,12 +7,15 @@ import { Hono } from "hono";
 import { DEFAULT_INGEST_PORT } from "../../shared/constants";
 import { getPrefs } from "../core/prefs";
 import { getIngestToken } from "../keychain";
+import { discoverHandler, setDiscoverPort } from "./discover";
 import { enqueueHandler } from "./item-add";
 import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
+import { itemThumbHandler } from "./item-thumb";
 import { libraryInfoHandler } from "./library-info";
 import { pairingHandler } from "./pairing";
 import { sessionImportHandler } from "./session-import";
+import { sessionPendingHandler } from "./session-pending";
 
 function isAllowedOrigin(
   origin: string | undefined,
@@ -89,6 +92,25 @@ function buildApp(): Hono {
     });
   });
 
+  /** Unauthenticated, but discoverHandler itself rejects non-loopback remotes. */
+  api.get("/api/v2/discover", async (c) => {
+    const ip =
+      c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ||
+      getConnInfo(c).remote.address ||
+      "unknown";
+    const blocked = AUTH_FAILURES.get(ip);
+    if (
+      blocked &&
+      blocked.resetAt > Date.now() &&
+      blocked.count > AUTH_MAX_FAILURES
+    ) {
+      return c.json({ status: "error", error: "rate_limited" }, 429);
+    }
+    const res = await discoverHandler(c);
+    if (res.status === 403) recordAuthFailure(ip);
+    return res;
+  });
+
   const requireAuth = async (
     c: Parameters<Parameters<Hono["use"]>[1]>[0],
     next: () => Promise<void>,
@@ -129,8 +151,10 @@ function buildApp(): Hono {
   api.post("/api/v2/item/get", itemGetHandler);
   api.get("/api/v2/item/get", itemGetHandler);
   api.get("/api/v2/item/info", itemInfoHandler);
+  api.get("/api/v2/item/thumb", itemThumbHandler);
   api.get("/api/v2/library/info", libraryInfoHandler);
   api.post("/api/v2/session/import", sessionImportHandler);
+  api.get("/api/v2/session/pending", sessionPendingHandler);
   api.get("/api/v2/pair", pairingHandler);
 
   api.notFound((c) => c.json({ status: "error", error: "not found" }, 404));
@@ -155,6 +179,7 @@ export async function startHttpServer(
 ): Promise<RunningServer> {
   const hono = buildApp();
   const host = bind === "lan" ? "0.0.0.0" : "127.0.0.1";
+  setDiscoverPort(preferredPort);
 
   const nodeServer = await new Promise<Server>((resolve, reject) => {
     const server = serve(

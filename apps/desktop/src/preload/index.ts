@@ -191,6 +191,10 @@ const api = {
     return ipcRenderer.invoke(IPC.sourceConnect, source);
   },
 
+  clearPendingSession(source?: string): Promise<{ ok: true }> {
+    return ipcRenderer.invoke(IPC.sessionPendingClear, source);
+  },
+
   sourceStatus(source: string): Promise<{ ok: boolean; connected: boolean }> {
     return ipcRenderer.invoke(IPC.sourceStatus, source);
   },

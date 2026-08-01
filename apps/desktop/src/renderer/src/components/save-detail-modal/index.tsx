@@ -1,11 +1,14 @@
 import { Dialog, TitleBar } from "@pond/ui";
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
-import { useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveArchiveViewer } from "@/components/save-archive-viewer";
 import { SaveDetails } from "@/components/save-detail-pane";
 import { MediaViewer } from "@/components/save-media-viewer";
-import { buildViewerMenu } from "@/components/save-media-viewer/lib/menu";
+import {
+  buildViewerMenu,
+  fileIndexFromSlide,
+} from "@/components/save-media-viewer/lib/menu";
 import { SpecContextMenu } from "@/components/spec-context-menu";
 import { useSave } from "@/hooks/use-saves";
 import { hasArchive } from "@/lib/media/archive";
@@ -61,8 +64,19 @@ export function SaveDetailModal() {
   const save = useSave(renderId);
   useTrackVisit(id);
 
-  /** The <video> under the cursor at open time, so frame items capture what is on screen. */
+  /** Centred slide in the media viewer; kebab and context menus target this file. */
+  const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
+  const onActiveFileIndexChange = useCallback((fileIndex: number | null) => {
+    setActiveFileIndex(fileIndex);
+  }, []);
+
+  useEffect(() => {
+    setActiveFileIndex(null);
+  }, []);
+
+  /** The slide under the cursor at open time, so file/frame actions target what is on screen. */
   const menuVideo = useRef<HTMLVideoElement | null>(null);
+  const menuFileIndex = useRef<number | null>(null);
 
   /** The closed root must still mount: Base UI only plays enter transitions when `open` flips while the root is mounted. */
   if (!save) {
@@ -89,6 +103,7 @@ export function SaveDetailModal() {
             buildViewerMenu(save, {
               clipboardEmpty: tagClipboard.get().length === 0,
               video: menuVideo.current,
+              fileIndex: menuFileIndex.current ?? activeFileIndex,
             })
           }
           onOpen={(eventDetails) => {
@@ -99,6 +114,8 @@ export function SaveDetailModal() {
                 : null;
             menuVideo.current =
               slide?.querySelector<HTMLVideoElement>("video") ?? null;
+            menuFileIndex.current =
+              fileIndexFromSlide(slide) ?? activeFileIndex;
           }}
         >
           <Dialog.Popup
@@ -118,12 +135,15 @@ export function SaveDetailModal() {
               {hasArchive(save) ? (
                 <SaveArchiveViewer save={save} />
               ) : (
-                <MediaViewer save={save} />
+                <MediaViewer
+                  save={save}
+                  onActiveFileIndexChange={onActiveFileIndexChange}
+                />
               )}
             </div>
 
             <div className={styles.pane} inert={!detailsOpen}>
-              <SaveDetails save={save} />
+              <SaveDetails save={save} fileIndex={activeFileIndex} />
             </div>
           </Dialog.Popup>
         </SpecContextMenu>

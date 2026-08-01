@@ -64,7 +64,7 @@ export function ConnectWaitSection() {
         </li>
         <li className={styles.step} data-state={pushState}>
           <StepMark state={pushState} />
-          Push the session with the Pond extension
+          Pond will pick up your session automatically
         </li>
       </ol>
       <TrayCard.Footer>

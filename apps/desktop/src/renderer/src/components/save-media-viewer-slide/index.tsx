@@ -5,6 +5,8 @@ import type { ChapterCue } from "@/lib/media/chapters-vtt";
 
 export interface MediaSlide {
   src: string;
+  /** Absolute index into `save.files` for the asset this slide represents. */
+  fileIndex: number;
   isVideo: boolean;
   posterUrl?: string;
   width?: number;
@@ -49,7 +51,12 @@ export function Slide({
   onError,
 }: SlideProps) {
   return (
-    <div className={styles.slide} data-blossom-slide>
+    <div
+      className={styles.slide}
+      data-blossom-slide
+      data-file-index={slide.fileIndex}
+      data-active={active ? "true" : undefined}
+    >
       {slide.isVideo ? (
         /** VideoPlayer mounts only near the centre; the poster placeholder reserves the identical box so swapping never shifts layout. */
         inView ? (

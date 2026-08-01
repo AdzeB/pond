@@ -31,6 +31,10 @@
   padding-inline: 7px 3px;
 }
 
+.chip[data-static] .chip-body {
+  padding-inline: 7px;
+}
+
 .chip-lead {
   display: inline-flex;
   flex-shrink: 0;

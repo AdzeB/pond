@@ -1,6 +1,6 @@
 # @pond/extension
 
-Browser extension that captures saves from supported sites into your local Pond library.
+Browser extension that captures saves from supported sites into your local Pond library, and pushes signed-in cookies when you connect a source.
 
 ## Install from a release
 
@@ -21,14 +21,23 @@ pnpm --filter @pond/extension dev
 
 Load unpacked from `apps/extension/.output/chrome-mv3` while developing.
 
-## Pair with Pond
+## Popup
 
-1. Install and launch the [Pond desktop app](https://github.com/raphaelsalaja/pond/releases).
-2. Click the Pond menu bar icon → **Copy Pairing Token**.
-3. Open the extension popup and paste the `pond://pair?...` link (or enter it in the pairing field).
-4. The popup should show **Connected** when Pond is running.
+Click the toolbar icon to open the popup:
 
-If pairing fails, confirm Pond is open and try copying a fresh token. Use **Rotate Ingest Token** in the menu bar if you suspect the old token was revoked.
+1. **Setup Pairing Token** — if Pond is already running on this machine, the extension links automatically. Otherwise paste a token from Pond’s menu bar → **Copy Pairing Token**.
+2. **Connect Pond With [Source]** — when you’re on a source site (X, Instagram, …), review what Pond can access and hit **Connect** to push cookies.
+3. Otherwise a compact linked status shows that capture is running in the background.
+
+## State gallery
+
+With `pnpm --filter @pond/extension dev` running:
+
+```
+http://localhost:3001/entrypoints/gallery/index.html
+```
+
+Or `chrome-extension://<id>/gallery.html`. Omitted from production `zip` builds.
 
 ## Supported sources
 

@@ -58,6 +58,25 @@ function readCardUrl(save: Save): string | undefined {
   return typeof url === "string" && url.length > 0 ? url : undefined;
 }
 
+/** X's own shortener; hiding it keeps Content focused on real destinations and prose. */
+function isTwitterShortUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "") === "t.co";
+  } catch {
+    return false;
+  }
+}
+
+function stripTwitterShortUrls(text: string): string {
+  return text
+    .replace(/https?:\/\/t\.co\/\S+/gi, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[^\S\n]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function collectIdentityRows(save: Save): DetailRow[] {
   const rows: DetailRow[] = [
     { id: "id", label: "ID", value: save.id, kind: "mono" },
@@ -83,11 +102,11 @@ export function collectIdentityRows(save: Save): DetailRow[] {
   return rows;
 }
 
-/** X strips the trailing link from a tweet's visible text once it becomes a card; surface that link here, deduped against any link the harvested text kept. */
+/** X strips the trailing link from a tweet's visible text once it becomes a card; surface that destination here when it isn't just another t.co shortlink. */
 export function composeContentDescription(save: Save): string {
-  const base = save.description?.trim() ?? "";
+  const base = stripTwitterShortUrls(save.description?.trim() ?? "");
   const cardUrl = readCardUrl(save);
-  if (!cardUrl) return base;
+  if (!cardUrl || isTwitterShortUrl(cardUrl)) return base;
   if (!base) return cardUrl;
   return base.includes(cardUrl) ? base : `${base} ${cardUrl}`;
 }

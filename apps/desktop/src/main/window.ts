@@ -1,11 +1,12 @@
 import { join } from "node:path";
-import { app, BrowserWindow, nativeTheme, shell } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
+import { resolveTheme } from "./theme";
 import { ensureTray, type TrayHandle } from "./tray";
 
 let mainWindow: BrowserWindow | null = null;
@@ -59,28 +60,15 @@ interface ShellHint {
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
-  try {
-    const { resolveActiveTheme, themeEngineVars } = await import(
-      "@pond/schema/db"
-    );
-    const prefs = await getPrefs();
-    const def = resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors);
-    const v = themeEngineVars(def);
-    return {
-      theme: v.isDark ? "dark" : "light",
-      baseL: v.baseL,
-      baseC: v.baseC,
-      baseH: v.baseH,
-      accentL: v.accentL,
-      accentC: v.accentC,
-      accentH: v.accentH,
-      contrast: v.contrast,
-      fgDir: v.fgDir,
-      pointerCursors: prefs.preferences.pointerCursors === true,
-    };
-  } catch {
-    return {};
-  }
+  const resolved = await resolveTheme();
+  if (!resolved) return {};
+  const { mode, ...vars } = resolved;
+  const prefs = await getPrefs().catch(() => null);
+  return {
+    theme: mode,
+    ...vars,
+    pointerCursors: prefs?.preferences.pointerCursors === true,
+  };
 }
 
 export async function createWindow(): Promise<BrowserWindow> {

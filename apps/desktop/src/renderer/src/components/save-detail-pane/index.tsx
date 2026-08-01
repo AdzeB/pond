@@ -18,7 +18,14 @@ import type { Save } from "@/lib/types";
 import { initials } from "@/lib/util/initials";
 import styles from "./styles.module.css";
 
-export function SaveDetails({ save }: { save: Save }) {
+export function SaveDetails({
+  save,
+  fileIndex = null,
+}: {
+  save: Save;
+  /** Active media file in the viewer; kebab file actions target this asset. */
+  fileIndex?: number | null;
+}) {
   const {
     engagement,
     rows,
@@ -90,7 +97,7 @@ export function SaveDetails({ save }: { save: Save }) {
     <div className={styles["detail-card"]}>
       <TitleBar.Root className={styles["detail-header"]}>
         <TitleBar.Start>
-          <KebabMenu save={save} />
+          <KebabMenu save={save} fileIndex={fileIndex} />
         </TitleBar.Start>
         <TitleBar.Title>
           <TitleBar.Label>Save Details</TitleBar.Label>

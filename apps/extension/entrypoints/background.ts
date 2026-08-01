@@ -7,12 +7,19 @@ import { onMessage } from "@/utils/messaging";
 import { ensureSettings, getSettings } from "@/utils/settings";
 import {
   enqueueUrl,
+  type PondSettings,
   type PushSessionResult,
   sessionImportUrl,
+  sessionPendingUrl,
 } from "@/utils/types";
-import { cookieDomainForSource } from "@/utils/url";
+import { cookieDomainForSource, hostToSource } from "@/utils/url";
+
+const AUTO_PUSH_COOLDOWN_MS = 60_000;
 
 export default defineBackground(() => {
+  const recentAutoPush = new Map<Source, number>();
+  let autoPushInFlight = false;
+
   chrome.runtime.onInstalled.addListener(async () => {
     await ensureSettings();
     clearStaleBadge();
@@ -57,6 +64,19 @@ export default defineBackground(() => {
     }),
   );
 
+  chrome.tabs.onActivated.addListener(() => {
+    void maybeAutoPush();
+  });
+
+  chrome.tabs.onUpdated.addListener((_tabId, info) => {
+    if (info.status === "complete" || info.url) void maybeAutoPush();
+  });
+
+  chrome.cookies.onChanged.addListener((changeInfo) => {
+    if (changeInfo.removed) return;
+    void maybeAutoPush();
+  });
+
   async function openPondTab(path: string | undefined): Promise<boolean> {
     const target = path ? `pond://${path}` : "pond://";
     try {
@@ -65,6 +85,63 @@ export default defineBackground(() => {
     } catch (err) {
       console.error("[pond] openPond failed", err);
       return false;
+    }
+  }
+
+  async function fetchPendingSource(
+    settings: PondSettings,
+  ): Promise<Source | null> {
+    try {
+      const res = await fetch(sessionPendingUrl(settings.port), {
+        headers: { authorization: `Bearer ${settings.apiKey}` },
+        signal: AbortSignal.timeout(1500),
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as {
+        status?: string;
+        data?: { source?: Source } | null;
+      };
+      if (body.status !== "success" || !body.data?.source) return null;
+      return body.data.source;
+    } catch {
+      return null;
+    }
+  }
+
+  async function maybeAutoPush(): Promise<void> {
+    if (autoPushInFlight) return;
+    autoPushInFlight = true;
+    try {
+      const settings = await getSettings();
+      if (!settings.apiKey) return;
+
+      const pending = await fetchPendingSource(settings);
+      if (!pending || !cookieDomainForSource(pending)) return;
+
+      const last = recentAutoPush.get(pending);
+      if (last && Date.now() - last < AUTO_PUSH_COOLDOWN_MS) return;
+
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      if (!tab?.url) return;
+      const tabSource = hostToSource(tab.url);
+      if (tabSource !== pending) return;
+
+      recentAutoPush.set(pending, Date.now());
+      const result = await pushSession(pending);
+      if (result.ok && result.data.connected) {
+        flashBadge(tab.id, "ok", "#1f9d55");
+        return;
+      }
+      recentAutoPush.delete(pending);
+      if (result.ok) return;
+      if (result.reason === "network") {
+        console.warn("[pond] auto-push failed", result.detail);
+      }
+    } finally {
+      autoPushInFlight = false;
     }
   }
 
@@ -151,7 +228,7 @@ export default defineBackground(() => {
     if (!payload || typeof payload.url !== "string") return false;
     const settings = await getSettings();
     if (!settings.apiKey) {
-      console.warn("[pond] missing apiKey; pair the extension via the popup");
+      console.warn("[pond] missing apiKey; pair the extension via the toolbar");
       flashBadge(tabId, "!", "#dd9b00");
       return false;
     }

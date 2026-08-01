@@ -32,6 +32,7 @@ export const IPC = {
   pipelineCancelAll: "pond:pipeline-cancel-all",
   sourceConnect: "pond:source-connect",
   sourceStatus: "pond:source-status",
+  sessionPendingClear: "pond:session-pending-clear",
   syncRunNow: "pond:sync-run-now",
   syncStatus: "pond:sync-status",
   syncRunAll: "pond:sync-run-all",

@@ -1,23 +1,40 @@
+import { IconSparkle3Fill18 as Sparkle } from "@pond/icons/fill/18";
 import { Calligraph } from "calligraph";
+import { AskChip } from "@/components/ask-bar-chip";
 import { runAskSuggestion } from "@/hooks/use-ask";
 import { formatNumber } from "@/lib/util/format";
 import type { AskSegment, AskTurn } from "@/stores/ask-store";
 import styles from "../styles.module.css";
 import { STAGE_LABELS } from "./stage-labels";
 
-/** Chips are styled to match how they looked in the composer. */
 function TurnSegment({ segment }: { segment: AskSegment }) {
   if (segment.kind === "text") return <>{segment.text}</>;
-  const label =
-    segment.kind === "mention"
-      ? `@${segment.title}`
-      : segment.kind === "tag"
-        ? `#${segment.tag}`
-        : `/${segment.name}`;
+  if (segment.kind === "mention") {
+    return (
+      <AskChip
+        tone="mention"
+        lead="@"
+        label={segment.title}
+        title={`@${segment.title}`}
+      />
+    );
+  }
+  if (segment.kind === "tag") {
+    return (
+      <AskChip
+        tone="tag"
+        lead="#"
+        label={segment.tag}
+        title={`#${segment.tag}`}
+      />
+    );
+  }
   return (
-    <span className={styles["user-chip"]} data-kind={segment.kind}>
-      {label}
-    </span>
+    <AskChip
+      tone="skill"
+      lead={<Sparkle width={13} height={13} />}
+      label={`/${segment.name}`}
+    />
   );
 }
 

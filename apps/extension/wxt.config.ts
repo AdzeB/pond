@@ -13,6 +13,14 @@ export default defineConfig({
   webExt: {
     disabled: true,
   },
+  /** Keep the popup state gallery out of release zips. */
+  hooks: {
+    "entrypoints:found"(wxt, infos) {
+      if (wxt.config.command !== "build") return;
+      const index = infos.findIndex((info) => info.name === "gallery");
+      if (index >= 0) infos.splice(index, 1);
+    },
+  },
   manifest: {
     name: "Pond",
     version: "0.1.0",
@@ -26,7 +34,6 @@ export default defineConfig({
     },
     action: {
       default_title: "Pond",
-      default_popup: "popup.html",
       default_icon: {
         16: "icons/16.png",
         32: "icons/32.png",

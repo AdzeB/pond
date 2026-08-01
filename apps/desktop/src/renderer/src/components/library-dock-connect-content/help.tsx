@@ -20,8 +20,8 @@ export function ConnectHelpSection() {
       <div className={styles.body}>
         <p>
           Connecting links an account you own to Pond. Pick a source and its
-          sign-in page opens in your browser. Sign in as usual, then push the
-          session to Pond with the browser extension.
+          sign-in page opens in your browser. Sign in as usual; the Pond
+          extension sends your session automatically.
         </p>
         <h2>Staying in sync</h2>
         <p>

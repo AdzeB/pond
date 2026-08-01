@@ -20,7 +20,16 @@ import {
 } from "./lib/use-carousel";
 import styles from "./styles.module.css";
 
-export function MediaViewer({ save }: { save: Save }) {
+interface MediaViewerProps {
+  save: Save;
+  /** Fires whenever the centred slide changes so detail actions can target it. */
+  onActiveFileIndexChange?: (fileIndex: number | null) => void;
+}
+
+export function MediaViewer({
+  save,
+  onActiveFileIndexChange,
+}: MediaViewerProps) {
   const theme = useResolvedTheme();
   const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
   const singleVideo = useMemo(
@@ -30,15 +39,20 @@ export function MediaViewer({ save }: { save: Save }) {
   );
   const allSlides = useMemo<MediaSlide[]>(
     () =>
-      buildMediaUnits(save, { theme }).map((u) => {
-        const file = save.files.find((f) => f.path === u.key);
-        return {
-          src: u.url,
-          isVideo: u.isVideo,
-          posterUrl: u.posterUrl,
-          width: file?.width ?? save.width ?? undefined,
-          height: file?.height ?? save.height ?? undefined,
-        };
+      buildMediaUnits(save, { theme }).flatMap((u) => {
+        const fileIndex = save.files.findIndex((f) => f.path === u.key);
+        if (fileIndex < 0) return [];
+        const file = save.files[fileIndex];
+        return [
+          {
+            src: u.url,
+            fileIndex,
+            isVideo: u.isVideo,
+            posterUrl: u.posterUrl,
+            width: file?.width ?? save.width ?? undefined,
+            height: file?.height ?? save.height ?? undefined,
+          },
+        ];
       }),
     [save, theme],
   );
@@ -61,7 +75,20 @@ export function MediaViewer({ save }: { save: Save }) {
   );
   const slideChapters = singleVideo ? chapters : undefined;
 
-  if (slides.length === 0) return null;
+  const firstFileIndex = slides[0]?.fileIndex ?? null;
+
+  useEffect(() => {
+    if (slides.length === 0) {
+      onActiveFileIndexChange?.(null);
+      return;
+    }
+    if (slides.length !== 1) return;
+    onActiveFileIndexChange?.(firstFileIndex);
+  }, [slides.length, firstFileIndex, onActiveFileIndexChange]);
+
+  if (slides.length === 0) {
+    return null;
+  }
 
   /** A single media item renders directly so there is no scroller, snapping, or coverflow scaling to settle. */
   if (slides.length === 1) {
@@ -87,6 +114,7 @@ export function MediaViewer({ save }: { save: Save }) {
       slides={slides}
       chapters={slideChapters}
       onError={markBroken}
+      onActiveFileIndexChange={onActiveFileIndexChange}
     />
   );
 }
@@ -142,11 +170,13 @@ function Carousel({
   slides,
   chapters,
   onError,
+  onActiveFileIndexChange,
 }: {
   save: Save;
   slides: MediaSlide[];
   chapters?: ChapterCue[];
   onError: (src: string) => void;
+  onActiveFileIndexChange?: (fileIndex: number | null) => void;
 }) {
   const handleRef = useRef<BlossomCarouselHandle>(null);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
@@ -157,6 +187,10 @@ function Carousel({
   useEffect(() => {
     setScroller(handleRef.current?.element ?? null);
   }, []);
+
+  useEffect(() => {
+    onActiveFileIndexChange?.(slides[active]?.fileIndex ?? null);
+  }, [active, slides, onActiveFileIndexChange]);
 
   return (
     <Frame activeIndex={active}>

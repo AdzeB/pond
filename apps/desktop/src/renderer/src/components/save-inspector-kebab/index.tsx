@@ -19,9 +19,7 @@ import {
   IconWandSparkleOutline18 as Wand,
 } from "@pond/icons/outline/18";
 import { Menu, type MenuItemSpec } from "@pond/ui";
-import { useRouter } from "@tanstack/react-router";
-import { useCallback, useMemo } from "react";
-import type { useSave } from "@/hooks/use-saves";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   rebuildVisualIndex,
   reembed,
@@ -42,46 +40,65 @@ import {
   untrashSave,
 } from "@/lib/save/actions";
 import {
+  hasPublicImageUrl,
   REVERSE_SEARCH_ENGINES,
   reverseImageSearch,
 } from "@/lib/save/reverse-image-search";
 import { shortcutGlyphs } from "@/lib/save/shortcuts";
+import type { Save } from "@/lib/types";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
+import { activity } from "@/stores/activity";
 import { usePrefsValue } from "@/stores/prefs";
+import { primarySelection } from "@/stores/selection";
 
 export function KebabMenu({
   save,
+  fileIndex = null,
 }: {
-  save: ReturnType<typeof useSave> | null;
+  save: Save;
+  /** Active viewer file; when set, Open/Copy/Reveal target that asset. */
+  fileIndex?: number | null;
 }) {
-  const router = useRouter();
   const prefs = usePrefsValue();
+  const [canReverseSearch, setCanReverseSearch] = useState(false);
 
-  const hasUrl = !!save?.url;
-  const hasFiles = (save?.files ?? []).length > 0;
-  const hasRawJson = !!save?.rawJson;
-  const isTrashed = !!save?.deletedAt;
+  useEffect(() => {
+    let cancelled = false;
+    void hasPublicImageUrl(save.id).then((ok) => {
+      if (!cancelled) setCanReverseSearch(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [save.id]);
+
+  const hasUrl = Boolean(save.url);
+  const hasFiles = save.files.length > 0;
+  const hasRawJson = Boolean(save.rawJson);
+  const isTrashed = Boolean(save.deletedAt);
+  const hasImage = copyableImageIndex(save, fileIndex) != null;
+
+  const closeDetail = useCallback(() => {
+    primarySelection.set(null);
+  }, []);
 
   const onTrash = useCallback(async () => {
-    if (!save) return;
     await trashSave(save);
-    router.history.back();
-  }, [save, router]);
+    closeDetail();
+  }, [save, closeDetail]);
 
   const onRestore = useCallback(async () => {
-    if (!save) return;
     await untrashSave(save);
   }, [save]);
 
   const onPurge = useCallback(async () => {
-    if (!save) return;
     await purgeForever(save);
-    router.history.back();
-  }, [save, router]);
+    closeDetail();
+  }, [save, closeDetail]);
 
   /** Silent, matching the system convention that Cmd+C confirms nothing. */
   const copyRawJson = useCallback(async () => {
-    if (!save?.rawJson) return;
+    if (!save.rawJson) return;
     await window.pond.query("clipboard.writeText", {
       text: JSON.stringify(save.rawJson, null, 2),
     });
@@ -100,19 +117,19 @@ export function KebabMenu({
             icon: <OpenExternal />,
             shortcut: shortcutGlyphs("save.open"),
             hidden: !hasFiles,
-            onClick: () => save && void openDefaultApp(save),
+            onClick: () => void openDefaultApp(save, fileIndex),
           },
           {
             label: "Original Source",
             icon: <Globe />,
             hidden: !hasUrl,
-            onClick: () => save && void openInBrowser(save),
+            onClick: () => void openInBrowser(save),
           },
           {
             label: REVEAL_LABEL,
             icon: <Reveal />,
             hidden: !hasFiles,
-            onClick: () => save && void revealFile(save),
+            onClick: () => void revealFile(save, fileIndex),
           },
         ],
       },
@@ -127,27 +144,29 @@ export function KebabMenu({
             label: "File",
             icon: <File />,
             hidden: !hasFiles,
-            onClick: () => save && void copyFile(save),
+            onClick: () => void copyFile(save, fileIndex),
           },
           {
             label: "Image",
             icon: <Image />,
             shortcut: shortcutGlyphs("save.copy-image"),
-            hidden: !save || copyableImageIndex(save) == null,
-            onClick: () => save && void copyImage(save),
+            hidden: !hasImage,
+            onClick: () => void copyImage(save, fileIndex),
           },
           {
             label: "Link",
             icon: <Link />,
             shortcut: shortcutGlyphs("save.copy-url"),
             hidden: !hasUrl,
-            onClick: () => save?.url && void copyUrl(save.url),
+            onClick: () => {
+              if (save.url) void copyUrl(save.url);
+            },
           },
           {
             label: "File Path",
             icon: <FilePath />,
             hidden: !hasFiles,
-            onClick: () => save && void copyFilePath(save),
+            onClick: () => void copyFilePath(save, fileIndex),
           },
           { type: "separator" },
           {
@@ -163,38 +182,42 @@ export function KebabMenu({
         type: "submenu",
         label: "Search",
         icon: <Search />,
-        /** Reverse search needs a public image URL from the capture metadata; local-only saves have none. */
-        hidden: !hasUrl,
+        hidden: !canReverseSearch,
         items: REVERSE_SEARCH_ENGINES.map((engine) => ({
           label: engine.label,
-          onClick: () => save && void reverseImageSearch(save, engine.key),
+          onClick: () => void reverseImageSearch(save, engine.key),
         })),
       },
       {
         type: "submenu",
         label: "Enhance",
         icon: <Wand />,
-        disabled: !save,
         items: [
           {
             label: "Metadata",
             icon: <Refresh />,
             shortcut: shortcutGlyphs("save.refresh"),
             hidden: !hasUrl,
-            onClick: () => save && void refreshSaveMetadata(save),
+            onClick: () => void refreshSaveMetadata(save),
           },
           { type: "separator" },
           {
             label: "Semantic Index",
             icon: <Vector />,
             disabled: !TASK_ENABLED.reembed(prefs),
-            onClick: () => save && void reembed([save.id]),
+            onClick: () => {
+              const result = reembed([save.id]);
+              if (!result.ok) activity.error("Semantic Index", result.message);
+            },
           },
           {
             label: "Visual Index",
             icon: <ScanImage />,
             disabled: !TASK_ENABLED.clip(prefs),
-            onClick: () => save && void rebuildVisualIndex([save.id]),
+            onClick: () => {
+              const result = rebuildVisualIndex([save.id]);
+              if (!result.ok) activity.error("Visual Index", result.message);
+            },
           },
         ],
       },
@@ -205,15 +228,13 @@ export function KebabMenu({
               label: "Restore from Trash",
               icon: <Restore />,
               shortcut: shortcutGlyphs("save.restore"),
-              disabled: !save,
-              onClick: onRestore,
+              onClick: () => void onRestore(),
             },
             {
               label: "Delete Forever",
               icon: <DeleteForever />,
               shortcut: shortcutGlyphs("save.delete-forever"),
-              disabled: !save,
-              onClick: onPurge,
+              onClick: () => void onPurge(),
             },
           ] satisfies MenuItemSpec[])
         : ([
@@ -221,16 +242,18 @@ export function KebabMenu({
               label: "Move to Trash",
               icon: <Trash />,
               shortcut: shortcutGlyphs("save.trash"),
-              disabled: !save,
-              onClick: onTrash,
+              onClick: () => void onTrash(),
             },
           ] satisfies MenuItemSpec[])),
     ],
     [
       save,
+      fileIndex,
       hasUrl,
       hasFiles,
       hasRawJson,
+      hasImage,
+      canReverseSearch,
       isTrashed,
       onTrash,
       onRestore,

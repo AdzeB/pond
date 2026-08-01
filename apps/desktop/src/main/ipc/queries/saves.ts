@@ -30,14 +30,18 @@ function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (video?.posterUrl) return video.posterUrl;
   const ytdlpThumb = raw.ytdlp?.thumbnail;
   if (isHttpUrl(ytdlpThumb)) return ytdlpThumb;
-  const ogImage = (() => {
-    const extras = raw.capture?.extras;
-    if (!extras || typeof extras !== "object") return null;
-    const candidate = (extras as Record<string, unknown>)["og:image"];
-    if (typeof candidate === "string" && isHttpUrl(candidate)) return candidate;
-    return null;
-  })();
-  return ogImage;
+  const extras =
+    raw.capture?.extras && typeof raw.capture.extras === "object"
+      ? (raw.capture.extras as Record<string, unknown>)
+      : null;
+  const card = extras?.card;
+  if (card && typeof card === "object") {
+    const cardImage = (card as Record<string, unknown>).imageUrl;
+    if (typeof cardImage === "string" && isHttpUrl(cardImage)) return cardImage;
+  }
+  const ogImage = extras?.["og:image"];
+  if (typeof ogImage === "string" && isHttpUrl(ogImage)) return ogImage;
+  return null;
 }
 
 /** SQLite caps bound parameters (~32k), so chunk the IN list; large libraries would otherwise throw "too many SQL variables". */

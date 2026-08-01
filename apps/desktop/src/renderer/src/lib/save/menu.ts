@@ -1,4 +1,5 @@
 import type { MenuItemSpec } from "@pond/ui";
+import { deriveTypeKind } from "@/lib/media/units";
 import {
   copyableImageIndex,
   copyFile as copyFileAction,
@@ -10,6 +11,7 @@ import {
   openDefaultApp,
   openInBrowser,
   pasteTags as pasteTagsAction,
+  resolveFileIndex,
   revealFile,
 } from "@/lib/save/actions";
 import { purgeSave, trashSave, untrashSave } from "@/lib/save/mutate";
@@ -25,19 +27,26 @@ import { tumbleToTrash } from "@/stores/trash-tumble";
 interface BuildSaveMenuOptions {
   /** Whether the tag clipboard is empty (controls the Paste Tags item). */
   clipboardEmpty: boolean;
+  /** When set (viewer slide under the cursor), file actions target that asset instead of the cover. */
+  fileIndex?: number | null;
 }
 
 /** Plain function rather than a hook so a card never subscribes to the tag clipboard just to host a menu; the list is assembled lazily on open. */
 export function buildSaveMenu(
   save: Save,
-  { clipboardEmpty }: BuildSaveMenuOptions,
+  { clipboardEmpty, fileIndex = null }: BuildSaveMenuOptions,
 ): MenuItemSpec[] {
   const hasFiles = save.files.length > 0;
   const hasTags = save.tags.length > 0;
   const isTrashed = Boolean(save.deletedAt);
   const hasUrl = Boolean(save.url);
   /** Videos and other non-image saves never get a Copy Image item; the viewer offers Copy Current Frame instead. */
-  const hasImage = copyableImageIndex(save) != null;
+  const hasImage = copyableImageIndex(save, fileIndex) != null;
+  const targetIndex = resolveFileIndex(save, fileIndex);
+  const targetFile =
+    targetIndex != null ? (save.files[targetIndex] ?? null) : null;
+  const copyFileLabel =
+    deriveTypeKind(targetFile, save) === "video" ? "Copy Video" : "Copy File";
 
   const reverseSearchItems: MenuItemSpec[] = REVERSE_SEARCH_ENGINES.map(
     (engine) => ({
@@ -73,12 +82,12 @@ export function buildSaveMenu(
       label: "Open with Default App",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.open"),
-      onClick: () => void openDefaultApp(save),
+      onClick: () => void openDefaultApp(save, fileIndex),
     },
     {
       label: REVEAL_LABEL,
       hidden: !hasFiles,
-      onClick: () => void revealFile(save),
+      onClick: () => void revealFile(save, fileIndex),
     },
     { type: "separator" },
     {
@@ -93,17 +102,17 @@ export function buildSaveMenu(
       label: "Copy Image",
       hidden: !hasImage,
       shortcut: shortcutGlyphs("save.copy-image"),
-      onClick: () => void copyImageAction(save),
+      onClick: () => void copyImageAction(save, fileIndex),
     },
     {
-      label: "Copy File",
+      label: copyFileLabel,
       hidden: !hasFiles,
-      onClick: () => void copyFileAction(save),
+      onClick: () => void copyFileAction(save, fileIndex),
     },
     {
       label: "Copy File Path",
       hidden: !hasFiles,
-      onClick: () => void copyFilePath(save),
+      onClick: () => void copyFilePath(save, fileIndex),
     },
     {
       label: "Copy Tags",
@@ -130,7 +139,7 @@ export function buildSaveMenu(
       label: "Export",
       hidden: !hasFiles,
       shortcut: shortcutGlyphs("save.export"),
-      onClick: () => void exportFileAction(save),
+      onClick: () => void exportFileAction(save, fileIndex),
     },
     { type: "separator" },
     ...restoreItems,

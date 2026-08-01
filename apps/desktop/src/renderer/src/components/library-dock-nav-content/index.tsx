@@ -4,7 +4,6 @@ import {
   IconCopyFill18 as Copy,
   IconEyeFill18 as DisplayIcon,
   IconGridFill18 as LayoutIcon,
-  IconArchivePlusFill18 as New,
   IconPencilFill18 as Pencil,
   IconPlusFill18 as Plus,
   IconDescendingSortingFill18 as SortIcon,
@@ -107,7 +106,11 @@ export function NavContent() {
 
   const actionSet = activeTab.id;
 
-  const renderTab = (tab: (typeof NAV_TABS)[number]) => (
+  const activeIndex = ORDERED_TABS.findIndex((tab) => tab.id === activeTab.id);
+  const tabsBefore = ORDERED_TABS.slice(0, activeIndex);
+  const tabsAfter = ORDERED_TABS.slice(activeIndex + 1);
+
+  const renderTab = (tab: (typeof ORDERED_TABS)[number]) => (
     <Tooltip.Trigger
       key={tab.id}
       handle={tip}
@@ -152,12 +155,30 @@ export function NavContent() {
     />
   );
 
+  const unfold = (tabs: typeof ORDERED_TABS, key: string) =>
+    tabs.length > 0 ? (
+      <motion.div
+        key={key}
+        className={styles.expand}
+        initial={{ width: 0, opacity: 0 }}
+        animate={{ width: "auto", opacity: 1 }}
+        exit={{ width: 0, opacity: 0 }}
+        transition={dock.quickTransition}
+      >
+        <div className={styles["expand-inner"]}>{tabs.map(renderTab)}</div>
+      </motion.div>
+    ) : null;
+
   return (
     <motion.div
       className={styles.row}
       transition={dock.swapTransition}
       {...dock.swap}
     >
+      <AnimatePresence initial={false}>
+        {navOpen ? unfold(tabsBefore, "tabs-before") : null}
+      </AnimatePresence>
+
       <Tooltip.Trigger
         handle={tip}
         payload={navOpen ? activeTab.label : "Navigate"}
@@ -175,22 +196,7 @@ export function NavContent() {
       />
 
       <AnimatePresence initial={false}>
-        {navOpen ? (
-          <motion.div
-            key="tabs"
-            className={styles.expand}
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: "auto", opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={dock.quickTransition}
-          >
-            <div className={styles["expand-inner"]}>
-              {ORDERED_TABS.filter((tab) => tab.id !== activeTab.id).map(
-                renderTab,
-              )}
-            </div>
-          </motion.div>
-        ) : null}
+        {navOpen ? unfold(tabsAfter, "tabs-after") : null}
       </AnimatePresence>
 
       {/** Actions follow the page: the cluster refolds whenever the route lands on a tab with a different set. */}
@@ -260,10 +266,8 @@ export function NavContent() {
             ) : (
               <>
                 <Tray.Item aria-label="New" onClick={dock.openNew}>
-                  <New />
+                  <Plus />
                 </Tray.Item>
-
-                <Tray.Separator />
 
                 {VIEW_MENUS.map(({ section, label, icon }) => (
                   <Tooltip.Trigger
@@ -280,8 +284,6 @@ export function NavContent() {
                     }
                   />
                 ))}
-
-                <Tray.Separator />
 
                 <Tooltip.Trigger
                   handle={tip}
