@@ -69,6 +69,23 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
       connected: false,
       reason: "no_cookies_for_source_domain",
     };
+    // #region agent log
+    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "d09e18",
+      },
+      body: JSON.stringify({
+        sessionId: "d09e18",
+        hypothesisId: "H2",
+        location: "session-import.ts:no_domain",
+        message: "session import rejected: no domain cookies",
+        data: { source, cookieCount: cookies.length },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return c.json({ status: "success", data: body });
   }
 
@@ -80,6 +97,27 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
       connected: false,
       reason: "no_auth_cookies_in_payload",
     };
+    // #region agent log
+    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "d09e18",
+      },
+      body: JSON.stringify({
+        sessionId: "d09e18",
+        hypothesisId: "H2",
+        location: "session-import.ts:no_auth",
+        message: "session import rejected: no auth cookies",
+        data: {
+          source,
+          filteredCount: filtered.length,
+          cookieNames: filtered.map((c) => c.name).slice(0, 30),
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     return c.json({ status: "success", data: body });
   }
 
@@ -121,6 +159,30 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
     imported: written,
     connected: true,
   };
+  // #region agent log
+  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "d09e18",
+    },
+    body: JSON.stringify({
+      sessionId: "d09e18",
+      hypothesisId: "H2",
+      location: "session-import.ts:success",
+      message: "session import succeeded",
+      data: {
+        source,
+        accountId: account.id,
+        kind: resolution.kind,
+        written,
+        handle: account.handle,
+        hasIdentityKey: Boolean(identityKey),
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   return c.json({ status: "success", data: body });
 }
 

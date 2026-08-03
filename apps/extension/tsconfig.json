@@ -2,6 +2,19 @@
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "types": ["chrome"]
+    "types": ["chrome"],
+    "paths": {
+      "@": ["."],
+      "@/*": ["./*"],
+      "~": ["."],
+      "~/*": ["./*"],
+      "@@": ["."],
+      "@@/*": ["./*"],
+      "~~": ["."],
+      "~~/*": ["./*"],
+      "@pond/icons/*": ["../../packages/icons/*"],
+      "@pond/ui": ["../../packages/ui/src/index.ts"],
+      "@pond/ui/*": ["../../packages/ui/src/*"]
+    }
   }
 }

@@ -73,12 +73,12 @@ export async function syncListSource(
     accountKey = account.handle ?? ((await inferAccountKey(source)) || "me");
   }
 
-  /** On a full walk, hide known ids from the harvester so it doesn't early-stop at the top of the list; dedup still happens via the real `knownIds` set. */
-  const harvestKnownIds = baseline.full ? [] : Array.from(knownIds);
+  /** Pass known ids even on full walks so a timed-out resume can skip already-queued posts; early-stop stays off so we keep paging into older saves. */
   const harvest = await harvestSourceList(
     source,
     {
-      knownIds: harvestKnownIds,
+      knownIds: Array.from(knownIds),
+      earlyStop: !baseline.full,
       accountKey,
     },
     {
@@ -99,6 +99,29 @@ export async function syncListSource(
   }
 
   if (!harvest.ok) {
+    // #region agent log
+    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "d09e18",
+      },
+      body: JSON.stringify({
+        sessionId: "d09e18",
+        hypothesisId: "H5",
+        location: "run-list.ts:harvest_fail",
+        message: "list harvest failed",
+        data: {
+          source,
+          accountId,
+          reason: harvest.reason,
+          retryAfterSec:
+            "retryAfterSec" in harvest ? harvest.retryAfterSec : null,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
     if (harvest.reason === "auth_required") {
       await patchAccountSync(accountId, { lastError: "auth_required" });
       emit({
@@ -145,7 +168,8 @@ export async function syncListSource(
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList(
       {
-        knownIds: harvestKnownIds,
+        knownIds: Array.from(knownIds),
+        earlyStop: !baseline.full,
       },
       { partition },
     );
@@ -160,6 +184,30 @@ export async function syncListSource(
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
   const fresh =
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
+  // #region agent log
+  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Debug-Session-Id": "d09e18",
+    },
+    body: JSON.stringify({
+      sessionId: "d09e18",
+      hypothesisId: "H5",
+      location: "run-list.ts:harvest_ok",
+      message: "list harvest succeeded",
+      data: {
+        source,
+        accountId,
+        seen: harvest.seen ?? combined.length,
+        combined: combined.length,
+        fresh: fresh.length,
+        full: baseline.full,
+      },
+      timestamp: Date.now(),
+    }),
+  }).catch(() => {});
+  // #endregion
   if (maxItems && allFresh.length > fresh.length) {
     log.info(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
@@ -173,7 +221,7 @@ export async function syncListSource(
   };
   if (fresh.length === 0) {
     const lastSyncedAt = await persistWatermark(accountId, {
-      full: baseline.full,
+      full: baseline.full && harvest.reachedEnd,
       newestId: null,
       total: baseline.total,
     });
@@ -181,7 +229,9 @@ export async function syncListSource(
       accountId,
       source,
       state: "done",
-      message: "All caught up.",
+      message: harvest.reachedEnd
+        ? "All caught up."
+        : "Paused mid-list. Will keep going next sync.",
       lastSyncedAt,
       lastError: null,
     });
@@ -214,7 +264,7 @@ export async function syncListSource(
   }
 
   const lastSyncedAt = await persistWatermark(accountId, {
-    full: baseline.full,
+    full: baseline.full && harvest.reachedEnd,
     newestId: fresh[0]?.sourceId ?? null,
     total: baseline.total + bulk.created,
   });
@@ -222,7 +272,9 @@ export async function syncListSource(
     accountId,
     source,
     state: "done",
-    message: `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`,
+    message: harvest.reachedEnd
+      ? `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`
+      : `Queued ${succeeded} item${succeeded === 1 ? "" : "s"}. More remain for the next sync.`,
     progress: { current: fresh.length, total: fresh.length },
     lastSyncedAt,
     lastError: null,

@@ -5,7 +5,7 @@ import { Calligraph } from "calligraph";
 import { useEffect, useState } from "react";
 import { useDock } from "@/components/library-dock/lib/context";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { useConnectCompleted, useConnectWaiting } from "@/stores/connect-flow";
+import { useConnectCompleted, useConnectSource } from "@/stores/connect-flow";
 import styles from "./wait.module.css";
 
 type StepState = "done" | "active" | "todo";
@@ -21,11 +21,8 @@ function StepMark({ state }: { state: StepState }) {
 /** Sign-in wait card; the sources page polls for the account and closes the tray when it arrives. */
 export function ConnectWaitSection() {
   const dock = useDock();
-  const waiting = useConnectWaiting();
+  const source = useConnectSource();
   const completed = useConnectCompleted();
-  /** The store clears before the card swaps out; any brand keeps the exit render intact. */
-  const source = waiting ?? "twitter";
-  const label = getSourceDef(source).label;
 
   /** Sign-in itself isn't observable, so the middle steps only tick once the account actually arrives, staggered so completion reads as progress rather than a flash. */
   const [pushDone, setPushDone] = useState(false);
@@ -38,6 +35,9 @@ export function ConnectWaitSection() {
     return () => window.clearTimeout(timer);
   }, [completed]);
 
+  if (!source) return null;
+
+  const label = getSourceDef(source).label;
   const signInState: StepState = completed ? "done" : "active";
   const pushState: StepState = pushDone
     ? "done"

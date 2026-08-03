@@ -1,3 +1,6 @@
+@import "@pond/ui/reset.css";
+@import "@pond/theme/theme.css";
+
 @font-face {
   font-family: inter-variable;
   font-style: normal;
@@ -22,8 +25,8 @@ body,
 }
 
 body {
-  color: #1a1a1a;
-  background: #f6f5f2;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-2);
 }
 
 a {

@@ -1,11 +1,6 @@
-import {
-  IconChartFill18 as Analytics,
-  IconArchiveContent2Fill18 as Library,
-  IconGlobeFill18 as Sources,
-  IconTrash2ContentFill18 as Trash,
-} from "@pond/icons/fill/18";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { SECTION_ICONS_FILL } from "@/lib/ui/section-icons";
 
 export type DockTab = "library" | "sources" | "analytics" | "trash";
 
@@ -25,7 +20,7 @@ export const NAV_TABS: readonly NavTab[] = [
     id: "library",
     label: "Library",
     to: "/",
-    icon: <Library />,
+    icon: <SECTION_ICONS_FILL.library />,
     match: (p) => p === "/" || p.startsWith("/save/"),
   },
   {
@@ -33,21 +28,21 @@ export const NAV_TABS: readonly NavTab[] = [
     label: "Trash",
     to: "/$mode",
     params: { mode: "trash" },
-    icon: <Trash />,
+    icon: <SECTION_ICONS_FILL.trash />,
     match: (p) => p === "/trash",
   },
   {
     id: "sources",
     label: "Sources",
     to: "/sources",
-    icon: <Sources />,
+    icon: <SECTION_ICONS_FILL.sources />,
     match: (p) => p === "/sources",
   },
   {
     id: "analytics",
     label: "Analytics",
     to: "/analytics",
-    icon: <Analytics />,
+    icon: <SECTION_ICONS_FILL.analytics />,
     match: (p) => p === "/analytics" || p.startsWith("/analytics/"),
   },
 ] as const;

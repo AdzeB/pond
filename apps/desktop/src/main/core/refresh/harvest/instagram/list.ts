@@ -47,25 +47,48 @@ async function inPageInstagramList(
     const entries: Entry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
-    /** The saved feed is newest-first, so a run of already-known posts means we've hit the synced backlog; off on full runs. */
-    const earlyStopEnabled = known.size > 0;
+    /** Full walks pass known ids for resume dedup but keep early-stop off so older saves stay reachable. */
+    const earlyStopEnabled = args.earlyStop ?? known.size > 0;
     let knownPageStreak = 0;
     const STOP_AFTER_KNOWN_PAGES = 2;
 
-    function reportProgress(phase: string) {
+    function checkpoint(): void {
+      (globalThis as any).__pondHarvestPartial = entries.map((e) => ({
+        sourceId: e.sourceId,
+        url: e.url,
+        savedAt: e.savedAt,
+      }));
+    }
+
+    function reportProgress(
+      phase: string,
+      extra: Record<string, unknown> = {},
+    ) {
       (globalThis as any).__pondHarvestStats = {
         phase,
         collected: entries.length,
         fresh: entries.filter((e) => !known.has(e.sourceId)).length,
+        path: location.pathname,
+        earlyStop: earlyStopEnabled,
+        known: known.size,
+        ...extra,
       };
     }
 
-    reportProgress("connecting");
+    reportProgress("connecting", {});
 
     for (let page = 0; page < 200; page++) {
+      if ((globalThis as any).__pondHarvestAbort) {
+        reportProgress("aborted", { page });
+        checkpoint();
+        return { ok: true, entries, reachedEnd: false };
+      }
+
       const url = cursor
         ? `/api/v1/feed/saved/posts/?max_id=${cursor}`
         : "/api/v1/feed/saved/posts/";
+
+      reportProgress("api_fetch", { page, cursor: cursor ?? null });
 
       let json: any;
       try {
@@ -80,6 +103,8 @@ async function inPageInstagramList(
           },
         });
 
+        reportProgress("api_response", { page, status: res.status });
+
         if (res.status === 401 || res.status === 403) {
           return { ok: false, reason: "auth_required" };
         }
@@ -93,10 +118,17 @@ async function inPageInstagramList(
             ...(Number.isFinite(n) ? { retryAfterSec: Math.max(0, n) } : {}),
           };
         }
-        if (!res.ok) return null;
+        if (!res.ok) {
+          reportProgress("api_not_ok", { page, status: res.status });
+          return null;
+        }
 
         json = await res.json();
-      } catch {
+      } catch (err) {
+        reportProgress("api_error", {
+          page,
+          error: err instanceof Error ? err.name : "error",
+        });
         return null;
       }
 
@@ -105,24 +137,36 @@ async function inPageInstagramList(
       }
 
       const items: any[] = json?.items ?? [];
-      if (items.length === 0 && page === 0) return null;
+      if (items.length === 0 && page === 0) {
+        reportProgress("api_empty", { page });
+        return null;
+      }
 
       let pageFresh = 0;
+      let pageNorm = 0;
       for (const item of items) {
         const raw = norm.normalizeMediaNode(item?.media, {
           savedTimestamp: item?.timestamp,
         });
         if (!raw) continue;
+        pageNorm += 1;
         if (!known.has(String((raw as Entry).sourceId))) pageFresh += 1;
         entries.push(raw as Entry);
       }
 
-      reportProgress("fetching");
+      checkpoint();
+      reportProgress("fetching", {
+        page,
+        items: items.length,
+        pageNorm,
+        pageFresh,
+        more: json?.more_available === true,
+      });
 
       if (earlyStopEnabled && items.length > 0 && pageFresh === 0) {
         knownPageStreak += 1;
         if (knownPageStreak >= STOP_AFTER_KNOWN_PAGES) {
-          reportProgress("done");
+          reportProgress("done", { page, earlyStop: true });
           return { ok: true, entries, reachedEnd: true };
         }
       } else {
@@ -133,18 +177,26 @@ async function inPageInstagramList(
       const nextCursor = json?.next_max_id;
 
       if (!moreAvailable || !nextCursor) {
-        reportProgress("done");
+        reportProgress("done", { page, earlyStop: false });
         return { ok: true, entries, reachedEnd: true };
       }
 
       cursor = String(nextCursor);
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 250));
     }
 
+    reportProgress("done", { page: 199, capped: true });
+    checkpoint();
     return { ok: true, entries, reachedEnd: false };
   }
 
   async function fallbackDomScroll(): Promise<ListHarvestResult> {
+    (globalThis as any).__pondHarvestStats = {
+      phase: "dom_fallback",
+      collected: 0,
+      fresh: 0,
+      path: location.pathname,
+    };
     const _known = new Set(args.knownIds.map(String));
 
     type StubEntry = { sourceId: string; url: string };

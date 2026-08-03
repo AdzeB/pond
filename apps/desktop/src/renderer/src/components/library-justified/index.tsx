@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import {
-  PackedGrid,
   type PackedItem,
   type PackResult,
+  SavePackedGrid,
 } from "@/components/library-packed-grid";
 import type { Save } from "@/lib/types";
 import { chromeHeightFor } from "@/lib/ui/library-chrome";
@@ -33,7 +33,7 @@ function packRows(
     for (const save of current) {
       const width = aspectFor(save) * height;
       items.push({
-        save,
+        id: save.id,
         width,
         height,
         top: cursorTop,
@@ -84,6 +84,10 @@ export function JustifiedView({
   }, [saves, width, targetHeight, chromeHeight, aspectVersion]);
 
   return (
-    <PackedGrid layout="justified" items={items} totalHeight={totalHeight} />
+    <SavePackedGrid
+      layout="justified"
+      items={items}
+      totalHeight={totalHeight}
+    />
   );
 }

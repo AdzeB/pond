@@ -9,6 +9,7 @@ import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PondApi } from "../../preload";
 import { AppShell } from "./components/app-shell";
+import { BootScreen } from "./components/boot-screen";
 import { ConfirmDialogHost } from "./components/confirm-dialog";
 import { ErrorBoundary } from "./components/error-boundary";
 import { ErrorScreen } from "./components/error-screen";
@@ -250,6 +251,7 @@ export function App() {
           <TabShortcuts />
           <SyncStatusBridge />
           <EnrichmentSweep />
+          <BootScreen />
           <ErrorBoundary>
             <AppShell.Root header={<TabBar />}>
               {tabList.map((tab) =>

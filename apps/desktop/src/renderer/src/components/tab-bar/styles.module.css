@@ -7,7 +7,8 @@
   padding-right: 0;
   padding-left: 0;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   -webkit-app-region: drag;
 }
 
@@ -22,6 +23,7 @@
   align-items: center;
   min-width: 0;
   height: 100%;
+  padding-block: 6px;
   padding-right: 4px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -138,8 +140,8 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   color: var(--ds-gray-9);
 }
 

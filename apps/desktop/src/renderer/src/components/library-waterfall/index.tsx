@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import {
-  PackedGrid,
   type PackedItem,
   type PackResult,
+  SavePackedGrid,
 } from "@/components/library-packed-grid";
 import { useGridMin } from "@/hooks/use-grid-min";
 import type { Save } from "@/lib/types";
@@ -35,7 +35,7 @@ function packMasonry(
     }
     const left = target * (colW + gap);
     const top = heights[target] ?? 0;
-    items.push({ save, top, left, width: colW, height: mediaH });
+    items.push({ id: save.id, top, left, width: colW, height: mediaH });
     heights[target] = top + mediaH + chromeHeight + gap;
   }
   let max = 0;
@@ -61,6 +61,10 @@ export function WaterfallView({ saves }: WaterfallViewProps) {
   }, [saves, width, colMin, chromeHeight, aspectVersion]);
 
   return (
-    <PackedGrid layout="waterfall" items={items} totalHeight={totalHeight} />
+    <SavePackedGrid
+      layout="waterfall"
+      items={items}
+      totalHeight={totalHeight}
+    />
   );
 }

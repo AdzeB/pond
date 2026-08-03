@@ -113,7 +113,35 @@ export default defineBackground(() => {
     autoPushInFlight = true;
     try {
       const settings = await getSettings();
-      if (!settings.apiKey) return;
+      if (!settings.apiKey) {
+        // #region agent log
+        if (
+          !(globalThis as { __pondDbgUnpaired?: boolean }).__pondDbgUnpaired
+        ) {
+          (globalThis as { __pondDbgUnpaired?: boolean }).__pondDbgUnpaired =
+            true;
+          fetch(
+            "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Debug-Session-Id": "d09e18",
+              },
+              body: JSON.stringify({
+                sessionId: "d09e18",
+                hypothesisId: "H1",
+                location: "background.ts:maybeAutoPush",
+                message: "auto-push skipped: unpaired",
+                data: {},
+                timestamp: Date.now(),
+              }),
+            },
+          ).catch(() => {});
+        }
+        // #endregion
+        return;
+      }
 
       const pending = await fetchPendingSource(settings);
       if (!pending || !cookieDomainForSource(pending)) return;
@@ -127,10 +155,58 @@ export default defineBackground(() => {
       });
       if (!tab?.url) return;
       const tabSource = hostToSource(tab.url);
-      if (tabSource !== pending) return;
+      if (tabSource !== pending) {
+        // #region agent log
+        fetch(
+          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "d09e18",
+            },
+            body: JSON.stringify({
+              sessionId: "d09e18",
+              hypothesisId: "H1",
+              location: "background.ts:maybeAutoPush",
+              message: "auto-push skipped: tab mismatch",
+              data: { pending, tabSource, tabUrl: tab.url.slice(0, 80) },
+              timestamp: Date.now(),
+            }),
+          },
+        ).catch(() => {});
+        // #endregion
+        return;
+      }
 
       recentAutoPush.set(pending, Date.now());
       const result = await pushSession(pending);
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "d09e18",
+          },
+          body: JSON.stringify({
+            sessionId: "d09e18",
+            hypothesisId: "H2",
+            location: "background.ts:maybeAutoPush",
+            message: "auto-push result",
+            data: {
+              pending,
+              ok: result.ok,
+              connected: result.ok ? result.data.connected : null,
+              reason: result.ok ? (result.data.reason ?? null) : result.reason,
+              importReason: result.ok ? (result.data.reason ?? null) : null,
+            },
+            timestamp: Date.now(),
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
       if (result.ok && result.data.connected) {
         flashBadge(tab.id, "ok", "#1f9d55");
         return;

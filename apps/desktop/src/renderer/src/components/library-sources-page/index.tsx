@@ -1,12 +1,20 @@
 import type { Source } from "@pond/schema/db";
 import type { MenuItemSpec } from "@pond/ui";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { LibraryGrid } from "@/components/library-grid";
+import {
+  LIBRARY_ITEM_GAP,
+  PackedGrid,
+  type PackedItem,
+  packUniform,
+} from "@/components/library-packed-grid";
 import {
   type CardModel,
   cardModel,
 } from "@/components/library-sync-monitor/lib/helpers";
 import { SpecContextMenu } from "@/components/spec-context-menu";
 import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
+import { useGridMin } from "@/hooks/use-grid-min";
 import { useWatches, type WatchRow } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { getAppRouter } from "@/lib/ui/app-router";
@@ -15,6 +23,7 @@ import {
   useConnectedBefore,
   useConnectWaiting,
 } from "@/stores/connect-flow";
+import { useGridWidth } from "@/stores/shell-state";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { setSearchInput } from "@/stores/view-store";
@@ -22,6 +31,13 @@ import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import { buildAccountMenu } from "./lib/account-menu";
 import { itemCount, syncFraction, watchName } from "./lib/helpers";
 import styles from "./styles.module.css";
+
+/** Avatar + name + meta chrome; columns follow library `--grid-min`, height stays tile-sized. */
+const SOURCE_CELL_HEIGHT = 120;
+
+type SourceEntry =
+  | { kind: "account"; row: AccountRow }
+  | { kind: "watch"; row: WatchRow };
 
 function viewItemsFor(id: string): void {
   setSearchInput([{ field: "account", operator: "eq", value: id }], "");
@@ -61,15 +77,52 @@ function buildWatchTileMenu(watch: WatchRow, model: CardModel): MenuItemSpec[] {
   ];
 }
 
+function cellStyle(item: PackedItem): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: `${item.top}px`,
+    left: `${item.left}px`,
+    width: `${item.width}px`,
+    height: `${item.height}px`,
+  };
+}
+
 export function SourcesPage() {
   const { accounts, refetch } = useAccounts();
   const { watches, refetch: refetchWatches } = useWatches();
   const byAccount = useSyncByAccount();
+  const width = useGridWidth();
+  const colMin = useGridMin();
   /** Connect and watch flows live in the dock tray; this page polls for the outcome and opens the detail card. */
   const waiting = useConnectWaiting();
   const connectedBefore = useConnectedBefore();
   const addedWatchId = useWatchAdded();
   const detailRevision = useSourceDetailRevision();
+
+  const entries = useMemo<SourceEntry[]>(() => {
+    const next: SourceEntry[] = [];
+    for (const row of accounts) next.push({ kind: "account", row });
+    for (const row of watches) next.push({ kind: "watch", row });
+    return next;
+  }, [accounts, watches]);
+
+  const byId = useMemo(() => {
+    const map = new Map<string, SourceEntry>();
+    for (const entry of entries) map.set(entry.row.id, entry);
+    return map;
+  }, [entries]);
+
+  const { items, totalHeight } = useMemo(
+    () =>
+      packUniform(
+        entries.map((e) => e.row.id),
+        width,
+        colMin,
+        LIBRARY_ITEM_GAP,
+        SOURCE_CELL_HEIGHT,
+      ),
+    [entries, width, colMin],
+  );
 
   /** Poll the registry until the extension delivers the session, then kick that account's first sync. */
   useEffect(() => {
@@ -86,6 +139,38 @@ export function SourcesPage() {
             (a) =>
               a.source === source && a.connected && !connectedBefore.has(a.id),
           );
+          // #region agent log
+          const sourceRows = rows.filter((a) => a.source === source);
+          fetch(
+            "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Debug-Session-Id": "d09e18",
+              },
+              body: JSON.stringify({
+                sessionId: "d09e18",
+                hypothesisId: "H3",
+                location: "library-sources-page/index.tsx:poll",
+                message: arrived
+                  ? "poll found new connected account"
+                  : "poll no new connected account",
+                data: {
+                  source,
+                  arrivedId: arrived?.id ?? null,
+                  connectedBeforeSize: connectedBefore.size,
+                  sourceAccounts: sourceRows.map((a) => ({
+                    id: a.id,
+                    connected: a.connected,
+                    inBefore: connectedBefore.has(a.id),
+                  })),
+                },
+                timestamp: Date.now(),
+              }),
+            },
+          ).catch(() => {});
+          // #endregion
           if (!arrived) return;
           arrivedOnce = true;
           syncMonitor.seed(arrived.id, source, { connected: true });
@@ -93,7 +178,7 @@ export function SourcesPage() {
           /** Let the wait card tick its remaining steps done before the detail card takes over. */
           connectFlow.complete();
           window.setTimeout(() => {
-            connectFlow.clear();
+            /** Leaving connect-wait clears the flow via the dockMode subscription. */
             sourceDetail.openAccount(arrived.id);
           }, 1100);
         } catch {
@@ -122,17 +207,33 @@ export function SourcesPage() {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
+  if (entries.length === 0) {
+    return (
+      <LibraryGrid.Root className={styles.root}>
+        <p className={styles["quiet-line"]}>
+          Connect a source or watch a public account. Pond keeps your library
+          filling up in the background.
+        </p>
+      </LibraryGrid.Root>
+    );
+  }
+
   return (
-    <div className={styles.page}>
-      <div className={styles.content}>
-        {accounts.length > 0 || watches.length > 0 ? (
-          <div className={styles["tile-grid"]}>
-            {accounts.map((account) => {
-              const status = byAccount[account.id];
-              const model = cardModel(status);
-              return (
+    <LibraryGrid.Root className={styles.root}>
+      <PackedGrid
+        layout="grid"
+        items={items}
+        totalHeight={totalHeight}
+        renderItem={(item) => {
+          const entry = byId.get(item.id);
+          if (!entry) return null;
+          const status = byAccount[entry.row.id];
+          const model = cardModel(status);
+          if (entry.kind === "account") {
+            const account = entry.row;
+            return (
+              <li key={item.id} className={styles.cell} style={cellStyle(item)}>
                 <SourceTile
-                  key={account.id}
                   source={account.source}
                   avatarUrl={account.avatarUrl}
                   name={account.label ?? getSourceDef(account.source).label}
@@ -142,34 +243,27 @@ export function SourcesPage() {
                   onOpen={() => sourceDetail.openAccount(account.id)}
                   menu={() => buildAccountTileMenu(account, model)}
                 />
-              );
-            })}
-            {watches.map((watch) => {
-              const status = byAccount[watch.id];
-              const model = cardModel(status);
-              return (
-                <SourceTile
-                  key={watch.id}
-                  source={watch.source}
-                  avatarUrl={watch.avatarUrl}
-                  name={watchName(watch)}
-                  value={itemCount(watch.sync?.knownCount ?? 0)}
-                  tone={model.tone}
-                  progress={syncFraction(model.tone, status)}
-                  onOpen={() => sourceDetail.openWatch(watch.id)}
-                  menu={() => buildWatchTileMenu(watch, model)}
-                />
-              );
-            })}
-          </div>
-        ) : (
-          <p className={styles["quiet-line"]}>
-            Connect a source or watch a public account. Pond keeps your library
-            filling up in the background.
-          </p>
-        )}
-      </div>
-    </div>
+              </li>
+            );
+          }
+          const watch = entry.row;
+          return (
+            <li key={item.id} className={styles.cell} style={cellStyle(item)}>
+              <SourceTile
+                source={watch.source}
+                avatarUrl={watch.avatarUrl}
+                name={watchName(watch)}
+                value={itemCount(watch.sync?.knownCount ?? 0)}
+                tone={model.tone}
+                progress={syncFraction(model.tone, status)}
+                onOpen={() => sourceDetail.openWatch(watch.id)}
+                menu={() => buildWatchTileMenu(watch, model)}
+              />
+            </li>
+          );
+        }}
+      />
+    </LibraryGrid.Root>
   );
 }
 

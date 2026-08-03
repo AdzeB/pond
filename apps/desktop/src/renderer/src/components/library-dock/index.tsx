@@ -7,7 +7,6 @@ import { NavContent } from "@/components/library-dock-nav-content";
 import { NewContent } from "@/components/library-dock-new-content";
 import { OptionsContent } from "@/components/library-dock-options-content";
 import { SelectionContent } from "@/components/library-dock-selection-content";
-import { SavingPill } from "@/components/library-saving-pill";
 import { SearchComposer } from "@/components/search-bar";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion } from "@/lib/ui/motion";
@@ -179,7 +178,6 @@ export function LibraryTray() {
 
   return (
     <div className={styles.dock}>
-      <SavingPill />
       <TrayCard.Provider onDismiss={closeToNav}>
         <DockProvider value={context}>
           {isMenuView ? (

@@ -1,10 +1,13 @@
-import { useMemo, useRef } from "react";
+import { type ReactNode, useMemo, useRef } from "react";
 import { useMultiSelectActive } from "@/components/grid-context";
 import { type GridLayout, LibraryGrid } from "@/components/library-grid";
 import { SaveCard } from "@/components/save-card";
 import type { CardLayout } from "@/components/save-card-media";
 import { useVisibleIndices } from "@/hooks/use-visible-indices";
-import type { Save } from "@/lib/types";
+import type { PackedItem } from "./uniform-pack";
+
+export type { PackedItem, PackResult } from "./uniform-pack";
+export { LIBRARY_ITEM_GAP, packUniform } from "./uniform-pack";
 
 const NO_NEW_IDS: ReadonlySet<string> = new Set();
 
@@ -13,40 +16,33 @@ function useNewIds(items: PackedItem[]): ReadonlySet<string> {
   const seen = useRef<Set<string> | null>(null);
   return useMemo(() => {
     if (seen.current === null) {
-      seen.current = new Set(items.map((it) => it.save.id));
+      seen.current = new Set(items.map((it) => it.id));
       return NO_NEW_IDS;
     }
     const fresh = new Set<string>();
     for (const it of items) {
-      if (!seen.current.has(it.save.id)) {
-        fresh.add(it.save.id);
-        seen.current.add(it.save.id);
+      if (!seen.current.has(it.id)) {
+        fresh.add(it.id);
+        seen.current.add(it.id);
       }
     }
     return fresh.size > 0 ? fresh : NO_NEW_IDS;
   }, [items]);
 }
 
-export interface PackedItem {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-  save: Save;
-}
-
-export interface PackResult {
-  items: PackedItem[];
-  totalHeight: number;
-}
-
 interface PackedGridProps {
   layout: GridLayout;
   items: PackedItem[];
   totalHeight: number;
+  renderItem: (item: PackedItem, state: { entering: boolean }) => ReactNode;
 }
 
-export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
+export function PackedGrid({
+  layout,
+  items,
+  totalHeight,
+  renderItem,
+}: PackedGridProps) {
   const ref = useRef<HTMLUListElement>(null);
   const multiSelectActive = useMultiSelectActive();
   const style = useMemo<React.CSSProperties>(
@@ -68,19 +64,41 @@ export function PackedGrid({ layout, items, totalHeight }: PackedGridProps) {
       {visible.map((i) => {
         const it = items[i];
         if (!it) return null;
-        return (
-          <SaveCard
-            key={it.save.id}
-            id={it.save.id}
-            layout={layout as CardLayout}
-            packedWidth={it.width}
-            packedHeight={it.height}
-            packedTop={it.top}
-            packedLeft={it.left}
-            entering={newIds.has(it.save.id)}
-          />
-        );
+        return renderItem(it, { entering: newIds.has(it.id) });
       })}
     </LibraryGrid.Grid>
+  );
+}
+
+interface SavePackedGridProps {
+  layout: GridLayout;
+  items: PackedItem[];
+  totalHeight: number;
+}
+
+/** Library save layouts: windowed PackedGrid that always mounts SaveCard. */
+export function SavePackedGrid({
+  layout,
+  items,
+  totalHeight,
+}: SavePackedGridProps) {
+  return (
+    <PackedGrid
+      layout={layout}
+      items={items}
+      totalHeight={totalHeight}
+      renderItem={(it, { entering }) => (
+        <SaveCard
+          key={it.id}
+          id={it.id}
+          layout={layout as CardLayout}
+          packedWidth={it.width}
+          packedHeight={it.height}
+          packedTop={it.top}
+          packedLeft={it.left}
+          entering={entering}
+        />
+      )}
+    />
   );
 }

@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
 export default defineConfig({
@@ -13,6 +14,14 @@ export default defineConfig({
   webExt: {
     disabled: true,
   },
+  vite: () => ({
+    resolve: {
+      alias: {
+        "@pond/icons": resolve(__dirname, "../../packages/icons"),
+        "@pond/ui": resolve(__dirname, "../../packages/ui/src"),
+      },
+    },
+  }),
   /** Keep the popup state gallery out of release zips. */
   hooks: {
     "entrypoints:found"(wxt, infos) {

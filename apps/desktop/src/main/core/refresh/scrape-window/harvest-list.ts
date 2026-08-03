@@ -84,7 +84,8 @@ export async function harvestSourceList(
 
     let stopPolling = false;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
-    if (opts.onProgress) {
+    let lastStats: Record<string, unknown> | null = null;
+    {
       let lastCollected = -1;
       pollInterval = setInterval(() => {
         if (stopPolling) return;
@@ -96,8 +97,37 @@ export async function harvestSourceList(
           .then((raw: unknown) => {
             if (typeof raw !== "string" || raw === "null") return;
             try {
-              const stats = JSON.parse(raw) as ListHarvestProgress;
-              if (stats.collected !== lastCollected) {
+              const stats = JSON.parse(raw) as ListHarvestProgress &
+                Record<string, unknown>;
+              lastStats = stats;
+              // #region agent log
+              if (source === "instagram") {
+                fetch(
+                  "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-Debug-Session-Id": "d09e18",
+                    },
+                    body: JSON.stringify({
+                      sessionId: "d09e18",
+                      hypothesisId: "H5",
+                      location: "harvest-list.ts:poll",
+                      message: "instagram harvest stats",
+                      data: stats,
+                      timestamp: Date.now(),
+                      runId: "post-fix",
+                    }),
+                  },
+                ).catch(() => {});
+              }
+              // #endregion
+              if (
+                opts.onProgress &&
+                typeof stats.collected === "number" &&
+                stats.collected !== lastCollected
+              ) {
                 lastCollected = stats.collected;
                 opts.onProgress?.(stats);
               }
@@ -108,6 +138,40 @@ export async function harvestSourceList(
     }
 
     const timeoutMs = source === "instagram" ? 300_000 : 90_000;
+    // #region agent log
+    if (source === "instagram") {
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "d09e18",
+          },
+          body: JSON.stringify({
+            sessionId: "d09e18",
+            hypothesisId: "H5",
+            location: "harvest-list.ts:start",
+            message: "instagram harvest execute start",
+            data: {
+              landedUrl: landedUrl.slice(0, 120),
+              knownIds: args.knownIds.length,
+              earlyStop: args.earlyStop ?? null,
+              timeoutMs,
+            },
+            timestamp: Date.now(),
+            runId: "post-fix",
+          }),
+        },
+      ).catch(() => {});
+    }
+    // #endregion
+    await lease.win.webContents
+      .executeJavaScript(
+        "globalThis.__pondHarvestAbort = false; globalThis.__pondHarvestPartial = null;",
+        true,
+      )
+      .catch(() => {});
     const raw = await Promise.race([
       lease.win.webContents.executeJavaScript(expr, true),
       sleep(timeoutMs).then(() => "__pond_list_timeout__"),
@@ -117,7 +181,44 @@ export async function harvestSourceList(
     });
 
     if (raw === "__pond_list_timeout__") {
-      log.warn("[pond list]", source, "harvest timed out");
+      log.warn("[pond list]", source, "harvest timed out", lastStats);
+      await lease.win.webContents
+        .executeJavaScript("globalThis.__pondHarvestAbort = true;", true)
+        .catch(() => {});
+      await sleep(750);
+      const partial = await readHarvestPartial(lease.win);
+      // #region agent log
+      fetch(
+        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "d09e18",
+          },
+          body: JSON.stringify({
+            sessionId: "d09e18",
+            hypothesisId: "H5",
+            location: "harvest-list.ts:timeout",
+            message: "list harvest timed out",
+            data: {
+              source,
+              lastStats,
+              partialCount: partial?.length ?? 0,
+              recovered: Boolean(partial?.length),
+            },
+            timestamp: Date.now(),
+            runId: "post-fix",
+          }),
+        },
+      ).catch(() => {});
+      // #endregion
+      if (partial && partial.length > 0) {
+        log.info(
+          `[pond list] ${source} recovered ${partial.length} entries after timeout`,
+        );
+        return { ok: true, entries: partial, reachedEnd: false };
+      }
       return { ok: false, reason: "timeout" };
     }
 
@@ -170,6 +271,41 @@ async function readHarvestCollected(
     if (typeof raw !== "string" || raw === "null") return null;
     const stats = JSON.parse(raw) as { collected?: number };
     return typeof stats.collected === "number" ? stats.collected : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Entries checkpointed by long list harvesters so a wall-clock timeout can still enqueue progress. */
+async function readHarvestPartial(
+  win: Electron.BrowserWindow,
+): Promise<Array<{ sourceId: string; url: string; savedAt?: string }> | null> {
+  try {
+    const raw = await win.webContents.executeJavaScript(
+      "JSON.stringify(globalThis.__pondHarvestPartial ?? null)",
+      true,
+    );
+    if (typeof raw !== "string" || raw === "null") return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const entries: Array<{ sourceId: string; url: string; savedAt?: string }> =
+      [];
+    for (const row of parsed) {
+      if (
+        row &&
+        typeof row === "object" &&
+        typeof (row as { sourceId?: unknown }).sourceId === "string" &&
+        typeof (row as { url?: unknown }).url === "string"
+      ) {
+        const savedAt = (row as { savedAt?: unknown }).savedAt;
+        entries.push({
+          sourceId: (row as { sourceId: string }).sourceId,
+          url: (row as { url: string }).url,
+          ...(typeof savedAt === "string" ? { savedAt } : {}),
+        });
+      }
+    }
+    return entries.length > 0 ? entries : null;
   } catch {
     return null;
   }

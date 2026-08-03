@@ -2,6 +2,8 @@ import type { MediaType } from "@pond/schema/db";
 
 export interface ListHarvestArgs {
   knownIds: string[];
+  /** When false, keep paging past a known backlog (full walks). Defaults to true when knownIds is non-empty. */
+  earlyStop?: boolean;
 }
 
 /** Only url+sourceId are consumed; the rest feeds the progress UI. */

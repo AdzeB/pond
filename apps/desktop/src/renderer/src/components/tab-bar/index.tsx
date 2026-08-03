@@ -7,6 +7,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChromeHistoryNav } from "@/components/chrome-toolbar";
 import { pickAuthorColor } from "@/components/save-preview/lib/helpers";
 import { SpecContextMenu } from "@/components/spec-context-menu";
+import { StatusBar } from "@/components/status-bar";
 import { useSave } from "@/hooks/use-saves";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
@@ -231,6 +232,7 @@ export function TabBar() {
       </Reorder.Group>
 
       <div className={styles.actions}>
+        <StatusBar />
         <Button
           variant="ghost"
           size="sm"

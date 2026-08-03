@@ -1,7 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
 import { tryAutoLink } from "@/utils/auto-link";
-import { sendMessage } from "@/utils/messaging";
 import { parsePairingInput } from "@/utils/pairing";
 import {
   loadSettings,
@@ -9,9 +8,38 @@ import {
   probe,
   saveSettings,
 } from "@/utils/probe";
-import type { PondSettings } from "@/utils/types";
+import { DEFAULT_SETTINGS, type PondSettings } from "@/utils/types";
 import { cookieDomainForSource, hostToSource, sourceLabel } from "@/utils/url";
 import { ConnectScreen, IdleScreen, LoadingScreen, TokenScreen } from "./views";
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  fallback: T,
+): Promise<T> {
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        window.setTimeout(() => resolve(fallback), ms);
+      }),
+    ]);
+  } catch {
+    return fallback;
+  }
+}
+
+async function readActiveTabUrl(): Promise<string | null> {
+  if (!chrome?.tabs?.query) return null;
+  const tabs = await withTimeout(
+    chrome.tabs.query({ active: true, currentWindow: true }),
+    400,
+    [],
+  );
+  const url = tabs[0]?.url ?? null;
+  if (!url || url.startsWith("chrome-extension://")) return null;
+  return url;
+}
 
 export function App() {
   const [ready, setReady] = useState(false);
@@ -26,22 +54,19 @@ export function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [settings, tabs] = await Promise.all([
-        loadSettings(),
-        chrome.tabs.query({ active: true, currentWindow: true }),
-      ]);
-      const url = tabs[0]?.url ?? null;
-      setTabUrl(url && !url.startsWith("chrome-extension://") ? url : null);
+      const settings = await withTimeout(loadSettings(), 400, DEFAULT_SETTINGS);
+      const url = await readActiveTabUrl();
+      setTabUrl(url);
 
       let nextSettings = settings;
       if (!settings.apiKey) {
-        const linked = await tryAutoLink();
+        const linked = await withTimeout(tryAutoLink(), 400, null);
         if (linked) nextSettings = linked;
       }
 
       setProbeResult(await probe(nextSettings));
     } catch (err) {
-      console.warn("[pond] popup probe failed", err);
+      console.warn("[pond] app probe failed", err);
       setProbeResult({ state: "unpaired" });
     } finally {
       setReady(true);
@@ -93,6 +118,7 @@ export function App() {
     setConnectBusy(true);
     setConnectError(null);
     try {
+      const { sendMessage } = await import("@/utils/messaging");
       const res = await sendMessage("pushSession", pushable);
       if (res.ok && res.data.connected) {
         setConnectDismissed(true);

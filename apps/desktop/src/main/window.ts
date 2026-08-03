@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { attachEditableContextMenu } from "./context-menu";
@@ -114,16 +114,24 @@ export async function createWindow(): Promise<BrowserWindow> {
       ? prefs.window.bounds
       : null;
 
+  const themedBackground =
+    shellHint.theme === "dark" ||
+    (shellHint.theme !== "light" && nativeTheme.shouldUseDarkColors)
+      ? "#000000"
+      : "#ffffff";
+
   const win = new BrowserWindow({
     width: restored?.width ?? 1280,
     height: restored?.height ?? 800,
     x: restored?.x,
     y: restored?.y,
     show: false,
+    backgroundColor: shellHint.shellBackdropCapable
+      ? "#00000000"
+      : themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
-    ...(shellHint.shellBackdropCapable ? { backgroundColor: "#00000000" } : {}),
     ...(isMac && shellHint.shellBackdrop
       ? {
           vibrancy: "sidebar" as const,

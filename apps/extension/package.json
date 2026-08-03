@@ -27,6 +27,7 @@
     "zip": "wxt zip"
   },
   "dependencies": {
+    "@pond/icons": "workspace:*",
     "@pond/schema": "workspace:*",
     "@pond/theme": "workspace:*",
     "@pond/ui": "workspace:*",

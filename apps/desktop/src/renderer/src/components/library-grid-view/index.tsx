@@ -1,51 +1,14 @@
 import { useMemo } from "react";
 import {
-  PackedGrid,
-  type PackedItem,
-  type PackResult,
+  LIBRARY_ITEM_GAP,
+  packUniform,
+  SavePackedGrid,
 } from "@/components/library-packed-grid";
 import { useGridMin } from "@/hooks/use-grid-min";
 import type { Save } from "@/lib/types";
 import { chromeHeightFor } from "@/lib/ui/library-chrome";
 import { useDisplayPrefs } from "@/stores/display-prefs";
 import { useGridWidth } from "@/stores/shell-state";
-
-const ITEM_GAP = 16;
-
-/** Uniform square cells packed manually so they ride the same PackedGrid windowing path. */
-function packUniform(
-  saves: ReadonlyArray<Save>,
-  containerWidth: number,
-  colMin: number,
-  gap: number,
-  chromeHeight: number,
-): PackResult {
-  if (containerWidth <= 0 || saves.length === 0) {
-    return { items: [], totalHeight: 0 };
-  }
-  const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
-  const colW = (containerWidth - gap * (cols - 1)) / cols;
-  /** Square media: height equals column width, plus the meta chrome underneath. */
-  const cellH = colW + chromeHeight;
-  const place = (idx: number) => {
-    const col = idx % cols;
-    const row = Math.floor(idx / cols);
-    return {
-      width: colW,
-      /** `height` feeds viewport windowing, so it spans the whole cell, not just media. */
-      height: cellH,
-      top: row * (cellH + gap),
-      left: col * (colW + gap),
-    };
-  };
-  const items: PackedItem[] = [];
-  saves.forEach((save, idx) => {
-    items.push({ save, ...place(idx) });
-  });
-  const rows = Math.ceil(saves.length / cols);
-  const totalHeight = rows > 0 ? rows * cellH + (rows - 1) * gap : 0;
-  return { items, totalHeight };
-}
 
 interface GridViewProps {
   saves: ReadonlyArray<Save>;
@@ -58,9 +21,19 @@ export function GridView({ saves }: GridViewProps) {
   const chromeHeight = chromeHeightFor(prefs);
 
   const { items, totalHeight } = useMemo(
-    () => packUniform(saves, width, colMin, ITEM_GAP, chromeHeight),
+    () =>
+      packUniform(
+        saves.map((s) => s.id),
+        width,
+        colMin,
+        LIBRARY_ITEM_GAP,
+        /** Square media: height equals column width, plus the meta chrome underneath. */
+        (colW) => colW + chromeHeight,
+      ),
     [saves, width, colMin, chromeHeight],
   );
 
-  return <PackedGrid layout="grid" items={items} totalHeight={totalHeight} />;
+  return (
+    <SavePackedGrid layout="grid" items={items} totalHeight={totalHeight} />
+  );
 }
