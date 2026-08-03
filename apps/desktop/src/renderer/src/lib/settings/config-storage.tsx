@@ -1,4 +1,4 @@
-import { LocationRow } from "@/components/settings-section-storage";
+import { LocationRow } from "@/components/settings/sections/storage";
 import { defineSection } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;

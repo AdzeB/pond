@@ -4,8 +4,8 @@ import type { Save } from "@/lib/types";
 import { dot } from "@/lib/util/vector";
 import { embeddingStore } from "@/stores/embedding-store";
 import { annNearest } from "./ann-index";
+import { searchFtsScores } from "./fts-client";
 import type { AskSort } from "./nl-query";
-import { searchScores } from "./text-index";
 
 /** Shared relevance/ordering helpers so the plan executor and the agent runner rank the same way as use-ask. */
 
@@ -103,14 +103,14 @@ export function rankSemantic(
 }
 
 /**
- * Embedding-free floor that keeps "Ask" useful when semantic search is off; backed by the shared Orama BM25 index so it ranks identically to the grid search box.
+ * Embedding-free floor that keeps "Ask" useful when semantic search is off; backed by SQLite FTS5 so it ranks like the grid search box.
  * @remarks Returns the scoring matches best-first, separately from the non-matching remainder in incoming order.
  */
-export function rankByKeyword(
+export async function rankByKeyword(
   candidates: ReadonlyArray<Save>,
   text: string,
-): { matches: Save[]; rest: Save[] } {
-  const scores = searchScores(text, "any");
+): Promise<{ matches: Save[]; rest: Save[] }> {
+  const scores = await searchFtsScores(text, "any");
   if (scores.size === 0) return { matches: [], rest: [...candidates] };
   const scored: { save: Save; score: number; index: number }[] = [];
   const rest: Save[] = [];

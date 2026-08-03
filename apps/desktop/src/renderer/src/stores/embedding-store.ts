@@ -1,5 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { annMarkDirty } from "@/lib/search/ann-dirty";
 
 /** Per-save embedding vectors: loaded once on startup (vectors are excluded from saves.list to keep it small), kept current by the sweep; `version` bumps on every mutation so semantic-rank consumers re-run. */
 
@@ -53,6 +54,7 @@ export function loadEmbeddings(): Promise<void> {
         version: s.version + 1,
         loaded: true,
       }));
+      annMarkDirty("all");
     } catch (err) {
       console.warn("[embeddings] failed to load persisted vectors", err);
       store.setState((s) => ({ ...s, loaded: true }));
@@ -74,6 +76,7 @@ export function setEmbedding(
     byId.set(id, { vec, model });
     return { byId, version: s.version + 1, loaded: s.loaded };
   });
+  annMarkDirty([id]);
   void window.pond
     .query("saves.setEmbedding", {
       id,
@@ -96,6 +99,7 @@ export function clearEmbeddings(ids?: readonly string[]): number {
         ? s
         : { byId, version: s.version + 1, loaded: s.loaded };
     });
+    if (count > 0) annMarkDirty(ids);
     return count;
   }
   const count = store.state.byId.size;
@@ -105,6 +109,7 @@ export function clearEmbeddings(ids?: readonly string[]): number {
     version: s.version + 1,
     loaded: s.loaded,
   }));
+  annMarkDirty("all");
   return count;
 }
 

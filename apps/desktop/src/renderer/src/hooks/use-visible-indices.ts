@@ -1,45 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { findScrollParent } from "@/lib/util/dom";
+import {
+  computeVisible,
+  type PositionedItem,
+  sameIndices,
+  type VisibilityMode,
+} from "./visible-indices";
 
-interface PositionedItem {
-  top: number;
-  height: number;
-}
-
-const OVERSCAN_PX = 600;
-
-function sameIndices(a: number[], b: number[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-/** Scans all items since waterfall packing isn't monotonic by `top`. */
-function computeVisible<T extends PositionedItem>(
-  items: T[],
-  offsetWithinGrid: number,
-  viewportH: number,
-): number[] {
-  const viewMin = offsetWithinGrid - OVERSCAN_PX;
-  const viewMax = offsetWithinGrid + viewportH + OVERSCAN_PX;
-  const out: number[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    if (!item) continue;
-    if (item.top + item.height < viewMin) continue;
-    if (item.top > viewMax) continue;
-    out.push(i);
-  }
-  return out;
-}
+export type { PositionedItem, VisibilityMode } from "./visible-indices";
+export { computeVisible } from "./visible-indices";
 
 /** Measures geometry once plus on resize because per-scroll getBoundingClientRect forces reflow. */
 export function useVisibleIndices<T extends PositionedItem>(
   ref: React.RefObject<HTMLElement | null>,
   items: T[],
+  mode: VisibilityMode = "scan",
 ): number[] {
   const estViewportH =
     typeof window !== "undefined" ? window.innerHeight : 1000;
@@ -49,22 +24,27 @@ export function useVisibleIndices<T extends PositionedItem>(
     scrollTop: 0,
     viewportH: estViewportH,
   });
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   const [visible, setVisible] = useState<number[]>(() =>
-    computeVisible(items, 0, estViewportH),
+    computeVisible(items, 0, estViewportH, mode),
   );
   const visibleRef = useRef<number[]>(visible);
   visibleRef.current = visible;
 
-  /** Re-window synchronously on item-set change; cached metrics are still valid since scroll hasn't moved. */
+  /** Re-window synchronously on item-set or mode change; cached metrics are still valid since scroll hasn't moved. */
   const lastItemsRef = useRef<T[]>(items);
-  if (lastItemsRef.current !== items) {
+  const lastModeRef = useRef(mode);
+  if (lastItemsRef.current !== items || lastModeRef.current !== mode) {
     lastItemsRef.current = items;
+    lastModeRef.current = mode;
     const m = metricsRef.current;
     const next = computeVisible(
       items,
       m.scrollTop - m.gridOffsetTop,
       m.viewportH,
+      mode,
     );
     if (!sameIndices(visibleRef.current, next)) {
       visibleRef.current = next;
@@ -93,6 +73,7 @@ export function useVisibleIndices<T extends PositionedItem>(
         items,
         m.scrollTop - m.gridOffsetTop,
         m.viewportH,
+        modeRef.current,
       );
       if (sameIndices(visibleRef.current, next)) return;
       visibleRef.current = next;

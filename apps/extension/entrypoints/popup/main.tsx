@@ -1,6 +1,9 @@
-/** Toolbar click opens the full-page app tab instead of a tiny popup. */
-const appUrl = chrome.runtime.getURL("/app.html");
+import "../app/page.css";
 
-void chrome.tabs.create({ url: appUrl, active: true }).finally(() => {
-  window.close();
-});
+import { createRoot } from "react-dom/client";
+import { App } from "../app/App";
+
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(<App />);
+}

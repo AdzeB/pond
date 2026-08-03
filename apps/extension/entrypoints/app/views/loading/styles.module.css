@@ -1,0 +1,8 @@
+.message {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--ds-gray-11);
+  text-wrap: pretty;
+}

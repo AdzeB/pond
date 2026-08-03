@@ -1,7 +1,7 @@
 import { Button, Settings, Switch } from "@pond/ui";
 import { type ReactNode, useState } from "react";
-import { confirm } from "@/components/confirm-dialog";
-import { VerifyRow } from "@/components/settings-section-developer-verify-row";
+import { VerifyRow } from "@/components/settings/sections/developer-verify-row";
+import { confirm } from "@/components/shared/confirm-dialog";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 import { reloadPrefs } from "@/stores/prefs";
 

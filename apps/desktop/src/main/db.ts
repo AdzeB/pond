@@ -310,6 +310,8 @@ const SAVES_FTS_COLUMNS = [
   "caption",
   "ocr_text",
   "transcript",
+  "notes",
+  "url",
 ] as const;
 
 function ensureSavesFts(sqlite: Database.Database): void {
@@ -341,15 +343,17 @@ function ensureSavesFts(sqlite: Database.Database): void {
 					caption,
 					ocr_text,
 					transcript,
+					notes,
+					url,
 					tokenize = 'porter unicode61'
 				);
 
 				CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url
 					);
 				END;
 
@@ -358,14 +362,14 @@ function ensureSavesFts(sqlite: Database.Database): void {
 				END;
 
 				CREATE TRIGGER IF NOT EXISTS saves_au
-				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript
+				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url
 				ON saves BEGIN
 					DELETE FROM saves_fts WHERE id = old.id;
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					VALUES (
 						new.id, new.title, new.description, new.author,
 						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript
+						new.caption, new.ocr_text, new.transcript, new.notes, new.url
 					);
 				END;
 			`);
@@ -376,11 +380,11 @@ function ensureSavesFts(sqlite: Database.Database): void {
   };
   if (count.n === 0) {
     sqlite.exec(`
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript)
+					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
 					SELECT
 						id, title, description, author,
 						COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), ''),
-						caption, ocr_text, transcript
+						caption, ocr_text, transcript, notes, url
 					FROM saves;
 				`);
   }

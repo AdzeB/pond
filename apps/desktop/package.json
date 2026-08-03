@@ -51,7 +51,6 @@
     "@leeoniya/ufuzzy": "^1.0.19",
     "@lexical/react": "^0.45.0",
     "@lexical/text": "^0.45.0",
-    "@orama/orama": "^3.1.18",
     "@pond/icons": "workspace:*",
     "@pond/schema": "workspace:*",
     "@pond/theme": "workspace:*",

@@ -1,4 +1,4 @@
-import { collectInfoRows } from "@/components/save-preview/lib/rows";
+import { collectInfoRows } from "@/components/save/preview/lib/rows";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import type { Save } from "@/lib/types";
 

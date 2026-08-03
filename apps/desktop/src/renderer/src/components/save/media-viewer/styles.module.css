@@ -1,0 +1,22 @@
+.carousel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  /* Size container so the shell can contain-fit against both axes (cqi/cqh). */
+  container-type: size;
+}
+
+.scroller {
+  --slide-spacing: 32px;
+  --snap-type: x mandatory;
+
+  height: 100%;
+  padding-inline: 50%;
+  /* Blossom's base stylesheet normally sets this; without it the slides wrap inside the zero-width content box and stack vertically. */
+  white-space: nowrap;
+  scroll-snap-type: x mandatory;
+}

@@ -55,23 +55,23 @@ function hasPredicates(plan: QueryPlan): boolean {
 }
 
 /** "relevance" follows the useAsk decision tree (vector -> semantic/by-vector -> keyword floor); "field" overrides with an explicit numeric/date sort. */
-function rankCandidates(
+async function rankCandidates(
   filtered: ReadonlyArray<Save>,
   plan: QueryPlan,
   ctx: PlanExecContext,
-): Save[] {
-  const relevance = rankRelevance(filtered, plan, ctx);
+): Promise<Save[]> {
+  const relevance = await rankRelevance(filtered, plan, ctx);
   if (plan.rank?.kind === "field") {
     return sortByField(relevance, plan.rank.field, plan.rank.dir);
   }
   return relevance;
 }
 
-function rankRelevance(
+async function rankRelevance(
   candidates: ReadonlyArray<Save>,
   plan: QueryPlan,
   ctx: PlanExecContext,
-): Save[] {
+): Promise<Save[]> {
   const preds = hasPredicates(plan);
   const residualText = ctx.residualText.trim();
   const freeText = residualText || ctx.question.trim();
@@ -81,16 +81,19 @@ function rankRelevance(
       ? rankByVector(candidates, ctx.rankVector)
       : rankSemantic(candidates, ctx.rankVector);
     if (ordered.length === 0 && freeText) {
-      ordered = rankByKeyword(candidates, freeText).matches;
+      ordered = (await rankByKeyword(candidates, freeText)).matches;
     }
     return ordered;
   }
   if (preds && residualText) {
-    const { matches: hits, rest } = rankByKeyword(candidates, residualText);
+    const { matches: hits, rest } = await rankByKeyword(
+      candidates,
+      residualText,
+    );
     return [...hits, ...rest];
   }
   if (preds) return [...candidates];
-  if (freeText) return rankByKeyword(candidates, freeText).matches;
+  if (freeText) return (await rankByKeyword(candidates, freeText)).matches;
   return [];
 }
 
@@ -225,9 +228,12 @@ function computeFacts(
   return facts;
 }
 
-export function executePlan(plan: QueryPlan, ctx: PlanExecContext): PlanResult {
+export async function executePlan(
+  plan: QueryPlan,
+  ctx: PlanExecContext,
+): Promise<PlanResult> {
   const filtered = ctx.pool.filter((save) => matches(plan.filter, save));
-  const ranked = rankCandidates(filtered, plan, ctx);
+  const ranked = await rankCandidates(filtered, plan, ctx);
   const { ids, groups } = applyGrouping(ranked, plan);
   const facts = computeFacts(filtered, plan);
   return { ids, groups, facts };

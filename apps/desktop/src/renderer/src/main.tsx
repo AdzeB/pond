@@ -1,6 +1,8 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+import "@/lib/search/ann-index";
+import "@/lib/search/clip-ann-index";
 import { bootPool } from "./stores/bootstrap";
 import { loadOnboarding } from "./stores/onboarding";
 import "./styles.css";

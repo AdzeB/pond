@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { AnalyticsPage } from "@/components/library-analytics";
+import { AnalyticsPage } from "@/components/library/analytics";
 import { loadPrefs } from "@/stores/prefs";
 
 export const Route = createFileRoute("/_library/analytics/$dashboardId")({

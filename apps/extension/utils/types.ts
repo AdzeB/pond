@@ -106,10 +106,6 @@ export function sessionPendingUrl(port: number): string {
   return `http://127.0.0.1:${port}/api/v2/session/pending`;
 }
 
-export function discoverUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/discover`;
-}
-
 export function itemGetUrl(port: number): string {
   return `http://127.0.0.1:${port}/api/v2/item/get`;
 }

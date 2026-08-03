@@ -3,7 +3,7 @@ import {
   CustomColorRow,
   SystemPresetRow,
   ThemeRow,
-} from "@/components/settings-section-appearance";
+} from "@/components/settings/sections/appearance";
 import { defineSection } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;

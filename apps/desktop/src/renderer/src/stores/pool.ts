@@ -1,15 +1,11 @@
 import { Store } from "@tanstack/store";
-import {
-  clearTextIndex,
-  indexSave,
-  indexSaves,
-  removeSaveFromIndex,
-} from "@/lib/search/text-index";
 import type { Save } from "@/lib/types";
 
 interface SavesState {
   readonly byId: Map<string, Save>;
   readonly sorted: ReadonlyArray<Save>;
+  /** Bumps on every mutation so selectors that need any-pool wake (not just `sorted`) stay correct while `byId` is mutated in place. */
+  readonly revision: number;
 }
 
 function savedAtMs(save: Save): number {
@@ -21,10 +17,78 @@ function sortByRecency(list: Iterable<Save>): Save[] {
   return Array.from(list).sort((a, b) => savedAtMs(b) - savedAtMs(a));
 }
 
+function isRecencyDesc(list: ReadonlyArray<Save>): boolean {
+  for (let i = 1; i < list.length; i++) {
+    const prev = list[i - 1];
+    const cur = list[i];
+    if (!prev || !cur) continue;
+    if (savedAtMs(prev) < savedAtMs(cur)) return false;
+  }
+  return true;
+}
+
+/** True when every upsert keeps recency order without a full re-sort (in-place field updates + newer prepends). */
+function canSkipFullSort(
+  list: ReadonlyArray<Save>,
+  byId: Map<string, Save>,
+  sorted: ReadonlyArray<Save>,
+): boolean {
+  if (!isRecencyDesc(list)) return false;
+  const headMs = sorted[0] ? savedAtMs(sorted[0]) : Number.NEGATIVE_INFINITY;
+  for (const save of list) {
+    const prev = byId.get(save.id);
+    if (prev) {
+      if (savedAtMs(prev) !== savedAtMs(save)) return false;
+    } else if (savedAtMs(save) < headMs) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Must run before `byId` is mutated so new vs existing membership is accurate. */
+function sortedAfterSkip(
+  list: ReadonlyArray<Save>,
+  byId: Map<string, Save>,
+  sorted: ReadonlyArray<Save>,
+): Save[] {
+  const updated = new Map<string, Save>();
+  const prepend: Save[] = [];
+  for (const save of list) {
+    if (byId.has(save.id)) updated.set(save.id, save);
+    else prepend.push(save);
+  }
+  const nextSorted =
+    updated.size === 0
+      ? sorted
+      : sorted.map((row) => updated.get(row.id) ?? row);
+  if (prepend.length === 0) {
+    return updated.size === 0 ? [...sorted] : [...nextSorted];
+  }
+  return [...prepend, ...nextSorted];
+}
+
 export const savesStore = new Store<SavesState>({
   byId: new Map(),
   sorted: [],
+  revision: 0,
 });
+
+type DirtyListener = (ids: readonly string[]) => void;
+const dirtyListeners = new Set<DirtyListener>();
+
+/** Enrichment and similar subscribers get changed ids without scanning the whole pool. */
+export function onPoolDirty(listener: DirtyListener): () => void {
+  dirtyListeners.add(listener);
+  return () => {
+    dirtyListeners.delete(listener);
+  };
+}
+
+function emitDirty(ids: readonly string[]): void {
+  if (ids.length === 0 || dirtyListeners.size === 0) return;
+  for (const listener of dirtyListeners) listener(ids);
+}
 
 /** Non-React read facade; mutations go through the helpers below so React consumers wake via `useSelector`. */
 export const pool = {
@@ -52,45 +116,56 @@ export const pool = {
 };
 
 export function upsertSave(save: Save): void {
-  /** Enrichment optimistic updates also funnel through here, so captions/OCR/transcripts get indexed as they land. */
-  indexSave(save);
+  let dirty = false;
   savesStore.setState((s) => {
     const prev = s.byId.get(save.id);
     if (prev === save) return s;
-    const byId = new Map(s.byId);
-    byId.set(save.id, save);
+    dirty = true;
+    s.byId.set(save.id, save);
     const sorted =
       prev && savedAtMs(prev) === savedAtMs(save)
         ? s.sorted.map((row) => (row.id === save.id ? save : row))
-        : sortByRecency(byId.values());
-    return { byId, sorted };
+        : sortByRecency(s.byId.values());
+    return { byId: s.byId, sorted, revision: s.revision + 1 };
   });
+  if (dirty) emitDirty([save.id]);
 }
 
 export function bulkUpsertSaves(list: ReadonlyArray<Save>): void {
   if (list.length === 0) return;
-  indexSaves(list);
   savesStore.setState((s) => {
-    const byId = new Map(s.byId);
-    for (const save of list) byId.set(save.id, save);
-    return { byId, sorted: sortByRecency(byId.values()) };
+    const skipSort = canSkipFullSort(list, s.byId, s.sorted);
+    const sorted = skipSort ? sortedAfterSkip(list, s.byId, s.sorted) : null;
+    for (const save of list) s.byId.set(save.id, save);
+    return {
+      byId: s.byId,
+      sorted: sorted ?? sortByRecency(s.byId.values()),
+      revision: s.revision + 1,
+    };
   });
+  emitDirty(list.map((s) => s.id));
 }
 
 export function deleteSave(id: string): void {
-  removeSaveFromIndex(id);
+  let dirty = false;
   savesStore.setState((s) => {
     if (!s.byId.has(id)) return s;
-    const byId = new Map(s.byId);
-    byId.delete(id);
-    return { byId, sorted: s.sorted.filter((row) => row.id !== id) };
+    dirty = true;
+    s.byId.delete(id);
+    return {
+      byId: s.byId,
+      sorted: s.sorted.filter((row) => row.id !== id),
+      revision: s.revision + 1,
+    };
   });
+  if (dirty) emitDirty([id]);
 }
 
 function clearSaves(): void {
-  clearTextIndex();
   savesStore.setState((s) =>
-    s.byId.size === 0 ? s : { byId: new Map(), sorted: [] },
+    s.byId.size === 0
+      ? s
+      : { byId: new Map(), sorted: [], revision: s.revision + 1 },
   );
 }
 
@@ -99,9 +174,8 @@ export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   savesStore.setState((s) => {
     const prev = s.byId.get(id);
     if (!prev) return s;
-    const byId = new Map(s.byId);
-    byId.set(id, { ...prev, rawJson });
-    return { byId, sorted: s.sorted };
+    s.byId.set(id, { ...prev, rawJson });
+    return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
   });
 }
 
@@ -113,11 +187,8 @@ export function patchSaveTranscript(
   savesStore.setState((s) => {
     const prev = s.byId.get(id);
     if (!prev) return s;
-    const byId = new Map(s.byId);
     const next = { ...prev, transcript };
-    byId.set(id, next);
-    /** Transcript is a searchable field, so fold it into the text index when it hydrates. */
-    indexSave(next);
-    return { byId, sorted: s.sorted };
+    s.byId.set(id, next);
+    return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
   });
 }

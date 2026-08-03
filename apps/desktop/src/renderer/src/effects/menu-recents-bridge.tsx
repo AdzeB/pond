@@ -20,18 +20,18 @@ function titleFor(id: string): string | null {
 /** Mirrors recently-visited saves into the native History menu; choosing an entry comes back over `onMenuOpenSave` and opens the save like a card click. */
 export function MenuRecentsBridge(): null {
   const recents = useRecents();
-  /** Saves hydrate lazily; subscribing to the pool re-resolves titles as they arrive. */
-  const byId = useSelector(savesStore, (s) => s.byId);
+  /** Saves hydrate lazily; revision wakes when pool rows change without cloning the Map. */
+  const revision = useSelector(savesStore, (s) => s.revision);
 
   const entries = useMemo<RecentMenuEntry[]>(() => {
-    void byId;
+    void revision;
     const out: RecentMenuEntry[] = [];
     for (const entry of recents) {
       const title = titleFor(entry.saveId);
       if (title) out.push({ id: entry.saveId, title });
     }
     return out;
-  }, [recents, byId]);
+  }, [recents, revision]);
 
   useEffect(() => {
     window.pond.sendMenuRecents(entries);

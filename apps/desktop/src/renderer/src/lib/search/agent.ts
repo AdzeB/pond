@@ -99,7 +99,7 @@ function describeResult(result: PlanResult, pool: ReadonlyArray<Save>): string {
 export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
   const { question, pool, facets, maxSteps, embed, onStage } = input;
   const rankVector = await embed(question);
-  const run = (plan: QueryPlan): PlanResult =>
+  const run = (plan: QueryPlan): Promise<PlanResult> =>
     executePlan(plan, { pool, rankVector, residualText: "", question });
 
   const steps: AgentStepRecord[] = [];
@@ -130,7 +130,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
       onStage("executing");
       const plan = validatePlan(action.plan);
       lastPlan = plan;
-      const result = run(plan);
+      const result = await run(plan);
       steps.push({ action, observation: describeResult(result, pool) });
       continue;
     }
@@ -138,7 +138,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
     if (action.type === "final") {
       onStage("executing");
       const plan = validatePlan(action.plan);
-      const result = run(plan);
+      const result = await run(plan);
       return {
         ids: applyLimit(result.ids, plan.limit),
         query: plan.filter,
@@ -147,7 +147,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
     }
 
     /** An "answer" action is prose; back it with the last plan's set as supporting evidence in the grid. */
-    const evidence = lastPlan ? run(lastPlan) : null;
+    const evidence = lastPlan ? await run(lastPlan) : null;
     return {
       ids: evidence ? applyLimit(evidence.ids, lastPlan?.limit) : [],
       query: lastPlan?.filter ?? EMPTY_QUERY,
@@ -157,7 +157,7 @@ export async function runAgent(input: AgentRunInput): Promise<AgentOutcome> {
 
   /** Steps exhausted or the model gave up: commit the best plan that ran, if any. */
   if (lastPlan) {
-    const result = run(lastPlan);
+    const result = await run(lastPlan);
     return {
       ids: applyLimit(result.ids, lastPlan.limit),
       query: lastPlan.filter,

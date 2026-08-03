@@ -1,0 +1,164 @@
+.turn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  align-self: stretch;
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-lg);
+}
+
+.user-image {
+  max-width: 180px;
+  max-height: 140px;
+  object-fit: cover;
+  border-radius: var(--ds-radius-md);
+  box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
+}
+
+.user-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+}
+
+.assistant-message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  align-self: stretch;
+  width: 100%;
+}
+
+.turn-status {
+  display: flex;
+  min-height: 18px;
+}
+
+.status-line {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+}
+
+.retry {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-blue-11, var(--ds-gray-12));
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+}
+
+/* Cursor-style thinking label: a light band sweeps through the text while work runs. */
+.shimmer {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--ds-gray-9) 35%,
+    var(--ds-gray-12) 50%,
+    var(--ds-gray-9) 65%
+  );
+  background-clip: text;
+  background-size: 300% 100%;
+  animation: shimmer-sweep 2s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    color: var(--ds-gray-11);
+    background: none;
+    animation: none;
+  }
+}
+
+.turn-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ds-gray-12);
+  word-break: break-word;
+  user-select: text;
+}
+
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 5px;
+  align-items: center;
+  height: 24px;
+  padding-inline: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.result-label {
+  color: var(--ds-gray-11);
+}
+
+.count {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+}
+
+.suggestions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+}
+
+.suggestion {
+  composes: chip;
+}
+
+.suggestion-count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}

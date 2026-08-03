@@ -1,0 +1,42 @@
+.field {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+}
+
+.field-label small {
+  font-size: 12px;
+  font-weight: 450;
+  color: var(--ds-gray-9);
+}
+
+/* Cells echo the dashboard's cell proportions (240 × 128). */
+.size-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 32px);
+  gap: 4px;
+  width: max-content;
+}
+
+.size-cell {
+  height: 17px;
+  padding: 0;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: var(--ds-gray-a3);
+  border: none;
+  border-radius: 4px;
+  transition: background 80ms ease;
+}
+
+.size-grid:not([data-previewing]) .size-cell[data-active],
+.size-grid[data-previewing] .size-cell[data-preview] {
+  background: var(--ds-accent-9);
+}

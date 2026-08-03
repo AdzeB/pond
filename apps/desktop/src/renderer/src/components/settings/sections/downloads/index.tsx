@@ -1,0 +1,83 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import type { Binding } from "@/components/settings/engine";
+import {
+  DEFAULT_IMAGE_DOWNLOAD,
+  DEFAULT_VIDEO_DOWNLOAD,
+  type ImageDownloadPrefs,
+  type SettingsRow,
+  type VideoDownloadPrefs,
+} from "@/lib/settings/section-types";
+
+export function useVideoDownloadBinding(): Binding<VideoDownloadPrefs> {
+  return useDownloadBinding(
+    "videoDownload",
+    "settings.setVideoDownload",
+  ) as unknown as Binding<VideoDownloadPrefs>;
+}
+
+export function useImageDownloadBinding(): Binding<ImageDownloadPrefs> {
+  return useDownloadBinding(
+    "imageDownload",
+    "settings.setImageDownload",
+  ) as unknown as Binding<ImageDownloadPrefs>;
+}
+
+type DownloadField = "videoDownload" | "imageDownload";
+type DownloadChannel =
+  | "settings.setVideoDownload"
+  | "settings.setImageDownload";
+
+const FALLBACK: Record<DownloadField, VideoDownloadPrefs | ImageDownloadPrefs> =
+  {
+    videoDownload: DEFAULT_VIDEO_DOWNLOAD,
+    imageDownload: DEFAULT_IMAGE_DOWNLOAD,
+  };
+
+function useDownloadBinding(
+  field: DownloadField,
+  channel: DownloadChannel,
+): Binding {
+  const qc = useQueryClient();
+
+  const { data } = useQuery<SettingsRow>({
+    queryKey: ["settings", "get"],
+    queryFn: async () => {
+      const row = (await window.pond.query("settings.get", {})) as SettingsRow;
+      /** Merge per-field: a whole-object fallback would blank stored fields. */
+      return {
+        ...row,
+        videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, ...row.videoDownload },
+        imageDownload: { ...DEFAULT_IMAGE_DOWNLOAD, ...row.imageDownload },
+      };
+    },
+  });
+
+  const values = (data?.[field] ?? FALLBACK[field]) as unknown as Record<
+    string,
+    unknown
+  >;
+
+  const patch = (delta: Partial<Record<string, unknown>>) => {
+    if (!data) return;
+    const previous = data[field];
+    qc.setQueryData<SettingsRow>(["settings", "get"], {
+      ...data,
+      [field]: { ...previous, ...delta },
+    });
+    void window.pond
+      .query(channel, delta)
+      .then((r) => {
+        const next = (r as Record<string, unknown>)[field];
+        qc.setQueryData<SettingsRow | undefined>(["settings", "get"], (cur) =>
+          cur ? { ...cur, [field]: next } : cur,
+        );
+      })
+      .catch(() => {
+        qc.setQueryData<SettingsRow | undefined>(["settings", "get"], (cur) =>
+          cur ? { ...cur, [field]: previous } : cur,
+        );
+      });
+  };
+
+  return { values, patch, loaded: Boolean(data) };
+}

@@ -1,7 +1,7 @@
 import pLimit from "p-limit";
 import type { Save } from "@/lib/types";
 import { enrichmentMonitor } from "@/stores/enrichment-monitor";
-import { pool, savesStore, upsertSave } from "@/stores/pool";
+import { onPoolDirty, pool, upsertSave } from "@/stores/pool";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
 import type { Enricher } from "./types";
@@ -195,6 +195,7 @@ let sweepStarted = false;
 let scanScheduled = false;
 /** Scope carried by the pending debounced scan: `null` means full-library. A global request always wins over a scoped one landing in the same window. */
 let pendingScope: Set<string> | null = null;
+const FULL_SCAN_MS = 60_000;
 
 function scheduleScan(ids?: readonly string[]): void {
   const scoped = ids && ids.length > 0 ? ids : null;
@@ -253,7 +254,9 @@ export function startEnrichmentSweep(): () => void {
     }),
   );
   void Promise.all(hydrations).then(() => scheduleScan());
-  const sub = savesStore.subscribe(() => scheduleScan());
+  /** Pool churn only rescans dirty ids; a periodic full scan catches dependency unlocks the dirty path misses. */
+  const detachDirty = onPoolDirty((ids) => scheduleScan(ids));
+  const fullScanTimer = setInterval(() => scheduleScan(), FULL_SCAN_MS);
 
   /** Pause while the window isn't on screen so inference never heats the machine invisibly. */
   let detachVisibility = (): void => {};
@@ -288,7 +291,8 @@ export function startEnrichmentSweep(): () => void {
   }
 
   return () => {
-    sub.unsubscribe();
+    detachDirty();
+    clearInterval(fullScanTimer);
     detachVisibility();
     detachBattery();
   };

@@ -1,7 +1,10 @@
+import { queryHasColorPredicate } from "@pond/schema/filters";
 import { matches } from "@pond/schema/filters/match";
 import { isEmptyQuery, type Query } from "@pond/schema/filters/types";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { ensureSaves } from "@/lib/save/ensure-saves";
 import type { Save } from "@/lib/types";
+import { pool } from "@/stores/pool";
 
 export type SortKey =
   | "savedAt"
@@ -43,14 +46,61 @@ export function useFilteredSaves(
 ): ReadonlyArray<Save> {
   const sortKey = opts?.sortKey ?? "savedAt";
   const sortDir = opts?.sortDir ?? "desc";
+  const empty = !query || isEmptyQuery(query);
+  const useSql = !empty && !queryHasColorPredicate(query);
+
+  const [sqlIds, setSqlIds] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    if (!useSql || !query) {
+      setSqlIds(null);
+      return;
+    }
+    let cancelled = false;
+    void window.pond
+      .query("saves.query", {
+        query,
+        sortKey,
+        sortDir,
+      })
+      .then(async (res) => {
+        if (cancelled) return;
+        const ids = (res as { ids: string[] }).ids ?? [];
+        await ensureSaves(ids);
+        if (cancelled) return;
+        setSqlIds(ids);
+      })
+      .catch(() => {
+        if (!cancelled) setSqlIds(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [useSql, query, sortKey, sortDir]);
+
   return useMemo(() => {
-    const filtered =
-      !query || isEmptyQuery(query)
-        ? saves
-        : saves.filter((s) => matches(query, s));
+    if (empty) {
+      if (sortKey === "savedAt" && sortDir === "desc") return saves;
+      return sortSaves(saves, sortKey, sortDir);
+    }
+    if (useSql && sqlIds) {
+      const list: Save[] = [];
+      for (const id of sqlIds) {
+        const save = pool.get(id);
+        if (save) list.push(save);
+      }
+      return list;
+    }
+    if (useSql && sqlIds === null) {
+      /** SQL in flight: keep prior in-memory filter so the grid doesn't flash empty. */
+      const filtered = saves.filter((s) => matches(query as Query, s));
+      if (sortKey === "savedAt" && sortDir === "desc") return filtered;
+      return sortSaves(filtered, sortKey, sortDir);
+    }
+    const filtered = saves.filter((s) => matches(query as Query, s));
     if (sortKey === "savedAt" && sortDir === "desc") return filtered;
     return sortSaves(filtered, sortKey, sortDir);
-  }, [saves, query, sortKey, sortDir]);
+  }, [saves, query, sortKey, sortDir, empty, useSql, sqlIds]);
 }
 
 function sortSaves(

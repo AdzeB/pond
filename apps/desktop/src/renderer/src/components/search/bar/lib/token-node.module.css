@@ -1,0 +1,10 @@
+/* Rendered as styled text so the caret can move inside a token and edit the value inline. */
+.token {
+  padding: 1px 4px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-a3);
+  border-radius: var(--ds-radius-sm);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

@@ -1,0 +1,66 @@
+/* Fixed-height stage so hint, skeleton, match, and no-result states swap without resizing the card. */
+.body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 108px;
+}
+
+.body[data-state="match"],
+.body[data-state="checking"],
+.body[data-state="none"] {
+  justify-content: flex-start;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  color: var(--ds-gray-8);
+}
+
+.no-match {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: 44px;
+  padding-inline: 14px;
+  font-size: 13px;
+  font-weight: 450;
+  color: var(--ds-gray-9);
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+}
+
+/* Empty-state guidance in the body, swapped for the exact-match row once the input resolves. */
+.hint {
+  padding-inline: 4px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 22px;
+  color: var(--ds-gray-10);
+  text-align: center;
+  /* Hints break lines with \n in their strings. */
+  white-space: pre-line;
+}
+
+/* Tinted status pill under the handle field for the add error. */
+.chip {
+  align-self: center;
+  max-width: 100%;
+  padding: 5px 12px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 550;
+  white-space: nowrap;
+  border-radius: var(--ds-radius-full);
+}
+
+.error {
+  color: var(--ds-orange-11);
+  background: var(--ds-orange-3);
+}

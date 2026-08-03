@@ -1,5 +1,6 @@
 import { RawImage } from "@huggingface/transformers";
 import { clipImageEmbedding } from "@/lib/enrichment/clip";
+import { clipAnnNearest } from "@/lib/search/clip-ann-index";
 import type { Save } from "@/lib/types";
 import { cosine } from "@/lib/util/vector";
 import { clipEmbeddingStore } from "@/stores/clip-embedding-store";
@@ -16,6 +17,19 @@ export function rankByClip(
   candidates: ReadonlyArray<Save>,
   vector: Float32Array,
 ): Save[] {
+  const byId = new Map(candidates.map((s) => [s.id, s]));
+  const ann = clipAnnNearest(
+    vector,
+    Math.min(1_000, Math.max(candidates.length, 1)),
+  );
+  if (ann) {
+    const out: Save[] = [];
+    for (const { id } of ann) {
+      const save = byId.get(id);
+      if (save) out.push(save);
+    }
+    if (out.length > 0) return out;
+  }
   const scored: { save: Save; score: number }[] = [];
   for (const save of candidates) {
     const entry = clipEmbeddingStore.state.byId.get(save.id);

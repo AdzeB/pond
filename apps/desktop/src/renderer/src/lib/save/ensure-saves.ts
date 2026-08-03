@@ -1,0 +1,19 @@
+import { normalise } from "@/lib/save/reconcile";
+import type { Save } from "@/lib/types";
+import { bulkUpsertSaves, pool } from "@/stores/pool";
+
+/** Hydrate slim rows for ids missing from the pool (cold rows after hot-set boot). */
+export async function ensureSaves(ids: readonly string[]): Promise<void> {
+  const missing: string[] = [];
+  for (const id of ids) {
+    if (!pool.get(id)) missing.push(id);
+  }
+  if (missing.length === 0) return;
+  const rows = (await window.pond.query("saves.getMany", {
+    ids: missing,
+  })) as Array<Partial<Save>>;
+  const normalised = rows
+    .map((row) => normalise(row))
+    .filter((r): r is Save => r !== null);
+  if (normalised.length > 0) bulkUpsertSaves(normalised);
+}

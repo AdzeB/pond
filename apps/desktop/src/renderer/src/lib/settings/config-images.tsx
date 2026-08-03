@@ -1,4 +1,4 @@
-import { useImageDownloadBinding } from "@/components/settings-section-downloads";
+import { useImageDownloadBinding } from "@/components/settings/sections/downloads";
 import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;

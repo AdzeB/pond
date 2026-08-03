@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import type { SectionConfig } from "@/components/settings-engine";
+import type { SectionConfig } from "@/components/settings/engine";
 import { aiSection } from "@/lib/settings/config-ai";
 import { appearanceSection } from "@/lib/settings/config-appearance";
 import { connectionsSection } from "@/lib/settings/config-connections";
@@ -13,22 +13,22 @@ import { videosSection } from "@/lib/settings/config-videos";
 
 /** Bespoke sections are lazy so each ships in its own chunk. */
 const TagsSection = lazy(() =>
-  import("@/components/settings-tags").then((m) => ({
+  import("@/components/settings/tags").then((m) => ({
     default: m.TagsSection,
   })),
 );
 const SkillsSection = lazy(() =>
-  import("@/components/settings-skills").then((m) => ({
+  import("@/components/settings/skills").then((m) => ({
     default: m.SkillsSection,
   })),
 );
 const AiProvidersSection = lazy(() =>
-  import("@/components/settings-ai-providers").then((m) => ({
+  import("@/components/settings/ai-providers").then((m) => ({
     default: m.AiProvidersSection,
   })),
 );
 const FunnelSection = lazy(() =>
-  import("@/components/settings-funnel").then((m) => ({
+  import("@/components/settings/funnel").then((m) => ({
     default: m.FunnelSection,
   })),
 );

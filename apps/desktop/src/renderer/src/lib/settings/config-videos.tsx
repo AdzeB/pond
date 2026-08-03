@@ -1,4 +1,4 @@
-import { useVideoDownloadBinding } from "@/components/settings-section-downloads";
+import { useVideoDownloadBinding } from "@/components/settings/sections/downloads";
 import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
 type Values = Record<string, unknown>;

@@ -27,86 +27,19 @@ const store = new Store<ConnectFlowState>({
 
 export const connectFlow = {
   start(source: Source, connectedIds: Iterable<string>): void {
-    const ids = [...connectedIds];
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d09e18",
-      },
-      body: JSON.stringify({
-        sessionId: "d09e18",
-        hypothesisId: "H4",
-        location: "connect-flow.ts:start",
-        message: "connectFlow.start",
-        data: {
-          source,
-          connectedBeforeCount: ids.length,
-          dockMode: dockMode.current(),
-        },
-        timestamp: Date.now(),
-        runId: "post-fix",
-      }),
-    }).catch(() => {});
-    // #endregion
     void window.pond.connectSource(source);
     store.setState(() => ({
       source,
       waiting: source,
-      connectedBefore: new Set(ids),
+      connectedBefore: new Set(connectedIds),
       completed: false,
     }));
   },
   complete(): void {
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d09e18",
-      },
-      body: JSON.stringify({
-        sessionId: "d09e18",
-        hypothesisId: "H3",
-        location: "connect-flow.ts:complete",
-        message: "connectFlow.complete",
-        data: {
-          source: store.state.source,
-          waiting: store.state.waiting,
-          alreadyCompleted: store.state.completed,
-        },
-        timestamp: Date.now(),
-        runId: "post-fix",
-      }),
-    }).catch(() => {});
-    // #endregion
     store.setState((s) => (s.completed ? s : { ...s, completed: true }));
   },
   clear(): void {
     const waiting = store.state.waiting;
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d09e18",
-      },
-      body: JSON.stringify({
-        sessionId: "d09e18",
-        hypothesisId: "H4",
-        location: "connect-flow.ts:clear",
-        message: "connectFlow.clear",
-        data: {
-          waiting,
-          dockMode: dockMode.current(),
-          completed: store.state.completed,
-        },
-        timestamp: Date.now(),
-        runId: "post-fix",
-      }),
-    }).catch(() => {});
-    // #endregion
     store.setState((s) => (s.waiting === null ? s : { ...s, waiting: null }));
     if (waiting) void window.pond.clearPendingSession(waiting);
   },
@@ -121,24 +54,6 @@ dockMode.subscribe((mode) => {
   const from = previousMode;
   const leftWait = from === "connect-wait" && mode !== "connect-wait";
   previousMode = mode;
-  // #region agent log
-  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "d09e18",
-    },
-    body: JSON.stringify({
-      sessionId: "d09e18",
-      hypothesisId: "H4",
-      location: "connect-flow.ts:dockMode",
-      message: "dockMode changed",
-      data: { mode, from, leftWait },
-      timestamp: Date.now(),
-      runId: "post-fix",
-    }),
-  }).catch(() => {});
-  // #endregion
   if (leftWait) queueMicrotask(() => connectFlow.clear());
 });
 

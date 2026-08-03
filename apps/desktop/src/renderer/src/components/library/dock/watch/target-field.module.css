@@ -1,0 +1,83 @@
+/* Inset well matching the other cards' 44px fields. */
+.field {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding-inline: 12px 8px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: none;
+  border: 0;
+}
+
+.field input::placeholder {
+  color: var(--ds-gray-9);
+}
+
+.paste {
+  flex: none;
+  height: 26px;
+  padding-inline: 10px;
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-4);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-5);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &:disabled {
+    color: var(--ds-gray-8);
+    cursor: default;
+    background: var(--ds-gray-3);
+  }
+}
+
+.field-spinner {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  border: 2px solid var(--ds-gray-a4);
+  border-top-color: var(--ds-accent-9);
+  border-radius: 50%;
+  animation: spin 1.4s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .field-spinner {
+    animation: none;
+  }
+}

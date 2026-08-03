@@ -1,6 +1,7 @@
 import { extname } from "node:path";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
+import pLimit from "p-limit";
 
 /** 50 MiB. */
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
@@ -211,18 +212,21 @@ export async function fetchMediaBatch(
   }
   if (unique.length === 0) return [];
 
+  const limit = pLimit(6);
   const results: MediaBatchEntry[] = await Promise.all(
-    unique.map(async (u, i): Promise<MediaBatchEntry> => {
-      try {
-        const outcome = await fetchMediaToTxFile(u, i, options);
-        return "file" in outcome
-          ? { url: u, file: outcome.file }
-          : { url: u, file: null, miss: outcome.miss };
-      } catch (err) {
-        log.warn("[pond blob] batch fetch failed", u, err);
-        return { url: u, file: null, miss: "transient" };
-      }
-    }),
+    unique.map((u, i) =>
+      limit(async (): Promise<MediaBatchEntry> => {
+        try {
+          const outcome = await fetchMediaToTxFile(u, i, options);
+          return "file" in outcome
+            ? { url: u, file: outcome.file }
+            : { url: u, file: null, miss: outcome.miss };
+        } catch (err) {
+          log.warn("[pond blob] batch fetch failed", u, err);
+          return { url: u, file: null, miss: "transient" };
+        }
+      }),
+    ),
   );
 
   return renumberCovers(results);

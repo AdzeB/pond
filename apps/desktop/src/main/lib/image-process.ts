@@ -88,7 +88,7 @@ function applyFormat(
       pipeline.jpeg({ quality: prefs.quality, progressive: prefs.progressive });
       break;
     case "png":
-      pipeline.png({ progressive: prefs.progressive, compressionLevel: 9 });
+      pipeline.png({ progressive: prefs.progressive, compressionLevel: 6 });
       break;
     case "webp":
       pipeline.webp({ quality: prefs.quality, lossless: prefs.lossless });

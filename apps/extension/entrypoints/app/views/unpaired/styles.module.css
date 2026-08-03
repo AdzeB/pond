@@ -1,0 +1,48 @@
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 24px;
+  color: var(--ds-gray-11);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.input {
+  display: flex;
+  width: 100%;
+}
+
+.helper {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.4;
+  color: var(--ds-gray-10);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ds-red-11);
+}

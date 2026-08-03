@@ -1,0 +1,60 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: -16px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.search {
+  width: 100%;
+  max-width: 320px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.selection-count {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-12);
+}
+
+.table-wrapper {
+  min-width: 0;
+}
+
+/* The pill is styled by the DataTable primitive; the offset keeps it centered over the content beside the settings nav. */
+.action-bar {
+  --data-table-action-bar-offset: calc(var(--settings-sidebar-width, 0px) / 2);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.empty-text {
+  max-width: 320px;
+  font-size: 13px;
+  color: var(--ds-gray-10);
+  text-wrap: balance;
+}

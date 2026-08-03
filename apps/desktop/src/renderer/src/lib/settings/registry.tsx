@@ -22,7 +22,7 @@ import {
   type SettingsGroup,
   type SettingsSection,
 } from "@pond/schema";
-import type { SectionConfig } from "@/components/settings-engine";
+import type { SectionConfig } from "@/components/settings/engine";
 import { SECTION_CONFIGS } from "@/lib/settings/sections";
 
 const ICONS: Record<string, IconComponent> = {

@@ -1,7 +1,18 @@
 import { type Save, saves, type Task, tasks } from "@pond/schema/db";
+import { buildWhere, isEmptyQuery, type Query } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
-import { desc, eq, getTableColumns, inArray, isNotNull } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getTableColumns,
+  inArray,
+  isNotNull,
+  isNull,
+  type SQL,
+} from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
@@ -120,6 +131,108 @@ export const savesQueries: QueryHandlerMap = {
       rawJson: rawSlim,
     })) as Save[];
     return toWireSaves(listRows, grouped);
+  },
+
+  /** Keyword search via saves_fts; scores are BM25 rank (lower is better in FTS5, inverted for callers). */
+  async "saves.searchFts"(params) {
+    const q = String(params.q ?? "").trim();
+    if (!q)
+      return { ids: [] as string[], scores: {} as Record<string, number> };
+    const limit = Math.min(
+      Math.max(1, Number(params.limit ?? 10_000) || 10_000),
+      10_000,
+    );
+    const deletedOnly = Boolean(params.deletedOnly);
+    const match = toFtsMatchQuery(q, params.mode === "any" ? "any" : "all");
+    if (!match) {
+      return { ids: [] as string[], scores: {} as Record<string, number> };
+    }
+    const db = await getDb();
+    const trashClause = deletedOnly
+      ? "s.deleted_at IS NOT NULL"
+      : "s.deleted_at IS NULL";
+    const rows = db.$raw
+      .prepare(
+        `SELECT f.id AS id, bm25(saves_fts) AS rank
+         FROM saves_fts f
+         JOIN saves s ON s.id = f.id
+         WHERE saves_fts MATCH ? AND ${trashClause}
+         ORDER BY rank
+         LIMIT ?`,
+      )
+      .all(match, limit) as Array<{ id: string; rank: number }>;
+    const scores: Record<string, number> = {};
+    const ids: string[] = [];
+    for (const row of rows) {
+      ids.push(row.id);
+      /** Invert FTS5 bm25 (more negative = better) into a positive relevance score. */
+      scores[row.id] = -row.rank;
+    }
+    return { ids, scores };
+  },
+
+  /** Structured filter pushdown; color predicates are not compiled and must be applied by the caller. */
+  async "saves.query"(params) {
+    const query = params.query as Query | null | undefined;
+    if (!query || isEmptyQuery(query)) {
+      return { ids: [] as string[] };
+    }
+    const compiled = buildWhere(query);
+    const deletedOnly = Boolean(params.deletedOnly);
+    const trash: SQL = deletedOnly
+      ? isNotNull(saves.deletedAt)
+      : isNull(saves.deletedAt);
+    const where = compiled ? and(trash, compiled) : trash;
+    const sortKey = String(params.sortKey ?? "savedAt");
+    const sortDir = params.sortDir === "asc" ? "asc" : "desc";
+    const orderCol =
+      sortKey === "createdAt"
+        ? saves.createdAt
+        : sortKey === "title"
+          ? saves.title
+          : sortKey === "fileSize"
+            ? saves.fileSize
+            : saves.savedAt;
+    const order = sortDir === "asc" ? asc(orderCol) : desc(orderCol);
+    const limit =
+      params.limit != null
+        ? Math.min(Math.max(1, Number(params.limit) || 1), 100_000)
+        : null;
+    const db = await getDb();
+    const base = db
+      .select({ id: saves.id })
+      .from(saves)
+      .where(where)
+      .orderBy(order);
+    const rows = limit != null ? await base.limit(limit) : await base;
+    return { ids: rows.map((r) => r.id) };
+  },
+
+  /** Hydrate slim rows for a set of ids (hot-set / cold fetch). */
+  async "saves.getMany"(params) {
+    const ids = Array.isArray(params.ids)
+      ? params.ids.map((id) => String(id)).filter(Boolean)
+      : [];
+    if (ids.length === 0) return [];
+    const db = await getDb();
+    const out: Save[] = [];
+    const groupedAll = new Map<string, Task[]>();
+    for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
+      const slice = ids.slice(i, i + TASK_ID_CHUNK);
+      const rows = await db
+        .select(SAVE_LIST_COLUMNS)
+        .from(saves)
+        .where(inArray(saves.id, slice));
+      const grouped = await loadTasksFor(
+        db,
+        rows.map((r) => r.id),
+      );
+      for (const [k, v] of grouped) groupedAll.set(k, v);
+      for (const { rawSlim, ...rest } of rows) {
+        out.push({ ...rest, rawJson: rawSlim } as Save);
+      }
+    }
+    return toWireSaves(out, groupedAll);
   },
 
   /** Full rawJson for one save; the detail view hydrates it lazily. */
@@ -377,3 +490,14 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true as const, url };
   },
 };
+
+/** Quote tokens for FTS5; AND for "all", OR for "any". */
+function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {
+  const tokens = q
+    .split(/\s+/)
+    .map((t) => t.replaceAll('"', "").replaceAll("'", "").trim())
+    .filter((t) => t.length > 0);
+  if (tokens.length === 0) return null;
+  const quoted = tokens.map((t) => `"${t}"`);
+  return quoted.join(mode === "any" ? " OR " : " ");
+}

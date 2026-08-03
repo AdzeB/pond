@@ -21,13 +21,12 @@ pnpm --filter @pond/extension dev
 
 Load unpacked from `apps/extension/.output/chrome-mv3` while developing.
 
-## App page
+## Toolbar popup
 
-Click the toolbar icon to open the full-page Pond extension UI (not a tiny popup):
+Click the toolbar icon to open the Pond popup:
 
-1. **Link your desktop app.** If Pond is already running on this machine, the extension links automatically. Otherwise paste a token from Pond’s menu bar → **Copy Pairing Token**.
-2. **Connect [Source].** When you’re on a source site (X, Instagram, …), confirm to push cookies.
-3. Otherwise a linked status page shows that capture is running in the background.
+1. **Link your desktop app.** Paste a token from Pond’s menu bar → **Copy Pairing Token**.
+2. When linked, the popup shows capture status. Session connect happens in the background when Pond is waiting and you open the matching source site signed in.
 
 ## State gallery
 
@@ -35,10 +34,10 @@ With `pnpm --filter @pond/extension dev` running:
 
 ```
 http://localhost:3001/entrypoints/gallery/index.html
-http://localhost:3001/entrypoints/app/index.html
+http://localhost:3001/entrypoints/popup/index.html
 ```
 
-Or `chrome-extension://<id>/gallery.html` / `app.html`. Gallery is omitted from production `zip` builds.
+Or `chrome-extension://<id>/gallery.html` / `popup.html`. Gallery is omitted from production `zip` builds.
 
 ## Supported sources
 

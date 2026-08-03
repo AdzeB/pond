@@ -287,7 +287,7 @@ export function useAsk(): (
         const rankVector = blendVectors(queryVector, anchorVector);
 
         setAskStage(nonce, "ranking");
-        const result = executePlan(plan, {
+        const result = await executePlan(plan, {
           pool: basePool,
           rankVector,
           residualText: residual.trim(),

@@ -6,8 +6,8 @@ import {
 } from "@pond/schema";
 import { Button, Input, Settings, Switch } from "@pond/ui";
 import { useCallback, useEffect, useState } from "react";
-import { EnrichmentModelPicker } from "@/components/enrichment-model-picker";
-import { ProviderLogo } from "@/components/provider-logo";
+import { EnrichmentModelPicker } from "@/components/shared/enrichment-model-picker";
+import { ProviderLogo } from "@/components/shared/provider-logo";
 import { EMBEDDING_CATALOG } from "@/lib/enrichment/model-catalogs";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 import { settingsModal } from "@/stores/settings-modal";

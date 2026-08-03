@@ -1,0 +1,126 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  grid-row: span 2;
+  grid-column: span 2;
+  min-width: 0;
+  padding: 14px 16px;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--shadow);
+}
+
+.card[data-w="1"] {
+  grid-column: span 1;
+}
+
+.card[data-w="3"] {
+  grid-column: span 3;
+}
+
+.card[data-h="1"] {
+  grid-row: span 1;
+}
+
+.card[data-h="3"] {
+  grid-row: span 3;
+}
+
+/* The dragged card doubles as the insertion indicator. */
+.card[data-dragging] {
+  border-color: var(--ds-accent-8);
+  box-shadow:
+    inset 3px 0 0 var(--ds-accent-9),
+    var(--shadow);
+  opacity: 0.55;
+}
+
+.card-header {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.card-grip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  margin-left: -8px;
+  color: var(--ink-3);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card:hover .card-grip {
+  opacity: 1;
+}
+
+.card-title {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.card-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-chevron {
+  flex: none;
+  color: var(--ink-3);
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card-title:hover .card-chevron,
+.card-title:focus-visible .card-chevron {
+  opacity: 1;
+}
+
+.card-actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.card:hover .card-actions,
+.card:focus-within .card-actions {
+  opacity: 1;
+}
+
+.card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.card-empty {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+}

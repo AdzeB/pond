@@ -1,8 +1,8 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { OnboardingGate } from "@/components/onboarding";
-import { SettingsModal } from "@/components/settings-modal";
-import { Tray } from "@/components/tray";
+import { SettingsModal } from "@/components/settings/modal";
+import { OnboardingGate } from "@/components/shell/onboarding";
+import { Tray } from "@/components/shell/tray";
 import { getAppRouter } from "@/lib/ui/app-router";
 import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { settingsModal } from "@/stores/settings-modal";

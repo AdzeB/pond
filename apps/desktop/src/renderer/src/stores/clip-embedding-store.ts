@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import { clipAnnMarkDirty } from "@/lib/search/ann-dirty";
 
 /** Per-save CLIP image vectors, mirroring stores/embedding-store.ts: hydrated once on startup (vectors are excluded from saves.list), kept current by the clip enricher, persisted non-synced via saves.patchDerived. */
 
@@ -47,6 +48,7 @@ export function loadClipEmbeddings(): Promise<void> {
         });
       }
       store.setState((s) => ({ byId, version: s.version + 1, loaded: true }));
+      clipAnnMarkDirty("all");
     } catch (err) {
       console.warn("[clip] failed to load persisted vectors", err);
       store.setState((s) => ({ ...s, loaded: true }));
@@ -68,6 +70,7 @@ export function setClipEmbedding(
     byId.set(id, { vec, model });
     return { byId, version: s.version + 1, loaded: s.loaded };
   });
+  clipAnnMarkDirty([id]);
   void window.pond
     .query("saves.patchDerived", {
       id,
@@ -89,6 +92,7 @@ export function clearClipEmbeddings(ids?: readonly string[]): number {
         ? s
         : { byId, version: s.version + 1, loaded: s.loaded };
     });
+    if (count > 0) clipAnnMarkDirty(ids);
     return count;
   }
   const count = store.state.byId.size;
@@ -98,5 +102,6 @@ export function clearClipEmbeddings(ids?: readonly string[]): number {
     version: s.version + 1,
     loaded: s.loaded,
   }));
+  clipAnnMarkDirty("all");
   return count;
 }

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   type BindAddress,
   BindAddressSelect,
-} from "@/components/settings-bind-address";
+} from "@/components/settings/bind-address";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 
 interface ApiValues {

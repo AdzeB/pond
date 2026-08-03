@@ -1,10 +1,13 @@
 import type { NlFacets } from "@/lib/search/nl-query";
 import type { Save } from "@/lib/types";
+import { onPoolDirty, pool } from "@/stores/pool";
 
-/** Distinct facet values present in the library, ordered by frequency; shared by the NL compiler and facet resolver so matching can only resolve to real data. */
+/** Distinct facet values present in the library, ordered by frequency; maintained incrementally from pool mutations. */
 
-function bump(map: Map<string, number>, key: string): void {
-  map.set(key, (map.get(key) ?? 0) + 1);
+function bump(map: Map<string, number>, key: string, delta: number): void {
+  const next = (map.get(key) ?? 0) + delta;
+  if (next <= 0) map.delete(key);
+  else map.set(key, next);
 }
 
 function ranked(map: Map<string, number>): string[] {
@@ -13,24 +16,71 @@ function ranked(map: Map<string, number>): string[] {
     .map((e) => e.value);
 }
 
-export function computeLiveFacets(saves: ReadonlyArray<Save>): NlFacets {
-  const sources = new Map<string, number>();
-  const tags = new Map<string, number>();
-  const types = new Map<string, number>();
-  const creators = new Map<string, number>();
-  for (const save of saves) {
-    if (save.deletedAt) continue;
-    if (save.source) bump(sources, save.source.toLowerCase());
-    for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase());
-    const type = (save.mediaType ?? "").toLowerCase();
-    if (type) bump(types, type);
-    const author = save.author?.trim();
-    if (author) bump(creators, author.toLowerCase());
+const sources = new Map<string, number>();
+const tags = new Map<string, number>();
+const types = new Map<string, number>();
+const creators = new Map<string, number>();
+/** Last save snapshot that contributed to the counters (for undo on upsert/delete). */
+const contributed = new Map<string, Save>();
+let attached = false;
+let cached: NlFacets | null = null;
+
+function applySave(save: Save, sign: 1 | -1): void {
+  if (save.deletedAt) return;
+  if (save.source) bump(sources, save.source.toLowerCase(), sign);
+  for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase(), sign);
+  const type = (save.mediaType ?? "").toLowerCase();
+  if (type) bump(types, type, sign);
+  const author = save.author?.trim();
+  if (author) bump(creators, author.toLowerCase(), sign);
+}
+
+function rebuildFromPool(): void {
+  sources.clear();
+  tags.clear();
+  types.clear();
+  creators.clear();
+  contributed.clear();
+  for (const save of pool.snapshot()) {
+    applySave(save, 1);
+    contributed.set(save.id, save);
   }
-  return {
+  cached = null;
+}
+
+function patchIds(ids: readonly string[]): void {
+  for (const id of ids) {
+    const prev = contributed.get(id);
+    if (prev) applySave(prev, -1);
+    const next = pool.get(id);
+    if (next) {
+      applySave(next, 1);
+      contributed.set(id, next);
+    } else {
+      contributed.delete(id);
+    }
+  }
+  cached = null;
+}
+
+function ensureAttached(): void {
+  if (attached) return;
+  attached = true;
+  rebuildFromPool();
+  onPoolDirty((ids) => {
+    if (ids.length > 2_000) rebuildFromPool();
+    else patchIds(ids);
+  });
+}
+
+export function computeLiveFacets(_saves?: ReadonlyArray<Save>): NlFacets {
+  ensureAttached();
+  if (cached) return cached;
+  cached = {
     sources: ranked(sources),
     tags: ranked(tags),
     types: ranked(types),
     creators: ranked(creators),
   };
+  return cached;
 }

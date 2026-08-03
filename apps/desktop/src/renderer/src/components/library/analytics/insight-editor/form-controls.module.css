@@ -1,0 +1,79 @@
+.section {
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.section:last-child {
+  border-bottom: 0;
+}
+
+.section-header {
+  margin: 0;
+}
+
+.section-trigger {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-gray-12);
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: none;
+  border: 0;
+}
+
+.section-chevron {
+  flex: none;
+  color: var(--ds-gray-9);
+  transition: rotate var(--ds-duration-snap) var(--ds-easing-standard);
+}
+
+.section-trigger[data-panel-open] .section-chevron {
+  rotate: 180deg;
+}
+
+.section-panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.section-panel[data-starting-style],
+.section-panel[data-ending-style] {
+  height: 0;
+}
+
+.section-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 2px 0 18px;
+}
+
+.field {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+}
+
+.field-seg {
+  width: 100%;
+}
+
+.knob {
+  display: flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 2px;
+}

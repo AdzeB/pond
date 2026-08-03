@@ -1,10 +1,7 @@
 import { Store } from "@tanstack/store";
-import {
-  applyAction,
-  normalise,
-  type SyncActionEvent,
-} from "@/lib/save/reconcile";
+import { normalise, type SyncActionEvent } from "@/lib/save/reconcile";
 import { readSnapshot, scheduleSnapshotWrite } from "@/lib/save/snapshot";
+import { applyActionCoalesced } from "@/lib/save/sync-coalesce";
 import type { Save } from "@/lib/types";
 import { bulkUpsertSaves, deleteSave, pool } from "@/stores/pool";
 
@@ -13,6 +10,9 @@ interface BootState {
 }
 
 export const bootStore = new Store<BootState>({ ready: false });
+
+/** Newest N rows paint first; the remainder hydrates in the background. */
+const HOT_SET_LIMIT = 5_000;
 
 let started = false;
 let bootPromise: Promise<void> | null = null;
@@ -41,34 +41,56 @@ export function bootPool(): Promise<void> {
     }
 
     try {
-      await hydrateFromMain();
+      await hydrateHotSet();
     } catch (err) {
-      console.warn("[pond pool] hydrate failed", err);
+      console.warn("[pond pool] hot-set hydrate failed", err);
     }
     scheduleSnapshotWrite();
-
     bootStore.setState(() => ({ ready: true }));
+
+    try {
+      await hydrateRemainder();
+      scheduleSnapshotWrite();
+    } catch (err) {
+      console.warn("[pond pool] full hydrate failed", err);
+    }
   })();
 
   return bootPromise;
 }
 
-async function hydrateFromMain(): Promise<void> {
+async function hydrateHotSet(): Promise<void> {
+  const rows = (await window.pond.query("saves.list", {
+    limit: HOT_SET_LIMIT,
+  })) as Array<Partial<Save>>;
+  applyListRows(rows, { pruneMissing: false });
+}
+
+async function hydrateRemainder(): Promise<void> {
   const rows = (await window.pond.query("saves.list", {})) as Array<
     Partial<Save>
   >;
+  applyListRows(rows, { pruneMissing: true });
+}
+
+function applyListRows(
+  rows: Array<Partial<Save>>,
+  opts: { pruneMissing: boolean },
+): void {
   const fresh = rows
     .map((row) => normalise(row))
     .filter((r): r is Save => r !== null);
 
-  const freshIds = new Set(fresh.map((s) => s.id));
-  const stale: string[] = [];
-  for (const id of pool.ids()) {
-    if (!freshIds.has(id)) stale.push(id);
+  if (opts.pruneMissing) {
+    const freshIds = new Set(fresh.map((s) => s.id));
+    const stale: string[] = [];
+    for (const id of pool.ids()) {
+      if (!freshIds.has(id)) stale.push(id);
+    }
+    for (const id of stale) deleteSave(id);
   }
 
   bulkUpsertSaves(fresh);
-  for (const id of stale) deleteSave(id);
 }
 
 let subscribedToSync = false;
@@ -77,7 +99,7 @@ function subscribeToSyncActions(): void {
   if (subscribedToSync) return;
   window.pond.onSyncAction((raw) => {
     try {
-      applyAction(raw as SyncActionEvent);
+      applyActionCoalesced(raw as SyncActionEvent);
       scheduleSnapshotWrite();
     } catch (err) {
       console.warn("[pond pool] applyAction failed", err, raw);

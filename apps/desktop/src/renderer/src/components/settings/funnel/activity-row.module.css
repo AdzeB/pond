@@ -1,0 +1,100 @@
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--ds-gray-a3);
+  }
+}
+
+.row-main {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+}
+
+.activity-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 0 6.5px;
+  background: var(--ds-gray-8);
+  border-radius: 999px;
+}
+
+.activity-dot[data-state="running"] {
+  background: var(--ds-blue-9);
+  animation: funnel-pulse 1.2s ease-in-out infinite;
+}
+
+.activity-dot[data-state="done"] {
+  background: var(--ds-green-9);
+}
+
+.activity-dot[data-state="error"] {
+  background: var(--ds-red-9);
+}
+
+.row-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+/* Trails the title on the same line; grows into leftover space so both sides ellipsize instead of colliding. */
+.row-sub {
+  flex: 1 1 60px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12.5px;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+
+.row-sub[data-tone="error"] {
+  color: var(--ds-red-11);
+}
+
+.row-end {
+  display: flex;
+  flex: none;
+  gap: 8px;
+  align-items: center;
+}
+
+.pct {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-11);
+}
+
+.when {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+@keyframes funnel-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-dot[data-state="running"] {
+    animation: none;
+  }
+}

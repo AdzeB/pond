@@ -1,0 +1,54 @@
+/* Option list matching the tray's other cards: separate 44px rounded rows. */
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 16px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+}
+
+.row-button {
+  font: inherit;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  border: 0;
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.row-button:hover {
+  background: var(--ds-gray-3);
+}
+
+.row-button:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.row-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: calc(var(--ds-radius-lg) + 2px);
+  box-shadow: 0 0 0 2px var(--ds-accent-a6);
+}

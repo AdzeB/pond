@@ -1,17 +1,17 @@
 .solo {
+  display: flex;
+  justify-content: center;
   width: 100vw;
   min-height: 100vh;
-}
-
-.solo > * {
-  min-height: 100vh;
+  padding: 48px 24px;
+  background: var(--ds-gray-3);
 }
 
 .gallery {
   display: flex;
   flex-direction: column;
   gap: 28px;
-  max-width: 1400px;
+  max-width: 420px;
   padding: 32px 28px 64px;
   margin: 0 auto;
 }
@@ -21,7 +21,6 @@
   font-size: 22px;
   font-weight: 600;
   color: var(--ds-gray-12);
-  letter-spacing: -0.02em;
 }
 
 .header p {
@@ -66,14 +65,11 @@
 }
 
 .stage {
+  width: 360px;
   overflow: hidden;
   background: var(--ds-gray-1);
   border-radius: 16px;
   box-shadow:
     0 0 0 1px var(--ds-gray-a3),
     0 16px 40px var(--ds-gray-a3);
-}
-
-.stage > * {
-  min-height: 640px;
 }

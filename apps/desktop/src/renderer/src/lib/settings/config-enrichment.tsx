@@ -1,5 +1,5 @@
 import { Settings } from "@pond/ui";
-import { EnrichmentModelPicker } from "@/components/enrichment-model-picker";
+import { EnrichmentModelPicker } from "@/components/shared/enrichment-model-picker";
 import {
   CAPTION_CATALOG,
   CLIP_CATALOG,

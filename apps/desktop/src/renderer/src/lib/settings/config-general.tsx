@@ -1,4 +1,4 @@
-import { CheckNowRow } from "@/components/settings-section-general";
+import { CheckNowRow } from "@/components/settings/sections/general";
 import { defineCustomSection, group } from "@/lib/settings/engine-types";
 
 function runApply(channel: string): void {

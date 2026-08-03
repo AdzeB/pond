@@ -3,7 +3,7 @@ import {
   DEFAULT_SYSTEM_LIGHT_ID,
 } from "@pond/schema/db";
 import { useEffect } from "react";
-import { openShortcutsSheet } from "@/components/shortcuts-sheet";
+import { openShortcutsSheet } from "@/components/shared/shortcuts-sheet";
 import {
   copyId,
   copyUrl,

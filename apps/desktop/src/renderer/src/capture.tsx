@@ -1,7 +1,7 @@
 import type { TweetCardData } from "@shared/tweet-card";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
-import { TweetCard } from "./components/tweet-card";
+import { TweetCard } from "./components/tweet/card";
 
 const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;

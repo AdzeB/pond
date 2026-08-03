@@ -1,0 +1,81 @@
+import type { Save } from "@/lib/types";
+import { bulkUpsertSaves, deleteSave, pool } from "@/stores/pool";
+import { applyAction, normalise, type SyncActionEvent } from "./reconcile";
+
+const pending = new Map<string, Save>();
+const pendingDeletes = new Set<string>();
+let flushScheduled = false;
+
+function scheduleFlush(): void {
+  if (flushScheduled) return;
+  flushScheduled = true;
+  const run = () => {
+    flushScheduled = false;
+    const deletes = [...pendingDeletes];
+    pendingDeletes.clear();
+    const upserts = [...pending.values()];
+    pending.clear();
+    for (const id of deletes) deleteSave(id);
+    if (upserts.length > 0) bulkUpsertSaves(upserts);
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(run);
+  } else {
+    queueMicrotask(run);
+  }
+}
+
+/** Fold save I/U/A into one bulk upsert per frame; deletes flush in the same turn. */
+export function applyActionCoalesced(event: SyncActionEvent): void {
+  if (event.modelName !== "save") {
+    applyAction(event);
+    return;
+  }
+
+  if (event.action === "D") {
+    pending.delete(event.modelId);
+    pendingDeletes.add(event.modelId);
+    scheduleFlush();
+    return;
+  }
+
+  pendingDeletes.delete(event.modelId);
+
+  if (event.action === "I") {
+    const save = normalise(event.data as Partial<Save>);
+    if (save) {
+      pending.set(save.id, save);
+      scheduleFlush();
+    }
+    return;
+  }
+
+  if (event.action === "U") {
+    const patch = event.data as Partial<Save>;
+    const base = pending.get(event.modelId) ?? pool.get(event.modelId);
+    const merged = normalise(
+      base
+        ? { ...base, ...patch, id: base.id }
+        : { ...patch, id: event.modelId },
+    );
+    if (merged) {
+      pending.set(merged.id, merged);
+      scheduleFlush();
+    }
+    return;
+  }
+
+  if (event.action === "A") {
+    const base = pending.get(event.modelId) ?? pool.get(event.modelId);
+    if (!base) return;
+    const merged = normalise({
+      ...base,
+      ...(event.data as Partial<Save>),
+      id: base.id,
+    });
+    if (merged) {
+      pending.set(merged.id, merged);
+      scheduleFlush();
+    }
+  }
+}

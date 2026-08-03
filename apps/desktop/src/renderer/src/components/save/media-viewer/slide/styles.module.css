@@ -1,0 +1,54 @@
+.slide {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding-inline: calc(var(--slide-spacing, 32px) / 2);
+  vertical-align: top;
+  scroll-snap-align: center;
+}
+
+@keyframes coverflow {
+  0%,
+  100% {
+    opacity: 0.5;
+    filter: blur(2px);
+    transform: scale(0.82);
+  }
+
+  50% {
+    opacity: 1;
+    filter: blur(0);
+    transform: scale(1);
+  }
+}
+
+/* Width is the smaller of the horizontal cap and the height-bound width, so the box equals the displayed media with no letterboxing; the 128px insets give the shadow space within the scroll container. */
+.media-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(calc(100cqi - 128px), calc((100cqh - 128px) * var(--ratio)));
+  aspect-ratio: var(--ratio);
+  overflow: hidden;
+  background: transparent;
+  border-radius: 8px;
+  box-shadow: var(--ds-shadow-2);
+  animation: coverflow linear both;
+  animation-timeline: view(inline);
+  will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media-shell {
+    animation: none;
+  }
+}
+
+.media {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

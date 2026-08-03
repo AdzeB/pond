@@ -1,0 +1,95 @@
+/* MessageScroller frame: caps the transcript height while the headless viewport owns scrolling. */
+.transcript {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 340px;
+  overflow: hidden;
+}
+
+/* Registered so the fade heights animate when the scroll-state attribute flips. */
+@property --ask-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --ask-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/* Mask, not overlay: fades to transparent so it holds up over any dock surface. */
+.transcript-viewport {
+  --ask-fade-top: 0px;
+  --ask-fade-bottom: 0px;
+
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black var(--ask-fade-top),
+    black calc(100% - var(--ask-fade-bottom)),
+    transparent
+  );
+  transition:
+    --ask-fade-top var(--ds-duration-medium) var(--ds-easing-standard),
+    --ask-fade-bottom var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+/* MessageScroller marks the viewport with data-scrollable="start end" as content clips past each edge. */
+.transcript-viewport[data-scrollable~="start"] {
+  --ask-fade-top: 32px;
+}
+
+.transcript-viewport[data-scrollable~="end"] {
+  --ask-fade-bottom: 32px;
+}
+
+.transcript-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Self-managing jump-to-latest control; the scroller marks it inert when the reader is at the live edge. */
+.transcript-jump {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  box-shadow:
+    var(--ds-shadow-3),
+    inset 0 0 0 0.5px var(--ds-gray-a4);
+  transform: translateX(-50%);
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-2);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &[inert] {
+    opacity: 0;
+  }
+}

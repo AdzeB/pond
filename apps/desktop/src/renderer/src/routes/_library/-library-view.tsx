@@ -1,8 +1,8 @@
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { LayoutSwitcher } from "@/components/layout-switcher";
-import { WelcomeEmpty } from "@/components/library-empty";
-import { LibraryGrid } from "@/components/library-grid";
+import { WelcomeEmpty } from "@/components/library/empty";
+import { LibraryGrid } from "@/components/library/layouts/grid";
+import { LayoutSwitcher } from "@/components/shared/layout-switcher";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useGridHotkeys } from "@/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/hooks/use-library-state";

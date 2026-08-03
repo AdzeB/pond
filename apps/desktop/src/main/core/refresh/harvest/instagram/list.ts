@@ -51,6 +51,7 @@ async function inPageInstagramList(
     const earlyStopEnabled = args.earlyStop ?? known.size > 0;
     let knownPageStreak = 0;
     const STOP_AFTER_KNOWN_PAGES = 2;
+    let freshCount = 0;
 
     function checkpoint(): void {
       (globalThis as any).__pondHarvestPartial = entries.map((e) => ({
@@ -67,7 +68,7 @@ async function inPageInstagramList(
       (globalThis as any).__pondHarvestStats = {
         phase,
         collected: entries.length,
-        fresh: entries.filter((e) => !known.has(e.sourceId)).length,
+        fresh: freshCount,
         path: location.pathname,
         earlyStop: earlyStopEnabled,
         known: known.size,
@@ -150,7 +151,10 @@ async function inPageInstagramList(
         });
         if (!raw) continue;
         pageNorm += 1;
-        if (!known.has(String((raw as Entry).sourceId))) pageFresh += 1;
+        if (!known.has(String((raw as Entry).sourceId))) {
+          pageFresh += 1;
+          freshCount += 1;
+        }
         entries.push(raw as Entry);
       }
 

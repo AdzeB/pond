@@ -19,12 +19,12 @@
 html,
 body,
 #root {
-  min-height: 100%;
   padding: 0;
   margin: 0;
 }
 
 body {
+  width: 360px;
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
 }
