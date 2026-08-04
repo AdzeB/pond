@@ -9,6 +9,7 @@ import { runFetchBlobs } from "./workers/fetch-blobs";
 import { runFetchVideoYtdlp } from "./workers/fetch-video-ytdlp";
 import { runFinalize } from "./workers/finalize";
 import { runHarvestMetadata } from "./workers/harvest-metadata";
+import { runRenderTextCover } from "./workers/render-text-cover";
 
 export const POLL_INTERVAL_MS = 5_000;
 /** Per-op caps are a second-order limit; the per-source pool budget binds. */
@@ -16,6 +17,7 @@ export const MAX_GLOBAL_INFLIGHT = 8;
 export const PER_OP_CONCURRENCY: Record<Op, number> = {
   harvest_metadata: 3,
   capture_tweet: 3,
+  render_text_cover: 2,
   fetch_blobs: 4,
   archive_page: 1,
   fetch_video_ytdlp: 2,
@@ -28,6 +30,7 @@ export const PER_OP_CONCURRENCY: Record<Op, number> = {
 export const TASK_WATCHDOG_MS: Record<Op, number> = {
   harvest_metadata: 90_000,
   capture_tweet: 120_000,
+  render_text_cover: 60_000,
   fetch_blobs: 5 * 60_000,
   /** Crawls up to ARCHIVE_MAX_PAGES navigations in one attempt; headroom over CRAWL_BUDGET_MS covers the final flush + WARC persist. */
   archive_page: 8 * 60_000,
@@ -69,6 +72,9 @@ export const WORKERS: Record<Op, Worker> = {
       );
     }
   },
+  render_text_cover: async (saveId) => {
+    await runRenderTextCover(saveId);
+  },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
   archive_page: (saveId, payload, ctx) =>
     runArchivePage(saveId, payload as { scope?: "page" | "site" }, ctx),
@@ -81,6 +87,7 @@ export const WORKERS: Record<Op, Worker> = {
 /** Cosmetic enhancer ops: when these exhaust retries the save still finalizes, unlike core ops whose final failure fails it. */
 export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
   "capture_tweet",
+  "render_text_cover",
   "archive_page",
   "ensure_poster",
   "fetch_avatar",
@@ -112,12 +119,13 @@ export function opOrderCase(opCol: typeof tasks.op) {
   return sql`(CASE ${opCol}
     WHEN 'harvest_metadata' THEN 0
     WHEN 'capture_tweet' THEN 1
-    WHEN 'fetch_blobs' THEN 2
-    WHEN 'archive_page' THEN 3
-    WHEN 'fetch_video_ytdlp' THEN 4
-    WHEN 'ensure_poster' THEN 5
-    WHEN 'fetch_avatar' THEN 6
-    WHEN 'finalize' THEN 7
+    WHEN 'render_text_cover' THEN 2
+    WHEN 'fetch_blobs' THEN 3
+    WHEN 'archive_page' THEN 4
+    WHEN 'fetch_video_ytdlp' THEN 5
+    WHEN 'ensure_poster' THEN 6
+    WHEN 'fetch_avatar' THEN 7
+    WHEN 'finalize' THEN 8
   END)`;
 }
 
@@ -125,11 +133,12 @@ export function opOrderCaseRaw(rawCol: string) {
   return sql.raw(`(CASE ${rawCol}
     WHEN 'harvest_metadata' THEN 0
     WHEN 'capture_tweet' THEN 1
-    WHEN 'fetch_blobs' THEN 2
-    WHEN 'archive_page' THEN 3
-    WHEN 'fetch_video_ytdlp' THEN 4
-    WHEN 'ensure_poster' THEN 5
-    WHEN 'fetch_avatar' THEN 6
-    WHEN 'finalize' THEN 7
+    WHEN 'render_text_cover' THEN 2
+    WHEN 'fetch_blobs' THEN 3
+    WHEN 'archive_page' THEN 4
+    WHEN 'fetch_video_ytdlp' THEN 5
+    WHEN 'ensure_poster' THEN 6
+    WHEN 'fetch_avatar' THEN 7
+    WHEN 'finalize' THEN 8
   END)`);
 }

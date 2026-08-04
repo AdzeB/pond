@@ -64,8 +64,7 @@ export function aspectFromDims(
   if (width == null || height == null || width <= 0 || height <= 0) return null;
   const r = width / height;
   for (const preset of ASPECT_PRESETS) {
-    const target = ASPECT_TARGETS[preset.value];
-    if (target == null) continue;
+    const target = ASPECT_TARGETS[preset.value]!;
     if (Math.abs(r - target) / target <= ASPECT_TOLERANCE) return preset.value;
   }
   return null;

@@ -109,6 +109,7 @@ export function MediaViewer({
           active
           inView
           title={save.title}
+          artist={save.author}
           chapters={slideChapters}
           noteMarkers={noteMarkers}
           onError={() => markBroken(only.src)}
@@ -219,6 +220,7 @@ function Carousel({
             /** The live player mounts only near the centre; neighbours stay posters. */
             inView={Math.abs(i - active) <= 1}
             title={save.title}
+            artist={save.author}
             chapters={chapters}
             noteMarkers={noteMarkers}
             ratio={ratios.get(s.src)}

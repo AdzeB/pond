@@ -70,7 +70,9 @@ function buildSavePatch(
   pageUrl: string,
 ): Partial<NewSave> {
   const mediaUrl = capture.media[0]?.url ?? null;
-  const mediaType = pickMediaType(capture);
+  const mediaType = majorityMediaType(
+    (capture.media ?? []).map((m) => (m.type === "video" ? "video" : "image")),
+  );
 
   const patch: Partial<NewSave> = {
     rawJson,
@@ -89,10 +91,4 @@ function buildSavePatch(
 function safeDate(value: string): Date | null {
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? new Date(ms) : null;
-}
-
-function pickMediaType(capture: Capture) {
-  return majorityMediaType(
-    (capture.media ?? []).map((m) => (m.type === "video" ? "video" : "image")),
-  );
 }

@@ -1,6 +1,7 @@
 import type { Source } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import { playUiSuccess } from "@/lib/ui/sounds";
 import { type DockMode, dockMode } from "@/stores/dock-mode";
 
 /**
@@ -36,7 +37,9 @@ export const connectFlow = {
     }));
   },
   complete(): void {
+    const already = store.state.completed;
     store.setState((s) => (s.completed ? s : { ...s, completed: true }));
+    if (!already) playUiSuccess();
   },
   clear(): void {
     const waiting = store.state.waiting;

@@ -43,7 +43,9 @@ const SORT_TRANSITION = {
 
 function focusTabEl(id: string): void {
   requestAnimationFrame(() => {
-    const el = document.querySelector<HTMLElement>(`[data-tab-id="${id}"]`);
+    const el = document.querySelector<HTMLElement>(
+      `[data-tab-id="${CSS.escape(id)}"]`,
+    );
     el?.focus();
   });
 }
@@ -53,19 +55,21 @@ function stopPropagation(e: React.SyntheticEvent) {
 }
 
 interface TabBodyProps {
-  tab: Tab;
+  path: string;
+  pinned: boolean;
   label: string;
   save: Save | undefined;
   onClose: () => void;
 }
 
 const TabBody = memo(function TabBody({
-  tab,
+  path,
+  pinned,
   label,
   save,
   onClose,
 }: TabBodyProps) {
-  const Icon = iconForTab(tab.path, save);
+  const Icon = iconForTab(path, save);
   const avatarUrl = save ? pickAuthorAvatarUrl(save) : null;
   const author = save?.author?.trim() ?? "";
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -103,7 +107,7 @@ const TabBody = memo(function TabBody({
         </span>
       )}
       <span className={styles["tab-label"]}>{label}</span>
-      {!tab.pinned && (
+      {!pinned && (
         <Button
           icon
           size="xs"
@@ -157,7 +161,7 @@ const TabItem = memo(function TabItem({
   tab: Tab;
   index: number;
   isActive: boolean;
-  frozenWidth: number | null;
+  frozenWidth: number | undefined;
   onBeginRapidClose: () => void;
 }) {
   const itemRef = useRef<HTMLDivElement | null>(null);
@@ -191,40 +195,38 @@ const TabItem = memo(function TabItem({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      const list = tabs.getState().tabs;
-      const idx = list.findIndex((t) => t.id === tab.id);
-      if (idx === -1) return;
-
-      const activateAt = (nextIdx: number) => {
-        const next = list[nextIdx];
-        if (!next) return;
-        e.preventDefault();
-        tabs.activate(next.id);
-        focusTabEl(next.id);
-      };
+      const focusActive = () => focusTabEl(tabs.getState().activeId);
 
       switch (e.key) {
         case "ArrowRight":
-          activateAt((idx + 1) % list.length);
+          e.preventDefault();
+          tabs.activateNext();
+          focusActive();
           return;
         case "ArrowLeft":
-          activateAt((idx - 1 + list.length) % list.length);
+          e.preventDefault();
+          tabs.activatePrev();
+          focusActive();
           return;
         case "Home":
-          activateAt(0);
+          e.preventDefault();
+          tabs.activateByIndex(0);
+          focusActive();
           return;
-        case "End":
-          activateAt(list.length - 1);
+        case "End": {
+          e.preventDefault();
+          const n = tabs.getState().tabs.length;
+          if (n > 0) tabs.activateByIndex(n - 1);
+          focusActive();
           return;
+        }
         case "Delete":
         case "Backspace": {
-          if (tab.pinned || list.length <= 1) return;
+          if (tab.pinned || tabs.getState().tabs.length <= 1) return;
           e.preventDefault();
-          const neighbor =
-            list[idx + 1] ?? list[idx - 1] ?? list.find((t) => t.id !== tab.id);
           onBeginRapidClose();
           tabs.close(tab.id);
-          if (neighbor) focusTabEl(neighbor.id);
+          focusActive();
           return;
         }
         case "Enter":
@@ -282,7 +284,13 @@ const TabItem = memo(function TabItem({
         onKeyDown={onKeyDown}
         onMouseDown={onMouseDown}
       >
-        <TabBody tab={tab} label={label} save={save} onClose={handleClose} />
+        <TabBody
+          path={tab.path}
+          pinned={tab.pinned}
+          label={label}
+          save={save}
+          onClose={handleClose}
+        />
       </div>
     </SpecContextMenu>
   );
@@ -292,14 +300,14 @@ export function Toolbar() {
   const tabList = useTabs();
   const activeId = useActiveTabId();
   const groupRef = useRef<HTMLDivElement | null>(null);
+  const frozenRef = useRef(false);
+  const canScrollXRef = useRef(false);
+  const fadeRafRef = useRef(0);
   const { accounts } = useAccounts();
   const { watches } = useWatches();
   const byAccount = useSyncByAccount();
   const [open, setOpen] = useState<Panel | null>(null);
-  const [frozenWidths, setFrozenWidths] = useState<Record<
-    string,
-    number
-  > | null>(null);
+  const [frozenWidths, setFrozenWidths] = useState<Record<string, number>>({});
 
   const ids = useMemo(() => tabList.map((t) => t.id), [tabList]);
 
@@ -314,7 +322,7 @@ export function Toolbar() {
   );
 
   const beginRapidClose = useCallback(() => {
-    if (frozenWidths) return;
+    if (frozenRef.current) return;
     const el = groupRef.current;
     if (!el) return;
     const next: Record<string, number> = {};
@@ -324,11 +332,14 @@ export function Toolbar() {
       next[id] = node.getBoundingClientRect().width;
     }
     if (Object.keys(next).length === 0) return;
+    frozenRef.current = true;
     setFrozenWidths(next);
-  }, [frozenWidths]);
+  }, []);
 
   const endRapidClose = useCallback(() => {
-    setFrozenWidths(null);
+    if (!frozenRef.current) return;
+    frozenRef.current = false;
+    setFrozenWidths({});
   }, []);
 
   /** Persist order when the gesture ends; dnd-kit handles optimistic motion mid-drag. */
@@ -342,12 +353,14 @@ export function Toolbar() {
     [ids],
   );
 
-  /** Edge fades + vertical wheel → horizontal scroll. */
   useEffect(() => {
     const el = groupRef.current;
     if (!el) return;
+
     const syncFade = () => {
+      fadeRafRef.current = 0;
       const max = el.scrollWidth - el.clientWidth;
+      canScrollXRef.current = max > 1;
       if (max <= 1) {
         el.removeAttribute("data-fade");
         return;
@@ -356,13 +369,19 @@ export function Toolbar() {
       const right = el.scrollLeft < max - 1;
       el.dataset.fade = left && right ? "both" : left ? "left" : "right";
     };
-    const syncSoon = () => requestAnimationFrame(syncFade);
+
+    const syncSoon = () => {
+      if (fadeRafRef.current) return;
+      fadeRafRef.current = requestAnimationFrame(syncFade);
+    };
+
     const onWheel = (e: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth + 1) return;
+      if (!canScrollXRef.current) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       e.preventDefault();
       el.scrollLeft += e.deltaY;
     };
+
     syncSoon();
     el.addEventListener("scroll", syncFade, { passive: true });
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -372,6 +391,7 @@ export function Toolbar() {
     const mo = new MutationObserver(syncSoon);
     mo.observe(el, { childList: true });
     return () => {
+      if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
       el.removeEventListener("scroll", syncFade);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("mouseleave", endRapidClose);
@@ -379,22 +399,6 @@ export function Toolbar() {
       mo.disconnect();
     };
   }, [endRapidClose]);
-
-  /** Drop frozen widths for tabs that no longer exist. */
-  useEffect(() => {
-    if (!frozenWidths) return;
-    const live = new Set(ids);
-    let changed = false;
-    const next: Record<string, number> = {};
-    for (const [id, width] of Object.entries(frozenWidths)) {
-      if (!live.has(id)) {
-        changed = true;
-        continue;
-      }
-      next[id] = width;
-    }
-    if (changed) setFrozenWidths(Object.keys(next).length ? next : null);
-  }, [frozenWidths, ids]);
 
   return (
     <div className={styles.bar}>
@@ -425,7 +429,7 @@ export function Toolbar() {
                 tab={tab}
                 index={index}
                 isActive={tab.id === activeId}
-                frozenWidth={frozenWidths?.[tab.id] ?? null}
+                frozenWidth={frozenWidths[tab.id]}
                 onBeginRapidClose={beginRapidClose}
               />
             ))}

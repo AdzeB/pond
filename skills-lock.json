@@ -37,6 +37,12 @@
       "sourceType": "well-known",
       "computedHash": "6a91633828967bb54865b6ce6043b5a97a5b0f21af5d886ebd11ea047c27b500"
     },
+    "create-sound": {
+      "source": "raphaelsalaja/audio",
+      "sourceType": "github",
+      "skillPath": "skills/create-sound/SKILL.md",
+      "computedHash": "d4e39069625e20e9088359a2bfb676a63e8d151572d196fece1faafc709383e2"
+    },
     "deploy-to-vercel": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",

@@ -47,6 +47,10 @@
   white-space: nowrap;
 }
 
+.tile-sub[data-tone="run"] {
+  color: var(--ds-blue-11);
+}
+
 .tile-sub[data-tone="warn"] {
   color: var(--ds-amber-11);
 }
@@ -54,6 +58,12 @@
 @media (prefers-reduced-motion: reduce) {
   .wipe[data-pulse] {
     opacity: 0.4;
+    animation: none;
+  }
+
+  .ring-arc[data-spin] {
+    stroke-dasharray: 47 141;
+    stroke-dashoffset: 0;
     animation: none;
   }
 }
@@ -66,6 +76,48 @@
   width: 56px;
   height: 56px;
   margin-bottom: 6px;
+}
+
+.ring {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.ring-track,
+.ring-arc {
+  fill: none;
+  stroke-width: 2.5;
+  transform-origin: 32px 32px;
+}
+
+.ring-track {
+  stroke: var(--ds-gray-a4);
+}
+
+.ring-arc {
+  stroke: var(--ds-blue-9);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 0.4s var(--ds-easing-standard, ease);
+}
+
+.ring-arc[data-spin] {
+  stroke-dasharray: 47 141;
+  animation: ring-spin 0.9s linear infinite;
+}
+
+@keyframes ring-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+
+  to {
+    transform: rotate(270deg);
+  }
 }
 
 .image {
@@ -142,6 +194,7 @@
   position: absolute;
   right: -3px;
   bottom: -3px;
+  z-index: 1;
   display: grid;
   place-items: center;
   overflow: hidden;

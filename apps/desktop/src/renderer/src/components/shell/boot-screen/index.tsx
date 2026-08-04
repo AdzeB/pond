@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { useBootReady } from "@/hooks/use-saves";
-import { useOnboardingStatus } from "@/stores/onboarding";
 
 const BOOT_FADE_MS = 220;
 
@@ -35,16 +34,14 @@ function dismissBootCover(): void {
   window.setTimeout(remove, BOOT_FADE_MS);
 }
 
-/** Dismisses the HTML launch cover once the save pool and onboarding flag are known. */
+/** Dismisses the HTML launch cover once the save pool is ready. */
 export function BootScreen() {
   const bootReady = useBootReady();
-  const status = useOnboardingStatus();
-  const ready = bootReady && status !== "unknown";
 
   useEffect(() => {
-    if (!ready) return;
+    if (!bootReady) return;
     dismissBootCover();
-  }, [ready]);
+  }, [bootReady]);
 
   return null;
 }

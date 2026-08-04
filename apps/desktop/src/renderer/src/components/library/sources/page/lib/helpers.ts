@@ -32,6 +32,16 @@ export function itemCount(count: number): string {
   return `${formatNumber(count)} item${count === 1 ? "" : "s"}`;
 }
 
+/** Live sync/error copy while active; item count when the source is resting. */
+export function tileValue(
+  tone: CardModel["tone"],
+  statusText: string,
+  count: number,
+): string {
+  if (tone === "run" || tone === "paused" || tone === "err") return statusText;
+  return itemCount(count);
+}
+
 /** 0..1 while syncing with a known total; null when indeterminate or resting. */
 export function syncFraction(
   tone: CardModel["tone"],

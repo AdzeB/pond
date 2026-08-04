@@ -1,9 +1,9 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { cp, mkdir, readdir, rm } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { app, BrowserWindow, dialog } from "electron";
 import log from "electron-log/main.js";
-import { LIBRARY_SCHEMA_VERSION } from "../../../shared/constants";
+import { createPondBundle } from "../../core/ensure-default-library";
 import { relocateLibrary } from "../../core/library-ops";
 import { invalidatePrefs } from "../../core/prefs";
 import { reconcileLibrary } from "../../core/scan";
@@ -11,11 +11,7 @@ import { migrateLegacySyncPrefs } from "../../core/sync";
 import { flushTagsDump, hydrateTagsFromBundle } from "../../core/tags-bundle";
 import { closeDb } from "../../db";
 import { rotateBundleBackups } from "../../lib/library-config";
-import {
-  checkPointerSafety,
-  readLibraryPointer,
-  writeLibraryPointer,
-} from "../../lib/library-pointer";
+import { readLibraryPointer } from "../../lib/library-pointer";
 import {
   invalidatePaths,
   libraryRoot as libraryRootDir,
@@ -26,45 +22,10 @@ import type { QueryHandlerMap } from "../helpers";
 export const libraryLocationQueries: QueryHandlerMap = {
   /** Creates a fresh .pond bundle at `parentDir/name.pond`, writes the pointer, and resolves paths. */
   async "library.createAt"(params) {
-    const name = String(params.name ?? "").trim() || "My Pond";
-    const parentDir = String(params.path ?? "").trim();
-    if (!parentDir) return { ok: false as const, reason: "no_path" as const };
-
-    const bundlePath = ensurePondSuffix(join(parentDir, name));
-    const safety = checkPointerSafety(bundlePath);
-    if (!safety.ok) return { ok: false as const, reason: safety.reason };
-
-    mkdirSync(join(bundlePath, "items"), { recursive: true });
-    mkdirSync(join(bundlePath, "trash"), { recursive: true });
-
-    const metadataFile = join(bundlePath, "metadata.json");
-    if (!existsSync(metadataFile)) {
-      const bytes = crypto.getRandomValues(new Uint8Array(16));
-      const id = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(
-        "",
-      );
-      writeFileSync(
-        metadataFile,
-        JSON.stringify(
-          {
-            id,
-            name,
-            createdAt: Date.now(),
-            schemaVersion: LIBRARY_SCHEMA_VERSION,
-            appVersion: process.env.npm_package_version ?? "0.1.0",
-          },
-          null,
-          2,
-        ),
-      );
-    }
-
-    writeLibraryPointer(bundlePath);
-    invalidatePaths();
-    resolvePaths(bundlePath);
-
-    log.info("[pond library-ops] created new pond at", bundlePath);
-    return { ok: true as const, path: bundlePath };
+    return createPondBundle(
+      String(params.path ?? ""),
+      String(params.name ?? ""),
+    );
   },
 
   /** Opens a native folder picker for choosing where to store the pond. */
@@ -138,8 +99,13 @@ export const libraryLocationQueries: QueryHandlerMap = {
     }
   },
 
-  /** Backs "Move Library"; prompts for a destination then copies the library there. */
+  /** Copies the active library to a new path, switches the pointer, and relaunches. Leaves the source intact. */
   async "library.move"(params) {
+    const src = libraryRootDir().replace(/\/+$/, "");
+    if (!src || !existsSync(src)) {
+      return { ok: false as const, reason: "no_library" as const };
+    }
+
     const explicitDest =
       typeof params.path === "string" ? params.path.trim() : "";
     let dest = explicitDest;
@@ -160,8 +126,30 @@ export const libraryLocationQueries: QueryHandlerMap = {
       }
       dest = result.filePath;
     }
+
+    const destResolved = resolve(ensurePondSuffix(dest)).replace(/\/+$/, "");
+    const srcResolved = resolve(src);
+
+    if (srcResolved === destResolved) {
+      return { ok: false as const, reason: "same_path" as const };
+    }
+    if (
+      destResolved.startsWith(`${srcResolved}/`) ||
+      srcResolved.startsWith(`${destResolved}/`)
+    ) {
+      return { ok: false as const, reason: "nested_path" as const };
+    }
+
     try {
-      const result = await relocateLibrary(ensurePondSuffix(dest), "copy");
+      if (existsSync(destResolved)) {
+        const entries = await readdir(destResolved);
+        if (entries.length > 0) {
+          return { ok: false as const, reason: "destination_exists" as const };
+        }
+      }
+
+      const result = await relocateLibrary(destResolved, "copy");
+      relaunchSoon();
       return { ok: true as const, path: result.path };
     } catch (err) {
       return {

@@ -2,6 +2,7 @@ import { IconFolderOpenOutline18 as Folder } from "@pond/icons/outline/18";
 import { Button } from "@pond/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { playUiSuccess } from "@/lib/ui/sounds";
 import { prettyPath } from "@/lib/util/pretty-path";
 import styles from "./styles.module.css";
 
@@ -15,6 +16,8 @@ type ActionResult = { ok: true } | { ok: false; reason: string };
 type BackupResult =
   | { ok: true; path: string; copied: number }
   | { ok: false; reason: string };
+
+type MoveResult = { ok: true; path: string } | { ok: false; reason: string };
 
 const FIRST_BACKUP_KEY = "pond.first-library-backup";
 
@@ -32,6 +35,23 @@ function backupErrorMessage(reason: string): string {
       return "No library is open to back up.";
     default:
       return `Couldn't back up library: ${reason}`;
+  }
+}
+
+function moveErrorMessage(reason: string): string {
+  switch (reason) {
+    case "cancelled":
+      return "";
+    case "same_path":
+      return "Pick a different location than the open library.";
+    case "nested_path":
+      return "Can't move into a folder inside the library.";
+    case "destination_exists":
+      return "That folder already has files. Pick a new name.";
+    case "no_library":
+      return "No library is open to move.";
+    default:
+      return `Couldn't move library: ${reason}`;
   }
 }
 
@@ -61,6 +81,19 @@ export function LocationRow() {
     },
   });
 
+  const move = useMutation({
+    mutationFn: async () => {
+      setStatus(null);
+      setCelebrate(false);
+      /** Moving relaunches, so there's no success state to settle into. */
+      const res = (await window.pond.query("library.move", {})) as MoveResult;
+      if (!res.ok) {
+        if (res.reason === "cancelled") return;
+        throw new Error(moveErrorMessage(res.reason) || res.reason);
+      }
+    },
+  });
+
   const backup = useMutation({
     mutationFn: async () => {
       setStatus(null);
@@ -83,6 +116,7 @@ export function LocationRow() {
       if (first) {
         localStorage.setItem(FIRST_BACKUP_KEY, "1");
         setCelebrate(true);
+        playUiSuccess();
       }
       setStatus(`Backup saved to ${prettyPath(res.path)}`);
     },
@@ -132,6 +166,12 @@ export function LocationRow() {
       : "Couldn't open library."
     : null;
 
+  const moveError = move.isError
+    ? move.error instanceof Error
+      ? move.error.message
+      : "Couldn't move library."
+    : null;
+
   const backupError = backup.isError
     ? backup.error instanceof Error
       ? backup.error.message
@@ -144,7 +184,8 @@ export function LocationRow() {
       : "Couldn't import Eagle library."
     : null;
 
-  const message = openError || backupError || eagleError || status;
+  const actionError = openError || moveError || backupError || eagleError;
+  const message = actionError || status;
 
   return (
     <div className={styles.stack}>
@@ -160,13 +201,13 @@ export function LocationRow() {
           {message ? (
             <span
               className={
-                openError || backupError || eagleError
+                actionError
                   ? styles.error
                   : celebrate
                     ? styles.successCelebrate
                     : styles.success
               }
-              role={openError || backupError || eagleError ? "alert" : "status"}
+              role={actionError ? "alert" : "status"}
             >
               {message}
             </span>
@@ -181,6 +222,24 @@ export function LocationRow() {
         </Button>
       </div>
       <div className={styles.actions}>
+        <div className={styles.action}>
+          <div className={styles.actionMeta}>
+            <span className={styles.actionTitle}>Move Library</span>
+            <span className={styles.actionDesc}>
+              Copy this pond to a new location and open it from there. The
+              original folder stays so you can delete it once everything looks
+              good.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={move.isPending}
+            onClick={() => move.mutate()}
+          >
+            {move.isPending ? "Moving…" : "Move"}
+          </Button>
+        </div>
         <div className={styles.action}>
           <div className={styles.actionMeta}>
             <span className={styles.actionTitle}>Backup Library</span>

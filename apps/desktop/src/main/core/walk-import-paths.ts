@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 
@@ -29,7 +30,7 @@ async function walkOne(path: string, out: string[]): Promise<void> {
   }
   if (!info.isDirectory()) return;
 
-  let entries: Awaited<ReturnType<typeof readdir>>;
+  let entries: Dirent[];
   try {
     entries = await readdir(path, { withFileTypes: true });
   } catch {
@@ -38,6 +39,16 @@ async function walkOne(path: string, out: string[]): Promise<void> {
 
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
-    await walkOne(join(path, entry.name), out);
+    const child = join(path, entry.name);
+    if (entry.isDirectory()) {
+      await walkOne(child, out);
+      continue;
+    }
+    if (!entry.isFile()) continue;
+    try {
+      if ((await stat(child)).size > 0) out.push(child);
+    } catch {
+      /* skip unreadable */
+    }
   }
 }

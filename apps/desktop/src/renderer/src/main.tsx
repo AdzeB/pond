@@ -4,11 +4,9 @@ import { App } from "./App";
 import "@/lib/search/ann-index";
 import "@/lib/search/clip-ann-index";
 import { bootPool } from "./stores/bootstrap";
-import { loadOnboarding } from "./stores/onboarding";
 import "./styles.css";
 
 void bootPool();
-loadOnboarding();
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root element missing");

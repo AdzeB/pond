@@ -8,11 +8,13 @@ import {
   buildViewerMenu,
   fileIndexFromSlide,
 } from "@/components/save/media-viewer/lib/menu";
+import { TextViewer } from "@/components/save/text-viewer";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { AppShell } from "@/components/shell/app-shell";
 import { useSave } from "@/hooks/use-saves";
 import { hasArchive } from "@/lib/media/archive";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
+import { isTextOnlySave } from "@/lib/save/text";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
 import { libraryViewContext } from "@/stores/library-view-context";
 import { useTrackVisit } from "@/stores/recents";
@@ -113,6 +115,8 @@ export function SaveDetailPage() {
           <div className={styles.main}>
             {hasArchive(save) ? (
               <SaveArchiveViewer save={save} />
+            ) : isTextOnlySave(save) ? (
+              <TextViewer save={save} />
             ) : (
               <MediaViewer
                 save={save}

@@ -171,6 +171,19 @@ export type ThemeMode = "preset" | "system" | "custom";
 /** Cover source for Twitter saves in the grid and preview pane. */
 export type TweetCover = "media" | "screenshot";
 
+/** Character of interface feedback sounds. */
+export type SoundFeel =
+  | "soft"
+  | "crisp"
+  | "thock"
+  | "glass"
+  | "metal"
+  | "lofi"
+  | "retro"
+  | "organic"
+  | "airy"
+  | "punchy";
+
 /** Contrast widens the separation between backgrounds, borders, and text. */
 export const CONTRAST_MIN = 0;
 export const CONTRAST_MAX = 100;

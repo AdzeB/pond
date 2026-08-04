@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { DownloadingBadge } from "@/components/save/card/media/downloading-badge";
 import { HoverGallery } from "@/components/save/card/media/hover-gallery";
 import { HoverVideo } from "@/components/save/card/media/hover-video";
@@ -7,6 +7,8 @@ import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";
 import { withThumbWidth } from "@/lib/media/url";
+import { ensureTextCover } from "@/lib/save/ensure-text-cover";
+import { isTextOnlySave, textBodyForSave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
 import { usePrefs } from "@/stores/prefs";
 import { CARD_THUMB_WIDTH } from "./lib/constants";
@@ -28,6 +30,10 @@ export const CardThumb = memo(function CardThumb({
     [save, theme, preferences?.tweetCover],
   );
   const isDownloading = useIsVideoDownloading(save);
+
+  useEffect(() => {
+    ensureTextCover(save);
+  }, [save]);
 
   /** The cycle list is disabled when the cover isn't one of these images so the resting frame stays correct. */
   const slides = useMemo(() => {
@@ -77,6 +83,8 @@ export const CardThumb = memo(function CardThumb({
 
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
   const showPlaceholder = !unit || broken;
+  const textPreview =
+    showPlaceholder && isTextOnlySave(save) ? textBodyForSave(save) : null;
 
   return (
     <div
@@ -111,7 +119,13 @@ export const CardThumb = memo(function CardThumb({
         />
       ) : null}
       {showPlaceholder ? (
-        <div className={styles.placeholder} aria-hidden />
+        textPreview ? (
+          <div className={styles.textPreview}>
+            <span className={styles.textPreviewBody}>{textPreview}</span>
+          </div>
+        ) : (
+          <div className={styles.placeholder} aria-hidden />
+        )
       ) : null}
       <DownloadingBadge save={save} isDownloading={isDownloading} />
     </div>

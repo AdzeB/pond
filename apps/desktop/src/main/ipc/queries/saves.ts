@@ -18,6 +18,7 @@ import log from "electron-log/main.js";
 import { executeBatch } from "../../core/executor";
 import { persistSave } from "../../core/persist-save";
 import { retryFailedSaves } from "../../core/pipeline/enqueue";
+import { runRenderTextCover } from "../../core/pipeline/workers/render-text-cover";
 import { recordForUndo } from "../../core/undo";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
@@ -488,6 +489,14 @@ export const savesQueries: QueryHandlerMap = {
     const raw = (row.rawJson ?? null) as RawJson | null;
     const url = derivePublicImageUrl(raw);
     return { ok: true as const, url };
+  },
+
+  /** Backfill rasterized text covers for existing text-only saves (same worker as the pipeline op). */
+  async "saves.ensureTextCover"(params) {
+    const id = String(params.id ?? "");
+    if (!id) return { ok: false as const, captured: 0 };
+    const captured = await runRenderTextCover(id);
+    return { ok: true as const, captured };
   },
 };
 

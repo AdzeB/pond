@@ -19,18 +19,44 @@ import {
 
 export * from "./prefs.types";
 
-const preferences = z.object({
-  themeMode: z.enum(["preset", "system", "custom"]).catch("system"),
-  presetId: z.string().catch(DEFAULT_PRESET_ID),
-  systemLightId: z.string().catch(DEFAULT_SYSTEM_LIGHT_ID),
-  systemDarkId: z.string().catch(DEFAULT_SYSTEM_DARK_ID),
-  custom: z.custom<ThemeDef>().default(CUSTOM_THEME_DEFAULT),
-  pointerCursors: z.boolean().catch(false),
-  reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
-  reduceTransparency: z.boolean().catch(false),
-  /** "media" prefers attached media; "screenshot" always renders the card. */
-  tweetCover: z.enum(["media", "screenshot"]).catch("media"),
-});
+const soundFeel = z
+  .enum([
+    "soft",
+    "crisp",
+    "thock",
+    "glass",
+    "metal",
+    "lofi",
+    "retro",
+    "organic",
+    "airy",
+    "punchy",
+  ])
+  .catch("soft");
+
+/** Older builds stored mute as `soundFeel: "off"`; lift that into `soundsEnabled`. */
+const preferences = z.preprocess(
+  (raw) => {
+    if (!raw || typeof raw !== "object") return raw;
+    const prefs = raw as Record<string, unknown>;
+    if (prefs.soundFeel !== "off") return raw;
+    return { ...prefs, soundFeel: "soft", soundsEnabled: false };
+  },
+  z.object({
+    themeMode: z.enum(["preset", "system", "custom"]).catch("system"),
+    presetId: z.string().catch(DEFAULT_PRESET_ID),
+    systemLightId: z.string().catch(DEFAULT_SYSTEM_LIGHT_ID),
+    systemDarkId: z.string().catch(DEFAULT_SYSTEM_DARK_ID),
+    custom: z.custom<ThemeDef>().default(CUSTOM_THEME_DEFAULT),
+    pointerCursors: z.boolean().catch(false),
+    reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
+    reduceTransparency: z.boolean().catch(false),
+    /** "media" prefers attached media; "screenshot" always renders the card. */
+    tweetCover: z.enum(["media", "screenshot"]).catch("media"),
+    soundsEnabled: z.boolean().catch(true),
+    soundFeel,
+  }),
+);
 
 const trash = z.object({
   autoEmptyDays: z.number().nullable().catch(null),

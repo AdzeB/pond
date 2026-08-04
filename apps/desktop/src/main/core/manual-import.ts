@@ -4,6 +4,7 @@ import {
   type MediaType,
   type NewSave,
   type SaveFile,
+  type Source,
   saves,
   syncActions,
 } from "@pond/schema/db";
@@ -63,6 +64,8 @@ export interface ManualSaveInput {
   filePaths?: string[];
   /** Override the local sourceId (e.g. eagle:<id> for idempotent re-import). */
   sourceId?: string | null;
+  /** Defaults to `local`. Starter pack attributes offline stills to external sources. */
+  source?: Source;
   width?: number;
   height?: number;
 }
@@ -87,6 +90,7 @@ export async function createManualSave(
 ): Promise<ManualSaveResult> {
   const db = await getDb();
   const id = ulid();
+  const source = input.source ?? "local";
   const overrideId = input.sourceId?.trim() || null;
   const sourceId = overrideId || id;
   const now = new Date();
@@ -95,7 +99,7 @@ export async function createManualSave(
     const existing = db
       .select({ id: saves.id })
       .from(saves)
-      .where(and(eq(saves.source, "local"), eq(saves.sourceId, sourceId)))
+      .where(and(eq(saves.source, source), eq(saves.sourceId, sourceId)))
       .all()[0];
     if (existing) {
       return { ok: true, id: existing.id, skipped: true };
@@ -147,7 +151,7 @@ export async function createManualSave(
 
   const insertValues: NewSave = {
     id,
-    source: "local",
+    source,
     sourceId,
     url: input.url?.trim() || `pond:local/${id}`,
     title,
@@ -201,7 +205,6 @@ export async function createManualSave(
       { actorReason: "manual:import", newFiles },
     );
   } else {
-    /** Link-only saves skip persistSave; still need an on-disk info.json. */
     const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
     if (finalRow) await writeSaveInfo(finalRow);
   }

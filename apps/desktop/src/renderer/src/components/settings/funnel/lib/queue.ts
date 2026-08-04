@@ -28,6 +28,7 @@ export interface QueueRow {
 const STAGE_LABELS: Record<Op, string> = {
   harvest_metadata: "Reading page",
   capture_tweet: "Capturing tweet",
+  render_text_cover: "Rendering text cover",
   fetch_blobs: "Downloading media",
   archive_page: "Archiving site",
   fetch_video_ytdlp: "Downloading video",

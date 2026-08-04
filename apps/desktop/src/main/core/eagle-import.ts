@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import log from "electron-log/main.js";
@@ -46,11 +47,7 @@ async function readJson<T>(path: string): Promise<T | null> {
   try {
     return JSON.parse(await readFile(path, "utf8")) as T;
   } catch (err) {
-    const code =
-      err && typeof err === "object" && "code" in err
-        ? (err as { code?: unknown }).code
-        : undefined;
-    if (code !== "ENOENT") {
+    if ((err as NodeJS.ErrnoException)?.code !== "ENOENT") {
       log.warn("[pond eagle] failed to read json", path, err);
     }
     return null;
@@ -118,7 +115,7 @@ export async function importEagleLibrary(
   let skipped = 0;
   let failed = 0;
 
-  let entries: Awaited<ReturnType<typeof readdir>>;
+  let entries: Dirent[];
   try {
     entries = await readdir(imagesDir, { withFileTypes: true });
   } catch (err) {

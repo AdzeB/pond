@@ -1,5 +1,4 @@
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
-import { ClearEditorPlugin } from "@lexical/react/LexicalClearEditorPlugin";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
@@ -12,21 +11,25 @@ import {
   $createParagraphNode,
   $createTextNode,
   $getRoot,
-  CLEAR_EDITOR_COMMAND,
   COMMAND_PRIORITY_LOW,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
   KEY_ESCAPE_COMMAND,
   LineBreakNode,
 } from "lexical";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { useNlFacets } from "@/hooks/use-nl-query";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import { useViewFilteredCount } from "@/stores/library-view-context";
 import { useTags } from "@/stores/tags";
-import { setSearchInput, useFilterQuery } from "@/stores/view-store";
-import { $isEditorEmpty, $readSearchString } from "./lib/editor-state";
+import {
+  setSearchInput,
+  useFilterQuery,
+  useSearchInput,
+  useSearchText,
+} from "@/stores/view-store";
+import { $readSearchString } from "./lib/editor-state";
 import { FilterTokenNode } from "./lib/token-node";
 import { FilterTokenPlugin } from "./lib/token-plugin";
 import { FilterTypeahead } from "./lib/typeahead";
@@ -63,17 +66,20 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const tags = useTags();
   const facets = useNlFacets();
   const _count = useViewFilteredCount();
-  const [hasContent, setHasContent] = useState(false);
   const seededRef = useRef(false);
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
-  /** Seed the editor once from the committed query as plain text; the token plugin highlights recognized tokens on the next transform pass. */
+  /** Seed once from the last verbatim field text (or a reconstructed query) so closing the dock keeps the filter. */
+  const seedInput = useSearchInput();
   const seedQuery = useFilterQuery();
+  const seedText = useSearchText();
   useEffect(() => {
     if (seededRef.current) return;
     seededRef.current = true;
-    const serialized = serializeQuery(seedQuery);
+    const serialized =
+      seedInput.trim() ||
+      [serializeQuery(seedQuery), seedText].filter(Boolean).join(" ");
     if (!serialized.trim()) return;
     editor.update(() => {
       const root = $getRoot();
@@ -83,34 +89,27 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       root.append(paragraph);
       paragraph.selectEnd();
     });
-    /** Seeding happens on open only; later edits drive the query, not the reverse. */
-  }, [editor, seedQuery]);
+  }, [editor, seedInput, seedQuery, seedText]);
 
   /** Every edit re-parses the tokens and residual text into the view store, which the grid already reflects. */
   useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
-        setHasContent(!$isEditorEmpty());
-        const parsed = parseSearchInput($readSearchString());
-        setSearchInput(parsed.predicates, parsed.text);
+        const raw = $readSearchString();
+        const parsed = parseSearchInput(raw);
+        setSearchInput(parsed.predicates, parsed.text, raw);
       });
     });
   }, [editor]);
 
   const onCollapseRef = useRef(onCollapse);
-  const emptyRef = useRef(!hasContent);
   onCollapseRef.current = onCollapse;
-  emptyRef.current = !hasContent;
 
   useEffect(() => {
     return editor.registerCommand(
       KEY_ESCAPE_COMMAND,
       () => {
-        if (emptyRef.current) {
-          onCollapseRef.current?.();
-        } else {
-          editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
-        }
+        onCollapseRef.current?.();
         return true;
       },
       COMMAND_PRIORITY_LOW,
@@ -171,7 +170,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
-          <ClearEditorPlugin />
           {autoFocus ? <AutoFocusPlugin /> : null}
           <FilterTokenPlugin />
           <FilterTypeahead tags={tagNames} sources={facets.sources} />

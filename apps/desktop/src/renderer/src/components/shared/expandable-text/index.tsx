@@ -18,7 +18,7 @@ function splitUrl(raw: string): { href: string; label: string; trail: string } {
   return { href, label, trail };
 }
 
-function renderRichText(text: string): ReactNode[] {
+export function renderRichText(text: string): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
   let key = 0;

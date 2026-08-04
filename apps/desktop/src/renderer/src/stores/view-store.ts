@@ -96,6 +96,12 @@ export function useLayout(): LayoutValue {
 export function useSearchText(): string {
   return useSelector(store, (s) => s.q);
 }
+
+/** Verbatim dock Search field text for re-seeding when the composer remounts. */
+export function useSearchInput(): string {
+  return useSelector(store, (s) => s.searchInput);
+}
+
 export function useSortKey(): string {
   return useSelector(store, (s) => s.sortKey);
 }
@@ -114,11 +120,19 @@ export function setQuery(query: Query): void {
   });
 }
 
-/** One update: predicates become the active filter (combinator stays "and") and the residual words become `q`. */
-export function setSearchInput(predicates: Predicate[], q: string): void {
+/**
+ * One update: predicates become the active filter (combinator stays "and") and the residual words become `q`.
+ * @remarks Pass `verbatim` from the dock field; omit it for structured callers so the composer can reconstruct.
+ */
+export function setSearchInput(
+  predicates: Predicate[],
+  q: string,
+  verbatim?: string,
+): void {
   store.setState((s) => ({
     ...s,
     q,
+    searchInput: verbatim ?? "",
     rows: predicates,
     combinator: "and",
     query: deriveQuery(predicates, "and"),

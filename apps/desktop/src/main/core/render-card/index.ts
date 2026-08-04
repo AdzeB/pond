@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import type { Capture } from "@pond/schema/raw";
+import { buildTextCardData, type TextCardData } from "@shared/text-card";
 import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
@@ -11,6 +12,8 @@ export interface RenderedCard {
   height: number;
 }
 
+type CaptureKind = "tweet" | "text";
+
 /** Fixed card width in CSS px; matches the capture entry's default. */
 const CARD_WIDTH = 550;
 /** Starting window height; grows to fit a taller card before capture. */
@@ -19,8 +22,8 @@ const INITIAL_HEIGHT = 1400;
 const MAX_HEIGHT = 8192;
 /** Capture at 2x so the cover stays crisp on retina displays. */
 const SCALE = 2;
-/** Scheme-colored padding around the card, in CSS px (scaled at capture time). */
-const PAD_CSS = 24;
+/** Scheme-colored padding around tweet cards, in CSS px (scaled at capture time). */
+const TWEET_PAD_CSS = 24;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
 const CDP_TIMEOUT_MS = 10_000;
@@ -84,17 +87,22 @@ function ensureWindow(): BrowserWindow {
   return win;
 }
 
-function captureSearch(scheme: "light" | "dark", data: TweetCardData): string {
+function captureSearch(
+  kind: CaptureKind,
+  scheme: "light" | "dark",
+  data: TweetCardData | TextCardData,
+): string {
   const base64 = Buffer.from(JSON.stringify(data), "utf8").toString("base64");
-  return `scheme=${scheme}&w=${CARD_WIDTH}&data=${encodeURIComponent(base64)}`;
+  return `kind=${kind}&scheme=${scheme}&w=${CARD_WIDTH}&data=${encodeURIComponent(base64)}`;
 }
 
 async function loadCapture(
   target: BrowserWindow,
+  kind: CaptureKind,
   scheme: "light" | "dark",
-  data: TweetCardData,
+  data: TweetCardData | TextCardData,
 ): Promise<void> {
-  const search = captureSearch(scheme, data);
+  const search = captureSearch(kind, scheme, data);
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
     ? target.loadURL(`${devUrl}/capture.html?${search}`)
@@ -198,8 +206,13 @@ async function captureAtScale(
 async function pad(
   bytes: Buffer,
   scheme: "light" | "dark",
+  padCss: number,
 ): Promise<RenderedCard> {
-  const p = PAD_CSS * SCALE;
+  if (padCss <= 0) {
+    const out = await sharp(bytes).png().toBuffer({ resolveWithObject: true });
+    return { bytes: out.data, width: out.info.width, height: out.info.height };
+  }
+  const p = padCss * SCALE;
   const background =
     scheme === "light"
       ? { r: 255, g: 255, b: 255, alpha: 1 }
@@ -212,15 +225,17 @@ async function pad(
 }
 
 async function renderOne(
-  data: TweetCardData,
+  kind: CaptureKind,
+  data: TweetCardData | TextCardData,
   scheme: "light" | "dark",
+  padCss: number,
 ): Promise<RenderedCard | null> {
   const target = ensureWindow();
-  await loadCapture(target, scheme, data);
+  await loadCapture(target, kind, scheme, data);
 
   let rect = await readCardRect(target);
   if (!rect) {
-    log.warn("[pond render-card] card not ready", scheme);
+    log.warn("[pond render-card] card not ready", kind, scheme);
     return null;
   }
 
@@ -237,7 +252,33 @@ async function renderOne(
   if (image.getSize().width === 0) return null;
   const raw = image.toPNG();
   if (raw.byteLength === 0) return null;
-  return pad(raw, scheme);
+  return pad(raw, scheme, padCss);
+}
+
+async function enqueueRender(
+  kind: CaptureKind,
+  data: TweetCardData | TextCardData,
+  scheme: "light" | "dark",
+  padCss: number,
+): Promise<RenderedCard | null> {
+  clearIdleDispose();
+  const run = chain.then(async () => {
+    try {
+      return await withTimeout(
+        renderOne(kind, data, scheme, padCss),
+        RENDER_TIMEOUT_MS,
+        "render",
+      );
+    } catch (err) {
+      log.warn("[pond render-card] render failed", kind, scheme, err);
+      disposeRenderCardWindow();
+      return null;
+    } finally {
+      scheduleIdleDispose();
+    }
+  });
+  chain = run.catch(() => undefined);
+  return run;
 }
 
 /** Renders a tweet's card to a padded cover PNG; null when the capture lacks enough data or rendering fails, so callers can fall back. */
@@ -251,27 +292,17 @@ export async function renderTweetCardPng(
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
-  /** A render is queued: cancel any pending teardown so the window survives. */
-  clearIdleDispose();
-  const run = chain.then(async () => {
-    try {
-      return await withTimeout(
-        renderOne(data, scheme),
-        RENDER_TIMEOUT_MS,
-        "render",
-      );
-    } catch (err) {
-      log.warn("[pond render-card] render failed", scheme, err);
-      /** A wedged window would stall every later render; drop it for a fresh one. */
-      disposeRenderCardWindow();
-      return null;
-    } finally {
-      /** Re-arm teardown; a later render clears it before the window is dropped. */
-      scheduleIdleDispose();
-    }
-  });
-  chain = run.catch(() => undefined);
-  return run;
+  return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS);
+}
+
+/** Renders an Are.na-style text block to a square cover PNG. */
+export async function renderTextCardPng(
+  text: string | null | undefined,
+  scheme: "light" | "dark",
+): Promise<RenderedCard | null> {
+  const data = buildTextCardData(text);
+  if (!data) return null;
+  return enqueueRender("text", data, scheme, 0);
 }
 
 export function disposeRenderCardWindow(): void {

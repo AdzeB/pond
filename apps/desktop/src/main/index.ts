@@ -8,6 +8,7 @@ import {
   type RecentMenuEntry,
 } from "../shared/constants";
 import { backfillEnrichmentSidecars } from "./core/enrichment-sidecar";
+import { ensureDefaultLibrary } from "./core/ensure-default-library";
 import { registerSyncActionListener } from "./core/executor";
 import { syncLibraryRootMetadata } from "./core/library-ops";
 import { flushGovernor } from "./core/pipeline/rate-governor";
@@ -138,6 +139,7 @@ app.whenReady().then(async () => {
     if (existsSync(iconPath)) app.dock?.setIcon(iconPath);
   }
 
+  ensureDefaultLibrary();
   const paths = resolvePaths();
   log.info("[pond] paths", paths);
 

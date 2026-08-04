@@ -92,13 +92,12 @@
 }
 
 .tab {
-  --tab-min: 48px;
-  --tab-active-min: 72px;
+  --tab-min: 72px;
+  --tab-active-min: 96px;
 
   position: relative;
-  container-type: inline-size;
   display: flex;
-  flex: 1 1 0;
+  flex: 1 1 120px;
   align-items: center;
   gap: 6px;
   min-width: var(--tab-min);
@@ -155,7 +154,6 @@
   background: var(--ds-gray-2);
 }
 
-/** Focus ring stays distinct from the active pill fill. */
 .tab:focus-visible {
   box-shadow:
     0 0 0 2px var(--ds-background-100, #fff),
@@ -224,12 +222,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-@container (max-width: 64px) {
-  .tab-label {
-    display: none;
-  }
 }
 
 .tab-pinned .tab-label {

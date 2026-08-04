@@ -34,6 +34,7 @@ export type SaveStatus = (typeof SAVE_STATUSES)[number];
 export const OPS = [
   "harvest_metadata",
   "capture_tweet",
+  "render_text_cover",
   "fetch_blobs",
   "archive_page",
   "fetch_video_ytdlp",

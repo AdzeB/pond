@@ -32,6 +32,23 @@ function findLastPinnedIndex(tabs: Tab[]): number {
   return -1;
 }
 
+function pinsFirst(list: Tab[]): Tab[] {
+  const pinned: Tab[] = [];
+  const unpinned: Tab[] = [];
+  for (const tab of list) {
+    if (tab.pinned) pinned.push(tab);
+    else unpinned.push(tab);
+  }
+  return [...pinned, ...unpinned];
+}
+
+function rememberClosed(
+  existing: ClosedTab[],
+  ...entries: ClosedTab[]
+): ClosedTab[] {
+  return [...entries, ...existing].slice(0, 10);
+}
+
 function loadPersistedState(): TabState | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -164,10 +181,10 @@ export const tabs = {
     commit({
       tabs: nextTabs,
       activeId: nextActive,
-      recentlyClosed: [
-        { path: tab.path, index: idx },
-        ...s.recentlyClosed,
-      ].slice(0, 10),
+      recentlyClosed: rememberClosed(s.recentlyClosed, {
+        path: tab.path,
+        index: idx,
+      }),
     });
   },
   closeOthers(id: string): void {
@@ -192,30 +209,26 @@ export const tabs = {
   /** Close every unpinned tab; if none are pinned, leave a single Library tab. */
   closeAll(): void {
     const s = store.state;
-    const pinned = s.tabs.filter((t) => t.pinned);
-    const closing = s.tabs.filter((t) => !t.pinned);
-    if (closing.length === 0) return;
+    const pinned: Tab[] = [];
+    const closedEntries: ClosedTab[] = [];
+    for (let i = 0; i < s.tabs.length; i++) {
+      const tab = s.tabs[i];
+      if (!tab) continue;
+      if (tab.pinned) pinned.push(tab);
+      else closedEntries.push({ path: tab.path, index: i });
+    }
+    if (closedEntries.length === 0) return;
 
-    const closedEntries: ClosedTab[] = closing.map((t) => ({
-      path: t.path,
-      index: s.tabs.findIndex((x) => x.id === t.id),
-    }));
-    const recentlyClosed = [...closedEntries, ...s.recentlyClosed].slice(0, 10);
-
+    const recentlyClosed = rememberClosed(s.recentlyClosed, ...closedEntries);
     if (pinned.length > 0) {
-      const nextActive =
-        pinned.find((t) => t.id === s.activeId)?.id ?? pinned[0]?.id;
-      if (!nextActive) return;
+      const head = pinned[0];
+      if (!head) return;
+      const nextActive = pinned.find((t) => t.id === s.activeId)?.id ?? head.id;
       commit({ tabs: pinned, activeId: nextActive, recentlyClosed });
       return;
     }
 
-    const id = uid();
-    commit({
-      tabs: [{ id, path: "/", pinned: false }],
-      activeId: id,
-      recentlyClosed,
-    });
+    commit({ ...defaultState(), recentlyClosed });
   },
   activate(id: string): void {
     const s = store.state;
@@ -289,10 +302,7 @@ export const tabs = {
         nextTabs.push(t);
       }
     }
-    /** Pinned tabs always occupy the left of the strip. */
-    const pinned = nextTabs.filter((t) => t.pinned);
-    const unpinned = nextTabs.filter((t) => !t.pinned);
-    const bounded = [...pinned, ...unpinned];
+    const bounded = pinsFirst(nextTabs);
     let changed = false;
     for (let i = 0; i < bounded.length; i++) {
       if (bounded[i] !== s.tabs[i]) {

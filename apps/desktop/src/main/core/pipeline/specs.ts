@@ -6,6 +6,7 @@ const UNIVERSAL_SPEC: readonly Op[] = OPS;
 const MAX_ATTEMPTS: Record<Op, number> = {
   harvest_metadata: 5,
   capture_tweet: 4,
+  render_text_cover: 3,
   fetch_blobs: 5,
   archive_page: 3,
   fetch_video_ytdlp: 3,
@@ -23,11 +24,19 @@ export function planOps(source: Source): readonly Op[] {
   if (source === "local") return [];
   /** Generic web links fetch metadata + cover, plus a replayable WARC site archive. */
   if (source === "web") {
-    return ["harvest_metadata", "fetch_blobs", "archive_page", "finalize"];
+    return [
+      "harvest_metadata",
+      "render_text_cover",
+      "fetch_blobs",
+      "archive_page",
+      "finalize",
+    ];
   }
-  /** capture_tweet is twitter-only and archive_page is web-only; filter them out to avoid dead tasks. */
+  /** capture_tweet is twitter-only; archive_page is web-only; text covers skip twitter (uses tweet screenshots). */
   if (source === "twitter") {
-    return UNIVERSAL_SPEC.filter((op) => op !== "archive_page");
+    return UNIVERSAL_SPEC.filter(
+      (op) => op !== "archive_page" && op !== "render_text_cover",
+    );
   }
   return UNIVERSAL_SPEC.filter(
     (op) => op !== "capture_tweet" && op !== "archive_page",
@@ -91,9 +100,11 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
     ],
   },
   cosmos: {
-    /** The uploader is not reliably present on a Cosmos element page, so grade on the og:image-resolved media; author stays a recommended nicety. */
-    required: ["mediaUrl"],
+    /** Identity is enough to finalize; text-only elements have no og:image, so mediaUrl stays recommended. */
+    required: ["sourceId"],
     recommended: [
+      "mediaUrl",
+      "description",
       "author",
       "capture.media",
       "capture.upstream.url",

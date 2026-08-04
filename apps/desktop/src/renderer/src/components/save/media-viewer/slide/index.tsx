@@ -18,6 +18,7 @@ interface SlideProps {
   active: boolean;
   inView: boolean;
   title?: string | null;
+  artist?: string | null;
   chapters?: ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
   /** Controlled ratio from the carousel's cache, kept identical for the player and its placeholder so toggling in-view never resizes the slide. */
@@ -46,6 +47,7 @@ export function Slide({
   active,
   inView,
   title,
+  artist,
   chapters,
   noteMarkers,
   ratio,
@@ -65,6 +67,8 @@ export function Slide({
           <VideoSlide
             slide={slide}
             active={active}
+            title={title}
+            artist={artist}
             chapters={chapters}
             noteMarkers={noteMarkers}
             ratioOverride={ratio}
@@ -98,6 +102,8 @@ function useResolvedRatio(slide: MediaSlide, override?: number) {
 function VideoSlide({
   slide,
   active,
+  title,
+  artist,
   chapters,
   noteMarkers,
   ratioOverride,
@@ -106,6 +112,8 @@ function VideoSlide({
 }: {
   slide: MediaSlide;
   active: boolean;
+  title?: string | null;
+  artist?: string | null;
   chapters?: ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
   ratioOverride?: number;
@@ -118,6 +126,8 @@ function VideoSlide({
       <VideoPlayer
         src={slide.src}
         poster={slide.posterUrl}
+        title={title}
+        artist={artist}
         active={active}
         width={slide.width}
         height={slide.height}

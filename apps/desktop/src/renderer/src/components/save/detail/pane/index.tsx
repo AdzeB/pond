@@ -9,6 +9,7 @@ import { ColorSwatch } from "@/components/shared/color-swatch";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { useSaveDetail } from "@/hooks/use-save-detail";
 import { buildMediaUnits } from "@/lib/media/units";
+import { isTextOnlySave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
 import { initials } from "@/lib/util/initials";
 import styles from "./styles.module.css";
@@ -32,6 +33,7 @@ export function SaveDetails({
 
   const title = save.title?.trim() || save.author?.trim() || "Untitled";
   const hasVideo = buildMediaUnits(save).some((u) => u.isVideo);
+  const textOnly = isTextOnlySave(save);
 
   return (
     <div className={styles["detail-card"]}>
@@ -56,7 +58,7 @@ export function SaveDetails({
           <h2 className={styles["heading-title"]}>{title}</h2>
         </div>
 
-        {description ? (
+        {description && !textOnly ? (
           <Section title="Content">
             <ExpandableText text={description} compact />
           </Section>

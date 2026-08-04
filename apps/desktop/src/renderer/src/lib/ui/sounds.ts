@@ -1,17 +1,62 @@
-import { defineSound, ensureReady } from "@web-kits/audio";
+import type { SoundFeel } from "@pond/schema/db";
+import { ensureReady, type PlayOptions } from "@web-kits/audio";
+import { type FeelSoundName, SOUND_PACKS } from "@/lib/ui/sound-packs";
+import { getPrefsSnapshot } from "@/stores/prefs";
 
-/** Soft low plop for saves dropping into the trash. */
-const trashThunk = defineSound({
-  source: { type: "sine", frequency: { start: 260, end: 85 } },
-  envelope: { attack: 0.002, decay: 0.14, sustain: 0, release: 0.05 },
-  gain: 0.22,
-});
+type SoundKind = FeelSoundName | "toggle";
 
-export function playTrashThunk(): void {
+const RATE_MS = 40;
+const lastPlayed = new Map<SoundKind, number>();
+
+function reduceMotion(): boolean {
+  return document.documentElement.getAttribute("data-reduce-motion") === "true";
+}
+
+function soundsEnabled(): boolean {
+  return getPrefsSnapshot()?.preferences.soundsEnabled !== false;
+}
+
+function activeFeel(): SoundFeel {
+  return getPrefsSnapshot()?.preferences.soundFeel ?? "soft";
+}
+
+function play(kind: SoundKind, name: FeelSoundName): void {
+  if (reduceMotion()) return;
+  if (!soundsEnabled()) return;
+  const feel = activeFeel();
+  const now = performance.now();
+  const prev = lastPlayed.get(kind) ?? 0;
+  if (now - prev < RATE_MS) return;
+  lastPlayed.set(kind, now);
+  const opts: PlayOptions = { detune: (Math.random() - 0.5) * 80 };
   void ensureReady()
     .then(() => {
-      /** A touch of random detune so repeat deletes don't sound stamped out. */
-      trashThunk({ detune: (Math.random() - 0.5) * 100 });
+      SOUND_PACKS[feel].play(name, opts);
     })
     .catch(() => {});
+}
+
+export function playUiTap(): void {
+  play("tap", "tap");
+}
+
+export function playUiSoft(): void {
+  play("soft", "soft");
+}
+
+export function playUiToggle(on: boolean): void {
+  play("toggle", on ? "toggleOn" : "toggleOff");
+}
+
+export function playUiSuccess(): void {
+  play("success", "success");
+}
+
+export function playTrashThunk(): void {
+  play("trash", "trash");
+}
+
+/** Preview the active feel after the settings select patches preferences. */
+export function previewSoundFeel(): void {
+  playUiTap();
 }

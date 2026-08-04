@@ -1,28 +1,34 @@
+import type { TextCardData } from "@shared/text-card";
 import type { TweetCardData } from "@shared/tweet-card";
 import { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import { TextCard } from "./components/save/text-card";
 import { TweetCard } from "./components/tweet/card";
 
 const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
 
 const params = new URLSearchParams(location.search);
+const KIND = params.get("kind") === "text" ? "text" : "tweet";
 const SCHEME: "light" | "dark" =
   params.get("scheme") === "dark" ? "dark" : "light";
 const WIDTH = Number(params.get("w") ?? DEFAULT_WIDTH) || DEFAULT_WIDTH;
 
 document.documentElement.style.background = SCHEME === "dark" ? "#000" : "#fff";
 
-function decodePayload(): TweetCardData {
+function decodePayload<T>(fallback: T): T {
   try {
     const raw = params.get("data") ?? "";
-    return JSON.parse(decodeURIComponent(escape(atob(raw)))) as TweetCardData;
+    return JSON.parse(decodeURIComponent(escape(atob(raw)))) as T;
   } catch {
-    return { author: { name: "", handle: "" } };
+    return fallback;
   }
 }
 
-const PAYLOAD = decodePayload();
+const TWEET_PAYLOAD = decodePayload<TweetCardData>({
+  author: { name: "", handle: "" },
+});
+const TEXT_PAYLOAD = decodePayload<TextCardData>({ text: "" });
 
 function waitForImages(root: HTMLElement): Promise<void> {
   const pending = Array.from(root.querySelectorAll("img")).filter(
@@ -66,7 +72,11 @@ function CaptureCard() {
 
   return (
     <div ref={ref} data-capture-card style={{ width: WIDTH }}>
-      <TweetCard data={PAYLOAD} scheme={SCHEME} />
+      {KIND === "text" ? (
+        <TextCard data={TEXT_PAYLOAD} scheme={SCHEME} />
+      ) : (
+        <TweetCard data={TWEET_PAYLOAD} scheme={SCHEME} />
+      )}
     </div>
   );
 }

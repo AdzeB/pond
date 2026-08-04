@@ -1,56 +1,47 @@
 .welcome {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 20px;
   align-items: center;
-  max-width: 420px;
-  padding: 60px 0 80px;
+  max-width: 360px;
+  padding: 72px 24px 96px;
   margin: 0 auto;
+  text-align: center;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ds-gray-12);
 }
 
 .text {
   margin: 0;
   font-size: 13px;
-  line-height: 1.6;
+  font-weight: 450;
+  line-height: 1.55;
   color: var(--ds-gray-11);
-  text-align: center;
 }
 
-.guide {
+.actions {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  color: var(--ds-gray-9);
+  justify-content: center;
 }
 
-.guideLabel {
+.hint {
+  margin: 0;
   font-size: 12px;
-  line-height: 1.3;
-  letter-spacing: 0.01em;
-}
-
-.arrow {
-  display: flex;
-  color: var(--ds-gray-8);
-  animation: guide-bob var(--ds-duration-slow) var(--ds-easing-decelerate)
-    infinite alternate;
-}
-
-@keyframes guide-bob {
-  from {
-    transform: translateY(0);
-    opacity: 0.55;
-  }
-  to {
-    transform: translateY(6px);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .arrow {
-    opacity: 0.7;
-    animation: none;
-  }
+  line-height: 1.4;
+  color: var(--ds-gray-9);
 }

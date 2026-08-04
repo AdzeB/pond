@@ -27,7 +27,7 @@ import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { setSearchInput } from "@/stores/view-store";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import { buildAccountMenu } from "./lib/account-menu";
-import { itemCount, syncFraction, watchName } from "./lib/helpers";
+import { syncFraction, tileValue, watchName } from "./lib/helpers";
 import { SourceTile } from "./source-tile";
 import styles from "./styles.module.css";
 
@@ -204,7 +204,11 @@ export function SourcesPage() {
                   source={account.source}
                   avatarUrl={account.avatarUrl}
                   name={account.label ?? getSourceDef(account.source).label}
-                  value={itemCount(account.sync?.knownCount ?? 0)}
+                  value={tileValue(
+                    model.tone,
+                    model.statusText,
+                    account.sync?.knownCount ?? 0,
+                  )}
                   tone={model.tone}
                   progress={syncFraction(model.tone, status)}
                   onOpen={() => sourceDetail.openAccount(account.id)}
@@ -220,7 +224,11 @@ export function SourcesPage() {
                 source={watch.source}
                 avatarUrl={watch.avatarUrl}
                 name={watchName(watch)}
-                value={itemCount(watch.sync?.knownCount ?? 0)}
+                value={tileValue(
+                  model.tone,
+                  model.statusText,
+                  watch.sync?.knownCount ?? 0,
+                )}
                 tone={model.tone}
                 progress={syncFraction(model.tone, status)}
                 onOpen={() => sourceDetail.openWatch(watch.id)}

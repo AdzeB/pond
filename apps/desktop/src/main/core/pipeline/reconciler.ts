@@ -40,6 +40,7 @@ let nextOrphanSweepAt = 0;
 const inflightByOp: Record<Op, number> = {
   harvest_metadata: 0,
   capture_tweet: 0,
+  render_text_cover: 0,
   fetch_blobs: 0,
   archive_page: 0,
   fetch_video_ytdlp: 0,

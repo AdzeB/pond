@@ -5,6 +5,8 @@ import {
   ThemeRow,
 } from "@/components/settings/sections/appearance";
 import { defineSection } from "@/lib/settings/engine-types";
+import { SOUND_FEEL_OPTIONS } from "@/lib/ui/sound-feel-options";
+import { previewSoundFeel } from "@/lib/ui/sounds";
 
 type Values = Record<string, unknown>;
 
@@ -13,7 +15,7 @@ const isCustomMode = (v: Values) => (v.themeMode ?? "system") === "custom";
 
 export const appearanceSection = defineSection("preferences", {
   title: "Appearance",
-  description: "Theme, colors, and accessibility.",
+  description: "Theme, colors, sounds, and accessibility.",
   groups: [
     {
       title: "Theme",
@@ -80,6 +82,44 @@ export const appearanceSection = defineSection("preferences", {
             { value: "media", label: "Media" },
             { value: "screenshot", label: "Screenshot" },
           ],
+        },
+      ],
+    },
+    {
+      title: "Sounds",
+      items: [
+        {
+          control: "switch",
+          key: "soundsEnabled",
+          title: "Interface Sounds",
+          description: "Play feedback for presses, toggles, and deletes.",
+          keywords: ["audio", "click", "feedback", "sfx", "mute", "silence"],
+          apply: () => {
+            previewSoundFeel();
+          },
+        },
+        {
+          control: "select",
+          key: "soundFeel",
+          title: "Sound Style",
+          description: "Character of the interface feedback.",
+          keywords: [
+            "soft",
+            "crisp",
+            "thock",
+            "glass",
+            "metal",
+            "lofi",
+            "retro",
+            "organic",
+            "airy",
+            "punchy",
+          ],
+          options: [...SOUND_FEEL_OPTIONS],
+          visible: (v) => v.soundsEnabled !== false,
+          apply: () => {
+            previewSoundFeel();
+          },
         },
       ],
     },

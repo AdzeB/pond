@@ -25,6 +25,7 @@ import { SaveHotkeys } from "./effects/save-hotkeys";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
 import { TabShortcuts } from "./effects/tab-shortcuts";
 import { ThemeApplier } from "./effects/theme-applier";
+import { UiSounds } from "./effects/ui-sounds";
 import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
@@ -243,6 +244,7 @@ export function App() {
         <Tooltip.Provider>
           <ThemeApplier />
           <DeveloperApplier />
+          <UiSounds />
           <UndoRedoBridge />
           <MenuBridge />
           <MenuRecentsBridge />

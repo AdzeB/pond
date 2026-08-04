@@ -3,8 +3,9 @@ import {
   type ResolvedTheme,
   resolveCurrentTheme,
 } from "@/hooks/use-resolved-theme";
-import { isArchiveFile } from "@/lib/media/archive";
+import { hasArchive, isArchiveFile } from "@/lib/media/archive";
 import { buildPondUrl } from "@/lib/media/url";
+import { composeContentDescription } from "@/lib/save/detail";
 import type { Save, SaveFile } from "@/lib/types";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
@@ -17,6 +18,14 @@ const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
   TWEET_SCREENSHOT_LEGACY_KIND,
   TWEET_SCREENSHOT_LIGHT_KIND,
   TWEET_SCREENSHOT_DARK_KIND,
+]);
+
+const TEXT_COVER_LIGHT_KIND = "text_cover_light";
+const TEXT_COVER_DARK_KIND = "text_cover_dark";
+
+const TEXT_COVER_KINDS: ReadonlySet<string> = new Set([
+  TEXT_COVER_LIGHT_KIND,
+  TEXT_COVER_DARK_KIND,
 ]);
 
 /** Quote-tweet screenshots, suffixed with 1-based depth, e.g. tweet_screenshot_quote1_light. */
@@ -47,13 +56,14 @@ export function buildMediaUnits(
   save: Save,
   opts: MediaPickOptions = {},
 ): MediaUnit[] {
-  /** Drop thumbnail/metadata assets: tweet screenshots, quote screenshots (appended later), avatars, source icons, and site-archive files (rendered by the archive viewer). */
+  /** Drop thumbnail/metadata assets: tweet/text covers, quote screenshots (appended later), avatars, source icons, and site-archive files (rendered by the archive viewer). */
   const files = (save.files ?? []).filter(
     (f) =>
       f.kind !== "avatar" &&
       f.kind !== "source_icon" &&
       !isArchiveFile(f) &&
       !TWEET_SCREENSHOT_KINDS.has(f.kind) &&
+      !TEXT_COVER_KINDS.has(f.kind) &&
       !isQuoteScreenshotKind(f.kind),
   );
   const posters = files.filter((f) => f.kind === "poster");
@@ -113,6 +123,18 @@ export function buildMediaUnits(
         isVideo: false,
       },
       ...quoteUnits,
+    ];
+  }
+
+  /** Text-only saves fall back to the rasterized text cover so thumbs/detail can scale like images. */
+  const textCover = pickTextCover(save, opts.theme);
+  if (textCover) {
+    return [
+      {
+        key: textCover.path,
+        url: buildPondUrl(save.id, textCover),
+        isVideo: false,
+      },
     ];
   }
   return units;
@@ -211,6 +233,33 @@ function pickTweetScreenshot(
   );
 }
 
+/** Matching theme, then the other; null when no text cover has been rendered yet. */
+function pickTextCover(
+  save: Save,
+  theme: ResolvedTheme | undefined,
+): SaveFile | null {
+  const files = save.files ?? [];
+  const resolved = theme ?? resolveCurrentTheme();
+  const preferredKind =
+    resolved === "light" ? TEXT_COVER_LIGHT_KIND : TEXT_COVER_DARK_KIND;
+  const otherKind =
+    resolved === "light" ? TEXT_COVER_DARK_KIND : TEXT_COVER_LIGHT_KIND;
+  return (
+    files.find((f) => f.kind === preferredKind) ??
+    files.find((f) => f.kind === otherKind) ??
+    null
+  );
+}
+
+/** True when a text-only save still needs its cover PNGs generated. */
+export function needsTextCover(save: Save): boolean {
+  if (save.source === "twitter") return false;
+  if (hasArchive(save)) return false;
+  if (!composeContentDescription(save).trim()) return false;
+  if (pickTextCover(save, undefined)) return false;
+  return buildMediaUnits(save).length === 0;
+}
+
 function isVideoFile(file: SaveFile): boolean {
   if (file.kind === "video") return true;
   if (file.mimeType?.startsWith("video/") === true) return true;
@@ -253,11 +302,30 @@ export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   return save.url ? "link" : "other";
 }
 
+function arenaBlockClass(save: Save): string | null {
+  const raw = save.rawJson as
+    | { capture?: { extras?: { blockClass?: unknown } } }
+    | null
+    | undefined;
+  const cls = raw?.capture?.extras?.blockClass;
+  return typeof cls === "string" ? cls.toLowerCase() : null;
+}
+
 /** Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link". */
 export function deriveTypeLabel(
   file: SaveFile | null,
   save: Save,
 ): string | null {
+  if (file && TEXT_COVER_KINDS.has(file.kind)) return "Text";
+  if (arenaBlockClass(save) === "text") return "Text";
+  if (
+    !file &&
+    !hasArchive(save) &&
+    composeContentDescription(save).trim().length > 0 &&
+    buildMediaUnits(save).length === 0
+  ) {
+    return "Text";
+  }
   const ext = file?.path.split(".").pop()?.toLowerCase();
   if (ext && /^[a-z0-9]{1,4}$/.test(ext)) return ext.toUpperCase();
   const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];

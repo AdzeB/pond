@@ -107,7 +107,9 @@ export function buildTwitterBookmarkSeed(
     description: description ?? null,
     author: name ?? (handle ? `@${handle}` : (entry.author ?? null)),
     mediaUrl: media[0]?.url ?? null,
-    mediaType: pickMediaType(media),
+    mediaType: majorityMediaType(
+      media.map((m) => (m.type === "video" ? "video" : "image")),
+    ),
     publishedAt,
     lang: null,
   };
@@ -123,12 +125,6 @@ function pickTitle(
   if (!firstLine) return fallback ?? null;
   if (firstLine.length <= TITLE_CAP) return firstLine;
   return `${firstLine.slice(0, TITLE_CAP - 1).trimEnd()}…`;
-}
-
-function pickMediaType(media: ReadonlyArray<CaptureMedia>): MediaType | null {
-  return majorityMediaType(
-    media.map((m) => (m.type === "video" ? "video" : "image")),
-  );
 }
 
 function readLegacyCreatedAt(raw: unknown): Date | null {

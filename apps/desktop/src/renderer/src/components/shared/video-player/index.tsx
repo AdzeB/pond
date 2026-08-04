@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
 } from "react";
+import { useMediaSession } from "@/hooks/use-media-session";
 import { type ChapterCue, chaptersToVttUrl } from "@/lib/media/chapters-vtt";
 import {
   clearActiveMediaSeek,
@@ -21,6 +22,8 @@ export interface NoteMarker {
 interface VideoPlayerProps {
   src: string;
   poster?: string;
+  title?: string | null;
+  artist?: string | null;
   chapters?: readonly ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
   /** Publishes the seek handle and current time to the active-media store so out-of-tree chrome can drive this player. */
@@ -34,10 +37,26 @@ interface VideoPlayerProps {
 }
 
 /** Lives inside Video.Root so it can read the player context and push seek/time to the active-media store. */
-function MediaBridge({ active }: { active: boolean }) {
+function MediaBridge({
+  active,
+  title,
+  artist,
+  artworkUrl,
+}: {
+  active: boolean;
+  title?: string | null;
+  artist?: string | null;
+  artworkUrl?: string;
+}) {
   const { state, actions } = useVideo();
-  const { seek, play, pause } = actions;
-  const { currentTime } = state;
+  const { seek, seekBy, play, pause } = actions;
+  const { currentTime, playing, duration, rate } = state;
+
+  useMediaSession(
+    { title, artist, artworkUrl },
+    { active, playing, currentTime, duration, rate },
+    { play, pause, seek, seekBy },
+  );
 
   /** Only one video ever plays; keyed on `active` so a manual pause isn't overridden. */
   useEffect(() => {
@@ -109,6 +128,8 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
 export function VideoPlayer({
   src,
   poster,
+  title,
+  artist,
   chapters,
   noteMarkers,
   active,
@@ -144,7 +165,12 @@ export function VideoPlayer({
 
   return (
     <Video.Root>
-      <MediaBridge active={!!active} />
+      <MediaBridge
+        active={!!active}
+        title={title}
+        artist={artist}
+        artworkUrl={poster}
+      />
       <Video.Media
         src={src}
         poster={poster}
