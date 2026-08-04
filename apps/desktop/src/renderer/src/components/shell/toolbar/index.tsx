@@ -11,14 +11,7 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { IconGear3Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { Button, type MenuItemSpec } from "@pond/ui";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
@@ -289,12 +282,7 @@ const TabItem = memo(function TabItem({
         onKeyDown={onKeyDown}
         onMouseDown={onMouseDown}
       >
-        <TabBody
-          tab={tab}
-          label={label}
-          save={save}
-          onClose={handleClose}
-        />
+        <TabBody tab={tab} label={label} save={save} onClose={handleClose} />
       </div>
     </SpecContextMenu>
   );

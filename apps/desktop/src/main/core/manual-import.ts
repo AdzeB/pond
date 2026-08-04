@@ -202,9 +202,7 @@ export async function createManualSave(
     );
   } else {
     /** Link-only saves skip persistSave; still need an on-disk info.json. */
-    const finalRow = (
-      await db.select().from(saves).where(eq(saves.id, id))
-    )[0];
+    const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
     if (finalRow) await writeSaveInfo(finalRow);
   }
 
