@@ -1,13 +1,17 @@
+import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-/** The detail modal's chapter list lives outside the player's Video.Root, so the in-view player publishes its seek handle and current time here. */
+/** The detail modal's note list lives outside the player's Video.Root, so the in-view player publishes its seek handle and current time here. */
 
 interface ActiveMediaState {
   readonly seek: ((seconds: number) => void) | null;
   readonly currentTime: number;
 }
 
-const store = new Store<ActiveMediaState>({ seek: null, currentTime: 0 });
+const store = new Store<ActiveMediaState>({
+  seek: null,
+  currentTime: 0,
+});
 
 export function setActiveMediaSeek(
   seek: ((seconds: number) => void) | null,
@@ -24,4 +28,12 @@ export function setActiveMediaTime(currentTime: number): void {
   store.setState((s) =>
     s.currentTime === currentTime ? s : { ...s, currentTime },
   );
+}
+
+export function useActiveMediaSeek(): ((seconds: number) => void) | null {
+  return useSelector(store, (s) => s.seek);
+}
+
+export function useActiveMediaTime(): number {
+  return useSelector(store, (s) => s.currentTime);
 }

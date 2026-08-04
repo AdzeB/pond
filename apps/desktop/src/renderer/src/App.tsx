@@ -15,7 +15,7 @@ import { AppShell } from "./components/shell/app-shell";
 import { BootScreen } from "./components/shell/boot-screen";
 import { ErrorBoundary } from "./components/shell/error-boundary";
 import { ErrorScreen } from "./components/shell/error-screen";
-import { TabBar } from "./components/shell/tab-bar";
+import { Toolbar } from "./components/shell/toolbar";
 import { AppHotkeys } from "./effects/app-hotkeys";
 import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
@@ -253,7 +253,7 @@ export function App() {
           <EnrichmentSweep />
           <BootScreen />
           <ErrorBoundary>
-            <AppShell.Root header={<TabBar />}>
+            <AppShell.Root header={<Toolbar />}>
               {tabList.map((tab) =>
                 liveIds.has(tab.id) ? (
                   <TabContent

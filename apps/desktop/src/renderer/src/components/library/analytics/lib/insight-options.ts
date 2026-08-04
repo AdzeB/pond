@@ -49,8 +49,7 @@ export const FILTER_FIELD_OPTIONS: {
 export const TYPE_META = {
   image: { label: "Image", color: "var(--ds-cyan-9)" },
   video: { label: "Video", color: "var(--ds-indigo-9)" },
-  mixed: { label: "Mixed", color: "var(--ds-magenta-9)" },
-  link: { label: "Link", color: "var(--ds-blue-9)" },
+  link: { label: "Website", color: "var(--ds-blue-9)" },
   other: { label: "Other", color: "var(--ds-gray-8)" },
 } as const;
 

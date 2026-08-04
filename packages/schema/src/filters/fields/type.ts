@@ -5,8 +5,7 @@ import { defineField } from "./descriptor";
 const TYPE_PRESETS = [
   { id: "image", label: "Image", value: "image" },
   { id: "video", label: "Video", value: "video" },
-  { id: "mixed", label: "Mixed", value: "mixed" },
-  { id: "url", label: "URL", value: "url" },
+  { id: "link", label: "Website", value: "link" },
 ] as const;
 
 export const typeField = defineField({
@@ -15,7 +14,6 @@ export const typeField = defineField({
   label: "Type",
   group: "media",
   presets: TYPE_PRESETS,
-  project: (s) => (s.mediaType ?? s.source ?? "").toLowerCase(),
-  sqlProjection: () =>
-    sql`lower(coalesce(${saves.mediaType}, ${saves.source}))`,
+  project: (s) => (s.mediaType ?? "").toLowerCase(),
+  sqlProjection: () => sql`lower(coalesce(${saves.mediaType}, ''))`,
 });

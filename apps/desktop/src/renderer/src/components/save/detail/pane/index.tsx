@@ -3,10 +3,12 @@ import { Button, TitleBar } from "@pond/ui";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
 import { TagsSection } from "@/components/save/detail/tags";
+import { VideoNotesSection } from "@/components/save/detail/video-notes";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { ColorSwatch } from "@/components/shared/color-swatch";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { useSaveDetail } from "@/hooks/use-save-detail";
+import { buildMediaUnits } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import { initials } from "@/lib/util/initials";
 import styles from "./styles.module.css";
@@ -29,6 +31,7 @@ export function SaveDetails({
   } = useSaveDetail(save.id);
 
   const title = save.title?.trim() || save.author?.trim() || "Untitled";
+  const hasVideo = buildMediaUnits(save).some((u) => u.isVideo);
 
   return (
     <div className={styles["detail-card"]}>
@@ -109,6 +112,8 @@ export function SaveDetails({
         </Section>
 
         <TagsSection save={save} />
+
+        {hasVideo ? <VideoNotesSection save={save} /> : null}
 
         {colors.length > 0 ? (
           <Section title="Colors">

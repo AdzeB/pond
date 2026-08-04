@@ -42,6 +42,8 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "type", keys: ["type", "kind"] },
   { field: "fileCount", keys: ["files", "filecount"] },
   { field: "duration", keys: ["duration", "length"] },
+  { field: "shape", keys: ["shape"] },
+  { field: "aspect", keys: ["aspect", "ratio"] },
   { field: "creator", keys: ["by", "creator", "author"] },
   { field: "note", keys: ["note", "notes"] },
   { field: "color", keys: ["color", "colour"] },

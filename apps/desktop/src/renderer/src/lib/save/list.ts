@@ -48,6 +48,14 @@ interface ModeFilterOptions {
   recentsOrder: ReadonlyMap<string, number> | null;
 }
 
+/** True when the card can show image/video media or a website/link save. */
+function isRenderable(save: Save): boolean {
+  if (pickPrimaryUnit(save)) return true;
+  if (save.mediaType === "link") return true;
+  if (save.url && !save.url.startsWith("pond:")) return true;
+  return false;
+}
+
 /** Shared by grid and detail navigator so j/k can't land on a hidden save; trash keeps unrenderable saves visible for cleanup. */
 export function applyModeFilter(
   saves: readonly Save[],
@@ -59,7 +67,7 @@ export function applyModeFilter(
     } else {
       if (save.deletedAt) return false;
       if (save.status !== "complete") return false;
-      if (!pickPrimaryUnit(save)) return false;
+      if (!isRenderable(save)) return false;
     }
     if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
       return false;

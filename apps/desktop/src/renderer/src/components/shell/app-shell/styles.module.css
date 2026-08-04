@@ -21,10 +21,11 @@
   flex-shrink: 0;
   padding-right: var(--shell-inset);
   background: transparent;
+  -webkit-app-region: drag;
 }
 
 :global(html[data-platform="mac"]) .header {
-  padding-left: 80px;
+  padding-left: 88px;
 }
 
 .main {

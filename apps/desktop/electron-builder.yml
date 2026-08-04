@@ -18,6 +18,9 @@ directories:
   buildResources: build
   output: dist
 
+# Windows / Linux app icon (1024 PNG from packages/icons/Pond Exports).
+icon: icon.png
+
 files:
   - out/**/*
   - package.json
@@ -63,6 +66,9 @@ publish:
 
 mac:
   category: public.app-category.productivity
+  # Prefer `icon.icon` (Icon Composer) when actool 26+ is available; until then
+  # the Default-export icns ships the same mark for Dock / DMG / older macOS.
+  icon: icon.icns
   artifactName: ${productName}-${version}-${arch}.${ext}
   target:
     - target: dmg

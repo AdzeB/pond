@@ -21,8 +21,6 @@ export interface DockContextValue {
   openAsk: () => void;
   openSearch: () => void;
   closeSearch: () => void;
-  openNew: () => void;
-  closeNew: () => void;
   openViewMenu: (section: ViewMenuSection) => void;
   closeViewMenu: () => void;
   destructive: () => void;

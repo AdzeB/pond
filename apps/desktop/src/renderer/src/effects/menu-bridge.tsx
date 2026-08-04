@@ -146,10 +146,6 @@ export function MenuBridge() {
           void window.pond.query("developer.openIpcInspector", {});
           return;
 
-        case "save.new":
-          dockMode.open("new");
-          return;
-
         case "save.open-with-default": {
           const save = currentSave();
           if (!save) return;

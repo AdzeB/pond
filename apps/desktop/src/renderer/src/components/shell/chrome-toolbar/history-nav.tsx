@@ -1,22 +1,17 @@
+import { IconHistory2Fill18 } from "@pond/icons/fill/18";
 import {
   IconArrowLeftOutline18,
   IconArrowRightOutline18,
-  IconClockRotateClockwiseOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Menu, type MenuItemSpec } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getAppRouter } from "@/lib/ui/app-router";
 import { openSave } from "@/lib/ui/save-nav";
 import { pool, savesStore } from "@/stores/pool";
 import { useRecents } from "@/stores/recents";
 import { useActiveTabId } from "@/stores/tabs";
 import styles from "./styles.module.css";
-
-const HISTORY_POPUP_STYLE = {
-  "--popup-width": "max-content",
-  "--popup-min-width": "180px",
-} as CSSProperties;
 
 function titleFor(id: string): string | null {
   const save = pool.get(id);
@@ -97,15 +92,11 @@ export function ChromeHistoryNav() {
       </Button>
       <Menu.Root>
         <Menu.Trigger icon size="sm" variant="ghost" aria-label="History">
-          <IconClockRotateClockwiseOutline18 />
+          <IconHistory2Fill18 />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Positioner
-            align="start"
-            side="bottom"
-            style={HISTORY_POPUP_STYLE}
-          >
-            <Menu.Popup>
+          <Menu.Positioner align="start" side="bottom">
+            <Menu.Popup className={styles["history-popup"]}>
               <Menu.Items items={historyItems} />
             </Menu.Popup>
           </Menu.Positioner>

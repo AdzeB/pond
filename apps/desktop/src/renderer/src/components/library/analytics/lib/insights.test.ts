@@ -14,11 +14,18 @@ import {
 const HOUR = 3_600_000;
 
 function save(overrides: Partial<Save> = {}): Save {
+  const source = overrides.source ?? "twitter";
+  const url =
+    overrides.url ??
+    (source === "reddit"
+      ? "https://www.reddit.com/r/x/comments/abc"
+      : "https://x.com/some/post");
   return {
     id: crypto.randomUUID(),
-    source: "twitter",
+    source,
     sourceId: "x",
-    url: "https://x.com/some/post",
+    url,
+    siteName: null,
     title: "t",
     description: null,
     author: "Alice",
@@ -121,7 +128,7 @@ describe("saves insight engine", () => {
       7,
     );
     expect(sunburst.legend.length).toBeGreaterThan(0);
-    const twitter = sunburst.groups.find((g) => g.key === "twitter");
+    const twitter = sunburst.groups.find((g) => g.key === "x.com");
     expect(twitter?.segments.reduce((a, s) => a + s.value, 0)).toBe(2);
   });
 
@@ -147,7 +154,7 @@ describe("saves insight engine", () => {
       saves,
       7,
     );
-    expect(result.legend.map((s) => s.key)).toEqual(["twitter", "reddit"]);
+    expect(result.legend.map((s) => s.key)).toEqual(["x.com", "reddit.com"]);
     const today = result.groups.at(-1);
     expect(today?.value).toBe(3);
     expect(today?.segments.map((s) => s.value)).toEqual([2, 1]);
@@ -164,7 +171,7 @@ describe("saves insight engine", () => {
     ).toHaveLength(1);
     expect(
       applyFilters(saves, [
-        { field: "source", op: "exclude", values: ["reddit"] },
+        { field: "source", op: "exclude", values: ["reddit.com"] },
       ]),
     ).toHaveLength(2);
   });

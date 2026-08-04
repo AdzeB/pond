@@ -1,5 +1,15 @@
 import { type NewTask, type Source, saves, tasks } from "@pond/schema/db";
-import { and, asc, eq, inArray, lte, ne, notExists, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  lte,
+  ne,
+  notExists,
+  sql,
+} from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
@@ -47,12 +57,12 @@ export async function pullDueTasks(): Promise<DueTask[]> {
         )`,
       ),
     )
-    .orderBy(asc(tasks.nextRunAt))
+    .orderBy(desc(saves.createdAt), asc(tasks.nextRunAt))
     .limit(60)) as unknown as DueTask[];
 
   if (rows.length === 0) return rows;
 
-  /** Per-save round-robin so one save can't monopolise progress; paused sources are skipped so inflight slots aren't pinned on stalled work. */
+  /** Per-save round-robin (newest saves first from the query order) so one save can't monopolise progress; paused sources are skipped so inflight slots aren't pinned on stalled work. */
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
     if (isSourceTask(row.op) && sourcePausedUntil(row.source as never) > 0) {

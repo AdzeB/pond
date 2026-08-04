@@ -132,7 +132,6 @@ function pickMediaType(media: ReadonlyArray<CaptureMedia>): MediaType | null {
     if (m.type === "video") videos++;
     else images++;
   }
-  if (videos > 0 && images > 0) return "mixed";
   return videos > images ? "video" : "image";
 }
 

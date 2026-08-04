@@ -1,46 +1,3 @@
-.trigger {
-  position: relative;
-  color: var(--ds-gray-10);
-}
-
-.trigger[data-active] {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-a3);
-}
-
-.badge {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1.5px var(--ds-gray-2);
-}
-
-.badge[data-tone="run"] {
-  background: var(--ds-blue-9);
-  animation: status-pulse 1.4s ease-in-out infinite;
-}
-
-.badge[data-tone="warn"] {
-  background: var(--ds-amber-11);
-}
-
-.badge[data-tone="err"] {
-  background: var(--ds-red-9);
-}
-
-@keyframes status-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.35;
-  }
-}
-
 .popup {
   --popup-width: 280px;
   --popup-min-width: 280px;
@@ -177,11 +134,4 @@ button.row:hover {
   font-size: 11px;
   color: var(--ds-gray-9);
   white-space: nowrap;
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  padding-top: 4px;
-  margin-top: 4px;
 }

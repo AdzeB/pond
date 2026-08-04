@@ -88,6 +88,44 @@ export function LocationRow() {
     },
   });
 
+  const importEagle = useMutation({
+    mutationFn: async () => {
+      setStatus(null);
+      setCelebrate(false);
+      const picked = (await window.pond.query("saves.pickEagleLibrary", {})) as
+        | { ok: true; path: string }
+        | { ok: false; path: null };
+      if (!picked.ok || !picked.path) return null;
+      const res = (await window.pond.query("saves.importEagleLibrary", {
+        path: picked.path,
+      })) as {
+        ok: boolean;
+        imported: number;
+        skipped: number;
+        failed: number;
+        error?: string;
+      };
+      if (!res.ok && res.error === "not_eagle_library") {
+        throw new Error("That folder doesn't look like an Eagle library.");
+      }
+      if (!res.ok && res.imported === 0 && res.skipped === 0) {
+        throw new Error(res.error ?? "Couldn't import Eagle library.");
+      }
+      return res;
+    },
+    onSuccess: (res) => {
+      if (!res) return;
+      const parts = [
+        res.imported > 0
+          ? `Imported ${res.imported} item${res.imported === 1 ? "" : "s"}`
+          : null,
+        res.skipped > 0 ? `skipped ${res.skipped}` : null,
+        res.failed > 0 ? `failed ${res.failed}` : null,
+      ].filter(Boolean);
+      setStatus(parts.join(", ") || "Nothing new to import.");
+    },
+  });
+
   const openError = openExisting.isError
     ? openExisting.error instanceof Error
       ? `Couldn't open library: ${openExisting.error.message}`
@@ -100,7 +138,13 @@ export function LocationRow() {
       : "Couldn't back up library."
     : null;
 
-  const message = openError || backupError || status;
+  const eagleError = importEagle.isError
+    ? importEagle.error instanceof Error
+      ? importEagle.error.message
+      : "Couldn't import Eagle library."
+    : null;
+
+  const message = openError || backupError || eagleError || status;
 
   return (
     <div className={styles.stack}>
@@ -116,13 +160,13 @@ export function LocationRow() {
           {message ? (
             <span
               className={
-                openError || backupError
+                openError || backupError || eagleError
                   ? styles.error
                   : celebrate
                     ? styles.successCelebrate
                     : styles.success
               }
-              role={openError || backupError ? "alert" : "status"}
+              role={openError || backupError || eagleError ? "alert" : "status"}
             >
               {message}
             </span>
@@ -169,6 +213,23 @@ export function LocationRow() {
             onClick={() => openExisting.mutate()}
           >
             {openExisting.isPending ? "Opening…" : "Restore"}
+          </Button>
+        </div>
+        <div className={styles.action}>
+          <div className={styles.actionMeta}>
+            <span className={styles.actionTitle}>Import Eagle Library</span>
+            <span className={styles.actionDesc}>
+              Bring items from an Eagle `.library` folder into this pond. Tags
+              and folders become Pond tags.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={importEagle.isPending}
+            onClick={() => importEagle.mutate()}
+          >
+            {importEagle.isPending ? "Importing…" : "Import"}
           </Button>
         </div>
       </div>

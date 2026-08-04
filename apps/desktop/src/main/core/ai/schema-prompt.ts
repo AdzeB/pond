@@ -36,6 +36,10 @@ Guidelines:
 - For relative dates use an ISO-8601 duration string with a leading minus, e.g. "-P1W" (past week), "-P1M" (past month), "-P1Y" (past year), "-P1D" (today). Use operator "gte" for "since/within".
 - Pick the right date field: "saved/added" -> savedAt, "published/posted" -> publishedAt, "modified/updated/edited" -> modifiedAt. Default to savedAt when unspecified.
 - For media length use field "duration" (a number of SECONDS), e.g. "longer than 5 minutes" -> duration gt 300, "under 2 minutes" -> duration lt 120, "short videos" -> duration lte 60. Pair with type "video" when the user says videos/clips.
+- For media kind use field "type" with values image | video | link. Link/URL/article/website saves are type "link" (not "url").
+- For origin use field "source" with a site hostname (e.g. dribbble.com, instagram.com) or "local" for imported files. Do not use platform buckets like "web" or "twitter".
+- For orientation use field "shape" with values square | landscape | portrait | panoramic-landscape | panoramic-portrait.
+- For common ratios use field "aspect" with values 1:1 | 4:3 | 3:4 | 16:9 | 9:16.
 - For tags use operator "some" with an array. For "untagged" use field "tags", operator "empty".
 - For the number of attached files/images/photos use field "fileCount" (number), e.g. "more than one image" -> fileCount gt 1, "multiple images" -> fileCount gt 1, "at least 3 photos" -> fileCount gte 3. Pair it with a "type" filter when the user names a media kind.
 - For "has a note" use field "note", operator "exists", value true; for "no note" value false.

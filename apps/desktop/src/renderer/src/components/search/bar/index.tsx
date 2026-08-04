@@ -21,6 +21,7 @@ import {
 } from "lexical";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
+import { useNlFacets } from "@/hooks/use-nl-query";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import { useViewFilteredCount } from "@/stores/library-view-context";
 import { useTags } from "@/stores/tags";
@@ -60,6 +61,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
   const dock = useDock();
   const tags = useTags();
+  const facets = useNlFacets();
   const _count = useViewFilteredCount();
   const [hasContent, setHasContent] = useState(false);
   const seededRef = useRef(false);
@@ -172,7 +174,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
           <ClearEditorPlugin />
           {autoFocus ? <AutoFocusPlugin /> : null}
           <FilterTokenPlugin />
-          <FilterTypeahead tags={tagNames} />
+          <FilterTypeahead tags={tagNames} sources={facets.sources} />
         </div>
       </div>
     </TrayCard.Root>

@@ -132,6 +132,12 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
+  /** Packaged builds take the Dock icon from the app bundle; amber mark in unpackaged dev. */
+  if (process.platform === "darwin" && !app.isPackaged) {
+    const iconPath = join(__dirname, "../../build/icon.development.png");
+    if (existsSync(iconPath)) app.dock?.setIcon(iconPath);
+  }
+
   const paths = resolvePaths();
   log.info("[pond] paths", paths);
 

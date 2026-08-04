@@ -7,34 +7,27 @@ interface StatusPanelProps {
   onOpenChange: (open: boolean) => void;
   label: string;
   icon: ReactNode;
-  tone?: "run" | "warn" | "err" | null;
   children: ReactNode;
 }
 
-/** Ghost icon trigger + downward popover for the chrome tab-bar cluster. */
+/** Ghost icon trigger + downward popover for the chrome toolbar cluster. */
 export function StatusPanel({
   open,
   onOpenChange,
   label,
   icon,
-  tone = null,
   children,
 }: StatusPanelProps) {
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Button
         render={<Popover.Trigger />}
-        icon
-        size="sm"
         variant="ghost"
+        size="sm"
+        icon
         aria-label={label}
-        className={styles.trigger}
-        data-active={open ? "" : undefined}
       >
         {icon}
-        {tone ? (
-          <span className={styles.badge} data-tone={tone} aria-hidden />
-        ) : null}
       </Button>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
@@ -107,20 +100,4 @@ export function Row({
     );
   }
   return <div className={styles.row}>{body}</div>;
-}
-
-export function PanelFooter({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <div className={styles.footer}>
-      <Button variant="link" size="xs" onClick={onClick}>
-        {label}
-      </Button>
-    </div>
-  );
 }

@@ -120,6 +120,13 @@ export async function createWindow(): Promise<BrowserWindow> {
       ? "#000000"
       : "#ffffff";
 
+  const appIcon = join(
+    __dirname,
+    app.isPackaged
+      ? "../../build/icon.png"
+      : "../../build/icon.development.png",
+  );
+
   const win = new BrowserWindow({
     width: restored?.width ?? 1280,
     height: restored?.height ?? 800,
@@ -132,6 +139,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
+    ...(!isMac ? { icon: appIcon } : {}),
     ...(isMac && shellHint.shellBackdrop
       ? {
           vibrancy: "sidebar" as const,

@@ -1,15 +1,17 @@
-import { MEDIA_TYPES, SOURCES } from "@pond/schema/db";
+import { MEDIA_TYPES } from "@pond/schema/db";
 import { COLOR_PRESETS } from "@pond/schema/filters/color";
 import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 import type { AskSort, NlFacets } from "@/lib/search/nl-query";
 import {
+  ASPECT_SYNONYMS,
   COMBINED_DURATION_RE,
   COUNT_PHRASES,
   DURATION_PHRASES,
   DURATION_UNITS,
   MULTI_WORDS,
   NUMBER_WORDS,
+  SHAPE_SYNONYMS,
   SORT_WORDS,
   SOURCE_SYNONYMS,
   TYPE_SYNONYMS,
@@ -41,15 +43,20 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
   }
 
   for (const [word, source] of Object.entries(SOURCE_SYNONYMS)) {
-    if ((SOURCES as readonly string[]).includes(source)) {
-      push(word, "source", source);
-    }
+    push(word, "source", source);
   }
-  /** Live sources by their literal id, in case of unmapped/new sources. */
+  /** Live site domains present in the library. */
   for (const source of facets.sources) push(source, "source", source);
 
   for (const color of COLOR_PRESETS) {
     push(color.label, "color", color.hex.toLowerCase());
+  }
+
+  for (const [word, shape] of Object.entries(SHAPE_SYNONYMS)) {
+    push(word, "shape", shape);
+  }
+  for (const [word, aspect] of Object.entries(ASPECT_SYNONYMS)) {
+    push(word, "aspect", aspect);
   }
 
   /** Open vocabulary: only values that exist in the library. */
@@ -66,12 +73,16 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
 interface Accumulator {
   sources: Set<string>;
   types: Set<string>;
+  shapes: Set<string>;
+  aspects: Set<string>;
   tags: Set<string>;
   creators: Set<string>;
   colors: string[];
   /** Negated counterparts. */
   negSources: Set<string>;
   negTypes: Set<string>;
+  negShapes: Set<string>;
+  negAspects: Set<string>;
   negTags: Set<string>;
   negCreators: Set<string>;
 }
@@ -80,11 +91,15 @@ export function newAccumulator(): Accumulator {
   return {
     sources: new Set(),
     types: new Set(),
+    shapes: new Set(),
+    aspects: new Set(),
     tags: new Set(),
     creators: new Set(),
     colors: [],
     negSources: new Set(),
     negTypes: new Set(),
+    negShapes: new Set(),
+    negAspects: new Set(),
     negCreators: new Set(),
     negTags: new Set(),
   };
@@ -101,6 +116,12 @@ export function accumulate(
       return;
     case "type":
       (negate ? acc.negTypes : acc.types).add(c.value);
+      return;
+    case "shape":
+      (negate ? acc.negShapes : acc.shapes).add(c.value);
+      return;
+    case "aspect":
+      (negate ? acc.negAspects : acc.aspects).add(c.value);
       return;
     case "tags":
       (negate ? acc.negTags : acc.tags).add(c.value);
@@ -120,7 +141,7 @@ export function toPredicates(acc: Accumulator): Predicate[] {
   const out: Predicate[] = [];
 
   const enumPred = (
-    field: "source" | "type",
+    field: "source" | "type" | "shape" | "aspect",
     values: Set<string>,
     negate: boolean,
   ) => {
@@ -136,6 +157,10 @@ export function toPredicates(acc: Accumulator): Predicate[] {
   enumPred("source", acc.negSources, true);
   enumPred("type", acc.types, false);
   enumPred("type", acc.negTypes, true);
+  enumPred("shape", acc.shapes, false);
+  enumPred("shape", acc.negShapes, true);
+  enumPred("aspect", acc.aspects, false);
+  enumPred("aspect", acc.negAspects, true);
 
   if (acc.creators.size > 0) {
     const list = [...acc.creators];

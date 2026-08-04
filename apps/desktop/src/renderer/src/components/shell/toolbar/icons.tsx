@@ -15,8 +15,9 @@ const ROUTE_ICONS: Record<string, TabIcon> = {
 
 function sourceIcon(path: string): TabIcon | null {
   const m = path.match(/^\/source\/([^/?]+)/);
-  if (!m) return null;
-  return getSourceIcon(m[1]!) ?? null;
+  const id = m?.[1];
+  if (!id) return null;
+  return getSourceIcon(id) ?? null;
 }
 
 export function iconForPath(path: string): TabIcon {

@@ -35,13 +35,27 @@ interface ValueSuggestion {
   label: string;
 }
 
+interface TypeaheadFacets {
+  tags: ReadonlyArray<string>;
+  sources: ReadonlyArray<string>;
+}
+
 /** Free-form fields return null so the caret keeps plain text. */
 function valueSuggestionsFor(
   field: FieldId,
-  tags: ReadonlyArray<string>,
+  facets: TypeaheadFacets,
 ): ValueSuggestion[] | null {
   if (field === "tags") {
-    return tags.map((tag) => ({ value: tag, label: tag }));
+    return facets.tags.map((tag) => ({ value: tag, label: tag }));
+  }
+  if (field === "source") {
+    const values = facets.sources.includes("local")
+      ? facets.sources
+      : [...facets.sources, "local"];
+    return values.map((value) => ({
+      value,
+      label: value === "local" ? "Local" : value,
+    }));
   }
   const meta = FIELD_META[field];
   if (meta.presets) {
@@ -69,7 +83,7 @@ type MenuItem =
 /** Suggests field keys while typing the key, concrete values once a `key:` prefix is present. */
 function buildMenu(
   raw: string,
-  tags: ReadonlyArray<string>,
+  facets: TypeaheadFacets,
 ): { title: string; items: MenuItem[] } | null {
   const negate = raw.startsWith("-");
   const body = negate ? raw.slice(1) : raw;
@@ -79,7 +93,7 @@ function buildMenu(
   if (opMatch) {
     const field = fieldForKey(opMatch[1] as string);
     if (!field) return null;
-    const suggestions = valueSuggestionsFor(field, tags);
+    const suggestions = valueSuggestionsFor(field, facets);
     if (!suggestions) return null;
     const q = (opMatch[3] as string).toLowerCase();
     const key = canonicalKey(field);
@@ -144,13 +158,20 @@ function triggerFn(text: string): MenuTextMatch | null {
   return { leadOffset, matchingString: token, replaceableString: token };
 }
 
-export function FilterTypeahead({ tags }: { tags: ReadonlyArray<string> }) {
+export function FilterTypeahead({
+  tags,
+  sources,
+}: {
+  tags: ReadonlyArray<string>;
+  sources: ReadonlyArray<string>;
+}) {
   const [editor] = useLexicalComposerContext();
   const [query, setQuery] = useState<string | null>(null);
+  const facets = useMemo(() => ({ tags, sources }), [tags, sources]);
 
   const menu = useMemo(
-    () => (query === null ? null : buildMenu(query, tags)),
-    [query, tags],
+    () => (query === null ? null : buildMenu(query, facets)),
+    [query, facets],
   );
   const options = useMemo(
     () => (menu ? menu.items.map((item) => new FilterOption(item)) : []),

@@ -1,3 +1,4 @@
+import { sourceIdentity } from "@pond/schema/domain";
 import type { NlFacets } from "@/lib/search/nl-query";
 import type { Save } from "@/lib/types";
 import { onPoolDirty, pool } from "@/stores/pool";
@@ -27,10 +28,13 @@ let cached: NlFacets | null = null;
 
 function applySave(save: Save, sign: 1 | -1): void {
   if (save.deletedAt) return;
-  if (save.source) bump(sources, save.source.toLowerCase(), sign);
+  const identity = sourceIdentity(save);
+  if (identity) bump(sources, identity, sign);
   for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase(), sign);
   const type = (save.mediaType ?? "").toLowerCase();
-  if (type) bump(types, type, sign);
+  if (type === "image" || type === "video" || type === "link") {
+    bump(types, type, sign);
+  }
   const author = save.author?.trim();
   if (author) bump(creators, author.toLowerCase(), sign);
 }

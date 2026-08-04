@@ -3,6 +3,7 @@ export * from "./ai-catalog.generated";
 export * from "./ai-providers";
 export * from "./color";
 export * from "./db";
+export * from "./domain";
 export * from "./events";
 export * from "./ingest";
 export * from "./query-plan";

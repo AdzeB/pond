@@ -1,10 +1,5 @@
-import {
-  type InsightConfig,
-  type InsightFilter,
-  SOURCES,
-  type Source,
-} from "@pond/schema/db";
-import { sourceLabel } from "@pond/schema/sources";
+import type { InsightConfig, InsightFilter, Source } from "@pond/schema/db";
+import { sourceIdentity } from "@pond/schema/domain";
 import type { Save } from "@/lib/types";
 import {
   DISPLAY_OPTIONS,
@@ -35,12 +30,9 @@ export function creatorOf(save: Save): string {
 }
 
 export function domainOf(save: Save): string {
-  try {
-    const host = new URL(save.url).hostname.replace(/^www\./, "");
-    return host || "unknown";
-  } catch {
-    return save.source === "local" ? "Local files" : "unknown";
-  }
+  const identity = sourceIdentity(save);
+  if (identity === "local") return "Local files";
+  return identity || "unknown";
 }
 
 export function statusOf(save: Save): keyof typeof STATUS_META {
@@ -79,7 +71,7 @@ export function applyFilters(
       } else {
         const value =
           f.field === "source"
-            ? save.source
+            ? sourceIdentity(save)
             : f.field === "type"
               ? mediaTypeOf(save)
               : f.field === "creator"
@@ -126,18 +118,31 @@ export function filterValueOptions(
   saves: readonly Save[] = [],
 ): { value: string; label: string; source: Source | null }[] {
   switch (field) {
-    case "source":
-      return SOURCES.map((s) => ({
-        value: s,
-        label: sourceLabel(s),
-        source: s,
-      }));
+    case "source": {
+      const counts = new Map<string, number>();
+      for (const save of saves) {
+        if (save.deletedAt != null) continue;
+        const value = sourceIdentity(save);
+        if (!value) continue;
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 40)
+        .map(([value]) => ({
+          value,
+          label: value === "local" ? "Local" : value,
+          source: null as Source | null,
+        }));
+    }
     case "type":
-      return Object.entries(TYPE_META).map(([value, meta]) => ({
-        value,
-        label: meta.label,
-        source: null,
-      }));
+      return Object.entries(TYPE_META)
+        .filter(([value]) => value !== "other")
+        .map(([value, meta]) => ({
+          value,
+          label: meta.label,
+          source: null,
+        }));
     case "status":
       return Object.entries(STATUS_META).map(([value, meta]) => ({
         value,
@@ -181,8 +186,8 @@ export function filterValueLabel(
   field: InsightFilter["field"],
   value: string,
 ): string {
-  if (field === "source" && (SOURCES as readonly string[]).includes(value)) {
-    return sourceLabel(value as Source);
+  if (field === "source") {
+    return value === "local" ? "Local" : value;
   }
   if (field === "type" && value in TYPE_META) {
     return TYPE_META[value as keyof typeof TYPE_META].label;

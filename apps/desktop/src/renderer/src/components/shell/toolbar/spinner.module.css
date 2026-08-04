@@ -1,0 +1,24 @@
+.root {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+}
+
+.glyph {
+  display: block;
+  animation: status-spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glyph {
+    animation: none;
+  }
+}
+
+@keyframes status-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

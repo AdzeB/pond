@@ -30,6 +30,7 @@ export { IconGlobeFill18 } from "../../generated/fill/18/IconGlobeFill18";
 export { IconGridFill18 } from "../../generated/fill/18/IconGridFill18";
 export { IconGridLayoutColsFill18 } from "../../generated/fill/18/IconGridLayoutColsFill18";
 export { IconGridLayoutRowsFill18 } from "../../generated/fill/18/IconGridLayoutRowsFill18";
+export { IconHistory2Fill18 } from "../../generated/fill/18/IconHistory2Fill18";
 export { IconImagePlusFill18 } from "../../generated/fill/18/IconImagePlusFill18";
 export { IconImageSparkleFill18 } from "../../generated/fill/18/IconImageSparkleFill18";
 export { IconKeyFill18 } from "../../generated/fill/18/IconKeyFill18";

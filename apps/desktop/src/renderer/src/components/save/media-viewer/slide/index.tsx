@@ -1,5 +1,5 @@
 import { type CSSProperties, useCallback, useState } from "react";
-import { VideoPlayer } from "@/components/shared/video-player";
+import { type NoteMarker, VideoPlayer } from "@/components/shared/video-player";
 import type { ChapterCue } from "@/lib/media/chapters-vtt";
 import styles from "./styles.module.css";
 
@@ -19,6 +19,7 @@ interface SlideProps {
   inView: boolean;
   title?: string | null;
   chapters?: ChapterCue[];
+  noteMarkers?: readonly NoteMarker[];
   /** Controlled ratio from the carousel's cache, kept identical for the player and its placeholder so toggling in-view never resizes the slide. */
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
@@ -46,6 +47,7 @@ export function Slide({
   inView,
   title,
   chapters,
+  noteMarkers,
   ratio,
   onRatio,
   onError,
@@ -64,6 +66,7 @@ export function Slide({
             slide={slide}
             active={active}
             chapters={chapters}
+            noteMarkers={noteMarkers}
             ratioOverride={ratio}
             onRatio={onRatio}
             onError={onError}
@@ -96,6 +99,7 @@ function VideoSlide({
   slide,
   active,
   chapters,
+  noteMarkers,
   ratioOverride,
   onRatio,
   onError,
@@ -103,6 +107,7 @@ function VideoSlide({
   slide: MediaSlide;
   active: boolean;
   chapters?: ChapterCue[];
+  noteMarkers?: readonly NoteMarker[];
   ratioOverride?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
@@ -117,6 +122,7 @@ function VideoSlide({
         width={slide.width}
         height={slide.height}
         chapters={chapters}
+        noteMarkers={noteMarkers}
         onRatio={(r) => {
           setLocal(r);
           onRatio?.(slide.src, r);

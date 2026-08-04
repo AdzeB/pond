@@ -1,25 +1,44 @@
+import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers";
+import { PointerActivationConstraints } from "@dnd-kit/dom";
+import { RestrictToElement } from "@dnd-kit/dom/modifiers";
+import { move } from "@dnd-kit/helpers";
+import {
+  DragDropProvider,
+  type DragEndEvent,
+  PointerSensor,
+} from "@dnd-kit/react";
+import { useSortable } from "@dnd-kit/react/sortable";
+import { IconGear3Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import { IconGear3Outline18, IconPlusOutline18 } from "@pond/icons/outline/18";
-
 import { Button, type MenuItemSpec } from "@pond/ui";
-import { Reorder } from "motion/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
-import { StatusBar } from "@/components/shell/status-bar";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useSave } from "@/hooks/use-saves";
+import { useWatches } from "@/hooks/use-watches";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
 import { settingsModal } from "@/stores/settings-modal";
+import { useSyncByAccount } from "@/stores/sync-monitor";
 import { type Tab, tabs, useActiveTabId, useTabs } from "@/stores/tabs";
+import { ProgressPanel } from "./activity";
+import { ErrorsPanel } from "./attention";
 import { iconForTab } from "./icons";
 import { computeLabel } from "./labels";
+import type { Panel } from "./lib";
+import { RecentPanel } from "./recent";
 import styles from "./styles.module.css";
+import { OngoingPanel } from "./sync";
 
-const REORDER_SPRING = { type: "spring", stiffness: 600, damping: 40 } as const;
-const TAB_LIFTED = styles["tab-lifted"] ?? "";
+/** Linear-style sibling slides; idle:false skips open/close layout motion. */
+const SORT_TRANSITION = {
+  duration: 120,
+  easing: "linear",
+  idle: false,
+} as const;
 
 interface TabBodyProps {
   tab: Tab;
@@ -110,12 +129,27 @@ function tabMenu(tab: Tab, onClose: () => void): MenuItemSpec[] {
 
 const TabItem = memo(function TabItem({
   tab,
+  index,
   isActive,
 }: {
   tab: Tab;
+  index: number;
   isActive: boolean;
 }) {
   const itemRef = useRef<HTMLDivElement | null>(null);
+  const { ref: sortableRef, isDragging } = useSortable({
+    id: tab.id,
+    index,
+    transition: SORT_TRANSITION,
+  });
+
+  const setRefs = useCallback(
+    (node: HTMLDivElement | null) => {
+      itemRef.current = node;
+      sortableRef(node);
+    },
+    [sortableRef],
+  );
 
   const handleClose = useCallback(() => tabs.close(tab.id), [tab.id]);
 
@@ -123,6 +157,15 @@ const TabItem = memo(function TabItem({
   const onClick = useCallback(() => {
     if (!isActive) tabs.activate(tab.id);
   }, [isActive, tab.id]);
+
+  const onKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      if (!isActive) tabs.activate(tab.id);
+    },
+    [isActive, tab.id],
+  );
 
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -146,46 +189,60 @@ const TabItem = memo(function TabItem({
     styles.tab,
     isActive && styles["tab-active"],
     tab.pinned && styles["tab-pinned"],
+    isDragging && styles["tab-lifted"],
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
     <SpecContextMenu buildItems={() => tabMenu(tab, handleClose)}>
-      <Reorder.Item
-        ref={itemRef}
-        value={tab.id}
-        as="div"
+      <div
+        ref={setRefs}
         className={className}
         role="tab"
         tabIndex={isActive ? 0 : -1}
         aria-selected={isActive}
-        transition={REORDER_SPRING}
         onClick={onClick}
+        onKeyDown={onKeyDown}
         onMouseDown={onMouseDown}
-        onDragStart={() => {
-          itemRef.current?.classList.add(TAB_LIFTED);
-        }}
-        onDragEnd={() => {
-          itemRef.current?.classList.remove(TAB_LIFTED);
-        }}
       >
         <TabBody tab={tab} onClose={handleClose} />
-      </Reorder.Item>
+      </div>
     </SpecContextMenu>
   );
 });
 
-export function TabBar() {
+export function Toolbar() {
   const tabList = useTabs();
   const activeId = useActiveTabId();
   const groupRef = useRef<HTMLDivElement | null>(null);
+  const { accounts } = useAccounts();
+  const { watches } = useWatches();
+  const byAccount = useSyncByAccount();
+  const [open, setOpen] = useState<Panel | null>(null);
 
   const ids = useMemo(() => tabList.map((t) => t.id), [tabList]);
 
-  const onReorder = useCallback((next: string[]) => {
-    tabs.setOrder(next);
-  }, []);
+  const modifiers = useMemo(
+    () => [
+      RestrictToHorizontalAxis,
+      RestrictToElement.configure({
+        element: () => groupRef.current,
+      }),
+    ],
+    [],
+  );
+
+  /** Persist order when the gesture ends; dnd-kit handles optimistic motion mid-drag. */
+  const onDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      if (event.canceled || !event.operation.source) return;
+      const next = move(ids, event);
+      if (next === ids) return;
+      tabs.setOrder(next.map(String));
+    },
+    [ids],
+  );
 
   /** Edge fades only when content is clipped on that side. */
   useEffect(() => {
@@ -218,30 +275,61 @@ export function TabBar() {
   return (
     <div className={styles.bar} role="tablist">
       <ChromeHistoryNav />
-      <Reorder.Group
-        ref={groupRef}
-        as="div"
-        axis="x"
-        className={styles.group}
-        values={ids}
-        onReorder={onReorder}
-      >
-        {tabList.map((tab) => (
-          <TabItem key={tab.id} tab={tab} isActive={tab.id === activeId} />
-        ))}
-      </Reorder.Group>
-
-      <div className={styles.actions}>
-        <StatusBar />
+      <div className={styles.tabs}>
+        <DragDropProvider
+          modifiers={modifiers}
+          sensors={(defaults) => [
+            ...defaults.filter((sensor) => sensor !== PointerSensor),
+            PointerSensor.configure({
+              activationConstraints: [
+                new PointerActivationConstraints.Distance({ value: 6 }),
+              ],
+            }),
+          ]}
+          onDragEnd={onDragEnd}
+        >
+          <div ref={groupRef} className={styles.group}>
+            {tabList.map((tab, index) => (
+              <TabItem
+                key={tab.id}
+                tab={tab}
+                index={index}
+                isActive={tab.id === activeId}
+              />
+            ))}
+          </div>
+        </DragDropProvider>
         <Button
           variant="ghost"
           size="sm"
           icon
+          className={styles["new-tab"]}
           onClick={() => tabs.open("/")}
           aria-label="New tab"
         >
-          <IconPlusOutline18 />
+          <IconPlusFill18 />
         </Button>
+      </div>
+
+      <div className={styles.dragSpacer} aria-hidden />
+
+      <div className={styles.actions}>
+        <ProgressPanel open={open === "progress"} onOpenChange={setOpen} />
+        <RecentPanel open={open === "recent"} onOpenChange={setOpen} />
+        <ErrorsPanel
+          open={open === "errors"}
+          onOpenChange={setOpen}
+          accounts={accounts}
+          watches={watches}
+          byAccount={byAccount}
+        />
+        <OngoingPanel
+          open={open === "ongoing"}
+          onOpenChange={setOpen}
+          accounts={accounts}
+          watches={watches}
+          byAccount={byAccount}
+        />
         <Button
           variant="ghost"
           size="sm"
@@ -249,7 +337,7 @@ export function TabBar() {
           onClick={() => settingsModal.open()}
           aria-label="Settings"
         >
-          <IconGear3Outline18 />
+          <IconGear3Fill18 />
         </Button>
       </div>
     </div>

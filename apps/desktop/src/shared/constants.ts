@@ -81,7 +81,6 @@ export type MenuActionId =
   | "theme.system"
   | "refresh.all"
   | "refresh.cancel"
-  | "save.new"
   | "save.reveal"
   | "save.open-with-default"
   | "save.open-original"

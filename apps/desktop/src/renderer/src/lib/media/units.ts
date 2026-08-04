@@ -63,7 +63,7 @@ export function buildMediaUnits(
   const quoteUnits = buildQuoteScreenshotUnits(save, opts.theme);
 
   const videos = slides.filter(isVideoFile);
-  const images = slides.filter((f) => !isVideoFile(f));
+  const images = slides.filter(isImageFile);
 
   /** Single-stream save: one video + optional cover collapses to one unit with the cover as poster. */
   if (videos.length === 1 && images.length <= 1 && quoteUnits.length === 0) {
@@ -92,7 +92,7 @@ export function buildMediaUnits(
         ...(poster ? { posterUrl: buildPondUrl(save.id, poster) } : {}),
       });
       videoSeen++;
-    } else {
+    } else if (isImageFile(f)) {
       units.push({
         key: f.path,
         url: buildPondUrl(save.id, f),
@@ -265,7 +265,7 @@ export function deriveTypeLabel(
   const media = save.mediaType?.toLowerCase();
   if (media === "video") return "Video";
   if (media === "image") return "Image";
-  if (media === "link") return "Link";
+  if (media === "link") return "Website";
   if (save.mediaType) return save.mediaType.toUpperCase();
   return save.url ? "Link" : null;
 }

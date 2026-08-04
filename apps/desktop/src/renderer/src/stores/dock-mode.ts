@@ -11,7 +11,6 @@ export type DockMode =
   | "ask-history"
   | "search"
   | "search-help"
-  | "new"
   | "layout"
   | "zoom"
   | "sort"

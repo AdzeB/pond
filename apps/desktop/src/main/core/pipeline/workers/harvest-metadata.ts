@@ -1,4 +1,5 @@
 import type { MediaType, NewSave } from "@pond/schema/db";
+import { domainFromUrl } from "@pond/schema/domain";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import { resolveExtractor } from "../extractors";
@@ -42,7 +43,7 @@ export async function runHarvestMetadata(
     ...(existingRaw?.ytdlp ? { ytdlp: existingRaw.ytdlp } : {}),
   };
 
-  const patch = buildSavePatch(capture, rawJson);
+  const patch = buildSavePatch(capture, rawJson, save.url);
   await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
   });
@@ -62,7 +63,11 @@ function isFreshHarvest(rawJson: unknown): boolean {
   return Date.now() - ms < HARVEST_FRESH_MS;
 }
 
-function buildSavePatch(capture: Capture, rawJson: RawJson): Partial<NewSave> {
+function buildSavePatch(
+  capture: Capture,
+  rawJson: RawJson,
+  pageUrl: string,
+): Partial<NewSave> {
   const mediaUrl = capture.media[0]?.url ?? null;
   const mediaType = pickMediaType(capture);
 
@@ -75,6 +80,7 @@ function buildSavePatch(capture: Capture, rawJson: RawJson): Partial<NewSave> {
     publishedAt: capture.publishedAt ? safeDate(capture.publishedAt) : null,
     mediaUrl,
     mediaType,
+    siteName: domainFromUrl(pageUrl),
   };
   return patch;
 }
@@ -84,7 +90,7 @@ function safeDate(value: string): Date | null {
   return Number.isFinite(ms) ? new Date(ms) : null;
 }
 
-/** "mixed" for carousels with both videos and images; else majority type. */
+/** Majority type; image wins ties so carousels stay filterable without a mixed bucket. */
 function pickMediaType(capture: Capture): MediaType | null {
   const media = capture.media ?? [];
   if (media.length === 0) return null;
@@ -94,6 +100,5 @@ function pickMediaType(capture: Capture): MediaType | null {
     if (m.type === "video") videos++;
     else images++;
   }
-  if (videos > 0 && images > 0) return "mixed";
   return videos > images ? "video" : "image";
 }

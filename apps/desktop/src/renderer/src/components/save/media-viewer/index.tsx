@@ -74,6 +74,14 @@ export function MediaViewer({
     [allSlides, broken],
   );
   const slideChapters = singleVideo ? chapters : undefined;
+  const noteMarkers = useMemo(
+    () =>
+      (save.videoNotes ?? []).map((n) => ({
+        id: n.id,
+        timeSec: n.timeSec,
+      })),
+    [save.videoNotes],
+  );
 
   const firstFileIndex = slides[0]?.fileIndex ?? null;
 
@@ -102,6 +110,7 @@ export function MediaViewer({
           inView
           title={save.title}
           chapters={slideChapters}
+          noteMarkers={noteMarkers}
           onError={() => markBroken(only.src)}
         />
       </Frame>
@@ -113,6 +122,7 @@ export function MediaViewer({
       save={save}
       slides={slides}
       chapters={slideChapters}
+      noteMarkers={noteMarkers}
       onError={markBroken}
       onActiveFileIndexChange={onActiveFileIndexChange}
     />
@@ -169,12 +179,14 @@ function Carousel({
   save,
   slides,
   chapters,
+  noteMarkers,
   onError,
   onActiveFileIndexChange,
 }: {
   save: Save;
   slides: MediaSlide[];
   chapters?: ChapterCue[];
+  noteMarkers?: readonly { id: string; timeSec: number }[];
   onError: (src: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
 }) {
@@ -208,6 +220,7 @@ function Carousel({
             inView={Math.abs(i - active) <= 1}
             title={save.title}
             chapters={chapters}
+            noteMarkers={noteMarkers}
             ratio={ratios.get(s.src)}
             onRatio={reportRatio}
             onError={() => onError(s.src)}

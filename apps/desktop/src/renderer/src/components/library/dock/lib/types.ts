@@ -5,7 +5,6 @@ export type DockView =
   | "ask-history"
   | "search"
   | "search-help"
-  | "new"
   | "layout"
   | "zoom"
   | "sort"

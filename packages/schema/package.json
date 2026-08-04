@@ -31,6 +31,7 @@
     "./session": "./src/session.ts",
     "./settings": "./src/settings.ts",
     "./sources": "./src/sources.ts",
+    "./domain": "./src/domain.ts",
     "./query-plan": "./src/query-plan.ts",
     "./filters": "./src/filters/index.ts",
     "./filters/types": "./src/filters/types.ts",

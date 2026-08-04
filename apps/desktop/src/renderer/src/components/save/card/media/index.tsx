@@ -76,6 +76,7 @@ export const CardThumb = memo(function CardThumb({
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
+  const showPlaceholder = !unit || broken;
 
   return (
     <div
@@ -109,7 +110,7 @@ export const CardThumb = memo(function CardThumb({
           onBroken={onBroken}
         />
       ) : null}
-      {!unit || broken ? (
+      {showPlaceholder ? (
         <div className={styles.placeholder} aria-hidden />
       ) : null}
       <DownloadingBadge save={save} isDownloading={isDownloading} />

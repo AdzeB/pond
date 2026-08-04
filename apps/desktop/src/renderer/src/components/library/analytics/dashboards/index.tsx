@@ -5,6 +5,7 @@ import {
   RANGE_OPTIONS,
   useDashboards,
 } from "@/components/library/analytics/lib/dashboards";
+import { GRID_CELL_W } from "@/components/library/analytics/lib/insight-sizing";
 import { LibraryGrid } from "@/components/library/layouts/grid";
 import {
   LIBRARY_ITEM_GAP,
@@ -17,7 +18,7 @@ import { useGridWidth } from "@/stores/shell-state";
 import styles from "./styles.module.css";
 
 const NEW_DASHBOARD_ID = "__new__";
-/** Matches the previous CSS `grid-auto-rows`; columns follow library `--grid-min`. */
+/** Matches the previous CSS `grid-auto-rows`. */
 const DASHBOARD_CELL_HEIGHT = 124;
 
 function rangeLabel(days: number): string {
@@ -41,7 +42,8 @@ export function AnalyticsDashboardsPage() {
   const { dashboards, addDashboard } = useDashboards();
   const navigate = useNavigate();
   const width = useGridWidth();
-  const colMin = useGridMin();
+  /** Text cards need more room than save thumbs; floor at insight column width. */
+  const colMin = Math.max(useGridMin(), GRID_CELL_W);
 
   const create = () => {
     const id = addDashboard();

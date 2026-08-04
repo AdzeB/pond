@@ -127,26 +127,54 @@ export const TYPE_SYNONYMS: Record<string, string> = {
   websites: "link",
 };
 
-/** Spoken source words -> a canonical source id, only emitted if it's a real source. */
+/** Spoken shape / aspect words -> canonical enum values for those fields. */
+export const SHAPE_SYNONYMS: Record<string, string> = {
+  square: "square",
+  squares: "square",
+  landscape: "landscape",
+  landscapes: "landscape",
+  horizontal: "landscape",
+  portrait: "portrait",
+  portraits: "portrait",
+  vertical: "portrait",
+  panoramic: "panoramic-landscape",
+  panorama: "panoramic-landscape",
+  banner: "panoramic-landscape",
+  "wide banner": "panoramic-landscape",
+  "tall portrait": "panoramic-portrait",
+};
+
+export const ASPECT_SYNONYMS: Record<string, string> = {
+  "1:1": "1:1",
+  "4:3": "4:3",
+  "3:4": "3:4",
+  "16:9": "16:9",
+  "9:16": "9:16",
+  widescreen: "16:9",
+  "story ratio": "9:16",
+};
+
+/** Spoken source words -> a canonical site hostname (or local). */
 export const SOURCE_SYNONYMS: Record<string, string> = {
-  twitter: "twitter",
-  tweet: "twitter",
-  tweets: "twitter",
-  x: "twitter",
-  arena: "arena",
-  "are.na": "arena",
-  pinterest: "pinterest",
-  pin: "pinterest",
-  pins: "pinterest",
-  instagram: "instagram",
-  insta: "instagram",
-  ig: "instagram",
-  tiktok: "tiktok",
-  youtube: "youtube",
-  yt: "youtube",
-  reddit: "reddit",
-  threads: "threads",
-  cosmos: "cosmos",
+  twitter: "x.com",
+  tweet: "x.com",
+  tweets: "x.com",
+  x: "x.com",
+  arena: "are.na",
+  "are.na": "are.na",
+  pinterest: "pinterest.com",
+  pin: "pinterest.com",
+  pins: "pinterest.com",
+  instagram: "instagram.com",
+  insta: "instagram.com",
+  ig: "instagram.com",
+  tiktok: "tiktok.com",
+  youtube: "youtube.com",
+  yt: "youtube.com",
+  reddit: "reddit.com",
+  threads: "threads.net",
+  cosmos: "cosmos.so",
+  local: "local",
 };
 
 /** Spelled-out small numbers, so "more than one" works like "more than 1". */

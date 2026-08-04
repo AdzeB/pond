@@ -131,11 +131,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "File",
       submenu: [
         {
-          label: "New Save",
-          accelerator: "CmdOrCtrl+N",
-          click: sendMenuAction("save.new"),
-        },
-        {
           label: "New Tab",
           accelerator: "CmdOrCtrl+T",
           click: () => {

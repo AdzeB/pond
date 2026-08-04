@@ -1,5 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
-import { extname } from "node:path";
+import { basename, extname } from "node:path";
 import {
   type MediaType,
   type NewSave,
@@ -7,7 +7,7 @@ import {
   saves,
   syncActions,
 } from "@pond/schema/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
@@ -30,14 +30,9 @@ const VIDEO_EXT: Record<string, string> = {
   ".m4v": "video/x-m4v",
 };
 
-export const IMPORTABLE_EXTENSIONS: readonly string[] = [
-  ...Object.keys(IMAGE_EXT),
-  ...Object.keys(VIDEO_EXT),
-].map((ext) => ext.slice(1));
-
 function classifyExt(
   ext: string,
-): { mediaType: MediaType; mimeType: string } | null {
+): { mediaType: "image" | "video"; mimeType: string } | null {
   const lower = ext.toLowerCase();
   if (IMAGE_EXT[lower])
     return { mediaType: "image", mimeType: IMAGE_EXT[lower] };
@@ -47,7 +42,7 @@ function classifyExt(
 }
 
 function blobFilename(
-  mediaType: MediaType,
+  mediaType: "image" | "video",
   ext: string,
   index: number,
 ): string {
@@ -57,26 +52,43 @@ function blobFilename(
   return index === 0 ? `cover${ext}` : `media-${index}${ext}`;
 }
 
-interface ManualSaveInput {
+export interface ManualSaveInput {
   title?: string | null;
   url?: string | null;
   note?: string | null;
   tags?: string[];
   /** Absolute paths on disk the main process can read. */
   filePaths?: string[];
+  /** Override the local sourceId (e.g. eagle:<id> for idempotent re-import). */
+  sourceId?: string | null;
+  width?: number;
+  height?: number;
 }
 
 interface ManualSaveResult {
   ok: boolean;
   id?: string;
   error?: string;
+  skipped?: boolean;
 }
 
 interface ReadableFile {
   path: string;
-  mediaType: MediaType;
+  mediaType: "image" | "video";
   mimeType: string;
   bytes: Buffer;
+}
+
+function majorityMediaType(
+  files: ReadonlyArray<{ mediaType: "image" | "video" }>,
+): MediaType {
+  let videos = 0;
+  let images = 0;
+  for (const f of files) {
+    if (f.mediaType === "video") videos += 1;
+    else images += 1;
+  }
+  return videos > images ? "video" : "image";
 }
 
 /** Builds a complete local save without the URL pipeline; no ops are enqueued. */
@@ -85,18 +97,32 @@ export async function createManualSave(
 ): Promise<ManualSaveResult> {
   const db = await getDb();
   const id = ulid();
-  /** The ulid doubles as the unique sourceId in the local namespace. */
-  const sourceId = id;
+  const overrideId = input.sourceId?.trim() || null;
+  const sourceId = overrideId || id;
   const now = new Date();
 
-  const title = input.title?.trim() || null;
+  if (overrideId) {
+    const existing = db
+      .select({ id: saves.id })
+      .from(saves)
+      .where(and(eq(saves.source, "local"), eq(saves.sourceId, sourceId)))
+      .all()[0];
+    if (existing) {
+      return { ok: true, id: existing.id, skipped: true };
+    }
+  }
+
   const note = input.note?.trim() || null;
   const tags = normalizeTags(input.tags ?? []);
 
   const readable: ReadableFile[] = [];
+  let skippedUnsupported = 0;
   for (const path of input.filePaths ?? []) {
     const cls = classifyExt(extname(path));
-    if (!cls) continue;
+    if (!cls) {
+      skippedUnsupported += 1;
+      continue;
+    }
     try {
       const info = await stat(path);
       if (!info.isFile() || info.size === 0) continue;
@@ -106,16 +132,26 @@ export async function createManualSave(
     }
   }
 
+  if (
+    (input.filePaths?.length ?? 0) > 0 &&
+    readable.length === 0 &&
+    skippedUnsupported > 0
+  ) {
+    return { ok: false, error: "unsupported_type", skipped: true };
+  }
+
+  const title =
+    input.title?.trim() ||
+    (readable[0]
+      ? basename(readable[0].path, extname(readable[0].path))
+      : null);
+
   if (readable.length === 0 && !title && !note && !input.url) {
     return { ok: false, error: "empty_input" };
   }
 
   const hasFiles = readable.length > 0;
-  const mediaType: MediaType = !hasFiles
-    ? "link"
-    : readable.length > 1
-      ? "mixed"
-      : (readable[0]?.mediaType ?? "image");
+  const mediaType: MediaType = !hasFiles ? "link" : majorityMediaType(readable);
 
   const insertValues: NewSave = {
     id,
@@ -125,12 +161,16 @@ export async function createManualSave(
     title,
     notes: note,
     mediaType,
-    status: hasFiles ? "ingesting" : "complete",
+    siteName: null,
+    /** Local files are copied in-process; never park them in the ingest queue. */
+    status: "complete",
     tags,
     files: [],
     coverIndex: 0,
+    ...(input.width != null ? { width: input.width } : {}),
+    ...(input.height != null ? { height: input.height } : {}),
     ingestStartedAt: now,
-    ingestCompletedAt: hasFiles ? null : now,
+    ingestCompletedAt: now,
     savedAt: now,
     createdAt: now,
   };
@@ -156,7 +196,7 @@ export async function createManualSave(
       kind: kindFor(file.mediaType, index),
       filename: blobFilename(
         file.mediaType,
-        extname(file.path).toLowerCase(),
+        extname(file.path).toLowerCase() || ".bin",
         index,
       ),
       bytes: file.bytes,
@@ -178,7 +218,10 @@ export async function createManualSave(
   return { ok: true, id };
 }
 
-function kindFor(mediaType: MediaType, index: number): SaveFile["kind"] {
+function kindFor(
+  mediaType: "image" | "video",
+  index: number,
+): SaveFile["kind"] {
   if (mediaType === "video") return "video";
   return index === 0 ? "cover" : "media";
 }

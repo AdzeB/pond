@@ -5,6 +5,7 @@ import {
   syncActions,
   tasks,
 } from "@pond/schema/db";
+import { domainFromUrl } from "@pond/schema/domain";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
@@ -117,6 +118,7 @@ export async function enqueueSaveByUrl(
     sourceId,
     accountId: opts.accountId ?? null,
     url: normalizedUrl,
+    siteName: domainFromUrl(normalizedUrl),
     status: "ingesting",
     ingestStartedAt: now,
     tags: [],

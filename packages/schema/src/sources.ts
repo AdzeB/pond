@@ -2,6 +2,11 @@ import { SOURCES, type Source } from "./db";
 import { SOURCE_DESCRIPTORS } from "./sources/registry";
 
 export {
+  canonicalHost,
+  domainFromUrl,
+  sourceIdentity,
+} from "./domain";
+export {
   DEFAULT_RATE_PROFILE,
   descriptorFor,
   EXTERNAL_SOURCE_IDS,

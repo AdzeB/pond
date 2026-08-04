@@ -4,7 +4,6 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskComposer } from "@/components/ask/bar";
 import { NavContent } from "@/components/library/dock/nav";
-import { NewContent } from "@/components/library/dock/new";
 import { OptionsContent } from "@/components/library/dock/options";
 import { SelectionContent } from "@/components/library/dock/selection";
 import { SearchComposer } from "@/components/search/bar";
@@ -31,7 +30,6 @@ import styles from "./styles.module.css";
 /** Module-level store calls stay referentially stable without useCallback. */
 const openAsk = () => dockMode.open("ask");
 const openSearch = () => dockMode.open("search");
-const openNew = () => dockMode.open("new");
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 const clearResults = () => {
@@ -89,7 +87,7 @@ export function LibraryTray() {
       : mode !== "nav"
         ? mode
         : "nav";
-  const isMenuView = view === "new" || isViewMenu(view);
+  const isMenuView = isViewMenu(view);
 
   const allSelected = isAllSelected();
 
@@ -101,8 +99,7 @@ export function LibraryTray() {
     [pathname],
   );
 
-  const isCard =
-    view === "ask" || view === "search" || view === "new" || isViewMenu(view);
+  const isCard = view === "ask" || view === "search" || isViewMenu(view);
 
   useEffect(() => {
     if (!isMenuView) return;
@@ -147,8 +144,6 @@ export function LibraryTray() {
       openAsk,
       openSearch,
       closeSearch: closeToNav,
-      openNew,
-      closeNew: closeToNav,
       openViewMenu,
       closeViewMenu: closeToNav,
       destructive,
@@ -233,10 +228,6 @@ export function LibraryTray() {
                     transition={swapTransition}
                   >
                     <SearchComposer autoFocus onCollapse={closeToNav} />
-                  </motion.div>
-                ) : view === "new" ? (
-                  <motion.div key="new" {...swap} transition={swapTransition}>
-                    <NewContent />
                   </motion.div>
                 ) : isViewMenu(view) ? (
                   <motion.div key={view} {...swap} transition={swapTransition}>

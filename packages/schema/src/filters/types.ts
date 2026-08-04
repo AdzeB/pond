@@ -76,6 +76,8 @@ export type FieldId =
   | "type"
   | "fileCount"
   | "duration"
+  | "shape"
+  | "aspect"
   | "creator"
   | "account"
   | "note"

@@ -5,7 +5,8 @@ import type {
   InsightSlice,
   Source,
 } from "@pond/schema/db";
-import { sourceLabel } from "@pond/schema/sources";
+import { sourceIdentity } from "@pond/schema/domain";
+import { hostToSource } from "@pond/schema/sources";
 import type { Save } from "@/lib/types";
 import {
   CYCLE_COLORS,
@@ -86,12 +87,18 @@ interface Dim {
   source: Source | null;
 }
 
-function sourceDim(source: string): Dim {
+function sourceDim(identity: string): Dim {
+  const platform =
+    identity === "local"
+      ? ("local" as Source)
+      : hostToSource(`https://${identity}`);
   return {
-    key: source,
-    label: sourceLabel(source as Source),
-    color: SOURCE_COLORS[source as Source] ?? FALLBACK_COLOR,
-    source: source as Source,
+    key: identity,
+    label: identity === "local" ? "Local" : identity,
+    color: platform
+      ? (SOURCE_COLORS[platform] ?? FALLBACK_COLOR)
+      : FALLBACK_COLOR,
+    source: platform,
   };
 }
 
@@ -113,7 +120,7 @@ function dimOf(
 ): Dim {
   switch (by) {
     case "source":
-      return sourceDim(save.source);
+      return sourceDim(sourceIdentity(save));
     case "type": {
       const key = mediaTypeOf(save);
       const meta = TYPE_META[key];

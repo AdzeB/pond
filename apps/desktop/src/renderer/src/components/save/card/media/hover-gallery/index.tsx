@@ -34,15 +34,6 @@ export function HoverGallery({
           />
         ) : null,
       )}
-      <div className={styles.dots} aria-hidden="true">
-        {slides.map((unit, i) => (
-          <span
-            key={unit.url}
-            className={styles.dot}
-            data-active={i === active ? "true" : undefined}
-          />
-        ))}
-      </div>
     </>
   );
 }

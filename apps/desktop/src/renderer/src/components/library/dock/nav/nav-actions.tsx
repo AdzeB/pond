@@ -176,10 +176,6 @@ function LibraryActions({ tip }: { tip: TipHandle }) {
 
   return (
     <>
-      <Tray.Item aria-label="New" onClick={dock.openNew}>
-        <Plus />
-      </Tray.Item>
-
       <ViewMenuActions tip={tip} />
 
       <Tooltip.Trigger

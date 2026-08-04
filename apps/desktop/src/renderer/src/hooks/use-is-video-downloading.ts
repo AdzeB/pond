@@ -13,7 +13,7 @@ export function useIsVideoDownloading(save: Save | null | undefined): boolean {
 }
 
 function hasVideoEvidence(save: Save): boolean {
-  if (save.mediaType === "video" || save.mediaType === "mixed") return true;
+  if (save.mediaType === "video") return true;
   if ((save.files ?? []).some((f) => f.kind === "video")) return true;
   const captureMedia = (
     save.rawJson as

@@ -1,4 +1,5 @@
 import {
+  IconGridLayoutRowsFill18 as AspectIcon,
   IconCalendarFill18 as Calendar,
   IconChatBubbleFill18 as Caption,
   IconFileFill18 as FileIcon,
@@ -7,6 +8,7 @@ import {
   IconMicrophoneFill18 as Mic,
   IconColorPaletteFill18 as Palette,
   IconPencilFill18 as Pencil,
+  IconGridLayoutColsFill18 as ShapeIcon,
   IconTagFill18 as Tag,
   IconStopwatchFill18 as Timer,
   IconUploadFill18 as Upload,
@@ -34,6 +36,8 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
   type: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
+  shape: ShapeIcon,
+  aspect: AspectIcon,
   creator: User,
   account: User,
   note: Pencil,
@@ -47,10 +51,12 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
 
 export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
   tags: "any tag",
-  source: "twitter, arena, local",
-  type: "image, video, url",
+  source: "dribbble.com, instagram.com, local",
+  type: "image, video, link",
   fileCount: "3, >2, 2..5",
   duration: "<30s, <3min",
+  shape: "square, landscape, portrait, panoramic-landscape",
+  aspect: "1:1, 4:3, 3:4, 16:9, 9:16",
   creator: "by name",
   account: "@handle",
   note: "with, without",

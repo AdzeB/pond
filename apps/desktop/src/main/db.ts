@@ -68,6 +68,15 @@ export async function getDb(): Promise<Db> {
 
   ensureLibraryMetadata();
 
+  try {
+    const { runLibraryScopeMigration } = await import(
+      "./core/library-scope-migration"
+    );
+    await runLibraryScopeMigration();
+  } catch (err) {
+    log.warn("[pond db] library scope migration failed", err);
+  }
+
   return cachedPond;
 }
 

@@ -11,11 +11,18 @@ import {
   setActiveMediaSeek,
   setActiveMediaTime,
 } from "@/stores/active-media";
+import styles from "./styles.module.css";
+
+export interface NoteMarker {
+  id: string;
+  timeSec: number;
+}
 
 interface VideoPlayerProps {
   src: string;
   poster?: string;
   chapters?: readonly ChapterCue[];
+  noteMarkers?: readonly NoteMarker[];
   /** Publishes the seek handle and current time to the active-media store so out-of-tree chrome can drive this player. */
   active?: boolean;
   /** Seeds the aspect ratio so it's known before metadata loads. */
@@ -55,6 +62,35 @@ function MediaBridge({ active }: { active: boolean }) {
   return null;
 }
 
+function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
+  const { state, actions } = useVideo();
+  if (markers.length === 0 || state.duration <= 0) return null;
+  return (
+    <div className={styles.markers} aria-hidden>
+      {markers.map((marker) => {
+        const pct = Math.min(
+          100,
+          Math.max(0, (marker.timeSec / state.duration) * 100),
+        );
+        return (
+          <button
+            key={marker.id}
+            type="button"
+            className={styles.marker}
+            style={{ left: `${pct}%` }}
+            tabIndex={-1}
+            onClick={(e) => {
+              e.stopPropagation();
+              actions.seek(marker.timeSec);
+              actions.play();
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 /** The object URL is revoked when chapters change or the player unmounts. */
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   const [url, setUrl] = useState<string | null>(null);
@@ -74,6 +110,7 @@ export function VideoPlayer({
   src,
   poster,
   chapters,
+  noteMarkers,
   active,
   width,
   height,
@@ -121,8 +158,11 @@ export function VideoPlayer({
       </Video.Media>
       <Video.Controls>
         <Video.TimeDisplay />
-        <Video.Row>
+        <Video.Row className={styles.scrubRow}>
           <Video.Scrubber />
+          {noteMarkers && noteMarkers.length > 0 ? (
+            <NoteMarkers markers={noteMarkers} />
+          ) : null}
         </Video.Row>
         <Video.Row>
           <Video.PlayButton />
