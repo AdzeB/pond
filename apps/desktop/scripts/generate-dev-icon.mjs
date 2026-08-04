@@ -26,7 +26,7 @@ async function main() {
       .raw()
       .toBuffer({ resolveWithObject: true }));
   } catch (err) {
-    if (err.code === "ENOENT") {
+    if (err?.code === "ENOENT") {
       console.warn("[pond] skip dev icon: build/icon.png missing");
       return;
     }
@@ -63,8 +63,11 @@ async function writeIcns(pngPath, icnsPath) {
     for (const size of [16, 32, 128, 256, 512]) {
       const base = join(iconset, `icon_${size}x${size}.png`);
       const retina = join(iconset, `icon_${size}x${size}@2x.png`);
-      resize(pngPath, size, base);
-      resize(pngPath, size * 2, retina);
+      await sharp(pngPath).resize(size, size).png().toFile(base);
+      await sharp(pngPath)
+        .resize(size * 2, size * 2)
+        .png()
+        .toFile(retina);
     }
     const result = spawnSync(
       "iconutil",
@@ -81,18 +84,7 @@ async function writeIcns(pngPath, icnsPath) {
   }
 }
 
-function resize(src, size, dest) {
-  const result = spawnSync(
-    "sips",
-    ["-z", String(size), String(size), src, "--out", dest],
-    { stdio: "ignore" },
-  );
-  if (result.status !== 0) {
-    throw new Error(`sips failed resizing to ${size}px`);
-  }
-}
-
 main().catch((err) => {
   console.error("[pond] generate-dev-icon failed:", err);
-  process.exitCode = 0;
+  process.exitCode = 1;
 });

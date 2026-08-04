@@ -38,18 +38,6 @@ async function walkOne(path: string, out: string[]): Promise<void> {
 
   for (const entry of entries) {
     if (entry.name.startsWith(".")) continue;
-    const child = join(path, entry.name);
-    if (entry.isDirectory()) {
-      await walkOne(child, out);
-      continue;
-    }
-    if (entry.isFile()) {
-      try {
-        const size = (await stat(child)).size;
-        if (size > 0) out.push(child);
-      } catch {
-        /** Skip unreadable files. */
-      }
-    }
+    await walkOne(join(path, entry.name), out);
   }
 }

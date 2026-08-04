@@ -1,4 +1,5 @@
 import type { MediaType } from "@pond/schema/db";
+import { majorityMediaType } from "@pond/schema/media-type";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
@@ -125,14 +126,9 @@ function pickTitle(
 }
 
 function pickMediaType(media: ReadonlyArray<CaptureMedia>): MediaType | null {
-  if (media.length === 0) return null;
-  let videos = 0;
-  let images = 0;
-  for (const m of media) {
-    if (m.type === "video") videos++;
-    else images++;
-  }
-  return videos > images ? "video" : "image";
+  return majorityMediaType(
+    media.map((m) => (m.type === "video" ? "video" : "image")),
+  );
 }
 
 function readLegacyCreatedAt(raw: unknown): Date | null {

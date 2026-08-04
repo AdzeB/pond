@@ -11,7 +11,14 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { IconGear3Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { Button, type MenuItemSpec } from "@pond/ui";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
@@ -19,6 +26,7 @@ import { useAccounts } from "@/hooks/use-accounts";
 import { useSave } from "@/hooks/use-saves";
 import { useWatches } from "@/hooks/use-watches";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
+import type { Save } from "@/lib/types";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
 import { settingsModal } from "@/stores/settings-modal";
@@ -40,15 +48,30 @@ const SORT_TRANSITION = {
   idle: false,
 } as const;
 
+function focusTabEl(id: string): void {
+  requestAnimationFrame(() => {
+    const el = document.querySelector<HTMLElement>(`[data-tab-id="${id}"]`);
+    el?.focus();
+  });
+}
+
+function stopPropagation(e: React.SyntheticEvent) {
+  e.stopPropagation();
+}
+
 interface TabBodyProps {
   tab: Tab;
+  label: string;
+  save: Save | undefined;
   onClose: () => void;
 }
 
-const TabBody = memo(function TabBody({ tab, onClose }: TabBodyProps) {
-  const saveId = saveIdFromPath(tab.path.split("?")[0] ?? tab.path);
-  const save = useSave(saveId);
-  const label = computeLabel(tab.path, save);
+const TabBody = memo(function TabBody({
+  tab,
+  label,
+  save,
+  onClose,
+}: TabBodyProps) {
   const Icon = iconForTab(tab.path, save);
   const avatarUrl = save ? pickAuthorAvatarUrl(save) : null;
   const author = save?.author?.trim() ?? "";
@@ -108,11 +131,8 @@ const TabBody = memo(function TabBody({ tab, onClose }: TabBodyProps) {
   );
 });
 
-function stopPropagation(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
 function tabMenu(tab: Tab, onClose: () => void): MenuItemSpec[] {
+  const canReopen = tabs.getState().recentlyClosed.length > 0;
   return [
     tab.pinned
       ? { label: "Unpin Tab", onClick: () => tabs.unpin(tab.id) }
@@ -124,6 +144,13 @@ function tabMenu(tab: Tab, onClose: () => void): MenuItemSpec[] {
       : [{ label: "Close", onClick: onClose } satisfies MenuItemSpec]),
     { label: "Close Others", onClick: () => tabs.closeOthers(tab.id) },
     { label: "Close to the Right", onClick: () => tabs.closeToRight(tab.id) },
+    { label: "Close All", onClick: () => tabs.closeAll() },
+    { type: "separator" },
+    {
+      label: "Reopen Closed Tab",
+      disabled: !canReopen,
+      onClick: () => tabs.reopenClosed(),
+    },
   ];
 }
 
@@ -131,10 +158,14 @@ const TabItem = memo(function TabItem({
   tab,
   index,
   isActive,
+  frozenWidth,
+  onBeginRapidClose,
 }: {
   tab: Tab;
   index: number;
   isActive: boolean;
+  frozenWidth: number | null;
+  onBeginRapidClose: () => void;
 }) {
   const itemRef = useRef<HTMLDivElement | null>(null);
   const { ref: sortableRef, isDragging } = useSortable({
@@ -142,6 +173,10 @@ const TabItem = memo(function TabItem({
     index,
     transition: SORT_TRANSITION,
   });
+
+  const saveId = saveIdFromPath(tab.path.split("?")[0] ?? tab.path);
+  const save = useSave(saveId);
+  const label = computeLabel(tab.path, save);
 
   const setRefs = useCallback(
     (node: HTMLDivElement | null) => {
@@ -151,7 +186,10 @@ const TabItem = memo(function TabItem({
     [sortableRef],
   );
 
-  const handleClose = useCallback(() => tabs.close(tab.id), [tab.id]);
+  const handleClose = useCallback(() => {
+    onBeginRapidClose();
+    tabs.close(tab.id);
+  }, [onBeginRapidClose, tab.id]);
 
   /** Activate on click so a drag-to-reorder does not also switch tabs mid-gesture. */
   const onClick = useCallback(() => {
@@ -160,11 +198,52 @@ const TabItem = memo(function TabItem({
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault();
-      if (!isActive) tabs.activate(tab.id);
+      const list = tabs.getState().tabs;
+      const idx = list.findIndex((t) => t.id === tab.id);
+      if (idx === -1) return;
+
+      const activateAt = (nextIdx: number) => {
+        const next = list[nextIdx];
+        if (!next) return;
+        e.preventDefault();
+        tabs.activate(next.id);
+        focusTabEl(next.id);
+      };
+
+      switch (e.key) {
+        case "ArrowRight":
+          activateAt((idx + 1) % list.length);
+          return;
+        case "ArrowLeft":
+          activateAt((idx - 1 + list.length) % list.length);
+          return;
+        case "Home":
+          activateAt(0);
+          return;
+        case "End":
+          activateAt(list.length - 1);
+          return;
+        case "Delete":
+        case "Backspace": {
+          if (tab.pinned || list.length <= 1) return;
+          e.preventDefault();
+          const neighbor =
+            list[idx + 1] ?? list[idx - 1] ?? list.find((t) => t.id !== tab.id);
+          onBeginRapidClose();
+          tabs.close(tab.id);
+          if (neighbor) focusTabEl(neighbor.id);
+          return;
+        }
+        case "Enter":
+        case " ":
+          e.preventDefault();
+          if (!isActive) tabs.activate(tab.id);
+          return;
+        default:
+          return;
+      }
     },
-    [isActive, tab.id],
+    [isActive, onBeginRapidClose, tab.id, tab.pinned],
   );
 
   const onMouseDown = useCallback(
@@ -190,6 +269,7 @@ const TabItem = memo(function TabItem({
     isActive && styles["tab-active"],
     tab.pinned && styles["tab-pinned"],
     isDragging && styles["tab-lifted"],
+    frozenWidth != null && styles["tab-frozen"],
   ]
     .filter(Boolean)
     .join(" ");
@@ -199,14 +279,22 @@ const TabItem = memo(function TabItem({
       <div
         ref={setRefs}
         className={className}
+        style={frozenWidth != null ? { width: frozenWidth } : undefined}
         role="tab"
+        data-tab-id={tab.id}
         tabIndex={isActive ? 0 : -1}
         aria-selected={isActive}
+        title={label}
         onClick={onClick}
         onKeyDown={onKeyDown}
         onMouseDown={onMouseDown}
       >
-        <TabBody tab={tab} onClose={handleClose} />
+        <TabBody
+          tab={tab}
+          label={label}
+          save={save}
+          onClose={handleClose}
+        />
       </div>
     </SpecContextMenu>
   );
@@ -220,6 +308,10 @@ export function Toolbar() {
   const { watches } = useWatches();
   const byAccount = useSyncByAccount();
   const [open, setOpen] = useState<Panel | null>(null);
+  const [frozenWidths, setFrozenWidths] = useState<Record<
+    string,
+    number
+  > | null>(null);
 
   const ids = useMemo(() => tabList.map((t) => t.id), [tabList]);
 
@@ -233,6 +325,24 @@ export function Toolbar() {
     [],
   );
 
+  const beginRapidClose = useCallback(() => {
+    if (frozenWidths) return;
+    const el = groupRef.current;
+    if (!el) return;
+    const next: Record<string, number> = {};
+    for (const node of el.querySelectorAll<HTMLElement>("[data-tab-id]")) {
+      const id = node.dataset.tabId;
+      if (!id) continue;
+      next[id] = node.getBoundingClientRect().width;
+    }
+    if (Object.keys(next).length === 0) return;
+    setFrozenWidths(next);
+  }, [frozenWidths]);
+
+  const endRapidClose = useCallback(() => {
+    setFrozenWidths(null);
+  }, []);
+
   /** Persist order when the gesture ends; dnd-kit handles optimistic motion mid-drag. */
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
@@ -244,7 +354,7 @@ export function Toolbar() {
     [ids],
   );
 
-  /** Edge fades only when content is clipped on that side. */
+  /** Edge fades + vertical wheel → horizontal scroll. */
   useEffect(() => {
     const el = groupRef.current;
     if (!el) return;
@@ -259,21 +369,47 @@ export function Toolbar() {
       el.dataset.fade = left && right ? "both" : left ? "left" : "right";
     };
     const syncSoon = () => requestAnimationFrame(syncFade);
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth + 1) return;
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
     syncSoon();
     el.addEventListener("scroll", syncFade, { passive: true });
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("mouseleave", endRapidClose);
     const ro = new ResizeObserver(syncSoon);
     ro.observe(el);
     const mo = new MutationObserver(syncSoon);
     mo.observe(el, { childList: true });
     return () => {
       el.removeEventListener("scroll", syncFade);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("mouseleave", endRapidClose);
       ro.disconnect();
       mo.disconnect();
     };
-  }, []);
+  }, [endRapidClose]);
+
+  /** Drop frozen widths for tabs that no longer exist. */
+  useEffect(() => {
+    if (!frozenWidths) return;
+    const live = new Set(ids);
+    let changed = false;
+    const next: Record<string, number> = {};
+    for (const [id, width] of Object.entries(frozenWidths)) {
+      if (!live.has(id)) {
+        changed = true;
+        continue;
+      }
+      next[id] = width;
+    }
+    if (changed) setFrozenWidths(Object.keys(next).length ? next : null);
+  }, [frozenWidths, ids]);
 
   return (
-    <div className={styles.bar} role="tablist">
+    <div className={styles.bar}>
       <ChromeHistoryNav />
       <div className={styles.tabs}>
         <DragDropProvider
@@ -288,13 +424,21 @@ export function Toolbar() {
           ]}
           onDragEnd={onDragEnd}
         >
-          <div ref={groupRef} className={styles.group}>
+          <div
+            ref={groupRef}
+            className={styles.group}
+            role="tablist"
+            aria-label="Open tabs"
+            aria-orientation="horizontal"
+          >
             {tabList.map((tab, index) => (
               <TabItem
                 key={tab.id}
                 tab={tab}
                 index={index}
                 isActive={tab.id === activeId}
+                frozenWidth={frozenWidths?.[tab.id] ?? null}
+                onBeginRapidClose={beginRapidClose}
               />
             ))}
           </div>

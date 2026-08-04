@@ -45,7 +45,14 @@ function buildFolderMap(
 async function readJson<T>(path: string): Promise<T | null> {
   try {
     return JSON.parse(await readFile(path, "utf8")) as T;
-  } catch {
+  } catch (err) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? (err as { code?: unknown }).code
+        : undefined;
+    if (code !== "ENOENT") {
+      log.warn("[pond eagle] failed to read json", path, err);
+    }
     return null;
   }
 }

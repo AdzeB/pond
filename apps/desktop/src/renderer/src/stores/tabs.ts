@@ -189,6 +189,34 @@ export const tabs = {
       recentlyClosed: s.recentlyClosed,
     });
   },
+  /** Close every unpinned tab; if none are pinned, leave a single Library tab. */
+  closeAll(): void {
+    const s = store.state;
+    const pinned = s.tabs.filter((t) => t.pinned);
+    const closing = s.tabs.filter((t) => !t.pinned);
+    if (closing.length === 0) return;
+
+    const closedEntries: ClosedTab[] = closing.map((t) => ({
+      path: t.path,
+      index: s.tabs.findIndex((x) => x.id === t.id),
+    }));
+    const recentlyClosed = [...closedEntries, ...s.recentlyClosed].slice(0, 10);
+
+    if (pinned.length > 0) {
+      const nextActive =
+        pinned.find((t) => t.id === s.activeId)?.id ?? pinned[0]?.id;
+      if (!nextActive) return;
+      commit({ tabs: pinned, activeId: nextActive, recentlyClosed });
+      return;
+    }
+
+    const id = uid();
+    commit({
+      tabs: [{ id, path: "/", pinned: false }],
+      activeId: id,
+      recentlyClosed,
+    });
+  },
   activate(id: string): void {
     const s = store.state;
     if (!s.tabs.find((t) => t.id === id) || s.activeId === id) return;
@@ -261,15 +289,19 @@ export const tabs = {
         nextTabs.push(t);
       }
     }
+    /** Pinned tabs always occupy the left of the strip. */
+    const pinned = nextTabs.filter((t) => t.pinned);
+    const unpinned = nextTabs.filter((t) => !t.pinned);
+    const bounded = [...pinned, ...unpinned];
     let changed = false;
-    for (let i = 0; i < nextTabs.length; i++) {
-      if (nextTabs[i] !== s.tabs[i]) {
+    for (let i = 0; i < bounded.length; i++) {
+      if (bounded[i] !== s.tabs[i]) {
         changed = true;
         break;
       }
     }
     if (!changed) return;
-    commit({ ...s, tabs: nextTabs });
+    commit({ ...s, tabs: bounded });
   },
   duplicate(id: string): void {
     const tab = store.state.tabs.find((t) => t.id === id);

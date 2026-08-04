@@ -1,5 +1,6 @@
-import type { MediaType, NewSave } from "@pond/schema/db";
+import type { NewSave } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
+import { majorityMediaType } from "@pond/schema/media-type";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import { resolveExtractor } from "../extractors";
@@ -90,15 +91,8 @@ function safeDate(value: string): Date | null {
   return Number.isFinite(ms) ? new Date(ms) : null;
 }
 
-/** Majority type; image wins ties so carousels stay filterable without a mixed bucket. */
-function pickMediaType(capture: Capture): MediaType | null {
-  const media = capture.media ?? [];
-  if (media.length === 0) return null;
-  let videos = 0;
-  let images = 0;
-  for (const m of media) {
-    if (m.type === "video") videos++;
-    else images++;
-  }
-  return videos > images ? "video" : "image";
+function pickMediaType(capture: Capture) {
+  return majorityMediaType(
+    (capture.media ?? []).map((m) => (m.type === "video" ? "video" : "image")),
+  );
 }

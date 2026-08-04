@@ -7,12 +7,14 @@ import {
   saves,
   syncActions,
 } from "@pond/schema/db";
+import { majorityMediaType } from "@pond/schema/media-type";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { getDb } from "../db";
 import { writeSaveInfo } from "../lib/library";
 import { broadcastSyncAction } from "./executor";
 import { persistSave } from "./persist-save";
+import { normalizeTagList } from "./tags";
 
 const IMAGE_EXT: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -79,18 +81,6 @@ interface ReadableFile {
   bytes: Buffer;
 }
 
-function majorityMediaType(
-  files: ReadonlyArray<{ mediaType: "image" | "video" }>,
-): MediaType {
-  let videos = 0;
-  let images = 0;
-  for (const f of files) {
-    if (f.mediaType === "video") videos += 1;
-    else images += 1;
-  }
-  return videos > images ? "video" : "image";
-}
-
 /** Builds a complete local save without the URL pipeline; no ops are enqueued. */
 export async function createManualSave(
   input: ManualSaveInput,
@@ -113,7 +103,7 @@ export async function createManualSave(
   }
 
   const note = input.note?.trim() || null;
-  const tags = normalizeTags(input.tags ?? []);
+  const tags = normalizeTagList(input.tags ?? []);
 
   const readable: ReadableFile[] = [];
   let skippedUnsupported = 0;
@@ -151,7 +141,9 @@ export async function createManualSave(
   }
 
   const hasFiles = readable.length > 0;
-  const mediaType: MediaType = !hasFiles ? "link" : majorityMediaType(readable);
+  const mediaType: MediaType = !hasFiles
+    ? "link"
+    : (majorityMediaType(readable.map((f) => f.mediaType)) ?? "image");
 
   const insertValues: NewSave = {
     id,
@@ -208,11 +200,12 @@ export async function createManualSave(
       { status: "complete", ingestCompletedAt: new Date(), fileSize },
       { actorReason: "manual:import", newFiles },
     );
-  }
-
-  const finalRow = (await db.select().from(saves).where(eq(saves.id, id)))[0];
-  if (finalRow) {
-    await writeSaveInfo(finalRow);
+  } else {
+    /** Link-only saves skip persistSave; still need an on-disk info.json. */
+    const finalRow = (
+      await db.select().from(saves).where(eq(saves.id, id))
+    )[0];
+    if (finalRow) await writeSaveInfo(finalRow);
   }
 
   return { ok: true, id };
@@ -224,17 +217,4 @@ function kindFor(
 ): SaveFile["kind"] {
   if (mediaType === "video") return "video";
   return index === 0 ? "cover" : "media";
-}
-
-function normalizeTags(tags: string[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of tags) {
-    const tag = raw.replace(/^#+/, "").trim().toLowerCase();
-    if (tag && !seen.has(tag)) {
-      seen.add(tag);
-      out.push(tag);
-    }
-  }
-  return out;
 }

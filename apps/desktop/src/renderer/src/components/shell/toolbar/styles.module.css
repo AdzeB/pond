@@ -92,11 +92,13 @@
 }
 
 .tab {
-  --tab-min: 96px;
+  --tab-min: 48px;
+  --tab-active-min: 72px;
 
   position: relative;
+  container-type: inline-size;
   display: flex;
-  flex: 0 1 160px;
+  flex: 1 1 0;
   align-items: center;
   gap: 6px;
   min-width: var(--tab-min);
@@ -112,11 +114,18 @@
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--ds-radius-md);
+  outline: none;
   -webkit-app-region: no-drag;
   transition:
     background-color 120ms ease,
     border-color 120ms ease,
-    color 120ms ease;
+    color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.tab-frozen {
+  flex: 0 0 auto;
+  transition: none;
 }
 
 .tab-lifted {
@@ -134,9 +143,9 @@
   background: color-mix(in oklab, var(--ds-gray-12) 8%, transparent);
 }
 
-/* Active: filled pill with a light stroke. */
 .tab-active {
   z-index: 2;
+  min-width: var(--tab-active-min);
   color: var(--ds-gray-12);
   background: var(--ds-gray-1);
   box-shadow: var(--ds-shadow-2);
@@ -146,15 +155,25 @@
   background: var(--ds-gray-2);
 }
 
+/** Focus ring stays distinct from the active pill fill. */
+.tab:focus-visible {
+  box-shadow:
+    0 0 0 2px var(--ds-background-100, #fff),
+    0 0 0 4px var(--ds-blue-9);
+}
+
+.tab-active:focus-visible {
+  box-shadow:
+    var(--ds-shadow-2),
+    0 0 0 2px var(--ds-background-100, #fff),
+    0 0 0 4px var(--ds-blue-9);
+}
+
 .tab-pinned {
   flex: 0 0 auto;
   min-width: 36px;
   max-width: 36px;
   padding-inline: 8px;
-}
-
-.tab-pinned .tab-label {
-  display: none;
 }
 
 .tab-icon {
@@ -205,6 +224,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@container (max-width: 64px) {
+  .tab-label {
+    display: none;
+  }
+}
+
+.tab-pinned .tab-label {
+  display: none;
 }
 
 /* Reveal only; Button owns the control chrome. */

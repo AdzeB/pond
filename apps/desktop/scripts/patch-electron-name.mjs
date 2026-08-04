@@ -127,5 +127,5 @@ async function isDir(path) {
 
 main().catch((err) => {
   console.error("[pond] electron name patch failed:", err);
-  process.exitCode = 0;
+  process.exitCode = 1;
 });

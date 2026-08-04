@@ -1,3 +1,4 @@
+import { domainFromUrl } from "@pond/schema/domain";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { listBaseFromPath } from "@/lib/search/schemas";
 import type { Save } from "@/lib/types";
@@ -18,19 +19,11 @@ function titleCase(slug: string): string {
     .join(" ");
 }
 
-function hostnameOf(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
-
 function saveLabel(save: Save): string {
   const title = save.title?.trim();
   if (title) return title;
   if (save.url) {
-    const host = hostnameOf(save.url);
+    const host = domainFromUrl(save.url);
     if (host) return host;
     return save.url;
   }

@@ -8,35 +8,6 @@
   overflow-y: auto;
 }
 
-.section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.section + .section {
-  padding-top: 8px;
-  margin-top: 6px;
-  border-top: 1px solid var(--ds-gray-a3);
-}
-
-.section-head {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  justify-content: space-between;
-  padding-inline: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
-.section-meta {
-  font-weight: 400;
-  color: var(--ds-gray-9);
-}
-
 .empty {
   display: flex;
   align-items: center;

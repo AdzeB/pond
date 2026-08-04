@@ -14,7 +14,6 @@ export interface StatusEntity {
   kind: "account" | "watch";
   source: Source;
   title: string;
-  status: SyncAccountStatus;
   model: ReturnType<typeof cardModel>;
   tone: RowTone;
 }
@@ -30,7 +29,6 @@ export function toneFromModel(
 }
 
 function entityTitle(
-  kind: "account" | "watch",
   source: Source,
   handle: string | null,
   label: string | null,
@@ -38,7 +36,7 @@ function entityTitle(
   const brand = getSourceDef(source).label;
   const name = label?.trim() || handle?.trim();
   if (!name) return brand;
-  return kind === "watch" ? `${name} · ${brand}` : `${name} · ${brand}`;
+  return `${name} · ${brand}`;
 }
 
 export function buildEntities(
@@ -56,8 +54,7 @@ export function buildEntities(
       id: row.id,
       kind: "account",
       source: row.source,
-      title: entityTitle("account", row.source, row.handle, row.label),
-      status,
+      title: entityTitle(row.source, row.handle, row.label),
       model,
       tone: toneFromModel(model.tone),
     });
@@ -70,8 +67,7 @@ export function buildEntities(
       id: row.id,
       kind: "watch",
       source: row.source,
-      title: entityTitle("watch", row.source, row.handle, row.label),
-      status,
+      title: entityTitle(row.source, row.handle, row.label),
       model,
       tone: toneFromModel(model.tone),
     });

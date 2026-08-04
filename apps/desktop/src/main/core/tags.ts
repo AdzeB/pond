@@ -256,7 +256,7 @@ export async function deleteTag(name: string): Promise<{
   return { ok: true, affected: txs.length };
 }
 
-function normalizeTagList(names: string[]): string[] {
+export function normalizeTagList(names: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const raw of names) {

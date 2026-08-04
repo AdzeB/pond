@@ -38,24 +38,6 @@ export function StatusPanel({
   );
 }
 
-interface SectionProps {
-  title: string;
-  meta?: string;
-  children: ReactNode;
-}
-
-export function Section({ title, meta, children }: SectionProps) {
-  return (
-    <section className={styles.section}>
-      <header className={styles["section-head"]}>
-        <span>{title}</span>
-        {meta ? <span className={styles["section-meta"]}>{meta}</span> : null}
-      </header>
-      {children}
-    </section>
-  );
-}
-
 export function Empty({ children }: { children: ReactNode }) {
   return <div className={styles.empty}>{children}</div>;
 }

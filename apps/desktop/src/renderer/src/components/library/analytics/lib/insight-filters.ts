@@ -132,7 +132,7 @@ export function filterValueOptions(
         .map(([value]) => ({
           value,
           label: value === "local" ? "Local" : value,
-          source: null as Source | null,
+          source: null,
         }));
     }
     case "type":

@@ -1,34 +1,30 @@
 import type { Save, SaveFile } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
+import { majorityMediaType } from "@pond/schema/media-type";
 import type { Transaction } from "@pond/schema/tx";
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { executeBatch } from "./executor";
 
-function majorityFromFiles(
-  files: SaveFile[] | null | undefined,
-): "image" | "video" {
-  let videos = 0;
-  let images = 0;
-  for (const f of files ?? []) {
-    if (
-      f.kind === "video" ||
-      f.mimeType?.startsWith("video/") === true ||
-      /\.(mp4|webm|mov|m4v|mkv)$/i.test(f.path)
-    ) {
-      videos += 1;
-    } else if (
-      f.kind === "cover" ||
-      f.kind === "media" ||
-      f.kind === "poster" ||
-      f.mimeType?.startsWith("image/") === true
-    ) {
-      images += 1;
-    }
+function fileMediaKind(file: SaveFile): "image" | "video" | null {
+  if (
+    file.kind === "video" ||
+    file.mimeType?.startsWith("video/") === true ||
+    /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path)
+  ) {
+    return "video";
   }
-  return videos > images ? "video" : "image";
+  if (
+    file.kind === "cover" ||
+    file.kind === "media" ||
+    file.kind === "poster" ||
+    file.mimeType?.startsWith("image/") === true
+  ) {
+    return "image";
+  }
+  return null;
 }
 
 /** Purge file saves, collapse mixed types, and backfill siteName from URLs. */
@@ -65,7 +61,10 @@ export async function runLibraryScopeMigration(): Promise<void> {
     .all();
 
   for (const row of mixedRows) {
-    const next = majorityFromFiles(row.files as SaveFile[] | null);
+    const kinds = ((row.files as SaveFile[] | null) ?? [])
+      .map(fileMediaKind)
+      .filter((k): k is "image" | "video" => k != null);
+    const next = majorityMediaType(kinds) ?? "image";
     db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
   }
   if (mixedRows.length > 0) {

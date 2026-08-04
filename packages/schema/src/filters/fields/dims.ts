@@ -56,22 +56,19 @@ export function shapeFromDims(
   return "portrait";
 }
 
+/** First matching preset within tolerance, same order as `aspectSql`. */
 export function aspectFromDims(
   width: number | null | undefined,
   height: number | null | undefined,
 ): string | null {
   if (width == null || height == null || width <= 0 || height <= 0) return null;
   const r = width / height;
-  let best: string | null = null;
-  let bestDelta = Number.POSITIVE_INFINITY;
-  for (const [id, target] of Object.entries(ASPECT_TARGETS)) {
-    const delta = Math.abs(r - target) / target;
-    if (delta <= ASPECT_TOLERANCE && delta < bestDelta) {
-      best = id;
-      bestDelta = delta;
-    }
+  for (const preset of ASPECT_PRESETS) {
+    const target = ASPECT_TARGETS[preset.value];
+    if (target == null) continue;
+    if (Math.abs(r - target) / target <= ASPECT_TOLERANCE) return preset.value;
   }
-  return best;
+  return null;
 }
 
 function ratioSql(): SQL {
