@@ -3,12 +3,15 @@ import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { Transaction } from "@pond/schema/tx";
+import { TEXT_COVER_KINDS } from "@shared/text-card";
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 import { executeBatch } from "./executor";
 
 function fileMediaKind(file: SaveFile): "image" | "video" | null {
+  if (TEXT_COVER_KINDS.has(file.kind)) return null;
+  if (file.kind === "avatar" || file.kind === "source_icon") return null;
   if (
     file.kind === "video" ||
     file.mimeType?.startsWith("video/") === true ||
@@ -19,12 +22,40 @@ function fileMediaKind(file: SaveFile): "image" | "video" | null {
   if (
     file.kind === "cover" ||
     file.kind === "media" ||
+    file.kind === "image" ||
     file.kind === "poster" ||
     file.mimeType?.startsWith("image/") === true
   ) {
     return "image";
   }
   return null;
+}
+
+function arenaBlockClass(rawJson: unknown): string | null {
+  if (!rawJson || typeof rawJson !== "object") return null;
+  const cls = (rawJson as { capture?: { extras?: { blockClass?: unknown } } })
+    .capture?.extras?.blockClass;
+  return typeof cls === "string" ? cls.toLowerCase() : null;
+}
+
+/** Keep text only for local prose and Are.na text blocks; otherwise rederive from files or link. */
+function repairTextMediaType(row: {
+  source: string;
+  description: string | null;
+  files: SaveFile[] | null;
+  rawJson: unknown;
+}): "image" | "video" | "link" | "text" | null {
+  const kinds = (row.files ?? [])
+    .map(fileMediaKind)
+    .filter((k): k is "image" | "video" => k != null);
+  const fromFiles = majorityMediaType(kinds);
+  if (fromFiles) return fromFiles;
+
+  const hasProse = Boolean(row.description?.trim());
+  if (!hasProse) return "link";
+  if (arenaBlockClass(row.rawJson) === "text") return "text";
+  if (row.source === "local") return "text";
+  return "link";
 }
 
 /** Purge file saves, collapse mixed types, and backfill siteName from URLs. */
@@ -70,6 +101,35 @@ export async function runLibraryScopeMigration(): Promise<void> {
   if (mixedRows.length > 0) {
     log.info("[pond migrate] collapsed mediaType=mixed", {
       count: mixedRows.length,
+    });
+  }
+
+  const textRows = db
+    .select({
+      id: saves.id,
+      source: saves.source,
+      url: saves.url,
+      description: saves.description,
+      files: saves.files,
+      rawJson: saves.rawJson,
+    })
+    .from(saves)
+    .where(sql`${saves.mediaType} = 'text'`)
+    .all();
+
+  let repairedText = 0;
+  for (const row of textRows) {
+    const next = repairTextMediaType({
+      ...row,
+      files: row.files as SaveFile[] | null,
+    });
+    if (!next || next === "text") continue;
+    db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
+    repairedText += 1;
+  }
+  if (repairedText > 0) {
+    log.info("[pond migrate] repaired mediaType=text stamps", {
+      count: repairedText,
     });
   }
 

@@ -495,7 +495,8 @@ export const savesQueries: QueryHandlerMap = {
   async "saves.ensureTextCover"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false as const, captured: 0 };
-    const captured = await runRenderTextCover(id);
+    const force = Boolean(params.force);
+    const captured = await runRenderTextCover(id, { force });
     return { ok: true as const, captured };
   },
 };

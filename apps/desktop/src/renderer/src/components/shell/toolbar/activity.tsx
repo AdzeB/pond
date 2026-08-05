@@ -79,7 +79,6 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
               title={row.name}
               subtitle={row.stage ?? "Saving"}
               meta={`${Math.round(row.progress * 100)}%`}
-              tone="run"
               onClick={goFunnel}
             />
           ))}
@@ -89,7 +88,6 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
               title={entry.label}
               subtitle={entry.message}
               meta="now"
-              tone="run"
               onClick={goFunnel}
             />
           ))}

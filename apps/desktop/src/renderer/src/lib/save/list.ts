@@ -48,10 +48,10 @@ interface ModeFilterOptions {
   recentsOrder: ReadonlyMap<string, number> | null;
 }
 
-/** True when the card can show image/video media or a website/link save. */
+/** True when the card can show image/video media or a website/link/text save. */
 function isRenderable(save: Save): boolean {
   if (pickPrimaryUnit(save)) return true;
-  if (save.mediaType === "link") return true;
+  if (save.mediaType === "link" || save.mediaType === "text") return true;
   if (save.url && !save.url.startsWith("pond:")) return true;
   return false;
 }

@@ -3,7 +3,13 @@ import { withThumbWidth } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import styles from "./thumb.module.css";
 
-export function Thumb({ save }: { save: Save }) {
+export function Thumb({
+  save,
+  active = false,
+}: {
+  save: Save;
+  active?: boolean;
+}) {
   const unit = pickPrimaryUnit(save);
   if (unit && !unit.isVideo) {
     return (
@@ -13,6 +19,7 @@ export function Thumb({ save }: { save: Save }) {
         alt=""
         loading="lazy"
         draggable={false}
+        data-pulse={active ? "" : undefined}
       />
     );
   }
@@ -21,6 +28,7 @@ export function Thumb({ save }: { save: Save }) {
     <span
       className={styles.thumb}
       style={color ? { background: color } : undefined}
+      data-pulse={active ? "" : undefined}
     />
   );
 }

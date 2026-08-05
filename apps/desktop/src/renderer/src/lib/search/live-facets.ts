@@ -32,7 +32,12 @@ function applySave(save: Save, sign: 1 | -1): void {
   if (identity) bump(sources, identity, sign);
   for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase(), sign);
   const type = (save.mediaType ?? "").toLowerCase();
-  if (type === "image" || type === "video" || type === "link") {
+  if (
+    type === "image" ||
+    type === "video" ||
+    type === "link" ||
+    type === "text"
+  ) {
     bump(types, type, sign);
   }
   const author = save.author?.trim();

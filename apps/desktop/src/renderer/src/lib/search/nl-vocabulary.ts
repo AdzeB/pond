@@ -125,6 +125,9 @@ export const TYPE_SYNONYMS: Record<string, string> = {
   articles: "link",
   website: "link",
   websites: "link",
+  text: "text",
+  note: "text",
+  notes: "text",
 };
 
 /** Spoken shape / aspect words -> canonical enum values for those fields. */

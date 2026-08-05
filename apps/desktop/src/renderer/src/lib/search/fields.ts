@@ -52,7 +52,7 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
 export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
   tags: "any tag",
   source: "dribbble.com, instagram.com, local",
-  type: "image, video, link",
+  type: "image, video, link, text",
   fileCount: "3, >2, 2..5",
   duration: "<30s, <3min",
   shape: "square, landscape, portrait, panoramic-landscape",

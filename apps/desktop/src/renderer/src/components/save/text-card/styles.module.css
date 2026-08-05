@@ -5,12 +5,10 @@
   padding: 16px;
   overflow: hidden;
   background: #fff;
-  border: 1px solid #e5e5e5;
 }
 
 .card[data-scheme="dark"] {
   background: #000;
-  border-color: #222;
 }
 
 .body {

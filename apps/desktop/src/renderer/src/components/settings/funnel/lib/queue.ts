@@ -40,7 +40,8 @@ const STAGE_LABELS: Record<Op, string> = {
 function toRow(save: Save): QueueRow | null {
   let status: RowStatus;
   if (save.status === "ingesting") status = "saving";
-  else if (save.status === "failed") status = "failed";
+  else if (save.status === "failed" && !clearedIds.has(save.id))
+    status = "failed";
   else if (
     (save.ingestCompletedAt ?? 0) >= SESSION_START &&
     !clearedIds.has(save.id)
@@ -55,9 +56,16 @@ function toRow(save: Save): QueueRow | null {
   for (const t of tasks) {
     if (t.status === "done") done += 1;
     else if (t.status === "running") stage = STAGE_LABELS[t.op];
-    else if (t.status === "failed" && !error) {
-      error = t.lastError;
+    else if (t.status === "failed") {
       stage ??= STAGE_LABELS[t.op];
+      /** Prefer the root failure over cascaded "blocked by …" follow-ons. */
+      if (
+        !error ||
+        (error.startsWith("blocked by") &&
+          !t.lastError?.startsWith("blocked by"))
+      ) {
+        error = t.lastError;
+      }
     }
   }
   /** Nothing running yet: show the first unfinished op. */
@@ -103,6 +111,24 @@ export function clearAllFinished(): void {
     if ((save.ingestCompletedAt ?? 0) >= SESSION_START) clearedIds.add(save.id);
   }
   clearRevision.setState((n) => n + 1);
+}
+
+/** Hides failed rows from the funnel for this window; does not trash or delete the saves. */
+export function clearAllFailed(): void {
+  for (const save of savesStore.state.sorted) {
+    if (save.deletedAt != null) continue;
+    if (save.status === "failed") clearedIds.add(save.id);
+  }
+  clearRevision.setState((n) => n + 1);
+}
+
+/** Drop clears for ids about to re-enter the pipeline so a later failure can show again. */
+export function liftCleared(ids: readonly string[]): void {
+  let changed = false;
+  for (const id of ids) {
+    if (clearedIds.delete(id)) changed = true;
+  }
+  if (changed) clearRevision.setState((n) => n + 1);
 }
 
 export function useSaveQueue() {

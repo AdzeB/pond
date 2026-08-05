@@ -83,7 +83,6 @@ export function ErrorsPanel({
               title={row.name}
               subtitle={humanizeError(row.error)}
               meta="save"
-              tone="err"
               onClick={goFunnel}
             />
           ))}
@@ -93,7 +92,6 @@ export function ErrorsPanel({
               title={entry.label}
               subtitle={entry.message}
               meta={relativeTimeFromMs(entry.endedAt ?? entry.startedAt)}
-              tone="err"
               onClick={goFunnel}
             />
           ))}
@@ -115,7 +113,6 @@ function EntityRow({
       title={entity.title}
       subtitle={entity.model.meta}
       meta={entity.model.lastText}
-      tone={entity.tone}
       onClick={onClick}
     />
   );

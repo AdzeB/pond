@@ -6,6 +6,7 @@ const TYPE_PRESETS = [
   { id: "image", label: "Image", value: "image" },
   { id: "video", label: "Video", value: "video" },
   { id: "link", label: "Website", value: "link" },
+  { id: "text", label: "Text", value: "text" },
 ] as const;
 
 export const typeField = defineField({

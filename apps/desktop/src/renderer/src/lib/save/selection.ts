@@ -1,3 +1,4 @@
+import { liftCleared } from "@/components/settings/funnel/lib/queue";
 import {
   purgeSaves,
   setSaveTags,
@@ -64,6 +65,7 @@ export async function retryFailedSelection(
 ): Promise<void> {
   const failed = failedIdsIn(ids);
   if (failed.length === 0) return;
+  liftCleared(failed);
   const result = (await window.pond.query("saves.retryFailed", {
     ids: failed,
   })) as { ok: boolean; requeued: number };

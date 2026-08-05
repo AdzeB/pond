@@ -1,5 +1,6 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import { Button, TitleBar } from "@pond/ui";
+import { useEffect, useRef, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
 import { TagsSection } from "@/components/save/detail/tags";
@@ -9,6 +10,7 @@ import { ColorSwatch } from "@/components/shared/color-swatch";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { useSaveDetail } from "@/hooks/use-save-detail";
 import { buildMediaUnits } from "@/lib/media/units";
+import { mutateSave } from "@/lib/save/mutate";
 import { isTextOnlySave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
 import { initials } from "@/lib/util/initials";
@@ -31,9 +33,30 @@ export function SaveDetails({
     sourceIcon: SourceIcon,
   } = useSaveDetail(save.id);
 
-  const title = save.title?.trim() || save.author?.trim() || "Untitled";
+  const displayTitle = save.title?.trim() || save.author?.trim() || "Untitled";
+  const local = save.source === "local";
+  const [titleDraft, setTitleDraft] = useState(displayTitle);
+  const titleRef = useRef(titleDraft);
+  titleRef.current = titleDraft;
+
+  useEffect(() => {
+    setTitleDraft(displayTitle);
+  }, [displayTitle]);
+
   const hasVideo = buildMediaUnits(save).some((u) => u.isVideo);
   const textOnly = isTextOnlySave(save);
+
+  const commitTitle = async () => {
+    const next = titleRef.current.trim();
+    const prev = save.title?.trim() ?? "";
+    if (next === prev) return;
+    if (!next && !prev) return;
+    await mutateSave(
+      save.id,
+      { title: next || null },
+      { actorReason: "user:rename" },
+    );
+  };
 
   return (
     <div className={styles["detail-card"]}>
@@ -55,7 +78,23 @@ export function SaveDetails({
 
       <div className={styles["detail-scroll"]}>
         <div className={styles.heading}>
-          <h2 className={styles["heading-title"]}>{title}</h2>
+          {local ? (
+            <input
+              data-pane-title
+              className={`${styles["heading-title"]} ${styles["heading-input"]}`}
+              value={titleDraft}
+              aria-label="Title"
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={() => void commitTitle()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.currentTarget.blur();
+                }
+              }}
+            />
+          ) : (
+            <h2 className={styles["heading-title"]}>{displayTitle}</h2>
+          )}
         </div>
 
         {description && !textOnly ? (

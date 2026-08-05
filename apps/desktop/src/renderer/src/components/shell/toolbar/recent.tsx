@@ -41,7 +41,6 @@ export function RecentPanel({ open, onOpenChange }: RecentPanelProps) {
               title={row.name}
               subtitle={row.error ? humanizeError(row.error) : "Saved"}
               meta={relativeTimeFromMs(row.save.ingestCompletedAt ?? null)}
-              tone={row.error ? "err" : "ok"}
               onClick={goFunnel}
             />
           ))}
@@ -51,7 +50,6 @@ export function RecentPanel({ open, onOpenChange }: RecentPanelProps) {
               title={entry.label}
               subtitle={entry.message}
               meta={relativeTimeFromMs(entry.endedAt ?? entry.startedAt)}
-              tone={entry.state === "error" ? "err" : "ok"}
               onClick={goFunnel}
             />
           ))}

@@ -55,19 +55,6 @@
   color: var(--ds-amber-11);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .wipe[data-pulse] {
-    opacity: 0.4;
-    animation: none;
-  }
-
-  .ring-arc[data-spin] {
-    stroke-dasharray: 47 141;
-    stroke-dashoffset: 0;
-    animation: none;
-  }
-}
-
 .cover {
   position: relative;
   display: grid;
@@ -78,46 +65,15 @@
   margin-bottom: 6px;
 }
 
-.ring {
-  position: absolute;
-  inset: -4px;
-  width: calc(100% + 8px);
-  height: calc(100% + 8px);
-  overflow: visible;
-  pointer-events: none;
+.art {
+  position: relative;
+  display: block;
+  width: 56px;
+  height: 56px;
 }
 
-.ring-track,
-.ring-arc {
-  fill: none;
-  stroke-width: 2.5;
-  transform-origin: 32px 32px;
-}
-
-.ring-track {
-  stroke: var(--ds-gray-a4);
-}
-
-.ring-arc {
-  stroke: var(--ds-blue-9);
-  stroke-linecap: round;
-  transform: rotate(-90deg);
-  transition: stroke-dashoffset 0.4s var(--ds-easing-standard, ease);
-}
-
-.ring-arc[data-spin] {
-  stroke-dasharray: 47 141;
-  animation: ring-spin 0.9s linear infinite;
-}
-
-@keyframes ring-spin {
-  from {
-    transform: rotate(-90deg);
-  }
-
-  to {
-    transform: rotate(270deg);
-  }
+.art[data-pulse] {
+  animation: art-pulse 1.4s ease-in-out infinite;
 }
 
 .image {
@@ -173,23 +129,6 @@
   }
 }
 
-/* No total yet: the color layer breathes instead of filling. */
-.wipe[data-pulse] {
-  mask-image: none;
-  animation: wipe-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes wipe-pulse {
-  from,
-  to {
-    opacity: 0.15;
-  }
-
-  50% {
-    opacity: 0.65;
-  }
-}
-
 .badge {
   position: absolute;
   right: -3px;
@@ -202,4 +141,26 @@
   background: var(--ds-gray-1);
   border-radius: 6px;
   box-shadow: var(--ds-shadow-2);
+}
+
+@keyframes art-pulse {
+  from,
+  to {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art[data-pulse] {
+    opacity: 0.7;
+    animation: none;
+  }
+
+  .wipe {
+    transition: none;
+  }
 }

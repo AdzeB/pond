@@ -1,11 +1,21 @@
 import type { TweetCover } from "@pond/schema/db";
 import {
+  RENDER_TEXT_COVER_VERSION,
+  TEXT_COVER_DARK_KIND,
+  TEXT_COVER_KINDS,
+  TEXT_COVER_LIGHT_KIND,
+} from "@shared/text-card";
+import {
   type ResolvedTheme,
   resolveCurrentTheme,
 } from "@/hooks/use-resolved-theme";
 import { hasArchive, isArchiveFile } from "@/lib/media/archive";
 import { buildPondUrl } from "@/lib/media/url";
-import { composeContentDescription } from "@/lib/save/detail";
+import {
+  arenaBlockClass,
+  isTextOnlyAsideFromCover,
+  textBodyForSave,
+} from "@/lib/save/text";
 import type { Save, SaveFile } from "@/lib/types";
 import { getPrefsSnapshot } from "@/stores/prefs";
 
@@ -18,14 +28,6 @@ const TWEET_SCREENSHOT_KINDS: ReadonlySet<string> = new Set([
   TWEET_SCREENSHOT_LEGACY_KIND,
   TWEET_SCREENSHOT_LIGHT_KIND,
   TWEET_SCREENSHOT_DARK_KIND,
-]);
-
-const TEXT_COVER_LIGHT_KIND = "text_cover_light";
-const TEXT_COVER_DARK_KIND = "text_cover_dark";
-
-const TEXT_COVER_KINDS: ReadonlySet<string> = new Set([
-  TEXT_COVER_LIGHT_KIND,
-  TEXT_COVER_DARK_KIND,
 ]);
 
 /** Quote-tweet screenshots, suffixed with 1-based depth, e.g. tweet_screenshot_quote1_light. */
@@ -251,13 +253,24 @@ function pickTextCover(
   );
 }
 
-/** True when a text-only save still needs its cover PNGs generated. */
+function textCoverVersion(save: Save): number {
+  const raw = save.rawJson as
+    | { capture?: { extras?: { renderTextCoverVersion?: unknown } } }
+    | null
+    | undefined;
+  const v = raw?.capture?.extras?.renderTextCoverVersion;
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+/** True when a text-only save still needs its cover PNGs generated or refreshed. */
 export function needsTextCover(save: Save): boolean {
   if (save.source === "twitter") return false;
   if (hasArchive(save)) return false;
-  if (!composeContentDescription(save).trim()) return false;
-  if (pickTextCover(save, undefined)) return false;
-  return buildMediaUnits(save).length === 0;
+  if (!textBodyForSave(save)) return false;
+  if (!isTextOnlyAsideFromCover(save)) return false;
+  const cover = pickTextCover(save, undefined);
+  if (!cover) return true;
+  return textCoverVersion(save) < RENDER_TEXT_COVER_VERSION;
 }
 
 function isVideoFile(file: SaveFile): boolean {
@@ -274,7 +287,7 @@ export function isImageFile(file: SaveFile): boolean {
 }
 
 /** Broad category for the primary asset, used to color the type badge. */
-type TypeKind = "image" | "video" | "audio" | "link" | "doc" | "other";
+type TypeKind = "image" | "video" | "audio" | "link" | "text" | "doc" | "other";
 
 const IMAGE_EXT = /^(png|jpe?g|gif|webp|avif|heic|heif|svg|bmp|tiff?|ico)$/;
 const VIDEO_EXT = /^(mp4|webm|mov|m4v|mkv|avi|gifv|ogv)$/;
@@ -282,6 +295,8 @@ const AUDIO_EXT = /^(mp3|wav|flac|aac|ogg|oga|m4a|opus)$/;
 const DOC_EXT = /^(pdf|docx?|txt|md|markdown|rtf|csv|tsv|xlsx?|pptx?|epub)$/;
 
 export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
+  if (file && TEXT_COVER_KINDS.has(file.kind)) return "text";
+
   const ext = file?.path.split(".").pop()?.toLowerCase() ?? "";
   if (IMAGE_EXT.test(ext)) return "image";
   if (VIDEO_EXT.test(ext)) return "video";
@@ -294,21 +309,13 @@ export function deriveTypeKind(file: SaveFile | null, save: Save): TypeKind {
   if (mime === "audio") return "audio";
 
   const media = save.mediaType?.toLowerCase();
+  if (media === "text") return "text";
   if (media === "image") return "image";
   if (media === "video") return "video";
   if (media === "audio") return "audio";
   if (media === "link") return "link";
 
   return save.url ? "link" : "other";
-}
-
-function arenaBlockClass(save: Save): string | null {
-  const raw = save.rawJson as
-    | { capture?: { extras?: { blockClass?: unknown } } }
-    | null
-    | undefined;
-  const cls = raw?.capture?.extras?.blockClass;
-  return typeof cls === "string" ? cls.toLowerCase() : null;
 }
 
 /** Badge label for the primary asset: extension, then mime subtype, then mediaType, then "Link". */
@@ -321,8 +328,8 @@ export function deriveTypeLabel(
   if (
     !file &&
     !hasArchive(save) &&
-    composeContentDescription(save).trim().length > 0 &&
-    buildMediaUnits(save).length === 0
+    textBodyForSave(save).length > 0 &&
+    isTextOnlyAsideFromCover(save)
   ) {
     return "Text";
   }
@@ -331,6 +338,7 @@ export function deriveTypeLabel(
   const subtype = file?.mimeType?.split("/")[1]?.split(";")[0];
   if (subtype) return subtype.toUpperCase();
   const media = save.mediaType?.toLowerCase();
+  if (media === "text") return "Text";
   if (media === "video") return "Video";
   if (media === "image") return "Image";
   if (media === "link") return "Website";

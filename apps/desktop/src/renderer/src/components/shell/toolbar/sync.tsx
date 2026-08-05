@@ -69,7 +69,6 @@ function EntityRow({
       title={entity.title}
       subtitle={entity.model.statusText}
       meta="now"
-      tone={entity.tone}
       onClick={onClick}
     />
   );

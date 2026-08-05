@@ -25,7 +25,7 @@ export * from "./theme-presets";
 export const SOURCES = [...EXTERNAL_SOURCE_IDS, "web", "local"] as const;
 export type Source = (typeof SOURCES)[number];
 
-export const MEDIA_TYPES = ["image", "video", "link"] as const;
+export const MEDIA_TYPES = ["image", "video", "link", "text"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;

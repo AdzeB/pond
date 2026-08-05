@@ -1,16 +1,36 @@
-import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
-import { Button, DataTable, Input, Settings, type TableColumn } from "@pond/ui";
+import {
+  IconCircleXmarkFill18 as ClearFailed,
+  IconMediaPauseFill18 as Pause,
+} from "@pond/icons/fill/18";
+import {
+  IconXmarkOutline18 as ClearFinished,
+  IconMagnifierOutline18 as Magnifier,
+  IconArrowRotateClockwiseOutline18 as Retry,
+} from "@pond/icons/outline/18";
+import {
+  Button,
+  DataTable,
+  Input,
+  Settings,
+  type TableColumn,
+  Tabs,
+  Tooltip,
+} from "@pond/ui";
 import { useDeferredValue, useMemo, useState } from "react";
-import { type EnumOption, EnumSelect } from "@/components/shared/enum-select";
 import { retryFailedSelection } from "@/lib/save/selection";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { openSave as navigateToSave } from "@/lib/ui/save-nav";
-import { formatBytes, formatNumber } from "@/lib/util/format";
-import { relativeTimeFromMs } from "@/lib/util/relative-time";
+import { formatNumber } from "@/lib/util/format";
 import { useActivityEntries } from "@/stores/activity";
 import { settingsModal } from "@/stores/settings-modal";
 import { ActivityCard } from "./activity-card";
-import { clearAllFinished, type QueueRow, useSaveQueue } from "./lib/queue";
+import {
+  clearAllFailed,
+  clearAllFinished,
+  humanizeError,
+  type QueueRow,
+  useSaveQueue,
+} from "./lib/queue";
 import { StatusCell } from "./status-cell";
 import styles from "./styles.module.css";
 import { Thumb } from "./thumb";
@@ -20,18 +40,18 @@ const MAX_DONE_ROWS = 200;
 
 type StatusFilter = "all" | "saving" | "failed" | "saved";
 
-const STATUS_OPTIONS: readonly EnumOption<StatusFilter>[] = [
-  { value: "all", label: "All statuses" },
-  { value: "saving", label: "Saving" },
-  { value: "failed", label: "Failed" },
-  { value: "saved", label: "Saved" },
-];
-
 const STATUS_RANK: Record<QueueRow["status"], number> = {
   saving: 0,
   failed: 1,
   saved: 2,
 };
+
+const FILTER_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "saving", label: "Saving" },
+  { value: "failed", label: "Failed" },
+  { value: "saved", label: "Saved" },
+];
 
 /** Settings closes first so the save page isn't revealed underneath the dialog. */
 function openSave(id: string): void {
@@ -39,56 +59,47 @@ function openSave(id: string): void {
   navigateToSave(id);
 }
 
+/** Prefer a real title; otherwise the path, so the table isn't a wall of full Instagram URLs. */
+function displayName(row: QueueRow): string {
+  const title = row.save.title?.trim();
+  if (title) return title;
+  try {
+    const path = new URL(row.save.url).pathname.replace(/\/$/, "");
+    return path || row.save.url;
+  } catch {
+    return row.name;
+  }
+}
+
+function secondaryMeta(row: QueueRow): string {
+  const source = getSourceLabel(row.save.source);
+  if (row.status === "failed") return `${source} · ${humanizeError(row.error)}`;
+  if (row.status === "saving") return `${source} · ${row.stage ?? "Queued"}`;
+  return source;
+}
+
 const funnelColumns: TableColumn<QueueRow>[] = [
   {
     id: "name",
     header: "Name",
-    accessor: (r) => r.name,
+    accessor: (r) => displayName(r),
     cell: (r) => (
       <span className={styles.name} title={r.save.url}>
-        <Thumb save={r.save} />
-        <span className={styles["name-text"]}>{r.name}</span>
+        <Thumb save={r.save} active={r.status === "saving"} />
+        <span className={styles["name-stack"]}>
+          <span className={styles["name-text"]}>{displayName(r)}</span>
+          <span className={styles.meta}>{secondaryMeta(r)}</span>
+        </span>
       </span>
     ),
-    width: "minmax(0, 1.8fr)",
-  },
-  {
-    id: "source",
-    header: "Source",
-    accessor: (r) => getSourceLabel(r.save.source),
-    cell: (r) => (
-      <span className={styles.meta}>{getSourceLabel(r.save.source)}</span>
-    ),
-    width: "110px",
+    width: "minmax(0, 1fr)",
   },
   {
     id: "status",
     header: "Status",
     accessor: (r) => STATUS_RANK[r.status],
     cell: (r) => <StatusCell row={r} />,
-    width: "140px",
-  },
-  {
-    id: "size",
-    header: "Size",
-    accessor: (r) => r.size,
-    cell: (r) => (
-      <span className={styles.meta}>
-        {r.size != null ? formatBytes(r.size) : "—"}
-      </span>
-    ),
-    width: "90px",
-  },
-  {
-    id: "when",
-    header: "Saved",
-    accessor: (r) => r.save.ingestCompletedAt ?? Number.NEGATIVE_INFINITY,
-    cell: (r) => (
-      <span className={styles.meta}>
-        {relativeTimeFromMs(r.save.ingestCompletedAt ?? null, "—")}
-      </span>
-    ),
-    width: "110px",
+    width: "72px",
   },
   {
     id: "actions",
@@ -96,18 +107,22 @@ const funnelColumns: TableColumn<QueueRow>[] = [
     headerHidden: true,
     cell: (r) =>
       r.status === "failed" ? (
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={(e) => {
-            e.stopPropagation();
-            void retryFailedSelection([r.save.id]);
-          }}
-        >
-          Retry
-        </Button>
+        <Tooltip label="Retry">
+          <Button
+            size="sm"
+            icon
+            variant="secondary"
+            aria-label="Retry"
+            onClick={(e) => {
+              e.stopPropagation();
+              void retryFailedSelection([r.save.id]);
+            }}
+          >
+            <Retry />
+          </Button>
+        </Tooltip>
       ) : null,
-    width: "88px",
+    width: "40px",
     align: "end",
   },
 ];
@@ -136,9 +151,11 @@ export function FunnelSection() {
       if (status !== "all" && row.status !== status) return false;
       if (!needle) return true;
       return (
-        row.name.toLowerCase().includes(needle) ||
+        displayName(row).toLowerCase().includes(needle) ||
         row.save.url.toLowerCase().includes(needle) ||
-        getSourceLabel(row.save.source).toLowerCase().includes(needle)
+        getSourceLabel(row.save.source).toLowerCase().includes(needle) ||
+        (row.status === "failed" &&
+          humanizeError(row.error).toLowerCase().includes(needle))
       );
     });
   }, [saving, visibleFailed, visibleSaved, status, needle]);
@@ -178,38 +195,72 @@ export function FunnelSection() {
                 placeholder="Search…"
               />
             </Input.Root>
-            <EnumSelect<StatusFilter>
+            <Tabs
+              size="sm"
+              variant="segmented"
               value={status}
-              onValueChange={setStatus}
-              options={STATUS_OPTIONS}
+              onValueChange={(next) => setStatus(next as StatusFilter)}
               aria-label="Filter by status"
+              className={styles.filters}
+              tabs={FILTER_OPTIONS}
             />
             <div className={styles.spacer} />
-            {failed.length > 0 ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() =>
-                  void retryFailedSelection(failed.map((r) => r.save.id))
-                }
-              >
-                Retry Failed
-              </Button>
-            ) : null}
-            {saving.length > 0 ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => void window.pond.pipelineCancelAll()}
-              >
-                Stop All
-              </Button>
-            ) : null}
-            {saved.length > 0 ? (
-              <Button size="sm" variant="secondary" onClick={clearAllFinished}>
-                Clear Finished
-              </Button>
-            ) : null}
+            <div className={styles.actions}>
+              {failed.length > 0 ? (
+                <>
+                  <Tooltip label="Retry Failed">
+                    <Button
+                      size="sm"
+                      icon
+                      variant="secondary"
+                      aria-label="Retry Failed"
+                      onClick={() =>
+                        void retryFailedSelection(failed.map((r) => r.save.id))
+                      }
+                    >
+                      <Retry />
+                    </Button>
+                  </Tooltip>
+                  <Tooltip label="Clear Failed">
+                    <Button
+                      size="sm"
+                      icon
+                      variant="secondary"
+                      aria-label="Clear Failed"
+                      onClick={clearAllFailed}
+                    >
+                      <ClearFailed />
+                    </Button>
+                  </Tooltip>
+                </>
+              ) : null}
+              {saving.length > 0 ? (
+                <Tooltip label="Stop All">
+                  <Button
+                    size="sm"
+                    icon
+                    variant="secondary"
+                    aria-label="Stop All"
+                    onClick={() => void window.pond.pipelineCancelAll()}
+                  >
+                    <Pause />
+                  </Button>
+                </Tooltip>
+              ) : null}
+              {saved.length > 0 ? (
+                <Tooltip label="Clear Finished">
+                  <Button
+                    size="sm"
+                    icon
+                    variant="secondary"
+                    aria-label="Clear Finished"
+                    onClick={clearAllFinished}
+                  >
+                    <ClearFinished />
+                  </Button>
+                </Tooltip>
+              ) : null}
+            </div>
           </DataTable.Toolbar>
 
           <DataTable.Root>

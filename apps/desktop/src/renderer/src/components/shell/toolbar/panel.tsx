@@ -50,20 +50,12 @@ interface RowProps {
   title: string;
   subtitle?: string;
   meta?: string;
-  tone?: "run" | "ok" | "warn" | "err" | "idle";
   onClick?: () => void;
 }
 
-export function Row({
-  title,
-  subtitle,
-  meta,
-  tone = "idle",
-  onClick,
-}: RowProps) {
+export function Row({ title, subtitle, meta, onClick }: RowProps) {
   const body = (
     <>
-      <span className={styles["row-dot"]} data-tone={tone} aria-hidden />
       <span className={styles["row-body"]}>
         <span className={styles["row-title"]}>{title}</span>
         {subtitle ? (

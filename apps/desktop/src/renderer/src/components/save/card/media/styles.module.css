@@ -37,8 +37,8 @@
   aspect-ratio: 1 / 1;
   padding: 10px;
   background: light-dark(#fff, #18181b);
-  border: 1px solid var(--ds-gray-a4);
   border-radius: inherit;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .textPreviewBody {

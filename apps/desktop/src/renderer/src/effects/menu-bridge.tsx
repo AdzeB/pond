@@ -181,10 +181,12 @@ export function MenuBridge() {
           return;
         }
 
-        case "save.rename":
-          if (!primarySelection.get()) return;
+        case "save.rename": {
+          const save = currentSave();
+          if (save?.source !== "local") return;
           focusPaneTitle();
           return;
+        }
 
         case "save.add-tag":
           if (!primarySelection.get()) return;

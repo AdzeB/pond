@@ -28,6 +28,7 @@ export { Slider } from "./slider";
 export { Stepper } from "./stepper";
 export { Switch } from "./switch";
 export { Table } from "./table";
+export { Tabs, type TabsItem, type TabsProps } from "./tabs";
 export { TitleBar } from "./title-bar";
 export { Toggle, type ToggleProps } from "./toggle";
 export { ToggleGroup } from "./toggle-group";

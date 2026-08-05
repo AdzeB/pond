@@ -32,15 +32,38 @@ const VIDEO_EXT: Record<string, string> = {
   ".mov": "video/quicktime",
   ".m4v": "video/x-m4v",
 };
+const TEXT_EXT: Record<string, string> = {
+  ".txt": "text/plain",
+  ".md": "text/markdown",
+  ".markdown": "text/markdown",
+};
 
-function classifyExt(
-  ext: string,
-): { mediaType: "image" | "video"; mimeType: string } | null {
+/** Cap imported text bodies so a huge markdown dump cannot blow memory or covers. */
+const MAX_TEXT_BODY_BYTES = 100_000;
+
+type Classified =
+  | { kind: "image" | "video"; mediaType: "image" | "video"; mimeType: string }
+  | { kind: "text"; mediaType: "text"; mimeType: string };
+
+function classifyExt(ext: string): Classified | null {
   const lower = ext.toLowerCase();
-  if (IMAGE_EXT[lower])
-    return { mediaType: "image", mimeType: IMAGE_EXT[lower] };
-  if (VIDEO_EXT[lower])
-    return { mediaType: "video", mimeType: VIDEO_EXT[lower] };
+  if (IMAGE_EXT[lower]) {
+    return {
+      kind: "image",
+      mediaType: "image",
+      mimeType: IMAGE_EXT[lower],
+    };
+  }
+  if (VIDEO_EXT[lower]) {
+    return {
+      kind: "video",
+      mediaType: "video",
+      mimeType: VIDEO_EXT[lower],
+    };
+  }
+  if (TEXT_EXT[lower]) {
+    return { kind: "text", mediaType: "text", mimeType: TEXT_EXT[lower] };
+  }
   return null;
 }
 
@@ -64,7 +87,7 @@ export interface ManualSaveInput {
   filePaths?: string[];
   /** Override the local sourceId (e.g. eagle:<id> for idempotent re-import). */
   sourceId?: string | null;
-  /** Defaults to `local`. Starter pack attributes offline stills to external sources. */
+  /** Defaults to `local`. */
   source?: Source;
   width?: number;
   height?: number;
@@ -77,11 +100,17 @@ interface ManualSaveResult {
   skipped?: boolean;
 }
 
-interface ReadableFile {
+interface ReadableMedia {
   path: string;
   mediaType: "image" | "video";
   mimeType: string;
   bytes: Buffer;
+}
+
+interface ReadableText {
+  path: string;
+  mimeType: string;
+  body: string;
 }
 
 /** Builds a complete local save without the URL pipeline; no ops are enqueued. */
@@ -109,7 +138,8 @@ export async function createManualSave(
   const note = input.note?.trim() || null;
   const tags = normalizeTagList(input.tags ?? []);
 
-  const readable: ReadableFile[] = [];
+  const readableMedia: ReadableMedia[] = [];
+  const readableText: ReadableText[] = [];
   let skippedUnsupported = 0;
   for (const path of input.filePaths ?? []) {
     const cls = classifyExt(extname(path));
@@ -120,7 +150,25 @@ export async function createManualSave(
     try {
       const info = await stat(path);
       if (!info.isFile() || info.size === 0) continue;
-      readable.push({ path, ...cls, bytes: await readFile(path) });
+      if (cls.kind === "text") {
+        const bytes = await readFile(path);
+        const slice =
+          bytes.byteLength > MAX_TEXT_BODY_BYTES
+            ? bytes.subarray(0, MAX_TEXT_BODY_BYTES)
+            : bytes;
+        readableText.push({
+          path,
+          mimeType: cls.mimeType,
+          body: slice.toString("utf8"),
+        });
+      } else {
+        readableMedia.push({
+          path,
+          mediaType: cls.mediaType,
+          mimeType: cls.mimeType,
+          bytes: await readFile(path),
+        });
+      }
     } catch {
       /** Skip unreadable files rather than failing the whole import. */
     }
@@ -128,7 +176,8 @@ export async function createManualSave(
 
   if (
     (input.filePaths?.length ?? 0) > 0 &&
-    readable.length === 0 &&
+    readableMedia.length === 0 &&
+    readableText.length === 0 &&
     skippedUnsupported > 0
   ) {
     return { ok: false, error: "unsupported_type", skipped: true };
@@ -136,18 +185,32 @@ export async function createManualSave(
 
   const title =
     input.title?.trim() ||
-    (readable[0]
-      ? basename(readable[0].path, extname(readable[0].path))
+    (readableMedia[0]
+      ? basename(readableMedia[0].path, extname(readableMedia[0].path))
+      : null) ||
+    (readableText[0]
+      ? basename(readableText[0].path, extname(readableText[0].path))
       : null);
 
-  if (readable.length === 0 && !title && !note && !input.url) {
+  const textBody =
+    readableText.length > 0
+      ? readableText
+          .map((t) => t.body.trim())
+          .filter(Boolean)
+          .join("\n\n")
+      : note;
+
+  if (readableMedia.length === 0 && !title && !textBody && !input.url) {
     return { ok: false, error: "empty_input" };
   }
 
-  const hasFiles = readable.length > 0;
-  const mediaType: MediaType = !hasFiles
-    ? "link"
-    : (majorityMediaType(readable.map((f) => f.mediaType)) ?? "image");
+  const hasMedia = readableMedia.length > 0;
+  const isTextSave = !hasMedia && Boolean(textBody?.trim());
+  const mediaType: MediaType = hasMedia
+    ? (majorityMediaType(readableMedia.map((f) => f.mediaType)) ?? "image")
+    : isTextSave
+      ? "text"
+      : "link";
 
   const insertValues: NewSave = {
     id,
@@ -155,7 +218,8 @@ export async function createManualSave(
     sourceId,
     url: input.url?.trim() || `pond:local/${id}`,
     title,
-    notes: note,
+    description: isTextSave ? (textBody?.trim() ?? null) : null,
+    notes: isTextSave ? null : note,
     mediaType,
     siteName: null,
     /** Local files are copied in-process; never park them in the ingest queue. */
@@ -187,8 +251,8 @@ export async function createManualSave(
     .all()[0];
   if (insertedAction) broadcastSyncAction(insertedAction);
 
-  if (hasFiles) {
-    const newFiles = readable.map((file, index) => ({
+  if (hasMedia) {
+    const newFiles = readableMedia.map((file, index) => ({
       kind: kindFor(file.mediaType, index),
       filename: blobFilename(
         file.mediaType,
@@ -198,7 +262,10 @@ export async function createManualSave(
       bytes: file.bytes,
       mimeType: file.mimeType,
     }));
-    const fileSize = readable.reduce((sum, f) => sum + f.bytes.byteLength, 0);
+    const fileSize = readableMedia.reduce(
+      (sum, f) => sum + f.bytes.byteLength,
+      0,
+    );
     await persistSave(
       id,
       { status: "complete", ingestCompletedAt: new Date(), fileSize },

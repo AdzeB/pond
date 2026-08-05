@@ -43,6 +43,15 @@
   white-space: nowrap;
 }
 
+.heading-input {
+  width: 100%;
+  padding: 0;
+  text-overflow: ellipsis;
+  outline: none;
+  background: transparent;
+  border: none;
+}
+
 .detail-header .header-label {
   font-size: 13px;
 }

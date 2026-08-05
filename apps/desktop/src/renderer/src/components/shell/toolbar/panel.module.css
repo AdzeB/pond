@@ -51,30 +51,6 @@ button.row:hover {
   background: var(--ds-gray-a3);
 }
 
-.row-dot {
-  flex-shrink: 0;
-  width: 6px;
-  height: 6px;
-  background: var(--ds-gray-a6);
-  border-radius: 50%;
-}
-
-.row-dot[data-tone="run"] {
-  background: var(--ds-blue-9);
-}
-
-.row-dot[data-tone="warn"] {
-  background: var(--ds-amber-11);
-}
-
-.row-dot[data-tone="err"] {
-  background: var(--ds-red-9);
-}
-
-.row-dot[data-tone="ok"] {
-  background: var(--ds-green-9);
-}
-
 .row-body {
   display: flex;
   flex: 1;

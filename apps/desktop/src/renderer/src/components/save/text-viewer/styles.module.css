@@ -18,8 +18,8 @@
   min-height: min(100%, 28rem);
   padding: 20px;
   background: light-dark(#fff, #18181b);
-  border: 1px solid var(--ds-gray-a4);
   border-radius: 4px;
+  box-shadow: var(--ds-shadow-2);
 }
 
 .body {
@@ -33,6 +33,18 @@
   word-break: break-word;
   text-wrap: pretty;
   white-space: pre-wrap;
+}
+
+.editor {
+  box-sizing: border-box;
+  min-height: min(100%, 28rem);
+  padding: 0;
+  resize: none;
+  background: transparent;
+  border: none;
+  outline: none;
+  field-sizing: content;
+  font: inherit;
 }
 
 .body a {

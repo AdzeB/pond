@@ -1,4 +1,4 @@
-import { humanizeError, type QueueRow } from "./lib/queue";
+import type { QueueRow } from "./lib/queue";
 import styles from "./status-cell.module.css";
 
 export function StatusCell({ row }: { row: QueueRow }) {
@@ -9,32 +9,19 @@ export function StatusCell({ row }: { row: QueueRow }) {
         data-status="saving"
         title={row.stage ?? "Queued"}
       >
-        <span className={styles.dot} aria-hidden />
-        {Math.round(row.progress * 100)}%
-        <span className={styles.bar} aria-hidden>
-          <span
-            className={styles["bar-fill"]}
-            style={{ transform: `scaleX(${row.progress})` }}
-          />
-        </span>
+        Saving
       </span>
     );
   }
   if (row.status === "failed") {
     return (
-      <span
-        className={styles.status}
-        data-status="failed"
-        title={humanizeError(row.error)}
-      >
-        <span className={styles.dot} aria-hidden />
+      <span className={styles.status} data-status="failed">
         Failed
       </span>
     );
   }
   return (
     <span className={styles.status} data-status="saved">
-      <span className={styles.dot} aria-hidden />
       Saved
     </span>
   );

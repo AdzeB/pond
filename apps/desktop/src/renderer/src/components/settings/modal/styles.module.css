@@ -1,5 +1,4 @@
 .popup {
-  /* settings-tags reads this var to offset its action bar. */
   --settings-sidebar-width: 240px;
 
   flex-direction: row;
@@ -14,11 +13,12 @@
   flex: none;
   width: var(--settings-sidebar-width);
   min-height: 0;
-  background: var(--ds-gray-2);
-  border-right: 1px solid var(--ds-gray-a3);
+  padding: 0px;
+  margin: 12px;
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-2);
 }
 
-/* Sidebar.Root carries a titlebar inset meant for the full-page layout; neutralize it inside the modal. */
 .sidebar > div {
   width: 100%;
   margin-top: 0;

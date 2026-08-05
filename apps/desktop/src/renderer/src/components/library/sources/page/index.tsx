@@ -1,5 +1,6 @@
-import type { MenuItemSpec } from "@pond/ui";
+import { Button, type MenuItemSpec } from "@pond/ui";
 import { type CSSProperties, useEffect, useMemo } from "react";
+import emptyStyles from "@/components/library/empty/styles.module.css";
 import { LibraryGrid } from "@/components/library/layouts/grid";
 import {
   LIBRARY_ITEM_GAP,
@@ -21,6 +22,7 @@ import {
   useConnectedBefore,
   useConnectWaiting,
 } from "@/stores/connect-flow";
+import { dockMode } from "@/stores/dock-mode";
 import { useGridWidth } from "@/stores/shell-state";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
@@ -177,10 +179,24 @@ export function SourcesPage() {
   if (entries.length === 0) {
     return (
       <LibraryGrid.Root className={styles.root}>
-        <p className={styles["quiet-line"]}>
-          Connect a source or watch a public account. Pond keeps your library
-          filling up in the background.
-        </p>
+        <div className={emptyStyles.welcome}>
+          <div className={emptyStyles.copy}>
+            <h2 className={emptyStyles.title}>No sources yet</h2>
+            <p className={emptyStyles.text}>
+              Connect a source or watch a public account. Pond keeps your
+              library filling up in the background.
+            </p>
+          </div>
+          <div className={emptyStyles.actions}>
+            <Button
+              variant="accent"
+              size="md"
+              onClick={() => dockMode.open("source-new")}
+            >
+              Connect a source
+            </Button>
+          </div>
+        </div>
       </LibraryGrid.Root>
     );
   }
