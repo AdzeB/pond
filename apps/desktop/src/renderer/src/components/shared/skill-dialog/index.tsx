@@ -3,7 +3,7 @@ import {
   IconXmarkOutline18 as X,
 } from "@pond/icons/outline/18";
 import { Button, Dialog, Field, Input } from "@pond/ui";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   type CustomSkill,
   makeSkillId,
@@ -41,11 +41,6 @@ function SkillForm({ initialName }: { initialName?: string }) {
   const [name, setName] = useState(initialName ?? "");
   const [description, setDescription] = useState("");
   const [prompt, setPrompt] = useState("");
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only seed
-  useEffect(() => {
-    if (initialName) setName(initialName);
-  }, []);
 
   const slug = slugifySkillName(name);
   const duplicate = skills.some((s) => s.name === slug);

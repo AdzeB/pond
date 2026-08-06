@@ -6,26 +6,16 @@ import {
   TEXT_COVER_KINDS,
   TEXT_COVER_LIGHT_KIND,
   textBodyFromFields,
+  textCoverVersionFromRawJson,
 } from "@shared/text-card";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import { type RenderedCard, renderTextCardPng } from "../../render-card";
 import { readSave } from "./apply";
 
-function readVersion(rawJson: unknown): number {
-  if (!rawJson || typeof rawJson !== "object") return 0;
-  const extras = (rawJson as RawJson).capture?.extras as
-    | Record<string, unknown>
-    | undefined;
-  const v = extras?.renderTextCoverVersion;
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
-}
-
-/** True when the save has prose and no image/video files to show as a cover. */
 function needsTextCover(
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
 ): boolean {
-  /** Title alone is not prose. */
   const hasProse =
     Boolean(save.description?.trim()) || save.mediaType === "text";
   if (!hasProse) return false;
@@ -46,7 +36,7 @@ function needsTextCover(
 
 async function writeCover(
   saveId: string,
-  kind: string,
+  kind: SaveFile["kind"],
   filename: string,
   card: RenderedCard,
 ): Promise<void> {
@@ -55,10 +45,10 @@ async function writeCover(
     {},
     {
       actorReason: `pipeline:render-text-cover:${kind}`,
-      replaceFilesWithKind: kind as SaveFile["kind"],
+      replaceFilesWithKind: kind,
       newFiles: [
         {
-          kind: kind as SaveFile["kind"],
+          kind,
           filename,
           bytes: card.bytes,
           mimeType: "image/png",
@@ -116,7 +106,10 @@ export async function runRenderTextCover(
   if (save.source === "twitter") return 0;
   if (!needsTextCover(save)) return 0;
 
-  if (!opts.force && readVersion(save.rawJson) >= RENDER_TEXT_COVER_VERSION) {
+  if (
+    !opts.force &&
+    textCoverVersionFromRawJson(save.rawJson) >= RENDER_TEXT_COVER_VERSION
+  ) {
     const hasBoth =
       (save.files ?? []).some((f) => f.kind === TEXT_COVER_LIGHT_KIND) &&
       (save.files ?? []).some((f) => f.kind === TEXT_COVER_DARK_KIND);

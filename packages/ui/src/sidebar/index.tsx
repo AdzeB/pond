@@ -2,7 +2,7 @@ import { Button } from "@base-ui/react/button";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
 import { Link, type LinkProps } from "@tanstack/react-router";
-import clsx from "clsx";
+import { clsx as cn } from "clsx";
 import { type HTMLMotionProps, motion } from "motion/react";
 import {
   type ComponentProps,
@@ -17,7 +17,7 @@ import styles from "./styles.module.css";
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {}
 
 function Root({ className, ...props }: RootProps) {
-  return <div className={clsx(styles.root, className)} {...props} />;
+  return <div className={cn(styles.root, className)} {...props} />;
 }
 
 interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}

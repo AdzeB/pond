@@ -1,5 +1,7 @@
 /** Image clipboard/disk writes go through IPC (nativeImage) rather than the renderer, matching saves.copyImage. */
 
+import { notify } from "@/lib/ui/toast";
+
 function captureFrameDataUrl(video: HTMLVideoElement): string | null {
   const width = video.videoWidth;
   const height = video.videoHeight;
@@ -22,12 +24,14 @@ export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
   const dataUrl = captureFrameDataUrl(video);
   if (!dataUrl) return;
   await window.pond.query("video.copyFrame", { dataUrl });
+  notify({ id: "copy-frame", title: "Frame copied to clipboard" });
 }
 
 export async function saveVideoFrame(video: HTMLVideoElement): Promise<void> {
   const dataUrl = captureFrameDataUrl(video);
   if (!dataUrl) return;
   await window.pond.query("video.saveFrame", { dataUrl });
+  notify({ id: "save-frame", title: "Frame saved" });
 }
 
 export async function setVideoThumbnail(

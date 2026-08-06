@@ -1,8 +1,8 @@
 import { useCallback, useEffect } from "react";
+import type { SaveListMode } from "@/lib/save/list";
 import { asUrlList, filePathsFromText } from "@/lib/save/url-list";
 import { openSave } from "@/lib/ui/save-nav";
 import { selection, useSelectionSize } from "@/stores/selection";
-import type { SavesMode } from "./use-library-state";
 
 interface CardActions {
   selectionSize: number;
@@ -22,7 +22,7 @@ async function quickAddUrls(urls: readonly string[]): Promise<void> {
 
 export function useCardActions(
   filteredIds: ReadonlyArray<string>,
-  mode: SavesMode,
+  mode: SaveListMode,
   sourceFilter: string,
 ): CardActions {
   const selectionSize = useSelectionSize();

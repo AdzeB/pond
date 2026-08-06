@@ -13,7 +13,8 @@ import {
   Input,
   Settings,
   type TableColumn,
-  Tabs,
+  Toggle,
+  ToggleGroup,
   Tooltip,
 } from "@pond/ui";
 import { useDeferredValue, useMemo, useState } from "react";
@@ -195,15 +196,23 @@ export function FunnelSection() {
                 placeholder="Search…"
               />
             </Input.Root>
-            <Tabs
-              size="sm"
-              variant="segmented"
-              value={status}
-              onValueChange={(next) => setStatus(next as StatusFilter)}
+            <ToggleGroup
+              value={[status]}
               aria-label="Filter by status"
               className={styles.filters}
-              tabs={FILTER_OPTIONS}
-            />
+              onValueChange={(next) => {
+                const pick = FILTER_OPTIONS.find(
+                  (o) => o.value === next[0],
+                )?.value;
+                if (pick && pick !== status) setStatus(pick);
+              }}
+            >
+              {FILTER_OPTIONS.map((option) => (
+                <Toggle key={option.value} value={option.value} size="sm">
+                  {option.label}
+                </Toggle>
+              ))}
+            </ToggleGroup>
             <div className={styles.spacer} />
             <div className={styles.actions}>
               {failed.length > 0 ? (

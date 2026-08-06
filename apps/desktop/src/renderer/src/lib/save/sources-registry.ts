@@ -3,7 +3,7 @@ import {
   IconEarthFill18 as WebIcon,
 } from "@pond/icons/fill/18";
 import type { Source } from "@pond/schema/db";
-import { isSource, sourceLabel } from "@pond/schema/sources";
+import { resolveSourceId, sourceLabel } from "@pond/schema/sources";
 import type React from "react";
 import arenaLogo from "@/assets/logos/arena.png";
 import cosmosLogo from "@/assets/logos/cosmos.png";
@@ -54,23 +54,14 @@ export function getSourceDef(source: Source): SourceDef {
   };
 }
 
-const SOURCE_ALIASES: Record<string, Source> = {
-  x: "twitter",
-  "are.na": "arena",
-};
-
 /** Null for unknown or logo-less sources; callers fall back to a glyph or text label. */
 export function getSourceLogo(source: string): string | null {
-  const key = source.toLowerCase();
-  const normalized = SOURCE_ALIASES[key] ?? key;
-  if (isSource(normalized)) return SOURCE_LOGOS[normalized];
-  return null;
+  const normalized = resolveSourceId(source);
+  return normalized ? SOURCE_LOGOS[normalized] : null;
 }
 
 /** Null for unknown sources; callers fall back to a text label. */
 export function getSourceIcon(source: string): GlyphIcon | null {
-  const key = source.toLowerCase();
-  const normalized = SOURCE_ALIASES[key] ?? key;
-  if (isSource(normalized)) return GLYPH_ICONS[normalized] ?? null;
-  return null;
+  const normalized = resolveSourceId(source);
+  return normalized ? (GLYPH_ICONS[normalized] ?? null) : null;
 }

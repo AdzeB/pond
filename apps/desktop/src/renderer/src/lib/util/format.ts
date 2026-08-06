@@ -38,16 +38,6 @@ export function formatDuration(sec: number): string {
   });
 }
 
-/** "dd/mm/yyyy"; echoes the input back if it isn't a valid date. */
-export function formatShortDate(value: string | number): string {
-  const d = new Date(value);
-  if (!Number.isFinite(d.getTime())) return String(value);
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}/${mm}/${yyyy}`;
-}
-
 const tsTime = new Intl.DateTimeFormat(undefined, {
   hour: "numeric",
   minute: "2-digit",

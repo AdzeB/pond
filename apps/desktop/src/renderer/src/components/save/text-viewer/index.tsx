@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { renderRichText } from "@/components/shared/expandable-text";
 import { ensureTextCover } from "@/lib/save/ensure-text-cover";
 import { mutateSave } from "@/lib/save/mutate";
@@ -10,8 +10,6 @@ export function TextViewer({ save }: { save: Save }) {
   const body = textBodyForSave(save);
   const editable = save.source === "local";
   const [draft, setDraft] = useState(body);
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
 
   useEffect(() => {
     setDraft(body);
@@ -22,7 +20,7 @@ export function TextViewer({ save }: { save: Save }) {
   }, [save]);
 
   const commit = async () => {
-    const next = draftRef.current.trim();
+    const next = draft.trim();
     const prev = body;
     if (next === prev) return;
     await mutateSave(

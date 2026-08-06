@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises";
+import { open, readFile, stat } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import {
   type MediaType,
@@ -32,18 +32,14 @@ const VIDEO_EXT: Record<string, string> = {
   ".mov": "video/quicktime",
   ".m4v": "video/x-m4v",
 };
-const TEXT_EXT: Record<string, string> = {
-  ".txt": "text/plain",
-  ".md": "text/markdown",
-  ".markdown": "text/markdown",
-};
+const TEXT_EXT = new Set([".txt", ".md", ".markdown"]);
 
 /** Cap imported text bodies so a huge markdown dump cannot blow memory or covers. */
 const MAX_TEXT_BODY_BYTES = 100_000;
 
 type Classified =
   | { kind: "image" | "video"; mediaType: "image" | "video"; mimeType: string }
-  | { kind: "text"; mediaType: "text"; mimeType: string };
+  | { kind: "text" };
 
 function classifyExt(ext: string): Classified | null {
   const lower = ext.toLowerCase();
@@ -61,8 +57,8 @@ function classifyExt(ext: string): Classified | null {
       mimeType: VIDEO_EXT[lower],
     };
   }
-  if (TEXT_EXT[lower]) {
-    return { kind: "text", mediaType: "text", mimeType: TEXT_EXT[lower] };
+  if (TEXT_EXT.has(lower)) {
+    return { kind: "text" };
   }
   return null;
 }
@@ -87,7 +83,6 @@ export interface ManualSaveInput {
   filePaths?: string[];
   /** Override the local sourceId (e.g. eagle:<id> for idempotent re-import). */
   sourceId?: string | null;
-  /** Defaults to `local`. */
   source?: Source;
   width?: number;
   height?: number;
@@ -109,7 +104,6 @@ interface ReadableMedia {
 
 interface ReadableText {
   path: string;
-  mimeType: string;
   body: string;
 }
 
@@ -151,15 +145,17 @@ export async function createManualSave(
       const info = await stat(path);
       if (!info.isFile() || info.size === 0) continue;
       if (cls.kind === "text") {
-        const bytes = await readFile(path);
-        const slice =
-          bytes.byteLength > MAX_TEXT_BODY_BYTES
-            ? bytes.subarray(0, MAX_TEXT_BODY_BYTES)
-            : bytes;
+        const length = Math.min(info.size, MAX_TEXT_BODY_BYTES);
+        const buf = Buffer.alloc(length);
+        const fh = await open(path, "r");
+        try {
+          await fh.read(buf, 0, length, 0);
+        } finally {
+          await fh.close();
+        }
         readableText.push({
           path,
-          mimeType: cls.mimeType,
-          body: slice.toString("utf8"),
+          body: buf.toString("utf8"),
         });
       } else {
         readableMedia.push({
@@ -193,19 +189,20 @@ export async function createManualSave(
       : null);
 
   const textBody =
-    readableText.length > 0
+    (readableText.length > 0
       ? readableText
           .map((t) => t.body.trim())
           .filter(Boolean)
           .join("\n\n")
-      : note;
+      : note
+    )?.trim() || null;
 
   if (readableMedia.length === 0 && !title && !textBody && !input.url) {
     return { ok: false, error: "empty_input" };
   }
 
   const hasMedia = readableMedia.length > 0;
-  const isTextSave = !hasMedia && Boolean(textBody?.trim());
+  const isTextSave = !hasMedia && Boolean(textBody);
   const mediaType: MediaType = hasMedia
     ? (majorityMediaType(readableMedia.map((f) => f.mediaType)) ?? "image")
     : isTextSave
@@ -218,7 +215,7 @@ export async function createManualSave(
     sourceId,
     url: input.url?.trim() || `pond:local/${id}`,
     title,
-    description: isTextSave ? (textBody?.trim() ?? null) : null,
+    description: isTextSave ? textBody : null,
     notes: isTextSave ? null : note,
     mediaType,
     siteName: null,

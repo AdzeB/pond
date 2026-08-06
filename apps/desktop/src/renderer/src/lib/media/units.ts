@@ -4,6 +4,7 @@ import {
   TEXT_COVER_DARK_KIND,
   TEXT_COVER_KINDS,
   TEXT_COVER_LIGHT_KIND,
+  textCoverVersionFromRawJson,
 } from "@shared/text-card";
 import {
   type ResolvedTheme,
@@ -253,15 +254,6 @@ function pickTextCover(
   );
 }
 
-function textCoverVersion(save: Save): number {
-  const raw = save.rawJson as
-    | { capture?: { extras?: { renderTextCoverVersion?: unknown } } }
-    | null
-    | undefined;
-  const v = raw?.capture?.extras?.renderTextCoverVersion;
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
-}
-
 /** True when a text-only save still needs its cover PNGs generated or refreshed. */
 export function needsTextCover(save: Save): boolean {
   if (save.source === "twitter") return false;
@@ -270,7 +262,7 @@ export function needsTextCover(save: Save): boolean {
   if (!isTextOnlyAsideFromCover(save)) return false;
   const cover = pickTextCover(save, undefined);
   if (!cover) return true;
-  return textCoverVersion(save) < RENDER_TEXT_COVER_VERSION;
+  return textCoverVersionFromRawJson(save.rawJson) < RENDER_TEXT_COVER_VERSION;
 }
 
 function isVideoFile(file: SaveFile): boolean {

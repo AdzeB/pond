@@ -18,7 +18,6 @@ type RowStatus = "saving" | "saved" | "failed";
 export interface QueueRow {
   save: Save;
   name: string;
-  size: number | null;
   status: RowStatus;
   progress: number;
   stage: string | null;
@@ -74,16 +73,9 @@ function toRow(save: Save): QueueRow | null {
     stage = next ? STAGE_LABELS[next.op] : null;
   }
 
-  const size =
-    save.fileSize ??
-    (save.files.length > 0
-      ? save.files.reduce((sum, f) => sum + (f.size || 0), 0)
-      : null);
-
   return {
     save,
     name: save.title?.trim() || save.url,
-    size,
     status,
     progress:
       status === "saved" ? 1 : tasks.length > 0 ? done / tasks.length : 0,

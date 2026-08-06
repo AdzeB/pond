@@ -9,6 +9,7 @@ import { SelectionContent } from "@/components/library/dock/selection";
 import { SearchComposer } from "@/components/search/bar";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion } from "@/lib/ui/motion";
+import { openLibrarySearch } from "@/lib/ui/open-search";
 import { clearAsk } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
@@ -29,7 +30,6 @@ import styles from "./styles.module.css";
 
 /** Module-level store calls stay referentially stable without useCallback. */
 const openAsk = () => dockMode.open("ask");
-const openSearch = () => dockMode.open("search");
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 const clearResults = () => {
@@ -77,15 +77,15 @@ export function LibraryTray() {
 
   const { destructive, confirmDeleteForever } = useDockActions();
 
-  /** Priority: an active selection commandeers the pill, then the opened surface, then the resting nav. Cards opened from the selection (confirm, run, tag, copy, export) outrank it so drilling in doesn't bounce back. */
+  /** Priority: selection-card modes, then any explicitly opened surface (search/ask/menus), then selection commandeering the resting nav. */
   const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
     mode,
   )
     ? (mode as DockView)
-    : selectionSize > 0
-      ? "selection"
-      : mode !== "nav"
-        ? mode
+    : mode !== "nav"
+      ? mode
+      : selectionSize > 0
+        ? "selection"
         : "nav";
   const isMenuView = isViewMenu(view);
 
@@ -142,7 +142,7 @@ export function LibraryTray() {
       isTabActive,
       isCard,
       openAsk,
-      openSearch,
+      openSearch: openLibrarySearch,
       closeSearch: closeToNav,
       openViewMenu,
       closeViewMenu: closeToNav,

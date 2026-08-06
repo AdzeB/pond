@@ -13,7 +13,6 @@ export const TEXT_COVER_KINDS: ReadonlySet<string> = new Set([
   TEXT_COVER_DARK_KIND,
 ]);
 
-/** Prose body for text covers and the text viewer: description, else title. */
 export function textBodyFromFields(
   description: string | null | undefined,
   title: string | null | undefined,
@@ -21,6 +20,21 @@ export function textBodyFromFields(
   const body = description?.trim() ?? "";
   if (body) return body;
   return title?.trim() ?? "";
+}
+
+export function arenaBlockClassFromRawJson(rawJson: unknown): string | null {
+  if (!rawJson || typeof rawJson !== "object") return null;
+  const cls = (rawJson as { capture?: { extras?: { blockClass?: unknown } } })
+    .capture?.extras?.blockClass;
+  return typeof cls === "string" ? cls.toLowerCase() : null;
+}
+
+export function textCoverVersionFromRawJson(rawJson: unknown): number {
+  if (!rawJson || typeof rawJson !== "object") return 0;
+  const v = (
+    rawJson as { capture?: { extras?: { renderTextCoverVersion?: unknown } } }
+  ).capture?.extras?.renderTextCoverVersion;
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
 export function buildTextCardData(

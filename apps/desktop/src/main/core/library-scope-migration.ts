@@ -3,7 +3,10 @@ import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { Transaction } from "@pond/schema/tx";
-import { TEXT_COVER_KINDS } from "@shared/text-card";
+import {
+  arenaBlockClassFromRawJson,
+  TEXT_COVER_KINDS,
+} from "@shared/text-card";
 import { eq, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
@@ -31,20 +34,13 @@ function fileMediaKind(file: SaveFile): "image" | "video" | null {
   return null;
 }
 
-function arenaBlockClass(rawJson: unknown): string | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const cls = (rawJson as { capture?: { extras?: { blockClass?: unknown } } })
-    .capture?.extras?.blockClass;
-  return typeof cls === "string" ? cls.toLowerCase() : null;
-}
-
 /** Keep text only for local prose and Are.na text blocks; otherwise rederive from files or link. */
 function repairTextMediaType(row: {
   source: string;
   description: string | null;
   files: SaveFile[] | null;
   rawJson: unknown;
-}): "image" | "video" | "link" | "text" | null {
+}): "image" | "video" | "link" | "text" {
   const kinds = (row.files ?? [])
     .map(fileMediaKind)
     .filter((k): k is "image" | "video" => k != null);
@@ -53,7 +49,7 @@ function repairTextMediaType(row: {
 
   const hasProse = Boolean(row.description?.trim());
   if (!hasProse) return "link";
-  if (arenaBlockClass(row.rawJson) === "text") return "text";
+  if (arenaBlockClassFromRawJson(row.rawJson) === "text") return "text";
   if (row.source === "local") return "text";
   return "link";
 }
@@ -123,7 +119,7 @@ export async function runLibraryScopeMigration(): Promise<void> {
       ...row,
       files: row.files as SaveFile[] | null,
     });
-    if (!next || next === "text") continue;
+    if (next === "text") continue;
     db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
     repairedText += 1;
   }

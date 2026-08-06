@@ -8,6 +8,34 @@ import { useSaves } from "./use-saves";
 const MAX_RESULTS = 500;
 const DEBOUNCE_MS = 100;
 
+/** Survives LibraryView unmount (save detail) so remounting with the same query never falls back to the full library. */
+let lastHits: { query: string; deletedOnly: boolean; ids: string[] } | null =
+  null;
+
+function resolveHits(query: string, deletedOnly: boolean): Save[] | null {
+  const trimmed = query.trim();
+  if (!trimmed || !lastHits) return null;
+  if (lastHits.query !== trimmed || lastHits.deletedOnly !== deletedOnly) {
+    return null;
+  }
+  const out: Save[] = [];
+  for (const id of lastHits.ids) {
+    const save = pool.get(id);
+    if (!save) continue;
+    if (deletedOnly ? !save.deletedAt : save.deletedAt) continue;
+    out.push(save);
+  }
+  return out;
+}
+
+function commitHits(query: string, deletedOnly: boolean, saves: Save[]): void {
+  lastHits = {
+    query,
+    deletedOnly,
+    ids: saves.map((s) => s.id),
+  };
+}
+
 /** Ranks by SQLite FTS5 (same index Ask keyword ranking uses). */
 export function useSearchResults(
   query: string,
@@ -18,12 +46,15 @@ export function useSearchResults(
 } {
   const _saves = useSaves();
   const deletedOnly = opts?.deletedOnly ?? false;
-  const [results, setResults] = useState<Save[] | null>(null);
+  const [results, setResults] = useState<Save[] | null>(() =>
+    resolveHits(query, deletedOnly),
+  );
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     const trimmed = query.trim();
     if (!trimmed) {
+      lastHits = null;
       setResults(null);
       setSearching(false);
       return;
@@ -35,6 +66,7 @@ export function useSearchResults(
         const scores = await searchFtsScores(trimmed, "all", { deletedOnly });
         if (cancelled) return;
         if (scores.size === 0) {
+          commitHits(trimmed, deletedOnly, []);
           setResults([]);
           setSearching(false);
           return;
@@ -49,7 +81,9 @@ export function useSearchResults(
           scored.push({ save, score });
         }
         scored.sort((a, b) => b.score - a.score);
-        setResults(scored.slice(0, MAX_RESULTS).map((row) => row.save));
+        const next = scored.slice(0, MAX_RESULTS).map((row) => row.save);
+        commitHits(trimmed, deletedOnly, next);
+        setResults(next);
         setSearching(false);
       })();
     }, DEBOUNCE_MS);

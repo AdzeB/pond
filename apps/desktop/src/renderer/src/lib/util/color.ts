@@ -1,40 +1,25 @@
 /** Colour-space conversions for the swatch copy menu, mirroring the formats Eagle exposes (hex / rgb / rgba / hsl / hsv / hwb / cmyk). */
 
+import { normalizeHex } from "@pond/schema/color";
+
 interface Rgb {
   r: number;
   g: number;
   b: number;
 }
 
-/** Accepts #rgb and #rrggbb with or without the leading #; returns null on junk so callers skip rendering rather than copy a malformed value. */
-function parseHex(input: string): Rgb | null {
-  const t = input.trim().replace(/^#/, "");
-  const short = /^([0-9a-f]{3})$/i.exec(t);
-  if (short) {
-    const [r, g, b] = short[1] as string;
-    return {
-      r: Number.parseInt(`${r}${r}`, 16),
-      g: Number.parseInt(`${g}${g}`, 16),
-      b: Number.parseInt(`${b}${b}`, 16),
-    };
-  }
-  const full = /^([0-9a-f]{6})$/i.exec(t);
-  if (full) {
-    const hex = full[1] as string;
-    return {
-      r: Number.parseInt(hex.slice(0, 2), 16),
-      g: Number.parseInt(hex.slice(2, 4), 16),
-      b: Number.parseInt(hex.slice(4, 6), 16),
-    };
-  }
-  return null;
-}
-
-function normalizeHex(input: string): string {
-  const rgb = parseHex(input);
-  if (!rgb) return input;
-  const hex = (n: number) => n.toString(16).padStart(2, "0");
-  return `#${hex(rgb.r)}${hex(rgb.g)}${hex(rgb.b)}`;
+function parseHex(input: string): { rgb: Rgb; hex: string } | null {
+  const hex = normalizeHex(input);
+  if (!hex) return null;
+  const int = Number.parseInt(hex.slice(1), 16);
+  return {
+    hex,
+    rgb: {
+      r: (int >> 16) & 0xff,
+      g: (int >> 8) & 0xff,
+      b: int & 0xff,
+    },
+  };
 }
 
 function hue(
@@ -104,9 +89,9 @@ interface ColorFormat {
 export function colorCopyFormats(
   input: string,
 ): { primary: ColorFormat[]; secondary: ColorFormat[] } | null {
-  const rgb = parseHex(input);
-  if (!rgb) return null;
-  const hex = normalizeHex(input);
+  const parsed = parseHex(input);
+  if (!parsed) return null;
+  const { rgb, hex } = parsed;
   return {
     primary: [
       { label: hex, value: hex },

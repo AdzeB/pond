@@ -24,6 +24,11 @@ export type {
 
 const SOURCE_SET: ReadonlySet<string> = new Set(SOURCES);
 
+const SOURCE_ALIASES: Readonly<Record<string, Source>> = {
+  x: "twitter",
+  "are.na": "arena",
+};
+
 const SOURCE_LABELS = new Map<string, string>(
   SOURCE_DESCRIPTORS.map((d) => [d.id, d.label]),
 );
@@ -32,6 +37,13 @@ SOURCE_LABELS.set("local", "Local");
 
 export function isSource(value: string): value is Source {
   return SOURCE_SET.has(value);
+}
+
+/** Map display aliases (`x`, `are.na`) onto canonical Source ids. */
+export function resolveSourceId(value: string): Source | null {
+  const key = value.toLowerCase();
+  const normalized = SOURCE_ALIASES[key] ?? key;
+  return isSource(normalized) ? normalized : null;
 }
 
 export function sourceLabel(source: Source): string {

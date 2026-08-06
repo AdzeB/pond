@@ -18,37 +18,12 @@ export function parseMode(parentBase: string): SaveListMode | null {
   return null;
 }
 
-export function extractSource(parentBase: string): string {
-  const match = /^\/source\/([^/]+)/.exec(parentBase);
-  return match?.[1]?.toLowerCase() ?? "";
-}
-
-function capitalise(s: string): string {
-  return s.length === 0 ? s : s[0]?.toUpperCase() + s.slice(1);
-}
-
-export function labelForMode(mode: SaveListMode, sourceFilter: string): string {
-  switch (mode) {
-    case "source":
-      return sourceFilter ? capitalise(sourceFilter) : "Source";
-    case "untagged":
-      return "Untagged";
-    case "recents":
-      return "Recents";
-    case "trash":
-      return "Trash";
-    default:
-      return "Library";
-  }
-}
-
 interface ModeFilterOptions {
   mode: SaveListMode;
   sourceFilter: string;
   recentsOrder: ReadonlyMap<string, number> | null;
 }
 
-/** True when the card can show image/video media or a website/link/text save. */
 function isRenderable(save: Save): boolean {
   if (pickPrimaryUnit(save)) return true;
   if (save.mediaType === "link" || save.mediaType === "text") return true;

@@ -3,11 +3,6 @@ import type { Save } from "@/lib/types";
 
 const requested = new Set<string>();
 
-/** Drop a pending request so a later mount can retry after failure or a forced regen. */
-export function clearTextCoverRequest(id: string): void {
-  requested.delete(id);
-}
-
 /** Fire-and-forget backfill for text-only saves missing their rasterized cover. */
 export function ensureTextCover(
   save: Save,
@@ -23,19 +18,10 @@ export function ensureTextCover(
       ...(opts.force ? { force: true } : {}),
     })
     .then((result) => {
-      const ok =
-        result &&
-        typeof result === "object" &&
-        "ok" in result &&
-        (result as { ok: boolean }).ok;
-      const captured =
-        result &&
-        typeof result === "object" &&
-        "captured" in result &&
-        typeof (result as { captured: unknown }).captured === "number"
-          ? (result as { captured: number }).captured
-          : 0;
-      if (!ok || captured === 0) requested.delete(save.id);
+      const res = result as
+        | { ok: true; captured: number }
+        | { ok: false; captured: 0 };
+      if (!res.ok || !res.captured) requested.delete(save.id);
     })
     .catch(() => {
       requested.delete(save.id);

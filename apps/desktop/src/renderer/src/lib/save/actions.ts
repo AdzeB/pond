@@ -10,6 +10,7 @@ import {
   setSaveTags,
 } from "@/lib/save/mutate";
 import type { Save, SaveFile } from "@/lib/types";
+import { notify } from "@/lib/ui/toast";
 import { activity } from "@/stores/activity";
 import { pool } from "@/stores/pool";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
@@ -62,11 +63,15 @@ async function writeClipboardText(text: string): Promise<void> {
 }
 
 export async function copyUrl(url: string): Promise<void> {
+  if (!url) return;
   await writeClipboardText(url);
+  notify({ id: "copy-url", title: "URL copied to clipboard" });
 }
 
 export async function copyId(id: string): Promise<void> {
+  if (!id) return;
   await writeClipboardText(id);
+  notify({ id: "copy-id", title: "ID copied to clipboard" });
 }
 
 export function focusPaneTitle(): void {
@@ -145,6 +150,7 @@ export async function copyFilePath(
   })) as { ok: true; path: string } | { ok: false; reason: string };
   if (!result.ok) return;
   await writeClipboardText(result.path);
+  notify({ id: "copy-path", title: "Path copied to clipboard" });
 }
 
 export async function copyFile(
@@ -157,6 +163,7 @@ export async function copyFile(
     id: save.id,
     fileIndex,
   });
+  notify({ id: "copy-image", title: "Image copied to clipboard" });
 }
 
 export async function openInBrowser(save: Save): Promise<void> {
@@ -173,7 +180,7 @@ export async function openInBrowser(save: Save): Promise<void> {
 
 export async function refreshSaveMetadata(save: Save): Promise<void> {
   if (!save.url) return;
-  activity.note("Refreshing metadata");
+  notify({ id: "refresh-details", title: "Refreshing details" });
   await window.pond.refreshSave(save.id);
 }
 
@@ -210,11 +217,13 @@ export async function copyImage(
   const fileIndex = copyableImageIndex(save, preferredIndex);
   if (fileIndex == null) return;
   await window.pond.query("saves.copyImage", { id: save.id, fileIndex });
+  notify({ id: "copy-image", title: "Image copied to clipboard" });
 }
 
 export function copyTags(save: Save): void {
   if (save.tags.length === 0) return;
   tagClipboard.set(save.tags);
+  notify({ id: "copy-tags", title: "Tags copied" });
 }
 
 export async function pasteTags(save: Save): Promise<void> {
@@ -224,6 +233,7 @@ export async function pasteTags(save: Save): Promise<void> {
   const added = next.length - save.tags.length;
   if (added === 0) return;
   await setSaveTags(save.id, next);
+  notify({ id: "paste-tags", title: "Tags pasted" });
 }
 
 export async function exportFile(
@@ -232,8 +242,10 @@ export async function exportFile(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  await window.pond.query("saves.exportFile", {
+  const result = (await window.pond.query("saves.exportFile", {
     id: save.id,
     fileIndex,
-  });
+  })) as { ok: true; path: string } | { ok: false; reason: string };
+  if (!result.ok) return;
+  notify({ id: "export-file", title: "Exported" });
 }

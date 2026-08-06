@@ -1,26 +1,7 @@
 import type { Op, Save, SyncAction, Task, TaskStatus } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
+import { toMs } from "@shared/to-ms";
 import { slimRawJson } from "../lib/raw-slim";
-
-type Stampable = Date | string | number | null | undefined;
-
-function toMs(v: Stampable): number | null {
-  if (v == null) return null;
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (v instanceof Date) {
-    const t = v.getTime();
-    return Number.isFinite(t) ? t : null;
-  }
-  if (typeof v === "string") {
-    const asNum = Number(v);
-    if (!Number.isNaN(asNum) && v.trim() !== "" && Number.isFinite(asNum)) {
-      return asNum;
-    }
-    const parsed = Date.parse(v);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
 
 interface WireTask {
   op: Op;

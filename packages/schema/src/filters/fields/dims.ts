@@ -33,7 +33,9 @@ const ASPECT_PRESETS = [
   { id: "9:16", label: "9:16", value: "9:16" },
 ] as const;
 
-const ASPECT_TARGETS: Record<string, number> = {
+type AspectPresetValue = (typeof ASPECT_PRESETS)[number]["value"];
+
+const ASPECT_TARGETS: Record<AspectPresetValue, number> = {
   "1:1": 1,
   "4:3": 4 / 3,
   "3:4": 3 / 4,
@@ -64,7 +66,7 @@ export function aspectFromDims(
   if (width == null || height == null || width <= 0 || height <= 0) return null;
   const r = width / height;
   for (const preset of ASPECT_PRESETS) {
-    const target = ASPECT_TARGETS[preset.value]!;
+    const target = ASPECT_TARGETS[preset.value];
     if (Math.abs(r - target) / target <= ASPECT_TOLERANCE) return preset.value;
   }
   return null;

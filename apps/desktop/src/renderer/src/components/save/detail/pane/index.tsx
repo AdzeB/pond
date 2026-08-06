@@ -1,6 +1,6 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import { Button, TitleBar } from "@pond/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
 import { TagsSection } from "@/components/save/detail/tags";
@@ -35,19 +35,17 @@ export function SaveDetails({
 
   const displayTitle = save.title?.trim() || save.author?.trim() || "Untitled";
   const local = save.source === "local";
-  const [titleDraft, setTitleDraft] = useState(displayTitle);
-  const titleRef = useRef(titleDraft);
-  titleRef.current = titleDraft;
+  const [titleDraft, setTitleDraft] = useState(save.title ?? "");
 
   useEffect(() => {
-    setTitleDraft(displayTitle);
-  }, [displayTitle]);
+    setTitleDraft(save.title ?? "");
+  }, [save.title]);
 
   const hasVideo = buildMediaUnits(save).some((u) => u.isVideo);
   const textOnly = isTextOnlySave(save);
 
   const commitTitle = async () => {
-    const next = titleRef.current.trim();
+    const next = titleDraft.trim();
     const prev = save.title?.trim() ?? "";
     if (next === prev) return;
     if (!next && !prev) return;
@@ -83,6 +81,7 @@ export function SaveDetails({
               data-pane-title
               className={`${styles["heading-title"]} ${styles["heading-input"]}`}
               value={titleDraft}
+              placeholder="Untitled"
               aria-label="Title"
               onChange={(e) => setTitleDraft(e.target.value)}
               onBlur={() => void commitTitle()}

@@ -178,17 +178,3 @@ export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
     return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
   });
 }
-
-/** Hydrates the lazily-loaded transcript, which is omitted from the list payload. */
-export function patchSaveTranscript(
-  id: string,
-  transcript: Save["transcript"],
-): void {
-  savesStore.setState((s) => {
-    const prev = s.byId.get(id);
-    if (!prev) return s;
-    const next = { ...prev, transcript };
-    s.byId.set(id, next);
-    return { byId: s.byId, sorted: s.sorted, revision: s.revision + 1 };
-  });
-}

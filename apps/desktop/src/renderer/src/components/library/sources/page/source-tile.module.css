@@ -38,12 +38,14 @@
 }
 
 .tile-sub {
+  display: block;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-10);
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -51,8 +53,16 @@
   color: var(--ds-blue-11);
 }
 
-.tile-sub[data-tone="warn"] {
+.tile-sub[data-tone="paused"] {
   color: var(--ds-amber-11);
+}
+
+.tile-sub[data-tone="err"] {
+  color: var(--ds-red-11);
+}
+
+.tile-sub[data-tone="ok"] {
+  color: var(--ds-green-11);
 }
 
 .cover {
@@ -73,7 +83,7 @@
 }
 
 .art[data-pulse] {
-  animation: art-pulse 1.4s ease-in-out infinite;
+  animation: art-pulse 2.2s ease-in-out infinite;
 }
 
 .image {
@@ -146,7 +156,7 @@
 @keyframes art-pulse {
   from,
   to {
-    opacity: 0.45;
+    opacity: 0.78;
   }
 
   50% {

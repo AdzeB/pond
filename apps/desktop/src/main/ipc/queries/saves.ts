@@ -80,7 +80,7 @@ async function loadTasksFor(
   return grouped;
 }
 
-/** Every saves column except the heavy rawJson blob and large vectors/text; raw_slim carries the grid projection, and vectors/transcript load via their own queries. */
+/** Every saves column except the heavy rawJson blob, embedding vectors, and full transcript text. */
 const {
   rawJson: _omitRawJson,
   embedding: _omitEmbedding,
@@ -362,18 +362,6 @@ export const savesQueries: QueryHandlerMap = {
       clipEmbedding: r.clipEmbedding ?? null,
       clipModel: r.clipModel ?? null,
     }));
-  },
-
-  /** Lazy transcript for one save; excluded from the list payload, like rawJson. */
-  async "saves.transcript"(params) {
-    const db = await getDb();
-    const id = String(params.id ?? "");
-    if (!id) return { id: "", transcript: null };
-    const rows = await db
-      .select({ transcript: saves.transcript })
-      .from(saves)
-      .where(eq(saves.id, id));
-    return { id, transcript: rows[0]?.transcript ?? null };
   },
 
   /** Whitelisted, DB-only write-back for on-device enrichment; the saves AFTER UPDATE trigger refreshes the FTS index for text columns automatically. */

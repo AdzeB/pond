@@ -1,5 +1,6 @@
 import { useHotkeys } from "@tanstack/react-hotkeys";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
+import { openLibrarySearch } from "@/lib/ui/open-search";
 import { dockMode } from "@/stores/dock-mode";
 
 /**
@@ -15,7 +16,7 @@ export function AppHotkeys() {
     },
     {
       hotkey: SHORTCUTS["dock.search"].keys,
-      callback: () => dockMode.open("search"),
+      callback: () => openLibrarySearch(),
       options: { ignoreInputs: false },
     },
   ]);

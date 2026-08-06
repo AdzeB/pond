@@ -39,7 +39,7 @@ export async function syncTwitter(
     accountId,
     source,
     state: "running",
-    message: `Looking at your Twitter bookmarks`,
+    message: "Reading",
   });
 
   /** On a full walk, hide known ids so the harvester scans the whole bookmark history instead of early-stopping; dedup still happens via `knownIds`. */
@@ -53,10 +53,10 @@ export async function syncTwitter(
         if (signal.aborted) return;
         const message =
           p.phase === "hydrate"
-            ? "Loading your Twitter bookmarks"
+            ? "Loading"
             : p.fresh > 0
-              ? `Found ${p.fresh} new bookmark${p.fresh === 1 ? "" : "s"}`
-              : `Scanned ${p.seen} bookmark${p.seen === 1 ? "" : "s"}`;
+              ? "Found"
+              : "Scanning";
         emit({ accountId, source, state: "running", message });
       },
     },
@@ -152,10 +152,7 @@ export async function syncTwitter(
     accountId,
     source,
     state: "running",
-    message:
-      recovery.length > 0
-        ? `Queueing 0 of ${total} (${recovery.length} recovering)`
-        : `Queueing 0 of ${total} bookmarks`,
+    message: "Queueing",
     progress: { current: 0, total },
   });
 

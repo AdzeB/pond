@@ -18,6 +18,7 @@ import {
 import { confirmEmptyTrash } from "@/lib/save/empty-trash";
 import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
+import { openLibrarySearch } from "@/lib/ui/open-search";
 import { closeSave, openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
@@ -86,7 +87,7 @@ export function MenuBridge() {
           return;
 
         case "dock.search":
-          dockMode.open("search");
+          openLibrarySearch();
           return;
 
         case "view.layout.waterfall":

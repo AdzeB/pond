@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { MenuItemSpec } from "@pond/ui";
+import { Calligraph } from "calligraph";
 import React, { useState } from "react";
 import type { CardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
@@ -30,11 +31,11 @@ export function SourceTile({
   const pfp = avatarUrl && avatarUrl !== failedUrl ? avatarUrl : null;
   const { logo } = getSourceDef(source);
 
-  const warn = tone === "err" || tone === "paused";
   const running = tone === "run";
+  const unsettled = tone === "run" || tone === "err" || tone === "paused";
 
   /** Broken or in-flight artwork drains to grayscale; syncing pours color back in. */
-  const drained = running || warn;
+  const drained = unsettled;
   const artSrc = pfp ?? logo ?? undefined;
   const artVariant = pfp ? "account" : "source";
 
@@ -93,11 +94,8 @@ export function SourceTile({
         ) : null}
       </span>
       <span className={styles["tile-name"]}>{name}</span>
-      <span
-        className={styles["tile-sub"]}
-        data-tone={running ? "run" : warn ? "warn" : undefined}
-      >
-        {value}
+      <span className={styles["tile-sub"]} data-tone={tone}>
+        <Calligraph>{value}</Calligraph>
       </span>
     </button>
   );

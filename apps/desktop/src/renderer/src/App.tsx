@@ -11,6 +11,7 @@ import type { PondApi } from "../../preload";
 import { ConfirmDialogHost } from "./components/shared/confirm-dialog";
 import { PromptDialogHost } from "./components/shared/prompt-dialog";
 import { ShortcutsSheetHost } from "./components/shared/shortcuts-sheet";
+import { ToastHost } from "./components/shared/toast-host";
 import { AppShell } from "./components/shell/app-shell";
 import { BootScreen } from "./components/shell/boot-screen";
 import { ErrorBoundary } from "./components/shell/error-boundary";
@@ -271,6 +272,7 @@ export function App() {
           <ConfirmDialogHost />
           <PromptDialogHost />
           <ShortcutsSheetHost />
+          <ToastHost />
         </Tooltip.Provider>
       </QueryClientProvider>
     </MotionConfig>

@@ -10,8 +10,6 @@ import { useNarrowedSaves } from "./use-narrowed-saves";
 import { useBootReady, useSaves } from "./use-saves";
 import { useStableStrings } from "./use-stable-array";
 
-export type SavesMode = SaveListMode;
-
 interface LibraryState {
   bootReady: boolean;
   totalSaves: number;

@@ -32,18 +32,27 @@ function RoutedContent() {
 
   const prev = useRef(section);
   const direction = useRef(0);
+  /** False on first paint (incl. remount after leaving save detail) so that path stays instant. */
+  const hasMounted = useRef(false);
+  let animateEnter = false;
   if (prev.current !== section) {
     direction.current = Math.sign(
       SECTION_ORDER.indexOf(section) - SECTION_ORDER.indexOf(prev.current),
     );
     prev.current = section;
+    animateEnter = hasMounted.current;
   }
+  hasMounted.current = true;
 
   return (
     <motion.div
       key={section}
       className={styles.route}
-      initial={{ opacity: 0, x: reduceMotion ? 0 : 16 * direction.current }}
+      initial={
+        animateEnter
+          ? { opacity: 0, x: reduceMotion ? 0 : 16 * direction.current }
+          : false
+      }
       animate={{ opacity: 1, x: 0 }}
       transition={routeTransition}
     >

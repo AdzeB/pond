@@ -51,13 +51,9 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
     : "—";
 
   if (state === "running") {
-    const p = status?.progress;
-    const statusText =
-      status?.message ??
-      (p?.total ? `Syncing · ${p.current}/${p.total}` : "Syncing");
     return {
       tone: "run",
-      statusText,
+      statusText: status?.message ?? "Syncing",
       connected: true,
       meta: "now",
       lastText: "now",
@@ -66,7 +62,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   if (state === "auth_required") {
     return {
       tone: "paused",
-      statusText: "Auth expired",
+      statusText: "Expired",
       connected,
       meta: "Re-auth needed",
       lastText,
@@ -75,7 +71,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   if (state === "paused") {
     return {
       tone: "paused",
-      statusText: "Paused to protect your account",
+      statusText: "Paused",
       connected,
       meta: status?.message ?? "Backing off",
       lastText,
@@ -84,7 +80,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   if (state === "error") {
     return {
       tone: "err",
-      statusText: status?.lastError ? "Sync failed" : "Failed",
+      statusText: "Failed",
       connected,
       meta: status?.lastError ?? "error",
       lastText,
@@ -93,7 +89,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   if (!connected) {
     return {
       tone: "idle",
-      statusText: "Not connected",
+      statusText: "Offline",
       connected: false,
       meta: "Set up to sync",
       lastText: "—",
@@ -110,7 +106,7 @@ export function cardModel(status: SyncSourceStatus | undefined): CardModel {
   }
   return {
     tone: "idle",
-    statusText: status?.lastSyncedAt ? "Caught up" : "Connected",
+    statusText: status?.lastSyncedAt ? "Ready" : "Connected",
     connected,
     meta: "Manual",
     lastText,

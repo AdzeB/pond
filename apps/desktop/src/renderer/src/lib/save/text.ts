@@ -1,4 +1,8 @@
-import { TEXT_COVER_KINDS, textBodyFromFields } from "@shared/text-card";
+import {
+  arenaBlockClassFromRawJson,
+  TEXT_COVER_KINDS,
+  textBodyFromFields,
+} from "@shared/text-card";
 import { hasArchive, isArchiveFile } from "@/lib/media/archive";
 import { composeContentDescription } from "@/lib/save/detail";
 import type { Save, SaveFile } from "@/lib/types";
@@ -16,12 +20,7 @@ export function textBodyForSave(save: Save): string {
 
 /** Are.na's block.class, when the harvest stored it on the capture. */
 export function arenaBlockClass(save: Save): string | null {
-  const raw = save.rawJson as
-    | { capture?: { extras?: { blockClass?: unknown } } }
-    | null
-    | undefined;
-  const cls = raw?.capture?.extras?.blockClass;
-  return typeof cls === "string" ? cls.toLowerCase() : null;
+  return arenaBlockClassFromRawJson(save.rawJson);
 }
 
 function isMediaFile(file: SaveFile): boolean {
@@ -43,7 +42,6 @@ function isMediaFile(file: SaveFile): boolean {
   return /^(mp4|webm|mov|m4v|mkv)$/i.test(ext);
 }
 
-/** True when the save has no image/video besides optional text-cover PNGs. */
 export function isTextOnlyAsideFromCover(save: Save): boolean {
   return !(save.files ?? []).some(
     (f) =>
