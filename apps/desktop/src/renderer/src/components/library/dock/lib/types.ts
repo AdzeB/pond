@@ -10,6 +10,7 @@ export type DockView =
   | "sort"
   | "sort-date"
   | "sort-content"
+  | "sort-media"
   | "sort-file"
   | "display"
   | "connect-source"
@@ -20,6 +21,9 @@ export type DockView =
   | "watch-kind"
   | "watch-target"
   | "account-detail"
+  | "account-profile"
+  | "account-sync"
+  | "account-maintenance"
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
@@ -41,6 +45,7 @@ export type ViewMenuSection =
   | "sort"
   | "sort-date"
   | "sort-content"
+  | "sort-media"
   | "sort-file"
   | "display"
   | "search-help"
@@ -52,6 +57,9 @@ export type ViewMenuSection =
   | "watch-kind"
   | "watch-target"
   | "account-detail"
+  | "account-profile"
+  | "account-sync"
+  | "account-maintenance"
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
@@ -71,6 +79,7 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "sort",
   "sort-date",
   "sort-content",
+  "sort-media",
   "sort-file",
   "display",
   "search-help",
@@ -82,6 +91,9 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "watch-kind",
   "watch-target",
   "account-detail",
+  "account-profile",
+  "account-sync",
+  "account-maintenance",
   "watch-detail",
   "sync-frequency",
   "source-new",

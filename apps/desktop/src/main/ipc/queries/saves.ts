@@ -1,10 +1,12 @@
 import { type Save, saves, type Task, tasks } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery, type Query } from "@pond/schema/filters";
+import { durationProjection } from "@pond/schema/filters/fields";
 import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   getTableColumns,
@@ -12,6 +14,8 @@ import {
   isNotNull,
   isNull,
   type SQL,
+  type SQLWrapper,
+  sql,
 } from "drizzle-orm";
 import { clipboard, nativeImage } from "electron";
 import log from "electron-log/main.js";
@@ -26,6 +30,7 @@ import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
 import { toWireSaves } from "../wire";
 import { savesExportQueries } from "./saves-export";
 import { savesImportQueries } from "./saves-import";
+import { cursorFor, type SavePageCursor } from "./saves-page";
 
 function isHttpUrl(u: string | undefined | null): u is string {
   if (!u) return false;
@@ -134,6 +139,54 @@ export const savesQueries: QueryHandlerMap = {
     return toWireSaves(listRows, grouped);
   },
 
+  /** Cursor-paged, recency-sorted listing for the ordinary library grid. */
+  async "saves.listPage"(params) {
+    const limit = Math.min(Math.max(1, Number(params.limit) || 250), 500);
+    const raw = params.cursor as Partial<SavePageCursor> | undefined;
+    const savedAt = raw?.savedAt;
+    const cursor =
+      typeof savedAt === "number" &&
+      Number.isFinite(savedAt) &&
+      typeof raw?.id === "string" &&
+      raw.id
+        ? { savedAt, id: raw.id }
+        : null;
+    /** Row-value comparison lets SQLite seek directly into the matching composite index instead of merging two scans and sorting through a temporary B-tree. */
+    const after = cursor
+      ? sql`(${saves.savedAt}, ${saves.id}) < (${cursor.savedAt}, ${cursor.id})`
+      : undefined;
+    const db = await getDb();
+    const rows = await db
+      .select(SAVE_LIST_COLUMNS)
+      .from(saves)
+      .where(after)
+      .orderBy(desc(saves.savedAt), desc(saves.id))
+      .limit(limit + 1);
+    const pageRows = rows.slice(0, limit);
+    const grouped = await loadTasksFor(
+      db,
+      pageRows.map((row) => row.id),
+    );
+    const totalRow = (await db.select({ value: count() }).from(saves))[0];
+    const listRows = pageRows.map(({ rawSlim, ...rest }) => ({
+      ...rest,
+      rawJson: rawSlim,
+    })) as Save[];
+    return {
+      rows: toWireSaves(listRows, grouped),
+      nextCursor:
+        rows.length > limit
+          ? cursorFor(
+              pageRows.map((row) => ({
+                savedAt: row.savedAt.getTime(),
+                id: row.id,
+              })),
+            )
+          : null,
+      total: Number(totalRow?.value ?? 0),
+    };
+  },
+
   /** Keyword search via saves_fts; scores are BM25 rank (lower is better in FTS5, inverted for callers). */
   async "saves.searchFts"(params) {
     const q = String(params.q ?? "").trim();
@@ -186,14 +239,7 @@ export const savesQueries: QueryHandlerMap = {
     const where = compiled ? and(trash, compiled) : trash;
     const sortKey = String(params.sortKey ?? "savedAt");
     const sortDir = params.sortDir === "asc" ? "asc" : "desc";
-    const orderCol =
-      sortKey === "createdAt"
-        ? saves.createdAt
-        : sortKey === "title"
-          ? saves.title
-          : sortKey === "fileSize"
-            ? saves.fileSize
-            : saves.savedAt;
+    const orderCol = sortColumn(sortKey);
     const order = sortDir === "asc" ? asc(orderCol) : desc(orderCol);
     const limit =
       params.limit != null
@@ -204,7 +250,7 @@ export const savesQueries: QueryHandlerMap = {
       .select({ id: saves.id })
       .from(saves)
       .where(where)
-      .orderBy(order);
+      .orderBy(asc(sql`${orderCol} is null`), order, desc(saves.id));
     const rows = limit != null ? await base.limit(limit) : await base;
     return { ids: rows.map((r) => r.id) };
   },
@@ -488,6 +534,44 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true as const, captured };
   },
 };
+
+/** Equivalent sortable projections for SQL-filtered library results. */
+function sortColumn(sortKey: string): SQLWrapper {
+  switch (sortKey) {
+    case "createdAt":
+      return saves.createdAt;
+    case "publishedAt":
+      return saves.publishedAt;
+    case "title":
+      return sql`lower(coalesce(${saves.title}, ''))`;
+    case "tagName":
+      return sql`(select lower(value) from json_each(${saves.tags}) order by lower(value) limit 1)`;
+    case "tagCount":
+      return sql`json_array_length(${saves.tags})`;
+    case "duration":
+      return durationProjection();
+    case "fileSize":
+      return saves.fileSize;
+    case "fileCount":
+      return sql`json_array_length(${saves.files})`;
+    case "width":
+      return saves.width;
+    case "height":
+      return saves.height;
+    case "dimensions":
+      return sql`cast(${saves.width} as real) * cast(${saves.height} as real)`;
+    case "aspectRatio":
+      return sql`cast(${saves.width} as real) / nullif(cast(${saves.height} as real), 0)`;
+    case "creator":
+      return sql`lower(coalesce(${saves.author}, ''))`;
+    case "source":
+      return sql`lower(${saves.source})`;
+    case "type":
+      return sql`lower(coalesce(${saves.mediaType}, ''))`;
+    default:
+      return saves.savedAt;
+  }
+}
 
 /** Quote tokens for FTS5; AND for "all", OR for "any". */
 function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {
