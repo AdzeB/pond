@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
 import {
-  PrefsSchema,
   darkPresets,
   lightPresets,
+  PrefsSchema,
   resolveActiveTheme,
-  themeCssVars,
   THEME_PRESETS,
+  themeCssVars,
 } from "@pond/schema/db";
+import { describe, expect, it } from "vitest";
 
 describe("theme prefs rebuild", () => {
   it("defaults to dual light/dark sides under system appearance", () => {

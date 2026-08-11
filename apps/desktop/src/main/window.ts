@@ -71,8 +71,7 @@ export async function syncShellChrome(): Promise<void> {
   const resolved = await resolveTheme();
   const background =
     resolved?.background ??
-    (resolved?.mode === "dark" ||
-    (!resolved && nativeTheme.shouldUseDarkColors)
+    (resolved?.mode === "dark" || (!resolved && nativeTheme.shouldUseDarkColors)
       ? "#000000"
       : "#ffffff");
 

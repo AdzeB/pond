@@ -19,7 +19,9 @@ export interface ResolvedTheme {
 
 export async function resolveTheme(): Promise<ResolvedTheme | null> {
   try {
-    const { resolveActiveTheme, themeCssVars } = await import("@pond/schema/db");
+    const { resolveActiveTheme, themeCssVars } = await import(
+      "@pond/schema/db"
+    );
     const prefs = await getPrefs();
     const def = resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors);
     const v = themeCssVars(def);

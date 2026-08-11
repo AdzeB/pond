@@ -1,7 +1,5 @@
 import {
-  DEFAULT_DARK_PRESET_ID,
   DEFAULT_DARK_THEME,
-  DEFAULT_LIGHT_PRESET_ID,
   DEFAULT_LIGHT_THEME,
   type ThemeAppearance,
   type ThemeDef,
@@ -147,8 +145,7 @@ export function resolveActiveTheme(
 ): ThemeDef {
   const p = prefs.preferences;
   const useDark =
-    p.appearance === "dark" ||
-    (p.appearance === "system" && systemPrefersDark);
+    p.appearance === "dark" || (p.appearance === "system" && systemPrefersDark);
   return useDark ? p.dark : p.light;
 }
 

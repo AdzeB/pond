@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
+  type DashboardConfig,
   DEFAULT_DARK_PRESET_ID,
   DEFAULT_DARK_THEME,
+  DEFAULT_DASHBOARDS,
   DEFAULT_LIGHT_PRESET_ID,
   DEFAULT_LIGHT_THEME,
-  type DashboardConfig,
-  DEFAULT_DASHBOARDS,
   DEFAULT_SOURCE_METRICS,
   type SourceMetricDisplay,
   type SyncAccounts,
@@ -90,16 +90,12 @@ function migratePreferencesTheme(
   let dark = presetDef(systemDarkId, DEFAULT_DARK_THEME);
 
   if (themeMode === "custom") {
-    const legacy = raw.custom as { base?: string; background?: string } | undefined;
-    const bgHex = (
-      legacy?.background ??
-      legacy?.base ??
-      ""
-    ).toLowerCase();
+    const legacy = raw.custom as
+      | { base?: string; background?: string }
+      | undefined;
+    const bgHex = (legacy?.background ?? legacy?.base ?? "").toLowerCase();
     const isDarkish =
-      bgHex.startsWith("#0") ||
-      bgHex.startsWith("#1") ||
-      bgHex === "#000000";
+      bgHex.startsWith("#0") || bgHex.startsWith("#1") || bgHex === "#000000";
     if (isDarkish) {
       appearance = "dark";
       dark = migrateThemeDef(raw.custom, "dark");
