@@ -83,7 +83,7 @@ export function MediaIndexPanel({ open, onOpenChange }: MediaIndexPanelProps) {
     <StatusPanel
       open={open}
       onOpenChange={(next) => onOpenChange(next ? "media-index" : null)}
-      label="Media index"
+      heading="Media Index"
       icon={
         <span
           className={styles.icon}

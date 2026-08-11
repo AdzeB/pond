@@ -74,16 +74,21 @@ export function Library() {
     `${activeTabId}:${pathname}${search}`,
   );
   const isSave = pathname.startsWith("/save/");
-
   if (isSave) return <Outlet />;
 
   return (
     <AppShell.Content>
-      <ScrollRestorationContext.Provider value={restoration}>
-        <Shell.Main ref={restoration.ref} className={styles.main}>
-          <RoutedContent />
-        </Shell.Main>
-      </ScrollRestorationContext.Provider>
+      <Shell.Body className={styles.body}>
+        <ScrollRestorationContext.Provider value={restoration}>
+          <Shell.Main
+            ref={restoration.ref}
+            className={styles.main}
+            data-library-grid-viewport
+          >
+            <RoutedContent />
+          </Shell.Main>
+        </ScrollRestorationContext.Provider>
+      </Shell.Body>
     </AppShell.Content>
   );
 }

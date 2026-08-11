@@ -247,9 +247,28 @@ const skills = z.object({
 });
 
 /** Most-recent-first; pond-scoped so questions typed in one library never surface in another. */
-const askHistory = z.object({
-  entries: z.array(z.string()).catch([]),
+const askHistoryEntry = z.object({
+  text: z.string(),
+  at: z.number(),
 });
+
+const askHistory = z.object({
+  entries: z
+    .array(z.union([z.string(), askHistoryEntry]))
+    .transform((entries) => {
+      const now = Date.now();
+      return entries.map((entry, index) =>
+        typeof entry === "string"
+          ? { text: entry, at: now - index * 60_000 }
+          : entry.at > 0
+            ? entry
+            : { text: entry.text, at: now - index * 60_000 },
+      );
+    })
+    .catch([]),
+});
+
+export type AskHistoryEntry = z.infer<typeof askHistoryEntry>;
 
 const recentSaveVisit = z.object({
   saveId: z.string(),

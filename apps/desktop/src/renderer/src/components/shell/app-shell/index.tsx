@@ -1,15 +1,19 @@
 import { clsx as cn } from "clsx";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ReactNode, useLayoutEffect } from "react";
+import { snappySpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
 interface RootProps {
   header: ReactNode;
   children: ReactNode;
+  right?: ReactNode;
   className?: string;
 }
 
-/** Shell chrome lives on `#root`; this only mounts the header + main. */
-function Root({ header, children, className }: RootProps) {
+/** Shell chrome lives on `#root`; the optional right rail sits outside the rounded workspace. */
+function Root({ header, children, right, className }: RootProps) {
+  const reduceMotion = useReducedMotion();
   useLayoutEffect(() => {
     const el = document.getElementById("root");
     if (!el) return;
@@ -23,10 +27,27 @@ function Root({ header, children, className }: RootProps) {
   }, [className]);
 
   return (
-    <>
-      <div className={styles.header}>{header}</div>
-      <div className={styles.main}>{children}</div>
-    </>
+    <div className={styles.frame}>
+      <div className={styles.window}>
+        <div className={styles.header}>{header}</div>
+        <div className={styles.main}>{children}</div>
+      </div>
+      <aside className={cn(styles.right, right && styles["right-open"])}>
+        <AnimatePresence initial={false}>
+          {right ? (
+            <motion.div
+              className={styles["right-content"]}
+              initial={reduceMotion ? false : { opacity: 0, x: 18 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 12 }}
+              transition={reduceMotion ? { duration: 0 } : snappySpring}
+            >
+              {right}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </aside>
+    </div>
   );
 }
 

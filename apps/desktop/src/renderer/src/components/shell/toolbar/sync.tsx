@@ -41,7 +41,7 @@ export function OngoingPanel({
     <StatusPanel
       open={open}
       onOpenChange={(next) => onOpenChange(next ? "ongoing" : null)}
-      label="Ongoing"
+      heading="Ongoing"
       icon={<SyncIcon />}
     >
       {ongoing.length === 0 ? (

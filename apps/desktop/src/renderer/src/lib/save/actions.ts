@@ -160,10 +160,11 @@ export async function copyFile(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  await window.pond.query("saves.copyFile", {
+  const result = (await window.pond.query("saves.copyFile", {
     id: save.id,
     fileIndex,
-  });
+  })) as { ok: boolean };
+  if (!result?.ok) return;
   const file = save.files[fileIndex];
   const title =
     file && deriveTypeKind(file, save) === "video"
@@ -222,7 +223,11 @@ export async function copyImage(
 ): Promise<void> {
   const fileIndex = copyableImageIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  await window.pond.query("saves.copyImage", { id: save.id, fileIndex });
+  const result = (await window.pond.query("saves.copyImage", {
+    id: save.id,
+    fileIndex,
+  })) as { ok: boolean };
+  if (!result?.ok) return;
   notify({ id: "copy-media", title: "Image copied to clipboard" });
 }
 

@@ -8,6 +8,16 @@
   overflow-y: auto;
 }
 
+/* Matches the group label used by the History menu, with the panel's inset. */
+.heading {
+  flex-shrink: 0;
+  padding: 2px 8px 4px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+}
+
 .empty {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ import {
 import { MotionConfig } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import type { PondApi } from "../../preload";
+import { AskWindowRight } from "./components/ask/window-right";
 import { ConfirmDialogHost } from "./components/shared/confirm-dialog";
 import { PromptDialogHost } from "./components/shared/prompt-dialog";
 import { ShortcutsSheetHost } from "./components/shared/shortcuts-sheet";
@@ -33,6 +34,7 @@ import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
 import { syncPrimaryFromPath } from "./lib/ui/save-nav";
 import { routeTree } from "./routeTree.gen";
+import { useDockMode } from "./stores/dock-mode";
 import { usePrefs } from "./stores/prefs";
 import { settingsModal } from "./stores/settings-modal";
 import { tabs, useActiveTabId, useTabs } from "./stores/tabs";
@@ -140,6 +142,7 @@ export function App() {
   const tabList = useTabs();
   const activeId = useActiveTabId();
   const activeTab = tabList.find((tab) => tab.id === activeId);
+  const dockMode = useDockMode();
 
   /** The "settings" startup page lands on "/" and opens the modal on top. */
   useEffect(() => {
@@ -189,7 +192,10 @@ export function App() {
           <EnrichmentSweep />
           <BootScreen />
           <ErrorBoundary>
-            <AppShell.Root header={<Toolbar />}>
+            <AppShell.Root
+              header={<Toolbar />}
+              right={dockMode === "ask" ? <AskWindowRight /> : undefined}
+            >
               {activeTab ? (
                 <TabContent key={activeTab.id} path={activeTab.path} />
               ) : null}

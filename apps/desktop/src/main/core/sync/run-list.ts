@@ -99,29 +99,6 @@ export async function syncListSource(
   }
 
   if (!harvest.ok) {
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "d09e18",
-      },
-      body: JSON.stringify({
-        sessionId: "d09e18",
-        hypothesisId: "H5",
-        location: "run-list.ts:harvest_fail",
-        message: "list harvest failed",
-        data: {
-          source,
-          accountId,
-          reason: harvest.reason,
-          retryAfterSec:
-            "retryAfterSec" in harvest ? harvest.retryAfterSec : null,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     if (harvest.reason === "auth_required") {
       await patchAccountSync(accountId, { lastError: "auth_required" });
       emit({
@@ -184,30 +161,6 @@ export async function syncListSource(
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
   const fresh =
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
-  // #region agent log
-  fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "d09e18",
-    },
-    body: JSON.stringify({
-      sessionId: "d09e18",
-      hypothesisId: "H5",
-      location: "run-list.ts:harvest_ok",
-      message: "list harvest succeeded",
-      data: {
-        source,
-        accountId,
-        seen: harvest.seen ?? combined.length,
-        combined: combined.length,
-        fresh: fresh.length,
-        full: baseline.full,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  // #endregion
   if (maxItems && allFresh.length > fresh.length) {
     log.info(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,

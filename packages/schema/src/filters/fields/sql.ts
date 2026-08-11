@@ -23,6 +23,13 @@ export function tagsDistinctCount(needle: SQL): SQL {
 export function durationProjection(): SQL {
   return sql`coalesce(
     cast(json_extract(${saves.rawJson}, '$.capture.duration') as real),
+    (
+      select cast(json_extract(value, '$.durationSec') as real)
+      from json_each(json_extract(${saves.rawJson}, '$.capture.media'))
+      where cast(json_extract(value, '$.durationSec') as real) > 0
+      limit 1
+    ),
+    cast(json_extract(${saves.rawJson}, '$.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.youtube.durationSec') as real),
     cast(json_extract(${saves.rawJson}, '$.youtube.ytdlp.duration') as real),
     cast(json_extract(${saves.rawJson}, '$.tiktok.durationSec') as real),

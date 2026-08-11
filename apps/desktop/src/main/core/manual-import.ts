@@ -202,7 +202,9 @@ export async function createManualSave(
   }
 
   const hasMedia = readableMedia.length > 0;
-  const isTextSave = !hasMedia && Boolean(textBody);
+  const hasUrl = Boolean(input.url?.trim());
+  /** URL bookmarks stay links even when a note is attached; prose-only entries are text. */
+  const isTextSave = !hasMedia && !hasUrl && Boolean(textBody);
   const mediaType: MediaType = hasMedia
     ? (majorityMediaType(readableMedia.map((f) => f.mediaType)) ?? "image")
     : isTextSave

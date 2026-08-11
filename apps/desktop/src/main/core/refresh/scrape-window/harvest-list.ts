@@ -100,29 +100,6 @@ export async function harvestSourceList(
               const stats = JSON.parse(raw) as ListHarvestProgress &
                 Record<string, unknown>;
               lastStats = stats;
-              // #region agent log
-              if (source === "instagram") {
-                fetch(
-                  "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-                  {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-Debug-Session-Id": "d09e18",
-                    },
-                    body: JSON.stringify({
-                      sessionId: "d09e18",
-                      hypothesisId: "H5",
-                      location: "harvest-list.ts:poll",
-                      message: "instagram harvest stats",
-                      data: stats,
-                      timestamp: Date.now(),
-                      runId: "post-fix",
-                    }),
-                  },
-                ).catch(() => {});
-              }
-              // #endregion
               if (
                 opts.onProgress &&
                 typeof stats.collected === "number" &&
@@ -138,34 +115,6 @@ export async function harvestSourceList(
     }
 
     const timeoutMs = source === "instagram" ? 300_000 : 90_000;
-    // #region agent log
-    if (source === "instagram") {
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d09e18",
-          },
-          body: JSON.stringify({
-            sessionId: "d09e18",
-            hypothesisId: "H5",
-            location: "harvest-list.ts:start",
-            message: "instagram harvest execute start",
-            data: {
-              landedUrl: landedUrl.slice(0, 120),
-              knownIds: args.knownIds.length,
-              earlyStop: args.earlyStop ?? null,
-              timeoutMs,
-            },
-            timestamp: Date.now(),
-            runId: "post-fix",
-          }),
-        },
-      ).catch(() => {});
-    }
-    // #endregion
     await lease.win.webContents
       .executeJavaScript(
         "globalThis.__pondHarvestAbort = false; globalThis.__pondHarvestPartial = null;",
@@ -187,32 +136,6 @@ export async function harvestSourceList(
         .catch(() => {});
       await sleep(750);
       const partial = await readHarvestPartial(lease.win);
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d09e18",
-          },
-          body: JSON.stringify({
-            sessionId: "d09e18",
-            hypothesisId: "H5",
-            location: "harvest-list.ts:timeout",
-            message: "list harvest timed out",
-            data: {
-              source,
-              lastStats,
-              partialCount: partial?.length ?? 0,
-              recovered: Boolean(partial?.length),
-            },
-            timestamp: Date.now(),
-            runId: "post-fix",
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       if (partial && partial.length > 0) {
         log.info(
           `[pond list] ${source} recovered ${partial.length} entries after timeout`,

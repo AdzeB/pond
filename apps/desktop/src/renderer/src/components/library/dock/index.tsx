@@ -2,7 +2,6 @@ import { Tray, TrayCard } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AskComposer } from "@/components/ask/bar";
 import { NavContent } from "@/components/library/dock/nav";
 import { OptionsContent } from "@/components/library/dock/options";
 import { SelectionContent } from "@/components/library/dock/selection";
@@ -10,7 +9,6 @@ import { SearchComposer } from "@/components/search/bar";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion } from "@/lib/ui/motion";
 import { openLibrarySearch } from "@/lib/ui/open-search";
-import { clearAsk } from "@/stores/ask-store";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
   useViewFilteredCount,
@@ -32,10 +30,6 @@ import styles from "./styles.module.css";
 const openAsk = () => dockMode.open("ask");
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
-const clearResults = () => {
-  clearAsk();
-  dockMode.close();
-};
 
 export function LibraryTray() {
   const selectionSize = useSelectionSize();
@@ -44,6 +38,7 @@ export function LibraryTray() {
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
   const mode = useDockMode();
+  const trayMode = mode === "ask" ? "nav" : mode;
 
   const inTrash = viewMode === "trash";
 
@@ -79,11 +74,11 @@ export function LibraryTray() {
 
   /** Priority: selection-card modes, then any explicitly opened surface (search/ask/menus), then selection commandeering the resting nav. */
   const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
-    mode,
+    trayMode,
   )
     ? (mode as DockView)
-    : mode !== "nav"
-      ? mode
+    : trayMode !== "nav"
+      ? trayMode
       : selectionSize > 0
         ? "selection"
         : "nav";
@@ -99,7 +94,7 @@ export function LibraryTray() {
     [pathname],
   );
 
-  const isCard = view === "ask" || view === "search" || isViewMenu(view);
+  const isCard = view === "search" || isViewMenu(view);
 
   useEffect(() => {
     if (!isMenuView) return;
@@ -204,22 +199,6 @@ export function LibraryTray() {
               <AnimatePresence initial={false}>
                 {view === "selection" ? (
                   <SelectionContent key="selection" />
-                ) : view === "ask" ? (
-                  <motion.div
-                    key="ask"
-                    className={styles["ask-row"]}
-                    {...swap}
-                    transition={swapTransition}
-                  >
-                    {/** Leaving the ask card ends the conversation: results clear so the grid never stays silently filtered. */}
-                    <TrayCard.Provider onDismiss={clearResults}>
-                      <AskComposer
-                        autoFocus
-                        onCollapse={clearResults}
-                        onClear={clearAsk}
-                      />
-                    </TrayCard.Provider>
-                  </motion.div>
                 ) : view === "search" ? (
                   <motion.div
                     key="search"

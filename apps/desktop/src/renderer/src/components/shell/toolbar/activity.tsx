@@ -39,7 +39,8 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
     <StatusPanel
       open={open}
       onOpenChange={(next) => onOpenChange(next ? "progress" : null)}
-      label={busy ? "In progress, working" : "In progress"}
+      ariaLabel={busy ? "In progress, working" : "In progress"}
+      heading="In Progress"
       icon={
         <span className={styles.icon} data-busy={busy ? "" : undefined}>
           <AnimatePresence mode="popLayout" initial={false}>

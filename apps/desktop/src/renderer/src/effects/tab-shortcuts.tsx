@@ -6,7 +6,7 @@ export function TabShortcuts() {
     const unsubs = [
       window.pond.onTabNew(() => tabs.open("/")),
       window.pond.onTabClose(() => {
-        tabs.close(tabs.getState().activeId);
+        if (!tabs.close(tabs.getState().activeId)) window.close();
       }),
       window.pond.onTabReopen(() => tabs.reopenClosed()),
     ];

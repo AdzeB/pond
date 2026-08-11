@@ -1,40 +1,96 @@
-.card {
-  width: 384px;
-  max-height: 72vh;
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
 }
 
-/* Inset well around the prompt field; the action row lives inside the well. */
+.conversation {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding-inline: 12px;
+}
+
+.empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+}
+
+.empty-copy {
+  max-width: 30ch;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ds-gray-9);
+}
+
+/* Linear footerParent: padding 0 12px 12px. */
+.composer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 12px 12px;
+  margin-top: auto;
+}
+
+/*
+ * Linear composer card (inspected):
+ * bg white, padding 12px, radius 10px, no border,
+ * shadow: 0 3px 6px -2px / 2%, 0 1px 1px / 4%.
+ */
 .editor {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 10px;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-lg);
+  padding: 12px;
+  background: var(--ds-gray-1);
+  border: 0;
+  border-radius: 10px;
+  box-shadow:
+    0 3px 6px -2px rgb(0 0 0 / 2%),
+    0 1px 1px 0 rgb(0 0 0 / 4%);
 }
 
 .editor-field {
   position: relative;
-  min-height: 42px;
-  padding: 2px 2px 0;
+  min-height: 24px;
+  padding: 0;
 }
 
-/* Once a conversation exists the input is a compact follow-up field. */
-.card[data-chat] .editor-field {
-  min-height: 21px;
+.chat[data-chat] .editor-field {
+  min-height: 24px;
 }
 
+/* Linear input: 450 15px/24px. */
 .input {
   display: block;
   width: 100%;
   max-height: 220px;
   overflow-y: auto;
   font: inherit;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  font-weight: 450;
+  line-height: 24px;
   color: var(--ds-gray-12);
+
   word-break: break-word;
   outline: none;
 }
@@ -45,11 +101,13 @@
 
 .placeholder {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  font-size: 14px;
-  line-height: 1.5;
+  top: 0;
+  left: 0;
+  font-size: 15px;
+  font-weight: 450;
+  line-height: 24px;
   color: var(--ds-gray-9);
+
   pointer-events: none;
   user-select: none;
 }

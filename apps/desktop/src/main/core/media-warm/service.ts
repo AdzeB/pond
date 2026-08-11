@@ -38,9 +38,11 @@ let manual = false;
 let failures = 0;
 let thermal: ThermalState = "unknown";
 let activeJobs = 0;
-let scanCursor: { savedAt: Date; id: string } | null = null;
+let scanCursor: { savedAt: number; id: string } | null = null;
 let scanComplete = false;
 let loadingPage = false;
+/** Bumped on every start so an in-flight page load cannot corrupt the next run. */
+let scanGeneration = 0;
 
 function publish(patch: Partial<MediaIndexStatus>): void {
   const next = { ...status, ...patch };
@@ -58,6 +60,7 @@ export function getMediaIndexStatus(): MediaIndexStatus {
 export async function startMediaIndex(opts?: {
   manual?: boolean;
 }): Promise<MediaIndexStatus> {
+  scanGeneration += 1;
   manual = opts?.manual === true;
   userPaused = false;
   stopped = false;
@@ -65,7 +68,6 @@ export async function startMediaIndex(opts?: {
   candidates = [];
   scanCursor = null;
   scanComplete = false;
-  loadingPage = false;
   publish({
     state: "idle",
     prepared: 0,
@@ -176,8 +178,9 @@ async function tick(): Promise<void> {
   if (candidates.length === 0 && !scanComplete) {
     if (loadingPage) return;
     loadingPage = true;
+    const generation = scanGeneration;
     try {
-      await loadCandidatePage();
+      await loadCandidatePage(generation);
     } catch (err) {
       fail(err);
       return;
@@ -185,6 +188,10 @@ async function tick(): Promise<void> {
       loadingPage = false;
     }
     if (stopped || userPaused) return;
+    if (generation !== scanGeneration) {
+      schedule(0);
+      return;
+    }
     /** A page can contain only text saves; continue scanning without retaining their JSON. */
     if (candidates.length === 0 && !scanComplete) {
       schedule(0);
@@ -230,6 +237,7 @@ async function processOne(candidate: MediaWarmCandidate): Promise<void> {
     log.warn("[pond media-index] candidate failed", candidate.saveId, err);
     publish({
       lastError: message,
+      remaining: Math.max(0, status.remaining - 1),
       currentTitle: activeJobs <= 1 ? null : status.currentTitle,
     });
   } finally {
@@ -269,7 +277,7 @@ async function warmThumbnail(
   });
 }
 
-async function loadCandidatePage(): Promise<void> {
+async function loadCandidatePage(generation: number): Promise<void> {
   const db = await getDb();
   const after = scanCursor
     ? sql`(${saves.savedAt}, ${saves.id}) < (${scanCursor.savedAt}, ${scanCursor.id})`
@@ -286,9 +294,12 @@ async function loadCandidatePage(): Promise<void> {
     .where(after)
     .orderBy(desc(saves.savedAt), desc(saves.id))
     .limit(SCAN_PAGE_SIZE + 1);
+  if (generation !== scanGeneration) return;
   const page = rows.slice(0, SCAN_PAGE_SIZE);
   const last = page.at(-1);
-  scanCursor = last ? { savedAt: last.savedAt, id: last.id } : scanCursor;
+  scanCursor = last
+    ? { savedAt: last.savedAt.getTime(), id: last.id }
+    : scanCursor;
   scanComplete = rows.length <= SCAN_PAGE_SIZE;
   const discovered = page.flatMap((save) => mediaWarmCandidates(save));
   candidates.push(...discovered);

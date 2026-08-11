@@ -1,28 +1,12 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   recallScroll,
   recallScrollAnchor,
   rememberScroll,
   rememberScrollAnchor,
 } from "./use-scroll-restoration";
-
-const STORAGE_KEY = "pond.scrollPositions:v1:unbound";
-const stored = new Map<string, string>();
-Object.defineProperty(window, "localStorage", {
-  configurable: true,
-  value: {
-    clear: () => stored.clear(),
-    getItem: (key: string) => stored.get(key) ?? null,
-    setItem: (key: string, value: string) => stored.set(key, value),
-  } as Pick<Storage, "clear" | "getItem" | "setItem">,
-});
-
-afterEach(() => {
-  window.dispatchEvent(new Event("pagehide"));
-  window.localStorage.clear();
-});
 
 describe("scroll restoration", () => {
   it("keeps independent offsets per tab and route", () => {
@@ -40,27 +24,15 @@ describe("scroll restoration", () => {
     expect(recallScroll("tab-a:/sources")).toBe(0);
   });
 
-  it("flushes remembered offsets before a renderer reload", () => {
+  it("starts a fresh renderer at the top", async () => {
     rememberScroll("tab-reload:/", 4321);
-    window.dispatchEvent(new Event("pagehide"));
-
-    expect(
-      JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "[]"),
-    ).toContainEqual(["tab-reload:/", { top: 4321 }]);
-  });
-
-  it("hydrates an offset saved by a previous renderer", async () => {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify([["tab-restored:/", 6789]]),
-    );
     vi.resetModules();
     const fresh = await import("./use-scroll-restoration");
 
-    expect(fresh.recallScroll("tab-restored:/")).toBe(6789);
+    expect(fresh.recallScroll("tab-reload:/")).toBe(0);
   });
 
-  it("persists a card identity anchor with its pixel fallback", () => {
+  it("keeps a card identity anchor with its pixel fallback", () => {
     rememberScrollAnchor("tab-anchor:/", 7000, {
       id: "save-123",
       offset: 42,

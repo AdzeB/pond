@@ -8,7 +8,6 @@ import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import { useSave } from "@/hooks/use-saves";
 import { pickPrimaryFile } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
-import { gentleSpring } from "@/lib/ui/motion";
 import { formatAbsolute } from "@/lib/util/format";
 import { clampRatio } from "@/stores/aspect";
 import { useDisplayPrefs } from "@/stores/display-prefs";
@@ -125,7 +124,7 @@ export const SaveCard = memo(function SaveCard({
         onNativeDragStart={onDragStart}
         initial={false}
         animate={tumbling ? tumbleTarget(id) : undefined}
-        transition={tumbling ? TUMBLE_TRANSITION : gentleSpring}
+        transition={TUMBLE_TRANSITION}
       >
         <Card.Checkbox
           checked={isMulti}

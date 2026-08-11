@@ -5,7 +5,10 @@ import styles from "./panel.module.css";
 interface StatusPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  label: string;
+  /** Screen-reader label for the trigger; defaults to the visible heading. */
+  ariaLabel?: string;
+  /** Shared section heading shown at the top of every toolbar dropdown. */
+  heading: string;
   icon: ReactNode;
   children: ReactNode;
 }
@@ -14,7 +17,8 @@ interface StatusPanelProps {
 export function StatusPanel({
   open,
   onOpenChange,
-  label,
+  ariaLabel,
+  heading,
   icon,
   children,
 }: StatusPanelProps) {
@@ -25,13 +29,16 @@ export function StatusPanel({
         variant="ghost"
         size="sm"
         icon
-        aria-label={label}
+        aria-label={ariaLabel ?? heading}
       >
         {icon}
       </Button>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8}>
-          <Popover.Popup className={styles.popup}>{children}</Popover.Popup>
+          <Popover.Popup className={styles.popup}>
+            <h2 className={styles.heading}>{heading}</h2>
+            {children}
+          </Popover.Popup>
         </Popover.Positioner>
       </Popover.Portal>
     </Popover.Root>

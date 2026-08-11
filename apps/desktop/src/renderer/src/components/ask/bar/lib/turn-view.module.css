@@ -4,16 +4,21 @@
   gap: 8px;
 }
 
+/*
+ * Linear user bubble (inspected):
+ * bg lch(96.5), padding 8px 12px, radius 8px, max-width 75%, column flex-end.
+ */
 .user-message {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   align-items: flex-start;
-  align-self: stretch;
-  width: 100%;
-  padding: 10px 12px;
+  align-self: flex-end;
+  width: fit-content;
+  max-width: 75%;
+  padding: 8px 12px;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-lg);
+  border-radius: 8px;
 }
 
 .user-image {
@@ -24,10 +29,13 @@
   box-shadow: inset 0 0 0 0.5px var(--ds-gray-a4);
 }
 
+/* Linear message text: 450 15px/24px, letter-spacing -0.1px. */
 .user-text {
-  font-size: 13px;
-  line-height: 1.45;
+  font-size: 14px;
+  font-weight: 450;
+  line-height: 24px;
   color: var(--ds-gray-12);
+
   word-break: break-word;
 }
 
@@ -51,7 +59,7 @@
   align-items: baseline;
   font-size: 12px;
   font-weight: 500;
-  color: var(--ds-gray-11);
+  color: var(--ds-gray-9);
 }
 
 .retry {
@@ -98,8 +106,8 @@
 
 .turn-body {
   margin: 0;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 24px;
   color: var(--ds-gray-12);
   word-break: break-word;
   user-select: text;

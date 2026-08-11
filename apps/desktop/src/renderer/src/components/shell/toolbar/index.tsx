@@ -8,7 +8,7 @@ import {
   PointerSensor,
 } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { IconPlusFill18 } from "@pond/icons/fill/18";
+import { IconPlusFill18, IconSparkle3Fill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { IconGear3Outline18 } from "@pond/icons/outline/18";
 import { Button, type MenuItemSpec } from "@pond/ui";
@@ -17,12 +17,14 @@ import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
 import { useAccounts } from "@/hooks/use-accounts";
+import { useAskAvailable } from "@/hooks/use-ask-available";
 import { useSave } from "@/hooks/use-saves";
 import { useWatches } from "@/hooks/use-watches";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
+import { dockMode, useDockMode } from "@/stores/dock-mode";
 import { settingsModal } from "@/stores/settings-modal";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 import { type Tab, tabs, useActiveTabId, useTabs } from "@/stores/tabs";
@@ -308,6 +310,8 @@ export function Toolbar() {
   const { accounts } = useAccounts();
   const { watches } = useWatches();
   const byAccount = useSyncByAccount();
+  const askAvailable = useAskAvailable();
+  const dock = useDockMode();
   const [open, setOpen] = useState<Panel | null>(null);
   const [frozenWidths, setFrozenWidths] = useState<Record<string, number>>({});
 
@@ -469,6 +473,23 @@ export function Toolbar() {
           byAccount={byAccount}
         />
         <MediaIndexPanel open={open === "media-index"} onOpenChange={setOpen} />
+        <Button
+          variant="ghost"
+          size="sm"
+          icon
+          aria-label={dock === "ask" ? "Close Chat" : "Open Chat"}
+          aria-pressed={dock === "ask"}
+          onClick={() => {
+            if (dock === "ask") {
+              dockMode.close();
+              return;
+            }
+            if (askAvailable) dockMode.open("ask");
+            else settingsModal.open("ai");
+          }}
+        >
+          <IconSparkle3Fill18 />
+        </Button>
         <Button
           variant="ghost"
           size="sm"

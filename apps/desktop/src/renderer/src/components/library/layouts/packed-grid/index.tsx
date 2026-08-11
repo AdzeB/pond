@@ -220,36 +220,28 @@ export function PackedGrid({
       return;
     }
     const target = scrollMargin + item.top + active.anchor.offset;
-    let innerFrame = 0;
-    const outerFrame = requestAnimationFrame(() => {
-      innerFrame = requestAnimationFrame(() => {
-        /**
-         * `useScrollRestoration` has already restored the precise saved offset.
-         * Only let the identity anchor take over for a meaningful layout change;
-         * otherwise fractional packing measurements make returning from a save
-         * visibly nudge the library by a pixel or two.
-         */
-        const savedTop = active.top;
-        const nextTop =
-          Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
-            ? savedTop
-            : target;
-        if (parent.scrollTop !== nextTop) parent.scrollTop = nextTop;
-        if (nextTop !== savedTop) rememberScroll(restoration.key, nextTop);
-        if (restorationSettleTimer.current !== null) {
-          clearTimeout(restorationSettleTimer.current);
-        }
-        restorationSettleTimer.current = setTimeout(() => {
-          if (activeRestoration.current !== active) return;
-          activeRestoration.current = null;
-          delete parent.dataset.restoringScroll;
-          restorationSettleTimer.current = null;
-        }, RESTORATION_SETTLE_MS);
-      });
-    });
+    /**
+     * This is a layout effect, so the packed items and their identity anchor
+     * are available before paint. Applying the correction here avoids the
+     * small, visible two-frame nudge that occurred after returning from detail.
+     */
+    const savedTop = active.top;
+    const nextTop =
+      Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
+        ? savedTop
+        : target;
+    if (parent.scrollTop !== nextTop) parent.scrollTop = nextTop;
+    if (nextTop !== savedTop) rememberScroll(restoration.key, nextTop);
+    if (restorationSettleTimer.current !== null) {
+      clearTimeout(restorationSettleTimer.current);
+    }
+    restorationSettleTimer.current = setTimeout(() => {
+      if (activeRestoration.current !== active) return;
+      activeRestoration.current = null;
+      delete parent.dataset.restoringScroll;
+      restorationSettleTimer.current = null;
+    }, RESTORATION_SETTLE_MS);
     return () => {
-      cancelAnimationFrame(outerFrame);
-      if (innerFrame !== 0) cancelAnimationFrame(innerFrame);
       if (restorationSettleTimer.current !== null) {
         clearTimeout(restorationSettleTimer.current);
         restorationSettleTimer.current = null;

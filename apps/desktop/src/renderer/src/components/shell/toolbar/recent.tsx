@@ -28,7 +28,7 @@ export function RecentPanel({ open, onOpenChange }: RecentPanelProps) {
     <StatusPanel
       open={open}
       onOpenChange={(next) => onOpenChange(next ? "recent" : null)}
-      label="Recent"
+      heading="Recent"
       icon={<RecentIcon />}
     >
       {recentSaves.length === 0 && recent.length === 0 ? (

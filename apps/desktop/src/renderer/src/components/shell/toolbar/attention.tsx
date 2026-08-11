@@ -64,7 +64,7 @@ export function ErrorsPanel({
     <StatusPanel
       open={open}
       onOpenChange={(next) => onOpenChange(next ? "errors" : null)}
-      label="Last errors"
+      heading="Last Errors"
       icon={<WarningIcon />}
     >
       {empty ? (

@@ -1,14 +1,15 @@
-/* MessageScroller frame: caps the transcript height while the headless viewport owns scrolling. */
 .transcript {
   position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   min-height: 0;
-  max-height: 340px;
   overflow: hidden;
 }
 
 .transcript-viewport {
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   outline: none;
@@ -17,10 +18,10 @@
 .transcript-content {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  padding: 8px 3px 24px;
 }
 
-/* Self-managing jump-to-latest control; the scroller marks it inert when the reader is at the live edge. */
 .transcript-jump {
   position: absolute;
   bottom: 8px;
@@ -35,7 +36,7 @@
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
-  background: var(--ds-gray-1);
+  background: var(--ds-gray-3);
   border: 0;
   border-radius: var(--ds-radius-full);
   box-shadow:
@@ -46,7 +47,7 @@
 
   &:hover {
     color: var(--ds-gray-12);
-    background: var(--ds-gray-2);
+    background: var(--ds-gray-4);
   }
 
   &:focus-visible {

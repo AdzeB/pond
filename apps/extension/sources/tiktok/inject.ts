@@ -1,7 +1,6 @@
 import {
   capture,
   installInterceptor,
-  log,
   type RequestLens,
 } from "@/utils/intercept";
 
@@ -141,49 +140,6 @@ export function inject(): void {
     const url = username
       ? `https://www.tiktok.com/@${username}/video/${id}`
       : `https://www.tiktok.com/video/${id}`;
-    // #region agent log
-    log("info", "tiktok emitFavorite", {
-      id,
-      hasUsername: Boolean(username),
-      source: fromCache
-        ? "cache"
-        : fromDom
-          ? "dom"
-          : fromLocation
-            ? "location"
-            : "none",
-      url,
-      cacheSize: usernameByAwemeId.size,
-    });
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "384c19",
-      },
-      body: JSON.stringify({
-        sessionId: "384c19",
-        runId: "post-fix",
-        hypothesisId: "F",
-        location: "tiktok/inject.ts:emitFavorite",
-        message: "tiktok emitFavorite",
-        data: {
-          id,
-          hasUsername: Boolean(username),
-          source: fromCache
-            ? "cache"
-            : fromDom
-              ? "dom"
-              : fromLocation
-                ? "location"
-                : "none",
-          url,
-          cacheSize: usernameByAwemeId.size,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     capture(url, "tiktok:favorite");
   }
 
@@ -195,38 +151,6 @@ export function inject(): void {
       if (!res.ok) return;
       if (FAVORITE_RE.test(req.url) && isFavoriteType(req.url)) {
         const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
-        // #region agent log
-        log("info", "tiktok favorite response", {
-          matched: Boolean(id),
-          id,
-          reqUrl: req.url.slice(0, 180),
-          method: req.method,
-        });
-        fetch(
-          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "384c19",
-            },
-            body: JSON.stringify({
-              sessionId: "384c19",
-              runId: "post-fix",
-              hypothesisId: "C",
-              location: "tiktok/inject.ts:onResponse",
-              message: "tiktok favorite response",
-              data: {
-                matched: Boolean(id),
-                id,
-                reqUrl: req.url.slice(0, 180),
-                method: req.method,
-              },
-              timestamp: Date.now(),
-            }),
-          },
-        ).catch(() => {});
-        // #endregion
         if (id) {
           walkForAweme(readJson(await res.readText()));
           emitFavorite(id);

@@ -6,8 +6,6 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconPen2Fill12 as NewChat } from "@pond/icons/fill/12";
-import { TrayCard } from "@pond/ui";
 import {
   CLEAR_EDITOR_COMMAND,
   COMMAND_PRIORITY_LOW,
@@ -16,10 +14,9 @@ import {
 } from "lexical";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AskMentions } from "@/components/ask/mentions";
-import { useDock } from "@/components/library/dock/lib/context";
 import { SkillDialog } from "@/components/shared/skill-dialog";
 import { useSaves } from "@/hooks/use-saves";
-import { clearAsk, useAskTurns } from "@/stores/ask-store";
+import { useAskTurns } from "@/stores/ask-store";
 import { usePrefs } from "@/stores/prefs";
 import { AttachRow } from "./attach-row";
 import { ComposerToolbar } from "./lib/composer-toolbar";
@@ -38,10 +35,9 @@ import { Transcript } from "./transcript";
 interface ComposerProps {
   autoFocus?: boolean;
   onCollapse?: () => void;
-  onSubmitted?: () => void;
-  onClear?: () => void;
 }
 
+/** Conversation body + prompt input for the chat rail. */
 export function AskComposer(props: ComposerProps) {
   const initialConfig = useMemo(
     () => ({
@@ -62,14 +58,8 @@ export function AskComposer(props: ComposerProps) {
   );
 }
 
-function AskField({
-  autoFocus = false,
-  onCollapse,
-  onSubmitted,
-  onClear,
-}: ComposerProps) {
+function AskField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
-  const dock = useDock();
   const saves = useSaves();
   const turns = useAskTurns();
   const [skillsPrefs] = usePrefs("skills");
@@ -102,6 +92,11 @@ function AskField({
     });
   }, [editor]);
 
+  /** New chat from the rail header clears turns; refocus the empty prompt. */
+  useEffect(() => {
+    if (!hasTurns && autoFocus) queueMicrotask(() => editor.focus());
+  }, [hasTurns, autoFocus, editor]);
+
   const sendNow = useCallback(() => {
     const state = editor.getEditorState();
     const prompt = state.read($readPrompt);
@@ -114,23 +109,15 @@ function AskField({
       editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
       /** The turn now owns the object URL; drop our handle without revoking it. */
       setPendingImage(null);
-      onSubmitted?.();
     }
-  }, [
-    editor,
-    submit,
-    onSubmitted,
-    turns.length,
-    pendingImage,
-    setPendingImage,
-  ]);
+  }, [editor, submit, turns.length, pendingImage, setPendingImage]);
 
   /** Sends a literal string as a fresh conversation rather than a refinement. */
   const runText = useCallback(
     (text: string) => {
-      if (submit(text, [], { refine: false })) onSubmitted?.();
+      submit(text, [], { refine: false });
     },
-    [submit, onSubmitted],
+    [submit],
   );
 
   const openCreateSkill = useCallback((name: string) => {
@@ -180,16 +167,10 @@ function AskField({
   const busy = lastTurn?.status === "thinking";
   const canSend = (hasContent || pendingImage != null) && !busy;
 
-  const newChat = useCallback(() => {
-    if (onClear) onClear();
-    else clearAsk();
-    removePendingImage();
-    queueMicrotask(() => editor.focus());
-  }, [onClear, editor, removePendingImage]);
-
   return (
-    <TrayCard.Root
-      className={styles.card}
+    // biome-ignore lint/a11y/noStaticElementInteractions: paste/drop target for composer attachments
+    <div
+      className={styles.chat}
       data-chat={hasTurns || undefined}
       onPaste={onPaste}
       onDrop={onDrop}
@@ -198,67 +179,57 @@ function AskField({
           e.preventDefault();
       }}
     >
-      <TrayCard.Header>
-        <TrayCard.Action
-          position="start"
-          aria-label="New chat"
-          onClick={newChat}
-        >
-          <NewChat width={12} height={12} />
-        </TrayCard.Action>
-        <TrayCard.Title position="center">Chat</TrayCard.Title>
-        <TrayCard.Close />
-        <TrayCard.Separator />
-        {!hasTurns ? (
-          <TrayCard.Description>
-            Answers come from your library. Use / for skills, @ for saves, # for
-            tags.
-          </TrayCard.Description>
+      <div className={styles.conversation}>
+        {hasTurns ? (
+          <Transcript turns={turns} busy={busy} onRetry={runText} />
+        ) : (
+          <div className={styles.empty}>
+            <p className={styles["empty-title"]}>Start a conversation</p>
+            <p className={styles["empty-copy"]}>
+              Answers come from your library. Use / for skills, @ for saves, #
+              for tags.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.composer}>
+        {pendingImage ? (
+          <AttachRow image={pendingImage} onRemove={removePendingImage} />
         ) : null}
-      </TrayCard.Header>
 
-      {hasTurns ? (
-        <Transcript turns={turns} busy={busy} onRetry={runText} />
-      ) : null}
-
-      {pendingImage ? (
-        <AttachRow image={pendingImage} onRemove={removePendingImage} />
-      ) : null}
-
-      <div className={styles.editor}>
-        <div className={styles["editor-field"]}>
-          <PlainTextPlugin
-            contentEditable={
-              <ContentEditable
-                className={styles.input}
-                spellCheck={false}
-                ariaLabel="Ask anything, or use / @ #"
-              />
-            }
-            placeholder={
-              <span className={styles.placeholder}>
-                {hasTurns
-                  ? "Ask a follow-up"
-                  : "Ask anything, / for skills, @ for context"}
-              </span>
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <HistoryPlugin />
-          <ClearEditorPlugin />
-          {autoFocus ? <AutoFocusPlugin /> : null}
-          <AskMentions
-            skills={skills}
-            saves={saves}
-            onCreateSkill={openCreateSkill}
+        <div className={styles.editor}>
+          <div className={styles["editor-field"]}>
+            <PlainTextPlugin
+              contentEditable={
+                <ContentEditable
+                  className={styles.input}
+                  spellCheck={false}
+                  ariaLabel="Ask anything, or use / @ #"
+                />
+              }
+              placeholder={
+                <span className={styles.placeholder}>
+                  {hasTurns ? "Ask a follow-up" : "Ask anything"}
+                </span>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <HistoryPlugin />
+            <ClearEditorPlugin />
+            {autoFocus ? <AutoFocusPlugin /> : null}
+            <AskMentions
+              skills={skills}
+              saves={saves}
+              onCreateSkill={openCreateSkill}
+            />
+          </div>
+          <ComposerToolbar
+            onPickImage={onPickImage}
+            canSend={canSend}
+            onSend={sendNow}
           />
         </div>
-        <ComposerToolbar
-          onHistory={() => dock.openViewMenu("ask-history")}
-          onPickImage={onPickImage}
-          canSend={canSend}
-          onSend={sendNow}
-        />
       </div>
 
       <input
@@ -278,6 +249,6 @@ function AskField({
         onOpenChange={setCreateOpen}
         initialName={createName}
       />
-    </TrayCard.Root>
+    </div>
   );
 }

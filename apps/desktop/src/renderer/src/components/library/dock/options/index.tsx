@@ -1,5 +1,4 @@
 import { TrayCard } from "@pond/ui";
-import { AskHistorySection } from "@/components/ask/bar/lib/history";
 import { AnalyticsDuplicateSection } from "@/components/library/dock/analytics/duplicate";
 import { AnalyticsRangeSection } from "@/components/library/dock/analytics/range";
 import { AnalyticsRenameSection } from "@/components/library/dock/analytics/rename";
@@ -34,7 +33,6 @@ import { SearchHelpSection } from "@/components/search/bar/lib/help";
 import styles from "./styles.module.css";
 
 const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
-  "ask-history": AskHistorySection,
   layout: LayoutSection,
   zoom: ZoomSection,
   sort: SortSection,

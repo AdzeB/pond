@@ -51,11 +51,6 @@
   grid-area: 1 / 1;
 }
 
-.ask-row {
-  display: inline-flex;
-  align-items: center;
-}
-
 .search-row {
   display: inline-flex;
   align-items: center;

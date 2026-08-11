@@ -114,32 +114,6 @@ export default defineBackground(() => {
     try {
       const settings = await getSettings();
       if (!settings.apiKey) {
-        // #region agent log
-        if (
-          !(globalThis as { __pondDbgUnpaired?: boolean }).__pondDbgUnpaired
-        ) {
-          (globalThis as { __pondDbgUnpaired?: boolean }).__pondDbgUnpaired =
-            true;
-          fetch(
-            "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-Debug-Session-Id": "d09e18",
-              },
-              body: JSON.stringify({
-                sessionId: "d09e18",
-                hypothesisId: "H1",
-                location: "background.ts:maybeAutoPush",
-                message: "auto-push skipped: unpaired",
-                data: {},
-                timestamp: Date.now(),
-              }),
-            },
-          ).catch(() => {});
-        }
-        // #endregion
         return;
       }
 
@@ -156,57 +130,11 @@ export default defineBackground(() => {
       if (!tab?.url) return;
       const tabSource = hostToSource(tab.url);
       if (tabSource !== pending) {
-        // #region agent log
-        fetch(
-          "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Debug-Session-Id": "d09e18",
-            },
-            body: JSON.stringify({
-              sessionId: "d09e18",
-              hypothesisId: "H1",
-              location: "background.ts:maybeAutoPush",
-              message: "auto-push skipped: tab mismatch",
-              data: { pending, tabSource, tabUrl: tab.url.slice(0, 80) },
-              timestamp: Date.now(),
-            }),
-          },
-        ).catch(() => {});
-        // #endregion
         return;
       }
 
       recentAutoPush.set(pending, Date.now());
       const result = await pushSession(pending);
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "d09e18",
-          },
-          body: JSON.stringify({
-            sessionId: "d09e18",
-            hypothesisId: "H2",
-            location: "background.ts:maybeAutoPush",
-            message: "auto-push result",
-            data: {
-              pending,
-              ok: result.ok,
-              connected: result.ok ? result.data.connected : null,
-              reason: result.ok ? (result.data.reason ?? null) : result.reason,
-              importReason: result.ok ? (result.data.reason ?? null) : null,
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       if (result.ok && result.data.connected) {
         flashBadge(tab.id, "ok", "#1f9d55");
         return;
@@ -303,28 +231,6 @@ export default defineBackground(() => {
   ): Promise<boolean> {
     if (!payload || typeof payload.url !== "string") return false;
     const settings = await getSettings();
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "384c19",
-      },
-      body: JSON.stringify({
-        sessionId: "384c19",
-        hypothesisId: "C",
-        location: "background.ts:handleCapture",
-        message: "capture received",
-        data: {
-          url: payload.url,
-          trigger: payload.trigger ?? null,
-          paired: Boolean(settings.apiKey),
-          port: settings.port,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     if (!settings.apiKey) {
       console.warn("[pond] missing apiKey; pair the extension via the toolbar");
       flashBadge(tabId, "!", "#dd9b00");
@@ -345,29 +251,6 @@ export default defineBackground(() => {
         }),
       });
     } catch (err) {
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "384c19",
-          },
-          body: JSON.stringify({
-            sessionId: "384c19",
-            hypothesisId: "E",
-            location: "background.ts:handleCapture",
-            message: "enqueue fetch failed",
-            data: {
-              url: payload.url,
-              detail: err instanceof Error ? err.message : String(err),
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       console.error("[pond] enqueue fetch failed", err);
       flashBadge(tabId, "x", "#cc3333");
       return false;
@@ -375,51 +258,10 @@ export default defineBackground(() => {
 
     if (!res.ok) {
       const bodyText = await res.text();
-      // #region agent log
-      fetch(
-        "http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Debug-Session-Id": "384c19",
-          },
-          body: JSON.stringify({
-            sessionId: "384c19",
-            hypothesisId: "E",
-            location: "background.ts:handleCapture",
-            message: "enqueue rejected",
-            data: {
-              url: payload.url,
-              status: res.status,
-              body: bodyText.slice(0, 300),
-            },
-            timestamp: Date.now(),
-          }),
-        },
-      ).catch(() => {});
-      // #endregion
       console.warn("[pond] enqueue rejected", res.status, bodyText);
       flashBadge(tabId, "x", "#cc3333");
       return false;
     }
-    // #region agent log
-    fetch("http://127.0.0.1:7359/ingest/cec9d836-64a0-42f6-913f-8582c9879b82", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Debug-Session-Id": "384c19",
-      },
-      body: JSON.stringify({
-        sessionId: "384c19",
-        hypothesisId: "A",
-        location: "background.ts:handleCapture",
-        message: "enqueue accepted",
-        data: { url: payload.url, trigger: payload.trigger ?? null },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    // #endregion
     flashBadge(tabId, "ok", "#1f9d55");
     return true;
   }

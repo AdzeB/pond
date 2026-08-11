@@ -1,42 +1,10 @@
-.icon-button {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-9);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover:not(:disabled),
-  &[data-popup-open] {
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-3);
-  }
-
-  &:disabled {
-    color: var(--ds-gray-6);
-    cursor: default;
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
-}
-
+/* Linear toolRow: flex, space-between, align flex-end, gap 8px, height 24. */
 .toolbar {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
+  min-height: 24px;
 }
 
 .toolbar-group {
@@ -47,36 +15,17 @@
   min-width: 0;
 }
 
+/*
+ * Linear send (inspected): 24×24, radius 12px (not pill),
+ * purple fill, soft shadow matching the composer card.
+ */
 .primary {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
   padding: 0;
-  color: var(--ds-gray-1);
-  cursor: var(--ds-cursor-interactive, pointer);
-  outline: none;
-  background: var(--ds-gray-12);
-  border: 0;
-  border-radius: var(--ds-radius-full);
-  transition:
-    color var(--ds-duration-medium) var(--ds-easing-standard),
-    background var(--ds-duration-medium) var(--ds-easing-standard),
-    transform var(--ds-duration-medium) var(--ds-easing-emphasized);
-
-  &:active:not(:disabled) {
-    transform: scale(0.9);
-  }
-
-  &:disabled {
-    color: var(--ds-gray-9);
-    cursor: default;
-    background: var(--ds-gray-4);
-  }
-
-  &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
-  }
+  border-radius: 12px;
+  box-shadow:
+    0 3px 6px -2px rgb(0 0 0 / 2%),
+    0 1px 1px 0 rgb(0 0 0 / 4%);
 }

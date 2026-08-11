@@ -1,5 +1,4 @@
 import {
-  IconSparkle3Fill18 as Ask,
   IconCalendarFill18 as Calendar,
   IconCopyFill18 as Copy,
   IconEyeFill18 as DisplayIcon,
@@ -19,10 +18,8 @@ import { newInsight } from "@/components/library/analytics/lib/insights";
 import { useDock } from "@/components/library/dock/lib/context";
 import type { DockTab } from "@/components/library/dock/lib/nav-tabs";
 import type { ViewMenuSection } from "@/components/library/dock/lib/types";
-import { useAskAvailable } from "@/hooks/use-ask-available";
 import { dockMode } from "@/stores/dock-mode";
 import { insightEditor } from "@/stores/insight-editor";
-import { settingsModal } from "@/stores/settings-modal";
 
 type TipHandle = ReturnType<typeof Tooltip.createHandle>;
 
@@ -172,7 +169,6 @@ function ViewMenuActions({ tip }: { tip: TipHandle }) {
 
 function LibraryActions({ tip }: { tip: TipHandle }) {
   const dock = useDock();
-  const askAvailable = useAskAvailable();
 
   return (
     <>
@@ -187,32 +183,6 @@ function LibraryActions({ tip }: { tip: TipHandle }) {
           </Tray.Item>
         }
       />
-
-      {askAvailable ? (
-        <Tooltip.Trigger
-          handle={tip}
-          payload="Ask AI"
-          render={
-            <Tray.Item aria-label="Ask AI" onClick={dock.openAsk}>
-              <Ask />
-            </Tray.Item>
-          }
-        />
-      ) : (
-        <Tooltip.Trigger
-          handle={tip}
-          payload="Open Settings → AI to connect a model"
-          render={
-            <Tray.Item
-              aria-label="Open Settings, AI to connect a model"
-              data-disabled="true"
-              onClick={() => settingsModal.open("ai")}
-            >
-              <Ask />
-            </Tray.Item>
-          }
-        />
-      )}
     </>
   );
 }

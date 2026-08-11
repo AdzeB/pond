@@ -1,15 +1,43 @@
-import { useWindowSize } from "rooks";
+import { useLayoutEffect, useState } from "react";
 
-/** AppShell `--shell-inset` + library `Shell.Main` padding-inline; keep in sync with those styles. */
-const SHELL_INSET = 12;
+/** Keep in sync with the library Shell.Main padding-inline. */
 const MAIN_PADDING_INLINE = 20;
-const GRID_HORIZONTAL_INSET = (SHELL_INSET + MAIN_PADDING_INLINE) * 2;
+const GRID_PADDING = MAIN_PADDING_INLINE * 2;
+
+function fallbackWidth(): number {
+  if (typeof window === "undefined") return 0;
+  /** AppShell inset + library Shell.Main padding on both sides. */
+  return Math.max(0, window.innerWidth - 64);
+}
 
 export function useGridWidth(): number {
-  const { innerWidth } = useWindowSize();
+  const [width, setWidth] = useState(fallbackWidth);
 
-  /** `innerWidth` is null only during SSR; the Electron renderer always has a real value. */
-  const windowWidth = innerWidth ?? window.innerWidth;
+  useLayoutEffect(() => {
+    const viewport = document.querySelector<HTMLElement>(
+      "[data-library-grid-viewport]",
+    );
+    if (!viewport) return;
 
-  return Math.max(0, windowWidth - GRID_HORIZONTAL_INSET);
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const next = Math.max(0, viewport.clientWidth - GRID_PADDING);
+      setWidth((current) => (current === next ? current : next));
+    };
+    const scheduleMeasure = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(measure);
+    };
+
+    measure();
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(viewport);
+    return () => {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  return width;
 }

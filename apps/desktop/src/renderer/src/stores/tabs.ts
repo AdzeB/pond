@@ -163,19 +163,19 @@ export const tabs = {
     });
     return id;
   },
-  close(id: string): void {
+  close(id: string): boolean {
     const s = store.state;
-    if (s.tabs.length <= 1) return;
+    if (s.tabs.length <= 1) return false;
     const idx = s.tabs.findIndex((t) => t.id === id);
-    if (idx === -1) return;
+    if (idx === -1) return false;
     const tab = s.tabs[idx];
-    if (!tab || tab.pinned) return;
+    if (!tab || tab.pinned) return false;
 
     const nextTabs = s.tabs.filter((t) => t.id !== id);
     let nextActive = s.activeId;
     if (s.activeId === id) {
       const neighbor = nextTabs[Math.min(idx, nextTabs.length - 1)];
-      if (!neighbor) return;
+      if (!neighbor) return false;
       nextActive = neighbor.id;
     }
     commit({
@@ -186,6 +186,7 @@ export const tabs = {
         index: idx,
       }),
     });
+    return true;
   },
   closeOthers(id: string): void {
     const s = store.state;

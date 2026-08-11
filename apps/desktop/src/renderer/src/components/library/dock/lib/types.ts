@@ -2,7 +2,6 @@
 export type DockView =
   | "selection"
   | "ask"
-  | "ask-history"
   | "search"
   | "search-help"
   | "layout"
@@ -37,9 +36,8 @@ export type DockView =
   | "selection-export"
   | "nav";
 
-/** Includes drill-down subviews (sort groups, search help, ask history) so they render through the same registry and swap transition. */
+/** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
 export type ViewMenuSection =
-  | "ask-history"
   | "layout"
   | "zoom"
   | "sort"
@@ -73,7 +71,6 @@ export type ViewMenuSection =
   | "selection-export";
 
 const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
-  "ask-history",
   "layout",
   "zoom",
   "sort",

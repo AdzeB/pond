@@ -2,18 +2,22 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  padding: 6px;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-md);
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  background: var(--ds-gray-1);
+  border-radius: 8px;
+  box-shadow:
+    0 3px 6px -2px rgb(0 0 0 / 2%),
+    0 1px 1px 0 rgb(0 0 0 / 4%);
 }
 
 .attach-thumb {
   display: inline-flex;
   flex-shrink: 0;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   overflow: hidden;
-  border-radius: var(--ds-radius-sm);
+  border-radius: 6px;
 
   & img {
     width: 100%;
@@ -27,6 +31,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
+  font-weight: 500;
   color: var(--ds-gray-11);
   white-space: nowrap;
 }
