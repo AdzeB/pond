@@ -1,10 +1,9 @@
-/* Linear toolRow: flex, space-between, align flex-end, gap 8px, height 24. */
 .toolbar {
   display: flex;
   gap: 8px;
   align-items: flex-end;
   justify-content: space-between;
-  min-height: 24px;
+  min-height: 28px;
 }
 
 .toolbar-group {
@@ -15,17 +14,10 @@
   min-width: 0;
 }
 
-/*
- * Linear send (inspected): 24×24, radius 12px (not pill),
- * purple fill, soft shadow matching the composer card.
- */
-.primary {
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
+.send {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
   padding: 0;
-  border-radius: 12px;
-  box-shadow:
-    0 3px 6px -2px rgb(0 0 0 / 2%),
-    0 1px 1px 0 rgb(0 0 0 / 4%);
+  border-radius: var(--ds-radius-full);
 }

@@ -17,8 +17,7 @@
       "!.impeccable",
       "!prototypes",
       "!packages/theme/src/colors/palette.css",
-      "!packages/theme/src/colors/scale.css",
-      "!packages/theme/src/colors/overrides.css"
+      "!packages/theme/src/colors/scale.css"
     ]
   },
   "formatter": {

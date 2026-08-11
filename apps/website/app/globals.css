@@ -35,10 +35,13 @@
 }
 
 :root {
-  /* The desktop "Light" preset (base #ffffff, accent #008FFF, contrast 30) as themeEngineVars emits it. */
-  --ds-base-l: 1;
-  --ds-base-c: 0;
-  --ds-base-h: 0;
+  /* The desktop "Light" preset as themeCssVars emits it. */
+  --ds-bg-l: 1;
+  --ds-bg-c: 0;
+  --ds-bg-h: 0;
+  --ds-fg-l: 0.274;
+  --ds-fg-c: 0;
+  --ds-fg-h: 0;
   --ds-accent-l: 0.6471;
   --ds-accent-c: 0.1941;
   --ds-accent-h: 252.09;

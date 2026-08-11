@@ -1,29 +1,34 @@
-/** Mirrors the desktop renderer's boot script: the whole --ds-* palette derives from these engine vars. */
+/** Mirrors the desktop renderer's boot script: the whole --ds-* palette derives from these anchors. */
 import { storage } from "wxt/utils/storage";
 
 export interface ThemeVars {
   mode: "light" | "dark";
-  baseL: number;
-  baseC: number;
-  baseH: number;
+  bgL: number;
+  bgC: number;
+  bgH: number;
+  fgL: number;
+  fgC: number;
+  fgH: number;
   accentL: number;
   accentC: number;
   accentH: number;
   contrast: number;
-  fgDir: number;
+  background?: string;
 }
 
 const cached = storage.defineItem<ThemeVars | null>("local:theme");
 
 const VAR_PROPS = [
-  ["baseL", "--ds-base-l"],
-  ["baseC", "--ds-base-c"],
-  ["baseH", "--ds-base-h"],
+  ["bgL", "--ds-bg-l"],
+  ["bgC", "--ds-bg-c"],
+  ["bgH", "--ds-bg-h"],
+  ["fgL", "--ds-fg-l"],
+  ["fgC", "--ds-fg-c"],
+  ["fgH", "--ds-fg-h"],
   ["accentL", "--ds-accent-l"],
   ["accentC", "--ds-accent-c"],
   ["accentH", "--ds-accent-h"],
   ["contrast", "--ds-contrast"],
-  ["fgDir", "--ds-fg-dir"],
 ] as const;
 
 export function applyTheme(theme: ThemeVars | null): void {

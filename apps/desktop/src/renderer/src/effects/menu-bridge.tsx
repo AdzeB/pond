@@ -1,7 +1,3 @@
-import {
-  DEFAULT_SYSTEM_DARK_ID,
-  DEFAULT_SYSTEM_LIGHT_ID,
-} from "@pond/schema/db";
 import { useEffect } from "react";
 import { openShortcutsSheet } from "@/components/shared/shortcuts-sheet";
 import {
@@ -100,20 +96,18 @@ export function MenuBridge() {
 
         case "theme.light":
           patchPreferences({
-            themeMode: "preset",
-            presetId: DEFAULT_SYSTEM_LIGHT_ID,
+            appearance: "light",
           });
           return;
 
         case "theme.dark":
           patchPreferences({
-            themeMode: "preset",
-            presetId: DEFAULT_SYSTEM_DARK_ID,
+            appearance: "dark",
           });
           return;
 
         case "theme.system":
-          patchPreferences({ themeMode: "system" });
+          patchPreferences({ appearance: "system" });
           return;
 
         case "refresh.all":

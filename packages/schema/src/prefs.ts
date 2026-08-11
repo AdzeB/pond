@@ -1,21 +1,22 @@
 import { z } from "zod";
 import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
-  CUSTOM_THEME_DEFAULT,
+  DEFAULT_DARK_PRESET_ID,
+  DEFAULT_DARK_THEME,
+  DEFAULT_LIGHT_PRESET_ID,
+  DEFAULT_LIGHT_THEME,
   type DashboardConfig,
   DEFAULT_DASHBOARDS,
-  DEFAULT_PRESET_ID,
   DEFAULT_SOURCE_METRICS,
-  DEFAULT_SYSTEM_DARK_ID,
-  DEFAULT_SYSTEM_LIGHT_ID,
   type SourceMetricDisplay,
   type SyncAccounts,
   type SyncHandles,
   type SyncSources,
   type SyncWatches,
-  type ThemeDef,
+  type ThemeAppearance,
   type WindowBounds,
 } from "./prefs.types";
+import { getPreset, migrateThemeDef, presetDef } from "./theme-presets";
 
 export * from "./prefs.types";
 
@@ -34,23 +35,136 @@ const soundFeel = z
   ])
   .catch("soft");
 
+const lightThemeDefSchema = z
+  .object({
+    accent: z.string(),
+    background: z.string(),
+    foreground: z.string(),
+    contrast: z.number(),
+  })
+  .catch(DEFAULT_LIGHT_THEME);
+
+const darkThemeDefSchema = z
+  .object({
+    accent: z.string(),
+    background: z.string(),
+    foreground: z.string(),
+    contrast: z.number(),
+  })
+  .catch(DEFAULT_DARK_THEME);
+
+/** Lift themeMode/presetId/custom into appearance + light/dark sides. */
+function migratePreferencesTheme(
+  raw: Record<string, unknown>,
+): Record<string, unknown> {
+  if (
+    typeof raw.appearance === "string" &&
+    raw.light &&
+    raw.dark &&
+    typeof raw.lightPresetId === "string" &&
+    typeof raw.darkPresetId === "string"
+  ) {
+    return {
+      ...raw,
+      light: migrateThemeDef(raw.light, "light"),
+      dark: migrateThemeDef(raw.dark, "dark"),
+    };
+  }
+
+  const themeMode = raw.themeMode;
+  const presetId =
+    typeof raw.presetId === "string" ? raw.presetId : DEFAULT_LIGHT_PRESET_ID;
+  const systemLightId =
+    typeof raw.systemLightId === "string"
+      ? raw.systemLightId
+      : DEFAULT_LIGHT_PRESET_ID;
+  const systemDarkId =
+    typeof raw.systemDarkId === "string"
+      ? raw.systemDarkId
+      : DEFAULT_DARK_PRESET_ID;
+
+  let appearance: ThemeAppearance = "system";
+  let lightPresetId = systemLightId;
+  let darkPresetId = systemDarkId;
+  let light = presetDef(systemLightId, DEFAULT_LIGHT_THEME);
+  let dark = presetDef(systemDarkId, DEFAULT_DARK_THEME);
+
+  if (themeMode === "custom") {
+    const legacy = raw.custom as { base?: string; background?: string } | undefined;
+    const bgHex = (
+      legacy?.background ??
+      legacy?.base ??
+      ""
+    ).toLowerCase();
+    const isDarkish =
+      bgHex.startsWith("#0") ||
+      bgHex.startsWith("#1") ||
+      bgHex === "#000000";
+    if (isDarkish) {
+      appearance = "dark";
+      dark = migrateThemeDef(raw.custom, "dark");
+    } else {
+      appearance = "light";
+      light = migrateThemeDef(raw.custom, "light");
+    }
+  } else if (themeMode === "preset") {
+    const catalog = getPreset(presetId);
+    if (catalog?.appearance === "dark") {
+      appearance = "dark";
+      darkPresetId = presetId;
+      dark = catalog.def;
+    } else {
+      appearance = "light";
+      lightPresetId = presetId;
+      light = catalog?.def ?? presetDef(presetId, DEFAULT_LIGHT_THEME);
+    }
+  } else {
+    appearance = "system";
+    lightPresetId = systemLightId;
+    darkPresetId = systemDarkId;
+    light = presetDef(systemLightId, DEFAULT_LIGHT_THEME);
+    dark = presetDef(systemDarkId, DEFAULT_DARK_THEME);
+  }
+
+  const {
+    themeMode: _tm,
+    presetId: _pid,
+    systemLightId: _sl,
+    systemDarkId: _sd,
+    custom: _c,
+    ...rest
+  } = raw;
+
+  return {
+    ...rest,
+    appearance,
+    lightPresetId,
+    darkPresetId,
+    light,
+    dark,
+  };
+}
+
 /** Older builds stored mute as `soundFeel: "off"`; lift that into `soundsEnabled`. */
 const preferences = z.preprocess(
   (raw) => {
     if (!raw || typeof raw !== "object") return raw;
-    const prefs = raw as Record<string, unknown>;
-    if (prefs.soundFeel !== "off") return raw;
-    return { ...prefs, soundFeel: "soft", soundsEnabled: false };
+    let prefs = raw as Record<string, unknown>;
+    if (prefs.soundFeel === "off") {
+      prefs = { ...prefs, soundFeel: "soft", soundsEnabled: false };
+    }
+    return migratePreferencesTheme(prefs);
   },
   z.object({
-    themeMode: z.enum(["preset", "system", "custom"]).catch("system"),
-    presetId: z.string().catch(DEFAULT_PRESET_ID),
-    systemLightId: z.string().catch(DEFAULT_SYSTEM_LIGHT_ID),
-    systemDarkId: z.string().catch(DEFAULT_SYSTEM_DARK_ID),
-    custom: z.custom<ThemeDef>().default(CUSTOM_THEME_DEFAULT),
+    appearance: z
+      .enum(["system", "light", "dark"])
+      .catch("system" satisfies ThemeAppearance),
+    lightPresetId: z.string().catch(DEFAULT_LIGHT_PRESET_ID),
+    darkPresetId: z.string().catch(DEFAULT_DARK_PRESET_ID),
+    light: lightThemeDefSchema.catch(DEFAULT_LIGHT_THEME),
+    dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
     pointerCursors: z.boolean().catch(false),
     reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
-    reduceTransparency: z.boolean().catch(false),
     /** "media" prefers attached media; "screenshot" always renders the card. */
     tweetCover: z.enum(["media", "screenshot"]).catch("media"),
     soundsEnabled: z.boolean().catch(true),

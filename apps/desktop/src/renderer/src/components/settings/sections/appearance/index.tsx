@@ -1,128 +1,199 @@
 import {
   CONTRAST_MAX,
   CONTRAST_MIN,
-  CUSTOM_THEME_DEFAULT,
+  DEFAULT_DARK_THEME,
+  DEFAULT_LIGHT_THEME,
   DEFAULT_PREFS,
   darkPresets,
   getPreset,
   lightPresets,
   type Prefs,
+  type ThemeAppearance,
   type ThemeDef,
 } from "@pond/schema/db";
-import { ColorField, Settings, Slider } from "@pond/ui";
+import { ColorField, Select, Settings, Slider } from "@pond/ui";
 import type { Binding } from "@/components/settings/engine";
-import { PresetSelect, ThemeSelect } from "@/components/settings/theme";
+import { PresetSelect } from "@/components/settings/theme";
 
 const DEFAULTS = DEFAULT_PREFS.preferences;
 
-function presetDefById(id: string): ThemeDef {
-  return getPreset(id)?.def ?? CUSTOM_THEME_DEFAULT;
-}
-
 type ThemePrefs = Prefs["preferences"];
+type ThemeSide = "light" | "dark";
 
 function readTheme(binding: Binding) {
   const values = binding.values as Partial<ThemePrefs>;
   const patch = binding.patch as (delta: Partial<ThemePrefs>) => void;
   return {
     patch,
-    mode: values.themeMode ?? DEFAULTS.themeMode,
-    presetId: values.presetId ?? DEFAULTS.presetId,
-    systemLightId: values.systemLightId ?? DEFAULTS.systemLightId,
-    systemDarkId: values.systemDarkId ?? DEFAULTS.systemDarkId,
-    custom: values.custom ?? CUSTOM_THEME_DEFAULT,
+    appearance: values.appearance ?? DEFAULTS.appearance,
+    lightPresetId: values.lightPresetId ?? DEFAULTS.lightPresetId,
+    darkPresetId: values.darkPresetId ?? DEFAULTS.darkPresetId,
+    light: values.light ?? DEFAULT_LIGHT_THEME,
+    dark: values.dark ?? DEFAULT_DARK_THEME,
   };
 }
 
-export function ThemeRow({ binding }: { binding: Binding }) {
-  const { patch, mode, presetId, systemLightId, systemDarkId, custom } =
-    readTheme(binding);
+const APPEARANCE_OPTIONS: { value: ThemeAppearance; label: string }[] = [
+  { value: "system", label: "System" },
+  { value: "light", label: "Light" },
+  { value: "dark", label: "Dark" },
+];
+
+export function AppearanceRow({ binding }: { binding: Binding }) {
+  const { patch, appearance } = readTheme(binding);
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>Interface theme</Settings.ItemTitle>
+        <Settings.ItemTitle>Appearance</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Select or customize your interface color scheme.
+          Follow the system, or lock the interface to light or dark.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
-        <ThemeSelect
-          mode={mode}
-          presetId={presetId}
-          systemLight={presetDefById(systemLightId)}
-          systemDark={presetDefById(systemDarkId)}
-          custom={custom}
-          onChange={patch}
-        />
+        <Select.Root
+          value={appearance}
+          onValueChange={(next) => {
+            if (next === "system" || next === "light" || next === "dark") {
+              patch({ appearance: next });
+            }
+          }}
+        >
+          <Select.Trigger>
+            <Select.Value>
+              {(v: string) =>
+                APPEARANCE_OPTIONS.find((o) => o.value === v)?.label ?? v
+              }
+            </Select.Value>
+          </Select.Trigger>
+          <Select.Portal>
+            <Select.Positioner sideOffset={6}>
+              <Select.Popup>
+                <Select.Items
+                  items={APPEARANCE_OPTIONS.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                  }))}
+                />
+              </Select.Popup>
+            </Select.Positioner>
+          </Select.Portal>
+        </Select.Root>
       </Settings.ItemControl>
     </>
   );
 }
 
-export function SystemPresetRow({
+function sideState(
+  side: ThemeSide,
+  state: ReturnType<typeof readTheme>,
+): { presetId: string; def: ThemeDef } {
+  return side === "light"
+    ? { presetId: state.lightPresetId, def: state.light }
+    : { presetId: state.darkPresetId, def: state.dark };
+}
+
+export function ThemePresetRow({
   binding,
-  kind,
+  side,
 }: {
   binding: Binding;
-  kind: "light" | "dark";
+  side: ThemeSide;
 }) {
-  const { patch, systemLightId, systemDarkId } = readTheme(binding);
-  const isLight = kind === "light";
+  const state = readTheme(binding);
+  const { presetId } = sideState(side, state);
+  const presets = side === "light" ? lightPresets() : darkPresets();
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>{isLight ? "Light" : "Dark"}</Settings.ItemTitle>
+        <Settings.ItemTitle>Preset</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Theme to use for {isLight ? "light" : "dark"} system appearance.
+          Starting colors for this appearance. Editing a field below keeps this
+          selection until you pick another preset.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <PresetSelect
-          presets={isLight ? lightPresets() : darkPresets()}
-          value={isLight ? systemLightId : systemDarkId}
-          onChange={(id) =>
-            patch(isLight ? { systemLightId: id } : { systemDarkId: id })
-          }
+          presets={presets}
+          value={presetId}
+          onChange={(id) => {
+            const preset = getPreset(id);
+            if (!preset) return;
+            if (side === "light") {
+              state.patch({
+                lightPresetId: id,
+                light: { ...preset.def },
+              });
+            } else {
+              state.patch({
+                darkPresetId: id,
+                dark: { ...preset.def },
+              });
+            }
+          }}
         />
       </Settings.ItemControl>
     </>
   );
 }
 
-export function CustomColorRow({
+export function ThemeColorRow({
   binding,
+  side,
   field,
 }: {
   binding: Binding;
-  field: "accent" | "base";
+  side: ThemeSide;
+  field: "accent" | "background" | "foreground";
 }) {
-  const { patch, custom } = readTheme(binding);
-  const isAccent = field === "accent";
+  const state = readTheme(binding);
+  const { def } = sideState(side, state);
+  const labels = {
+    accent: {
+      title: "Accent",
+      description: "Primary color for buttons, links, and selection.",
+    },
+    background: {
+      title: "Background",
+      description: "Base surface the rest of the interface is built from.",
+    },
+    foreground: {
+      title: "Foreground",
+      description: "Primary text and high-contrast ink.",
+    },
+  } as const;
+  const copy = labels[field];
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>
-          {isAccent ? "Accent" : "Background"}
-        </Settings.ItemTitle>
-        <Settings.ItemDescription>
-          {isAccent
-            ? "The primary color for buttons, links, and selection."
-            : "The base color the rest of the interface is built from."}
-        </Settings.ItemDescription>
+        <Settings.ItemTitle>{copy.title}</Settings.ItemTitle>
+        <Settings.ItemDescription>{copy.description}</Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <ColorField
-          aria-label={isAccent ? "Accent color" : "Background color"}
-          value={custom[field]}
-          onChange={(hex) => patch({ custom: { ...custom, [field]: hex } })}
+          aria-label={`${side} ${copy.title.toLowerCase()}`}
+          value={def[field]}
+          onChange={(hex) => {
+            if (side === "light") {
+              state.patch({ light: { ...def, [field]: hex } });
+            } else {
+              state.patch({ dark: { ...def, [field]: hex } });
+            }
+          }}
         />
       </Settings.ItemControl>
     </>
   );
 }
 
-export function ContrastRow({ binding }: { binding: Binding }) {
-  const { patch, custom } = readTheme(binding);
+export function ThemeContrastRow({
+  binding,
+  side,
+}: {
+  binding: Binding;
+  side: ThemeSide;
+}) {
+  const state = readTheme(binding);
+  const { def } = sideState(side, state);
   return (
     <>
       <Settings.ItemDetails>
@@ -136,20 +207,20 @@ export function ContrastRow({ binding }: { binding: Binding }) {
           min={CONTRAST_MIN}
           max={CONTRAST_MAX}
           step={5}
-          value={custom.contrast}
-          onValueChange={(next) =>
-            patch({
-              custom: {
-                ...custom,
-                contrast: typeof next === "number" ? next : (next[0] ?? 0),
-              },
-            })
-          }
+          value={def.contrast}
+          onValueChange={(next) => {
+            const contrast = typeof next === "number" ? next : (next[0] ?? 0);
+            if (side === "light") {
+              state.patch({ light: { ...def, contrast } });
+            } else {
+              state.patch({ dark: { ...def, contrast } });
+            }
+          }}
         >
           <Slider.Control>
             <Slider.Track>
               <Slider.Indicator />
-              <Slider.Thumb aria-label="Contrast" />
+              <Slider.Thumb aria-label={`${side} contrast`} />
             </Slider.Track>
           </Slider.Control>
           <Slider.Value />

@@ -3,7 +3,7 @@ import {
   CONTRAST_MAX,
   CONTRAST_MIN,
   type ThemeDef,
-} from "./prefs";
+} from "./prefs.types";
 
 export interface Oklch {
   l: number;
@@ -74,48 +74,92 @@ function round(value: number, places: number): number {
   return Math.round(value * f) / f;
 }
 
-/** Runtime inputs the CSS engine reads to derive the --ds-* scale; set on <html>. */
-export interface ThemeEngineVars {
-  baseL: number;
-  baseC: number;
-  baseH: number;
+/** Runtime anchors the CSS scale reads; set on <html>. */
+export interface ThemeCssVars {
+  /** Exact surface / ink / accent hexes the CSS scale mixes from. */
+  background: string;
+  foreground: string;
+  accent: string;
+  bgL: number;
+  bgC: number;
+  bgH: number;
+  fgL: number;
+  fgC: number;
+  fgH: number;
   accentL: number;
   accentC: number;
   accentH: number;
-  /** CSS contrast multiplier (0.6..1.4) applied to the per-step lightness spread. */
+  /** CSS contrast multiplier (0.6..1.4) applied to mid gray mixes. */
   contrast: number;
-  /** +1 when foreground is lighter than base (dark theme), -1 otherwise. */
-  fgDir: 1 | -1;
   isDark: boolean;
 }
 
-const FALLBACK_BASE: Oklch = { l: 0.99, c: 0, h: 0 };
+const FALLBACK_BG: Oklch = { l: 1, c: 0, h: 0 };
+const FALLBACK_FG: Oklch = { l: 0.25, c: 0, h: 0 };
 const FALLBACK_ACCENT: Oklch = { l: 0.62, c: 0.19, h: 250 };
 
 /** Accent chroma multiplier applied only on Display P3 panels; mirrors the P3 tier baked into the theme package's static ramps. */
 export const P3_CHROMA_BOOST = 1.4;
 
-/** Maps the 0..100 contrast slider to the CSS lightness-spread multiplier. */
+/** Maps the 0..100 contrast slider to the CSS mid-spread multiplier. */
 export function contrastMultiplier(contrast: number): number {
   const n = Number.isFinite(contrast) ? contrast : 30;
   const clamped = clamp(n, CONTRAST_MIN, CONTRAST_MAX);
   return round(0.6 + (clamped / 100) * 0.8, 4);
 }
 
-export function themeEngineVars(def: ThemeDef): ThemeEngineVars {
-  const base = hexToOklch(def?.base ?? "") ?? FALLBACK_BASE;
-  const accent = hexToOklch(def?.accent ?? "") ?? FALLBACK_ACCENT;
-  /** Threshold above 0.5 so saturated mid colors still get white text. */
-  const isDark = base.l < 0.6;
+function pack(ok: Oklch): Pick<Oklch, "l" | "c" | "h"> {
   return {
-    baseL: round(base.l, 4),
-    baseC: round(base.c, 4),
-    baseH: round(base.h, 2),
-    accentL: round(accent.l, 4),
-    accentC: round(accent.c, 4),
-    accentH: round(accent.h, 2),
+    l: round(ok.l, 4),
+    c: round(ok.c, 4),
+    h: round(ok.h, 2),
+  };
+}
+
+export function themeCssVars(def: ThemeDef): ThemeCssVars {
+  const background = normalizeHex(def?.background ?? "") ?? "#ffffff";
+  const foreground = normalizeHex(def?.foreground ?? "") ?? "#1b1b1b";
+  const accentHex = normalizeHex(def?.accent ?? "") ?? "#008fff";
+  const bg = hexToOklch(background) ?? FALLBACK_BG;
+  const fg = hexToOklch(foreground) ?? FALLBACK_FG;
+  const accent = hexToOklch(accentHex) ?? FALLBACK_ACCENT;
+  const bgPacked = pack(bg);
+  const fgPacked = pack(fg);
+  const accentPacked = pack(accent);
+  return {
+    background,
+    foreground,
+    accent: accentHex,
+    bgL: bgPacked.l,
+    bgC: bgPacked.c,
+    bgH: bgPacked.h,
+    fgL: fgPacked.l,
+    fgC: fgPacked.c,
+    fgH: fgPacked.h,
+    accentL: accentPacked.l,
+    accentC: accentPacked.c,
+    accentH: accentPacked.h,
     contrast: contrastMultiplier(def?.contrast ?? CONTRAST_DEFAULT),
-    fgDir: isDark ? 1 : -1,
-    isDark,
+    isDark: bg.l < fg.l,
+  };
+}
+
+/** @deprecated Use themeCssVars. */
+export type ThemeEngineVars = ThemeCssVars & {
+  baseL: number;
+  baseC: number;
+  baseH: number;
+  fgDir: 1 | -1;
+};
+
+/** @deprecated Use themeCssVars. */
+export function themeEngineVars(def: ThemeDef): ThemeEngineVars {
+  const v = themeCssVars(def);
+  return {
+    ...v,
+    baseL: v.bgL,
+    baseC: v.bgC,
+    baseH: v.bgH,
+    fgDir: v.isDark ? 1 : -1,
   };
 }

@@ -1,7 +1,8 @@
+import { IconXmarkOutline12 as Close } from "@pond/icons/outline/12";
 import {
-  IconChevronExpandYOutline12 as Chevron,
-  IconXmarkOutline12 as Close,
-} from "@pond/icons/outline/12";
+  IconClockRotateClockwiseOutline18 as History,
+  IconPlusOutline18 as Plus,
+} from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
 import { useMemo } from "react";
 import { AskComposer } from "@/components/ask/bar";
@@ -52,7 +53,7 @@ function groupHistory(entries: AskHistoryEntry[], now = Date.now()) {
   ].filter((group) => group.items.length > 0);
 }
 
-/** Dedicated chat rail with a Linear-style history switcher menu. */
+/** Dedicated chat rail with close + title left, new chat / history right. */
 export function AskWindowRight() {
   const turns = useAskTurns();
   const recents = useAskHistory();
@@ -79,29 +80,39 @@ export function AskWindowRight() {
     <aside className={styles.panel} aria-label="Chat">
       <header className={styles.header}>
         <div className={styles["header-start"]}>
+          <Button
+            icon
+            size="xs"
+            variant="ghost"
+            aria-label="Close chat"
+            onClick={close}
+          >
+            <Close />
+          </Button>
+          <h2 className={styles.title}>{title}</h2>
+        </div>
+        <div className={styles["header-end"]}>
+          <Button
+            icon
+            size="xs"
+            variant="ghost"
+            aria-label="New chat"
+            onClick={newChat}
+          >
+            <Plus />
+          </Button>
           <Menu.Root>
             <Menu.Trigger
-              size="sm"
+              icon
+              size="xs"
               variant="ghost"
-              className={styles.switcher}
               aria-label="Chat history"
             >
-              <span className={styles["switcher-label"]}>{title}</span>
-              <span className={styles["switcher-chevron"]} aria-hidden>
-                <Chevron />
-              </span>
+              <History />
             </Menu.Trigger>
             <Menu.Portal>
-              <Menu.Positioner align="start" side="bottom" sideOffset={4}>
+              <Menu.Positioner align="end" side="bottom" sideOffset={4}>
                 <Menu.Popup className={styles.menu}>
-                  {hasTurns ? (
-                    <>
-                      <Menu.Item onClick={newChat}>
-                        <Menu.ItemLabel>New chat</Menu.ItemLabel>
-                      </Menu.Item>
-                      <Menu.Separator />
-                    </>
-                  ) : null}
                   {groups.length === 0 ? (
                     <Menu.Group>
                       <Menu.GroupLabel>Chat history</Menu.GroupLabel>
@@ -137,17 +148,6 @@ export function AskWindowRight() {
               </Menu.Positioner>
             </Menu.Portal>
           </Menu.Root>
-        </div>
-        <div className={styles["header-end"]}>
-          <Button
-            icon
-            size="xs"
-            variant="ghost"
-            aria-label="Close chat"
-            onClick={close}
-          >
-            <Close />
-          </Button>
         </div>
       </header>
 

@@ -42,11 +42,6 @@
 				color-scheme: dark;
 				background: #000000;
 			}
-			html[data-shell-backdrop="native"],
-			html[data-shell-backdrop="native"] body,
-			html[data-shell-backdrop="native"] #root {
-				background: transparent;
-			}
 			html,
 			body {
 				height: 100%;
@@ -149,24 +144,29 @@
 						if (typeof shell[key] === "number")
 							doc.style.setProperty(prop, String(shell[key]));
 					};
-					setNum("baseL", "--ds-base-l");
-					setNum("baseC", "--ds-base-c");
-					setNum("baseH", "--ds-base-h");
+					setNum("bgL", "--ds-bg-l");
+					setNum("bgC", "--ds-bg-c");
+					setNum("bgH", "--ds-bg-h");
+					setNum("fgL", "--ds-fg-l");
+					setNum("fgC", "--ds-fg-c");
+					setNum("fgH", "--ds-fg-h");
 					setNum("accentL", "--ds-accent-l");
 					setNum("accentC", "--ds-accent-c");
 					setNum("accentH", "--ds-accent-h");
 					setNum("contrast", "--ds-contrast");
-					setNum("fgDir", "--ds-fg-dir");
 
+					/** Older pondShell mirrors only had baseL; map them onto the bg anchors. */
+					if (typeof shell.bgL !== "number" && typeof shell.baseL === "number") {
+						setNum("baseL", "--ds-bg-l");
+						setNum("baseC", "--ds-bg-c");
+						setNum("baseH", "--ds-bg-h");
+						setNum("accentL", "--ds-accent-l");
+						setNum("accentC", "--ds-accent-c");
+						setNum("accentH", "--ds-accent-h");
+						setNum("contrast", "--ds-contrast");
+					}
 					if (shell.pointerCursors)
 						doc.setAttribute("data-pointer-cursors", "true");
-
-					if (shell.shellBackdropCapable)
-						doc.setAttribute("data-shell-backdrop-capable", "");
-					if (shell.shellBackdrop)
-						doc.setAttribute("data-shell-backdrop", "native");
-					if (shell.reduceTransparency)
-						doc.setAttribute("data-reduce-transparency", "true");
 
 					const ua = navigator.userAgent || "";
 					const platform = /Mac|iPhone|iPad/i.test(ua) ? "mac" : "other";

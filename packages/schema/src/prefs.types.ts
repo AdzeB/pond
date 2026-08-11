@@ -159,14 +159,16 @@ export interface WatchedAccount {
 
 export type SyncWatches = Record<string, WatchedAccount>;
 
-/** Base color (its lightness picks light/dark), accent, and contrast spread for the ramp. */
+/** Accent, surfaces, ink, and contrast spread for the gray/accent ramps. */
 export interface ThemeDef {
-  base: string;
   accent: string;
+  background: string;
+  foreground: string;
   contrast: number;
 }
 
-export type ThemeMode = "preset" | "system" | "custom";
+/** Which side drives the UI when not following the OS. */
+export type ThemeAppearance = "system" | "light" | "dark";
 
 /** Cover source for Twitter saves in the grid and preview pane. */
 export type TweetCover = "media" | "screenshot";
@@ -189,15 +191,33 @@ export const CONTRAST_MIN = 0;
 export const CONTRAST_MAX = 100;
 export const CONTRAST_DEFAULT = 30;
 
-/** Fallback custom theme and default preset ids; presets live in theme-presets.ts. */
-export const CUSTOM_THEME_DEFAULT: ThemeDef = {
-  base: "#ffffff",
-  accent: "#3b82f6",
+/** Default light side; presets live in theme-presets.ts. */
+export const DEFAULT_LIGHT_THEME: ThemeDef = {
+  accent: "#008FFF",
+  background: "#ffffff",
+  foreground: "#1B1B1B",
   contrast: CONTRAST_DEFAULT,
 };
-export const DEFAULT_PRESET_ID = "light";
-export const DEFAULT_SYSTEM_LIGHT_ID = "light";
-export const DEFAULT_SYSTEM_DARK_ID = "dark";
+
+/** Default dark side; presets live in theme-presets.ts. */
+export const DEFAULT_DARK_THEME: ThemeDef = {
+  accent: "#008FFF",
+  background: "#0A0A0A",
+  foreground: "#EEEEEE",
+  contrast: CONTRAST_DEFAULT,
+};
+
+export const DEFAULT_LIGHT_PRESET_ID = "light";
+export const DEFAULT_DARK_PRESET_ID = "dark";
+
+/** @deprecated Use DEFAULT_LIGHT_THEME. */
+export const CUSTOM_THEME_DEFAULT = DEFAULT_LIGHT_THEME;
+/** @deprecated Use DEFAULT_LIGHT_PRESET_ID. */
+export const DEFAULT_PRESET_ID = DEFAULT_LIGHT_PRESET_ID;
+/** @deprecated Use DEFAULT_LIGHT_PRESET_ID. */
+export const DEFAULT_SYSTEM_LIGHT_ID = DEFAULT_LIGHT_PRESET_ID;
+/** @deprecated Use DEFAULT_DARK_PRESET_ID. */
+export const DEFAULT_SYSTEM_DARK_ID = DEFAULT_DARK_PRESET_ID;
 
 /** Persisted so the window restores to its last position. */
 export interface WindowBounds {

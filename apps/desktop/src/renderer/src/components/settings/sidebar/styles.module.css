@@ -3,5 +3,6 @@
   flex: none;
   width: var(--settings-sidebar-width);
   min-height: 0;
-  padding: 16 px;
+  padding: 16px;
+  border-right: 1px solid var(--ds-gray-a3);
 }

@@ -17,7 +17,7 @@ import {
 } from "../../core/prefs";
 import { getGlobalDb } from "../../db";
 import { getIngestToken, rotateIngestToken } from "../../keychain";
-import { syncShellBackdrop } from "../../window";
+import { syncShellChrome } from "../../window";
 import type { QueryHandlerMap } from "../helpers";
 
 export const settingsQueries: QueryHandlerMap = {
@@ -106,7 +106,7 @@ export const settingsQueries: QueryHandlerMap = {
     /** AI provider config is cached; drop it so endpoint/model edits take effect. */
     if (params && typeof params === "object" && "ai" in params) resetProvider();
     if (params && typeof params === "object" && "preferences" in params) {
-      syncShellBackdrop(next.preferences.reduceTransparency === true);
+      await syncShellChrome();
     }
     return { ok: true, prefs: next };
   },

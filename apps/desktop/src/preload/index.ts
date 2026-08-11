@@ -301,18 +301,18 @@ const api = {
 
 interface ShellHint {
   theme?: "light" | "dark";
-  baseL?: number;
-  baseC?: number;
-  baseH?: number;
+  bgL?: number;
+  bgC?: number;
+  bgH?: number;
+  fgL?: number;
+  fgC?: number;
+  fgH?: number;
   accentL?: number;
   accentC?: number;
   accentH?: number;
   contrast?: number;
-  fgDir?: number;
+  background?: string;
   pointerCursors?: boolean;
-  reduceTransparency?: boolean;
-  shellBackdropCapable?: boolean;
-  shellBackdrop?: boolean;
 }
 
 /** Main forwards `--pond-shell=<json>` via additionalArguments; the inline boot script in index.html reads `window.__pondShell` to set theme and pointer cursors before any bundle parses. */

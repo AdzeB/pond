@@ -184,10 +184,8 @@ function AskField({ autoFocus = false, onCollapse }: ComposerProps) {
           <Transcript turns={turns} busy={busy} onRetry={runText} />
         ) : (
           <div className={styles.empty}>
-            <p className={styles["empty-title"]}>Start a conversation</p>
-            <p className={styles["empty-copy"]}>
-              Answers come from your library. Use / for skills, @ for saves, #
-              for tags.
+            <p className={styles["empty-title"]}>
+              Hi! How can I help you today?
             </p>
           </div>
         )}

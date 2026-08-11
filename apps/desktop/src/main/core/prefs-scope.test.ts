@@ -5,15 +5,15 @@ import {
   splitPrefsPatch,
 } from "./prefs-scope";
 
-const GREEN = { themeMode: "preset", presetId: "mint" };
+const GREEN = { appearance: "system", lightPresetId: "mint" };
 
 describe("splitPrefsPatch", () => {
   it("routes appearance (preferences) to the library slice", () => {
     const { app, pond } = splitPrefsPatch({
-      preferences: { presetId: "mint" },
+      preferences: { lightPresetId: "mint" },
       window: { restorePosition: false },
     });
-    expect(pond).toEqual({ preferences: { presetId: "mint" } });
+    expect(pond).toEqual({ preferences: { lightPresetId: "mint" } });
     expect(app).toEqual({ window: { restorePosition: false } });
   });
 });
@@ -30,7 +30,7 @@ describe("normalizeStoredPrefs", () => {
       app: { window: { restorePosition: false } },
       ponds: {
         unbound: { preferences: GREEN },
-        "pond-a": { preferences: { presetId: "ocean" } },
+        "pond-a": { preferences: { lightPresetId: "ocean" } },
       },
     });
     expect(stored.version).toBe(3);

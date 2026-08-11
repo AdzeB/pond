@@ -1,6 +1,6 @@
 .dock {
   position: fixed;
-  bottom: calc(var(--ds-mac-inset, 16px) + 4px);
+  bottom: calc(var(--ds-mac-inset, 16px) + 16px);
   left: 50%;
   z-index: 20;
   display: flex;

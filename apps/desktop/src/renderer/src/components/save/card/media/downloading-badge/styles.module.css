@@ -11,10 +11,8 @@
   font-weight: 600;
   color: #fff;
   pointer-events: none;
-  background: rgba(0, 0, 0, 0.62);
+  background: rgb(0, 0, 0);
   border-radius: var(--ds-radius-full);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
 
 .failed {
@@ -28,10 +26,8 @@
   font-size: 10px;
   font-weight: 600;
   color: #fff;
-  background: rgba(220, 38, 38, 0.85);
+  background: rgb(220, 38, 38);
   border-radius: var(--ds-radius-full);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
 }
 
 .downloading-dot {

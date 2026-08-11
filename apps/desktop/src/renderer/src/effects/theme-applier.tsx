@@ -2,7 +2,7 @@ import {
   P3_CHROMA_BOOST,
   type Prefs,
   resolveActiveTheme,
-  themeEngineVars,
+  themeCssVars,
 } from "@pond/schema/db";
 import { useEffect } from "react";
 import { useMediaMatch } from "rooks";
@@ -14,17 +14,17 @@ const SHELL_KEY = pondScopedKey("pondShell");
 
 interface ShellPatch {
   theme?: "light" | "dark";
-  baseL?: number;
-  baseC?: number;
-  baseH?: number;
+  bgL?: number;
+  bgC?: number;
+  bgH?: number;
+  fgL?: number;
+  fgC?: number;
+  fgH?: number;
   accentL?: number;
   accentC?: number;
   accentH?: number;
   contrast?: number;
-  fgDir?: number;
   pointerCursors?: boolean;
-  reduceTransparency?: boolean;
-  shellBackdrop?: boolean;
 }
 
 function persistShell(patch: ShellPatch) {
@@ -48,48 +48,46 @@ export function ThemeApplier() {
   useEffect(() => {
     const root = document.documentElement;
 
-    const apply = (prefersDark: boolean) => {
-      const def = resolveActiveTheme(
-        { preferences: prefs } as Prefs,
-        prefersDark,
-      );
-      const v = themeEngineVars(def);
-      /** Match the static ramps' P3 tier: boost accent chroma on wide-gamut displays. */
-      const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
-      root.style.setProperty("--ds-base-l", String(v.baseL));
-      root.style.setProperty("--ds-base-c", String(v.baseC));
-      root.style.setProperty("--ds-base-h", String(v.baseH));
-      root.style.setProperty("--ds-accent-l", String(v.accentL));
-      root.style.setProperty("--ds-accent-c", String(accentC));
-      root.style.setProperty("--ds-accent-h", String(v.accentH));
-      root.style.setProperty("--ds-contrast", String(v.contrast));
-      root.style.setProperty("--ds-fg-dir", String(v.fgDir));
+    const def = resolveActiveTheme(
+      { preferences: prefs } as Prefs,
+      prefersDark,
+    );
+    const v = themeCssVars(def);
+    /** Match the static ramps' P3 tier: boost accent chroma on wide-gamut displays. */
+    const accentC = prefersP3 ? v.accentC * P3_CHROMA_BOOST : v.accentC;
+    root.style.setProperty("--ds-bg-l", String(v.bgL));
+    root.style.setProperty("--ds-bg-c", String(v.bgC));
+    root.style.setProperty("--ds-bg-h", String(v.bgH));
+    root.style.setProperty("--ds-fg-l", String(v.fgL));
+    root.style.setProperty("--ds-fg-c", String(v.fgC));
+    root.style.setProperty("--ds-fg-h", String(v.fgH));
+    root.style.setProperty("--ds-accent-l", String(v.accentL));
+    root.style.setProperty("--ds-accent-c", String(accentC));
+    root.style.setProperty("--ds-accent-h", String(v.accentH));
+    root.style.setProperty("--ds-contrast", String(v.contrast));
 
-      const theme = v.isDark ? "dark" : "light";
-      root.setAttribute("data-theme", theme);
-      root.classList.toggle("dark", v.isDark);
-      root.classList.toggle("light", !v.isDark);
+    const theme = v.isDark ? "dark" : "light";
+    root.setAttribute("data-theme", theme);
+    root.classList.toggle("dark", v.isDark);
+    root.classList.toggle("light", !v.isDark);
 
-      persistShell({
-        theme,
-        baseL: v.baseL,
-        baseC: v.baseC,
-        baseH: v.baseH,
-        accentL: v.accentL,
-        accentC,
-        accentH: v.accentH,
-        contrast: v.contrast,
-        fgDir: v.fgDir,
-      });
-    };
-
-    apply(prefs.themeMode === "system" ? prefersDark : false);
+    persistShell({
+      theme,
+      bgL: v.bgL,
+      bgC: v.bgC,
+      bgH: v.bgH,
+      fgL: v.fgL,
+      fgC: v.fgC,
+      fgH: v.fgH,
+      accentL: v.accentL,
+      accentC,
+      accentH: v.accentH,
+      contrast: v.contrast,
+    });
   }, [
-    prefs.themeMode,
-    prefs.presetId,
-    prefs.systemLightId,
-    prefs.systemDarkId,
-    prefs.custom,
+    prefs.appearance,
+    prefs.light,
+    prefs.dark,
     prefs,
     prefersDark,
     prefersP3,
@@ -104,23 +102,6 @@ export function ThemeApplier() {
     }
     persistShell({ pointerCursors: prefs.pointerCursors });
   }, [prefs.pointerCursors]);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const capable = root.hasAttribute("data-shell-backdrop-capable");
-    const backdrop = capable && !prefs.reduceTransparency;
-    if (prefs.reduceTransparency) {
-      root.setAttribute("data-reduce-transparency", "true");
-    } else {
-      root.removeAttribute("data-reduce-transparency");
-    }
-    if (backdrop) {
-      root.setAttribute("data-shell-backdrop", "native");
-    } else {
-      root.removeAttribute("data-shell-backdrop");
-    }
-    persistShell({ shellBackdrop: backdrop });
-  }, [prefs.reduceTransparency]);
 
   useEffect(() => {
     const root = document.documentElement;

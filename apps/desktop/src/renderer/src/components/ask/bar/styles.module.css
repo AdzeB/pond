@@ -17,29 +17,19 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  text-align: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 12px 4px 24px;
 }
 
 .empty-title {
   margin: 0;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 500;
+  line-height: 24px;
   color: var(--ds-gray-12);
 }
 
-.empty-copy {
-  max-width: 30ch;
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--ds-gray-9);
-}
-
-/* Linear footerParent: padding 0 12px 12px. */
 .composer {
   display: flex;
   flex-shrink: 0;
@@ -49,37 +39,25 @@
   margin-top: auto;
 }
 
-/*
- * Linear composer card (inspected):
- * bg white, padding 12px, radius 10px, no border,
- * shadow: 0 3px 6px -2px / 2%, 0 1px 1px / 4%.
- */
 .editor {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  padding: 12px;
-  background: var(--ds-gray-1);
+  padding: 14px;
+  background: var(--ds-gray-2);
   border: 0;
-  border-radius: 10px;
-  box-shadow:
-    0 3px 6px -2px rgb(0 0 0 / 2%),
-    0 1px 1px 0 rgb(0 0 0 / 4%);
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
 }
 
 .editor-field {
   position: relative;
-  min-height: 24px;
+  min-height: 48px;
   padding: 0;
 }
 
-.chat[data-chat] .editor-field {
-  min-height: 24px;
-}
-
-/* Linear input: 450 15px/24px. */
 .input {
   display: block;
   width: 100%;

@@ -1,17 +1,12 @@
 import {
-  ContrastRow,
-  CustomColorRow,
-  SystemPresetRow,
-  ThemeRow,
+  AppearanceRow,
+  ThemeColorRow,
+  ThemeContrastRow,
+  ThemePresetRow,
 } from "@/components/settings/sections/appearance";
 import { defineSection } from "@/lib/settings/engine-types";
 import { SOUND_FEEL_OPTIONS } from "@/lib/ui/sound-feel-options";
 import { previewSoundFeel } from "@/lib/ui/sounds";
-
-type Values = Record<string, unknown>;
-
-const isSystemMode = (v: Values) => (v.themeMode ?? "system") === "system";
-const isCustomMode = (v: Values) => (v.themeMode ?? "system") === "custom";
 
 export const appearanceSection = defineSection("preferences", {
   title: "Appearance",
@@ -23,38 +18,82 @@ export const appearanceSection = defineSection("preferences", {
       items: [
         {
           control: "custom",
-          key: "interface-theme",
-          render: (b) => <ThemeRow binding={b} />,
+          key: "appearance-mode",
+          render: (b) => <AppearanceRow binding={b} />,
+        },
+      ],
+    },
+    {
+      title: "Light theme",
+      fullWidth: true,
+      items: [
+        {
+          control: "custom",
+          key: "light-preset",
+          render: (b) => <ThemePresetRow binding={b} side="light" />,
         },
         {
           control: "custom",
-          key: "system-light",
-          render: (b) => <SystemPresetRow binding={b} kind="light" />,
-          visible: isSystemMode,
+          key: "light-accent",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="light" field="accent" />
+          ),
         },
         {
           control: "custom",
-          key: "system-dark",
-          render: (b) => <SystemPresetRow binding={b} kind="dark" />,
-          visible: isSystemMode,
+          key: "light-background",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="light" field="background" />
+          ),
         },
         {
           control: "custom",
-          key: "accent",
-          render: (b) => <CustomColorRow binding={b} field="accent" />,
-          visible: isCustomMode,
+          key: "light-foreground",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="light" field="foreground" />
+          ),
         },
         {
           control: "custom",
-          key: "background",
-          render: (b) => <CustomColorRow binding={b} field="base" />,
-          visible: isCustomMode,
+          key: "light-contrast",
+          render: (b) => <ThemeContrastRow binding={b} side="light" />,
+        },
+      ],
+    },
+    {
+      title: "Dark theme",
+      fullWidth: true,
+      items: [
+        {
+          control: "custom",
+          key: "dark-preset",
+          render: (b) => <ThemePresetRow binding={b} side="dark" />,
         },
         {
           control: "custom",
-          key: "contrast",
-          render: (b) => <ContrastRow binding={b} />,
-          visible: isCustomMode,
+          key: "dark-accent",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="dark" field="accent" />
+          ),
+        },
+        {
+          control: "custom",
+          key: "dark-background",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="dark" field="background" />
+          ),
+        },
+        {
+          control: "custom",
+          key: "dark-foreground",
+          render: (b) => (
+            <ThemeColorRow binding={b} side="dark" field="foreground" />
+          ),
+        },
+        {
+          control: "custom",
+          key: "dark-contrast",
+          render: (b) => <ThemeContrastRow binding={b} side="dark" />,
         },
       ],
     },
@@ -136,12 +175,6 @@ export const appearanceSection = defineSection("preferences", {
             { value: "always", label: "Always reduce" },
             { value: "never", label: "Never reduce" },
           ],
-        },
-        {
-          control: "switch",
-          key: "reduceTransparency",
-          title: "Reduce Transparency",
-          description: "Swap blurred surfaces for opaque fills.",
         },
       ],
     },

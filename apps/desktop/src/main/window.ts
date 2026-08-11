@@ -16,6 +16,7 @@ let trayRefreshQueued = false;
 let closeToTrayEnabled = false;
 /** Set during graceful quit so the close handler stops swallowing the event. */
 let isQuitting = false;
+let nativeThemeListenerAttached = false;
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
@@ -48,43 +49,34 @@ function navigateMain(route: string): void {
 
 interface ShellHint {
   theme?: "light" | "dark";
-  baseL?: number;
-  baseC?: number;
-  baseH?: number;
+  bgL?: number;
+  bgC?: number;
+  bgH?: number;
+  fgL?: number;
+  fgC?: number;
+  fgH?: number;
   accentL?: number;
   accentC?: number;
   accentH?: number;
   contrast?: number;
-  fgDir?: number;
+  background?: string;
   pointerCursors?: boolean;
-  reduceTransparency?: boolean;
-  /** Platform can draw vibrancy/tabbed material; boot script mirrors this for CSS gating. */
-  shellBackdropCapable?: boolean;
-  /** True when native backdrop is active so the boot script can clear the page fill. */
-  shellBackdrop?: boolean;
 }
 
-function supportsShellBackdrop(): boolean {
-  return process.platform === "darwin" || process.platform === "win32";
-}
-
-/** macOS vibrancy / Windows tabbed material behind the chrome frame; stage stays opaque in CSS. */
-export function syncShellBackdrop(reduceTransparency: boolean): void {
+/** Paint the native window with the active theme Background. */
+export async function syncShellChrome(): Promise<void> {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
-  if (!supportsShellBackdrop()) return;
 
-  const enabled = !reduceTransparency;
-  win.setBackgroundColor("#00000000");
+  const resolved = await resolveTheme();
+  const background =
+    resolved?.background ??
+    (resolved?.mode === "dark" ||
+    (!resolved && nativeTheme.shouldUseDarkColors)
+      ? "#000000"
+      : "#ffffff");
 
-  if (process.platform === "darwin") {
-    win.setVibrancy(enabled ? "sidebar" : null);
-    return;
-  }
-
-  if (process.platform === "win32") {
-    win.setBackgroundMaterial(enabled ? "tabbed" : "none");
-  }
+  win.setBackgroundColor(background);
 }
 
 async function resolveShellHint(): Promise<ShellHint> {
@@ -92,14 +84,10 @@ async function resolveShellHint(): Promise<ShellHint> {
   if (!resolved) return {};
   const { mode, ...vars } = resolved;
   const prefs = await getPrefs().catch(() => null);
-  const reduceTransparency = prefs?.preferences.reduceTransparency === true;
   return {
     theme: mode,
     ...vars,
     pointerCursors: prefs?.preferences.pointerCursors === true,
-    reduceTransparency,
-    shellBackdropCapable: supportsShellBackdrop(),
-    shellBackdrop: supportsShellBackdrop() && !reduceTransparency,
   };
 }
 
@@ -115,10 +103,12 @@ export async function createWindow(): Promise<BrowserWindow> {
       : null;
 
   const themedBackground =
-    shellHint.theme === "dark" ||
-    (shellHint.theme !== "light" && nativeTheme.shouldUseDarkColors)
-      ? "#000000"
-      : "#ffffff";
+    typeof shellHint.background === "string" && shellHint.background.length > 0
+      ? shellHint.background
+      : shellHint.theme === "dark" ||
+          (shellHint.theme !== "light" && nativeTheme.shouldUseDarkColors)
+        ? "#000000"
+        : "#ffffff";
 
   const appIcon = join(
     __dirname,
@@ -133,22 +123,11 @@ export async function createWindow(): Promise<BrowserWindow> {
     x: restored?.x,
     y: restored?.y,
     show: false,
-    backgroundColor: shellHint.shellBackdropCapable
-      ? "#00000000"
-      : themedBackground,
+    backgroundColor: themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
     ...(!isMac ? { icon: appIcon } : {}),
-    ...(isMac && shellHint.shellBackdrop
-      ? {
-          vibrancy: "sidebar" as const,
-          visualEffectState: "active" as const,
-        }
-      : {}),
-    ...(process.platform === "win32" && shellHint.shellBackdrop
-      ? { backgroundMaterial: "tabbed" as const }
-      : {}),
     webPreferences: {
       preload: join(__dirname, "../preload/index.cjs"),
       contextIsolation: true,
@@ -255,6 +234,14 @@ export async function createWindow(): Promise<BrowserWindow> {
   }
 
   mainWindow = win;
+
+  if (!nativeThemeListenerAttached) {
+    nativeThemeListenerAttached = true;
+    nativeTheme.on("updated", () => {
+      void syncShellChrome();
+    });
+  }
+
   return win;
 }
 

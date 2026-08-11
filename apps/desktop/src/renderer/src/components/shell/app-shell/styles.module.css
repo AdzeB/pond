@@ -1,8 +1,8 @@
 .root {
-  --shell-inset: 12px;
+  --shell-inset: 16px;
   --shell-radius: 12px;
-  --shell-main-bg: var(--ds-gray-1);
-  --shell-chrome-bg: var(--ds-gray-1);
+  --shell-background-primary: var(--ds-gray-2);
+  --shell-background-secondary: var(--ds-gray-1);
 
   position: relative;
   display: flex;
@@ -11,7 +11,7 @@
   min-height: 0;
   padding: 0;
   overflow: hidden;
-  background: var(--shell-chrome-bg);
+  background: var(--shell-background-primary);
 }
 
 .frame {
@@ -26,10 +26,6 @@
   flex: 1 1 0;
   flex-direction: column;
   min-width: 0;
-}
-
-:global(html[data-shell-backdrop="native"]) .root {
-  background: transparent;
 }
 
 .header {
@@ -54,7 +50,7 @@
   margin-bottom: var(--shell-inset);
   margin-left: var(--shell-inset);
   overflow: hidden;
-  background: var(--shell-main-bg);
+  background: var(--shell-background-secondary);
   border-radius: var(--shell-radius);
   box-shadow: var(--ds-shadow-4);
 }
@@ -90,7 +86,6 @@
   justify-content: center;
   height: 44px;
   padding-inline: 12px;
-  background: var(--shell-main-bg);
   border-bottom: 1px solid var(--ds-gray-a3);
 }
 
@@ -101,5 +96,4 @@
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: var(--shell-main-bg);
 }

@@ -2,41 +2,45 @@
    Edit packages/theme/src/colors/ramps.ts, then run `pnpm --filter @pond/theme generate`. */
 
 :root {
-  --ds-base-l: 0.99;
-  --ds-base-c: 0;
-  --ds-base-h: 0;
+  --ds-bg-l: 1;
+  --ds-bg-c: 0;
+  --ds-bg-h: 0;
+  --ds-fg-l: 0.25;
+  --ds-fg-c: 0;
+  --ds-fg-h: 0;
   --ds-accent-l: 0.62;
   --ds-accent-c: 0.19;
   --ds-accent-h: 250;
   --ds-contrast: 0.84;
-  --ds-fg-dir: -1;
+  --ds-bg: oklch(var(--ds-bg-l) var(--ds-bg-c) var(--ds-bg-h));
+  --ds-fg: oklch(var(--ds-fg-l) var(--ds-fg-c) var(--ds-fg-h));
   --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));
 
-  --ds-gray-1: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
-  --ds-gray-2: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.022 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 1) var(--ds-base-h));
-  --ds-gray-3: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.05 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.95) var(--ds-base-h));
-  --ds-gray-4: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.078 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.9) var(--ds-base-h));
-  --ds-gray-5: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.11 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.85) var(--ds-base-h));
-  --ds-gray-6: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.145 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.8) var(--ds-base-h));
-  --ds-gray-7: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.19 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.72) var(--ds-base-h));
-  --ds-gray-8: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.24 * var(--ds-contrast) + 0)), 1) calc(var(--ds-base-c) * 0.64) var(--ds-base-h));
-  --ds-gray-9: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.27 * var(--ds-contrast) + 0.1)), 1) calc(var(--ds-base-c) * 0.5) var(--ds-base-h));
-  --ds-gray-10: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.16)), 1) calc(var(--ds-base-c) * 0.42) var(--ds-base-h));
-  --ds-gray-11: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.34)), 1) calc(var(--ds-base-c) * 0.3) var(--ds-base-h));
-  --ds-gray-12: oklch(clamp(min(0.2974, var(--ds-base-l)), calc(var(--ds-base-l) + var(--ds-fg-dir) * (0.3 * var(--ds-contrast) + 0.52)), 1) calc(var(--ds-base-c) * 0.22) var(--ds-base-h));
+  --ds-gray-1: var(--ds-bg);
+  --ds-gray-2: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.03 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-3: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.06 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-4: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.1 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-5: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.15 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-6: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.22 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-7: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.3 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-8: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.4 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-9: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.52 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-10: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.66 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-11: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.82 - 0.5) * var(--ds-contrast)) * 100%), 99%), var(--ds-bg));
+  --ds-gray-12: var(--ds-fg);
 
-  --ds-gray-a1: color-mix(in srgb, var(--ds-gray-12) calc((0 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a2: color-mix(in srgb, var(--ds-gray-12) calc((0.022 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a3: color-mix(in srgb, var(--ds-gray-12) calc((0.05 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a4: color-mix(in srgb, var(--ds-gray-12) calc((0.078 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a5: color-mix(in srgb, var(--ds-gray-12) calc((0.11 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a6: color-mix(in srgb, var(--ds-gray-12) calc((0.145 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a7: color-mix(in srgb, var(--ds-gray-12) calc((0.19 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a8: color-mix(in srgb, var(--ds-gray-12) calc((0.24 * var(--ds-contrast) + 0) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a9: color-mix(in srgb, var(--ds-gray-12) calc((0.27 * var(--ds-contrast) + 0.1) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a10: color-mix(in srgb, var(--ds-gray-12) calc((0.3 * var(--ds-contrast) + 0.16) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a11: color-mix(in srgb, var(--ds-gray-12) calc((0.3 * var(--ds-contrast) + 0.34) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
-  --ds-gray-a12: color-mix(in srgb, var(--ds-gray-12) calc((0.3 * var(--ds-contrast) + 0.52) / (0.3 * var(--ds-contrast) + 0.52) * 100%), transparent);
+  --ds-gray-a1: color-mix(in oklch, var(--ds-fg) 0%, transparent);
+  --ds-gray-a2: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.03 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a3: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.06 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a4: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.1 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a5: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.15 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a6: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.22 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a7: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.3 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a8: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.4 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a9: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.52 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a10: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.66 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a11: color-mix(in oklch, var(--ds-fg) clamp(1%, calc((0.5 + (0.82 - 0.5) * var(--ds-contrast)) * 100%), 99%), transparent);
+  --ds-gray-a12: color-mix(in oklch, var(--ds-fg) 100%, transparent);
 
   --ds-gray-surface: color-mix(in oklch, var(--ds-gray-2) 85%, transparent);
   --ds-gray-indicator: var(--ds-gray-9);

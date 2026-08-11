@@ -1,6 +1,6 @@
 /**
  * Source of truth for the okLCH color system; edit here, then run `pnpm --filter @pond/theme generate`.
- * One shared 12-step scale aligns with the engine's --ds-gray-1..12; per-step chroma taper keeps colors inside the sRGB gamut.
+ * Static hue ramps feed charts/status; the gray/accent scale lerps background→foreground with accent mix.
  */
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
@@ -86,14 +86,14 @@ type HueName = keyof typeof HUE_RAMPS;
 /** On Display P3 screens push chroma ~40% past the sRGB-safe baseline; the browser gamut-maps any overshoot. */
 const P3_CHROMA_BOOST = 1.4;
 
-function round(value: number, places: number): number {
+function round(value: number, places: number): string {
   const f = 10 ** places;
-  return Math.round(value * f) / f;
+  return String(Math.round(value * f) / f);
 }
 
 function color(ramp: Ramp, step: Step, chromaMul = 1): string {
   const l = round(LIGHTNESS[step], 4);
-  const c = round(ramp.chroma * CHROMA_SCALE[step] * chromaMul, 4);
+  const c = Number(round(ramp.chroma * CHROMA_SCALE[step] * chromaMul, 4));
   if (c === 0) return `oklch(${l} 0 0)`;
   return `oklch(${l} ${c} ${ramp.hue})`;
 }
@@ -142,39 +142,30 @@ export function buildColorsCss(): string {
 }
 
 /**
- * Theme engine: every --ds-* token derives at runtime via CSS math from four theme inputs (see @pond/schema/color).
- * aL = contrast-scaled lightness delta, bL = fixed readability delta, cT = base-chroma taper (backgrounds keep tint, text drops it).
+ * Fraction of foreground mixed into background per gray step (before contrast stretch).
+ * Step 1 stays at the background; step 12 reaches the foreground.
  */
-const GRAY_AL = [
-  0, 0.022, 0.05, 0.078, 0.11, 0.145, 0.19, 0.24, 0.27, 0.3, 0.3, 0.3,
-];
-const GRAY_BL = [0, 0, 0, 0, 0, 0, 0, 0, 0.1, 0.16, 0.34, 0.52];
-const GRAY_CT = [1, 1, 0.95, 0.9, 0.85, 0.8, 0.72, 0.64, 0.5, 0.42, 0.3, 0.22];
+const GRAY_T = [0, 0.03, 0.06, 0.1, 0.15, 0.22, 0.3, 0.4, 0.52, 0.66, 0.82, 1];
 
 /** Accent steps mix solid accent toward the matching gray step; step 9 is pure accent. */
 const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
 const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
 
 /**
- * White is the hard top; SCALE_BLACK_L (#2c2d30) is the minimum ink lightness in light mode.
- * A dark theme whose base is darker than this may go all the way down to its own base.
+ * Mid steps stretch away from the center when contrast > 1, compress toward it when < 1.
+ * Endpoints stay pinned to background / foreground.
  */
-const SCALE_BLACK_L = 0.2974;
-const SCALE_WHITE_L = 1;
-
-function grayLightness(i: number): string {
-  const a = GRAY_AL[i];
-  const b = GRAY_BL[i];
-  const spread = `${a} * var(--ds-contrast) + ${b}`;
-  const value = `calc(var(--ds-base-l) + var(--ds-fg-dir) * (${spread}))`;
-  const floor = `min(${SCALE_BLACK_L}, var(--ds-base-l))`;
-  return `clamp(${floor}, ${value}, ${SCALE_WHITE_L})`;
+function grayMixPct(i: number): string {
+  if (i === 0) return "0%";
+  if (i === 11) return "100%";
+  const t = GRAY_T[i];
+  return `clamp(1%, calc((0.5 + (${t} - 0.5) * var(--ds-contrast)) * 100%), 99%)`;
 }
 
 function grayStep(i: number): string {
-  const l = grayLightness(i);
-  const c = `calc(var(--ds-base-c) * ${GRAY_CT[i]})`;
-  return `  --ds-gray-${i + 1}: oklch(${l} ${c} var(--ds-base-h));`;
+  if (i === 0) return "  --ds-gray-1: var(--ds-bg);";
+  if (i === 11) return "  --ds-gray-12: var(--ds-fg);";
+  return `  --ds-gray-${i + 1}: color-mix(in oklch, var(--ds-fg) ${grayMixPct(i)}, var(--ds-bg));`;
 }
 
 /**
@@ -190,67 +181,8 @@ function accentAlpha(i: number): string {
   return `  --ds-accent-a${i + 1}: color-mix(in oklab, var(--ds-accent-solid) ${ACCENT_ALPHA[i]}%, transparent);`;
 }
 
-/**
- * gray-a* is the alpha form of the gray itself (Radix model): gray-aN over gray-1 reproduces solid gray-N and inherits
- * the theme's tint via gray-12. Alpha is the step's lightness delta over gray-12's, so it tracks --ds-contrast at runtime.
- */
 function grayAlpha(i: number): string {
-  const numerator = `${GRAY_AL[i]} * var(--ds-contrast) + ${GRAY_BL[i]}`;
-  const denominator = "0.3 * var(--ds-contrast) + 0.52";
-  const alpha = `calc((${numerator}) / (${denominator}) * 100%)`;
-  return `  --ds-gray-a${i + 1}: color-mix(in srgb, var(--ds-gray-12) ${alpha}, transparent);`;
-}
-
-/**
- * Pure-CSS subtree re-theming: a `[data-accent]` ancestor recolors the accent ramp and `[data-neutral]` tints the grays.
- * Each block re-declares the full scale because var() references resolve at :root; re-emitting the steps re-runs the calc against the scope's inputs.
- */
-
-/** Fixed rather than tied to the hue ramp curve, so a scoped accent matches the app's default accent weight at the hue's peak chroma. */
-const ACCENT_ANCHOR_L = 0.62;
-
-/** Subtle chroma applied to tinted neutral ramps. */
-const NEUTRAL_TINT_C = 0.012;
-
-function accentScope(name: string, ramp: Ramp, chromaMul = 1): string {
-  const idx = Array.from({ length: 12 }, (_, i) => i);
-  const inputs = [
-    `  --ds-accent-l: ${ACCENT_ANCHOR_L};`,
-    `  --ds-accent-c: ${round(ramp.chroma * chromaMul, 4)};`,
-    `  --ds-accent-h: ${ramp.hue};`,
-    "  --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));",
-  ].join("\n");
-  const steps = idx.map(accentStep).join("\n");
-  const alphas = idx.map(accentAlpha).join("\n");
-  return `[data-accent="${name}"] {\n${inputs}\n${steps}\n${alphas}\n}`;
-}
-
-function neutralScope(name: string, hue: number, chroma: number): string {
-  const idx = Array.from({ length: 12 }, (_, i) => i);
-  const inputs = [`  --ds-base-c: ${chroma};`, `  --ds-base-h: ${hue};`].join(
-    "\n",
-  );
-  const grays = idx.map(grayStep).join("\n");
-  const grayAlphas = idx.map(grayAlpha).join("\n");
-  const surface = [
-    "  --ds-gray-surface: color-mix(in oklch, var(--ds-gray-2) 85%, transparent);",
-    "  --ds-gray-track: var(--ds-gray-a3);",
-  ].join("\n");
-  return `[data-neutral="${name}"] {\n${inputs}\n${grays}\n${grayAlphas}\n${surface}\n}`;
-}
-
-export function buildOverridesCss(): string {
-  const names = Object.keys(HUE_RAMPS) as HueName[];
-  const accents = names.map((n) => accentScope(n, HUE_RAMPS[n])).join("\n\n");
-  const accentsP3 = names
-    .map((n) => accentScope(n, HUE_RAMPS[n], P3_CHROMA_BOOST))
-    .join("\n\n");
-  const neutrals = [
-    neutralScope("pure", 0, 0),
-    ...names.map((n) => neutralScope(n, HUE_RAMPS[n].hue, NEUTRAL_TINT_C)),
-  ].join("\n\n");
-  const p3 = `@media (color-gamut: p3) {\n${indent(accentsP3, 2)}\n}`;
-  return `${HEADER}\n${accents}\n\n${neutrals}\n\n${p3}\n`;
+  return `  --ds-gray-a${i + 1}: color-mix(in oklch, var(--ds-fg) ${grayMixPct(i)}, transparent);`;
 }
 
 export function buildTokensCss(): string {
@@ -261,14 +193,18 @@ export function buildTokensCss(): string {
   const accentAlphas = idx.map(accentAlpha).join("\n");
 
   const defaults = [
-    "  --ds-base-l: 0.99;",
-    "  --ds-base-c: 0;",
-    "  --ds-base-h: 0;",
+    "  --ds-bg-l: 1;",
+    "  --ds-bg-c: 0;",
+    "  --ds-bg-h: 0;",
+    "  --ds-fg-l: 0.25;",
+    "  --ds-fg-c: 0;",
+    "  --ds-fg-h: 0;",
     "  --ds-accent-l: 0.62;",
     "  --ds-accent-c: 0.19;",
     "  --ds-accent-h: 250;",
     "  --ds-contrast: 0.84;",
-    "  --ds-fg-dir: -1;",
+    "  --ds-bg: oklch(var(--ds-bg-l) var(--ds-bg-c) var(--ds-bg-h));",
+    "  --ds-fg: oklch(var(--ds-fg-l) var(--ds-fg-c) var(--ds-fg-h));",
     "  --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));",
   ].join("\n");
 
