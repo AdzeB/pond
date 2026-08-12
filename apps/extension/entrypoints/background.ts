@@ -34,6 +34,17 @@ export default defineBackground(() => {
     chrome.action.setBadgeText({ text: "" }).catch(() => {});
   }
 
+  if (chrome.action?.onClicked) {
+    chrome.action.onClicked.addListener((tab) => {
+      if (typeof tab.id !== "number") return;
+      void chrome.tabs
+        .sendMessage(tab.id, { type: "pond:toggle-toolbar" })
+        .catch(() => {
+          /** No content script on this page (chrome://, Web Store, etc.). */
+        });
+    });
+  }
+
   onMessage("log", ({ data }) => {
     const fn =
       data.level === "error"

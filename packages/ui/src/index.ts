@@ -18,6 +18,7 @@ export { Drawer } from "./drawer";
 export { Field } from "./field";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";
+export { Logo, type LogoProps } from "./logo";
 export { Menu, type MenuItemSpec } from "./menu";
 export { Popover } from "./popover";
 export { Select, type SelectItemSpec } from "./select";

@@ -1,5 +1,6 @@
 .solo {
   display: flex;
+  align-items: flex-start;
   justify-content: center;
   width: 100vw;
   min-height: 100vh;
@@ -11,7 +12,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
-  max-width: 420px;
+  max-width: 720px;
   padding: 32px 28px 64px;
   margin: 0 auto;
 }
@@ -34,6 +35,45 @@
 .header code {
   font-size: 12px;
   color: var(--ds-gray-12);
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  overflow: visible;
+  background: var(--ds-gray-2);
+  border-radius: 12px;
+}
+
+.playerHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  font-size: 12px;
+  color: var(--ds-gray-11);
+}
+
+.playerHeader strong {
+  font-weight: 600;
+  color: var(--ds-gray-12);
+}
+
+.playerStage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  overflow: visible;
+}
+
+.playerControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
 }
 
 .grid {
@@ -65,11 +105,12 @@
 }
 
 .stage {
-  width: 360px;
-  overflow: hidden;
-  background: var(--ds-gray-1);
-  border-radius: 16px;
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a3),
-    0 16px 40px var(--ds-gray-a3);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 72px;
+  padding: 16px;
+  overflow: visible;
+  background: var(--ds-gray-2);
+  border-radius: 12px;
 }

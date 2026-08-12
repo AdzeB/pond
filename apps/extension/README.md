@@ -21,12 +21,13 @@ pnpm --filter @pond/extension dev
 
 Load unpacked from `apps/extension/.output/chrome-mv3` while developing.
 
-## Toolbar popup
+## In-page toolbar
 
-Click the toolbar icon to open the Pond popup:
+Click the Pond toolbar icon to show a floating bar on the current page (same idea as Figma's capture HUD):
 
-1. **Link your desktop app.** Paste a token from Pond’s menu bar → **Copy Pairing Token**.
-2. When linked, the popup shows capture status. Session connect happens in the background when Pond is waiting and you open the matching source site signed in.
+1. Paste a pairing token from Pond's menu bar → **Copy Pairing Token**.
+2. Once linked, **Capture Page** sends the current URL into your library.
+3. Session connect still happens in the background when Pond is waiting and you open the matching source site signed in.
 
 ## State gallery
 
@@ -34,10 +35,9 @@ With `pnpm --filter @pond/extension dev` running:
 
 ```
 http://localhost:3001/entrypoints/gallery/index.html
-http://localhost:3001/entrypoints/popup/index.html
 ```
 
-Or `chrome-extension://<id>/gallery.html` / `popup.html`. Gallery is omitted from production `zip` builds.
+Or `chrome-extension://<id>/gallery.html`. Gallery is omitted from production `zip` builds.
 
 ## Supported sources
 

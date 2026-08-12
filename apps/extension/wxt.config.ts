@@ -22,12 +22,19 @@ export default defineConfig({
       },
     },
   }),
-  /** Keep the popup state gallery out of release zips. */
+  /** Keep the popup state gallery out of release zips; the browser-action popup is replaced by the in-page toolbar. */
   hooks: {
     "entrypoints:found"(wxt, infos) {
-      if (wxt.config.command !== "build") return;
-      const index = infos.findIndex((info) => info.name === "gallery");
-      if (index >= 0) infos.splice(index, 1);
+      if (wxt.config.command !== "build") {
+        /** Dev still loads gallery; strip the action popup so the toolbar toggle works. */
+        const popup = infos.findIndex((info) => info.name === "popup");
+        if (popup >= 0) infos.splice(popup, 1);
+        return;
+      }
+      for (const name of ["gallery", "popup"] as const) {
+        const index = infos.findIndex((info) => info.name === name);
+        if (index >= 0) infos.splice(index, 1);
+      }
     },
   },
   manifest: {
@@ -50,6 +57,12 @@ export default defineConfig({
         128: "icons/128.png",
       },
     },
+    web_accessible_resources: [
+      {
+        resources: ["icons/brand/icon.svg"],
+        matches: ["<all_urls>"],
+      },
+    ],
     permissions: [
       "storage",
       "activeTab",

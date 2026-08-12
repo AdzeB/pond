@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { PopupView } from "../app/views";
+import { Toolbar, type ToolbarMode } from "../toolbar/Toolbar";
 import styles from "./gallery.module.css";
+import { ToolbarStateMachine } from "./ToolbarStateMachine";
 
 interface FrameProps {
   label: string;
@@ -20,51 +21,64 @@ function Frame({ label, note, children }: FrameProps) {
   );
 }
 
-const noop = (): void => undefined;
+function Bar({
+  mode,
+  token = "",
+  error,
+  siteName,
+}: {
+  mode: ToolbarMode;
+  token?: string;
+  error?: string;
+  siteName?: string;
+}) {
+  return (
+    <Toolbar
+      mode={mode}
+      siteName={siteName}
+      tokenValue={token}
+      errorMessage={error}
+      onCapturePage={() => undefined}
+      onTokenChange={() => undefined}
+      onTokenSubmit={() => undefined}
+    />
+  );
+}
 
-type SoloState = "loading" | "link" | "link-error" | "idle" | "idle-offline";
+type SoloState =
+  | "idle-connected"
+  | "link-empty"
+  | "link-pasted"
+  | "link-loading"
+  | "link-error";
 
 function SoloScreen({ state }: { state: SoloState }) {
   switch (state) {
-    case "loading":
-      return <PopupView state="loading" />;
-    case "link":
+    case "idle-connected":
+      return <Bar mode="idle-connected" />;
+    case "link-empty":
+      return <Bar mode="link-empty" />;
+    case "link-pasted":
       return (
-        <PopupView
-          state="unpaired"
-          value=""
-          onChange={noop}
-          onContinue={noop}
-          busy={false}
-          error={null}
+        <Bar
+          mode="link-pasted"
+          token="pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d"
         />
       );
+    case "link-loading":
+      return <Bar mode="link-loading" siteName="x.com" />;
     case "link-error":
-      return (
-        <PopupView
-          state="unpaired"
-          inputId="token-error"
-          value="not-a-token"
-          onChange={noop}
-          onContinue={noop}
-          busy={false}
-          error="That doesn't look like a Pond pairing token."
-        />
-      );
-    case "idle":
-      return <PopupView state="connected" libraryName="My Pond" />;
-    case "idle-offline":
-      return <PopupView state="offline" onRetry={noop} />;
+      return <Bar mode="link-error" error="This isn't a pairing token" />;
   }
 }
 
 function parseSolo(value: string | null): SoloState | null {
   switch (value) {
-    case "loading":
-    case "link":
+    case "idle-connected":
+    case "link-empty":
+    case "link-pasted":
+    case "link-loading":
     case "link-error":
-    case "idle":
-    case "idle-offline":
       return value;
     default:
       return null;
@@ -87,46 +101,32 @@ export function Gallery() {
   return (
     <main className={styles.gallery}>
       <header className={styles.header}>
-        <h1>Extension popup</h1>
+        <h1>Extension toolbar</h1>
         <p>
-          Toolbar popup states. Edit <code>entrypoints/app/views/</code>.
+          In-page HUD states. Edit <code>entrypoints/toolbar/</code>.
         </p>
       </header>
 
+      <ToolbarStateMachine />
+
       <div className={styles.grid}>
-        <Frame label="loading">
-          <PopupView state="loading" />
+        <Frame label="Idle" note="connected">
+          <Bar mode="idle-connected" />
         </Frame>
-
-        <Frame label="link" note="empty">
-          <PopupView
-            state="unpaired"
-            value=""
-            onChange={noop}
-            onContinue={noop}
-            busy={false}
-            error={null}
+        <Frame label="Link" note="empty">
+          <Bar mode="link-empty" />
+        </Frame>
+        <Frame label="Link" note="pasted">
+          <Bar
+            mode="link-pasted"
+            token="pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d"
           />
         </Frame>
-
-        <Frame label="link" note="error">
-          <PopupView
-            state="unpaired"
-            inputId="token-error"
-            value="not-a-token"
-            onChange={noop}
-            onContinue={noop}
-            busy={false}
-            error="That doesn't look like a Pond pairing token."
-          />
+        <Frame label="Link" note="loading">
+          <Bar mode="link-loading" siteName="x.com" />
         </Frame>
-
-        <Frame label="idle" note="linked">
-          <PopupView state="connected" libraryName="My Pond" />
-        </Frame>
-
-        <Frame label="idle" note="offline">
-          <PopupView state="offline" onRetry={noop} />
+        <Frame label="Link" note="error">
+          <Bar mode="link-error" error="This isn't a pairing token" />
         </Frame>
       </div>
     </main>
