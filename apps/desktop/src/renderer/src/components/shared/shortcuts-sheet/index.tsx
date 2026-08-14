@@ -1,9 +1,9 @@
-import { Dialog, Keyboard } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import { ShortcutKeys } from "@/components/shared/shortcut-keys";
 import {
   SHORTCUT_GROUPS,
   SHORTCUTS,
   type ShortcutId,
-  shortcutGlyphs,
 } from "@/lib/save/shortcuts";
 import styles from "./styles.module.css";
 
@@ -35,7 +35,7 @@ export function ShortcutsSheetHost() {
                         <span className={styles.label}>
                           {SHORTCUTS[id].label}
                         </span>
-                        <Keyboard.Cluster keys={shortcutGlyphs(id)} />
+                        <ShortcutKeys id={id} />
                       </div>
                     ),
                   )}

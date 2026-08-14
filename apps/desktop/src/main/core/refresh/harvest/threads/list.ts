@@ -35,13 +35,12 @@ async function inPageThreadsList(
       title?: string;
       author?: string;
       mediaUrl?: string;
+      mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
       mediaType?: MediaType;
     }> = [];
     const seen = new Set<string>();
     const links = Array.from(
-      document.querySelectorAll<HTMLAnchorElement>(
-        'a[href*="/post/"], a[href*="/t/"]',
-      ),
+      document.querySelectorAll<HTMLAnchorElement>('a[href*="/post/"]'),
     );
     for (const a of links) {
       const id = norm.extractPostCode(a.href);
@@ -57,29 +56,71 @@ async function inPageThreadsList(
       } catch {}
 
       const card =
-        a.closest("article, [role='article'], [data-pressable-container]") ??
+        a.closest("[data-pressable-container], [role='article'], article") ??
         a.parentElement;
-      const img = (card ?? a).querySelector<HTMLImageElement>("img");
-      const src = img?.src ?? img?.currentSrc ?? undefined;
-      const mediaUrl = src && !src.startsWith("data:") ? src : undefined;
-      const handle = pathname.match(/\/@([^/]+)\//)?.[1];
-      const text = card
-        ?.querySelector<HTMLElement>("span[dir='auto'], div[dir='auto']")
-        ?.textContent?.trim();
 
-      const cleanUrl = href.includes("/post/")
-        ? (href.split("?")[0] ?? href)
-        : `https://www.threads.com/t/${id}`;
+      const handle = pathname.match(/\/@([^/]+)\//)?.[1];
+      const texts = Array.from(
+        (card ?? a).querySelectorAll<HTMLElement>("[dir='auto']"),
+      )
+        .map((el) => (el.textContent ?? "").trim())
+        .filter((t) => {
+          if (!t) return false;
+          if (handle && t.replace(/^@/, "") === handle) return false;
+          if (/^Translate$/i.test(t)) return false;
+          return t.length > 1;
+        });
+      const text = texts[0];
+
+      const mediaUrls: Array<{
+        url: string;
+        type?: MediaType;
+        poster?: string;
+      }> = [];
+      const seenMedia = new Set<string>();
+      const push = (
+        url: string | undefined,
+        type: MediaType,
+        poster?: string,
+      ) => {
+        if (!url || url.startsWith("data:") || url.startsWith("blob:")) return;
+        if (norm.isBrandAsset(url) || seenMedia.has(url)) return;
+        seenMedia.add(url);
+        mediaUrls.push({ url, type, ...(poster ? { poster } : {}) });
+      };
+
+      for (const v of Array.from(
+        (card ?? a).querySelectorAll<HTMLVideoElement>("video"),
+      )) {
+        const poster = v.poster || undefined;
+        const src = v.currentSrc || v.src;
+        push(src && !src.startsWith("blob:") ? src : poster, "video", poster);
+      }
+      for (const img of Array.from(
+        (card ?? a).querySelectorAll<HTMLImageElement>("img"),
+      )) {
+        const best =
+          norm.pickLargestSrcset(img.srcset) ?? img.currentSrc ?? img.src;
+        if (!best) continue;
+        if (norm.looksLikeAvatar(best, img.alt)) continue;
+        push(best, "image");
+      }
+
+      const cleanUrl = href.split("?")[0] ?? href;
       out.push({
         sourceId: id,
-        url: cleanUrl,
-        ...(text
+        url: cleanUrl.startsWith("http")
+          ? cleanUrl
+          : `https://www.threads.com${cleanUrl}`,
+        ...(text ? { title: norm.titleFromText(text) } : {}),
+        ...(handle ? { author: handle } : {}),
+        ...(mediaUrls.length > 0
           ? {
-              title: text.length <= 90 ? text : `${text.slice(0, 89)}…`,
+              mediaUrl: mediaUrls[0]?.url,
+              mediaUrls,
+              mediaType: mediaUrls[0]?.type ?? ("image" as MediaType),
             }
           : {}),
-        ...(handle ? { author: handle } : {}),
-        ...(mediaUrl ? { mediaUrl, mediaType: "image" as MediaType } : {}),
       });
     }
     return out;
@@ -88,6 +129,6 @@ async function inPageThreadsList(
   return scroll({
     collectFn,
     knownIds: args.knownIds,
-    hydrateSelector: 'a[href*="/post/"], a[href*="/t/"]',
+    hydrateSelector: 'a[href*="/post/"]',
   });
 }

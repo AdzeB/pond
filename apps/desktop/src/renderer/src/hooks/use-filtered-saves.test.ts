@@ -1,7 +1,7 @@
 import { queryIsFullySqlSupported } from "@pond/schema/filters";
 import { matches } from "@pond/schema/filters/match";
 import { describe, expect, it } from "vitest";
-import { parseSearchInput } from "@/lib/search/syntax";
+import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import type { Save } from "@/lib/types";
 import {
   intersectSqlResults,
@@ -143,6 +143,21 @@ describe("queryIsFullySqlSupported", () => {
       }),
     ).toBe(true);
   });
+
+  it("compiles account filters to SQL", () => {
+    expect(
+      queryIsFullySqlSupported({
+        combinator: "and",
+        rules: [
+          {
+            field: "account",
+            operator: "eq",
+            value: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          },
+        ],
+      }),
+    ).toBe(true);
+  });
 });
 
 describe("structured source search", () => {
@@ -165,5 +180,38 @@ describe("structured source search", () => {
         url: "https://www.tiktok.com/@example/video/1",
       }),
     ).toBe(false);
+  });
+});
+
+describe("structured account search", () => {
+  const ulid = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
+
+  it("matches an account id regardless of ULID case", () => {
+    const parsed = parseSearchInput(`account:${ulid}`);
+    const query = { combinator: "and" as const, rules: parsed.predicates };
+
+    expect(parsed.text).toBe("");
+    expect(parsed.predicates).toEqual([
+      { field: "account", operator: "eq", value: ulid.toLowerCase() },
+    ]);
+    expect(matches(query, { id: "owned", accountId: ulid })).toBe(true);
+    expect(
+      matches(query, { id: "other", accountId: "01BX5ZZKBKACTAV9WEVGEMMVRZ" }),
+    ).toBe(false);
+  });
+
+  it("round-trips an account predicate through search syntax", () => {
+    const query = {
+      combinator: "and" as const,
+      rules: [
+        { field: "account" as const, operator: "eq" as const, value: ulid },
+      ],
+    };
+    expect(parseSearchInput(serializeQuery(query))).toEqual({
+      predicates: [
+        { field: "account", operator: "eq", value: ulid.toLowerCase() },
+      ],
+      text: "",
+    });
   });
 });

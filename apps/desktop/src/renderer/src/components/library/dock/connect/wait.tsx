@@ -1,49 +1,19 @@
-import { IconCircleCheckFill18 as StepDone } from "@pond/icons/fill/18";
-import { IconArrowUpRightOutline18 as ArrowUpRight } from "@pond/icons/outline/18";
-import { TrayCard } from "@pond/ui";
-import { Calligraph } from "calligraph";
-import { useEffect, useState } from "react";
+import { IconCircleCheckFill18 as Connected } from "@pond/icons/fill/18";
+import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import { useConnectCompleted, useConnectSource } from "@/stores/connect-flow";
 import styles from "./wait.module.css";
 
-type StepState = "done" | "active" | "todo";
-
-function StepMark({ state }: { state: StepState }) {
-  if (state === "done") {
-    return <StepDone className={styles.check} width={16} height={16} />;
-  }
-  if (state === "active") return <span className={styles.spinner} />;
-  return <span className={styles.dot} />;
-}
-
-/** Sign-in wait card; the sources page polls for the account and closes the tray when it arrives. */
+/** Holds while the browser sign-in finishes; the sources page polls and advances once the account arrives. */
 export function ConnectWaitSection() {
   const dock = useDock();
   const source = useConnectSource();
   const completed = useConnectCompleted();
 
-  /** Sign-in itself isn't observable, so the middle steps only tick once the account actually arrives, staggered so completion reads as progress rather than a flash. */
-  const [pushDone, setPushDone] = useState(false);
-  useEffect(() => {
-    if (!completed) {
-      setPushDone(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setPushDone(true), 300);
-    return () => window.clearTimeout(timer);
-  }, [completed]);
-
   if (!source) return null;
 
   const label = getSourceDef(source).label;
-  const signInState: StepState = completed ? "done" : "active";
-  const pushState: StepState = pushDone
-    ? "done"
-    : completed
-      ? "active"
-      : "todo";
 
   return (
     <>
@@ -53,35 +23,38 @@ export function ConnectWaitSection() {
         <TrayCard.Close />
         <TrayCard.Separator />
       </TrayCard.Header>
-      <ol className={styles.steps}>
-        <li className={styles.step} data-state="done">
-          <StepMark state="done" />
-          Opened {label} in your browser
-        </li>
-        <li className={styles.step} data-state={signInState}>
-          <StepMark state={signInState} />
-          Sign in as you normally would
-        </li>
-        <li className={styles.step} data-state={pushState}>
-          <StepMark state={pushState} />
-          Pond will pick up your session automatically
-        </li>
-      </ol>
+      <div className={styles.body} data-state={completed ? "done" : "waiting"}>
+        {completed ? (
+          <Connected className={styles.mark} />
+        ) : (
+          <span className={styles.spinner} aria-hidden />
+        )}
+        <div className={styles.copy}>
+          <p className={styles.status}>
+            {completed ? "Connected" : `Waiting for ${label} sign-in`}
+          </p>
+          {completed ? null : (
+            <p className={styles.hint}>
+              We opened {label} in your browser. Sign in there and Pond will
+              finish automatically.
+            </p>
+          )}
+        </div>
+      </div>
       <TrayCard.Footer>
         <TrayCard.Cancel disabled={completed} />
-        <TrayCard.Confirm
-          disabled={completed}
-          onClick={(e) => {
-            /** Reopening the browser keeps the wait alive; only the arriving account closes this card. */
-            e.preventDefault();
-            if (!completed) void window.pond.connectSource(source);
-          }}
-        >
-          {completed ? null : <ArrowUpRight width={14} height={14} />}
-          <Calligraph>
-            {completed ? "Connected" : "Reopen in Browser"}
-          </Calligraph>
-        </TrayCard.Confirm>
+        {completed ? (
+          <TrayCard.Confirm disabled>Connected</TrayCard.Confirm>
+        ) : (
+          <Button
+            variant="tertiary"
+            size="lg"
+            style={{ width: "100%" }}
+            onClick={() => void window.pond.connectSource(source)}
+          >
+            Reopen {label}
+          </Button>
+        )}
       </TrayCard.Footer>
     </>
   );

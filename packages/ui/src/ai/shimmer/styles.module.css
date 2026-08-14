@@ -1,0 +1,30 @@
+.root {
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    var(--ds-accent-9) 35%,
+    var(--ds-accent-12) 50%,
+    var(--ds-accent-9) 65%
+  );
+  background-clip: text;
+  background-size: 300% 100%;
+  animation: shimmer-sweep 2s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    color: var(--ds-accent-11);
+    background: none;
+    animation: none;
+  }
+}

@@ -22,12 +22,8 @@ export class YouTubeWatchExtractor implements Extractor {
       })()`;
 
   authCookies(name: string): boolean {
-    return (
-      name === "LOGIN_INFO" ||
-      name === "SID" ||
-      name === "__Secure-1PSID" ||
-      name === "__Secure-3PSID"
-    );
+    /** SID / PSID appear during Google SSO before YouTube itself is signed in. */
+    return name === "LOGIN_INFO";
   }
 
   readonly tests = [

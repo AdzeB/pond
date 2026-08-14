@@ -1,12 +1,12 @@
 import { Tooltip, Tray } from "@pond/ui";
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
-import { useDashboards } from "@/components/library/analytics/lib/dashboards";
-import { openTrayConfirm } from "@/components/library/dock/confirm";
+import { type ReactNode, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { type DockTab, NAV_TABS } from "@/components/library/dock/lib/nav-tabs";
+import { ShortcutKeys } from "@/components/shared/shortcut-keys";
 import { openInNewTabIfMeta } from "@/hooks/use-tab-navigate";
+import type { ShortcutId } from "@/lib/save/shortcuts";
 import { tabs } from "@/stores/tabs";
 import { NavActions } from "./nav-actions";
 import styles from "./styles.module.css";
@@ -17,63 +17,26 @@ function pathForTab(tab: (typeof NAV_TABS)[number]): string | null {
   return null;
 }
 
+const TAB_SHORTCUT: Record<DockTab, ShortcutId> = {
+  library: "nav.library",
+  sources: "nav.sources",
+  trash: "nav.trash",
+};
+
 /** Destinations first, utilities last, matching how often each is reached for. */
-const NAV_ORDER: readonly DockTab[] = [
-  "library",
-  "sources",
-  "analytics",
-  "trash",
-];
+const NAV_ORDER: readonly DockTab[] = ["library", "trash", "sources"];
 
 const ORDERED_TABS = NAV_ORDER.flatMap((id) =>
   NAV_TABS.filter((tab) => tab.id === id),
 );
 
+function tabTip(tab: (typeof ORDERED_TABS)[number]) {
+  return Tooltip.Label(tab.label, <ShortcutKeys id={TAB_SHORTCUT[tab.id]} />);
+}
+
 export function NavContent() {
   const dock = useDock();
-  const [tip] = useState(() => Tooltip.createHandle<React.ReactNode>());
-  const [navOpen, setNavOpen] = useState(false);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const navigate = useNavigate();
-  const { dashboard, deleteDashboard } = useDashboards();
-
-  const confirmDelete = () => {
-    openTrayConfirm({
-      title: "Delete Dashboard",
-      description: `Deleting removes “${dashboard.name}” and its insights. This can't be undone.`,
-      confirmLabel: "Delete Dashboard",
-      returnTo: null,
-      onConfirm: () => {
-        deleteDashboard();
-        void navigate({ to: "/analytics" });
-      },
-    });
-  };
-
-  const onDashboard = pathname.startsWith("/analytics/");
-
-  /** The unfold is transient: pointer-down outside the pill or Escape puts the tabs away. */
-  useEffect(() => {
-    if (!navOpen) return;
-    const onPointerDown = (e: PointerEvent) => {
-      const pill = dock.pillRef.current;
-      if (pill && e.target instanceof Node && !pill.contains(e.target)) {
-        setNavOpen(false);
-      }
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setNavOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [navOpen, dock.pillRef]);
+  const [tip] = useState(() => Tooltip.createHandle<ReactNode>());
 
   const activeTab =
     ORDERED_TABS.find((tab) => dock.isTabActive(tab.id)) ??
@@ -82,63 +45,48 @@ export function NavContent() {
 
   const actionSet = activeTab.id;
 
-  const activeIndex = ORDERED_TABS.findIndex((tab) => tab.id === activeTab.id);
-  const tabsBefore = ORDERED_TABS.slice(0, activeIndex);
-  const tabsAfter = ORDERED_TABS.slice(activeIndex + 1);
-
-  const renderTab = (tab: (typeof ORDERED_TABS)[number]) => (
-    <Tooltip.Trigger
-      key={tab.id}
-      handle={tip}
-      payload={tab.label}
-      render={
-        tab.action ? (
-          <Tray.Item
-            aria-label={tab.label}
-            onClick={() => {
-              setNavOpen(false);
-              tab.action?.();
-            }}
-          >
-            {tab.icon}
-          </Tray.Item>
-        ) : (
-          <Tray.Item
-            render={<Link to={tab.to} params={tab.params} />}
-            aria-label={tab.label}
-            onClick={(e) => {
-              setNavOpen(false);
-              const path = pathForTab(tab);
-              if (path) openInNewTabIfMeta(e, path, () => {});
-            }}
-            onAuxClick={(e) => {
-              if (e.button !== 1) return;
-              const path = pathForTab(tab);
-              if (!path) return;
-              e.preventDefault();
-              tabs.open(path, { background: true });
-            }}
-          >
-            {tab.icon}
-          </Tray.Item>
-        )
-      }
-    />
-  );
-
-  const unfold = (tabs: typeof ORDERED_TABS, key: string) =>
-    tabs.length > 0 ? (
-      <motion.div
-        key={key}
-        className={styles.expand}
-        initial={{ width: 0, opacity: 0 }}
-        animate={{ width: "auto", opacity: 1 }}
-        exit={{ width: 0, opacity: 0 }}
-        transition={dock.quickTransition}
-      >
-        <div className={styles["expand-inner"]}>{tabs.map(renderTab)}</div>
-      </motion.div>
-    ) : null;
+  const renderTab = (tab: (typeof ORDERED_TABS)[number]) => {
+    const active = tab.id === activeTab.id;
+    return (
+      <Tooltip.Trigger
+        key={tab.id}
+        handle={tip}
+        payload={tabTip(tab)}
+        render={
+          tab.action ? (
+            <Tray.Item
+              aria-label={tab.label}
+              data-status={active ? "active" : undefined}
+              onClick={() => tab.action?.()}
+            >
+              {active ? <Tray.Indicator /> : null}
+              {tab.icon}
+            </Tray.Item>
+          ) : (
+            <Tray.Item
+              render={<Link to={tab.to} params={tab.params} />}
+              aria-label={tab.label}
+              data-status={active ? "active" : undefined}
+              onClick={(e) => {
+                const path = pathForTab(tab);
+                if (path) openInNewTabIfMeta(e, path, () => {});
+              }}
+              onAuxClick={(e) => {
+                if (e.button !== 1) return;
+                const path = pathForTab(tab);
+                if (!path) return;
+                e.preventDefault();
+                tabs.open(path, { background: true });
+              }}
+            >
+              {active ? <Tray.Indicator /> : null}
+              {tab.icon}
+            </Tray.Item>
+          )
+        }
+      />
+    );
+  };
 
   return (
     <motion.div
@@ -146,29 +94,7 @@ export function NavContent() {
       transition={dock.swapTransition}
       {...dock.swap}
     >
-      <AnimatePresence initial={false}>
-        {navOpen ? unfold(tabsBefore, "tabs-before") : null}
-      </AnimatePresence>
-
-      <Tooltip.Trigger
-        handle={tip}
-        payload={navOpen ? activeTab.label : "Navigate"}
-        render={
-          <Tray.Item
-            aria-label={navOpen ? activeTab.label : "Navigate"}
-            aria-expanded={navOpen}
-            data-status="active"
-            onClick={() => setNavOpen((v) => !v)}
-          >
-            <Tray.Indicator />
-            {activeTab.icon}
-          </Tray.Item>
-        }
-      />
-
-      <AnimatePresence initial={false}>
-        {navOpen ? unfold(tabsAfter, "tabs-after") : null}
-      </AnimatePresence>
+      {ORDERED_TABS.map(renderTab)}
 
       {/** Actions follow the page: the cluster refolds whenever the route lands on a tab with a different set. */}
       <AnimatePresence initial={false}>
@@ -182,12 +108,7 @@ export function NavContent() {
         >
           <div className={styles["expand-inner"]}>
             <Tray.Separator />
-            <NavActions
-              actionSet={actionSet}
-              tip={tip}
-              onDashboard={onDashboard}
-              confirmDelete={confirmDelete}
-            />
+            <NavActions actionSet={actionSet} tip={tip} />
           </div>
         </motion.div>
       </AnimatePresence>

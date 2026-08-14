@@ -122,3 +122,60 @@ export function buildArticleRectExpression(tweetId: string): string {
     }
   })()`;
 }
+
+/** Isolates the focused Threads post card and returns a bounding box plus any quoted-post URL. */
+export function buildThreadsPostRectExpression(code: string): string {
+  return `(async () => {
+    try {
+      const code = ${JSON.stringify(code)};
+      const findCard = () => {
+        const anchor = document.querySelector('a[href*="/post/' + code + '"]');
+        return anchor && (anchor.closest('[data-pressable-container], [role="article"], article') || anchor.parentElement);
+      };
+      const deadline = Date.now() + 10_000;
+      let card = findCard();
+      while (!card && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 200));
+        card = findCard();
+      }
+      if (!card) return null;
+
+      try {
+        const siblings = document.querySelectorAll('[data-pressable-container], [role="article"], article');
+        for (const s of siblings) {
+          if (s !== card && !card.contains(s) && !s.contains(card)) {
+            s.style.setProperty('display', 'none', 'important');
+          }
+        }
+      } catch (_) {}
+
+      window.scrollTo(0, 0);
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (_) {}
+      await new Promise(r => requestAnimationFrame(() => r(null)));
+      await new Promise(r => setTimeout(r, 150));
+
+      const r = card.getBoundingClientRect();
+      let quotedUrl;
+      try {
+        for (const link of card.querySelectorAll('a[href*="/post/"]')) {
+          const u = new URL(link.href, 'https://www.threads.com');
+          const m = u.pathname.match(/\\/post\\/([A-Za-z0-9_-]+)/);
+          if (m && m[1] !== code) {
+            quotedUrl = 'https://www.threads.com' + u.pathname;
+            break;
+          }
+        }
+      } catch (_) {}
+
+      return {
+        x: r.left,
+        y: r.top,
+        width: Math.max(8, r.width),
+        height: Math.max(8, r.height),
+        ...(quotedUrl ? { quotedUrl } : {}),
+      };
+    } catch (_) {
+      return null;
+    }
+  })()`;
+}

@@ -64,10 +64,16 @@ function Portal(props: Base.Portal.Props) {
   return <Base.Portal {...props} />;
 }
 
-function Positioner({ className, ...props }: Base.Positioner.Props) {
+function Positioner({
+  className,
+  sideOffset = 8,
+  alignItemWithTrigger = false,
+  ...props
+}: Base.Positioner.Props) {
   return (
     <Base.Positioner
-      sideOffset={8}
+      sideOffset={sideOffset}
+      alignItemWithTrigger={alignItemWithTrigger}
       data-type="select"
       className={cn(styles.positioner, className)}
       {...props}
@@ -130,7 +136,7 @@ function Separator({ className, ...props }: Base.Separator.Props) {
 
 function Items<Value>({ items }: { items: SelectItemSpec<Value>[] }) {
   return (
-    <>
+    <List>
       {renderSelectSpec(items, {
         Item,
         ItemText,
@@ -139,7 +145,7 @@ function Items<Value>({ items }: { items: SelectItemSpec<Value>[] }) {
         GroupLabel,
         Separator,
       })}
-    </>
+    </List>
   );
 }
 

@@ -4,6 +4,7 @@ import type {
   SessionImportResponse,
 } from "@pond/schema/session";
 import { onMessage } from "@/utils/messaging";
+import { probe } from "@/utils/probe";
 import { ensureSettings, getSettings } from "@/utils/settings";
 import {
   enqueueUrl,
@@ -74,6 +75,16 @@ export default defineBackground(() => {
       } satisfies PushSessionResult;
     }),
   );
+
+  onMessage("probe", async ({ data }) => {
+    try {
+      const settings = data ?? (await getSettings());
+      return await probe(settings);
+    } catch (err) {
+      console.warn("[pond] probe failed", err);
+      return { state: "offline" as const };
+    }
+  });
 
   chrome.tabs.onActivated.addListener(() => {
     void maybeAutoPush();

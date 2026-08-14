@@ -28,8 +28,8 @@ export interface Extractor {
   readonly validUrl: readonly RegExp[];
   /** Cookie domain (leading-dot) gating this source's auth; `null` if no login. */
   readonly cookieDomain: string | null;
-  /** True when a cookie of this name proves the user is signed in. */
-  authCookies(name: string): boolean;
+  /** True when this cookie proves a signed-in session; `value` distinguishes anon cookies that reuse the name. */
+  authCookies(name: string, value?: string): boolean;
   /** Parse the account handle from a profile URL's path segments. */
   handleFromPath?(segments: string[]): string | null;
   /** In-page JS expression returning the signed-in user's handle. */

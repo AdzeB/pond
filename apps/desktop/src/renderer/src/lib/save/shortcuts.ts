@@ -12,23 +12,40 @@ export type ShortcutGroup =
   | "Selection"
   | "Saves"
   | "Viewer"
-  | "Tags";
+  | "Sources"
+  | "Tags"
+  | "Library";
 
 export interface ShortcutDef {
-  keys: string;
   label: string;
   group: ShortcutGroup;
+  /** Simultaneous chord, e.g. `Mod+K`. Mutually exclusive with `sequence`. */
+  keys?: string;
+  /** Sequential chords, e.g. `["G", "L"]` for Linear-style go. */
+  sequence?: readonly string[];
 }
 
 export const SHORTCUTS = {
-  "nav.library": { keys: "Mod+1", label: "Go to Library", group: "Navigate" },
-  "nav.sources": { keys: "Mod+2", label: "Go to Sources", group: "Navigate" },
-  "nav.analytics": {
-    keys: "Mod+3",
-    label: "Go to Analytics",
+  "nav.library": {
+    sequence: ["G", "L"],
+    label: "Go to Library",
     group: "Navigate",
   },
-  "nav.trash": { keys: "Mod+4", label: "Go to Trash", group: "Navigate" },
+  "nav.sources": {
+    sequence: ["G", "S"],
+    label: "Go to Sources",
+    group: "Navigate",
+  },
+  "nav.trash": {
+    sequence: ["G", "T"],
+    label: "Go to Trash",
+    group: "Navigate",
+  },
+  "nav.settings": {
+    sequence: ["G", ","],
+    label: "Go to Settings",
+    group: "Navigate",
+  },
   "nav.back": { keys: "Mod+[", label: "Back", group: "Navigate" },
   "nav.forward": { keys: "Mod+]", label: "Forward", group: "Navigate" },
   "nav.scroll-top": {
@@ -41,7 +58,7 @@ export const SHORTCUTS = {
     label: "Scroll to Bottom",
     group: "Navigate",
   },
-  "dock.ask": { keys: "Mod+K", label: "Ask Your Library", group: "Navigate" },
+  "dock.ask": { keys: "Mod+K", label: "AI Search", group: "Navigate" },
   "dock.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
   "app.shortcuts": {
     keys: "Mod+/",
@@ -57,7 +74,35 @@ export const SHORTCUTS = {
     label: "Cycle Layout",
     group: "View",
   },
+  "view.layout-waterfall": {
+    keys: "1",
+    label: "Waterfall Layout",
+    group: "View",
+  },
+  "view.layout-grid": { keys: "2", label: "Grid Layout", group: "View" },
+  "view.layout-justified": {
+    keys: "3",
+    label: "Justified Layout",
+    group: "View",
+  },
   "view.inspector": { keys: "Mod+I", label: "Toggle Details", group: "View" },
+  "view.options": { keys: "V", label: "View Options", group: "View" },
+  "view.display": { keys: "D", label: "Display Options", group: "View" },
+  "view.sort-dir": {
+    keys: "Y",
+    label: "Toggle Sort Direction",
+    group: "View",
+  },
+  "view.sort-key": {
+    keys: "Shift+Y",
+    label: "Cycle Sort Key",
+    group: "View",
+  },
+  "view.theme-cycle": {
+    keys: "Mod+Shift+D",
+    label: "Cycle Appearance",
+    group: "View",
+  },
 
   "grid.prev": {
     keys: "ArrowLeft",
@@ -87,6 +132,13 @@ export const SHORTCUTS = {
     label: "Clear Selection",
     group: "Selection",
   },
+  "selection.run": { keys: "W", label: "Run on Selection", group: "Selection" },
+  "selection.export": {
+    keys: "X",
+    label: "Export Selection",
+    group: "Selection",
+  },
+
   "trash.empty": {
     keys: "Mod+Shift+Backspace",
     label: "Empty Trash",
@@ -100,6 +152,7 @@ export const SHORTCUTS = {
     group: "Saves",
   },
   "save.copy-url": { keys: "Mod+Shift+C", label: "Copy URL", group: "Saves" },
+  "save.copy-id": { keys: "I", label: "Copy Save ID", group: "Saves" },
   "save.copy-tags": {
     keys: "Mod+Shift+T",
     label: "Copy Tags",
@@ -112,6 +165,10 @@ export const SHORTCUTS = {
   },
   "save.export": { keys: "Mod+E", label: "Export", group: "Saves" },
   "save.refresh": { keys: "R", label: "Refresh Details", group: "Saves" },
+  "save.add-tag": { keys: "A", label: "Add Tag", group: "Saves" },
+  "save.rename": { keys: "N", label: "Rename", group: "Saves" },
+  "save.open-url": { keys: "U", label: "Open Original URL", group: "Saves" },
+  "save.reveal": { keys: "F", label: "Reveal in Finder", group: "Saves" },
   "save.trash": { keys: "Backspace", label: "Move to Trash", group: "Saves" },
   "save.restore": {
     keys: "Backspace",
@@ -144,8 +201,37 @@ export const SHORTCUTS = {
     label: "Save Current Frame",
     group: "Viewer",
   },
+  "viewer.prev-slide": {
+    keys: "[",
+    label: "Previous Slide",
+    group: "Viewer",
+  },
+  "viewer.next-slide": {
+    keys: "]",
+    label: "Next Slide",
+    group: "Viewer",
+  },
+  "viewer.mute": { keys: "M", label: "Mute", group: "Viewer" },
+  "viewer.fullscreen": {
+    keys: "Mod+Shift+F",
+    label: "Full Screen",
+    group: "Viewer",
+  },
+
+  "sources.new": { keys: "Mod+N", label: "New Source", group: "Sources" },
+  "sources.sync-all": {
+    keys: "Mod+Shift+S",
+    label: "Sync All Sources",
+    group: "Sources",
+  },
 
   "tags.rename": { keys: "E", label: "Rename", group: "Tags" },
+
+  "library.rescan": {
+    keys: "Mod+Shift+R",
+    label: "Rescan Library",
+    group: "Library",
+  },
 } as const satisfies Record<string, ShortcutDef>;
 
 export type ShortcutId = keyof typeof SHORTCUTS;
@@ -156,10 +242,48 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Selection",
   "Saves",
   "Viewer",
+  "Sources",
   "Tags",
+  "Library",
 ];
+
+/** Glyph tokens for a single chord (menu `shortcut: string[]` display). */
+export function chordGlyphs(keys: string): string[] {
+  return formatForDisplay(keys)
+    .split(/[\s+]+/)
+    .filter(Boolean);
+}
+
+function defOf(id: ShortcutId): ShortcutDef {
+  return SHORTCUTS[id];
+}
 
 /** Glyph tokens for the menu renderer's `shortcut: string[]` display. */
 export function shortcutGlyphs(id: ShortcutId): string[] {
-  return formatForDisplay(SHORTCUTS[id].keys).split(/[\s+]+/);
+  const def = defOf(id);
+  if (def.keys) return chordGlyphs(def.keys);
+  if (def.sequence) {
+    return def.sequence.flatMap((step) => chordGlyphs(step));
+  }
+  return [];
+}
+
+/** Menu label for sequences (`G then L`) or glyph array for chords. */
+export function shortcutMenuHint(id: ShortcutId): string | string[] {
+  const def = defOf(id);
+  if (def.sequence) {
+    return def.sequence.map((step) => formatForDisplay(step)).join(" then ");
+  }
+  if (def.keys) return chordGlyphs(def.keys);
+  return [];
+}
+
+/** Chord string for `useHotkeys`, or null when the shortcut is a sequence. */
+export function shortcutChord(id: ShortcutId): string | null {
+  return defOf(id).keys ?? null;
+}
+
+/** Sequence steps for `useHotkeySequences`, or null when the shortcut is a chord. */
+export function shortcutSequence(id: ShortcutId): readonly string[] | null {
+  return defOf(id).sequence ?? null;
 }

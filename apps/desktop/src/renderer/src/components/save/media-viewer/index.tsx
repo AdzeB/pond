@@ -149,7 +149,7 @@ function Frame({
 
   /** preventDefault only when a live video is under the keys, so Shift+C/S stay inert on image slides. */
   useHotkey(
-    SHORTCUTS["viewer.copy-frame"].keys,
+    SHORTCUTS["viewer.copy-frame"].keys!,
     (event) => {
       const video = activeVideo();
       if (!video) return;
@@ -159,7 +159,7 @@ function Frame({
     { preventDefault: false },
   );
   useHotkey(
-    SHORTCUTS["viewer.save-frame"].keys,
+    SHORTCUTS["viewer.save-frame"].keys!,
     (event) => {
       const video = activeVideo();
       if (!video) return;
@@ -167,6 +167,31 @@ function Frame({
       void saveVideoFrame(video);
     },
     { preventDefault: false },
+  );
+  useHotkey(
+    SHORTCUTS["viewer.mute"].keys!,
+    (event) => {
+      const video = activeVideo();
+      if (!video) return;
+      event.preventDefault();
+      video.muted = !video.muted;
+    },
+    { preventDefault: false, ignoreInputs: true },
+  );
+  useHotkey(
+    SHORTCUTS["viewer.fullscreen"].keys!,
+    (event) => {
+      const video = activeVideo();
+      const root = ref.current;
+      if (!video || !root) return;
+      event.preventDefault();
+      if (document.fullscreenElement === root) {
+        void document.exitFullscreen();
+      } else {
+        void root.requestFullscreen();
+      }
+    },
+    { preventDefault: false, ignoreInputs: true },
   );
 
   return (
@@ -196,6 +221,23 @@ function Carousel({
   const active = useActiveSlide(scroller, slides.length);
   const { ratios, reportRatio } = useRatioCache();
   const { goPrev, goNext } = useCarouselNavigation(scroller, ratios);
+
+  useHotkey(
+    SHORTCUTS["viewer.prev-slide"].keys!,
+    (event) => {
+      event.preventDefault();
+      goPrev();
+    },
+    { preventDefault: false, ignoreInputs: true },
+  );
+  useHotkey(
+    SHORTCUTS["viewer.next-slide"].keys!,
+    (event) => {
+      event.preventDefault();
+      goNext();
+    },
+    { preventDefault: false, ignoreInputs: true },
+  );
 
   useEffect(() => {
     setScroller(handleRef.current?.element ?? null);

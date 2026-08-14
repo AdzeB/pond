@@ -82,6 +82,10 @@ export async function runFinalize(saveId: string): Promise<void> {
     }
   }
 
+  const latest = (await readSave(saveId)) ?? save;
+  const { writeSaveBlurhash } = await import("../../../lib/blurhash");
+  await writeSaveBlurhash(latest);
+
   /** Authoritative info.json write after color extraction; writeInfo forces it. */
   await persistSave(
     saveId,

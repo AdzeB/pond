@@ -6,7 +6,11 @@ import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
 import { POND_PROTOCOL } from "../shared/constants";
-import { clampThumbWidth, getOrCreateThumbnail } from "./lib/thumbnail";
+import {
+  clampThumbWidth,
+  ensureThumbnailInBackground,
+  lookupCachedThumbnail,
+} from "./lib/thumbnail";
 import { itemFile, libraryRoot, resolvePaths } from "./paths";
 
 const ONE_YEAR_SECONDS = 31_536_000;
@@ -70,16 +74,17 @@ export function registerProtocol() {
         return new Response("forbidden", { status: 403 });
       }
 
-      /** Serve a generated WebP thumb when `?w=` is set on a still raster; else the original. */
+      /** Serve a cached WebP when `?tw=` hits disk; else the original while thumbs generate off-path. */
       const version = url.searchParams.get("v");
       let target = resolved;
       let immutable = version !== null;
 
-      const widthParam = url.searchParams.get("w");
+      const widthParam =
+        url.searchParams.get("tw") ?? url.searchParams.get("w");
       if (host !== META_HOST && widthParam) {
         const width = clampThumbWidth(Number(widthParam));
         if (width !== null) {
-          const thumb = await getOrCreateThumbnail({
+          const thumb = lookupCachedThumbnail({
             saveId: host,
             sourcePath: resolved,
             width,
@@ -89,6 +94,16 @@ export function registerProtocol() {
             /** Keyed by version + width, so the bytes never change: cache forever. */
             target = thumb.path;
             immutable = true;
+          } else {
+            ensureThumbnailInBackground({
+              saveId: host,
+              sourcePath: resolved,
+              width,
+              version,
+              priority: "background",
+            });
+            /** Don't cache the original under `?tw=`; the next request should pick up the thumb. */
+            immutable = false;
           }
         }
       }

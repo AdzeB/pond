@@ -1,46 +1,38 @@
 import { IconArrowRotateClockwiseOutline18 as SyncIcon } from "@pond/icons/outline/18";
 import { useMemo } from "react";
-import type { AccountRow } from "@/hooks/use-accounts";
-import type { WatchRow } from "@/hooks/use-watches";
-import type { SyncAccountStatus } from "@/stores/sync-monitor";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useWatches } from "@/hooks/use-watches";
+import { useSyncByAccount } from "@/stores/sync-monitor";
 import {
+  bindPanel,
   buildEntities,
+  closeThen,
   openSources,
   type Panel,
-  type StatusEntity,
 } from "./lib";
-import { Empty, List, Row, StatusPanel } from "./panel";
+import { Empty, EntityRow, List, StatusPanel } from "./panel";
 
 interface OngoingPanelProps {
   open: boolean;
   onOpenChange: (next: Panel | null) => void;
-  accounts: AccountRow[];
-  watches: WatchRow[];
-  byAccount: Record<string, SyncAccountStatus>;
 }
 
-export function OngoingPanel({
-  open,
-  onOpenChange,
-  accounts,
-  watches,
-  byAccount,
-}: OngoingPanelProps) {
-  const entities = useMemo(
-    () => buildEntities(accounts, watches, byAccount),
-    [accounts, watches, byAccount],
-  );
-  const ongoing = entities.filter((e) => e.tone === "run");
-  const close = () => onOpenChange(null);
-  const goSources = () => {
-    close();
-    openSources();
-  };
+export function OngoingPanel({ open, onOpenChange }: OngoingPanelProps) {
+  const { accounts } = useAccounts();
+  const { watches } = useWatches();
+  const byAccount = useSyncByAccount();
+  const ongoing = useMemo(() => {
+    if (!open) return [];
+    return buildEntities(accounts, watches, byAccount).filter(
+      (e) => e.tone === "run",
+    );
+  }, [open, accounts, watches, byAccount]);
+  const goSources = closeThen(onOpenChange, openSources);
 
   return (
     <StatusPanel
       open={open}
-      onOpenChange={(next) => onOpenChange(next ? "ongoing" : null)}
+      onOpenChange={bindPanel(onOpenChange, "ongoing")}
       heading="Ongoing"
       icon={<SyncIcon />}
     >
@@ -49,27 +41,16 @@ export function OngoingPanel({
       ) : (
         <List>
           {ongoing.map((entity) => (
-            <EntityRow key={entity.id} entity={entity} onClick={goSources} />
+            <EntityRow
+              key={entity.id}
+              entity={entity}
+              subtitle={entity.model.statusText}
+              meta="now"
+              onClick={goSources}
+            />
           ))}
         </List>
       )}
     </StatusPanel>
-  );
-}
-
-function EntityRow({
-  entity,
-  onClick,
-}: {
-  entity: StatusEntity;
-  onClick: () => void;
-}) {
-  return (
-    <Row
-      title={entity.title}
-      subtitle={entity.model.statusText}
-      meta="now"
-      onClick={onClick}
-    />
   );
 }

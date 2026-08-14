@@ -3,6 +3,8 @@
   gap: 12px;
   align-items: center;
   width: 100%;
+  /* Shrink-wrapped parents (settings ItemControl) otherwise collapse the track. */
+  min-width: 168px;
 }
 
 .label {
@@ -15,6 +17,9 @@
   display: flex;
   flex: 1 1 auto;
   align-items: center;
+  /* Fixed basis so percentage track width resolves under flex: none parents. */
+  width: 120px;
+  min-width: 120px;
   height: 16px;
 }
 

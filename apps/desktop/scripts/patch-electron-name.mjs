@@ -20,9 +20,7 @@ const distDir = resolve(electronPkg, "dist");
 const pathTxt = resolve(electronPkg, "path.txt");
 const electronApp = resolve(distDir, "Electron.app");
 const pondApp = resolve(distDir, `${APP_NAME}.app`);
-/** Prefer the amber dev mark; fall back to prod if generate-dev-icon hasn't run. */
-const pondIcnsPath = resolve(appRoot, "build/icon.development.icns");
-const pondIcnsFallback = resolve(appRoot, "build/icon.icns");
+const pondIcnsPath = resolve(appRoot, "build/icon.icns");
 const relativeBinary = `${APP_NAME}.app/Contents/MacOS/Electron`;
 
 async function main() {
@@ -94,14 +92,11 @@ async function patchPlist(plistPath) {
 }
 
 async function patchIcon(electronIcnsPath) {
-  for (const src of [pondIcnsPath, pondIcnsFallback]) {
-    try {
-      await copyFile(src, electronIcnsPath);
-      console.log(`[pond] patched dev Electron bundle icon → ${src}`);
-      return;
-    } catch (err) {
-      if (err.code !== "ENOENT") throw err;
-    }
+  try {
+    await copyFile(pondIcnsPath, electronIcnsPath);
+    console.log(`[pond] patched dev Electron bundle icon → ${pondIcnsPath}`);
+  } catch (err) {
+    if (err.code !== "ENOENT") throw err;
   }
 }
 

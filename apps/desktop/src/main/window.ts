@@ -6,6 +6,7 @@ import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
 import { getPrefs, setPrefs } from "./core/prefs";
 import { consumePendingDeepLink } from "./deep-link";
+import { resolveMainOut, resolvePreload } from "./lib/resolve-preload";
 import { resolveTheme } from "./theme";
 import { ensureTray, type TrayHandle } from "./tray";
 
@@ -109,12 +110,7 @@ export async function createWindow(): Promise<BrowserWindow> {
         ? "#000000"
         : "#ffffff";
 
-  const appIcon = join(
-    __dirname,
-    app.isPackaged
-      ? "../../build/icon.png"
-      : "../../build/icon.development.png",
-  );
+  const appIcon = join(__dirname, "../../build/icon.png");
 
   const win = new BrowserWindow({
     width: restored?.width ?? 1280,
@@ -128,7 +124,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
     ...(!isMac ? { icon: appIcon } : {}),
     webPreferences: {
-      preload: join(__dirname, "../preload/index.cjs"),
+      preload: resolvePreload("index.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
@@ -229,7 +225,7 @@ export async function createWindow(): Promise<BrowserWindow> {
       win.webContents.openDevTools({ mode: "detach" });
     }
   } else {
-    await win.loadFile(join(__dirname, "../renderer/index.html"));
+    await win.loadFile(resolveMainOut("../renderer/index.html"));
   }
 
   mainWindow = win;

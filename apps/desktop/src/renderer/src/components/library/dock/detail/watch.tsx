@@ -7,12 +7,10 @@ import {
 } from "@pond/icons/fill/18";
 import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
 import { Button, TrayCard } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
 import { useRef } from "react";
 import { openTrayConfirm } from "@/components/library/dock/confirm";
 import { openFrequencyPage } from "@/components/library/dock/detail/frequency";
 import { HeroAvatar } from "@/components/library/dock/detail/hero-avatar";
-import { useDock } from "@/components/library/dock/lib/context";
 import {
   accountName,
   watchName,
@@ -30,11 +28,10 @@ import {
   type WatchRow,
 } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
+import { viewAccountItems } from "@/lib/ui/open-search";
 import { formatNumber } from "@/lib/util/format";
-import { clearAsk } from "@/stores/ask-store";
 import { sourceDetail, useDetailWatchId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
-import { setSearchInput } from "@/stores/view-store";
 import { useFrequencyRow } from "./frequency-row";
 import styles from "./watch.module.css";
 
@@ -65,8 +62,6 @@ function WatchDetail({
   watch: WatchRow;
   onChanged: () => void;
 }) {
-  const dock = useDock();
-  const navigate = useNavigate();
   const { accounts } = useAccounts();
   const byAccount = useSyncByAccount();
   const status = byAccount[watch.id];
@@ -90,12 +85,7 @@ function WatchDetail({
     onChanged();
   };
 
-  const viewItems = () => {
-    clearAsk();
-    setSearchInput([{ field: "account", operator: "eq", value: watch.id }], "");
-    dock.closeViewMenu();
-    void navigate({ to: "/" });
-  };
+  const viewItems = () => viewAccountItems(watch.id);
 
   const confirmStopWatching = () => {
     openTrayConfirm({

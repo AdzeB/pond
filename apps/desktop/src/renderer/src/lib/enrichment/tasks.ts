@@ -74,7 +74,7 @@ export async function autoTag(ids?: TaskScope): Promise<TaskResult> {
   };
 }
 
-/** Backend job; only images without a palette are touched. */
+/** Backend job; fills missing palettes and cover blurhashes. */
 export async function backfillColors(): Promise<TaskResult> {
   const job = activity.start("Backfilling colors");
   const res = (await window.pond.query("saves.backfillColors", {})) as {
@@ -89,15 +89,15 @@ export async function backfillColors(): Promise<TaskResult> {
   activity.done(
     job,
     updated > 0
-      ? `Updated ${updated} ${plural(updated, "image")}`
-      : "All images already have colors",
+      ? `Updated ${updated} ${plural(updated, "item")}`
+      : "All items already have colors",
   );
   return {
     ok: true,
     message:
       updated > 0
-        ? `Updated ${updated} ${plural(updated, "image")}.`
-        : "All images already have colors.",
+        ? `Updated ${updated} ${plural(updated, "item")}.`
+        : "All items already have colors.",
   };
 }
 

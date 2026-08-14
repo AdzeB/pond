@@ -36,6 +36,11 @@ const STAGE_LABELS: Record<Op, string> = {
   finalize: "Finalizing",
 };
 
+function stageLabel(op: Op, source: string): string {
+  if (op === "capture_tweet" && source === "threads") return "Capturing post";
+  return STAGE_LABELS[op];
+}
+
 function toRow(save: Save): QueueRow | null {
   let status: RowStatus;
   if (save.status === "ingesting") status = "saving";
@@ -54,9 +59,9 @@ function toRow(save: Save): QueueRow | null {
   let error: string | null = null;
   for (const t of tasks) {
     if (t.status === "done") done += 1;
-    else if (t.status === "running") stage = STAGE_LABELS[t.op];
+    else if (t.status === "running") stage = stageLabel(t.op, save.source);
     else if (t.status === "failed") {
-      stage ??= STAGE_LABELS[t.op];
+      stage ??= stageLabel(t.op, save.source);
       /** Prefer the root failure over cascaded "blocked by …" follow-ons. */
       if (
         !error ||
@@ -70,7 +75,7 @@ function toRow(save: Save): QueueRow | null {
   /** Nothing running yet: show the first unfinished op. */
   if (status === "saving" && !stage) {
     const next = tasks.find((t) => t.status !== "done");
-    stage = next ? STAGE_LABELS[next.op] : null;
+    stage = next ? stageLabel(next.op, save.source) : null;
   }
 
   return {

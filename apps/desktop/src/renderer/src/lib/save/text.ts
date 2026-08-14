@@ -55,7 +55,7 @@ export function isTextOnlyAsideFromCover(save: Save): boolean {
 
 /** Save with prose and no image/video/archive to show in the media slot. */
 export function isTextOnlySave(save: Save): boolean {
-  if (save.source === "twitter") return false;
+  if (save.source === "twitter" || save.source === "threads") return false;
   if (hasArchive(save)) return false;
   if (!textBodyForSave(save)) return false;
   return isTextOnlyAsideFromCover(save);

@@ -131,6 +131,7 @@ function migratePond(sqlite: Database.Database): void {
 					height INTEGER,
 					file_size INTEGER,
 					phash TEXT,
+					blurhash TEXT,
 					embedding TEXT,
 					embedding_model TEXT,
 					caption TEXT,
@@ -294,6 +295,7 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "saves", "suggested_tags", "TEXT");
   addColumnIfMissing(sqlite, "saves", "suggested_tags_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "account_id", "TEXT");
+  addColumnIfMissing(sqlite, "saves", "blurhash", "TEXT");
   addColumnIfMissing(sqlite, "pipeline_events", "account_id", "TEXT");
   sqlite.exec(
     "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",

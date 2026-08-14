@@ -17,6 +17,7 @@ const SIDECAR_FILE = "enrichment.json";
 
 const ENRICHMENT_KEYS = [
   "phash",
+  "blurhash",
   "caption",
   "captionModel",
   "ocrText",
@@ -78,6 +79,7 @@ export function readEnrichmentSidecar(id: string): EnrichmentFields | null {
   const out: Record<string, unknown> = {};
   const raw = read.data;
   copyString(raw, out, "phash");
+  copyString(raw, out, "blurhash");
   copyString(raw, out, "caption");
   copyString(raw, out, "captionModel");
   copyString(raw, out, "ocrText");
@@ -139,6 +141,7 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
     .where(
       or(
         isNotNull(savesTable.phash),
+        isNotNull(savesTable.blurhash),
         isNotNull(savesTable.caption),
         isNotNull(savesTable.ocrText),
         isNotNull(savesTable.transcript),

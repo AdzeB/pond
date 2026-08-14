@@ -12,7 +12,10 @@ export function ExtensionCaptureToast() {
       const event = raw as SyncActionEvent;
       if (event.modelName !== "save" || event.action !== "I") return;
       if (!EXTENSION_CAPTURE_RE.test(event.actorReason ?? "")) return;
-      notify({ id: "extension-capture", title: "Saved to Pond" });
+      notify({
+        id: "extension-capture",
+        title: "Saved to Pond",
+      });
     });
   }, []);
 

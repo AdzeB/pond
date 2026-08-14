@@ -41,6 +41,7 @@ function Bar({
       onCapturePage={() => undefined}
       onTokenChange={() => undefined}
       onTokenSubmit={() => undefined}
+      onRetry={() => undefined}
     />
   );
 }
@@ -113,6 +114,12 @@ export function Gallery() {
         <Frame label="Idle" note="connected">
           <Bar mode="idle-connected" />
         </Frame>
+        <Frame label="Idle" note="offline">
+          <Bar
+            mode="idle-offline"
+            error="Pond isn't running. Open the app and try again."
+          />
+        </Frame>
         <Frame label="Link" note="empty">
           <Bar mode="link-empty" />
         </Frame>
@@ -127,6 +134,12 @@ export function Gallery() {
         </Frame>
         <Frame label="Link" note="error">
           <Bar mode="link-error" error="This isn't a pairing token" />
+        </Frame>
+        <Frame label="Action" note="error">
+          <Bar
+            mode="action-error"
+            error="Couldn't capture this page. Try again."
+          />
         </Frame>
       </div>
     </main>

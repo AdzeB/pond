@@ -49,12 +49,12 @@ export function SaveDetailPage() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["viewer.prev-save"].keys,
+      hotkey: SHORTCUTS["viewer.prev-save"].keys!,
       callback: () => stepSave(-1),
       options: { ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["viewer.next-save"].keys,
+      hotkey: SHORTCUTS["viewer.next-save"].keys!,
       callback: () => stepSave(1),
       options: { ignoreInputs: true },
     },

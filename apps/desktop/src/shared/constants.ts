@@ -19,7 +19,6 @@ export const IPC = {
   redo: "pond:redo",
   query: "pond:query",
   syncAction: "pond:sync-action",
-  mediaIndexStatus: "pond:media-index-status",
   appInfo: "pond:app-info",
   nav: "pond:nav",
   openExternal: "pond:open-external",

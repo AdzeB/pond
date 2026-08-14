@@ -22,12 +22,6 @@ export const bouncySpring: Transition = {
 const DOCK_EASE: [number, number, number, number] = [0.25, 1, 0.5, 1];
 const FAMILY_CONTENT_DURATION = 0.4;
 
-/** Directional route swaps ride the dock curve at content pace so tab changes fly instead of teleporting. */
-export const routeSwapTransition: Transition = {
-  duration: FAMILY_CONTENT_DURATION * 0.75,
-  ease: DOCK_EASE,
-};
-
 export interface DockMotion {
   pillTransition: Transition;
   /** For size changes within one view (nav unfold, composer growth): quick, unlike the deliberate view morph. */

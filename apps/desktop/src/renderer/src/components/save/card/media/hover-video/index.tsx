@@ -1,28 +1,64 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
-import { recordAspect } from "@/stores/aspect";
+import type { MediaUnit } from "@/lib/media/units";
+import { aspectCoverKey, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
+
+/** Seek can throw before metadata is available. */
+function seekToStart(el: HTMLVideoElement) {
+  try {
+    el.currentTime = 0;
+  } catch {
+    /* ignore */
+  }
+}
 
 export function HoverVideo({
   saveId,
   src,
+  unit,
   posterUrl,
+  blurhash,
   label,
   onBroken,
   onReady,
+  /** When set, the resting poster must not displace the stream's known aspect. */
+  hasVideoDims = false,
 }: {
   saveId: string;
   src: string;
+  unit: MediaUnit;
   posterUrl?: string;
+  blurhash?: string | null;
   label: string;
   onBroken: () => void;
-  onReady: () => void;
+  onReady?: () => void;
+  hasVideoDims?: boolean;
 }) {
   const internalRef = useRef<HTMLVideoElement | null>(null);
-  const [primed, setPrimed] = useState(false);
+  const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
-  const poster = useImageReady(posterUrl ?? null, onReady);
+  const [posterBroken, setPosterBroken] = useState(false);
+  const coverKey = aspectCoverKey(unit);
+  const effectivePosterUrl = posterBroken ? undefined : posterUrl;
+  const needsRestingVideo = !effectivePosterUrl;
+  const primed = hoverPrimed || needsRestingVideo;
+
+  const reportPosterReady = useCallback(
+    (image: HTMLImageElement) => {
+      /** Platform posters can disagree with the stream (YouTube Shorts 16:9 blur composites). */
+      if (!hasVideoDims) {
+        recordAspect(saveId, image.naturalWidth, image.naturalHeight, {
+          coverKey,
+        });
+      }
+      onReady?.();
+    },
+    [coverKey, hasVideoDims, onReady, saveId],
+  );
+  const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 
   useEffect(() => {
     if (!active || !primed) return;
@@ -36,7 +72,7 @@ export function HoverVideo({
 
   const onEnter = useCallback(() => {
     setActive(true);
-    setPrimed(true);
+    setHoverPrimed(true);
   }, []);
 
   const onLeave = useCallback(() => {
@@ -44,11 +80,7 @@ export function HoverVideo({
     const el = internalRef.current;
     if (!el) return;
     el.pause();
-    try {
-      el.currentTime = 0;
-    } catch {
-      /* Seek can throw if metadata hasn't loaded yet. */
-    }
+    seekToStart(el);
   }, []);
 
   const onLoadedMetadata = useCallback(() => {
@@ -59,23 +91,42 @@ export function HoverVideo({
       onBroken();
       return;
     }
-    recordAspect(saveId, el.videoWidth, el.videoHeight);
-  }, [onBroken, saveId]);
+    recordAspect(saveId, el.videoWidth, el.videoHeight, {
+      coverKey,
+      soft: Boolean(effectivePosterUrl),
+    });
+    if (needsRestingVideo) {
+      seekToStart(el);
+      onReady?.();
+      setVideoReady(true);
+    }
+  }, [
+    coverKey,
+    effectivePosterUrl,
+    needsRestingVideo,
+    onBroken,
+    onReady,
+    saveId,
+  ]);
+
+  const showHash =
+    Boolean(blurhash) && (effectivePosterUrl ? !poster.loaded : !videoReady);
 
   return (
     <>
-      {posterUrl ? (
+      {showHash && blurhash ? <BlurHash hash={blurhash} /> : null}
+      {effectivePosterUrl ? (
         <img
           ref={poster.ref}
-          src={posterUrl}
+          src={effectivePosterUrl}
           alt=""
           decoding="async"
           fetchPriority="auto"
           className={styles.poster}
-          data-loaded={poster.loaded ? "true" : "false"}
+          data-loaded={!blurhash || poster.loaded ? "true" : "false"}
           draggable={false}
           onLoad={poster.onLoad}
-          onError={onBroken}
+          onError={() => setPosterBroken(true)}
         />
       ) : null}
       <video
@@ -88,6 +139,7 @@ export function HoverVideo({
         className={styles.media}
         data-active={active ? "true" : undefined}
         data-ready={videoReady ? "true" : undefined}
+        data-resting={needsRestingVideo && videoReady ? "true" : undefined}
         aria-label={label}
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}

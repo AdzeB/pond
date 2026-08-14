@@ -1,94 +1,72 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "motion/react";
-import { useRef } from "react";
+import { useLayoutEffect } from "react";
 import { AppShell } from "@/components/shell/app-shell";
 import {
   ScrollRestorationContext,
   useScrollRestoration,
 } from "@/hooks/use-scroll-restoration";
-import { routeSwapTransition } from "@/lib/ui/motion";
+import {
+  getLastListPath,
+  getLastListSearch,
+  rememberListPath,
+} from "@/lib/ui/list-path";
+import { saveIdFromPath } from "@/lib/ui/save-nav";
+import { LibraryView } from "@/routes/_library/-library-view";
 import { useActiveTabId } from "@/stores/tabs";
 import styles from "./styles.module.css";
-
-/** Mirrors the dock's nav order so travel direction matches the tab you aimed at. */
-const SECTION_ORDER = ["library", "sources", "analytics", "trash"] as const;
-
-type Section = (typeof SECTION_ORDER)[number];
-
-function sectionFor(pathname: string): Section {
-  if (pathname.startsWith("/sources")) return "sources";
-  if (pathname.startsWith("/analytics")) return "analytics";
-  if (pathname === "/trash") return "trash";
-  return "library";
-}
-
-/** The dock ease front-loads so hard the fade was invisible; opacity gets its own linear ramp to stay perceptible. */
-const routeTransition = {
-  ...routeSwapTransition,
-  opacity: { duration: 0.25, ease: "linear" as const },
-};
-
-/** Remounts routed content per section with a short fade-slide toward the direction of travel. */
-function RoutedContent() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const reduceMotion = useReducedMotion();
-  const section = sectionFor(pathname);
-
-  const prev = useRef(section);
-  const direction = useRef(0);
-  /** False on first paint (incl. remount after leaving save detail) so that path stays instant. */
-  const hasMounted = useRef(false);
-  let animateEnter = false;
-  if (prev.current !== section) {
-    direction.current = Math.sign(
-      SECTION_ORDER.indexOf(section) - SECTION_ORDER.indexOf(prev.current),
-    );
-    prev.current = section;
-    animateEnter = hasMounted.current;
-  }
-  hasMounted.current = true;
-
-  return (
-    <motion.div
-      key={section}
-      className={styles.route}
-      initial={
-        animateEnter
-          ? { opacity: 0, x: reduceMotion ? 0 : 16 * direction.current }
-          : false
-      }
-      animate={{ opacity: 1, x: 0 }}
-      transition={routeTransition}
-    >
-      <Outlet />
-    </motion.div>
-  );
-}
 
 export function Library() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.searchStr });
   const activeTabId = useActiveTabId();
+  const isSave = saveIdFromPath(pathname) !== null;
+  const isSources = pathname.startsWith("/sources");
+  const showLibraryGrid = !isSources;
+
+  useLayoutEffect(() => {
+    rememberListPath(pathname, search);
+  }, [pathname, search]);
+
+  const listPath = isSave ? getLastListPath() : pathname;
+  const listSearch = isSave ? getLastListSearch() : search;
+  /** Stable across save open/close so scroll restoration does not re-run and wipe offset. */
   const restoration = useScrollRestoration(
-    `${activeTabId}:${pathname}${search}`,
+    `${activeTabId}:${listPath}${listSearch}`,
   );
-  const isSave = pathname.startsWith("/save/");
-  if (isSave) return <Outlet />;
 
   return (
-    <AppShell.Content>
-      <Shell.Body className={styles.body}>
-        <ScrollRestorationContext.Provider value={restoration}>
-          <Shell.Main
-            ref={restoration.ref}
-            className={styles.main}
-            data-library-grid-viewport
-          >
-            <RoutedContent />
-          </Shell.Main>
-        </ScrollRestorationContext.Provider>
-      </Shell.Body>
-    </AppShell.Content>
+    <div className={styles.stage}>
+      {showLibraryGrid ? (
+        <div
+          className={styles.keepAlive}
+          data-suppressed={isSave || undefined}
+          inert={isSave || undefined}
+          aria-hidden={isSave || undefined}
+        >
+          <AppShell.Content>
+            <Shell.Body className={styles.body}>
+              <ScrollRestorationContext.Provider value={restoration}>
+                <Shell.Main
+                  ref={restoration.ref}
+                  className={styles.main}
+                  data-library-grid-viewport
+                >
+                  <LibraryView />
+                </Shell.Main>
+              </ScrollRestorationContext.Provider>
+            </Shell.Body>
+          </AppShell.Content>
+        </div>
+      ) : null}
+
+      {isSave ? (
+        <div className={styles.overlay}>
+          <Outlet />
+        </div>
+      ) : isSources ? (
+        <Outlet />
+      ) : null}
+    </div>
   );
 }

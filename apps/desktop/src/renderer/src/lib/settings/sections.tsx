@@ -85,7 +85,7 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   skills: {
     title: "Skills",
     description:
-      "Saved prompts you can run with “/” in the composer. Each one resolves through the “find anything” search.",
+      "Saved prompts for AI search. Each one resolves through natural-language library search.",
     keywords: ["prompts", "commands", "slash", "shortcuts", "automation"],
     component: SkillsSection,
   },

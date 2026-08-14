@@ -62,7 +62,7 @@ const TASKS: readonly LibraryTask[] = [
   {
     id: "backfill-colors",
     label: "Backfill Colors",
-    description: "Extract colors for images missing a palette.",
+    description: "Extract colors and cover blurhashes for items missing them.",
     action: "Run",
     group: "enrichment",
     keywords: ["colors", "colours", "palette"],

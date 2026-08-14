@@ -1,6 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { WelcomeEmpty } from "@/components/library/empty";
+import { LibraryLoading, WelcomeEmpty } from "@/components/library/empty";
 import { LibraryGrid } from "@/components/library/layouts/grid";
 import { LayoutSwitcher } from "@/components/shared/layout-switcher";
 import { useCardActions } from "@/hooks/use-card-actions";
@@ -57,10 +57,12 @@ export function LibraryView() {
       onDragOver={actions.onDragOver}
       onDrop={(e) => void actions.onDrop(e)}
     >
-      {data.filtered.length === 0 ? (
-        !data.bootReady ? null : data.mode === "trash" ? (
+      {!data.bootReady ? (
+        <LibraryLoading />
+      ) : data.filtered.length === 0 ? (
+        data.mode === "trash" ? (
           <LibraryGrid.Empty>Trash is empty.</LibraryGrid.Empty>
-        ) : data.totalSaves === 0 ? (
+        ) : paging.total === 0 ? (
           <WelcomeEmpty />
         ) : (
           <LibraryGrid.Empty>

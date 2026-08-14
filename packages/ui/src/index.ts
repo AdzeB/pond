@@ -1,5 +1,16 @@
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
+export {
+  Attachments,
+  Chip,
+  type ChipTone,
+  Conversation,
+  Loader,
+  Message,
+  PromptInput,
+  Shimmer,
+  Suggestion,
+} from "./ai";
 export { AlertDialog } from "./alert-dialog";
 export { Button, type ButtonProps } from "./button";
 export { Checkbox } from "./checkbox";
@@ -43,3 +54,9 @@ export {
 } from "./tray-card/context";
 export { Video } from "./video";
 export { useVideo, type VideoContextValue } from "./video/context";
+export {
+  useWindow,
+  Window,
+  type WindowContextValue,
+  type WindowEdge,
+} from "./window";

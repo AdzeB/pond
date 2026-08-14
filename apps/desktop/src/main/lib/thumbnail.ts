@@ -140,6 +140,9 @@ type ThumbnailOutput = { width: number; out: string };
 export async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
+  const exact = lookupExactCachedThumbnail(req);
+  if (exact) return exact;
+
   const { saveId, sourcePath, width } = req;
   const version = await resolveVersion(sourcePath, req.version);
   if (!version) return null;
@@ -188,6 +191,48 @@ export async function getOrCreateThumbnail(
   } finally {
     inflight.delete(out);
   }
+}
+
+function lookupExactCachedThumbnail(req: {
+  saveId: string;
+  sourcePath: string;
+  width: number;
+  version: string | null;
+}): { path: string } | null {
+  if (!req.version) return null;
+  const segment = sanitizeSegment(req.saveId);
+  const dir = join(thumbnailCacheRoot(), segment);
+  const out = thumbnailOutput(dir, req.sourcePath, req.version, req.width);
+  if (existsSync(out)) return { path: out };
+  const legacyOut = thumbnailOutput(
+    join(libraryRoot(), LEGACY_THUMBS_DIRNAME, segment),
+    req.sourcePath,
+    req.version,
+    req.width,
+  );
+  if (existsSync(legacyOut)) return { path: legacyOut };
+  return null;
+}
+
+/**
+ * Sync cache probe for the protocol hot path. Never generates.
+ * Exact width only: a different bucket must not stand in for the card thumb.
+ */
+export function lookupCachedThumbnail(req: {
+  saveId: string;
+  sourcePath: string;
+  width: number;
+  version: string | null;
+}): { path: string } | null {
+  return lookupExactCachedThumbnail(req);
+}
+
+/** Kick generation off the protocol path so the grid can paint the original immediately. */
+export function ensureThumbnailInBackground(req: ThumbnailRequest): void {
+  void getOrCreateThumbnail({
+    ...req,
+    priority: req.priority ?? "background",
+  }).catch(() => {});
 }
 
 /** Generates several cache buckets through one decoded source pipeline. */
@@ -318,15 +363,10 @@ async function generateMany(
       const maxWidth = Math.max(...missing.map(({ width }) => width));
       const source = await thumbnailPipeline(sourcePath, maxWidth, kind);
       if (!source) return results;
-      const { pipeline, metadata: meta } = source;
-      /** Multi-page = animated; resizing would flatten it, so serve the original. */
-      if ((meta.pages ?? 1) > 1) return results;
+      const { pipeline } = source;
 
       await mkdir(dir, { recursive: true });
-      /** Keep the LQIP first while clones share the same decoded input. */
-      for (const { out, width } of [...missing].sort(
-        (a, b) => a.width - b.width,
-      )) {
+      for (const { out, width } of missing) {
         try {
           /** Write to a temp path then rename so a crash can't leave a truncated cache hit. */
           const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
@@ -361,8 +401,8 @@ async function thumbnailPipeline(
     return nativeThumbnailPipeline(sourcePath, width);
   }
 
-  const pipeline = sharp(sourcePath, { failOn: "none" });
-  /** Decode by file contents: imported JPEGs can carry a misleading .heic extension. */
+  const pipeline = sharp(sourcePath, { failOn: "none", pages: 1 });
+  /** Decode by file contents: imported JPEGs can carry a misleading .heic extension. First page only so GIFs flatten for the grid. */
   return { pipeline, metadata: await pipeline.metadata() };
 }
 

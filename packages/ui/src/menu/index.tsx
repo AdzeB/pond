@@ -3,6 +3,7 @@ import { Menu as Base } from "@base-ui/react/menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
+import { forwardRef } from "react";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
 import { Switch } from "../switch";
@@ -58,6 +59,35 @@ function Positioner({
 
 function Popup({ className, ...props }: Base.Popup.Props) {
   return <Base.Popup {...props} className={cn(styles.popup, className)} />;
+}
+
+/** Popup chrome without Base UI Menu state; for hosts that own open/position (e.g. Lexical typeahead). */
+const Surface = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  function Surface({ className, ...props }, ref) {
+    return <div ref={ref} className={cn(styles.popup, className)} {...props} />;
+  },
+);
+
+/** Item chrome without Base UI Menu state; set `highlighted` for keyboard/hover active. */
+function Row({
+  className,
+  highlighted = false,
+  type = "button",
+  ...props
+}: React.ComponentProps<"button"> & { highlighted?: boolean }) {
+  return (
+    <button
+      type={type}
+      data-highlighted={highlighted || undefined}
+      className={cn(styles.item, className)}
+      {...props}
+    />
+  );
+}
+
+/** Group label chrome without Base UI Menu state. */
+function SectionLabel({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn(styles["group-label"], className)} {...props} />;
 }
 
 function Viewport({ className, ...props }: Base.Viewport.Props) {
@@ -280,9 +310,11 @@ export const Menu = {
   Portal,
   Positioner,
   Popup,
+  Surface,
   Viewport,
   Arrow,
   Item,
+  Row,
   LinkItem,
   ItemIcon,
   ItemLabel,
@@ -291,6 +323,7 @@ export const Menu = {
   SecondaryLabel,
   Group,
   GroupLabel,
+  SectionLabel,
   Separator,
   RadioGroup,
   RadioItem,

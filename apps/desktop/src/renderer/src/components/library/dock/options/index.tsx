@@ -1,7 +1,4 @@
 import { TrayCard } from "@pond/ui";
-import { AnalyticsDuplicateSection } from "@/components/library/dock/analytics/duplicate";
-import { AnalyticsRangeSection } from "@/components/library/dock/analytics/range";
-import { AnalyticsRenameSection } from "@/components/library/dock/analytics/rename";
 import { ConfirmSection } from "@/components/library/dock/confirm";
 import { ConnectSourceSection } from "@/components/library/dock/connect";
 import { ConnectHelpSection } from "@/components/library/dock/connect/help";
@@ -24,6 +21,7 @@ import { WatchKindSection } from "@/components/library/dock/watch/kind";
 import { WatchTargetSection } from "@/components/library/dock/watch/target";
 import { DisplaySection } from "@/components/library/view-menu/display";
 import { LayoutSection } from "@/components/library/view-menu/layout";
+import { OptionsSection } from "@/components/library/view-menu/options";
 import {
   SortGroupSection,
   SortSection,
@@ -33,6 +31,7 @@ import { SearchHelpSection } from "@/components/search/bar/lib/help";
 import styles from "./styles.module.css";
 
 const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
+  options: OptionsSection,
   layout: LayoutSection,
   zoom: ZoomSection,
   sort: SortSection,
@@ -56,9 +55,6 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
   "watch-detail": WatchDetailSection,
   "sync-frequency": FrequencySection,
   "source-new": SourceNewSection,
-  "analytics-range": AnalyticsRangeSection,
-  "analytics-rename": AnalyticsRenameSection,
-  "analytics-duplicate": AnalyticsDuplicateSection,
   confirm: ConfirmSection,
   "selection-run": SelectionRunSection,
   "selection-tag": SelectionTagSection,

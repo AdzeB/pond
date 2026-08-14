@@ -1,4 +1,3 @@
-import { CARD_LQIP_WIDTH } from "@shared/media-index";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   type ReactNode,
@@ -15,9 +14,7 @@ import {
   LibraryGrid,
 } from "@/components/library/layouts/grid";
 import { SaveCard } from "@/components/save/card";
-import type { CardLayout } from "@/components/save/card/media";
 import { useMultiSelectActive } from "@/components/shared/grid-context";
-import { useResolvedTheme } from "@/hooks/use-resolved-theme";
 import {
   recallScroll,
   recallScrollAnchor,
@@ -26,13 +23,7 @@ import {
   type ScrollAnchor,
   ScrollRestorationContext,
 } from "@/hooks/use-scroll-restoration";
-import { cardPreviewSource } from "@/lib/media/card-preview";
-import { retainPreviewRunway } from "@/lib/media/preview-runway";
-import { pickPrimaryUnit } from "@/lib/media/units";
-import { withThumbWidth } from "@/lib/media/url";
 import { findScrollParent } from "@/lib/util/dom";
-import { pool } from "@/stores/pool";
-import { usePrefs } from "@/stores/prefs";
 import type { PackedItem } from "./uniform-pack";
 import {
   buildVirtualBands,
@@ -45,7 +36,7 @@ export { LIBRARY_ITEM_GAP, packUniform } from "./uniform-pack";
 
 const END_THRESHOLD_ITEMS = 8;
 const BAND_OVERSCAN = 3;
-const LQIP_RUNWAY_BANDS = 6;
+const RUNWAY_BANDS = 6;
 const estimateBandSize = () => PACKED_GRID_BAND_PX;
 const virtualBandKey = (index: number) => `packed-grid-band-${index}`;
 const INITIAL_VIEWPORT_RECT = {
@@ -92,14 +83,14 @@ interface PackedGridProps {
   /** Called once the visible window reaches the final rows of the grid. */
   onEndReached?: () => void;
   renderItem: (item: PackedItem) => ReactNode;
-  /** Cheap low-resolution previews to retain outside the mounted card window. */
+  /** Optional overscan indexes beyond the mounted card window. */
   onRunwayChange?: (itemIndexes: readonly number[]) => void;
 }
 
 export function surroundingBandIndexes(
   mounted: readonly number[],
   count: number,
-  runway = LQIP_RUNWAY_BANDS,
+  runway = RUNWAY_BANDS,
 ): number[] {
   if (mounted.length === 0 || count <= 0 || runway <= 0) return [];
   const first = Math.min(...mounted);
@@ -320,12 +311,13 @@ export function PackedGrid({
     [bands, virtualBandIndexes],
   );
   const runway = useMemo(() => {
+    if (!onRunwayChange) return [];
     const mounted = new Set(visible);
     return indicesForVirtualBands(
       bands,
       surroundingBandIndexes(virtualBandIndexes, bands.length),
     ).filter((index) => !mounted.has(index));
-  }, [bands, virtualBandIndexes, visible]);
+  }, [bands, onRunwayChange, virtualBandIndexes, visible]);
   const endReached = useRef(false);
 
   useEffect(() => {
@@ -373,43 +365,19 @@ export function SavePackedGrid({
   totalHeight,
   onEndReached,
 }: SavePackedGridProps) {
-  const theme = useResolvedTheme();
-  const [preferences] = usePrefs("preferences");
-  const tweetCover = preferences?.tweetCover;
-  const onRunwayChange = useCallback(
-    (indexes: readonly number[]) => {
-      const sources = new Set<string>();
-      for (const index of indexes) {
-        const item = items[index];
-        if (!item) continue;
-        const save = pool.get(item.id);
-        if (!save) continue;
-        const unit = pickPrimaryUnit(save, { theme, tweetCover });
-        if (!unit) continue;
-        const src = cardPreviewSource(save, unit);
-        if (src) sources.add(withThumbWidth(src, CARD_LQIP_WIDTH));
-      }
-      retainPreviewRunway([...sources]);
-    },
-    [items, theme, tweetCover],
-  );
-
-  useEffect(() => () => retainPreviewRunway([]), []);
-
   return (
     <PackedGrid
       layout={layout}
       items={items}
       totalHeight={totalHeight}
       onEndReached={onEndReached}
-      onRunwayChange={onRunwayChange}
       renderItem={(it) => (
         <SaveCard
           key={it.id}
           id={it.id}
-          layout={layout as CardLayout}
+          layout={layout}
           packedWidth={it.width}
-          packedHeight={it.height}
+          packedHeight={it.mediaHeight}
           packedTop={it.top}
           packedLeft={it.left}
         />

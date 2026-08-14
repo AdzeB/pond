@@ -2,7 +2,6 @@
 
 import {
   IconArchiveContent2Fill18,
-  IconChartFill18,
   IconGear3Fill18,
   IconGlobeFill18,
   IconTrash2ContentFill18,
@@ -31,7 +30,6 @@ type RailItem = {
 const RAIL_MAIN: RailItem[] = [
   { icon: IconArchiveContent2Fill18, label: "Library", active: true },
   { icon: IconGlobeFill18, label: "Sources" },
-  { icon: IconChartFill18, label: "Analytics" },
 ];
 
 const RAIL_UTILITY: RailItem[] = [

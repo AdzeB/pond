@@ -37,6 +37,39 @@ function isHttpUrl(u: string | undefined | null): u is string {
   return u.startsWith("http://") || u.startsWith("https://");
 }
 
+/** Finder/Explorer paste of file refs, not image bytes. One path uses public.file-url; several need NSFilenamesPboardType. */
+function writeFileRefsToClipboard(paths: string[]): void {
+  if (paths.length === 0) return;
+  if (process.platform !== "darwin") {
+    clipboard.writeText(paths.join("\n"));
+    return;
+  }
+  if (paths.length === 1) {
+    const path = paths[0];
+    if (!path) return;
+    const url = `file://${encodeURI(path)}`;
+    clipboard.writeBuffer("public.file-url", Buffer.from(url, "utf8"));
+    return;
+  }
+  clipboard.writeBuffer(
+    "NSFilenamesPboardType",
+    Buffer.from(filenamesPlist(paths), "utf8"),
+  );
+}
+
+function filenamesPlist(paths: string[]): string {
+  const items = paths.map((p) => `<string>${escapeXml(p)}</string>`).join("");
+  return `<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array>${items}</array></plist>`;
+}
+
+function escapeXml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
 /** Public http(s) URL for the save's primary image, for reverse image search. */
 function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (!raw) return null;
@@ -457,16 +490,40 @@ export const savesQueries: QueryHandlerMap = {
     );
     if (!target.ok) return target;
     try {
-      if (process.platform === "darwin") {
-        /** Write the file reference to the pasteboard so it pastes as a file into Finder or Mail, distinct from the image data copy. */
-        const url = `file://${encodeURI(target.path)}`;
-        clipboard.writeBuffer("public.file-url", Buffer.from(url, "utf8"));
-      } else {
-        clipboard.writeText(target.path);
-      }
+      writeFileRefsToClipboard([target.path]);
       return { ok: true as const };
     } catch (err) {
       log.warn("[pond ipc] saves.copyFile failed", err);
+      return { ok: false as const, reason: "internal_error" as const };
+    }
+  },
+
+  async "saves.copyFiles"(params) {
+    const raw = params.files;
+    if (!Array.isArray(raw) || raw.length === 0) {
+      return { ok: false as const, reason: "not_found" as const };
+    }
+    const paths: string[] = [];
+    for (const entry of raw) {
+      if (!entry || typeof entry !== "object") continue;
+      const rec = entry as Record<string, unknown>;
+      const id = String(rec.id ?? "");
+      const fileIndex = Number(rec.fileIndex ?? 0);
+      if (!id) continue;
+      const target = await resolveSaveFilePath(
+        id,
+        Number.isFinite(fileIndex) ? fileIndex : 0,
+      );
+      if (target.ok) paths.push(target.path);
+    }
+    if (paths.length === 0) {
+      return { ok: false as const, reason: "missing" as const };
+    }
+    try {
+      writeFileRefsToClipboard(paths);
+      return { ok: true as const, copied: paths.length };
+    } catch (err) {
+      log.warn("[pond ipc] saves.copyFiles failed", err);
       return { ok: false as const, reason: "internal_error" as const };
     }
   },
@@ -486,29 +543,35 @@ export const savesQueries: QueryHandlerMap = {
 
   async "saves.backfillColors"() {
     const { extractPalette } = await import("../../lib/palette");
+    const { encodeBlurhash, pickBlurhashStill } = await import(
+      "../../lib/blurhash"
+    );
     const { itemFile } = await import("../../paths");
 
     const db = await getDb();
-    const rows = await db
-      .select()
-      .from(saves)
-      .where(eq(saves.mediaType, "image"));
+    const rows = await db.select().from(saves);
 
     let updated = 0;
     for (const row of rows) {
-      if ((row.dominantColors ?? []).length > 0) continue;
-      const files = row.files ?? [];
-      const cover = files[row.coverIndex ?? 0] ?? files[0];
-      if (!cover) continue;
-      const colors = await extractPalette(itemFile(row.id, cover.path));
-      if (colors.length > 0) {
-        await persistSave(
-          row.id,
-          { dominantColors: colors },
-          { actorReason: "color:backfill" },
-        );
-        updated++;
+      const still = pickBlurhashStill(row);
+      const needsColors =
+        row.mediaType === "image" && (row.dominantColors ?? []).length === 0;
+      const needsHash = !row.blurhash && still !== null;
+      if (!needsColors && !needsHash) continue;
+      if (!still) continue;
+      const path = itemFile(row.id, still.path);
+      const patch: { dominantColors?: string[]; blurhash?: string } = {};
+      if (needsColors) {
+        const colors = await extractPalette(path);
+        if (colors.length > 0) patch.dominantColors = colors;
       }
+      if (needsHash) {
+        const hash = await encodeBlurhash(path);
+        if (hash) patch.blurhash = hash;
+      }
+      if (Object.keys(patch).length === 0) continue;
+      await persistSave(row.id, patch, { actorReason: "color:backfill" });
+      updated++;
     }
     return { ok: true, updated };
   },
@@ -573,13 +636,15 @@ function sortColumn(sortKey: string): SQLWrapper {
   }
 }
 
-/** Quote tokens for FTS5; AND for "all", OR for "any". */
+/** Quote tokens for FTS5 and suffix `*` so as-you-type prefixes match; AND for "all", OR for "any". */
 function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {
   const tokens = q
     .split(/\s+/)
-    .map((t) => t.replaceAll('"', "").replaceAll("'", "").trim())
+    .map((t) =>
+      t.replaceAll('"', "").replaceAll("'", "").replaceAll("*", "").trim(),
+    )
     .filter((t) => t.length > 0);
   if (tokens.length === 0) return null;
-  const quoted = tokens.map((t) => `"${t}"`);
+  const quoted = tokens.map((t) => `"${t}"*`);
   return quoted.join(mode === "any" ? " OR " : " ");
 }

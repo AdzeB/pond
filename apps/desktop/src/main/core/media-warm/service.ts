@@ -1,17 +1,13 @@
 import type { Save } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { BrowserWindow, powerMonitor } from "electron";
+import { powerMonitor } from "electron";
 import log from "electron-log/main.js";
-import { IPC } from "../../../shared/constants";
 import type {
   MediaIndexPauseReason,
   MediaIndexStatus,
 } from "../../../shared/media-index";
-import { CARD_INDEX_WIDTHS } from "../../../shared/media-index";
 import { getDb } from "../../db";
-import { prepareThumbnails } from "../../lib/thumbnail";
-import { itemFile } from "../../paths";
 import { runEnsurePoster } from "../pipeline/workers/ensure-poster";
 import { type MediaWarmCandidate, mediaWarmCandidates } from "./candidates";
 import { mediaWarmPauseReason, type ThermalState } from "./policy";
@@ -33,7 +29,6 @@ let candidates: MediaWarmCandidate[] = [];
 let timer: NodeJS.Timeout | null = null;
 let started = false;
 let stopped = false;
-let userPaused = false;
 let manual = false;
 let failures = 0;
 let thermal: ThermalState = "unknown";
@@ -48,21 +43,11 @@ function publish(patch: Partial<MediaIndexStatus>): void {
   const next = { ...status, ...patch };
   if (JSON.stringify(next) === JSON.stringify(status)) return;
   status = next;
-  for (const win of BrowserWindow.getAllWindows()) {
-    if (!win.isDestroyed()) win.webContents.send(IPC.mediaIndexStatus, status);
-  }
 }
 
-export function getMediaIndexStatus(): MediaIndexStatus {
-  return status;
-}
-
-export async function startMediaIndex(opts?: {
-  manual?: boolean;
-}): Promise<MediaIndexStatus> {
+async function startMediaIndex(): Promise<void> {
   scanGeneration += 1;
-  manual = opts?.manual === true;
-  userPaused = false;
+  manual = false;
   stopped = false;
   failures = 0;
   candidates = [];
@@ -77,26 +62,6 @@ export async function startMediaIndex(opts?: {
     lastError: null,
   });
   schedule(0);
-  return status;
-}
-
-export function pauseMediaIndex(): MediaIndexStatus {
-  userPaused = true;
-  clearScheduled();
-  publish({
-    state: "paused-user",
-    currentTitle: null,
-    pauseReason: null,
-  });
-  return status;
-}
-
-export function resumeMediaIndex(): MediaIndexStatus {
-  userPaused = false;
-  manual = true;
-  publish({ state: "idle", pauseReason: null, lastError: null });
-  schedule(0);
-  return status;
 }
 
 export function startMediaWarmer(): void {
@@ -136,7 +101,7 @@ function currentThermalState(): ThermalState {
 }
 
 function kick(): void {
-  if (!userPaused && (!scanComplete || candidates.length > 0)) schedule(0);
+  if (!scanComplete || candidates.length > 0) schedule(0);
 }
 
 function clearScheduled(): void {
@@ -145,7 +110,7 @@ function clearScheduled(): void {
 }
 
 function schedule(delay: number): void {
-  if (stopped || userPaused || timer) return;
+  if (stopped || timer) return;
   timer = setTimeout(() => {
     timer = null;
     void tick();
@@ -163,7 +128,7 @@ function systemPauseReason(): MediaIndexPauseReason | null {
 }
 
 async function tick(): Promise<void> {
-  if (stopped || userPaused) return;
+  if (stopped) return;
   const reason = systemPauseReason();
   if (reason) {
     publish({
@@ -187,7 +152,7 @@ async function tick(): Promise<void> {
     } finally {
       loadingPage = false;
     }
-    if (stopped || userPaused) return;
+    if (stopped) return;
     if (generation !== scanGeneration) {
       schedule(0);
       return;
@@ -251,30 +216,17 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
     await runEnsurePoster(candidate.saveId);
     const refreshed = await readCandidateSave(candidate.saveId);
     if (!refreshed) return;
-    const next = mediaWarmCandidates(refreshed).filter(
-      (item): item is Extract<MediaWarmCandidate, { kind: "thumbnail" }> =>
-        item.kind === "thumbnail",
-    );
+    const next = mediaWarmCandidates(refreshed);
     if (next.length > 0) {
       candidates.unshift(...next);
       publish({ remaining: status.remaining + next.length });
     }
     return;
   }
-  await warmThumbnail(candidate);
-}
-
-async function warmThumbnail(
-  candidate: Extract<MediaWarmCandidate, { kind: "thumbnail" }>,
-): Promise<void> {
-  const sourcePath = itemFile(candidate.saveId, candidate.sourceFile);
-  await prepareThumbnails({
-    saveId: candidate.saveId,
-    sourcePath,
-    widths: CARD_INDEX_WIDTHS,
-    version: candidate.version,
-    priority: "background",
-  });
+  const save = await readCandidateSave(candidate.saveId);
+  if (!save) return;
+  const { writeSaveBlurhash } = await import("../../lib/blurhash");
+  await writeSaveBlurhash(save);
 }
 
 async function loadCandidatePage(generation: number): Promise<void> {
@@ -288,6 +240,10 @@ async function loadCandidatePage(generation: number): Promise<void> {
       title: saves.title,
       status: saves.status,
       files: saves.files,
+      source: saves.source,
+      url: saves.url,
+      blurhash: saves.blurhash,
+      coverIndex: saves.coverIndex,
       savedAt: saves.savedAt,
     })
     .from(saves)
@@ -310,7 +266,17 @@ async function loadCandidatePage(generation: number): Promise<void> {
 
 async function readCandidateSave(
   saveId: string,
-): Promise<Pick<Save, "id" | "title" | "status" | "files"> | null> {
+): Promise<Pick<
+  Save,
+  | "id"
+  | "title"
+  | "status"
+  | "files"
+  | "source"
+  | "url"
+  | "blurhash"
+  | "coverIndex"
+> | null> {
   const db = await getDb();
   return (
     (await db
@@ -319,6 +285,10 @@ async function readCandidateSave(
         title: saves.title,
         status: saves.status,
         files: saves.files,
+        source: saves.source,
+        url: saves.url,
+        blurhash: saves.blurhash,
+        coverIndex: saves.coverIndex,
       })
       .from(saves)
       .where(eq(saves.id, saveId))

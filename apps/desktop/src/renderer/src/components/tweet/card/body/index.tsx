@@ -32,9 +32,21 @@ function prettifyUrl(url: string): string {
   return bare.length > 30 ? `${bare.slice(0, 30)}\u2026` : bare;
 }
 
-export function Body({ text, lang }: { text: string; lang?: string }) {
+export function Body({
+  text,
+  lang,
+  className,
+}: {
+  text: string;
+  lang?: string;
+  className?: string;
+}) {
   return (
-    <p className={styles.body} lang={lang} dir="auto">
+    <p
+      className={className ? `${styles.body} ${className}` : styles.body}
+      lang={lang}
+      dir="auto"
+    >
       {renderTokens(text)}
     </p>
   );

@@ -24,6 +24,7 @@ export interface TweetCardMetrics {
   likes?: number;
   views?: number;
   bookmarks?: number;
+  shares?: number;
 }
 
 /** The linked page's OG preview X renders below a tweet; `url` is the destination, the rest is best-effort. */
@@ -60,8 +61,10 @@ interface QuotedExtra {
 
 function handleFromUrl(url: string): string | undefined {
   try {
-    const seg = new URL(url).pathname.split("/").filter(Boolean)[0];
-    return seg && /^[A-Za-z0-9_]+$/.test(seg) ? seg : undefined;
+    const first = new URL(url).pathname.split("/").filter(Boolean)[0];
+    if (!first) return undefined;
+    const handle = first.startsWith("@") ? first.slice(1) : first;
+    return /^[A-Za-z0-9._]+$/.test(handle) ? handle : undefined;
   } catch {
     return undefined;
   }
@@ -185,12 +188,15 @@ export function buildTweetCardData(
     ...(capture.lang ? { lang: capture.lang } : {}),
   };
 
-  const quoted = buildQuoted(
-    capture.extras as Record<string, unknown> | undefined,
-  );
+  const extras = capture.extras as Record<string, unknown> | undefined;
+  if (extras?.isReply === true) data.isReply = true;
+  if (typeof extras?.replyingTo === "string")
+    data.replyingTo = extras.replyingTo;
+
+  const quoted = buildQuoted(extras);
   if (quoted) data.quoted = quoted;
 
-  const card = buildCard(capture.extras as Record<string, unknown> | undefined);
+  const card = buildCard(extras);
   if (card) data.card = card;
 
   /** The harvester merges quoted media into the parent capture list, so exclude anything already shown in the quoted card. */
@@ -201,11 +207,16 @@ export function buildTweetCardData(
   if (capture.metrics) {
     const m = capture.metrics;
     const metrics: TweetCardMetrics = {
-      ...(typeof m.replies === "number" ? { replies: m.replies } : {}),
+      ...(typeof m.replies === "number"
+        ? { replies: m.replies }
+        : typeof m.comments === "number"
+          ? { replies: m.comments }
+          : {}),
       ...(typeof m.retweets === "number" ? { retweets: m.retweets } : {}),
       ...(typeof m.likes === "number" ? { likes: m.likes } : {}),
       ...(typeof m.views === "number" ? { views: m.views } : {}),
       ...(typeof m.bookmarks === "number" ? { bookmarks: m.bookmarks } : {}),
+      ...(typeof m.shares === "number" ? { shares: m.shares } : {}),
     };
     if (Object.keys(metrics).length > 0) data.metrics = metrics;
   }

@@ -55,7 +55,7 @@ describe("HoverGallery preview scheduling", () => {
     expect(images).toHaveLength(2);
     expect(images[0]?.getAttribute("loading")).toBe("eager");
     expect(images[0]?.getAttribute("fetchpriority")).toBe("auto");
-    expect(images[0]?.getAttribute("data-loaded")).toBe("false");
+    expect(images[0]?.getAttribute("data-loaded")).toBe("true");
     expect(images[1]?.getAttribute("loading")).toBe("lazy");
     expect(images[1]?.getAttribute("fetchpriority")).toBe("low");
 

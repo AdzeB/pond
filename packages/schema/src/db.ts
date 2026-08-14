@@ -108,6 +108,8 @@ export const saves = sqliteTable(
     height: integer("height"),
     fileSize: integer("file_size"),
     phash: text("phash"),
+    /** Compact cover placeholder; decoded in the renderer, never fetched as an image. */
+    blurhash: text("blurhash"),
     /** On-device semantic-search embedding of the save's text as a JSON float array; null = not yet embedded. DB-only, re-derivable. */
     embedding: text("embedding", { mode: "json" }).$type<number[]>(),
     /** Embedder that produced `embedding`; null embeddings and stale stamps get picked up by the sweep, so bumping re-embeds the library. */

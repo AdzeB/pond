@@ -11,7 +11,7 @@
   --ds-accent-l: 0.62;
   --ds-accent-c: 0.19;
   --ds-accent-h: 250;
-  --ds-contrast: 0.84;
+  --ds-contrast: 1;
   --ds-bg: oklch(var(--ds-bg-l) var(--ds-bg-c) var(--ds-bg-h));
   --ds-fg: oklch(var(--ds-fg-l) var(--ds-fg-c) var(--ds-fg-h));
   --ds-accent-solid: oklch(var(--ds-accent-l) var(--ds-accent-c) var(--ds-accent-h));

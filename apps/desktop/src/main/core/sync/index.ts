@@ -13,6 +13,7 @@ import {
   patchAccountSync,
 } from "./accounts";
 import { LIST_HARVEST_SOURCES, syncListSource } from "./run-list";
+import { syncThreads } from "./run-threads";
 import { syncTwitter } from "./run-twitter";
 import { emit, inFlight } from "./sync-status";
 
@@ -176,6 +177,14 @@ export async function syncAccount(
     await ensureAccountHandle(account);
     if (source === "twitter") {
       await syncTwitter(
+        account,
+        controller.signal,
+        ev,
+        opts.maxItems,
+        opts.forceFull,
+      );
+    } else if (source === "threads") {
+      await syncThreads(
         account,
         controller.signal,
         ev,

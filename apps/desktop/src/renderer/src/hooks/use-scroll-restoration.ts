@@ -63,7 +63,7 @@ export interface ScrollRestorationScope {
 export const ScrollRestorationContext =
   createContext<ScrollRestorationScope | null>(null);
 
-/** Remembers an element scroller while its tab/route is unmounted, then restores after the packed grid has laid out. */
+/** Remembers an element scroller across route changes, then restores after the packed grid has laid out. */
 export function useScrollRestoration(key: string) {
   const ref = useRef<HTMLElement | null>(null);
 
@@ -94,11 +94,6 @@ export function useScrollRestoration(key: string) {
       restoring = false;
       delete element.dataset.restoringScroll;
     };
-    /**
-     * A save route unmounts the library scroller. Restore its remembered offset
-     * during the layout phase so returning to the library never presents a
-     * single frame at the top before the retry loop takes over.
-     */
     if (restoring) restore();
 
     let saveFrame = 0;
@@ -117,7 +112,11 @@ export function useScrollRestoration(key: string) {
       if (saveFrame !== 0) cancelAnimationFrame(saveFrame);
       element.removeEventListener("scroll", save);
       delete element.dataset.restoringScroll;
-      /** Preserve the intended target if navigation interrupts restoration before layout becomes tall enough. */
+      /**
+       * Skip when the library scroller is parked under a save overlay.
+       * A suppressed box can report a stale scrollTop and clobber the real offset.
+       */
+      if (element.closest("[data-suppressed]") != null) return;
       rememberScroll(key, restoring ? recallScroll(key) : element.scrollTop);
     };
   }, [key]);

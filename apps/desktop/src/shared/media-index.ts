@@ -8,12 +8,6 @@ export type MediaIndexState =
 
 export type MediaIndexPauseReason = "battery" | "active" | "thermal";
 
-/** Width buckets shared by the background sweep and renderer cache requests. */
-export const CARD_THUMB_WIDTH = 768;
-export const CARD_LQIP_WIDTH = 32;
-/** Smallest first so an interrupted sweep still improves first paint. */
-export const CARD_INDEX_WIDTHS = [CARD_LQIP_WIDTH, CARD_THUMB_WIDTH] as const;
-
 const THUMBNAIL_EXTENSIONS = new Set([
   ".jpg",
   ".jpeg",
@@ -22,6 +16,7 @@ const THUMBNAIL_EXTENSIONS = new Set([
   ".avif",
   ".heic",
   ".heif",
+  ".gif",
 ]);
 const THUMBNAIL_MIME_TYPES = new Set([
   "image/jpeg",
@@ -32,6 +27,7 @@ const THUMBNAIL_MIME_TYPES = new Set([
   "image/avif",
   "image/heic",
   "image/heif",
+  "image/gif",
 ]);
 
 export function isThumbnailFileExtension(extension: string): boolean {
@@ -44,7 +40,14 @@ interface ThumbnailFileLike {
   mimeType?: string | null;
 }
 
-/** True when a local still can use the WebP thumbnail/LQIP cache. */
+/** Kind, mime, or common video extension; shared by pipeline and renderer unit picking. */
+export function isVideoFile(file: ThumbnailFileLike): boolean {
+  if (file.kind === "video") return true;
+  if (file.mimeType?.startsWith("video/") === true) return true;
+  return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
+}
+
+/** True when a local still can be decoded for a blurhash or an on-demand preview. */
 export function isStaticThumbnailFile(file: ThumbnailFileLike): boolean {
   const slash = Math.max(
     file.path.lastIndexOf("/"),
@@ -54,12 +57,7 @@ export function isStaticThumbnailFile(file: ThumbnailFileLike): boolean {
   const extension = dot > slash ? file.path.slice(dot).toLowerCase() : "";
   const mimeType = file.mimeType?.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 
-  if (
-    extension === ".gif" ||
-    extension === ".svg" ||
-    mimeType === "image/gif" ||
-    mimeType === "image/svg+xml"
-  ) {
+  if (extension === ".svg" || mimeType === "image/svg+xml") {
     return false;
   }
   if (

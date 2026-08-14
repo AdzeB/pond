@@ -1,4 +1,5 @@
 import {
+  CONTRAST_DEFAULT,
   DEFAULT_DARK_THEME,
   DEFAULT_LIGHT_THEME,
   type ThemeAppearance,
@@ -20,7 +21,7 @@ function light(
   accent: string,
   background: string,
   foreground: string,
-  contrast = 30,
+  contrast = CONTRAST_DEFAULT,
 ): ThemePreset {
   return {
     id,
@@ -36,7 +37,7 @@ function dark(
   accent: string,
   background: string,
   foreground: string,
-  contrast = 30,
+  contrast = CONTRAST_DEFAULT,
 ): ThemePreset {
   return {
     id,

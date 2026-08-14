@@ -1,0 +1,34 @@
+.root {
+  display: inline-flex;
+  flex-shrink: 0;
+  gap: 5px;
+  align-items: center;
+  height: 24px;
+  padding-inline: 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-3);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-4);
+  }
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-9);
+}

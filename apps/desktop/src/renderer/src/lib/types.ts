@@ -42,6 +42,7 @@ export interface Save {
   height?: number | null;
   fileSize?: number | null;
   phash?: string | null;
+  blurhash?: string | null;
   /** On-device enrichment outputs; lightweight fields ride along on saves.list while transcript and clipEmbedding are lazy-loaded. */
   caption?: string | null;
   captionModel?: string | null;

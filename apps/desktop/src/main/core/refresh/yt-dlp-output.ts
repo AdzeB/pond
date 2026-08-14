@@ -90,11 +90,17 @@ export async function readInfoJson(
   }
 }
 
-export async function pickProducedFile(
-  dir: string,
-): Promise<{ path: string; size: number; mimeType: string } | null> {
+export interface ProducedFile {
+  path: string;
+  size: number;
+  mimeType: string;
+  infoJson: Record<string, unknown> | null;
+}
+
+/** Playlist order from info.json; size must not win, or a quoted 4K clip outranks the parent. */
+export async function pickProducedFiles(dir: string): Promise<ProducedFile[]> {
   const entries = await readdir(dir);
-  if (entries.length === 0) return null;
+  if (entries.length === 0) return [];
 
   const sized = await Promise.all(
     entries
@@ -105,20 +111,39 @@ export async function pickProducedFile(
         const full = join(dir, name);
         try {
           const s = await stat(full);
-          return { path: full, size: s.size };
+          if (s.size <= 0) return null;
+          const infoJson = await readInfoJson(dir, full);
+          return {
+            path: full,
+            size: s.size,
+            mimeType: mimeFor(full),
+            infoJson,
+          };
         } catch {
           return null;
         }
       }),
   );
-  const valid = sized.filter(
-    (e): e is { path: string; size: number } => e !== null && e.size > 0,
-  );
-  if (valid.length === 0) return null;
-  valid.sort((a, b) => b.size - a.size);
-  const winner = valid[0];
-  if (!winner) return null;
-  return { ...winner, mimeType: mimeFor(winner.path) };
+  const valid = sized.filter((e): e is ProducedFile => e !== null);
+  valid.sort((a, b) => playlistIndex(a) - playlistIndex(b));
+  return valid;
+}
+
+export async function pickProducedFile(
+  dir: string,
+): Promise<ProducedFile | null> {
+  const all = await pickProducedFiles(dir);
+  return all[0] ?? null;
+}
+
+function playlistIndex(file: ProducedFile): number {
+  const v = file.infoJson?.playlist_index;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number.parseInt(v, 10);
+    if (Number.isFinite(n)) return n;
+  }
+  return 1;
 }
 
 function isThumbnail(name: string): boolean {

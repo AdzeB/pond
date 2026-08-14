@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Save, SaveFile } from "@/lib/types";
-import { buildMediaUnits } from "./units";
+import { buildMediaUnits, pickPrimaryUnit } from "./units";
 
 function file(kind: string, path: string, mimeType: string): SaveFile {
   return { kind, path, mimeType, sha256: "abcdef1234567890", size: 10 };
@@ -85,5 +85,49 @@ describe("buildMediaUnits video posters", () => {
         isVideo: false,
       },
     ]);
+  });
+});
+
+describe("pickPrimaryUnit Threads post cover", () => {
+  const threadsSave = {
+    id: "thread-1",
+    source: "threads",
+    files: [
+      file("image", "photo.jpg", "image/jpeg"),
+      file("tweet_screenshot_light", "tweet-light.png", "image/png"),
+      file("tweet_screenshot_dark", "tweet-dark.png", "image/png"),
+    ],
+  } as Save;
+
+  it("uses extracted media when tweetCover is media", () => {
+    const unit = pickPrimaryUnit(threadsSave, {
+      theme: "light",
+      tweetCover: "media",
+    });
+    expect(unit?.key).toBe("photo.jpg");
+  });
+
+  it("uses the theme-matched card PNG when tweetCover is screenshot", () => {
+    const unit = pickPrimaryUnit(threadsSave, {
+      theme: "dark",
+      tweetCover: "screenshot",
+    });
+    expect(unit?.key).toBe("tweet-dark.png");
+  });
+
+  it("falls back to the card PNG for a text-only Threads post", () => {
+    const textOnly = {
+      id: "thread-text",
+      source: "threads",
+      files: [
+        file("tweet_screenshot_light", "tweet-light.png", "image/png"),
+        file("avatar", "avatar.jpg", "image/jpeg"),
+      ],
+    } as Save;
+    const unit = pickPrimaryUnit(textOnly, {
+      theme: "light",
+      tweetCover: "media",
+    });
+    expect(unit?.key).toBe("tweet-light.png");
   });
 });

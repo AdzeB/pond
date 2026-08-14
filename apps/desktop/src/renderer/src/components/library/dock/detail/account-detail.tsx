@@ -6,7 +6,6 @@ import {
 } from "@pond/icons/fill/18";
 import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
 import { Button, TrayCard } from "@pond/ui";
-import { useNavigate } from "@tanstack/react-router";
 import { openTrayConfirm } from "@/components/library/dock/confirm";
 import { HeroAvatar } from "@/components/library/dock/detail/hero-avatar";
 import { useDock } from "@/components/library/dock/lib/context";
@@ -14,11 +13,11 @@ import { accountName } from "@/components/library/sources/page/lib/helpers";
 import { cardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
 import { getSourceDef } from "@/lib/save/sources-registry";
+import { viewAccountItems } from "@/lib/ui/open-search";
 import { formatNumber } from "@/lib/util/format";
-import { clearAsk } from "@/stores/ask-store";
+import { connectFlow } from "@/stores/connect-flow";
 import { sourceDetail, useDetailAccountId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
-import { setSearchInput } from "@/stores/view-store";
 import styles from "./account-detail.module.css";
 
 /** Account settings card in the dock tray; the id arrives through the source-detail store. */
@@ -49,7 +48,7 @@ function AccountDetail({
   onChanged: () => void;
 }) {
   const dock = useDock();
-  const navigate = useNavigate();
+  const { accounts } = useAccounts();
   const byAccount = useSyncByAccount();
   const status = byAccount[account.id];
   const model = cardModel(status);
@@ -58,15 +57,15 @@ function AccountDetail({
   const count = account.sync?.knownCount ?? 0;
   const def = getSourceDef(source);
 
-  const viewItems = () => {
-    clearAsk();
-    setSearchInput(
-      [{ field: "account", operator: "eq", value: account.id }],
-      "",
+  const startConnect = () => {
+    connectFlow.start(
+      source,
+      accounts.filter((a) => a.connected).map((a) => a.id),
     );
-    dock.closeViewMenu();
-    void navigate({ to: "/" });
+    dock.openViewMenu("connect-wait");
   };
+
+  const viewItems = () => viewAccountItems(account.id);
 
   const confirmDisconnect = () => {
     openTrayConfirm({
@@ -93,7 +92,7 @@ function AccountDetail({
       case "paused":
         return {
           label: "Reconnect",
-          run: () => window.pond.connectSource(source),
+          run: startConnect,
         };
       case "err":
         return {
@@ -106,7 +105,7 @@ function AccountDetail({
               label: "Sync Now",
               run: () => window.pond.syncRunNow(account.id),
             }
-          : { label: "Connect", run: () => window.pond.connectSource(source) };
+          : { label: "Connect", run: startConnect };
     }
   })();
 

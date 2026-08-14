@@ -4,10 +4,12 @@ import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { itemFile } from "../../paths";
+import { persistSave } from "../persist-save";
 import { resetTasksForSave } from "../pipeline/enqueue";
+import { kickReconciler } from "../pipeline/reconciler";
 
 export type RefreshOutcome =
-  | { ok: true; method: "pipeline-reset" }
+  | { ok: true; method: "metadata" | "pipeline-reset" }
   | {
       ok: false;
       reason: "not_found" | "no_url" | "internal_error";
@@ -18,7 +20,10 @@ interface RefreshSaveOptions {
   overwrite?: boolean;
 }
 
-/** Refresh = reset task rows to pending and force harvest_metadata to re-run. */
+/**
+ * Soft refresh re-harvests metadata and leaves blob/video/poster tasks done.
+ * Overwrite still resets the full pipeline after wiping local media.
+ */
 export async function refreshSave(
   saveId: string,
   opts: RefreshSaveOptions = {},
@@ -41,20 +46,62 @@ export async function refreshSave(
         .set({ files: [], coverIndex: 0, fileSize: null, mediaUrl: null })
         .where(eq(saves.id, saveId))
         .run();
+
+      db.update(tasks)
+        .set({
+          payload: { force: true },
+          updatedAt: new Date(),
+        })
+        .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
+        .run();
+      await resetTasksForSave(saveId, "user:refresh-overwrite");
+      await persistSave(
+        saveId,
+        {
+          status: "ingesting",
+          ingestStartedAt: new Date(),
+          ingestCompletedAt: null,
+          files: [],
+          coverIndex: 0,
+          fileSize: null,
+          mediaUrl: null,
+        },
+        { actorReason: "user:refresh-overwrite" },
+      );
+      kickReconciler();
+      return { ok: true, method: "pipeline-reset" };
     }
 
-    db.update(tasks)
+    const now = new Date();
+    const harvest = db
+      .update(tasks)
       .set({
         payload: { force: true },
-        updatedAt: new Date(),
+        status: "pending",
+        attempts: 0,
+        lastError: null,
+        nextRunAt: now,
+        updatedAt: now,
       })
       .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
       .run();
-    await resetTasksForSave(
+
+    if ((harvest.changes ?? 0) === 0) {
+      log.warn("[pond refresh] no harvest_metadata task", saveId);
+      return { ok: false, reason: "internal_error" };
+    }
+
+    await persistSave(
       saveId,
-      opts.overwrite ? "user:refresh-overwrite" : "user:refresh",
+      {
+        status: "ingesting",
+        ingestStartedAt: now,
+        ingestCompletedAt: null,
+      },
+      { actorReason: "user:refresh" },
     );
-    return { ok: true, method: "pipeline-reset" };
+    kickReconciler();
+    return { ok: true, method: "metadata" };
   } catch (err) {
     log.error("[pond refresh] reset failed", saveId, err);
     return { ok: false, reason: "internal_error" };

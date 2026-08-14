@@ -18,6 +18,7 @@ export async function signInToSource(
   source: Source,
 ): Promise<{ ok: boolean; mode: SignInMode }> {
   const url = homeUrlForSource(source);
+  if (!url) return { ok: false, mode: "external" };
   try {
     await shell.openExternal(url);
     log.info("[pond refresh:signin] opened external browser for", source, url);
@@ -77,7 +78,7 @@ export async function writePartitionCookies(args: {
         url,
         name: c.name,
         value: c.value,
-        domain: c.domain,
+        ...(c.hostOnly ? {} : { domain: c.domain }),
         path: c.path ?? "/",
         secure: c.secure,
         httpOnly: c.httpOnly,
@@ -103,6 +104,11 @@ export async function probeUserHandle(
   source: Source,
   partition?: string,
 ): Promise<string | null> {
+  if (source === "reddit") {
+    const { probeRedditHandle } = await import("../harvest/reddit/api");
+    const viaApi = await probeRedditHandle(partition ?? PARTITION);
+    if (viaApi) return viaApi;
+  }
   const lease = await leaseWindow(source, { partition });
   try {
     const url = probeUrlForSource(source);
@@ -146,6 +152,10 @@ function probeUrlForSource(source: Source): string {
   if (source === "pinterest") return "https://www.pinterest.com/";
   /** The account settings page shows the channel handle; signed-out it redirects to accounts.google.com, which reads as an auth wall. */
   if (source === "youtube") return "https://www.youtube.com/account";
+  /** Home renders the signed-in shell; signed-out redirects to /login and trips the auth-wall check. */
+  if (source === "reddit") return "https://www.reddit.com/";
+  if (source === "threads") return "https://www.threads.com/";
+  if (source === "cosmos") return "https://www.cosmos.so/";
   return homeUrlForSource(source);
 }
 
@@ -154,11 +164,15 @@ function buildProbeExpression(source: Source): string {
 }
 
 function isAuthCookie(source: Source, cookie: Cookie): boolean {
-  return isAuthCookieName(source, cookie.name);
+  return isAuthCookieName(source, cookie.name, cookie.value);
 }
 
-export function isAuthCookieName(source: Source, name: string): boolean {
-  return extractorFor(source)?.authCookies(name) ?? false;
+export function isAuthCookieName(
+  source: Source,
+  name: string,
+  value?: string,
+): boolean {
+  return extractorFor(source)?.authCookies(name, value) ?? false;
 }
 
 export async function listCookiesForSource(

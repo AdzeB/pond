@@ -1,9 +1,9 @@
 /** The mutually exclusive surfaces the pill can show. */
 export type DockView =
   | "selection"
-  | "ask"
   | "search"
   | "search-help"
+  | "options"
   | "layout"
   | "zoom"
   | "sort"
@@ -26,9 +26,6 @@ export type DockView =
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
-  | "analytics-range"
-  | "analytics-rename"
-  | "analytics-duplicate"
   | "confirm"
   | "selection-run"
   | "selection-tag"
@@ -38,6 +35,7 @@ export type DockView =
 
 /** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
 export type ViewMenuSection =
+  | "options"
   | "layout"
   | "zoom"
   | "sort"
@@ -61,9 +59,6 @@ export type ViewMenuSection =
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
-  | "analytics-range"
-  | "analytics-rename"
-  | "analytics-duplicate"
   | "confirm"
   | "selection-run"
   | "selection-tag"
@@ -71,6 +66,7 @@ export type ViewMenuSection =
   | "selection-export";
 
 const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
+  "options",
   "layout",
   "zoom",
   "sort",
@@ -94,9 +90,6 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "watch-detail",
   "sync-frequency",
   "source-new",
-  "analytics-range",
-  "analytics-rename",
-  "analytics-duplicate",
   "confirm",
   "selection-run",
   "selection-tag",

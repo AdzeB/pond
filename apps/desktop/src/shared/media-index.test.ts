@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { CARD_INDEX_WIDTHS, isStaticThumbnailFile } from "./media-index";
+import { isStaticThumbnailFile } from "./media-index";
 
 describe("media thumbnail contract", () => {
-  it("keeps the LQIP and final card cache buckets in one order", () => {
-    expect(CARD_INDEX_WIDTHS).toEqual([32, 768]);
-  });
-
   it("accepts supported stills and legacy extensionless covers", () => {
     expect(
       isStaticThumbnailFile({
@@ -19,14 +15,14 @@ describe("media thumbnail contract", () => {
     ).toBe(true);
   });
 
-  it("rejects animated, vector, and unsupported raster formats", () => {
+  it("rejects vector and unsupported raster formats; GIFs use a first-frame still", () => {
     expect(
       isStaticThumbnailFile({
         kind: "image",
         path: "animation.gif",
         mimeType: "image/gif",
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       isStaticThumbnailFile({
         kind: "image",

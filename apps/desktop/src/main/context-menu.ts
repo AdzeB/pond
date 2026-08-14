@@ -4,6 +4,7 @@ import {
   type MenuItemConstructorOptions,
   type WebContents,
 } from "electron";
+import { sym } from "./lib/menu-symbol";
 
 export function attachEditableContextMenu(contents: WebContents): void {
   contents.on("context-menu", (_event, params) => {
@@ -19,6 +20,7 @@ export function attachEditableContextMenu(contents: WebContents): void {
     }
     if (params.misspelledWord) {
       template.push({
+        ...sym("plus"),
         label: "Add to Dictionary",
         click: () =>
           contents.session.addWordToSpellCheckerDictionary(
@@ -29,11 +31,19 @@ export function attachEditableContextMenu(contents: WebContents): void {
     }
 
     template.push(
-      { role: "cut", enabled: params.editFlags.canCut },
-      { role: "copy", enabled: params.editFlags.canCopy },
-      { role: "paste", enabled: params.editFlags.canPaste },
+      { ...sym("scissors"), role: "cut", enabled: params.editFlags.canCut },
+      { ...sym("doc.on.doc"), role: "copy", enabled: params.editFlags.canCopy },
+      {
+        ...sym("doc.on.clipboard"),
+        role: "paste",
+        enabled: params.editFlags.canPaste,
+      },
       { type: "separator" },
-      { role: "selectAll", enabled: params.editFlags.canSelectAll },
+      {
+        ...sym("checkmark.square"),
+        role: "selectAll",
+        enabled: params.editFlags.canSelectAll,
+      },
     );
 
     Menu.buildFromTemplate(template).popup();

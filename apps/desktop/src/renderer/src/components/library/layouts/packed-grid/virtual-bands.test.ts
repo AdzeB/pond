@@ -3,9 +3,9 @@ import { buildVirtualBands, indicesForVirtualBands } from "./virtual-bands";
 
 describe("packed-grid virtual bands", () => {
   const items = [
-    { id: "a", top: 0, left: 0, width: 100, height: 80 },
-    { id: "b", top: 80, left: 0, width: 100, height: 40 },
-    { id: "c", top: 190, left: 0, width: 100, height: 30 },
+    { id: "a", top: 0, left: 0, width: 100, height: 80, mediaHeight: 80 },
+    { id: "b", top: 80, left: 0, width: 100, height: 40, mediaHeight: 40 },
+    { id: "c", top: 190, left: 0, width: 100, height: 30, mediaHeight: 30 },
   ];
 
   it("indexes an item into every vertical band it intersects", () => {

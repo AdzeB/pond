@@ -1,0 +1,22 @@
+.metrics {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.metric {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--tw-secondary);
+}
+
+.metric-icon {
+  flex-shrink: 0;
+}
+
+.metric-value {
+  font-weight: 500;
+}

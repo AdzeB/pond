@@ -1,4 +1,5 @@
 import type { TweetCover } from "@pond/schema/db";
+import { isVideoFile } from "@shared/media-index";
 import {
   RENDER_TEXT_COVER_VERSION,
   TEXT_COVER_DARK_KIND,
@@ -46,7 +47,7 @@ export interface MediaUnit {
   posterKey?: string;
 }
 
-interface MediaPickOptions {
+export interface MediaPickOptions {
   theme?: ResolvedTheme;
   tweetCover?: TweetCover;
 }
@@ -166,7 +167,7 @@ function buildQuoteScreenshotUnits(
   save: Save,
   theme: ResolvedTheme | undefined,
 ): MediaUnit[] {
-  if (save.source !== "twitter") return [];
+  if (save.source !== "twitter" && save.source !== "threads") return [];
   const files = save.files ?? [];
   const resolved = theme ?? resolveCurrentTheme();
 
@@ -230,12 +231,12 @@ export function pickPrimaryFile(
   return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
 }
 
-/** Matching theme, then the other, then legacy; null for non-twitter. */
+/** Matching theme, then the other, then legacy; null unless the save is a tweet or Threads post. */
 function pickTweetScreenshot(
   save: Save,
   theme: ResolvedTheme | undefined,
 ): SaveFile | null {
-  if (save.source !== "twitter") return null;
+  if (save.source !== "twitter" && save.source !== "threads") return null;
   const files = save.files ?? [];
   const resolved = theme ?? resolveCurrentTheme();
   const preferredKind =
@@ -274,19 +275,13 @@ function pickTextCover(
 
 /** True when a text-only save still needs its cover PNGs generated or refreshed. */
 export function needsTextCover(save: Save): boolean {
-  if (save.source === "twitter") return false;
+  if (save.source === "twitter" || save.source === "threads") return false;
   if (hasArchive(save)) return false;
   if (!textBodyForSave(save)) return false;
   if (!isTextOnlyAsideFromCover(save)) return false;
   const cover = pickTextCover(save, undefined);
   if (!cover) return true;
   return textCoverVersionFromRawJson(save.rawJson) < RENDER_TEXT_COVER_VERSION;
-}
-
-function isVideoFile(file: SaveFile): boolean {
-  if (file.kind === "video") return true;
-  if (file.mimeType?.startsWith("video/") === true) return true;
-  return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
 }
 
 /** Extension/mime only; kind stays out because tweet screenshots and posters are images too. */

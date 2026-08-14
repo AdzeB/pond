@@ -23,17 +23,15 @@ export function DownloadingBadge({
     );
   }
   if (!isDownloading) return null;
-  const fetchVideo = save.tasks?.find((t) => t.op === "fetch_video_ytdlp");
-  const label = fetchVideo?.status === "running" ? "Downloading" : "Queued";
   return (
     <span
       className={styles.downloading}
       role="status"
-      aria-label={`${label} video`}
-      title={`${label} video`}
+      aria-label="Downloading video"
+      title="Downloading video"
     >
       <span className={styles["downloading-dot"]} aria-hidden="true" />
-      {label}
+      Downloading
     </span>
   );
 }

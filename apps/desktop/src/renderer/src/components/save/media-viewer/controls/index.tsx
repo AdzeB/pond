@@ -3,6 +3,7 @@ import {
   IconArrowRightOutline18 as ArrowRight,
 } from "@pond/icons/outline/18";
 import { Button, Tooltip } from "@pond/ui";
+import { ShortcutKeys } from "@/components/shared/shortcut-keys";
 import styles from "./styles.module.css";
 
 export function NavButtons({
@@ -14,7 +15,11 @@ export function NavButtons({
 }) {
   return (
     <>
-      <Tooltip label="Previous" side="right">
+      <Tooltip
+        label="Previous"
+        shortcut={<ShortcutKeys id="viewer.prev-slide" />}
+        side="right"
+      >
         <Button
           size="sm"
           icon
@@ -23,10 +28,14 @@ export function NavButtons({
           className={styles.nav}
           data-side="prev"
         >
-          <ArrowLeft width={14} height={14} />
+          <ArrowLeft />
         </Button>
       </Tooltip>
-      <Tooltip label="Next" side="left">
+      <Tooltip
+        label="Next"
+        shortcut={<ShortcutKeys id="viewer.next-slide" />}
+        side="left"
+      >
         <Button
           size="sm"
           icon
@@ -35,7 +44,7 @@ export function NavButtons({
           className={styles.nav}
           data-side="next"
         >
-          <ArrowRight width={14} height={14} />
+          <ArrowRight />
         </Button>
       </Tooltip>
     </>

@@ -51,3 +51,7 @@ export class FilterTokenNode extends TextNode {
 export function $createFilterTokenNode(text = ""): FilterTokenNode {
   return $applyNodeReplacement(new FilterTokenNode(text));
 }
+
+export function $isFilterTokenNode(node: unknown): node is FilterTokenNode {
+  return node instanceof FilterTokenNode;
+}

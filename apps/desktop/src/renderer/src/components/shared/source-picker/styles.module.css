@@ -30,12 +30,6 @@
   box-shadow: 0 0 0 2px var(--ds-gray-a8);
 }
 
-/* The brand tile owns the rounding; the shadow lifts it off the cell. */
-.cell img,
-.cell svg {
-  box-shadow: var(--ds-shadow-2);
-}
-
 .name {
   max-width: 100%;
   overflow: hidden;

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { VerifiedIcon } from "@/components/tweet/card/icons";
 import type { TweetCardAuthor } from "@/components/tweet/card/lib/data";
 import { initials } from "@/lib/util/initials";
@@ -28,17 +29,33 @@ export function Avatar({
   size?: number;
 }) {
   return (
+    <AvatarInner key={author.avatarUrl ?? ""} author={author} size={size} />
+  );
+}
+
+function AvatarInner({
+  author,
+  size,
+}: {
+  author: TweetCardAuthor;
+  size: number;
+}) {
+  const [failed, setFailed] = useState(false);
+  const showImg = Boolean(author.avatarUrl) && !failed;
+  return (
     <span
       className={styles.avatar}
       style={{ width: size, height: size }}
       aria-hidden
     >
-      {author.avatarUrl ? (
+      {showImg ? (
         <img
           src={author.avatarUrl}
           alt=""
           className={styles["avatar-image"]}
           draggable={false}
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
         />
       ) : (
         <span className={styles["avatar-fallback"]}>

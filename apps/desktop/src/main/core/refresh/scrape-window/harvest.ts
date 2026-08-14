@@ -10,6 +10,7 @@ import { sleep } from "./util";
 
 export { harvestTwitterBookmarks } from "./harvest-bookmarks";
 export { harvestSourceList, harvestYoutubeLikedList } from "./harvest-list";
+export { harvestThreadsSaved } from "./harvest-saved";
 
 interface HarvestArgs {
   url: string;
@@ -28,9 +29,33 @@ interface HarvestResult {
 
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
   const partition = await partitionForIngest(args.source, args.accountId);
-  const lease = await leaseWindow(args.source, { partition });
   const harv = harvesterFor(args.source);
   const sourceId = args.sourceId ?? harv.sourceIdFromUrl(args.url) ?? "";
+
+  if (args.source === "reddit" && sourceId) {
+    const { fetchRedditPostCapture } = await import("../harvest/reddit/api");
+    const capture = await fetchRedditPostCapture(sourceId, partition);
+    if (capture) {
+      return {
+        ok: true,
+        sourceId,
+        harvest: {
+          title: capture.title,
+          description: capture.description,
+          author: capture.author?.handle,
+          mediaUrl: capture.media[0]?.url,
+          mediaUrls: capture.media.map((m) => ({
+            url: m.url,
+            type: m.type,
+            ...(m.posterUrl ? { poster: m.posterUrl } : {}),
+          })),
+          mediaType: capture.media[0]?.type,
+        },
+      };
+    }
+  }
+
+  const lease = await leaseWindow(args.source, { partition });
 
   try {
     const navOk = await navigateWithTimeout(

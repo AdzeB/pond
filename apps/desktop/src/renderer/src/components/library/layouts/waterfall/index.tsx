@@ -1,10 +1,13 @@
 import { useMemo } from "react";
 import {
+  LIBRARY_ITEM_GAP,
   type PackedItem,
   type PackResult,
   SavePackedGrid,
 } from "@/components/library/layouts/packed-grid";
 import { useGridMin } from "@/hooks/use-grid-min";
+import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
+import type { MediaPickOptions } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import { chromeHeightFor } from "@/lib/ui/library-chrome";
 import { aspectFor, useAspectVersion } from "@/stores/aspect";
@@ -17,6 +20,7 @@ function packMasonry(
   colMin: number,
   gap: number,
   chromeHeight: number,
+  opts: MediaPickOptions,
 ): PackResult {
   if (containerWidth <= 0) {
     return { items: [], totalHeight: 0 };
@@ -27,7 +31,7 @@ function packMasonry(
 
   const items: PackedItem[] = [];
   for (const save of saves) {
-    const ratio = aspectFor(save);
+    const ratio = aspectFor(save, opts);
     const mediaH = colW / ratio;
     let target = 0;
     for (let i = 1; i < cols; i++) {
@@ -35,7 +39,14 @@ function packMasonry(
     }
     const left = target * (colW + gap);
     const top = heights[target] ?? 0;
-    items.push({ id: save.id, top, left, width: colW, height: mediaH });
+    items.push({
+      id: save.id,
+      top,
+      left,
+      width: colW,
+      height: mediaH + chromeHeight,
+      mediaHeight: mediaH,
+    });
     heights[target] = top + mediaH + chromeHeight + gap;
   }
   let max = 0;
@@ -53,13 +64,20 @@ export function WaterfallView({ saves, onEndReached }: WaterfallViewProps) {
   const colMin = useGridMin();
   const prefs = useDisplayPrefs();
   const chromeHeight = chromeHeightFor(prefs);
-  const itemGap = 16;
   const aspectVersion = useAspectVersion();
+  const pickOpts = useMediaPickOptions();
 
   const { items, totalHeight } = useMemo(() => {
     void aspectVersion;
-    return packMasonry(saves, width, colMin, itemGap, chromeHeight);
-  }, [saves, width, colMin, chromeHeight, aspectVersion]);
+    return packMasonry(
+      saves,
+      width,
+      colMin,
+      LIBRARY_ITEM_GAP,
+      chromeHeight,
+      pickOpts,
+    );
+  }, [saves, width, colMin, chromeHeight, aspectVersion, pickOpts]);
 
   return (
     <SavePackedGrid

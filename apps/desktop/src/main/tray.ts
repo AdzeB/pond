@@ -69,7 +69,7 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
         );
         tray.setContextMenu(menu);
         tray.setToolTip(await buildTooltip());
-        setTraySyncing(ingesting > 0);
+        setTraySyncing(ingesting);
       } catch (err) {
         log.warn("[pond tray] refresh failed", err);
       }
@@ -77,22 +77,31 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
     destroy() {
       stopSpinner();
       syncing = false;
+      if (process.platform === "darwin") tray.setTitle("");
       tray.destroy();
       handle = null;
     },
   };
 
-  await instance.refresh();
   handle = instance;
+  await instance.refresh();
   return instance;
 }
 
-/** Swaps the menu-bar icon for an animated throbber while saves are ingesting. */
-function setTraySyncing(active: boolean): void {
-  if (active === syncing) return;
-  syncing = active;
+/** Count is title text beside the template image; a 22pt glyph can't hold a readable badge. */
+function setTraySyncing(ingesting: number): void {
   const tray = handle?.tray;
   if (!tray) return;
+
+  const active = ingesting > 0;
+  if (process.platform === "darwin") {
+    tray.setTitle(active ? String(ingesting) : "", {
+      fontType: "monospacedDigit",
+    });
+  }
+
+  if (active === syncing) return;
+  syncing = active;
 
   if (active) {
     const frames = getSpinnerFrames();

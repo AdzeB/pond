@@ -141,9 +141,26 @@ function FieldControl({
               <Slider.Thumb aria-label={item.title} />
             </Slider.Track>
           </Slider.Control>
-          <Slider.Value>
-            {(_, values) => `${values[0]}${item.suffix ?? ""}`}
-          </Slider.Value>
+          <Input.Root size="sm">
+            <Input.Field
+              type="number"
+              min={item.min}
+              max={item.max}
+              step={item.step}
+              aria-label={`${item.title} value`}
+              value={String(toNumber(current, item.min))}
+              onChange={(e) => {
+                const n = clamp(
+                  Number(e.target.value) || item.min,
+                  item.min,
+                  item.max,
+                );
+                patch({ [item.key]: n });
+                runApply(item);
+              }}
+              style={{ width: 44, textAlign: "right" }}
+            />
+          </Input.Root>
         </Slider.Root>
       );
 

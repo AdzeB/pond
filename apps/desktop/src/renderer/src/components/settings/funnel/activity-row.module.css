@@ -29,7 +29,7 @@
 }
 
 .activity-dot[data-state="running"] {
-  background: var(--ds-blue-9);
+  background: var(--ds-accent-9);
   animation: funnel-pulse 1.2s ease-in-out infinite;
 }
 

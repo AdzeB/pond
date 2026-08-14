@@ -7,7 +7,6 @@ import { resolvePaths } from "../paths";
 /** Prefs slices that travel with the bundle (settings.json); everything else is app-global. */
 const POND_PREF_KEYS = [
   "preferences",
-  "analyticsView",
   "sourcesView",
   "sync",
   "skills",

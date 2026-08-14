@@ -1,23 +1,23 @@
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { BlurPlaceholder } from "@/components/save/card/media/blur-placeholder";
+import type { GridLayout } from "@/components/library/layouts/grid";
 import { DownloadingBadge } from "@/components/save/card/media/downloading-badge";
 import { HoverGallery } from "@/components/save/card/media/hover-gallery";
 import { HoverVideo } from "@/components/save/card/media/hover-video";
 import { CardImage } from "@/components/save/card/media/image";
 import { useIsVideoDownloading } from "@/hooks/use-is-video-downloading";
-import { useResolvedTheme } from "@/hooks/use-resolved-theme";
-import { cardPreviewSource } from "@/lib/media/card-preview";
+import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
 import { buildMediaUnits, pickPrimaryUnit } from "@/lib/media/units";
-import { withThumbWidth } from "@/lib/media/url";
 import { ensureTextCover } from "@/lib/save/ensure-text-cover";
 import { isTextOnlySave, textBodyForSave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
-import { usePrefs } from "@/stores/prefs";
-import { CARD_THUMB_WIDTH } from "./lib/constants";
 import styles from "./styles.module.css";
 
-export type CardLayout = "waterfall" | "grid" | "justified";
+export type CardLayout = GridLayout;
 
+/**
+ * Resting original plus a stored blurhash until it decodes.
+ * Hover gallery and video stay opt-in.
+ */
 export const CardThumb = memo(function CardThumb({
   save,
   layout,
@@ -25,25 +25,33 @@ export const CardThumb = memo(function CardThumb({
   save: Save;
   layout?: CardLayout;
 }) {
-  const theme = useResolvedTheme();
-  const [preferences] = usePrefs("preferences");
-  const unit = useMemo(
-    () => pickPrimaryUnit(save, { theme, tweetCover: preferences?.tweetCover }),
-    [save, theme, preferences?.tweetCover],
-  );
+  const pickOpts = useMediaPickOptions();
+  const unit = useMemo(() => pickPrimaryUnit(save, pickOpts), [save, pickOpts]);
+  const hasVideoDims = useMemo(() => {
+    if (!unit?.isVideo) return false;
+    const primary = (save.files ?? []).find((f) => f.path === unit.key) ?? null;
+    if (
+      primary?.width &&
+      primary?.height &&
+      primary.width > 0 &&
+      primary.height > 0
+    ) {
+      return true;
+    }
+    return Boolean(
+      save.width && save.height && save.width > 0 && save.height > 0,
+    );
+  }, [save.files, save.height, save.width, unit]);
   const isDownloading = useIsVideoDownloading(save);
+  const pending = save.status === "ingesting" && !isDownloading;
 
   useEffect(() => {
     ensureTextCover(save);
   }, [save]);
 
-  /** The cycle list is disabled when the cover isn't one of these images so the resting frame stays correct. */
   const slides = useMemo(() => {
     if (!unit || unit.isVideo) return null;
-    const units = buildMediaUnits(save, {
-      theme,
-      tweetCover: preferences?.tweetCover,
-    });
+    const units = buildMediaUnits(save, pickOpts);
     const images = units.filter((u) => !u.isVideo);
     if (images.length < 2) return null;
     const idx = images.findIndex((u) => u.url === unit.url);
@@ -53,12 +61,11 @@ export const CardThumb = memo(function CardThumb({
     const [primary] = reordered.splice(idx, 1);
     if (primary) reordered.unshift(primary);
     return reordered;
-  }, [unit, save, theme, preferences?.tweetCover]);
+  }, [unit, save, pickOpts]);
 
   const [active, setActive] = useState(0);
   const [seen, setSeen] = useState<ReadonlySet<number>>(() => new Set([0]));
 
-  /** Handlers live here rather than on the gallery so moves over the badge overlay still bubble up and register. */
   const onPointerMove = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!slides) return;
@@ -77,21 +84,10 @@ export const CardThumb = memo(function CardThumb({
 
   const onPointerLeave = useCallback(() => setActive(0), []);
 
-  /** Track the broken src rather than a boolean so swapping the unit URL auto-clears the broken state. */
   const pickedSrc = unit?.url ?? null;
   const [brokenSrc, setBrokenSrc] = useState<string | null>(null);
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
-
-  const previewSrc = useMemo(() => {
-    if (!unit || broken) return null;
-    return cardPreviewSource(save, unit);
-  }, [broken, save, unit]);
-  const [loadedPreviewSrc, setLoadedPreviewSrc] = useState<string | null>(null);
-  const onPreviewReady = useCallback(() => {
-    if (previewSrc) setLoadedPreviewSrc(previewSrc);
-  }, [previewSrc]);
-  const previewLoaded = previewSrc !== null && loadedPreviewSrc === previewSrc;
 
   const safeActive = slides ? Math.min(active, slides.length - 1) : 0;
   const showPlaceholder = !unit || broken;
@@ -102,13 +98,12 @@ export const CardThumb = memo(function CardThumb({
     <div
       className={styles.thumb}
       data-layout={layout}
+      data-pending={pending || undefined}
       data-multi-media={slides && !broken ? "true" : undefined}
+      aria-busy={pending || undefined}
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
-      {previewSrc ? (
-        <BlurPlaceholder src={previewSrc} loaded={previewLoaded} />
-      ) : null}
       {slides && !broken ? (
         <HoverGallery
           save={save}
@@ -116,30 +111,21 @@ export const CardThumb = memo(function CardThumb({
           active={safeActive}
           seen={seen}
           onBroken={onBroken}
-          onReady={onPreviewReady}
         />
       ) : unit && !broken && !unit.isVideo ? (
-        <CardImage
-          key={unit.url}
-          save={save}
-          unit={unit}
-          onBroken={onBroken}
-          onReady={onPreviewReady}
-        />
+        <CardImage key={unit.url} save={save} unit={unit} onBroken={onBroken} />
       ) : null}
       {unit?.isVideo && !broken ? (
         <HoverVideo
           key={unit.url}
           saveId={save.id}
           src={unit.url}
-          posterUrl={
-            unit.posterUrl
-              ? withThumbWidth(unit.posterUrl, CARD_THUMB_WIDTH)
-              : undefined
-          }
+          unit={unit}
+          posterUrl={unit.posterUrl}
+          blurhash={save.blurhash}
+          hasVideoDims={hasVideoDims}
           label={save.title ?? "video"}
           onBroken={onBroken}
-          onReady={onPreviewReady}
         />
       ) : null}
       {showPlaceholder ? (

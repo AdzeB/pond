@@ -1,16 +1,26 @@
-import type { Save } from "@pond/schema/db";
+import type { Save, Source } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
-import { CARD_INDEX_WIDTHS } from "../../../shared/media-index";
 import { mediaWarmCandidates } from "./candidates";
 
 function fixture(
-  patch: Partial<Pick<Save, "id" | "title" | "status" | "files">>,
-): Pick<Save, "id" | "title" | "status" | "files"> {
+  patch: Partial<
+    Pick<
+      Save,
+      "id" | "title" | "status" | "files" | "source" | "blurhash" | "coverIndex"
+    >
+  > = {},
+): Pick<
+  Save,
+  "id" | "title" | "status" | "files" | "source" | "blurhash" | "coverIndex"
+> {
   return {
     id: "save-1",
     title: "Example",
     status: "complete",
+    source: "tiktok" as Source,
     files: [],
+    blurhash: null,
+    coverIndex: 0,
     ...patch,
   };
 }
@@ -24,17 +34,13 @@ const file = (kind: string, path: string, mimeType?: string) => ({
 });
 
 describe("mediaWarmCandidates", () => {
-  it("indexes the tiny placeholder before the final card thumbnail", () => {
-    expect(CARD_INDEX_WIDTHS).toEqual([32, 768]);
-  });
-
   it("repairs a video without a poster", () => {
     expect(
       mediaWarmCandidates(fixture({ files: [file("video", "video.mp4")] })),
     ).toEqual([{ kind: "poster", saveId: "save-1", title: "Example" }]);
   });
 
-  it("warms a video's poster rather than the video bytes", () => {
+  it("encodes a blurhash from a video poster once the poster exists", () => {
     expect(
       mediaWarmCandidates(
         fixture({
@@ -44,14 +50,18 @@ describe("mediaWarmCandidates", () => {
           ],
         }),
       ),
-    ).toEqual([
-      expect.objectContaining({
-        kind: "thumbnail",
-        saveId: "save-1",
-        sourceFile: "poster.jpg",
-        version: "abcdef123456",
-      }),
-    ]);
+    ).toEqual([{ kind: "blurhash", saveId: "save-1", title: "Example" }]);
+  });
+
+  it("skips a save that already has a blurhash", () => {
+    expect(
+      mediaWarmCandidates(
+        fixture({
+          blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+          files: [file("cover", "cover.jpg", "image/jpeg")],
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it("fills the missing poster slots in a multi-video save", () => {
@@ -68,7 +78,7 @@ describe("mediaWarmCandidates", () => {
     ).toEqual([{ kind: "poster", saveId: "save-1", title: "Example" }]);
   });
 
-  it("accepts a cover as the resting poster for a single video", () => {
+  it("extracts a first-frame poster even when a cover already exists", () => {
     expect(
       mediaWarmCandidates(
         fixture({
@@ -78,15 +88,10 @@ describe("mediaWarmCandidates", () => {
           ],
         }),
       ),
-    ).toEqual([
-      expect.objectContaining({
-        kind: "thumbnail",
-        sourceFile: "cover.jpg",
-      }),
-    ]);
+    ).toEqual([{ kind: "poster", saveId: "save-1", title: "Example" }]);
   });
 
-  it("sweeps every card-displayable still image, including gallery slides", () => {
+  it("encodes one cover blurhash for a gallery", () => {
     expect(
       mediaWarmCandidates(
         fixture({
@@ -94,78 +99,21 @@ describe("mediaWarmCandidates", () => {
             file("image", "cover.png", "image/png"),
             file("image", "gallery.jpg", "image/jpeg"),
             file("avatar", "avatar.jpg", "image/jpeg"),
-            file("source_icon", "icon.png", "image/png"),
           ],
         }),
       ),
-    ).toEqual([
-      expect.objectContaining({ kind: "thumbnail", sourceFile: "cover.png" }),
-      expect.objectContaining({
-        kind: "thumbnail",
-        sourceFile: "gallery.jpg",
-      }),
-    ]);
+    ).toEqual([{ kind: "blurhash", saveId: "save-1", title: "Example" }]);
   });
 
-  it("includes HEIC covers that need native thumbnail conversion", () => {
+  it("skips vector, unsupported stills, and incomplete saves", () => {
     expect(
       mediaWarmCandidates(
-        fixture({ files: [file("cover", "cover.heic", "image/heic")] }),
-      ),
-    ).toEqual([
-      expect.objectContaining({
-        kind: "thumbnail",
-        sourceFile: "cover.heic",
-      }),
-    ]);
-  });
-
-  it("includes a legacy cover whose filename and metadata omit the format", () => {
-    expect(
-      mediaWarmCandidates(fixture({ files: [file("cover", "cover.")] })),
-    ).toEqual([
-      expect.objectContaining({
-        kind: "thumbnail",
-        sourceFile: "cover.",
-      }),
-    ]);
-  });
-
-  it("warms valid media retained by a failed legacy import", () => {
-    expect(
-      mediaWarmCandidates(
-        fixture({
-          status: "failed",
-          files: [file("cover", "cover.jpg", "image/jpeg")],
-        }),
-      ),
-    ).toEqual([
-      expect.objectContaining({
-        kind: "thumbnail",
-        sourceFile: "cover.jpg",
-      }),
-    ]);
-  });
-
-  it("skips vector, animated, and incomplete saves", () => {
-    expect(
-      mediaWarmCandidates(
-        fixture({ files: [file("image", "image.gif", "image/gif")] }),
+        fixture({ files: [file("image", "image.svg", "image/svg+xml")] }),
       ),
     ).toEqual([]);
     expect(
       mediaWarmCandidates(
         fixture({ status: "ingesting", files: [file("image", "image.png")] }),
-      ),
-    ).toEqual([]);
-    expect(
-      mediaWarmCandidates(
-        fixture({ files: [file("cover", "cover.gif", "image/gif")] }),
-      ),
-    ).toEqual([]);
-    expect(
-      mediaWarmCandidates(
-        fixture({ files: [file("image", "image.bmp", "image/bmp")] }),
       ),
     ).toEqual([]);
   });

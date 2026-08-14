@@ -26,7 +26,10 @@ async function importFilesAndNotify(paths: readonly string[]): Promise<void> {
   if (!result.ok) return;
   const count = result.ids?.length ?? paths.length;
   if (count === 0) return;
-  notify({ id: "paste-import", title: pasteSavedTitle(count) });
+  notify({
+    id: "paste-import",
+    title: pasteSavedTitle(count),
+  });
 }
 
 async function quickAddUrls(urls: readonly string[]): Promise<void> {
@@ -38,7 +41,10 @@ async function quickAddUrls(urls: readonly string[]): Promise<void> {
     if (result.ok) added += 1;
   }
   if (added === 0) return;
-  notify({ id: "paste-import", title: pasteSavedTitle(added) });
+  notify({
+    id: "paste-import",
+    title: pasteSavedTitle(added),
+  });
 }
 
 async function importClipboardAndNotify(): Promise<void> {
@@ -49,9 +55,11 @@ async function importClipboardAndNotify(): Promise<void> {
   if (!result.ok) return;
   const count = result.ids?.length ?? 1;
   if (count === 0) return;
-  notify({ id: "paste-import", title: pasteSavedTitle(count) });
+  notify({
+    id: "paste-import",
+    title: pasteSavedTitle(count),
+  });
 }
-
 export function useCardActions(
   filteredIds: ReadonlyArray<string>,
   mode: SaveListMode,
@@ -86,11 +94,12 @@ export function useCardActions(
         selection.setRange(filteredIds, anchor, id);
         return;
       }
-      if (multiSelectActive) selection.clear();
+      /** Read live size so this callback identity stays stable across multi-select enter/exit. */
+      if (selection.size() > 0) selection.clear();
       selection.setAnchor(id);
       openSave(id);
     },
-    [filteredIds, multiSelectActive],
+    [filteredIds],
   );
 
   useEffect(() => {

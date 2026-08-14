@@ -1,15 +1,12 @@
 import type { Save } from "@/lib/types";
 
-/** Requires video evidence alongside a pending fetch_video_ytdlp task; the gate stops text/image saves flashing "Queued". */
+/** True only while yt-dlp is actively fetching; pending video tasks stay off the card. */
 export function useIsVideoDownloading(save: Save | null | undefined): boolean {
   if (!save) return false;
   if (save.status === "complete" || save.status === "failed") return false;
   if (!hasVideoEvidence(save)) return false;
-  const tasks = save.tasks ?? [];
-  if (tasks.length === 0) return save.status === "ingesting";
-  const t = tasks.find((x) => x.op === "fetch_video_ytdlp");
-  if (!t) return false;
-  return t.status === "pending" || t.status === "running";
+  const t = (save.tasks ?? []).find((x) => x.op === "fetch_video_ytdlp");
+  return t?.status === "running";
 }
 
 function hasVideoEvidence(save: Save): boolean {

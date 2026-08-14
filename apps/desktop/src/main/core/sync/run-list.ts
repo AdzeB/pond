@@ -24,7 +24,6 @@ export const LIST_HARVEST_SOURCES = new Set<Source>([
   "instagram",
   "tiktok",
   "reddit",
-  "threads",
 ]);
 
 export async function syncListSource(

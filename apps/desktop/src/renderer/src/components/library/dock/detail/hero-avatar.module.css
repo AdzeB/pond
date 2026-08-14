@@ -1,4 +1,4 @@
-/* Ringed app-icon face for watches; the brand tile rounds itself, this adds the outer keyline. */
+/* Keyline around the brand-tile fallback for watches. */
 .wavatar {
   position: relative;
   display: grid;
@@ -11,7 +11,7 @@
   inset: -4px;
   content: "";
   border: 1.5px solid var(--ds-gray-a5);
-  border-radius: calc(var(--ds-radius-app-icon) + 2px);
+  border-radius: calc(var(--ds-radius-xs) + 2px);
 }
 
 /* Round profile face with the brand badge, mirroring the sources grid tile. */
@@ -37,6 +37,6 @@
   overflow: hidden;
   outline: 2px solid var(--ds-gray-1);
   background: var(--ds-gray-1);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }

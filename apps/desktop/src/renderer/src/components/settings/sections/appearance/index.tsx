@@ -1,4 +1,5 @@
 import {
+  CONTRAST_DEFAULT,
   CONTRAST_MAX,
   CONTRAST_MIN,
   DEFAULT_DARK_THEME,
@@ -11,9 +12,10 @@ import {
   type ThemeAppearance,
   type ThemeDef,
 } from "@pond/schema/db";
-import { ColorField, Select, Settings, Slider } from "@pond/ui";
+import { ColorField, Input, Select, Settings, Slider } from "@pond/ui";
 import type { Binding } from "@/components/settings/engine";
 import { PresetSelect } from "@/components/settings/theme";
+import { clamp as clampNum } from "@/lib/util/math";
 
 const DEFAULTS = DEFAULT_PREFS.preferences;
 
@@ -194,6 +196,19 @@ export function ThemeContrastRow({
 }) {
   const state = readTheme(binding);
   const { def } = sideState(side, state);
+  const contrast = Number.isFinite(def.contrast)
+    ? def.contrast
+    : CONTRAST_DEFAULT;
+
+  const setContrast = (next: number) => {
+    const value = clampNum(Math.round(next), CONTRAST_MIN, CONTRAST_MAX);
+    if (side === "light") {
+      state.patch({ light: { ...def, contrast: value } });
+    } else {
+      state.patch({ dark: { ...def, contrast: value } });
+    }
+  };
+
   return (
     <>
       <Settings.ItemDetails>
@@ -207,14 +222,11 @@ export function ThemeContrastRow({
           min={CONTRAST_MIN}
           max={CONTRAST_MAX}
           step={5}
-          value={def.contrast}
+          value={contrast}
           onValueChange={(next) => {
-            const contrast = typeof next === "number" ? next : (next[0] ?? 0);
-            if (side === "light") {
-              state.patch({ light: { ...def, contrast } });
-            } else {
-              state.patch({ dark: { ...def, contrast } });
-            }
+            setContrast(
+              typeof next === "number" ? next : (next[0] ?? contrast),
+            );
           }}
         >
           <Slider.Control>
@@ -223,7 +235,21 @@ export function ThemeContrastRow({
               <Slider.Thumb aria-label={`${side} contrast`} />
             </Slider.Track>
           </Slider.Control>
-          <Slider.Value />
+          <Input.Root size="sm">
+            <Input.Field
+              type="number"
+              min={CONTRAST_MIN}
+              max={CONTRAST_MAX}
+              step={5}
+              aria-label={`${side} contrast value`}
+              value={String(contrast)}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                if (Number.isFinite(n)) setContrast(n);
+              }}
+              style={{ width: 44, textAlign: "right" }}
+            />
+          </Input.Root>
         </Slider.Root>
       </Settings.ItemControl>
     </>

@@ -1,43 +1,82 @@
-.card {
-  width: 384px;
-}
-
-.fields {
+/* Sits in the dock pill surface: no nested card or inset well. */
+.wrap {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 400px;
 }
 
-/* Inset well around the query field; min-height matches the other cards' 44px rows. */
-.editor {
-  position: relative;
+.bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  padding-inline: 12px 6px;
+}
+
+.modes {
+  display: inline-flex;
+  flex: none;
+}
+
+.thinking-pill {
   display: flex;
   gap: 8px;
   align-items: center;
-  width: 100%;
-  height: 44px;
-  padding-inline: 12px;
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-lg);
+  height: 40px;
+  padding-inline: 12px 6px;
+  color: var(--ds-gray-11);
 }
 
-/* Leading glyph beside the query field. */
-.lead-icon {
-  display: inline-flex;
+.spinner {
+  display: grid;
   flex: none;
-  align-items: center;
-  justify-content: center;
+  place-items: center;
+  width: 14px;
+  height: 14px;
   color: var(--ds-gray-9);
+}
+
+.spinner-glyph {
+  display: block;
+  animation: thinking-spin 0.7s linear infinite;
+}
+
+.thinking-text {
+  flex: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@keyframes thinking-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner-glyph {
+    animation: none;
+  }
+}
+
+.editor {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
 }
 
 /* Single-line query: long input scrolls horizontally behind a hidden scrollbar instead of wrapping. */
 .input {
   display: block;
-  flex: 1;
-  min-width: 0;
-
-  /* Breathing room at the scroll end so the caret and last glyph never sit clipped against the well's rounded edge. */
-  padding-inline-end: 24px;
+  width: 100%;
+  min-height: 1.5em;
   overflow-x: auto;
   overflow-y: hidden;
   font: inherit;
@@ -49,7 +88,6 @@
   /* Lexical inlines `pre-wrap`/`break-word` on the root element; !important beats the inline style, and `pre` keeps its space handling while never wrapping. */
   white-space: pre;
   outline: none;
-  scroll-padding-inline-end: 24px;
   scrollbar-width: none;
 }
 
@@ -68,8 +106,10 @@
 
 .placeholder {
   position: absolute;
-  top: 12px;
-  left: 42px;
+  inset-block: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
@@ -78,4 +118,27 @@
   white-space: nowrap;
   pointer-events: none;
   user-select: none;
+}
+
+.close {
+  flex: none;
+}
+
+.clear {
+  flex: none;
+}
+
+.status {
+  padding-inline: 12px 6px;
+  padding-bottom: 4px;
+  font-size: 13px;
+  color: var(--ds-gray-10);
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-inline: 12px 6px;
+  padding-bottom: 8px;
 }

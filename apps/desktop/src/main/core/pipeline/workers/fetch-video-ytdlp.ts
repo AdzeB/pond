@@ -1,12 +1,23 @@
 import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
-import type { SaveFile } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
+import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
+import { probeImageDims } from "../../../lib/image-process";
+import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
+import {
+  type PosterWrite,
+  posterFilename,
+  usesPlatformPoster,
+  videoFilename,
+} from "../../../lib/poster-policy";
+import { probeVideoDims } from "../../../lib/video-dims";
 import { persistSave } from "../../persist-save";
-import { downloadVideo } from "../../refresh/yt-dlp";
+import { type DownloadedVideoItem, downloadVideo } from "../../refresh/yt-dlp";
 import { isAutoVideoBlockedByStorageGuard } from "../../storage-watcher";
-import { resolveYtDlpTarget } from "../specs";
-import { readSave } from "./apply";
+import { TransientError } from "../extractors/errors";
+import { expectedVideoDownloads, resolveYtDlpTarget } from "../specs";
+import { readSave, type WriteFileArgs } from "./apply";
 
 export async function runFetchVideoYtdlp(
   saveId: string,
@@ -15,11 +26,12 @@ export async function runFetchVideoYtdlp(
   const save = await readSave(saveId);
   if (!save) return;
 
-  const files = save.files ?? [];
-  if (files.some((f) => f.kind === "video")) {
+  const expected = expectedVideoDownloads(save);
+  const existingVideos = (save.files ?? []).filter(isVideoFile);
+  if (expected > 0 && existingVideos.length >= expected) {
     log.debug(
-      "[pond pipeline:fetch-video-ytdlp] video file already present, skipping",
-      saveId,
+      "[pond pipeline:fetch-video-ytdlp] video files already present, skipping",
+      { saveId, existing: existingVideos.length, expected },
     );
     return;
   }
@@ -38,98 +50,157 @@ export async function runFetchVideoYtdlp(
   }
 
   if (isAutoVideoBlockedByStorageGuard()) {
-    log.info(
-      "[pond pipeline:fetch-video-ytdlp] storage guard blocking; will retry",
-      saveId,
+    throw new TransientError(
+      `fetch-video-ytdlp: storage guard blocking ${saveId}`,
     );
-    return;
   }
+
+  /** YouTube watch URLs share a playlist id; never expand those. Tweets with quoted/carousel clips must. */
+  const allowPlaylist =
+    expected > 1 && save.source !== "youtube" && save.source !== "pinterest";
 
   log.info("[pond pipeline:fetch-video-ytdlp] downloading", {
     saveId,
     target,
     source: save.source,
+    expected,
+    allowPlaylist,
   });
   const dl = await downloadVideo({
     url: target,
     source: save.source,
     accountId: save.accountId,
+    allowPlaylist,
+    expectedCount: expected,
     ...(ctx?.signal ? { signal: ctx.signal } : {}),
   });
-  if (!dl) {
-    log.info("[pond pipeline:fetch-video-ytdlp] no video produced", saveId);
-    return;
+  if (!dl || dl.items.length === 0) {
+    throw new TransientError(
+      `fetch-video-ytdlp: no video produced for ${saveId}`,
+    );
   }
 
   try {
-    const videoBuf = await readPath(dl.path);
-    if (!videoBuf) {
-      log.warn(
-        "[pond pipeline:fetch-video-ytdlp] could not read produced file",
-        dl.path,
-      );
-      return;
-    }
-    const videoExt = extname(dl.path).toLowerCase() || ".mp4";
-    const newFiles: Array<{
-      kind: SaveFile["kind"];
-      filename: string;
-      bytes: Buffer;
-      mimeType?: string;
-    }> = [
-      {
-        kind: "video",
-        filename: `video${videoExt}`,
-        bytes: videoBuf,
-        mimeType: dl.mimeType,
-      },
-    ];
-    if (dl.posterPath) {
-      const posterBuf = await readPath(dl.posterPath);
-      if (posterBuf) {
-        const posterExt = extname(dl.posterPath).toLowerCase() || ".jpg";
-        newFiles.push({
-          kind: "poster",
-          filename: `poster${posterExt}`,
-          bytes: posterBuf,
-          mimeType: dl.posterMimeType ?? "image/jpeg",
-        });
+    const newFiles: WriteFileArgs[] = [];
+
+    for (let i = 0; i < dl.items.length; i++) {
+      const item = dl.items[i];
+      if (!item) continue;
+      const files = await filesForItem(item, i, save.source);
+      if (!files) {
+        throw new TransientError(
+          `fetch-video-ytdlp: could not read produced file for ${saveId}`,
+        );
       }
+      newFiles.push(...files);
     }
 
-    for (const sub of dl.subtitles) {
-      const subBuf = await readPath(sub.path);
-      if (subBuf) {
-        newFiles.push({
-          kind: "subtitle",
-          filename: sub.filename,
-          bytes: subBuf,
-          mimeType: sub.mimeType,
-        });
-      }
-    }
-
+    const primary = dl.items[0];
+    const primaryDims = newFiles.find((f) => f.kind === "video");
     await persistSave(
       saveId,
       {
         mediaType: "video",
-        ...(dl.infoJson
-          ? { rawJson: mergeYtdlpInfo(save.rawJson, dl.infoJson) }
+        ...(primaryDims?.width && primaryDims.height
+          ? { width: primaryDims.width, height: primaryDims.height }
+          : {}),
+        ...(primary?.infoJson
+          ? { rawJson: mergeYtdlpInfo(save.rawJson, primary.infoJson) }
           : {}),
       },
       {
         actorReason: "pipeline:fetch-video-ytdlp",
+        replaceFilesWithKind: ["video", "poster"],
         newFiles,
       },
     );
     log.info("[pond pipeline:fetch-video-ytdlp] wrote", {
       saveId,
-      bytes: dl.size,
-      poster: dl.posterPath != null,
+      count: dl.items.length,
+      bytes: dl.items.reduce((sum, item) => sum + item.size, 0),
     });
   } finally {
     await dl.cleanup();
   }
+}
+
+async function filesForItem(
+  item: DownloadedVideoItem,
+  index: number,
+  source: Source | null,
+): Promise<WriteFileArgs[] | null> {
+  const [videoBuf, platformPosterBuf, ...subtitleBufs] = await Promise.all([
+    readPath(item.path),
+    item.posterPath ? readPath(item.posterPath) : Promise.resolve(null),
+    ...item.subtitles.map((sub) => readPath(sub.path)),
+  ]);
+  if (!videoBuf) return null;
+
+  const videoExt = extname(item.path).toLowerCase() || ".mp4";
+  const videoDims =
+    dimsFromYtdlpInfo(item.infoJson) ?? (await probeVideoDims(item.path));
+  const out: WriteFileArgs[] = [
+    {
+      kind: "video",
+      filename: videoFilename(index, videoExt),
+      bytes: videoBuf,
+      mimeType: item.mimeType,
+      ...(videoDims ?? {}),
+    },
+  ];
+
+  const poster = await resolvePoster({
+    source,
+    index,
+    videoPath: item.path,
+    platformPath: item.posterPath,
+    platformBytes: platformPosterBuf,
+    platformMimeType: item.posterMimeType,
+  });
+  if (poster) out.push(poster);
+
+  for (let i = 0; i < item.subtitles.length; i++) {
+    const sub = item.subtitles[i];
+    const subBuf = subtitleBufs[i];
+    if (!sub || !subBuf) continue;
+    out.push({
+      kind: "subtitle",
+      filename: sub.filename,
+      bytes: subBuf,
+      mimeType: sub.mimeType,
+    });
+  }
+
+  return out;
+}
+
+async function resolvePoster(args: {
+  source: Source | null;
+  index: number;
+  videoPath: string;
+  platformPath: string | null;
+  platformBytes: Buffer | null;
+  platformMimeType: string | null;
+}): Promise<PosterWrite | null> {
+  if (
+    usesPlatformPoster(args.source) &&
+    args.platformBytes &&
+    args.platformPath
+  ) {
+    const ext = extname(args.platformPath).toLowerCase() || ".jpg";
+    const dims = await probeImageDims(args.platformBytes);
+    return {
+      kind: "poster",
+      filename: posterFilename(args.index, ext),
+      bytes: args.platformBytes,
+      mimeType: args.platformMimeType ?? "image/jpeg",
+      ...(dims ?? {}),
+    };
+  }
+  return buildFirstFramePoster(
+    args.videoPath,
+    posterFilename(args.index, ".jpg"),
+  );
 }
 
 function readCaptureMedia(rawJson: unknown): Array<{ type?: string }> | null {
@@ -148,6 +219,23 @@ function mergeYtdlpInfo(
       ? (rawJson as Record<string, unknown>)
       : {};
   return { ...base, capture: base.capture ?? {}, ytdlp: info };
+}
+
+function dimsFromYtdlpInfo(
+  info: Record<string, unknown> | null | undefined,
+): { width: number; height: number } | null {
+  if (!info) return null;
+  const width = Number(info.width);
+  const height = Number(info.height);
+  if (
+    Number.isFinite(width) &&
+    Number.isFinite(height) &&
+    width > 0 &&
+    height > 0
+  ) {
+    return { width, height };
+  }
+  return null;
 }
 
 async function readPath(p: string): Promise<Buffer | null> {

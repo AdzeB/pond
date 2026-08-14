@@ -25,3 +25,16 @@ export function WelcomeEmpty() {
     </div>
   );
 }
+
+/** Shown while the pool snapshot / first page is still resolving after a cold start. */
+export function LibraryLoading() {
+  return (
+    <div className={styles.welcome} role="status" aria-live="polite">
+      <div className={styles.spinner} aria-hidden="true" />
+      <div className={styles.copy}>
+        <h2 className={styles.title}>Loading library</h2>
+        <p className={styles.text}>Getting your saves ready.</p>
+      </div>
+    </div>
+  );
+}

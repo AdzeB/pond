@@ -9,7 +9,7 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
 /** Requests a downscaled WebP preview (width in device px) for grid cards; the detail view keeps the original via `buildPondUrl`. */
 export function withThumbWidth(url: string, width: number): string {
   const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}w=${Math.round(width)}`;
+  return `${url}${sep}tw=${Math.round(width)}`;
 }
 
 export function pickAuthorAvatarUrl(save: Save): string | null {

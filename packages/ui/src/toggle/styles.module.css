@@ -51,10 +51,12 @@
   }
 }
 
-/* Inside a ToggleGroup the toggle becomes a segmented-control item: flat until pressed, then a raised card on the group's recessed track. */
+/* Labels sit above the group's sliding pill; fill and shadow live on the pill, not the item. */
 [data-pond-toggle-group] > .root {
+  z-index: 1;
   flex: 1;
-  border-radius: calc(var(--ds-radius-sm) - 2px);
+  border-radius: var(--ds-radius-full);
+  transition: color var(--ds-duration-emphasized) var(--ds-easing-snap);
 
   &:hover,
   &[data-demo-state="hover"] {
@@ -64,8 +66,7 @@
   &[data-pressed] {
     font-weight: 550;
     color: var(--ds-gray-12);
-    background: var(--ds-gray-1);
-    box-shadow: 0 1px 2px var(--ds-gray-a4);
+    background: none;
   }
 
   &:focus-visible,
@@ -74,8 +75,19 @@
   }
 }
 
+[data-pond-toggle-group][data-multiple] > .root[data-pressed] {
+  background: var(--ds-gray-1);
+  box-shadow: 0 1px 2px var(--ds-gray-a4);
+}
+
 [data-pond-toggle-group][data-orientation="vertical"] > .root {
   flex: none;
   justify-content: flex-start;
   width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pond-toggle-group] > .root {
+    transition: none;
+  }
 }

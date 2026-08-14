@@ -7,7 +7,6 @@ import { saveIdFromPath } from "@/lib/ui/save-nav";
 const ROUTE_LABELS: Record<string, string> = {
   "/": "Library",
   "/sources": "Sources",
-  "/analytics": "Analytics",
   "/trash": "Trash",
 };
 
@@ -36,8 +35,6 @@ export function labelForPath(path: string): string {
 
   const exact = ROUTE_LABELS[clean];
   if (exact) return exact;
-
-  if (clean.startsWith("/analytics/")) return "Analytics";
 
   if (clean.startsWith("/source/")) {
     const source = clean.split("/")[2];

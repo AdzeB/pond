@@ -105,7 +105,8 @@ export function SortSection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Title>Sort Library</TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu("options")} />
+        <TrayCard.Title position="center">Sort</TrayCard.Title>
         <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>

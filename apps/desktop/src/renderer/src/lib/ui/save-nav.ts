@@ -1,5 +1,5 @@
-import { listBaseFromPath } from "@/lib/search/schemas";
 import { getAppRouter } from "@/lib/ui/app-router";
+import { getLastListPath, rememberListPath } from "@/lib/ui/list-path";
 import { primarySelection } from "@/stores/selection";
 import { tabs } from "@/stores/tabs";
 
@@ -22,6 +22,10 @@ export function openSave(id: string, opts?: { background?: boolean }): void {
   primarySelection.set(id);
   const router = getAppRouter();
   if (!router) return;
+  rememberListPath(
+    router.state.location.pathname,
+    router.state.location.searchStr,
+  );
   router.history.push(path);
 }
 
@@ -29,12 +33,12 @@ export function closeSave(): void {
   const router = getAppRouter();
   primarySelection.set(null);
   if (!router) return;
-  const base = listBaseFromPath(router.state.location.pathname);
-  router.history.push(base);
+  router.history.push(getLastListPath());
 }
 
 /** Sync primary selection from the active tab path so save hotkeys follow the visible tab. */
 export function syncPrimaryFromPath(pathname: string): void {
   const id = saveIdFromPath(pathname);
   if (primarySelection.get() !== id) primarySelection.set(id);
+  rememberListPath(pathname);
 }

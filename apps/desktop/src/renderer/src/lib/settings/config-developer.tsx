@@ -3,7 +3,9 @@ import { type ReactNode, useState } from "react";
 import { VerifyRow } from "@/components/settings/sections/developer-verify-row";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
+import { getAppRouter } from "@/lib/ui/app-router";
 import { reloadPrefs } from "@/stores/prefs";
+import { settingsModal } from "@/stores/settings-modal";
 
 function query(channel: string, payload: Record<string, unknown> = {}) {
   return window.pond.query(channel, payload);
@@ -113,6 +115,18 @@ export const developerSection = defineSection("developer", {
     {
       title: "Diagnostics",
       items: [
+        {
+          control: "button",
+          key: "open-ai-playground",
+          title: "AI Playground",
+          description: "Grid of Pond UI AI elements for live editing.",
+          keywords: ["ai", "playground", "elements", "ui", "components"],
+          label: "Open",
+          onClick: () => {
+            settingsModal.close();
+            getAppRouter()?.history.push("/playground");
+          },
+        },
         {
           control: "button",
           key: "open-logs",

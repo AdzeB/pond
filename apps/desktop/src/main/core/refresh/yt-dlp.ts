@@ -9,10 +9,9 @@ import { binariesAvailable } from "./binaries";
 import { writeNetscapeCookies } from "./cookies";
 import { formatSelector, maxFilesizeArg } from "./yt-dlp-format";
 import {
-  pickProducedFile,
+  pickProducedFiles,
   pickProducedPoster,
   pickSubtitleFiles,
-  readInfoJson,
   type SubtitleFile,
 } from "./yt-dlp-output";
 import { runWithTimeout } from "./yt-dlp-process";
@@ -24,9 +23,13 @@ interface DownloadVideoArgs {
   accountId?: string | null;
   /** Aborts the in-flight yt-dlp process. */
   signal?: AbortSignal;
+  /** Quoted/carousel tweets are a yt-dlp playlist; YouTube watch URLs must never expand. */
+  allowPlaylist?: boolean;
+  /** Scales the hard timeout; capped so a long carousel cannot run unbounded. */
+  expectedCount?: number;
 }
 
-interface DownloadedVideo {
+export interface DownloadedVideoItem {
   path: string;
   mimeType: string;
   size: number;
@@ -34,14 +37,19 @@ interface DownloadedVideo {
   posterPath: string | null;
   posterMimeType: string | null;
   subtitles: SubtitleFile[];
+}
+
+interface DownloadedVideos {
+  items: DownloadedVideoItem[];
   cleanup: () => Promise<void>;
 }
 
 const HARD_TIMEOUT_MS = 90_000;
+const MAX_PLAYLIST_TIMEOUT_FACTOR = 4;
 
 export async function downloadVideo(
   args: DownloadVideoArgs,
-): Promise<DownloadedVideo | null> {
+): Promise<DownloadedVideos | null> {
   const { ytdlp, ffmpeg } = binariesAvailable();
   if (!ytdlp) {
     log.debug("[pond yt-dlp] binary unavailable, skipping", args.url);
@@ -77,15 +85,12 @@ export async function downloadVideo(
     outputDir = await mkdtemp(join(tmpdir(), "pond-ytdlp-out-"));
 
     const argv = [
-      "--no-playlist",
+      args.allowPlaylist ? "--yes-playlist" : "--no-playlist",
       "--no-warnings",
       "--no-progress",
       "--no-part",
       "--restrict-filenames",
       "--write-info-json",
-      "--write-thumbnail",
-      "--convert-thumbnails",
-      "jpg",
       "--socket-timeout",
       "30",
       "--retries",
@@ -97,6 +102,10 @@ export async function downloadVideo(
       "-o",
       join(outputDir, "%(id)s.%(ext)s"),
     ];
+    /** Platform thumbs are the resting poster for YouTube; embed-thumbnail also needs a downloaded still. */
+    if (args.source === "youtube" || prefs.embedThumbnail) {
+      argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
+    }
     const filesize = maxFilesizeArg(prefs);
     if (filesize) argv.unshift("--max-filesize", filesize);
 
@@ -134,10 +143,16 @@ export async function downloadVideo(
       args.url,
       `(cookies=${cookies.count})`,
     );
+    const timeoutMs =
+      HARD_TIMEOUT_MS *
+      Math.min(
+        MAX_PLAYLIST_TIMEOUT_FACTOR,
+        Math.max(1, args.expectedCount ?? 1),
+      );
     const { code, stderr } = await runWithTimeout(
       ytdlp,
       argv,
-      HARD_TIMEOUT_MS,
+      timeoutMs,
       args.signal,
     );
     if (code !== 0) {
@@ -151,28 +166,40 @@ export async function downloadVideo(
       return null;
     }
 
-    const produced = await pickProducedFile(outputDir);
-    if (!produced) {
+    const produced = await pickProducedFiles(outputDir);
+    if (produced.length === 0) {
       log.warn("[pond yt-dlp] no output file produced", args.url);
       await cleanup();
       return null;
     }
 
-    const infoJson = await readInfoJson(outputDir, produced.path);
-    const poster = await pickProducedPoster(outputDir, produced.path);
+    const wantPoster =
+      args.source === "youtube" || Boolean(prefs.embedThumbnail);
     const subtitles =
       prefs.subtitles === "download" ? await pickSubtitleFiles(outputDir) : [];
-    log.info("[pond yt-dlp] wrote", produced.path, `(${produced.size} bytes)`);
-    return {
-      path: produced.path,
-      mimeType: produced.mimeType,
-      size: produced.size,
-      infoJson,
-      posterPath: poster?.path ?? null,
-      posterMimeType: poster?.mimeType ?? null,
-      subtitles,
-      cleanup,
-    };
+    const items: DownloadedVideoItem[] = [];
+    for (let i = 0; i < produced.length; i++) {
+      const file = produced[i];
+      if (!file) continue;
+      const poster = wantPoster
+        ? await pickProducedPoster(outputDir, file.path)
+        : null;
+      items.push({
+        path: file.path,
+        mimeType: file.mimeType,
+        size: file.size,
+        infoJson: file.infoJson,
+        posterPath: poster?.path ?? null,
+        posterMimeType: poster?.mimeType ?? null,
+        subtitles: i === 0 ? subtitles : [],
+      });
+      log.info("[pond yt-dlp] wrote", file.path, `(${file.size} bytes)`);
+    }
+    if (items.length === 0) {
+      await cleanup();
+      return null;
+    }
+    return { items, cleanup };
   } catch (err) {
     log.warn("[pond yt-dlp] unexpected error", args.url, err);
     await cleanup();

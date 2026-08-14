@@ -10,7 +10,6 @@
   border-radius: 4px;
   box-shadow: var(--ds-shadow-2);
   opacity: 0;
-  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
 .slide[data-active][data-loaded="true"] {

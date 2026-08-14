@@ -4,14 +4,13 @@ import { type CardLayout, CardThumb } from "@/components/save/card/media";
 import { Card } from "@/components/save/card/parts";
 import { SaveContextMenu } from "@/components/save/context-menu";
 import { useLibraryCardCallbacks } from "@/components/shared/grid-context";
-import { useResolvedTheme } from "@/hooks/use-resolved-theme";
+import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
 import { useSave } from "@/hooks/use-saves";
-import { pickPrimaryFile } from "@/lib/media/units";
+import { pickPrimaryUnit } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 import { formatAbsolute } from "@/lib/util/format";
-import { clampRatio } from "@/stores/aspect";
-import { useDisplayPrefs } from "@/stores/display-prefs";
-import { usePrefs } from "@/stores/prefs";
+import { aspectDimsFor, clampRatio } from "@/stores/aspect";
+import { useDisplayPref } from "@/stores/display-prefs";
 import {
   selection,
   useIsAnchor,
@@ -67,8 +66,9 @@ export const SaveCard = memo(function SaveCard({
     };
     if (packedTop != null && packedLeft != null) {
       base.position = "absolute";
-      base.top = `${packedTop}px`;
-      base.left = `${packedLeft}px`;
+      base.top = 0;
+      base.left = 0;
+      base.transform = `translate3d(${packedLeft}px, ${packedTop}px, 0)`;
     }
     return base;
   }, [packedWidth, packedHeight, packedTop, packedLeft]);
@@ -112,34 +112,47 @@ export const SaveCard = memo(function SaveCard({
 
   if (!save) return null;
 
+  const children = (
+    <>
+      <Card.Checkbox
+        checked={isMulti}
+        aria-label={isMulti ? "Deselect" : "Select"}
+        onClick={onCheckboxClick}
+      />
+      <Card.Select
+        aria-pressed={isPrimary}
+        onClick={onSelectClick}
+        onAuxClick={onSelectAuxClick}
+        onDoubleClick={onSelectDoubleClick}
+      >
+        <SaveCardBody save={save} layout={layout} />
+      </Card.Select>
+    </>
+  );
+
+  const rootProps = {
+    selected: isPrimary,
+    multi: isMulti,
+    "data-save-id": id,
+    "data-cursor": isAnchor || undefined,
+    style: liStyle,
+    draggable: save.files.length > 0,
+    onNativeDragStart: onDragStart,
+    children,
+  };
+
   return (
     <SaveContextMenu save={save}>
-      <MotionCardRoot
-        selected={isPrimary}
-        multi={isMulti}
-        data-save-id={id}
-        data-cursor={isAnchor || undefined}
-        style={liStyle}
-        draggable={save.files.length > 0}
-        onNativeDragStart={onDragStart}
-        initial={false}
-        animate={tumbling ? tumbleTarget(id) : undefined}
-        transition={TUMBLE_TRANSITION}
-      >
-        <Card.Checkbox
-          checked={isMulti}
-          aria-label={isMulti ? "Deselect" : "Select"}
-          onClick={onCheckboxClick}
+      {tumbling ? (
+        <MotionCardRoot
+          {...rootProps}
+          initial={false}
+          animate={tumbleTarget(id)}
+          transition={TUMBLE_TRANSITION}
         />
-        <Card.Select
-          aria-pressed={isPrimary}
-          onClick={onSelectClick}
-          onAuxClick={onSelectAuxClick}
-          onDoubleClick={onSelectDoubleClick}
-        >
-          <SaveCardBody save={save} layout={layout} />
-        </Card.Select>
-      </MotionCardRoot>
+      ) : (
+        <Card.Root {...rootProps} />
+      )}
     </SaveContextMenu>
   );
 });
@@ -151,26 +164,24 @@ const SaveCardBody = memo(function SaveCardBody({
   save: Save;
   layout?: CardLayout;
 }) {
-  const theme = useResolvedTheme();
-  const [preferences] = usePrefs("preferences");
-  const tweetCover = preferences?.tweetCover;
-  const primary = useMemo(
-    () => pickPrimaryFile(save, { theme, tweetCover }),
-    [save, theme, tweetCover],
-  );
-  const w = primary?.width ?? save.width ?? null;
-  const h = primary?.height ?? save.height ?? null;
-  /** Clamp so panoramas and extreme portraits don't distort justified rows or waterfall cards. */
-  const ratio = w && h ? clampRatio(w, h) : 1;
-  const mediaStyle = useMemo<React.CSSProperties>(
-    () =>
-      ({
-        "--card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
-        "--card-aspect-num": String(ratio),
-      }) as React.CSSProperties,
-    [w, h, ratio],
-  );
-  const prefs = useDisplayPrefs();
+  const pickOpts = useMediaPickOptions();
+  const showName = useDisplayPref("name");
+  const showDate = useDisplayPref("date");
+  const packed = layout === "waterfall" || layout === "justified";
+  const unit = useMemo(() => pickPrimaryUnit(save, pickOpts), [save, pickOpts]);
+  const primary = useMemo(() => {
+    if (!unit) return null;
+    return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
+  }, [save.files, unit]);
+  const mediaStyle = useMemo<React.CSSProperties>(() => {
+    if (packed) return {} as React.CSSProperties;
+    const { w, h } = aspectDimsFor(save, pickOpts, unit);
+    const ratio = w && h ? clampRatio(w, h) : 1;
+    return {
+      "--card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
+      "--card-aspect-num": String(ratio),
+    } as React.CSSProperties;
+  }, [packed, save, pickOpts, unit]);
   const dateLabel = useMemo(() => formatAbsolute(save.savedAt), [save.savedAt]);
   return (
     <>
@@ -179,8 +190,8 @@ const SaveCardBody = memo(function SaveCardBody({
         <Card.Overlay save={save} primary={primary} />
       </Card.Media>
       <Card.Meta
-        title={prefs.name ? (save.title ?? save.url) : undefined}
-        time={prefs.date ? dateLabel : undefined}
+        title={showName ? (save.title ?? save.url) : undefined}
+        time={showDate ? dateLabel : undefined}
       />
     </>
   );

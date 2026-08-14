@@ -12,7 +12,7 @@ export function OfflineView({
       <div className={styles.heading}>
         <h1 className={styles.title}>Pond</h1>
         <p className={styles.subtitle}>
-          Pond isn’t running on this Mac. Open the app and try again.
+          Pond isn’t running on this Mac. Open the app...
         </p>
       </div>
 

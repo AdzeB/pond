@@ -2,11 +2,13 @@ import {
   IconCalendarOutline18 as DateIcon,
   IconAlbum2Outline18 as FileCountIcon,
   IconDropCapOutline18 as NameIcon,
+  IconNotepadOutline18 as NotesIcon,
   IconGlobe2Outline18 as SourceIcon,
   IconDocumentScanOutline18 as TypeIcon,
 } from "@pond/icons/outline/18";
 import { Switch, TrayCard } from "@pond/ui";
 import { type ReactNode, useRef } from "react";
+import { useDock } from "@/components/library/dock/lib/context";
 import { useView } from "@/hooks/use-view";
 import type { DisplayPrefKey } from "@/stores/display-prefs";
 import styles from "./styles.module.css";
@@ -17,21 +19,20 @@ const TOGGLES: Array<{ key: DisplayPrefKey; label: string; icon: ReactNode }> =
     { key: "date", label: "Date", icon: <DateIcon /> },
     { key: "source", label: "Source", icon: <SourceIcon /> },
     { key: "type", label: "Format", icon: <TypeIcon /> },
-    {
-      key: "fileCount",
-      label: "Count",
-      icon: <FileCountIcon />,
-    },
+    { key: "fileCount", label: "Count", icon: <FileCountIcon /> },
+    { key: "notes", label: "Notes", icon: <NotesIcon /> },
   ];
 
 export function DisplaySection() {
+  const dock = useDock();
   const { state, actions } = useView();
   const initialPrefs = useRef(state.displayPrefs);
 
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Title>Display Details</TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu("options")} />
+        <TrayCard.Title position="center">Display</TrayCard.Title>
         <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>

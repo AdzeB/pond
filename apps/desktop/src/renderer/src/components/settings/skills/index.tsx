@@ -67,8 +67,8 @@ export function SkillsSection() {
         <Settings.HeaderText>
           <Settings.Title>Skills</Settings.Title>
           <Settings.Description>
-            Saved prompts you can run with “/” in the composer. Each one
-            resolves through the “find anything” search.
+            Saved prompts for AI search. Each one resolves through
+            natural-language library search.
           </Settings.Description>
         </Settings.HeaderText>
       </Settings.Header>

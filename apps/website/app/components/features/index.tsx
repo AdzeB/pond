@@ -92,12 +92,6 @@ export function Features() {
         />
         <Section.Card
           span={4}
-          title="Analytics"
-          description="Build dashboards over what you save: sources, kinds, and trends across a date range."
-          fragment={<DepthChip label="Insights" />}
-        />
-        <Section.Card
-          span={4}
           title="On-device enrichment"
           description="Captions, OCR, transcripts, and visual search run locally. Nothing leaves your Mac unless you ask."
           fragment={<DepthChip label="Florence · Whisper · CLIP" />}

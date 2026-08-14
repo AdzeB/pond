@@ -2,7 +2,7 @@ import { extname } from "node:path";
 import type { SaveFile } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { fetchMediaBatch } from "../../../lib/blob";
-import { processImage } from "../../../lib/image-process";
+import { probeImageDims, processImage } from "../../../lib/image-process";
 import { persistSave } from "../../persist-save";
 import { getImageDownloadPrefs } from "../../prefs";
 import { TransientError } from "../extractors/errors";
@@ -74,6 +74,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
       let bytes: Buffer = Buffer.from(tx.bytes);
       let filename = tx.filename;
       let mimeType = tx.mimeType;
+      let dims: { width: number; height: number } | null = null;
       if (kind !== "video") {
         const processed = await processImage(
           bytes,
@@ -85,7 +86,11 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
           bytes = processed.bytes;
           filename = processed.filename;
           mimeType = processed.mimeType;
+          if (processed.width && processed.height) {
+            dims = { width: processed.width, height: processed.height };
+          }
         }
+        dims ??= await probeImageDims(bytes);
       }
       return {
         kind,
@@ -93,6 +98,7 @@ export async function runFetchBlobs(saveId: string): Promise<void> {
         bytes,
         sourceUrl: entry.url,
         ...(mimeType ? { mimeType } : {}),
+        ...(dims ?? {}),
       };
     }),
   );

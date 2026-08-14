@@ -5,6 +5,7 @@ import {
 } from "@pond/icons/fill/18";
 import { TrayCard } from "@pond/ui";
 import { useRef } from "react";
+import { useDock } from "@/components/library/dock/lib/context";
 import {
   Segmented,
   type SegmentedOption,
@@ -19,6 +20,7 @@ const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
 ];
 
 export function LayoutSection() {
+  const dock = useDock();
   const { state, actions } = useView();
   /** Layout applies live while the card is open; Cancel restores this snapshot. */
   const initialLayout = useRef(state.layout);
@@ -26,7 +28,8 @@ export function LayoutSection() {
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Title>Library Layout</TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu("options")} />
+        <TrayCard.Title position="center">Layout</TrayCard.Title>
         <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>

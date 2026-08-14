@@ -8,9 +8,13 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
     const p = u.pathname.toLowerCase();
     if (
       p.startsWith("/login") ||
+      p.startsWith("/log-in") ||
       p.startsWith("/signin") ||
       p.startsWith("/sign-in") ||
       p.startsWith("/sign_in") ||
+      p.startsWith("/signup") ||
+      p.startsWith("/sign-up") ||
+      p.startsWith("/register") ||
       p.startsWith("/i/flow/login") ||
       p.startsWith("/accounts/login") ||
       p.startsWith("/auth")
@@ -18,6 +22,7 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
       return true;
     }
     if (u.hostname.includes("accounts.google.com")) return true;
+    if (u.hostname.includes("login.reddit.com")) return true;
     return false;
   } catch {
     return false;

@@ -9,7 +9,6 @@ import { accountsQueries } from "./accounts";
 import { aiQueries } from "./ai";
 import { developerQueries } from "./developer";
 import { libraryQueries } from "./library";
-import { mediaIndexQueries } from "./media-index";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
@@ -26,7 +25,6 @@ const queryRegistry: QueryHandlerMap = {
   ...tagGroupsQueries,
   ...savedViewsQueries,
   ...libraryQueries,
-  ...mediaIndexQueries,
   ...developerQueries,
   ...videoQueries,
   ...syncHistoryQueries,

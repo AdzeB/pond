@@ -5,7 +5,7 @@ import type {
   WatchKind,
 } from "@pond/schema/db";
 import log from "electron-log/main.js";
-import { listAccounts, patchAccount } from "./accounts";
+import { listAccounts, partitionForAccount, patchAccount } from "./accounts";
 import { listWatches, patchWatch } from "./watches";
 
 /** Best-effort profile pictures for the Sources page cards, resolved from public profile pages or APIs, never a session partition. */
@@ -166,22 +166,28 @@ async function pinterestAvatar(user: string): Promise<string | null> {
   }
 }
 
-/** Reddit's public about endpoint carries the avatar; no page scrape needed. */
-async function redditAvatar(name: string): Promise<string | null> {
+/** Reddit's about.json 403s without a session; use the account jar when we have one. */
+async function redditAvatar(
+  name: string,
+  partition?: string,
+): Promise<string | null> {
+  if (partition) {
+    const { fetchRedditAvatar } = await import("../refresh/harvest/reddit/api");
+    return fetchRedditAvatar(name, partition);
+  }
   try {
     const res = await fetch(
-      `https://www.reddit.com/user/${encodeURIComponent(name)}/about.json`,
+      `https://www.reddit.com/user/${encodeURIComponent(name)}/about.json?raw_json=1`,
       {
         headers: { "user-agent": BROWSER_UA, accept: "application/json" },
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
     if (!res.ok) return null;
-    const body = (await res.json()) as {
-      data?: { icon_img?: string; snoovatar_img?: string };
-    };
-    const raw = body.data?.icon_img || body.data?.snoovatar_img || null;
-    return raw ? decodeEntities(raw) : null;
+    const { avatarFromMeJson } = await import(
+      "../refresh/harvest/reddit/listing"
+    );
+    return avatarFromMeJson(await res.json());
   } catch {
     return null;
   }
@@ -191,6 +197,7 @@ async function resolveAvatarUrl(
   source: Source,
   handle: string,
   kind?: WatchKind,
+  partition?: string,
 ): Promise<string | null> {
   if (source === "arena") {
     /** Channels have covers, not faces; leave them to the brand tile. */
@@ -200,7 +207,7 @@ async function resolveAvatarUrl(
     if (kind === "group") return arenaAvatar(handle, "groups");
     return null;
   }
-  if (source === "reddit") return redditAvatar(handle);
+  if (source === "reddit") return redditAvatar(handle, partition);
   if (source === "pinterest") {
     const owner = handle.split("/")[0];
     return owner ? pinterestAvatar(owner) : null;
@@ -218,6 +225,14 @@ export function fillMissingAvatars(): void {
   void (async () => {
     try {
       for (const account of await listAccounts()) {
+        if (
+          account.source === "reddit" &&
+          account.handle &&
+          !account.avatarUrl
+        ) {
+          await checkAccount(account);
+          continue;
+        }
         if (!needsCheck(account)) continue;
         await checkAccount(account);
       }
@@ -235,7 +250,12 @@ export function fillMissingAvatars(): void {
 
 async function checkAccount(account: ConnectedAccount): Promise<void> {
   const url = account.handle
-    ? await resolveAvatarUrl(account.source, account.handle)
+    ? await resolveAvatarUrl(
+        account.source,
+        account.handle,
+        undefined,
+        partitionForAccount(account.id),
+      )
     : null;
   await patchAccount(account.id, {
     avatarUrl: url,

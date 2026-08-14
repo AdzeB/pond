@@ -1,33 +1,36 @@
-.steps {
+.body {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.step {
-  display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  min-height: 40px;
-  padding-inline: 12px;
+  padding: 8px 4px 4px;
+  text-align: center;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 28ch;
+}
+
+.status {
+  margin: 0;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 550;
+  line-height: 20px;
   color: var(--ds-gray-12);
-  border-radius: var(--ds-radius-lg);
 }
 
-.step[data-state="active"] {
-  background: var(--ds-gray-2);
+.hint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 450;
+  line-height: 20px;
+  color: var(--ds-gray-10);
 }
 
-.step[data-state="todo"] {
-  color: var(--ds-gray-9);
-}
-
-.check {
+.mark {
   flex: none;
   color: var(--ds-accent-9);
   animation: check-pop var(--ds-duration-emphasized) var(--ds-easing-emphasized);
@@ -42,20 +45,12 @@
 
 .spinner {
   flex: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border: 2px solid var(--ds-gray-a4);
   border-top-color: var(--ds-accent-9);
   border-radius: 50%;
   animation: spin 1.4s linear infinite;
-}
-
-.dot {
-  flex: none;
-  width: 16px;
-  height: 16px;
-  border: 1.5px solid var(--ds-gray-a5);
-  border-radius: 50%;
 }
 
 @keyframes spin {
@@ -66,7 +61,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .spinner,
-  .check {
+  .mark {
     animation: none;
   }
 }

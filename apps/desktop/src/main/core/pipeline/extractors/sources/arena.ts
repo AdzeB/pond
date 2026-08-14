@@ -37,7 +37,7 @@ export class ArenaBlockExtractor implements Extractor {
   readonly source = "arena" as const;
   readonly validUrl = ARENA_PATTERNS;
   readonly cookieDomain = ".are.na";
-  /** Accept iron-session and legacy Rails cookies; cf_clearance tolerated for first sync. */
+  /** Accept iron-session and legacy Rails session cookies only. */
   readonly probeExpression = `(() => {
         try {
           const reserved = ['block','blocks','about','blog','log-in','login','sign-up','signup','channels','search','explore','feed','index','me','notifications','messages','pricing','jobs','privacy','terms','team','press','help','support','settings'];
@@ -62,11 +62,11 @@ export class ArenaBlockExtractor implements Extractor {
       })()`;
 
   authCookies(name: string): boolean {
+    /** `cf_clearance` is Cloudflare bot clearance, set for signed-out visitors too. */
     return (
       name === "sander-iron-session" ||
       name === "_arena_session" ||
-      name === "remember_user_token" ||
-      name === "cf_clearance"
+      name === "remember_user_token"
     );
   }
 

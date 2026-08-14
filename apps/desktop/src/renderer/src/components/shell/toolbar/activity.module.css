@@ -7,7 +7,7 @@
 }
 
 .icon[data-busy] {
-  color: var(--ds-blue-9);
+  color: var(--ds-accent-9);
 }
 
 .idle {

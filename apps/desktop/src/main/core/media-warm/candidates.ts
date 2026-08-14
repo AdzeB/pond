@@ -1,60 +1,32 @@
-import type { Save, SaveFile } from "@pond/schema/db";
-import { isStaticThumbnailFile } from "../../../shared/media-index";
+import type { Save } from "@pond/schema/db";
+import { pickBlurhashStill } from "../../lib/blurhash";
+import { needsPosterRepair } from "../../lib/poster-policy";
 
 export type MediaWarmCandidate =
   | { kind: "poster"; saveId: string; title: string }
-  | {
-      kind: "thumbnail";
-      saveId: string;
-      title: string;
-      sourceFile: string;
-      version: string | null;
-    };
+  | { kind: "blurhash"; saveId: string; title: string };
 
-type CandidateSave = Pick<Save, "id" | "title" | "status" | "files">;
-
-const NON_CARD_IMAGE_KINDS = new Set(["avatar", "source_icon"]);
+type CandidateSave = Pick<
+  Save,
+  "id" | "title" | "status" | "files" | "source" | "blurhash" | "coverIndex"
+>;
 
 /**
- * Every locally displayable still gets the same LQIP and 768px cache entries
- * the card requests. This includes gallery slides so pointer scrubbing never
- * becomes the first time their thumbnail is generated.
+ * Background work for the grid: missing video posters, then a cover blurhash.
+ * Cards load the original still; there is no derivative thumbnail to warm.
  */
 export function mediaWarmCandidates(save: CandidateSave): MediaWarmCandidate[] {
   /** Failed legacy imports can still have valid, visible media; only skip files still being written. */
   if (save.status === "ingesting") return [];
-  const files = save.files ?? [];
-  let videoCount = 0;
-  let posterCount = 0;
-  let fallbackCover = false;
-  const stills: SaveFile[] = [];
-  for (const file of files) {
-    if (file.kind === "video") videoCount += 1;
-    const isStill = isStaticThumbnailFile(file);
-    if (file.kind === "poster" && isStill) posterCount += 1;
-    if (file.kind === "cover" && isStill) fallbackCover = true;
-    if (isStill && !NON_CARD_IMAGE_KINDS.has(file.kind)) stills.push(file);
-  }
   const title = save.title?.trim() || "Untitled save";
+  const files = save.files ?? [];
 
-  const needsPoster =
-    videoCount === 1
-      ? posterCount === 0 && !fallbackCover
-      : videoCount > 1 && posterCount < videoCount;
-  if (needsPoster) return [{ kind: "poster", saveId: save.id, title }];
-
-  const paths = new Set<string>();
-  const candidates: MediaWarmCandidate[] = [];
-  for (const file of stills) {
-    if (paths.has(file.path)) continue;
-    paths.add(file.path);
-    candidates.push({
-      kind: "thumbnail",
-      saveId: save.id,
-      title,
-      sourceFile: file.path,
-      version: file.sha256?.slice(0, 12) || null,
-    });
+  if (needsPosterRepair(files)) {
+    return [{ kind: "poster", saveId: save.id, title }];
   }
-  return candidates;
+
+  if (!save.blurhash && pickBlurhashStill(save)) {
+    return [{ kind: "blurhash", saveId: save.id, title }];
+  }
+  return [];
 }

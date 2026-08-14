@@ -45,6 +45,7 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "shape", keys: ["shape"] },
   { field: "aspect", keys: ["aspect", "ratio"] },
   { field: "creator", keys: ["by", "creator", "author"] },
+  { field: "account", keys: ["account"] },
   { field: "note", keys: ["note", "notes"] },
   { field: "color", keys: ["color", "colour"] },
   { field: "savedAt", keys: ["saved", "savedat"] },

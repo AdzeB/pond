@@ -1,6 +1,7 @@
 import { IconNotepadOutline18 as NotebookPen } from "@pond/icons/outline/18";
 import { cn } from "@pond/ui";
 import React, { memo, type ReactNode, useMemo } from "react";
+import { useMediaPickOptions } from "@/hooks/use-media-pick-options";
 import {
   buildMediaUnits,
   deriveTypeKind,
@@ -10,7 +11,7 @@ import { pickSourceIconUrl } from "@/lib/media/url";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
 import type { Save, SaveFile } from "@/lib/types";
-import { useDisplayPrefs } from "@/stores/display-prefs";
+import { useDisplayPref } from "@/stores/display-prefs";
 import styles from "./styles.module.css";
 
 interface RootProps extends React.ComponentPropsWithRef<"li"> {
@@ -125,21 +126,29 @@ const Overlay = memo(function Overlay({
   save: Save;
   primary: SaveFile | null;
 }) {
-  const prefs = useDisplayPrefs();
+  const showType = useDisplayPref("type");
+  const showSource = useDisplayPref("source");
+  const showFileCount = useDisplayPref("fileCount");
+  const showNotes = useDisplayPref("notes");
+  const pickOpts = useMediaPickOptions();
   const typeLabel = useMemo(
-    () => (prefs.type ? deriveTypeLabel(primary, save) : null),
-    [prefs.type, primary, save],
+    () => (showType ? deriveTypeLabel(primary, save) : null),
+    [showType, primary, save],
   );
   const typeKind = useMemo(
     () => deriveTypeKind(primary, save),
     [primary, save],
   );
-  const sourceLabel = prefs.source ? getSourceLabel(save.source) : null;
+  const sourceLabel = showSource ? getSourceLabel(save.source) : null;
   const sourceLogo =
-    (prefs.source ? getSourceLogo(save.source) : null) ??
-    (prefs.source && save.source === "web" ? pickSourceIconUrl(save) : null);
-  const SourceIcon = prefs.source ? getSourceIcon(save.source) : null;
-  const mediaUnitCount = useMemo(() => buildMediaUnits(save).length, [save]);
+    (showSource ? getSourceLogo(save.source) : null) ??
+    (showSource && save.source === "web" ? pickSourceIconUrl(save) : null);
+  const SourceIcon = showSource ? getSourceIcon(save.source) : null;
+  const mediaUnitCount = useMemo(
+    () => (showFileCount ? buildMediaUnits(save, pickOpts).length : 0),
+    [showFileCount, save, pickOpts],
+  );
+  const hasNotes = showNotes && Boolean(save.notes?.trim());
 
   return (
     <div className={styles.overlay}>
@@ -162,12 +171,12 @@ const Overlay = memo(function Overlay({
           )}
         </Source>
       ) : null}
-      {prefs.fileCount && mediaUnitCount > 1 ? (
+      {showFileCount && mediaUnitCount > 1 ? (
         <Count aria-label={`${mediaUnitCount} media files`}>
           {mediaUnitCount}
         </Count>
       ) : null}
-      {save.notes?.trim() ? (
+      {hasNotes ? (
         <Note aria-label="Has a note" title="Has a note">
           <NotebookPen size={11} />
         </Note>

@@ -103,7 +103,7 @@ export const P3_CHROMA_BOOST = 1.4;
 
 /** Maps the 0..100 contrast slider to the CSS mid-spread multiplier. */
 export function contrastMultiplier(contrast: number): number {
-  const n = Number.isFinite(contrast) ? contrast : 30;
+  const n = Number.isFinite(contrast) ? contrast : CONTRAST_DEFAULT;
   const clamped = clamp(n, CONTRAST_MIN, CONTRAST_MAX);
   return round(0.6 + (clamped / 100) * 0.8, 4);
 }

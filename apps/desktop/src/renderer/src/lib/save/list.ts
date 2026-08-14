@@ -41,7 +41,7 @@ export function applyModeFilter(
       if (!save.deletedAt) return false;
     } else {
       if (save.deletedAt) return false;
-      if (save.status !== "complete") return false;
+      if (!isVisibleInLibrary(save)) return false;
       if (!isRenderable(save)) return false;
     }
     if (sourceFilter && save.source.toLowerCase() !== sourceFilter) {
@@ -51,6 +51,17 @@ export function applyModeFilter(
     if (mode === "recents" && !recentsOrder?.has(save.id)) return false;
     return true;
   });
+}
+
+/**
+ * Soft metadata refresh flips complete → ingesting without wiping files.
+ * Keep those cards in the grid; brand-new ingests (no files yet) stay in the saving pill.
+ */
+function isVisibleInLibrary(save: Save): boolean {
+  if (save.status === "complete") return true;
+  if (save.status !== "ingesting") return false;
+  if ((save.files?.length ?? 0) > 0) return true;
+  return save.mediaType === "link" || save.mediaType === "text";
 }
 
 interface ModeSortOptions {

@@ -2,8 +2,8 @@ import { useLocation, useParams } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import { parseMode, type SaveListMode } from "@/lib/save/list";
-import { listBaseFromPath } from "@/lib/search/schemas";
 import type { Save, ViewMode } from "@/lib/types";
+import { listPathForLocation } from "@/lib/ui/list-path";
 import { useAskResult } from "@/stores/ask-store";
 import { primarySelectionStore } from "@/stores/selection";
 import { useFilterQuery, useLayout, useSearchText } from "@/stores/view-store";
@@ -39,7 +39,7 @@ export function useLibraryState(): LibraryState {
   const filterQuery = useFilterQuery();
   const ask = useAskResult();
 
-  const parentBase = listBaseFromPath(location.pathname);
+  const parentBase = listPathForLocation(location.pathname);
   const recognized = parseMode(parentBase);
   const mode: SaveListMode = recognized ?? "library";
   const unknown = recognized === null;

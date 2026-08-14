@@ -57,6 +57,10 @@ export async function harvestSourceList(
     partition?: string;
   } = {},
 ): Promise<ListHarvestResult> {
+  if (source === "reddit") {
+    const { harvestRedditSavedJson } = await import("../harvest/reddit/api");
+    return harvestRedditSavedJson(args, opts.partition);
+  }
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {
     return { ok: false, reason: "no_match" };

@@ -1,0 +1,233 @@
+import type { ConnectedAccount, Source } from "@pond/schema/db";
+import type {
+  ExtensionCookie,
+  SessionImportResponse,
+} from "@pond/schema/session";
+import { session } from "electron";
+import log from "electron-log/main.js";
+import { identityKeyFromCookies } from "../http/session-identity";
+import { clearPendingSessionSource } from "../pending-session";
+import { extractorFor } from "./pipeline/extractors";
+import {
+  isAuthCookieName,
+  primaryDomainForSource,
+  probeUserHandle,
+  writePartitionCookies,
+} from "./refresh/scrape-window";
+import { syncAccount } from "./sync";
+import {
+  createAccount,
+  findAccountByHandle,
+  findAccountByIdentityKey,
+  listAccountsForSource,
+  normalizeHandle,
+  partitionForAccount,
+  patchAccount,
+} from "./sync/accounts";
+import { fillMissingAvatars } from "./sync/avatars";
+
+/** Writes a signed-in cookie jar into an account partition and kicks sync. */
+export async function importSessionCookies(
+  source: Source,
+  cookies: ExtensionCookie[],
+): Promise<SessionImportResponse> {
+  const domain = primaryDomainForSource(source);
+  if (!domain) {
+    return {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: `source ${source} has no cookie domain configured`,
+    };
+  }
+
+  const allowedHost = domain.replace(/^\./, "").toLowerCase();
+  const filtered = cookies.filter((cookie: ExtensionCookie) => {
+    const ck = cookie.domain.replace(/^\./, "").toLowerCase();
+    return ck === allowedHost || ck.endsWith(`.${allowedHost}`);
+  });
+
+  if (filtered.length === 0) {
+    return {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: "no_cookies_for_source_domain",
+    };
+  }
+
+  /** Reject unauthenticated sessions before touching any partition; the extension pushes whatever the browser has, signed-in or not. */
+  if (
+    !filtered.some((cookie) =>
+      isAuthCookieName(source, cookie.name, cookie.value),
+    )
+  ) {
+    return {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: "no_auth_cookies_in_payload",
+    };
+  }
+
+  const identityKey = identityKeyFromCookies(source, filtered);
+  const resolution = await resolveTargetAccount(source, filtered, identityKey);
+
+  if (source === "reddit" && !resolution.probedHandle) {
+    log.info(
+      `[pond session-import] ${source}: cookies present but /api/me.json did not return a user`,
+    );
+    return {
+      ok: false,
+      imported: 0,
+      connected: false,
+      reason: "session_not_authenticated",
+    };
+  }
+  const account = resolution.account;
+
+  const { written, skipped } = await writePartitionCookies({
+    cookies: filtered,
+    partition: partitionForAccount(account.id),
+  });
+  log.info(
+    `[pond session-import] ${source} → @${account.handle ?? "?"} (${account.id}, ${resolution.kind}): ` +
+      `wrote ${written} (skipped ${skipped}, filtered out ${cookies.length - filtered.length})`,
+  );
+
+  const patch: {
+    identityKey?: string;
+    handle?: string;
+    avatarUrl?: string | null;
+    avatarCheckedAt?: string;
+  } = {};
+  if (identityKey && account.identityKey !== identityKey) {
+    patch.identityKey = identityKey;
+  }
+  if (resolution.probedHandle && !account.handle) {
+    patch.handle = resolution.probedHandle;
+  }
+  if (source === "reddit") {
+    const handle = resolution.probedHandle ?? account.handle;
+    if (handle) {
+      const { fetchRedditAvatar } = await import(
+        "./refresh/harvest/reddit/api"
+      );
+      const avatarUrl = await fetchRedditAvatar(
+        handle,
+        partitionForAccount(account.id),
+      );
+      if (avatarUrl) {
+        patch.avatarUrl = avatarUrl;
+        patch.avatarCheckedAt = new Date().toISOString();
+      }
+    }
+  }
+  if (Object.keys(patch).length > 0) {
+    await patchAccount(account.id, patch).catch((err) =>
+      log.warn("[pond session-import] identity patch failed", err),
+    );
+  }
+
+  void syncAccount(account.id, { trigger: "manual" }).catch((err) =>
+    log.warn("[pond session-import] follow-up sync threw", source, err),
+  );
+
+  fillMissingAvatars();
+
+  clearPendingSessionSource(source);
+
+  return {
+    ok: true,
+    imported: written,
+    connected: true,
+  };
+}
+
+interface AccountResolution {
+  account: ConnectedAccount;
+  kind: "identity_match" | "handle_match" | "reauth" | "created" | "ambiguous";
+  probedHandle: string | null;
+}
+
+async function resolveTargetAccount(
+  source: Source,
+  cookies: ExtensionCookie[],
+  identityKey: string | null,
+): Promise<AccountResolution> {
+  if (identityKey) {
+    const matched = await findAccountByIdentityKey(source, identityKey);
+    if (matched) {
+      return { account: matched, kind: "identity_match", probedHandle: null };
+    }
+  }
+
+  const accounts = await listAccountsForSource(source);
+
+  /** For sources without an identity cookie, the probed handle is the only way to tell accounts apart; costs one hidden-window navigation against a staging partition. */
+  let probedHandle: string | null = null;
+  if (extractorFor(source)?.probeExpression) {
+    probedHandle = await probeStagedHandle(source, cookies);
+  }
+  if (probedHandle) {
+    const matched = await findAccountByHandle(source, probedHandle);
+    if (matched) {
+      return { account: matched, kind: "handle_match", probedHandle };
+    }
+  }
+
+  /** A migrated account carries no identityKey, so a fresh push from its owner matches nothing above; adopt a sole unclaimed account the probed handle doesn't contradict instead of minting a duplicate. */
+  const sole = accounts.length === 1 ? accounts[0] : undefined;
+  if (
+    sole &&
+    sole.identityKey === null &&
+    !(probedHandle && sole.handle && sole.handle !== probedHandle)
+  ) {
+    return { account: sole, kind: "reauth", probedHandle };
+  }
+
+  if (identityKey || probedHandle) {
+    const account = await createAccount({
+      source,
+      handle: probedHandle,
+      identityKey,
+    });
+    return { account, kind: "created", probedHandle };
+  }
+
+  if (accounts.length === 0) {
+    const account = await createAccount({ source });
+    return { account, kind: "created", probedHandle };
+  }
+  const first = accounts[0];
+  if (!first) throw new Error("unreachable: accounts non-empty");
+  if (accounts.length > 1) {
+    log.warn(
+      `[pond session-import] ${source}: ${accounts.length} accounts but the session carries no identity; assigning to the first`,
+    );
+    return { account: first, kind: "ambiguous", probedHandle };
+  }
+  return { account: first, kind: "reauth", probedHandle };
+}
+
+/** Stages the pushed cookies into a throwaway in-memory partition and probes the handle there, leaving every real account jar untouched. */
+async function probeStagedHandle(
+  source: Source,
+  cookies: ExtensionCookie[],
+): Promise<string | null> {
+  const staging = `pond-staging-${source}`;
+  try {
+    await session.fromPartition(staging).clearStorageData();
+    await writePartitionCookies({ cookies, partition: staging });
+    const handle = await probeUserHandle(source, staging);
+    return normalizeHandle(handle);
+  } catch (err) {
+    log.warn("[pond session-import] staged probe failed", source, err);
+    return null;
+  } finally {
+    void session
+      .fromPartition(staging)
+      .clearStorageData()
+      .catch(() => {});
+  }
+}

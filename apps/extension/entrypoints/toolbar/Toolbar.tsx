@@ -5,10 +5,12 @@ import styles from "./styles.module.css";
 
 export type ToolbarMode =
   | "idle-connected"
+  | "idle-offline"
   | "link-empty"
   | "link-pasted"
   | "link-loading"
-  | "link-error";
+  | "link-error"
+  | "action-error";
 
 export interface ToolbarProps {
   mode: ToolbarMode;
@@ -19,6 +21,7 @@ export interface ToolbarProps {
   onCapturePage?: () => void;
   onTokenChange?: (value: string) => void;
   onTokenSubmit?: () => void;
+  onRetry?: () => void;
 }
 
 type SwapPhase = "idle" | "exit" | "enter-start";
@@ -28,6 +31,13 @@ const TEXT_SWAP_MS = 150;
 
 function slotFor(mode: ToolbarMode): string {
   if (mode === "link-empty" || mode === "link-pasted") return "link-field";
+  if (
+    mode === "link-error" ||
+    mode === "action-error" ||
+    mode === "idle-offline"
+  ) {
+    return "error";
+  }
   return mode;
 }
 
@@ -74,10 +84,11 @@ export function Toolbar({
   mode,
   siteName,
   tokenValue = "",
-  errorMessage = "This isn't a pairing token",
+  errorMessage = "Something went wrong",
   onCapturePage,
   onTokenChange,
   onTokenSubmit,
+  onRetry,
 }: ToolbarProps) {
   const [shown, setShown] = useState({
     mode,
@@ -94,7 +105,10 @@ export function Toolbar({
 
   const targetSlot = slotFor(mode);
   const shownSlot = slotFor(shown.mode);
-  const error = shown.mode === "link-error";
+  const error =
+    shown.mode === "link-error" ||
+    shown.mode === "action-error" ||
+    shown.mode === "idle-offline";
   const loading = shown.mode === "link-loading";
 
   useEffect(() => {
@@ -142,7 +156,10 @@ export function Toolbar({
   }, [phase]);
 
   useEffect(() => {
-    const nextError = mode === "link-error";
+    const nextError =
+      mode === "link-error" ||
+      mode === "action-error" ||
+      mode === "idle-offline";
     if (nextError && !prevError.current) {
       setShaking(true);
       if (shakeTimer.current !== null) window.clearTimeout(shakeTimer.current);
@@ -209,6 +226,20 @@ export function Toolbar({
             </Button>
           ) : null}
 
+          {shown.mode === "idle-offline" ? (
+            <div className={styles.errorRow}>
+              <p className={styles.error}>{shown.errorMessage}</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Try again"
+                onClick={onRetry}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
+
           {shown.mode === "link-empty" || shown.mode === "link-pasted" ? (
             <div className={styles.field}>
               <input
@@ -236,7 +267,7 @@ export function Toolbar({
             <p className={styles.status}>{connectingCopy(shown.siteName)}</p>
           ) : null}
 
-          {shown.mode === "link-error" ? (
+          {shown.mode === "link-error" || shown.mode === "action-error" ? (
             <p className={styles.error}>{shown.errorMessage}</p>
           ) : null}
         </div>

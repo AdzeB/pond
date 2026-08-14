@@ -1,0 +1,11 @@
+.sequence {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.then {
+  font-size: 10px;
+  color: var(--ds-gray-9);
+  text-transform: lowercase;
+}

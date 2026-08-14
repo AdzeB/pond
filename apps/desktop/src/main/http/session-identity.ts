@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import { redditIdentityFromToken } from "../lib/reddit-token";
 
 interface NamedCookie {
   name: string;
@@ -26,6 +27,10 @@ export function identityKeyFromCookies(
     case "instagram":
     case "threads":
       return get("ds_user_id");
+    case "reddit": {
+      const token = get("token_v2");
+      return token ? redditIdentityFromToken(token) : null;
+    }
     default:
       return null;
   }

@@ -1,7 +1,6 @@
 import { Button, type MenuItemSpec } from "@pond/ui";
 import { type CSSProperties, useEffect, useMemo } from "react";
 import emptyStyles from "@/components/library/empty/styles.module.css";
-import { LibraryGrid } from "@/components/library/layouts/grid";
 import {
   LIBRARY_ITEM_GAP,
   PackedGrid,
@@ -16,8 +15,7 @@ import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
 import { useGridMin } from "@/hooks/use-grid-min";
 import { useWatches, type WatchRow } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { getAppRouter } from "@/lib/ui/app-router";
-import { clearAsk } from "@/stores/ask-store";
+import { viewAccountItems } from "@/lib/ui/open-search";
 import {
   connectFlow,
   useConnectedBefore,
@@ -27,7 +25,6 @@ import { dockMode } from "@/stores/dock-mode";
 import { useGridWidth } from "@/stores/shell-state";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
-import { setSearchInput } from "@/stores/view-store";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import { buildAccountMenu } from "./lib/account-menu";
 import { syncFraction, tileValue, watchName } from "./lib/helpers";
@@ -41,45 +38,6 @@ type SourceEntry =
   | { kind: "account"; row: AccountRow }
   | { kind: "watch"; row: WatchRow };
 
-function viewItemsFor(id: string): void {
-  clearAsk();
-  setSearchInput([{ field: "account", operator: "eq", value: id }], "");
-  void getAppRouter()?.navigate({ to: "/" });
-}
-
-function buildAccountTileMenu(
-  account: AccountRow,
-  model: CardModel,
-): MenuItemSpec[] {
-  return [
-    {
-      label: "Sync Now",
-      disabled: !(model.connected && model.tone !== "run"),
-      onClick: () => void window.pond.syncRunNow(account.id),
-    },
-    {
-      label: "View Items in Library",
-      onClick: () => viewItemsFor(account.id),
-    },
-    { type: "separator" },
-    ...buildAccountMenu(account, model),
-  ];
-}
-
-function buildWatchTileMenu(watch: WatchRow, model: CardModel): MenuItemSpec[] {
-  return [
-    {
-      label: "Check Now",
-      disabled: model.tone === "run",
-      onClick: () => void window.pond.syncRunNow(watch.id),
-    },
-    {
-      label: "View Items in Library",
-      onClick: () => viewItemsFor(watch.id),
-    },
-  ];
-}
-
 function cellStyle(item: PackedItem): CSSProperties {
   return {
     position: "absolute",
@@ -88,6 +46,36 @@ function cellStyle(item: PackedItem): CSSProperties {
     width: `${item.width}px`,
     height: `${item.height}px`,
   };
+}
+
+function entryName(entry: SourceEntry): string {
+  if (entry.kind === "account") {
+    return entry.row.label ?? getSourceDef(entry.row.source).label;
+  }
+  return watchName(entry.row);
+}
+
+function openEntry(entry: SourceEntry): void {
+  if (entry.kind === "account") sourceDetail.openAccount(entry.row.id);
+  else sourceDetail.openWatch(entry.row.id);
+}
+
+function buildTileMenu(entry: SourceEntry, model: CardModel): MenuItemSpec[] {
+  const running = model.tone === "run";
+  const now =
+    entry.kind === "account"
+      ? { label: "Sync Now", disabled: !(model.connected && !running) }
+      : { label: "Check Now", disabled: running };
+  return [
+    { ...now, onClick: () => void window.pond.syncRunNow(entry.row.id) },
+    {
+      label: "View Items in Library",
+      onClick: () => viewAccountItems(entry.row.id),
+    },
+    ...(entry.kind === "account"
+      ? [{ type: "separator" as const }, ...buildAccountMenu(entry.row, model)]
+      : []),
+  ];
 }
 
 export function SourcesPage() {
@@ -137,7 +125,11 @@ export function SourcesPage() {
     const source = waiting;
     let cancelled = false;
     let arrivedOnce = false;
-    const timer = setInterval(() => {
+    let inflight = false;
+
+    const tick = () => {
+      if (cancelled || arrivedOnce || inflight) return;
+      inflight = true;
       void (async () => {
         try {
           const rows = await refetch();
@@ -150,17 +142,23 @@ export function SourcesPage() {
           arrivedOnce = true;
           syncMonitor.seed(arrived.id, source, { connected: true });
           void window.pond.syncRunNow(arrived.id);
-          /** Let the wait card tick its remaining steps done before the detail card takes over. */
+          /** Let the wait card show Connected briefly before the detail card takes over. */
           connectFlow.complete();
           window.setTimeout(() => {
-            /** Leaving connect-wait clears the flow via the dockMode subscription. */
+            if (cancelled) return;
+            connectFlow.clear();
             sourceDetail.openAccount(arrived.id);
           }, 1100);
         } catch {
           /* keep polling */
+        } finally {
+          inflight = false;
         }
       })();
-    }, 1500);
+    };
+
+    tick();
+    const timer = setInterval(tick, 1500);
     return () => {
       cancelled = true;
       clearInterval(timer);
@@ -186,31 +184,27 @@ export function SourcesPage() {
    * to settle before deciding that this is the genuine first-run empty state. */
   if (!accountsLoading && !watchesLoading && entries.length === 0) {
     return (
-      <LibraryGrid.Root className={styles.root}>
-        <div className={emptyStyles.welcome}>
-          <div className={emptyStyles.copy}>
-            <h2 className={emptyStyles.title}>No sources yet</h2>
-            <p className={emptyStyles.text}>
-              Connect a source or watch a public account. Pond keeps your
-              library filling up in the background.
-            </p>
-          </div>
-          <div className={emptyStyles.actions}>
-            <Button
-              variant="accent"
-              size="md"
-              onClick={() => dockMode.open("source-new")}
-            >
-              Connect a source
-            </Button>
-          </div>
+      <div className={emptyStyles.welcome}>
+        <div className={emptyStyles.copy}>
+          <h2 className={emptyStyles.title}>No sources yet</h2>
+          <p className={emptyStyles.text}>
+            Connect a source or watch a public account. Pond keeps your library
+            filling up in the background.
+          </p>
         </div>
-      </LibraryGrid.Root>
+        <Button
+          variant="accent"
+          size="md"
+          onClick={() => dockMode.open("source-new")}
+        >
+          Connect a source
+        </Button>
+      </div>
     );
   }
 
   return (
-    <LibraryGrid.Root className={styles.root}>
+    <div className={styles.root}>
       <PackedGrid
         layout="grid"
         items={items}
@@ -220,48 +214,26 @@ export function SourcesPage() {
           if (!entry) return null;
           const status = byAccount[entry.row.id];
           const model = cardModel(status);
-          if (entry.kind === "account") {
-            const account = entry.row;
-            return (
-              <li key={item.id} className={styles.cell} style={cellStyle(item)}>
-                <SourceTile
-                  source={account.source}
-                  avatarUrl={account.avatarUrl}
-                  name={account.label ?? getSourceDef(account.source).label}
-                  value={tileValue(
-                    model.tone,
-                    model.statusText,
-                    account.sync?.knownCount ?? 0,
-                  )}
-                  tone={model.tone}
-                  progress={syncFraction(model.tone, status)}
-                  onOpen={() => sourceDetail.openAccount(account.id)}
-                  menu={() => buildAccountTileMenu(account, model)}
-                />
-              </li>
-            );
-          }
-          const watch = entry.row;
           return (
             <li key={item.id} className={styles.cell} style={cellStyle(item)}>
               <SourceTile
-                source={watch.source}
-                avatarUrl={watch.avatarUrl}
-                name={watchName(watch)}
+                source={entry.row.source}
+                avatarUrl={entry.row.avatarUrl}
+                name={entryName(entry)}
                 value={tileValue(
                   model.tone,
                   model.statusText,
-                  watch.sync?.knownCount ?? 0,
+                  entry.row.sync?.knownCount ?? 0,
                 )}
                 tone={model.tone}
                 progress={syncFraction(model.tone, status)}
-                onOpen={() => sourceDetail.openWatch(watch.id)}
-                menu={() => buildWatchTileMenu(watch, model)}
+                onOpen={() => openEntry(entry)}
+                menu={() => buildTileMenu(entry, model)}
               />
             </li>
           );
         }}
       />
-    </LibraryGrid.Root>
+    </div>
   );
 }

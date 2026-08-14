@@ -29,8 +29,10 @@
 .list {
   position: relative;
   box-sizing: border-box;
-  max-height: var(--available-height);
+  max-height: min(320px, var(--available-height, 320px));
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scroll-padding-block: 24px;
 }
 
@@ -47,6 +49,7 @@
 
 .positioner {
   composes: positioner from "../shared/styles/popup/styles.module.css";
+  max-height: 128px;
 }
 
 .backdrop {

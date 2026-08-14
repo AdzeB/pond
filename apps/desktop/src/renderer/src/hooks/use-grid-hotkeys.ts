@@ -76,37 +76,37 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["grid.prev"].keys,
+      hotkey: SHORTCUTS["grid.prev"].keys!,
       callback: (event) => move(-1, false, event),
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.next"].keys,
+      hotkey: SHORTCUTS["grid.next"].keys!,
       callback: (event) => move(1, false, event),
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.extend-prev"].keys,
+      hotkey: SHORTCUTS["grid.extend-prev"].keys!,
       callback: (event) => move(-1, true, event),
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.extend-next"].keys,
+      hotkey: SHORTCUTS["grid.extend-next"].keys!,
       callback: (event) => move(1, true, event),
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.open"].keys,
+      hotkey: SHORTCUTS["grid.open"].keys!,
       callback: open,
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.preview"].keys,
+      hotkey: SHORTCUTS["grid.preview"].keys!,
       callback: open,
       options: { preventDefault: false },
     },
     {
-      hotkey: SHORTCUTS["grid.select-all"].keys,
+      hotkey: SHORTCUTS["grid.select-all"].keys!,
       callback: (event) => {
         if (saveRouteOpen()) return;
         if (!gridFocusFree()) return;
@@ -121,7 +121,7 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
     },
     {
       /** Save page, dock, and expanded pill own Escape while open; only a bare grid clears. */
-      hotkey: SHORTCUTS["grid.clear"].keys,
+      hotkey: SHORTCUTS["grid.clear"].keys!,
       callback: (event) => {
         if (event.defaultPrevented) return;
         if (saveRouteOpen()) return;

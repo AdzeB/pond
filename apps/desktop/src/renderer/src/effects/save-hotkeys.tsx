@@ -2,11 +2,14 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useSelector } from "@tanstack/react-store";
 import {
   copyableImageIndex,
+  copyId,
   copyPrimaryMedia,
   copyTags,
   copyUrl,
   exportFile,
+  focusPaneTitle,
   openDefaultApp,
+  openTagPicker,
   pasteTags,
   purgeForever,
   refreshSaveMetadata,
@@ -17,6 +20,7 @@ import {
 import { trashSelection } from "@/lib/save/selection";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import type { Save } from "@/lib/types";
+import { dockMode } from "@/stores/dock-mode";
 import { pool } from "@/stores/pool";
 import {
   primarySelectionStore,
@@ -48,13 +52,13 @@ export function SaveHotkeys() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["save.open"].keys,
+      hotkey: SHORTCUTS["save.open"].keys!,
       callback: withPrimary((save) => void openDefaultApp(save)),
       options: { enabled: hasPrimary },
     },
     {
       /** Ordinary text copy must keep working: never preventDefault when text is selected or the target is editable. */
-      hotkey: SHORTCUTS["save.copy-image"].keys,
+      hotkey: SHORTCUTS["save.copy-image"].keys!,
       callback: (event) => {
         const save = primarySave();
         if (!save || !canCopyPrimaryMedia(save)) return;
@@ -70,35 +74,97 @@ export function SaveHotkeys() {
       },
     },
     {
-      hotkey: SHORTCUTS["save.copy-url"].keys,
+      hotkey: SHORTCUTS["save.copy-url"].keys!,
       callback: withPrimary((save) => {
         if (save.url) void copyUrl(save.url);
       }),
       options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["save.copy-tags"].keys,
+      hotkey: SHORTCUTS["save.copy-id"].keys!,
+      callback: () => {
+        const id = primarySelectionStore.state.id;
+        if (id) void copyId(id);
+      },
+      options: { enabled: hasPrimary, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["save.copy-tags"].keys!,
       callback: withPrimary((save) => copyTags(save)),
       options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["save.paste-tags"].keys,
+      hotkey: SHORTCUTS["save.paste-tags"].keys!,
       callback: withPrimary((save) => void pasteTags(save)),
       options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["save.export"].keys,
+      hotkey: SHORTCUTS["save.export"].keys!,
       callback: withPrimary((save) => void exportFile(save)),
       options: { enabled: hasPrimary, ignoreInputs: true },
     },
     {
-      hotkey: SHORTCUTS["save.refresh"].keys,
+      hotkey: SHORTCUTS["save.refresh"].keys!,
       callback: withPrimary((save) => void refreshSaveMetadata(save)),
       options: { enabled: hasPrimary },
     },
     {
+      hotkey: SHORTCUTS["save.add-tag"].keys!,
+      callback: () => {
+        if (selection.size() > 1) {
+          dockMode.open("selection-tag");
+          return;
+        }
+        if (!primarySelectionStore.state.id) return;
+        openTagPicker();
+      },
+      options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["save.rename"].keys!,
+      callback: withPrimary((save) => {
+        if (save.source !== "local") return;
+        focusPaneTitle();
+      }),
+      options: { enabled: hasPrimary, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["save.open-url"].keys!,
+      callback: withPrimary((save) => {
+        if (!save.url) return;
+        void window.pond.openExternal(save.url);
+      }),
+      options: { enabled: hasPrimary, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["save.reveal"].keys!,
+      callback: () => {
+        const sid = primarySelectionStore.state.id;
+        if (!sid) return;
+        void window.pond.revealSave(sid);
+      },
+      options: { enabled: hasPrimary, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["selection.run"].keys!,
+      callback: () => dockMode.open("selection-run"),
+      options: { enabled: hasMulti, ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["selection.export"].keys!,
+      callback: () => {
+        if (selection.size() > 1) {
+          dockMode.open("selection-export");
+          return;
+        }
+        const save = primarySave();
+        if (save) void exportFile(save);
+      },
+      options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
+    },
+    {
       /** Multi-selection wins so bulk trash matches the app menu's save.bulk-trash; a trashed primary restores instead, matching its menu. */
-      hotkey: SHORTCUTS["save.trash"].keys,
+      hotkey: SHORTCUTS["save.trash"].keys!,
       callback: () => {
         const ids = selection.snapshot();
         if (ids.length > 0) {
@@ -114,7 +180,7 @@ export function SaveHotkeys() {
     },
     {
       /** Mod+Backspace is delete-to-line-start in macOS text fields; never purge while typing. */
-      hotkey: SHORTCUTS["save.delete-forever"].keys,
+      hotkey: SHORTCUTS["save.delete-forever"].keys!,
       callback: withPrimary((save) => void purgeForever(save)),
       options: { enabled: hasPrimary, ignoreInputs: true },
     },

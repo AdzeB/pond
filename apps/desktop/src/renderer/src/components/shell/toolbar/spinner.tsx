@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import styles from "./spinner.module.css";
 
-const transition = {
+export const statusIconTransition = {
   duration: 0.4,
   ease: [0.175, 0.885, 0.32, 0.98] as const,
 };
@@ -16,10 +16,10 @@ export function StatusSpinner() {
         position: "absolute",
         opacity: 0,
         rotate: -180,
-        transition,
+        transition: statusIconTransition,
       }}
       transition={{
-        ...transition,
+        ...statusIconTransition,
         delay: 0.2,
       }}
       aria-hidden

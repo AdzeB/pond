@@ -3,12 +3,44 @@
   min-height: 0;
 }
 
-.route {
+.stage {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.keepAlive {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/**
+ * Park the grid under the save overlay without `visibility: hidden` / `display: none`.
+ * Hiding drops decoded thumbnails and flashes empty cards when the list returns.
+ */
+.keepAlive[data-suppressed] {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.overlay {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--ds-gray-1);
 }
 
 /* Inner pad only; AppShell owns the outer inset. padding-inline must beat Shell.Main's 24px. */

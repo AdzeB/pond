@@ -5,10 +5,12 @@
   all: initial;
 }
 
-.pond-toolbar-root {
+.pond-toolbar-shell {
+  --pond-toolbar-enter-dur: 220ms;
+  --pond-toolbar-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
   position: fixed;
-  top: 16px;
-  left: 50%;
+  inset: 0;
   z-index: 2147483646;
   font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
@@ -16,5 +18,54 @@
   color: var(--ds-gray-12);
   pointer-events: auto;
   color-scheme: light;
-  transform: translateX(-50%);
+}
+
+.pond-toolbar-backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  margin: 0;
+  appearance: none;
+  cursor: default;
+  background: var(--ds-black-a8);
+  border: none;
+  opacity: 0;
+  transition: opacity var(--pond-toolbar-enter-dur)
+    var(--pond-toolbar-enter-ease);
+}
+
+.pond-toolbar-root {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  opacity: 0;
+  transform: translateX(-50%) translateY(-6px) scale(0.96);
+  transition:
+    opacity var(--pond-toolbar-enter-dur) var(--pond-toolbar-enter-ease),
+    transform var(--pond-toolbar-enter-dur) var(--pond-toolbar-enter-ease);
+  will-change: opacity, transform;
+}
+
+.pond-toolbar-shell[data-open] .pond-toolbar-backdrop {
+  opacity: 1;
+}
+
+.pond-toolbar-shell[data-open] .pond-toolbar-root {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pond-toolbar-backdrop,
+  .pond-toolbar-root {
+    transition: none;
+  }
+
+  .pond-toolbar-root {
+    transform: translateX(-50%);
+  }
+
+  .pond-toolbar-shell[data-open] .pond-toolbar-root {
+    transform: translateX(-50%);
+  }
 }

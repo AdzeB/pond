@@ -5,7 +5,7 @@ import {
 } from "@/components/settings/funnel/lib/queue";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import { useActivityEntries } from "@/stores/activity";
-import { openFunnel, type Panel } from "./lib";
+import { bindPanel, closeThen, openFunnel, type Panel } from "./lib";
 import { Empty, List, Row, StatusPanel } from "./panel";
 
 interface RecentPanelProps {
@@ -16,18 +16,16 @@ interface RecentPanelProps {
 export function RecentPanel({ open, onOpenChange }: RecentPanelProps) {
   const { saved } = useSaveQueue();
   const activity = useActivityEntries();
-  const recent = activity.filter((e) => e.state !== "running").slice(0, 8);
-  const recentSaves = saved.slice(0, 5);
-  const close = () => onOpenChange(null);
-  const goFunnel = () => {
-    close();
-    openFunnel();
-  };
+  const recent = open
+    ? activity.filter((e) => e.state !== "running").slice(0, 8)
+    : [];
+  const recentSaves = open ? saved.slice(0, 5) : [];
+  const goFunnel = closeThen(onOpenChange, openFunnel);
 
   return (
     <StatusPanel
       open={open}
-      onOpenChange={(next) => onOpenChange(next ? "recent" : null)}
+      onOpenChange={bindPanel(onOpenChange, "recent")}
       heading="Recent"
       icon={<RecentIcon />}
     >

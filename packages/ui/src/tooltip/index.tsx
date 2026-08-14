@@ -83,6 +83,8 @@ function Shared({ handle, side, align, sideOffset }: SharedProps) {
 
 interface TooltipProps {
   label: ReactNode;
+  /** Keycap hint rendered after the label (e.g. `<Keyboard.Cluster />`). */
+  shortcut?: ReactNode;
   children: ReactElement;
   side?: Base.Positioner.Props["side"];
   align?: Base.Positioner.Props["align"];
@@ -90,8 +92,19 @@ interface TooltipProps {
   delay?: number;
 }
 
+function tooltipContent(label: ReactNode, shortcut?: ReactNode): ReactNode {
+  if (shortcut == null) return label;
+  return (
+    <span className={styles.row}>
+      <span className={styles.label}>{label}</span>
+      <span className={styles.shortcut}>{shortcut}</span>
+    </span>
+  );
+}
+
 function TooltipWrapper({
   label,
+  shortcut,
   children,
   side,
   align,
@@ -104,7 +117,7 @@ function TooltipWrapper({
       <Portal>
         <Positioner side={side} align={align} sideOffset={sideOffset}>
           <Popup>
-            <Viewport>{label}</Viewport>
+            <Viewport>{tooltipContent(label, shortcut)}</Viewport>
           </Popup>
         </Positioner>
       </Portal>
@@ -122,6 +135,7 @@ export const Tooltip = Object.assign(TooltipWrapper, {
   Popup,
   Arrow,
   Shared,
+  Label: tooltipContent,
   createHandle: Base.createHandle,
   Handle: Base.Handle,
 });

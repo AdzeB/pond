@@ -1,7 +1,7 @@
 .groups {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .group {
@@ -45,7 +45,7 @@
 .directions {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
   padding: 4px;
   background-color: var(--ds-gray-2);
   border-radius: calc(var(--ds-radius-lg) + 4px);
@@ -84,7 +84,7 @@
 .rows {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .option {

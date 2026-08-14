@@ -2,13 +2,20 @@ import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { partitionForIngest } from "../../sync/accounts";
+import {
+  adapt as adaptThreads,
+  buildExpression as buildThreadsExpression,
+} from "../harvest/threads";
 import { adapt, buildExpression } from "../harvest/twitter";
 import type { ScrapedHarvest } from "../harvest/types";
 import { NAV_TIMEOUT_MS } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
 import { emulateColorScheme, withDeviceScaleFactor } from "./screenshot-cdp";
-import { buildArticleRectExpression } from "./screenshot-dom";
+import {
+  buildArticleRectExpression,
+  buildThreadsPostRectExpression,
+} from "./screenshot-dom";
 import { sleep } from "./util";
 
 export interface TweetScreenshotResult {
@@ -85,12 +92,21 @@ export async function screenshotTweetDual(
       return { light: wall, dark: wall };
     }
 
-    const light = await captureCurrentScheme(lease.win, args.sourceId, "light");
+    const light = await captureCurrentScheme(
+      lease.win,
+      args.sourceId,
+      "light",
+      "tweet",
+    );
 
     /** Harvest media once on the light pass to avoid a second page evaluation on the dark pass. */
     let media: ScrapedHarvest["mediaUrls"] | undefined;
     if (args.harvestMedia && light.ok) {
-      const harvested = await harvestPageMedia(lease.win, args.sourceId);
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "tweet",
+      );
       if (harvested && harvested.length > 0) media = harvested;
     }
 
@@ -103,7 +119,12 @@ export async function screenshotTweetDual(
       log.debug("[pond screenshot:tweet] scheme flip needed reload", args.url);
       await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
     }
-    const dark = await captureCurrentScheme(lease.win, args.sourceId, "dark");
+    const dark = await captureCurrentScheme(
+      lease.win,
+      args.sourceId,
+      "dark",
+      "tweet",
+    );
 
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
     return {
@@ -122,26 +143,110 @@ export async function screenshotTweetDual(
   }
 }
 
+/** Captures both color schemes from one Threads window lease; native card render is preferred, this is the live fallback. */
+export async function screenshotThreadsDual(
+  args: TweetDualScreenshotArgs,
+): Promise<TweetDualScreenshotResult> {
+  const partition = await partitionForIngest("threads", args.accountId);
+  const lease = await leaseWindow("threads", { partition });
+  let restoreEmulation: (() => Promise<void>) | null = null;
+  try {
+    restoreEmulation = await emulateColorScheme(lease.win, "light");
+    const navOk = await navigateWithTimeout(
+      lease.win,
+      args.url,
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) {
+      log.warn("[pond screenshot:threads] navigate failed", args.url);
+      const fail: TweetScreenshotResult = {
+        ok: false,
+        reason: "navigate_failed",
+      };
+      return { light: fail, dark: fail };
+    }
+    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+      log.info("[pond screenshot:threads] auth wall hit", args.url);
+      const wall: TweetScreenshotResult = {
+        ok: false,
+        reason: "auth_required",
+      };
+      return { light: wall, dark: wall };
+    }
+
+    const light = await captureCurrentScheme(
+      lease.win,
+      args.sourceId,
+      "light",
+      "threads",
+    );
+
+    let media: ScrapedHarvest["mediaUrls"] | undefined;
+    if (args.harvestMedia && light.ok) {
+      const harvested = await harvestPageMedia(
+        lease.win,
+        args.sourceId,
+        "threads",
+      );
+      if (harvested && harvested.length > 0) media = harvested;
+    }
+
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    restoreEmulation = await emulateColorScheme(lease.win, "dark");
+    const flipped = await waitForSchemeFlip(lease.win, "dark");
+    if (!flipped) {
+      log.debug(
+        "[pond screenshot:threads] scheme flip needed reload",
+        args.url,
+      );
+      await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
+    }
+    const dark = await captureCurrentScheme(
+      lease.win,
+      args.sourceId,
+      "dark",
+      "threads",
+    );
+
+    const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
+    return {
+      light,
+      dark,
+      ...(quotedUrl ? { quotedUrl } : {}),
+      ...(media ? { media } : {}),
+    };
+  } catch (err) {
+    log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
+    const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
+    return { light: fail, dark: fail };
+  } finally {
+    if (restoreEmulation) await restoreEmulation().catch(() => {});
+    lease.release();
+  }
+}
+
 /** Captures the focused article in the window's current navigation and emulated scheme; pins the html background for this capture only. */
 async function captureCurrentScheme(
   win: BrowserWindow,
   sourceId: string,
   colorScheme: "light" | "dark",
+  kind: "tweet" | "threads",
 ): Promise<TweetScreenshotResult> {
   /** Pin html background to the scheme so rect rounding doesn't leak edge color. */
   const htmlBg = colorScheme === "light" ? "#fff" : "#000";
-  /** Hide "View quotes" and strip article borders so a divider can't leak into the trim. */
-  const cssKey = await win.webContents
-    .insertCSS(
-      `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
+  const hideCss =
+    kind === "tweet"
+      ? `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
        a[href$="/quotes"], a[href$="/retweets/with_comments"] { display: none !important; }
        article { border: 0 !important; }
-       html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`,
-    )
+       html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`
+      : `html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`;
+  const cssKey = await win.webContents
+    .insertCSS(hideCss)
     .catch(() => undefined);
 
   try {
-    const initial = await readArticleRect(win, sourceId);
+    const initial = await readArticleRect(win, sourceId, kind);
     if (!initial) {
       log.info("[pond screenshot:tweet] no article", sourceId);
       return { ok: false, reason: "no_article" };
@@ -161,7 +266,7 @@ async function captureCurrentScheme(
       win.setContentSize(contentWidth, target);
       resized = true;
       await sleep(400);
-      const remeasured = await readArticleRect(win, sourceId);
+      const remeasured = await readArticleRect(win, sourceId, kind);
       if (remeasured) rect = remeasured;
     }
 
@@ -262,17 +367,22 @@ async function readBackgroundLuminance(
 /** Harvests media off the already-loaded page; best-effort, returns undefined on failure. */
 async function harvestPageMedia(
   win: BrowserWindow,
-  tweetId: string,
+  sourceId: string,
+  kind: "tweet" | "threads",
 ): Promise<ScrapedHarvest["mediaUrls"]> {
   try {
+    const expr =
+      kind === "threads"
+        ? buildThreadsExpression(sourceId)
+        : buildExpression(sourceId);
     const raw = await Promise.race([
-      win.webContents.executeJavaScript(buildExpression(tweetId), true),
+      win.webContents.executeJavaScript(expr, true),
       sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(() => null),
     ]);
-    const harvested = adapt(raw);
+    const harvested = kind === "threads" ? adaptThreads(raw) : adapt(raw);
     return harvested?.mediaUrls;
   } catch (err) {
-    log.warn("[pond screenshot:tweet] media harvest failed", err);
+    log.warn("[pond screenshot] media harvest failed", err);
     return undefined;
   }
 }
@@ -310,9 +420,13 @@ interface ArticleRect {
 
 async function readArticleRect(
   win: BrowserWindow,
-  tweetId: string,
+  sourceId: string,
+  kind: "tweet" | "threads",
 ): Promise<ArticleRect | null> {
-  const expr = buildArticleRectExpression(tweetId);
+  const expr =
+    kind === "threads"
+      ? buildThreadsPostRectExpression(sourceId)
+      : buildArticleRectExpression(sourceId);
   const raw = await Promise.race([
     win.webContents.executeJavaScript(expr, true),
     sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(

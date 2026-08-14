@@ -59,6 +59,7 @@ function RestorationHarness({
             left: 0,
             width: 100,
             height: rowHeight,
+            mediaHeight: rowHeight,
           }))}
           renderItem={(item) => <li key={item.id} />}
         />
@@ -78,15 +79,43 @@ describe("PackedGrid", () => {
   it("finds a stable leftmost card identity at the viewport top", () => {
     const anchor = findScrollAnchor(
       [
-        { id: "a", top: 100, left: 100, width: 100, height: 200 },
-        { id: "b", top: 100, left: 0, width: 100, height: 200 },
-        { id: "c", top: 300, left: 0, width: 100, height: 200 },
+        {
+          id: "a",
+          top: 100,
+          left: 100,
+          width: 100,
+          height: 200,
+          mediaHeight: 200,
+        },
+        {
+          id: "b",
+          top: 100,
+          left: 0,
+          width: 100,
+          height: 200,
+          mediaHeight: 200,
+        },
+        {
+          id: "c",
+          top: 300,
+          left: 0,
+          width: 100,
+          height: 200,
+          mediaHeight: 200,
+        },
       ].sort((a, b) => a.top - b.top || a.left - b.left),
       140,
     );
 
     expect(anchor).toEqual({
-      item: { id: "b", top: 100, left: 0, width: 100, height: 200 },
+      item: {
+        id: "b",
+        top: 100,
+        left: 0,
+        width: 100,
+        height: 200,
+        mediaHeight: 200,
+      },
       offset: 40,
     });
   });
@@ -112,6 +141,7 @@ describe("PackedGrid", () => {
               left: 0,
               width: 100,
               height: 100,
+              mediaHeight: 100,
             }))}
             renderItem={() => null}
           />
@@ -158,6 +188,7 @@ describe("PackedGrid", () => {
               left: 0,
               width: 100,
               height: 100,
+              mediaHeight: 100,
             }))}
             renderItem={(item) => <li key={item.id} data-item-id={item.id} />}
           />
@@ -202,6 +233,7 @@ describe("PackedGrid", () => {
               left: 0,
               width: 100,
               height: 100,
+              mediaHeight: 100,
             }))}
             renderItem={(item) => <li key={item.id} />}
           />

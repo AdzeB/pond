@@ -19,7 +19,6 @@ import { openLibrarySearch } from "@/lib/ui/open-search";
 import { closeSave, openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
-import { dockMode } from "@/stores/dock-mode";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";
@@ -80,7 +79,7 @@ export function MenuBridge() {
           return;
 
         case "dock.ask":
-          dockMode.open("ask");
+          openLibrarySearch({ aiMode: true });
           return;
 
         case "dock.search":

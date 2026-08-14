@@ -3,7 +3,7 @@
   align-items: center;
 }
 
-/* Unfolded tab group: width animates via motion, so clip the flow. */
+/* Action cluster: width animates via motion, so clip the flow. */
 .expand {
   display: flex;
   align-items: center;

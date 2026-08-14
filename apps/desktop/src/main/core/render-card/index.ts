@@ -12,7 +12,7 @@ export interface RenderedCard {
   height: number;
 }
 
-type CaptureKind = "tweet" | "text";
+type CaptureKind = "tweet" | "text" | "threads";
 
 /** Fixed card width in CSS px; matches the capture entry's default. */
 const CARD_WIDTH = 550;
@@ -293,6 +293,19 @@ export async function renderTweetCardPng(
     return null;
   }
   return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS);
+}
+
+/** Renders a Threads post card to a padded cover PNG; same data adapter as tweets, Threads chrome in the capture page. */
+export async function renderThreadsCardPng(
+  capture: Capture | undefined | null,
+  fallbackAuthor: string | null | undefined,
+  scheme: "light" | "dark",
+): Promise<RenderedCard | null> {
+  const data = buildTweetCardData(capture, fallbackAuthor);
+  if (!data || (!data.text && (!data.media || data.media.length === 0))) {
+    return null;
+  }
+  return enqueueRender("threads", data, scheme, TWEET_PAD_CSS);
 }
 
 /** Renders an Are.na-style text block to a square cover PNG. */

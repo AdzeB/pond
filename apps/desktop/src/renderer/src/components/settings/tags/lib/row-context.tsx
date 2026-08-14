@@ -56,7 +56,7 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
   }
 
   /** Scoped to the focused row so E only renames the row the user is on. */
-  useHotkey(SHORTCUTS["tags.rename"].keys, () => startRename(), {
+  useHotkey(SHORTCUTS["tags.rename"].keys!, () => startRename(), {
     target: rowRef,
     enabled: !renaming,
   });

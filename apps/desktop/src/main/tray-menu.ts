@@ -12,6 +12,7 @@ import { DEFAULT_INGEST_PORT } from "../shared/constants";
 import { syncAllSources } from "./core/sync";
 import { getDb } from "./db";
 import { getIngestToken, rotateIngestToken } from "./keychain";
+import { sym } from "./lib/menu-symbol";
 import { itemFile, libraryRoot } from "./paths";
 import type { TrayOptions } from "./tray";
 
@@ -105,15 +106,18 @@ export async function buildMenu(
 
   template.push(
     {
+      ...sym("books.vertical"),
       label: "Open Library",
       accelerator: "CommandOrControl+Shift+P",
       click: () => void opts.onOpenLibrary(),
     },
     {
+      ...sym("gearshape"),
       label: "Settings",
       click: () => void (opts.onOpenSettings ?? opts.onOpenLibrary)(),
     },
     {
+      ...sym("arrow.triangle.2.circlepath"),
       label: "Sync Now",
       click: () => {
         void syncAllSources({ trigger: "manual" });
@@ -121,6 +125,7 @@ export async function buildMenu(
     },
     { type: "separator" },
     {
+      ...sym("key"),
       label: "Copy Pairing Token",
       click: async () => {
         const { clipboard } = await import("electron");
@@ -131,6 +136,7 @@ export async function buildMenu(
       },
     },
     {
+      ...sym("arrow.triangle.2.circlepath"),
       label: "Rotate Ingest Token",
       click: async () => {
         await rotateIngestToken();
@@ -139,6 +145,7 @@ export async function buildMenu(
     },
     { type: "separator" },
     {
+      ...sym("power"),
       label: "Launch on startup",
       type: "checkbox",
       checked: loginItem.openAtLogin,
@@ -152,7 +159,12 @@ export async function buildMenu(
     },
     { type: "separator" },
     { label: `Pond ${app.getVersion()}`, enabled: false },
-    { label: "Quit", accelerator: "CommandOrControl+Q", role: "quit" },
+    {
+      ...sym("power"),
+      label: "Quit",
+      accelerator: "CommandOrControl+Q",
+      role: "quit",
+    },
   );
 
   return { menu: Menu.buildFromTemplate(template), ingesting };

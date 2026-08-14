@@ -8,6 +8,7 @@ import {
 } from "../shared/constants";
 import { reconcileLibrary } from "./core/scan";
 import { syncAllSources, syncSource } from "./core/sync";
+import { sym } from "./lib/menu-symbol";
 import { libraryRoot } from "./paths";
 
 interface AppMenuDeps {
@@ -60,6 +61,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       return [{ label: "No Recent Items", enabled: false }];
     }
     return recentEntries.map((entry) => ({
+      ...sym("clock"),
       label: entry.title,
       click: openRecent(entry.id),
     }));
@@ -70,6 +72,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       /** Local imports have no remote to sync from. */
       (source) => source !== "local",
     ).map((source) => ({
+      ...sym("arrow.triangle.2.circlepath"),
       label: `Sync ${sourceLabel(source)}`,
       click: () => {
         void syncSource(source, { trigger: "manual" }).catch((err) =>
@@ -79,16 +82,21 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
     }));
     return [
       {
+        ...sym("arrow.triangle.2.circlepath"),
         label: "Sync All Sources",
+        accelerator: "CmdOrCtrl+Shift+S",
+        registerAccelerator: false,
         click: () => void syncAllSources({ trigger: "manual" }),
       },
       ...syncItems,
       { type: "separator" },
       {
+        ...sym("arrow.clockwise"),
         label: "Refresh All Metadata",
         click: sendMenuAction("refresh.all"),
       },
       {
+        ...sym("xmark.circle"),
         label: "Cancel Metadata Refresh",
         click: sendMenuAction("refresh.cancel"),
       },
@@ -96,6 +104,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
   };
 
   const settingsItem: Electron.MenuItemConstructorOptions = {
+    ...sym("gearshape"),
     label: "Settings",
     accelerator: "CmdOrCtrl+,",
     click: navTo("/settings"),
@@ -107,9 +116,14 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           {
             label: app.name,
             submenu: [
-              { role: "about" as const, label: `About ${app.name}` },
+              {
+                ...sym("info.circle"),
+                role: "about" as const,
+                label: `About ${app.name}`,
+              },
               { type: "separator" as const },
               {
+                ...sym("arrow.triangle.2.circlepath"),
                 label: "Check for Updates",
                 click: navTo("/settings/general"),
               },
@@ -118,11 +132,11 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
               { type: "separator" as const },
               { role: "services" as const },
               { type: "separator" as const },
-              { role: "hide" as const },
-              { role: "hideOthers" as const },
-              { role: "unhide" as const },
+              { ...sym("eye.slash"), role: "hide" as const },
+              { ...sym("eye"), role: "hideOthers" as const },
+              { ...sym("eye"), role: "unhide" as const },
               { type: "separator" as const },
-              { role: "quit" as const },
+              { ...sym("power"), role: "quit" as const },
             ],
           } satisfies Electron.MenuItemConstructorOptions,
         ]
@@ -131,6 +145,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "File",
       submenu: [
         {
+          ...sym("plus.square.on.square"),
           label: "New Tab",
           accelerator: "CmdOrCtrl+T",
           click: () => {
@@ -138,6 +153,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           },
         },
         {
+          ...sym("xmark"),
           label: "Close Tab",
           accelerator: "CmdOrCtrl+W",
           click: () => {
@@ -145,6 +161,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           },
         },
         {
+          ...sym("arrow.uturn.backward"),
           label: "Reopen Closed Tab",
           accelerator: "CmdOrCtrl+Shift+T",
           click: () => {
@@ -152,11 +169,13 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           },
         },
         {
+          ...sym("books.vertical"),
           label: "Open Library",
           click: () => openLibraryWindow(),
         },
         { type: "separator" },
         {
+          ...sym("arrow.up.forward.app"),
           label: "Open with Default App",
           /** Display-only: the renderer's save hotkeys own the key so it stays scoped to a selected save. */
           accelerator: "O",
@@ -164,23 +183,28 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: sendMenuAction("save.open-with-default"),
         },
         {
+          ...sym("globe"),
           label: "Open Original URL",
           click: sendMenuAction("save.open-original"),
         },
         {
+          ...sym("folder"),
           label: "Reveal in Finder",
           click: sendMenuAction("save.reveal"),
         },
         { type: "separator" },
         {
+          ...sym("pencil"),
           label: "Rename",
           click: sendMenuAction("save.rename"),
         },
         {
+          ...sym("tag"),
           label: "Add Tag",
           click: sendMenuAction("save.add-tag"),
         },
         {
+          ...sym("arrow.clockwise"),
           label: "Refresh Details",
           accelerator: "R",
           registerAccelerator: false,
@@ -188,29 +212,35 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          ...sym("trash"),
           label: "Move to Trash",
           accelerator: "Backspace",
           registerAccelerator: false,
           click: sendMenuAction("save.trash"),
         },
         {
+          ...sym("arrow.uturn.backward"),
           label: "Restore from Trash",
           click: sendMenuAction("save.untrash"),
         },
         {
+          ...sym("trash.fill"),
           label: "Delete Forever",
           accelerator: "CmdOrCtrl+Backspace",
           registerAccelerator: false,
           click: sendMenuAction("save.delete-forever"),
         },
         { type: "separator" },
-        isMac ? { role: "close" } : { role: "quit" },
+        isMac
+          ? { ...sym("xmark"), role: "close" }
+          : { ...sym("power"), role: "quit" },
       ],
     },
     {
       label: "Edit",
       submenu: [
         {
+          ...sym("arrow.uturn.backward"),
           label: "Undo",
           accelerator: "CmdOrCtrl+Z",
           click: () => {
@@ -221,6 +251,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           },
         },
         {
+          ...sym("arrow.uturn.forward"),
           label: "Redo",
           accelerator: "CmdOrCtrl+Shift+Z",
           click: () => {
@@ -231,33 +262,38 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           },
         },
         { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        { role: "selectAll" },
+        { ...sym("scissors"), role: "cut" },
+        { ...sym("doc.on.doc"), role: "copy" },
+        { ...sym("doc.on.clipboard"), role: "paste" },
+        { ...sym("checkmark.square"), role: "selectAll" },
         { type: "separator" },
         {
+          ...sym("photo.on.rectangle"),
           label: "Copy Image or Video",
           accelerator: "C",
           registerAccelerator: false,
           click: sendMenuAction("save.copy-media"),
         },
         {
+          ...sym("link"),
           label: "Copy URL",
           accelerator: "CmdOrCtrl+Shift+C",
           registerAccelerator: false,
           click: sendMenuAction("save.copy-url"),
         },
         {
+          ...sym("number"),
           label: "Copy Save ID",
           click: sendMenuAction("save.copy-id"),
         },
         { type: "separator" },
         {
+          ...sym("trash"),
           label: "Move Selected to Trash",
           click: sendMenuAction("save.bulk-trash"),
         },
         {
+          ...sym("arrow.clockwise"),
           label: "Refresh Selected",
           click: sendMenuAction("save.bulk-refresh"),
         },
@@ -268,90 +304,141 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "View",
       submenu: [
         {
+          ...sym("rectangle.3.group"),
           label: "Cycle Layout",
           accelerator: "CmdOrCtrl+Shift+L",
           click: sendMenuAction("view.layout.cycle"),
         },
         {
+          ...sym("rectangle.stack"),
           label: "Waterfall",
           click: sendMenuAction("view.layout.waterfall"),
         },
-        { label: "Grid", click: sendMenuAction("view.layout.grid") },
         {
+          ...sym("square.grid.2x2"),
+          label: "Grid",
+          click: sendMenuAction("view.layout.grid"),
+        },
+        {
+          ...sym("rectangle.split.3x1"),
           label: "Justified",
           click: sendMenuAction("view.layout.justified"),
         },
-        { label: "List", click: sendMenuAction("view.layout.list") },
+        {
+          ...sym("list.bullet"),
+          label: "List",
+          click: sendMenuAction("view.layout.list"),
+        },
         { type: "separator" },
         {
+          ...sym("sidebar.right"),
           label: "Toggle Details",
           accelerator: "CmdOrCtrl+I",
           click: sendMenuAction("view.inspector.toggle"),
         },
         {
+          ...sym("circle.lefthalf.filled"),
           label: "Appearance",
           submenu: [
-            { label: "Light", click: sendMenuAction("theme.light") },
-            { label: "Dark", click: sendMenuAction("theme.dark") },
-            { label: "Match System", click: sendMenuAction("theme.system") },
+            {
+              ...sym("sun.max"),
+              label: "Light",
+              click: sendMenuAction("theme.light"),
+            },
+            {
+              ...sym("moon"),
+              label: "Dark",
+              click: sendMenuAction("theme.dark"),
+            },
+            {
+              ...sym("circle.lefthalf.filled"),
+              label: "Match System",
+              click: sendMenuAction("theme.system"),
+            },
           ],
         },
         { type: "separator" },
         /** Grid zoom, not page zoom: the roles would scale the whole chrome. */
         {
+          ...sym("plus.magnifyingglass"),
           label: "Zoom In",
           accelerator: "CmdOrCtrl+=",
           click: sendMenuAction("view.zoom-in"),
         },
         {
+          ...sym("minus.magnifyingglass"),
           label: "Zoom Out",
           accelerator: "CmdOrCtrl+-",
           click: sendMenuAction("view.zoom-out"),
         },
         {
+          ...sym("1.magnifyingglass"),
           label: "Reset Zoom",
           accelerator: "CmdOrCtrl+0",
           click: sendMenuAction("view.zoom-reset"),
         },
         { type: "separator" },
-        { role: "togglefullscreen" },
+        {
+          ...sym("arrow.up.left.and.arrow.down.right"),
+          role: "togglefullscreen",
+        },
       ],
     },
     {
       label: "Go",
       submenu: [
         {
+          ...sym("chevron.left"),
           label: "Back",
           accelerator: "CmdOrCtrl+[",
           click: sendMenuAction("history.back"),
         },
         {
+          ...sym("chevron.right"),
           label: "Forward",
           accelerator: "CmdOrCtrl+]",
           click: sendMenuAction("history.forward"),
         },
         { type: "separator" },
-        { label: "Library", accelerator: "CmdOrCtrl+1", click: navTo("/") },
         {
+          ...sym("square.grid.2x2"),
+          label: "Library",
+          accelerator: "G L",
+          registerAccelerator: false,
+          click: navTo("/"),
+        },
+        {
+          ...sym("square.stack.3d.up"),
           label: "Sources",
-          accelerator: "CmdOrCtrl+2",
+          accelerator: "G S",
+          registerAccelerator: false,
           click: navTo("/sources"),
         },
         {
-          label: "Analytics",
-          accelerator: "CmdOrCtrl+3",
-          click: navTo("/analytics"),
+          ...sym("trash"),
+          label: "Trash",
+          accelerator: "G T",
+          registerAccelerator: false,
+          click: navTo("/trash"),
         },
-        { label: "Trash", accelerator: "CmdOrCtrl+4", click: navTo("/trash") },
+        {
+          ...sym("gearshape"),
+          label: "Settings",
+          accelerator: "G ,",
+          registerAccelerator: false,
+          click: navTo("/settings"),
+        },
         { type: "separator" },
         {
-          label: "Ask Your Library",
+          ...sym("sparkle"),
+          label: "AI Search",
           /** Display-only: the renderer owns the key so it works while a field is focused. */
           accelerator: "CmdOrCtrl+K",
           registerAccelerator: false,
           click: sendMenuAction("dock.ask"),
         },
         {
+          ...sym("magnifyingglass"),
           label: "Search",
           accelerator: "CmdOrCtrl+F",
           registerAccelerator: false,
@@ -367,15 +454,18 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "Library",
       submenu: [
         {
+          ...sym("folder"),
           label: "Reveal Library in Finder",
           click: () => void shell.openPath(libraryRoot()),
         },
         {
+          ...sym("folder.badge.gearshape"),
           label: "Move Library",
           click: sendMenuAction("library.move"),
         },
         { type: "separator" },
         {
+          ...sym("arrow.clockwise"),
           label: "Rescan Library",
           click: () =>
             void reconcileLibrary().catch((err) =>
@@ -383,6 +473,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
             ),
         },
         {
+          ...sym("checkmark.seal"),
           label: "Verify Integrity",
           click: async () => {
             try {
@@ -397,16 +488,19 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          ...sym("arrow.triangle.2.circlepath"),
           label: "Sync",
           submenu: sourcesSubmenu(),
         },
         { type: "separator" },
         {
+          ...sym("trash"),
           label: "Empty Trash",
           accelerator: "CmdOrCtrl+Shift+Backspace",
           click: sendMenuAction("trash.empty"),
         },
         {
+          ...sym("arrow.uturn.backward"),
           label: "Restore All from Trash",
           click: sendMenuAction("trash.restore-all"),
         },
@@ -415,15 +509,15 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
     {
       label: "Window",
       submenu: [
-        { role: "minimize" },
-        { role: "zoom" },
+        { ...sym("minus"), role: "minimize" },
+        { ...sym("plus"), role: "zoom" },
         ...(isMac
           ? ([
               { type: "separator" },
-              { role: "front" },
+              { ...sym("macwindow.on.rectangle"), role: "front" },
             ] satisfies Electron.MenuItemConstructorOptions[])
           : ([
-              { role: "close" },
+              { ...sym("xmark"), role: "close" },
             ] satisfies Electron.MenuItemConstructorOptions[])),
       ],
     },
@@ -432,19 +526,25 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           {
             label: "Developer",
             submenu: [
-              { role: "reload" as const },
-              { role: "forceReload" as const },
-              { role: "toggleDevTools" as const },
+              { ...sym("arrow.clockwise"), role: "reload" as const },
+              {
+                ...sym("arrow.clockwise.circle"),
+                role: "forceReload" as const,
+              },
+              { ...sym("hammer"), role: "toggleDevTools" as const },
               { type: "separator" as const },
               {
+                ...sym("server.rack"),
                 label: "Restart Local API",
                 click: sendMenuAction("developer.restart-api"),
               },
               {
+                ...sym("doc.text"),
                 label: "Open Developer Logs",
                 click: sendMenuAction("developer.open-logs"),
               },
               {
+                ...sym("cable.connector"),
                 label: "Open IPC Inspector",
                 click: sendMenuAction("developer.ipc-inspector"),
               },
@@ -457,16 +557,19 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       role: "help",
       submenu: [
         {
+          ...sym("keyboard"),
           label: "Keyboard Shortcuts",
           accelerator: "CmdOrCtrl+/",
           click: sendMenuAction("help.shortcuts"),
         },
         { type: "separator" },
         {
+          ...sym("link"),
           label: "Pond on GitHub",
           click: openExternalUrl("https://github.com/raphaelsalaja/pond"),
         },
         {
+          ...sym("exclamationmark.bubble"),
           label: "Report an Issue",
           click: openExternalUrl(
             "https://github.com/raphaelsalaja/pond/issues/new",
@@ -474,6 +577,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          ...sym("folder"),
           label: "Show Logs in Finder",
           click: () => void shell.openPath(app.getPath("logs")),
         },

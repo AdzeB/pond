@@ -6,6 +6,7 @@ import {
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type { FieldId } from "@pond/schema/filters/types";
+import { Menu } from "@pond/ui";
 import {
   $createTextNode,
   COMMAND_PRIORITY_NORMAL,
@@ -19,6 +20,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useDock } from "@/components/library/dock/lib/context";
 import {
   canonicalKey,
   DATE_PRESETS,
@@ -38,6 +40,7 @@ interface ValueSuggestion {
 interface TypeaheadFacets {
   tags: ReadonlyArray<string>;
   sources: ReadonlyArray<string>;
+  creators: ReadonlyArray<string>;
 }
 
 /** Free-form fields return null so the caret keeps plain text. */
@@ -47,6 +50,9 @@ function valueSuggestionsFor(
 ): ValueSuggestion[] | null {
   if (field === "tags") {
     return facets.tags.map((tag) => ({ value: tag, label: tag }));
+  }
+  if (field === "creator") {
+    return facets.creators.map((value) => ({ value, label: value }));
   }
   if (field === "source") {
     const values = facets.sources.includes("local")
@@ -97,21 +103,21 @@ function buildMenu(
     if (!suggestions) return null;
     const q = (opMatch[3] as string).toLowerCase();
     const key = canonicalKey(field);
-    const items: MenuItem[] = suggestions
-      .filter(
-        (s) =>
-          !q ||
-          s.value.toLowerCase().includes(q) ||
-          s.label.toLowerCase().includes(q),
-      )
-      .slice(0, LOOKUP_CAP)
-      .map((s) => ({
-        kind: "value" as const,
-        key: `value-${s.value}`,
-        label: s.label,
-        description: `${prefix}${key}:${s.value}`,
-        token: `${prefix}${key}:${quoteIfNeeded(s.value)}`,
-      }));
+    const matches = suggestions.filter(
+      (s) =>
+        !q ||
+        s.value.toLowerCase().includes(q) ||
+        s.label.toLowerCase().includes(q),
+    );
+    const limited =
+      field === "creator" ? matches : matches.slice(0, LOOKUP_CAP);
+    const items: MenuItem[] = limited.map((s) => ({
+      kind: "value" as const,
+      key: `value-${s.value}`,
+      label: s.label,
+      description: `${prefix}${key}:${s.value}`,
+      token: `${prefix}${key}:${quoteIfNeeded(s.value)}`,
+    }));
     if (items.length === 0) return null;
     return { title: FIELD_META[field].label, items };
   }
@@ -161,13 +167,19 @@ function triggerFn(text: string): MenuTextMatch | null {
 export function FilterTypeahead({
   tags,
   sources,
+  creators,
 }: {
   tags: ReadonlyArray<string>;
   sources: ReadonlyArray<string>;
+  creators: ReadonlyArray<string>;
 }) {
   const [editor] = useLexicalComposerContext();
+  const { dockRef } = useDock();
   const [query, setQuery] = useState<string | null>(null);
-  const facets = useMemo(() => ({ tags, sources }), [tags, sources]);
+  const facets = useMemo(
+    () => ({ tags, sources, creators }),
+    [tags, sources, creators],
+  );
 
   const menu = useMemo(
     () => (query === null ? null : buildMenu(query, facets)),
@@ -209,14 +221,17 @@ export function FilterTypeahead({
       triggerFn={triggerFn}
       onQueryChange={setQuery}
       commandPriority={COMMAND_PRIORITY_NORMAL}
+      ignoreEntityBoundary
+      /** Hide Lexical's caret-sized anchor; we portal into the dock shell instead. */
+      anchorClassName={styles["lexical-anchor"]}
       onSelectOption={(option, nodeToReplace, closeMenu) =>
         onSelect(option, nodeToReplace, closeMenu)
       }
-      menuRenderFn={(anchorRef, itemProps) =>
-        menu && anchorRef.current
+      menuRenderFn={(lexicalAnchor, itemProps) =>
+        menu && lexicalAnchor.current && dockRef.current
           ? createPortal(
               <MenuPanel menu={menu} {...itemProps} />,
-              anchorRef.current,
+              dockRef.current,
             )
           : null
       }
@@ -224,6 +239,7 @@ export function FilterTypeahead({
   );
 }
 
+/** Portaled into the dock shell; sits above the tray pill like the ask bar popover. */
 function MenuPanel({
   menu,
   options,
@@ -239,24 +255,26 @@ function MenuPanel({
 }) {
   return (
     <motion.div
-      className={styles.menu}
+      className={styles.anchor}
       initial={{ opacity: 0, y: 6, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={bouncySpring}
     >
-      <div className={styles["group-label"]}>{menu.title}</div>
-      {menu.items.map((item, index) => {
-        const option = options[index];
-        return (
-          <MenuRow
-            key={item.key}
-            item={item}
-            active={selectedIndex === index}
-            onHover={() => setHighlightedIndex(index)}
-            onSelect={() => option && selectOptionAndCleanUp(option)}
-          />
-        );
-      })}
+      <Menu.Surface className={styles.menu}>
+        <Menu.SectionLabel>{menu.title}</Menu.SectionLabel>
+        {menu.items.map((item, index) => {
+          const option = options[index];
+          return (
+            <MenuRow
+              key={item.key}
+              item={item}
+              active={selectedIndex === index}
+              onHover={() => setHighlightedIndex(index)}
+              onSelect={() => option && selectOptionAndCleanUp(option)}
+            />
+          );
+        })}
+      </Menu.Surface>
     </motion.div>
   );
 }
@@ -273,18 +291,16 @@ function MenuRow({
   onSelect: () => void;
 }) {
   return (
-    <button
-      type="button"
-      className={styles.row}
-      data-active={active || undefined}
+    <Menu.Row
+      highlighted={active}
       onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
       onMouseEnter={onHover}
       onClick={onSelect}
     >
-      <span className={styles.name}>{item.label}</span>
-      <span className={styles.description}>
+      <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
+      <Menu.SecondaryLabel className={styles.description}>
         {item.kind === "field" ? item.token : item.description}
-      </span>
-    </button>
+      </Menu.SecondaryLabel>
+    </Menu.Row>
   );
 }

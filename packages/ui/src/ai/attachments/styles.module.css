@@ -1,0 +1,43 @@
+.root {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  background: var(--ds-gray-2);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--ds-gray-a3);
+}
+
+.item {
+  display: contents;
+}
+
+.thumb {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 6px;
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-11);
+  white-space: nowrap;
+}
+
+.remove {
+  flex-shrink: 0;
+}

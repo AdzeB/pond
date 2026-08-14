@@ -35,4 +35,24 @@ describe("identityKeyFromCookies", () => {
       identityKeyFromCookies("pinterest", [{ name: "twid", value: "u=1" }]),
     ).toBeNull();
   });
+
+  it("reads the lid from a logged-in reddit token_v2", () => {
+    const payload = Buffer.from(
+      JSON.stringify({ sub: "user", lid: "t2_spez" }),
+    ).toString("base64url");
+    const token = `eyJhbGciOiJub25lIn0.${payload}.sig`;
+    expect(
+      identityKeyFromCookies("reddit", [{ name: "token_v2", value: token }]),
+    ).toBe("t2_spez");
+  });
+
+  it("ignores anonymous reddit token_v2", () => {
+    const payload = Buffer.from(JSON.stringify({ sub: "loid" })).toString(
+      "base64url",
+    );
+    const token = `eyJhbGciOiJub25lIn0.${payload}.sig`;
+    expect(
+      identityKeyFromCookies("reddit", [{ name: "token_v2", value: token }]),
+    ).toBeNull();
+  });
 });

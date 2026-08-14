@@ -18,7 +18,6 @@ export interface DockContextValue {
   allSelected: boolean;
   isTabActive: (tab: DockTab) => boolean;
   isCard: boolean;
-  openAsk: () => void;
   openSearch: () => void;
   closeSearch: () => void;
   openViewMenu: (section: ViewMenuSection) => void;
@@ -32,6 +31,8 @@ export interface DockContextValue {
   /** For size changes within one view (nav unfold), matched to the pill's quick within-view spring. */
   quickTransition: Transition;
   pillRef: RefObject<HTMLDivElement | null>;
+  /** Content-sized wrap around the pill; typeahead menus portal here so they sit above the overflow-clipped pill without stretching to the viewport. */
+  dockRef: RefObject<HTMLDivElement | null>;
 }
 
 const DockContext = createContext<DockContextValue | null>(null);

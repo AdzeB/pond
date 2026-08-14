@@ -1,10 +1,8 @@
 import { z } from "zod";
 import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
-  type DashboardConfig,
   DEFAULT_DARK_PRESET_ID,
   DEFAULT_DARK_THEME,
-  DEFAULT_DASHBOARDS,
   DEFAULT_LIGHT_PRESET_ID,
   DEFAULT_LIGHT_THEME,
   DEFAULT_SOURCE_METRICS,
@@ -213,12 +211,6 @@ const sourcesView = z.object({
   days: z.number().catch(7),
 });
 
-/** `activeId` remembers the last-open dashboard. */
-const analyticsView = z.object({
-  dashboards: z.custom<DashboardConfig[]>().default(DEFAULT_DASHBOARDS),
-  activeId: z.string().catch("default-overview"),
-});
-
 const api = z.object({
   port: z.number().catch(41610),
   bindAddress: z.enum(["loopback", "lan"]).catch("loopback"),
@@ -401,7 +393,6 @@ const PrefsObject = z.object({
   tagPicker: tagPicker.catch(tagPicker.parse({})),
   allTags: allTags.catch(allTags.parse({})),
   sourcesView: sourcesView.catch(sourcesView.parse({})),
-  analyticsView: analyticsView.catch(analyticsView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
   developer: developer.catch(developer.parse({})),

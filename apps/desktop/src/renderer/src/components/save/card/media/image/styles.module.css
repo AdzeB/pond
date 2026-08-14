@@ -8,11 +8,7 @@
   object-fit: contain;
   border-radius: 4px;
   box-shadow: var(--ds-shadow-2);
-}
-
-.media[data-loaded] {
   opacity: 0;
-  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
 .media[data-loaded="true"] {

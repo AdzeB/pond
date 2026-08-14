@@ -18,7 +18,7 @@
 
 .popup {
   box-shadow: var(--ds-shadow-1);
-  max-width: 256px;
+  max-width: 320px;
   padding: 2px;
   font-size: 10px;
   font-weight: 500;
@@ -35,6 +35,21 @@
     opacity: 0;
     transform: translateY(2px) scale(0.97);
   }
+}
+
+.row {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
 }
 
 .viewport {

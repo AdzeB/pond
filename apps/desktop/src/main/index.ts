@@ -16,8 +16,12 @@ import { flushGovernor } from "./core/pipeline/rate-governor";
 import { startReconciler } from "./core/pipeline/reconciler";
 import { getPrefs, invalidatePrefs } from "./core/prefs";
 import { startArchiveBackfill } from "./core/refresh/archive-backfill";
+import { startMissingVideoBackfill } from "./core/refresh/missing-video-backfill";
+import { startPosterBackfill } from "./core/refresh/poster-backfill";
 import { disposeHiddenWindow } from "./core/refresh/scrape-window";
 import { backfillSourceIcons } from "./core/refresh/source-icon-backfill";
+import { startThreadsCardBackfill } from "./core/refresh/threads-card-backfill";
+import { startThreadsLandingOgTrash } from "./core/refresh/threads-landing-og-trash";
 import { disposeRenderCardWindow } from "./core/render-card";
 import { reconcileLibrary } from "./core/scan";
 import {
@@ -134,9 +138,9 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
-  /** Packaged builds take the Dock icon from the app bundle; amber mark in unpackaged dev. */
+  /** Packaged builds take the Dock icon from the app bundle. */
   if (process.platform === "darwin" && !app.isPackaged) {
-    const iconPath = join(__dirname, "../../build/icon.development.png");
+    const iconPath = join(__dirname, "../../build/icon.png");
     if (existsSync(iconPath)) app.dock?.setIcon(iconPath);
   }
 
@@ -215,10 +219,16 @@ async function postLaunchInit(): Promise<void> {
     .catch((err) => log.warn("[pond] scan failed", err))
     /** Preview warming can begin as soon as the durable index is reconciled; slower maintenance backfills continue alongside it. */
     .finally(() => startMediaWarmer())
-    /** Self-heal saves whose archives predate the current WARC format; no-op when everything is current. */
     .then(() => startArchiveBackfill())
     .catch((err) => log.warn("[pond] archive backfill failed", err))
-    /** Web saves ingested before favicon capture get their source icon filled in; no-op once every save has one. */
+    .then(() => startMissingVideoBackfill())
+    .catch((err) => log.warn("[pond] missing video backfill failed", err))
+    .then(() => startPosterBackfill())
+    .catch((err) => log.warn("[pond] poster backfill failed", err))
+    .then(() => startThreadsCardBackfill())
+    .catch((err) => log.warn("[pond] threads card backfill failed", err))
+    .then(() => startThreadsLandingOgTrash())
+    .catch((err) => log.warn("[pond] threads landing-og trash failed", err))
     .then(() => backfillSourceIcons())
     .catch((err) => log.warn("[pond] source icon backfill failed", err));
   void backfillEnrichmentSidecars().catch((err) =>

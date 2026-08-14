@@ -1,10 +1,9 @@
-import { useCallback } from "react";
-import { CARD_THUMB_WIDTH } from "@/components/save/card/media/lib/constants";
+import { useCallback, useState } from "react";
+import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import type { MediaUnit } from "@/lib/media/units";
-import { withThumbWidth } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
-import { recordAspect } from "@/stores/aspect";
+import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
 
 /** The parent owns the active index and seen set driven by pointer scrubbing, so this stays presentational; `slides[0]` is the resting image. */
@@ -21,7 +20,7 @@ export function HoverGallery({
   active: number;
   seen: ReadonlySet<number>;
   onBroken: () => void;
-  onReady: () => void;
+  onReady?: () => void;
 }) {
   return (
     <>
@@ -55,39 +54,55 @@ function GallerySlide({
   primary: boolean;
   active: boolean;
   onBroken: () => void;
-  onReady: () => void;
+  onReady?: () => void;
 }) {
+  const [failed, setFailed] = useState(false);
   /** Only the primary slide feeds the card's aspect ratio; secondaries must not override it. */
-  const file = save.files.find((f) => f.path === unit.key);
-  const w = primary ? (file?.width ?? save.width ?? undefined) : undefined;
-  const h = primary ? (file?.height ?? save.height ?? undefined) : undefined;
-  const src = withThumbWidth(unit.url, CARD_THUMB_WIDTH);
+  const dims = primary ? aspectDimsFor(save, {}, unit) : null;
+  const w = dims?.w ?? undefined;
+  const h = dims?.h ?? undefined;
+  const src = unit.url;
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       if (!primary) return;
-      recordAspect(save.id, image.naturalWidth, image.naturalHeight);
-      onReady();
+      recordAspect(save.id, image.naturalWidth, image.naturalHeight, {
+        coverKey: aspectCoverKey(unit),
+      });
+      onReady?.();
     },
-    [onReady, primary, save.id],
+    [onReady, primary, save.id, unit],
   );
   const ready = useImageReady(src, reportReady);
 
+  if (failed && !primary) return null;
+
   return (
-    <img
-      ref={ready.ref}
-      src={src}
-      alt=""
-      /** TanStack Virtual already controls the card runway. Do not defer its resting image a second time. */
-      loading={primary ? "eager" : "lazy"}
-      decoding="async"
-      fetchPriority={primary ? "auto" : "low"}
-      width={w}
-      height={h}
-      className={styles.slide}
-      data-active={active ? "true" : undefined}
-      data-loaded={ready.loaded ? "true" : "false"}
-      onLoad={ready.onLoad}
-      onError={primary ? onBroken : undefined}
-    />
+    <>
+      {primary && save.blurhash && !ready.loaded ? (
+        <BlurHash hash={save.blurhash} />
+      ) : null}
+      <img
+        ref={ready.ref}
+        src={src}
+        alt=""
+        /** TanStack Virtual already controls the card runway. Do not defer its resting image a second time. */
+        loading={primary ? "eager" : "lazy"}
+        decoding="async"
+        fetchPriority={primary ? "auto" : "low"}
+        width={w}
+        height={h}
+        className={styles.slide}
+        data-active={active && !failed ? "true" : undefined}
+        data-loaded={!save.blurhash || ready.loaded ? "true" : "false"}
+        onLoad={ready.onLoad}
+        onError={
+          primary
+            ? onBroken
+            : () => {
+                setFailed(true);
+              }
+        }
+      />
+    </>
   );
 }

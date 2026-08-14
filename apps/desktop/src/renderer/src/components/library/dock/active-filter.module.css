@@ -1,0 +1,19 @@
+/* Sits above the tray pill in the same slot as search typeahead. */
+.cluster {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  pointer-events: auto;
+  transform-origin: bottom center;
+}
+
+.label {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -24,14 +24,20 @@ export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
   const dataUrl = captureFrameDataUrl(video);
   if (!dataUrl) return;
   await window.pond.query("video.copyFrame", { dataUrl });
-  notify({ id: "copy-frame", title: "Frame copied to clipboard" });
+  notify({
+    id: "copy-frame",
+    title: "Frame copied to clipboard",
+  });
 }
 
 export async function saveVideoFrame(video: HTMLVideoElement): Promise<void> {
   const dataUrl = captureFrameDataUrl(video);
   if (!dataUrl) return;
   await window.pond.query("video.saveFrame", { dataUrl });
-  notify({ id: "save-frame", title: "Frame saved" });
+  notify({
+    id: "save-frame",
+    title: "Frame saved",
+  });
 }
 
 export async function setVideoThumbnail(

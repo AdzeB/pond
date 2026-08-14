@@ -9,7 +9,6 @@ type TabIcon = React.ComponentType<{ width?: number; height?: number }>;
 const ROUTE_ICONS: Record<string, TabIcon> = {
   "/": SECTION_ICONS.library,
   "/sources": SECTION_ICONS.sources,
-  "/analytics": SECTION_ICONS.analytics,
   "/trash": SECTION_ICONS.trash,
 };
 
@@ -25,8 +24,6 @@ export function iconForPath(path: string): TabIcon {
 
   const exact = ROUTE_ICONS[clean];
   if (exact) return exact;
-
-  if (clean.startsWith("/analytics")) return SECTION_ICONS.analytics;
 
   const source = sourceIcon(clean);
   if (source) return source;

@@ -2,7 +2,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { SECTION_ICONS_FILL } from "@/lib/ui/section-icons";
 
-export type DockTab = "library" | "sources" | "analytics" | "trash";
+export type DockTab = "library" | "sources" | "trash";
 
 interface NavTab {
   id: DockTab;
@@ -37,12 +37,5 @@ export const NAV_TABS: readonly NavTab[] = [
     to: "/sources",
     icon: <SECTION_ICONS_FILL.sources />,
     match: (p) => p === "/sources",
-  },
-  {
-    id: "analytics",
-    label: "Analytics",
-    to: "/analytics",
-    icon: <SECTION_ICONS_FILL.analytics />,
-    match: (p) => p === "/analytics" || p.startsWith("/analytics/"),
   },
 ] as const;

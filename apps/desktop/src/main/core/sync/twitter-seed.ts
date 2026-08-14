@@ -1,6 +1,7 @@
 import type { MediaType } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
+import { pickTitle } from "../refresh/harvest/lib/title";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
 /** Cap on quote-chain depth to keep media merges and the screenshot walker bounded. */
@@ -113,18 +114,6 @@ export function buildTwitterBookmarkSeed(
     publishedAt,
     lang: null,
   };
-}
-
-const TITLE_CAP = 90;
-
-function pickTitle(
-  fullText: string,
-  fallback: string | undefined,
-): string | null {
-  const firstLine = fullText.split(/\n+/)[0]?.trim();
-  if (!firstLine) return fallback ?? null;
-  if (firstLine.length <= TITLE_CAP) return firstLine;
-  return `${firstLine.slice(0, TITLE_CAP - 1).trimEnd()}…`;
 }
 
 function readLegacyCreatedAt(raw: unknown): Date | null {

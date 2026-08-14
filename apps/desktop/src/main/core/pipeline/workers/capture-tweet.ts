@@ -4,11 +4,17 @@ import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
 import type { ScrapedHarvest } from "../../refresh/harvest/types";
 import {
+  screenshotThreadsDual,
   screenshotTweetDual,
   type TweetScreenshotResult,
 } from "../../refresh/scrape-window";
-import { type RenderedCard, renderTweetCardPng } from "../../render-card";
+import {
+  type RenderedCard,
+  renderThreadsCardPng,
+  renderTweetCardPng,
+} from "../../render-card";
 import { readSave } from "./apply";
+import { inlineCaptureAvatars } from "./inline-card-avatars";
 
 /** Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel. */
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
@@ -20,7 +26,7 @@ function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
 }
 
 /** Bump when capture output changes so stale screenshots are regenerated. */
-const CAPTURE_TWEET_VERSION = 9;
+const CAPTURE_TWEET_VERSION = 10;
 
 /** Quote-chain walk depth cap; keeps navigation bounded. */
 const QUOTE_DEPTH_CAP = 3;
@@ -44,9 +50,14 @@ function readCaptureTweetVersion(rawJson: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
+export function isCaptureTweetStale(rawJson: unknown): boolean {
+  return readCaptureTweetVersion(rawJson) < CAPTURE_TWEET_VERSION;
+}
+
 /** Idempotent via `CAPTURE_TWEET_VERSION`; returns silently on any failure so a screenshot miss never fails the save. */
 export async function runCaptureTweet(
   saveId: string,
+  opts?: { nativeOnly?: boolean },
 ): Promise<CaptureTweetResult> {
   const idle: CaptureTweetResult = {
     captured: 0,
@@ -55,7 +66,7 @@ export async function runCaptureTweet(
   };
   const save = await readSave(saveId);
   if (!save) return idle;
-  if (save.source !== "twitter") return idle;
+  if (save.source !== "twitter" && save.source !== "threads") return idle;
   if (!save.sourceId) return idle;
 
   if (readCaptureTweetVersion(save.rawJson) >= CAPTURE_TWEET_VERSION) {
@@ -71,6 +82,14 @@ export async function runCaptureTweet(
     return { captured: 2, authWall: false, mediaAdded: false };
   }
 
+  if (opts?.nativeOnly) {
+    log.debug(
+      "[pond pipeline:capture-tweet] native miss, skipping live screenshot",
+      saveId,
+    );
+    return idle;
+  }
+
   let captured = 0;
   let authWall = false;
   const harvested: NonNullable<ScrapedHarvest["mediaUrls"]> = [];
@@ -79,6 +98,7 @@ export async function runCaptureTweet(
   const main = await captureVariants(saveId, {
     url: save.url,
     sourceId: save.sourceId,
+    source: save.source,
     lightKind: TWEET_SCREENSHOT_LIGHT_KIND,
     darkKind: TWEET_SCREENSHOT_DARK_KIND,
     lightFilename: "tweet-light.png",
@@ -95,13 +115,17 @@ export async function runCaptureTweet(
 
   /** Only stamp once both variants exist; a single-variant capture stays unstamped to retry. */
   let completed = main.complete;
-  let nextUrl = main.quotedUrl;
+  let nextUrl = main.quotedUrl ?? quotedUrlFromExtras(save.rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
-    const quotedId = parseTweetId(nextUrl);
+    const quotedId =
+      save.source === "threads"
+        ? parsePostCode(nextUrl)
+        : parseTweetId(nextUrl);
     if (!quotedId) break;
     const quote = await captureVariants(saveId, {
       url: nextUrl,
       sourceId: quotedId,
+      source: save.source,
       lightKind: quoteScreenshotKind(depth, "light"),
       darkKind: quoteScreenshotKind(depth, "dark"),
       lightFilename: `tweet-quote${depth}-light.png`,
@@ -141,9 +165,13 @@ async function tryNativeRender(
 ): Promise<boolean> {
   const rawJson = save.rawJson as RawJson | null | undefined;
   const capture = rawJson?.capture ?? null;
-  const light = await renderTweetCardPng(capture, save.author, "light");
+  if (!capture) return false;
+  const inlined = await inlineCaptureAvatars(capture, save);
+  const render =
+    save.source === "threads" ? renderThreadsCardPng : renderTweetCardPng;
+  const light = await render(inlined.capture, save.author, "light");
   if (!light) return false;
-  const dark = await renderTweetCardPng(capture, save.author, "dark");
+  const dark = await render(inlined.capture, save.author, "dark");
   if (!dark) return false;
   await writeCardPng(
     saveId,
@@ -157,6 +185,36 @@ async function tryNativeRender(
     "tweet-dark.png",
     dark,
   );
+  if (inlined.avatarFile) {
+    try {
+      await persistSave(
+        saveId,
+        {},
+        {
+          actorReason: "pipeline:capture-tweet:avatar",
+          newFiles: [
+            {
+              kind: "avatar",
+              filename: inlined.avatarFile.filename,
+              bytes: Buffer.from(inlined.avatarFile.bytes),
+              ...(inlined.avatarFile.mimeType
+                ? { mimeType: inlined.avatarFile.mimeType }
+                : {}),
+              ...(inlined.avatarSourceUrl
+                ? { sourceUrl: inlined.avatarSourceUrl }
+                : {}),
+            },
+          ],
+        },
+      );
+    } catch (err) {
+      log.warn(
+        "[pond pipeline:capture-tweet] avatar persist failed",
+        saveId,
+        err,
+      );
+    }
+  }
   return true;
 }
 
@@ -189,6 +247,7 @@ async function writeCardPng(
 interface CaptureVariantsArgs {
   url: string;
   sourceId: string;
+  source: "twitter" | "threads";
   lightKind: string;
   darkKind: string;
   lightFilename: string;
@@ -215,11 +274,18 @@ async function captureVariants(
   let lightOk = false;
   let darkOk = false;
 
-  const dual = await screenshotTweetDual({
-    url: args.url,
-    sourceId: args.sourceId,
-    harvestMedia: args.harvestMedia,
-  });
+  const dual =
+    args.source === "threads"
+      ? await screenshotThreadsDual({
+          url: args.url,
+          sourceId: args.sourceId,
+          harvestMedia: args.harvestMedia,
+        })
+      : await screenshotTweetDual({
+          url: args.url,
+          sourceId: args.sourceId,
+          harvestMedia: args.harvestMedia,
+        });
 
   const light: TweetScreenshotResult = dual.light;
   if (light.ok && light.png) {
@@ -332,4 +398,32 @@ function parseTweetId(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function parsePostCode(url: string): string | null {
+  try {
+    const path = new URL(url).pathname;
+    return (
+      path.match(/\/post\/([A-Za-z0-9_-]+)/)?.[1] ??
+      path.match(/\/t\/([A-Za-z0-9_-]+)/)?.[1] ??
+      null
+    );
+  } catch {
+    return null;
+  }
+}
+
+function quotedUrlFromExtras(rawJson: unknown): string | undefined {
+  if (!rawJson || typeof rawJson !== "object") return undefined;
+  const extras = (rawJson as RawJson).capture?.extras as
+    | Record<string, unknown>
+    | undefined;
+  const rich = extras?.quotedTweet as { url?: unknown } | undefined;
+  if (typeof rich?.url === "string" && rich.url.length > 0) return rich.url;
+  const list = extras?.quotedTweets;
+  if (Array.isArray(list) && list[0] && typeof list[0] === "object") {
+    const url = (list[0] as { url?: unknown }).url;
+    if (typeof url === "string" && url.length > 0) return url;
+  }
+  return undefined;
 }

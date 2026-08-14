@@ -23,8 +23,10 @@ export class PinterestPinExtractor implements Extractor {
         } catch { return ''; }
       })()`;
 
-  authCookies(name: string): boolean {
-    return name === "_pinterest_sess" || name === "_auth";
+  authCookies(name: string, value?: string): boolean {
+    /** `_pinterest_sess` is set for everyone; `_auth` is `"0"` while signed out. */
+    if (name !== "_auth") return false;
+    return value === undefined || value === "1";
   }
 
   handleFromPath(segments: string[]): string | null {

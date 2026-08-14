@@ -1,7 +1,6 @@
+import { Window } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, useLayoutEffect } from "react";
-import { snappySpring } from "@/lib/ui/motion";
+import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
 interface RootProps {
@@ -11,43 +10,13 @@ interface RootProps {
   className?: string;
 }
 
-/** Shell chrome lives on `#root`; the optional right rail sits outside the rounded workspace. */
 function Root({ header, children, right, className }: RootProps) {
-  const reduceMotion = useReducedMotion();
-  useLayoutEffect(() => {
-    const el = document.getElementById("root");
-    if (!el) return;
-    const shell = styles.root;
-    if (!shell) return;
-    const extra = className?.split(/\s+/).filter(Boolean) ?? [];
-    el.classList.add(shell, ...extra);
-    return () => {
-      el.classList.remove(shell, ...extra);
-    };
-  }, [className]);
-
   return (
-    <div className={styles.frame}>
-      <div className={styles.window}>
-        <div className={styles.header}>{header}</div>
-        <div className={styles.main}>{children}</div>
-      </div>
-      <aside className={cn(styles.right, right && styles["right-open"])}>
-        <AnimatePresence initial={false}>
-          {right ? (
-            <motion.div
-              className={styles["right-content"]}
-              initial={reduceMotion ? false : { opacity: 0, x: 18 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 12 }}
-              transition={reduceMotion ? { duration: 0 } : snappySpring}
-            >
-              {right}
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </aside>
-    </div>
+    <Window.Root className={className}>
+      <Window.Top>{header}</Window.Top>
+      <Window.Center>{children}</Window.Center>
+      <Window.Right open={Boolean(right)}>{right}</Window.Right>
+    </Window.Root>
   );
 }
 

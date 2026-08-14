@@ -21,11 +21,12 @@ export interface SyncBaseline {
   full: boolean;
 }
 
-/** Saves owned by this account plus unattributed rows for its source; rows without account_id treated as unknown would only make the harvester walk further. */
-function baselineWhere(account: ConnectedAccount) {
+/** Saves owned by this account plus unattributed rows for its source; trashed rows are unknown so a re-sync can recapture them. */
+export function syncBaselineWhere(account: ConnectedAccount) {
   return and(
     eq(saves.source, account.source),
     or(eq(saves.accountId, account.id), isNull(saves.accountId)),
+    isNull(saves.deletedAt),
   );
 }
 
@@ -41,21 +42,21 @@ export async function loadSyncBaseline(
     const rows = await db
       .select({ sourceId: saves.sourceId })
       .from(saves)
-      .where(baselineWhere(account));
+      .where(syncBaselineWhere(account));
     const knownIds = new Set<string>(rows.map((r) => r.sourceId));
     return { knownIds, total: knownIds.size, full: true };
   }
   const rows = await db
     .select({ sourceId: saves.sourceId })
     .from(saves)
-    .where(baselineWhere(account))
+    .where(syncBaselineWhere(account))
     .orderBy(desc(saves.savedAt))
     .limit(RECENT_KNOWN_WINDOW);
   const knownIds = new Set<string>(rows.map((r) => r.sourceId));
   const totalRow = await db
     .select({ c: count() })
     .from(saves)
-    .where(baselineWhere(account))
+    .where(syncBaselineWhere(account))
     .get();
   return { knownIds, total: totalRow?.c ?? knownIds.size, full: false };
 }

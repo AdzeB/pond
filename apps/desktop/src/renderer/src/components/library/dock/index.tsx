@@ -2,6 +2,7 @@ import { Tray, TrayCard } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ActiveFilter } from "@/components/library/dock/active-filter";
 import { NavContent } from "@/components/library/dock/nav";
 import { OptionsContent } from "@/components/library/dock/options";
 import { SelectionContent } from "@/components/library/dock/selection";
@@ -27,7 +28,6 @@ import {
 import styles from "./styles.module.css";
 
 /** Module-level store calls stay referentially stable without useCallback. */
-const openAsk = () => dockMode.open("ask");
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 
@@ -38,10 +38,10 @@ export function LibraryTray() {
   const viewMode = useViewMode();
   const filteredCount = useViewFilteredCount();
   const mode = useDockMode();
-  const trayMode = mode === "ask" ? "nav" : mode;
 
   const inTrash = viewMode === "trash";
 
+  const dockRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
   /** The pill's real width/height animates to the measured viewport size with a spring, so a mid-flight view change retargets instead of restarting. */
   const [bounds, setBounds] = useState<{
@@ -72,13 +72,13 @@ export function LibraryTray() {
 
   const { destructive, confirmDeleteForever } = useDockActions();
 
-  /** Priority: selection-card modes, then any explicitly opened surface (search/ask/menus), then selection commandeering the resting nav. */
+  /** Priority: selection-card modes, then any explicitly opened surface (search/menus), then selection commandeering the resting nav. */
   const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
-    trayMode,
+    mode,
   )
     ? (mode as DockView)
-    : trayMode !== "nav"
-      ? trayMode
+    : mode !== "nav"
+      ? mode
       : selectionSize > 0
         ? "selection"
         : "nav";
@@ -136,7 +136,6 @@ export function LibraryTray() {
       allSelected,
       isTabActive,
       isCard,
-      openAsk,
       openSearch: openLibrarySearch,
       closeSearch: closeToNav,
       openViewMenu,
@@ -148,6 +147,7 @@ export function LibraryTray() {
       sizeTransition: pillTransition,
       quickTransition,
       pillRef,
+      dockRef,
     }),
     [
       view,
@@ -178,46 +178,53 @@ export function LibraryTray() {
               onClick={closeToNav}
             />
           ) : null}
-          <Tray.Pill
-            className={styles.pill}
-            render={
-              <motion.div
-                ref={pillRef}
-                initial={false}
-                animate={
-                  bounds ? { width: bounds.width, height: bounds.height } : {}
-                }
-                transition={boundsTransition}
-              />
-            }
-          >
-            <div
-              ref={viewportRef}
-              className={styles.viewport}
-              data-card={isCard || undefined}
+          <div ref={dockRef} className={styles.shell}>
+            <ActiveFilter />
+            <Tray.Pill
+              className={styles.pill}
+              render={
+                <motion.div
+                  ref={pillRef}
+                  initial={false}
+                  animate={
+                    bounds ? { width: bounds.width, height: bounds.height } : {}
+                  }
+                  transition={boundsTransition}
+                />
+              }
             >
-              <AnimatePresence initial={false}>
-                {view === "selection" ? (
-                  <SelectionContent key="selection" />
-                ) : view === "search" ? (
-                  <motion.div
-                    key="search"
-                    className={styles["search-row"]}
-                    {...swap}
-                    transition={swapTransition}
-                  >
-                    <SearchComposer autoFocus onCollapse={closeToNav} />
-                  </motion.div>
-                ) : isViewMenu(view) ? (
-                  <motion.div key={view} {...swap} transition={swapTransition}>
-                    <OptionsContent section={view} />
-                  </motion.div>
-                ) : (
-                  <NavContent key="nav" />
-                )}
-              </AnimatePresence>
-            </div>
-          </Tray.Pill>
+              <div
+                ref={viewportRef}
+                className={styles.viewport}
+                data-card={isCard || undefined}
+              >
+                <AnimatePresence initial={false}>
+                  {view === "selection" ? (
+                    <SelectionContent key="selection" />
+                  ) : view === "search" ? (
+                    <motion.div
+                      key="search"
+                      className={styles["search-row"]}
+                      {...swap}
+                      transition={swapTransition}
+                    >
+                      <SearchComposer autoFocus onCollapse={closeToNav} />
+                    </motion.div>
+                  ) : isViewMenu(view) ? (
+                    <motion.div
+                      key={view}
+                      {...swap}
+                      transition={swapTransition}
+                    >
+                      <OptionsContent section={view} />
+                    </motion.div>
+                  ) : (
+                    <NavContent key="nav" />
+                  )}
+                </AnimatePresence>
+              </div>
+            </Tray.Pill>
+          </div>
         </DockProvider>
       </TrayCard.Provider>
     </div>

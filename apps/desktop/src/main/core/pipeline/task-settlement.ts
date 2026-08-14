@@ -221,8 +221,9 @@ export async function maybeFinalizeSave(saveId: string): Promise<void> {
   if (rows.length === 0) return;
   const allDone = rows.every((t) => t.status === "done");
   if (!allDone) return;
-  db.update(saves)
-    .set({ status: "complete", ingestCompletedAt: new Date() })
-    .where(eq(saves.id, saveId))
-    .run();
+  await persistSave(
+    saveId,
+    { status: "complete", ingestCompletedAt: new Date() },
+    { actorReason: "pipeline:tasks-complete" },
+  );
 }

@@ -32,8 +32,8 @@ export function planOps(source: Source): readonly Op[] {
       "finalize",
     ];
   }
-  /** capture_tweet is twitter-only; archive_page is web-only; text covers skip twitter (uses tweet screenshots). */
-  if (source === "twitter") {
+  /** capture_tweet is twitter/threads; archive_page is web-only; text covers skip those (uses post screenshots). */
+  if (source === "twitter" || source === "threads") {
     return UNIVERSAL_SPEC.filter(
       (op) => op !== "archive_page" && op !== "render_text_cover",
     );
@@ -151,4 +151,22 @@ export function resolveYtDlpTarget(save: Save): string | null {
   }
   if (save.source === "pinterest") return null;
   return save.url;
+}
+
+/** Video entries on `capture.media`, including quoted clips merged into the parent list. */
+export function countCaptureVideos(rawJson: unknown): number {
+  if (!rawJson || typeof rawJson !== "object") return 0;
+  const media = (rawJson as { capture?: { media?: Array<{ type?: string }> } })
+    .capture?.media;
+  if (!Array.isArray(media)) return 0;
+  return media.filter((m) => m.type === "video").length;
+}
+
+/** How many video files the pipeline should end up with; `mediaType: "video"` counts as one when capture is empty. */
+export function expectedVideoDownloads(
+  save: Pick<Save, "mediaType" | "rawJson">,
+): number {
+  const fromCapture = countCaptureVideos(save.rawJson);
+  if (fromCapture > 0) return fromCapture;
+  return save.mediaType === "video" ? 1 : 0;
 }

@@ -35,6 +35,19 @@ const FLOW: Step[] = [
     holdMs: 2000,
   },
   { mode: "idle-connected", label: "Idle · connected", holdMs: 2200 },
+  {
+    mode: "idle-offline",
+    label: "Idle · offline",
+    error: "Pond isn't running. Open the app and try again.",
+    holdMs: 2200,
+  },
+  { mode: "idle-connected", label: "Idle · connected", holdMs: 1600 },
+  {
+    mode: "action-error",
+    label: "Action · error",
+    error: "Couldn't capture this page. Try again.",
+    holdMs: 2000,
+  },
   { mode: "link-empty", label: "Link · empty", holdMs: 1200 },
   {
     mode: "link-pasted",

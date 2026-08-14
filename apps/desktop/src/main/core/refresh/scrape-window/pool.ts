@@ -1,6 +1,6 @@
-import { join } from "node:path";
 import { SOURCES, type Source } from "@pond/schema/db";
 import { BrowserWindow, session } from "electron";
+import { resolvePreload } from "../../../lib/resolve-preload";
 import { acquire } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
 
@@ -67,7 +67,7 @@ function createHiddenWindow(partition: string): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      preload: join(__dirname, "../preload/scrape.cjs"),
+      preload: resolvePreload("scrape.cjs"),
       plugins: false,
       webgl: false,
       autoplayPolicy: "document-user-activation-required",

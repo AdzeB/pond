@@ -8,6 +8,7 @@ export const account = defineField({
   type: "enum",
   label: "Account",
   group: "people",
-  project: (s) => s.accountId ?? "",
-  sqlProjection: () => sql`coalesce(${saves.accountId}, '')`,
+  /** ULIDs are stored uppercase; enum filter values are lowercased and SQLite `=` is case-sensitive. */
+  project: (s) => (s.accountId ?? "").toLowerCase(),
+  sqlProjection: () => sql`lower(coalesce(${saves.accountId}, ''))`,
 });

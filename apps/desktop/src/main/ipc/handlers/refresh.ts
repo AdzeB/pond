@@ -79,12 +79,12 @@ export function registerRefreshHandlers(): void {
 
   safeHandle(IPC.sourceConnect, async (_, source: string) => {
     try {
-      if (!isSource(source)) return { ok: false as const };
+      if (!isSource(source)) return { ok: false as const, mode: "external" };
       setPendingSessionSource(source);
       return await signInToSource(source);
     } catch (err) {
       log.warn("[pond ipc] sourceConnect failed", err);
-      return { ok: false as const };
+      return { ok: false as const, mode: "external" };
     }
   });
 

@@ -1,16 +1,19 @@
 import { liftCleared } from "@/components/settings/funnel/lib/queue";
+import { resolveFileIndex } from "@/lib/save/actions";
 import {
   purgeSaves,
   setSaveTags,
   trashSaves,
   untrashSaves,
 } from "@/lib/save/mutate";
+import { REVERSE_SEARCH_ENGINES } from "@/lib/save/reverse-image-search";
 import type { Save } from "@/lib/types";
+import { notify } from "@/lib/ui/toast";
 import { activity } from "@/stores/activity";
 import { libraryViewContext } from "@/stores/library-view-context";
 import { pool } from "@/stores/pool";
 import { selection } from "@/stores/selection";
-import { mergeUniqueTags } from "@/stores/tag-clipboard";
+import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
 /** Inline feedback for the card that triggered the action. */
 export interface SelectionActionResult {
@@ -189,4 +192,147 @@ export async function exportSelectionCsv(
   const message = `Exported ${pluralize(result.count, "row")} to CSV`;
   activity.done(job, message);
   return { ok: true, message };
+}
+
+export async function copyFilesForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  const files: Array<{ id: string; fileIndex: number }> = [];
+  for (const save of resolve(ids)) {
+    const fileIndex = resolveFileIndex(save);
+    if (fileIndex == null) continue;
+    files.push({ id: save.id, fileIndex });
+  }
+  if (files.length === 0) return;
+  const result = (await window.pond.query("saves.copyFiles", { files })) as {
+    ok: boolean;
+  };
+  if (!result?.ok) return;
+  notify({
+    id: "copy-media",
+    title:
+      files.length === 1
+        ? "File copied to clipboard"
+        : "Files copied to clipboard",
+  });
+}
+
+export function copyTagsForSelection(ids: readonly string[]): void {
+  let tags: string[] = [];
+  for (const save of resolve(ids)) {
+    tags = mergeUniqueTags(tags, save.tags);
+  }
+  if (tags.length === 0) return;
+  tagClipboard.set(tags);
+  notify({ id: "copy-tags", title: "Tags copied" });
+}
+
+export async function pasteTagsForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  const buf = tagClipboard.get();
+  if (buf.length === 0) return;
+  await addTagsToSelection(ids, buf);
+  notify({ id: "paste-tags", title: "Tags pasted" });
+}
+
+export async function openDefaultAppForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  let attempted = 0;
+  let failed = 0;
+  for (const save of resolve(ids)) {
+    const fileIndex = resolveFileIndex(save);
+    if (fileIndex == null) continue;
+    attempted += 1;
+    const result = (await window.pond.openSaveFile(save.id, fileIndex)) as {
+      ok: boolean;
+    };
+    if (!result?.ok) failed += 1;
+  }
+  if (attempted === 0 || failed === 0) return;
+  activity.error(
+    "Open",
+    failed === attempted
+      ? "Couldn't open these files."
+      : "Couldn't open some files.",
+  );
+}
+
+export async function revealFilesForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  let attempted = 0;
+  let failed = 0;
+  for (const save of resolve(ids)) {
+    const fileIndex = resolveFileIndex(save);
+    if (fileIndex == null) continue;
+    attempted += 1;
+    const result = (await window.pond.revealSave(save.id, fileIndex)) as {
+      ok: boolean;
+    };
+    if (!result?.ok) failed += 1;
+  }
+  if (attempted === 0 || failed === 0) return;
+  activity.error(
+    "Reveal",
+    failed === attempted
+      ? "Couldn't find these files on disk."
+      : "Couldn't find some files on disk.",
+  );
+}
+
+export async function openInBrowserForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  for (const save of resolve(ids)) {
+    const url = save.url;
+    if (!url) continue;
+    try {
+      const parsed = new URL(url);
+      if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+        await window.pond.openExternal(parsed.toString());
+      }
+    } catch {
+      /** Malformed URL; skip. */
+    }
+  }
+}
+
+export async function reverseImageSearchForSelection(
+  ids: readonly string[],
+  engineKey: string,
+): Promise<void> {
+  const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
+  if (!engine) return;
+  let opened = 0;
+  for (const save of resolve(ids)) {
+    const result = (await window.pond.query("saves.publicImageUrl", {
+      id: save.id,
+    })) as { ok: true; url: string | null } | { ok: false; url: null };
+    if (!result.ok || !result.url) continue;
+    await window.pond.openExternal(engine.url(encodeURIComponent(result.url)));
+    opened += 1;
+  }
+  if (opened === 0) {
+    activity.error("Reverse Image Search", "No public image URL is available.");
+  }
+}
+
+export async function refreshDetailsForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  for (const save of resolve(ids)) {
+    if (!save.url) continue;
+    await window.pond.refreshSave(save.id);
+  }
+}
+
+export async function archiveSitesForSelection(
+  ids: readonly string[],
+): Promise<void> {
+  for (const save of resolve(ids)) {
+    if (!save.url || save.source !== "web" || save.deletedAt) continue;
+    await window.pond.archiveSite(save.id);
+  }
 }

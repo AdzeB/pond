@@ -3,44 +3,25 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 import { TrayCard } from "@pond/ui";
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useRef } from "react";
+import { useDock } from "@/components/library/dock/lib/context";
 import { useView } from "@/hooks/use-view";
 import { snappySpring } from "@/lib/ui/motion";
-import { ZOOM_DEFAULT, ZOOM_MAX, ZOOM_MIN } from "@/lib/ui/zoom";
+import { nearestZoomIndex, ZOOM_STEPS } from "@/lib/ui/zoom";
 import styles from "./styles.module.css";
 
-const STEPS: ReadonlyArray<{ value: number; label: string }> = [
-  { value: ZOOM_MIN, label: "Tiny" },
-  { value: 105, label: "Small" },
-  { value: ZOOM_DEFAULT, label: "Medium" },
-  { value: 155, label: "Large" },
-  { value: 185, label: "Huge" },
-  { value: ZOOM_MAX, label: "Giant" },
-];
-
-function closestIndex(value: number): number {
-  let best = 0;
-  let bestDelta = Number.POSITIVE_INFINITY;
-  STEPS.forEach((step, index) => {
-    const delta = Math.abs(value - step.value);
-    if (delta < bestDelta) {
-      best = index;
-      bestDelta = delta;
-    }
-  });
-  return best;
-}
-
 export function ZoomSection() {
+  const dock = useDock();
   const { state, actions } = useView();
   const groupId = useId();
   const reduceMotion = useReducedMotion();
-  const activeIndex = closestIndex(state.zoom);
+  const activeIndex = nearestZoomIndex(state.zoom);
   const initialZoom = useRef(state.zoom);
 
   return (
     <>
       <TrayCard.Header>
-        <TrayCard.Title>Library Zoom Level</TrayCard.Title>
+        <TrayCard.Back onClick={() => dock.openViewMenu("options")} />
+        <TrayCard.Title position="center">Zoom</TrayCard.Title>
         <TrayCard.Close />
         <TrayCard.Separator />
         <TrayCard.Description>
@@ -52,7 +33,7 @@ export function ZoomSection() {
         aria-label="Zoom"
         className={styles.options}
       >
-        {STEPS.map((step, index) => {
+        {ZOOM_STEPS.map((step, index) => {
           const active = index === activeIndex;
           return (
             <Toggle

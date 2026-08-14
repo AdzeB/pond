@@ -8,32 +8,26 @@ import {
   PointerSensor,
 } from "@dnd-kit/react";
 import { useSortable } from "@dnd-kit/react/sortable";
-import { IconPlusFill18, IconSparkle3Fill18 } from "@pond/icons/fill/18";
+import { IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { IconGear3Outline18 } from "@pond/icons/outline/18";
-import { Button, type MenuItemSpec } from "@pond/ui";
+import { Button, cn, type MenuItemSpec } from "@pond/ui";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
-import { useAccounts } from "@/hooks/use-accounts";
-import { useAskAvailable } from "@/hooks/use-ask-available";
 import { useSave } from "@/hooks/use-saves";
-import { useWatches } from "@/hooks/use-watches";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
-import { dockMode, useDockMode } from "@/stores/dock-mode";
 import { settingsModal } from "@/stores/settings-modal";
-import { useSyncByAccount } from "@/stores/sync-monitor";
 import { type Tab, tabs, useActiveTabId, useTabs } from "@/stores/tabs";
 import { ProgressPanel } from "./activity";
 import { ErrorsPanel } from "./attention";
 import { iconForTab } from "./icons";
 import { computeLabel } from "./labels";
 import type { Panel } from "./lib";
-import { MediaIndexPanel } from "./media-index";
 import { RecentPanel } from "./recent";
 import styles from "./styles.module.css";
 import { OngoingPanel } from "./sync";
@@ -263,15 +257,13 @@ const TabItem = memo(function TabItem({
     });
   }, [isActive]);
 
-  const className = [
+  const className = cn(
     styles.tab,
     isActive && styles["tab-active"],
     tab.pinned && styles["tab-pinned"],
     isDragging && styles["tab-lifted"],
     frozenWidth != null && styles["tab-frozen"],
-  ]
-    .filter(Boolean)
-    .join(" ");
+  );
 
   return (
     <SpecContextMenu buildItems={() => tabMenu(tab, handleClose)}>
@@ -307,11 +299,6 @@ export function Toolbar() {
   const frozenRef = useRef(false);
   const canScrollXRef = useRef(false);
   const fadeRafRef = useRef(0);
-  const { accounts } = useAccounts();
-  const { watches } = useWatches();
-  const byAccount = useSyncByAccount();
-  const askAvailable = useAskAvailable();
-  const dock = useDockMode();
   const [open, setOpen] = useState<Panel | null>(null);
   const [frozenWidths, setFrozenWidths] = useState<Record<string, number>>({});
 
@@ -368,12 +355,13 @@ export function Toolbar() {
       const max = el.scrollWidth - el.clientWidth;
       canScrollXRef.current = max > 1;
       if (max <= 1) {
-        el.removeAttribute("data-fade");
+        if (el.hasAttribute("data-fade")) el.removeAttribute("data-fade");
         return;
       }
       const left = el.scrollLeft > 1;
       const right = el.scrollLeft < max - 1;
-      el.dataset.fade = left && right ? "both" : left ? "left" : "right";
+      const next = left && right ? "both" : left ? "left" : "right";
+      if (el.dataset.fade !== next) el.dataset.fade = next;
     };
 
     const syncSoon = () => {
@@ -389,7 +377,7 @@ export function Toolbar() {
     };
 
     syncSoon();
-    el.addEventListener("scroll", syncFade, { passive: true });
+    el.addEventListener("scroll", syncSoon, { passive: true });
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("mouseleave", endRapidClose);
     const ro = new ResizeObserver(syncSoon);
@@ -398,7 +386,7 @@ export function Toolbar() {
     mo.observe(el, { childList: true });
     return () => {
       if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
-      el.removeEventListener("scroll", syncFade);
+      el.removeEventListener("scroll", syncSoon);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("mouseleave", endRapidClose);
       ro.disconnect();
@@ -458,38 +446,8 @@ export function Toolbar() {
       <div className={styles.actions}>
         <ProgressPanel open={open === "progress"} onOpenChange={setOpen} />
         <RecentPanel open={open === "recent"} onOpenChange={setOpen} />
-        <ErrorsPanel
-          open={open === "errors"}
-          onOpenChange={setOpen}
-          accounts={accounts}
-          watches={watches}
-          byAccount={byAccount}
-        />
-        <OngoingPanel
-          open={open === "ongoing"}
-          onOpenChange={setOpen}
-          accounts={accounts}
-          watches={watches}
-          byAccount={byAccount}
-        />
-        <MediaIndexPanel open={open === "media-index"} onOpenChange={setOpen} />
-        <Button
-          variant="ghost"
-          size="sm"
-          icon
-          aria-label={dock === "ask" ? "Close Chat" : "Open Chat"}
-          aria-pressed={dock === "ask"}
-          onClick={() => {
-            if (dock === "ask") {
-              dockMode.close();
-              return;
-            }
-            if (askAvailable) dockMode.open("ask");
-            else settingsModal.open("ai");
-          }}
-        >
-          <IconSparkle3Fill18 />
-        </Button>
+        <ErrorsPanel open={open === "errors"} onOpenChange={setOpen} />
+        <OngoingPanel open={open === "ongoing"} onOpenChange={setOpen} />
         <Button
           variant="ghost"
           size="sm"

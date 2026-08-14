@@ -3,9 +3,9 @@ import { AnimatePresence, motion } from "motion/react";
 import { useSaveQueue } from "@/components/settings/funnel/lib/queue";
 import { useActivityEntries } from "@/stores/activity";
 import styles from "./activity.module.css";
-import { openFunnel, type Panel } from "./lib";
+import { bindPanel, closeThen, openFunnel, type Panel } from "./lib";
 import { Empty, List, Row, StatusPanel } from "./panel";
-import { StatusSpinner } from "./spinner";
+import { StatusSpinner, statusIconTransition } from "./spinner";
 
 interface ProgressPanelProps {
   open: boolean;
@@ -14,31 +14,23 @@ interface ProgressPanelProps {
 
 const PREVIEW_LIMIT = 20;
 
-const iconTransition = {
-  duration: 0.4,
-  ease: [0.175, 0.885, 0.32, 0.98] as const,
-};
-
 export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
   const { saving } = useSaveQueue();
   const activity = useActivityEntries();
   const running = activity.filter((e) => e.state === "running");
+  const busy = saving.length > 0 || running.length > 0;
+  const goFunnel = closeThen(onOpenChange, openFunnel);
+
   const savingPreview = saving.slice(0, PREVIEW_LIMIT);
   const runningPreview = running.slice(
     0,
     Math.max(0, PREVIEW_LIMIT - savingPreview.length),
   );
-  const busy = saving.length > 0 || running.length > 0;
-  const close = () => onOpenChange(null);
-  const goFunnel = () => {
-    close();
-    openFunnel();
-  };
 
   return (
     <StatusPanel
       open={open}
-      onOpenChange={(next) => onOpenChange(next ? "progress" : null)}
+      onOpenChange={bindPanel(onOpenChange, "progress")}
       ariaLabel={busy ? "In progress, working" : "In progress"}
       heading="In Progress"
       icon={
@@ -56,10 +48,10 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
                   position: "absolute",
                   opacity: 0,
                   rotate: 180,
-                  transition: iconTransition,
+                  transition: statusIconTransition,
                 }}
                 transition={{
-                  ...iconTransition,
+                  ...statusIconTransition,
                   delay: 0.2,
                 }}
               >
@@ -70,7 +62,7 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
         </span>
       }
     >
-      {saving.length === 0 && running.length === 0 ? (
+      {!busy ? (
         <Empty>Nothing in progress</Empty>
       ) : (
         <List>

@@ -18,7 +18,7 @@ directories:
   buildResources: build
   output: dist
 
-# Windows / Linux app icon (1024 PNG from packages/icons/Pond Exports).
+# Windows / Linux app icon (from packages/icons/app/ios via prepare-app-icon).
 icon: icon.png
 
 files:

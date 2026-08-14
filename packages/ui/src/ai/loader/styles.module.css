@@ -1,0 +1,8 @@
+.root {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-9);
+}

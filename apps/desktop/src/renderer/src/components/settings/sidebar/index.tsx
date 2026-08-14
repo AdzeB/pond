@@ -92,46 +92,48 @@ export function SettingsSidebar() {
   };
 
   return (
-    <Sidebar.Root className={styles.sidebar}>
-      <Sidebar.Search
-        value={query}
-        onChange={(value) => setQuery(value.target.value)}
-        placeholder="Search…"
-      />
+    <div className={styles.container}>
+      <Sidebar.Root className={styles.sidebar}>
+        <Sidebar.Search
+          value={query}
+          onChange={(value) => setQuery(value.target.value)}
+          placeholder="Search…"
+        />
 
-      <Sidebar.Scroll>
-        {results === null ? (
-          masterGroups.map((group) => (
-            <Sidebar.Group key={group.group}>
-              <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
-              {group.sections.map(sectionItem)}
+        <Sidebar.Scroll>
+          {results === null ? (
+            masterGroups.map((group) => (
+              <Sidebar.Group key={group.group}>
+                <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
+                {group.sections.map(sectionItem)}
+              </Sidebar.Group>
+            ))
+          ) : results.length === 0 ? (
+            <Sidebar.Group>
+              <Sidebar.Empty>No settings match.</Sidebar.Empty>
             </Sidebar.Group>
-          ))
-        ) : results.length === 0 ? (
-          <Sidebar.Group>
-            <Sidebar.Empty>No settings match.</Sidebar.Empty>
-          </Sidebar.Group>
-        ) : (
-          results.map(({ section, items }) => (
-            <Sidebar.Group key={section.id}>
-              {sectionItem(section)}
-              {items.map((item) => (
-                <Sidebar.ResultButton
-                  key={item.id}
-                  onClick={() =>
-                    settingsModal.open(
-                      section.path,
-                      `setting-${item.sectionId}-${item.itemKey}`,
-                    )
-                  }
-                >
-                  {item.title}
-                </Sidebar.ResultButton>
-              ))}
-            </Sidebar.Group>
-          ))
-        )}
-      </Sidebar.Scroll>
-    </Sidebar.Root>
+          ) : (
+            results.map(({ section, items }) => (
+              <Sidebar.Group key={section.id}>
+                {sectionItem(section)}
+                {items.map((item) => (
+                  <Sidebar.ResultButton
+                    key={item.id}
+                    onClick={() =>
+                      settingsModal.open(
+                        section.path,
+                        `setting-${item.sectionId}-${item.itemKey}`,
+                      )
+                    }
+                  >
+                    {item.title}
+                  </Sidebar.ResultButton>
+                ))}
+              </Sidebar.Group>
+            ))
+          )}
+        </Sidebar.Scroll>
+      </Sidebar.Root>
+    </div>
   );
 }

@@ -1,17 +1,24 @@
 .dock {
   position: fixed;
+  right: var(--window-right-width, 0px);
   bottom: calc(var(--ds-mac-inset, 16px) + 16px);
-  left: 50%;
+  /* Center in the workspace; inset the right edge when the ask rail is open. */
+  left: 0;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  transform: translateX(-50%);
 }
 
 /* Width/height are animated by motion/react, not CSS, so mid-flight view changes retarget with preserved velocity. */
 .pill {
+  z-index: 1;
+}
+
+/* Shrink-wraps the pill so portaled typeaheads match its width instead of the full-bleed dock. */
+.shell {
+  position: relative;
   z-index: 1;
 }
 
@@ -32,15 +39,16 @@
 /* Pinned to the pill's bottom edge (which stays put while the height morphs) so content doesn't jump; all views share one grid cell so outgoing + incoming stack instead of summing widths. */
 .viewport {
   position: absolute;
+  right: 0;
   bottom: 0;
-  left: 50%;
+  left: 0;
   display: grid;
   align-items: center;
   justify-items: center;
   /* Without max-content the element collapses to min-content inside the 0-width morphing pill and the dock appears to vanish. */
   width: max-content;
   padding: 4px;
-  transform: translateX(-50%);
+  margin-inline: auto;
 }
 
 .viewport[data-card="true"] {

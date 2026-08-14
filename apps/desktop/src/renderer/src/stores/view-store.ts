@@ -35,6 +35,8 @@ interface ViewStoreState {
   q: string;
   /** Verbatim dock Search text, kept separate from `q` (the residual after structured terms parse out) so the field can re-seed when the dock swaps back. */
   searchInput: string;
+  /** Explicit NL/agent find mode in the dock search bar; structured filter search is the default. */
+  aiMode: boolean;
   /** Ordered draft conditions (incomplete rows allowed); `query` is the committed view. */
   rows: Predicate[];
   combinator: Combinator;
@@ -68,6 +70,7 @@ function readInitialZoom(): number {
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
+  aiMode: false,
   rows: [],
   combinator: "and",
   query: EMPTY_QUERY,
@@ -100,6 +103,14 @@ export function useSearchText(): string {
 /** Verbatim dock Search field text for re-seeding when the composer remounts. */
 export function useSearchInput(): string {
   return useSelector(store, (s) => s.searchInput);
+}
+
+export function useAiMode(): boolean {
+  return useSelector(store, (s) => s.aiMode);
+}
+
+export function setAiMode(aiMode: boolean): void {
+  store.setState((s) => (s.aiMode === aiMode ? s : { ...s, aiMode }));
 }
 
 export function useSortKey(): string {
@@ -213,6 +224,39 @@ export function setSort(next: { key: string; dir: SortDir }): void {
   writeViewPref("sort", next.key);
   writeViewPref("dir", next.dir);
   store.setState((s) => ({ ...s, sortKey: next.key, sortDir: next.dir }));
+}
+
+const SORT_KEY_CYCLE: readonly string[] = [
+  "savedAt",
+  "createdAt",
+  "publishedAt",
+  "title",
+  "type",
+  "creator",
+  "source",
+  "tagName",
+  "tagCount",
+  "duration",
+  "width",
+  "height",
+  "dimensions",
+  "aspectRatio",
+  "fileSize",
+  "fileCount",
+];
+
+export function toggleSortDir(): void {
+  const { sortKey, sortDir } = store.state;
+  setSort({ key: sortKey, dir: sortDir === "asc" ? "desc" : "asc" });
+}
+
+export function cycleSortKey(): void {
+  const { sortKey, sortDir } = store.state;
+  const idx = SORT_KEY_CYCLE.indexOf(sortKey);
+  const next =
+    SORT_KEY_CYCLE[(idx < 0 ? 0 : idx + 1) % SORT_KEY_CYCLE.length] ??
+    "savedAt";
+  setSort({ key: next, dir: sortDir });
 }
 
 export function adjustZoom(delta: number): void {

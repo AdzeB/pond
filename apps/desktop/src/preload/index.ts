@@ -4,7 +4,6 @@ import {
   type MenuActionId,
   type RecentMenuEntry,
 } from "../shared/constants";
-import type { MediaIndexStatus } from "../shared/media-index";
 
 export interface RelocatePreviewWire {
   currentPath: string;
@@ -76,12 +75,6 @@ const api = {
     const listener = (_: unknown, action: unknown) => cb(action);
     ipcRenderer.on(IPC.syncAction, listener);
     return () => ipcRenderer.off(IPC.syncAction, listener);
-  },
-
-  onMediaIndexStatus(cb: (status: MediaIndexStatus) => void): () => void {
-    const listener = (_: unknown, status: MediaIndexStatus) => cb(status);
-    ipcRenderer.on(IPC.mediaIndexStatus, listener);
-    return () => ipcRenderer.off(IPC.mediaIndexStatus, listener);
   },
 
   onNavigate(cb: (path: string) => void): () => void {
@@ -210,9 +203,7 @@ const api = {
     return ipcRenderer.invoke(IPC.pipelineCancelAll);
   },
 
-  connectSource(
-    source: string,
-  ): Promise<{ ok: boolean; mode: "external" | "skipped" }> {
+  connectSource(source: string): Promise<{ ok: boolean; mode: "external" }> {
     return ipcRenderer.invoke(IPC.sourceConnect, source);
   },
 

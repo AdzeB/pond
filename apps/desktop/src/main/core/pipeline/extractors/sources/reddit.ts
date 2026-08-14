@@ -1,3 +1,5 @@
+import { isLoggedInRedditToken } from "../../../../lib/reddit-token";
+import { fetchRedditPostCapture } from "../../../refresh/harvest/reddit/api";
 import { TerminalError } from "../errors";
 import { fetchHtmlInWindow } from "../helpers";
 import type {
@@ -27,8 +29,12 @@ export class RedditPostExtractor implements Extractor {
         } catch { return ''; }
       })()`;
 
-  authCookies(name: string): boolean {
-    return name === "reddit_session" || name === "token_v2";
+  authCookies(name: string, value?: string): boolean {
+    if (name === "reddit_session")
+      return value === undefined || value.length > 0;
+    if (name === "token_v2")
+      return value ? isLoggedInRedditToken(value) : false;
+    return false;
   }
 
   handleFromPath(segments: string[]): string | null {
@@ -66,6 +72,9 @@ export class RedditPostExtractor implements Extractor {
 
     /** redd.it short links redirect to the canonical permalink; navigating the original URL lets the scrape window follow the redirect. */
     const canonical = input.url.href;
+
+    const fromJson = await fetchRedditPostCapture(postId).catch(() => null);
+    if (fromJson) return fromJson;
 
     const result = await fetchHtmlInWindow(canonical, "reddit", postId);
     const meta = (result.meta ?? {}) as Record<string, unknown>;

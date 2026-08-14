@@ -7,6 +7,8 @@ interface ProcessedImage {
   bytes: Buffer;
   mimeType: string;
   filename: string;
+  width?: number;
+  height?: number;
 }
 
 const TARGET_EXT: Record<Exclude<ImageFormat, "original">, string> = {
@@ -57,13 +59,17 @@ export async function processImage(
 
     if (prefs.preserveMetadata) pipeline.withMetadata();
 
-    const outBytes = await pipeline.toBuffer();
+    const { data: outBytes, info } = await pipeline.toBuffer({
+      resolveWithObject: true,
+    });
+    const dims = dimsFromMeta(info);
 
     if (prefs.format === "original") {
       return {
         bytes: outBytes,
         mimeType: mimeType ?? mimeFromSharp(metadata.format),
         filename,
+        ...dims,
       };
     }
 
@@ -72,11 +78,43 @@ export async function processImage(
       bytes: outBytes,
       mimeType: TARGET_MIME[prefs.format],
       filename: replaceExt(filename, ext),
+      ...dims,
     };
   } catch (err) {
     log.warn("[pond image-process] failed, keeping original", filename, err);
     return null;
   }
+}
+
+/** Probe width/height for still image bytes; null when undecodable or incomplete. */
+export async function probeImageDims(
+  bytes: Buffer,
+): Promise<{ width: number; height: number } | null> {
+  try {
+    const meta = await sharp(bytes, { failOn: "none" }).metadata();
+    const dims = dimsFromMeta(meta);
+    return dims.width && dims.height
+      ? { width: dims.width, height: dims.height }
+      : null;
+  } catch {
+    /** Undecodable buffer: caller writes the file without dims. */
+  }
+  return null;
+}
+
+function dimsFromMeta(meta: { width?: number; height?: number }): {
+  width?: number;
+  height?: number;
+} {
+  if (
+    meta.width &&
+    meta.height &&
+    Number.isFinite(meta.width) &&
+    Number.isFinite(meta.height)
+  ) {
+    return { width: meta.width, height: meta.height };
+  }
+  return {};
 }
 
 function applyFormat(

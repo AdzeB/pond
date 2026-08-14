@@ -102,8 +102,8 @@ function makeSpinnerFrame(size: number, head: number): NativeImage {
   const rgba = Buffer.alloc(size * size * 4);
   const cx = size / 2 - 0.5;
   const cy = size / 2 - 0.5;
-  const ringR = size * 0.3;
-  const dotR = size * 0.085;
+  const ringR = size * 0.22;
+  const dotR = size * 0.07;
 
   for (let d = 0; d < SPINNER_DOTS; d++) {
     const angle = (d / SPINNER_DOTS) * Math.PI * 2 - Math.PI / 2;

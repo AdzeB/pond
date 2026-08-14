@@ -42,7 +42,9 @@ export default defineContentScript({
         root = createRoot(host);
 
         function render(next: boolean) {
-          root?.render(<ToolbarApp visible={next} />);
+          root?.render(
+            <ToolbarApp visible={next} onClose={() => setVisible?.(false)} />,
+          );
         }
 
         setVisible = (next: boolean) => {

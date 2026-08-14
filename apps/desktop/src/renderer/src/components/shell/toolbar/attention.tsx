@@ -4,66 +4,61 @@ import {
   humanizeError,
   useSaveQueue,
 } from "@/components/settings/funnel/lib/queue";
-import type { AccountRow } from "@/hooks/use-accounts";
-import type { WatchRow } from "@/hooks/use-watches";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useWatches } from "@/hooks/use-watches";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import { useActivityEntries } from "@/stores/activity";
-import type { SyncAccountStatus } from "@/stores/sync-monitor";
+import { useSyncByAccount } from "@/stores/sync-monitor";
 import {
+  bindPanel,
   buildEntities,
+  closeThen,
   openFunnel,
   openSources,
   type Panel,
   type StatusEntity,
 } from "./lib";
-import { Empty, List, Row, StatusPanel } from "./panel";
+import { Empty, EntityRow, List, Row, StatusPanel } from "./panel";
 
 interface ErrorsPanelProps {
   open: boolean;
   onOpenChange: (next: Panel | null) => void;
-  accounts: AccountRow[];
-  watches: WatchRow[];
-  byAccount: Record<string, SyncAccountStatus>;
 }
 
-export function ErrorsPanel({
-  open,
-  onOpenChange,
-  accounts,
-  watches,
-  byAccount,
-}: ErrorsPanelProps) {
+export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
+  const { accounts } = useAccounts();
+  const { watches } = useWatches();
+  const byAccount = useSyncByAccount();
   const entities = useMemo(
-    () => buildEntities(accounts, watches, byAccount),
-    [accounts, watches, byAccount],
+    () => (open ? buildEntities(accounts, watches, byAccount) : []),
+    [open, accounts, watches, byAccount],
   );
-  const alerts = entities.filter((e) => e.tone === "warn");
-  const syncErrors = entities.filter((e) => e.tone === "err");
   const { failed } = useSaveQueue();
   const activity = useActivityEntries();
-  const activityErrors = activity
-    .filter((e) => e.state === "error")
-    .slice(0, 5);
+
+  const alerts: StatusEntity[] = [];
+  const syncErrors: StatusEntity[] = [];
+  for (const entity of entities) {
+    if (entity.tone === "warn") alerts.push(entity);
+    else if (entity.tone === "err") syncErrors.push(entity);
+  }
+
+  const activityErrors = open
+    ? activity.filter((e) => e.state === "error").slice(0, 5)
+    : [];
   const empty =
     alerts.length === 0 &&
     syncErrors.length === 0 &&
     failed.length === 0 &&
     activityErrors.length === 0;
 
-  const close = () => onOpenChange(null);
-  const goSources = () => {
-    close();
-    openSources();
-  };
-  const goFunnel = () => {
-    close();
-    openFunnel();
-  };
+  const goSources = closeThen(onOpenChange, openSources);
+  const goFunnel = closeThen(onOpenChange, openFunnel);
 
   return (
     <StatusPanel
       open={open}
-      onOpenChange={(next) => onOpenChange(next ? "errors" : null)}
+      onOpenChange={bindPanel(onOpenChange, "errors")}
       heading="Last Errors"
       icon={<WarningIcon />}
     >
@@ -72,10 +67,22 @@ export function ErrorsPanel({
       ) : (
         <List>
           {alerts.map((entity) => (
-            <EntityRow key={entity.id} entity={entity} onClick={goSources} />
+            <EntityRow
+              key={entity.id}
+              entity={entity}
+              subtitle={entity.model.meta}
+              meta={entity.model.lastText}
+              onClick={goSources}
+            />
           ))}
           {syncErrors.map((entity) => (
-            <EntityRow key={entity.id} entity={entity} onClick={goSources} />
+            <EntityRow
+              key={entity.id}
+              entity={entity}
+              subtitle={entity.model.meta}
+              meta={entity.model.lastText}
+              onClick={goSources}
+            />
           ))}
           {failed.map((row) => (
             <Row
@@ -98,22 +105,5 @@ export function ErrorsPanel({
         </List>
       )}
     </StatusPanel>
-  );
-}
-
-function EntityRow({
-  entity,
-  onClick,
-}: {
-  entity: StatusEntity;
-  onClick: () => void;
-}) {
-  return (
-    <Row
-      title={entity.title}
-      subtitle={entity.model.meta}
-      meta={entity.model.lastText}
-      onClick={onClick}
-    />
   );
 }

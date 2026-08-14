@@ -1,5 +1,6 @@
 import { Button, Popover } from "@pond/ui";
 import type { ReactNode } from "react";
+import type { StatusEntity } from "./lib";
 import styles from "./panel.module.css";
 
 interface StatusPanelProps {
@@ -81,4 +82,25 @@ export function Row({ title, subtitle, meta, onClick }: RowProps) {
     );
   }
   return <div className={styles.row}>{body}</div>;
+}
+
+export function EntityRow({
+  entity,
+  subtitle,
+  meta,
+  onClick,
+}: {
+  entity: StatusEntity;
+  subtitle: string;
+  meta: string;
+  onClick: () => void;
+}) {
+  return (
+    <Row
+      title={entity.title}
+      subtitle={subtitle}
+      meta={meta}
+      onClick={onClick}
+    />
+  );
 }

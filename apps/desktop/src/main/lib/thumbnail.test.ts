@@ -8,8 +8,9 @@ import {
 } from "./thumbnail";
 
 describe("thumbnail formats", () => {
-  it("keeps the 32px LQIP bucket distinct from card thumbnails", () => {
+  it("clamps requested widths into the thumbnail range", () => {
     expect(clampThumbWidth(32)).toBe(32);
+    expect(clampThumbWidth(320)).toBe(320);
   });
 
   it("accepts HEIC covers for native conversion", () => {
