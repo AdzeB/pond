@@ -1,4 +1,4 @@
-/** Tags may omit a stored color; the name hash gives every tag a stable, distinct dot. */
+/** Groups may omit a stored color; the name hash gives every group a stable fallback. */
 export function colorForName(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i += 1)

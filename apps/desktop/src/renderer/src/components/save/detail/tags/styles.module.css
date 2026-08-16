@@ -1,17 +1,10 @@
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.chip-add {
+.add {
   display: inline-flex;
   gap: 6px;
   align-items: center;
   height: 24px;
-  padding: 0 8px 0 7px;
-  font-size: 13px;
+  padding: 0 8px 0 10px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-10);
   cursor: var(--ds-cursor-interactive, pointer);
@@ -36,14 +29,6 @@
   }
 }
 
-.chip-add-dot {
-  flex-shrink: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  opacity: 0.55;
-}
-
-.chip-add-icon {
+.icon {
   color: var(--ds-gray-9);
 }

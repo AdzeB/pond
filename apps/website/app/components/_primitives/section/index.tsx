@@ -24,8 +24,18 @@ function Root({ id, className, children, bleed, ...rest }: RootProps) {
   );
 }
 
-function Header({ children }: { children: ReactNode }) {
-  return <header className={styles.header}>{children}</header>;
+function Header({
+  children,
+  align = "center",
+}: {
+  children: ReactNode;
+  align?: "center" | "start";
+}) {
+  return (
+    <header className={styles.header} data-align={align}>
+      {children}
+    </header>
+  );
 }
 
 function Eyebrow({ children }: { children: ReactNode }) {
@@ -64,39 +74,54 @@ interface CardProps {
   span?: CardSpan;
   spanMd?: CardSpan;
   className?: string;
+  index?: string;
   title?: ReactNode;
   description?: ReactNode;
   fragment?: ReactNode;
+  media?: "start" | "end";
+  surface?: "panel" | "plain";
 }
 
-/** Compact feature card: optional visual on top, title plus one line below. */
 function Card({
   children,
   span = 6,
   spanMd,
   className,
+  index,
   title,
   description,
   fragment,
+  media = "start",
+  surface = "panel",
 }: CardProps) {
   const style: CSSProperties = {
     ["--card-span" as string]: String(span),
     ["--card-span-md" as string]: String(spanMd ?? (span >= 8 ? 12 : span)),
   };
 
+  const body =
+    index || title || description ? (
+      <div className={styles["card-body"]}>
+        {index ? <p className={styles["card-index"]}>{index}</p> : null}
+        {title ? <h3 className={styles["card-title"]}>{title}</h3> : null}
+        {description ? (
+          <p className={styles["card-description"]}>{description}</p>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
-    <article className={cn(styles.card, className)} style={style}>
+    <article
+      className={cn(styles.card, className)}
+      data-media={media}
+      data-surface={surface}
+      style={style}
+    >
+      {media === "end" ? body : null}
       {fragment ? (
         <div className={styles["card-fragment"]}>{fragment}</div>
       ) : null}
-      {(title || description) && (
-        <div className={styles["card-body"]}>
-          {title ? <h3 className={styles["card-title"]}>{title}</h3> : null}
-          {description ? (
-            <p className={styles["card-description"]}>{description}</p>
-          ) : null}
-        </div>
-      )}
+      {media !== "end" ? body : null}
       {children}
     </article>
   );

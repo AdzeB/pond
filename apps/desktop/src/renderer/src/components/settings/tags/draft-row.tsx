@@ -1,6 +1,7 @@
+import { IconFolderFill18 as Folder } from "@pond/icons/fill/18";
 import { useDataTable } from "@pond/ui";
 import styles from "./draft-row.module.css";
-import { colorForName, focusInput } from "./lib/helpers";
+import { focusInput } from "./lib/helpers";
 import type { TagsRowData } from "./lib/types";
 
 interface DraftRowProps {
@@ -29,13 +30,11 @@ export function DraftRow({
       {meta.expansionEnabled ? <div /> : null}
       <div className={styles["name-cell"]}>
         <span className={styles.name}>
-          <span className={styles["dot-slot"]}>
-            <span
-              className={styles.dot}
-              style={{ background: colorForName(draft || creating) }}
-              aria-hidden
-            />
-          </span>
+          {creating === "group" ? (
+            <span className={styles["dot-slot"]}>
+              <Folder />
+            </span>
+          ) : null}
           <input
             ref={focusInput}
             className={styles["name-input"]}

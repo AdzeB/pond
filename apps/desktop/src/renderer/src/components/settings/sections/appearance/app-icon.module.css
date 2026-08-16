@@ -1,0 +1,55 @@
+.row {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border-radius: 14px;
+
+  input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip: rect(0 0 0 0);
+  }
+
+  img {
+    width: 44px;
+    height: 44px;
+    pointer-events: none;
+    object-fit: contain;
+  }
+
+  &:hover {
+    background: var(--ds-gray-a3);
+  }
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  }
+
+  &[data-selected] {
+    background: var(--ds-gray-a4);
+    box-shadow: 0 0 0 2px var(--ds-gray-12);
+  }
+}

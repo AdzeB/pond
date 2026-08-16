@@ -47,7 +47,7 @@
   }
 
   &:active {
-    transform: scale(0.98);
+    scale: 0.98;
   }
 
   &:focus-visible,
@@ -243,7 +243,7 @@
     }
 
     &:active {
-      transform: none;
+      scale: none;
     }
 
     &:focus-visible,

@@ -7,7 +7,6 @@ import { clearEmbeddings } from "@/stores/embedding-store";
 import { pool } from "@/stores/pool";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { mergeUniqueTags } from "@/stores/tag-clipboard";
-import { rescanEnrichment } from "./sweep";
 
 export interface TaskResult {
   ok: boolean;
@@ -101,8 +100,14 @@ export async function backfillColors(): Promise<TaskResult> {
   };
 }
 
+function kickRescan(ids?: TaskScope): void {
+  void import("./sweep").then(({ rescanEnrichment }) => {
+    rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
+  });
+}
+
 export function runEnrichment(): TaskResult {
-  rescanEnrichment();
+  kickRescan();
   activity.note("Enrichment sweep started");
   return { ok: true, message: "Enrichment sweep started." };
 }
@@ -124,7 +129,7 @@ function reprocessStamped(
     if (next) updated.push(next);
   }
   pool.bulkUpsert(updated);
-  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
+  kickRescan(ids);
   const n = updated.length;
   if (n > 0) {
     activity.note(`Reprocessing ${n} ${plural(n, "item")} in the background`);
@@ -171,7 +176,7 @@ export function reembed(ids?: TaskScope): TaskResult {
     return { ok: false, message: DISABLED_HINTS.reembed };
   }
   const n = clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
+  kickRescan(ids);
   const message =
     n > 0
       ? `Embedding ${n} ${plural(n, "item")} again in the background`
@@ -185,7 +190,7 @@ export function rebuildVisualIndex(ids?: TaskScope): TaskResult {
     return { ok: false, message: DISABLED_HINTS.clip };
   }
   const n = clearClipEmbeddings(ids && ids.length > 0 ? ids : undefined);
-  rescanEnrichment(ids && ids.length > 0 ? ids : undefined);
+  kickRescan(ids);
   const message =
     n > 0
       ? `Rebuilding the visual index for ${n} ${plural(n, "item")}`

@@ -13,6 +13,13 @@ export function NavButtons({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const sharedProps = {
+    size: "sm",
+    icon: true,
+    variant: "secondary",
+    className: styles.nav,
+  } as const;
+
   return (
     <>
       <Tooltip
@@ -20,14 +27,7 @@ export function NavButtons({
         shortcut={<ShortcutKeys id="viewer.prev-slide" />}
         side="right"
       >
-        <Button
-          size="sm"
-          icon
-          onClick={onPrev}
-          aria-label="Previous"
-          className={styles.nav}
-          data-side="prev"
-        >
+        <Button {...sharedProps} onClick={onPrev} data-side="prev">
           <ArrowLeft />
         </Button>
       </Tooltip>
@@ -36,14 +36,7 @@ export function NavButtons({
         shortcut={<ShortcutKeys id="viewer.next-slide" />}
         side="left"
       >
-        <Button
-          size="sm"
-          icon
-          onClick={onNext}
-          aria-label="Next"
-          className={styles.nav}
-          data-side="next"
-        >
+        <Button {...sharedProps} onClick={onNext} data-side="next">
           <ArrowRight />
         </Button>
       </Tooltip>

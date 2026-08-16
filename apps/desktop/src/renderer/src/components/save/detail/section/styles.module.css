@@ -1,12 +1,76 @@
 .section {
+  padding: 10px 12px;
+  background: var(--ds-gray-1);
+  border-radius: 10px;
+  box-shadow: var(--ds-shadow-2);
+}
+
+.item {
   display: flex;
   flex-direction: column;
+}
+
+.header {
+  margin: 0;
+}
+
+.trigger {
+  display: flex;
   gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: inherit;
+  text-align: left;
+  appearance: none;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ds-accent-9);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .title {
-  margin: 0;
-  font-size: 13px;
+  min-width: 0;
+  font-size: 11px;
   font-weight: 500;
-  color: var(--ds-gray-12);
+  line-height: 1.2;
+  color: var(--ds-gray-10);
+}
+
+.chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--ds-gray-9);
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.chevron :global(polyline) {
+  vector-effect: non-scaling-stroke;
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chevron {
+    transition: none;
+  }
 }

@@ -210,7 +210,6 @@ export const tags = sqliteTable("tags", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   description: text("description"),
-  color: text("color"),
   starred: integer("starred", { mode: "boolean" }).notNull().default(false),
   /** Soft-retire: archived tags drop out of the default list but stay on saves. */
   archived: integer("archived", { mode: "boolean" }).notNull().default(false),

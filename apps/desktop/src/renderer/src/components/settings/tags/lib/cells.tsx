@@ -22,17 +22,17 @@ export function NameCell() {
   } = useTagRow();
   const isGroup = row.kind === "group";
   const name = isGroup ? row.group.name : row.tag.name;
-  const color = isGroup ? row.group.color : row.tag.color;
 
   return (
     <span className={styles.name}>
-      <TagColorPicker
-        label={name}
-        color={color}
-        fallback={colorForName(name)}
-        onSelect={setColor}
-        variant={isGroup ? "glyph" : "dot"}
-      />
+      {isGroup ? (
+        <TagColorPicker
+          label={name}
+          color={row.group.color}
+          fallback={colorForName(name)}
+          onSelect={setColor}
+        />
+      ) : null}
       {renaming ? (
         <input
           ref={focusInput}

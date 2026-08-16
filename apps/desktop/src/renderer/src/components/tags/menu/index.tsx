@@ -1,13 +1,20 @@
+import { IconChevronDownOutline12 as ChevronDown } from "@pond/icons/outline/12";
 import {
+  IconMagnifierOutline18 as Magnifier,
   IconPlusOutline18 as Plus,
-  IconTagsOutline18 as Tags,
 } from "@pond/icons/outline/18";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Menu } from "@pond/ui";
-import { type ReactNode, useMemo, useState } from "react";
-import { colorForName } from "@/lib/tags/color";
+import { Keyboard, Menu } from "@pond/ui";
+import { type KeyboardEvent, type ReactNode, useMemo, useState } from "react";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { useTagGroups } from "@/stores/tag-groups";
-import { useTags } from "@/stores/tags";
+import { type TagRow, useTags } from "@/stores/tags";
+import {
+  buildTagNav,
+  filterByNav,
+  partitionRecent,
+  type TagNavId,
+} from "./lib";
 import styles from "./styles.module.css";
 
 interface TagMenuProps {
@@ -15,7 +22,6 @@ interface TagMenuProps {
   counts?: ReadonlyMap<string, number>;
   onToggle: (name: string) => void;
   allowCreate?: boolean;
-  groupsAs?: "submenu" | "section";
   placeholder?: string;
   emptyLabel?: ReactNode;
 }
@@ -25,62 +31,77 @@ export function TagMenu({
   counts,
   onToggle,
   allowCreate = false,
-  groupsAs = "submenu",
-  placeholder = "Change or add tags…",
+  placeholder = "Search…",
   emptyLabel = "No tags yet.",
 }: TagMenuProps) {
   const tags = useTags();
   const groups = useTagGroups();
   const [q, setQ] = useState("");
+  const [navId, setNavId] = useState<TagNavId>("all");
+  const [pane, setPane] = useState<"nav" | "list">("list");
+  const [recentOpen, setRecentOpen] = useState(true);
+  const [othersOpen, setOthersOpen] = useState(true);
+  const navFade = useScrollFade<HTMLDivElement>();
+  const listFade = useScrollFade<HTMLDivElement>();
 
   const needle = q.trim().toLowerCase();
 
   const tagsByLower = useMemo(() => {
-    const map = new Map<string, (typeof tags)[number]>();
-    for (const t of tags) map.set(t.name.toLowerCase(), t);
+    const map = new Map<string, TagRow>();
+    for (const tag of tags) map.set(tag.name.toLowerCase(), tag);
     return map;
   }, [tags]);
-
-  const colorByLower = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const t of tags) {
-      map.set(t.name.toLowerCase(), t.color ?? colorForName(t.name));
-    }
-    return map;
-  }, [tags]);
-
-  const matches = useMemo(
-    () => (name: string) => !needle || name.toLowerCase().includes(needle),
-    [needle],
-  );
 
   const groupedTagIds = useMemo(() => {
     const set = new Set<string>();
-    for (const g of groups) for (const id of g.tagIds) set.add(id);
+    for (const group of groups) for (const id of group.tagIds) set.add(id);
     return set;
   }, [groups]);
 
-  const uncategorised = useMemo(
+  const groupTagIds = useMemo(() => {
+    const map = new Map<string, ReadonlySet<string>>();
+    for (const group of groups) map.set(group.id, new Set(group.tagIds));
+    return map;
+  }, [groups]);
+
+  const matching = useMemo(
     () =>
-      tags
-        .filter((t) => !groupedTagIds.has(t.id))
-        .filter((t) => matches(t.name))
-        .map((t) => t.name),
-    [tags, groupedTagIds, matches],
+      needle
+        ? tags.filter((tag) => tag.name.toLowerCase().includes(needle))
+        : tags,
+    [tags, needle],
   );
 
-  const visibleGroups = useMemo(
-    () =>
-      groups
-        .map((g) => ({
-          id: g.id,
-          name: g.name,
-          items: g.tagNames.filter(matches),
-        }))
-        /** Sections only make sense with rows; submenus stay browsable empty. */
-        .filter((g) => (groupsAs === "section" ? g.items.length > 0 : true))
-        .filter((g) => (needle ? g.items.length > 0 : true)),
-    [groups, matches, needle, groupsAs],
+  const matchingIds = useMemo(
+    () => new Set(matching.map((tag) => tag.id)),
+    [matching],
+  );
+
+  const navItems = useMemo(() => {
+    const visibleGroups = groups
+      .map((group) => ({
+        id: group.id,
+        name: group.name,
+        count: group.tagIds.filter((id) => matchingIds.has(id)).length,
+      }))
+      .filter((group) => (needle ? group.count > 0 : true));
+    const uncategorizedCount = matching.filter(
+      (tag) => !groupedTagIds.has(tag.id),
+    ).length;
+    return buildTagNav(matching.length, visibleGroups, uncategorizedCount);
+  }, [groups, matching, matchingIds, groupedTagIds, needle]);
+
+  const showNav = groups.length > 0;
+  const activeNav = navItems.some((item) => item.id === navId) ? navId : "all";
+
+  const visibleTags = useMemo(
+    () => filterByNav(matching, activeNav, groupedTagIds, groupTagIds),
+    [matching, activeNav, groupedTagIds, groupTagIds],
+  );
+
+  const { recent, others } = useMemo(
+    () => partitionRecent(visibleTags),
+    [visibleTags],
   );
 
   const createInfo = useMemo(() => {
@@ -123,123 +144,225 @@ export function TagMenu({
     setQ("");
   }
 
-  function renderRow(name: string) {
-    const applied = appliedKeys?.has(name.toLowerCase()) ?? false;
-    const count = counts?.get(name.toLowerCase());
-    const trailing =
-      count != null ? (
-        <Menu.SecondaryLabel className={styles.count}>
-          {count}
-        </Menu.SecondaryLabel>
-      ) : null;
+  function moveNav(delta: number) {
+    const index = navItems.findIndex((item) => item.id === activeNav);
+    const next =
+      navItems[Math.max(0, Math.min(navItems.length - 1, index + delta))];
+    if (next) setNavId(next.id);
+  }
+
+  function onPaneKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === "Tab" && showNav) {
+      event.preventDefault();
+      event.stopPropagation();
+      setPane((current) => (current === "nav" ? "list" : "nav"));
+      return;
+    }
+    if (!showNav) return;
+    if (pane === "nav") {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        moveNav(1);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        event.stopPropagation();
+        moveNav(-1);
+        return;
+      }
+      if (event.key === "ArrowRight" || event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        setPane("list");
+      }
+      return;
+    }
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      setPane("nav");
+    }
+  }
+
+  function renderRow(tag: TagRow) {
+    const applied = appliedKeys?.has(tag.name.toLowerCase()) ?? false;
+    const count = counts?.get(tag.name.toLowerCase()) ?? tag.usageCount;
     return (
       <Menu.CheckboxItem
-        key={name}
-        closeOnClick
+        key={tag.id}
+        closeOnClick={false}
         checked={applied}
-        onCheckedChange={() => onToggle(name)}
+        onCheckedChange={() => onToggle(tag.name)}
       >
         <Menu.CheckboxItemIndicator />
-        <Menu.ItemIcon>
-          <span
-            className={styles.dot}
-            style={{
-              background:
-                colorByLower.get(name.toLowerCase()) ?? colorForName(name),
-            }}
-            aria-hidden
-          />
-        </Menu.ItemIcon>
-        <Menu.ItemLabel>{name}</Menu.ItemLabel>
-        {trailing}
+        <Menu.ItemLabel>{tag.name}</Menu.ItemLabel>
+        {count > 0 ? (
+          <Menu.SecondaryLabel className={styles.count}>
+            {count}
+          </Menu.SecondaryLabel>
+        ) : null}
       </Menu.CheckboxItem>
     );
   }
 
-  const hasRows = uncategorised.length > 0 || visibleGroups.length > 0;
+  function renderSection(
+    label: string,
+    items: TagRow[],
+    open: boolean,
+    onToggleOpen: () => void,
+  ) {
+    if (items.length === 0) return null;
+    const showToggle = recent.length > 0 && others.length > 0;
+    return (
+      <Menu.Group>
+        {showToggle ? (
+          <button
+            type="button"
+            className={styles.section}
+            data-collapsed={open ? undefined : ""}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleOpen();
+            }}
+          >
+            <span>
+              {label} ({items.length})
+            </span>
+            <ChevronDown />
+          </button>
+        ) : (
+          <Menu.GroupLabel>
+            {label} ({items.length})
+          </Menu.GroupLabel>
+        )}
+        {open ? items.map(renderRow) : null}
+      </Menu.Group>
+    );
+  }
+
+  const hasRows = visibleTags.length > 0;
+  const bothSections = recent.length > 0 && others.length > 0;
 
   return (
-    <>
-      <Menu.Input
-        value={q}
-        placeholder={placeholder}
-        autoFocus
-        onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && createInfo) {
-            e.preventDefault();
-            void commitCreate();
-          }
-        }}
-      />
+    <div className={styles.root} data-nav={showNav ? "" : undefined}>
+      <div className={styles.header}>
+        <span className={styles.magnifier} aria-hidden>
+          <Magnifier />
+        </span>
+        <Menu.Input
+          className={styles.search}
+          value={q}
+          placeholder={placeholder}
+          autoFocus
+          onChange={(event) => {
+            setQ(event.target.value);
+            setPane("list");
+          }}
+          onKeyDown={(event) => {
+            onPaneKeyDown(event);
+            if (event.defaultPrevented) return;
+            if (event.key === "Enter" && createInfo) {
+              event.preventDefault();
+              void commitCreate();
+            }
+          }}
+        />
+      </div>
 
-      {groupsAs === "submenu" ? (
-        uncategorised.length > 0 || visibleGroups.length > 0 ? (
-          <Menu.Group>
-            <Menu.GroupLabel>Labels</Menu.GroupLabel>
-            {uncategorised.map(renderRow)}
-            {visibleGroups.map((group) => (
-              <Menu.SubmenuRoot key={group.id}>
-                <Menu.SubmenuTrigger>
-                  <Menu.ItemIcon>
-                    <Tags width={14} height={14} />
-                  </Menu.ItemIcon>
-                  <Menu.ItemLabel>{group.name}</Menu.ItemLabel>
-                </Menu.SubmenuTrigger>
-                <Menu.Portal>
-                  <Menu.Positioner>
-                    <Menu.Popup>
-                      {group.items.length > 0 ? (
-                        group.items.map(renderRow)
-                      ) : (
-                        <div className={styles.empty}>No tags</div>
-                      )}
-                    </Menu.Popup>
-                  </Menu.Positioner>
-                </Menu.Portal>
-              </Menu.SubmenuRoot>
+      <div className={styles.body}>
+        {showNav ? (
+          <div
+            className={styles.nav}
+            role="radiogroup"
+            aria-label="Tag group"
+            {...navFade}
+          >
+            {navItems.map((item) => (
+              <Menu.Row
+                key={item.id}
+                role="radio"
+                highlighted={item.id === activeNav}
+                aria-checked={item.id === activeNav}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setNavId(item.id);
+                  setPane("list");
+                }}
+              >
+                <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
+                <Menu.SecondaryLabel className={styles.count}>
+                  {item.count}
+                </Menu.SecondaryLabel>
+              </Menu.Row>
             ))}
-          </Menu.Group>
-        ) : null
-      ) : (
-        <>
-          {visibleGroups.map((group) => (
-            <Menu.Group key={group.id} className={styles.section}>
-              <Menu.GroupLabel>{group.name}</Menu.GroupLabel>
-              {group.items.map(renderRow)}
-            </Menu.Group>
-          ))}
-          {uncategorised.length > 0 ? (
-            <Menu.Group>
-              <Menu.GroupLabel>Labels</Menu.GroupLabel>
-              {uncategorised.map(renderRow)}
-            </Menu.Group>
+          </div>
+        ) : null}
+
+        <div className={styles.list} {...listFade}>
+          {bothSections ? (
+            <>
+              {renderSection("Recently", recent, recentOpen, () =>
+                setRecentOpen((open) => !open),
+              )}
+              {others.length > 0 && recentOpen ? <Menu.Separator /> : null}
+              {renderSection("Others", others, othersOpen, () =>
+                setOthersOpen((open) => !open),
+              )}
+            </>
+          ) : hasRows ? (
+            <Menu.Group>{visibleTags.map(renderRow)}</Menu.Group>
           ) : null}
-        </>
-      )}
 
-      {createInfo ? (
-        <Menu.Item onClick={() => void commitCreate()}>
-          <Menu.ItemIcon>
-            <Plus width={14} height={14} />
-          </Menu.ItemIcon>
-          <Menu.ItemLabel>
-            {createInfo.kind === "group" ? (
-              <>
-                Create "{createInfo.label}" in group "{createInfo.group}"
-              </>
-            ) : (
-              <>Create "{createInfo.label}"</>
-            )}
-          </Menu.ItemLabel>
-        </Menu.Item>
-      ) : null}
+          {createInfo ? (
+            <Menu.Item onClick={() => void commitCreate()}>
+              <Menu.ItemIcon>
+                <Plus />
+              </Menu.ItemIcon>
+              <Menu.ItemLabel>
+                {createInfo.kind === "group" ? (
+                  <>
+                    Create "{createInfo.label}" in group "{createInfo.group}"
+                  </>
+                ) : (
+                  <>Create "{createInfo.label}"</>
+                )}
+              </Menu.ItemLabel>
+            </Menu.Item>
+          ) : null}
 
-      {!hasRows && !createInfo ? (
-        <div className={styles.empty}>
-          {needle ? "No matches." : emptyLabel}
+          {!hasRows && !createInfo ? (
+            <div className={styles.empty}>
+              {needle ? "No matches." : emptyLabel}
+            </div>
+          ) : null}
         </div>
-      ) : null}
-    </>
+      </div>
+
+      <div className={styles.footer}>
+        {showNav ? (
+          <span className={styles.hint}>
+            Switch
+            <Keyboard.Key>Tab</Keyboard.Key>
+          </span>
+        ) : null}
+        <span className={styles.hint}>
+          Move
+          <Keyboard.Cluster
+            keys={showNav ? ["↑", "↓", "←", "→"] : ["↑", "↓"]}
+          />
+        </span>
+        <span className={styles.hint}>
+          Select
+          <Keyboard.Key>⏎</Keyboard.Key>
+        </span>
+        <span className={styles.close}>
+          Close
+          <Keyboard.Key>Esc</Keyboard.Key>
+        </span>
+      </div>
+    </div>
   );
 }

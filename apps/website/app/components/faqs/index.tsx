@@ -1,7 +1,7 @@
 "use client";
 
+import { IconPlusOutline18 } from "@pond/icons/outline/18";
 import { Accordion } from "@pond/ui";
-import { Section } from "../_primitives/section";
 import styles from "./styles.module.css";
 
 interface FaqItem {
@@ -51,68 +51,28 @@ const FAQS: FaqItem[] = [
     question: "Does it work on Windows or Linux?",
     answer: "Not yet. Mac-first, by design.",
   },
-  {
-    value: "uninstall",
-    question: "How do I uninstall it?",
-    answer:
-      "Quit Pond, drag the app to the trash, and delete ~/Pond/ if you want the library gone too.",
-  },
-  {
-    value: "open-source",
-    question: "Is it open source?",
-    answer: "Yes. The code is on GitHub.",
-  },
 ];
-
-function ChevronIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      width={14}
-      height={14}
-      className={styles.chevron}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <title>Toggle</title>
-      <path
-        d="m4 6 4 4 4-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.4"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 export function Faqs() {
   return (
-    <Section.Root id="faqs">
-      <Section.Header>
-        <Section.Eyebrow>FAQs</Section.Eyebrow>
-        <Section.Title>Common questions.</Section.Title>
-      </Section.Header>
-      <Accordion.Root className={styles.list}>
-        {FAQS.map((item) => (
-          <Accordion.Item
-            key={item.value}
-            value={item.value}
-            className={styles.item}
-          >
-            <Accordion.Header className={styles.header}>
-              <Accordion.Trigger className={styles.trigger}>
-                <span>{item.question}</span>
-                <ChevronIcon />
-              </Accordion.Trigger>
-            </Accordion.Header>
-            <Accordion.Panel className={styles.panel}>
-              <p className={styles.answer}>{item.answer}</p>
-            </Accordion.Panel>
-          </Accordion.Item>
-        ))}
-      </Accordion.Root>
-    </Section.Root>
+    <Accordion.Root className={styles.list}>
+      {FAQS.map((item) => (
+        <Accordion.Item
+          key={item.value}
+          value={item.value}
+          className={styles.item}
+        >
+          <Accordion.Header className={styles.header}>
+            <Accordion.Trigger className={styles.trigger}>
+              <span>{item.question}</span>
+              <IconPlusOutline18 className={styles.plus} />
+            </Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Panel className={styles.panel}>
+            <p className={styles.answer}>{item.answer}</p>
+          </Accordion.Panel>
+        </Accordion.Item>
+      ))}
+    </Accordion.Root>
   );
 }

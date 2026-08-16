@@ -7,6 +7,10 @@ import type {
   Query,
 } from "@pond/schema/filters/types";
 import { isPredicate } from "@pond/schema/filters/types";
+import {
+  displayAccountToken,
+  resolveAccountToken,
+} from "@/lib/search/account-aliases";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
 /**
@@ -206,7 +210,9 @@ function buildPredicate(token: FieldToken): Predicate | null {
 
   switch (type) {
     case "enum": {
-      const list = splitList(raw).map((v) => v.toLowerCase());
+      const list = splitList(raw).map((v) =>
+        field === "account" ? resolveAccountToken(v) : v.toLowerCase(),
+      );
       if (list.length === 0) return null;
       if (list.length === 1) {
         return { field, operator: negate ? "neq" : "eq", value: list[0] };
@@ -317,7 +323,11 @@ export function serializePredicate(predicate: Predicate): string | null {
     case "enum": {
       const negate = operator === "neq" || operator === "nin";
       const list = (Array.isArray(value) ? value : [value]).map((v) =>
-        quoteIfNeeded(String(v)),
+        quoteIfNeeded(
+          predicate.field === "account"
+            ? displayAccountToken(String(v))
+            : String(v),
+        ),
       );
       if (list.length === 0) return null;
       return `${negate ? "-" : ""}${key}:${list.join(",")}`;

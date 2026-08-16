@@ -2,6 +2,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
+import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import {
   DEFAULT_INGEST_PORT,
   IPC,
@@ -138,10 +139,10 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
-  /** Packaged builds take the Dock icon from the app bundle. */
+  /** Packaged builds take the Dock icon from the app bundle until prefs load. */
   if (process.platform === "darwin" && !app.isPackaged) {
-    const iconPath = join(__dirname, "../../build/icon.png");
-    if (existsSync(iconPath)) app.dock?.setIcon(iconPath);
+    const { applyAppIcon } = await import("./core/app-icon");
+    await applyAppIcon(DEFAULT_APP_ICON);
   }
 
   ensureDefaultLibrary();
@@ -208,7 +209,7 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] recording active library failed", err);
   }
 
-  /** Tag colors/groups live in the bundle's tags.json; a fresh index hydrates from it before anything queries tags. */
+  /** Tag catalog and groups live in the bundle's tags.json; a fresh index hydrates from it before anything queries tags. */
   try {
     await hydrateTagsFromBundle();
   } catch (err) {
@@ -308,6 +309,8 @@ export async function applyPrefsAtRuntime() {
     });
   }
   setCloseToTray(prefs.window.closeToTray === true);
+  const { applyAppIcon } = await import("./core/app-icon");
+  await applyAppIcon(prefs.window.appIcon);
 }
 
 export async function applyWindowPrefsAtRuntime() {

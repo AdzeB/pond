@@ -34,7 +34,7 @@
     "typecheck": "tsc --noEmit"
   },
   "peerDependencies": {
-    "react": ">=19"
+    "react": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",

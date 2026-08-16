@@ -22,6 +22,7 @@ import type {
   Predicate,
 } from "@pond/schema/filters/types";
 import type { ComponentType } from "react";
+import { accountChipLabel } from "@/lib/search/account-aliases";
 import { DATE_PRESETS, serializePredicate } from "@/lib/search/syntax";
 
 type FieldIcon = ComponentType<{
@@ -114,7 +115,9 @@ export function describePredicate(predicate: Predicate): PredicateChip {
   switch (meta.type) {
     case "enum": {
       const negated = operator === "neq" || operator === "nin";
-      const list = (Array.isArray(value) ? value : [value]).map(String);
+      const list = (Array.isArray(value) ? value : [value]).map((v) =>
+        field === "account" ? accountChipLabel(String(v)) : String(v),
+      );
       return { ...base, label: list.join(", "), negated };
     }
     case "stringArray": {

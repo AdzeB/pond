@@ -277,7 +277,7 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing(sqlite, "tags", "description", "TEXT");
   addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");
-  addColumnIfMissing(sqlite, "tags", "color", "TEXT");
+  dropColumnIfPresent(sqlite, "tags", "color");
   addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
   addColumnIfMissing(sqlite, "saves", "embedding", "TEXT");
   addColumnIfMissing(sqlite, "saves", "embedding_model", "TEXT");
@@ -415,6 +415,18 @@ function addColumnIfMissing(
   }>;
   if (cols.some((c) => c.name === column)) return;
   sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+}
+
+function dropColumnIfPresent(
+  sqlite: Database.Database,
+  table: string,
+  column: string,
+): void {
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
+    name: string;
+  }>;
+  if (!cols.some((c) => c.name === column)) return;
+  sqlite.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
 }
 
 function ensureLibraryMetadata(): void {

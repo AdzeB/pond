@@ -1,6 +1,5 @@
 import { ContextMenu as Base } from "@base-ui/react/context-menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
-import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
 import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
@@ -142,15 +141,14 @@ function CheckboxItemIndicator({
       className={cn(styles.indicator, className)}
       render={(renderProps, state) => (
         <Checkbox.Root
+          size="sm"
           checked={state.checked}
           readOnly
           tabIndex={-1}
           aria-hidden
           {...renderProps}
         >
-          <Checkbox.Indicator>
-            <Check strokeWidth={2} />
-          </Checkbox.Indicator>
+          <Checkbox.Indicator />
         </Checkbox.Root>
       )}
       {...props}

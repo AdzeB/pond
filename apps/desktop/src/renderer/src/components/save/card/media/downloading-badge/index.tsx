@@ -30,7 +30,7 @@ export function DownloadingBadge({
       aria-label="Downloading video"
       title="Downloading video"
     >
-      <span className={styles["downloading-dot"]} aria-hidden="true" />
+      <span className={styles.dot} aria-hidden="true" />
       Downloading
     </span>
   );

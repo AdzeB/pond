@@ -8,7 +8,6 @@ export interface TagRow {
   id: string;
   name: string;
   description: string | null;
-  color: string | null;
   lastUsedAt: number | null;
   usageCount: number;
   createdAt: number | null;
@@ -30,7 +29,6 @@ function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
     id: raw.id,
     name: raw.name,
     description: typeof raw.description === "string" ? raw.description : null,
-    color: typeof raw.color === "string" ? raw.color : null,
     lastUsedAt: toMs(raw.lastUsedAt as unknown),
     usageCount: typeof raw.usageCount === "number" ? raw.usageCount : 0,
     createdAt: toMs(raw.createdAt as unknown),

@@ -8,14 +8,18 @@
   min-height: 0;
   /* Size container so the shell can contain-fit against both axes (cqi/cqh). */
   container-type: size;
+  overflow: visible;
 }
 
 .scroller {
   --slide-spacing: 32px;
   --snap-type: x mandatory;
 
+  width: calc(100% + (var(--detail-w, 384px) * 2));
   height: 100%;
-  padding-inline: 50%;
+  /* 50% is of the main column; add pane width so first/last slides can still snap to centre. */
+  padding-inline: calc(50% + var(--detail-w, 384px));
+  margin-inline: calc(var(--detail-w, 384px) * -1);
   /* Blossom's base stylesheet normally sets this; without it the slides wrap inside the zero-width content box and stack vertically. */
   white-space: nowrap;
   scroll-snap-type: x mandatory;

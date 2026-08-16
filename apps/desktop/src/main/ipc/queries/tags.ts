@@ -34,9 +34,6 @@ export const tagsQueries: QueryHandlerMap = {
               patch.description == null ? null : String(patch.description),
           }
         : {}),
-      ...("color" in patch
-        ? { color: patch.color == null ? null : String(patch.color) }
-        : {}),
     });
   },
 

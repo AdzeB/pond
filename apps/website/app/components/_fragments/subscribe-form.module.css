@@ -9,59 +9,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  justify-content: center;
 }
 
 .input {
   flex: 1;
+  width: 100%;
   min-width: 200px;
-  height: 44px;
-  padding: 0 16px;
-  font-size: 14px;
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-2);
-  border: 1px solid var(--ds-gray-a3);
-  border-radius: var(--site-radius-pill);
-  transition: border-color var(--ds-duration-snap) var(--ds-easing-standard);
-
-  &::placeholder {
-    color: var(--ds-gray-9);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 1px;
-    border-color: var(--ds-accent-9);
-  }
-}
-
-.submit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 44px;
-  padding: 0 20px;
-  font-size: 14px;
-  font-weight: 550;
-  color: var(--ds-gray-1);
-  cursor: pointer;
-  background: var(--ds-gray-12);
-  border-radius: var(--site-radius-pill);
-  transition: background-color var(--ds-duration-snap) var(--ds-easing-standard);
-
-  &:hover {
-    background: var(--ds-gray-11);
-  }
-
-  &:disabled {
-    cursor: default;
-    opacity: 0.6;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ds-accent-9);
-    outline-offset: 3px;
-  }
 }
 
 .error {

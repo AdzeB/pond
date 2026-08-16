@@ -5,7 +5,7 @@ import styles from "./styles.module.css";
 
 function pressedToggle(root: HTMLElement): HTMLElement | null {
   const pressed = root.querySelectorAll<HTMLElement>("[data-pressed]");
-  return pressed.length === 1 ? pressed[0] : null;
+  return pressed.length === 1 ? pressed.item(0) : null;
 }
 
 /** Geometry is measured from the pressed toggle so CSS can tween between the previous and next boxes. */

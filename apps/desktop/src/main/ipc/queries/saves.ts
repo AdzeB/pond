@@ -174,6 +174,7 @@ export const savesQueries: QueryHandlerMap = {
 
   /** Cursor-paged, recency-sorted listing for the ordinary library grid. */
   async "saves.listPage"(params) {
+    const startedAt = Date.now();
     const limit = Math.min(Math.max(1, Number(params.limit) || 250), 500);
     const raw = params.cursor as Partial<SavePageCursor> | undefined;
     const savedAt = raw?.savedAt;
@@ -205,7 +206,7 @@ export const savesQueries: QueryHandlerMap = {
       ...rest,
       rawJson: rawSlim,
     })) as Save[];
-    return {
+    const payload = {
       rows: toWireSaves(listRows, grouped),
       nextCursor:
         rows.length > limit
@@ -218,6 +219,12 @@ export const savesQueries: QueryHandlerMap = {
           : null,
       total: Number(totalRow?.value ?? 0),
     };
+    log.info("[pond ipc] saves.listPage", {
+      rows: payload.rows.length,
+      total: payload.total,
+      ms: Date.now() - startedAt,
+    });
+    return payload;
   },
 
   /** Keyword search via saves_fts; scores are BM25 rank (lower is better in FTS5, inverted for callers). */

@@ -18,6 +18,7 @@ describe("theme prefs rebuild", () => {
     expect(prefs.preferences.dark.background).toBe("#0A0A0A");
     expect(prefs.preferences.light.foreground).toBeTruthy();
     expect(prefs.preferences.dark.foreground).toBeTruthy();
+    expect(prefs.window.appIcon).toBe("aqua");
   });
 
   it("ships ~15 light and ~15 dark presets", () => {

@@ -1,4 +1,3 @@
-import { RawImage } from "@huggingface/transformers";
 import { clipImageEmbedding } from "@/lib/enrichment/clip";
 import { clipAnnNearest } from "@/lib/search/clip-ann-index";
 import type { Save } from "@/lib/types";
@@ -8,6 +7,7 @@ import { clipEmbeddingStore } from "@/stores/clip-embedding-store";
 /** Per-save CLIP vectors come from the clip enricher via `clip-embedding-store`; here an arbitrary query image is embedded the same way and the library ranked against it. */
 
 export async function embedQueryImage(blob: Blob): Promise<Float32Array> {
+  const { RawImage } = await import("@huggingface/transformers");
   const image = await RawImage.fromBlob(blob);
   return clipImageEmbedding(image);
 }

@@ -1,0 +1,138 @@
+import type { Source, WatchKind } from "@pond/schema/db";
+import { isSource, sourceLabel } from "@pond/schema/sources";
+import { getPrefsSnapshot } from "@/stores/prefs";
+
+export interface AccountRef {
+  readonly id: string;
+  readonly source: Source;
+  readonly handle: string | null;
+  readonly label: string | null;
+  readonly kind?: WatchKind;
+}
+
+function isOpaqueKind(kind: WatchKind | undefined): boolean {
+  return kind === "playlist" || kind === "list";
+}
+
+function localName(ref: AccountRef): string {
+  const labeled = ref.label?.trim();
+  if (labeled) return labeled;
+  const handle = ref.handle?.trim();
+  if (!handle) return "";
+  if (isOpaqueKind(ref.kind)) return handle;
+  return handle.startsWith("@") ? handle : `@${handle}`;
+}
+
+function keyOf(value: string): string {
+  return value.trim().toLowerCase().replace(/^@+/, "");
+}
+
+function aliases(ref: AccountRef): string[] {
+  const out: string[] = [
+    ref.id,
+    localName(ref),
+    ref.handle ?? "",
+    ref.label ?? "",
+  ];
+  return [...new Set(out.map(keyOf).filter(Boolean))];
+}
+
+export function accountRefsFromSync(
+  sync:
+    | {
+        accounts?: Record<
+          string,
+          {
+            id: string;
+            source: Source;
+            handle: string | null;
+            label: string | null;
+          }
+        >;
+        watches?: Record<
+          string,
+          {
+            id: string;
+            source: Source;
+            handle: string;
+            label: string | null;
+            kind?: WatchKind;
+          }
+        >;
+      }
+    | null
+    | undefined,
+): AccountRef[] {
+  const refs: AccountRef[] = [];
+  for (const row of Object.values(sync?.accounts ?? {})) {
+    refs.push({
+      id: row.id,
+      source: row.source,
+      handle: row.handle,
+      label: row.label,
+    });
+  }
+  for (const row of Object.values(sync?.watches ?? {})) {
+    refs.push({
+      id: row.id,
+      source: row.source,
+      handle: row.handle,
+      label: row.label,
+      kind: row.kind,
+    });
+  }
+  return refs;
+}
+
+function liveRefs(): AccountRef[] {
+  return accountRefsFromSync(getPrefsSnapshot()?.sync);
+}
+
+function hitsFor(raw: string, refs: readonly AccountRef[]): AccountRef[] {
+  const slash = raw.indexOf("/");
+  if (slash > 0) {
+    const source = raw.slice(0, slash).toLowerCase();
+    if (isSource(source)) {
+      const rest = keyOf(raw.slice(slash + 1));
+      return refs.filter(
+        (ref) => ref.source === source && aliases(ref).includes(rest),
+      );
+    }
+  }
+  const key = keyOf(raw);
+  return refs.filter((ref) => aliases(ref).includes(key));
+}
+
+/** Canonical token written into `account:…`; qualified with the source id when a handle is shared. */
+export function displayAccountToken(
+  id: string,
+  refs: readonly AccountRef[] = liveRefs(),
+): string {
+  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  if (!ref) return id;
+  const local = localName(ref) || ref.id;
+  const unique = hitsFor(local, refs).every((row) => row.id === ref.id);
+  return unique ? local : `${ref.source}/${local}`;
+}
+
+/** Human chip copy: `@handle · Twitter`, falling back to the source name when the account has no handle yet. */
+export function accountChipLabel(
+  id: string,
+  refs: readonly AccountRef[] = liveRefs(),
+): string {
+  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  if (!ref) return id;
+  const brand = sourceLabel(ref.source);
+  const name = localName(ref);
+  return name ? `${name} · ${brand}` : brand;
+}
+
+/** Maps a typed `account:` value (id, @handle, or source/@handle) onto the stored account id. */
+export function resolveAccountToken(
+  raw: string,
+  refs: readonly AccountRef[] = liveRefs(),
+): string {
+  const matched = hitsFor(raw, refs);
+  if (matched.length === 1) return matched[0].id.toLowerCase();
+  return raw.trim().toLowerCase();
+}

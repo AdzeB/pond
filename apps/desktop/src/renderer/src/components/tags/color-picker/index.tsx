@@ -1,7 +1,4 @@
-import {
-  IconFolderFill18 as Folder,
-  IconLabel3Fill18 as Label,
-} from "@pond/icons/fill/18";
+import { IconFolderFill18 as Folder } from "@pond/icons/fill/18";
 import { ColorPicker, Input, Popover } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { type MouseEvent, useState } from "react";
@@ -21,7 +18,6 @@ interface TagColorPickerProps {
   color: string | null;
   fallback: string;
   onSelect: (color: string | null) => void;
-  variant?: "dot" | "glyph";
 }
 
 export function TagColorPicker({
@@ -29,7 +25,6 @@ export function TagColorPicker({
   color,
   fallback,
   onSelect,
-  variant = "dot",
 }: TagColorPickerProps) {
   const [open, setOpen] = useState(false);
   const [custom, setCustom] = useState(false);
@@ -88,11 +83,7 @@ export function TagColorPicker({
         className={styles.trigger}
         onClick={stop}
       >
-        {variant === "glyph" ? (
-          <Folder width={16} height={16} style={{ color: swatch }} />
-        ) : (
-          <Label width={16} height={16} style={{ color: swatch }} />
-        )}
+        <Folder style={{ color: swatch }} />
       </Popover.Trigger>
 
       <Popover.Portal>

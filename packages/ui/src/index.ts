@@ -1,3 +1,5 @@
+"use client";
+
 export { clsx as cn } from "clsx";
 export { Accordion } from "./accordion";
 export {

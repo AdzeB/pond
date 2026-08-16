@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Derive `build/icon.png` (+ `.icns`) from the iOS Default export.
+ * Derive `build/icon.png` (+ `.icns`) from the aqua tint Default export.
  * Keeps the squircle alpha and insets the art so Electron `dock.setIcon`
  * matches native Dock sizing (opaque full-bleed PNGs render as huge squares).
  */
@@ -17,7 +17,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const buildDir = resolve(__dirname, "../build");
 const sourcePng = resolve(
   __dirname,
-  "../../../packages/icons/app/ios/default.png",
+  "../../../packages/icons/brand/tints/aqua/default.png",
 );
 const outPng = join(buildDir, "icon.png");
 const outIcns = join(buildDir, "icon.icns");
@@ -32,7 +32,7 @@ async function main() {
   } catch (err) {
     if (err?.code === "ENOENT") {
       console.warn(
-        "[pond] skip prepare-app-icon: packages/icons/app/ios/default.png missing",
+        "[pond] skip prepare-app-icon: packages/icons/brand/tints/aqua/default.png missing",
       );
       return;
     }

@@ -13,6 +13,13 @@
   border-radius: 6px;
   transition: all var(--ds-duration-snap) var(--ds-easing-standard);
 
+  &[data-size="sm"] {
+    width: 14px;
+    height: 14px;
+    padding: 0;
+    border-radius: 4px;
+  }
+
   &[data-checked] {
     background: var(--ds-accent-9);
     border-color: var(--ds-accent-9);
@@ -46,5 +53,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  padding: 2px;
   color: var(--ds-gray-1);
 }

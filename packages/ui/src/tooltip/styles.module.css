@@ -37,6 +37,11 @@
   }
 }
 
+.body {
+  display: block;
+  padding: 6px;
+}
+
 .row {
   display: inline-flex;
   gap: 8px;

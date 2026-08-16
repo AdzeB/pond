@@ -1,6 +1,6 @@
-import { IconCheckOutline18 } from "@pond/icons/outline/18";
+import { IconCheck3Outline12 } from "@pond/icons/outline/12";
+import { Logo } from "@pond/ui/logo";
 import Image from "next/image";
-import { Mark } from "../_fragments/mark";
 import styles from "./save-static.module.css";
 import { demoImage, SAVES } from "./saves";
 
@@ -22,7 +22,7 @@ export function SaveStatic() {
         </span>
         <span className={styles.url}>pinterest.com/search/pins?q=fits</span>
         <span className={styles.extension}>
-          <Mark size={13} />
+          <Logo size={13} />
         </span>
       </div>
       <div className={styles.page}>
@@ -39,7 +39,7 @@ export function SaveStatic() {
         </div>
         <div className={styles.toast}>
           <span className={styles["toast-icon"]}>
-            <IconCheckOutline18 width={12} height={12} />
+            <IconCheck3Outline12 />
           </span>
           <span className={styles["toast-body"]}>
             <span className={styles["toast-title"]}>Saved to Pond</span>

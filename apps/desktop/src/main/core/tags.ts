@@ -184,7 +184,6 @@ export async function mergeTags(
 interface TagPatch {
   starred?: boolean;
   description?: string | null;
-  color?: string | null;
 }
 
 /** Name changes go through renameTag instead because they must rewrite every save's tag list. */
@@ -203,10 +202,6 @@ export async function updateTag(
     const d =
       typeof patch.description === "string" ? patch.description.trim() : "";
     next.description = d ? d : null;
-  }
-  if ("color" in patch) {
-    const c = typeof patch.color === "string" ? patch.color.trim() : "";
-    next.color = c ? c : null;
   }
   if (Object.keys(next).length === 0) return { ok: true };
 

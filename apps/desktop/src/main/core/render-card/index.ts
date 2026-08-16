@@ -87,13 +87,13 @@ function ensureWindow(): BrowserWindow {
   return win;
 }
 
-function captureSearch(
-  kind: CaptureKind,
-  scheme: "light" | "dark",
-  data: TweetCardData | TextCardData,
-): string {
-  const base64 = Buffer.from(JSON.stringify(data), "utf8").toString("base64");
-  return `kind=${kind}&scheme=${scheme}&w=${CARD_WIDTH}&data=${encodeURIComponent(base64)}`;
+function captureQuery(kind: CaptureKind, scheme: "light" | "dark"): string {
+  return `kind=${kind}&scheme=${scheme}&w=${CARD_WIDTH}`;
+}
+
+/** Card JSON goes in the hash so a large payload never becomes an HTTP request line (Vite 431 in dev). */
+function captureHash(data: TweetCardData | TextCardData): string {
+  return Buffer.from(JSON.stringify(data), "utf8").toString("base64");
 }
 
 async function loadCapture(
@@ -102,11 +102,15 @@ async function loadCapture(
   scheme: "light" | "dark",
   data: TweetCardData | TextCardData,
 ): Promise<void> {
-  const search = captureSearch(kind, scheme, data);
+  const search = captureQuery(kind, scheme);
+  const hash = captureHash(data);
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
-    ? target.loadURL(`${devUrl}/capture.html?${search}`)
-    : target.loadFile(join(__dirname, "../renderer/capture.html"), { search });
+    ? target.loadURL(`${devUrl}/capture.html?${search}#${hash}`)
+    : target.loadFile(join(__dirname, "../renderer/capture.html"), {
+        search,
+        hash,
+      });
   await withTimeout(load, LOAD_TIMEOUT_MS, "capture load");
 }
 

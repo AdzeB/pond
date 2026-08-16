@@ -1,11 +1,18 @@
 import { IconCircleXmarkFill18 as Clear } from "@pond/icons/fill/18";
+import { isPredicate } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { serializeQuery } from "@/lib/search/syntax";
+import {
+  accountChipLabel,
+  accountRefsFromSync,
+} from "@/lib/search/account-aliases";
+import { describePredicate } from "@/lib/search/fields";
+import { serializePredicate } from "@/lib/search/syntax";
 import { bouncySpring } from "@/lib/ui/motion";
 import { openLibrarySearch } from "@/lib/ui/open-search";
 import { clearAsk, useAskResult } from "@/stores/ask-store";
+import { usePrefs } from "@/stores/prefs";
 import {
   resetFilters,
   useFilterQuery,
@@ -21,10 +28,21 @@ export function ActiveFilter() {
   const query = useFilterQuery();
   const q = useSearchText();
   const ask = useAskResult();
+  const [sync] = usePrefs("sync");
+  const refs = accountRefsFromSync(sync);
 
-  const serialized = [serializeQuery(query), q.trim()]
+  const serialized = [
+    ...query.rules.filter(isPredicate).map((rule) => {
+      if (rule.field === "account") {
+        const values = Array.isArray(rule.value) ? rule.value : [rule.value];
+        return values.map((v) => accountChipLabel(String(v), refs)).join(", ");
+      }
+      return serializePredicate(rule) ?? describePredicate(rule).label;
+    }),
+    q.trim(),
+  ]
     .filter(Boolean)
-    .join(" ");
+    .join(" · ");
   const label = (ask.active ? ask.question.trim() : "") || serialized;
   const active = ask.active || serialized.length > 0;
   const show =

@@ -1,5 +1,6 @@
 "use client";
 
+import { Button, Input } from "@pond/ui";
 import { type FormEvent, useState } from "react";
 import styles from "./subscribe-form.module.css";
 
@@ -58,27 +59,24 @@ export function SubscribeForm({
   return (
     <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <div className={styles.row}>
-        <input
-          className={styles.input}
-          type="email"
-          name="email"
-          placeholder="you@example.com"
-          aria-label="Email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(event) => {
-            setEmail(event.target.value);
-            if (status === "error") setStatus("idle");
-          }}
-        />
-        <button
-          className={styles.submit}
-          type="submit"
-          disabled={status === "loading"}
-        >
+        <Input.Root className={styles.input} size="lg" variant="secondary">
+          <Input.Field
+            type="email"
+            name="email"
+            placeholder="you@example.com"
+            aria-label="Email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (status === "error") setStatus("idle");
+            }}
+          />
+        </Input.Root>
+        <Button type="submit" size="lg" disabled={status === "loading"}>
           {status === "loading" ? "Sending…" : buttonLabel}
-        </button>
+        </Button>
       </div>
       {status === "error" ? (
         <p className={styles.error} role="alert">

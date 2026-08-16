@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
+  DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
   DEFAULT_DARK_THEME,
   DEFAULT_LIGHT_PRESET_ID,
@@ -180,6 +181,8 @@ const windowSlice = z.object({
   startupPage: z
     .enum(["continue", "library", "sources", "trash", "settings"])
     .catch("continue"),
+  /** Crayon folder name under packages/icons/brand/tints; missing files fall back to aqua. */
+  appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
 });
 
 const quickCapture = z.object({

@@ -16,7 +16,7 @@ import { confirmEmptyTrash } from "@/lib/save/empty-trash";
 import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
 import { openLibrarySearch } from "@/lib/ui/open-search";
-import { closeSave, openSave, saveIdFromPath } from "@/lib/ui/save-nav";
+import { closeSave, openSave } from "@/lib/ui/save-nav";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
 import { pool } from "@/stores/pool";
@@ -45,10 +45,7 @@ export function MenuBridge() {
           return;
 
         case "view.inspector.toggle": {
-          const router = getAppRouter();
-          const openId =
-            primarySelection.get() ??
-            (router ? saveIdFromPath(router.state.location.pathname) : null);
+          const openId = primarySelection.get();
           if (openId) {
             closeSave();
           } else {

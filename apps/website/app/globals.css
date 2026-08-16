@@ -1,7 +1,6 @@
 @import "@pond/ui/reset.css";
 @import "@pond/theme/theme.css";
 
-/* Same files the desktop renderer ships, so app replicas render with identical metrics. */
 @font-face {
   font-family: inter-variable;
   font-style: normal;
@@ -35,11 +34,10 @@
 }
 
 :root {
-  /* The desktop "Light" preset as themeCssVars emits it. */
   --ds-bg-l: 1;
   --ds-bg-c: 0;
   --ds-bg-h: 0;
-  --ds-fg-l: 0.274;
+  --ds-fg-l: 0.18;
   --ds-fg-c: 0;
   --ds-fg-h: 0;
   --ds-accent-l: 0.6471;
@@ -48,45 +46,49 @@
   --ds-contrast: 1;
 
   --site-font-sans:
-    ui-sans-serif, system-ui, -apple-system, "SF Pro Text", "Segoe UI", Inter,
-    sans-serif;
-  --site-font-display: ui-rounded, var(--site-font-sans);
-  --site-font-mono: var(--ds-font-mono);
+    inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", sans-serif;
+  --site-font-mono: jetbrains-mono, var(--ds-font-mono);
 
-  --site-page-max: 1200px;
-  --site-page-padding: 24px;
-  --site-section-gap: 128px;
+  --site-column: 640px;
+  --site-page-padding: 16px;
+  --site-ink: #0f0906;
+  --site-mute: #b49c8b;
+  --site-copy: #856b5a;
+  --site-faint: #666;
+  --site-chip: rgb(237 227 216 / 80%);
+}
 
-  --site-radius-pill: 999px;
-
-  --site-text-display: clamp(40px, 6vw, 72px);
-  --site-text-title: clamp(28px, 3.6vw, 44px);
-  --site-text-lead: clamp(15px, 1.7vw, 18px);
-  --site-text-body: 14px;
-  --site-text-small: 13px;
-  --site-text-micro: 11.5px;
+.wordmark {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--site-font-sans);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--site-ink);
+  letter-spacing: -0.02em;
 }
 
 html {
   font-family: var(--site-font-sans);
   font-size: 16px;
   line-height: 1.5;
-  color: var(--ds-gray-12);
+  color: var(--site-ink);
   color-scheme: light;
-  background: var(--ds-gray-1);
+  background: #fff;
 }
 
 body {
   min-height: 100dvh;
-  background: var(--ds-gray-1);
+  background: #fff;
 }
 
 ::selection {
-  color: var(--ds-gray-12);
-  background: color-mix(in srgb, var(--ds-accent-9) 25%, transparent);
+  color: var(--site-ink);
+  background: color-mix(in srgb, var(--site-mute) 35%, transparent);
 }
 
-/* Mirrors the desktop's P3_CHROMA_BOOST: wide-gamut panels get the same richer accent. */
 @media (color-gamut: p3) {
   :root {
     --ds-accent-c: 0.2717;
@@ -100,12 +102,5 @@ body {
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
-  }
-}
-
-@media (max-width: 720px) {
-  :root {
-    --site-page-padding: 20px;
-    --site-section-gap: 72px;
   }
 }

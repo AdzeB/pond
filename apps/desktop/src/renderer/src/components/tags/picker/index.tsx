@@ -1,5 +1,12 @@
 import { Menu } from "@pond/ui";
-import { createContext, use, useCallback, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  createContext,
+  use,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
 import { TagMenu } from "@/components/tags/menu";
 import type { Save } from "@/lib/types";
 import { type TagGroupRow, useTagGroups } from "@/stores/tag-groups";
@@ -135,6 +142,13 @@ function Content({
         side={side}
         align={align}
         sideOffset={sideOffset}
+        collisionAvoidance={{ fallbackAxisSide: "none" }}
+        style={
+          {
+            "--popup-min-width": "max-content",
+            "--popup-width": "max-content",
+          } as CSSProperties
+        }
       >
         <Menu.Popup>
           <Menu.Viewport>
@@ -142,7 +156,6 @@ function Content({
               appliedKeys={appliedSet}
               onToggle={(name) => void toggle(name)}
               allowCreate
-              groupsAs="submenu"
             />
           </Menu.Viewport>
         </Menu.Popup>

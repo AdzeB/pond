@@ -1,8 +1,13 @@
-import { resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "electron-vite";
 import type { Plugin } from "vite";
+
+const require = createRequire(import.meta.url);
+const reactDir = dirname(require.resolve("react/package.json"));
+const reactDomDir = dirname(require.resolve("react-dom/package.json"));
 
 const CJS_SHIM = [
   'import __cjs_mod__ from "node:module";',
@@ -89,7 +94,11 @@ export default defineConfig({
       react(),
     ],
     resolve: {
+      /** Workspace packages and nested @base-ui peers otherwise pull a second React and crash Tooltip.Provider with an invalid hook call. */
+      dedupe: ["react", "react-dom"],
       alias: {
+        react: reactDir,
+        "react-dom": reactDomDir,
         "@": resolve(__dirname, "src/renderer/src"),
         "@shared": resolve(__dirname, "src/shared"),
         "@pond/icons": resolve(__dirname, "../../packages/icons"),
@@ -98,7 +107,14 @@ export default defineConfig({
     },
     /** transformers.js imports `onnxruntime-web` subpaths as bare specifiers; pre-bundling resolves them in dev, mirroring the prod Rollup build. */
     optimizeDeps: {
-      include: ["@huggingface/transformers"],
+      include: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@base-ui/react",
+        "@huggingface/transformers",
+      ],
     },
     build: {
       /** Electron ships a recent Chromium; skip legacy transforms and module-preload polyfills. */

@@ -1,6 +1,8 @@
-/* Native-resolution replica of the desktop shell: 1280x800, hiddenInset traffic lights at (16, 28), Shell.Main insets, floating Tray rail and dock. */
+/* Native-resolution replica of the desktop shell: 1280x800, tab chrome, inset library panel, bottom dock. */
 
 .window {
+  --window-inset: 16px;
+  --window-radius: 12px;
   --ds-mac-inset: 16px;
   --ds-ui-font-family:
     inter-variable, ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
@@ -10,6 +12,8 @@
   --ds-cursor-interactive: default;
 
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 1280px;
   height: 800px;
   overflow: hidden;
@@ -21,34 +25,16 @@
     "cv11" 1,
     "ss01" 1;
   color: var(--ds-gray-12);
-  background: var(--ds-gray-1);
-  border-radius: 20px;
-  box-shadow:
-    0 0 0 1px var(--ds-gray-a3),
-    0 32px 64px -16px var(--ds-gray-a5);
+  background: var(--ds-gray-2);
 }
 
 .lights {
   position: absolute;
-  top: 28px;
-  left: 16px;
+  top: 14px;
+  left: 20px;
   z-index: 30;
   display: inline-flex;
   gap: 8px;
-}
-
-/* Shell.Mask equivalent: the app always paints a 96px top fade over the scrolling grid. */
-.fade {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 10;
-  height: 96px;
-  pointer-events: none;
-  background: linear-gradient(to bottom, var(--ds-gray-1), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent);
-  mask-image: linear-gradient(to bottom, black 40%, transparent);
 }
 
 .light {
@@ -69,27 +55,148 @@
   }
 }
 
-/* Shell.Main: 16px mac inset, 24px inline. */
-.main {
-  position: relative;
+.chrome {
   display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: var(--ds-mac-inset);
-  padding-inline: 24px;
-  overflow: hidden;
+  flex-shrink: 0;
+  align-items: center;
+  min-width: 0;
+  height: 40px;
+  padding: 4px var(--window-inset) 4px 88px;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
-/* Shell.Header: sticky z-30 in the app, so it paints above the top fade. */
-.title-bar {
-  z-index: 30;
+.history {
+  display: flex;
   flex-shrink: 0;
-  margin-bottom: 24px;
+  gap: 2px;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.tabs {
+  display: flex;
+  flex: 0 1 auto;
+  gap: 2px;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: 100%;
+}
+
+.group {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding-block: 6px;
+  padding-right: 4px;
+  padding-left: 2px;
+}
+
+.tab {
+  --tab-min: 72px;
+  --tab-active-min: 96px;
+
+  position: relative;
+  display: flex;
+  flex: 1 1 120px;
+  gap: 6px;
+  align-items: center;
+  min-width: var(--tab-min);
+  max-width: 200px;
+  padding: 2px 6px;
+  padding-right: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+  background: transparent;
+  border-radius: var(--ds-radius-md);
+
+  &[data-active] {
+    z-index: 2;
+    min-width: var(--tab-active-min);
+    color: var(--ds-gray-12);
+    background: var(--ds-gray-1);
+    box-shadow: var(--ds-shadow-2);
+  }
+}
+
+.tab-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  overflow: hidden;
+  color: var(--ds-gray-9);
+}
+
+.tab[data-active] .tab-icon {
+  color: var(--ds-gray-12);
+}
+
+.tab-label {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  flex-shrink: 0;
+  opacity: 0;
+}
+
+.tab[data-active] .tab-close {
+  opacity: 1;
+}
+
+.spacer {
+  flex: 1 1 0;
+  align-self: stretch;
+  min-width: 32px;
+}
+
+.actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+  align-items: center;
+}
+
+.stage {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  padding: 0 var(--window-inset) var(--window-inset);
+}
+
+.panel {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--window-radius);
+  box-shadow: var(--ds-shadow-4);
+}
+
+.scroller {
+  height: 100%;
+  padding: 16px 20px 20px;
+  overflow: hidden;
 }
 
 .grid {
   position: relative;
-  flex-shrink: 0;
   width: 100%;
 }
 
@@ -97,18 +204,9 @@
   position: absolute;
 }
 
-.rail {
-  position: absolute;
-  top: 50%;
-  left: calc(var(--ds-mac-inset) - 4px);
-  z-index: 20;
-  padding: 4px;
-  transform: translateY(-50%);
-}
-
 .dock-slot {
   position: absolute;
-  bottom: calc(var(--ds-mac-inset) + 4px);
+  bottom: calc(var(--window-inset) + 16px);
   left: 50%;
   z-index: 20;
   transform: translateX(-50%);

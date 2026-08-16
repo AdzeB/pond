@@ -4,14 +4,37 @@ import {
   ThemeContrastRow,
   ThemePresetRow,
 } from "@/components/settings/sections/appearance";
+import { AppIconRow } from "@/components/settings/sections/appearance/app-icon";
 import { defineSection } from "@/lib/settings/engine-types";
 import { SOUND_FEEL_OPTIONS } from "@/lib/ui/sound-feel-options";
 import { previewSoundFeel } from "@/lib/ui/sounds";
 
 export const appearanceSection = defineSection("preferences", {
   title: "Appearance",
-  description: "Theme, colors, sounds, and accessibility.",
+  description: "App icon, theme, colors, sounds, and accessibility.",
   groups: [
+    {
+      title: "App Icon",
+      fullWidth: true,
+      prefsKey: "window",
+      items: [
+        {
+          control: "custom",
+          key: "app-icon",
+          title: "App Icon",
+          keywords: [
+            "dock",
+            "icon",
+            "tint",
+            "aqua",
+            "crayon",
+            "taskbar",
+            "brand",
+          ],
+          render: (b) => <AppIconRow binding={b} />,
+        },
+      ],
+    },
     {
       title: "Theme",
       fullWidth: true,

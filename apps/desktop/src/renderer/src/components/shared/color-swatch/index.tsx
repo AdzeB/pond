@@ -1,4 +1,3 @@
-import { IconCheck3Outline12 as Check } from "@pond/icons/outline/12";
 import { Menu, type MenuItemSpec } from "@pond/ui";
 import { type CSSProperties, useEffect, useState } from "react";
 import { closeSave } from "@/lib/ui/save-nav";
@@ -12,7 +11,7 @@ const POPUP_STYLE = {
   "--popup-min-width": "200px",
 } as CSSProperties;
 
-/** How long the swatch wears the checkmark after a copy. */
+/** How long the swatch reports a successful copy. */
 const COPIED_HOLD_MS = 1200;
 
 /** Leaves the save page so the freshly-filtered grid is what the user lands on. */
@@ -31,7 +30,7 @@ export function ColorSwatch({ color }: { color: string }) {
   useEffect(() => {
     if (!copied) return;
     const timer = window.setTimeout(() => setCopied(false), COPIED_HOLD_MS);
-    return () => clearTimeout(timer);
+    return () => window.clearTimeout(timer);
   }, [copied]);
 
   const copyValue = async (value: string): Promise<void> => {
@@ -68,16 +67,11 @@ export function ColorSwatch({ color }: { color: string }) {
         render={
           <button
             type="button"
-            className={styles["color-swatch"]}
-            style={{ background: color }}
+            className={styles.swatch}
+            style={{ background: color, color }}
+            title={color}
             aria-label={copied ? `Copied ${color}` : `Color ${color}`}
-          >
-            {copied ? (
-              <span className={styles["copied-check"]} aria-hidden>
-                <Check width={12} height={12} strokeWidth={2.5} />
-              </span>
-            ) : null}
-          </button>
+          />
         }
       />
       <Menu.Portal>

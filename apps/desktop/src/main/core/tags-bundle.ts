@@ -28,7 +28,6 @@ interface WireTag {
   id: string;
   name: string;
   description: string | null;
-  color: string | null;
   starred: boolean;
   archived: boolean;
   lastUsedAt: number | null;
@@ -156,7 +155,6 @@ function tagToWire(tag: Tag): WireTag {
     id: tag.id,
     name: tag.name,
     description: tag.description,
-    color: tag.color,
     starred: tag.starred,
     archived: tag.archived,
     lastUsedAt: tag.lastUsedAt ? tag.lastUsedAt.getTime() : null,
@@ -182,7 +180,6 @@ function tagFromWire(tag: WireTag): Tag {
     id: tag.id,
     name: tag.name,
     description: tag.description ?? null,
-    color: tag.color ?? null,
     starred: tag.starred === true,
     archived: tag.archived === true,
     lastUsedAt: toDate(tag.lastUsedAt),

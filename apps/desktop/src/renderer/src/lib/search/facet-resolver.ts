@@ -1,5 +1,4 @@
 import type { Predicate } from "@pond/schema/filters/types";
-import { embedText, embedTexts } from "@/lib/enrichment/embeddings";
 import type { NlFacets } from "@/lib/search/nl-query";
 import { dot } from "@/lib/util/vector";
 
@@ -42,6 +41,7 @@ async function buildVocab(facets: NlFacets): Promise<VocabEntry[]> {
     items.push({ field: "creator", value: v });
 
   if (items.length === 0) return [];
+  const { embedTexts } = await import("@/lib/enrichment/embeddings");
   const vecs = await embedTexts(items.map((i) => i.value));
   return items.map((item, idx) => ({
     field: item.field,
@@ -87,6 +87,7 @@ export async function resolveFacets(
   const vocab = await getVocab(facets);
   if (vocab.length === 0) return { predicates: [], residual };
 
+  const { embedTexts } = await import("@/lib/enrichment/embeddings");
   const wordVecs = await embedTexts(words);
   const predicates: Predicate[] = [];
   const leftover: string[] = [];
@@ -117,6 +118,7 @@ export async function embedQuery(text: string): Promise<Float32Array | null> {
   const trimmed = text.trim();
   if (!trimmed) return null;
   try {
+    const { embedText } = await import("@/lib/enrichment/embeddings");
     return await embedText(trimmed);
   } catch (err) {
     console.warn("[facet-resolver] query embed failed", err);

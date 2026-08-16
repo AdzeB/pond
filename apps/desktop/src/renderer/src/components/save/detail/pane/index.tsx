@@ -1,22 +1,57 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import { Button, TitleBar } from "@pond/ui";
-import { useEffect, useState } from "react";
+import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
-import { TagsSection } from "@/components/save/detail/tags";
+import { SaveTags } from "@/components/save/detail/tags";
 import { VideoNotesSection } from "@/components/save/detail/video-notes";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { ColorSwatch } from "@/components/shared/color-swatch";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { useSaveDetail } from "@/hooks/use-save-detail";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { buildMediaUnits } from "@/lib/media/units";
+import {
+  type DetailRow,
+  groupDetailRows,
+  isSameTitleAndContent,
+} from "@/lib/save/detail";
 import { mutateSave } from "@/lib/save/mutate";
 import { isTextOnlySave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
+import { closeSave } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
 import styles from "./styles.module.css";
 
-export function SaveDetails({
+function DetailCard({
+  title,
+  start,
+  end,
+  children,
+}: {
+  title: string;
+  start?: ReactNode;
+  end?: ReactNode;
+  children: ReactNode;
+}) {
+  const scrollFade = useScrollFade<HTMLDivElement>();
+  return (
+    <div className={styles.card}>
+      <TitleBar.Root className={styles.header}>
+        <TitleBar.Start>{start}</TitleBar.Start>
+        <TitleBar.Title>
+          <TitleBar.Label>{title}</TitleBar.Label>
+        </TitleBar.Title>
+        <TitleBar.End>{end}</TitleBar.End>
+      </TitleBar.Root>
+      <div className={styles.scroll} {...scrollFade}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function SaveAbout({
   save,
   fileIndex = null,
 }: {
@@ -24,15 +59,7 @@ export function SaveDetails({
   /** Active media file in the viewer; kebab file actions target this asset. */
   fileIndex?: number | null;
 }) {
-  const {
-    rows,
-    description,
-    colors,
-    avatarUrl,
-    sourceLogo,
-    sourceIcon: SourceIcon,
-  } = useSaveDetail(save.id);
-
+  const { description } = useSaveDetail(save.id);
   const displayTitle = save.title?.trim() || save.author?.trim() || "Untitled";
   const local = save.source === "local";
   const [titleDraft, setTitleDraft] = useState(save.title ?? "");
@@ -43,6 +70,9 @@ export function SaveDetails({
 
   const hasVideo = buildMediaUnits(save).some((u) => u.isVideo);
   const textOnly = isTextOnlySave(save);
+  const showContent = Boolean(description) && !textOnly;
+  const showTitle =
+    local || !showContent || !isSameTitleAndContent(displayTitle, description);
 
   const commitTitle = async () => {
     const next = titleDraft.trim();
@@ -57,25 +87,12 @@ export function SaveDetails({
   };
 
   return (
-    <div className={styles["detail-card"]}>
-      <TitleBar.Root className={styles["detail-header"]}>
-        <TitleBar.Start>
-          <KebabMenu save={save} fileIndex={fileIndex} />
-        </TitleBar.Start>
-        <TitleBar.Title>
-          <TitleBar.Label className={styles["header-label"]}>
-            Save Details
-          </TitleBar.Label>
-        </TitleBar.Title>
-        <TitleBar.End>
-          <Button icon size="sm" variant="ghost" aria-label="Close">
-            <Cross />
-          </Button>
-        </TitleBar.End>
-      </TitleBar.Root>
-
-      <div className={styles["detail-scroll"]}>
-        <div className={styles.heading}>
+    <DetailCard
+      title="About"
+      start={<KebabMenu save={save} fileIndex={fileIndex} />}
+    >
+      {showTitle ? (
+        <Section title="Title">
           {local ? (
             <input
               data-pane-title
@@ -94,77 +111,152 @@ export function SaveDetails({
           ) : (
             <h2 className={styles["heading-title"]}>{displayTitle}</h2>
           )}
-        </div>
+        </Section>
+      ) : null}
 
-        {description && !textOnly ? (
-          <Section title="Content">
-            <ExpandableText text={description} compact />
-          </Section>
-        ) : null}
+      {showContent ? (
+        <Section title="Content">
+          <ExpandableText text={description} compact />
+        </Section>
+      ) : null}
 
-        <Section title="Properties">
+      <Section title="Tags">
+        <SaveTags save={save} />
+      </Section>
+
+      {hasVideo ? <VideoNotesSection save={save} /> : null}
+    </DetailCard>
+  );
+}
+
+export function SaveInfo({ save }: { save: Save }) {
+  const {
+    rows,
+    colors,
+    avatarUrl,
+    sourceLogo,
+    sourceIcon: SourceIcon,
+  } = useSaveDetail(save.id);
+
+  const groups = groupDetailRows(rows);
+  const hasProperties = groups.some((group) => group.title === "Properties");
+
+  return (
+    <DetailCard
+      title="Details"
+      end={
+        <Button
+          type="button"
+          icon
+          size="xs"
+          variant="ghost"
+          aria-label="Close"
+          onClick={() => closeSave()}
+        >
+          <Cross />
+        </Button>
+      }
+    >
+      {groups.map((group) => (
+        <Section key={group.title} title={group.title}>
           <div className={styles.rows}>
-            {rows.map((row) => (
-              <div key={row.id} className={styles.row}>
-                <span className={styles["row-label"]}>{row.label}</span>
-                {row.kind === "author" ? (
-                  <span className={styles["row-inline"]}>
-                    <span
-                      className={styles["row-avatar"]}
-                      style={{ background: pickAuthorColor(row.value) }}
-                      aria-hidden
-                    >
-                      {avatarUrl ? (
-                        <img
-                          src={avatarUrl}
-                          alt=""
-                          loading="lazy"
-                          decoding="async"
-                          draggable={false}
-                        />
-                      ) : (
-                        initials(row.value)
-                      )}
-                    </span>
-                    <span className={styles["row-value"]}>{row.value}</span>
-                  </span>
-                ) : row.kind === "platform" ? (
-                  <span className={styles["row-inline"]}>
-                    {sourceLogo ? (
-                      <span className={styles["row-source-icon"]} aria-hidden>
-                        <img src={sourceLogo} alt="" width={16} height={16} />
-                      </span>
-                    ) : SourceIcon ? (
-                      <span className={styles["row-source-icon"]} aria-hidden>
-                        <SourceIcon width={16} height={16} />
-                      </span>
-                    ) : null}
-                    <span className={styles["row-value"]}>{row.value}</span>
-                  </span>
-                ) : (
-                  <span className={styles["row-value"]} title={row.value}>
-                    {row.value}
-                  </span>
-                )}
-              </div>
+            {group.rows.map((row) => (
+              <PropertyRow
+                key={row.id}
+                row={row}
+                avatarUrl={avatarUrl}
+                sourceLogo={sourceLogo}
+                SourceIcon={SourceIcon}
+              />
             ))}
+            {group.title === "Properties" ? (
+              <PropertyColors colors={colors} />
+            ) : null}
           </div>
         </Section>
+      ))}
 
-        <TagsSection save={save} />
+      {!hasProperties && colors.length > 0 ? (
+        <Section title="Properties">
+          <div className={styles.rows}>
+            <PropertyColors colors={colors} />
+          </div>
+        </Section>
+      ) : null}
+    </DetailCard>
+  );
+}
 
-        {hasVideo ? <VideoNotesSection save={save} /> : null}
-
-        {colors.length > 0 ? (
-          <Section title="Colors">
-            <div className={styles.colors}>
-              {colors.map((color) => (
-                <ColorSwatch key={color} color={color} />
-              ))}
-            </div>
-          </Section>
-        ) : null}
+function PropertyColors({ colors }: { colors: string[] }) {
+  if (colors.length === 0) return null;
+  return (
+    <div className={styles.row}>
+      <span className={styles["row-label"]}>Colors</span>
+      <div className={styles.colors}>
+        {colors.map((color) => (
+          <ColorSwatch key={color} color={color} />
+        ))}
       </div>
+    </div>
+  );
+}
+
+function PropertyRow({
+  row,
+  avatarUrl,
+  sourceLogo,
+  SourceIcon,
+}: {
+  row: DetailRow;
+  avatarUrl: string | null;
+  sourceLogo: string | null;
+  SourceIcon: ComponentType<{
+    width?: number;
+    height?: number;
+  }> | null;
+}) {
+  return (
+    <div className={styles.row}>
+      <span className={styles["row-label"]}>{row.label}</span>
+      {row.kind === "author" ? (
+        <span className={styles["row-inline"]}>
+          <span
+            className={styles["row-avatar"]}
+            style={{ background: pickAuthorColor(row.value) }}
+            aria-hidden
+          >
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                draggable={false}
+              />
+            ) : (
+              initials(row.value)
+            )}
+          </span>
+          <span className={styles["row-value"]}>{row.value}</span>
+        </span>
+      ) : row.kind === "platform" ? (
+        <span className={styles["row-inline"]}>
+          {sourceLogo ? (
+            <span className={styles["row-source-icon"]} aria-hidden>
+              <img src={sourceLogo} alt="" width={16} height={16} />
+            </span>
+          ) : SourceIcon ? (
+            <span className={styles["row-source-icon"]} aria-hidden>
+              <SourceIcon width={16} height={16} />
+            </span>
+          ) : null}
+          <span className={styles["row-value"]}>{row.value}</span>
+        </span>
+      ) : (
+        <span className={styles["row-value"]} title={row.value}>
+          {row.value}
+        </span>
+      )}
     </div>
   );
 }

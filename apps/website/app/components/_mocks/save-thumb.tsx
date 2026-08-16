@@ -63,13 +63,15 @@ export function SaveThumb({
             : { aspectRatio: String(aspect) }
         }
       >
-        <Image
-          className={styles.image}
-          src={image}
-          alt=""
-          width={480}
-          height={Math.round(480 / aspect)}
-        />
+        <div className={styles.thumb}>
+          <Image
+            className={styles.image}
+            src={image}
+            alt=""
+            width={480}
+            height={Math.round(480 / aspect)}
+          />
+        </div>
         <div className={styles.overlay}>
           {typeLabel ? <span className={styles.type}>{typeLabel}</span> : null}
           {count ? <span className={styles.count}>{count}</span> : null}

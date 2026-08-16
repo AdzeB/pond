@@ -1,6 +1,6 @@
-import { join } from "node:path";
 import { app, BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
+import { DEFAULT_APP_ICON } from "../shared/app-icons";
 import { IPC } from "../shared/constants";
 import { attachEditableContextMenu } from "./context-menu";
 import { hardenArchiveWebviews } from "./core/archive-viewer";
@@ -18,6 +18,20 @@ let closeToTrayEnabled = false;
 /** Set during graceful quit so the close handler stops swallowing the event. */
 let isQuitting = false;
 let nativeThemeListenerAttached = false;
+
+/** Stage Manager's strip reports ~145×158 via getBounds; refuse to restore or persist that. */
+const MIN_WINDOW_WIDTH = 720;
+const MIN_WINDOW_HEIGHT = 480;
+
+function usableWindowBounds(
+  bounds: { x: number; y: number; width: number; height: number } | null,
+): { x: number; y: number; width: number; height: number } | null {
+  if (!bounds) return null;
+  if (bounds.width < MIN_WINDOW_WIDTH || bounds.height < MIN_WINDOW_HEIGHT) {
+    return null;
+  }
+  return bounds;
+}
 
 export function getMainWindow(): BrowserWindow | null {
   return mainWindow;
@@ -97,10 +111,9 @@ export async function createWindow(): Promise<BrowserWindow> {
   /** Resolve before the window exists so the first paint is themed. */
   const shellHint = await resolveShellHint();
   const prefs = await getPrefs().catch(() => null);
-  const restored =
-    prefs?.window.restorePosition && prefs.window.bounds
-      ? prefs.window.bounds
-      : null;
+  const restored = usableWindowBounds(
+    prefs?.window.restorePosition ? (prefs.window.bounds ?? null) : null,
+  );
 
   const themedBackground =
     typeof shellHint.background === "string" && shellHint.background.length > 0
@@ -110,19 +123,22 @@ export async function createWindow(): Promise<BrowserWindow> {
         ? "#000000"
         : "#ffffff";
 
-  const appIcon = join(__dirname, "../../build/icon.png");
+  const { applyAppIcon, resolveAppIconPath } = await import("./core/app-icon");
+  const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
 
   const win = new BrowserWindow({
     width: restored?.width ?? 1280,
     height: restored?.height ?? 800,
     x: restored?.x,
     y: restored?.y,
+    minWidth: MIN_WINDOW_WIDTH,
+    minHeight: MIN_WINDOW_HEIGHT,
     show: false,
     backgroundColor: themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
-    ...(!isMac ? { icon: appIcon } : {}),
+    ...(!isMac && appIcon ? { icon: appIcon } : {}),
     webPreferences: {
       preload: resolvePreload("index.cjs"),
       contextIsolation: true,
@@ -147,7 +163,8 @@ export async function createWindow(): Promise<BrowserWindow> {
     if (saveBoundsTimer) clearTimeout(saveBoundsTimer);
     saveBoundsTimer = setTimeout(() => {
       saveBoundsTimer = null;
-      const b = win.getBounds();
+      const b = usableWindowBounds(win.getBounds());
+      if (!b) return;
       void setPrefs({ window: { bounds: b } }).catch((err) =>
         log.warn("[pond] persist window bounds failed", err),
       );
@@ -174,6 +191,24 @@ export async function createWindow(): Promise<BrowserWindow> {
     if (route) {
       win.webContents.send(IPC.nav, route);
     }
+  });
+
+  win.webContents.on(
+    "did-fail-load",
+    (_event, code, desc, url, isMainFrame) => {
+      if (!isMainFrame) return;
+      log.error("[pond] renderer did-fail-load", { code, desc, url });
+    },
+  );
+
+  win.webContents.on("render-process-gone", (_event, details) => {
+    log.error("[pond] renderer gone", details);
+  });
+
+  win.webContents.on("console-message", (event) => {
+    const level = event.level;
+    if (level !== "warning" && level !== "error") return;
+    log.warn("[pond renderer]", event.message);
   });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
@@ -229,6 +264,7 @@ export async function createWindow(): Promise<BrowserWindow> {
   }
 
   mainWindow = win;
+  void applyAppIcon(prefs?.window.appIcon);
 
   if (!nativeThemeListenerAttached) {
     nativeThemeListenerAttached = true;

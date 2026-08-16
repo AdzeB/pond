@@ -1,0 +1,95 @@
+.wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.feature {
+  width: 44%;
+}
+
+.product {
+  width: 14%;
+  padding: 16px 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  vertical-align: bottom;
+  color: var(--ds-gray-10);
+  text-align: center;
+
+  &[data-pond] {
+    color: var(--ds-gray-12);
+    background: #f6f6f4;
+    border-radius: 12px 12px 0 0;
+  }
+
+  svg {
+    display: block;
+    margin: 0 auto 8px;
+  }
+}
+
+.label {
+  padding: 18px 12px 18px 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ds-gray-12);
+  text-align: left;
+  white-space: nowrap;
+  border-top: 1px solid var(--ds-gray-a3);
+}
+
+.label-inner {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--ds-gray-9);
+  }
+}
+
+.cell {
+  padding: 14px 8px;
+  vertical-align: middle;
+  text-align: center;
+  border-top: 1px solid var(--ds-gray-a3);
+
+  &[data-pond] {
+    background: #f6f6f4;
+  }
+}
+
+tbody tr:last-child .cell[data-pond] {
+  border-radius: 0 0 12px 12px;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+  clip: rect(0 0 0 0);
+}
+
+.yes,
+.no {
+  position: relative;
+}
+
+.yes {
+  display: inline-flex;
+  color: var(--ds-green-10);
+}
+
+.no {
+  display: inline-flex;
+  color: var(--ds-gray-7);
+}

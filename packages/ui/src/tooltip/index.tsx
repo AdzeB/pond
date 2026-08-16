@@ -117,7 +117,9 @@ function TooltipWrapper({
       <Portal>
         <Positioner side={side} align={align} sideOffset={sideOffset}>
           <Popup>
-            <Viewport>{tooltipContent(label, shortcut)}</Viewport>
+            <span className={styles.body}>
+              {tooltipContent(label, shortcut)}
+            </span>
           </Popup>
         </Positioner>
       </Portal>

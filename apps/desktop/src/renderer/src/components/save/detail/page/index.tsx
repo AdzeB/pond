@@ -2,7 +2,7 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveArchiveViewer } from "@/components/save/archive-viewer";
-import { SaveDetails } from "@/components/save/detail/pane";
+import { SaveAbout, SaveInfo } from "@/components/save/detail/pane";
 import { MediaViewer } from "@/components/save/media-viewer";
 import {
   buildViewerMenu,
@@ -18,14 +18,12 @@ import { isTextOnlySave } from "@/lib/save/text";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
 import { libraryViewContext } from "@/stores/library-view-context";
 import { useTrackVisit } from "@/stores/recents";
-import { useSaveDetailsOpen } from "@/stores/save-detail-prefs";
 import { primarySelection, selection } from "@/stores/selection";
 import { tagClipboard } from "@/stores/tag-clipboard";
 import styles from "./styles.module.css";
 
 export function SaveDetailPage() {
   const { id } = useParams({ from: "/_library/save/$id" });
-  const detailsOpen = useSaveDetailsOpen();
   const save = useSave(id);
   useTrackVisit(id);
 
@@ -108,10 +106,11 @@ export function SaveDetailPage() {
           menuFileIndex.current = fileIndexFromSlide(slide) ?? activeFileIndex;
         }}
       >
-        <div
-          className={styles.page}
-          data-details={detailsOpen ? "open" : "closed"}
-        >
+        <div className={styles.page}>
+          <div className={styles.pane}>
+            <SaveAbout save={save} fileIndex={activeFileIndex} />
+          </div>
+
           <div className={styles.main}>
             {hasArchive(save) ? (
               <SaveArchiveViewer save={save} />
@@ -125,8 +124,8 @@ export function SaveDetailPage() {
             )}
           </div>
 
-          <div className={styles.pane} inert={!detailsOpen}>
-            <SaveDetails save={save} fileIndex={activeFileIndex} />
+          <div className={styles.pane}>
+            <SaveInfo save={save} />
           </div>
         </div>
       </SpecContextMenu>

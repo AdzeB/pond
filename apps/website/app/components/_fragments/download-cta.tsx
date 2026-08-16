@@ -5,9 +5,10 @@ import {
   RELEASES_PAGE,
 } from "@/lib/release";
 import styles from "./download-cta.module.css";
+import { LinkButton } from "./link-button";
 
 interface DownloadCtaProps {
-  /** Compact row for the hero; full stack for the Get section. */
+  /** Compact row for the hero; full stack for the footer. */
   variant?: "hero" | "get";
 }
 
@@ -15,12 +16,12 @@ export function DownloadCta({ variant = "hero" }: DownloadCtaProps) {
   return (
     <div className={styles.root} data-variant={variant}>
       <div className={styles.row}>
-        <a className={styles.primary} href={dmgUrl("arm64")}>
+        <LinkButton href={dmgUrl("arm64")} variant="primary" size="md">
           Download for Apple Silicon
-        </a>
-        <a className={styles.secondary} href={dmgUrl("x64")}>
+        </LinkButton>
+        <LinkButton href={dmgUrl("x64")} variant="ghost" size="md">
           Intel
-        </a>
+        </LinkButton>
       </div>
       <p className={styles.meta}>
         macOS 12 or later · v{POND_VERSION} ·{" "}

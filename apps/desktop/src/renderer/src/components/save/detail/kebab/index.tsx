@@ -266,7 +266,7 @@ export function KebabMenu({
 
   return (
     <Menu.Root>
-      <Menu.Trigger variant="ghost" size="sm" icon>
+      <Menu.Trigger variant="ghost" size="xs" icon>
         <Ellipsis />
       </Menu.Trigger>
       <Menu.Portal>

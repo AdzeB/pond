@@ -1,34 +1,47 @@
 import {
-  IconDescendingSortingFill18,
-  IconEyeFill18,
-  IconGridFill18,
-  IconPlusFill18,
-  IconSizeFill18,
-  IconSparkle3Fill18,
+  IconArchiveContent2Fill18,
+  IconGlobeFill18,
+  IconLayers2Fill18,
+  IconTrash2ContentFill18,
 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
 import { Tray } from "@pond/ui";
 import type { ComponentType, SVGProps } from "react";
 import styles from "./dock.module.css";
 
-type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
+type Icon = ComponentType<SVGProps<SVGSVGElement>>;
 
-/** Actions mirror library-dock-nav-content: New, view menus, Search, Ask. */
-const REST_ACTIONS: { icon: IconComponent; label: string }[] = [
-  { icon: IconPlusFill18, label: "New" },
-  { icon: IconGridFill18, label: "Layout" },
-  { icon: IconSizeFill18, label: "Zoom" },
-  { icon: IconDescendingSortingFill18, label: "Sort" },
-  { icon: IconEyeFill18, label: "Display" },
-  { icon: IconMagnifierOutline18, label: "Search" },
-  { icon: IconSparkle3Fill18, label: "Ask AI" },
+const NAV: { icon: Icon; label: string; active?: boolean }[] = [
+  { icon: IconArchiveContent2Fill18, label: "Library", active: true },
+  { icon: IconTrash2ContentFill18, label: "Trash" },
+  { icon: IconGlobeFill18, label: "Sources" },
 ];
 
-/** The resting nav row alone, for docks that supply their own pill surface. */
+const ACTIONS: { icon: Icon; label: string }[] = [
+  { icon: IconMagnifierOutline18, label: "Search" },
+  { icon: IconLayers2Fill18, label: "Options" },
+];
+
+/** Resting library dock: destinations, then the page actions. */
 export function DockNavRow() {
   return (
     <div className={styles.row}>
-      {REST_ACTIONS.map((item) => {
+      {NAV.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Tray.Item
+            key={item.label}
+            render={<span />}
+            data-status={item.active ? "active" : undefined}
+            title={item.label}
+          >
+            {item.active ? <Tray.Indicator /> : null}
+            <Icon />
+          </Tray.Item>
+        );
+      })}
+      <Tray.Separator />
+      {ACTIONS.map((item) => {
         const Icon = item.icon;
         return (
           <Tray.Item key={item.label} render={<span />} title={item.label}>
@@ -40,7 +53,7 @@ export function DockNavRow() {
   );
 }
 
-/** Static replica of the resting library dock; Pill > 4px viewport > nav row, like library-dock. */
+/** Static replica of the resting library dock. */
 export function Dock() {
   return (
     <Tray.Pill aria-hidden>

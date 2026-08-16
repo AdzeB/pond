@@ -6,6 +6,8 @@
 }
 
 .text {
+  display: block;
+  overflow: hidden;
   font-size: 13px;
   line-height: 20px;
   color: var(--ds-gray-11);
@@ -13,10 +15,6 @@
   white-space: pre-wrap;
 
   &[data-clamped="true"] {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    -webkit-line-clamp: 10;
     mask-image: linear-gradient(to bottom, #000 62%, transparent);
   }
 }
@@ -39,21 +37,7 @@
 }
 
 .button {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  align-self: flex-start;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--ds-gray-12);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: transparent;
-  border: 0;
-
-  &:hover {
-    text-decoration: underline;
-  }
+  border-radius: var(--ds-radius-full);
 }
 
 .icon {
@@ -63,4 +47,9 @@
   &[data-rotate="true"] {
     transform: rotate(180deg);
   }
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
 }

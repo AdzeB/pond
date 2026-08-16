@@ -18,7 +18,7 @@ directories:
   buildResources: build
   output: dist
 
-# Windows / Linux app icon (from packages/icons/app/ios via prepare-app-icon).
+# Windows / Linux app icon (from packages/icons/brand/tints/aqua via prepare-app-icon).
 icon: icon.png
 
 files:
@@ -43,6 +43,11 @@ extraResources:
     to: .
     filter:
       - "**/*"
+  - from: ../../packages/icons/brand/tints
+    to: app-icons
+    filter:
+      - "**/default.png"
+      - "**/Pond-iOS-Default-1024x1024@1x.png"
   - from: node_modules/ffmpeg-static/ffmpeg
     to: bin/ffmpeg
 

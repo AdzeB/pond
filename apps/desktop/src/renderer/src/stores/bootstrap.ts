@@ -3,7 +3,11 @@ import { normalise, type SyncActionEvent } from "@/lib/save/reconcile";
 import { readSnapshot, scheduleSnapshotWrite } from "@/lib/save/snapshot";
 import { applyActionCoalesced } from "@/lib/save/sync-coalesce";
 import type { Save } from "@/lib/types";
+import { dismissBootCover } from "@/lib/ui/boot-cover";
 import { bulkUpsertSaves, deleteSave, pool } from "@/stores/pool";
+
+const SNAPSHOT_TIMEOUT_MS = 2_000;
+const FIRST_PAGE_TIMEOUT_MS = 4_000;
 
 export interface SavePageCursor {
   readonly savedAt: number;
@@ -28,6 +32,28 @@ export const pagingStore = new Store<PagingState>({
   hasMore: true,
 });
 
+function withTimeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out after ${ms}ms`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
+
 const PAGE_SIZE = 250;
 
 let started = false;
@@ -41,20 +67,29 @@ export function bootPool(): Promise<void> {
   started = true;
 
   bootPromise = (async () => {
-    subscribeToSyncActions();
     try {
-      await primeSnapshot();
+      subscribeToSyncActions();
+    } catch (err) {
+      console.warn("[pond pool] sync subscribe failed", err);
+    }
+    try {
+      await withTimeout(primeSnapshot(), SNAPSHOT_TIMEOUT_MS, "snapshot prime");
     } catch (err) {
       console.warn("[pond pool] snapshot prime failed", err);
     }
 
     try {
-      await loadNextPage();
+      await withTimeout(
+        loadNextPage(),
+        FIRST_PAGE_TIMEOUT_MS,
+        "initial page hydrate",
+      );
     } catch (err) {
       console.warn("[pond pool] initial page hydrate failed", err);
     }
     scheduleSnapshotWrite();
     pagingStore.setState((state) => ({ ...state, ready: true }));
+    dismissBootCover();
   })();
 
   return bootPromise;

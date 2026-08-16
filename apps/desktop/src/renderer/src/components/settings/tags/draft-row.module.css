@@ -11,13 +11,7 @@
   align-items: center;
   justify-content: center;
   width: 22px;
-}
-
-.dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
+  color: var(--ds-gray-11);
 }
 
 .name-input {

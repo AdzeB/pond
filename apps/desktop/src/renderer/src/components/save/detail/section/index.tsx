@@ -1,14 +1,49 @@
+import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
+import { Accordion } from "@pond/ui";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useState } from "react";
+import { gentleSpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
-interface SectionProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SectionProps {
   title: string;
+  children: React.ReactNode;
 }
 
-export function Section({ title, ...props }: SectionProps) {
+export function Section({ title, children }: SectionProps) {
+  const [open, setOpen] = useState(true);
+  const reduceMotion = useReducedMotion();
+
   return (
-    <section className={styles.section} {...props}>
-      <h3 className={styles.title}>{title}</h3>
-      {props.children}
-    </section>
+    <Accordion.Root
+      className={styles.section}
+      multiple
+      value={open ? [title] : []}
+      onValueChange={(next) => setOpen(next.includes(title))}
+    >
+      <Accordion.Item value={title} className={styles.item}>
+        <Accordion.Header className={styles.header}>
+          <Accordion.Trigger className={styles.trigger}>
+            <span className={styles.title}>{title}</span>
+            <span className={styles.chevron} aria-hidden>
+              <IconChevronDownOutline12 />
+            </span>
+          </Accordion.Trigger>
+        </Accordion.Header>
+        <AnimatePresence mode="wait" initial={false}>
+          {open ? (
+            <motion.div
+              className={styles.panel}
+              initial={{ height: 0, opacity: 0, marginTop: 0 }}
+              animate={{ height: "auto", opacity: 1, marginTop: 8 }}
+              exit={{ height: 0, opacity: 0, marginTop: 0 }}
+              transition={reduceMotion ? { duration: 0 } : gentleSpring}
+            >
+              {children}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </Accordion.Item>
+    </Accordion.Root>
   );
 }

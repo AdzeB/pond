@@ -40,6 +40,29 @@ function stripTwitterShortUrls(text: string): string {
     .trim();
 }
 
+const DETAIL_GROUPS = [
+  { title: "Properties", ids: ["author", "platform", "type"] },
+  {
+    title: "Activity",
+    ids: [
+      "views",
+      "likes",
+      "comments",
+      "retweets",
+      "quotes",
+      "bookmarks",
+      "shares",
+    ],
+  },
+  { title: "File", ids: ["duration", "dimensions", "size", "id"] },
+  { title: "Dates", ids: ["published", "imported", "modified"] },
+] as const;
+
+export interface DetailGroup {
+  title: string;
+  rows: DetailRow[];
+}
+
 export function collectIdentityRows(save: Save): DetailRow[] {
   const rows: DetailRow[] = [
     { id: "id", label: "ID", value: save.id, kind: "mono" },
@@ -62,6 +85,48 @@ export function collectIdentityRows(save: Save): DetailRow[] {
     rows.push({ ...row, kind: "text" });
   }
   return rows;
+}
+
+/** Unknown ids fall through into Properties. */
+export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const placed = new Set<string>();
+  const groups: DetailGroup[] = [];
+
+  for (const group of DETAIL_GROUPS) {
+    const next = group.ids.flatMap((id) => {
+      const row = byId.get(id);
+      if (!row) return [];
+      placed.add(id);
+      return [row];
+    });
+    if (next.length === 0) continue;
+    groups.push({ title: group.title, rows: next });
+  }
+
+  const leftover = rows.filter((row) => !placed.has(row.id));
+  if (leftover.length > 0) {
+    const properties = groups.find((group) => group.title === "Properties");
+    if (properties) properties.rows.push(...leftover);
+    else groups.unshift({ title: "Properties", rows: leftover });
+  }
+
+  return groups;
+}
+
+function normalizeForCompare(text: string): string {
+  return text
+    .replace(/https?:\/\/\S+/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+/** Title that is the content plus a trailing URL (or the same words) should not get its own island. */
+export function isSameTitleAndContent(title: string, content: string): boolean {
+  const a = normalizeForCompare(title);
+  const b = normalizeForCompare(content);
+  return a.length > 0 && a === b;
 }
 
 /** X strips the trailing link from a tweet's visible text once it becomes a card; surface that destination here when it isn't just another t.co shortlink. */

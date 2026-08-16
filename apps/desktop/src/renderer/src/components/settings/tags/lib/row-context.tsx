@@ -118,7 +118,8 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
   }
 
   function setColor(color: string | null) {
-    void window.pond.query(isGroup ? "tagGroups.update" : "tags.update", {
+    if (!isGroup) return;
+    void window.pond.query("tagGroups.update", {
       name,
       patch: { color },
     });

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Rasterize `packages/icons/app/icon.svg` into menu-bar template PNGs.
- * @see packages/icons/app/icon.svg
+ * Rasterize `packages/icons/brand/icon.svg` into menu-bar template PNGs.
+ * @see packages/icons/brand/icon.svg
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -12,7 +12,7 @@ import sharp from "sharp";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "..", "resources");
-const svgPath = resolve(here, "../../../packages/icons/app/icon.svg");
+const svgPath = resolve(here, "../../../packages/icons/brand/icon.svg");
 
 mkdirSync(outDir, { recursive: true });
 

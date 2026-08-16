@@ -32,7 +32,7 @@ export const SAVES: DemoSave[] = [
     aspect: 0.75,
     kind: "image",
     source: "pinterest",
-    title: "Chuncky brown shoes",
+    title: "Chunky brown shoes",
     time: "2026/06/14 18:22",
     id: "01KV5AS1NVP7NG58ZAJ5ZN0G73",
   },

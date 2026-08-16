@@ -178,6 +178,18 @@
 				}
 			})();
 		</script>
+		<script>
+			(() => {
+				const BOOT_FAILSAFE_MS = 4000;
+				window.setTimeout(() => {
+					const el = document.getElementById("boot");
+					if (!el || el.dataset.state === "out") return;
+					el.dataset.state = "out";
+					el.setAttribute("aria-busy", "false");
+					window.setTimeout(() => el.remove(), 220);
+				}, BOOT_FAILSAFE_MS);
+			})();
+		</script>
 	</head>
 	<body>
 		<div id="boot" role="status" aria-busy="true" aria-label="Loading Pond">

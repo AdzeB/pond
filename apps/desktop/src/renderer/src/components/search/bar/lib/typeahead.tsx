@@ -22,12 +22,18 @@ import {
 import { createPortal } from "react-dom";
 import { useDock } from "@/components/library/dock/lib/context";
 import {
+  accountChipLabel,
+  accountRefsFromSync,
+  displayAccountToken,
+} from "@/lib/search/account-aliases";
+import {
   canonicalKey,
   DATE_PRESETS,
   fieldForKey,
   TOKEN_FIELDS,
 } from "@/lib/search/syntax";
 import { bouncySpring } from "@/lib/ui/motion";
+import { usePrefs } from "@/stores/prefs";
 import styles from "./typeahead.module.css";
 
 const LOOKUP_CAP = 8;
@@ -41,6 +47,7 @@ interface TypeaheadFacets {
   tags: ReadonlyArray<string>;
   sources: ReadonlyArray<string>;
   creators: ReadonlyArray<string>;
+  accounts: ReadonlyArray<{ value: string; label: string }>;
 }
 
 /** Free-form fields return null so the caret keeps plain text. */
@@ -62,6 +69,9 @@ function valueSuggestionsFor(
       value,
       label: value === "local" ? "Local" : value,
     }));
+  }
+  if (field === "account") {
+    return [...facets.accounts];
   }
   const meta = FIELD_META[field];
   if (meta.presets) {
@@ -176,9 +186,17 @@ export function FilterTypeahead({
   const [editor] = useLexicalComposerContext();
   const { dockRef } = useDock();
   const [query, setQuery] = useState<string | null>(null);
+  const [sync] = usePrefs("sync");
+  const accounts = useMemo(() => {
+    const refs = accountRefsFromSync(sync);
+    return refs.map((ref) => ({
+      value: displayAccountToken(ref.id, refs),
+      label: accountChipLabel(ref.id, refs),
+    }));
+  }, [sync]);
   const facets = useMemo(
-    () => ({ tags, sources, creators }),
-    [tags, sources, creators],
+    () => ({ tags, sources, creators, accounts }),
+    [tags, sources, creators, accounts],
   );
 
   const menu = useMemo(

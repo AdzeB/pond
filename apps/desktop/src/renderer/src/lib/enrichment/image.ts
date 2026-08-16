@@ -1,4 +1,4 @@
-import { RawImage } from "@huggingface/transformers";
+import type { RawImage } from "@huggingface/transformers";
 import { pickPrimaryUnit } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 
@@ -15,5 +15,6 @@ export function representativeImageUrl(save: Save): string | null {
 export async function loadImage(url: string): Promise<RawImage> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
+  const { RawImage } = await import("@huggingface/transformers");
   return RawImage.fromBlob(await res.blob());
 }

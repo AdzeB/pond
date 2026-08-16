@@ -1,16 +1,11 @@
-import {
-  IconPlusOutline18 as Plus,
-  IconXmarkOutline18 as X,
-} from "@pond/icons/outline/18";
+import { IconPlusOutline12 as Plus } from "@pond/icons/outline/12";
 import type { MenuItemSpec } from "@pond/ui";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { TagPicker } from "@/components/tags/picker";
 import { setSaveTags } from "@/lib/save/mutate";
-import { colorForName } from "@/lib/tags/color";
 import type { Save } from "@/lib/types";
 import { closeSave } from "@/lib/ui/save-nav";
-import { useTags } from "@/stores/tags";
 import { setSearchInput } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
@@ -43,77 +38,58 @@ function buildTagPillMenu(
   ];
 }
 
-export function TagsEditor({ save }: { save: Save }) {
-  const [busy, setBusy] = useState(false);
-  const catalog = useTags();
-
-  const colorByName = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const tag of catalog) {
-      map.set(tag.name.toLowerCase(), tag.color ?? colorForName(tag.name));
-    }
-    return map;
-  }, [catalog]);
+export function TagsEditor({
+  save,
+  children,
+}: {
+  save: Save;
+  children?: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const remove = useCallback(
     async (name: string) => {
-      setBusy(true);
-      try {
-        await setSaveTags(
-          save.id,
-          save.tags.filter((t) => t.toLowerCase() !== name.toLowerCase()),
-        );
-      } finally {
-        setBusy(false);
-      }
+      await setSaveTags(
+        save.id,
+        save.tags.filter((t) => t.toLowerCase() !== name.toLowerCase()),
+      );
     },
     [save.id, save.tags],
   );
 
   return (
-    <div className={styles["pane-tags"]}>
-      {save.tags.map((tag) => (
-        <SpecContextMenu
-          key={tag}
-          buildItems={() => buildTagPillMenu(tag, remove)}
-        >
-          <span className={styles["pane-tag"]}>
-            <span
-              className={styles["pane-tag-dot"]}
-              style={{
-                background:
-                  colorByName.get(tag.toLowerCase()) ?? colorForName(tag),
-              }}
-              aria-hidden
-            />
-            <span className={styles["pane-tag-label"]}>{tag}</span>
+    <TagPicker.Root
+      target={{ kind: "save", save }}
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <div ref={listRef} className={styles.tags}>
+        {save.tags.map((tag) => (
+          <SpecContextMenu
+            key={tag}
+            buildItems={() => buildTagPillMenu(tag, remove)}
+          >
             <button
               type="button"
-              className={styles["pane-tag-remove"]}
-              onClick={() => void remove(tag)}
-              aria-label={`Remove tag ${tag}`}
-              disabled={busy}
+              className={styles.tag}
+              onClick={() => setOpen(true)}
             >
-              <X width={10} height={10} />
+              <span className={styles.label}>{tag}</span>
             </button>
-          </span>
-        </SpecContextMenu>
-      ))}
-      <TagPicker.Root target={{ kind: "save", save }}>
-        <TagPicker.Trigger
-          render={
-            <button
-              type="button"
-              className={styles["pane-tag-add"]}
-              aria-label="Add tag"
-              data-tag-add
-            >
-              <Plus width={12} height={12} />
-            </button>
-          }
+          </SpecContextMenu>
+        ))}
+        {children}
+        <TagPicker.Trigger icon size="xs" variant="ghost" aria-label="Add tag">
+          <Plus />
+        </TagPicker.Trigger>
+        <TagPicker.Content
+          anchor={() => listRef.current}
+          side="top"
+          align="start"
+          sideOffset={8}
         />
-        <TagPicker.Content side="left" align="start" sideOffset={6} />
-      </TagPicker.Root>
-    </div>
+      </div>
+    </TagPicker.Root>
   );
 }
