@@ -1,8 +1,6 @@
 const DEFAULT_PORT = 41610;
 
-export function parsePairingLink(
-  raw: string,
-): { token: string; port: number } | null {
+function parsePairingLink(raw: string): { token: string; port: number } | null {
   try {
     const cleaned = raw.trim().replace(/^[<"']|[>"']$/g, "");
     if (!cleaned.startsWith("pond://pair")) return null;

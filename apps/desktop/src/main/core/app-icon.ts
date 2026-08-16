@@ -40,11 +40,13 @@ let popGeneration = 0;
 /** Packaged: extraResources `app-icons`. Dev: this file emits under `out/main/chunks/`. */
 function tintsRoot(): string {
   if (app.isPackaged) return join(process.resourcesPath, "app-icons");
-  const candidates = [
-    join(app.getAppPath(), "../../packages/icons/brand/tints"),
-    resolveMainOut("../../../../packages/icons/brand/tints"),
-  ];
-  return candidates.find((dir) => existsSync(dir)) ?? candidates[0];
+  const packagedDev = join(
+    app.getAppPath(),
+    "../../packages/icons/brand/tints",
+  );
+  if (existsSync(packagedDev)) return packagedDev;
+  const fromOut = resolveMainOut("../../../../packages/icons/brand/tints");
+  return existsSync(fromOut) ? fromOut : packagedDev;
 }
 
 function iconFile(id: string): string | null {

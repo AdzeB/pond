@@ -55,8 +55,6 @@ const INITIAL: AskState = {
 
 const store = new Store<AskState>(INITIAL);
 
-export const askStore = store;
-
 /** No-op when `nonce` is no longer the live run. */
 function updateIfCurrent(nonce: number, patch: Partial<AskState>): void {
   store.setState((s) => {

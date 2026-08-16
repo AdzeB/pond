@@ -6,15 +6,13 @@
  */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = join(here, "..", "public", "icons");
 const svgPath = resolve(here, "../../../packages/icons/brand/icon.svg");
-const require = createRequire(resolve(here, "../../desktop/package.json"));
-const sharp = require("sharp");
 
 mkdirSync(outDir, { recursive: true });
 

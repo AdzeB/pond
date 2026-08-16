@@ -7,7 +7,7 @@ import { getAppRouter } from "@/lib/ui/app-router";
 import { settingsModal } from "@/stores/settings-modal";
 import type { SyncAccountStatus } from "@/stores/sync-monitor";
 
-export type RowTone = "run" | "ok" | "warn" | "err" | "idle";
+type RowTone = "run" | "ok" | "warn" | "err" | "idle";
 
 export interface StatusEntity {
   id: string;
@@ -18,9 +18,7 @@ export interface StatusEntity {
   tone: RowTone;
 }
 
-export function toneFromModel(
-  tone: ReturnType<typeof cardModel>["tone"],
-): RowTone {
+function toneFromModel(tone: ReturnType<typeof cardModel>["tone"]): RowTone {
   if (tone === "run") return "run";
   if (tone === "ok") return "ok";
   if (tone === "paused") return "warn";

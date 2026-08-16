@@ -33,9 +33,3 @@
   border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-2);
 }
-
-.close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}

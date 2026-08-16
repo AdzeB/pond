@@ -4,7 +4,3 @@ import { $getRoot } from "lexical";
 export function $readSearchString(): string {
   return $getRoot().getTextContent().replace(/\s+/g, " ").trim();
 }
-
-export function $isEditorEmpty(): boolean {
-  return $getRoot().getTextContent().trim().length === 0;
-}

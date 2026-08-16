@@ -3,7 +3,7 @@ import { DEFAULT_APP_ICON } from "@pond/schema/db";
 export { DEFAULT_APP_ICON };
 
 /** Preferred picker order: default first, then the saturated crayons, then the rest. */
-export const APP_ICON_ORDER = [
+const APP_ICON_ORDER = [
   DEFAULT_APP_ICON,
   "maraschino",
   "tangerine",
@@ -29,7 +29,7 @@ export const APP_ICON_ORDER = [
 export function appIconLabel(id: string): string {
   return id
     .split("-")
-    .map((part) => (part ? part[0].toUpperCase() + part.slice(1) : part))
+    .map((part) => (part ? part.charAt(0).toUpperCase() + part.slice(1) : part))
     .join(" ");
 }
 

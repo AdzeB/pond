@@ -1,5 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["iconutil"],
   "ignoreDependencies": ["@pond/theme", "ffmpeg-static", "drizzle-kit"],
   "workspaces": {
     "apps/desktop": {

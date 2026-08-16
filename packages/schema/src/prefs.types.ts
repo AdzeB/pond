@@ -210,15 +210,6 @@ export const DEFAULT_DARK_THEME: ThemeDef = {
 export const DEFAULT_LIGHT_PRESET_ID = "light";
 export const DEFAULT_DARK_PRESET_ID = "dark";
 
-/** @deprecated Use DEFAULT_LIGHT_THEME. */
-export const CUSTOM_THEME_DEFAULT = DEFAULT_LIGHT_THEME;
-/** @deprecated Use DEFAULT_LIGHT_PRESET_ID. */
-export const DEFAULT_PRESET_ID = DEFAULT_LIGHT_PRESET_ID;
-/** @deprecated Use DEFAULT_LIGHT_PRESET_ID. */
-export const DEFAULT_SYSTEM_LIGHT_ID = DEFAULT_LIGHT_PRESET_ID;
-/** @deprecated Use DEFAULT_DARK_PRESET_ID. */
-export const DEFAULT_SYSTEM_DARK_ID = DEFAULT_DARK_PRESET_ID;
-
 /** Dock / taskbar mark; matches a folder under packages/icons/brand/tints. */
 export const DEFAULT_APP_ICON = "aqua";
 

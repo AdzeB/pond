@@ -103,7 +103,7 @@ function parseGraphqlBody(body: string): unknown {
 }
 
 /** Walks a GraphQL payload for post nodes; skips quoted/reposted children so they stay nested on the parent. */
-export function collectThreadPosts(json: unknown): unknown[] {
+function collectThreadPosts(json: unknown): unknown[] {
   const out: unknown[] = [];
   const seen = new Set<string>();
   walk(json, false, (obj) => {

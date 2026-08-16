@@ -9,7 +9,7 @@ import { bulkUpsertSaves, deleteSave, pool } from "@/stores/pool";
 const SNAPSHOT_TIMEOUT_MS = 2_000;
 const FIRST_PAGE_TIMEOUT_MS = 4_000;
 
-export interface SavePageCursor {
+interface SavePageCursor {
   readonly savedAt: number;
   readonly id: string;
 }

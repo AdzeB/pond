@@ -1,6 +1,6 @@
 import type { Source } from "@pond/schema/db";
 
-export { hostToSource, sourceLabel } from "@pond/schema/sources";
+export { hostToSource } from "@pond/schema/sources";
 
 export function cookieDomainForSource(source: Source): string | null {
   switch (source) {

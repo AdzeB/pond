@@ -2,7 +2,6 @@ import { Settings } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { Suspense, useEffect } from "react";
 import { SettingsSectionView } from "@/components/settings/engine";
-import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { isBespokeSection, sectionForPath } from "@/lib/settings/registry";
 import styles from "./styles.module.css";
 
@@ -48,7 +47,6 @@ export function SettingsDetail({
   hash?: string | null;
 }) {
   useScrollToHashField(hash);
-  const _scrollFade = useScrollFade<HTMLDivElement>();
   const def = sectionForPath(section);
   if (!def) return null;
 

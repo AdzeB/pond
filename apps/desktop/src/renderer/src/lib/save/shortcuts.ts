@@ -268,16 +268,6 @@ export function shortcutGlyphs(id: ShortcutId): string[] {
   return [];
 }
 
-/** Menu label for sequences (`G then L`) or glyph array for chords. */
-export function shortcutMenuHint(id: ShortcutId): string | string[] {
-  const def = defOf(id);
-  if (def.sequence) {
-    return def.sequence.map((step) => formatForDisplay(step)).join(" then ");
-  }
-  if (def.keys) return chordGlyphs(def.keys);
-  return [];
-}
-
 /** Chord string for `useHotkeys`, or null when the shortcut is a sequence. */
 export function shortcutChord(id: ShortcutId): string | null {
   return defOf(id).keys ?? null;

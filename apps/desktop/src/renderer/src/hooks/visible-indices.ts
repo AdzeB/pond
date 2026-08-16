@@ -6,7 +6,7 @@ export interface PositionedItem {
 export type VisibilityMode = "monotonic" | "scan";
 
 /** Roughly two laptop viewports: enough runway for local preview reads + decode during a fast trackpad scroll. */
-export const OVERSCAN_PX = 1600;
+const OVERSCAN_PX = 1600;
 
 /** First index whose bottom edge reaches `viewMin` (items ordered by nondecreasing `top`). */
 function lowerBoundMonotonic<T extends PositionedItem>(
@@ -80,13 +80,4 @@ export function computeVisible<T extends PositionedItem>(
   return mode === "monotonic"
     ? computeVisibleMonotonic(items, viewMin, viewMax)
     : computeVisibleScan(items, viewMin, viewMax);
-}
-
-export function sameIndices(a: number[], b: number[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
 }

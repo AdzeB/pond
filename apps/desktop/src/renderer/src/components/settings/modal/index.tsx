@@ -7,7 +7,7 @@ import styles from "./styles.module.css";
 
 export function SettingsModal() {
   const { section, hash } = useSettingsModal();
-  const _scrollFade = useScrollFade<HTMLElement>();
+  const scrollFade = useScrollFade<HTMLDivElement>();
 
   return (
     <Dialog.Root
@@ -21,7 +21,7 @@ export function SettingsModal() {
         <Dialog.Popup className={styles.popup} aria-label="Settings">
           <SettingsSidebar />
           <div className={styles.main}>
-            <div className={styles.content}>
+            <div className={styles.content} {...scrollFade}>
               {section ? (
                 <SettingsDetail section={section} hash={hash} />
               ) : null}

@@ -70,7 +70,7 @@ const YTDLP_KEEP_KEYS = [
   "n_entries",
 ] as const;
 
-export async function readInfoJson(
+async function readInfoJson(
   dir: string,
   videoPath: string,
 ): Promise<Record<string, unknown> | null> {
@@ -127,13 +127,6 @@ export async function pickProducedFiles(dir: string): Promise<ProducedFile[]> {
   const valid = sized.filter((e): e is ProducedFile => e !== null);
   valid.sort((a, b) => playlistIndex(a) - playlistIndex(b));
   return valid;
-}
-
-export async function pickProducedFile(
-  dir: string,
-): Promise<ProducedFile | null> {
-  const all = await pickProducedFiles(dir);
-  return all[0] ?? null;
 }
 
 function playlistIndex(file: ProducedFile): number {

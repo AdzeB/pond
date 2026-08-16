@@ -6,7 +6,7 @@ import { pool } from "@/stores/pool";
 const DB_NAME = "pond-pool";
 const STORE = "snapshot";
 const VERSION = 1;
-export const SNAPSHOT_LIMIT = 250;
+const SNAPSHOT_LIMIT = 250;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 

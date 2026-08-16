@@ -105,11 +105,3 @@ export function sessionImportUrl(port: number): string {
 export function sessionPendingUrl(port: number): string {
   return `http://127.0.0.1:${port}/api/v2/session/pending`;
 }
-
-export function itemGetUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/item/get`;
-}
-
-export function itemThumbUrl(port: number, id: string): string {
-  return `http://127.0.0.1:${port}/api/v2/item/thumb?id=${encodeURIComponent(id)}`;
-}

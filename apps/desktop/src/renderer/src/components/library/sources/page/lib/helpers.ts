@@ -28,7 +28,7 @@ export function watchName(watch: WatchRow): string {
     : `@${watch.handle}`;
 }
 
-export function itemCount(count: number): string {
+function itemCount(count: number): string {
   return `${formatNumber(count)} item${count === 1 ? "" : "s"}`;
 }
 

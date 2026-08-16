@@ -1,6 +1,4 @@
-import type { CustomSkill } from "@pond/schema/db";
 import { ulid } from "ulid";
-import { fuzzyRank } from "@/lib/util/fuzzy";
 
 export type { CustomSkill } from "@pond/schema/db";
 
@@ -16,12 +14,4 @@ export function slugifySkillName(name: string): string {
 
 export function makeSkillId(): string {
   return `skill_${ulid()}`;
-}
-
-/** An empty query returns all skills in their stored order. */
-export function matchSkills(
-  skills: readonly CustomSkill[],
-  query: string,
-): CustomSkill[] {
-  return fuzzyRank(skills, query, (s) => `${s.name} ${s.description}`);
 }

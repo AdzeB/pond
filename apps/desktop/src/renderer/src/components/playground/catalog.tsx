@@ -67,7 +67,3 @@ export const PLAYGROUND_CATALOG: PlaygroundEntry[] = [
     Fixture: ChipFixture,
   },
 ];
-
-export function playgroundEntry(id: string): PlaygroundEntry | undefined {
-  return PLAYGROUND_CATALOG.find((entry) => entry.id === id);
-}

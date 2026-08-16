@@ -29,7 +29,7 @@ function saveLabel(save: Save): string {
   return "Untitled save";
 }
 
-export function labelForPath(path: string): string {
+function labelForPath(path: string): string {
   const pathname = path.split("?")[0] ?? path;
   const clean = listBaseFromPath(pathname);
 

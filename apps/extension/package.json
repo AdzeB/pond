@@ -42,6 +42,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@wxt-dev/module-react": "^1.1.6",
+    "sharp": "^0.34.5",
     "typescript": "catalog:",
     "wxt": "^0.20.25"
   }

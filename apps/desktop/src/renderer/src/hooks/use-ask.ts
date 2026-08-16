@@ -168,6 +168,3 @@ export function useNlSearch(): (question: string) => Promise<void> {
     [compile, ai, facets],
   );
 }
-
-/** @deprecated Prefer `useNlSearch`. */
-export const useAsk = useNlSearch;

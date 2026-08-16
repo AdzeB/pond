@@ -19,7 +19,7 @@ function sourceIcon(path: string): TabIcon | null {
   return getSourceIcon(id) ?? null;
 }
 
-export function iconForPath(path: string): TabIcon {
+function iconForPath(path: string): TabIcon {
   const clean = listBaseFromPath(path.split("?")[0] ?? path);
 
   const exact = ROUTE_ICONS[clean];

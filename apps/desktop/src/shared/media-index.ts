@@ -1,4 +1,4 @@
-export type MediaIndexState =
+type MediaIndexState =
   | "idle"
   | "indexing"
   | "paused-user"

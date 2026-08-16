@@ -129,15 +129,11 @@ interface ThumbnailRequest {
   priority?: ThumbnailPriority;
 }
 
-interface ThumbnailSetRequest extends Omit<ThumbnailRequest, "width"> {
-  widths: readonly number[];
-}
-
 type ThumbnailKind = "sharp" | "native";
 type ThumbnailOutput = { width: number; out: string };
 
 /** Resolves a cached WebP thumb, generating on demand; null means serve the original. */
-export async function getOrCreateThumbnail(
+async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
   const exact = lookupExactCachedThumbnail(req);
@@ -233,72 +229,6 @@ export function ensureThumbnailInBackground(req: ThumbnailRequest): void {
     ...req,
     priority: req.priority ?? "background",
   }).catch(() => {});
-}
-
-/** Generates several cache buckets through one decoded source pipeline. */
-export async function prepareThumbnails(
-  req: ThumbnailSetRequest,
-): Promise<void> {
-  const widths = [...new Set(req.widths)];
-  if (widths.length === 0) return;
-  const version = await resolveVersion(req.sourcePath, req.version);
-  if (!version) return;
-  const segment = sanitizeSegment(req.saveId);
-  const dir = join(thumbnailCacheRoot(), segment);
-  const legacyDir = join(libraryRoot(), LEGACY_THUMBS_DIRNAME, segment);
-  const outputs = widths.map((width) => ({
-    width,
-    out: thumbnailOutput(dir, req.sourcePath, version, width),
-    legacyOut: thumbnailOutput(legacyDir, req.sourcePath, version, width),
-  }));
-
-  const waits: Promise<string | null>[] = [];
-  const missing: ThumbnailOutput[] = [];
-  const owned: Array<readonly [string, Promise<string | null>]> = [];
-  for (const output of outputs) {
-    if (existsSync(output.out)) continue;
-    const existing = inflight.get(output.out);
-    if (existing) waits.push(existing);
-    else if (existsSync(output.legacyOut)) {
-      const promotion = promoteLegacyThumbnail(
-        output.legacyOut,
-        output.out,
-        dir,
-      );
-      inflight.set(output.out, promotion);
-      waits.push(promotion);
-      owned.push([output.out, promotion] as const);
-    } else missing.push(output);
-  }
-
-  if (missing.length > 0) {
-    const kind = await detectThumbnailKind(req.sourcePath);
-    if (kind) {
-      const batch = generateMany(
-        missing,
-        dir,
-        req.sourcePath,
-        kind,
-        req.priority ?? "foreground",
-      );
-      const generated = missing.map((output) => {
-        const promise = batch.then(
-          (results) => results.get(output.out) ?? null,
-        );
-        inflight.set(output.out, promise);
-        waits.push(promise);
-        return [output.out, promise] as const;
-      });
-      owned.push(...generated);
-    }
-  }
-  try {
-    await Promise.all(waits);
-  } finally {
-    for (const [out, promise] of owned) {
-      if (inflight.get(out) === promise) inflight.delete(out);
-    }
-  }
 }
 
 async function promoteLegacyThumbnail(
