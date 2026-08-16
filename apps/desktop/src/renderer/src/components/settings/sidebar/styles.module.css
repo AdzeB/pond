@@ -1,14 +1,7 @@
-.container {
-  padding: 16px;
-}
-
 .sidebar {
   display: flex;
   flex: none;
   width: var(--settings-sidebar-width);
   min-height: 0;
   padding: 16px;
-  background-color: var(--ds-gray-2);
-  border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-2);
 }

@@ -122,7 +122,7 @@ export const settingsQueries: QueryHandlerMap = {
       "appIcon" in params.window
     ) {
       const { applyAppIcon } = await import("../../core/app-icon");
-      await applyAppIcon();
+      await applyAppIcon(undefined, { animate: true });
     }
     return { ok: true, prefs: next };
   },

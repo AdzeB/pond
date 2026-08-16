@@ -1,16 +1,24 @@
 .popup {
   --settings-sidebar-width: 240px;
-
   flex-direction: row;
   width: min(1080px, calc(100vw - 96px));
   height: min(720px, calc(100vh - 96px));
   padding: 0;
   overflow: hidden;
+  background-color: var(--ds-gray-2);
+  box-shadow: var(--ds-shadow-4);
 }
 
 .sidebar > div {
   width: 100%;
   margin-top: 0;
+}
+
+.main {
+  position: relative;
+  width: 100%;
+  padding-block: 16px;
+  padding-right: 16px;
 }
 
 .content {
@@ -21,27 +29,13 @@
   min-width: 0;
   height: 100%;
   overflow-y: auto;
+  background-color: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow: var(--ds-shadow-2);
 }
 
 .close {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  color: var(--ds-gray-10);
-  cursor: var(--ds-cursor-interactive, pointer);
-  background: none;
-  border: 0;
-  border-radius: var(--ds-radius-sm);
-}
-
-.close:hover,
-.close:focus-visible {
-  color: var(--ds-gray-12);
-  background: var(--ds-gray-3);
+  top: 20px;
+  right: 20px;
 }

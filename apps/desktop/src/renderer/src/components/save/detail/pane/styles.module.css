@@ -88,6 +88,14 @@
   min-width: 0;
 }
 
+.row-author {
+  justify-self: end;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .row-avatar {
   display: inline-flex;
   flex-shrink: 0;

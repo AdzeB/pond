@@ -1,5 +1,6 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
-import { Settings } from "@pond/ui";
+import { Select, Settings } from "@pond/ui";
+import { appIconLabel } from "@shared/app-icons";
 import { useEffect, useState } from "react";
 import type { Binding } from "@/components/settings/engine";
 import styles from "./app-icon.module.css";
@@ -27,40 +28,63 @@ export function AppIconRow({ binding }: { binding: Binding }) {
         if (!Array.isArray(rows)) return;
         setIcons(rows as AppIconOption[]);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[pond] appIcons.list failed", err);
+      });
   }, []);
 
   return (
-    <div className={styles.row}>
+    <>
       <Settings.ItemDetails>
         <Settings.ItemTitle>Icon</Settings.ItemTitle>
         <Settings.ItemDescription>
           Shown in the Dock and on the taskbar.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
-      <div className={styles.grid} role="radiogroup" aria-label="App icon">
-        {icons.map((icon) => {
-          const pressed = icon.id === selected;
-          return (
-            <label
-              key={icon.id}
-              className={styles.tile}
-              data-selected={pressed || undefined}
-              title={icon.label}
-            >
-              <input
-                type="radio"
-                name="app-icon"
-                value={icon.id}
-                checked={pressed}
-                onChange={() => binding.patch({ appIcon: icon.id })}
-                aria-label={icon.label}
-              />
-              <img src={icon.preview} alt="" draggable={false} />
-            </label>
-          );
-        })}
-      </div>
-    </div>
+      <Settings.ItemControl>
+        <Select.Root
+          value={selected}
+          onValueChange={(next) => {
+            if (typeof next === "string") binding.patch({ appIcon: next });
+          }}
+        >
+          <Select.Trigger>
+            <Select.Value>
+              {(v: string) => {
+                const icon = icons.find((item) => item.id === v);
+                return icon ? (
+                  <IconOption preview={icon.preview} label={icon.label} />
+                ) : (
+                  appIconLabel(v)
+                );
+              }}
+            </Select.Value>
+          </Select.Trigger>
+          <Select.Portal>
+            <Select.Positioner sideOffset={6}>
+              <Select.Popup>
+                <Select.Items
+                  items={icons.map((icon) => ({
+                    value: icon.id,
+                    label: (
+                      <IconOption preview={icon.preview} label={icon.label} />
+                    ),
+                  }))}
+                />
+              </Select.Popup>
+            </Select.Positioner>
+          </Select.Portal>
+        </Select.Root>
+      </Settings.ItemControl>
+    </>
+  );
+}
+
+function IconOption({ preview, label }: { preview: string; label: string }) {
+  return (
+    <span className={styles.option}>
+      <img src={preview} alt="" draggable={false} />
+      <span>{label}</span>
+    </span>
   );
 }

@@ -9,6 +9,7 @@ export interface DetailRow {
   label: string;
   value: string;
   kind: RowKind;
+  href?: string;
 }
 
 /** The link-card destination URL, read from the harvested capture. */
@@ -63,16 +64,62 @@ export interface DetailGroup {
   rows: DetailRow[];
 }
 
+function asHttpUrl(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function profileUrlFromHandle(source: string, handle: string): string | null {
+  const h = encodeURIComponent(handle.replace(/^@/, ""));
+  if (!h) return null;
+  if (source === "instagram") return `https://www.instagram.com/${h}/`;
+  if (source === "twitter") return `https://x.com/${h}`;
+  if (source === "threads") return `https://www.threads.com/@${h}`;
+  if (source === "reddit") return `https://www.reddit.com/user/${h}/`;
+  if (source === "tiktok") return `https://www.tiktok.com/@${h}`;
+  if (source === "pinterest") return `https://www.pinterest.com/${h}/`;
+  if (source === "arena") return `https://www.are.na/${h}`;
+  if (source === "youtube") return `https://www.youtube.com/@${h}`;
+  return null;
+}
+
+export function pickAuthorProfileUrl(save: Save): string | null {
+  const capture = save.rawJson?.capture;
+  const fromCapture = asHttpUrl(capture?.author?.profileUrl);
+  if (fromCapture) return fromCapture;
+
+  const fromYtdlp =
+    asHttpUrl(save.rawJson?.ytdlp?.channel_url) ??
+    asHttpUrl(save.rawJson?.ytdlp?.uploader_url);
+  if (fromYtdlp) return fromYtdlp;
+
+  const handle = capture?.author?.handle?.trim();
+  if (!handle) return null;
+  return profileUrlFromHandle(save.source, handle);
+}
+
 export function collectIdentityRows(save: Save): DetailRow[] {
   const rows: DetailRow[] = [
     { id: "id", label: "ID", value: save.id, kind: "mono" },
   ];
   if (save.author) {
+    const href = pickAuthorProfileUrl(save) ?? undefined;
     rows.push({
       id: "author",
       label: "Author",
       value: save.author,
       kind: "author",
+      ...(href ? { href } : {}),
     });
   }
   rows.push({

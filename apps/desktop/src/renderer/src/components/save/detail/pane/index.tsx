@@ -1,5 +1,5 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
-import { Button, TitleBar } from "@pond/ui";
+import { Button, TitleBar, Tooltip } from "@pond/ui";
 import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
@@ -201,6 +201,34 @@ function PropertyColors({ colors }: { colors: string[] }) {
   );
 }
 
+function AuthorAvatar({
+  name,
+  avatarUrl,
+}: {
+  name: string;
+  avatarUrl: string | null;
+}) {
+  return (
+    <span
+      className={styles["row-avatar"]}
+      style={{ background: pickAuthorColor(name) }}
+      aria-hidden
+    >
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+        />
+      ) : (
+        initials(name)
+      )}
+    </span>
+  );
+}
+
 function PropertyRow({
   row,
   avatarUrl,
@@ -219,26 +247,28 @@ function PropertyRow({
     <div className={styles.row}>
       <span className={styles["row-label"]}>{row.label}</span>
       {row.kind === "author" ? (
-        <span className={styles["row-inline"]}>
-          <span
-            className={styles["row-avatar"]}
-            style={{ background: pickAuthorColor(row.value) }}
-            aria-hidden
-          >
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt=""
-                loading="lazy"
-                decoding="async"
-                draggable={false}
-              />
-            ) : (
-              initials(row.value)
-            )}
+        row.href ? (
+          <Tooltip label="Open in browser" side="left">
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className={styles["row-author"]}
+              onClick={() => {
+                const href = row.href;
+                if (href) void window.pond.openExternal(href);
+              }}
+            >
+              <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
+              {row.value}
+            </Button>
+          </Tooltip>
+        ) : (
+          <span className={styles["row-inline"]}>
+            <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
+            <span className={styles["row-value"]}>{row.value}</span>
           </span>
-          <span className={styles["row-value"]}>{row.value}</span>
-        </span>
+        )
       ) : row.kind === "platform" ? (
         <span className={styles["row-inline"]}>
           {sourceLogo ? (
