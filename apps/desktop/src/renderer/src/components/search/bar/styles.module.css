@@ -15,54 +15,6 @@
   padding-inline: 12px 6px;
 }
 
-.modes {
-  display: inline-flex;
-  flex: none;
-}
-
-.thinking-pill {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  height: 40px;
-  padding-inline: 12px 6px;
-  color: var(--ds-gray-11);
-}
-
-.spinner {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 14px;
-  height: 14px;
-  color: var(--ds-gray-9);
-}
-
-.spinner-glyph {
-  display: block;
-  animation: thinking-spin 0.7s linear infinite;
-}
-
-.thinking-text {
-  flex: none;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-@keyframes thinking-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .spinner-glyph {
-    animation: none;
-  }
-}
-
 .editor {
   position: relative;
   display: flex;
@@ -113,6 +65,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
+  font-weight: 450;
   line-height: 1.5;
   color: var(--ds-gray-9);
   white-space: nowrap;
@@ -120,11 +73,11 @@
   user-select: none;
 }
 
-.close {
+.clear {
   flex: none;
 }
 
-.clear {
+.close {
   flex: none;
 }
 
@@ -133,12 +86,4 @@
   padding-bottom: 4px;
   font-size: 13px;
   color: var(--ds-gray-10);
-}
-
-.suggestions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-inline: 12px 6px;
-  padding-bottom: 8px;
 }

@@ -1,29 +1,23 @@
-/** Image clipboard/disk writes go through IPC (nativeImage) rather than the renderer, matching saves.copyImage. */
+/** pond:// video taints a renderer canvas, so the frame is decoded in main from the file at currentTime. */
 
 import { notify } from "@/lib/ui/toast";
 
-function captureFrameDataUrl(video: HTMLVideoElement): string | null {
-  const width = video.videoWidth;
-  const height = video.videoHeight;
-  if (!width || !height) return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
-  try {
-    ctx.drawImage(video, 0, 0, width, height);
-    return canvas.toDataURL("image/png");
-  } catch {
-    /** Tainted canvas (cross-origin frame). */
-    return null;
-  }
+function frameParams(video: HTMLVideoElement): {
+  src: string;
+  timeSec: number;
+} | null {
+  const src = video.currentSrc || video.src;
+  if (!src) return null;
+  return { src, timeSec: video.currentTime };
 }
 
 export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
-  const dataUrl = captureFrameDataUrl(video);
-  if (!dataUrl) return;
-  await window.pond.query("video.copyFrame", { dataUrl });
+  const params = frameParams(video);
+  if (!params) return;
+  const result = (await window.pond.query("video.copyFrame", params)) as {
+    ok: boolean;
+  };
+  if (!result?.ok) return;
   notify({
     id: "copy-frame",
     title: "Frame copied to clipboard",
@@ -31,9 +25,12 @@ export async function copyVideoFrame(video: HTMLVideoElement): Promise<void> {
 }
 
 export async function saveVideoFrame(video: HTMLVideoElement): Promise<void> {
-  const dataUrl = captureFrameDataUrl(video);
-  if (!dataUrl) return;
-  await window.pond.query("video.saveFrame", { dataUrl });
+  const params = frameParams(video);
+  if (!params) return;
+  const result = (await window.pond.query("video.saveFrame", params)) as {
+    ok: boolean;
+  };
+  if (!result?.ok) return;
   notify({
     id: "save-frame",
     title: "Frame saved",
@@ -44,7 +41,7 @@ export async function setVideoThumbnail(
   saveId: string,
   video: HTMLVideoElement,
 ): Promise<void> {
-  const dataUrl = captureFrameDataUrl(video);
-  if (!dataUrl) return;
-  await window.pond.query("video.setThumbnail", { saveId, dataUrl });
+  const params = frameParams(video);
+  if (!params) return;
+  await window.pond.query("video.setThumbnail", { saveId, ...params });
 }

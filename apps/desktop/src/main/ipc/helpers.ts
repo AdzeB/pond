@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { ipcMain } from "electron";
 import log from "electron-log/main.js";
+import { POND_PROTOCOL } from "../../shared/constants";
 import { getDb } from "../db";
 import { itemFile, itemsRoot } from "../paths";
 import { toWireSave } from "./wire";
@@ -77,6 +78,30 @@ export async function resolveSaveFilePath(
     log.warn("[pond ipc] resolveSaveFilePath failed", err);
     return { ok: false, reason: "not_found" };
   }
+}
+
+/** Maps a pond:// item URL onto a file under the library; null if the host/path is missing or escapes itemsDir. */
+export function resolvePondItemPath(
+  src: string,
+): { saveId: string; path: string } | null {
+  let url: URL;
+  try {
+    url = new URL(src);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== `${POND_PROTOCOL}:`) return null;
+  const saveId = url.hostname;
+  const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
+  if (!saveId || !file) return null;
+  const absolute = resolvePath(itemFile(saveId, file));
+  const root = resolvePath(itemsRoot());
+  if (absolute !== root && !absolute.startsWith(root + pathSep)) {
+    log.warn("[pond ipc] refused pond URL outside library", { src, absolute });
+    return null;
+  }
+  if (!existsSync(absolute)) return null;
+  return { saveId, path: absolute };
 }
 
 type QueryParams = Record<string, unknown>;

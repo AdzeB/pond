@@ -51,3 +51,148 @@
   height: 36px;
   background: var(--ds-gray-a4);
 }
+
+/* Shared look for the selection drill-in cards (run, tag, copy, export). */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  font: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-xl);
+  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.row:hover {
+  background: var(--ds-gray-3);
+}
+
+.row:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.row-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--ds-gray-9);
+}
+
+.row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.row-label {
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+}
+
+/* Outcome swapped into the label in place of a toast. */
+.row-label[data-tone="error"] {
+  color: var(--ds-red-11);
+}
+
+.row-description {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  color: var(--ds-gray-9);
+  white-space: nowrap;
+}
+
+/* Precondition hint on a disabled row, e.g. a pref that must be on first. */
+.row-description[data-tone="hint"] {
+  color: var(--ds-amber-11);
+}
+
+/* Tag card: search-or-create field above toggle chips. */
+.field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding-inline: 12px;
+  background: var(--ds-gray-2);
+  border-radius: var(--ds-radius-lg);
+}
+
+.field input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: none;
+  border: 0;
+}
+
+.field input::placeholder {
+  color: var(--ds-gray-9);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-inline: 2px;
+}
+
+.chip {
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-11);
+  cursor: var(--ds-cursor-interactive, pointer);
+  outline: none;
+  background: var(--ds-gray-2);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+  transition:
+    color var(--ds-duration-medium) var(--ds-easing-standard),
+    background var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.chip:hover {
+  background: var(--ds-gray-3);
+}
+
+.chip:focus-visible {
+  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+}
+
+.chip[data-active] {
+  color: var(--ds-accent-11);
+  background: var(--ds-accent-3);
+}
+
+.chips-empty {
+  padding: 6px 2px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ds-gray-9);
+}

@@ -64,11 +64,6 @@ export function AppHotkeys() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["dock.ask"].keys!,
-      callback: () => openLibrarySearch({ aiMode: true }),
-      options: { ignoreInputs: false },
-    },
-    {
       hotkey: SHORTCUTS["dock.search"].keys!,
       callback: () => openLibrarySearch(),
       options: { ignoreInputs: false },

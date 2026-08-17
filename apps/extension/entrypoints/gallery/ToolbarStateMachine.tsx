@@ -5,7 +5,7 @@ import {
 import { Button } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { Toolbar, type ToolbarMode } from "../toolbar/Toolbar";
-import styles from "./gallery.module.css";
+import styles from "./styles.module.css";
 
 const SAMPLE_TOKEN =
   "pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d";

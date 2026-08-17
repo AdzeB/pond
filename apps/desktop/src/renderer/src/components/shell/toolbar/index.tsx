@@ -11,12 +11,21 @@ import { useSortable } from "@dnd-kit/react/sortable";
 import { IconPlusFill18 } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { IconGear3Outline18 } from "@pond/icons/outline/18";
-import { Button, cn, type MenuItemSpec } from "@pond/ui";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, type MenuItemSpec } from "@pond/ui";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
 import { useSave } from "@/hooks/use-saves";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
@@ -71,15 +80,34 @@ const TabBody = memo(function TabBody({
   const avatarUrl = save ? pickAuthorAvatarUrl(save) : null;
   const author = save?.author?.trim() ?? "";
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const labelRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(false);
   const showAvatar = Boolean(save && (avatarUrl || author));
   const showImg = Boolean(avatarUrl && failedUrl !== avatarUrl);
+
+  useLayoutEffect(() => {
+    const el = labelRef.current;
+    if (!el) return;
+    const sync = () => {
+      setOverflow(el.scrollWidth - el.clientWidth > 1);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    const mo = new MutationObserver(sync);
+    mo.observe(el, { characterData: true, subtree: true, childList: true });
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
+  }, []);
 
   return (
     <>
       {showAvatar ? (
         <span
           aria-hidden
-          className={styles["tab-avatar"]}
+          className={styles.avatar}
           style={
             showImg
               ? undefined
@@ -100,17 +128,23 @@ const TabBody = memo(function TabBody({
           )}
         </span>
       ) : (
-        <span aria-hidden className={styles["tab-icon"]}>
+        <span aria-hidden className={styles.icon}>
           <Icon />
         </span>
       )}
-      <span className={styles["tab-label"]}>{label}</span>
+      <span
+        ref={labelRef}
+        className={styles.label}
+        data-overflow={overflow || undefined}
+      >
+        {label}
+      </span>
       {!pinned && (
         <Button
           icon
           size="xs"
           variant="ghost"
-          className={styles["tab-close"]}
+          className={styles.close}
           onPointerDown={stopPropagation}
           onMouseDown={stopPropagation}
           onClick={(e) => {
@@ -257,20 +291,26 @@ const TabItem = memo(function TabItem({
     });
   }, [isActive]);
 
-  const className = cn(
-    styles.tab,
-    isActive && styles["tab-active"],
-    tab.pinned && styles["tab-pinned"],
-    isDragging && styles["tab-lifted"],
-    frozenWidth != null && styles["tab-frozen"],
-  );
-
   return (
     <SpecContextMenu buildItems={() => tabMenu(tab, handleClose)}>
       <div
         ref={setRefs}
-        className={className}
-        style={frozenWidth != null ? { width: frozenWidth } : undefined}
+        className={styles.tab}
+        data-active={isActive || undefined}
+        data-pinned={tab.pinned || undefined}
+        data-lifted={isDragging || undefined}
+        data-frozen={frozenWidth != null || undefined}
+        style={
+          frozenWidth != null
+            ? {
+                flexGrow: 0,
+                flexShrink: 0,
+                flexBasis: frozenWidth,
+                minWidth: frozenWidth,
+                maxWidth: frozenWidth,
+              }
+            : undefined
+        }
         role="tab"
         data-tab-id={tab.id}
         tabIndex={isActive ? 0 : -1}
@@ -296,9 +336,8 @@ export function Toolbar() {
   const tabList = useTabs();
   const activeId = useActiveTabId();
   const groupRef = useRef<HTMLDivElement | null>(null);
+  const scrollFade = useScrollFade<HTMLDivElement>();
   const frozenRef = useRef(false);
-  const canScrollXRef = useRef(false);
-  const fadeRafRef = useRef(0);
   const [open, setOpen] = useState<Panel | null>(null);
   const [frozenWidths, setFrozenWidths] = useState<Record<string, number>>({});
 
@@ -350,47 +389,18 @@ export function Toolbar() {
     const el = groupRef.current;
     if (!el) return;
 
-    const syncFade = () => {
-      fadeRafRef.current = 0;
-      const max = el.scrollWidth - el.clientWidth;
-      canScrollXRef.current = max > 1;
-      if (max <= 1) {
-        if (el.hasAttribute("data-fade")) el.removeAttribute("data-fade");
-        return;
-      }
-      const left = el.scrollLeft > 1;
-      const right = el.scrollLeft < max - 1;
-      const next = left && right ? "both" : left ? "left" : "right";
-      if (el.dataset.fade !== next) el.dataset.fade = next;
-    };
-
-    const syncSoon = () => {
-      if (fadeRafRef.current) return;
-      fadeRafRef.current = requestAnimationFrame(syncFade);
-    };
-
     const onWheel = (e: WheelEvent) => {
-      if (!canScrollXRef.current) return;
+      if (el.scrollWidth - el.clientWidth <= 1) return;
       if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
       e.preventDefault();
       el.scrollLeft += e.deltaY;
     };
 
-    syncSoon();
-    el.addEventListener("scroll", syncSoon, { passive: true });
     el.addEventListener("wheel", onWheel, { passive: false });
     el.addEventListener("mouseleave", endRapidClose);
-    const ro = new ResizeObserver(syncSoon);
-    ro.observe(el);
-    const mo = new MutationObserver(syncSoon);
-    mo.observe(el, { childList: true });
     return () => {
-      if (fadeRafRef.current) cancelAnimationFrame(fadeRafRef.current);
-      el.removeEventListener("scroll", syncSoon);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("mouseleave", endRapidClose);
-      ro.disconnect();
-      mo.disconnect();
     };
   }, [endRapidClose]);
 
@@ -411,11 +421,15 @@ export function Toolbar() {
           onDragEnd={onDragEnd}
         >
           <div
-            ref={groupRef}
             className={styles.group}
             role="tablist"
             aria-label="Open tabs"
             aria-orientation="horizontal"
+            {...scrollFade}
+            ref={(node) => {
+              groupRef.current = node;
+              scrollFade.ref.current = node;
+            }}
           >
             {tabList.map((tab, index) => (
               <TabItem
@@ -439,9 +453,8 @@ export function Toolbar() {
         >
           <IconPlusFill18 />
         </Button>
+        <div className={styles["drag-spacer"]} aria-hidden />
       </div>
-
-      <div className={styles.dragSpacer} aria-hidden />
 
       <div className={styles.actions}>
         <ProgressPanel open={open === "progress"} onOpenChange={setOpen} />

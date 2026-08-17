@@ -21,6 +21,7 @@ import { isTextOnlySave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
 import { closeSave } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
+import { sourceDetail } from "@/stores/source-detail";
 import styles from "./styles.module.css";
 
 function DetailCard({
@@ -269,6 +270,24 @@ function PropertyRow({
             <span className={styles["row-value"]}>{row.value}</span>
           </span>
         )
+      ) : row.kind === "account" && row.accountId ? (
+        <Tooltip label="Open source" side="left">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className={styles["row-author"]}
+            onClick={() => {
+              const id = row.accountId;
+              if (!id) return;
+              if (row.watch) sourceDetail.openWatch(id);
+              else sourceDetail.openAccount(id);
+            }}
+          >
+            <AuthorAvatar name={row.value} avatarUrl={row.avatarUrl ?? null} />
+            {row.value}
+          </Button>
+        </Tooltip>
       ) : row.kind === "platform" ? (
         <span className={styles["row-inline"]}>
           {sourceLogo ? (

@@ -1,7 +1,7 @@
 import { queryIsFullySqlSupported } from "@pond/schema/filters";
 import { matches } from "@pond/schema/filters/match";
 import { isEmptyQuery, type Query } from "@pond/schema/filters/types";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ensureSaves } from "@/lib/save/ensure-saves";
 import type { Save } from "@/lib/types";
 import { hydrateFullPool } from "@/stores/bootstrap";
@@ -122,7 +122,9 @@ export function useFilteredSaves(
       ? sqlResult.ids
       : null;
 
-  return useMemo(() => {
+  const prevRef = useRef<ReadonlyArray<Save>>(saves);
+
+  const next = useMemo(() => {
     if (empty) {
       if (sortKey === "savedAt" && sortDir === "desc") return saves;
       return sortSaves(saves, sortKey, sortDir);
@@ -131,15 +133,21 @@ export function useFilteredSaves(
       return intersectSqlResults(saves, sqlIds);
     }
     if (useSql && sqlIds === null) {
-      /** SQL in flight: keep prior in-memory filter so the grid doesn't flash empty. */
       const filtered = saves.filter((s) => matches(query as Query, s));
-      if (sortKey === "savedAt" && sortDir === "desc") return filtered;
-      return sortSaves(filtered, sortKey, sortDir);
+      const preview =
+        sortKey === "savedAt" && sortDir === "desc"
+          ? filtered
+          : sortSaves(filtered, sortKey, sortDir);
+      /** Incomplete pool can match nothing while SQL is in flight; keep the last grid instead of flashing empty. */
+      return preview.length > 0 ? preview : prevRef.current;
     }
     const filtered = saves.filter((s) => matches(query as Query, s));
     if (sortKey === "savedAt" && sortDir === "desc") return filtered;
     return sortSaves(filtered, sortKey, sortDir);
   }, [saves, query, sortKey, sortDir, empty, useSql, sqlIds]);
+
+  prevRef.current = next;
+  return next;
 }
 
 /** Preserve the SQL sort order without widening a previously narrowed input (for example, FTS search hits). */

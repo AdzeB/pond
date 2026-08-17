@@ -31,6 +31,9 @@ import styles from "./styles.module.css";
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 
+const COLLAPSED_BAR = { width: 64, height: 6 };
+const COLLAPSE_MS = 240;
+
 export function LibraryTray() {
   const selectionSize = useSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -43,6 +46,8 @@ export function LibraryTray() {
 
   const dockRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
+  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [navOpen, setNavOpen] = useState(false);
   /** The pill's real width/height animates to the measured viewport size with a spring, so a mid-flight view change retargets instead of restarting. */
   const [bounds, setBounds] = useState<{
     width: number;
@@ -95,6 +100,41 @@ export function LibraryTray() {
   );
 
   const isCard = view === "search" || isViewMenu(view);
+  const collapsed = view === "nav" && !navOpen;
+
+  const cancelLeave = useCallback(() => {
+    if (!leaveTimer.current) return;
+    clearTimeout(leaveTimer.current);
+    leaveTimer.current = null;
+  }, []);
+
+  const expandNav = useCallback(() => {
+    cancelLeave();
+    setNavOpen(true);
+  }, [cancelLeave]);
+
+  const collapseNav = useCallback(() => {
+    cancelLeave();
+    leaveTimer.current = setTimeout(() => {
+      setNavOpen(false);
+      leaveTimer.current = null;
+    }, COLLAPSE_MS);
+  }, [cancelLeave]);
+
+  useEffect(
+    () => () => {
+      if (!leaveTimer.current) return;
+      clearTimeout(leaveTimer.current);
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (view !== "nav") {
+      cancelLeave();
+      setNavOpen(false);
+    }
+  }, [view, cancelLeave]);
 
   useEffect(() => {
     if (!isMenuView) return;
@@ -111,7 +151,7 @@ export function LibraryTray() {
   const { pillTransition, quickTransition, swapTransition, swap } =
     buildDockMotion(reduceMotion ?? false);
 
-  /** View swaps get the deliberate morph (timed by when the view last changed); in the resting nav view the pill tracks the content per frame, so the unfold's own spring is the only timing; other within-view growth rides the quick spring. */
+  /** View swaps get the deliberate morph; collapsing to the handle and other within-view growth ride the quick spring. */
   const lastView = useRef(view);
   const viewChangedAt = useRef(0);
   if (lastView.current !== view) {
@@ -123,9 +163,7 @@ export function LibraryTray() {
     ? { duration: 0 }
     : inViewMorph
       ? pillTransition
-      : view === "nav"
-        ? { duration: 0 }
-        : quickTransition;
+      : quickTransition;
 
   const context = useMemo<DockContextValue>(
     () => ({
@@ -167,10 +205,10 @@ export function LibraryTray() {
   );
 
   return (
-    <div className={styles.dock}>
+    <div className={styles.dock} data-collapsed={collapsed || undefined}>
       <TrayCard.Provider onDismiss={closeToNav}>
         <DockProvider value={context}>
-          {isMenuView ? (
+          {isCard ? (
             <button
               type="button"
               aria-label="Close"
@@ -178,7 +216,23 @@ export function LibraryTray() {
               onClick={closeToNav}
             />
           ) : null}
-          <div ref={dockRef} className={styles.shell}>
+          <div
+            ref={dockRef}
+            className={styles.shell}
+            data-collapsed={collapsed || undefined}
+            onPointerEnter={expandNav}
+            onPointerLeave={collapseNav}
+            onFocusCapture={expandNav}
+            onBlurCapture={(event) => {
+              if (
+                !event.currentTarget.contains(
+                  event.relatedTarget as Node | null,
+                )
+              ) {
+                collapseNav();
+              }
+            }}
+          >
             <ActiveFilter />
             <Tray.Pill
               className={styles.pill}
@@ -187,7 +241,11 @@ export function LibraryTray() {
                   ref={pillRef}
                   initial={false}
                   animate={
-                    bounds ? { width: bounds.width, height: bounds.height } : {}
+                    collapsed
+                      ? COLLAPSED_BAR
+                      : bounds
+                        ? { width: bounds.width, height: bounds.height }
+                        : {}
                   }
                   transition={boundsTransition}
                 />
@@ -197,6 +255,7 @@ export function LibraryTray() {
                 ref={viewportRef}
                 className={styles.viewport}
                 data-card={isCard || undefined}
+                inert={collapsed}
               >
                 <AnimatePresence initial={false}>
                   {view === "selection" ? (

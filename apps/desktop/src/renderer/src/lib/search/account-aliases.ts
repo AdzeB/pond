@@ -8,6 +8,8 @@ export interface AccountRef {
   readonly handle: string | null;
   readonly label: string | null;
   readonly kind?: WatchKind;
+  readonly avatarUrl?: string | null;
+  readonly watch?: boolean;
 }
 
 function isOpaqueKind(kind: WatchKind | undefined): boolean {
@@ -47,6 +49,7 @@ export function accountRefsFromSync(
             source: Source;
             handle: string | null;
             label: string | null;
+            avatarUrl?: string | null;
           }
         >;
         watches?: Record<
@@ -57,6 +60,7 @@ export function accountRefsFromSync(
             handle: string;
             label: string | null;
             kind?: WatchKind;
+            avatarUrl?: string | null;
           }
         >;
       }
@@ -70,6 +74,7 @@ export function accountRefsFromSync(
       source: row.source,
       handle: row.handle,
       label: row.label,
+      avatarUrl: row.avatarUrl,
     });
   }
   for (const row of Object.values(sync?.watches ?? {})) {
@@ -79,6 +84,8 @@ export function accountRefsFromSync(
       handle: row.handle,
       label: row.label,
       kind: row.kind,
+      avatarUrl: row.avatarUrl,
+      watch: true,
     });
   }
   return refs;
@@ -115,6 +122,11 @@ export function displayAccountToken(
   return unique ? local : `${ref.source}/${local}`;
 }
 
+/** Nickname, @handle, or the source name when the account has not been probed yet. */
+export function accountDisplayName(ref: AccountRef): string {
+  return localName(ref) || sourceLabel(ref.source);
+}
+
 /** Human chip copy: `@handle · Twitter`, falling back to the source name when the account has no handle yet. */
 export function accountChipLabel(
   id: string,
@@ -133,6 +145,7 @@ export function resolveAccountToken(
   refs: readonly AccountRef[] = liveRefs(),
 ): string {
   const matched = hitsFor(raw, refs);
-  if (matched.length === 1) return matched[0].id.toLowerCase();
+  const hit = matched.length === 1 ? matched[0] : undefined;
+  if (hit) return hit.id.toLowerCase();
   return raw.trim().toLowerCase();
 }

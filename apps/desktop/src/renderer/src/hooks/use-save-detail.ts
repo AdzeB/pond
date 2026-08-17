@@ -7,7 +7,9 @@ import {
 } from "@/lib/save/detail";
 import { ensureRawJson } from "@/lib/save/raw-json";
 import { getSourceIcon, getSourceLogo } from "@/lib/save/sources-registry";
+import { accountRefsFromSync } from "@/lib/search/account-aliases";
 import type { Save } from "@/lib/types";
+import { usePrefs } from "@/stores/prefs";
 import { useSave } from "./use-saves";
 
 type SourceIcon = ReturnType<typeof getSourceIcon>;
@@ -25,6 +27,7 @@ interface SaveDetailView {
 /** Lazily hydrates full rawJson (list rows omit it) and derives the panel view-model. */
 export function useSaveDetail(id: string): SaveDetailView {
   const save = useSave(id);
+  const [sync] = usePrefs("sync");
 
   useEffect(() => {
     void ensureRawJson(id);
@@ -45,7 +48,7 @@ export function useSaveDetail(id: string): SaveDetailView {
 
     return {
       save,
-      rows: collectIdentityRows(save),
+      rows: collectIdentityRows(save, accountRefsFromSync(sync)),
       description: composeContentDescription(save),
       colors: save.dominantColors?.slice(0, 8) ?? [],
       avatarUrl: pickAuthorAvatarUrl(save),
@@ -54,5 +57,5 @@ export function useSaveDetail(id: string): SaveDetailView {
         (save.source === "web" ? pickSourceIconUrl(save) : null),
       sourceIcon: getSourceIcon(save.source),
     };
-  }, [save]);
+  }, [save, sync]);
 }

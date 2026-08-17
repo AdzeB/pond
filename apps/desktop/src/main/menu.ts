@@ -430,14 +430,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
-          ...sym("sparkle"),
-          label: "AI Search",
-          /** Display-only: the renderer owns the key so it works while a field is focused. */
-          accelerator: "CmdOrCtrl+K",
-          registerAccelerator: false,
-          click: sendMenuAction("dock.ask"),
-        },
-        {
           ...sym("magnifyingglass"),
           label: "Search",
           accelerator: "CmdOrCtrl+F",

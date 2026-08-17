@@ -69,7 +69,6 @@ export type MenuActionId =
   | "view.zoom-in"
   | "view.zoom-out"
   | "view.zoom-reset"
-  | "dock.ask"
   | "dock.search"
   | "help.shortcuts"
   | "view.layout.waterfall"

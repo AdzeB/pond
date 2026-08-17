@@ -1,7 +1,6 @@
 import { Tooltip, Tray } from "@pond/ui";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { type DockTab, NAV_TABS } from "@/components/library/dock/lib/nav-tabs";
 import { ShortcutKeys } from "@/components/shared/shortcut-keys";
@@ -30,13 +29,8 @@ const ORDERED_TABS = NAV_ORDER.flatMap((id) =>
   NAV_TABS.filter((tab) => tab.id === id),
 );
 
-function tabTip(tab: (typeof ORDERED_TABS)[number]) {
-  return Tooltip.Label(tab.label, <ShortcutKeys id={TAB_SHORTCUT[tab.id]} />);
-}
-
 export function NavContent() {
   const dock = useDock();
-  const [tip] = useState(() => Tooltip.createHandle<ReactNode>());
 
   const activeTab =
     ORDERED_TABS.find((tab) => dock.isTabActive(tab.id)) ??
@@ -48,43 +42,43 @@ export function NavContent() {
   const renderTab = (tab: (typeof ORDERED_TABS)[number]) => {
     const active = tab.id === activeTab.id;
     return (
-      <Tooltip.Trigger
+      <Tooltip
         key={tab.id}
-        handle={tip}
-        payload={tabTip(tab)}
-        render={
-          tab.action ? (
-            <Tray.Item
-              aria-label={tab.label}
-              data-status={active ? "active" : undefined}
-              onClick={() => tab.action?.()}
-            >
-              {active ? <Tray.Indicator /> : null}
-              {tab.icon}
-            </Tray.Item>
-          ) : (
-            <Tray.Item
-              render={<Link to={tab.to} params={tab.params} />}
-              aria-label={tab.label}
-              data-status={active ? "active" : undefined}
-              onClick={(e) => {
-                const path = pathForTab(tab);
-                if (path) openInNewTabIfMeta(e, path, () => {});
-              }}
-              onAuxClick={(e) => {
-                if (e.button !== 1) return;
-                const path = pathForTab(tab);
-                if (!path) return;
-                e.preventDefault();
-                tabs.open(path, { background: true });
-              }}
-            >
-              {active ? <Tray.Indicator /> : null}
-              {tab.icon}
-            </Tray.Item>
-          )
-        }
-      />
+        label={tab.label}
+        shortcut={<ShortcutKeys id={TAB_SHORTCUT[tab.id]} />}
+        side="top"
+      >
+        {tab.action ? (
+          <Tray.Item
+            aria-label={tab.label}
+            data-status={active ? "active" : undefined}
+            onClick={() => tab.action?.()}
+          >
+            {active ? <Tray.Indicator /> : null}
+            {tab.icon}
+          </Tray.Item>
+        ) : (
+          <Tray.Item
+            render={<Link to={tab.to} params={tab.params} />}
+            aria-label={tab.label}
+            data-status={active ? "active" : undefined}
+            onClick={(e) => {
+              const path = pathForTab(tab);
+              if (path) openInNewTabIfMeta(e, path, () => {});
+            }}
+            onAuxClick={(e) => {
+              if (e.button !== 1) return;
+              const path = pathForTab(tab);
+              if (!path) return;
+              e.preventDefault();
+              tabs.open(path, { background: true });
+            }}
+          >
+            {active ? <Tray.Indicator /> : null}
+            {tab.icon}
+          </Tray.Item>
+        )}
+      </Tooltip>
     );
   };
 
@@ -96,7 +90,6 @@ export function NavContent() {
     >
       {ORDERED_TABS.map(renderTab)}
 
-      {/** Actions follow the page: the cluster refolds whenever the route lands on a tab with a different set. */}
       <AnimatePresence initial={false}>
         <motion.div
           key={actionSet}
@@ -108,12 +101,10 @@ export function NavContent() {
         >
           <div className={styles["expand-inner"]}>
             <Tray.Separator />
-            <NavActions actionSet={actionSet} tip={tip} />
+            <NavActions actionSet={actionSet} />
           </div>
         </motion.div>
       </AnimatePresence>
-
-      <Tooltip.Shared handle={tip} side="top" />
     </motion.div>
   );
 }

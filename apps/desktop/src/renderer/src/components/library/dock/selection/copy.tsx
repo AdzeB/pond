@@ -11,7 +11,7 @@ import {
   type SelectionActionResult,
 } from "@/lib/save/selection";
 import { selection } from "@/stores/selection";
-import styles from "./cards.module.css";
+import styles from "./styles.module.css";
 
 /** Long enough to read the swapped label before the card closes. */
 const STATUS_HOLD_MS = 1200;

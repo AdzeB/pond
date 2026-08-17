@@ -194,9 +194,21 @@ describe("structured account search", () => {
     expect(parsed.predicates).toEqual([
       { field: "account", operator: "eq", value: ulid.toLowerCase() },
     ]);
-    expect(matches(query, { id: "owned", accountId: ulid })).toBe(true);
     expect(
-      matches(query, { id: "other", accountId: "01BX5ZZKBKACTAV9WEVGEMMVRZ" }),
+      matches(query, {
+        id: "owned",
+        accountId: ulid,
+        source: "instagram",
+        url: "https://www.instagram.com/p/owned",
+      }),
+    ).toBe(true);
+    expect(
+      matches(query, {
+        id: "other",
+        accountId: "01BX5ZZKBKACTAV9WEVGEMMVRZ",
+        source: "instagram",
+        url: "https://www.instagram.com/p/other",
+      }),
     ).toBe(false);
   });
 

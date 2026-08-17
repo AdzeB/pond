@@ -75,10 +75,6 @@ export function MenuBridge() {
           openShortcutsSheet();
           return;
 
-        case "dock.ask":
-          openLibrarySearch({ aiMode: true });
-          return;
-
         case "dock.search":
           openLibrarySearch();
           return;

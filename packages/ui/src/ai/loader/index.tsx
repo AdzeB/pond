@@ -8,4 +8,14 @@ function Root({ className, ...props }: ComponentProps<"span">) {
   );
 }
 
-export const Loader = { Root };
+function Dots({ className, ...props }: ComponentProps<"span">) {
+  return (
+    <span className={cn(styles.dots, className)} aria-hidden {...props}>
+      <span />
+      <span />
+      <span />
+    </span>
+  );
+}
+
+export const Loader = { Root, Dots };

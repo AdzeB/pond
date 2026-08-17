@@ -59,8 +59,8 @@ export function useSearchResults(
       setSearching(false);
       return;
     }
-    /** Never show the full library (or hits from the previous query) while this query is in flight. */
-    setResults(resolveHits(trimmed, deletedOnly) ?? []);
+    const cached = resolveHits(trimmed, deletedOnly);
+    if (cached) setResults(cached);
     setSearching(true);
     let cancelled = false;
     const timer = setTimeout(() => {

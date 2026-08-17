@@ -1,9 +1,11 @@
 import {
-  IconLayers2Fill18 as OptionsIcon,
   IconPlusFill18 as Plus,
   IconRefreshFill18 as Sync,
 } from "@pond/icons/fill/18";
-import { IconMagnifierOutline18 as Search } from "@pond/icons/outline/18";
+import {
+  IconSlidersOutline18 as OptionsIcon,
+  IconMagnifierOutline18 as Search,
+} from "@pond/icons/outline/18";
 import { Tooltip, Tray } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
@@ -16,48 +18,38 @@ function Action({
   label,
   icon,
   onClick,
-  tip,
   shortcut,
 }: {
   label: string;
   icon: ReactNode;
   onClick: () => void;
-  tip: ReturnType<typeof Tooltip.createHandle<ReactNode>>;
   shortcut?: ShortcutId;
 }) {
   return (
-    <Tooltip.Trigger
-      handle={tip}
-      payload={
-        shortcut ? Tooltip.Label(label, <ShortcutKeys id={shortcut} />) : label
-      }
-      render={
-        <Tray.Item aria-label={label} onClick={onClick}>
-          {icon}
-        </Tray.Item>
-      }
-    />
+    <Tooltip
+      label={label}
+      shortcut={shortcut ? <ShortcutKeys id={shortcut} /> : undefined}
+      side="top"
+    >
+      <Tray.Item aria-label={label} onClick={onClick}>
+        {icon}
+      </Tray.Item>
+    </Tooltip>
   );
 }
 
-function SourcesActions({
-  tip,
-}: {
-  tip: ReturnType<typeof Tooltip.createHandle<ReactNode>>;
-}) {
+function SourcesActions() {
   return (
     <>
       <Action
         label="New Source"
         icon={<Plus />}
-        tip={tip}
         shortcut="sources.new"
         onClick={() => dockMode.open("source-new")}
       />
       <Action
         label="Sync All"
         icon={<Sync />}
-        tip={tip}
         shortcut="sources.sync-all"
         onClick={() => {
           void window.pond.syncRunAll();
@@ -67,28 +59,19 @@ function SourcesActions({
   );
 }
 
-function ViewMenuActions({
-  tip,
-}: {
-  tip: ReturnType<typeof Tooltip.createHandle<ReactNode>>;
-}) {
+function ViewMenuActions() {
   const dock = useDock();
   return (
     <Action
       label="Options"
       icon={<OptionsIcon />}
-      tip={tip}
       shortcut="view.options"
       onClick={() => dock.openViewMenu("options")}
     />
   );
 }
 
-function LibraryActions({
-  tip,
-}: {
-  tip: ReturnType<typeof Tooltip.createHandle<ReactNode>>;
-}) {
+function LibraryActions() {
   const dock = useDock();
 
   return (
@@ -96,23 +79,16 @@ function LibraryActions({
       <Action
         label="Search"
         icon={<Search />}
-        tip={tip}
         shortcut="dock.search"
-        onClick={dock.openSearch}
+        onClick={() => dock.openSearch()}
       />
-      <ViewMenuActions tip={tip} />
+      <ViewMenuActions />
     </>
   );
 }
 
-export function NavActions({
-  actionSet,
-  tip,
-}: {
-  actionSet: DockTab;
-  tip: ReturnType<typeof Tooltip.createHandle<ReactNode>>;
-}) {
-  if (actionSet === "sources") return <SourcesActions tip={tip} />;
-  if (actionSet === "trash") return <ViewMenuActions tip={tip} />;
-  return <LibraryActions tip={tip} />;
+export function NavActions({ actionSet }: { actionSet: DockTab }) {
+  if (actionSet === "sources") return <SourcesActions />;
+  if (actionSet === "trash") return <ViewMenuActions />;
+  return <LibraryActions />;
 }

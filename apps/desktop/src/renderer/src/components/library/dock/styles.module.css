@@ -9,6 +9,11 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  transition: bottom var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.dock[data-collapsed] {
+  bottom: calc(var(--ds-mac-inset, 16px) + 6px);
 }
 
 /* Width/height are animated by motion/react, not CSS, so mid-flight view changes retarget with preserved velocity. */
@@ -16,10 +21,22 @@
   z-index: 1;
 }
 
+.shell[data-collapsed] .pill {
+  cursor: pointer;
+}
+
 /* Shrink-wraps the pill so portaled typeaheads match its width instead of the full-bleed dock. */
 .shell {
   position: relative;
   z-index: 1;
+  padding: 16px 32px 20px;
+  margin: -16px -32px -20px;
+  pointer-events: auto;
+}
+
+.shell[data-collapsed] {
+  padding-bottom: 32px;
+  margin-bottom: -32px;
 }
 
 /* Invisible full-viewport catcher: clicking outside the pill collapses it. */
@@ -49,6 +66,11 @@
   width: max-content;
   padding: 4px;
   margin-inline: auto;
+  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
+}
+
+.shell[data-collapsed] .viewport {
+  opacity: 0;
 }
 
 .viewport[data-card="true"] {

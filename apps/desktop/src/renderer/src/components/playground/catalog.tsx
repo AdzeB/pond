@@ -8,6 +8,7 @@ import {
   PromptInputFixture,
   ShimmerFixture,
   SuggestionFixture,
+  ThinkingFixture,
 } from "./fixtures";
 
 export type PlaygroundEntry = {
@@ -47,6 +48,12 @@ export const PLAYGROUND_CATALOG: PlaygroundEntry[] = [
     name: "Shimmer",
     blurb: "Sweeping text treatment for thinking labels.",
     Fixture: ShimmerFixture,
+  },
+  {
+    id: "thinking",
+    name: "Thinking",
+    blurb: "Search dock compressed to loading dots.",
+    Fixture: ThinkingFixture,
   },
   {
     id: "prompt-input",

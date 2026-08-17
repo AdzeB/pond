@@ -85,7 +85,7 @@ export function TagsEditor({
         </TagPicker.Trigger>
         <TagPicker.Content
           anchor={() => listRef.current}
-          side="top"
+          side="bottom"
           align="start"
           sideOffset={8}
         />

@@ -1,8 +1,12 @@
 import { collectInfoRows } from "@/components/save/preview/lib/rows";
 import { getSourceLabel } from "@/lib/save/source-labels";
+import {
+  type AccountRef,
+  accountDisplayName,
+} from "@/lib/search/account-aliases";
 import type { Save } from "@/lib/types";
 
-type RowKind = "mono" | "author" | "platform" | "text";
+type RowKind = "mono" | "author" | "account" | "platform" | "text";
 
 export interface DetailRow {
   id: string;
@@ -10,6 +14,9 @@ export interface DetailRow {
   value: string;
   kind: RowKind;
   href?: string;
+  accountId?: string;
+  avatarUrl?: string | null;
+  watch?: boolean;
 }
 
 /** The link-card destination URL, read from the harvested capture. */
@@ -42,7 +49,7 @@ function stripTwitterShortUrls(text: string): string {
 }
 
 const DETAIL_GROUPS = [
-  { title: "Properties", ids: ["author", "platform", "type"] },
+  { title: "Properties", ids: ["author", "from", "platform", "type"] },
   {
     title: "Activity",
     ids: [
@@ -93,7 +100,9 @@ function profileUrlFromHandle(source: string, handle: string): string | null {
   return null;
 }
 
-export function pickAuthorProfileUrl(save: Save): string | null {
+export function pickAuthorProfileUrl(
+  save: Pick<Save, "source" | "rawJson">,
+): string | null {
   const capture = save.rawJson?.capture;
   const fromCapture = asHttpUrl(capture?.author?.profileUrl);
   if (fromCapture) return fromCapture;
@@ -108,7 +117,29 @@ export function pickAuthorProfileUrl(save: Save): string | null {
   return profileUrlFromHandle(save.source, handle);
 }
 
-export function collectIdentityRows(save: Save): DetailRow[] {
+function pickFromRow(
+  save: Pick<Save, "accountId">,
+  refs: readonly AccountRef[],
+): DetailRow | null {
+  const id = save.accountId?.trim();
+  if (!id) return null;
+  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  if (!ref) return null;
+  return {
+    id: "from",
+    label: "From",
+    value: accountDisplayName(ref),
+    kind: "account",
+    accountId: ref.id,
+    ...(ref.avatarUrl ? { avatarUrl: ref.avatarUrl } : {}),
+    ...(ref.watch ? { watch: true } : {}),
+  };
+}
+
+export function collectIdentityRows(
+  save: Save,
+  refs: readonly AccountRef[] = [],
+): DetailRow[] {
   const rows: DetailRow[] = [
     { id: "id", label: "ID", value: save.id, kind: "mono" },
   ];
@@ -122,6 +153,8 @@ export function collectIdentityRows(save: Save): DetailRow[] {
       ...(href ? { href } : {}),
     });
   }
+  const from = pickFromRow(save, refs);
+  if (from) rows.push(from);
   rows.push({
     id: "platform",
     label: "Platform",

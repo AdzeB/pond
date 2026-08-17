@@ -140,48 +140,99 @@ body {
   }
 }
 
-@property --scroll-fade-start {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
-@property --scroll-fade-end {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
 /* Shared rule for scroll viewports: fade only edges with clipped content. */
-[data-scroll-fade] {
-  --scroll-fade-start: 0px;
-  --scroll-fade-end: 0px;
+[data-scroll-fade="y"][data-scrollable="end"] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
+}
 
+[data-scroll-fade="y"][data-scrollable="start"] {
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent,
-    black var(--scroll-fade-start),
-    black calc(100% - var(--scroll-fade-end)),
+    #000 var(--scroll-fade-size, 32px),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 100%
+  );
+}
+
+[data-scroll-fade="y"][data-scrollable="start end"] {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
     transparent
   );
   mask-image: linear-gradient(
     to bottom,
     transparent,
-    black var(--scroll-fade-start),
-    black calc(100% - var(--scroll-fade-end)),
+    #000 var(--scroll-fade-size, 32px),
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
     transparent
   );
-  transition:
-    --scroll-fade-start var(--ds-duration-medium) var(--ds-easing-standard),
-    --scroll-fade-end var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-[data-scroll-fade][data-scrollable~="start"] {
-  --scroll-fade-start: var(--scroll-fade-size, 32px);
+[data-scroll-fade="x"][data-scrollable="end"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    #000 0%,
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
 }
 
-[data-scroll-fade][data-scrollable~="end"] {
-  --scroll-fade-end: var(--scroll-fade-size, 32px);
+[data-scroll-fade="x"][data-scrollable="start"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 100%
+  );
+}
+
+[data-scroll-fade="x"][data-scrollable="start end"] {
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 var(--scroll-fade-size, 32px),
+    #000 calc(100% - var(--scroll-fade-size, 32px)),
+    transparent
+  );
 }
 
 @media (prefers-reduced-motion: reduce) {

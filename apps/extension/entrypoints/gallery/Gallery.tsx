@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Toolbar, type ToolbarMode } from "../toolbar/Toolbar";
-import styles from "./gallery.module.css";
+import styles from "./styles.module.css";
 import { ToolbarStateMachine } from "./ToolbarStateMachine";
 
 interface FrameProps {

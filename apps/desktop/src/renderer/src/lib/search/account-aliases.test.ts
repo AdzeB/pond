@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   type AccountRef,
   accountChipLabel,
+  accountDisplayName,
   displayAccountToken,
   resolveAccountToken,
 } from "./account-aliases";
@@ -74,5 +75,20 @@ describe("accountChipLabel", () => {
     expect(accountChipLabel(twitter.id, [twitter])).toBe(
       "@raphaelsalaja · Twitter",
     );
+  });
+});
+
+describe("accountDisplayName", () => {
+  it("uses a nickname, then @handle, then the source name", () => {
+    expect(accountDisplayName(labeled)).toBe("Design talks");
+    expect(accountDisplayName(twitter)).toBe("@raphaelsalaja");
+    expect(
+      accountDisplayName({
+        id: twitter.id,
+        source: "twitter",
+        handle: null,
+        label: null,
+      }),
+    ).toBe("Twitter");
   });
 });

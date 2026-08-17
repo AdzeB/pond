@@ -142,7 +142,7 @@ function Content({
         side={side}
         align={align}
         sideOffset={sideOffset}
-        collisionAvoidance={{ fallbackAxisSide: "none" }}
+        collisionPadding={{ top: 48 }}
         style={
           {
             "--popup-min-width": "max-content",

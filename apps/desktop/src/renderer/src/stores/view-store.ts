@@ -35,8 +35,6 @@ interface ViewStoreState {
   q: string;
   /** Verbatim dock Search text, kept separate from `q` (the residual after structured terms parse out) so the field can re-seed when the dock swaps back. */
   searchInput: string;
-  /** Explicit NL/agent find mode in the dock search bar; structured filter search is the default. */
-  aiMode: boolean;
   /** Ordered draft conditions (incomplete rows allowed); `query` is the committed view. */
   rows: Predicate[];
   combinator: Combinator;
@@ -70,7 +68,6 @@ function readInitialZoom(): number {
 const store = new Store<ViewStoreState>({
   q: "",
   searchInput: "",
-  aiMode: false,
   rows: [],
   combinator: "and",
   query: EMPTY_QUERY,
@@ -103,14 +100,6 @@ export function useSearchText(): string {
 /** Verbatim dock Search field text for re-seeding when the composer remounts. */
 export function useSearchInput(): string {
   return useSelector(store, (s) => s.searchInput);
-}
-
-export function useAiMode(): boolean {
-  return useSelector(store, (s) => s.aiMode);
-}
-
-export function setAiMode(aiMode: boolean): void {
-  store.setState((s) => (s.aiMode === aiMode ? s : { ...s, aiMode }));
 }
 
 export function useSortKey(): string {

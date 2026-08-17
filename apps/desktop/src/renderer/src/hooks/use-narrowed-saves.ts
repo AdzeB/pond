@@ -75,6 +75,14 @@ export function useNarrowedSaves(
   const ranked = useSemanticRank(filteredFresh);
   const normal = useStableById(ranked);
 
+  /** Keep the last settled grid while FTS is in flight so typing never flashes "no matches". */
+  const settledRef = useRef(normal);
+  if (!searchHits.searching) settledRef.current = normal;
+  const visible =
+    searchHits.searching && settledRef.current.length > 0
+      ? settledRef.current
+      : normal;
+
   /** The agent result is a frozen, ranked answer that overrides the normal view and ignores manual filters/sort by design. */
   const askFresh = useMemo(() => {
     if (!ask.active) return EMPTY;
@@ -98,12 +106,12 @@ export function useNarrowedSaves(
     }
   }, [ask.active, ask.status, askSaves]);
 
-  if (!ask.active) return normal;
+  if (!ask.active) return visible;
   if (ask.status === "thinking") {
     /** Keep the previous answer, else the current view, so the grid is never empty before the first result. */
     return lastResolvedRef.current.length > 0
       ? lastResolvedRef.current
-      : normal;
+      : visible;
   }
   return askSaves;
 }

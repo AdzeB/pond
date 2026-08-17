@@ -54,6 +54,7 @@ export { IconPlusOutline18 } from "../../generated/outline/18/IconPlusOutline18"
 export { IconRefreshOutline18 } from "../../generated/outline/18/IconRefreshOutline18";
 export { IconScanImageOutline18 } from "../../generated/outline/18/IconScanImageOutline18";
 export { IconServerOutline18 } from "../../generated/outline/18/IconServerOutline18";
+export { IconSlidersOutline18 } from "../../generated/outline/18/IconSlidersOutline18";
 export { IconStopwatchOutline18 } from "../../generated/outline/18/IconStopwatchOutline18";
 export { IconTableOutline18 } from "../../generated/outline/18/IconTableOutline18";
 export { IconTagsOutline18 } from "../../generated/outline/18/IconTagsOutline18";

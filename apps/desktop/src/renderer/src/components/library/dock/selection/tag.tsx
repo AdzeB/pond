@@ -6,7 +6,7 @@ import { addTagsToSelection } from "@/lib/save/selection";
 import { formatNumber } from "@/lib/util/format";
 import { selection } from "@/stores/selection";
 import { useTags } from "@/stores/tags";
-import styles from "./cards.module.css";
+import styles from "./styles.module.css";
 
 /** Tag picker opened from the selection pill's Tag tile; toggle existing tags or type to create one, then apply in one batch. */
 export function SelectionTagSection() {

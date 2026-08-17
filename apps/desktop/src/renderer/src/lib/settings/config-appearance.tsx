@@ -5,18 +5,17 @@ import {
   ThemePresetRow,
 } from "@/components/settings/sections/appearance";
 import { AppIconRow } from "@/components/settings/sections/appearance/app-icon";
-import { defineSection } from "@/lib/settings/engine-types";
+import { defineCustomSection, group } from "@/lib/settings/engine-types";
 import { SOUND_FEEL_OPTIONS } from "@/lib/ui/sound-feel-options";
 import { previewSoundFeel } from "@/lib/ui/sounds";
 
-export const appearanceSection = defineSection("preferences", {
+export const appearanceSection = defineCustomSection({
   title: "Appearance",
   description: "App icon, theme, colors, sounds, and accessibility.",
   groups: [
-    {
+    group.prefs("window", {
       title: "App Icon",
       fullWidth: true,
-      prefsKey: "window",
       items: [
         {
           control: "custom",
@@ -34,8 +33,8 @@ export const appearanceSection = defineSection("preferences", {
           render: (b) => <AppIconRow binding={b} />,
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Theme",
       fullWidth: true,
       items: [
@@ -45,8 +44,8 @@ export const appearanceSection = defineSection("preferences", {
           render: (b) => <AppearanceRow binding={b} />,
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Light theme",
       fullWidth: true,
       items: [
@@ -82,8 +81,8 @@ export const appearanceSection = defineSection("preferences", {
           render: (b) => <ThemeContrastRow binding={b} side="light" />,
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Dark theme",
       fullWidth: true,
       items: [
@@ -119,8 +118,8 @@ export const appearanceSection = defineSection("preferences", {
           render: (b) => <ThemeContrastRow binding={b} side="dark" />,
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       items: [
         {
           control: "switch",
@@ -130,8 +129,8 @@ export const appearanceSection = defineSection("preferences", {
             "Show a hand cursor on hover instead of the default text caret.",
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Cards",
       items: [
         {
@@ -154,8 +153,8 @@ export const appearanceSection = defineSection("preferences", {
           ],
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Sounds",
       items: [
         {
@@ -192,8 +191,8 @@ export const appearanceSection = defineSection("preferences", {
           },
         },
       ],
-    },
-    {
+    }),
+    group.prefs("preferences", {
       title: "Accessibility",
       items: [
         {
@@ -208,6 +207,6 @@ export const appearanceSection = defineSection("preferences", {
           ],
         },
       ],
-    },
+    }),
   ],
 });

@@ -66,13 +66,13 @@
   }
 }
 
-/* Active-tab backdrop inside an item; a full circle to match the capsule pill. */
+/* Active-tab backdrop inside an item; rounded square so it reads as a tile, not a pill. */
 .indicator {
   position: absolute;
   inset: 2px;
   z-index: 0;
   background: var(--ds-gray-3);
-  border-radius: var(--ds-radius-lg);
+  border-radius: var(--ds-radius-sm);
 }
 
 .separator {

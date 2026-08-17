@@ -17,6 +17,54 @@ interface ExtractedFrame {
 export async function extractFirstFrame(
   videoPath: string,
 ): Promise<ExtractedFrame | null> {
+  return extractJpeg(videoPath, (outPath) => [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-ss",
+    "0",
+    "-i",
+    videoPath,
+    "-frames:v",
+    "1",
+    "-q:v",
+    "3",
+    "-f",
+    "image2",
+    outPath,
+  ]);
+}
+
+/** `-ss` after `-i` so the grab matches the player's currentTime, not the prior keyframe. */
+export async function extractFrameAt(
+  videoPath: string,
+  timeSec: number,
+): Promise<ExtractedFrame | null> {
+  const seek = Math.max(0, Number.isFinite(timeSec) ? timeSec : 0);
+  return extractJpeg(videoPath, (outPath) => [
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-i",
+    videoPath,
+    "-ss",
+    String(seek),
+    "-frames:v",
+    "1",
+    "-q:v",
+    "3",
+    "-f",
+    "image2",
+    outPath,
+  ]);
+}
+
+async function extractJpeg(
+  videoPath: string,
+  argvFor: (outPath: string) => string[],
+): Promise<ExtractedFrame | null> {
   const { ffmpeg } = binariesAvailable();
   if (!ffmpeg) {
     log.debug("[pond ffmpeg-frame] binary unavailable, skipping", videoPath);
@@ -40,28 +88,9 @@ export async function extractFirstFrame(
   try {
     outputDir = await mkdtemp(join(tmpdir(), "pond-frame-"));
     const outPath = join(outputDir, "frame.jpg");
-
-    const argv = [
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-y",
-      "-ss",
-      "0",
-      "-i",
-      videoPath,
-      "-frames:v",
-      "1",
-      "-q:v",
-      "3",
-      "-f",
-      "image2",
-      outPath,
-    ];
-
     const { code, stderr } = await runWithTimeout(
       ffmpeg,
-      argv,
+      argvFor(outPath),
       HARD_TIMEOUT_MS,
     );
     if (code !== 0) {

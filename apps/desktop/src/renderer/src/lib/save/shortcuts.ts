@@ -58,7 +58,6 @@ export const SHORTCUTS = {
     label: "Scroll to Bottom",
     group: "Navigate",
   },
-  "dock.ask": { keys: "Mod+K", label: "AI Search", group: "Navigate" },
   "dock.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
   "app.shortcuts": {
     keys: "Mod+/",

@@ -5,46 +5,31 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconCircleXmarkFill18 as Clear } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import {
-  Button,
-  Keyboard,
-  Loader,
-  Shimmer,
-  Suggestion,
-  Toggle,
-  ToggleGroup,
-  Tooltip,
-} from "@pond/ui";
-import { Calligraph } from "calligraph";
+import { Button, Loader } from "@pond/ui";
 import {
   $createParagraphNode,
   $createTextNode,
   $getRoot,
-  COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
   KEY_ESCAPE_COMMAND,
-  KEY_TAB_COMMAND,
   LineBreakNode,
 } from "lexical";
-import { useEffect, useMemo, useRef } from "react";
-import { runAskSuggestion, useNlSearch } from "@/hooks/use-ask";
-import { useNlFacets } from "@/hooks/use-nl-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNlCompiler, useNlFacets } from "@/hooks/use-nl-query";
+import { flattenPredicates } from "@/lib/search/nl-query";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
-import { clearAsk, useAskResult } from "@/stores/ask-store";
+import { clearAsk } from "@/stores/ask-store";
 import { useTags } from "@/stores/tags";
 import {
-  setAiMode,
   setSearchInput,
-  useAiMode,
   useFilterQuery,
   useSearchInput,
   useSearchText,
 } from "@/stores/view-store";
-import { $readSearchString } from "./lib/editor-state";
+import { $readSearchString, $writeSearchString } from "./lib/editor-state";
 import { FilterTokenNode } from "./lib/token-node";
 import { FilterTokenPlugin } from "./lib/token-plugin";
 import { FilterTypeahead } from "./lib/typeahead";
@@ -75,94 +60,19 @@ export function SearchComposer(props: ComposerProps) {
   );
 }
 
-function ThinkingPill({
-  onCancel,
-  onClose,
-}: {
-  onCancel: () => void;
-  onClose?: () => void;
-}) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      e.preventDefault();
-      onCancel();
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onCancel]);
-
-  return (
-    <div className={styles["thinking-pill"]} role="status" aria-live="polite">
-      <span className={styles.spinner} aria-hidden>
-        {/* biome-ignore lint/a11y/noSvgWithoutTitle: decorative */}
-        <svg
-          className={styles["spinner-glyph"]}
-          width="14"
-          height="14"
-          viewBox="0 0 18 18"
-          fill="none"
-        >
-          <circle
-            cx="9"
-            cy="9"
-            r="7"
-            stroke="currentColor"
-            strokeOpacity="0.15"
-            strokeWidth="2.5"
-          />
-          <path
-            d="M16 9C16 5.13401 12.866 2 9 2"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      </span>
-      <span className={styles["thinking-text"]}>
-        <Shimmer.Root>Thinking</Shimmer.Root>
-      </span>
-      <Button
-        icon
-        size="xs"
-        variant="ghost"
-        aria-label="Cancel search"
-        className={styles.clear}
-        onClick={onCancel}
-      >
-        <Clear />
-      </Button>
-      {onClose ? (
-        <Button
-          icon
-          size="xs"
-          variant="ghost"
-          aria-label="Close search"
-          className={styles.close}
-          onClick={() => {
-            onCancel();
-            onClose();
-          }}
-        >
-          <IconXmarkOutline12 />
-        </Button>
-      ) : null}
-    </div>
-  );
-}
-
 function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
   const tags = useTags();
   const facets = useNlFacets();
-  const aiMode = useAiMode();
-  const ask = useAskResult();
-  const runNl = useNlSearch();
+  const compile = useNlCompiler();
+  const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
   const seededRef = useRef(false);
-  const aiModeRef = useRef(aiMode);
-  aiModeRef.current = aiMode;
-  const runNlRef = useRef(runNl);
-  runNlRef.current = runNl;
+  const compileRef = useRef(compile);
+  compileRef.current = compile;
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const runRef = useRef(0);
+  const lastRawRef = useRef("");
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
@@ -178,12 +88,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       [serializeQuery(seedQuery), seedText].filter(Boolean).join(" ");
     if (!serialized.trim()) return;
     editor.update(() => {
-      const root = $getRoot();
-      root.clear();
-      const paragraph = $createParagraphNode();
-      paragraph.append($createTextNode(`${serialized} `));
-      root.append(paragraph);
-      paragraph.selectEnd();
+      $writeSearchString(serialized);
     });
   }, [editor, seedInput, seedQuery, seedText]);
 
@@ -191,90 +96,82 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
         const raw = $readSearchString();
-        if (aiModeRef.current) {
-          setSearchInput([], "", raw);
-          return;
-        }
         const parsed = parseSearchInput(raw);
         setSearchInput(parsed.predicates, parsed.text, raw);
       });
     });
   }, [editor]);
 
-  useEffect(() => {
-    if (aiMode) return;
-    editor.getEditorState().read(() => {
-      const raw = $readSearchString();
-      const parsed = parseSearchInput(raw);
-      setSearchInput(parsed.predicates, parsed.text, raw);
-    });
-  }, [aiMode, editor]);
-
   const onCollapseRef = useRef(onCollapse);
   onCollapseRef.current = onCollapse;
 
-  const toggleAiMode = () => {
-    const next = !aiModeRef.current;
-    if (!next) clearAsk();
-    setAiMode(next);
-    editor.focus();
+  const cancelAi = useCallback(() => {
+    runRef.current += 1;
+    setStatus("idle");
+  }, []);
+
+  const submitAi = async () => {
+    if (statusRef.current === "thinking") return;
+    let raw = "";
+    editor.getEditorState().read(() => {
+      raw = $readSearchString();
+    });
+    if (!raw) return;
+    lastRawRef.current = raw;
+    runRef.current += 1;
+    const nonce = runRef.current;
+    setStatus("thinking");
+    try {
+      const compiled = await compileRef.current(raw);
+      if (runRef.current !== nonce) return;
+      const query = compiled.plan.filter;
+      const residual = compiled.residual.trim();
+      const predicates = flattenPredicates(query);
+      const serialized = [serializeQuery(query), residual]
+        .filter(Boolean)
+        .join(" ");
+      setSearchInput(predicates, residual, serialized);
+      editor.update(() => {
+        $writeSearchString(serialized);
+      });
+      setStatus("idle");
+    } catch {
+      if (runRef.current !== nonce) return;
+      setStatus("error");
+    }
   };
-  const toggleAiModeRef = useRef(toggleAiMode);
-  toggleAiModeRef.current = toggleAiMode;
+
+  const submitAiRef = useRef(submitAi);
+  submitAiRef.current = submitAi;
 
   useEffect(() => {
     return editor.registerCommand(
       KEY_ESCAPE_COMMAND,
       () => {
+        if (statusRef.current === "thinking") {
+          cancelAi();
+          return true;
+        }
         onCollapseRef.current?.();
         return true;
       },
       COMMAND_PRIORITY_LOW,
     );
-  }, [editor]);
-
-  /** Typeahead registers Tab at normal priority; this only runs when that menu is closed. */
-  useEffect(() => {
-    return editor.registerCommand(
-      KEY_TAB_COMMAND,
-      (event) => {
-        event?.preventDefault();
-        toggleAiModeRef.current();
-        return true;
-      },
-      COMMAND_PRIORITY_LOW,
-    );
-  }, [editor]);
+  }, [editor, cancelAi]);
 
   useEffect(() => {
-    const submitAi = () => {
-      if (!aiModeRef.current) return false;
-      let raw = "";
-      editor.getEditorState().read(() => {
-        raw = $readSearchString().trim();
-      });
-      if (raw) void runNlRef.current(raw);
+    const submitOrSwallow = () => {
+      void submitAiRef.current();
       return true;
     };
-    const swallowBreak = () => true;
-    const unregisterBreakHigh = editor.registerCommand(
-      INSERT_LINE_BREAK_COMMAND,
-      submitAi,
-      COMMAND_PRIORITY_HIGH,
-    );
-    const unregisterParagraphHigh = editor.registerCommand(
-      INSERT_PARAGRAPH_COMMAND,
-      submitAi,
-      COMMAND_PRIORITY_HIGH,
-    );
     const unregisterBreak = editor.registerCommand(
       INSERT_LINE_BREAK_COMMAND,
-      swallowBreak,
+      submitOrSwallow,
       COMMAND_PRIORITY_LOW,
     );
     const unregisterParagraph = editor.registerCommand(
       INSERT_PARAGRAPH_COMMAND,
-      swallowBreak,
+      submitOrSwallow,
       COMMAND_PRIORITY_LOW,
     );
     const unregisterTransform = editor.registerNodeTransform(
@@ -284,22 +181,16 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       },
     );
     return () => {
-      unregisterBreakHigh();
-      unregisterParagraphHigh();
       unregisterBreak();
       unregisterParagraph();
       unregisterTransform();
     };
   }, [editor]);
 
-  const thinking = ask.active && ask.status === "thinking";
-  const showSuggestions =
-    ask.active &&
-    ask.status === "done" &&
-    ask.count === 0 &&
-    ask.suggestions.length > 0;
+  const hasText = seedInput.trim().length > 0;
 
   const clearField = () => {
+    cancelAi();
     clearAsk();
     setSearchInput([], "", "");
     editor.update(() => {
@@ -308,12 +199,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       root.append($createParagraphNode());
     });
   };
-
-  const hasText = seedInput.trim().length > 0 || ask.active;
-
-  if (thinking) {
-    return <ThinkingPill onCancel={clearAsk} onClose={onCollapse} />;
-  }
 
   return (
     <div className={styles.wrap}>
@@ -324,76 +209,29 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
               <ContentEditable
                 className={styles.input}
                 spellCheck={false}
-                ariaLabel={aiMode ? "AI search" : "Search filters"}
+                ariaLabel="Search"
               />
             }
-            placeholder={
-              <span className={styles.placeholder}>
-                <Calligraph autoSize={false}>
-                  {aiMode ? "Ask your library…" : "Filter your library…"}
-                </Calligraph>
-              </span>
-            }
+            placeholder={<span className={styles.placeholder}>Search...</span>}
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
           {autoFocus ? <AutoFocusPlugin /> : null}
-          {aiMode ? null : (
-            <>
-              <FilterTokenPlugin />
-              <FilterTypeahead
-                tags={tagNames}
-                sources={facets.sources}
-                creators={facets.creators}
-              />
-            </>
-          )}
+          <FilterTokenPlugin />
+          <FilterTypeahead
+            tags={tagNames}
+            sources={facets.sources}
+            creators={facets.creators}
+          />
         </div>
-        <Tooltip
-          label="Switch mode"
-          shortcut={<Keyboard.Key>Tab</Keyboard.Key>}
-        >
-          <span className={styles.modes}>
-            <ToggleGroup
-              value={[aiMode ? "ask" : "filter"]}
-              aria-label="Search mode"
-              onValueChange={(next) => {
-                const pick = next[0];
-                if (pick !== "ask" && pick !== "filter") return;
-                const ask = pick === "ask";
-                if (ask === aiModeRef.current) return;
-                if (!ask) clearAsk();
-                setAiMode(ask);
-                editor.focus();
-              }}
-            >
-              <Toggle
-                value="filter"
-                size="sm"
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                Filter
-              </Toggle>
-              <Toggle
-                value="ask"
-                size="sm"
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                Ask
-              </Toggle>
-            </ToggleGroup>
-          </span>
-        </Tooltip>
-        {hasText || ask.active ? (
+        {hasText ? (
           <Button
-            icon
             size="xs"
             variant="ghost"
-            aria-label="Clear search"
             className={styles.clear}
             onClick={clearField}
           >
-            <Clear />
+            Clear Search
           </Button>
         ) : null}
         {onCollapse ? (
@@ -409,7 +247,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
           </Button>
         ) : null}
       </div>
-      {ask.active && ask.status === "error" ? (
+      {status === "error" ? (
         <div className={styles.status}>
           <Loader.Root>
             Couldn’t search
@@ -418,28 +256,13 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
               variant="ghost"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => {
-                const q = ask.question.trim();
-                if (q) void runNl(q);
+                const q = lastRawRef.current.trim();
+                if (q) void submitAi();
               }}
             >
               Retry
             </Button>
           </Loader.Root>
-        </div>
-      ) : null}
-      {showSuggestions ? (
-        <div className={styles.suggestions}>
-          {ask.suggestions.map((s) => (
-            <Suggestion.Root
-              key={s.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => runAskSuggestion(s)}
-            >
-              {s.label}
-              <Suggestion.Count>{s.count}</Suggestion.Count>
-            </Suggestion.Root>
-          ))}
         </div>
       ) : null}
     </div>

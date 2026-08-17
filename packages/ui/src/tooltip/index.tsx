@@ -57,30 +57,6 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
   return <Base.Arrow className={clsx(styles.arrow, className)} {...props} />;
 }
 
-interface SharedProps {
-  handle: Base.Handle<ReactNode>;
-  side?: Base.Positioner.Props["side"];
-  align?: Base.Positioner.Props["align"];
-  sideOffset?: number;
-}
-
-/** Single popup for many detached triggers; the positioner transitions let it glide between them. */
-function Shared({ handle, side, align, sideOffset }: SharedProps) {
-  return (
-    <Base.Root handle={handle}>
-      {({ payload }) => (
-        <Portal>
-          <Positioner side={side} align={align} sideOffset={sideOffset}>
-            <Popup>
-              <Viewport>{payload}</Viewport>
-            </Popup>
-          </Positioner>
-        </Portal>
-      )}
-    </Base.Root>
-  );
-}
-
 interface TooltipProps {
   label: ReactNode;
   /** Keycap hint rendered after the label (e.g. `<Keyboard.Cluster />`). */
@@ -136,8 +112,5 @@ export const Tooltip = Object.assign(TooltipWrapper, {
   Positioner,
   Popup,
   Arrow,
-  Shared,
   Label: tooltipContent,
-  createHandle: Base.createHandle,
-  Handle: Base.Handle,
 });
