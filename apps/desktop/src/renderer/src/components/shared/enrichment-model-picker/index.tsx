@@ -108,11 +108,7 @@ export function EnrichmentModelPicker({ catalog, value, onChange }: Props) {
                               </Combobox.ItemLabel>
                               <Combobox.ItemEnd>
                                 {model.multilingual ? (
-                                  <Globe
-                                    width={13}
-                                    height={13}
-                                    aria-label="Multilingual"
-                                  />
+                                  <Globe aria-label="Multilingual" />
                                 ) : null}
                                 {model.meta ? (
                                   <Combobox.ItemMeta>

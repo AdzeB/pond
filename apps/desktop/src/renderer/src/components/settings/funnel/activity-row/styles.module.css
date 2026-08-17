@@ -25,7 +25,7 @@
   height: 7px;
   margin: 0 6.5px;
   background: var(--ds-gray-8);
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
 }
 
 .activity-dot[data-state="running"] {
@@ -41,7 +41,7 @@
   background: var(--ds-red-9);
 }
 
-.row-title {
+.title {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -53,7 +53,7 @@
 }
 
 /* Trails the title on the same line; grows into leftover space so both sides ellipsize instead of colliding. */
-.row-sub {
+.sub {
   flex: 1 1 60px;
   min-width: 0;
   overflow: hidden;
@@ -63,7 +63,7 @@
   white-space: nowrap;
 }
 
-.row-sub[data-tone="error"] {
+.sub[data-tone="error"] {
   color: var(--ds-red-11);
 }
 

@@ -7,8 +7,7 @@ const TWITTER_HOOK = `
     if (globalThis.__pondBookmarksHookInstalled) return;
     globalThis.__pondBookmarksHookInstalled = true;
     globalThis.__pondBookmarksCaptures = [];
-    // Capture the page's first Bookmarks request verbatim; X validates auth via
-    // bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them.
+    /** Capture the page's first Bookmarks request verbatim; X validates auth via bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them. */
     globalThis.__pondBookmarksRequest = null;
 
     const isBookmarksUrl = (u) => {
@@ -163,7 +162,7 @@ const COSMOS_HOOK = `
     const isCosmosGraphqlUrl = (u) => {
       try {
         if (typeof u !== "string") return false;
-        // Matches bare hosts and full URLs ("https://api.cosmos.so/graphql").
+        /** Matches bare hosts and full URLs ("https://api.cosmos.so/graphql"). */
         return /(^|[./])api\\.cosmos\\.so\\/graphql/.test(u);
       } catch (e) {
         return false;

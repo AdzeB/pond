@@ -15,8 +15,8 @@ export interface HeaderContext {
 }
 
 /**
- * A single column definition. Feature enablement is intentionally column-level —
- * `accessor` enables sorting, `resizable` enables resizing — rather than table-wide boolean props.
+ * A single column definition. Feature enablement is intentionally column-level:
+ * `accessor` enables sorting, `resizable` enables resizing, rather than table-wide boolean props.
  */
 export interface TableColumn<T> {
   id: string;
@@ -50,6 +50,7 @@ export interface RenderRowArgs<T> {
     style: React.CSSProperties;
     onClick: (e: ReactMouseEvent) => void;
     "aria-selected"?: boolean;
+    "data-selected"?: "";
     "data-depth"?: number;
   };
 }

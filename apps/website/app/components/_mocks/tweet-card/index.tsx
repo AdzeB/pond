@@ -5,7 +5,7 @@ export function TweetCard() {
   return (
     <article className={styles.tweet} aria-hidden>
       <span className={styles.chip}>
-        <span className={styles["chip-dot"]} />
+        <span className={styles.dot} />
         Archived
       </span>
       <header className={styles.header}>

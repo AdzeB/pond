@@ -33,7 +33,8 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 }
 

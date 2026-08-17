@@ -55,20 +55,20 @@
   }
 }
 
-.card-top {
+.top {
   display: flex;
   gap: 8px;
   align-items: center;
   justify-content: space-between;
 }
 
-.card-name {
+.name {
   font-size: 13px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.card-blurb {
+.blurb {
   margin: 0;
   font-size: 12px;
   line-height: 16px;

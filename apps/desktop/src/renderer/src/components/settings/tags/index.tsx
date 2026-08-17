@@ -1,4 +1,4 @@
-import { IconMagnifierOutline18 as Magnifier } from "@pond/icons/outline/18";
+import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import { normalizeLabelName } from "@pond/schema/label-name";
 import { Button, DataTable, Input, Settings } from "@pond/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -73,7 +73,7 @@ export function TagsSection() {
           <DataTable.Toolbar className={styles.toolbar}>
             <Input.Root className={styles.search}>
               <Input.Icon>
-                <Magnifier width={14} height={14} />
+                <Magnifier />
               </Input.Icon>
               <Input.Field
                 value={q}
@@ -117,10 +117,10 @@ export function TagsSection() {
               </DataTable.ExtraRow>
               <DataTable.Empty>
                 <div className={styles.empty}>
-                  <span className={styles["empty-title"]}>
+                  <span className={styles.title}>
                     {total === 0 ? "No Tags Yet" : "No matches"}
                   </span>
-                  <span className={styles["empty-text"]}>
+                  <span className={styles.text}>
                     {total === 0
                       ? "Labels keep your saves organised. Create one, then add it to a group to build a hierarchy."
                       : "Try a different search."}

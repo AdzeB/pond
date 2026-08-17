@@ -14,7 +14,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: none;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--ds-radius-full);
   transition:
     color var(--ds-duration-medium) var(--ds-easing-standard),
     background var(--ds-duration-medium) var(--ds-easing-standard);
@@ -48,13 +48,13 @@
   gap: 10px;
 }
 
-.sectionHead {
+.section-head {
   display: flex;
   gap: 10px;
   align-items: center;
 }
 
-.sectionTitle {
+.title {
   display: inline-flex;
   flex: none;
   gap: 7px;
@@ -81,13 +81,15 @@
   flex-direction: column;
   gap: 5px;
   align-items: flex-start;
+  width: 100%;
   min-width: 0;
+  height: auto;
   padding: 12px 14px;
   text-align: left;
   cursor: var(--ds-cursor-interactive, pointer);
   background: var(--ds-gray-1);
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--ds-radius-lg);
   box-shadow: var(--ds-shadow-1);
   transition:
     background var(--ds-duration-medium) var(--ds-easing-standard),
@@ -114,7 +116,7 @@
     var(--ds-shadow-1);
 }
 
-.cardHead {
+.card-head {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -122,14 +124,14 @@
   min-width: 0;
 }
 
-.cardLogo {
+.logo {
   display: flex;
   flex: none;
   align-items: center;
   color: var(--ds-gray-12);
 }
 
-.cardName {
+.name {
   flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -139,14 +141,14 @@
   white-space: nowrap;
 }
 
-.cardCheck {
+.check {
   display: flex;
   flex: none;
   align-items: center;
   color: var(--ds-accent-solid, var(--ds-gray-12));
 }
 
-.cardDescription {
+.description {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   overflow: hidden;

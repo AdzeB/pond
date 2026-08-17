@@ -7,9 +7,8 @@
   font-size: 16px;
   font-weight: 500;
   line-height: 1;
-  letter-spacing: -0.18px;
   text-decoration: none;
-  border-radius: 100px;
+  border-radius: var(--ds-radius-full);
   transition:
     color 120ms ease,
     background-color 120ms ease,

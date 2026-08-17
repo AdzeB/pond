@@ -26,7 +26,7 @@
   outline-offset: 2px;
 }
 
-.tile-name {
+.name {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -37,7 +37,7 @@
   white-space: nowrap;
 }
 
-.tile-sub {
+.sub {
   display: grid;
   justify-items: center;
   max-width: 100%;
@@ -47,7 +47,7 @@
   text-align: center;
 }
 
-.tile-sub-text {
+.sub-text {
   display: block;
   grid-area: 1 / 1;
   max-width: 100%;

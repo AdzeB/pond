@@ -10,7 +10,7 @@
   margin-top: 8px;
   overflow: hidden;
   background: var(--tw-placeholder);
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
 }
 
 .single[data-ratio] {
@@ -31,7 +31,7 @@
   flex: 0 0 auto;
   overflow: hidden;
   background: var(--tw-placeholder);
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
 }
 
 .single .tile {
@@ -74,7 +74,7 @@
   height: 44px;
   color: #fff;
   background: rgb(0 0 0 / 0.5);
-  border-radius: 9999px;
+  border-radius: var(--ds-radius-full);
   transform: translate(-50%, -50%);
 }
 
@@ -87,5 +87,5 @@
   font-weight: 600;
   color: #fff;
   background: rgb(0 0 0 / 0.65);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }

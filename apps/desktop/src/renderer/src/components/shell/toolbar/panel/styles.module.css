@@ -61,7 +61,7 @@ button.row:hover {
   background: var(--ds-gray-a3);
 }
 
-.row-body {
+.body {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -69,7 +69,7 @@ button.row:hover {
   min-width: 0;
 }
 
-.row-title {
+.title {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -78,7 +78,7 @@ button.row:hover {
   white-space: nowrap;
 }
 
-.row-sub {
+.sub {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
@@ -86,7 +86,7 @@ button.row:hover {
   white-space: nowrap;
 }
 
-.row-meta {
+.meta {
   flex-shrink: 0;
   font-size: 11px;
   color: var(--ds-gray-9);

@@ -20,6 +20,11 @@ function isTrustedSender(event: IpcMainInvokeEvent): boolean {
   return false;
 }
 
+function isInsideLibrary(absolute: string): boolean {
+  const root = resolvePath(itemsRoot());
+  return absolute === root || absolute.startsWith(root + pathSep);
+}
+
 export function safeHandle<Args extends unknown[], R>(
   channel: string,
   handler: (event: IpcMainInvokeEvent, ...args: Args) => R,
@@ -67,8 +72,7 @@ export async function resolveSaveFilePath(
     if (!file) return { ok: false, reason: "out_of_range" };
 
     const absolute = resolvePath(itemFile(id, file.path));
-    const root = resolvePath(itemsRoot());
-    if (absolute !== root && !absolute.startsWith(root + pathSep)) {
+    if (!isInsideLibrary(absolute)) {
       log.warn("[pond ipc] refused path outside library", { id, absolute });
       return { ok: false, reason: "unsafe_path" };
     }
@@ -80,7 +84,6 @@ export async function resolveSaveFilePath(
   }
 }
 
-/** Maps a pond:// item URL onto a file under the library; null if the host/path is missing or escapes itemsDir. */
 export function resolvePondItemPath(
   src: string,
 ): { saveId: string; path: string } | null {
@@ -95,8 +98,7 @@ export function resolvePondItemPath(
   const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
   if (!saveId || !file) return null;
   const absolute = resolvePath(itemFile(saveId, file));
-  const root = resolvePath(itemsRoot());
-  if (absolute !== root && !absolute.startsWith(root + pathSep)) {
+  if (!isInsideLibrary(absolute)) {
     log.warn("[pond ipc] refused pond URL outside library", { src, absolute });
     return null;
   }

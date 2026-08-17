@@ -120,8 +120,8 @@ export async function syncListSource(
         source,
         state: "paused",
         message: waitMin
-          ? `${sourceLabel(source)} asked us to slow down — paused ~${waitMin} min to protect your account.`
-          : `${sourceLabel(source)} asked us to slow down — paused to protect your account.`,
+          ? `${sourceLabel(source)} asked us to slow down. Paused ~${waitMin} min to protect your account.`
+          : `${sourceLabel(source)} asked us to slow down. Paused to protect your account.`,
         lastError: "rate_limited",
       });
       ev.outcome = "rate_limited";

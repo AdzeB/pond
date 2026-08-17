@@ -16,7 +16,7 @@
   display: inline-flex;
   padding-bottom: 24px;
   text-decoration: none;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 
   &:focus-visible {
     outline: 2px solid var(--ds-accent-9);
@@ -29,7 +29,6 @@
   font-size: 16px;
   font-weight: 450;
   color: var(--site-faint);
-  letter-spacing: -0.18px;
 }
 
 .cta {
@@ -46,7 +45,7 @@
   container-type: inline-size;
   overflow: hidden;
   background: var(--ds-gray-2);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
   box-shadow:
     0 0 0 0.66px rgb(0 0 0 / 6%),
     0 0.66px 0.66px -0.33px rgb(0 0 0 / 6%),

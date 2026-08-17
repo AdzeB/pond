@@ -7,7 +7,7 @@ import {
   IconTagFill18 as Tag,
   IconWaveformLinesFill18 as Waveform,
 } from "@pond/icons/fill/18";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import { type ReactNode, useEffect, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { failedIdsIn, retryFailedSelection } from "@/lib/save/selection";
@@ -89,49 +89,53 @@ export function SelectionRunSection() {
           const hint = task.precondition?.(prefs) ?? null;
           const swapped = status?.id === task.id;
           return (
-            <button
+            <Button
               key={task.id}
-              type="button"
+              variant="ghost"
+              size="xl"
+              width="full"
               className={styles.row}
               disabled={busy || status !== null || hint !== null}
               onClick={() => void run(task)}
             >
-              <span className={styles["row-icon"]}>{TASK_ICONS[task.id]}</span>
-              <span className={styles["row-text"]}>
+              <span className={styles.icon}>{TASK_ICONS[task.id]}</span>
+              <span className={styles.text}>
                 <span
-                  className={styles["row-label"]}
+                  className={styles.label}
                   data-tone={swapped && !status.ok ? "error" : undefined}
                 >
                   {swapped ? status.message : task.label}
                 </span>
                 <span
-                  className={styles["row-description"]}
+                  className={styles.description}
                   data-tone={hint ? "hint" : undefined}
                 >
                   {hint ?? task.description}
                 </span>
               </span>
-            </button>
+            </Button>
           );
         })}
         {failedCount > 0 ? (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xl"
+            width="full"
             className={styles.row}
             disabled={busy || status !== null}
             onClick={() => void retry()}
           >
-            <span className={styles["row-icon"]}>
+            <span className={styles.icon}>
               <Retry size={18} />
             </span>
-            <span className={styles["row-text"]}>
-              <span className={styles["row-label"]}>Retry Failed</span>
-              <span className={styles["row-description"]}>
+            <span className={styles.text}>
+              <span className={styles.label}>Retry Failed</span>
+              <span className={styles.description}>
                 Run {formatNumber(failedCount)} failed item
                 {failedCount === 1 ? "" : "s"} again.
               </span>
             </span>
-          </button>
+          </Button>
         ) : null}
       </div>
     </>

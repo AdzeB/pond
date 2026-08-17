@@ -45,7 +45,7 @@
   min-width: 0;
 }
 
-.name-text {
+.text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

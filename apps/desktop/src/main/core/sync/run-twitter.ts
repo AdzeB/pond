@@ -89,8 +89,8 @@ export async function syncTwitter(
         source,
         state: "paused",
         message: waitMin
-          ? `Twitter asked us to slow down — paused ~${waitMin} min to protect your account.`
-          : "Twitter asked us to slow down — paused to protect your account.",
+          ? `Twitter asked us to slow down. Paused ~${waitMin} min to protect your account.`
+          : "Twitter asked us to slow down. Paused to protect your account.",
         lastError: "rate_limited",
       });
       ev.outcome = "rate_limited";

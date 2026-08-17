@@ -14,7 +14,7 @@
   color: var(--ds-gray-11);
 }
 
-.name-input {
+.input {
   flex: 1;
   min-width: 0;
   height: 24px;

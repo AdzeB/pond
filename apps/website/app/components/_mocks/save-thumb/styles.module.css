@@ -15,7 +15,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
 }
 
 .media::before {
@@ -25,7 +25,7 @@
   pointer-events: none;
   content: "";
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
 }
 
 .item[data-selected] .media::before {
@@ -51,7 +51,7 @@
   max-height: 100%;
   margin: auto;
   object-fit: contain;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }
 
@@ -80,7 +80,7 @@
   color: var(--ds-gray-3);
   text-transform: uppercase;
   background: var(--ds-gray-a11);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .count {
@@ -98,7 +98,7 @@
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-3);
   background: rgb(0, 0, 0);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .source {
@@ -111,7 +111,7 @@
   width: 18px;
   height: 18px;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }
 

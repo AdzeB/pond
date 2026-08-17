@@ -47,8 +47,7 @@ export class ArenaBlockExtractor implements Extractor {
             const slug = m[1];
             return reserved.includes(slug.toLowerCase()) ? '' : slug;
           };
-          // Most reliable: the signed-in header shows the user's own avatar,
-          // wrapped in a link to /<their-slug>.
+          /** Most reliable: the signed-in header shows the user's own avatar, wrapped in a link to /<their-slug>. */
           const avatarLink = Array.from(document.querySelectorAll('a[href^="/"]'))
             .find((a) => a.querySelector('img[src*="avatars.are.na"]'));
           const fromAvatar = slugOf(avatarLink?.getAttribute('href') || '');

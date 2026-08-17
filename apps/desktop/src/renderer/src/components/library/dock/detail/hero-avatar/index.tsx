@@ -32,7 +32,7 @@ export function HeroAvatar({
       <img
         src={pfp}
         alt=""
-        className={styles["avatar-image"]}
+        className={styles.image}
         referrerPolicy="no-referrer"
         onError={() => setFailed(true)}
       />
@@ -42,7 +42,7 @@ export function HeroAvatar({
           height={16}
           src={logo}
           alt=""
-          className={styles["avatar-badge"]}
+          className={styles.badge}
         />
       ) : null}
     </span>

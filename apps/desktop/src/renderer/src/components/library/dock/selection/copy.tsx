@@ -2,7 +2,7 @@ import {
   IconFolderFill18 as Folder,
   IconLink2Fill18 as Link,
 } from "@pond/icons/fill/18";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import {
@@ -61,52 +61,56 @@ export function SelectionCopySection() {
         <TrayCard.Separator />
       </TrayCard.Header>
       <div className={styles.rows}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           disabled={busy || status !== null}
           onClick={() => void copy("links", copyUrlsForSelection)}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Link size={18} />
           </span>
-          <span className={styles["row-text"]}>
+          <span className={styles.text}>
             <span
-              className={styles["row-label"]}
+              className={styles.label}
               data-tone={
                 status?.key === "links" && !status.ok ? "error" : undefined
               }
             >
               {labelFor("links", "Copy Links")}
             </span>
-            <span className={styles["row-description"]}>
+            <span className={styles.description}>
               The web addresses of the selected items.
             </span>
           </span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           disabled={busy || status !== null}
           onClick={() => void copy("paths", copyFilePathsForSelection)}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Folder size={18} />
           </span>
-          <span className={styles["row-text"]}>
+          <span className={styles.text}>
             <span
-              className={styles["row-label"]}
+              className={styles.label}
               data-tone={
                 status?.key === "paths" && !status.ok ? "error" : undefined
               }
             >
               {labelFor("paths", "Copy File Paths")}
             </span>
-            <span className={styles["row-description"]}>
+            <span className={styles.description}>
               Where the files live on disk.
             </span>
           </span>
-        </button>
+        </Button>
       </div>
     </>
   );

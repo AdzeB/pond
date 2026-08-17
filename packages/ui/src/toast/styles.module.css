@@ -108,7 +108,6 @@
   font-weight: 500;
   line-height: 16.25px;
   color: var(--ds-gray-12);
-  letter-spacing: -0.076px;
   white-space: nowrap;
 }
 
@@ -118,7 +117,6 @@
   font-weight: 450;
   line-height: 16.25px;
   color: var(--ds-gray-11);
-  letter-spacing: -0.076px;
   overflow-wrap: break-word;
 }
 

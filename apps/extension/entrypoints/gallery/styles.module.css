@@ -44,7 +44,7 @@
   padding: 16px;
   overflow: visible;
   background: var(--ds-gray-2);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
 }
 
 .playerHeader {
@@ -112,5 +112,5 @@
   padding: 16px;
   overflow: visible;
   background: var(--ds-gray-2);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
 }

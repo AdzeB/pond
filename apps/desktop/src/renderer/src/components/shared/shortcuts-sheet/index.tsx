@@ -1,5 +1,6 @@
 import { Dialog } from "@pond/ui";
 import { ShortcutKeys } from "@/components/shared/shortcut-keys";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
   SHORTCUT_GROUPS,
   SHORTCUTS,
@@ -16,6 +17,7 @@ export function openShortcutsSheet(): void {
 const IDS = Object.keys(SHORTCUTS) as ShortcutId[];
 
 export function ShortcutsSheetHost() {
+  const scrollFade = useScrollFade<HTMLDivElement>();
   return (
     <Dialog.Root handle={handle}>
       <Dialog.Portal>
@@ -24,7 +26,7 @@ export function ShortcutsSheetHost() {
           <Dialog.Header>
             <Dialog.Title>Keyboard Shortcuts</Dialog.Title>
           </Dialog.Header>
-          <Dialog.Content className={styles.content}>
+          <Dialog.Content className={styles.content} {...scrollFade}>
             <div className={styles.columns}>
               {SHORTCUT_GROUPS.map((group) => (
                 <section key={group} className={styles.group}>

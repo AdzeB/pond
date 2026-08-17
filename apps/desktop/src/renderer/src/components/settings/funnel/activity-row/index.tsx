@@ -11,9 +11,9 @@ export function ActivityRow({ entry }: { entry: ActivityEntry }) {
           data-state={entry.state}
           aria-hidden
         />
-        <span className={styles["row-title"]}>{entry.label}</span>
+        <span className={styles.title}>{entry.label}</span>
         <span
-          className={styles["row-sub"]}
+          className={styles.sub}
           data-tone={entry.state === "error" ? "error" : undefined}
         >
           {entry.state === "error"

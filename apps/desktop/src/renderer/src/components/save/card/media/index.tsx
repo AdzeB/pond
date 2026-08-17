@@ -130,8 +130,8 @@ export const CardThumb = memo(function CardThumb({
       ) : null}
       {showPlaceholder ? (
         textPreview ? (
-          <div className={styles.textPreview}>
-            <span className={styles.textPreviewBody}>{textPreview}</span>
+          <div className={styles["text-preview"]}>
+            <span className={styles["text-preview-body"]}>{textPreview}</span>
           </div>
         ) : (
           <div className={styles.placeholder} aria-hidden />

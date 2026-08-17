@@ -25,11 +25,12 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 }
 
-.group-label {
+.heading {
   flex: 1;
   font-size: 14px;
   font-weight: 550;
@@ -77,7 +78,8 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 }
 
@@ -108,7 +110,8 @@
   }
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--ds-gray-a8);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 }
 

@@ -83,12 +83,12 @@ export function SourceTile({
           />
         ) : null}
       </span>
-      <span className={styles["tile-name"]}>{name}</span>
-      <span className={styles["tile-sub"]}>
+      <span className={styles.name}>{name}</span>
+      <span className={styles.sub}>
         <AnimatePresence initial={false}>
           <motion.span
             key={value}
-            className={styles["tile-sub-text"]}
+            className={styles["sub-text"]}
             initial={{ opacity: 0, filter: blur }}
             animate={{ opacity: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, filter: blur }}

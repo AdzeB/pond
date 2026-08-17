@@ -34,7 +34,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.actionMeta {
+.action-meta {
   display: flex;
   flex: 1;
   flex-direction: column;

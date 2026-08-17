@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { renderRichText } from "@/components/shared/expandable-text";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { ensureTextCover } from "@/lib/save/ensure-text-cover";
 import { mutateSave } from "@/lib/save/mutate";
 import { textBodyForSave } from "@/lib/save/text";
@@ -10,6 +11,7 @@ export function TextViewer({ save }: { save: Save }) {
   const body = textBodyForSave(save);
   const editable = save.source === "local";
   const [draft, setDraft] = useState(body);
+  const scrollFade = useScrollFade<HTMLDivElement>();
 
   useEffect(() => {
     setDraft(body);
@@ -34,7 +36,7 @@ export function TextViewer({ save }: { save: Save }) {
   if (!body && !editable) return null;
 
   return (
-    <div className={styles.root}>
+    <div className={styles.root} {...scrollFade}>
       <div className={styles.frame}>
         {editable ? (
           <textarea

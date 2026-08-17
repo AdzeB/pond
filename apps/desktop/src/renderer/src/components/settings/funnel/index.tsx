@@ -2,9 +2,9 @@ import {
   IconCircleXmarkFill18 as ClearFailed,
   IconMediaPauseFill18 as Pause,
 } from "@pond/icons/fill/18";
+import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import {
   IconXmarkOutline18 as ClearFinished,
-  IconMagnifierOutline18 as Magnifier,
   IconArrowRotateClockwiseOutline18 as Retry,
 } from "@pond/icons/outline/18";
 import {
@@ -88,7 +88,7 @@ const funnelColumns: TableColumn<QueueRow>[] = [
       <span className={styles.name} title={r.save.url}>
         <Thumb save={r.save} active={r.status === "saving"} />
         <span className={styles["name-stack"]}>
-          <span className={styles["name-text"]}>{displayName(r)}</span>
+          <span className={styles.text}>{displayName(r)}</span>
           <span className={styles.meta}>{secondaryMeta(r)}</span>
         </span>
       </span>
@@ -187,7 +187,7 @@ export function FunnelSection() {
           <DataTable.Toolbar className={styles.toolbar}>
             <Input.Root className={styles.search}>
               <Input.Icon>
-                <Magnifier width={14} height={14} />
+                <Magnifier />
               </Input.Icon>
               <Input.Field
                 value={q}

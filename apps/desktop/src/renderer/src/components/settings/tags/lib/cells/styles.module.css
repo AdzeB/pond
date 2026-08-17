@@ -9,7 +9,7 @@
   padding-left: 26px;
 }
 
-.name-text {
+.text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -19,7 +19,7 @@
   white-space: nowrap;
 }
 
-.name-input {
+.input {
   flex: 1;
   min-width: 0;
   height: 24px;
@@ -33,7 +33,7 @@
   border-radius: var(--ds-radius-sm, 6px);
 }
 
-.action-button {
+.action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -52,13 +52,13 @@
     opacity var(--ds-duration-fast, 0.12s) ease;
 }
 
-.action-button:hover {
+.action:hover {
   color: var(--ds-gray-12);
   background: var(--ds-gray-a3);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .action-button {
+  .action {
     transition: none;
   }
 }

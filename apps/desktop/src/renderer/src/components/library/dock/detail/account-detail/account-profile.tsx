@@ -56,13 +56,13 @@ export function AccountProfileSection() {
       </TrayCard.Header>
       <div className={styles.rows}>
         <div className={styles.row}>
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Signature size={18} />
           </span>
-          <span className={styles["row-label"]}>Nickname</span>
+          <span className={styles.label}>Nickname</span>
           <input
             ref={nickRef}
-            className={styles["row-input"]}
+            className={styles.input}
             placeholder="None"
             defaultValue={account.label ?? ""}
             onBlur={() => void saveNickname()}
@@ -72,13 +72,13 @@ export function AccountProfileSection() {
           />
         </div>
         <div className={styles.row} title="Unlocks the profile picture">
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <AtSign size={18} />
           </span>
-          <span className={styles["row-label"]}>Handle</span>
+          <span className={styles.label}>Handle</span>
           <input
             ref={handleRef}
-            className={styles["row-input"]}
+            className={styles.input}
             placeholder="@username"
             defaultValue={account.handle ? `@${account.handle}` : ""}
             onBlur={() => void saveHandle()}

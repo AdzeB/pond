@@ -22,7 +22,7 @@
   place-items: center;
 }
 
-.avatar-image {
+.image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -30,7 +30,7 @@
   box-shadow: var(--ds-shadow-2);
 }
 
-.avatar-badge {
+.badge {
   position: absolute;
   right: -3px;
   bottom: -3px;

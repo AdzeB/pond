@@ -20,7 +20,7 @@
   }
 }
 
-.row-icon {
+.icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -28,7 +28,7 @@
   color: var(--ds-gray-9);
 }
 
-.row-label {
+.label {
   flex: 1;
   font-size: 14px;
   font-weight: 550;

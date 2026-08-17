@@ -4,7 +4,7 @@ import {
   IconDescendingSortingFill18 as SortIcon,
   IconSizeFill18 as ZoomIcon,
 } from "@pond/icons/fill/18";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { type SortKey, useView } from "@/hooks/use-view";
@@ -94,16 +94,18 @@ export function OptionsSection() {
       </TrayCard.Header>
       <div className={styles.rows}>
         {ROWS.map((row) => (
-          <button
+          <Button
             key={row.section}
-            type="button"
+            variant="ghost"
+            size="xl"
+            width="full"
             className={styles.row}
             onClick={() => dock.openViewMenu(row.section)}
           >
-            <span className={styles["row-icon"]}>{row.icon}</span>
-            <span className={styles["row-label"]}>{row.label}</span>
-            <span className={styles["row-value"]}>{row.value(state)}</span>
-          </button>
+            <span className={styles.icon}>{row.icon}</span>
+            <span className={styles.label}>{row.label}</span>
+            <span className={styles.value}>{row.value(state)}</span>
+          </Button>
         ))}
       </div>
     </>

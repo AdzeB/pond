@@ -31,7 +31,7 @@ const COLLECTOR = `
     if (/\\/(login|sign-in|signup|auth)/.test(location.pathname)) {
       return { authWall: true, links: [] };
     }
-    // Missing profiles/clusters render an error page in place (no redirect).
+    /** Missing profiles/clusters render an error page in place (no redirect). */
     if (/content not found/i.test(document.title)) {
       return { notFound: true, links: [] };
     }
@@ -44,8 +44,7 @@ const COLLECTOR = `
       links.push(clean);
     };
     const collect = () => {
-      // Element ids live in the GraphQL bodies the preload hook captured;
-      // regex keeps this resilient to operation/shape changes.
+      /** Element ids live in the GraphQL bodies the preload hook captured; regex keeps this resilient to operation/shape changes. */
       for (const cap of globalThis.__pondCosmosCaptures ?? []) {
         for (const m of String(cap.body ?? "").matchAll(
           /cosmos\\.so\\\\?\\/e\\\\?\\/(\\d+)/g,

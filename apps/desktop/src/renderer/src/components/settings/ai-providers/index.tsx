@@ -1,5 +1,5 @@
 import { IconCircleCheckFill18 } from "@pond/icons/fill/18";
-import { IconChevronLeftOutline18 as Back } from "@pond/icons/outline/18";
+import { IconChevronLeftOutline12 as Back } from "@pond/icons/outline/12";
 import {
   AI_PROVIDER_IDS,
   AI_PROVIDERS,
@@ -7,7 +7,7 @@ import {
   type AiProviderId,
   providerModels,
 } from "@pond/schema";
-import { Input, Settings } from "@pond/ui";
+import { Button, Input, Settings } from "@pond/ui";
 import { useMemo, useState } from "react";
 import { ProviderLogo } from "@/components/shared/provider-logo";
 import { usePrefs } from "@/stores/prefs";
@@ -72,23 +72,25 @@ function Card({
   description: string;
 }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      width="full"
       className={styles.card}
       data-selected={selected || undefined}
       onClick={onSelect}
     >
-      <span className={styles.cardHead}>
-        <span className={styles.cardLogo}>{logo}</span>
-        <span className={styles.cardName}>{name}</span>
+      <span className={styles["card-head"]}>
+        <span className={styles.logo}>{logo}</span>
+        <span className={styles.name}>{name}</span>
         {selected ? (
-          <span className={styles.cardCheck}>
+          <span className={styles.check}>
             <IconCircleCheckFill18 />
           </span>
         ) : null}
       </span>
-      <span className={styles.cardDescription}>{description}</span>
-    </button>
+      <span className={styles.description}>{description}</span>
+    </Button>
   );
 }
 
@@ -100,8 +102,8 @@ function SectionHead({
   title: string;
 }) {
   return (
-    <header className={styles.sectionHead}>
-      <h3 className={styles.sectionTitle}>
+    <header className={styles["section-head"]}>
+      <h3 className={styles.title}>
         {provider ? <ProviderLogo provider={provider} size={18} /> : null}
         {title}
       </h3>
@@ -231,14 +233,15 @@ function PickerBody() {
 export function AiProvidersSection() {
   return (
     <>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="sm"
         className={styles.crumb}
         onClick={() => settingsModal.open("ai")}
       >
-        <Back width={14} height={14} />
+        <Back />
         AI
-      </button>
+      </Button>
       <Settings.Header>
         <Settings.HeaderText>
           <Settings.Title>Provider &amp; Model</Settings.Title>

@@ -7,7 +7,7 @@ export function confirmEmptyTrash(): void {
     description:
       "Every save in the trash is deleted forever. This cannot be undone.",
     confirmLabel: "Empty Trash",
-    busyLabel: "Emptying…",
+    busyLabel: "Emptying",
     onConfirm: async () => {
       await window.pond.query("saves.emptyTrash", {});
     },

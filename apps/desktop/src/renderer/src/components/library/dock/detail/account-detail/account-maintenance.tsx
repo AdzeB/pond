@@ -3,7 +3,7 @@ import {
   IconFileRefreshOutline18 as FileRefresh,
   IconRefreshOutline18 as Refresh,
 } from "@pond/icons/outline/18";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import { cardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import { useAccounts } from "@/hooks/use-accounts";
@@ -34,35 +34,44 @@ export function AccountMaintenanceSection() {
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           disabled={!(model.connected && model.tone !== "run")}
           onClick={() =>
             void window.pond.syncRunNow(account.id, { forceFull: true })
           }
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Refresh size={18} />
           </span>
-          <span className={styles["row-label"]}>Backfill</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+          <span className={styles.label}>Backfill</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           disabled={!model.connected}
           onClick={() =>
             void window.pond.refreshBackfillStart({ source: account.source })
           }
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <FileRefresh size={18} />
           </span>
-          <span className={styles["row-label"]}>Refresh Metadata</span>
-        </button>
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+          <span className={styles.label}>Refresh Metadata</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           disabled={!model.connected}
           onClick={() =>
             void window.pond.refreshBackfillStart({
@@ -71,11 +80,11 @@ export function AccountMaintenanceSection() {
             })
           }
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Download size={18} />
           </span>
-          <span className={styles["row-label"]}>Download Full Quality</span>
-        </button>
+          <span className={styles.label}>Download Full Quality</span>
+        </Button>
       </div>
     </>
   );

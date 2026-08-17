@@ -10,7 +10,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: none;
-  border-radius: 9999px;
+  border-radius: var(--ds-radius-full);
   box-shadow: 0 0 0 1px var(--ds-gray-a4);
   transition:
     color var(--ds-duration-fast) var(--ds-easing-standard),

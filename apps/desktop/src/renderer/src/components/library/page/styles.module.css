@@ -13,7 +13,7 @@
   overflow: hidden;
 }
 
-.keepAlive {
+.keep-alive {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -25,7 +25,7 @@
  * Park the grid under the save overlay without `visibility: hidden` / `display: none`.
  * Hiding drops decoded thumbnails and flashes empty cards when the list returns.
  */
-.keepAlive[data-suppressed] {
+.keep-alive[data-suppressed] {
   position: absolute;
   inset: 0;
   z-index: 0;

@@ -1,10 +1,6 @@
 import { formatForDisplay } from "@tanstack/react-hotkeys";
 
-/**
- * Single source of truth for app shortcuts: hotkey effects register from this
- * map, menu builders derive their glyphs from it, and the cheat sheet renders
- * it, so bindings and displayed shortcuts cannot drift apart.
- */
+/** Shared shortcut map for hotkeys, menus, and the cheat sheet. */
 
 export type ShortcutGroup =
   | "Navigate"

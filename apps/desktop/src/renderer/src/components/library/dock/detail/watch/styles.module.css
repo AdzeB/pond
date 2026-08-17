@@ -7,7 +7,7 @@
   text-align: left;
 }
 
-.hero-copy {
+.copy {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -15,7 +15,7 @@
   min-width: 0;
 }
 
-.hero-handle {
+.handle {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -42,7 +42,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.row-button {
+.row[data-button] {
   font: inherit;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
@@ -50,21 +50,22 @@
   transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-.row-button:hover {
+.row[data-button]:hover {
   background: var(--ds-gray-3);
 }
 
-.row-button:focus-visible {
-  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+.row[data-button]:focus-visible {
+  outline: 2px solid var(--ds-gray-6);
+  outline-offset: 2px;
 }
 
-.row-icon {
+.icon {
   display: inline-flex;
   flex: none;
   color: var(--ds-gray-9);
 }
 
-.row-label {
+.label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -76,7 +77,7 @@
   white-space: nowrap;
 }
 
-.row-value {
+.value {
   display: inline-flex;
   flex: none;
   gap: 5px;
@@ -86,12 +87,12 @@
   color: var(--ds-gray-9);
 }
 
-.row-value svg {
+.value svg {
   color: var(--ds-gray-9);
 }
 
 /* Trailing inline editor styled like a plain row value until focused. */
-.row-input {
+.input {
   width: 150px;
   padding: 0;
   font: inherit;
@@ -103,11 +104,11 @@
   border: 0;
 }
 
-.row-input::placeholder {
+.input::placeholder {
   color: var(--ds-gray-9);
 }
 
-.error-line {
+.error {
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;

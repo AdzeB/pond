@@ -1,6 +1,8 @@
 import { Select as Base } from "@base-ui/react/select";
-import { IconChevronExpandYOutline12 as Expand } from "@pond/icons/outline/12";
-import { IconCheckOutline18 as Check } from "@pond/icons/outline/18";
+import {
+  IconCheckOutline12 as Check,
+  IconChevronExpandYOutline12 as Expand,
+} from "@pond/icons/outline/12";
 import { clsx as cn } from "clsx";
 import { Button, type ButtonProps } from "../button";
 import { renderSelectSpec, type SelectItemSpec } from "./items";
@@ -106,7 +108,7 @@ function ItemText({ className, ...props }: Base.ItemText.Props) {
 function ItemIndicator({ className, ...props }: Base.ItemIndicator.Props) {
   return (
     <Base.ItemIndicator className={cn(styles.indicator, className)} {...props}>
-      <Check width={14} height={14} />
+      <Check />
     </Base.ItemIndicator>
   );
 }

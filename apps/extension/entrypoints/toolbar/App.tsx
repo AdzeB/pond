@@ -8,8 +8,8 @@ import { Toolbar, type ToolbarMode } from "./Toolbar";
 /** Pairing connect stays visible at least this long so the spinner reads. */
 const MIN_CONNECT_MS = 2000;
 
-/** Matches `--pond-toolbar-enter-dur` in host.css. */
-const SHELL_ENTER_MS = 220;
+/** Matches `--ds-duration-emphasized` in host.css. */
+const SHELL_ENTER_MS = 250;
 
 /** Brief capture/action errors clear so the HUD can return to Capture Page. */
 const ACTION_ERROR_MS = 3200;

@@ -27,7 +27,6 @@
   font-weight: 600;
   color: var(--text-tertiary, currentColor);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
   opacity: 0.6;
 }
 

@@ -3,8 +3,8 @@ import {
   IconClockRotateClockwiseFill18 as History,
   IconKeyFill18 as Key,
 } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
-import { TrayCard } from "@pond/ui";
+import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
+import { Button, TrayCard } from "@pond/ui";
 import { openFrequencyPage } from "@/components/library/dock/detail/frequency";
 import { useDock } from "@/components/library/dock/lib/context";
 import {
@@ -48,27 +48,30 @@ function AccountSync({ account }: { account: AccountRow }) {
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           title="Applies to all accounts"
           onClick={() => openFrequencyPage("account-sync")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Clock size={18} />
           </span>
-          <span className={styles["row-label"]}>Sync Frequency</span>
-          <span className={styles["row-value"]}>
+          <span className={styles.label}>Sync Frequency</span>
+          <span className={styles.value}>
             {frequency.label}
-            <ChevronRight width={13} height={13} />
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
         <div className={styles.row}>
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Key size={18} />
           </span>
-          <span className={styles["row-label"]}>Session</span>
-          <span className={styles["row-value"]} data-tone={model.tone}>
+          <span className={styles.label}>Session</span>
+          <span className={styles.value} data-tone={model.tone}>
             {model.connected
               ? model.tone === "paused"
                 ? "Sign-in required"
@@ -78,11 +81,11 @@ function AccountSync({ account }: { account: AccountRow }) {
         </div>
         {last ? (
           <div className={styles.row} title={describeRun(last)}>
-            <span className={styles["row-icon"]}>
+            <span className={styles.icon}>
               <History size={18} />
             </span>
-            <span className={styles["row-label"]}>Last Run</span>
-            <span className={styles["row-value"]}>{formatClock(last.ts)}</span>
+            <span className={styles.label}>Last Run</span>
+            <span className={styles.value}>{formatClock(last.ts)}</span>
           </div>
         ) : null}
       </div>

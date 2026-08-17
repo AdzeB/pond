@@ -75,7 +75,7 @@ export function SubscribeForm({
           />
         </Input.Root>
         <Button type="submit" size="lg" disabled={status === "loading"}>
-          {status === "loading" ? "Sending…" : buttonLabel}
+          {status === "loading" ? "Sending" : buttonLabel}
         </Button>
       </div>
       {status === "error" ? (

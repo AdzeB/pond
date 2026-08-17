@@ -11,7 +11,7 @@ import {
 } from "@pond/schema/filters/types";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
-/** Stage D safety gate: model output is untrusted, so every predicate is re-validated against the real field schema — a model cannot inject an unknown field, unsupported operator, or malformed value. */
+/** Stage D: re-validate every model predicate against the real field schema so unknown fields, operators, or values cannot sneak in. */
 
 function isFieldId(value: unknown): value is FieldId {
   return typeof value === "string" && value in FIELD_META;

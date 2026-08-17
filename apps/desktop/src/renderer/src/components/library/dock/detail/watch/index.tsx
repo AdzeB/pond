@@ -5,7 +5,7 @@ import {
   IconKeyFill18 as Key,
   IconSignatureFill18 as Signature,
 } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
+import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
 import { Button, TrayCard } from "@pond/ui";
 import { useRef } from "react";
 import { openTrayConfirm } from "@/components/library/dock/confirm";
@@ -115,11 +115,11 @@ function WatchDetail({
       <TrayCard.Close />
       <div className={styles.hero}>
         <HeroAvatar source={source} avatarUrl={watch.avatarUrl} ring />
-        <div className={styles["hero-copy"]}>
+        <div className={styles.copy}>
           <TrayCard.Title>
             {watch.label ?? getSourceDef(source).label}
           </TrayCard.Title>
-          <span className={styles["hero-handle"]}>
+          <span className={styles.handle}>
             {watch.kind === "playlist" || watch.kind === "list"
               ? watch.handle
               : `@${watch.handle}`}
@@ -129,13 +129,13 @@ function WatchDetail({
 
       <div className={styles.rows}>
         <div className={styles.row}>
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Signature size={18} />
           </span>
-          <span className={styles["row-label"]}>Nickname</span>
+          <span className={styles.label}>Nickname</span>
           <input
             ref={nickRef}
-            className={styles["row-input"]}
+            className={styles.input}
             placeholder="None"
             defaultValue={watch.label ?? ""}
             onBlur={() => void saveNickname()}
@@ -149,52 +149,58 @@ function WatchDetail({
           className={styles.row}
           title="Read-only. Pond never posts or follows"
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Key size={18} />
           </span>
-          <span className={styles["row-label"]}>Access</span>
-          <span className={styles["row-value"]}>{accessText}</span>
+          <span className={styles.label}>Access</span>
+          <span className={styles.value}>{accessText}</span>
         </div>
 
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           title="Applies to all accounts"
           onClick={() => openFrequencyPage("watch-detail")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Clock size={18} />
           </span>
-          <span className={styles["row-label"]}>Check Frequency</span>
-          <span className={styles["row-value"]}>
+          <span className={styles.label}>Check Frequency</span>
+          <span className={styles.value}>
             {frequency.label}
-            <ChevronRight width={13} height={13} />
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
 
         {last ? (
           <div className={styles.row} title={describeRun(last)}>
-            <span className={styles["row-icon"]}>
+            <span className={styles.icon}>
               <History size={18} />
             </span>
-            <span className={styles["row-label"]}>Last Check</span>
-            <span className={styles["row-value"]}>{formatClock(last.ts)}</span>
+            <span className={styles.label}>Last Check</span>
+            <span className={styles.value}>{formatClock(last.ts)}</span>
           </div>
         ) : null}
 
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           onClick={viewItems}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Grid size={18} />
           </span>
-          <span className={styles["row-label"]}>View Items in Library</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>View Items in Library</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
       </div>
 
       <TrayCard.Footer>
@@ -222,7 +228,7 @@ function WatchDetail({
       </TrayCard.Footer>
 
       {model.tone === "err" && status?.lastError ? (
-        <p className={styles["error-line"]}>{status.lastError}</p>
+        <p className={styles.error}>{status.lastError}</p>
       ) : null}
     </>
   );

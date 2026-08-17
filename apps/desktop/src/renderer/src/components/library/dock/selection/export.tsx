@@ -2,7 +2,7 @@ import {
   IconFileExportFill18 as Files,
   IconTableFill18 as Table,
 } from "@pond/icons/fill/18";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import { useEffect, useState } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import {
@@ -52,7 +52,7 @@ export function SelectionExportSection() {
 
   const labelFor = (key: ExportKey, idle: string) => {
     if (status?.key === key) return status.message;
-    if (runningKey === key) return "Exporting…";
+    if (runningKey === key) return "Exporting";
     return idle;
   };
 
@@ -65,52 +65,56 @@ export function SelectionExportSection() {
         <TrayCard.Separator />
       </TrayCard.Header>
       <div className={styles.rows}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           disabled={busy || status !== null}
           onClick={() => void runExport("files", exportSelectionFiles)}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Files size={18} />
           </span>
-          <span className={styles["row-text"]}>
+          <span className={styles.text}>
             <span
-              className={styles["row-label"]}
+              className={styles.label}
               data-tone={
                 status?.key === "files" && !status.ok ? "error" : undefined
               }
             >
               {labelFor("files", "Export Files")}
             </span>
-            <span className={styles["row-description"]}>
+            <span className={styles.description}>
               Save copies of the files to a folder.
             </span>
           </span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           disabled={busy || status !== null}
           onClick={() => void runExport("csv", exportSelectionCsv)}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Table size={18} />
           </span>
-          <span className={styles["row-text"]}>
+          <span className={styles.text}>
             <span
-              className={styles["row-label"]}
+              className={styles.label}
               data-tone={
                 status?.key === "csv" && !status.ok ? "error" : undefined
               }
             >
               {labelFor("csv", "Export to CSV")}
             </span>
-            <span className={styles["row-description"]}>
+            <span className={styles.description}>
               A spreadsheet of the selected items.
             </span>
           </span>
-        </button>
+        </Button>
       </div>
     </>
   );

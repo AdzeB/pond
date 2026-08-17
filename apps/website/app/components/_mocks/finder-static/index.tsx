@@ -1,4 +1,4 @@
-import { IconFolderFill18 } from "@pond/icons/fill/18";
+import { IconFolderFill12 } from "@pond/icons/fill/12";
 import { TweetCard } from "../tweet-card";
 import styles from "./styles.module.css";
 
@@ -27,21 +27,21 @@ export function FinderStatic() {
           <span className={styles.light} />
         </span>
         <span className={styles.path}>
-          <IconFolderFill18 width={13} height={13} />
+          <IconFolderFill12 />
           ~/Pond/My Pond.pond
         </span>
       </div>
       <div className={styles.columns}>
         <div className={styles.column} data-role="root">
           <span className={styles.row} data-selected>
-            <IconFolderFill18 width={14} height={14} />
+            <IconFolderFill12 />
             items
-            <span className={styles["row-meta"]}>5,070</span>
+            <span className={styles.meta}>5,070</span>
           </span>
           <span className={styles.row}>
-            <IconFolderFill18 width={14} height={14} />
+            <IconFolderFill12 />
             trash
-            <span className={styles["row-meta"]}>12</span>
+            <span className={styles.meta}>12</span>
           </span>
           <span className={styles.row} data-kind="file">
             library.sqlite
@@ -54,7 +54,7 @@ export function FinderStatic() {
               className={styles.row}
               data-selected={index === SELECTED_ITEM || undefined}
             >
-              <IconFolderFill18 width={14} height={14} />
+              <IconFolderFill12 />
               <span className={styles.mono}>{label}</span>
             </span>
           ))}

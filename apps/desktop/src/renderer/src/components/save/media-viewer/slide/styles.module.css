@@ -33,7 +33,7 @@
   aspect-ratio: var(--ratio);
   overflow: hidden;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
   box-shadow: var(--ds-shadow-2);
   animation: coverflow linear both;
   animation-timeline: view(inline);

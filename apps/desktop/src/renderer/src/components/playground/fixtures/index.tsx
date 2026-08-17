@@ -1,7 +1,5 @@
-import {
-  IconArrowUpFill18 as ArrowUp,
-  IconSparkle3Fill18 as Sparkle,
-} from "@pond/icons/fill/18";
+import { IconSparkle3Fill12 as Sparkle } from "@pond/icons/fill/12";
+import { IconArrowUpFill18 as ArrowUp } from "@pond/icons/fill/18";
 import { IconXmarkOutline12 as Clear } from "@pond/icons/outline/12";
 import { IconPlusOutline18 as Plus } from "@pond/icons/outline/18";
 import {
@@ -20,11 +18,7 @@ import styles from "./styles.module.css";
 export function ChipFixture() {
   return (
     <div className={styles.row}>
-      <Chip.Root
-        tone="skill"
-        lead={<Sparkle width={13} height={13} />}
-        label="/summarize"
-      />
+      <Chip.Root tone="skill" lead={<Sparkle />} label="/summarize" />
       <Chip.Root tone="mention" lead="@" label="Linear notes" />
       <Chip.Root tone="tag" lead="#" label="design" />
       <Chip.Root
@@ -105,7 +99,7 @@ export function LoaderFixture() {
   return (
     <div className={styles.stack}>
       <Loader.Root>
-        <span>Understanding…</span>
+        <span>Understanding</span>
       </Loader.Root>
       <Loader.Dots />
     </div>

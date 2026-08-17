@@ -140,7 +140,6 @@ body {
   }
 }
 
-/* Shared rule for scroll viewports: fade only edges with clipped content. */
 [data-scroll-fade="y"][data-scrollable="end"] {
   -webkit-mask-image: linear-gradient(
     to bottom,

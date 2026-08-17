@@ -17,7 +17,7 @@
   border-radius: var(--ds-radius-lg);
 }
 
-.row-button {
+.row[data-button] {
   font: inherit;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
@@ -25,15 +25,16 @@
   transition: background var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
-.row-button:hover {
+.row[data-button]:hover {
   background: var(--ds-gray-3);
 }
 
-.row-button:focus-visible {
-  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+.row[data-button]:focus-visible {
+  outline: 2px solid var(--ds-gray-6);
+  outline-offset: 2px;
 }
 
-.row-label {
+.label {
   flex: 1;
   min-width: 0;
   overflow: hidden;

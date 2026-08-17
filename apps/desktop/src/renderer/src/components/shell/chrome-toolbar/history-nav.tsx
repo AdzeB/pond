@@ -7,6 +7,7 @@ import { Button, Menu } from "@pond/ui";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { getAppRouter } from "@/lib/ui/app-router";
@@ -57,6 +58,7 @@ export function ChromeHistoryNav() {
   const [canForward, setCanForward] = useState(false);
   const recents = useRecents();
   const revision = useSelector(savesStore, (s) => s.revision);
+  const scrollFade = useScrollFade<HTMLDivElement>();
 
   const historySaves = useMemo(() => {
     void revision;
@@ -127,7 +129,7 @@ export function ChromeHistoryNav() {
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner align="start" side="bottom">
-            <Menu.Popup className={styles.popup}>
+            <Menu.Popup className={styles.popup} {...scrollFade}>
               <Menu.Group>
                 <Menu.GroupLabel>History</Menu.GroupLabel>
                 {historySaves.map((save) => (

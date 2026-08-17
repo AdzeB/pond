@@ -4,7 +4,7 @@ import {
   IconGridFill18 as Grid,
   IconUserFill18 as User,
 } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
+import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
 import { Button, TrayCard } from "@pond/ui";
 import { openTrayConfirm } from "@/components/library/dock/confirm";
 import { HeroAvatar } from "@/components/library/dock/detail/hero-avatar";
@@ -114,70 +114,82 @@ function AccountDetail({
       <TrayCard.Close />
       <div className={styles.hero}>
         <HeroAvatar source={source} avatarUrl={account.avatarUrl} />
-        <div className={styles["hero-copy"]}>
+        <div className={styles.copy}>
           <TrayCard.Title>{account.label ?? def.label}</TrayCard.Title>
           {account.handle ? (
-            <span className={styles["hero-handle"]}>@{account.handle}</span>
+            <span className={styles.handle}>@{account.handle}</span>
           ) : null}
         </div>
       </div>
 
       <div className={styles.rows}>
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           onClick={() => dock.openViewMenu("account-profile")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <User size={18} />
           </span>
-          <span className={styles["row-label"]}>Profile</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>Profile</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           onClick={() => dock.openViewMenu("account-sync")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Clock size={18} />
           </span>
-          <span className={styles["row-label"]}>Sync Details</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>Sync Details</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           onClick={() => dock.openViewMenu("account-maintenance")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Gear size={18} />
           </span>
-          <span className={styles["row-label"]}>Maintenance</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>Maintenance</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
 
-        <button
-          type="button"
-          className={`${styles.row} ${styles["row-button"]}`}
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
+          className={styles.row}
+          data-button=""
           onClick={viewItems}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Grid size={18} />
           </span>
-          <span className={styles["row-label"]}>View Items in Library</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>View Items in Library</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
       </div>
 
       <TrayCard.Footer>
@@ -201,7 +213,7 @@ function AccountDetail({
       </TrayCard.Footer>
 
       {model.tone === "err" && status?.lastError ? (
-        <p className={styles["error-line"]}>{status.lastError}</p>
+        <p className={styles.error}>{status.lastError}</p>
       ) : null}
     </>
   );

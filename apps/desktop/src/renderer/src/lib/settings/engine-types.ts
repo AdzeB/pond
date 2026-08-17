@@ -119,7 +119,7 @@ export interface SectionConfig {
 }
 
 /**
- * Typed authoring layer: the runtime types keep `key` loose because the engine resolves bindings dynamically through section -> group -> item overrides, which no single generic can model; these helpers add compile-time safety where bugs happen — a field `key` that doesn't name a settable field silently no-ops.
+ * Typed authoring layer: runtime `key` stays loose because bindings resolve through section, group, and item overrides; these helpers catch a field key that would silently no-op.
  * @remarks Custom/button items keep free-form keys on purpose: their `key` is only a React key + search anchor, and they own their binding via `render`/`onClick`.
  */
 

@@ -2,9 +2,7 @@ import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-/**
- * AI search result layer, separate from manual filters in `view-store`: a run produces a frozen ranked id set that takes over the grid, and clearing it returns to the normal library.
- */
+/** AI search result layer: a run freezes a ranked id set over the grid until cleared. */
 
 type AskStatus = "idle" | "thinking" | "done" | "error";
 

@@ -1,4 +1,4 @@
-import { IconMagnifierOutline18 } from "@pond/icons/outline/18";
+import { IconMagnifierOutline12 } from "@pond/icons/outline/12";
 import Image from "next/image";
 import { demoImage, SAVES } from "../saves";
 import styles from "./styles.module.css";
@@ -32,8 +32,8 @@ export function SearchStatic() {
       <div className={styles["dock-area"]}>
         <div className={styles.card}>
           <div className={styles.editor}>
-            <span className={styles["lead-icon"]}>
-              <IconMagnifierOutline18 width={16} height={16} />
+            <span className={styles.icon}>
+              <IconMagnifierOutline12 />
             </span>
             <span className={styles.token}>source: pinterest</span>
             <span className={styles.query}>

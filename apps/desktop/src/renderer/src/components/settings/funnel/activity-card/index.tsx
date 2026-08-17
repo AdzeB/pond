@@ -8,7 +8,7 @@ export function ActivityCard() {
   if (entries.length === 0) return null;
   return (
     <div className={styles.card}>
-      <div className={styles["card-header"]}>
+      <div className={styles.header}>
         <span className={styles["card-title"]}>Background tasks</span>
       </div>
       <ul className={styles.list}>

@@ -17,23 +17,9 @@ interface ExtractedFrame {
 export async function extractFirstFrame(
   videoPath: string,
 ): Promise<ExtractedFrame | null> {
-  return extractJpeg(videoPath, (outPath) => [
-    "-hide_banner",
-    "-loglevel",
-    "error",
-    "-y",
-    "-ss",
-    "0",
-    "-i",
-    videoPath,
-    "-frames:v",
-    "1",
-    "-q:v",
-    "3",
-    "-f",
-    "image2",
-    outPath,
-  ]);
+  return extractJpeg(videoPath, (outPath) =>
+    jpegArgv(videoPath, outPath, ["before", "0"]),
+  );
 }
 
 /** `-ss` after `-i` so the grab matches the player's currentTime, not the prior keyframe. */
@@ -42,15 +28,26 @@ export async function extractFrameAt(
   timeSec: number,
 ): Promise<ExtractedFrame | null> {
   const seek = Math.max(0, Number.isFinite(timeSec) ? timeSec : 0);
-  return extractJpeg(videoPath, (outPath) => [
+  return extractJpeg(videoPath, (outPath) =>
+    jpegArgv(videoPath, outPath, ["after", String(seek)]),
+  );
+}
+
+function jpegArgv(
+  videoPath: string,
+  outPath: string,
+  seek: ["before" | "after", string],
+): string[] {
+  const head =
+    seek[0] === "before"
+      ? ["-ss", seek[1], "-i", videoPath]
+      : ["-i", videoPath, "-ss", seek[1]];
+  return [
     "-hide_banner",
     "-loglevel",
     "error",
     "-y",
-    "-i",
-    videoPath,
-    "-ss",
-    String(seek),
+    ...head,
     "-frames:v",
     "1",
     "-q:v",
@@ -58,7 +55,7 @@ export async function extractFrameAt(
     "-f",
     "image2",
     outPath,
-  ]);
+  ];
 }
 
 async function extractJpeg(

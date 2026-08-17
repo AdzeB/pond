@@ -67,7 +67,6 @@
   font-size: 16px;
   font-weight: 500;
   color: var(--site-ink);
-  letter-spacing: -0.02em;
 }
 
 html {
@@ -76,12 +75,12 @@ html {
   line-height: 1.5;
   color: var(--site-ink);
   color-scheme: light;
-  background: #fff;
+  background: var(--ds-gray-1);
 }
 
 body {
   min-height: 100dvh;
-  background: #fff;
+  background: var(--ds-gray-1);
 }
 
 ::selection {

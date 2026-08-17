@@ -223,7 +223,7 @@ export function LocationRow() {
       </div>
       <div className={styles.actions}>
         <div className={styles.action}>
-          <div className={styles.actionMeta}>
+          <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Move Library</span>
             <span className={styles.actionDesc}>
               Copy this pond to a new location and open it from there. The
@@ -237,11 +237,11 @@ export function LocationRow() {
             disabled={move.isPending}
             onClick={() => move.mutate()}
           >
-            {move.isPending ? "Moving…" : "Move"}
+            {move.isPending ? "Moving" : "Move"}
           </Button>
         </div>
         <div className={styles.action}>
-          <div className={styles.actionMeta}>
+          <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Backup Library</span>
             <span className={styles.actionDesc}>
               Copy this pond folder to another location. Your open library stays
@@ -254,11 +254,11 @@ export function LocationRow() {
             disabled={backup.isPending}
             onClick={() => backup.mutate()}
           >
-            {backup.isPending ? "Backing up…" : "Backup"}
+            {backup.isPending ? "Backing up" : "Backup"}
           </Button>
         </div>
         <div className={styles.action}>
-          <div className={styles.actionMeta}>
+          <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Restore Library</span>
             <span className={styles.actionDesc}>
               Open a `.pond` backup. Pond switches to that folder and
@@ -271,11 +271,11 @@ export function LocationRow() {
             disabled={openExisting.isPending}
             onClick={() => openExisting.mutate()}
           >
-            {openExisting.isPending ? "Opening…" : "Restore"}
+            {openExisting.isPending ? "Opening" : "Restore"}
           </Button>
         </div>
         <div className={styles.action}>
-          <div className={styles.actionMeta}>
+          <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Import Eagle Library</span>
             <span className={styles.actionDesc}>
               Bring items from an Eagle `.library` folder into this pond. Tags
@@ -288,7 +288,7 @@ export function LocationRow() {
             disabled={importEagle.isPending}
             onClick={() => importEagle.mutate()}
           >
-            {importEagle.isPending ? "Importing…" : "Import"}
+            {importEagle.isPending ? "Importing" : "Import"}
           </Button>
         </div>
       </div>

@@ -16,7 +16,7 @@ export function buildArticleRectExpression(tweetId: string): string {
       }
       if (!article) return null;
 
-      // Hide every other timeline cell so replies and the composer can't bleed into the clip.
+      /** Hide every other timeline cell so replies and the composer can't bleed into the clip. */
       try {
         const cell = article.closest('[data-testid="cellInnerDiv"]');
         if (cell) {
@@ -31,8 +31,7 @@ export function buildArticleRectExpression(tweetId: string): string {
       await new Promise(r => requestAnimationFrame(() => r(null)));
       await new Promise(r => setTimeout(r, 150));
 
-      // Hide the footer chrome under the action bar with visibility:hidden;
-      // display:none would reflow the reply composer up into the captured region.
+      /** Hide footer chrome under the action bar with visibility:hidden; display:none would reflow the reply composer into the clip. */
       try {
         let barBottom = 0;
         for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
@@ -59,8 +58,7 @@ export function buildArticleRectExpression(tweetId: string): string {
 
       const r = article.getBoundingClientRect();
 
-      // The raw article box includes the thread spine and footer chrome; derive a
-      // tight box from the tweet's own content, with the bottom at the action bar.
+      /** The raw article box includes the thread spine and footer chrome; derive a tight box from the tweet's own content, with the bottom at the action bar. */
       const inner = Array.from(article.querySelectorAll('article'))
         .find((a) => a !== article);
       const focal = (el) => !!el && el.closest('article') === article;
@@ -80,8 +78,7 @@ export function buildArticleRectExpression(tweetId: string): string {
         right = Math.min(r.right, Math.max(...rects.map((b) => b.right)));
       }
 
-      // Bottom edge: action-bar buttons, then their role="group" wrapper, then
-      // the content union, finally the article rect; each fallback is content-safe.
+      /** Bottom edge: action-bar buttons, then their role="group" wrapper, then the content union, finally the article rect; each fallback is content-safe. */
       let actionBottom = 0;
       for (const b of article.querySelectorAll('[data-testid="reply"],[data-testid="retweet"],[data-testid="unretweet"],[data-testid="like"],[data-testid="unlike"],[data-testid="bookmark"]')) {
         if (focal(b)) actionBottom = Math.max(actionBottom, b.getBoundingClientRect().bottom);
@@ -98,8 +95,7 @@ export function buildArticleRectExpression(tweetId: string): string {
         bottom = Math.max(...rects.map((b) => b.bottom));
       }
 
-      // Discover the quoted tweet (the inline nested <article>) so the
-      // caller can walk the quote chain by navigating to it.
+      /** Discover the quoted tweet (the inline nested <article>) so the caller can walk the quote chain by navigating to it. */
       let quotedUrl;
       try {
         const link = inner && inner.querySelector('a[href*="/status/"]');

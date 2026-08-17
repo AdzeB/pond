@@ -4,7 +4,7 @@ import log from "electron-log/main.js";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
 /**
- * Are.na watch listing via the public v3 API — no auth, no window.
+ * Are.na watch listing via the public v3 API. No auth, no window.
  * @remarks v2 is being wound down: its user-contents endpoint 301s to a disabled route that returns 410 Gone.
  */
 

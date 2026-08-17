@@ -8,9 +8,7 @@ import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
 import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import { Button, Loader } from "@pond/ui";
 import {
-  $createParagraphNode,
   $createTextNode,
-  $getRoot,
   COMMAND_PRIORITY_LOW,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
@@ -19,6 +17,7 @@ import {
 } from "lexical";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNlCompiler, useNlFacets } from "@/hooks/use-nl-query";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { flattenPredicates } from "@/lib/search/nl-query";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
 import { clearAsk } from "@/stores/ask-store";
@@ -72,7 +71,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const statusRef = useRef(status);
   statusRef.current = status;
   const runRef = useRef(0);
-  const lastRawRef = useRef("");
+  const scrollFade = useScrollFade<HTMLDivElement>();
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
@@ -117,7 +116,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       raw = $readSearchString();
     });
     if (!raw) return;
-    lastRawRef.current = raw;
     runRef.current += 1;
     const nonce = runRef.current;
     setStatus("thinking");
@@ -194,9 +192,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
     clearAsk();
     setSearchInput([], "", "");
     editor.update(() => {
-      const root = $getRoot();
-      root.clear();
-      root.append($createParagraphNode());
+      $writeSearchString("");
     });
   };
 
@@ -210,9 +206,10 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
                 className={styles.input}
                 spellCheck={false}
                 ariaLabel="Search"
+                {...scrollFade}
               />
             }
-            placeholder={<span className={styles.placeholder}>Search...</span>}
+            placeholder={<span className={styles.placeholder}>Search…</span>}
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
@@ -255,10 +252,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
               size="xs"
               variant="ghost"
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                const q = lastRawRef.current.trim();
-                if (q) void submitAi();
-              }}
+              onClick={() => void submitAi()}
             >
               Retry
             </Button>

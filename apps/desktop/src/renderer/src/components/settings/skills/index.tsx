@@ -1,7 +1,7 @@
-import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
+import { IconDotsFill12 as Ellipsis } from "@pond/icons/fill/12";
+import { IconPlusOutline12 as PlusIcon } from "@pond/icons/outline/12";
 import {
   IconPencilOutline18 as EditIcon,
-  IconPlusOutline18 as PlusIcon,
   IconTrash2Outline18 as TrashIcon,
 } from "@pond/icons/outline/18";
 import { Button, Menu, type MenuItemSpec, Settings } from "@pond/ui";
@@ -74,7 +74,7 @@ export function SkillsSection() {
       </Settings.Header>
 
       <div className={styles.card}>
-        <div className={styles["card-header"]}>
+        <div className={styles.header}>
           <span className={styles.count}>
             {skills.length} {skills.length === 1 ? "skill" : "skills"}
           </span>
@@ -85,18 +85,18 @@ export function SkillsSection() {
             aria-label="New skill"
             onClick={() => setEditing({ mode: "new" })}
           >
-            <PlusIcon width={16} height={16} />
+            <PlusIcon />
           </Button>
         </div>
 
         {skills.length === 0 ? (
           <div className={styles.empty}>
-            <span className={styles["empty-title"]}>No skills yet</span>
-            <span className={styles["empty-text"]}>
+            <span className={styles.title}>No skills yet</span>
+            <span className={styles.text}>
               Create a skill to run a saved prompt with “/” in the composer.
             </span>
             <Button
-              className={styles["empty-action"]}
+              className={styles.action}
               size="sm"
               variant="secondary"
               onClick={() => setEditing({ mode: "new" })}
@@ -110,11 +110,11 @@ export function SkillsSection() {
               <li key={skill.id} className={styles.item}>
                 <button
                   type="button"
-                  className={styles["item-main"]}
+                  className={styles.main}
                   onClick={() => setEditing({ mode: "edit", id: skill.id })}
                 >
-                  <span className={styles["item-name"]}>/{skill.name}</span>
-                  <span className={styles["item-description"]}>
+                  <span className={styles.name}>/{skill.name}</span>
+                  <span className={styles.description}>
                     {skill.description || skill.prompt}
                   </span>
                 </button>
@@ -155,7 +155,7 @@ function SkillRowMenu({
         className={styles.kebab}
         aria-label={`Actions for /${name}`}
       >
-        <Ellipsis width={16} height={16} />
+        <Ellipsis />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={6}>

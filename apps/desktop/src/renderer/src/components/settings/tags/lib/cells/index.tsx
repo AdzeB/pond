@@ -1,4 +1,4 @@
-import { IconDotsFill18 as Dots } from "@pond/icons/fill/18";
+import { IconDotsFill12 as Dots } from "@pond/icons/fill/12";
 import { Menu } from "@pond/ui";
 import type { MouseEvent } from "react";
 import { TagColorPicker } from "@/components/tags/color-picker";
@@ -36,7 +36,7 @@ export function NameCell() {
       {renaming ? (
         <input
           ref={focusInput}
-          className={styles["name-input"]}
+          className={styles.input}
           value={renameDraft}
           spellCheck={false}
           onClick={stop}
@@ -53,7 +53,7 @@ export function NameCell() {
           }}
         />
       ) : (
-        <span className={styles["name-text"]}>{name}</span>
+        <span className={styles.text}>{name}</span>
       )}
     </span>
   );
@@ -65,16 +65,14 @@ export function ActionsCell() {
   return (
     <Menu.Root>
       <Menu.Trigger
-        render={
-          <button
-            type="button"
-            className={styles["action-button"]}
-            aria-label="More actions"
-            onClick={stop}
-          />
-        }
+        icon
+        size="xs"
+        variant="ghost"
+        className={styles.action}
+        aria-label="More actions"
+        onClick={stop}
       >
-        <Dots width={14} height={14} />
+        <Dots />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={4}>

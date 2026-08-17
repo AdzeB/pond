@@ -52,7 +52,7 @@ function AvatarInner({
         <img
           src={author.avatarUrl}
           alt=""
-          className={styles["avatar-image"]}
+          className={styles.image}
           draggable={false}
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}

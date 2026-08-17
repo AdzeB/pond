@@ -122,17 +122,17 @@
 }
 
 /* A contiguous selected run reads as one rounded block: first row rounds the top, last rounds the bottom; a lone row matches both rules. */
-.row-selected {
+.row[data-selected] {
   background: var(--ds-accent-a1);
   border-radius: 0;
 }
 
-.row-selected:not(.row-selected + .row-selected) {
+.row[data-selected]:not(.row[data-selected] + .row[data-selected]) {
   border-top-left-radius: var(--ds-radius-md);
   border-top-right-radius: var(--ds-radius-md);
 }
 
-.row-selected:not(:has(+ .row-selected)) {
+.row[data-selected]:not(:has(+ .row[data-selected])) {
   border-bottom-right-radius: var(--ds-radius-md);
   border-bottom-left-radius: var(--ds-radius-md);
 }

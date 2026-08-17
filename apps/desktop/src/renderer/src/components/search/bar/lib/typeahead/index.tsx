@@ -21,6 +21,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useDock } from "@/components/library/dock/lib/context";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
   accountChipLabel,
   accountRefsFromSync,
@@ -271,6 +272,7 @@ function MenuPanel({
   selectOptionAndCleanUp: (option: FilterOption) => void;
   setHighlightedIndex: (index: number) => void;
 }) {
+  const scrollFade = useScrollFade<HTMLDivElement>();
   return (
     <motion.div
       className={styles.anchor}
@@ -278,7 +280,7 @@ function MenuPanel({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={bouncySpring}
     >
-      <Menu.Surface className={styles.menu}>
+      <Menu.Surface className={styles.menu} {...scrollFade}>
         <Menu.SectionLabel>{menu.title}</Menu.SectionLabel>
         {menu.items.map((item, index) => {
           const option = options[index];

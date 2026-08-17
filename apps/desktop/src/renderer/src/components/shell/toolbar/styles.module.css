@@ -161,9 +161,8 @@
   }
 
   &:focus-visible {
-    box-shadow:
-      0 0 0 2px var(--ds-background-100, #fff),
-      0 0 0 4px var(--ds-accent-9);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 
   &[data-frozen] {
@@ -189,10 +188,8 @@
   }
 
   &[data-active]:focus-visible {
-    box-shadow:
-      var(--ds-shadow-2),
-      0 0 0 2px var(--ds-background-100, #fff),
-      0 0 0 4px var(--ds-accent-9);
+    outline: 2px solid var(--ds-gray-6);
+    outline-offset: 2px;
   }
 
   &[data-active] .icon {

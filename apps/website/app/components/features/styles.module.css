@@ -64,7 +64,7 @@
 .logo {
   display: inline-flex;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
 
   img {
     display: block;
@@ -105,7 +105,7 @@
   color: var(--site-ink);
   text-decoration: none;
   background: var(--site-chip);
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
 
   &:focus-visible {
     outline: 2px solid var(--ds-accent-9);

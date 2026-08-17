@@ -85,22 +85,19 @@ const TabBody = memo(function TabBody({
   const showAvatar = Boolean(save && (avatarUrl || author));
   const showImg = Boolean(avatarUrl && failedUrl !== avatarUrl);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: label is the trigger, not a read
   useLayoutEffect(() => {
     const el = labelRef.current;
     if (!el) return;
     const sync = () => {
-      setOverflow(el.scrollWidth - el.clientWidth > 1);
+      const next = el.scrollWidth - el.clientWidth > 1;
+      setOverflow((current) => (current === next ? current : next));
     };
     sync();
     const ro = new ResizeObserver(sync);
     ro.observe(el);
-    const mo = new MutationObserver(sync);
-    mo.observe(el, { characterData: true, subtree: true, childList: true });
-    return () => {
-      ro.disconnect();
-      mo.disconnect();
-    };
-  }, []);
+    return () => ro.disconnect();
+  }, [label]);
 
   return (
     <>

@@ -2,7 +2,7 @@
   padding: 16px;
   margin-top: 12px;
   border: 1px solid var(--tw-border);
-  border-radius: 8px;
+  border-radius: var(--ds-radius-md);
 }
 
 .quoted-header {

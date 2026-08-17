@@ -46,13 +46,13 @@
   text-align: center;
 }
 
-.empty-title {
+.title {
   font-size: 14px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.empty-text {
+.text {
   max-width: 320px;
   font-size: 13px;
   color: var(--ds-gray-10);

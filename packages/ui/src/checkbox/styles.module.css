@@ -10,14 +10,14 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 1px solid var(--ds-gray-4);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
   transition: all var(--ds-duration-snap) var(--ds-easing-standard);
 
   &[data-size="sm"] {
     width: 14px;
     height: 14px;
     padding: 0;
-    border-radius: 4px;
+    border-radius: var(--ds-radius-xs);
   }
 
   &[data-checked] {

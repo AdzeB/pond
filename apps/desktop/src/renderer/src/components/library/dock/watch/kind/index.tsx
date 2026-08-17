@@ -7,9 +7,9 @@ import {
   IconMediaPlaylistFill18 as Playlist,
   IconUserFill18 as User,
 } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
+import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
 import type { WatchKind } from "@pond/schema/db";
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import type { ReactNode } from "react";
 import { useDock } from "@/components/library/dock/lib/context";
 import { watchKindsFor } from "@/hooks/use-watches";
@@ -51,18 +51,20 @@ export function WatchKindSection() {
       </TrayCard.Header>
       <div className={styles.rows}>
         {watchKindsFor(source).map((kind) => (
-          <button
+          <Button
             key={kind}
-            type="button"
+            variant="ghost"
+            size="xl"
+            width="full"
             className={styles.row}
             onClick={() => pick(kind)}
           >
-            <span className={styles["row-icon"]}>{KIND_ROWS[kind].icon}</span>
-            <span className={styles["row-label"]}>{KIND_ROWS[kind].label}</span>
-            <span className={styles["row-value"]}>
-              <ChevronRight width={13} height={13} />
+            <span className={styles.icon}>{KIND_ROWS[kind].icon}</span>
+            <span className={styles.label}>{KIND_ROWS[kind].label}</span>
+            <span className={styles.value}>
+              <ChevronRight />
             </span>
-          </button>
+          </Button>
         ))}
       </div>
     </>

@@ -37,7 +37,7 @@ export function DraftRow({
           ) : null}
           <input
             ref={focusInput}
-            className={styles["name-input"]}
+            className={styles.input}
             value={draft}
             spellCheck={false}
             placeholder={creating === "group" ? "Group name" : "Label name"}

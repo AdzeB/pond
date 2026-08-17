@@ -3,6 +3,7 @@ import { getSourceLabel } from "@/lib/save/source-labels";
 import {
   type AccountRef,
   accountDisplayName,
+  findAccountRef,
 } from "@/lib/search/account-aliases";
 import type { Save } from "@/lib/types";
 
@@ -123,7 +124,7 @@ function pickFromRow(
 ): DetailRow | null {
   const id = save.accountId?.trim();
   if (!id) return null;
-  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  const ref = findAccountRef(id, refs);
   if (!ref) return null;
   return {
     id: "from",

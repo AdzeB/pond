@@ -95,6 +95,14 @@ function liveRefs(): AccountRef[] {
   return accountRefsFromSync(getPrefsSnapshot()?.sync);
 }
 
+export function findAccountRef(
+  id: string,
+  refs: readonly AccountRef[],
+): AccountRef | undefined {
+  const key = id.toLowerCase();
+  return refs.find((row) => row.id.toLowerCase() === key);
+}
+
 function hitsFor(raw: string, refs: readonly AccountRef[]): AccountRef[] {
   const slash = raw.indexOf("/");
   if (slash > 0) {
@@ -115,14 +123,13 @@ export function displayAccountToken(
   id: string,
   refs: readonly AccountRef[] = liveRefs(),
 ): string {
-  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  const ref = findAccountRef(id, refs);
   if (!ref) return id;
   const local = localName(ref) || ref.id;
   const unique = hitsFor(local, refs).every((row) => row.id === ref.id);
   return unique ? local : `${ref.source}/${local}`;
 }
 
-/** Nickname, @handle, or the source name when the account has not been probed yet. */
 export function accountDisplayName(ref: AccountRef): string {
   return localName(ref) || sourceLabel(ref.source);
 }
@@ -132,7 +139,7 @@ export function accountChipLabel(
   id: string,
   refs: readonly AccountRef[] = liveRefs(),
 ): string {
-  const ref = refs.find((row) => row.id.toLowerCase() === id.toLowerCase());
+  const ref = findAccountRef(id, refs);
   if (!ref) return id;
   const brand = sourceLabel(ref.source);
   const name = localName(ref);

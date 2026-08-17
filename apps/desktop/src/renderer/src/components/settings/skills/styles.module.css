@@ -3,11 +3,11 @@
   flex-direction: column;
   overflow: hidden;
   background-color: var(--ds-gray-1);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
 }
 
-.card-header {
+.header {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -42,7 +42,7 @@
   }
 }
 
-.item-main {
+.main {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -66,7 +66,7 @@
   }
 }
 
-.item-name {
+.name {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
@@ -75,7 +75,7 @@
   white-space: nowrap;
 }
 
-.item-description {
+.description {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 13px;
@@ -109,19 +109,19 @@
   text-align: center;
 }
 
-.empty-title {
+.title {
   font-size: 14px;
   font-weight: 600;
   color: var(--ds-gray-12);
 }
 
-.empty-text {
+.text {
   max-width: 320px;
   font-size: 13px;
   color: var(--ds-gray-11);
   text-wrap: balance;
 }
 
-.empty-action {
+.action {
   margin-top: 12px;
 }

@@ -3,7 +3,6 @@
 // biome-ignore-all lint/a11y/useKeyWithClickEvents: click guards only stop row propagation; keyboard handled at row level.
 
 import { useSelector } from "@tanstack/react-store";
-import { clsx as cn } from "clsx";
 import {
   memo,
   type MouseEvent as ReactMouseEvent,
@@ -85,10 +84,11 @@ function RowImpl<T>({
 
   const rowProps: RenderRowArgs<T>["rowProps"] = {
     role: "row",
-    className: cn(styles.row, selected && styles["row-selected"]),
+    className: styles.row ?? "",
     style: { gridTemplateColumns: api.gridTemplate },
     onClick,
     "aria-selected": api.selectionEnabled ? selected : undefined,
+    "data-selected": selected ? "" : undefined,
     "data-depth": depth || undefined,
   };
 

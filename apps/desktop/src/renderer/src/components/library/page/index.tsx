@@ -39,7 +39,7 @@ export function Library() {
     <div className={styles.stage}>
       {showLibraryGrid ? (
         <div
-          className={styles.keepAlive}
+          className={styles["keep-alive"]}
           data-suppressed={isSave || undefined}
           inert={isSave || undefined}
           aria-hidden={isSave || undefined}

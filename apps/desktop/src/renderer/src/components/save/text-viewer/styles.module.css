@@ -17,8 +17,8 @@
   width: min(100%, 36rem);
   min-height: min(100%, 28rem);
   padding: 20px;
-  background: light-dark(#fff, #18181b);
-  border-radius: 4px;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }
 

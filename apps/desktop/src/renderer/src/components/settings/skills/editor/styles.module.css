@@ -1,4 +1,4 @@
-.editor-header {
+.header {
   align-items: center;
 }
 
@@ -20,7 +20,7 @@
   gap: 16px;
   padding: 16px;
   background-color: var(--ds-gray-1);
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
 }
 

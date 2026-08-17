@@ -28,5 +28,5 @@
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   background: var(--ds-gray-3);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }

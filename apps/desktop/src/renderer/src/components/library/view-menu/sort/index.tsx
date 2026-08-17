@@ -132,7 +132,7 @@ export function SortSection() {
                 />
               ) : null}
               <span className={styles["group-icon"]}>{group.icon}</span>
-              <span className={styles["group-label"]}>{group.label}</span>
+              <span className={styles.heading}>{group.label}</span>
               {selected ? (
                 <span className={styles["group-value"]}>{selected.label}</span>
               ) : null}

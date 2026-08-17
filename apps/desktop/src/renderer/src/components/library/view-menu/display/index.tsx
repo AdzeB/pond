@@ -46,8 +46,8 @@ export function DisplaySection() {
             htmlFor={`display-pref-${key}`}
             className={styles.row}
           >
-            <span className={styles["row-icon"]}>{icon}</span>
-            <span className={styles["row-label"]}>{label}</span>
+            <span className={styles.icon}>{icon}</span>
+            <span className={styles.label}>{label}</span>
             <Switch.Root
               id={`display-pref-${key}`}
               style={{ scale: 1.2 }}

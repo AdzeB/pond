@@ -3,6 +3,8 @@ export { IconCheckOutline12 } from "../../generated/outline/12/IconCheckOutline1
 export { IconChevronDownOutline12 } from "../../generated/outline/12/IconChevronDownOutline12";
 export { IconChevronExpandYOutline12 } from "../../generated/outline/12/IconChevronExpandYOutline12";
 export { IconChevronLeftOutline12 } from "../../generated/outline/12/IconChevronLeftOutline12";
+export { IconChevronRightOutline12 } from "../../generated/outline/12/IconChevronRightOutline12";
 export { IconCopyOutline12 } from "../../generated/outline/12/IconCopyOutline12";
+export { IconMagnifierOutline12 } from "../../generated/outline/12/IconMagnifierOutline12";
 export { IconPlusOutline12 } from "../../generated/outline/12/IconPlusOutline12";
 export { IconXmarkOutline12 } from "../../generated/outline/12/IconXmarkOutline12";

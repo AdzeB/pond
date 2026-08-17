@@ -29,18 +29,18 @@ export function SearchHelpSection() {
       <ClippedScroll maxHeight={300} className={styles.list}>
         {groups.map(({ group, fields }) => (
           <Fragment key={group}>
-            <div className={styles["group-label"]}>{GROUP_LABELS[group]}</div>
+            <div className={styles.heading}>{GROUP_LABELS[group]}</div>
             {fields.map((entry) => {
               const Icon = FIELD_ICONS[entry.field];
               return (
                 <div key={entry.field} className={styles.row}>
-                  <span className={styles["row-icon"]}>
-                    <Icon width={15} height={15} />
+                  <span className={styles.icon}>
+                    <Icon />
                   </span>
-                  <span className={styles["row-label"]}>{entry.label}</span>
-                  <span className={styles["row-key"]}>{entry.key}:</span>
+                  <span className={styles.label}>{entry.label}</span>
+                  <span className={styles.key}>{entry.key}:</span>
                   {entry.hint ? (
-                    <span className={styles["row-hint"]}>{entry.hint}</span>
+                    <span className={styles.hint}>{entry.hint}</span>
                   ) : null}
                 </div>
               );

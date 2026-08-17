@@ -37,7 +37,8 @@
 }
 
 .tile:focus-visible {
-  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  outline: 2px solid var(--ds-gray-6);
+  outline-offset: 2px;
 }
 
 .tile[data-danger]:hover {
@@ -51,8 +52,6 @@
   height: 36px;
   background: var(--ds-gray-a4);
 }
-
-/* Shared look for the selection drill-in cards (run, tag, copy, export). */
 
 .rows {
   display: flex;
@@ -81,7 +80,8 @@
 }
 
 .row:focus-visible {
-  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  outline: 2px solid var(--ds-gray-6);
+  outline-offset: 2px;
 }
 
 .row:disabled {
@@ -89,13 +89,13 @@
   opacity: 0.55;
 }
 
-.row-icon {
+.icon {
   display: inline-flex;
   flex: none;
   color: var(--ds-gray-9);
 }
 
-.row-text {
+.text {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -103,18 +103,18 @@
   min-width: 0;
 }
 
-.row-label {
+.label {
   font-size: 14px;
   font-weight: 550;
   color: var(--ds-gray-12);
 }
 
 /* Outcome swapped into the label in place of a toast. */
-.row-label[data-tone="error"] {
+.label[data-tone="error"] {
   color: var(--ds-red-11);
 }
 
-.row-description {
+.description {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 12px;
@@ -122,12 +122,10 @@
   white-space: nowrap;
 }
 
-/* Precondition hint on a disabled row, e.g. a pref that must be on first. */
-.row-description[data-tone="hint"] {
+.description[data-tone="hint"] {
   color: var(--ds-amber-11);
 }
 
-/* Tag card: search-or-create field above toggle chips. */
 .field {
   display: flex;
   align-items: center;
@@ -182,7 +180,8 @@
 }
 
 .chip:focus-visible {
-  box-shadow: 0 0 0 2px var(--ds-gray-a8);
+  outline: 2px solid var(--ds-gray-6);
+  outline-offset: 2px;
 }
 
 .chip[data-active] {

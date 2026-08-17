@@ -6,9 +6,6 @@
 }
 
 .pond-toolbar-shell {
-  --pond-toolbar-enter-dur: 220ms;
-  --pond-toolbar-enter-ease: cubic-bezier(0.22, 1, 0.36, 1);
-
   position: fixed;
   inset: 0;
   z-index: 2147483646;
@@ -30,8 +27,7 @@
   background: var(--ds-black-a8);
   border: none;
   opacity: 0;
-  transition: opacity var(--pond-toolbar-enter-dur)
-    var(--pond-toolbar-enter-ease);
+  transition: opacity var(--ds-duration-emphasized) var(--ds-easing-snap);
 }
 
 .pond-toolbar-root {
@@ -41,8 +37,8 @@
   opacity: 0;
   transform: translateX(-50%) translateY(-6px) scale(0.96);
   transition:
-    opacity var(--pond-toolbar-enter-dur) var(--pond-toolbar-enter-ease),
-    transform var(--pond-toolbar-enter-dur) var(--pond-toolbar-enter-ease);
+    opacity var(--ds-duration-emphasized) var(--ds-easing-snap),
+    transform var(--ds-duration-emphasized) var(--ds-easing-snap);
   will-change: opacity, transform;
 }
 

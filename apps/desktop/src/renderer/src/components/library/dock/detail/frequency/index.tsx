@@ -1,4 +1,4 @@
-import { TrayCard } from "@pond/ui";
+import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import { FREQUENCY_OPTIONS } from "@/components/library/sources/page/lib/helpers";
 import { dockMode } from "@/stores/dock-mode";
@@ -41,29 +41,35 @@ export function FrequencySection() {
         {FREQUENCY_OPTIONS.map((option) => {
           const active = cron.enabled && cron.intervalHours === option.hours;
           return (
-            <button
+            <Button
               key={option.hours}
-              type="button"
+              variant="ghost"
+              size="xl"
+              width="full"
               aria-pressed={active}
-              className={`${styles.row} ${styles["row-button"]}`}
+              className={styles.row}
+              data-button=""
               onClick={() =>
                 pick({ enabled: true, intervalHours: option.hours })
               }
             >
               {active ? <span aria-hidden className={styles.ring} /> : null}
-              <span className={styles["row-label"]}>{option.label}</span>
-            </button>
+              <span className={styles.label}>{option.label}</span>
+            </Button>
           );
         })}
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           aria-pressed={!cron.enabled}
-          className={`${styles.row} ${styles["row-button"]}`}
+          className={styles.row}
+          data-button=""
           onClick={() => pick({ ...cron, enabled: false })}
         >
           {!cron.enabled ? <span aria-hidden className={styles.ring} /> : null}
-          <span className={styles["row-label"]}>Manual Only</span>
-        </button>
+          <span className={styles.label}>Manual Only</span>
+        </Button>
       </div>
     </>
   );

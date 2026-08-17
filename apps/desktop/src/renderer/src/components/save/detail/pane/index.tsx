@@ -192,7 +192,7 @@ function PropertyColors({ colors }: { colors: string[] }) {
   if (colors.length === 0) return null;
   return (
     <div className={styles.row}>
-      <span className={styles["row-label"]}>Colors</span>
+      <span className={styles.label}>Colors</span>
       <div className={styles.colors}>
         {colors.map((color) => (
           <ColorSwatch key={color} color={color} />
@@ -246,7 +246,7 @@ function PropertyRow({
 }) {
   return (
     <div className={styles.row}>
-      <span className={styles["row-label"]}>{row.label}</span>
+      <span className={styles.label}>{row.label}</span>
       {row.kind === "author" ? (
         row.href ? (
           <Tooltip label="Open in browser" side="left">
@@ -267,7 +267,7 @@ function PropertyRow({
         ) : (
           <span className={styles["row-inline"]}>
             <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-            <span className={styles["row-value"]}>{row.value}</span>
+            <span className={styles.value}>{row.value}</span>
           </span>
         )
       ) : row.kind === "account" && row.accountId ? (
@@ -299,10 +299,10 @@ function PropertyRow({
               <SourceIcon width={16} height={16} />
             </span>
           ) : null}
-          <span className={styles["row-value"]}>{row.value}</span>
+          <span className={styles.value}>{row.value}</span>
         </span>
       ) : (
-        <span className={styles["row-value"]} title={row.value}>
+        <span className={styles.value} title={row.value}>
           {row.value}
         </span>
       )}

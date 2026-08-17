@@ -2,8 +2,8 @@ import {
   IconEyeFill18 as Eye,
   IconUserPlusFill18 as UserPlus,
 } from "@pond/icons/fill/18";
-import { IconChevronRightOutline18 as ChevronRight } from "@pond/icons/outline/18";
-import { TrayCard } from "@pond/ui";
+import { IconChevronRightOutline12 as ChevronRight } from "@pond/icons/outline/12";
+import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import styles from "./styles.module.css";
 
@@ -22,32 +22,36 @@ export function SourceNewSection() {
         </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           onClick={() => dock.openViewMenu("connect-source")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <UserPlus size={18} />
           </span>
-          <span className={styles["row-label"]}>Connect a Source</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>Connect a Source</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="xl"
+          width="full"
           className={styles.row}
           onClick={() => dock.openViewMenu("watch-source")}
         >
-          <span className={styles["row-icon"]}>
+          <span className={styles.icon}>
             <Eye size={18} />
           </span>
-          <span className={styles["row-label"]}>Watch Someone</span>
-          <span className={styles["row-value"]}>
-            <ChevronRight width={13} height={13} />
+          <span className={styles.label}>Watch Someone</span>
+          <span className={styles.value}>
+            <ChevronRight />
           </span>
-        </button>
+        </Button>
       </div>
     </>
   );

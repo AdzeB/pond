@@ -1,4 +1,4 @@
-import { IconDotsFill18 as Ellipsis } from "@pond/icons/fill/18";
+import { IconDotsFill12 as Ellipsis } from "@pond/icons/fill/12";
 import {
   IconChevronLeftOutline18 as Back,
   IconTrash2Outline18 as TrashIcon,
@@ -56,7 +56,7 @@ export function SkillEditor({
 
   return (
     <Settings.Page width="medium">
-      <Settings.Header className={styles["editor-header"]}>
+      <Settings.Header className={styles.header}>
         <Button
           icon
           size="sm"
@@ -80,7 +80,7 @@ export function SkillEditor({
               variant="ghost"
               aria-label="Skill actions"
             >
-              <Ellipsis width={16} height={16} />
+              <Ellipsis />
             </Menu.Trigger>
             <Menu.Portal>
               <Menu.Positioner align="end" sideOffset={6}>

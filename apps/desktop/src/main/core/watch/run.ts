@@ -180,7 +180,7 @@ async function runWatch(
         accountId: watchId,
         source,
         state: "paused",
-        message: "Rate limited — will retry on the next check.",
+        message: "Rate limited. Will retry on the next check.",
         lastError: "rate_limited",
       });
       ev.outcome = "rate_limited";

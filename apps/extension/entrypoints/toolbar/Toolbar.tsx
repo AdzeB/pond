@@ -43,7 +43,7 @@ function slotFor(mode: ToolbarMode): string {
 
 function connectingCopy(siteName?: string): string {
   const site = siteName?.trim();
-  return site ? `Connecting ${site} to Pond...` : "Connecting to Pond...";
+  return site ? `Connecting ${site} to Pond` : "Connecting to Pond";
 }
 
 function Divider() {
@@ -245,7 +245,7 @@ export function Toolbar({
               <input
                 className={styles.input}
                 type="text"
-                placeholder="Pairing Token..."
+                placeholder="Pairing token…"
                 value={shown.tokenValue}
                 autoComplete="off"
                 spellCheck={false}

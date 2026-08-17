@@ -54,7 +54,7 @@ export function UnpairedView({
           disabled={busy || !value.trim()}
           onClick={() => void onContinue()}
         >
-          {busy ? "Linking…" : "Continue"}
+          {busy ? "Linking" : "Continue"}
         </Button>
 
         {error ? <p className={styles.error}>{error}</p> : null}

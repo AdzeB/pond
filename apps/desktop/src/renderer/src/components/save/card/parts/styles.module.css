@@ -19,7 +19,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
   outline: none;
   user-select: none;
   text-align: inherit;
@@ -32,7 +32,7 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  border-radius: 12px;
+  border-radius: var(--ds-radius-xl);
   transition: background var(--ds-duration-snap) var(--ds-easing-standard);
 }
 
@@ -43,7 +43,7 @@
   pointer-events: none;
   content: "";
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
   transition: all var(--ds-duration-medium) var(--ds-easing-standard);
 }
 
@@ -134,7 +134,7 @@
   text-transform: uppercase;
   pointer-events: none;
   background: var(--ds-gray-a11);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .type[data-kind="other"],
@@ -153,7 +153,7 @@
   height: 18px;
   overflow: hidden;
   pointer-events: none;
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
   box-shadow: var(--ds-shadow-2);
 }
 
@@ -177,7 +177,7 @@
   color: var(--ds-gray-3);
   pointer-events: none;
   background: rgb(0, 0, 0);
-  border-radius: 4px;
+  border-radius: var(--ds-radius-xs);
 }
 
 .checkbox {
@@ -195,7 +195,7 @@
   cursor: var(--ds-cursor-interactive, pointer);
   background: light-dark(rgb(255, 255, 255), rgb(0, 0, 0));
   border: 1px solid var(--ds-gray-a4);
-  border-radius: 6px;
+  border-radius: var(--ds-radius-sm);
   box-shadow: var(--ds-shadow-search);
   opacity: 0;
   transition:
