@@ -1,5 +1,8 @@
 import {
+  DEFAULT_LIGHT_THEME,
   darkPresets,
+  getPreset,
+  isCustomTheme,
   lightPresets,
   PrefsSchema,
   resolveActiveTheme,
@@ -53,6 +56,17 @@ describe("theme prefs rebuild", () => {
     const prefs = PrefsSchema.parse({});
     expect(resolveActiveTheme(prefs, false).background).toBe("#ffffff");
     expect(resolveActiveTheme(prefs, true).background).toBe("#0A0A0A");
+  });
+
+  it("treats unknown or drifted presets as custom", () => {
+    const mint = getPreset("mint");
+    expect(mint).toBeDefined();
+    expect(isCustomTheme("custom", mint?.def)).toBe(true);
+    expect(isCustomTheme("mint", mint?.def)).toBe(false);
+    expect(isCustomTheme("mint", { ...mint?.def, accent: "#ff0000" })).toBe(
+      true,
+    );
+    expect(isCustomTheme("missing", DEFAULT_LIGHT_THEME)).toBe(true);
   });
 
   it("emits css anchors from themeCssVars", () => {

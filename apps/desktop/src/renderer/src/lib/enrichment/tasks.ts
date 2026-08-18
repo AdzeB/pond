@@ -15,11 +15,11 @@ export interface TaskResult {
 
 /** Shared by the task guards and the UI that disables rows up front, so the copy can't drift. */
 export const DISABLED_HINTS = {
-  caption: "Turn on Image captions in Enrichment first.",
-  ocr: "Turn on Text in images (OCR) in Enrichment first.",
-  transcribe: "Turn on Transcribe audio & video in Enrichment first.",
-  reembed: "Turn on Semantic search in AI first.",
-  clip: "Turn on Visual similarity (CLIP) in Enrichment first.",
+  caption: "Turn on Image Captions in Enrichments first.",
+  ocr: "Turn on Text in Images in Enrichments first.",
+  transcribe: "Turn on Transcription in Enrichments first.",
+  reembed: "Turn on Semantic Search in Enrichments first.",
+  clip: "Turn on Visual Similarity in Enrichments first.",
 } as const;
 
 export const TASK_ENABLED = {

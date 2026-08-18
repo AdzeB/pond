@@ -13,11 +13,6 @@
   border-radius: var(--ds-radius-sm);
 }
 
-.chip[data-tone="skill"] {
-  color: var(--ds-teal-11, var(--ds-gray-12));
-  background: var(--ds-teal-a3, var(--ds-gray-a3));
-}
-
 .chip[data-selected] {
   box-shadow: 0 0 0 2px var(--ds-accent-a7);
 }

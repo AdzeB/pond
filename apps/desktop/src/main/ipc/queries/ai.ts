@@ -3,12 +3,9 @@ import {
   agentStep,
   type CompileFacets,
   compilePlan,
-  providerAvailable,
-  resetProvider,
   type SummaryItem,
   summarize,
 } from "../../core/ai";
-import { getAiApiKey, setAiApiKey } from "../../keychain";
 import type { QueryHandlerMap } from "../helpers";
 
 /** IPC surface for the local AI query compiler; the renderer owns the deterministic/embedding stages and validation, main only runs the LLM stage. */
@@ -51,7 +48,7 @@ function asSummaryItems(raw: unknown): SummaryItem[] {
 }
 
 export const aiQueries: QueryHandlerMap = {
-  /** Natural language to raw QueryPlan JSON, untrusted and validated by the renderer; networked providers emit a full plan, the bundled model a filter-only one. */
+  /** Natural language to raw QueryPlan JSON, untrusted and validated by the renderer; the bundled model emits a filter-only plan. */
   async "ai.compilePlan"(params) {
     const input = String(params.input ?? "").slice(0, 500);
     if (!input.trim()) return { plan: null };
@@ -79,27 +76,5 @@ export const aiQueries: QueryHandlerMap = {
     if (items.length === 0) return { summary: "" };
     const summary = await summarize(question, items);
     return { summary: summary ?? "" };
-  },
-
-  async "ai.providerStatus"() {
-    return { available: await providerAvailable() };
-  },
-
-  /** Persists (or clears) a provider's API key in the OS keychain. */
-  async "ai.setApiKey"(params) {
-    const provider = String(params.provider ?? "").trim();
-    if (!provider) return { ok: false };
-    const key = params.key != null ? String(params.key) : null;
-    await setAiApiKey(provider, key);
-    resetProvider();
-    return { ok: true };
-  },
-
-  /** Whether a key is stored for the provider, so the UI can show state without ever exposing the key itself. */
-  async "ai.hasApiKey"(params) {
-    const provider = String(params.provider ?? "").trim();
-    if (!provider) return { present: false };
-    const key = await getAiApiKey(provider);
-    return { present: Boolean(key) };
   },
 };

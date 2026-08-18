@@ -7,7 +7,6 @@ import {
 } from "../helpers";
 import { accountsQueries } from "./accounts";
 import { aiQueries } from "./ai";
-import { developerQueries } from "./developer";
 import { libraryQueries } from "./library";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
@@ -25,7 +24,6 @@ const queryRegistry: QueryHandlerMap = {
   ...tagGroupsQueries,
   ...savedViewsQueries,
   ...libraryQueries,
-  ...developerQueries,
   ...videoQueries,
   ...syncHistoryQueries,
   ...aiQueries,

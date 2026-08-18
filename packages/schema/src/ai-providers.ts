@@ -45,7 +45,7 @@ export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
 export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   bundled: {
     label: "Minnow",
-    hint: "Pond's built-in model. Small, private, runs fully on-device. Downloaded on first use.",
+    hint: "Built-in. On-device, downloaded on first use.",
     transport: "bundled",
     baseUrl: "",
     defaultModel: "",
@@ -54,7 +54,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   ollama: {
     label: "Ollama",
-    hint: "Local Ollama server, usually http://127.0.0.1:11434.",
+    hint: "Local Ollama server.",
     transport: "ollama",
     baseUrl: "http://127.0.0.1:11434",
     defaultModel: "llama3.2:1b",
@@ -63,7 +63,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   lmstudio: {
     label: "LM Studio",
-    hint: "LM Studio's local server, usually http://127.0.0.1:1234.",
+    hint: "Local LM Studio server.",
     transport: "openai",
     baseUrl: "http://127.0.0.1:1234/v1",
     defaultModel: "local-model",
@@ -72,7 +72,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   custom: {
     label: "Custom Endpoint",
-    hint: "Connect any server that speaks the OpenAI API. Enter the base URL up to /v1. An API key is optional.",
+    hint: "Any OpenAI-compatible server.",
     transport: "openai",
     baseUrl: "",
     defaultModel: "local-model",
@@ -81,7 +81,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   openai: {
     label: "OpenAI",
-    hint: "OpenAI's API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.openai.com/v1",
     defaultModel: "gpt-4o-mini",
@@ -90,7 +90,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   anthropic: {
     label: "Anthropic (Claude)",
-    hint: "Claude via Anthropic's OpenAI-compatible endpoint. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.anthropic.com/v1",
     defaultModel: "claude-sonnet-4-5",
@@ -99,7 +99,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   google: {
     label: "Google (Gemini)",
-    hint: "Gemini via Google's OpenAI-compatible endpoint. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai",
     defaultModel: "gemini-2.0-flash",
@@ -108,7 +108,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   groq: {
     label: "Groq",
-    hint: "Groq's fast inference API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.groq.com/openai/v1",
     defaultModel: "llama-3.3-70b-versatile",
@@ -117,7 +117,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   mistral: {
     label: "Mistral",
-    hint: "Mistral's API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.mistral.ai/v1",
     defaultModel: "mistral-large-latest",
@@ -126,7 +126,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   xai: {
     label: "xAI (Grok)",
-    hint: "Grok via xAI's API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.x.ai/v1",
     defaultModel: "grok-4.5",
@@ -135,7 +135,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   deepseek: {
     label: "DeepSeek",
-    hint: "DeepSeek's API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.deepseek.com/v1",
     defaultModel: "deepseek-chat",
@@ -144,7 +144,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   openrouter: {
     label: "OpenRouter",
-    hint: "Many models through one API. Requires an API key.",
+    hint: "Many models, one API key.",
     transport: "openai",
     baseUrl: "https://openrouter.ai/api/v1",
     defaultModel: "openai/gpt-4o-mini",
@@ -153,7 +153,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   together: {
     label: "Together",
-    hint: "Together AI's API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.together.xyz/v1",
     defaultModel: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -162,7 +162,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderMeta> = {
   },
   perplexity: {
     label: "Perplexity",
-    hint: "Perplexity's Sonar API. Requires an API key.",
+    hint: "Requires an API key.",
     transport: "openai",
     baseUrl: "https://api.perplexity.ai",
     defaultModel: "sonar",

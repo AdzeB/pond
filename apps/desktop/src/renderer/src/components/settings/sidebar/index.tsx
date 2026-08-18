@@ -1,12 +1,11 @@
 import { Sidebar } from "@pond/ui";
 import Fuse from "fuse.js";
-import { useEffect, useMemo, useState } from "react";
-import { loadAppInfo } from "@/lib/app-info";
+import { useMemo, useState } from "react";
 import {
+  SETTINGS_MASTER_GROUPS,
   type SectionDef,
   sectionForId,
   sectionForPath,
-  settingsMasterGroupsForPackaged,
 } from "@/lib/settings/registry";
 import {
   SETTINGS_SEARCH_INDEX,
@@ -21,19 +20,9 @@ interface SectionResult {
 }
 
 export function SettingsSidebar() {
-  const [query, setQuery] = useState("");
-  const [isPackaged, setIsPackaged] = useState(false);
   const activeSection = useSettingsModal().section;
+  const [query, setQuery] = useState("");
   const needle = query.trim();
-
-  useEffect(() => {
-    void loadAppInfo().then((info) => setIsPackaged(info.isPackaged));
-  }, []);
-
-  const masterGroups = useMemo(
-    () => settingsMasterGroupsForPackaged(isPackaged),
-    [isPackaged],
-  );
 
   const fuse = useMemo(
     () =>
@@ -58,7 +47,6 @@ export function SettingsSidebar() {
     for (const { item } of fuse.search(needle)) {
       const section = sectionForId(item.sectionId);
       if (!section) continue;
-      if (isPackaged && section.id === "developer") continue;
       let group = bySection.get(item.sectionId);
       if (!group) {
         group = { section, items: [] };
@@ -67,7 +55,7 @@ export function SettingsSidebar() {
       if (item.itemKey) group.items.push(item);
     }
     return [...bySection.values()];
-  }, [needle, fuse, isPackaged]);
+  }, [needle, fuse]);
 
   /** Hidden nested pages highlight their parent's row instead of nothing. */
   const highlightPath = activeSection
@@ -102,7 +90,7 @@ export function SettingsSidebar() {
 
         <Sidebar.Scroll>
           {results === null ? (
-            masterGroups.map((group) => (
+            SETTINGS_MASTER_GROUPS.map((group) => (
               <Sidebar.Group key={group.group}>
                 <Sidebar.GroupLabel>{group.label}</Sidebar.GroupLabel>
                 {group.sections.map(sectionItem)}

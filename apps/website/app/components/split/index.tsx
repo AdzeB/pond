@@ -4,10 +4,9 @@ import styles from "./styles.module.css";
 
 const CAPABILITIES = [
   "Captions",
-  "OCR",
+  "Text in images",
   "Transcripts",
   "Visual search",
-  "Skills",
 ] as const;
 
 export function Split() {
@@ -21,10 +20,10 @@ export function Split() {
           </Section.Title>
           <p className={styles.lead}>
             The extension talks to a local port only your Mac can reach.
-            On-device enrichment never leaves the machine. Optional Ask AI sends
-            prompts only to providers you configure.
+            On-device enrichment never leaves the machine. Ask runs locally with
+            Minnow.
           </p>
-          <p className={styles.aside}>On-device, unless you ask.</p>
+          <p className={styles.aside}>On-device.</p>
           <ul className={styles.list}>
             {CAPABILITIES.map((item) => (
               <li key={item}>{item}</li>

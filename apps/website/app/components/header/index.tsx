@@ -14,7 +14,7 @@ export function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <a href="#top" className={styles.brand} aria-label="Pond, back to top">
+        <a href="#top" className={styles.brand} aria-label="Pond, Back to Top">
           <Wordmark size={16} />
         </a>
         <nav className={styles.nav} aria-label="Primary">

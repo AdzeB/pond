@@ -10,7 +10,7 @@ export function WatchHelpSection() {
     <>
       <TrayCard.Header>
         <TrayCard.Back
-          aria-label="Back to sources"
+          aria-label="Back to Sources"
           onClick={() => dock.openViewMenu("watch-source")}
         />
         <TrayCard.Title position="center">Watching an Account</TrayCard.Title>

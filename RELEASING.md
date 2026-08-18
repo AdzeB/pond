@@ -60,10 +60,9 @@ Run these before announcing a release:
 - [ ] GitHub Release contains arm64 + x64 `.dmg`, `latest-mac.yml`, and `pond-extension-X.Y.Z.zip`
 - [ ] Fresh Mac: download arm64 DMG → right-click → **Open** → app launches (unsigned build)
 - [ ] Website Download buttons hit the new artifacts
-- [ ] Menu bar → **Copy Pairing Token** → paste in extension popup → status shows connected
+- [ ] Menu bar → **Copy Pairing Token** → paste in the in-page toolbar → status shows connected
 - [ ] Save a tab from the extension → item appears in Pond
 - [ ] Settings → **Check for Updates** → shows "You're on the latest version"
-- [ ] Developer settings and `/playground` are not accessible in the packaged build
 - [ ] Optional: tag a patch on a fork and confirm auto-update downloads the new build
 
 ## Notes

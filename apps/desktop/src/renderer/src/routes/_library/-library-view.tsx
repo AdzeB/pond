@@ -1,6 +1,11 @@
 import { useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
-import { LibraryLoading, WelcomeEmpty } from "@/components/library/empty";
+import {
+  LibraryEmpty,
+  LibraryLoading,
+  MatchesEmpty,
+  TrashEmpty,
+} from "@/components/library/empty";
 import { LibraryGrid } from "@/components/library/layouts/grid";
 import { LayoutSwitcher } from "@/components/shared/layout-switcher";
 import { useCardActions } from "@/hooks/use-card-actions";
@@ -60,14 +65,14 @@ export function LibraryView() {
       {!data.bootReady ? (
         <LibraryLoading />
       ) : data.filtered.length === 0 ? (
-        data.mode === "trash" ? (
-          <LibraryGrid.Empty>Trash is empty.</LibraryGrid.Empty>
-        ) : paging.total === 0 ? (
-          <WelcomeEmpty />
+        data.mode === "trash" &&
+        !data.hasActiveSearch &&
+        !data.hasActiveFilter ? (
+          <TrashEmpty />
+        ) : paging.total === 0 && data.mode !== "trash" ? (
+          <LibraryEmpty />
         ) : (
-          <LibraryGrid.Empty>
-            No matches. Try a different search or clear the filter.
-          </LibraryGrid.Empty>
+          <MatchesEmpty />
         )
       ) : (
         <LayoutSwitcher

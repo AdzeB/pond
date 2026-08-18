@@ -28,7 +28,7 @@ export function openTrayConfirm(spec: TrayConfirmSpec): void {
 const FALLBACK: TrayConfirmSpec = {
   title: "Delete Forever",
   description:
-    "Deleting removes the 12 selected items and their files from your library for good. This can't be undone. Proceed carefully.",
+    "Deleting removes the 12 selected items and their files from your library for good. This can't be undone.",
   confirmLabel: "Delete Forever",
   returnTo: null,
   onConfirm: () => {},

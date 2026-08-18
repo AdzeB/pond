@@ -23,7 +23,6 @@ interface LibraryTask {
   /** Verb shown on the settings run button (Run / Apply / Rebuild / Re-run). */
   action: string;
   group: TaskGroup;
-  /** Extra terms matched by the composer slash-skill menu. */
   keywords: string[];
   /** Whether the task can run on a selection subset and so appears in the selection menu. */
   selectable: boolean;
@@ -42,7 +41,7 @@ const TASKS: readonly LibraryTask[] = [
   {
     id: "auto-tag",
     label: "Apply Suggested Tags",
-    description: "Tag each item with its AI suggestions.",
+    description: "Apply each item's suggested tags.",
     action: "Apply",
     group: "tagging",
     keywords: ["autotag", "tag", "tags"],
@@ -62,7 +61,7 @@ const TASKS: readonly LibraryTask[] = [
   {
     id: "backfill-colors",
     label: "Backfill Colors",
-    description: "Extract colors and cover blurhashes for items missing them.",
+    description: "Fill missing colors and cover placeholders.",
     action: "Run",
     group: "enrichment",
     keywords: ["colors", "colours", "palette"],
@@ -82,7 +81,7 @@ const TASKS: readonly LibraryTask[] = [
   },
   {
     id: "ocr",
-    label: "Extract Text (OCR)",
+    label: "Extract Text",
     description: "Read text from images again.",
     action: "Re-run",
     group: "reprocess",
@@ -105,7 +104,7 @@ const TASKS: readonly LibraryTask[] = [
   {
     id: "re-embed",
     label: "Rebuild Search Index",
-    description: "Rebuild the semantic search index.",
+    description: "Rebuild so search ranks by meaning again.",
     action: "Rebuild",
     group: "reprocess",
     keywords: ["embed", "embeddings", "semantic", "reindex"],
@@ -116,7 +115,7 @@ const TASKS: readonly LibraryTask[] = [
   {
     id: "rebuild-visual",
     label: "Rebuild Visual Index",
-    description: "Recompute visual similarity vectors.",
+    description: "Rebuild so similar images match again.",
     action: "Rebuild",
     group: "reprocess",
     keywords: ["clip", "visual", "similarity"],

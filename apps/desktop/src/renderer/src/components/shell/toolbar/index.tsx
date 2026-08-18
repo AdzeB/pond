@@ -148,7 +148,7 @@ const TabBody = memo(function TabBody({
             e.stopPropagation();
             onClose();
           }}
-          aria-label="Close tab"
+          aria-label="Close Tab"
         >
           <IconXmarkOutline12 />
         </Button>
@@ -420,7 +420,7 @@ export function Toolbar() {
           <div
             className={styles.group}
             role="tablist"
-            aria-label="Open tabs"
+            aria-label="Open Tabs"
             aria-orientation="horizontal"
             {...scrollFade}
             ref={(node) => {
@@ -446,7 +446,7 @@ export function Toolbar() {
           icon
           className={styles["new-tab"]}
           onClick={() => tabs.open("/")}
-          aria-label="New tab"
+          aria-label="New Tab"
         >
           <IconPlusFill18 />
         </Button>

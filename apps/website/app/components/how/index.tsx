@@ -28,7 +28,7 @@ export function How() {
           surface="plain"
           index="02"
           title="Find anything"
-          description="Full-text search, stacking filter tokens, and plain-language questions through AI providers you configure."
+          description="Full-text search, filters, and plain-language questions, on-device."
           fragment={<SearchStatic />}
         />
         <Section.Card

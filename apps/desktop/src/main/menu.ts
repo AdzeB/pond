@@ -524,22 +524,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
                 role: "forceReload" as const,
               },
               { ...sym("hammer"), role: "toggleDevTools" as const },
-              { type: "separator" as const },
-              {
-                ...sym("server.rack"),
-                label: "Restart Local API",
-                click: sendMenuAction("developer.restart-api"),
-              },
-              {
-                ...sym("doc.text"),
-                label: "Open Developer Logs",
-                click: sendMenuAction("developer.open-logs"),
-              },
-              {
-                ...sym("cable.connector"),
-                label: "Open IPC Inspector",
-                click: sendMenuAction("developer.ipc-inspector"),
-              },
             ],
           },
         ] satisfies Electron.MenuItemConstructorOptions[])

@@ -16,8 +16,7 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "maxHeight",
           title: "Maximum Resolution",
-          description:
-            "Higher resolutions mean bigger files. 1080p suits most clips.",
+          description: "Higher means bigger files. 1080p suits most clips.",
           options: [
             { value: 4320, label: "4320p (8K)" },
             { value: 2160, label: "2160p (4K)" },
@@ -35,7 +34,7 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "maxFps",
           title: "Maximum Frame Rate",
-          description: "Cap the frame rate to keep files smaller.",
+          description: "Cap the frame rate.",
           options: [
             { value: null, label: "Unlimited" },
             { value: 60, label: "60\u00A0fps" },
@@ -66,32 +65,31 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "videoCodec",
           title: "Preferred Video Codec",
-          description:
-            "H.264 is most compatible; AV1 and VP9 are smaller but newer.",
+          description: "H.264 is most compatible. AV1 and VP9 are smaller.",
           options: [
             { value: "h264", label: "H.264 (AVC)" },
             { value: "hevc", label: "H.265 (HEVC)" },
             { value: "av1", label: "AV1" },
             { value: "vp9", label: "VP9" },
-            { value: "any", label: "Any / best" },
+            { value: "any", label: "Any / Best" },
           ],
         },
         {
           control: "select",
           key: "audioCodec",
           title: "Preferred Audio Codec",
-          description: "Falls back to the next best when unavailable.",
+          description: "Falls back if unavailable.",
           options: [
             { value: "aac", label: "AAC" },
             { value: "opus", label: "Opus" },
-            { value: "any", label: "Any / best" },
+            { value: "any", label: "Any / Best" },
           ],
         },
         {
           control: "select",
           key: "container",
           title: "Container",
-          description: "Auto picks the best wrapper for the chosen codecs.",
+          description: "Best wrapper for the chosen codecs.",
           options: [
             { value: "auto", label: "Auto" },
             { value: "mp4", label: "MP4" },
@@ -109,19 +107,18 @@ export const videosSection = defineCustomSection({
           control: "select",
           key: "subtitles",
           title: "Subtitles",
-          description:
-            "Download saves a sidecar file; Embed muxes them into the video.",
+          description: "Sidecar file, or muxed into the video.",
           options: [
             { value: "off", label: "Off" },
-            { value: "download", label: "Download sidecar" },
-            { value: "embed", label: "Embed in video" },
+            { value: "download", label: "Download Sidecar" },
+            { value: "embed", label: "Embed in Video" },
           ],
         },
         {
           control: "select",
           key: "subtitleLang",
           title: "Subtitle Language",
-          description: "Preferred language to fetch when available.",
+          description: "Language to fetch when available.",
           visible: subtitlesEnabled,
           options: [
             { value: "en", label: "English" },
@@ -159,7 +156,7 @@ export const videosSection = defineCustomSection({
           control: "switch",
           key: "embedChapters",
           title: "Embed Chapters",
-          description: "Include chapter markers when the source has them.",
+          description: "Include chapters when the source has them.",
         },
       ],
     }),
@@ -170,8 +167,7 @@ export const videosSection = defineCustomSection({
           control: "switch",
           key: "sponsorblockRemove",
           title: "Remove Sponsors",
-          description:
-            "Use SponsorBlock to cut sponsor segments (YouTube only).",
+          description: "Cut sponsor segments on YouTube.",
         },
       ],
     }),

@@ -39,10 +39,10 @@ export function registerAutoUpdater() {
     log.info("[pond updater] downloaded", info.version);
     const res = await dialog.showMessageBox({
       type: "info",
-      buttons: ["Restart & install", "Later"],
+      buttons: ["Restart & Install", "Later"],
       defaultId: 0,
       cancelId: 1,
-      title: "Pond update ready",
+      title: "Pond Update Ready",
       message: `Pond ${info.version} has been downloaded.`,
       detail: "Restart to apply the update.",
     });

@@ -28,6 +28,7 @@ export {
 } from "./data-table";
 export { Dialog } from "./dialog";
 export { Drawer } from "./drawer";
+export { Empty } from "./empty";
 export { Field } from "./field";
 export { Input } from "./input";
 export { Keyboard } from "./keyboard";

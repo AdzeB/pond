@@ -1,7 +1,9 @@
+import { IconTagFill18 } from "@pond/icons/fill/18";
 import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import { normalizeLabelName } from "@pond/schema/label-name";
-import { Button, DataTable, Input, Settings } from "@pond/ui";
+import { Button, DataTable, Empty, Input, Settings } from "@pond/ui";
 import { useCallback, useMemo, useRef, useState } from "react";
+import { MatchesEmpty } from "@/components/library/empty";
 import { TagsBulkActionBar } from "./bulk-actions";
 import { DraftRow } from "./draft-row";
 import { tagsColumns } from "./lib/columns";
@@ -64,7 +66,7 @@ export function TagsSection() {
           <Settings.HeaderText>
             <Settings.Title>Tags</Settings.Title>
             <Settings.Description>
-              Organise your saves with tags and groups.
+              Organize saves with tags and groups.
             </Settings.Description>
           </Settings.HeaderText>
         </Settings.Header>
@@ -116,16 +118,38 @@ export function TagsSection() {
                 ) : null}
               </DataTable.ExtraRow>
               <DataTable.Empty>
-                <div className={styles.empty}>
-                  <span className={styles.title}>
-                    {total === 0 ? "No Tags Yet" : "No matches"}
-                  </span>
-                  <span className={styles.text}>
-                    {total === 0
-                      ? "Labels keep your saves organised. Create one, then add it to a group to build a hierarchy."
-                      : "Try a different search."}
-                  </span>
-                </div>
+                {total === 0 ? (
+                  <Empty.Root align="start">
+                    <Empty.Media>
+                      <IconTagFill18 />
+                    </Empty.Media>
+                    <Empty.Title>Tags</Empty.Title>
+                    <Empty.Description>
+                      Labels keep your saves organized.
+                    </Empty.Description>
+                    <Empty.Description>
+                      Create one, then add it to a group to build a hierarchy.
+                    </Empty.Description>
+                    <Empty.Action>
+                      <Button
+                        variant="primary"
+                        size="md"
+                        onClick={() => startCreate("tag")}
+                      >
+                        New Tag
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        onClick={() => startCreate("group")}
+                      >
+                        New Group
+                      </Button>
+                    </Empty.Action>
+                  </Empty.Root>
+                ) : (
+                  <MatchesEmpty />
+                )}
               </DataTable.Empty>
             </DataTable.Root>
           </TagsTableContext>

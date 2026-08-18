@@ -64,7 +64,7 @@ export function ActiveFilter() {
           <Button
             size="sm"
             variant="secondary"
-            aria-label="Edit filter"
+            aria-label="Edit Filter"
             onClick={() => openLibrarySearch()}
           >
             <span className={styles.label}>{label || "Filter"}</span>
@@ -73,7 +73,7 @@ export function ActiveFilter() {
             icon
             size="sm"
             variant="secondary"
-            aria-label="Clear filter"
+            aria-label="Clear Filter"
             onClick={() => {
               clearAsk();
               resetFilters();

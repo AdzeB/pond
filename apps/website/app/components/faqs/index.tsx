@@ -44,7 +44,7 @@ const FAQS: FaqItem[] = [
     value: "ai",
     question: "Does Pond send my data anywhere?",
     answer:
-      "Your library stays on your Mac. On-device enrichment (captions, OCR, transcripts, visual search) never leaves the machine. Optional Ask AI sends prompts only to providers you configure, using keys stored in your Keychain.",
+      "Your library stays on your Mac. On-device enrichment (captions, text in images, transcripts, visual search) never leaves the machine. Ask runs locally with Minnow.",
   },
   {
     value: "platforms",

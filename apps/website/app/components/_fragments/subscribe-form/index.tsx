@@ -12,7 +12,7 @@ interface SubscribeFormProps {
 }
 
 export function SubscribeForm({
-  buttonLabel = "Request early access",
+  buttonLabel = "Request Early Access",
   successMessage = "You are on the list. Invites go out by email.",
 }: SubscribeFormProps) {
   const [email, setEmail] = useState("");
@@ -35,7 +35,7 @@ export function SubscribeForm({
 
       if (!response.ok) {
         const body = (await response.json()) as { error?: string };
-        setError(body.error ?? "Something went wrong. Try again in a moment.");
+        setError(body.error ?? "Couldn't subscribe. Try again in a moment.");
         setStatus("error");
         return;
       }
@@ -43,7 +43,7 @@ export function SubscribeForm({
       setStatus("success");
       setEmail("");
     } catch {
-      setError("Something went wrong. Try again in a moment.");
+      setError("Couldn't subscribe. Try again in a moment.");
       setStatus("error");
     }
   }

@@ -1,9 +1,6 @@
 import { lazy } from "react";
 import type { SectionConfig } from "@/components/settings/engine";
-import { aiSection } from "@/lib/settings/config-ai";
 import { appearanceSection } from "@/lib/settings/config-appearance";
-import { connectionsSection } from "@/lib/settings/config-connections";
-import { developerSection } from "@/lib/settings/config-developer";
 import { enrichmentSection } from "@/lib/settings/config-enrichment";
 import { generalSection } from "@/lib/settings/config-general";
 import { imagesSection } from "@/lib/settings/config-images";
@@ -15,16 +12,6 @@ import { videosSection } from "@/lib/settings/config-videos";
 const TagsSection = lazy(() =>
   import("@/components/settings/tags").then((m) => ({
     default: m.TagsSection,
-  })),
-);
-const SkillsSection = lazy(() =>
-  import("@/components/settings/skills").then((m) => ({
-    default: m.SkillsSection,
-  })),
-);
-const AiProvidersSection = lazy(() =>
-  import("@/components/settings/ai-providers").then((m) => ({
-    default: m.AiProvidersSection,
   })),
 );
 const FunnelSection = lazy(() =>
@@ -39,17 +26,15 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   tags: {
     component: TagsSection,
     title: "Tags",
-    description: "Organize, merge, and archive the tags across your library.",
+    description: "Organize, merge, and archive tags.",
     keywords: ["labels", "groups", "merge", "archive", "rename", "organize"],
   },
   trash: trashSection,
   storage: storageSection,
-  connections: connectionsSection,
   funnel: {
     component: FunnelSection,
     title: "Funnel",
-    description:
-      "Everything saving this session: progress, failures, and what just landed.",
+    description: "In-progress, failed, and finished saves.",
     width: "wide",
     keywords: [
       "saves",
@@ -64,30 +49,5 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   },
   videos: videosSection,
   images: imagesSection,
-  ai: aiSection,
-  /** Nested page reached from AI -> Model; renders its own header with a back button. */
-  "ai-providers": {
-    component: AiProvidersSection,
-    description: "Choose the provider and model that power AI features.",
-    keywords: [
-      "provider",
-      "model",
-      "openai",
-      "anthropic",
-      "ollama",
-      "gemini",
-      "api key",
-      "endpoint",
-      "keychain",
-    ],
-  },
   enrichment: enrichmentSection,
-  skills: {
-    title: "Skills",
-    description:
-      "Saved prompts for AI search. Each one resolves through natural-language library search.",
-    keywords: ["prompts", "commands", "slash", "shortcuts", "automation"],
-    component: SkillsSection,
-  },
-  developer: developerSection,
 };

@@ -180,7 +180,7 @@ export function SourcesPage() {
   }, [detailRevision, refetch, refetchWatches]);
 
   /** Both lists begin as empty while their IPC queries are in flight. Wait for them
-   * to settle before deciding that this is the genuine first-run empty state. */
+   * to settle before showing the empty page. */
   if (!accountsLoading && !watchesLoading && entries.length === 0) {
     return <SourcesEmpty />;
   }

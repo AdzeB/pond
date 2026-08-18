@@ -18,6 +18,7 @@ import {
   Tooltip,
 } from "@pond/ui";
 import { useDeferredValue, useMemo, useState } from "react";
+import { MatchesEmpty } from "@/components/library/empty";
 import { retryFailedSelection } from "@/lib/save/selection";
 import { getSourceLabel } from "@/lib/save/source-labels";
 import { openSave as navigateToSave } from "@/lib/ui/save-nav";
@@ -274,7 +275,7 @@ export function FunnelSection() {
 
           <DataTable.Root>
             <DataTable.Empty>
-              <p className={styles["quiet-line"]}>No matches.</p>
+              <MatchesEmpty />
             </DataTable.Empty>
           </DataTable.Root>
 

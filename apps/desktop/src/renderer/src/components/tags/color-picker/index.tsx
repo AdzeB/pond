@@ -79,7 +79,7 @@ export function TagColorPicker({
     >
       <Popover.Trigger
         type="button"
-        aria-label={`${label} colour`}
+        aria-label={`${label} color`}
         className={styles.trigger}
         onClick={stop}
       >
@@ -91,7 +91,7 @@ export function TagColorPicker({
           <Popover.Popup className={styles.popup} onClick={stop}>
             <ColorPicker.Root
               value={customHex}
-              ariaLabel={`${label} colour`}
+              ariaLabel={`${label} color`}
               onChange={(hex) => {
                 setCustomHex(hex);
                 setHexDraft(hex);
@@ -135,7 +135,7 @@ export function TagColorPicker({
                         className={styles["swatch-button"]}
                         data-default
                         data-active={color === null || undefined}
-                        aria-label="Default colour"
+                        aria-label="Default Color"
                         title="Default"
                         style={{ background: fallback }}
                         onClick={() => pick(null)}
@@ -160,8 +160,8 @@ export function TagColorPicker({
                   <button
                     type="button"
                     className={styles.wheel}
-                    aria-label={custom ? "Back to presets" : "Custom colour"}
-                    title={custom ? "Presets" : "Custom colour"}
+                    aria-label={custom ? "Back to Presets" : "Custom Color"}
+                    title={custom ? "Presets" : "Custom Color"}
                     onClick={() => (custom ? reset() : setCustom(true))}
                   />
                   {custom && <ColorPicker.Hue height={200} />}

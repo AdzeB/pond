@@ -83,15 +83,15 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
   function confirmDelete() {
     if (isGroup) {
       confirm({
-        title: "Remove tag group?",
-        description: `"${name}" will be removed. The tags inside it stay in your library; they just won't belong to this group anymore.`,
+        title: "Remove Tag Group",
+        description: `"${name}" will be removed. The tags inside it stay in your library; they won't belong to this group anymore.`,
         confirmLabel: "Remove",
         onConfirm: () => void window.pond.query("tagGroups.delete", { name }),
       });
       return;
     }
     confirm({
-      title: "Delete tag?",
+      title: "Delete Tag",
       description: `"${name}" will be removed from every save. This cannot be undone.`,
       confirmLabel: "Delete",
       onConfirm: () => void window.pond.query("tags.delete", { name }),
@@ -100,7 +100,7 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
 
   function confirmConvert() {
     confirm({
-      title: "Convert to group?",
+      title: "Convert to Group",
       description: `"${name}" will become a label group. It can no longer be applied to saves directly, and the label will be removed from every save it's on.`,
       confirmLabel: "Convert",
       onConfirm: () => void window.pond.query("tags.convertToGroup", { name }),

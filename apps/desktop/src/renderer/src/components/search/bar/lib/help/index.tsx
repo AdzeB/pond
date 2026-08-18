@@ -15,7 +15,7 @@ export function SearchHelpSection() {
     <>
       <TrayCard.Header>
         <TrayCard.Back
-          aria-label="Back to search"
+          aria-label="Back to Search"
           onClick={() => dock.openSearch()}
         />
         <TrayCard.Title position="center">Search Help</TrayCard.Title>

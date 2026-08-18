@@ -1,7 +1,6 @@
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
-  DEFAULT_SKILLS,
   DEFAULT_VIDEO_DOWNLOAD,
   type ImageDownloadSettings,
   type Prefs,
@@ -135,18 +134,7 @@ async function persistStoredPrefs(stored: StoredPrefs): Promise<void> {
 }
 
 export async function getPrefs(): Promise<Prefs> {
-  const prefs = (await loadSettings()).prefs;
-  if (prefs.skills.seeded) return prefs;
-  return seedDefaultSkills(prefs);
-}
-
-/** Back-fills the starter skills exactly once per pond, skipping slugs the user already defined. */
-async function seedDefaultSkills(prefs: Prefs): Promise<Prefs> {
-  const existing = new Set(prefs.skills.custom.map((s) => s.name));
-  const additions = DEFAULT_SKILLS.filter((s) => !existing.has(s.name));
-  return setPrefs({
-    skills: { custom: [...additions, ...prefs.skills.custom], seeded: true },
-  });
+  return (await loadSettings()).prefs;
 }
 
 export async function getVideoDownloadPrefs(): Promise<VideoDownloadSettings> {

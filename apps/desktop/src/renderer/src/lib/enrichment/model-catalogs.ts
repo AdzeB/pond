@@ -217,27 +217,28 @@ export const CAPTION_CATALOG: ModelCatalog = {
     {
       id: "onnx-community/Florence-2-base-ft",
       name: "Florence-2 Base",
-      group: "Microsoft · Florence-2",
+      group: "Florence-2",
       speed: 4,
       quality: 4,
       meta: "270 MB",
       specs: [
         { label: "Size", value: "~270 MB" },
-        { label: "Tasks", value: "Caption + OCR" },
+        { label: "Tasks", value: "Caption + Text" },
         { label: "Tuning", value: "Fine-tuned" },
       ],
-      summary: "Default. Fine-tuned base model with good captions and OCR.",
+      summary:
+        "Default. Fine-tuned base model with good captions and text in images.",
     },
     {
       id: "onnx-community/Florence-2-large-ft",
       name: "Florence-2 Large",
-      group: "Microsoft · Florence-2",
+      group: "Florence-2",
       speed: 2,
       quality: 5,
       meta: "770 MB",
       specs: [
         { label: "Size", value: "~770 MB" },
-        { label: "Tasks", value: "Caption + OCR" },
+        { label: "Tasks", value: "Caption + Text" },
         { label: "Tuning", value: "Fine-tuned" },
       ],
       summary: "Best quality. Large download and slow first run.",
@@ -247,12 +248,12 @@ export const CAPTION_CATALOG: ModelCatalog = {
 
 export const CLIP_CATALOG: ModelCatalog = {
   defaultId: "Xenova/clip-vit-base-patch32",
-  searchPlaceholder: "Search CLIP models…",
+  searchPlaceholder: "Search models…",
   models: [
     {
       id: "Xenova/clip-vit-base-patch32",
       name: "CLIP ViT-B/32",
-      group: "OpenAI · CLIP",
+      group: "Visual",
       speed: 5,
       quality: 3,
       meta: "512d",
@@ -267,7 +268,7 @@ export const CLIP_CATALOG: ModelCatalog = {
     {
       id: "Xenova/clip-vit-base-patch16",
       name: "CLIP ViT-B/16",
-      group: "OpenAI · CLIP",
+      group: "Visual",
       speed: 3,
       quality: 4,
       meta: "512d",
@@ -281,7 +282,7 @@ export const CLIP_CATALOG: ModelCatalog = {
     {
       id: "Xenova/clip-vit-large-patch14",
       name: "CLIP ViT-L/14",
-      group: "OpenAI · CLIP",
+      group: "Visual",
       speed: 2,
       quality: 5,
       meta: "768d",
@@ -302,7 +303,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     {
       id: "Xenova/whisper-tiny",
       name: "Whisper Tiny",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 5,
       quality: 2,
       multilingual: true,
@@ -312,12 +313,12 @@ export const WHISPER_CATALOG: ModelCatalog = {
         { label: "Parameters", value: "39M" },
         { label: "Languages", value: "Multilingual" },
       ],
-      summary: "Default. Fastest, lowest accuracy. Good for quick transcripts.",
+      summary: "Default. Fastest, lowest accuracy. Fine for short clips.",
     },
     {
       id: "Xenova/whisper-tiny.en",
       name: "Whisper Tiny",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 5,
       quality: 2,
       meta: "English · 40 MB",
@@ -332,7 +333,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     {
       id: "Xenova/whisper-base",
       name: "Whisper Base",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 4,
       quality: 3,
       multilingual: true,
@@ -347,7 +348,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     {
       id: "Xenova/whisper-base.en",
       name: "Whisper Base",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 4,
       quality: 3,
       meta: "English · 80 MB",
@@ -362,7 +363,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     {
       id: "Xenova/whisper-small",
       name: "Whisper Small",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 2,
       quality: 4,
       multilingual: true,
@@ -377,7 +378,7 @@ export const WHISPER_CATALOG: ModelCatalog = {
     {
       id: "Xenova/whisper-small.en",
       name: "Whisper Small",
-      group: "OpenAI · Whisper",
+      group: "Transcription",
       speed: 2,
       quality: 4,
       meta: "English · 250 MB",

@@ -1,0 +1,19 @@
+:root {
+  --ds-empty-max-width: 360px;
+  --ds-empty-padding-block-start: 72px;
+  --ds-empty-padding-block-end: 96px;
+  --ds-empty-padding-inline: 24px;
+  --ds-empty-gap: 20px;
+  --ds-empty-copy-gap: 8px;
+
+  --ds-empty-title-size: 16px;
+  --ds-empty-title-weight: 600;
+  --ds-empty-title-leading: 1.3;
+  --ds-empty-title-color: var(--ds-gray-12);
+
+  --ds-empty-description-size: 13px;
+  --ds-empty-description-weight: 450;
+  --ds-empty-description-leading: 1.55;
+  --ds-empty-description-color: var(--ds-gray-11);
+  --ds-empty-description-max-width: 36ch;
+}

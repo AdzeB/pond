@@ -21,7 +21,7 @@ const COPY = {
   offline: "Pond isn't running. Open the app and try again.",
   rejected: "Pond rejected that token. Copy a fresh one.",
   expired: "Session expired. Paste a fresh pairing token.",
-  invalid: "This isn't a pairing token",
+  invalid: "This isn't a pairing token.",
   capture: "Couldn't capture this page. Try again.",
 } as const;
 

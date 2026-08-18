@@ -22,7 +22,7 @@ export const imagesSection = defineCustomSection({
           control: "select",
           key: "maxLongEdge",
           title: "Resolution",
-          description: "Long edge in pixels. Pond resizes anything larger.",
+          description: "Resize anything larger than this.",
           options: [
             { value: 1024, label: "1024\u00A0px" },
             { value: 2048, label: "2048\u00A0px" },
@@ -35,7 +35,7 @@ export const imagesSection = defineCustomSection({
           control: "select",
           key: "format",
           title: "Format",
-          description: "Convert saved images, or keep the original encoding.",
+          description: "Convert on save, or keep the original.",
           options: [
             { value: "original", label: "Original" },
             { value: "jpeg", label: "JPEG" },
@@ -53,7 +53,7 @@ export const imagesSection = defineCustomSection({
           control: "select",
           key: "quality",
           title: "Quality",
-          description: "Higher keeps more detail at the cost of size.",
+          description: "Higher keeps more detail.",
           visible: imageQuality,
           options: [
             { value: 50, label: "50%" },
@@ -76,14 +76,14 @@ export const imagesSection = defineCustomSection({
           control: "switch",
           key: "progressive",
           title: "Progressive",
-          description: "Render JPEG/PNG in passes as they load.",
+          description: "Load JPEG and PNG in passes.",
           visible: imageProgressive,
         },
         {
           control: "switch",
           key: "preserveMetadata",
           title: "Preserve Metadata",
-          description: "Keep EXIF and color profile when re-encoding.",
+          description: "Keep EXIF and color profile.",
           visible: imageReencode,
         },
       ],

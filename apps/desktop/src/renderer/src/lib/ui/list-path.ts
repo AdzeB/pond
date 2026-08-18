@@ -14,7 +14,6 @@ function isLibraryListPath(pathname: string): boolean {
   if (pathname.startsWith("/sources")) {
     return false;
   }
-  if (pathname.startsWith("/playground")) return false;
   return parseMode(listBaseFromPath(pathname)) !== null;
 }
 

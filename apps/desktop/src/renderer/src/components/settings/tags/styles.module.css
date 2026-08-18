@@ -35,26 +35,3 @@
 .action-bar {
   --data-table-action-bar-offset: calc(var(--settings-sidebar-width, 0px) / 2);
 }
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  justify-content: center;
-  padding: 64px 24px;
-  text-align: center;
-}
-
-.title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ds-gray-12);
-}
-
-.text {
-  max-width: 320px;
-  font-size: 13px;
-  color: var(--ds-gray-10);
-  text-wrap: balance;
-}

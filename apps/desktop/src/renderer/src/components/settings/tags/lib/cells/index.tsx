@@ -69,7 +69,7 @@ export function ActionsCell() {
         size="xs"
         variant="ghost"
         className={styles.action}
-        aria-label="More actions"
+        aria-label="More Actions"
         onClick={stop}
       >
         <Dots />

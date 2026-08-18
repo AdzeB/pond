@@ -1,5 +1,6 @@
 import {
   AppearanceRow,
+  customColorsVisible,
   ThemeColorRow,
   ThemeContrastRow,
   ThemePresetRow,
@@ -43,20 +44,17 @@ export const appearanceSection = defineCustomSection({
           key: "appearance-mode",
           render: (b) => <AppearanceRow binding={b} />,
         },
-      ],
-    }),
-    group.prefs("preferences", {
-      title: "Light theme",
-      fullWidth: true,
-      items: [
         {
           control: "custom",
           key: "light-preset",
+          visible: (v) => v.appearance !== "dark",
           render: (b) => <ThemePresetRow binding={b} side="light" />,
         },
         {
           control: "custom",
           key: "light-accent",
+          visible: (v) =>
+            v.appearance !== "dark" && customColorsVisible("light")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="light" field="accent" />
           ),
@@ -64,6 +62,8 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "light-background",
+          visible: (v) =>
+            v.appearance !== "dark" && customColorsVisible("light")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="light" field="background" />
           ),
@@ -71,6 +71,8 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "light-foreground",
+          visible: (v) =>
+            v.appearance !== "dark" && customColorsVisible("light")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="light" field="foreground" />
           ),
@@ -78,22 +80,21 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "light-contrast",
+          visible: (v) =>
+            v.appearance !== "dark" && customColorsVisible("light")(v),
           render: (b) => <ThemeContrastRow binding={b} side="light" />,
         },
-      ],
-    }),
-    group.prefs("preferences", {
-      title: "Dark theme",
-      fullWidth: true,
-      items: [
         {
           control: "custom",
           key: "dark-preset",
+          visible: (v) => v.appearance !== "light",
           render: (b) => <ThemePresetRow binding={b} side="dark" />,
         },
         {
           control: "custom",
           key: "dark-accent",
+          visible: (v) =>
+            v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="dark" field="accent" />
           ),
@@ -101,6 +102,8 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "dark-background",
+          visible: (v) =>
+            v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="dark" field="background" />
           ),
@@ -108,6 +111,8 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "dark-foreground",
+          visible: (v) =>
+            v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => (
             <ThemeColorRow binding={b} side="dark" field="foreground" />
           ),
@@ -115,18 +120,15 @@ export const appearanceSection = defineCustomSection({
         {
           control: "custom",
           key: "dark-contrast",
+          visible: (v) =>
+            v.appearance !== "light" && customColorsVisible("dark")(v),
           render: (b) => <ThemeContrastRow binding={b} side="dark" />,
         },
-      ],
-    }),
-    group.prefs("preferences", {
-      items: [
         {
           control: "switch",
           key: "pointerCursors",
           title: "Pointer Cursors",
-          description:
-            "Show a hand cursor on hover instead of the default text caret.",
+          description: "Use a hand cursor on hover.",
         },
       ],
     }),
@@ -137,8 +139,7 @@ export const appearanceSection = defineCustomSection({
           control: "select",
           key: "tweetCover",
           title: "Post Cover",
-          description:
-            "Image used as the card cover for saved posts on X and Threads.",
+          description: "Cover image for X and Threads posts.",
           keywords: [
             "twitter",
             "x",
@@ -161,7 +162,7 @@ export const appearanceSection = defineCustomSection({
           control: "switch",
           key: "soundsEnabled",
           title: "Interface Sounds",
-          description: "Play feedback for presses, toggles, and deletes.",
+          description: "Play feedback for clicks and toggles.",
           keywords: ["audio", "click", "feedback", "sfx", "mute", "silence"],
           apply: () => {
             previewSoundFeel();
@@ -171,7 +172,7 @@ export const appearanceSection = defineCustomSection({
           control: "select",
           key: "soundFeel",
           title: "Sound Style",
-          description: "Character of the interface feedback.",
+          description: "Character of clicks and toggles.",
           keywords: [
             "soft",
             "crisp",
@@ -199,11 +200,11 @@ export const appearanceSection = defineCustomSection({
           control: "select",
           key: "reduceMotion",
           title: "Reduce Motion",
-          description: "Tone down animations and transitions across Pond.",
+          description: "Tone down animations and transitions.",
           options: [
-            { value: "system", label: "Match system" },
-            { value: "always", label: "Always reduce" },
-            { value: "never", label: "Never reduce" },
+            { value: "system", label: "Match System" },
+            { value: "always", label: "Always Reduce" },
+            { value: "never", label: "Never Reduce" },
           ],
         },
       ],

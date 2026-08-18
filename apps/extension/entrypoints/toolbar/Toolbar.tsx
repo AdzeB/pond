@@ -84,7 +84,7 @@ export function Toolbar({
   mode,
   siteName,
   tokenValue = "",
-  errorMessage = "Something went wrong",
+  errorMessage = "Couldn't finish that",
   onCapturePage,
   onTokenChange,
   onTokenSubmit,
@@ -232,10 +232,10 @@ export function Toolbar({
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label="Try again"
+                aria-label="Try Again"
                 onClick={onRetry}
               >
-                Try again
+                Try Again
               </Button>
             </div>
           ) : null}
@@ -245,7 +245,7 @@ export function Toolbar({
               <input
                 className={styles.input}
                 type="text"
-                placeholder="Pairing token…"
+                placeholder="Pairing token"
                 value={shown.tokenValue}
                 autoComplete="off"
                 spellCheck={false}

@@ -43,7 +43,7 @@ export function TextViewer({ save }: { save: Save }) {
             className={`${styles.body} ${styles.editor}`}
             value={draft}
             aria-label="Note"
-            placeholder="Write something…"
+            placeholder="Write a note"
             onChange={(e) => setDraft(e.target.value)}
             onBlur={() => void commit()}
           />

@@ -100,8 +100,9 @@ export function ColorField({
           </Popover.Positioner>
         </Popover.Portal>
       </Popover.Root>
-      <Input.Root>
+      <Input.Root className={styles.input}>
         <Input.Field
+          className={styles.hex}
           aria-label={`${ariaLabel} hex`}
           spellCheck={false}
           autoCapitalize="off"

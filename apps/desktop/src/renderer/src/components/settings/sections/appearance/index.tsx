@@ -2,11 +2,15 @@ import {
   CONTRAST_DEFAULT,
   CONTRAST_MAX,
   CONTRAST_MIN,
+  CUSTOM_PRESET_ID,
+  DEFAULT_DARK_PRESET_ID,
   DEFAULT_DARK_THEME,
+  DEFAULT_LIGHT_PRESET_ID,
   DEFAULT_LIGHT_THEME,
   DEFAULT_PREFS,
   darkPresets,
   getPreset,
+  isCustomTheme,
   lightPresets,
   type Prefs,
   type ThemeAppearance,
@@ -41,6 +45,23 @@ const APPEARANCE_OPTIONS: { value: ThemeAppearance; label: string }[] = [
   { value: "dark", label: "Dark" },
 ];
 
+export function customColorsVisible(side: ThemeSide) {
+  return (values: Record<string, unknown>) => {
+    const key = side === "light" ? "lightPresetId" : "darkPresetId";
+    const presetId =
+      typeof values[key] === "string"
+        ? values[key]
+        : side === "light"
+          ? DEFAULT_LIGHT_PRESET_ID
+          : DEFAULT_DARK_PRESET_ID;
+    const def = (values[side] ??
+      (side === "light"
+        ? DEFAULT_LIGHT_THEME
+        : DEFAULT_DARK_THEME)) as ThemeDef;
+    return isCustomTheme(presetId, def);
+  };
+}
+
 export function AppearanceRow({ binding }: { binding: Binding }) {
   const { patch, appearance } = readTheme(binding);
   return (
@@ -48,7 +69,7 @@ export function AppearanceRow({ binding }: { binding: Binding }) {
       <Settings.ItemDetails>
         <Settings.ItemTitle>Appearance</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Follow the system, or lock the interface to light or dark.
+          Follow the system, or lock to light or dark.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
@@ -102,22 +123,39 @@ export function ThemePresetRow({
   side: ThemeSide;
 }) {
   const state = readTheme(binding);
-  const { presetId } = sideState(side, state);
+  const { presetId, def } = sideState(side, state);
   const presets = side === "light" ? lightPresets() : darkPresets();
+  const selected = isCustomTheme(presetId, def) ? CUSTOM_PRESET_ID : presetId;
+  const copy =
+    side === "light"
+      ? {
+          title: "Light",
+          description: "Used when the system is light.",
+        }
+      : {
+          title: "Dark",
+          description: "Used when the system is dark.",
+        };
   return (
     <>
       <Settings.ItemDetails>
-        <Settings.ItemTitle>Preset</Settings.ItemTitle>
-        <Settings.ItemDescription>
-          Starting colors for this appearance. Editing a field below keeps this
-          selection until you pick another preset.
-        </Settings.ItemDescription>
+        <Settings.ItemTitle>{copy.title}</Settings.ItemTitle>
+        <Settings.ItemDescription>{copy.description}</Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <PresetSelect
           presets={presets}
-          value={presetId}
+          value={selected}
+          customDef={def}
           onChange={(id) => {
+            if (id === CUSTOM_PRESET_ID) {
+              if (side === "light") {
+                state.patch({ lightPresetId: id });
+              } else {
+                state.patch({ darkPresetId: id });
+              }
+              return;
+            }
             const preset = getPreset(id);
             if (!preset) return;
             if (side === "light") {
@@ -152,15 +190,15 @@ export function ThemeColorRow({
   const labels = {
     accent: {
       title: "Accent",
-      description: "Primary color for buttons, links, and selection.",
+      description: "Buttons, links, and selection.",
     },
     background: {
       title: "Background",
-      description: "Base surface the rest of the interface is built from.",
+      description: "Base surface of the interface.",
     },
     foreground: {
       title: "Foreground",
-      description: "Primary text and high-contrast ink.",
+      description: "Text and high-contrast ink.",
     },
   } as const;
   const copy = labels[field];
@@ -176,9 +214,15 @@ export function ThemeColorRow({
           value={def[field]}
           onChange={(hex) => {
             if (side === "light") {
-              state.patch({ light: { ...def, [field]: hex } });
+              state.patch({
+                lightPresetId: CUSTOM_PRESET_ID,
+                light: { ...def, [field]: hex },
+              });
             } else {
-              state.patch({ dark: { ...def, [field]: hex } });
+              state.patch({
+                darkPresetId: CUSTOM_PRESET_ID,
+                dark: { ...def, [field]: hex },
+              });
             }
           }}
         />
@@ -203,9 +247,15 @@ export function ThemeContrastRow({
   const setContrast = (next: number) => {
     const value = clampNum(Math.round(next), CONTRAST_MIN, CONTRAST_MAX);
     if (side === "light") {
-      state.patch({ light: { ...def, contrast: value } });
+      state.patch({
+        lightPresetId: CUSTOM_PRESET_ID,
+        light: { ...def, contrast: value },
+      });
     } else {
-      state.patch({ dark: { ...def, contrast: value } });
+      state.patch({
+        darkPresetId: CUSTOM_PRESET_ID,
+        dark: { ...def, contrast: value },
+      });
     }
   };
 
@@ -214,7 +264,7 @@ export function ThemeContrastRow({
       <Settings.ItemDetails>
         <Settings.ItemTitle>Contrast</Settings.ItemTitle>
         <Settings.ItemDescription>
-          How strongly backgrounds, borders, and text separate.
+          Separation of surfaces, borders, and text.
         </Settings.ItemDescription>
       </Settings.ItemDetails>
       <Settings.ItemControl>

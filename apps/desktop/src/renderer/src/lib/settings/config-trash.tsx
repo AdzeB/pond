@@ -11,7 +11,7 @@ export const trashSection = defineSection("trash", {
           control: "select",
           key: "autoEmptyDays",
           title: "Empty Automatically",
-          description: "Permanently remove trashed saves after this long.",
+          description: "Permanently delete after this long.",
           options: [
             { value: null, label: "Never" },
             { value: 7, label: "After 7 days" },
@@ -29,7 +29,7 @@ export const trashSection = defineSection("trash", {
           control: "switch",
           key: "confirmBeforeEmpty",
           title: "Confirm Before Emptying",
-          description: "Ask for confirmation before clearing the trash.",
+          description: "Ask before emptying the trash.",
         },
       ],
     },

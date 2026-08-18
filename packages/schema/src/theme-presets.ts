@@ -83,8 +83,32 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
 
 const PRESETS_BY_ID = new Map(THEME_PRESETS.map((p) => [p.id, p]));
 
+export const CUSTOM_PRESET_ID = "custom";
+
 export function getPreset(id: string): ThemePreset | undefined {
   return PRESETS_BY_ID.get(id);
+}
+
+function hexEq(a: string, b: string): boolean {
+  return (
+    a.replace(/^#/, "").toLowerCase() === b.replace(/^#/, "").toLowerCase()
+  );
+}
+
+function themeDefsMatch(a: ThemeDef, b: ThemeDef): boolean {
+  return (
+    hexEq(a.accent, b.accent) &&
+    hexEq(a.background, b.background) &&
+    hexEq(a.foreground, b.foreground) &&
+    a.contrast === b.contrast
+  );
+}
+
+export function isCustomTheme(presetId: string, def: ThemeDef): boolean {
+  if (presetId === CUSTOM_PRESET_ID) return true;
+  const preset = getPreset(presetId);
+  if (!preset) return true;
+  return !themeDefsMatch(preset.def, def);
 }
 
 export function lightPresets(): ThemePreset[] {

@@ -10,7 +10,7 @@ export function ConnectHelpSection() {
     <>
       <TrayCard.Header>
         <TrayCard.Back
-          aria-label="Back to sources"
+          aria-label="Back to Sources"
           onClick={() => dock.openViewMenu("connect-source")}
         />
         <TrayCard.Title position="center">Connecting a Source</TrayCard.Title>

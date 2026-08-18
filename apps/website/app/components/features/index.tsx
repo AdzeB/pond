@@ -85,7 +85,7 @@ export function Features() {
           <Feature
             icon={<Logo size={32} />}
             title="Desktop app"
-            description="Minimal desktop app for macOS."
+            description="Browse and search saves on your Mac."
             action={
               <div className={styles.actions}>
                 <Chip href={dmgUrl("arm64")}>Download</Chip>
@@ -109,8 +109,8 @@ export function Features() {
             description="One keystroke in the browser sends the page to your library."
             action={
               <div className={styles.actions}>
-                <Chip href={extensionZipUrl()}>Install extension</Chip>
-                <Chip href={GITHUB} external label="View source">
+                <Chip href={extensionZipUrl()}>Install Extension</Chip>
+                <Chip href={GITHUB} external label="View Source">
                   <IconArrowUpRightOutline18 />
                 </Chip>
               </div>
@@ -134,17 +134,17 @@ export function Features() {
           <Feature
             icon={<IconScanImageOutline18 />}
             title="On-device enrichment"
-            description="Captions, OCR, and transcripts run on your Mac."
+            description="Captions, text in images, and transcripts run on your Mac."
           />
           <Feature
             icon={<IconComputerOutline18 />}
             title="Local-first"
-            description="Nothing leaves your Mac unless you ask."
+            description="Nothing leaves your Mac."
           />
           <Feature
             icon={<IconMagnifierOutline18 />}
             title="Natural language search"
-            description="Full-text search and plain-language questions through providers you configure."
+            description="Full-text search and plain-language questions, on-device."
           />
         </div>
       </div>

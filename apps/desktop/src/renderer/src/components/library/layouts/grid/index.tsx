@@ -43,16 +43,9 @@ function Grid({
   );
 }
 
-interface EmptyProps extends React.ComponentPropsWithoutRef<"p"> {}
-
-function Empty({ className, ...props }: EmptyProps) {
-  return <p className={cn(styles.empty, className)} {...props} />;
-}
-
 export const LibraryGrid = {
   Root,
   Grid,
-  Empty,
 };
 
 export type { GridLayout };

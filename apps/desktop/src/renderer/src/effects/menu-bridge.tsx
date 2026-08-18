@@ -122,18 +122,6 @@ export function MenuBridge() {
           void window.pond.query("library.move", {});
           return;
 
-        case "developer.restart-api":
-          void window.pond.query("api.restart", {});
-          return;
-
-        case "developer.open-logs":
-          void window.pond.query("developer.openLogs", {});
-          return;
-
-        case "developer.ipc-inspector":
-          void window.pond.query("developer.openIpcInspector", {});
-          return;
-
         case "save.open-with-default": {
           const save = currentSave();
           if (!save) return;

@@ -33,7 +33,7 @@ function promptBulkMerge(names: string[], onDone: () => void) {
 function confirmBulkDelete(names: string[], onDone: () => void) {
   const count = names.length;
   confirm({
-    title: `Delete ${count} ${count === 1 ? "tag" : "tags"}?`,
+    title: `Delete ${count} ${count === 1 ? "tag" : "tags"}`,
     description: "They will be removed from every save. This cannot be undone.",
     confirmLabel: "Delete",
     onConfirm: () => void bulkDelete(names).then(onDone),

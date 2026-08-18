@@ -70,7 +70,7 @@ export function VideoNotesSection({ save }: { save: Save }) {
                 icon
                 size="xs"
                 variant="ghost"
-                aria-label="Delete note"
+                aria-label="Delete Note"
                 disabled={busy}
                 onClick={() => void removeNote(note.id)}
               >

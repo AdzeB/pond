@@ -88,7 +88,7 @@ export function AppWindow() {
                 size="xs"
                 variant="ghost"
                 className={styles["tab-close"]}
-                aria-label="Close tab"
+                aria-label="Close Tab"
               >
                 <IconXmarkOutline12 />
               </Button>

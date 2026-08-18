@@ -91,12 +91,12 @@ function toRow(save: Save): QueueRow | null {
 
 /** Task errors carry a class-name prefix ("TransientError: fetch_blobs: no media"); the row shows only the human tail. */
 export function humanizeError(error: string | null): string {
-  if (!error) return "Something went wrong";
+  if (!error) return "Couldn't finish this save";
   const tail = error
     .replace(/^[A-Za-z]*Error:\s*/, "")
     .replace(/^[a-z0-9_]+:\s*/, "")
     .trim();
-  if (!tail) return "Something went wrong";
+  if (!tail) return "Couldn't finish this save";
   return tail.charAt(0).toUpperCase() + tail.slice(1);
 }
 

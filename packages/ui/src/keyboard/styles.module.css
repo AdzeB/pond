@@ -1,7 +1,8 @@
 .cluster {
   display: inline-flex;
-  gap: 4px;
+  gap: 2px;
   align-items: center;
+  vertical-align: middle;
 }
 
 .row {
@@ -17,16 +18,27 @@
 }
 
 .key {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 18px;
-  min-height: 18px;
+  height: 18px;
   padding: 0 4px;
   font-size: 10px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-11);
-  background: var(--ds-gray-3);
+  line-height: 1;
+  vertical-align: middle;
+  color: var(--ds-gray-12);
+  background: transparent;
+  border: 1px solid var(--ds-gray-3);
+  border-bottom-width: 2px;
   border-radius: var(--ds-radius-xs);
+
+  &:only-child {
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+  }
 }

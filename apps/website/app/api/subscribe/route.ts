@@ -50,7 +50,7 @@ export async function POST(request: Request) {
       await response.text(),
     );
     return NextResponse.json(
-      { error: "Something went wrong. Try again in a moment." },
+      { error: "Couldn't subscribe. Try again in a moment." },
       { status: 502 },
     );
   }

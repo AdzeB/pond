@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { AI_PROVIDER_IDS } from "./ai-providers";
 import {
   DEFAULT_APP_ICON,
   DEFAULT_DARK_PRESET_ID,
@@ -224,10 +223,6 @@ const updates = z.object({
   autoInstall: z.boolean().catch(true),
 });
 
-const developer = z.object({
-  verboseLogging: z.boolean().catch(false),
-});
-
 const sync = z.object({
   /** Connected accounts keyed by account id; several may share one source. */
   accounts: z.custom<SyncAccounts>().default({}),
@@ -254,8 +249,7 @@ const storage = z.object({
 });
 
 /**
- * `provider` selects where the LLM stage runs; embeddings always run on-device in the renderer via Transformers.js.
- * A custom endpoint's API key is stored in the OS keychain, never here.
+ * `provider` is always the bundled on-device model; embeddings always run on-device in the renderer via Transformers.js.
  */
 const ai = z.object({
   /** Natural-language -> structured-query compiler LLM stage. */
@@ -269,11 +263,8 @@ const ai = z.object({
   agentMaxSteps: z.number().catch(5),
   /** On-device embeddings plus semantic ranking of free-text search. */
   semanticSearch: z.boolean().catch(false),
-  /**
-   * "bundled" runs node-llama-cpp GGUF in the main process; local servers and hosted vendors speak OpenAI-compatible HTTP.
-   * @see AI_PROVIDERS
-   */
-  provider: z.enum(AI_PROVIDER_IDS).catch("ollama"),
+  /** Always the bundled on-device model. Stored cloud/local-server ids coerce here. */
+  provider: z.literal("bundled").catch("bundled"),
   /** Base URL override for HTTP providers; empty means the provider's default. */
   endpoint: z.string().catch(""),
   /** Provider-specific chat/completion model id for the LLM stage. */
@@ -293,62 +284,6 @@ const ai = z.object({
   captionModelId: z.string().catch(""),
   clipModelId: z.string().catch(""),
   whisperModelId: z.string().catch(""),
-});
-
-/** Named slash shortcut that runs a saved prompt through the Ask flow; `name` is the slash token without the leading slash, `id` its stable slug. */
-const customSkill = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().catch(""),
-  prompt: z.string(),
-});
-
-export type CustomSkill = z.infer<typeof customSkill>;
-
-/**
- * Starter skills so a new library isn't an empty composer; each prompt is phrased to resolve through the deterministic NL compiler.
- * Stable ids keep them de-duplicated across reloads; the seed only fills an absent skills slice, so deletions persist.
- */
-export const DEFAULT_SKILLS: CustomSkill[] = [
-  {
-    id: "default-untagged",
-    name: "untagged",
-    description: "Saves you haven't labelled yet",
-    prompt: "untagged",
-  },
-  {
-    id: "default-recent",
-    name: "recent",
-    description: "Saved in the last week",
-    prompt: "saved this week, newest first",
-  },
-  {
-    id: "default-videos",
-    name: "videos",
-    description: "Just your videos",
-    prompt: "videos",
-  },
-  {
-    id: "default-images",
-    name: "images",
-    description: "Just your images",
-    prompt: "images",
-  },
-  {
-    id: "default-galleries",
-    name: "galleries",
-    description: "Posts with multiple images",
-    prompt: "multiple images",
-  },
-];
-
-const skills = z.object({
-  custom: z.array(customSkill).catch([]),
-  /**
-   * One-shot marker: false until the starter skills have been merged in once.
-   * Never re-seeded after it flips true, so deletions stay sticky.
-   */
-  seeded: z.boolean().catch(false),
 });
 
 /** Most-recent-first; pond-scoped so questions typed in one library never surface in another. */
@@ -398,11 +333,9 @@ const PrefsObject = z.object({
   sourcesView: sourcesView.catch(sourcesView.parse({})),
   api: api.catch(api.parse({})),
   updates: updates.catch(updates.parse({})),
-  developer: developer.catch(developer.parse({})),
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),
-  skills: skills.catch(skills.parse({})),
   askHistory: askHistory.catch(askHistory.parse({})),
   saveRecents: saveRecents.catch(saveRecents.parse({})),
 });

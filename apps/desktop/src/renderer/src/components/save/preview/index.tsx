@@ -80,7 +80,7 @@ export function TagsEditor({
           </SpecContextMenu>
         ))}
         {children}
-        <TagPicker.Trigger icon size="xs" variant="ghost" aria-label="Add tag">
+        <TagPicker.Trigger icon size="xs" variant="ghost" aria-label="Add Tag">
           <Plus />
         </TagPicker.Trigger>
         <TagPicker.Content

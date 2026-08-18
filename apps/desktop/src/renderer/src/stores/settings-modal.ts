@@ -1,7 +1,6 @@
 import { SETTINGS_SECTION_ALIASES, SETTINGS_SECTIONS } from "@pond/schema";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { loadAppInfo } from "@/lib/app-info";
 
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
 const DEFAULT_PATH = SETTINGS_SECTIONS[0]?.path ?? "general";
@@ -25,16 +24,6 @@ export const settingsModal = {
     const valid = VALID_PATHS.has(resolved) ? resolved : DEFAULT_PATH;
     lastSection = valid;
     store.setState(() => ({ section: valid, hash: hash ?? null }));
-    if (valid === "developer") {
-      /** The developer section is dev-only; bounce to the default section in packaged builds. */
-      void loadAppInfo().then((info) => {
-        if (!info.isPackaged) return;
-        lastSection = DEFAULT_PATH;
-        store.setState((s) =>
-          s.section === "developer" ? { section: DEFAULT_PATH, hash: null } : s,
-        );
-      });
-    }
   },
   close(): void {
     store.setState((s) =>

@@ -8,7 +8,7 @@
 
 ## Reporting a vulnerability
 
-If you discover a security issue in Pond, please report it responsibly:
+If you discover a security issue in Pond, report it responsibly:
 
 1. **Do not** open a public GitHub issue for undisclosed vulnerabilities.
 2. Email or DM the maintainer via GitHub: [@raphaelsalaja](https://github.com/raphaelsalaja).
@@ -28,7 +28,7 @@ Renderer ↔ main IPC handlers validate the sending frame. Untrusted web content
 
 ### Extension pairing
 
-Pairing uses a `pond://pair` deep link with a token copied from the menu bar. Treat the pairing token like a local API secret — anyone with access to your Mac while Pond is running could use it.
+Pairing uses a `pond://pair` deep link with a token copied from the menu bar. Treat the pairing token like a local API secret. Anyone with access to your Mac while Pond is running could use it.
 
 ### Library data
 

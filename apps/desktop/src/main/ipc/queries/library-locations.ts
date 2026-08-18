@@ -32,7 +32,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Choose where to save your pond",
+      title: "Choose Where to Save Your Pond",
       buttonLabel: "Select",
       defaultPath: join(app.getPath("home"), "Pond"),
       properties: ["openDirectory" as const, "createDirectory" as const],
@@ -50,7 +50,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
   async "library.pickExisting"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
-      title: "Open an existing pond",
+      title: "Open an Existing Pond",
       buttonLabel: "Open",
       properties: ["openFile" as const, "openDirectory" as const],
     };
@@ -112,7 +112,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
     if (!dest) {
       const win = BrowserWindow.getFocusedWindow() ?? undefined;
       const dialogOpts = {
-        title: "Move library",
+        title: "Move Library",
         nameFieldLabel: "Pond Name:",
         buttonLabel: "Move",
         defaultPath: join(app.getPath("home"), "Pond", "My Pond.pond"),
@@ -170,7 +170,7 @@ export const libraryLocationQueries: QueryHandlerMap = {
     const stamp = new Date().toISOString().slice(0, 10);
     const base = basename(src).replace(/\.pond$/i, "") || "Pond";
     const dialogOpts = {
-      title: "Backup library",
+      title: "Backup Library",
       nameFieldLabel: "Backup Name:",
       buttonLabel: "Backup",
       defaultPath: join(dirname(src), `${base} Backup ${stamp}.pond`),

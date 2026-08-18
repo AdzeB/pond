@@ -146,7 +146,7 @@ export async function buildMenu(
     { type: "separator" },
     {
       ...sym("power"),
-      label: "Launch on startup",
+      label: "Launch on Startup",
       type: "checkbox",
       checked: loginItem.openAtLogin,
       click: (menuItem) => {

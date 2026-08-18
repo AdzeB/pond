@@ -1,0 +1,86 @@
+.root {
+  --empty-max-width: var(--ds-empty-max-width);
+  --empty-padding-block-start: var(--ds-empty-padding-block-start);
+  --empty-padding-block-end: var(--ds-empty-padding-block-end);
+  --empty-padding-inline: var(--ds-empty-padding-inline);
+  --empty-gap: var(--ds-empty-gap);
+  --empty-copy-gap: var(--ds-empty-copy-gap);
+  --empty-title-size: var(--ds-empty-title-size);
+  --empty-title-weight: var(--ds-empty-title-weight);
+  --empty-title-leading: var(--ds-empty-title-leading);
+  --empty-title-color: var(--ds-empty-title-color);
+  --empty-description-size: var(--ds-empty-description-size);
+  --empty-description-weight: var(--ds-empty-description-weight);
+  --empty-description-leading: var(--ds-empty-description-leading);
+  --empty-description-color: var(--ds-empty-description-color);
+  --empty-description-max-width: var(--ds-empty-description-max-width);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--empty-copy-gap);
+  align-items: center;
+  width: 100%;
+  max-width: var(--empty-max-width);
+  padding: var(--empty-padding-block-start) var(--empty-padding-inline)
+    var(--empty-padding-block-end);
+  margin-inline: auto;
+  text-align: center;
+
+  &[data-align="start"] {
+    align-items: start;
+    text-align: start;
+  }
+}
+
+.media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--ds-gray-11);
+  border-radius: var(--ds-radius-sm);
+  box-shadow: var(--ds-shadow-2);
+
+  &:not(:last-child) {
+    margin-bottom: calc(var(--empty-gap) - var(--empty-copy-gap));
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: var(--empty-title-size);
+  font-weight: var(--empty-title-weight);
+  line-height: var(--empty-title-leading);
+  color: var(--empty-title-color);
+  text-wrap: balance;
+}
+
+.description {
+  max-width: var(--empty-description-max-width);
+  margin: 0;
+  font-size: var(--empty-description-size);
+  font-weight: var(--empty-description-weight);
+  line-height: var(--empty-description-leading);
+  color: var(--empty-description-color);
+  text-wrap: pretty;
+}
+
+.action {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  &:not(:first-child) {
+    margin-top: calc(var(--empty-gap) - var(--empty-copy-gap));
+  }
+
+  [data-align="start"] & {
+    justify-content: start;
+
+    & > * {
+      width: 128px;
+    }
+  }
+}

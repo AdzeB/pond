@@ -1,14 +1,20 @@
-import type { ThemeDef } from "@pond/schema/db";
+import { CUSTOM_PRESET_ID, type ThemeDef } from "@pond/schema/db";
 import { Select, type SelectItemSpec } from "@pond/ui";
 import styles from "./styles.module.css";
 
 interface PresetSelectProps {
   presets: { id: string; name: string; def: ThemeDef }[];
   value: string;
+  customDef: ThemeDef;
   onChange: (id: string) => void;
 }
 
-export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
+export function PresetSelect({
+  presets,
+  value,
+  customDef,
+  onChange,
+}: PresetSelectProps) {
   return (
     <Select.Root
       value={value}
@@ -19,6 +25,9 @@ export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
       <Select.Trigger>
         <Select.Value>
           {(v: string) => {
+            if (v === CUSTOM_PRESET_ID) {
+              return <ThemeOption def={customDef} label="Custom" />;
+            }
             const preset = presets.find((p) => p.id === v);
             return preset ? (
               <ThemeOption def={preset.def} label={preset.name} />
@@ -32,12 +41,19 @@ export function PresetSelect({ presets, value, onChange }: PresetSelectProps) {
         <Select.Positioner sideOffset={6}>
           <Select.Popup>
             <Select.Items
-              items={presets.map(
-                (preset): SelectItemSpec<string> => ({
-                  value: preset.id,
-                  label: <ThemeOption def={preset.def} label={preset.name} />,
-                }),
-              )}
+              items={[
+                ...presets.map(
+                  (preset): SelectItemSpec<string> => ({
+                    value: preset.id,
+                    label: <ThemeOption def={preset.def} label={preset.name} />,
+                  }),
+                ),
+                { type: "separator" },
+                {
+                  value: CUSTOM_PRESET_ID,
+                  label: <ThemeOption def={customDef} label="Custom" />,
+                },
+              ]}
             />
           </Select.Popup>
         </Select.Positioner>

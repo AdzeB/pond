@@ -45,7 +45,7 @@ const ROWS: {
   },
   {
     icon: IconScanImageOutline18,
-    label: "On-device captions, OCR, and visual search",
+    label: "On-device captions, text in images, and visual search",
     values: [true, false, false, false],
   },
 ];

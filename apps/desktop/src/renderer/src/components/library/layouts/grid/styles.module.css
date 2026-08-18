@@ -4,16 +4,6 @@
   gap: 24px;
 }
 
-.empty {
-  max-width: 420px;
-  padding: 60px 0;
-  margin: 0 auto;
-  font-size: 13px;
-  line-height: 1.6;
-  color: var(--ds-gray-11);
-  text-align: center;
-}
-
 .grid {
   padding: 0;
   margin: 0;

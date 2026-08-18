@@ -2,7 +2,6 @@
   --settings-padding-inline-inset: 16px;
   --settings-margin-block: 64px;
   --settings-width: 640px;
-
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -11,6 +10,8 @@
   padding-inline: 24px;
   margin-block: var(--settings-margin-block);
   margin-inline: auto;
+
+  container-type: inline-size;
 }
 
 .page[data-width="narrow"] {
@@ -95,6 +96,7 @@
   flex-direction: row;
   gap: 16px;
   align-items: center;
+  min-width: 0;
   padding: 16px;
 
   &:not(:last-child) {
@@ -164,4 +166,10 @@
   background-color: var(--ds-gray-1);
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-1);
+}
+
+@container (max-width: 560px) {
+  .columns {
+    columns: 1;
+  }
 }

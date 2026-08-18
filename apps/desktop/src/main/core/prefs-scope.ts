@@ -9,7 +9,6 @@ const POND_PREF_KEYS = [
   "preferences",
   "sourcesView",
   "sync",
-  "skills",
   "storage",
   "trash",
   "ai",

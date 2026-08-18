@@ -18,7 +18,6 @@ import { ErrorBoundary } from "./components/shell/error-boundary";
 import { ErrorScreen } from "./components/shell/error-screen";
 import { Toolbar } from "./components/shell/toolbar";
 import { AppHotkeys } from "./effects/app-hotkeys";
-import { DeveloperApplier } from "./effects/developer-applier";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { ExtensionCaptureToast } from "./effects/extension-capture-toast";
 import { MenuBridge } from "./effects/menu-bridge";
@@ -179,7 +178,6 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <Tooltip.Provider>
           <ThemeApplier />
-          <DeveloperApplier />
           <UiSounds />
           <UndoRedoBridge />
           <MenuBridge />

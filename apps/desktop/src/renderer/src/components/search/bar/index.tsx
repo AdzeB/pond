@@ -236,7 +236,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
             icon
             size="xs"
             variant="ghost"
-            aria-label="Close search"
+            aria-label="Close Search"
             className={styles.close}
             onClick={onCollapse}
           >

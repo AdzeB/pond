@@ -96,7 +96,4 @@ export type MenuActionId =
   | "save.bulk-refresh"
   | "trash.empty"
   | "trash.restore-all"
-  | "library.move"
-  | "developer.restart-api"
-  | "developer.open-logs"
-  | "developer.ipc-inspector";
+  | "library.move";

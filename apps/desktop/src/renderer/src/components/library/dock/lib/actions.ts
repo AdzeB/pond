@@ -34,7 +34,7 @@ export function useDockActions(): DockActions {
     if (scope.length === 0) return;
     openTrayConfirm({
       title: "Delete Forever",
-      description: `Deleting removes the ${scope.length === 1 ? "selected item and its files" : `${formatNumber(scope.length)} selected items and their files`} from your library for good. This can't be undone. Proceed carefully.`,
+      description: `Deleting removes the ${scope.length === 1 ? "selected item and its files" : `${formatNumber(scope.length)} selected items and their files`} from your library for good. This can't be undone.`,
       confirmLabel: "Delete Forever",
       returnTo: null,
       onConfirm: () =>

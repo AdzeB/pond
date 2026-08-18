@@ -5,7 +5,7 @@ import styles from "./styles.module.css";
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
-  return "An unexpected error occurred.";
+  return "Pond hit an unexpected error.";
 }
 
 function stackOf(error: unknown): string | undefined {
@@ -30,12 +30,12 @@ export function ErrorScreen({
   return (
     <div className={styles.root} role="alert">
       <div className={styles.card}>
-        <h1 className={styles.title}>Something went wrong</h1>
+        <h1 className={styles.title}>Couldn't load this view</h1>
         <p className={styles.message}>{message}</p>
 
         {hasDetails ? (
           <details className={styles.details}>
-            <summary className={styles.summary}>Technical details</summary>
+            <summary className={styles.summary}>Technical Details</summary>
             <pre className={styles.stack} {...scrollFade}>
               {[stack, componentStack].filter(Boolean).join("\n\n")}
             </pre>
@@ -45,7 +45,7 @@ export function ErrorScreen({
         <div className={styles.actions}>
           {reset ? (
             <Button variant="secondary" onClick={reset}>
-              Try again
+              Try Again
             </Button>
           ) : null}
           <Button onClick={() => window.location.reload()}>Reload</Button>

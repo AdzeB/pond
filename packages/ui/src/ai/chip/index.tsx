@@ -3,7 +3,7 @@ import { clsx as cn } from "clsx";
 import { forwardRef, type ReactNode } from "react";
 import styles from "./styles.module.css";
 
-export type ChipTone = "skill" | "mention" | "tag";
+export type ChipTone = "mention" | "tag";
 
 type ChipProps = {
   tone: ChipTone;
@@ -15,7 +15,7 @@ type ChipProps = {
   className?: string;
 };
 
-/** Shared pill for skill, mention, and tag chips in composers and transcripts. */
+/** Shared pill for mention and tag chips in composers and transcripts. */
 const Root = forwardRef<HTMLSpanElement, ChipProps>(function ChipRoot(
   { tone, lead, label, title, selected, onRemove, className },
   ref,

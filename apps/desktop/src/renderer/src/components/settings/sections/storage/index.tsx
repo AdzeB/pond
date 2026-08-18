@@ -226,9 +226,7 @@ export function LocationRow() {
           <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Move Library</span>
             <span className={styles.actionDesc}>
-              Copy this pond to a new location and open it from there. The
-              original folder stays so you can delete it once everything looks
-              good.
+              Copy to a new folder and switch to it. The original stays.
             </span>
           </div>
           <Button
@@ -244,8 +242,7 @@ export function LocationRow() {
           <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Backup Library</span>
             <span className={styles.actionDesc}>
-              Copy this pond folder to another location. Your open library stays
-              put.
+              Copy the pond elsewhere. This library stays open.
             </span>
           </div>
           <Button
@@ -261,8 +258,7 @@ export function LocationRow() {
           <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Restore Library</span>
             <span className={styles.actionDesc}>
-              Open a `.pond` backup. Pond switches to that folder and
-              relaunches.
+              Open a `.pond` backup and relaunch.
             </span>
           </div>
           <Button
@@ -278,8 +274,7 @@ export function LocationRow() {
           <div className={styles["action-meta"]}>
             <span className={styles.actionTitle}>Import Eagle Library</span>
             <span className={styles.actionDesc}>
-              Bring items from an Eagle `.library` folder into this pond. Tags
-              and folders become Pond tags.
+              Import from Eagle. Tags and folders become Pond tags.
             </span>
           </div>
           <Button

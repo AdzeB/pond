@@ -3,16 +3,26 @@ import { EnrichmentModelPicker } from "@/components/shared/enrichment-model-pick
 import {
   CAPTION_CATALOG,
   CLIP_CATALOG,
+  EMBEDDING_CATALOG,
   type ModelCatalog,
   WHISPER_CATALOG,
 } from "@/lib/enrichment/model-catalogs";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 
 interface EnrichValues {
+  nlCompiler?: boolean;
+  semanticSearch?: boolean;
+  embedModelId?: string;
   captionModelId?: string;
   clipModelId?: string;
   whisperModelId?: string;
 }
+
+type ModelField =
+  | "embedModelId"
+  | "captionModelId"
+  | "clipModelId"
+  | "whisperModelId";
 
 function ModelPickerRow({
   binding,
@@ -23,16 +33,18 @@ function ModelPickerRow({
 }: {
   binding: Binding;
   title: string;
-  description: string;
+  description?: string;
   catalog: ModelCatalog;
-  field: keyof EnrichValues;
+  field: ModelField;
 }) {
   const values = binding.values as EnrichValues;
   return (
     <>
       <Settings.ItemDetails>
         <Settings.ItemTitle>{title}</Settings.ItemTitle>
-        <Settings.ItemDescription>{description}</Settings.ItemDescription>
+        {description ? (
+          <Settings.ItemDescription>{description}</Settings.ItemDescription>
+        ) : null}
       </Settings.ItemDetails>
       <Settings.ItemControl>
         <EnrichmentModelPicker
@@ -46,66 +58,106 @@ function ModelPickerRow({
 }
 
 export const enrichmentSection = defineSection("ai", {
-  title: "Enrichment",
-  description:
-    "On-device models that caption, transcribe, and label your saves.",
+  title: "Enrichments",
+  description: "Search, caption, and transcribe saves on-device.",
   groups: [
     {
-      title: "Features",
+      title: "Search",
+      items: [
+        {
+          control: "switch",
+          key: "nlCompiler",
+          title: "Natural-Language Search",
+          description:
+            "Turn questions into filters. Minnow downloads on first use.",
+          keywords: [
+            "nlp",
+            "query",
+            "ask",
+            "minnow",
+            "llama",
+            "on-device",
+            "natural language",
+          ],
+        },
+        {
+          control: "switch",
+          key: "semanticSearch",
+          title: "Semantic Search",
+          description: "Rank results by meaning.",
+          keywords: ["embeddings", "meaning", "vector", "similarity"],
+        },
+        {
+          control: "custom",
+          key: "embedModelId",
+          title: "Embedding Model",
+          keywords: ["embeddings", "model", "on-device"],
+          visible: (v) => v.semanticSearch === true,
+          render: (binding) => (
+            <ModelPickerRow
+              binding={binding}
+              title="Embedding Model"
+              catalog={EMBEDDING_CATALOG}
+              field="embedModelId"
+            />
+          ),
+        },
+      ],
+    },
+    {
+      title: "Media",
       items: [
         {
           control: "switch",
           key: "enableCaption",
           title: "Image Captions",
-          description: "Caption images with Florence-2. Large first download.",
+          description: "Describe images. Large first download.",
           keywords: ["florence", "vision", "describe"],
         },
         {
           control: "switch",
           key: "enableOcr",
-          title: "Text in Images (OCR)",
-          description: "Read text in images with Florence-2.",
+          title: "Text in Images",
+          description: "Read text in screenshots and photos.",
           keywords: ["ocr", "recognition", "florence"],
         },
         {
           control: "switch",
           key: "enableTranscript",
-          title: "Transcribe Audio & Video",
-          description:
-            "Transcribe video and audio with Whisper. Runs in the background.",
+          title: "Transcription",
+          description: "Transcribe video and audio.",
           keywords: ["whisper", "speech", "captions", "subtitles"],
         },
         {
           control: "switch",
           key: "enableClip",
-          title: "Visual Similarity (CLIP)",
-          description:
-            "Embed images with CLIP for visual search and duplicate detection.",
+          title: "Visual Similarity",
+          description: "Find similar images and duplicates.",
           keywords: ["clip", "embeddings", "duplicates"],
         },
         {
           control: "switch",
           key: "enableAesthetic",
-          title: "Aesthetic & Style Labels",
-          description:
-            "Label image styles like minimalist or vintage with CLIP.",
+          title: "Style Labels",
+          description: "Label styles like minimalist or vintage.",
           keywords: ["style", "aesthetic", "labels", "clip"],
+          visible: (v) => v.enableClip === true,
         },
         {
           control: "switch",
           key: "enableAutoTitle",
           title: "Auto-Title",
-          description:
-            "Fill empty titles from captions or text. Never overwrites edits.",
+          description: "Fill empty titles. Never overwrites edits.",
           keywords: ["title", "automatic", "naming"],
+          visible: (v) => v.enableCaption === true || v.enableOcr === true,
         },
         {
           control: "switch",
           key: "enableSuggestedTags",
           title: "Suggested Tags",
-          description:
-            "Suggest existing tags by meaning. Needs semantic search. Apply them in bulk from Tasks.",
+          description: "Suggest tags from your library. You apply them.",
           keywords: ["tags", "suggestions", "auto-tag"],
+          visible: (v) => v.semanticSearch === true,
         },
       ],
     },
@@ -115,13 +167,14 @@ export const enrichmentSection = defineSection("ai", {
         {
           control: "custom",
           key: "captionModelId",
-          title: "Caption / OCR Model",
+          title: "Image Model",
           keywords: ["florence", "model", "caption", "ocr"],
+          visible: (v) => v.enableCaption === true || v.enableOcr === true,
           render: (binding) => (
             <ModelPickerRow
               binding={binding}
-              title="Caption / OCR Model"
-              description="Florence-2 model for captions and OCR."
+              title="Image Model"
+              description="Used for captions and text in images."
               catalog={CAPTION_CATALOG}
               field="captionModelId"
             />
@@ -130,13 +183,13 @@ export const enrichmentSection = defineSection("ai", {
         {
           control: "custom",
           key: "clipModelId",
-          title: "CLIP Model",
+          title: "Visual Model",
           keywords: ["clip", "model", "embeddings"],
+          visible: (v) => v.enableClip === true || v.enableAesthetic === true,
           render: (binding) => (
             <ModelPickerRow
               binding={binding}
-              title="CLIP Model"
-              description="Model for image embeddings and style labels."
+              title="Visual Model"
               catalog={CLIP_CATALOG}
               field="clipModelId"
             />
@@ -147,11 +200,11 @@ export const enrichmentSection = defineSection("ai", {
           key: "whisperModelId",
           title: "Transcription Model",
           keywords: ["whisper", "model", "speech"],
+          visible: (v) => v.enableTranscript === true,
           render: (binding) => (
             <ModelPickerRow
               binding={binding}
               title="Transcription Model"
-              description="Whisper model for speech-to-text."
               catalog={WHISPER_CATALOG}
               field="whisperModelId"
             />

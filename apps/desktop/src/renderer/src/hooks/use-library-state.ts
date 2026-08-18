@@ -20,6 +20,7 @@ interface LibraryState {
   sourceFilter: string;
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
+  searchText: string;
   askActive: boolean;
   selectedId: string | null;
   viewMode: ViewMode;
@@ -66,6 +67,7 @@ export function useLibraryState(): LibraryState {
     sourceFilter,
     hasActiveSearch,
     hasActiveFilter,
+    searchText,
     askActive: ask.active,
     selectedId,
     viewMode,

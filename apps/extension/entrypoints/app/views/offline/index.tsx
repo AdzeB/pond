@@ -10,9 +10,9 @@ export function OfflineView({
   return (
     <PopupShell>
       <div className={styles.heading}>
-        <h1 className={styles.title}>Pond</h1>
+        <h1 className={styles.title}>Not running</h1>
         <p className={styles.subtitle}>
-          Pond isn’t running on this Mac. Open the app...
+          Pond isn't running on this Mac. Open the app.
         </p>
       </div>
 
@@ -22,7 +22,7 @@ export function OfflineView({
         width="full"
         onClick={() => void onRetry()}
       >
-        Try again
+        Try Again
       </Button>
     </PopupShell>
   );

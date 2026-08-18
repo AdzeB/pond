@@ -43,7 +43,7 @@ export function CheckNowRow() {
       <Settings.ItemDetails>
         <Settings.ItemTitle>Check for Updates</Settings.ItemTitle>
         <Settings.ItemDescription>
-          Ping the update server for a newer build.
+          Look for a newer build.
           {message ? (
             <>
               <br />

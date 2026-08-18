@@ -1,9 +1,4 @@
-export type SettingsGroup =
-  | "general"
-  | "library"
-  | "capture"
-  | "intelligence"
-  | "advanced";
+export type SettingsGroup = "general" | "library" | "capture";
 
 export interface SettingsSection {
   id: string;
@@ -25,63 +20,35 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "general",
   },
   { id: "tags", path: "tags", label: "Tags", group: "library" },
+  {
+    id: "enrichment",
+    path: "enrichment",
+    label: "Enrichments",
+    group: "library",
+  },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },
   { id: "funnel", path: "funnel", label: "Funnel", group: "capture" },
   { id: "videos", path: "videos", label: "Videos", group: "capture" },
   { id: "images", path: "images", label: "Images", group: "capture" },
-  {
-    id: "ai",
-    path: "ai",
-    label: "AI",
-    group: "intelligence",
-  },
-  {
-    id: "ai-providers",
-    path: "ai-providers",
-    label: "Provider & Model",
-    group: "intelligence",
-    hidden: true,
-    parent: "ai",
-  },
-  {
-    id: "enrichment",
-    path: "enrichment",
-    label: "Enrichment",
-    group: "intelligence",
-  },
-  {
-    id: "skills",
-    path: "skills",
-    label: "Skills",
-    group: "intelligence",
-  },
-  {
-    id: "connections",
-    path: "connections",
-    label: "Connections",
-    group: "advanced",
-  },
-  { id: "developer", path: "developer", label: "Developer", group: "advanced" },
 ];
 
 export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
   "general",
   "library",
   "capture",
-  "intelligence",
-  "advanced",
 ];
 
 export const SETTINGS_GROUP_LABELS: Record<SettingsGroup, string> = {
   general: "General",
   library: "Library",
   capture: "Capture",
-  intelligence: "Intelligence",
-  advanced: "Advanced",
 };
 
 export const SETTINGS_SECTION_ALIASES: Readonly<Record<string, string>> = {
   downloads: "videos",
-  "ai-models": "ai",
+  ai: "enrichment",
+  "ai-models": "enrichment",
+  "ai-providers": "enrichment",
+  skills: "enrichment",
 };
