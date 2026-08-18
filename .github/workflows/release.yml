@@ -65,4 +65,5 @@ jobs:
             echo "Extension zip not found under apps/extension/.output"
             exit 1
           fi
-          gh release upload "$GITHUB_REF_NAME" "${ZIP}#pond-extension-${VERSION}.zip" --clobber
+          cp "$ZIP" "pond-extension-${VERSION}.zip"
+          gh release upload "$GITHUB_REF_NAME" "pond-extension-${VERSION}.zip" --clobber
