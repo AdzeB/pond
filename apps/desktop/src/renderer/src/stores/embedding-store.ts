@@ -1,8 +1,6 @@
-import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { annMarkDirty } from "@/lib/search/ann-dirty";
 
-/** Per-save embedding vectors: loaded once on startup (vectors are excluded from saves.list to keep it small), kept current by the sweep; `version` bumps on every mutation so semantic-rank consumers re-run. */
+/** Per-save embedding vectors: loaded once on startup (vectors are excluded from saves.list to keep it small), kept current by the sweep. */
 
 interface EmbeddingEntry {
   vec: Float32Array;
@@ -11,13 +9,11 @@ interface EmbeddingEntry {
 
 interface EmbeddingState {
   readonly byId: Map<string, EmbeddingEntry>;
-  readonly version: number;
   readonly loaded: boolean;
 }
 
 const store = new Store<EmbeddingState>({
   byId: new Map(),
-  version: 0,
   loaded: false,
 });
 
@@ -49,12 +45,10 @@ export function loadEmbeddings(): Promise<void> {
           model: row.embeddingModel,
         });
       }
-      store.setState((s) => ({
+      store.setState(() => ({
         byId,
-        version: s.version + 1,
         loaded: true,
       }));
-      annMarkDirty("all");
     } catch (err) {
       console.warn("[embeddings] failed to load persisted vectors", err);
       store.setState((s) => ({ ...s, loaded: true }));
@@ -74,9 +68,8 @@ export function setEmbedding(
   store.setState((s) => {
     const byId = new Map(s.byId);
     byId.set(id, { vec, model });
-    return { byId, version: s.version + 1, loaded: s.loaded };
+    return { byId, loaded: s.loaded };
   });
-  annMarkDirty([id]);
   void window.pond
     .query("saves.setEmbedding", {
       id,
@@ -95,24 +88,15 @@ export function clearEmbeddings(ids?: readonly string[]): number {
     store.setState((s) => {
       const byId = new Map(s.byId);
       for (const id of ids) if (byId.delete(id)) count++;
-      return count === 0
-        ? s
-        : { byId, version: s.version + 1, loaded: s.loaded };
+      return count === 0 ? s : { byId, loaded: s.loaded };
     });
-    if (count > 0) annMarkDirty(ids);
     return count;
   }
   const count = store.state.byId.size;
   if (count === 0) return 0;
   store.setState((s) => ({
     byId: new Map(),
-    version: s.version + 1,
     loaded: s.loaded,
   }));
-  annMarkDirty("all");
   return count;
-}
-
-export function useEmbeddingVersion(): number {
-  return useSelector(store, (s) => s.version);
 }

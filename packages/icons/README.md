@@ -2,7 +2,7 @@
 
 Icon barrels for Pond. UI glyphs under `fill/*` and `outline/*` are vendored
 Nucleo SVGs (≤100 unique glyphs). Social and brand marks live under
-`social-media/custom/` and `providers/` and are outside that cap.
+`social-media/custom/` and are outside that cap.
 
 The Pond mark lives in `brand/`: `icon.svg` is the vector source, and `tints/`
 holds Icon Composer colorways (one folder per crayon). The desktop app

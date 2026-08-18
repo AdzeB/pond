@@ -1,14 +1,13 @@
-import { IconFolderOpenOutline18 as Folder } from "@pond/icons/outline/18";
-import { Button } from "@pond/ui";
+import { Button, Settings } from "@pond/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { REVEAL_LABEL } from "@/lib/ui/platform";
 import { playUiSuccess } from "@/lib/ui/sounds";
 import { prettyPath } from "@/lib/util/pretty-path";
 import styles from "./styles.module.css";
 
 interface LibraryInfo {
   path: string;
-  name: string;
 }
 
 type ActionResult = { ok: true } | { ok: false; reason: string };
@@ -21,38 +20,28 @@ type MoveResult = { ok: true; path: string } | { ok: false; reason: string };
 
 const FIRST_BACKUP_KEY = "pond.first-library-backup";
 
-function backupErrorMessage(reason: string): string {
+function pathActionError(
+  reason: string,
+  copy: { nested: string; missing: string; fallback: string },
+): string {
   switch (reason) {
     case "cancelled":
       return "";
     case "same_path":
       return "Pick a different location than the open library.";
     case "nested_path":
-      return "Can't back up into a folder inside the library.";
+      return copy.nested;
     case "destination_exists":
       return "That folder already has files. Pick a new name.";
     case "no_library":
-      return "No library is open to back up.";
+      return copy.missing;
     default:
-      return `Couldn't back up library: ${reason}`;
+      return `${copy.fallback}: ${reason}`;
   }
 }
 
-function moveErrorMessage(reason: string): string {
-  switch (reason) {
-    case "cancelled":
-      return "";
-    case "same_path":
-      return "Pick a different location than the open library.";
-    case "nested_path":
-      return "Can't move into a folder inside the library.";
-    case "destination_exists":
-      return "That folder already has files. Pick a new name.";
-    case "no_library":
-      return "No library is open to move.";
-    default:
-      return `Couldn't move library: ${reason}`;
-  }
+function mutationError(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
 }
 
 export function LocationRow() {
@@ -62,13 +51,20 @@ export function LocationRow() {
       (await window.pond.query("library.info", {})) as LibraryInfo,
   });
 
-  const [status, setStatus] = useState<string | null>(null);
+  const [note, setNote] = useState<{
+    row: "backup" | "import";
+    message: string;
+  } | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+
+  const clearNotes = () => {
+    setNote(null);
+    setCelebrate(false);
+  };
 
   const openExisting = useMutation({
     mutationFn: async () => {
-      setStatus(null);
-      setCelebrate(false);
+      clearNotes();
       const picked = (await window.pond.query("library.pickExisting", {})) as
         | { ok: true; path: string }
         | { ok: false; reason: string };
@@ -77,34 +73,44 @@ export function LocationRow() {
       const res = (await window.pond.query("library.switchTo", {
         path: picked.path,
       })) as ActionResult;
-      if (!res.ok) throw new Error(res.reason);
+      if (!res.ok) throw new Error(`Couldn't open library: ${res.reason}`);
     },
   });
 
   const move = useMutation({
     mutationFn: async () => {
-      setStatus(null);
-      setCelebrate(false);
+      clearNotes();
       /** Moving relaunches, so there's no success state to settle into. */
       const res = (await window.pond.query("library.move", {})) as MoveResult;
       if (!res.ok) {
         if (res.reason === "cancelled") return;
-        throw new Error(moveErrorMessage(res.reason) || res.reason);
+        throw new Error(
+          pathActionError(res.reason, {
+            nested: "Can't move into a folder inside the library.",
+            missing: "No library is open to move.",
+            fallback: "Couldn't move library",
+          }) || res.reason,
+        );
       }
     },
   });
 
   const backup = useMutation({
     mutationFn: async () => {
-      setStatus(null);
-      setCelebrate(false);
+      clearNotes();
       const res = (await window.pond.query(
         "library.backupTo",
         {},
       )) as BackupResult;
       if (!res.ok) {
         if (res.reason === "cancelled") return;
-        throw new Error(backupErrorMessage(res.reason) || res.reason);
+        throw new Error(
+          pathActionError(res.reason, {
+            nested: "Can't back up into a folder inside the library.",
+            missing: "No library is open to back up.",
+            fallback: "Couldn't back up library",
+          }) || res.reason,
+        );
       }
       return res;
     },
@@ -118,14 +124,16 @@ export function LocationRow() {
         setCelebrate(true);
         playUiSuccess();
       }
-      setStatus(`Backup saved to ${prettyPath(res.path)}`);
+      setNote({
+        row: "backup",
+        message: `Backup saved to ${prettyPath(res.path)}`,
+      });
     },
   });
 
   const importEagle = useMutation({
     mutationFn: async () => {
-      setStatus(null);
-      setCelebrate(false);
+      clearNotes();
       const picked = (await window.pond.query("saves.pickEagleLibrary", {})) as
         | { ok: true; path: string }
         | { ok: false; path: null };
@@ -156,79 +164,49 @@ export function LocationRow() {
         res.skipped > 0 ? `skipped ${res.skipped}` : null,
         res.failed > 0 ? `failed ${res.failed}` : null,
       ].filter(Boolean);
-      setStatus(parts.join(", ") || "Nothing new to import.");
+      setNote({
+        row: "import",
+        message: parts.join(", ") || "Nothing new to import.",
+      });
     },
   });
 
-  const openError = openExisting.isError
-    ? openExisting.error instanceof Error
-      ? `Couldn't open library: ${openExisting.error.message}`
-      : "Couldn't open library."
-    : null;
-
-  const moveError = move.isError
-    ? move.error instanceof Error
-      ? move.error.message
-      : "Couldn't move library."
-    : null;
-
-  const backupError = backup.isError
-    ? backup.error instanceof Error
-      ? backup.error.message
-      : "Couldn't back up library."
-    : null;
-
-  const eagleError = importEagle.isError
-    ? importEagle.error instanceof Error
-      ? importEagle.error.message
-      : "Couldn't import Eagle library."
-    : null;
-
-  const actionError = openError || moveError || backupError || eagleError;
-  const message = actionError || status;
-
   return (
-    <div className={styles.stack}>
-      <div className={styles.card}>
-        <span aria-hidden className={styles.avatar}>
-          <Folder size={20} />
-        </span>
-        <div className={styles.meta}>
-          <span className={styles.name}>{info?.name ?? "Library"}</span>
+    <Settings.List>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Library Location</Settings.ItemTitle>
           {info ? (
-            <span className={styles.path}>{prettyPath(info.path)}</span>
+            <Settings.ItemDescription>
+              {prettyPath(info.path)}
+            </Settings.ItemDescription>
           ) : null}
-          {message ? (
-            <span
-              className={
-                actionError
-                  ? styles.error
-                  : celebrate
-                    ? styles.successCelebrate
-                    : styles.success
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => void window.pond.query("library.openInFinder", {})}
+          >
+            {REVEAL_LABEL}
+          </Button>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Move Library</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Copy to a new folder and switch to it. The original stays.
+            <StatusNote
+              error={
+                move.isError
+                  ? mutationError(move.error, "Couldn't move library.")
+                  : null
               }
-              role={actionError ? "alert" : "status"}
-            >
-              {message}
-            </span>
-          ) : null}
-        </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => void window.pond.query("library.openInFinder", {})}
-        >
-          Reveal in Finder
-        </Button>
-      </div>
-      <div className={styles.actions}>
-        <div className={styles.action}>
-          <div className={styles["action-meta"]}>
-            <span className={styles.actionTitle}>Move Library</span>
-            <span className={styles.actionDesc}>
-              Copy to a new folder and switch to it. The original stays.
-            </span>
-          </div>
+            />
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
           <Button
             size="sm"
             variant="secondary"
@@ -237,14 +215,25 @@ export function LocationRow() {
           >
             {move.isPending ? "Moving" : "Move"}
           </Button>
-        </div>
-        <div className={styles.action}>
-          <div className={styles["action-meta"]}>
-            <span className={styles.actionTitle}>Backup Library</span>
-            <span className={styles.actionDesc}>
-              Copy the pond elsewhere. This library stays open.
-            </span>
-          </div>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Backup Library</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Copy the pond elsewhere. This library stays open.
+            <StatusNote
+              error={
+                backup.isError
+                  ? mutationError(backup.error, "Couldn't back up library.")
+                  : null
+              }
+              status={note?.row === "backup" ? note.message : null}
+              celebrate={celebrate}
+            />
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
           <Button
             size="sm"
             variant="secondary"
@@ -253,14 +242,23 @@ export function LocationRow() {
           >
             {backup.isPending ? "Backing up" : "Backup"}
           </Button>
-        </div>
-        <div className={styles.action}>
-          <div className={styles["action-meta"]}>
-            <span className={styles.actionTitle}>Restore Library</span>
-            <span className={styles.actionDesc}>
-              Open a `.pond` backup and relaunch.
-            </span>
-          </div>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Restore Library</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Open a `.pond` backup and relaunch.
+            <StatusNote
+              error={
+                openExisting.isError
+                  ? mutationError(openExisting.error, "Couldn't open library.")
+                  : null
+              }
+            />
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
           <Button
             size="sm"
             variant="secondary"
@@ -269,14 +267,27 @@ export function LocationRow() {
           >
             {openExisting.isPending ? "Opening" : "Restore"}
           </Button>
-        </div>
-        <div className={styles.action}>
-          <div className={styles["action-meta"]}>
-            <span className={styles.actionTitle}>Import Eagle Library</span>
-            <span className={styles.actionDesc}>
-              Import from Eagle. Tags and folders become Pond tags.
-            </span>
-          </div>
+        </Settings.ItemControl>
+      </Settings.Item>
+      <Settings.Item>
+        <Settings.ItemDetails>
+          <Settings.ItemTitle>Import Eagle Library</Settings.ItemTitle>
+          <Settings.ItemDescription>
+            Import from Eagle. Tags and folders become Pond tags.
+            <StatusNote
+              error={
+                importEagle.isError
+                  ? mutationError(
+                      importEagle.error,
+                      "Couldn't import Eagle library.",
+                    )
+                  : null
+              }
+              status={note?.row === "import" ? note.message : null}
+            />
+          </Settings.ItemDescription>
+        </Settings.ItemDetails>
+        <Settings.ItemControl>
           <Button
             size="sm"
             variant="secondary"
@@ -285,8 +296,35 @@ export function LocationRow() {
           >
             {importEagle.isPending ? "Importing" : "Import"}
           </Button>
-        </div>
-      </div>
-    </div>
+        </Settings.ItemControl>
+      </Settings.Item>
+    </Settings.List>
+  );
+}
+
+function StatusNote({
+  error,
+  status,
+  celebrate,
+}: {
+  error?: string | null;
+  status?: string | null;
+  celebrate?: boolean;
+}) {
+  const message = error || status;
+  if (!message) return null;
+  return (
+    <span
+      className={
+        error
+          ? styles.error
+          : celebrate
+            ? styles.successCelebrate
+            : styles.success
+      }
+      role={error ? "alert" : "status"}
+    >
+      {message}
+    </span>
   );
 }

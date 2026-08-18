@@ -249,26 +249,13 @@ const storage = z.object({
 });
 
 /**
- * `provider` is always the bundled on-device model; embeddings always run on-device in the renderer via Transformers.js.
+ * Ask and enrichments always run on-device; embeddings use Transformers.js in the renderer.
  */
 const ai = z.object({
   /** Natural-language -> structured-query compiler LLM stage. */
   nlCompiler: z.boolean().catch(false),
-  /**
-   * Multi-step agentic loop; falls back to single-shot plan compile when off or the model can't drive it.
-   * @see modelSupportsAgent
-   */
-  agent: z.boolean().catch(false),
-  /** Hard cap on agent reasoning steps per turn; bounds latency and token spend. */
-  agentMaxSteps: z.number().catch(5),
   /** On-device embeddings plus semantic ranking of free-text search. */
   semanticSearch: z.boolean().catch(false),
-  /** Always the bundled on-device model. Stored cloud/local-server ids coerce here. */
-  provider: z.literal("bundled").catch("bundled"),
-  /** Base URL override for HTTP providers; empty means the provider's default. */
-  endpoint: z.string().catch(""),
-  /** Provider-specific chat/completion model id for the LLM stage. */
-  modelId: z.string().catch(""),
   /** Transformers.js feature-extraction model for embeddings. */
   embedModelId: z.string().catch("Xenova/all-MiniLM-L6-v2"),
   /** Heavy enrichers (caption/OCR, transcript, CLIP) default off given download size; all run locally via Transformers.js. */
@@ -285,30 +272,6 @@ const ai = z.object({
   clipModelId: z.string().catch(""),
   whisperModelId: z.string().catch(""),
 });
-
-/** Most-recent-first; pond-scoped so questions typed in one library never surface in another. */
-const askHistoryEntry = z.object({
-  text: z.string(),
-  at: z.number(),
-});
-
-const askHistory = z.object({
-  entries: z
-    .array(z.union([z.string(), askHistoryEntry]))
-    .transform((entries) => {
-      const now = Date.now();
-      return entries.map((entry, index) =>
-        typeof entry === "string"
-          ? { text: entry, at: now - index * 60_000 }
-          : entry.at > 0
-            ? entry
-            : { text: entry.text, at: now - index * 60_000 },
-      );
-    })
-    .catch([]),
-});
-
-export type AskHistoryEntry = z.infer<typeof askHistoryEntry>;
 
 const recentSaveVisit = z.object({
   saveId: z.string(),
@@ -336,7 +299,6 @@ const PrefsObject = z.object({
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),
-  askHistory: askHistory.catch(askHistory.parse({})),
   saveRecents: saveRecents.catch(saveRecents.parse({})),
 });
 

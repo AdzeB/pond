@@ -32,7 +32,6 @@ export function LibraryView() {
     data.mode === "library" &&
     !data.hasActiveSearch &&
     !data.hasActiveFilter &&
-    !data.askActive &&
     paging.hasMore &&
     !paging.loading;
   const onEndReached = useCallback(() => {

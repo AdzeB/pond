@@ -100,17 +100,7 @@ function validateQuery(raw: unknown): Query {
   return { combinator: "and", rules: [clause] };
 }
 
-/** A model-emitted plan gets its filter validated and its numeric bounds clamped so the executor is never handed a runaway per-group/limit; structurally invalid plans degrade to filter-only. */
-
-const MAX_PER_GROUP = 50;
-const MAX_GROUPS = 100;
-const MAX_LIMIT = 1000;
-
-function clampInt(n: number, lo: number, hi: number): number {
-  const x = Math.floor(n);
-  if (!Number.isFinite(x)) return lo;
-  return Math.min(hi, Math.max(lo, x));
-}
+/** A model-emitted plan gets its filter re-validated; structurally invalid plans degrade to an empty filter. */
 
 export function validatePlan(raw: unknown): QueryPlan {
   const parsed = parseQueryPlan(raw);
@@ -119,36 +109,5 @@ export function validatePlan(raw: unknown): QueryPlan {
     (raw && typeof raw === "object"
       ? (raw as Record<string, unknown>).filter
       : undefined);
-  const filter = validateQuery(filterRaw);
-  if (!parsed) return { filter };
-
-  const plan: QueryPlan = { filter };
-  if (parsed.rank) plan.rank = parsed.rank;
-  if (parsed.group) {
-    plan.group = {
-      by: parsed.group.by,
-      ...(parsed.group.bucket ? { bucket: parsed.group.bucket } : {}),
-      ...(parsed.group.perGroup != null
-        ? { perGroup: clampInt(parsed.group.perGroup, 1, MAX_PER_GROUP) }
-        : {}),
-      ...(parsed.group.interleave != null
-        ? { interleave: parsed.group.interleave }
-        : {}),
-      ...(parsed.group.maxGroups != null
-        ? { maxGroups: clampInt(parsed.group.maxGroups, 1, MAX_GROUPS) }
-        : {}),
-    };
-  }
-  if (parsed.limit != null) plan.limit = clampInt(parsed.limit, 1, MAX_LIMIT);
-  if (parsed.aggregate) {
-    plan.aggregate = {
-      ...(parsed.aggregate.count != null
-        ? { count: parsed.aggregate.count }
-        : {}),
-      ...(parsed.aggregate.countBy
-        ? { countBy: parsed.aggregate.countBy }
-        : {}),
-    };
-  }
-  return plan;
+  return { filter: validateQuery(filterRaw) };
 }

@@ -113,15 +113,3 @@ export async function resolveFacets(
 
   return { predicates, residual: leftover.join(" ") };
 }
-
-export async function embedQuery(text: string): Promise<Float32Array | null> {
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-  try {
-    const { embedText } = await import("@/lib/enrichment/embeddings");
-    return await embedText(trimmed);
-  } catch (err) {
-    console.warn("[facet-resolver] query embed failed", err);
-    return null;
-  }
-}

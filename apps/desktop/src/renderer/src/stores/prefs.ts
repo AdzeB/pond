@@ -78,9 +78,3 @@ export function usePrefsValue(): Prefs | null {
 export function getPrefsSnapshot(): Prefs | null {
   return prefsStore.state.value;
 }
-
-export async function reloadPrefs(): Promise<Prefs> {
-  prefsStore.setState(() => ({ value: null }));
-  inflight = null;
-  return load();
-}

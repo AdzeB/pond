@@ -11,7 +11,6 @@ import { describePredicate } from "@/lib/search/fields";
 import { serializePredicate } from "@/lib/search/syntax";
 import { bouncySpring } from "@/lib/ui/motion";
 import { openLibrarySearch } from "@/lib/ui/open-search";
-import { clearAsk, useAskResult } from "@/stores/ask-store";
 import { usePrefs } from "@/stores/prefs";
 import {
   resetFilters,
@@ -27,7 +26,6 @@ export function ActiveFilter() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const query = useFilterQuery();
   const q = useSearchText();
-  const ask = useAskResult();
   const [sync] = usePrefs("sync");
   const refs = accountRefsFromSync(sync);
 
@@ -43,8 +41,8 @@ export function ActiveFilter() {
   ]
     .filter(Boolean)
     .join(" · ");
-  const label = (ask.active ? ask.question.trim() : "") || serialized;
-  const active = ask.active || serialized.length > 0;
+  const label = serialized;
+  const active = serialized.length > 0;
   const show =
     active &&
     (dock.view === "nav" || dock.view === "selection") &&
@@ -75,7 +73,6 @@ export function ActiveFilter() {
             variant="secondary"
             aria-label="Clear Filter"
             onClick={() => {
-              clearAsk();
               resetFilters();
             }}
           >

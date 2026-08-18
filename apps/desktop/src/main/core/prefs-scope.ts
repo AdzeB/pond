@@ -14,7 +14,6 @@ const POND_PREF_KEYS = [
   "ai",
   "tagPicker",
   "allTags",
-  "askHistory",
   "saveRecents",
 ] as const satisfies readonly (keyof Prefs)[];
 

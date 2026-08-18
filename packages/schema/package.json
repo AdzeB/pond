@@ -44,7 +44,6 @@
   },
   "scripts": {
     "generate": "node --experimental-strip-types scripts/generate-supported-sources.ts",
-    "generate:ai-catalog": "node --experimental-strip-types scripts/generate-ai-catalog.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

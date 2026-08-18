@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { parseMode, type SaveListMode } from "@/lib/save/list";
 import type { Save, ViewMode } from "@/lib/types";
 import { listPathForLocation } from "@/lib/ui/list-path";
-import { useAskResult } from "@/stores/ask-store";
 import { primarySelectionStore } from "@/stores/selection";
 import { useFilterQuery, useLayout, useSearchText } from "@/stores/view-store";
 import { useNarrowedSaves } from "./use-narrowed-saves";
@@ -21,7 +20,6 @@ interface LibraryState {
   hasActiveSearch: boolean;
   hasActiveFilter: boolean;
   searchText: string;
-  askActive: boolean;
   selectedId: string | null;
   viewMode: ViewMode;
   /** True when the URL's mode segment wasn't recognized, so callers can navigate away. */
@@ -38,7 +36,6 @@ export function useLibraryState(): LibraryState {
   const layout = useLayout();
   const searchText = useSearchText();
   const filterQuery = useFilterQuery();
-  const ask = useAskResult();
 
   const parentBase = listPathForLocation(location.pathname);
   const recognized = parseMode(parentBase);
@@ -68,7 +65,6 @@ export function useLibraryState(): LibraryState {
     hasActiveSearch,
     hasActiveFilter,
     searchText,
-    askActive: ask.active,
     selectedId,
     viewMode,
     unknown,

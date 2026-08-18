@@ -1,5 +1,4 @@
 import { getAppRouter } from "@/lib/ui/app-router";
-import { clearAsk } from "@/stores/ask-store";
 import { dockMode } from "@/stores/dock-mode";
 import { settingsModal } from "@/stores/settings-modal";
 import { setSearchInput } from "@/stores/view-store";
@@ -20,7 +19,6 @@ export function openLibrarySearch(): void {
 
 /** Narrow the library to one connected account or watch, then leave Sources so the grid is visible. */
 export function viewAccountItems(accountId: string): void {
-  clearAsk();
   setSearchInput([{ field: "account", operator: "eq", value: accountId }], "");
   dockMode.close();
   showLibrary();

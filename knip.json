@@ -26,6 +26,9 @@
     },
     "packages/icons": {
       "entry": ["lib/create-icon.tsx", "scripts/*.mjs"]
+    },
+    "packages/schema": {
+      "entry": ["scripts/*.ts"]
     }
   }
 }

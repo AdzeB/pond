@@ -3,11 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, safeStorage } from "electron";
 import log from "electron-log/main.js";
-import {
-  KEYCHAIN_AI_API_KEY,
-  KEYCHAIN_INGEST_TOKEN,
-  KEYCHAIN_SERVICE,
-} from "../shared/constants";
+import { KEYCHAIN_INGEST_TOKEN, KEYCHAIN_SERVICE } from "../shared/constants";
 
 const SECRETS_FILE = "secrets.json";
 
@@ -90,30 +86,4 @@ export async function rotateIngestToken(): Promise<string> {
   const token = randomBytes(24).toString("hex");
   await setIngestToken(token);
   return token;
-}
-
-/** Per-provider API key, stored encrypted and never in prefs; keyed by provider id so switching providers never overwrites another's key. */
-function aiApiKeyAccount(provider: string): string {
-  return `${KEYCHAIN_AI_API_KEY}:${provider}`;
-}
-
-export async function getAiApiKey(provider: string): Promise<string | null> {
-  const all = await readAll();
-  const value = all[entryKey(KEYCHAIN_SERVICE, aiApiKeyAccount(provider))];
-  if (value) return decrypt(value);
-  /** Fall back to the legacy single-slot key so keys saved before per-provider storage aren't lost. */
-  const legacy = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_AI_API_KEY)];
-  if (legacy) return decrypt(legacy);
-  return null;
-}
-
-export async function setAiApiKey(
-  provider: string,
-  key: string | null,
-): Promise<void> {
-  const all = await readAll();
-  const mapKey = entryKey(KEYCHAIN_SERVICE, aiApiKeyAccount(provider));
-  if (key && key.trim().length > 0) all[mapKey] = encrypt(key.trim());
-  else delete all[mapKey];
-  await writeAll(all);
 }

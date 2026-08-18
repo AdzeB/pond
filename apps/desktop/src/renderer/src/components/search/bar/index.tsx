@@ -20,7 +20,6 @@ import { useNlCompiler, useNlFacets } from "@/hooks/use-nl-query";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { flattenPredicates } from "@/lib/search/nl-query";
 import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
-import { clearAsk } from "@/stores/ask-store";
 import { useTags } from "@/stores/tags";
 import {
   setSearchInput,
@@ -189,7 +188,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
 
   const clearField = () => {
     cancelAi();
-    clearAsk();
     setSearchInput([], "", "");
     editor.update(() => {
       $writeSearchString("");

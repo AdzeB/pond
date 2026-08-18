@@ -60,6 +60,7 @@ adapter authors are expected to respect.
 
 ## Documentation
 
+- [References](references.md)
 - [License](LICENSE)
 - [Privacy](PRIVACY.md)
 - [Security](SECURITY.md)

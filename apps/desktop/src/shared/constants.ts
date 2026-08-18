@@ -8,8 +8,6 @@ export const KEYCHAIN_SERVICE = "so.pond.desktop";
 
 export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
 
-export const KEYCHAIN_AI_API_KEY = "ai-api-key";
-
 export const POND_PROTOCOL = "pond";
 
 export const IPC = {

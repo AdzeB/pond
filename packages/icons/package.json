@@ -23,13 +23,11 @@
     "./fill/18": "./fill/18/index.ts",
     "./outline/12": "./outline/12/index.ts",
     "./outline/18": "./outline/18/index.ts",
-    "./providers": "./providers/index.ts",
     "./social-media": "./social-media/index.ts",
     "./types": "./types.ts"
   },
   "scripts": {
     "generate:icons": "node ./scripts/generate-icons.mjs",
-    "generate:providers": "node --experimental-strip-types providers/generate.ts",
     "check:allowlist": "node ./scripts/check-allowlist.mjs",
     "typecheck": "tsc --noEmit"
   },

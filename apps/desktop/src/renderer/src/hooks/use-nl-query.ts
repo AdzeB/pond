@@ -1,9 +1,9 @@
-import { modelContextLimit, type QueryPlan, type RankSpec } from "@pond/schema";
+import type { QueryPlan } from "@pond/schema";
 import { matches } from "@pond/schema/filters/match";
 import type { Predicate, Query } from "@pond/schema/filters/types";
 import { encode } from "gpt-tokenizer";
 import { useCallback, useMemo } from "react";
-import { embedQuery, resolveFacets } from "@/lib/search/facet-resolver";
+import { resolveFacets } from "@/lib/search/facet-resolver";
 import { computeLiveFacets } from "@/lib/search/live-facets";
 import {
   compileStageA,
@@ -15,32 +15,23 @@ import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { useSaves } from "./use-saves";
 
-/** The "find anything" orchestrator: deterministic resolver (Stage A), embedding facet resolver (B), and LLM compiler (C) behind the validation gate (D), then zero-result repair; each stage degrades to the previous so it always returns something usable. */
+/** Deterministic resolver, then optional embedding facets and LLM compile, each stage degrading to the previous. */
 
 interface NlCompileResult {
-  /** The deterministic path emits a one-step plan; capable providers emit a richer one. */
   plan: QueryPlan;
-  /** Leftover words that didn't resolve to a predicate, for keyword ranking. */
+  /** Leftover words that didn't resolve to a predicate, for keyword search. */
   residual: string;
-  /** Query vector for semantic ranking of the residual, when available. */
-  queryVector: Float32Array | null;
 }
 
-/** Caps the grounding facet section of the compile prompt so a huge library can't blow up prompt size, cost, and latency. */
+/** Caps the grounding facet section of the compile prompt so a huge library can't blow up prompt size and latency. */
 const FACET_TOKEN_BUDGET = 1200;
 
 function tokenLength(text: string): number {
   return encode(text).length;
 }
 
-/** ~10% of the model's context window, clamped so a tiny local model isn't swamped and a huge window doesn't bloat the prompt. */
-export function facetBudgetFor(context: number | undefined): number {
-  if (!context) return FACET_TOKEN_BUDGET;
-  return Math.max(400, Math.min(4000, Math.round(context * 0.1)));
-}
-
 /** Bounded by a token budget rather than a fixed count so the grounding section stays a predictable size; hard per-facet caps guard against pathological inputs. */
-export function capFacets(
+function capFacets(
   facets: NlFacets,
   budget: number = FACET_TOKEN_BUDGET,
 ): NlFacets {
@@ -111,75 +102,39 @@ export function useNlCompiler(): (input: string) => Promise<NlCompileResult> {
 
   return useCallback(
     async (input: string): Promise<NlCompileResult> => {
-      /** Stage A: deterministic. */
       const stageA = compileStageA(input, facets);
       let rules: Predicate[] = [...(stageA.query.rules as Predicate[])];
       let residual = stageA.residual;
 
-      /** Stage B: embedding facet resolution over the residual. */
-      if (ai?.semanticSearch && residual.trim()) {
-        try {
-          const b = await resolveFacets(residual, facets);
-          rules = dedupePredicates([...rules, ...b.predicates]);
-          residual = b.residual;
-        } catch {
-          /** Keep the deterministic result. */
-        }
-      }
-
-      let query: Query = { combinator: "and", rules };
-      let modelPlan: QueryPlan | null = null;
-
-      /** Stage C + D: every provider compiles to a QueryPlan via ai.compilePlan (the bundled model returns filter-only); deterministic predicates merge into the flat AND filter and validatePlan clamps untrusted output. */
-      if (ai?.nlCompiler) {
-        try {
-          const budget = facetBudgetFor(
-            modelContextLimit(ai.provider ?? "bundled", ai.modelId),
-          );
-          const res = (await window.pond.query("ai.compilePlan", {
-            input,
-            facets: capFacets(facets, budget),
-          })) as { plan: unknown };
-          const validated = validatePlan(res.plan);
-          validated.filter = mergeModelQuery(validated.filter, rules);
-          modelPlan = validated;
-        } catch {
-          /** Fall back to the deterministic/embedding result. */
-        }
-      }
-
-      const queryVector =
+      const stageB =
         ai?.semanticSearch && residual.trim()
-          ? await embedQuery(residual)
-          : null;
+          ? resolveFacets(residual, facets).catch(() => null)
+          : Promise.resolve(null);
 
-      /** Stage A sort/limit fold into the plan as a fallback ordering/cap. */
-      const stageRank: RankSpec | undefined = stageA.sort
-        ? { kind: "field", field: stageA.sort.key, dir: stageA.sort.dir }
-        : undefined;
+      const compiled = ai?.nlCompiler
+        ? window.pond
+            .query("ai.compilePlan", {
+              input,
+              facets: capFacets(facets),
+            })
+            .then((res) => validatePlan((res as { plan: unknown }).plan))
+            .catch(() => null)
+        : Promise.resolve(null);
 
-      let plan: QueryPlan;
-      if (modelPlan) {
-        /** Backfill ordering/limit the model omitted from the deterministic pass. */
-        if (!modelPlan.rank && stageRank) modelPlan.rank = stageRank;
-        if (modelPlan.limit == null && stageA.limit != null) {
-          modelPlan.limit = stageA.limit;
-        }
-        /** Relax empty filters so a real ask never reads as "no matches"; aggregate filters stay exact so the count stays honest. */
-        if (!modelPlan.aggregate) {
-          modelPlan.filter = repairEmpty(modelPlan.filter);
-        }
-        plan = modelPlan;
-      } else {
-        query = repairEmpty(query);
-        plan = {
-          filter: query,
-          ...(stageRank ? { rank: stageRank } : {}),
-          ...(stageA.limit != null ? { limit: stageA.limit } : {}),
-        };
+      const [b, modelPlan] = await Promise.all([stageB, compiled]);
+      if (b) {
+        rules = dedupePredicates([...rules, ...b.predicates]);
+        residual = b.residual;
       }
 
-      return { plan, residual, queryVector };
+      const query: Query = { combinator: "and", rules };
+      if (modelPlan) {
+        modelPlan.filter = mergeModelQuery(modelPlan.filter, rules);
+        modelPlan.filter = repairEmpty(modelPlan.filter);
+        return { plan: modelPlan, residual };
+      }
+
+      return { plan: { filter: repairEmpty(query) }, residual };
     },
     [facets, ai],
   );

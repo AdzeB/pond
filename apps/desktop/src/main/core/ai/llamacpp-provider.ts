@@ -3,16 +3,10 @@ import { mkdir, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline as streamPipeline } from "node:stream/promises";
-import type { AgentStepRecord } from "@pond/schema";
 import { app } from "electron";
 import log from "electron-log/main.js";
-import {
-  buildSummaryPrompt,
-  buildSystemPrompt,
-  formatSummaryItems,
-  queryJsonSchema,
-} from "./schema-prompt";
-import type { AiProvider, CompileContext, SummaryItem } from "./types";
+import { buildSystemPrompt, queryJsonSchema } from "./schema-prompt";
+import type { AiProvider, CompileContext } from "./types";
 
 /** Offline LLM provider via node-llama-cpp; the native dep is optional (the app runs without it) and the GGUF model downloads to userData on first use to keep the installer small. */
 
@@ -118,7 +112,8 @@ export class LlamaCppProvider implements AiProvider {
     return { mod, session: this.session };
   }
 
-  async compileQuery(input: string, ctx: CompileContext): Promise<unknown> {
+  /** Grammar output is a filter object; wrap it as a QueryPlan. Each prompt starts from a clean chat so prior compiles don't leak. */
+  async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
     const { mod, session } = await this.ensureSession();
     const grammar = await mod
       .getLlama()
@@ -130,6 +125,7 @@ export class LlamaCppProvider implements AiProvider {
     const system = buildSystemPrompt(ctx);
     // biome-ignore lint/suspicious/noExplicitAny: native session
     const s = session as any;
+    s.resetChatHistory?.();
     const prompt = `${system}\n\nUser request: ${input}\n\nJSON:`;
     const answer: string = await s.prompt(prompt, {
       grammar,
@@ -137,50 +133,21 @@ export class LlamaCppProvider implements AiProvider {
       maxTokens: 512,
     });
     try {
-      return grammar?.parse ? grammar.parse(answer) : JSON.parse(answer);
+      const filter = grammar?.parse
+        ? grammar.parse(answer)
+        : JSON.parse(answer);
+      return { filter };
     } catch {
       const start = answer.indexOf("{");
       const end = answer.lastIndexOf("}");
       if (start >= 0 && end > start) {
         try {
-          return JSON.parse(answer.slice(start, end + 1));
+          return { filter: JSON.parse(answer.slice(start, end + 1)) };
         } catch {
           return null;
         }
       }
       return null;
     }
-  }
-
-  /** The bundled model isn't trusted for the richer plan format; a filter-only plan is the renderer's safe fallback. */
-  async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
-    const filter = await this.compileQuery(input, ctx);
-    return { filter };
-  }
-
-  /** Bundled isn't agent-capable; the loop collapses into a single filter-only result. */
-  async agentStep(
-    question: string,
-    ctx: CompileContext,
-    _steps?: ReadonlyArray<AgentStepRecord>,
-  ): Promise<unknown> {
-    const filter = await this.compileQuery(question, ctx);
-    return { type: "final", plan: { filter } };
-  }
-
-  async summarize(question: string, items: SummaryItem[]): Promise<string> {
-    if (items.length === 0) return "";
-    const { session } = await this.ensureSession();
-    const system = buildSummaryPrompt();
-    const user = formatSummaryItems(question, items);
-    // biome-ignore lint/suspicious/noExplicitAny: native session
-    const s = session as any;
-    /** Drop prior compile turns so prose isn't biased toward JSON output. */
-    s.resetChatHistory?.();
-    const answer: string = await s.prompt(`${system}\n\n${user}\n\nSummary:`, {
-      temperature: 0.3,
-      maxTokens: 200,
-    });
-    return String(answer).trim();
   }
 }

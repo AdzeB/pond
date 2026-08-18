@@ -60,10 +60,10 @@ describe("theme prefs rebuild", () => {
 
   it("treats unknown or drifted presets as custom", () => {
     const mint = getPreset("mint");
-    expect(mint).toBeDefined();
-    expect(isCustomTheme("custom", mint?.def)).toBe(true);
-    expect(isCustomTheme("mint", mint?.def)).toBe(false);
-    expect(isCustomTheme("mint", { ...mint?.def, accent: "#ff0000" })).toBe(
+    if (!mint) throw new Error("mint preset missing");
+    expect(isCustomTheme("custom", mint.def)).toBe(true);
+    expect(isCustomTheme("mint", mint.def)).toBe(false);
+    expect(isCustomTheme("mint", { ...mint.def, accent: "#ff0000" })).toBe(
       true,
     );
     expect(isCustomTheme("missing", DEFAULT_LIGHT_THEME)).toBe(true);

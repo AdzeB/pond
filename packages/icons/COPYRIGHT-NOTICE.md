@@ -13,4 +13,4 @@ For more details: <https://nucleoapp.com/license>
 
 Pond vendors up to 100 Nucleo UI glyphs into `generated/` for the open-source
 build (see `allowlist.json`). Social and brand marks in `social-media/custom/`
-and `providers/` are separate assets and are not part of the Nucleo allowlist.
+are separate assets and are not part of the Nucleo allowlist.
