@@ -68,6 +68,8 @@ publish:
   provider: github
   owner: raphaelsalaja
   repo: pond
+  private: true
+  releaseType: release
 
 mac:
   category: public.app-category.productivity
@@ -88,8 +90,8 @@ mac:
   # The inherit entitlements are applied to the bundled ffmpeg binary (and
   # any child process Pond spawns, e.g. the runtime yt-dlp) so they survive
   # the hardened runtime after notarization.
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.inherit.plist
+  entitlements: packaging/entitlements.mac.plist
+  entitlementsInherit: packaging/entitlements.mac.inherit.plist
   # Register `.pond` as a macOS package so Finder shows a library as a
   # single bundle instead of a folder full of items/, trash/, metadata.
   # LaunchServices only honors this in packaged builds, not `dev`.
