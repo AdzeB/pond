@@ -2,13 +2,11 @@ import type { Source } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
 import { syncMonitor } from "@/stores/sync-monitor";
 
-/** Mirrors the main-process ConnectedAccount + live status from `accounts.list`, kept local so the renderer never imports across IPC. */
 export interface AccountRow {
   id: string;
   source: Source;
   handle: string | null;
   label: string | null;
-  /** Best-effort profile picture resolved by the main process. */
   avatarUrl?: string | null;
   addedAt: string;
   sync: {
@@ -20,7 +18,6 @@ export interface AccountRow {
   syncing: boolean;
 }
 
-/** Seeds a one-shot snapshot into the sync-monitor store so rows aren't blank before live pushes arrive. */
 export function useAccounts(): {
   accounts: AccountRow[];
   loading: boolean;
@@ -55,7 +52,6 @@ export function useAccounts(): {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     void refetch().then((rows) => {
-      /** Avatars resolve in the background on the main side; one delayed refetch picks them up without polling. */
       if (rows.some((row) => row.handle && row.avatarUrl === undefined)) {
         timer = setTimeout(() => void refetch(), 4000);
       }

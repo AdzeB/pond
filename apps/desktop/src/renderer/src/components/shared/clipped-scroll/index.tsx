@@ -10,21 +10,15 @@ import {
 import styles from "./styles.module.css";
 
 interface ClippedScrollProps {
-  /** Real height is derived from this and the rows so an overflowing list always ends mid-row, never on a boundary that reads as a false bottom. */
   maxHeight: number;
   children: ReactNode;
   className?: string;
-  /** Rows must be direct children of the scroll element, so layout (e.g. grid) goes here, not on a wrapper. */
   contentClassName?: string;
-  /** How much of the first clipped row to leave peeking below the fold. */
   peek?: number;
-  /** Fade height at each overflowing edge. */
   fade?: number;
-  /** Inner padding lives here so row offsets stay measurable. */
   pad?: number;
 }
 
-/** Fades overflowing edges and deliberately clips the last visible row; direct children must be the scrollable rows themselves. */
 export function ClippedScroll({
   maxHeight,
   children,
@@ -46,7 +40,6 @@ export function ClippedScroll({
       setHeight(content);
       return;
     }
-    /** Fit whole rows within a reduced budget, then reveal `peek` px of the next row so the bottom edge always cuts through a row. */
     const budget = maxHeight - peek;
     let base = 0;
     for (const child of Array.from(el.children) as HTMLElement[]) {
@@ -72,7 +65,6 @@ export function ClippedScroll({
     measure();
   }, [measure]);
 
-  /** Re-evaluate the fades after the container is resized to its clipped height. */
   // biome-ignore lint/correctness/useExhaustiveDependencies: height is the trigger, not a read
   useEffect(() => {
     updateOverflow();

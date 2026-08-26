@@ -1,7 +1,6 @@
 import type { RawJson } from "@pond/schema/raw";
 import { patchSaveRawJson, pool } from "@/stores/pool";
 
-/** The list ships a slim rawJson; the detail view hydrates the full blob once on open. */
 const inflight = new Set<string>();
 const loaded = new Set<string>();
 
@@ -16,7 +15,6 @@ export async function ensureRawJson(id: string): Promise<void> {
     loaded.add(id);
     if (pool.get(id)) patchSaveRawJson(id, res.rawJson);
   } catch {
-    /** Best-effort; a failure just hides the detail rows the slim projection doesn't cover. */
   } finally {
     inflight.delete(id);
   }

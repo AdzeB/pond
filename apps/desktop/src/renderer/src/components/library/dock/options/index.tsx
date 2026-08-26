@@ -67,7 +67,6 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
 export function OptionsContent({ section }: { section: ViewMenuSection }) {
   const Section = SECTIONS[section];
   return (
-    /** The dock's AnimatePresence and the pill's `layout` own the morph, so this is just the card content. */
     <TrayCard.Root className={styles.card} data-section={section}>
       <Section />
     </TrayCard.Root>

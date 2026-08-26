@@ -84,6 +84,7 @@ function Tile({
           alt={media.altText ?? ""}
           className={styles["media-image"]}
           draggable={false}
+          decoding="sync"
           referrerPolicy="no-referrer"
         />
       ) : (

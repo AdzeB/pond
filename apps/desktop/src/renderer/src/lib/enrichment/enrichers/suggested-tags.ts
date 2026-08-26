@@ -13,7 +13,6 @@ interface VocabEntry {
   vec: Float32Array;
 }
 
-/** Cached per embed-model version so the vocabulary is embedded at most once per session. */
 let vocabPromise: Promise<VocabEntry[]> | null = null;
 let vocabKey = "";
 
@@ -38,7 +37,6 @@ async function getVocab(): Promise<VocabEntry[]> {
   return vocabPromise;
 }
 
-/** Suggestions are stored in `suggestedTags` for the detail view to confirm, never applied automatically. */
 export const suggestedTagsEnricher: Enricher = {
   id: "suggestedTags",
   dependsOn: ["textEmbedding"],

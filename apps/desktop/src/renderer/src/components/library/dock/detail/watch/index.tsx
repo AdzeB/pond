@@ -35,13 +35,11 @@ import { useSyncByAccount } from "@/stores/sync-monitor";
 import { useFrequencyRow } from "../frequency-row";
 import styles from "./styles.module.css";
 
-/** Watch settings card in the dock tray; the id arrives through the source-detail store. */
 export function WatchDetailSection() {
   const { watches, refetch } = useWatches();
   const watchId = useDetailWatchId();
   const watch = watches.find((w) => w.id === watchId) ?? watches[0];
 
-  /** Nothing to show while the list loads. */
   if (!watch) return <TrayCard.Close />;
   return (
     <WatchDetail
@@ -100,7 +98,6 @@ function WatchDetail({
     });
   };
 
-  /** The check rides on a public listing or a connected account's session. */
   const viaAccount = watch.via
     ? (accounts.find((a) => a.id === watch.via) ?? null)
     : null;
@@ -216,7 +213,6 @@ function WatchDetail({
           onClick={(e) => {
             if (model.tone === "run") {
               void window.pond.syncCancel(watch.id);
-              /** A running check stays visible so it can be cancelled. */
               e.preventDefault();
             } else {
               void window.pond.syncRunNow(watch.id);

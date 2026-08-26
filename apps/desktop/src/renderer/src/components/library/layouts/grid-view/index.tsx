@@ -28,7 +28,6 @@ export function GridView({ saves, onEndReached }: GridViewProps) {
         width,
         colMin,
         LIBRARY_ITEM_GAP,
-        /** Square media: height equals column width, plus the meta chrome underneath. */
         (colW) => colW + chromeHeight,
       ),
     [saves, width, colMin, chromeHeight],

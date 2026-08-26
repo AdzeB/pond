@@ -1,13 +1,16 @@
-// biome-ignore-all lint/a11y/noStaticElementInteractions: row already has role="row" from the DataTable primitive.
-// biome-ignore-all lint/a11y/useKeyWithClickEvents: context menu is keyboard-reachable via the actions kebab.
-
 import { normalizeLabelName } from "@pond/schema/label-name";
-import type { MenuItemSpec, RenderRowArgs } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { createContext, use, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  type RefObject,
+  use,
+  useRef,
+  useState,
+} from "react";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { prompt } from "@/components/shared/prompt-dialog";
-import { SpecContextMenu } from "@/components/shared/spec-context-menu";
 import {
   buildTagMenuItems,
   type TagMenuActions,
@@ -22,14 +25,15 @@ import type { TagsRowData } from "./types";
 
 interface TagRowContextValue {
   row: TagsRowData;
+  rowRef: RefObject<HTMLElement | null>;
   renaming: boolean;
   renameDraft: string;
   setRenameDraft: (v: string) => void;
   commitRename: () => void;
   cancelRename: () => void;
-  setColor: (color: string | null) => void;
-  /** Row actions as `Menu.Items` specs, for the kebab dropdown. */
+  startRename: () => void;
   menuItems: MenuItemSpec[];
+  buildMenuItems: () => MenuItemSpec[];
 }
 
 const TagRowContext = createContext<TagRowContextValue | null>(null);
@@ -40,22 +44,26 @@ export function useTagRow(): TagRowContextValue {
   return ctx;
 }
 
-/** Owns all per-row interaction state and exposes it to the cell components via context; the primitive hands over the already-rendered `cells`. */
-export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
+export function TagRowProvider({
+  row,
+  children,
+}: {
+  row: TagsRowData;
+  children: ReactNode;
+}) {
   const { groups } = useTagsTable();
   const isGroup = row.kind === "group";
   const name = isGroup ? row.group.name : row.tag.name;
 
   const [renaming, setRenaming] = useState(false);
   const [renameDraft, setRenameDraft] = useState(name);
-  const rowRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLElement | null>(null);
 
   function startRename() {
     setRenameDraft(name);
     setRenaming(true);
   }
 
-  /** Scoped to the focused row so E only renames the row the user is on. */
   useHotkey(SHORTCUTS["tags.rename"].keys!, () => startRename(), {
     target: rowRef,
     enabled: !renaming,
@@ -117,14 +125,6 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
     });
   }
 
-  function setColor(color: string | null) {
-    if (!isGroup) return;
-    void window.pond.query("tagGroups.update", {
-      name,
-      patch: { color },
-    });
-  }
-
   function buildMenuItems(): MenuItemSpec[] {
     if (isGroup) {
       const actions: TagGroupMenuActions = {
@@ -156,27 +156,18 @@ export function TagRow({ row, cells, rowProps }: RenderRowArgs<TagsRowData>) {
     return buildTagMenuItems(actions);
   }
 
-  const menuItems = buildMenuItems();
-
   const value: TagRowContextValue = {
     row,
+    rowRef,
     renaming,
     renameDraft,
     setRenameDraft,
     commitRename: () => void commitRename(),
     cancelRename: () => setRenaming(false),
-    setColor,
-    menuItems,
+    startRename,
+    menuItems: buildMenuItems(),
+    buildMenuItems,
   };
 
-  return (
-    <TagRowContext value={value}>
-      <SpecContextMenu buildItems={buildMenuItems}>
-        {/* Focus (via tabIndex -1) scopes the E rename hotkey to the clicked row. */}
-        <div {...rowProps} ref={rowRef} title={name} tabIndex={-1}>
-          {cells}
-        </div>
-      </SpecContextMenu>
-    </TagRowContext>
-  );
+  return <TagRowContext value={value}>{children}</TagRowContext>;
 }

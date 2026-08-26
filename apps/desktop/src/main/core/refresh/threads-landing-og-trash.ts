@@ -1,4 +1,3 @@
-/** One-shot: soft-trash Threads saves that captured the landing-page logo instead of a post. */
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { saves } from "@pond/schema/db";
@@ -17,7 +16,6 @@ function markerPath(): string {
   return join(resolvePaths().indexesDir, `${currentPondId()}.${MIGRATION_ID}`);
 }
 
-/** Walks live Threads saves once and moves landing-OG logo tiles to Trash. */
 export async function startThreadsLandingOgTrash(): Promise<{
   ok: true;
   trashed: number;

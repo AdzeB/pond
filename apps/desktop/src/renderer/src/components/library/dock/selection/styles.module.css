@@ -1,4 +1,3 @@
-/* Labeled icon-over-label tiles; the dock viewport already pads 4px around this row. */
 .tiles {
   display: flex;
   gap: 6px;
@@ -109,7 +108,6 @@
   color: var(--ds-gray-12);
 }
 
-/* Outcome swapped into the label in place of a toast. */
 .label[data-tone="error"] {
   color: var(--ds-red-11);
 }

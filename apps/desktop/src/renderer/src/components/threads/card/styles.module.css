@@ -16,6 +16,7 @@
   font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--tw-text);
   background: var(--tw-bg);
+  border-radius: var(--ds-radius-2xl, 16px);
 }
 
 .card[data-scheme="dark"] {

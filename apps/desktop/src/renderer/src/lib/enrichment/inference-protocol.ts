@@ -1,7 +1,5 @@
 import type { FlorenceTask } from "./inference-core";
 
-/** Wire protocol shared by the inference worker and its main-thread client: images and audio cross as transferred buffers, and model ids are resolved from prefs on the main thread so the worker stays prefs-free. */
-
 export interface SerializedImage {
   data: ArrayBuffer;
   width: number;

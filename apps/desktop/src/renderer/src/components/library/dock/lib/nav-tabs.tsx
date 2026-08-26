@@ -9,7 +9,6 @@ interface NavTab {
   label: string;
   to?: LinkProps["to"];
   params?: LinkProps["params"];
-  /** Tabs that open an overlay instead of navigating. */
   action?: () => void;
   icon: ReactNode;
   match: (pathname: string) => boolean;

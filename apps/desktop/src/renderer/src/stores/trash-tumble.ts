@@ -7,14 +7,12 @@ const store = new Store<{ ids: ReadonlySet<string> }>({
 });
 
 const TUMBLE_MS = 340;
-/** Ids stay marked past the data update so cards never flash back upright before they unmount. */
 const CLEAR_GRACE_MS = 500;
 
 function reduceMotion(): boolean {
   return document.documentElement.getAttribute("data-reduce-motion") === "true";
 }
 
-/** Plays the tumble (cards drop toward the dock, soft thunk) and resolves when the caller should apply the trash mutation. */
 export async function tumbleToTrash(ids: readonly string[]): Promise<void> {
   if (ids.length === 0 || reduceMotion()) return;
   store.setState((s) => {

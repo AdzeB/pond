@@ -116,7 +116,6 @@ interface EmptyProps
   action?: React.ReactNode;
 }
 
-/** Shared empty-state row styled to match a single list card. */
 function Empty({
   title,
   description,

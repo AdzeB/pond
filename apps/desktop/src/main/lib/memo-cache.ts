@@ -1,20 +1,14 @@
 interface MemoCacheOptions {
-  /** Staleness TTL in ms; omit to cache until an explicit invalidate()/set(). */
   ttlMs?: number;
 }
 
 interface MemoCache<T> {
-  /** Concurrent callers share one compute. */
   get(): Promise<T>;
-  /** Current cached value without computing; null when empty or stale. */
   peek(): T | null;
-  /** Overwrites the cached value and resets its freshness window. */
   set(value: T): void;
-  /** Drops the cached value and abandons any in-flight compute. */
   invalidate(): void;
 }
 
-/** Single-value async memo: TTL freshness plus in-flight dedupe; rejections aren't cached. */
 export function createMemoCache<T>(
   compute: () => Promise<T>,
   options: MemoCacheOptions = {},

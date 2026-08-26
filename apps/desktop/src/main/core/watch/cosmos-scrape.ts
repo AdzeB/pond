@@ -5,17 +5,11 @@ import { navigateWithTimeout } from "../refresh/scrape-window/navigation";
 import { leaseWindow } from "../refresh/scrape-window/pool";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
-/**
- * Cosmos watch listing scrapes the public page on a cookie-less partition; profiles and clusters render logged-out.
- * @remarks Cosmos renders element tiles without anchors, so ids come from the GraphQL bodies the preload's COSMOS_HOOK captures.
- */
-
 const COLLECT_TIMEOUT_MS = 60_000;
 
 /** Isolated from both the legacy shared jar and per-account jars so a watch can never ride or pollute a signed-in Cosmos session. */
 const PUBLIC_PARTITION = "persist:pond-watch-public";
 
-/** The kind is implied by the handle shape: `user` or `user/cluster`. */
 function pageUrl(handle: string): string {
   const segs = handle
     .split("/")
@@ -77,7 +71,6 @@ export async function listCosmosWatch(
   try {
     const navOk = await navigateWithTimeout(lease.win, target, NAV_TIMEOUT_MS);
     if (!navOk) return { ok: false, reason: "timeout" };
-    /** Missing profiles bounce to the explore page. */
     const landed = new URL(lease.win.webContents.getURL());
     const landedFirst = landed.pathname.split("/").filter(Boolean)[0] ?? "";
     const wantedFirst = handle.split("/")[0] ?? handle;

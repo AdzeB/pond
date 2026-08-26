@@ -1,4 +1,3 @@
-// Minimal electron-log stub for Vitest (no-op logger).
 const noop = () => {};
 const logger = {
   info: noop,

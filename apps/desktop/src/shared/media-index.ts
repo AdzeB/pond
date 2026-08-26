@@ -40,14 +40,12 @@ interface ThumbnailFileLike {
   mimeType?: string | null;
 }
 
-/** Kind, mime, or common video extension; shared by pipeline and renderer unit picking. */
 export function isVideoFile(file: ThumbnailFileLike): boolean {
   if (file.kind === "video") return true;
   if (file.mimeType?.startsWith("video/") === true) return true;
   return /\.(mp4|webm|mov|m4v|mkv)$/i.test(file.path);
 }
 
-/** True when a local still can be decoded for a blurhash or an on-demand preview. */
 export function isStaticThumbnailFile(file: ThumbnailFileLike): boolean {
   const slash = Math.max(
     file.path.lastIndexOf("/"),
@@ -66,7 +64,6 @@ export function isStaticThumbnailFile(file: ThumbnailFileLike): boolean {
   ) {
     return true;
   }
-  /** Legacy cover/poster imports can omit both extension and MIME; byte sniffing validates them later. */
   return (
     (file.kind === "cover" || file.kind === "poster") &&
     (extension === "" || extension === ".")

@@ -95,14 +95,12 @@ export function bootPool(): Promise<void> {
   return bootPromise;
 }
 
-/** Paint the bounded cached page before SQLite responds. The live first page reconciles it. */
 async function primeSnapshot(): Promise<void> {
   const cached = await readSnapshot();
   applyListRows(cached.slice(0, PAGE_SIZE));
 }
 
 export function loadNextPage(): Promise<void> {
-  /** A full hydrate supersedes every cursor page, including a page requested while it is running. */
   if (fullPoolInflight) return fullPoolInflight;
   if (pageInflight) return pageInflight;
   if (!pagingStore.state.hasMore) return Promise.resolve();
@@ -113,24 +111,16 @@ export function loadNextPage(): Promise<void> {
   return pageInflight;
 }
 
-/**
- * Loads the complete pool only for views whose filters cannot be exact from a
- * recency page. Callers may safely invoke this repeatedly; concurrent calls
- * share one request and no cursor pages can resume once it completes.
- */
 export function hydrateFullPool(): Promise<void> {
   if (fullPoolInflight) return fullPoolInflight;
   if (!pagingStore.state.hasMore) return Promise.resolve();
 
   fullPoolInflight = (async () => {
-    /** Let a page already requested finish first, so its final state cannot overwrite the complete state below. */
     const activePage = pageInflight;
     if (activePage) {
       try {
         await activePage;
-      } catch {
-        /** The full query below can still recover from an individual page failure. */
-      }
+      } catch {}
     }
 
     pagingStore.setState((state) => ({ ...state, loading: true }));

@@ -5,8 +5,6 @@ import { type RateProfile, syncConfigFor } from "@pond/schema/sources";
 import { app } from "electron";
 import log from "electron-log/main.js";
 
-/** Shared state, persistence, and UI snapshot for the rate governor; the request path in `rate-governor.ts` mutates the maps exported here. */
-
 type PausedReason = "cooldown" | "breaker" | "at_risk" | "manual";
 
 export interface PausedState {
@@ -29,22 +27,17 @@ export interface AtRiskState {
   note: string;
 }
 
-/** Circuit breaker: N transient failures inside the window trips a long pause. */
 export const BREAKER_WINDOW_MS = 60_000;
 export const BREAKER_THRESHOLD = 3;
 export const BREAKER_TRIP_MS = 10 * 60_000;
 
-/** AIMD bounds for the per-source delay multiplier. */
 export const MULTIPLIER_MIN = 1;
 export const MULTIPLIER_MAX = 8;
-/** Multiplicative increase under pressure. */
 export const MULTIPLIER_INCREASE = 2;
-/** Additive decrease on success, so speeding back up is slow. */
 export const MULTIPLIER_DECREASE = 0.1;
 
 export const AT_RISK_PARK_MS = 30 * 60_000;
 
-/** Cooldowns/at-risk flush immediately; only the hot request log is debounced. */
 const PERSIST_DEBOUNCE_MS = 3_000;
 
 interface PersistShape {
@@ -52,12 +45,10 @@ interface PersistShape {
   cooldownUntil: Partial<Record<Source, number>>;
   breakerUntil: Partial<Record<Source, number>>;
   atRisk: Partial<Record<Source, AtRiskState>>;
-  /** Recent request timestamps per source, pruned to the largest window. */
   requestLog: Partial<Record<Source, number[]>>;
   allPausedUntil: number;
 }
 
-/** In-memory state is authoritative; persisted lazily. */
 export const cooldownUntil = new Map<Source, number>();
 export const breakerUntil = new Map<Source, number>();
 export const breakerCounters = new Map<
@@ -117,9 +108,7 @@ export function loadState(): void {
       cooldowns: cooldownUntil.size,
       atRisk: atRisk.size,
     });
-  } catch {
-    /** No prior state or unreadable file; start clean. */
-  }
+  } catch {}
 }
 
 export function schedulePersist(immediate = false): void {

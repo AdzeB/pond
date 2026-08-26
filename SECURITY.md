@@ -4,7 +4,7 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
+| 0.0.x   | Yes       |
 
 ## Reporting a vulnerability
 
@@ -18,17 +18,15 @@ We aim to acknowledge reports within a few days and will coordinate disclosure o
 
 ## Security model (summary)
 
-### Local ingest API
+### Browser extension
 
-The desktop app exposes an HTTP API on `127.0.0.1:41610` for the browser extension. Requests require a bearer token (the ingest token). The server enforces origin allowlists and rate-limits failed auth attempts. Only processes on your machine can reach this port under normal OS firewall defaults.
+The extension talks to Pond through Chrome native messaging (`so.pond.host`). Chrome launches a small host binary that Pond registers; only this extension ID is allowed. Saves and session cookies stay on your Mac.
+
+A loopback HTTP API on `127.0.0.1:41610` still exists for debugging. It requires the ingest token.
 
 ### IPC
 
 Renderer ↔ main IPC handlers validate the sending frame. Untrusted web content cannot invoke privileged channels.
-
-### Extension pairing
-
-Pairing uses a `pond://pair` deep link with a token copied from the menu bar. Treat the pairing token like a local API secret. Anyone with access to your Mac while Pond is running could use it.
 
 ### Library data
 
@@ -38,4 +36,3 @@ Your `.pond` library bundle is readable by any process with filesystem access to
 
 - Rotate the ingest token if you suspect it was exposed (menu bar → **Rotate Ingest Token**).
 - Only load the Pond extension from [official GitHub Releases](https://github.com/raphaelsalaja/pond/releases) or a build you compiled yourself.
-- Review AI provider settings if you want to avoid sending content to third-party APIs.

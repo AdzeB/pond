@@ -8,10 +8,9 @@ import {
   type NativeImage,
   nativeImage,
 } from "electron";
-import { DEFAULT_INGEST_PORT } from "../shared/constants";
 import { syncAllSources } from "./core/sync";
 import { getDb } from "./db";
-import { getIngestToken, rotateIngestToken } from "./keychain";
+import { rotateIngestToken } from "./keychain";
 import { sym } from "./lib/menu-symbol";
 import { itemFile, libraryRoot } from "./paths";
 import type { TrayOptions } from "./tray";
@@ -125,17 +124,6 @@ export async function buildMenu(
     },
     { type: "separator" },
     {
-      ...sym("key"),
-      label: "Copy Pairing Token",
-      click: async () => {
-        const { clipboard } = await import("electron");
-        const token = await getIngestToken();
-        if (token) {
-          clipboard.writeText(pairingString(token));
-        }
-      },
-    },
-    {
       ...sym("arrow.triangle.2.circlepath"),
       label: "Rotate Ingest Token",
       click: async () => {
@@ -197,7 +185,6 @@ function hostFromUrl(url: string | null | undefined): string | null {
   }
 }
 
-/** A small color thumbnail for the save's cover; null for non-image covers or missing files so the item simply renders text. */
 function loadThumb(
   id: string,
   files: SaveFile[] | null | undefined,
@@ -215,11 +202,4 @@ function loadThumb(
   } catch {
     return null;
   }
-}
-
-function pairingString(token: string): string {
-  const url = new URL("pond://pair");
-  url.searchParams.set("port", String(DEFAULT_INGEST_PORT));
-  url.searchParams.set("token", token);
-  return url.toString();
 }

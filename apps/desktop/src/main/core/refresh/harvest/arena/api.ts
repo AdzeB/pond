@@ -320,7 +320,6 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  /** Upstream URL for yt-dlp: first valid of embed, attachment, source.url. */
   const upstream = ((): Capture["upstream"] => {
     const candidates = [
       pickNonEmpty(block.embed?.url),
@@ -344,7 +343,6 @@ export async function fetchArenaCapture(args: {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  /** source.url routes embeds to the real host; fall back to the block permalink. */
   const url =
     typeof block.source?.url === "string" && block.source.url
       ? block.source.url

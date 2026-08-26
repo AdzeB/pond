@@ -2,18 +2,13 @@
   position: fixed;
   right: var(--window-right-width, 0px);
   bottom: calc(var(--ds-mac-inset, 16px) + 16px);
-  /* Center in the workspace; inset the right edge when the ask rail is open. */
   left: 0;
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
-  transition: bottom var(--ds-duration-medium) var(--ds-easing-standard);
-}
-
-.dock[data-collapsed] {
-  bottom: calc(var(--ds-mac-inset, 16px) + 6px);
+  transition: bottom 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* Width/height are animated by motion/react, not CSS, so mid-flight view changes retarget with preserved velocity. */
@@ -21,25 +16,24 @@
   z-index: 1;
 }
 
-.shell[data-collapsed] .pill {
-  cursor: pointer;
-}
-
-/* Shrink-wraps the pill so portaled typeaheads match its width instead of the full-bleed dock. */
 .shell {
   position: relative;
   z-index: 1;
-  padding: 16px 32px 20px;
-  margin: -16px -32px -20px;
+  pointer-events: none;
+}
+
+/* Hover slop lives on a pseudo so it doesn't inflate the box the typeahead and filter chip position against. */
+.hit {
+  position: relative;
   pointer-events: auto;
 }
 
-.shell[data-collapsed] {
-  padding-bottom: 32px;
-  margin-bottom: -32px;
+.hit::before {
+  position: absolute;
+  inset: -16px -32px -20px;
+  content: "";
 }
 
-/* Invisible full-viewport catcher: clicking outside the pill collapses it. */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -66,11 +60,6 @@
   width: max-content;
   padding: 4px;
   margin-inline: auto;
-  transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
-}
-
-.shell[data-collapsed] .viewport {
-  opacity: 0;
 }
 
 .viewport[data-card="true"] {

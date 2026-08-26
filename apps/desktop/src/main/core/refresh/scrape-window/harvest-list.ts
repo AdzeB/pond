@@ -53,7 +53,6 @@ export async function harvestSourceList(
   args: SourceListArgs,
   opts: {
     onProgress?: (p: ListHarvestProgress) => void;
-    /** Session partition of the account being synced. */
     partition?: string;
   } = {},
 ): Promise<ListHarvestResult> {
@@ -74,7 +73,6 @@ export async function harvestSourceList(
     const landedUrl = lease.win.webContents.getURL();
     const challenge = looksLikeChallenge(landedUrl);
     if (challenge) {
-      /** Anti-abuse interstitial: hard-stop and park the source so we never keep poking an account the platform is already scrutinising. */
       markAtRisk(source, challenge.kind, `harvest landed on ${challenge.kind}`);
       return { ok: false, reason: "auth_required" };
     }
@@ -159,12 +157,10 @@ export async function harvestSourceList(
       return { ok: false, reason: "no_match" };
     }
     const result = raw as ListHarvestResult;
-    /** Harvesters that return only fresh entries undercount what they scanned; backfill from __pondHarvestStats.collected. */
     if (result.ok && result.seen == null) {
       const collected = await readHarvestCollected(lease.win);
       if (collected != null) result.seen = collected;
     }
-    /** Feed the outcome to the governor so cooldowns and pacing adapt for every source's list harvest. */
     if (!result.ok && result.reason === "rate_limited") {
       const { cooldownMs } = report(source, {
         ok: false,
@@ -186,7 +182,6 @@ export async function harvestSourceList(
   }
 }
 
-/** Reads the scanned count from `__pondHarvestStats.collected`; null when the harvester doesn't track it. */
 async function readHarvestCollected(
   win: Electron.BrowserWindow,
 ): Promise<number | null> {
@@ -203,7 +198,6 @@ async function readHarvestCollected(
   }
 }
 
-/** Entries checkpointed by long list harvesters so a wall-clock timeout can still enqueue progress. */
 async function readHarvestPartial(
   win: Electron.BrowserWindow,
 ): Promise<Array<{ sourceId: string; url: string; savedAt?: string }> | null> {

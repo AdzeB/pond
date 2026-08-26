@@ -118,17 +118,14 @@
   display: flex;
   flex: 0 0 var(--tab-width);
   align-items: center;
-  box-sizing: border-box;
-  width: var(--tab-width);
-  min-width: var(--tab-width);
-  max-width: var(--tab-width);
-  height: var(--tab-height);
   gap: 6px;
+  width: var(--tab-width);
+  min-width: 0;
+  height: var(--tab-height);
   padding-inline: 6px 4px;
   font-size: 12px;
   font-weight: 500;
   color: var(--ds-gray-10);
-  white-space: nowrap;
   cursor: default;
   user-select: none;
   background: transparent;
@@ -136,10 +133,8 @@
   outline: none;
   -webkit-app-region: no-drag;
   transition:
-    width var(--ds-duration-snap) var(--ds-easing-standard),
-    min-width var(--ds-duration-snap) var(--ds-easing-standard),
-    max-width var(--ds-duration-snap) var(--ds-easing-standard),
     flex-basis var(--ds-duration-snap) var(--ds-easing-standard),
+    width var(--ds-duration-snap) var(--ds-easing-standard),
     padding var(--ds-duration-snap) var(--ds-easing-standard),
     gap var(--ds-duration-snap) var(--ds-easing-standard),
     border-radius var(--ds-duration-snap) var(--ds-easing-standard);
@@ -147,10 +142,10 @@
   &:hover {
     color: var(--ds-gray-12);
     background: color-mix(in oklab, var(--ds-gray-12) 8%, transparent);
-  }
 
-  &:hover .icon {
-    color: var(--ds-gray-11);
+    .icon {
+      color: var(--ds-gray-11);
+    }
   }
 
   &:hover .close,
@@ -165,11 +160,6 @@
     outline-offset: 2px;
   }
 
-  &[data-frozen] {
-    flex-grow: 0;
-    flex-shrink: 0;
-  }
-
   &[data-lifted] {
     z-index: 3;
     cursor: grabbing;
@@ -181,34 +171,27 @@
     color: var(--ds-gray-12);
     background: var(--ds-gray-1);
     box-shadow: var(--ds-shadow-2);
-  }
 
-  &[data-active]:hover {
-    background: var(--ds-gray-2);
-  }
+    &:hover {
+      background: var(--ds-gray-2);
+    }
 
-  &[data-active]:focus-visible {
-    outline: 2px solid var(--ds-gray-6);
-    outline-offset: 2px;
-  }
-
-  &[data-active] .icon {
-    color: var(--ds-gray-12);
+    .icon {
+      color: var(--ds-gray-12);
+    }
   }
 
   &[data-pinned] {
-    flex: 0 0 var(--tab-height);
+    flex-basis: var(--tab-height);
     gap: 0;
     justify-content: center;
     width: var(--tab-height);
-    min-width: var(--tab-height);
-    max-width: var(--tab-height);
     padding-inline: 2px;
     border-radius: var(--ds-radius-sm);
-  }
 
-  &[data-pinned] .label {
-    display: none;
+    .label {
+      display: none;
+    }
   }
 }
 

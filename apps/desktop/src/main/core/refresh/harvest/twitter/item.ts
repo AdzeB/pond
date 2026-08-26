@@ -1,39 +1,27 @@
-import type { ScrapedHarvest } from "../types";
+import type { Capture } from "@pond/schema/raw";
+import {
+  captureFromTweetShaped,
+  draftFromDomHarvest,
+} from "../../../capture/tweet-shaped";
+import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
+import { bindSourceId } from "../source-id";
 import { harvestSource } from "./item-source";
 import { inPageTwitterNormalize } from "./normalize";
 
-export function adapt(raw: unknown): ScrapedHarvest | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as Record<string, unknown>;
-  return {
-    title: typeof o.title === "string" ? o.title : undefined,
-    description: typeof o.description === "string" ? o.description : undefined,
-    author: typeof o.author === "string" ? o.author : undefined,
-    lang: typeof o.lang === "string" ? o.lang : undefined,
-    mediaUrl: typeof o.mediaUrl === "string" ? o.mediaUrl : undefined,
-    mediaUrls: Array.isArray(o.mediaUrls)
-      ? (o.mediaUrls as ScrapedHarvest["mediaUrls"])
-      : undefined,
-    mediaType:
-      typeof o.mediaType === "string"
-        ? (o.mediaType as ScrapedHarvest["mediaType"])
-        : undefined,
-    meta:
-      o.meta && typeof o.meta === "object"
-        ? (o.meta as Record<string, unknown>)
-        : undefined,
-  };
+export function adapt(raw: unknown, ctx: HarvestAdaptCtx): Capture | null {
+  const page = parsePageBlob(raw);
+  if (!page) return null;
+  return captureFromTweetShaped(
+    draftFromDomHarvest({
+      source: "twitter",
+      id: ctx.sourceId,
+      url: ctx.url,
+      ...page,
+    }),
+  );
 }
 
-export function sourceIdFromUrl(rawUrl: string): string | null {
-  try {
-    const u = new URL(rawUrl);
-    const m = u.pathname.match(/\/status\/(\d+)/);
-    return m?.[1] ?? null;
-  } catch {
-    return null;
-  }
-}
+export const sourceIdFromUrl = bindSourceId("twitter");
 
 export function buildExpression(tweetId: string): string {
   const normSrc = `(${inPageTwitterNormalize.toString()})()`;

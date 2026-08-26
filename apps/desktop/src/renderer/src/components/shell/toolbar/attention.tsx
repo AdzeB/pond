@@ -1,22 +1,12 @@
 import { IconTriangleWarningOutline18 as WarningIcon } from "@pond/icons/outline/18";
-import { useMemo } from "react";
-import {
-  humanizeError,
-  useSaveQueue,
-} from "@/components/settings/funnel/lib/queue";
-import { useAccounts } from "@/hooks/use-accounts";
-import { useWatches } from "@/hooks/use-watches";
+import { humanizeError, useStatusFeed } from "@/lib/status-feed";
 import { relativeTimeFromMs } from "@/lib/util/relative-time";
-import { useActivityEntries } from "@/stores/activity";
-import { useSyncByAccount } from "@/stores/sync-monitor";
 import {
   bindPanel,
-  buildEntities,
   closeThen,
-  openFunnel,
+  openSaveFromPanel,
   openSources,
   type Panel,
-  type StatusEntity,
 } from "./lib";
 import { Empty, EntityRow, List, Row, StatusPanel } from "./panel";
 
@@ -26,26 +16,8 @@ interface ErrorsPanelProps {
 }
 
 export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
-  const { accounts } = useAccounts();
-  const { watches } = useWatches();
-  const byAccount = useSyncByAccount();
-  const entities = useMemo(
-    () => (open ? buildEntities(accounts, watches, byAccount) : []),
-    [open, accounts, watches, byAccount],
-  );
-  const { failed } = useSaveQueue();
-  const activity = useActivityEntries();
-
-  const alerts: StatusEntity[] = [];
-  const syncErrors: StatusEntity[] = [];
-  for (const entity of entities) {
-    if (entity.tone === "warn") alerts.push(entity);
-    else if (entity.tone === "err") syncErrors.push(entity);
-  }
-
-  const activityErrors = open
-    ? activity.filter((e) => e.state === "error").slice(0, 5)
-    : [];
+  const { errors } = useStatusFeed();
+  const { alerts, syncErrors, failed, activityErrors } = errors;
   const empty =
     alerts.length === 0 &&
     syncErrors.length === 0 &&
@@ -53,7 +25,6 @@ export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
     activityErrors.length === 0;
 
   const goSources = closeThen(onOpenChange, openSources);
-  const goFunnel = closeThen(onOpenChange, openFunnel);
 
   return (
     <StatusPanel
@@ -90,7 +61,9 @@ export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
               title={row.name}
               subtitle={humanizeError(row.error)}
               meta="save"
-              onClick={goFunnel}
+              onClick={closeThen(onOpenChange, () =>
+                openSaveFromPanel(row.save.id),
+              )}
             />
           ))}
           {activityErrors.map((entry) => (
@@ -99,7 +72,6 @@ export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
               title={entry.label}
               subtitle={entry.message}
               meta={relativeTimeFromMs(entry.endedAt ?? entry.startedAt)}
-              onClick={goFunnel}
             />
           ))}
         </List>

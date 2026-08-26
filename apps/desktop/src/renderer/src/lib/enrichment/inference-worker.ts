@@ -15,8 +15,6 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-/** Hosts every transformers.js model off the UI thread; pure dispatch, since all model logic lives in inference-core, shared with the main-thread fallback. */
-
 const ctx = self as unknown as DedicatedWorkerGlobalScope;
 
 function toRawImage(s: SerializedImage): RawImage {

@@ -12,7 +12,6 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  /* A white canvas fringes dark sites at the rounded corners; a theme surface stays invisible while the page paints. */
   background: var(--ds-gray-2);
   border: 1px solid var(--ds-gray-a4);
   border-radius: var(--ds-radius-md);

@@ -9,7 +9,6 @@ import { canRedo, canUndo, recordForUndo, redo, undo } from "../../core/undo";
 import { resolveSaveFilePath, safeHandle } from "../helpers";
 
 export function registerAppHandlers(): void {
-  /** Synchronous on purpose: the preload resolves the active pond id before any renderer module hydrates, so pond-scoped localStorage keys never mix ponds. */
   ipcMain.on(IPC.pondId, (event) => {
     try {
       event.returnValue = currentPondId();

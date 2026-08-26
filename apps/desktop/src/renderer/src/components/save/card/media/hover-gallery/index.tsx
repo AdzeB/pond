@@ -6,7 +6,6 @@ import type { Save } from "@/lib/types";
 import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
 
-/** The parent owns the active index and seen set driven by pointer scrubbing, so this stays presentational; `slides[0]` is the resting image. */
 export function HoverGallery({
   save,
   slides,
@@ -57,7 +56,6 @@ function GallerySlide({
   onReady?: () => void;
 }) {
   const [failed, setFailed] = useState(false);
-  /** Only the primary slide feeds the card's aspect ratio; secondaries must not override it. */
   const dims = primary ? aspectDimsFor(save, {}, unit) : null;
   const w = dims?.w ?? undefined;
   const h = dims?.h ?? undefined;
@@ -85,7 +83,6 @@ function GallerySlide({
         ref={ready.ref}
         src={src}
         alt=""
-        /** TanStack Virtual already controls the card runway. Do not defer its resting image a second time. */
         loading={primary ? "eager" : "lazy"}
         decoding="async"
         fetchPriority={primary ? "auto" : "low"}

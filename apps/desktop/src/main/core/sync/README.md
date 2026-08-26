@@ -15,7 +15,7 @@ syncSource(source)
   → loadSyncBaseline(source, forceFull)   # full set OR bounded recent window
   → harvestSourceList / harvestTwitterBookmarks  # paced by the governor, early-stops on known ids
   → dedupe vs knownIds → fresh / recovery
-  → enqueueSavesBulk(fresh)               # one chunked, transactional insert path
+  → enqueue(fresh)                        # one chunked, transactional insert path
   → persistWatermark(source)              # only AFTER a successful enqueue
 ```
 
@@ -65,7 +65,7 @@ don't hit a platform in lockstep.
 
 ## Ingest write path (batched + non-blocking-ish)
 
-Fresh URLs go through `enqueueSavesBulk` (`core/pipeline/enqueue.ts`): rows are
+Fresh URLs go through `enqueue` (`core/pipeline/enqueue.ts`): rows are
 built then committed in **bounded chunks, one transaction per chunk**, yielding to
 the event loop between chunks. SQLite is synchronous (`better-sqlite3`) and runs
 on the main thread, so a single giant transaction would freeze the UI on a 50k

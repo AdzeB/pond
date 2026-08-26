@@ -1,12 +1,10 @@
 import { useLayoutEffect, useState } from "react";
 
-/** Keep in sync with the library Shell.Main padding-inline. */
 const MAIN_PADDING_INLINE = 20;
 const GRID_PADDING = MAIN_PADDING_INLINE * 2;
 
 function fallbackWidth(): number {
   if (typeof window === "undefined") return 0;
-  /** AppShell inset + library Shell.Main padding on both sides. */
   return Math.max(0, window.innerWidth - 64);
 }
 

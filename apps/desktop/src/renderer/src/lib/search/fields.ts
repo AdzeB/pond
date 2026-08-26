@@ -30,7 +30,6 @@ type FieldIcon = ComponentType<{
   height?: string | number;
 }>;
 
-/** Shared by the suggestion list and chips. */
 export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
   tags: Tag,
   source: LinkIcon,
@@ -95,12 +94,10 @@ function isDatePreset(value: unknown): boolean {
   return DATE_PRESETS.some((d) => d.iso === String(value ?? ""));
 }
 
-/** Date fields share a calendar glyph, so chips need the field name; the "Date " prefix is dropped to keep them short. */
 function shortDateField(field: FieldId): string {
   return FIELD_META[field].label.replace(/^Date\s+/i, "");
 }
 
-/** The field icon carries the "what" and the label the "value", so chips stay short. */
 export function describePredicate(predicate: Predicate): PredicateChip {
   const { field, operator, value } = predicate;
   const meta = FIELD_META[field];
@@ -168,7 +165,6 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       }
       const sym = COMPARATOR_SYMBOL[operator];
       const text = dateLabel(value);
-      /** A bare preset (operator "gte") already implies a range, so only explicit comparators or raw dates get a symbol. */
       const valuePart =
         sym && !(operator === "gte" && isDatePreset(value))
           ? `${sym} ${text}`

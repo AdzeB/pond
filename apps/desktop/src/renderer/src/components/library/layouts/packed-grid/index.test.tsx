@@ -289,7 +289,6 @@ describe("PackedGrid", () => {
       const restoredScroller = container?.querySelector<HTMLDivElement>(
         "[data-restoration-scroller]",
       );
-      /** Same card 25, now repacked to a different pixel position. */
       expect(restoredScroller?.scrollTop).toBe(1500);
     });
   });

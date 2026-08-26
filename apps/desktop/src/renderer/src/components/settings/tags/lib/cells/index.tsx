@@ -1,8 +1,7 @@
 import { IconDotsFill12 as Dots } from "@pond/icons/fill/12";
 import { Menu } from "@pond/ui";
 import type { MouseEvent } from "react";
-import { TagColorPicker } from "@/components/tags/color-picker";
-import { colorForName, focusInput } from "../helpers";
+import { focusInput } from "../helpers";
 import { useTagRow } from "../row-context";
 import styles from "./styles.module.css";
 
@@ -18,21 +17,12 @@ export function NameCell() {
     setRenameDraft,
     commitRename,
     cancelRename,
-    setColor,
   } = useTagRow();
-  const isGroup = row.kind === "group";
-  const name = isGroup ? row.group.name : row.tag.name;
+  const saves = row.kind === "tag" ? row.saves : 0;
+  const name = row.kind === "tag" ? row.tag.name : row.group.name;
 
   return (
     <span className={styles.name}>
-      {isGroup ? (
-        <TagColorPicker
-          label={name}
-          color={row.group.color}
-          fallback={colorForName(name)}
-          onSelect={setColor}
-        />
-      ) : null}
       {renaming ? (
         <input
           ref={focusInput}
@@ -55,6 +45,9 @@ export function NameCell() {
       ) : (
         <span className={styles.text}>{name}</span>
       )}
+      {!renaming && saves > 0 ? (
+        <span className={styles.meta}>{saves}</span>
+      ) : null}
     </span>
   );
 }

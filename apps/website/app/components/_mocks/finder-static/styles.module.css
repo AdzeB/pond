@@ -118,7 +118,6 @@
   background: var(--ds-gray-2);
 }
 
-/* Column view degrades by dropping columns as the window narrows. */
 @container (max-width: 660px) {
   .columns {
     grid-template-columns: 150px 135px minmax(0, 1fr);

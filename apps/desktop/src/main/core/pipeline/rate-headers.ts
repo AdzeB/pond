@@ -1,5 +1,3 @@
-/** Stateless parsing of platform rate-limit response signals; the governor feeds these into cooldown/multiplier decisions. */
-
 export type HeaderBag = Record<string, string> | Headers;
 
 function header(bag: HeaderBag, name: string): string | null {
@@ -12,9 +10,7 @@ function header(bag: HeaderBag, name: string): string | null {
 }
 
 export interface RateSignal {
-  /** Server-requested wait in seconds, if any (retry-after / reset). */
   retryAfterSec: number | null;
-  /** Remaining requests in the current platform window, if advertised. */
   remaining: number | null;
 }
 
@@ -41,7 +37,6 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
     header(bag, "x-ratelimit-remaining");
   const remaining = remainingRaw != null ? Number(remainingRaw) : null;
 
-  /** When remaining is exhausted and a reset epoch is given, treat reset as the wait even without an explicit retry-after. */
   if (
     retryAfterSec == null &&
     remaining != null &&
@@ -51,7 +46,6 @@ export function parseRateSignal(bag: HeaderBag): RateSignal {
   ) {
     const resetEpoch = Number(resetRaw);
     if (Number.isFinite(resetEpoch)) {
-      /** Platforms send epoch seconds or ms; normalize to seconds-from-now. */
       const resetMs = resetEpoch > 1e12 ? resetEpoch : resetEpoch * 1000;
       retryAfterSec = Math.max(0, Math.round((resetMs - Date.now()) / 1000));
     }

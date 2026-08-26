@@ -82,7 +82,6 @@ interface RelocateResult {
   skipped: number;
 }
 
-/** "copy" clones the current library into dest then switches, leaving the source intact; "adopt" just switches to dest, which must already hold a Pond library. */
 export async function relocateLibrary(
   dest: string,
   mode: RelocateMode,
@@ -119,7 +118,6 @@ export async function relocateLibrary(
     }
   }
 
-  /** Persist to the global DB first so a failed write never leaves the pointer ahead of the in-memory path cache. */
   const globalDb = await getGlobalDb();
   await globalDb
     .insert(settingsTable)
@@ -138,7 +136,6 @@ export async function relocateLibrary(
   return { path: destResolved, mode, copied, skipped };
 }
 
-/** The pointer is authoritative for resolvePaths(); repairs global-DB drift left by a partial switch. */
 export async function syncLibraryRootMetadata(): Promise<void> {
   const pointer = readLibraryPointer()?.replace(/\/+$/, "");
   if (!pointer) return;

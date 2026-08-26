@@ -30,7 +30,6 @@ export function Library() {
 
   const listPath = isSave ? getLastListPath() : pathname;
   const listSearch = isSave ? getLastListSearch() : search;
-  /** Stable across save open/close so scroll restoration does not re-run and wipe offset. */
   const restoration = useScrollRestoration(
     `${activeTabId}:${listPath}${listSearch}`,
   );

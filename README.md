@@ -2,7 +2,7 @@
 
 ## Install
 
-Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately).
+Download the latest `.dmg` from [GitHub Releases](https://github.com/raphaelsalaja/pond/releases). Requires macOS 12 or later (Apple Silicon and Intel builds are published separately). Windows builds can be produced locally and have not been tested.
 
 **First open (unsigned build):** macOS may block the app with "developer cannot be verified." Right-click the app → **Open**, or go to **System Settings → Privacy & Security → Open Anyway**.
 
@@ -12,7 +12,7 @@ Capture from the web requires the Pond extension:
 
 1. Download `pond-extension-X.Y.Z.zip` from the same release (or build from source; see [`apps/extension/README.md`](apps/extension/README.md)).
 2. Load unpacked in Chrome (`chrome://extensions` → Developer mode).
-3. Pair: Pond menu bar → **Copy Pairing Token** → paste the `pond://pair?...` link in the in-page toolbar.
+3. Open Pond once so it can register the native host, then click the Pond icon or right-click a page to save.
 
 ## Development
 

@@ -34,7 +34,6 @@ function useTagPickerContext(): TagPickerContextValue {
 
 interface RootProps {
   target: TagPickerTarget;
-  /** Force the picker open from a keyboard shortcut. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   children?: React.ReactNode;

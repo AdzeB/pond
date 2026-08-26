@@ -22,7 +22,6 @@ interface LibraryState {
   searchText: string;
   selectedId: string | null;
   viewMode: ViewMode;
-  /** True when the URL's mode segment wasn't recognized, so callers can navigate away. */
   unknown: boolean;
 }
 
@@ -46,7 +45,6 @@ export function useLibraryState(): LibraryState {
   const hasActiveSearch = searchText.trim().length > 0;
   const hasActiveFilter = filterQuery.rules.length > 0;
 
-  /** The open save is pure client state; cards read it via `useIsPrimary`. */
   const selectedId = useSelector(primarySelectionStore, (s) => s.id);
 
   const viewMode = layout as ViewMode;

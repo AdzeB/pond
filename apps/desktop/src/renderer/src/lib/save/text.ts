@@ -7,18 +7,15 @@ import { hasArchive, isArchiveFile } from "@/lib/media/archive";
 import { composeContentDescription } from "@/lib/save/detail";
 import type { Save, SaveFile } from "@/lib/types";
 
-/** Body copy shown for text-only saves (Are.na Text, Cosmos notes, link descriptions). */
 export function textBodyForSave(save: Save): string {
   const fromDescription = composeContentDescription(save).trim();
   if (fromDescription) return fromDescription;
-  /** Title-only fallback only for saves already typed as text. */
   if (save.mediaType?.toLowerCase() === "text") {
     return textBodyFromFields(null, save.title);
   }
   return "";
 }
 
-/** Are.na's block.class, when the harvest stored it on the capture. */
 export function arenaBlockClass(save: Save): string | null {
   return arenaBlockClassFromRawJson(save.rawJson);
 }
@@ -53,7 +50,6 @@ export function isTextOnlyAsideFromCover(save: Save): boolean {
   );
 }
 
-/** Save with prose and no image/video/archive to show in the media slot. */
 export function isTextOnlySave(save: Save): boolean {
   if (save.source === "twitter" || save.source === "threads") return false;
   if (hasArchive(save)) return false;

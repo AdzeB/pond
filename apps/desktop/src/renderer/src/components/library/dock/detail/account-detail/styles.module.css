@@ -23,7 +23,6 @@
   white-space: nowrap;
 }
 
-/* Option list matching the tray's other cards: separate 44px rounded rows. */
 .rows {
   display: flex;
   flex-direction: column;
@@ -114,7 +113,6 @@
   color: var(--ds-gray-10);
 }
 
-/* Trailing inline editor styled like a plain row value until focused. */
 .input {
   width: 150px;
   padding: 0;

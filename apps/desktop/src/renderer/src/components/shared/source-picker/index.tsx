@@ -3,7 +3,6 @@ import { BrandTile } from "@/components/library/sources/sync-monitor-source-tile
 import { getSourceDef } from "@/lib/save/sources-registry";
 import styles from "./styles.module.css";
 
-/** The brand grid shared by the tray's connect and watch pickers. */
 export function SourcePicker({
   sources,
   onPick,

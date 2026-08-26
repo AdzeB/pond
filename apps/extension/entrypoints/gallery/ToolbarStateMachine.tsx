@@ -7,34 +7,18 @@ import { useEffect, useState } from "react";
 import { Toolbar, type ToolbarMode } from "../toolbar/Toolbar";
 import styles from "./styles.module.css";
 
-const SAMPLE_TOKEN =
-  "pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d";
-
 interface Step {
   mode: ToolbarMode;
   label: string;
-  siteName?: string;
-  token?: string;
   error?: string;
   holdMs: number;
 }
 
-/** Happy path, then a bad-token recovery loop for gallery preview. */
 const FLOW: Step[] = [
-  { mode: "link-empty", label: "Link · empty", holdMs: 1600 },
-  {
-    mode: "link-pasted",
-    label: "Link · pasted",
-    token: SAMPLE_TOKEN,
-    holdMs: 1800,
-  },
-  {
-    mode: "link-loading",
-    label: "Link · loading",
-    siteName: "x.com",
-    holdMs: 2000,
-  },
+  { mode: "checking", label: "Idle · checking", holdMs: 1600 },
   { mode: "idle-connected", label: "Idle · connected", holdMs: 2200 },
+  { mode: "action-busy", label: "Action · capturing", holdMs: 1800 },
+  { mode: "action-done", label: "Action · captured", holdMs: 1800 },
   {
     mode: "idle-offline",
     label: "Idle · offline",
@@ -48,22 +32,8 @@ const FLOW: Step[] = [
     error: "Couldn't capture this page. Try again.",
     holdMs: 2000,
   },
-  { mode: "link-empty", label: "Link · empty", holdMs: 1200 },
-  {
-    mode: "link-pasted",
-    label: "Link · bad token",
-    token: "not-a-pairing-token",
-    holdMs: 1400,
-  },
-  {
-    mode: "link-error",
-    label: "Link · error",
-    error: "This isn't a pairing token",
-    holdMs: 2200,
-  },
 ];
 
-/** Auto-playing state machine that cycles the toolbar through its HUD modes. */
 export function ToolbarStateMachine() {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -86,12 +56,7 @@ export function ToolbarStateMachine() {
       </div>
 
       <div className={styles.playerStage}>
-        <Toolbar
-          mode={step.mode}
-          siteName={step.siteName}
-          tokenValue={step.token ?? ""}
-          errorMessage={step.error}
-        />
+        <Toolbar mode={step.mode} errorMessage={step.error} />
       </div>
 
       <div className={styles.playerControls}>

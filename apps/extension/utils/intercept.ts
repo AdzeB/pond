@@ -24,27 +24,20 @@ export function log(
 export interface RequestLens {
   readonly url: string;
   readonly method: string;
-  /** Case-insensitive request header lookup. Returns null when unknown. */
   getHeader(name: string): string | null;
-  /** Best-effort string form of the request body (cached). */
   readBody(): Promise<string | null>;
 }
 
 interface ResponseLens {
   readonly status: number;
   readonly ok: boolean;
-  /** Text body of the response, or null if it could not be read (cached). */
   readText(): Promise<string | null>;
 }
 
 interface SourceInterceptor {
-  /** Stable id; re-registering the same id is a no-op (double-injection guard). */
   id: string;
-  /** Synchronous, cheap predicate over request metadata. */
   match(req: RequestLens): boolean;
-  /** Invoked once the matched request settles. Throwing here is swallowed + logged. */
   onResponse(req: RequestLens, res: ResponseLens): void | Promise<void>;
-  /** Optional observer for navigator.sendBeacon calls. */
   onBeacon?(url: string, body: string | null): void | Promise<void>;
 }
 
@@ -286,9 +279,7 @@ function patchXhr(reg: Registry): void {
     if (state) {
       try {
         state.headers[String(name).toLowerCase()] = String(value);
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     }
     return origSetHeader.call(this, name, value);
   } as typeof proto.setRequestHeader;
@@ -358,7 +349,6 @@ function patchBeacon(reg: Registry): void {
   };
 }
 
-/** Register a source interceptor and lazily install the network patches; re-registering an `id` is a no-op. */
 export function installInterceptor(def: SourceInterceptor): void {
   const reg = registry();
   if (reg.ids.has(def.id)) return;

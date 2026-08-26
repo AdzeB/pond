@@ -1,4 +1,3 @@
-/* Match library Shell.Main inset; extra bottom keeps the last row clear of the dock. */
 .root {
   height: max-content;
   padding: 16px 20px 120px;

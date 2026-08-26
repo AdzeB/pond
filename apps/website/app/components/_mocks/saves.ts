@@ -1,5 +1,3 @@
-/** The 24 real saves backing every website demo; media lives in public/demo/library, provenance in manifest.json. */
-
 export type SaveSource =
   | "x"
   | "instagram"
@@ -256,7 +254,6 @@ export interface PackedSave<T> {
   width: number;
 }
 
-/** Exact port of the app's WaterfallView packMasonry: width-derived columns, shortest column wins. */
 export function packMasonry<T extends { aspect?: number }>(
   saves: T[],
   containerWidth: number,
@@ -283,7 +280,6 @@ export function packMasonry<T extends { aspect?: number }>(
   return { items, totalHeight: Math.max(0, max - gap) };
 }
 
-/** Exact port of the app's GridView packUniform: square media cells filled row by row. */
 export function packUniform<T>(
   saves: T[],
   containerWidth: number,
@@ -307,7 +303,6 @@ export function packUniform<T>(
   };
 }
 
-/** Shortest-column packing, same strategy as the app's waterfall layout. */
 export function packColumns<T extends { aspect?: number }>(
   saves: T[],
   columnCount: number,
@@ -320,7 +315,6 @@ export function packColumns<T extends { aspect?: number }>(
       if ((heights[i] ?? 0) < (heights[shortest] ?? 0)) shortest = i;
     }
     columns[shortest]?.push(save);
-    /** 1/aspect is the media height in column widths; 0.34 approximates the 44px meta chrome at the default 130px column. */
     heights[shortest] =
       (heights[shortest] ?? 0) + 1 / (save.aspect ?? 1) + 0.34;
   }

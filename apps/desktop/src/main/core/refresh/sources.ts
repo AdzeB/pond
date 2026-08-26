@@ -20,10 +20,8 @@ export function homeUrlForSource(source: Source): string {
     case "threads":
       return "https://www.threads.com/login";
     case "web":
-      /** Generic links have no account/login page. */
       return "";
     case "local":
-      /** Local imports have no remote account, so there is no login page. */
       return "";
   }
 }

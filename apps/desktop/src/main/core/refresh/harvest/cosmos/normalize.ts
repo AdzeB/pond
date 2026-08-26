@@ -74,7 +74,6 @@ export function inPageCosmosNormalize() {
     );
     if (avatarImg?.src) meta.authorAvatar = avatarImg.src;
 
-    /** The server-rendered `og:image` is the only reliable per-element image; the DOM is full of sidebar covers and skeleton placeholders. */
     const ogImage = document.querySelector<HTMLMetaElement>(
       'meta[property="og:image"]',
     );

@@ -21,7 +21,6 @@ function Root({ header, children, right, className }: RootProps) {
 
 interface ToolbarProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-/** Nav + omnibox row inside main. */
 function Toolbar({ className, ...props }: ToolbarProps) {
   return <div className={cn(styles.toolbar, className)} {...props} />;
 }

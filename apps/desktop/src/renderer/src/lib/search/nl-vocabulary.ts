@@ -1,9 +1,6 @@
 import type { ComparatorId } from "@pond/schema/filters/types";
 import type { AskSort } from "@/lib/search/nl-query";
 
-/** Static vocabulary for the Stage A compiler, kept apart from the matching logic so the data is easy to scan and extend. */
-
-/** Conversational scaffolding that carries no filter intent. */
 export const FILLER = new Set([
   "show",
   "me",
@@ -45,7 +42,6 @@ export const FILLER = new Set([
   "are",
   "was",
   "were",
-  /** Date/scope prepositions carry no filter value on their own; dropping them keeps "saves from yesterday" clean. */
   "from",
   "in",
   "on",
@@ -64,10 +60,6 @@ export const NEGATORS = new Set([
   "excluding",
 ]);
 
-/**
- * Rolling windows ("last 3 months" = the last ~90 days, not the previous calendar quarter) differ from chrono's bounded-calendar parsing, so they're claimed first and emit a relative ISO duration resolved as `>= now - duration` downstream.
- * @remarks Sorted longest-first so "past 6 months" wins over "past month".
- */
 const ROLLING_RAW: ReadonlyArray<[string, string]> = [
   ["past 6 months", "-P6M"],
   ["last 6 months", "-P6M"],
@@ -99,7 +91,6 @@ export const ROLLING_WINDOWS: ReadonlyArray<[string, string]> = [
   ...ROLLING_RAW,
 ].sort((a, b) => b[0].split(/\s+/).length - a[0].split(/\s+/).length);
 
-/** Spoken type words -> a canonical media type, only emitted if it's a real type. */
 export const TYPE_SYNONYMS: Record<string, string> = {
   video: "video",
   videos: "video",
@@ -130,7 +121,6 @@ export const TYPE_SYNONYMS: Record<string, string> = {
   notes: "text",
 };
 
-/** Spoken shape / aspect words -> canonical enum values for those fields. */
 export const SHAPE_SYNONYMS: Record<string, string> = {
   square: "square",
   squares: "square",
@@ -157,7 +147,6 @@ export const ASPECT_SYNONYMS: Record<string, string> = {
   "story ratio": "9:16",
 };
 
-/** Spoken source words -> a canonical site hostname (or local). */
 export const SOURCE_SYNONYMS: Record<string, string> = {
   twitter: "x.com",
   tweet: "x.com",
@@ -180,7 +169,6 @@ export const SOURCE_SYNONYMS: Record<string, string> = {
   local: "local",
 };
 
-/** Spelled-out small numbers, so "more than one" works like "more than 1". */
 export const NUMBER_WORDS: Record<string, number> = {
   zero: 0,
   one: 1,
@@ -197,7 +185,6 @@ export const NUMBER_WORDS: Record<string, number> = {
   twelve: 12,
 };
 
-/** Quantifier phrases preceding a number; longest listed first so "at least" beats a bare "least". */
 export const COUNT_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
   [["more", "than"], "gt"],
   [["greater", "than"], "gt"],
@@ -212,10 +199,8 @@ export const COUNT_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
   [["exactly"], "eq"],
 ];
 
-/** Bare adjectives that imply "more than one file" (a gallery / carousel). */
 export const MULTI_WORDS = new Set(["multiple", "several", "many"]);
 
-/** Time units -> seconds; duration is stored in seconds. */
 export const DURATION_UNITS: Record<string, number> = {
   s: 1,
   sec: 1,
@@ -234,11 +219,9 @@ export const DURATION_UNITS: Record<string, number> = {
   hours: 3600,
 };
 
-/** A glued token like "30s", "5min", "2hrs". */
 export const COMBINED_DURATION_RE =
   /^(\d+(?:\.\d+)?)(s|secs?|seconds?|m|mins?|minutes?|h|hrs?|hours?)$/;
 
-/** The generic count phrases plus the duration-specific "longer/shorter than". */
 export const DURATION_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
   [["longer", "than"], "gt"],
   [["shorter", "than"], "lt"],
@@ -254,7 +237,6 @@ export const SORT_WORDS: Record<string, AskSort> = {
   shortest: { key: "duration", dir: "asc" },
 };
 
-/** Leading words that assert presence / absence of an attribute. */
 export const WITH_WORDS = new Set([
   "with",
   "has",

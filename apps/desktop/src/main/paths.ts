@@ -8,19 +8,15 @@ interface PondPaths {
   appData: string;
   cache: string;
   logs: string;
-  /** App-global state (settings, prefs, onboarded); one file shared by every pond. */
   globalDb: string;
-  /** Active pond's index cache; switching ponds swaps this file. */
   indexDb: string;
   indexesDir: string;
-  /** Rebuildable per-pond previews stay local even when the library is in iCloud. */
   thumbnailCache: string;
   config: string;
   libraryRoot: string;
   itemsDir: string;
   trashDir: string;
   libraryMetadata: string;
-  /** Per-pond root JSONs living inside the bundle: settings, tags, and rolling backups of both. */
   settingsFile: string;
   tagsFile: string;
   backupDir: string;
@@ -37,7 +33,6 @@ function defaultLibraryRoot(): string {
   return join(app.getPath("home"), "Pond", "My Pond.pond");
 }
 
-/** Busts the cache after writing a new pointer; usually paired with a relaunch. */
 export function invalidatePaths(): void {
   cached = null;
 }
@@ -53,7 +48,6 @@ export function resolvePaths(libraryRootOverride?: string): PondPaths {
 
   const pointer = readLibraryPointer();
   const root = libraryRootOverride ?? pointer ?? defaultLibraryRoot();
-  /** Only materialize the bundle once committed (override, pointer, or existing root). */
   const committed =
     libraryRootOverride != null || pointer != null || existsSync(root);
   if (committed) ensureLibraryDirs(root);

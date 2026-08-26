@@ -6,7 +6,6 @@ interface PillProps extends useRender.ComponentProps<"div"> {
   orientation?: "horizontal" | "vertical";
 }
 
-/** Positioning and any size animation belong to the caller; the pill is only the surface. */
 function Pill({
   orientation = "horizontal",
   className,

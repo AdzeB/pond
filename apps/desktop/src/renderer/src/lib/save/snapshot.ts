@@ -2,7 +2,6 @@ import { debounce } from "@tanstack/pacer";
 import type { Save } from "@/lib/types";
 import { pool } from "@/stores/pool";
 
-/** Cold-start cache so the grid paints before the first SQLite page returns. */
 const DB_NAME = "pond-pool";
 const STORE = "snapshot";
 const VERSION = 1;
@@ -47,7 +46,6 @@ export async function readSnapshot(): Promise<Save[]> {
   }
 }
 
-/** Coalesces bursts of writes, e.g. a 50-tx batch, into one flush. */
 const WRITE_DEBOUNCE_MS = 2000;
 
 export const scheduleSnapshotWrite = debounce(

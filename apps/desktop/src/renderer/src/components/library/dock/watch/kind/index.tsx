@@ -27,11 +27,9 @@ const KIND_ROWS: Record<WatchKind, { label: string; icon: ReactNode }> = {
   list: { label: "List", icon: <List size={18} /> },
 };
 
-/** Kind chooser between the source picker and the handle card, for sources that can watch more than one thing. */
 export function WatchKindSection() {
   const dock = useDock();
   const picked = useWatchSource();
-  /** The pick clears before the card swaps out; any multi-kind brand keeps the exit render intact. */
   const source = picked ?? "youtube";
 
   const pick = (kind: WatchKind) => {

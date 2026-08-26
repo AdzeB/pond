@@ -16,14 +16,9 @@ export type RefreshOutcome =
     };
 
 interface RefreshSaveOptions {
-  /** Drop already-downloaded media so fetch_blobs re-downloads instead of self-gating on existing covers. */
   overwrite?: boolean;
 }
 
-/**
- * Soft refresh re-harvests metadata and leaves blob/video/poster tasks done.
- * Overwrite still resets the full pipeline after wiping local media.
- */
 export async function refreshSave(
   saveId: string,
   opts: RefreshSaveOptions = {},

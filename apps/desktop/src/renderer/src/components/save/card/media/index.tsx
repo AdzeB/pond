@@ -14,10 +14,6 @@ import styles from "./styles.module.css";
 
 export type CardLayout = GridLayout;
 
-/**
- * Resting original plus a stored blurhash until it decodes.
- * Hover gallery and video stay opt-in.
- */
 export const CardThumb = memo(function CardThumb({
   save,
   layout,

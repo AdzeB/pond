@@ -6,10 +6,9 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-/** Main-thread client for the inference Web Worker; if the worker can't start or crashes, calls transparently fall back to running the same models in-thread via inference-core. */
+/** Main-thread client for the inference Web Worker. In-thread fallback is only for a worker that never started, not one that died mid-run; Whisper in the UI renderer has crashed the process (exit 5). */
 
 function serializeImage(image: RawImage): SerializedImage {
-  /** Copy into a fresh transferable buffer, leaving the caller's RawImage intact for the in-thread fallback. */
   const src = image.data as Uint8ClampedArray;
   const copy = src.slice();
   return {
@@ -25,7 +24,6 @@ type Pending = {
   reject: (reason: unknown) => void;
 };
 
-/** Distributes Omit across the request union; a plain `Omit<Union, "id">` collapses to just the shared keys. */
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
   ? Omit<T, K>
   : never;
@@ -33,6 +31,7 @@ type RequestBody = DistributiveOmit<InferenceRequest, "id">;
 
 let worker: Worker | null = null;
 let workerBroken = false;
+let workerEverStarted = false;
 let nextId = 1;
 const pending = new Map<number, Pending>();
 
@@ -57,17 +56,14 @@ function ensureWorker(): Worker | null {
       else p.reject(new Error(msg.error));
     };
     w.onerror = (event) => {
-      console.error(
-        "[inference] worker crashed; falling back to in-thread inference",
-        event.message,
-      );
+      console.error("[inference] worker crashed", event.message);
       workerBroken = true;
       worker?.terminate();
       worker = null;
-      /** Reject in-flight calls; the worker-broken flag routes retries in-thread. */
       failAllPending(new Error("inference worker crashed"));
     };
     worker = w;
+    workerEverStarted = true;
     return w;
   } catch (err) {
     console.error(
@@ -89,15 +85,19 @@ function callWorker<T>(msg: RequestBody, transfer: Transferable[]): Promise<T> {
   });
 }
 
-/** A model-level rejection while the worker is healthy propagates as-is, so callers keep the "mark failed, retry next session" semantics. */
+/** A model-level rejection while the worker is healthy propagates as-is. A worker that died mid-run must not resume on the UI thread. */
 async function viaWorker<T>(
   run: () => Promise<T>,
   fallback: () => Promise<T>,
 ): Promise<T> {
-  if (workerBroken) return fallback();
+  if (workerBroken) {
+    if (workerEverStarted) throw new Error("inference worker crashed");
+    return fallback();
+  }
   try {
     return await run();
   } catch (err) {
+    if (workerBroken && workerEverStarted) throw err;
     if (workerBroken) return fallback();
     throw err;
   }
@@ -186,13 +186,13 @@ export function inferTranscribe(
 ): Promise<string> {
   return viaWorker(
     () => {
-      /** Transfer a copy so the caller's buffer survives for the fallback path. */
       const copy = audio.slice();
       return callWorker<string>({ op: "transcribe", audio: copy, modelId }, [
         copy.buffer,
       ]);
     },
-    async () =>
-      (await import("./inference-core")).coreTranscribe(audio, modelId),
+    async () => {
+      throw new Error("whisper requires the inference worker");
+    },
   );
 }

@@ -33,7 +33,6 @@ interface SettingsCache {
   imageDownload: ImageDownloadSettings;
 }
 
-/** Keyed by pond id so a library switch never serves the previous library's prefs from memory. */
 const settingsCache = createMemoCache<SettingsCache>(fetchSettings);
 
 export function invalidatePrefs(): void {
@@ -65,7 +64,6 @@ async function fetchSettings(): Promise<SettingsCache> {
   };
 }
 
-/** The library slice's source of truth is the bundle's settings.json; before the bundle exists the slice parks in global.db as `pending`, and the first open of a bundle without settings.json seeds the file from it. */
 async function resolvePondSlice(
   stored: StoredPrefs,
   pondId: string,
@@ -154,7 +152,6 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
 
   let pondSlice: PondPrefs;
   if (isUnboundPondId(pondId)) {
-    /** No bundle on disk yet: park the library slice in global.db until the bundle materializes and consumes it. */
     if (Object.keys(pond).length > 0) {
       stored = {
         ...stored,

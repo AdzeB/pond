@@ -29,7 +29,6 @@ export {
   tagsExists,
 } from "./sql";
 
-/** Insertion order is the field display order for FIELD_IDS and the filter bar chips. */
 export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   tags,
   source,

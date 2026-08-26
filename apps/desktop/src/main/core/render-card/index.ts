@@ -14,27 +14,20 @@ export interface RenderedCard {
 
 type CaptureKind = "tweet" | "text" | "threads";
 
-/** Fixed card width in CSS px; matches the capture entry's default. */
 const CARD_WIDTH = 550;
-/** Starting window height; grows to fit a taller card before capture. */
 const INITIAL_HEIGHT = 1400;
-/** Hard cap so a runaway card can't allocate an enormous surface. */
 const MAX_HEIGHT = 8192;
-/** Capture at 2x so the cover stays crisp on retina displays. */
 const SCALE = 2;
-/** Scheme-colored padding around tweet cards, in CSS px (scaled at capture time). */
 const TWEET_PAD_CSS = 24;
+const TWEET_RADIUS_CSS = 16;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
 const CDP_TIMEOUT_MS = 10_000;
 const CAPTURE_TIMEOUT_MS = 15_000;
-/** Whole-render budget; on overrun the window is torn down for a clean retry. */
 const RENDER_TIMEOUT_MS = 30_000;
-/** The hidden window runs un-throttled, so tear it down once renders stop arriving rather than keeping a renderer process warm. */
 const IDLE_DISPOSE_MS = 60_000;
 
 let win: BrowserWindow | null = null;
-/** Serialize renders through the single hidden window. */
 let chain: Promise<unknown> = Promise.resolve();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -91,7 +84,6 @@ function captureQuery(kind: CaptureKind, scheme: "light" | "dark"): string {
   return `kind=${kind}&scheme=${scheme}&w=${CARD_WIDTH}`;
 }
 
-/** Card JSON goes in the hash so a large payload never becomes an HTTP request line (Vite 431 in dev). */
 function captureHash(data: TweetCardData | TextCardData): string {
   return Buffer.from(JSON.stringify(data), "utf8").toString("base64");
 }
@@ -175,7 +167,6 @@ async function captureAtScale(
       CDP_TIMEOUT_MS,
       "setDeviceMetricsOverride",
     );
-    /** Let the override settle into a repaint before grabbing the surface. */
     await sleep(50);
     return await withTimeout(
       target.webContents.capturePage({
@@ -194,38 +185,68 @@ async function captureAtScale(
         CDP_TIMEOUT_MS,
         "clearDeviceMetricsOverride",
       );
-    } catch {
-      /** Override may already be cleared. */
-    }
+    } catch {}
     if (attached) {
       try {
         dbg.detach();
-      } catch {
-        /** wc may be gone. */
-      }
+      } catch {}
     }
   }
+}
+
+async function roundCorners(bytes: Buffer, radiusPx: number): Promise<Buffer> {
+  if (radiusPx <= 0) return bytes;
+  const meta = await sharp(bytes).metadata();
+  const width = meta.width ?? 0;
+  const height = meta.height ?? 0;
+  if (width < 2 || height < 2) return bytes;
+  const r = Math.min(radiusPx, Math.floor(Math.min(width, height) / 2));
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="${width}" height="${height}" rx="${r}" ry="${r}" fill="#fff"/></svg>`,
+  );
+  return sharp(bytes)
+    .ensureAlpha()
+    .composite([{ input: mask, blend: "dest-in" }])
+    .png()
+    .toBuffer();
 }
 
 async function pad(
   bytes: Buffer,
   scheme: "light" | "dark",
   padCss: number,
+  radiusCss: number,
 ): Promise<RenderedCard> {
-  if (padCss <= 0) {
-    const out = await sharp(bytes).png().toBuffer({ resolveWithObject: true });
-    return { bytes: out.data, width: out.info.width, height: out.info.height };
-  }
-  const p = padCss * SCALE;
   const background =
     scheme === "light"
       ? { r: 255, g: 255, b: 255, alpha: 1 }
       : { r: 0, g: 0, b: 0, alpha: 1 };
-  const out = await sharp(bytes)
-    .extend({ top: p, bottom: p, left: p, right: p, background })
-    .png()
-    .toBuffer({ resolveWithObject: true });
-  return { bytes: out.data, width: out.info.width, height: out.info.height };
+  let pipeline = sharp(bytes);
+  if (padCss > 0) {
+    const p = padCss * SCALE;
+    pipeline = pipeline.extend({
+      top: p,
+      bottom: p,
+      left: p,
+      right: p,
+      background,
+    });
+  }
+  const out = await pipeline.png().toBuffer({ resolveWithObject: true });
+  if (radiusCss <= 0) {
+    return {
+      bytes: out.data,
+      width: out.info.width,
+      height: out.info.height,
+    };
+  }
+  const rounded = await roundCorners(out.data, radiusCss * SCALE);
+  const meta = await sharp(rounded).metadata();
+  return {
+    bytes: rounded,
+    width: meta.width ?? out.info.width,
+    height: meta.height ?? out.info.height,
+  };
 }
 
 async function renderOne(
@@ -233,6 +254,7 @@ async function renderOne(
   data: TweetCardData | TextCardData,
   scheme: "light" | "dark",
   padCss: number,
+  radiusCss: number,
 ): Promise<RenderedCard | null> {
   const target = ensureWindow();
   await loadCapture(target, kind, scheme, data);
@@ -243,7 +265,6 @@ async function renderOne(
     return null;
   }
 
-  /** capturePage crops overflow, so grow the window to fit a taller card. */
   const [, contentHeight] = target.getContentSize();
   const needed = Math.ceil(rect.y + rect.height + 8);
   if (needed > (contentHeight ?? INITIAL_HEIGHT)) {
@@ -256,7 +277,7 @@ async function renderOne(
   if (image.getSize().width === 0) return null;
   const raw = image.toPNG();
   if (raw.byteLength === 0) return null;
-  return pad(raw, scheme, padCss);
+  return pad(raw, scheme, padCss, radiusCss);
 }
 
 async function enqueueRender(
@@ -264,12 +285,13 @@ async function enqueueRender(
   data: TweetCardData | TextCardData,
   scheme: "light" | "dark",
   padCss: number,
+  radiusCss = 0,
 ): Promise<RenderedCard | null> {
   clearIdleDispose();
   const run = chain.then(async () => {
     try {
       return await withTimeout(
-        renderOne(kind, data, scheme, padCss),
+        renderOne(kind, data, scheme, padCss, radiusCss),
         RENDER_TIMEOUT_MS,
         "render",
       );
@@ -285,21 +307,18 @@ async function enqueueRender(
   return run;
 }
 
-/** Renders a tweet's card to a padded cover PNG; null when the capture lacks enough data or rendering fails, so callers can fall back. */
 export async function renderTweetCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
 ): Promise<RenderedCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
-  /** Need at least an author plus some content to be worth rendering. */
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
-  return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS);
+  return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
 }
 
-/** Renders a Threads post card to a padded cover PNG; same data adapter as tweets, Threads chrome in the capture page. */
 export async function renderThreadsCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
@@ -309,10 +328,15 @@ export async function renderThreadsCardPng(
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
-  return enqueueRender("threads", data, scheme, TWEET_PAD_CSS);
+  return enqueueRender(
+    "threads",
+    data,
+    scheme,
+    TWEET_PAD_CSS,
+    TWEET_RADIUS_CSS,
+  );
 }
 
-/** Renders an Are.na-style text block to a square cover PNG. */
 export async function renderTextCardPng(
   text: string | null | undefined,
   scheme: "light" | "dark",

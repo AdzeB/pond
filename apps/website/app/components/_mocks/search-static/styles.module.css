@@ -64,7 +64,6 @@
   padding: 4px 20px 20px;
 }
 
-/* Card values mirror @pond/ui tray-card. */
 .card {
   display: flex;
   flex-direction: column;

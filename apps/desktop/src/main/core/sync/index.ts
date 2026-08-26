@@ -4,6 +4,7 @@ import log from "electron-log/main.js";
 import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { isAccountConnected } from "../refresh/scrape-window";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
+import { watchNow } from "../watch/run";
 import { ensureAccountHandle } from "./account-key";
 import {
   getAccount,
@@ -16,6 +17,7 @@ import { LIST_HARVEST_SOURCES, syncListSource } from "./run-list";
 import { syncThreads } from "./run-threads";
 import { syncTwitter } from "./run-twitter";
 import { emit, inFlight } from "./sync-status";
+import { listWatches } from "./watches";
 
 export { getAccountSync } from "./accounts";
 export { migrateLegacySyncPrefs } from "./migrate-legacy";
@@ -29,13 +31,10 @@ export {
 
 interface SyncOptions {
   trigger?: "manual" | "cron";
-  /** Cap on new items enqueued per account; the full list is still walked. */
   maxItems?: number;
-  /** Ignore the incremental watermark and walk the whole remote list; for drift recovery. */
   forceFull?: boolean;
 }
 
-/** Watchdog: abort a stuck sync so the slot clears; Twitter gets the loosest cap. */
 const SYNC_WATCHDOG_MS: Record<Source, number> = {
   twitter: 30 * 60_000,
   youtube: 20 * 60_000,
@@ -46,9 +45,7 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   tiktok: 20 * 60_000,
   reddit: 20 * 60_000,
   threads: 20 * 60_000,
-  /** Web links are saved individually, never list-synced; present for the record total. */
   web: 20 * 60_000,
-  /** Local never syncs; present only for the record total. */
   local: 20 * 60_000,
 };
 
@@ -78,27 +75,26 @@ export async function syncAllSources(opts: SyncOptions = {}): Promise<void> {
     ),
   );
   const runnable = connected.filter((a): a is ConnectedAccount => a !== null);
-  if (runnable.length === 0) return;
+  const watches = await listWatches();
+  const sources = new Set<Source>([
+    ...runnable.map((account) => account.source),
+    ...watches.map((watch) => watch.source),
+  ]);
+  if (sources.size === 0) return;
 
-  /** Accounts on the same platform run back to back: rate limits are largely IP-based and shared, so simultaneous same-domain runs only raise risk. */
-  const bySource = new Map<Source, ConnectedAccount[]>();
-  for (const account of runnable) {
-    const list = bySource.get(account.source) ?? [];
-    list.push(account);
-    bySource.set(account.source, list);
-  }
   await Promise.all(
-    Array.from(bySource.values()).map(async (group) => {
+    Array.from(sources).map(async (source) => {
+      const group = runnable.filter((account) => account.source === source);
       for (const account of group) {
         await syncAccount(account.id, opts).catch((err) =>
           log.warn("[pond sync] syncAccount threw", account.id, err),
         );
       }
+      await syncWatchesForSource(source, opts);
     }),
   );
 }
 
-/** Syncs every connected account on the source, sequentially; for per-platform triggers. */
 export async function syncSource(
   source: Source,
   opts: SyncOptions = {},
@@ -107,6 +103,21 @@ export async function syncSource(
   for (const account of accounts) {
     await syncAccount(account.id, opts).catch((err) =>
       log.warn("[pond sync] syncAccount threw", account.id, err),
+    );
+  }
+  await syncWatchesForSource(source, opts);
+}
+
+async function syncWatchesForSource(
+  source: Source,
+  opts: SyncOptions,
+): Promise<void> {
+  const watches = (await listWatches()).filter(
+    (watch) => watch.source === source,
+  );
+  for (const watch of watches) {
+    await watchNow(watch.id, { trigger: opts.trigger ?? "manual" }).catch(
+      (err) => log.warn("[pond watch] watchNow threw", watch.id, err),
     );
   }
 }
@@ -160,11 +171,9 @@ export async function syncAccount(
     watchdog,
     source,
   });
-  /** Persist an in-flight marker so a crash mid-run is recoverable on next launch. @see recoverInterruptedSyncs */
   void patchAccountSync(accountId, {
     runningSince: new Date(startedAt).toISOString(),
   }).catch(() => {});
-  /** One wide event per sync run, mutated then committed in the finally. */
   const ev: SyncRunEvent = startSyncEvent({
     source,
     accountId,
@@ -173,7 +182,6 @@ export async function syncAccount(
   });
   emit({ accountId, source, state: "running", message: "Starting" });
   try {
-    /** Sync doesn't need the handle, but session matching and the Sources page profile picture do; one probe, then cached. */
     await ensureAccountHandle(account);
     if (source === "twitter") {
       await syncTwitter(
@@ -214,7 +222,6 @@ export async function syncAccount(
     }
     if (controller.signal.aborted) {
       ev.outcome = "aborted";
-      /** Push an explicit idle so the UI clears its spinner; watchdog reports an error. */
       const cfg = await getAccountSync(accountId);
       emit({
         accountId,
@@ -251,7 +258,6 @@ export async function syncAccount(
   }
 }
 
-/** An account still flagged `runningSince` at startup was interrupted by a crash; clear the stale marker so the UI doesn't show a stuck spinner. */
 export async function recoverInterruptedSyncs(): Promise<string[]> {
   const recovered: string[] = [];
   for (const account of await listAccounts()) {

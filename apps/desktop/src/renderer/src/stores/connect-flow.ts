@@ -3,17 +3,10 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { playUiSuccess } from "@/lib/ui/sounds";
 
-/**
- * In-flight source connect: picker/detail start it, the wait card holds until the account arrives, sources page polls.
- */
 interface ConnectFlowState {
-  /** Platform shown in the wait card; kept through clear so exit frames stay source-specific. */
   source: Source | null;
-  /** Platform sent for sign-in; polled until an account for it connects. */
   waiting: Source | null;
-  /** Snapshot of connected account ids when connect started, so a fresh or re-authed account is distinguishable from already-healthy ones. */
   connectedBefore: ReadonlySet<string>;
-  /** The account arrived; the wait card can show Connected before the flow moves on. */
   completed: boolean;
 }
 

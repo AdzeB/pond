@@ -1,7 +1,5 @@
 import { env } from "@huggingface/transformers";
 
-/** Centralized WebGPU-vs-WASM selection for every on-device transformer model. */
-
 type InferenceDevice = "webgpu" | "wasm";
 
 let wasmConfigured = false;
@@ -23,9 +21,7 @@ function capWasmThreads(): void {
     const wasm = (env.backends as { onnx?: { wasm?: { numThreads?: number } } })
       ?.onnx?.wasm;
     if (wasm) wasm.numThreads = threads;
-  } catch {
-    /** Backend not initialized yet or the shape changed upstream; safe to skip. */
-  }
+  } catch {}
   console.info(
     `[inference] wasm threads=${threads} (cores=${cores}, crossOriginIsolated=${isolated}, SharedArrayBuffer=${hasSAB})`,
   );

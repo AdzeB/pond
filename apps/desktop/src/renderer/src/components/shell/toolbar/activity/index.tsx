@@ -1,8 +1,7 @@
 import { IconStopwatchOutline18 as ProgressIcon } from "@pond/icons/outline/18";
 import { AnimatePresence, motion } from "motion/react";
-import { useSaveQueue } from "@/components/settings/funnel/lib/queue";
-import { useActivityEntries } from "@/stores/activity";
-import { bindPanel, closeThen, openFunnel, type Panel } from "../lib";
+import { useStatusFeed } from "@/lib/status-feed";
+import { bindPanel, closeThen, openSaveFromPanel, type Panel } from "../lib";
 import { Empty, List, Row, StatusPanel } from "../panel";
 import { StatusSpinner, statusIconTransition } from "../spinner";
 import styles from "./styles.module.css";
@@ -15,11 +14,8 @@ interface ProgressPanelProps {
 const PREVIEW_LIMIT = 20;
 
 export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
-  const { saving } = useSaveQueue();
-  const activity = useActivityEntries();
-  const running = activity.filter((e) => e.state === "running");
-  const busy = saving.length > 0 || running.length > 0;
-  const goFunnel = closeThen(onOpenChange, openFunnel);
+  const { inProgress } = useStatusFeed();
+  const { saving, running, busy } = inProgress;
 
   const savingPreview = saving.slice(0, PREVIEW_LIMIT);
   const runningPreview = running.slice(
@@ -72,7 +68,9 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
               title={row.name}
               subtitle={row.stage ?? "Saving"}
               meta={`${Math.round(row.progress * 100)}%`}
-              onClick={goFunnel}
+              onClick={closeThen(onOpenChange, () =>
+                openSaveFromPanel(row.save.id),
+              )}
             />
           ))}
           {runningPreview.map((entry) => (
@@ -81,7 +79,6 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
               title={entry.label}
               subtitle={entry.message}
               meta="now"
-              onClick={goFunnel}
             />
           ))}
         </List>

@@ -1,5 +1,5 @@
 import { SOURCES, type Source } from "./db";
-import { SOURCE_DESCRIPTORS } from "./sources/registry";
+import { descriptorFor, SOURCE_DESCRIPTORS } from "./sources/registry";
 
 export {
   canonicalHost,
@@ -39,7 +39,6 @@ export function isSource(value: string): value is Source {
   return SOURCE_SET.has(value);
 }
 
-/** Map display aliases (`x`, `are.na`) onto canonical Source ids. */
 export function resolveSourceId(value: string): Source | null {
   const key = value.toLowerCase();
   const normalized = SOURCE_ALIASES[key] ?? key;
@@ -48,6 +47,22 @@ export function resolveSourceId(value: string): Source | null {
 
 export function sourceLabel(source: Source): string {
   return SOURCE_LABELS.get(source) ?? source;
+}
+
+export function sourceIdFromUrl(source: Source, rawUrl: string): string | null {
+  if (source === "local") return null;
+  let href: string;
+  try {
+    href = new URL(rawUrl).href;
+  } catch {
+    return null;
+  }
+  if (source === "web") return href;
+  for (const rx of descriptorFor(source).urlPatterns) {
+    const match = rx.exec(href);
+    if (match?.[1]) return match[1];
+  }
+  return null;
 }
 
 export function hostToSource(rawUrl: string): Source | null {

@@ -7,14 +7,13 @@ import log from "electron-log/main.js";
 import { importEagleLibrary } from "../../core/eagle-import";
 import { createManualSave } from "../../core/manual-import";
 import { persistSave } from "../../core/persist-save";
-import { enqueueSaveByUrl, normalizeUrl } from "../../core/pipeline/enqueue";
+import { enqueue, normalizeUrl } from "../../core/pipeline/enqueue";
 import { classifyUrlToSource } from "../../core/pipeline/extractors";
 import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { walkImportPaths } from "../../core/walk-import-paths";
 import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
 
-/** Imports each file as its own save so a multi-file drop becomes individual items. */
 async function importFilesImpl(
   paths: string[],
 ): Promise<{ ok: boolean; ids: string[]; error?: string }> {
@@ -36,9 +35,7 @@ function clipboardFilePaths(): string[] {
     if (!token.startsWith("file:")) return;
     try {
       out.push(fileURLToPath(token));
-    } catch {
-      /** Skip malformed file URLs. */
-    }
+    } catch {}
   };
 
   try {
@@ -61,7 +58,6 @@ function clipboardFilePaths(): string[] {
 }
 
 export const savesImportQueries: QueryHandlerMap = {
-  /** Which source adapter would handle this URL; cheap synchronous matching lets capture UIs preview the classification as the user types. */
   "saves.classifyUrl"(params) {
     const url = String(params.url ?? "").trim();
     if (!url) return { source: null };
@@ -169,14 +165,13 @@ export const savesImportQueries: QueryHandlerMap = {
     const tags = Array.isArray(params.tags) ? (params.tags as string[]) : [];
 
     if (!url) {
-      /** No URL: treat as a manual note entry rather than rejecting it. */
       const res = await createManualSave({ title: note, note, tags });
       return res.ok
         ? { ok: true, id: res.id }
         : { ok: false, error: res.error ?? "empty_input" };
     }
     try {
-      const result = await enqueueSaveByUrl(url, { trigger: "user:quickAdd" });
+      const result = await enqueue(url, { trigger: "user:quickAdd" });
       if (tags.length > 0) await setSaveTags(result.id, tags);
       if (note) {
         await persistSave(
@@ -188,7 +183,6 @@ export const savesImportQueries: QueryHandlerMap = {
       return { ok: true, id: result.id, created: result.created };
     } catch (err) {
       if (err instanceof UnsupportedError) {
-        /** Unsupported URL: keep it as a manual save instead of dropping it. */
         const res = await createManualSave({
           url,
           title: note ?? url,

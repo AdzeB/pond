@@ -19,7 +19,6 @@
   aspect-ratio: var(--tweet-media-ratio, 16 / 9);
 }
 
-/* A lone video honours its clamped aspect ratio rather than the landscape height cap, so portrait and square videos read correctly. */
 .media-grid[data-single-video="true"] {
   max-height: none;
 }

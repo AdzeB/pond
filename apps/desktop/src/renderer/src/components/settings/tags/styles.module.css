@@ -27,11 +27,24 @@
   color: var(--ds-gray-12);
 }
 
-.table-wrapper {
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   min-width: 0;
 }
 
-/* The pill is styled by the DataTable primitive; the offset keeps it centered over the content beside the settings nav. */
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.draft {
+  overflow: hidden;
+}
+
 .action-bar {
   --data-table-action-bar-offset: calc(var(--settings-sidebar-width, 0px) / 2);
 }

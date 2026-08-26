@@ -1,6 +1,5 @@
 const BOOT_FADE_MS = 220;
 
-/** HTML launch cover in index.html; safe to call before React mounts. */
 export function dismissBootCover(): void {
   if (typeof document === "undefined") return;
   const el = document.getElementById("boot");

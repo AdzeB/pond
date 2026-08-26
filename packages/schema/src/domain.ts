@@ -1,6 +1,5 @@
 import { SOURCE_DESCRIPTORS } from "./sources/registry";
 
-/** Every known platform host maps to that descriptor's first (canonical) host. */
 const HOST_TO_CANONICAL: ReadonlyMap<string, string> = (() => {
   const map = new Map<string, string>();
   for (const descriptor of SOURCE_DESCRIPTORS) {
@@ -27,7 +26,6 @@ export function canonicalHost(hostname: string): string {
   return bare;
 }
 
-/** Hostname for a save URL, or null when the URL is missing/unparseable. */
 export function domainFromUrl(
   rawUrl: string | null | undefined,
 ): string | null {
@@ -42,7 +40,6 @@ export function domainFromUrl(
   }
 }
 
-/** User-facing Source filter value: persisted site, local, or derived domain. */
 export function sourceIdentity(save: {
   siteName?: string | null;
   source?: string | null;

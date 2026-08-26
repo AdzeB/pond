@@ -11,8 +11,6 @@ import {
 } from "@pond/schema/filters/types";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
-/** Stage D: re-validate every model predicate against the real field schema so unknown fields, operators, or values cannot sneak in. */
-
 function isFieldId(value: unknown): value is FieldId {
   return typeof value === "string" && value in FIELD_META;
 }
@@ -58,7 +56,6 @@ function validatePredicate(raw: unknown): Predicate | null {
   const op = operator as ComparatorId;
 
   let value = obj.value;
-  /** `empty` carries no value; normalize so predicateIsActive accepts it. */
   if (op === "empty") value = true;
   if (!valueOkForOperator(op, value)) return null;
 
@@ -85,7 +82,6 @@ function validateClause(raw: unknown): Clause | null {
   return validatePredicate(raw);
 }
 
-/** Accepts a full group, a bare array of predicates, or junk; always returns a usable Query. */
 function validateQuery(raw: unknown): Query {
   if (!raw) return EMPTY_QUERY;
 
@@ -99,8 +95,6 @@ function validateQuery(raw: unknown): Query {
   if ("rules" in clause) return clause as Query;
   return { combinator: "and", rules: [clause] };
 }
-
-/** A model-emitted plan gets its filter re-validated; structurally invalid plans degrade to an empty filter. */
 
 export function validatePlan(raw: unknown): QueryPlan {
   const parsed = parseQueryPlan(raw);

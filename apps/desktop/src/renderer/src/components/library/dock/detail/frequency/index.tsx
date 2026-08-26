@@ -1,3 +1,4 @@
+import { DEFAULT_SYNC_CRON } from "@pond/schema/db";
 import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import { FREQUENCY_OPTIONS } from "@/components/library/sources/page/lib/helpers";
@@ -7,7 +8,6 @@ import styles from "./styles.module.css";
 
 type DetailView = "account-detail" | "account-sync" | "watch-detail";
 
-/** The page is reached from either detail card; module state survives the card swap so Back returns to the right one. */
 let returnTo: DetailView = "account-detail";
 
 export function openFrequencyPage(from: DetailView): void {
@@ -18,7 +18,7 @@ export function openFrequencyPage(from: DetailView): void {
 export function FrequencySection() {
   const dock = useDock();
   const [sync, patchSync] = usePrefs("sync");
-  const cron = sync.cron ?? { enabled: true, intervalHours: 6 };
+  const cron = sync.cron ?? DEFAULT_SYNC_CRON;
 
   const pick = (next: { enabled: boolean; intervalHours: number }) => {
     patchSync({ cron: next });
@@ -33,9 +33,6 @@ export function FrequencySection() {
           {returnTo === "watch-detail" ? "Check Frequency" : "Sync Frequency"}
         </TrayCard.Title>
         <TrayCard.Separator />
-        <TrayCard.Description>
-          How often Pond checks for new items in the background.
-        </TrayCard.Description>
       </TrayCard.Header>
       <div className={styles.rows}>
         {FREQUENCY_OPTIONS.map((option) => {

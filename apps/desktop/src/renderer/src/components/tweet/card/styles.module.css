@@ -31,7 +31,6 @@
   src: url("../../assets/fonts/chirp/chirp-Heavy.woff") format("woff");
 }
 
-/* The card carries its own Twitter-accurate palette rather than --ds tokens, so it reads as a real tweet regardless of app theme. */
 .card {
   --tw-bg: #fff;
   --tw-text: #0f1419;
@@ -50,6 +49,7 @@
   font-family: Chirp, "Helvetica Neue", -apple-system, "Segoe UI", sans-serif;
   color: var(--tw-text);
   background: var(--tw-bg);
+  border-radius: var(--ds-radius-2xl, 16px);
 }
 
 .card[data-scheme="dark"] {

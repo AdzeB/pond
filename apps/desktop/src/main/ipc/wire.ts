@@ -32,7 +32,6 @@ type WireSave = Omit<
 };
 
 interface WireSaveOptions {
-  /** Replace rawJson with a tiny projection; the grid never reads the full blob. */
   slim?: boolean;
 }
 

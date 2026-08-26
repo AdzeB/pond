@@ -68,7 +68,6 @@ function loadPersistedState(): TabState | null {
   }
 }
 
-/** Settings lives in a modal now; old persisted tab paths would 404. */
 function sanitizePath(path: string): string {
   const pathname = path.split("?")[0] ?? "/";
   if (pathname.startsWith("/settings")) return "/";
@@ -99,9 +98,7 @@ function writeNow(state: TabState): void {
         activeId: state.activeId,
       }),
     );
-  } catch {
-    /** Storage denied; tabs still work in-memory for the session. */
-  }
+  } catch {}
 }
 
 function persist(state: TabState): void {
@@ -141,7 +138,6 @@ export const tabs = {
   getState(): TabState {
     return store.state;
   },
-  /** Seed the first tab when nothing was persisted; no-op once tabs exist. */
   ensureInitial(path: string): void {
     const s = store.state;
     if (s.tabs.length !== 1) return;
@@ -207,7 +203,6 @@ export const tabs = {
       recentlyClosed: s.recentlyClosed,
     });
   },
-  /** Close every unpinned tab; if none are pinned, leave a single Library tab. */
   closeAll(): void {
     const s = store.state;
     const pinned: Tab[] = [];

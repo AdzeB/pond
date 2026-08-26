@@ -2,7 +2,6 @@ import type { Source } from "@pond/schema/db";
 import { getSourceDef } from "@/lib/save/sources-registry";
 import styles from "./styles.module.css";
 
-/** Same 4px + shadow treatment as the source badge on item cards. */
 export function BrandTile({
   source,
   size = 36,

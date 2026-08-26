@@ -11,12 +11,7 @@ type CandidateSave = Pick<
   "id" | "title" | "status" | "files" | "source" | "blurhash" | "coverIndex"
 >;
 
-/**
- * Background work for the grid: missing video posters, then a cover blurhash.
- * Cards load the original still; there is no derivative thumbnail to warm.
- */
 export function mediaWarmCandidates(save: CandidateSave): MediaWarmCandidate[] {
-  /** Failed legacy imports can still have valid, visible media; only skip files still being written. */
   if (save.status === "ingesting") return [];
   const title = save.title?.trim() || "Untitled save";
   const files = save.files ?? [];

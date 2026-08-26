@@ -8,7 +8,6 @@ export type SaveListMode =
   | "recents"
   | "trash";
 
-/** Returns `null` for unrecognized URLs so callers choose to redirect or fall back to "library". */
 export function parseMode(parentBase: string): SaveListMode | null {
   if (parentBase === "/" || parentBase === "") return "library";
   if (parentBase.startsWith("/source/")) return "source";
@@ -31,7 +30,6 @@ function isRenderable(save: Save): boolean {
   return false;
 }
 
-/** Shared by grid and detail navigator so j/k can't land on a hidden save; trash keeps unrenderable saves visible for cleanup. */
 export function applyModeFilter(
   saves: readonly Save[],
   { mode, sourceFilter, recentsOrder }: ModeFilterOptions,
@@ -53,10 +51,6 @@ export function applyModeFilter(
   });
 }
 
-/**
- * Soft metadata refresh flips complete → ingesting without wiping files.
- * Keep those cards in the grid; brand-new ingests (no files yet) stay in the saving pill.
- */
 function isVisibleInLibrary(save: Save): boolean {
   if (save.status === "complete") return true;
   if (save.status !== "ingesting") return false;

@@ -13,13 +13,10 @@ import { ensureTray, type TrayHandle } from "./tray";
 let mainWindow: BrowserWindow | null = null;
 let tray: TrayHandle | null = null;
 let trayRefreshQueued = false;
-/** Mirrors the close-to-tray pref here because close events fire synchronously. */
 let closeToTrayEnabled = false;
-/** Set during graceful quit so the close handler stops swallowing the event. */
 let isQuitting = false;
 let nativeThemeListenerAttached = false;
 
-/** Stage Manager's strip reports ~145×158 via getBounds; refuse to restore or persist that. */
 const MIN_WINDOW_WIDTH = 720;
 const MIN_WINDOW_HEIGHT = 480;
 
@@ -78,7 +75,6 @@ interface ShellHint {
   pointerCursors?: boolean;
 }
 
-/** Paint the native window with the active theme Background. */
 export async function syncShellChrome(): Promise<void> {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
@@ -108,7 +104,6 @@ async function resolveShellHint(): Promise<ShellHint> {
 export async function createWindow(): Promise<BrowserWindow> {
   const isMac = process.platform === "darwin";
 
-  /** Resolve before the window exists so the first paint is themed. */
   const shellHint = await resolveShellHint();
   const prefs = await getPrefs().catch(() => null);
   const restored = usableWindowBounds(
@@ -173,7 +168,6 @@ export async function createWindow(): Promise<BrowserWindow> {
   win.on("resize", saveBounds);
   win.on("move", saveBounds);
 
-  /** Close-to-tray: hide the window instead of quitting; the tray menu still has Quit. */
   win.on("close", (event) => {
     if (isQuitting) return;
     if (!closeToTrayEnabled) return;
@@ -290,7 +284,6 @@ export async function openLibraryWindow(): Promise<void> {
   win.focus();
 }
 
-/** macOS `activate`: re-shows or recreates the window when the dock icon is clicked. */
 export async function handleActivate(): Promise<void> {
   if (process.platform === "darwin") app.dock?.show();
   if (BrowserWindow.getAllWindows().length === 0) {

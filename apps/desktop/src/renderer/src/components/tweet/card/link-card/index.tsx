@@ -1,7 +1,6 @@
 import type { TweetCardLink } from "@/components/tweet/card/lib/data";
 import styles from "./styles.module.css";
 
-/** X renders two OG-preview shapes: summary_large_image is a full-width image with overlaid title, summary is a bordered thumbnail row. */
 export function LinkCard({ data }: { data: TweetCardLink }) {
   const { domain, title, description, imageUrl, large } = data;
 
@@ -14,6 +13,8 @@ export function LinkCard({ data }: { data: TweetCardLink }) {
             alt=""
             className={styles["link-card-image"]}
             draggable={false}
+            decoding="sync"
+            referrerPolicy="no-referrer"
           />
           {title ? (
             <span className={styles["link-card-overlay-title"]}>{title}</span>
@@ -37,6 +38,8 @@ export function LinkCard({ data }: { data: TweetCardLink }) {
             alt=""
             className={styles["link-card-image"]}
             draggable={false}
+            decoding="sync"
+            referrerPolicy="no-referrer"
           />
         </div>
       ) : null}

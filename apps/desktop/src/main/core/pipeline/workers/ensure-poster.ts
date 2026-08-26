@@ -82,7 +82,6 @@ async function ensurePoster(
       ? videos.map((_, index) => index)
       : posterRepairIndexes(files),
   );
-  /** Replacing any slot requires rewriting the full poster list so indexes stay aligned. */
   const replacing = [...repairIndexes].some((index) => posters[index] != null);
   const targets = replacing
     ? videos.map((video, index) => ({ video, index }))
@@ -135,7 +134,6 @@ async function ensurePoster(
   );
 }
 
-/** Persist probed video dims so card layout never needs the poster’s size. */
 async function hydrateVideoDims(
   saveId: string,
   files: SaveFile[],

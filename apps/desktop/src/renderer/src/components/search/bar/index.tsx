@@ -16,6 +16,7 @@ import {
   LineBreakNode,
 } from "lexical";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDock } from "@/components/library/dock/lib/context";
 import { useNlCompiler, useNlFacets } from "@/hooks/use-nl-query";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { flattenPredicates } from "@/lib/search/nl-query";
@@ -60,6 +61,7 @@ export function SearchComposer(props: ComposerProps) {
 
 function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const [editor] = useLexicalComposerContext();
+  const { popoverOpen } = useDock();
   const tags = useTags();
   const facets = useNlFacets();
   const compile = useNlCompiler();
@@ -74,7 +76,6 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
 
   const tagNames = useMemo(() => tags.map((t) => t.name), [tags]);
 
-  /** Seed once from the last verbatim field text (or a reconstructed query) so closing the dock keeps the filter. */
   const seedInput = useSearchInput();
   const seedQuery = useFilterQuery();
   const seedText = useSearchText();
@@ -102,6 +103,8 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
 
   const onCollapseRef = useRef(onCollapse);
   onCollapseRef.current = onCollapse;
+  const popoverOpenRef = useRef(popoverOpen);
+  popoverOpenRef.current = popoverOpen;
 
   const cancelAi = useCallback(() => {
     runRef.current += 1;
@@ -149,6 +152,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
           cancelAi();
           return true;
         }
+        if (popoverOpenRef.current) return true;
         onCollapseRef.current?.();
         return true;
       },

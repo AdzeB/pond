@@ -22,7 +22,6 @@ function parseHex(hex: string): [number, number, number] | null {
   return [(int >> 16) & 0xff, (int >> 8) & 0xff, int & 0xff];
 }
 
-/** Normalize 3/6-digit hex, with or without "#", to lowercase `#rrggbb`; null if invalid. */
 export function normalizeHex(input: string): string | null {
   if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");
@@ -74,9 +73,7 @@ function round(value: number, places: number): number {
   return Math.round(value * f) / f;
 }
 
-/** Runtime anchors the CSS scale reads; set on <html>. */
 export interface ThemeCssVars {
-  /** Exact surface / ink / accent hexes the CSS scale mixes from. */
   background: string;
   foreground: string;
   accent: string;
@@ -89,7 +86,6 @@ export interface ThemeCssVars {
   accentL: number;
   accentC: number;
   accentH: number;
-  /** CSS contrast multiplier (0.6..1.4) applied to mid gray mixes. */
   contrast: number;
   isDark: boolean;
 }
@@ -98,10 +94,8 @@ const FALLBACK_BG: Oklch = { l: 1, c: 0, h: 0 };
 const FALLBACK_FG: Oklch = { l: 0.25, c: 0, h: 0 };
 const FALLBACK_ACCENT: Oklch = { l: 0.62, c: 0.19, h: 250 };
 
-/** Accent chroma multiplier applied only on Display P3 panels; mirrors the P3 tier baked into the theme package's static ramps. */
 export const P3_CHROMA_BOOST = 1.4;
 
-/** Maps the 0..100 contrast slider to the CSS mid-spread multiplier. */
 export function contrastMultiplier(contrast: number): number {
   const n = Number.isFinite(contrast) ? contrast : CONTRAST_DEFAULT;
   const clamped = clamp(n, CONTRAST_MIN, CONTRAST_MAX);

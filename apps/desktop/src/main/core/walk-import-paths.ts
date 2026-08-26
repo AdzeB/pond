@@ -2,7 +2,6 @@ import type { Dirent } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 
-/** Recursively expand files and directories into absolute file paths; skips hidden/dot entries. */
 export async function walkImportPaths(
   paths: readonly string[],
 ): Promise<string[]> {
@@ -47,8 +46,6 @@ async function walkOne(path: string, out: string[]): Promise<void> {
     if (!entry.isFile()) continue;
     try {
       if ((await stat(child)).size > 0) out.push(child);
-    } catch {
-      /* skip unreadable */
-    }
+    } catch {}
   }
 }

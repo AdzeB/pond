@@ -97,7 +97,6 @@ export function getSpinnerFrames(): NativeImage[] {
   return frames;
 }
 
-/** A ring of dots with a rotating bright head and fading trail; alpha-only template image so macOS tints it like any other menu glyph. */
 function makeSpinnerFrame(size: number, head: number): NativeImage {
   const rgba = Buffer.alloc(size * size * 4);
   const cx = size / 2 - 0.5;

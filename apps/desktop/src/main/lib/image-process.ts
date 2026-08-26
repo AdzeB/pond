@@ -25,7 +25,6 @@ const TARGET_MIME: Record<Exclude<ImageFormat, "original">, string> = {
   avif: "image/avif",
 };
 
-/** Resizes/transcodes a still image per download prefs; null on passthrough or non-still input. */
 export async function processImage(
   bytes: Buffer,
   filename: string,
@@ -43,7 +42,6 @@ export async function processImage(
   try {
     const pipeline = sharp(bytes, { failOn: "none" });
     const metadata = await pipeline.metadata();
-    /** Animated images are left untouched. */
     if ((metadata.pages ?? 1) > 1) return null;
 
     if (prefs.maxLongEdge !== null) {
@@ -86,7 +84,6 @@ export async function processImage(
   }
 }
 
-/** Probe width/height for still image bytes; null when undecodable or incomplete. */
 export async function probeImageDims(
   bytes: Buffer,
 ): Promise<{ width: number; height: number } | null> {
@@ -96,9 +93,7 @@ export async function probeImageDims(
     return dims.width && dims.height
       ? { width: dims.width, height: dims.height }
       : null;
-  } catch {
-    /** Undecodable buffer: caller writes the file without dims. */
-  }
+  } catch {}
   return null;
 }
 

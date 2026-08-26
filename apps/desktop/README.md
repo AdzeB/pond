@@ -2,7 +2,7 @@
 
 The pond desktop app: a local-first archive that runs in the background,
 owns a SQLite index + filesystem library folder, and accepts saves from
-the browser extension over `http://127.0.0.1:41610`.
+the browser extension over native messaging.
 
 ## Scripts
 

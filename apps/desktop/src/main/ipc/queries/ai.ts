@@ -1,8 +1,6 @@
 import { type CompileFacets, compilePlan } from "../../core/ai";
 import type { QueryHandlerMap } from "../helpers";
 
-/** IPC surface for the local AI query compiler; the renderer owns the deterministic/embedding stages and validation, main only runs the LLM stage. */
-
 function asStringArray(value: unknown, cap: number): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((v): v is string => typeof v === "string").slice(0, cap);
@@ -19,7 +17,6 @@ function asFacets(raw: unknown): CompileFacets {
 }
 
 export const aiQueries: QueryHandlerMap = {
-  /** Natural language to a QueryPlan, untrusted until the renderer validates it. */
   async "ai.compilePlan"(params) {
     const input = String(params.input ?? "").slice(0, 500);
     if (!input.trim()) return { plan: null };

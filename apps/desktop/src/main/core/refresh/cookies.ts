@@ -25,7 +25,6 @@ interface CookieJar {
   count: number;
 }
 
-/** Exports the given partition's cookies; defaults to the legacy shared jar for unmigrated sessions. */
 export async function writeNetscapeCookies(
   partition: string = LEGACY_PARTITION,
 ): Promise<CookieJar> {

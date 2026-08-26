@@ -1,7 +1,6 @@
 import { parseMode } from "@/lib/save/list";
 import { listBaseFromPath } from "@/lib/search/schemas";
 
-/** Last library-list surface (`/`, `/trash`, …) so save overlays can keep mode and return correctly. */
 let lastListPath = "/";
 let lastListSearch = "";
 
@@ -31,7 +30,6 @@ export function getLastListSearch(): string {
   return lastListSearch;
 }
 
-/** Pathname to use for list mode while a save overlay is open. */
 export function listPathForLocation(pathname: string): string {
   if (isSavePath(pathname)) return lastListPath;
   if (isLibraryListPath(pathname)) return listBaseFromPath(pathname);

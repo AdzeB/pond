@@ -25,7 +25,6 @@ function scheduleFlush(): void {
   }
 }
 
-/** Fold save I/U/A into one bulk upsert per frame; deletes flush in the same turn. */
 export function applyActionCoalesced(event: SyncActionEvent): void {
   if (event.modelName !== "save") {
     applyAction(event);

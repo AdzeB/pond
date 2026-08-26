@@ -13,18 +13,12 @@ import {
 } from "@/lib/search/account-aliases";
 import { predicateIsActive } from "@/lib/search/filter-helpers";
 
-/**
- * The structured-search grammar: whitespace-separated tokens, each either a `key:value` filter (a `Predicate`) or a free-text word collected into the residual.
- * @remarks Examples: `tag:design,brutalist`, `-type:video`, `files>2`, `files:2..10`, `saved:past-week`, `by:"Jane Doe"`, `color:red`, `note:without`.
- */
-
 interface DatePreset {
   slug: string;
   label: string;
   iso: string;
 }
 
-/** The stored predicate value is the ISO duration, which `match.ts` resolves against `Date.now()` at evaluation time. */
 export const DATE_PRESETS: readonly DatePreset[] = [
   { slug: "today", label: "Today", iso: "-P1D" },
   { slug: "past-3-days", label: "Past 3 days", iso: "-P3D" },
@@ -36,7 +30,6 @@ export const DATE_PRESETS: readonly DatePreset[] = [
 
 interface TokenFieldSpec {
   field: FieldId;
-  /** The first key is canonical (used when serializing); the rest are aliases. */
   keys: readonly string[];
 }
 
@@ -83,7 +76,6 @@ interface RawToken {
   end: number;
 }
 
-/** Whitespace-split, but double-quoted runs keep their inner spaces. */
 function tokenize(input: string): RawToken[] {
   const tokens: RawToken[] = [];
   const n = input.length;
@@ -115,7 +107,6 @@ interface FieldToken {
 
 const FIELD_TOKEN_RE = /^(-?)([a-zA-Z]+)(>=|<=|:|>|<)(.*)$/s;
 
-/** Returns null for free-text words and `key:` forms whose key isn't a known field. */
 function matchFieldToken(token: string): FieldToken | null {
   const m = FIELD_TOKEN_RE.exec(token);
   if (!m) return null;
@@ -160,7 +151,6 @@ function toDateValue(value: string): string | null {
 
 function toColorValue(value: string): string | null {
   const t = value.trim();
-  /** Expand 3-digit shorthand (#f00 -> #ff0000) so both forms are accepted. */
   const short = /^#?([0-9a-f]{3})$/i.exec(t);
   if (short) {
     const [r, g, b] = short[1] as string;
@@ -196,7 +186,6 @@ function dateOperator(op: OpSymbol): ComparatorId {
     case "<=":
       return "lte";
     default:
-      /** A bare `saved:past-week` reads as "on or after". */
       return "gte";
   }
 }
@@ -270,7 +259,6 @@ interface ParsedSearch {
   text: string;
 }
 
-/** Recognized-but-incomplete tokens (a half-typed `tag:`) are dropped from both outputs so mid-edit state never leaks into the free-text search. */
 export function parseSearchInput(input: string): ParsedSearch {
   const predicates: Predicate[] = [];
   const free: string[] = [];
@@ -286,9 +274,7 @@ export function parseSearchInput(input: string): ParsedSearch {
       predicates.push(predicate);
       continue;
     }
-    /** Known key but no value yet -> mid-edit, ignore entirely. */
     if (matched.rawValue.trim() === "") continue;
-    /** Known key with an unparseable value -> fall back to free text. */
     free.push(token.text);
   }
 
@@ -372,7 +358,6 @@ export function serializePredicate(predicate: Predicate): string | null {
   }
 }
 
-/** Renders a committed query back into token syntax so an externally applied query round-trips into the search input. */
 export function serializeQuery(query: Query | null | undefined): string {
   if (!query) return "";
   const parts: string[] = [];

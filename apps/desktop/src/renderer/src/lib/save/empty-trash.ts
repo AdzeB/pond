@@ -1,6 +1,5 @@
 import { confirm } from "@/components/shared/confirm-dialog";
 
-/** Shared by the Library menu item and the trash hotkey so both confirm before purging. */
 export function confirmEmptyTrash(): void {
   confirm({
     title: "Empty Trash",

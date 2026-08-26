@@ -26,7 +26,6 @@ const TUMBLE_TRANSITION = {
   ease: [0.5, 0, 0.85, 0.4] as const,
 };
 
-/** Direction is derived from the id so a batch tumbles both ways instead of in lockstep. */
 function tumbleTarget(id: string) {
   const lean = (id.charCodeAt(id.length - 1) ?? 0) % 2 === 0 ? 1 : -1;
   return { opacity: 0, y: 120, scale: 0.55, rotate: 8 * lean };
@@ -49,9 +48,7 @@ export const SaveCard = memo(function SaveCard({
   packedTop,
   packedLeft,
 }: SaveCardProps) {
-  /** Callbacks come from grid context so this memoized card doesn't re-render on a sibling's selection change. */
   const { onClick, onAuxClick, onDoubleClick } = useLibraryCardCallbacks();
-  /** Per-id subscription: edits to this save wake only this card. */
   const save = useSave(id);
   const isMulti = useIsSelected(id);
   const isPrimary = useIsPrimary(id);

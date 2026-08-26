@@ -8,19 +8,12 @@ import { storageSection } from "@/lib/settings/config-storage";
 import { trashSection } from "@/lib/settings/config-trash";
 import { videosSection } from "@/lib/settings/config-videos";
 
-/** Bespoke sections are lazy so each ships in its own chunk. */
 const TagsSection = lazy(() =>
   import("@/components/settings/tags").then((m) => ({
     default: m.TagsSection,
   })),
 );
-const FunnelSection = lazy(() =>
-  import("@/components/settings/funnel").then((m) => ({
-    default: m.FunnelSection,
-  })),
-);
 export const SECTION_CONFIGS: Record<string, SectionConfig> = {
-  /** Bespoke sections render their own header and layout; their title/keywords are inert at render time and exist only for the settings search index. */
   general: generalSection,
   appearance: appearanceSection,
   tags: {
@@ -31,22 +24,6 @@ export const SECTION_CONFIGS: Record<string, SectionConfig> = {
   },
   trash: trashSection,
   storage: storageSection,
-  funnel: {
-    component: FunnelSection,
-    title: "Funnel",
-    description: "In-progress, failed, and finished saves.",
-    width: "wide",
-    keywords: [
-      "saves",
-      "downloads",
-      "queue",
-      "progress",
-      "saving",
-      "failed",
-      "retry",
-      "ingest",
-    ],
-  },
   videos: videosSection,
   images: imagesSection,
   enrichment: enrichmentSection,

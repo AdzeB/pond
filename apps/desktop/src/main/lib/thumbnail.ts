@@ -11,12 +11,10 @@ const LEGACY_THUMBS_DIRNAME = "_thumbs";
 const MIN_WIDTH = 32;
 const MAX_WIDTH = 2048;
 const WEBP_QUALITY = 78;
-/** Cap concurrent sharp jobs so a fast scroll can't peg every core. */
 const MAX_CONCURRENT = 4;
 
 export type ThumbnailPriority = "foreground" | "background";
 
-/** Raster formats safe to downscale; animated/vector are served as the original. */
 const NATIVE_RASTER_EXT = new Set([".heic", ".heif"]);
 
 export function isThumbnailable(ext: string): boolean {
@@ -30,7 +28,6 @@ export function isIsoBaseMediaHeader(header: Uint8Array): boolean {
   );
 }
 
-/** Detect still raster bytes when legacy imports have no usable file extension. */
 export function isRasterImageHeader(header: Uint8Array): boolean {
   if (header.byteLength >= 2 && header[0] === 0xff && header[1] === 0xd8) {
     return true;
@@ -58,7 +55,6 @@ export function isRasterImageHeader(header: Uint8Array): boolean {
   return isIsoBaseMediaHeader(header);
 }
 
-/** Clamps a requested width; null on garbage so the caller uses the original. */
 export function clampThumbWidth(raw: number): number | null {
   if (!Number.isFinite(raw)) return null;
   const w = Math.round(raw);
@@ -66,10 +62,8 @@ export function clampThumbWidth(raw: number): number | null {
   return Math.min(Math.max(w, MIN_WIDTH), MAX_WIDTH);
 }
 
-/** Per-output in-flight dedupe so concurrent requests share one generation. */
 const inflight = new Map<string, Promise<string | null>>();
 
-/** Foreground card requests jump speculative warming; only one background transform may run at once. */
 export function createThumbnailScheduler(
   maxConcurrent: number,
   maxBackground = 2,
@@ -117,22 +111,16 @@ export function createThumbnailScheduler(
 const scheduler = createThumbnailScheduler(MAX_CONCURRENT);
 
 interface ThumbnailRequest {
-  /** Protocol host; partitions the cache so a deleted save's thumbs drop as a unit. */
   saveId: string;
-  /** Absolute source path, already validated to live in the items dir. */
   sourcePath: string;
-  /** Target width in device pixels, already clamped. */
   width: number;
-  /** Content version (sha256 prefix); null falls back to mtime+size. */
   version: string | null;
-  /** Visible cards are foreground; speculative library preparation is background. */
   priority?: ThumbnailPriority;
 }
 
 type ThumbnailKind = "sharp" | "native";
 type ThumbnailOutput = { width: number; out: string };
 
-/** Resolves a cached WebP thumb, generating on demand; null means serve the original. */
 async function getOrCreateThumbnail(
   req: ThumbnailRequest,
 ): Promise<{ path: string } | null> {
@@ -223,7 +211,6 @@ export function lookupCachedThumbnail(req: {
   return lookupExactCachedThumbnail(req);
 }
 
-/** Kick generation off the protocol path so the grid can paint the original immediately. */
 export function ensureThumbnailInBackground(req: ThumbnailRequest): void {
   void getOrCreateThumbnail({
     ...req,
@@ -245,7 +232,6 @@ async function promoteLegacyThumbnail(
     return out;
   } catch (err) {
     await unlink(tmp).catch(() => {});
-    /** Keep serving the portable legacy cache if iCloud promotion is unavailable. */
     if (existsSync(legacyOut)) {
       log.warn("[pond thumbnail] local promotion failed", legacyOut, err);
       return legacyOut;
@@ -282,7 +268,6 @@ async function generateMany(
   return scheduler.run(priority, async () => {
     const results = new Map<string, string>();
     try {
-      /** Re-check: another request may have produced it while we queued. */
       const missing = outputs.filter(({ out }) => {
         if (!existsSync(out)) return true;
         results.set(out, out);
@@ -298,7 +283,6 @@ async function generateMany(
       await mkdir(dir, { recursive: true });
       for (const { out, width } of missing) {
         try {
-          /** Write to a temp path then rename so a crash can't leave a truncated cache hit. */
           const tmp = `${out}.${process.pid}.${Date.now()}.tmp`;
           await pipeline
             .clone()
@@ -332,7 +316,6 @@ async function thumbnailPipeline(
   }
 
   const pipeline = sharp(sourcePath, { failOn: "none", pages: 1 });
-  /** Decode by file contents: imported JPEGs can carry a misleading .heic extension. First page only so GIFs flatten for the grid. */
   return { pipeline, metadata: await pipeline.metadata() };
 }
 

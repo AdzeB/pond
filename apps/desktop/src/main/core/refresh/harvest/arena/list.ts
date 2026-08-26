@@ -70,7 +70,6 @@ async function inPageArenaList(
     return out;
   }
 
-  /** The `/all` view is a virtualized infinite-scroll grid with no "Load more" button; the collector accumulates block ids across renders as off-screen cards unmount. */
   return scroll({
     collectFn,
     knownIds: args.knownIds,

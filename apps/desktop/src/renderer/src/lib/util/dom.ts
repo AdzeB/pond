@@ -1,4 +1,3 @@
-/** Nearest scrollable ancestor; falls back to documentElement unless `fallbackToDocument: false`, which returns null when no explicit scrollable parent exists. */
 export function findScrollParent(
   el: HTMLElement | null,
   { fallbackToDocument = true }: { fallbackToDocument?: boolean } = {},

@@ -22,7 +22,6 @@ const TAB_SHORTCUT: Record<DockTab, ShortcutId> = {
   trash: "nav.trash",
 };
 
-/** Destinations first, utilities last, matching how often each is reached for. */
 const NAV_ORDER: readonly DockTab[] = ["library", "trash", "sources"];
 
 const ORDERED_TABS = NAV_ORDER.flatMap((id) =>

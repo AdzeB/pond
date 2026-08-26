@@ -9,14 +9,12 @@ import {
   IconTrash2Outline18 as Trash,
 } from "@pond/icons/outline/18";
 import type { MenuItemSpec } from "@pond/ui";
-import type { TagGroupOption } from "@/components/settings/tags/lib/context";
 import { shortcutGlyphs } from "@/lib/save/shortcuts";
 
 const ICON = { width: 16, height: 16 } as const;
 
 export interface TagMenuActions {
-  groups: TagGroupOption[];
-  /** Group name when the user is currently viewing a specific group. */
+  groups: string[];
   inGroup: string | null;
   onAddToGroup: (group: string) => void;
   onRemoveFromGroup: (group: string) => void;
@@ -36,11 +34,11 @@ export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
     onClick: a.onRename,
   });
 
-  const moveTargets = a.groups.filter((g) => g.name !== a.inGroup);
+  const moveTargets = a.groups.filter((g) => g !== a.inGroup);
   const moveSubmenu: MenuItemSpec[] = moveTargets.map((g) => ({
-    label: g.name,
-    icon: <Folder {...ICON} style={{ color: g.color }} />,
-    onClick: () => a.onAddToGroup(g.name),
+    label: g,
+    icon: <Folder {...ICON} />,
+    onClick: () => a.onAddToGroup(g),
   }));
   if (a.inGroup) {
     if (moveSubmenu.length > 0) moveSubmenu.push({ type: "separator" });

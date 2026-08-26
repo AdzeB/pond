@@ -60,7 +60,6 @@ export function chaptersToVttUrl(input: readonly ChapterLike[]): string | null {
   return URL.createObjectURL(blob);
 }
 
-/** yt-dlp dumps chapters on most platforms. */
 export function chaptersForSave(save: {
   rawJson?: { ytdlp?: { chapters?: readonly ChapterLike[] } } | null;
 }): ChapterCue[] {

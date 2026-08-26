@@ -7,15 +7,12 @@ import styles from "./styles.module.css";
 interface StatusPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Screen-reader label for the trigger; defaults to the visible heading. */
   ariaLabel?: string;
-  /** Shared section heading shown at the top of every toolbar dropdown. */
   heading: string;
   icon: ReactNode;
   children: ReactNode;
 }
 
-/** Ghost icon trigger + downward popover for the chrome toolbar cluster. */
 export function StatusPanel({
   open,
   onOpenChange,

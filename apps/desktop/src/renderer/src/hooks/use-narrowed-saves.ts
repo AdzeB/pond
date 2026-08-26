@@ -22,7 +22,6 @@ import { useSaves } from "./use-saves";
 import { useSearchResults } from "./use-search-results";
 import { useStableById } from "./use-stable-array";
 
-/** Shared narrowing pipeline (search hits -> mode filter/sort -> view query/sort) so the two views can't diverge. */
 export function useNarrowedSaves(
   mode: SaveListMode,
   sourceFilter: string,
@@ -70,7 +69,6 @@ export function useNarrowedSaves(
   const filteredFresh = useFilteredSaves(narrowed, query, sortOpts);
   const normal = useStableById(filteredFresh);
 
-  /** Keep the last settled grid while FTS is in flight so typing never flashes "no matches". */
   const settledRef = useRef(normal);
   if (!searchHits.searching) settledRef.current = normal;
   return searchHits.searching && settledRef.current.length > 0

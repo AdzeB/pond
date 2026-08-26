@@ -4,7 +4,6 @@ import type { Save } from "@/lib/types";
 interface SavesState {
   readonly byId: Map<string, Save>;
   readonly sorted: ReadonlyArray<Save>;
-  /** Bumps on every mutation so selectors that need any-pool wake (not just `sorted`) stay correct while `byId` is mutated in place. */
   readonly revision: number;
 }
 
@@ -27,7 +26,6 @@ function isRecencyDesc(list: ReadonlyArray<Save>): boolean {
   return true;
 }
 
-/** True when every upsert keeps recency order without a full re-sort (in-place field updates + newer prepends). */
 function canSkipFullSort(
   list: ReadonlyArray<Save>,
   byId: Map<string, Save>,
@@ -46,7 +44,6 @@ function canSkipFullSort(
   return true;
 }
 
-/** Must run before `byId` is mutated so new vs existing membership is accurate. */
 function sortedAfterSkip(
   list: ReadonlyArray<Save>,
   byId: Map<string, Save>,
@@ -77,7 +74,6 @@ export const savesStore = new Store<SavesState>({
 type DirtyListener = (ids: readonly string[]) => void;
 const dirtyListeners = new Set<DirtyListener>();
 
-/** Enrichment and similar subscribers get changed ids without scanning the whole pool. */
 export function onPoolDirty(listener: DirtyListener): () => void {
   dirtyListeners.add(listener);
   return () => {
@@ -90,7 +86,6 @@ function emitDirty(ids: readonly string[]): void {
   for (const listener of dirtyListeners) listener(ids);
 }
 
-/** Non-React read facade; mutations go through the helpers below so React consumers wake via `useSelector`. */
 export const pool = {
   get(id: string): Save | undefined {
     return savesStore.state.byId.get(id);
@@ -169,7 +164,6 @@ function clearSaves(): void {
   );
 }
 
-/** Keeps `sorted` identity stable so only useSave(id) consumers wake. */
 export function patchSaveRawJson(id: string, rawJson: Save["rawJson"]): void {
   savesStore.setState((s) => {
     const prev = s.byId.get(id);

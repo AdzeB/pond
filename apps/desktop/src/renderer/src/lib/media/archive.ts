@@ -1,4 +1,3 @@
-/** Site-archive manifest helpers; mirrors archive-page.ts constants, inlined since the renderer can't reach the main bundle. */
 import { buildPondUrl } from "@/lib/media/url";
 import type { Save, SaveFile } from "@/lib/types";
 
@@ -30,7 +29,6 @@ function archiveManifestFile(save: Save): SaveFile | null {
   );
 }
 
-/** The replayable WARC; MHTML-era archive files don't qualify and are ignored by the viewer. */
 function archiveWarcFile(save: Save): SaveFile | null {
   return (
     (save.files ?? []).find(
@@ -53,7 +51,6 @@ export async function loadArchiveManifest(
     if (!res.ok) return null;
     const raw = (await res.json()) as ArchiveManifest;
     if (!Array.isArray(raw.pages)) return null;
-    /** Manifests written before the scope field carried site crawls. */
     return { ...raw, scope: raw.scope === "page" ? "page" : "site" };
   } catch {
     return null;
@@ -77,7 +74,6 @@ export function buildArchiveViewerUrl(
   return `pond://_replay/index.html?${params.toString()}`;
 }
 
-/** Matches the crawler's dedupe: host + path (no trailing slash) + query, so archived links resolve across redirects and slash variants. */
 export function archiveUrlKey(url: string): string {
   try {
     const u = new URL(url);

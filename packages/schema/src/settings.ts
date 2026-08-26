@@ -5,9 +5,7 @@ export interface SettingsSection {
   path: string;
   label: string;
   group: SettingsGroup;
-  /** Hidden from the top-level settings index but still routable directly. */
   hidden?: boolean;
-  /** Path of the owning section for hidden nested pages; keeps the parent's sidebar row highlighted. */
   parent?: string;
 }
 
@@ -28,7 +26,6 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   },
   { id: "trash", path: "trash", label: "Trash", group: "library" },
   { id: "storage", path: "storage", label: "Storage", group: "library" },
-  { id: "funnel", path: "funnel", label: "Funnel", group: "capture" },
   { id: "videos", path: "videos", label: "Videos", group: "capture" },
   { id: "images", path: "images", label: "Images", group: "capture" },
 ];

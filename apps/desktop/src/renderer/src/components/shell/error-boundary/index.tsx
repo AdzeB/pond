@@ -10,7 +10,6 @@ interface State {
   componentStack: string | null;
 }
 
-/** Catches render crashes outside the router's own boundary, keeping the error and component stack diagnosable. */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null, componentStack: null };
 

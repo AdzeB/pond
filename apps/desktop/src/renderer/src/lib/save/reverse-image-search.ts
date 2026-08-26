@@ -1,7 +1,6 @@
+import { statusFeed } from "@/lib/status-feed";
 import type { Save } from "@/lib/types";
-import { activity } from "@/stores/activity";
 
-/** Each engine maps a public image URL to a search URL; local saves are gated upstream. */
 export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
   key: string;
   label: string;
@@ -47,7 +46,7 @@ export async function reverseImageSearch(
     id: save.id,
   })) as { ok: true; url: string | null } | { ok: false; url: null };
   if (!result.ok || !result.url) {
-    activity.error(
+    statusFeed.error(
       "Reverse Image Search",
       "No public image URL is available for this save.",
     );

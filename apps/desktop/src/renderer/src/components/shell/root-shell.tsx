@@ -7,7 +7,6 @@ import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { settingsModal } from "@/stores/settings-modal";
 
 export function RootShell() {
-  /** Menu / tray / deep-link navigation arrives over `IPC.nav` as a path string; settings lives in a modal, so its paths open it instead of routing. */
   useEffect(() => {
     return window.pond.onNavigate((path) => {
       const pathname = path.split("?")[0] ?? "";

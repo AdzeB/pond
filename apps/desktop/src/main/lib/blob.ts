@@ -3,9 +3,7 @@ import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 
-/** 50 MiB. */
 const MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024;
-/** 2 MiB. */
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
 const DOWNLOAD_TIMEOUT_MS = 30_000;
 
@@ -13,7 +11,6 @@ interface FetchMediaOptions {
   imageMaxBytes?: number | null;
 }
 
-/** Transient misses retry; permanent means the URL will never succeed, so the worker settles it as done. */
 type BlobMiss = "transient" | "permanent";
 
 function classifyHttpStatus(status: number): BlobMiss {
@@ -24,7 +21,6 @@ function classifyHttpStatus(status: number): BlobMiss {
 
 type MediaFetchOutcome = { file: TxSaveFile } | { miss: BlobMiss };
 
-/** One downloaded media URL paired with its origin URL so callers can persist a URL->file mapping and tally transient vs permanent misses. */
 interface MediaBatchEntry {
   url: string;
   file: TxSaveFile | null;
@@ -131,7 +127,6 @@ function nameFor(
   return index === 0 ? `cover${ext}` : `media-${index}${ext}`;
 }
 
-/** Small auxiliary image (avatar, favicon): 2 MiB cap and image MIME required. */
 async function fetchSmallImageToTxFile(
   imageUrl: string,
   baseName: string,
@@ -232,7 +227,6 @@ export async function fetchMediaBatch(
   return renumberCovers(results);
 }
 
-/** Reassigns cover/media filenames across the survivors while preserving each entry's origin url. */
 function renumberCovers(entries: MediaBatchEntry[]): MediaBatchEntry[] {
   let coverAssigned = false;
   let mediaIndex = 1;

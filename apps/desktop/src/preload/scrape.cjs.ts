@@ -468,19 +468,13 @@ const isThreads =
   host.endsWith(".threads.net");
 
 if (isTwitter) {
-  webFrame.executeJavaScript(TWITTER_HOOK).catch(() => {
-    /** Hook install failures are non-fatal; the harvester falls back to DOM-only walking. */
-  });
+  webFrame.executeJavaScript(TWITTER_HOOK).catch(() => {});
 }
 
 if (isCosmos) {
-  webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {
-    /** Hook install failures are non-fatal; capture is best-effort. */
-  });
+  webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {});
 }
 
 if (isThreads) {
-  webFrame.executeJavaScript(THREADS_HOOK).catch(() => {
-    /** Hook install failures are non-fatal; the harvester falls back to DOM-only walking. */
-  });
+  webFrame.executeJavaScript(THREADS_HOOK).catch(() => {});
 }

@@ -1,0 +1,103 @@
+.card {
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-lg);
+  box-shadow: var(--ds-shadow-2);
+}
+
+.header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 8px 0 12px;
+  background: var(--ds-gray-2);
+}
+
+.heading {
+  display: contents;
+  margin: 0;
+  font: inherit;
+}
+
+.trigger {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  background: transparent;
+  border: 0;
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ds-accent-9);
+  outline-offset: 2px;
+  border-radius: var(--ds-radius-xs);
+}
+
+.caret {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--ds-gray-10);
+  transition: transform var(--ds-duration-fast, 0.12s) ease;
+}
+
+.trigger[data-panel-open] .caret,
+.card[data-open] .caret {
+  transform: rotate(90deg);
+}
+
+.title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ds-gray-12);
+  white-space: nowrap;
+}
+
+.rename {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ds-gray-12);
+  outline: none;
+  background: transparent;
+  border: 0;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--ds-gray-1);
+  border-top: 1px solid var(--ds-gray-a4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .caret {
+    transition: none;
+  }
+}

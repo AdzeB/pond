@@ -1,14 +1,12 @@
 import Image from "next/image";
 import styles from "./styles.module.css";
 
-/** Desktop derives the badge from the primary file's extension (deriveTypeLabel); demo kinds map to their file types. */
 const TYPE_LABELS: Record<string, string> = {
   image: "JPG",
   video: "MP4",
   post: "PNG",
 };
 
-/** Desktop renders PNG brand logos from its sources registry, not SVG icons. */
 const SOURCE_LOGOS: Record<string, string> = {
   x: "/demo/logos/twitter.png",
   instagram: "/demo/logos/instagram.png",
@@ -34,7 +32,6 @@ export interface SaveThumbProps {
   mediaHeight?: number;
 }
 
-/** Static recreation of the desktop save card: contained media at 4px radius inside a 12px shell, badges on a 6px overlay inset, meta below. */
 export function SaveThumb({
   image,
   aspect = 1,

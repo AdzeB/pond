@@ -110,7 +110,6 @@ export function TrashEmpty() {
   );
 }
 
-/** Shown while the pool snapshot / first page is still resolving after a cold start. */
 export function LibraryLoading() {
   return (
     <Empty.Root role="status" aria-live="polite">

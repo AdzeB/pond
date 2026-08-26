@@ -12,8 +12,6 @@ import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../db";
 
-/** Wide-event substrate: one row per unit of work in SQLite plus a summary log line. */
-
 type WithoutKind<E extends WideEvent> = Omit<E, "kind">;
 
 export function startTaskEvent(
@@ -79,7 +77,6 @@ function startIngestEvent(
   };
 }
 
-/** Builds and commits a save.ingest.completed row from current state; no-op if the save vanished. */
 export async function commitSaveIngestEvent(
   saveId: string,
   override: {
@@ -149,13 +146,11 @@ export async function commitEvent(ev: WideEvent): Promise<void> {
       })
       .run();
   } catch (err) {
-    /** A failing event write must never break the producer. */
     log.warn("[pond events] commit failed", err);
   }
   log.info(formatSummary(ev));
 }
 
-/** One-line summary for `tail -f main.log`. */
 function formatSummary(ev: WideEvent): string {
   switch (ev.kind) {
     case "pipeline.task.completed": {

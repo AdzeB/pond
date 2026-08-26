@@ -15,6 +15,8 @@ export const typeField = defineField({
   label: "Type",
   group: "media",
   presets: TYPE_PRESETS,
-  project: (s) => (s.mediaType ?? "").toLowerCase(),
-  sqlProjection: () => sql`lower(coalesce(${saves.mediaType}, ''))`,
+  project: (s) =>
+    s.source === "web" ? "link" : (s.mediaType ?? "").toLowerCase(),
+  sqlProjection: () =>
+    sql`case when ${saves.source} = 'web' then 'link' else lower(coalesce(${saves.mediaType}, '')) end`,
 });

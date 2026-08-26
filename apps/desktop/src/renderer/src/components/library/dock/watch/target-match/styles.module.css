@@ -18,7 +18,6 @@
   align-items: center;
 }
 
-/* Full-bleed square logos read as app icons once rounded; the keyline keeps white logos from dissolving into the card. */
 .avatar {
   position: relative;
   display: grid;

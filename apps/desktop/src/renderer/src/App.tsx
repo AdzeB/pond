@@ -63,7 +63,6 @@ declare module "@tanstack/react-router" {
   }
 }
 
-/** Last path is pond-scoped because a route can point at a save that exists in only one library; the startup-page mirror is app-level like the window prefs it shadows. */
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
@@ -82,7 +81,6 @@ function readStored(key: string): string | null {
   }
 }
 
-/** Reads the localStorage mirror of the startup preference so the initial route resolves synchronously, before prefs finish loading over IPC. */
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
   if (startup === "settings") return "/";
@@ -90,7 +88,8 @@ function initialPath(): string {
     return STARTUP_ROUTES[startup];
   }
   const last = readStored(LAST_PATH_KEY) || "/";
-  return last.startsWith("/settings") ? "/" : last;
+  if (last.startsWith("/settings") || last.startsWith("/dev")) return "/";
+  return last;
 }
 
 function buildRouter(entry: string) {
@@ -105,7 +104,6 @@ function buildRouter(entry: string) {
 }
 
 function TabContent({ path }: { path: string }) {
-  /** TabContent is keyed by tab id, so each activation restores from the tab store's saved path without keeping an inactive router alive. */
   const [router] = useState(() => buildRouter(path));
 
   useEffect(() => {
@@ -116,9 +114,7 @@ function TabContent({ path }: { path: string }) {
       tabs.updatePath(activeId, next);
       try {
         localStorage.setItem(LAST_PATH_KEY, loc.pathname);
-      } catch {
-        /** Best-effort; navigation still works without persistence. */
-      }
+      } catch {}
       syncPrimaryFromPath(loc.pathname);
       setAppRouter(router);
     });
@@ -134,7 +130,6 @@ function TabContent({ path }: { path: string }) {
 }
 
 export function App() {
-  /** Seed once before the first tab routers mount so the startup path wins over the default "/". */
   useState(() => {
     tabs.ensureInitial(initialPath());
   });
@@ -143,21 +138,17 @@ export function App() {
   const activeId = useActiveTabId();
   const activeTab = tabList.find((tab) => tab.id === activeId);
 
-  /** The "settings" startup page lands on "/" and opens the modal on top. */
   useEffect(() => {
     if (readStored(STARTUP_PAGE_KEY) === "settings") settingsModal.open();
   }, []);
 
-  /** Mirror the startup preference into localStorage so the next cold launch resolves the initial route before prefs load over IPC. */
   const [windowPrefs] = usePrefs("window");
   const startupPage = windowPrefs?.startupPage;
   useEffect(() => {
     if (!startupPage) return;
     try {
       localStorage.setItem(STARTUP_PAGE_KEY, startupPage);
-    } catch {
-      /** Best-effort; falls back to "continue" when unreadable. */
-    }
+    } catch {}
   }, [startupPage]);
 
   const queryClient = useMemo(

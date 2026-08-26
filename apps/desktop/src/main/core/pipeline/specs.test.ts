@@ -19,8 +19,13 @@ describe("expectedVideoDownloads", () => {
           media: [
             { type: "video", url: "https://video.twimg.com/a.mp4" },
             { type: "image", url: "https://pbs.twimg.com/b.jpg" },
-            { type: "video", url: "https://video.twimg.com/c.mp4" },
           ],
+          quoted: {
+            id: "q",
+            source: "twitter",
+            url: "https://x.com/b/status/2",
+            media: [{ type: "video", url: "https://video.twimg.com/c.mp4" }],
+          },
         },
       }),
     ).toBe(2);
@@ -29,10 +34,13 @@ describe("expectedVideoDownloads", () => {
         mediaType: "video",
         rawJson: {
           capture: {
-            media: [
-              { type: "video", url: "https://video.twimg.com/a.mp4" },
-              { type: "video", url: "https://video.twimg.com/c.mp4" },
-            ],
+            media: [{ type: "video", url: "https://video.twimg.com/a.mp4" }],
+            quoted: {
+              id: "q",
+              source: "twitter",
+              url: "https://x.com/b/status/2",
+              media: [{ type: "video", url: "https://video.twimg.com/c.mp4" }],
+            },
           },
         },
       }),

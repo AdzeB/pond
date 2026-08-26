@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   appIconLabel,
+  appIconTint,
   DEFAULT_APP_ICON,
   resolveAppIconId,
   sortAppIconIds,
@@ -24,5 +25,10 @@ describe("app icons", () => {
       "tangerine",
       "plum",
     ]);
+  });
+
+  it("returns a crayon hex for known tints", () => {
+    expect(appIconTint("mocha")).toMatch(/^#[0-9a-f]{6}$/);
+    expect(appIconTint("nope")).toBeUndefined();
   });
 });

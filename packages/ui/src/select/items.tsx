@@ -17,23 +17,17 @@ interface SelectGroupItem<Value> {
   items: SelectItemSpec<Value>[];
 }
 
-/** Escape hatch for dynamic/stateful content. */
 interface SelectCustomItem {
   type: "custom";
   render: () => ReactNode;
 }
 
-/** A single node in a data-driven select. */
 export type SelectItemSpec<Value = unknown> =
   | SelectOptionItem<Value>
   | SelectSeparatorItem
   | SelectGroupItem<Value>
   | SelectCustomItem;
 
-/**
- * The wrapped Base UI parts a renderer needs, injected so the same logic can
- * drive any `Select` family that shares these primitives.
- */
 interface SelectParts<Value> {
   Item: React.ComponentType<{
     value: Value;
@@ -79,7 +73,6 @@ function renderSpec<Value>(
   );
 }
 
-/** Render a flat array of select specs into the supplied wrapped parts. */
 export function renderSelectSpec<Value>(
   items: SelectItemSpec<Value>[],
   parts: SelectParts<Value>,

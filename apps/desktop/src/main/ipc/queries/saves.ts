@@ -37,7 +37,6 @@ function isHttpUrl(u: string | undefined | null): u is string {
   return u.startsWith("http://") || u.startsWith("https://");
 }
 
-/** Finder/Explorer paste of file refs, not image bytes. One path uses public.file-url; several need NSFilenamesPboardType. */
 function writeFileRefsToClipboard(paths: string[]): void {
   if (paths.length === 0) return;
   if (process.platform !== "darwin") {
@@ -70,7 +69,6 @@ function escapeXml(value: string): string {
     .replaceAll('"', "&quot;");
 }
 
-/** Public http(s) URL for the save's primary image, for reverse image search. */
 function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (!raw) return null;
   const media = raw.capture?.media ?? [];
@@ -80,15 +78,15 @@ function derivePublicImageUrl(raw: RawJson | null): string | null {
   if (video?.posterUrl) return video.posterUrl;
   const ytdlpThumb = raw.ytdlp?.thumbnail;
   if (isHttpUrl(ytdlpThumb)) return ytdlpThumb;
+  const card = raw.capture?.card;
+  if (card && typeof card === "object") {
+    const cardImage = card.imageUrl;
+    if (typeof cardImage === "string" && isHttpUrl(cardImage)) return cardImage;
+  }
   const extras =
     raw.capture?.extras && typeof raw.capture.extras === "object"
       ? (raw.capture.extras as Record<string, unknown>)
       : null;
-  const card = extras?.card;
-  if (card && typeof card === "object") {
-    const cardImage = (card as Record<string, unknown>).imageUrl;
-    if (typeof cardImage === "string" && isHttpUrl(cardImage)) return cardImage;
-  }
   const ogImage = extras?.["og:image"];
   if (typeof ogImage === "string" && isHttpUrl(ogImage)) return ogImage;
   return null;
@@ -118,7 +116,6 @@ async function loadTasksFor(
   return grouped;
 }
 
-/** Every saves column except the heavy rawJson blob, embedding vectors, and full transcript text. */
 const {
   rawJson: _omitRawJson,
   embedding: _omitEmbedding,
@@ -127,7 +124,6 @@ const {
   ...SAVE_LIST_COLUMNS
 } = getTableColumns(saves);
 
-/** Columns the enrichment pipeline may write back via `saves.patchDerived`; all on-device-derived and non-synced, so writing them never emits a sync action. */
 const DERIVED_COLUMNS = {
   caption: saves.caption,
   captionModel: saves.captionModel,
@@ -164,7 +160,6 @@ export const savesQueries: QueryHandlerMap = {
       db,
       rows.map((r) => r.id),
     );
-    /** raw_slim already holds the slim projection, so present it as rawJson directly instead of re-slimming the unselected full blob. */
     const listRows = rows.map(({ rawSlim, ...rest }) => ({
       ...rest,
       rawJson: rawSlim,
@@ -172,7 +167,6 @@ export const savesQueries: QueryHandlerMap = {
     return toWireSaves(listRows, grouped);
   },
 
-  /** Cursor-paged, recency-sorted listing for the ordinary library grid. */
   async "saves.listPage"(params) {
     const startedAt = Date.now();
     const limit = Math.min(Math.max(1, Number(params.limit) || 250), 500);
@@ -185,7 +179,6 @@ export const savesQueries: QueryHandlerMap = {
       raw.id
         ? { savedAt, id: raw.id }
         : null;
-    /** Row-value comparison lets SQLite seek directly into the matching composite index instead of merging two scans and sorting through a temporary B-tree. */
     const after = cursor
       ? sql`(${saves.savedAt}, ${saves.id}) < (${cursor.savedAt}, ${cursor.id})`
       : undefined;
@@ -227,7 +220,6 @@ export const savesQueries: QueryHandlerMap = {
     return payload;
   },
 
-  /** Keyword search via saves_fts; scores are BM25 rank (lower is better in FTS5, inverted for callers). */
   async "saves.searchFts"(params) {
     const q = String(params.q ?? "").trim();
     if (!q)
@@ -259,13 +251,11 @@ export const savesQueries: QueryHandlerMap = {
     const ids: string[] = [];
     for (const row of rows) {
       ids.push(row.id);
-      /** Invert FTS5 bm25 (more negative = better) into a positive relevance score. */
       scores[row.id] = -row.rank;
     }
     return { ids, scores };
   },
 
-  /** Structured filter pushdown; color predicates are not compiled and must be applied by the caller. */
   async "saves.query"(params) {
     const query = params.query as Query | null | undefined;
     if (!query || isEmptyQuery(query)) {
@@ -295,7 +285,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ids: rows.map((r) => r.id) };
   },
 
-  /** Hydrate slim rows for a set of ids (hot-set / cold fetch). */
   async "saves.getMany"(params) {
     const ids = Array.isArray(params.ids)
       ? params.ids.map((id) => String(id)).filter(Boolean)
@@ -322,7 +311,6 @@ export const savesQueries: QueryHandlerMap = {
     return toWireSaves(out, groupedAll);
   },
 
-  /** Full rawJson for one save; the detail view hydrates it lazily. */
   async "saves.rawJson"(params) {
     const db = await getDb();
     const id = String(params.id ?? "");
@@ -371,7 +359,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true, count: txs.length };
   },
 
-  /** Re-runs saves stuck in `failed`; `ids` scopes the retry to a selection, omitted retries every failed save. */
   async "saves.retryFailed"(params) {
     const ids = Array.isArray(params.ids)
       ? (params.ids as unknown[]).map(String).filter(Boolean)
@@ -395,7 +382,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  /** All persisted embeddings, loaded once on startup into the renderer's in-memory store; vectors are excluded from saves.list, so this is the only path that reads them. */
   async "saves.embeddings"() {
     const db = await getDb();
     const rows = await db
@@ -413,7 +399,6 @@ export const savesQueries: QueryHandlerMap = {
     }));
   },
 
-  /** Written directly, not via the sync executor: the vector would bloat the sync-action ring and embeddings are cheap to re-derive per device. */
   async "saves.setEmbedding"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false };
@@ -432,7 +417,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true };
   },
 
-  /** All persisted CLIP image vectors, hydrated into the renderer's clip store on startup; mirrors `saves.embeddings`. */
   async "saves.clipEmbeddings"() {
     const db = await getDb();
     const rows = await db
@@ -450,7 +434,6 @@ export const savesQueries: QueryHandlerMap = {
     }));
   },
 
-  /** Whitelisted, DB-only write-back for on-device enrichment; the saves AFTER UPDATE trigger refreshes the FTS index for text columns automatically. */
   async "saves.patchDerived"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false as const };
@@ -595,7 +578,6 @@ export const savesQueries: QueryHandlerMap = {
     return { ok: true as const, url };
   },
 
-  /** Backfill rasterized text covers for existing text-only saves (same worker as the pipeline op). */
   async "saves.ensureTextCover"(params) {
     const id = String(params.id ?? "");
     if (!id) return { ok: false as const, captured: 0 };
@@ -605,7 +587,6 @@ export const savesQueries: QueryHandlerMap = {
   },
 };
 
-/** Equivalent sortable projections for SQL-filtered library results. */
 function sortColumn(sortKey: string): SQLWrapper {
   switch (sortKey) {
     case "createdAt":
@@ -643,7 +624,6 @@ function sortColumn(sortKey: string): SQLWrapper {
   }
 }
 
-/** Quote tokens for FTS5 and suffix `*` so as-you-type prefixes match; AND for "all", OR for "any". */
 function toFtsMatchQuery(q: string, mode: "all" | "any"): string | null {
   const tokens = q
     .split(/\s+/)

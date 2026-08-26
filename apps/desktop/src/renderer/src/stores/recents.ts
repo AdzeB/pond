@@ -4,8 +4,6 @@ import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { loadPrefs, patchPrefsSection } from "@/stores/prefs";
 
-/** Recently visited saves feeding the native History menu; persisted in the pond prefs slice because save ids are pond-specific and shared localStorage would leak one library's recents into another. */
-
 const RECENTS_CAP = 20;
 
 const store = new Store<RecentSaveVisit[]>([]);
@@ -30,9 +28,7 @@ function hydrate(): void {
         );
       }
     })
-    .catch(() => {
-      /** Prefs unavailable: recents start empty this session. */
-    });
+    .catch(() => {});
 }
 
 hydrate();

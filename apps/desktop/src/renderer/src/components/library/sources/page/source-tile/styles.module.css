@@ -92,7 +92,6 @@
   }
 }
 
-/* Broken or in-flight artwork drains to grayscale; the wipe layer pours color back in with progress. */
 .image[data-drained] {
   opacity: 0.92;
   filter: grayscale(1);
@@ -111,7 +110,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Soft edge on the reveal; masks composite on the GPU, so this is the cheap version of a shader. */
   mask-image: linear-gradient(
     to top,
     black calc(var(--sources-wipe-p) * 108% - 8%),

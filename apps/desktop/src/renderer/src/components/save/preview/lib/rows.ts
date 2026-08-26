@@ -16,7 +16,10 @@ interface PaneRow {
 export function collectInfoRows(save: Save): PaneRow[] {
   const out: PaneRow[] = [];
 
-  const type = save.mediaType ?? (save.url ? "Link" : null);
+  const type =
+    save.source === "web"
+      ? "web"
+      : (save.mediaType ?? (save.url ? "Link" : null));
   if (type) {
     out.push({
       id: "type",

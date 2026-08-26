@@ -1,8 +1,3 @@
-/**
- * Source of truth for the okLCH color system; edit here, then run `pnpm --filter @pond/theme generate`.
- * Static hue ramps feed charts/status; the gray/accent scale lerps background→foreground with accent mix.
- */
-
 type Step = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
 const STEPS: readonly Step[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -23,7 +18,6 @@ const LIGHTNESS: Record<Step, number> = {
   12: 0.38,
 };
 
-/** Holds near peak across the solid steps 7-9 and keeps the dark steps saturated so the ramp never goes muddy. */
 const CHROMA_SCALE: Record<Step, number> = {
   1: 0.16,
   2: 0.32,
@@ -39,7 +33,6 @@ const CHROMA_SCALE: Record<Step, number> = {
   12: 0.62,
 };
 
-/** Alpha per step for transparent ramps, derived from the lightness curve. */
 const ALPHA: Record<Step, number> = {
   1: 0.03,
   2: 0.07,
@@ -60,7 +53,6 @@ interface Ramp {
   chroma: number;
 }
 
-/** Hue in oklch degrees; chroma is the sRGB-safe peak before taper. The P3 tier multiplies these for wide-gamut displays. */
 const HUE_RAMPS = {
   ruby: { hue: 12, chroma: 0.19 },
   red: { hue: 25, chroma: 0.2 },
@@ -83,7 +75,6 @@ const HUE_RAMPS = {
 
 type HueName = keyof typeof HUE_RAMPS;
 
-/** On Display P3 screens push chroma ~40% past the sRGB-safe baseline; the browser gamut-maps any overshoot. */
 const P3_CHROMA_BOOST = 1.4;
 
 function round(value: number, places: number): string {
@@ -141,20 +132,11 @@ export function buildColorsCss(): string {
   return `${HEADER}\n${root}\n\n${p3}\n`;
 }
 
-/**
- * Fraction of foreground mixed into background per gray step (before contrast stretch).
- * Step 1 stays at the background; step 12 reaches the foreground.
- */
 const GRAY_T = [0, 0.03, 0.06, 0.1, 0.15, 0.22, 0.3, 0.4, 0.52, 0.66, 0.82, 1];
 
-/** Accent steps mix solid accent toward the matching gray step; step 9 is pure accent. */
 const ACCENT_MIX = [16, 22, 32, 46, 60, 74, 88, 96, 100, 100, 82, 70];
 const ACCENT_ALPHA = [4, 8, 14, 22, 30, 40, 52, 66, 82, 88, 92, 96];
 
-/**
- * Mid steps stretch away from the center when contrast > 1, compress toward it when < 1.
- * Endpoints stay pinned to background / foreground.
- */
 function grayMixPct(i: number): string {
   if (i === 0) return "0%";
   if (i === 11) return "100%";
@@ -168,10 +150,6 @@ function grayStep(i: number): string {
   return `  --ds-gray-${i + 1}: color-mix(in oklch, var(--ds-fg) ${grayMixPct(i)}, var(--ds-bg));`;
 }
 
-/**
- * Mix in oklab, not oklch: blending toward the achromatic gray in oklch rotates hue along the 250->360 arc,
- * smearing low steps through violet/magenta/pink; oklab scales chroma toward neutral with no hue rotation.
- */
 function accentStep(i: number): string {
   const mix = ACCENT_MIX[i];
   return `  --ds-accent-${i + 1}: color-mix(in oklab, var(--ds-accent-solid) ${mix}%, var(--ds-gray-${i + 1}));`;

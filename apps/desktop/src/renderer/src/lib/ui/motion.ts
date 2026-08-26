@@ -18,13 +18,11 @@ export const bouncySpring: Transition = {
   bounce: 0.28,
 };
 
-/** One shared easeOutQuart-style curve: the pill's box morph and the content crossfade ride the same curve so they land as one. */
 const DOCK_EASE: [number, number, number, number] = [0.25, 1, 0.5, 1];
 const FAMILY_CONTENT_DURATION = 0.4;
 
 export interface DockMotion {
   pillTransition: Transition;
-  /** For size changes within one view (nav unfold, composer growth): quick, unlike the deliberate view morph. */
   quickTransition: Transition;
   swapTransition: Transition;
   swap: {

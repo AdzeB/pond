@@ -1,4 +1,3 @@
-/** Locks <webview> guests to the pond://_replay archive viewer and routes outbound navigations back to the renderer. */
 import {
   type BrowserWindow,
   clipboard,
@@ -21,7 +20,6 @@ function httpUrl(raw: string): string | null {
   }
 }
 
-/** Copy/open actions for replayed pages; opening stays http(s)-only, matching the attach hardening. */
 function attachGuestContextMenu(guest: WebContents): void {
   guest.on("context-menu", (_event, params) => {
     const template: MenuItemConstructorOptions[] = [];
@@ -56,7 +54,6 @@ function attachGuestContextMenu(guest: WebContents): void {
 
 export function hardenArchiveWebviews(win: BrowserWindow): void {
   win.webContents.on("will-attach-webview", (event, webPreferences, params) => {
-    /** Never trust guest params from the renderer; re-assert isolation and drop any preload. */
     delete webPreferences.preload;
     webPreferences.nodeIntegration = false;
     webPreferences.contextIsolation = true;
@@ -73,7 +70,6 @@ export function hardenArchiveWebviews(win: BrowserWindow): void {
       forwardNavigation(win, guest.id, url);
       return { action: "deny" };
     });
-    /** Replayed sites can script top-level navigations; keep the guest on the viewer and let the renderer decide what to do with the target. */
     guest.on("will-navigate", (event, url) => {
       if (url.startsWith("pond://")) return;
       event.preventDefault();

@@ -45,7 +45,6 @@ const INITIAL_VIEWPORT_RECT = {
 };
 const RESTORATION_SETTLE_MS = 750;
 const MISSING_ANCHOR_TIMEOUT_MS = 5000;
-/** Preserve the exact pixel position when a fresh layout only differs by sub-pixel rounding. */
 const ANCHOR_RESTORE_TOLERANCE_PX = 2;
 
 export function findScrollAnchor(
@@ -69,7 +68,6 @@ export function findScrollAnchor(
   }
   const bestItem = itemsByTop[best];
   if (!bestItem) return null;
-  /** Pick the leftmost card when several columns begin on the same row. */
   while (best > 0 && itemsByTop[best - 1]?.top === bestItem.top) best -= 1;
   const item = itemsByTop[best];
   if (!item) return null;
@@ -80,10 +78,8 @@ interface PackedGridProps {
   layout: GridLayout;
   items: PackedItem[];
   totalHeight: number;
-  /** Called once the visible window reaches the final rows of the grid. */
   onEndReached?: () => void;
   renderItem: (item: PackedItem) => ReactNode;
-  /** Optional overscan indexes beyond the mounted card window. */
   onRunwayChange?: (itemIndexes: readonly number[]) => void;
 }
 
@@ -156,7 +152,6 @@ export function PackedGrid({
   );
   const [scrollMargin, setScrollMargin] = useState(0);
 
-  /** The grid can sit below route chrome; TanStack needs that stable offset within Shell.Main. */
   useLayoutEffect(() => {
     const node = ref.current;
     const parent = restoration?.ref.current ?? findScrollParent(node);
@@ -186,11 +181,6 @@ export function PackedGrid({
     };
   }, [restoration]);
 
-  /**
-   * Re-anchor by card identity after layout/aspect changes; a bare pixel is only the fallback.
-   * Keep the original anchor locked while the paged pool fills because every newly sorted page can
-   * move that card. Programmatic jumps during this transaction must never become a new user anchor.
-   */
   useLayoutEffect(() => {
     if (!restoration) return;
     const parent = getScrollElement();
@@ -211,11 +201,6 @@ export function PackedGrid({
       return;
     }
     const target = scrollMargin + item.top + active.anchor.offset;
-    /**
-     * This is a layout effect, so the packed items and their identity anchor
-     * are available before paint. Applying the correction here avoids the
-     * small, visible two-frame nudge that occurred after returning from detail.
-     */
     const savedTop = active.top;
     const nextTop =
       Math.abs(savedTop - target) <= ANCHOR_RESTORE_TOLERANCE_PX
@@ -240,7 +225,6 @@ export function PackedGrid({
     };
   }, [getScrollElement, itemById, restoration, scrollMargin]);
 
-  /** Explicit user input cancels an in-flight cold-start restore instead of fighting the user. */
   useEffect(() => {
     const parent = getScrollElement();
     if (!parent) return;
@@ -271,7 +255,6 @@ export function PackedGrid({
     estimateSize: estimateBandSize,
     getItemKey: virtualBandKey,
     overscan: BAND_OVERSCAN,
-    /** Scroll events may be frequent; let React batch range changes instead of forcing synchronous commits. */
     useFlushSync: false,
     scrollMargin,
     initialOffset: () => {
@@ -358,7 +341,6 @@ interface SavePackedGridProps {
   onEndReached?: () => void;
 }
 
-/** Library save layouts: windowed PackedGrid that always mounts SaveCard. */
 export function SavePackedGrid({
   layout,
   items,

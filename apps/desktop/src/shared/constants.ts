@@ -41,7 +41,6 @@ export const IPC = {
   editUndoRequested: "pond:edit-undo-requested",
   editRedoRequested: "pond:edit-redo-requested",
   menuAction: "pond:menu-action",
-  /** Fetched synchronously from the preload so pond-scoped renderer caches can namespace their keys before any module hydrates. */
   pondId: "pond:pond-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
@@ -53,7 +52,6 @@ export const IPC = {
   archiveSite: "pond:archive-site",
 } as const;
 
-/** A recently-visited save surfaced in the native History menu. */
 export interface RecentMenuEntry {
   id: string;
   title: string;

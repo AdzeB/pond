@@ -1,6 +1,5 @@
 import type { PackedItem } from "./uniform-pack";
 
-/** A fixed virtual surface unit; cards retain their independently packed geometry. */
 export const PACKED_GRID_BAND_PX = 512;
 
 export function buildVirtualBands(

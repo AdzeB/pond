@@ -4,7 +4,6 @@ import { binariesAvailable } from "../core/refresh/binaries";
 
 const HARD_TIMEOUT_MS = 10_000;
 
-/** Display width/height from the file, accounting for rotation side-data. */
 export async function probeVideoDims(
   videoPath: string,
 ): Promise<{ width: number; height: number } | null> {
@@ -64,9 +63,7 @@ function runFfmpegProbe(
       settled = true;
       try {
         child.kill("SIGKILL");
-      } catch {
-        /* already exited */
-      }
+      } catch {}
       resolve({ code: 124, stderr });
     }, HARD_TIMEOUT_MS);
 

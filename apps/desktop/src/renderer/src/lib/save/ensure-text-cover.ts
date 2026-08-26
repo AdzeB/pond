@@ -3,7 +3,6 @@ import type { Save } from "@/lib/types";
 
 const requested = new Set<string>();
 
-/** Fire-and-forget backfill for text-only saves missing their rasterized cover. */
 export function ensureTextCover(
   save: Save,
   opts: { force?: boolean } = {},

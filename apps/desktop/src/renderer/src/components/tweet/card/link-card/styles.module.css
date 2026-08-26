@@ -10,7 +10,6 @@
   border-radius: var(--ds-radius-2xl);
 }
 
-/* Matches how X renders large previews: title overlaid bottom-left, domain beneath. */
 .link-card[data-large="true"] {
   display: flex;
   flex-direction: column;

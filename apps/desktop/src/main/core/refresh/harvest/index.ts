@@ -1,18 +1,22 @@
 import type { Source } from "@pond/schema/db";
+import type { Capture } from "@pond/schema/raw";
+import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
 import * as cosmos from "./cosmos";
+import type { HarvestAdaptCtx } from "./from-page";
 import * as instagram from "./instagram";
 import * as pinterest from "./pinterest";
 import * as reddit from "./reddit";
 import * as threads from "./threads";
 import * as tiktok from "./tiktok";
 import * as twitter from "./twitter";
-import type { ScrapedHarvest } from "./types";
 import * as youtube from "./youtube";
+
+export type { HarvestAdaptCtx } from "./from-page";
 
 interface Harvester {
   buildExpression: (sourceId: string) => string;
-  adapt: (raw: unknown) => ScrapedHarvest | null;
+  adapt: (raw: unknown, ctx: HarvestAdaptCtx) => Capture | null;
   sourceIdFromUrl: (url: string) => string | null;
 }
 
@@ -20,63 +24,61 @@ const REGISTRY: Record<Source, Harvester> = {
   twitter: {
     buildExpression: twitter.buildExpression,
     adapt: twitter.adapt,
-    sourceIdFromUrl: twitter.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("twitter", url),
   },
   instagram: {
     buildExpression: instagram.buildExpression,
     adapt: instagram.adapt,
-    sourceIdFromUrl: instagram.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("instagram", url),
   },
   youtube: {
     buildExpression: youtube.buildExpression,
     adapt: youtube.adapt,
-    sourceIdFromUrl: youtube.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("youtube", url),
   },
   pinterest: {
     buildExpression: pinterest.buildExpression,
     adapt: pinterest.adapt,
-    sourceIdFromUrl: pinterest.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("pinterest", url),
   },
   tiktok: {
     buildExpression: tiktok.buildExpression,
     adapt: tiktok.adapt,
-    sourceIdFromUrl: tiktok.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("tiktok", url),
   },
   arena: {
     buildExpression: arena.buildExpression,
     adapt: arena.adapt,
-    sourceIdFromUrl: arena.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("arena", url),
   },
   cosmos: {
     buildExpression: cosmos.buildExpression,
     adapt: cosmos.adapt,
-    sourceIdFromUrl: cosmos.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("cosmos", url),
   },
   reddit: {
     buildExpression: reddit.buildExpression,
     adapt: reddit.adapt,
-    sourceIdFromUrl: reddit.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("reddit", url),
   },
   threads: {
     buildExpression: threads.buildExpression,
     adapt: threads.adapt,
-    sourceIdFromUrl: threads.sourceIdFromUrl,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("threads", url),
   },
-  /** Web links fetch metadata directly in the extractor; entry exists for registry totality and throws if routed here. */
   web: {
     buildExpression: () => {
       throw new Error("web source does not harvest via the window pool");
     },
     adapt: () => null,
-    sourceIdFromUrl: (url) => url,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("web", url),
   },
-  /** Local never harvests; entry exists for registry totality and throws if called. */
   local: {
     buildExpression: () => {
       throw new Error("local source is not harvestable");
     },
     adapt: () => null,
-    sourceIdFromUrl: () => null,
+    sourceIdFromUrl: (url) => sourceIdFromUrl("local", url),
   },
 };
 

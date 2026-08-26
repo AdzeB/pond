@@ -23,7 +23,6 @@
   }
 }
 
-/* Width is the smaller of the horizontal cap and the height-bound width, so the box equals the displayed media with no letterboxing; the 128px insets give the shadow space within the scroll container. */
 .media-shell {
   position: relative;
   display: flex;

@@ -17,7 +17,6 @@ import { usePrefsValue } from "@/stores/prefs";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-/** Long enough to read the swapped label before the card closes. */
 const STATUS_HOLD_MS = 1200;
 
 const TASK_ICONS: Record<string, ReactNode> = {
@@ -35,7 +34,6 @@ interface Status {
   ok: boolean;
 }
 
-/** Task chooser opened from the selection pill's Run tile. Preconditions render as disabled rows with the hint; outcomes swap into the row, with longer-running work owned by the activity pill. */
 export function SelectionRunSection() {
   const dock = useDock();
   const prefs = usePrefsValue();
@@ -68,7 +66,6 @@ export function SelectionRunSection() {
     if (scope.length === 0 || busy || status) return;
     setBusy(true);
     try {
-      /** Requeued items reappear in the saving pill and queue, so the card just closes. */
       await retryFailedSelection(scope);
     } finally {
       setBusy(false);

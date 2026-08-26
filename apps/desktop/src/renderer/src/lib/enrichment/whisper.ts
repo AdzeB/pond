@@ -1,9 +1,9 @@
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferTranscribe } from "./inference-client";
 
-/** Audio is decoded to 16 kHz mono here on the main thread (Web Audio API is window-only), then the PCM buffer is handed to the inference worker for the ASR run. */
-
 const DEFAULT_MODEL_ID = "Xenova/whisper-tiny";
+/** decodeAudioData on a large video has aborted the renderer (Chromium exit 5). */
+export const MAX_TRANSCRIPT_BYTES = 16 * 1024 * 1024;
 
 function modelId(): string {
   const fromPrefs = getPrefsSnapshot()?.ai?.whisperModelId;
@@ -16,11 +16,13 @@ export function whisperModelVersion(): string {
   return `${modelId()}@1`;
 }
 
-/** The AudioContext sample rate forces resampling on decode; channels are averaged to mono. */
 async function decodeMono16k(url: string): Promise<Float32Array> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`fetch failed (${res.status}) for ${url}`);
   const bytes = await res.arrayBuffer();
+  if (bytes.byteLength > MAX_TRANSCRIPT_BYTES) {
+    throw new Error(`audio too large (${bytes.byteLength})`);
+  }
   const Ctx: typeof AudioContext =
     window.AudioContext ??
     (window as unknown as { webkitAudioContext: typeof AudioContext })
@@ -49,7 +51,6 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
   }
 }
 
-/** Returns "" when there's no speech. */
 export async function transcribeAudio(url: string): Promise<string> {
   const audio = await decodeMono16k(url);
   return inferTranscribe(audio, modelId());

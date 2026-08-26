@@ -5,7 +5,6 @@ import { getSourceDef } from "@/lib/save/sources-registry";
 import { useConnectCompleted, useConnectSource } from "@/stores/connect-flow";
 import styles from "./styles.module.css";
 
-/** Holds while the browser sign-in finishes; the sources page polls and advances once the account arrives. */
 export function ConnectWaitSection() {
   const dock = useDock();
   const source = useConnectSource();
@@ -24,19 +23,15 @@ export function ConnectWaitSection() {
         <TrayCard.Separator />
       </TrayCard.Header>
       <div className={styles.body} data-state={completed ? "done" : "waiting"}>
-        {completed ? (
-          <Connected className={styles.mark} />
-        ) : (
-          <span className={styles.spinner} aria-hidden />
-        )}
+        {completed ? <Connected className={styles.mark} /> : null}
         <div className={styles.copy}>
           <p className={styles.status}>
             {completed ? "Connected" : `Waiting for ${label} sign-in`}
           </p>
           {completed ? null : (
             <p className={styles.hint}>
-              We opened {label} in your browser. Sign in there and Pond will
-              finish automatically.
+              Sign in in your browser. The Pond extension sends the session
+              back.
             </p>
           )}
         </div>
@@ -52,7 +47,7 @@ export function ConnectWaitSection() {
             style={{ width: "100%" }}
             onClick={() => void window.pond.connectSource(source)}
           >
-            Reopen {label}
+            Open Again
           </Button>
         )}
       </TrayCard.Footer>

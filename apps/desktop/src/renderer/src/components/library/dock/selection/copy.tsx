@@ -13,7 +13,6 @@ import {
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-/** Long enough to read the swapped label before the card closes. */
 const STATUS_HOLD_MS = 1200;
 
 type CopyKey = "links" | "paths";
@@ -22,7 +21,6 @@ interface Status extends SelectionActionResult {
   key: CopyKey;
 }
 
-/** Copy chooser opened from the selection pill's Copy tile; the outcome swaps into the row label instead of toasting. */
 export function SelectionCopySection() {
   const dock = useDock();
   const [busy, setBusy] = useState(false);

@@ -16,14 +16,11 @@ interface AppMenuDeps {
   openLibraryWindow: () => void;
 }
 
-/** How many recently-visited saves to surface in the History menu. */
 const RECENTS_MENU_CAP = 12;
 
-/** Kept at module scope so `setMenuRecents` can rebuild the menu in place without the caller re-threading its dependencies. */
 let activeDeps: AppMenuDeps | null = null;
 let recentEntries: RecentMenuEntry[] = [];
 
-/** Replaces the History menu's recents from the renderer and rebuilds in place. */
 export function setMenuRecents(entries: RecentMenuEntry[]): void {
   recentEntries = entries.slice(0, RECENTS_MENU_CAP);
   if (activeDeps) buildAndSetMenu(activeDeps);
@@ -69,7 +66,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
 
   const sourcesSubmenu = (): Electron.MenuItemConstructorOptions[] => {
     const syncItems: Electron.MenuItemConstructorOptions[] = SOURCES.filter(
-      /** Local imports have no remote to sync from. */
       (source) => source !== "local",
     ).map((source) => ({
       ...sym("arrow.triangle.2.circlepath"),
@@ -83,7 +79,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
     return [
       {
         ...sym("arrow.triangle.2.circlepath"),
-        label: "Sync All Sources",
+        label: "Sync All",
         accelerator: "CmdOrCtrl+Shift+S",
         registerAccelerator: false,
         click: () => void syncAllSources({ trigger: "manual" }),
@@ -177,7 +173,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         {
           ...sym("arrow.up.forward.app"),
           label: "Open with Default App",
-          /** Display-only: the renderer's save hotkeys own the key so it stays scoped to a selected save. */
           accelerator: "O",
           registerAccelerator: false,
           click: sendMenuAction("save.open-with-default"),
@@ -358,7 +353,6 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           ],
         },
         { type: "separator" },
-        /** Grid zoom, not page zoom: the roles would scale the whole chrome. */
         {
           ...sym("plus.magnifyingglass"),
           label: "Zoom In",
@@ -518,6 +512,17 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           {
             label: "Developer",
             submenu: [
+              {
+                ...sym("rectangle.on.rectangle"),
+                label: "Card Renders",
+                click: navTo("/dev/cards"),
+              },
+              {
+                ...sym("speaker.wave.2"),
+                label: "Sounds",
+                click: navTo("/dev/sounds"),
+              },
+              { type: "separator" as const },
               { ...sym("arrow.clockwise"), role: "reload" as const },
               {
                 ...sym("arrow.clockwise.circle"),

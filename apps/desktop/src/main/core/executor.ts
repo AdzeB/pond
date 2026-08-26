@@ -143,7 +143,6 @@ export async function executeBatch(
     await applyToDisk(tx);
   }
 
-  /** One transaction for all index writes + sync_action inserts: one fsync per batch and atomic on a mid-batch crash. */
   const actions = raw.transaction(() => {
     const out: SyncAction[] = [];
     for (const tx of withBatch) {
@@ -210,7 +209,6 @@ async function applyToDisk(tx: Transaction): Promise<void> {
       );
       if (patched) return;
 
-      /** No item folder; if the update carries files, rebuild it from the DB row. */
       if (tx.files && tx.files.length > 0) {
         const db = await getDb();
         const rows = await db

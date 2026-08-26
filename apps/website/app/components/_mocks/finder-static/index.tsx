@@ -16,7 +16,6 @@ const FILES = ["info.json", "tweet-light.png", "avatar.jpg"];
 
 const SELECTED_FILE = 1;
 
-/** Finder column view fixed on an archived tweet: plain files on disk, readable without the app. */
 export function FinderStatic() {
   return (
     <div className={styles.window} aria-hidden>

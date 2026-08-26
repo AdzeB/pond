@@ -11,7 +11,6 @@ interface WatchTargetMatchData {
   display: string;
 }
 
-/** Repeating the handle under an identical display name reads as a glitch; fall back to the source and kind. */
 function matchSub(source: Source, match: WatchTargetMatchData): string {
   const handleText = /[:./]/.test(match.handle)
     ? match.handle

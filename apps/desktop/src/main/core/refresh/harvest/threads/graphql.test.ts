@@ -111,7 +111,7 @@ describe("parseSavedResponses", () => {
 });
 
 describe("buildThreadsSavedSeed", () => {
-  it("writes quotedTweet, card, and merged quote media", () => {
+  it("writes quoted Capture, card, and quote media on the quoted item", () => {
     const rich = shapeRichThread(parentNode);
     expect(rich).not.toBeNull();
     const seed = buildThreadsSavedSeed({
@@ -120,18 +120,20 @@ describe("buildThreadsSavedSeed", () => {
       rich: rich ?? undefined,
     });
     expect(seed?.rawJson.extractorId).toBe("threads-saved-seed");
-    const extras = seed?.rawJson.capture.extras as Record<string, unknown>;
-    expect(extras.quotedTweet).toMatchObject({
-      tweetId: "QuotedCode01",
+    const capture = seed?.rawJson.capture;
+    expect(capture?.quoted).toMatchObject({
+      id: "QuotedCode01",
       url: "https://www.threads.com/@carol/post/QuotedCode01",
-      text: "original thought",
+      description: "original thought",
     });
-    expect(extras.card).toMatchObject({
+    expect(capture?.card).toMatchObject({
       url: "https://www.example.com/article",
       title: "An article",
     });
-    expect(seed?.rawJson.capture.media.map((m) => m.url)).toEqual([
+    expect(capture?.media.map((m) => m.url)).toEqual([
       "https://cdn.example.com/parent.jpg",
+    ]);
+    expect(capture?.quoted?.media.map((m) => m.url)).toEqual([
       "https://cdn.example.com/quoted.jpg",
     ]);
   });

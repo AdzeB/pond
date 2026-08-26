@@ -81,12 +81,12 @@ async function stampVersion(
   const capture = base?.capture ?? stubCapture(save);
   const extras = {
     ...((capture.extras as Record<string, unknown> | undefined) ?? {}),
-    renderTextCoverVersion: RENDER_TEXT_COVER_VERSION,
   };
   const rawJson: RawJson = {
     capture: { ...capture, extras },
     extractorId: base?.extractorId ?? "text-cover",
     extractedAt: base?.extractedAt ?? new Date().toISOString(),
+    renderTextCoverVersion: RENDER_TEXT_COVER_VERSION,
     ...(base?.ytdlp ? { ytdlp: base.ytdlp } : {}),
   };
   await persistSave(
@@ -96,7 +96,6 @@ async function stampVersion(
   );
 }
 
-/** Rasterizes text-only saves into theme-matched cover PNGs, matching the tweet screenshot path. */
 export async function runRenderTextCover(
   saveId: string,
   opts: { force?: boolean } = {},

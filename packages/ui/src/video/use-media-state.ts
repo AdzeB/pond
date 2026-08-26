@@ -51,7 +51,6 @@ const INITIAL: MediaState = {
   fullscreenSupported: false,
 };
 
-/** Owns the <video> element and derives a state snapshot from media events. */
 export function useMediaState(): {
   state: MediaState;
   actions: MediaActions;

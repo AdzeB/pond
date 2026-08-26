@@ -1,6 +1,6 @@
 {
   "name": "@pond/website",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Pond's promotional site. A single, static Next.js page that reuses @pond/ui tokens.",

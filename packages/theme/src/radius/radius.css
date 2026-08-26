@@ -7,10 +7,8 @@
   --ds-radius-2xl: 16px;
   --ds-radius-full: 9999px;
 
-  /* Percentage rounding for app-icon tiles (brand logos, provider marks), scaling with the tile size. */
   --ds-radius-app-icon: 40%;
 
-  /* Superellipse exponent for squircle corners; used by .ds-squircle. */
   --ds-superellipse: 1.4;
 }
 

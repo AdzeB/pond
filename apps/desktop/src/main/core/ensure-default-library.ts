@@ -25,7 +25,6 @@ export type CreatePondResult =
         | "unknown_error";
     };
 
-/** Creates a fresh `.pond` bundle at `parentDir/name.pond`, writes the pointer, and resolves paths. */
 export function createPondBundle(
   parentDir: string,
   name: string = DEFAULT_LIBRARY_NAME,
@@ -57,7 +56,7 @@ export function createPondBundle(
           name: safeName,
           createdAt: Date.now(),
           schemaVersion: LIBRARY_SCHEMA_VERSION,
-          appVersion: process.env.npm_package_version ?? "0.1.0",
+          appVersion: process.env.npm_package_version ?? "0.0.1",
         },
         null,
         2,
@@ -73,10 +72,6 @@ export function createPondBundle(
   return { ok: true, path: bundlePath };
 }
 
-/**
- * First boot with no library pointer: adopt an existing default bundle, or create
- * `~/Pond/My Pond.pond`. Must run before `getDb()` so the pond id is committed.
- */
 export function ensureDefaultLibrary(): void {
   if (readLibraryPointer()) return;
 

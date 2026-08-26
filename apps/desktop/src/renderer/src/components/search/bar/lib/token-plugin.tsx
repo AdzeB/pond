@@ -18,7 +18,6 @@ import {
 
 const KEYS = TOKEN_FIELDS.flatMap((spec) => spec.keys);
 
-/** A `key op value` token restricted to known field keys; group 2 is the token itself, sitting at input start or after space. */
 const TOKEN_RE = new RegExp(
   `(^|\\s)(-?(?:${KEYS.join("|")})(?::|>=|<=|>|<)(?:"[^"]*"|[^\\s"])+)`,
   "i",
@@ -53,7 +52,6 @@ function $replaceWithSimpleText(node: TextNode): void {
   if (offset !== null) textNode.select(offset, offset);
 }
 
-/** Wrap a completed `key:value` run, but leave the in-progress token as plain text so typeahead can keep filtering. */
 function $tryWrap(node: TextNode): void {
   if (!node.isAttached()) return;
   if (node.getType() !== "text" || !node.isSimpleText()) return;
@@ -89,7 +87,6 @@ function $tryUnwrap(node: FilterTokenNode): void {
   if ($isCaretInside(node, 0, text.length)) $replaceWithSimpleText(node);
 }
 
-/** Reverts tokens the instant they stop matching, and unwraps while the caret is inside so typeahead can filter. */
 export function FilterTokenPlugin() {
   const [editor] = useLexicalComposerContext();
 

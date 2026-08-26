@@ -11,8 +11,6 @@ import { getDb } from "../db";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { itemFile } from "../paths";
 
-/** Per-item sidecar (items/<id>.info/enrichment.json) persisting pipeline outputs that would otherwise live only in the disposable index DB; embedding vectors stay index-only because they are large and cheap to recompute. */
-
 const SIDECAR_FILE = "enrichment.json";
 
 const ENRICHMENT_KEYS = [
@@ -51,7 +49,6 @@ function hasValue(value: unknown): boolean {
   return true;
 }
 
-/** Skips the write when there is nothing to persist and no stale file to refresh. */
 export function writeEnrichmentSidecar(save: Save): void {
   const data: Record<string, unknown> = {};
   let any = false;
@@ -132,7 +129,6 @@ function copyVideoNotes(
   if (notes.length > 0) out.videoNotes = notes;
 }
 
-/** Writes missing sidecars for already-enriched rows so existing libraries converge without a blocking migration. */
 export async function backfillEnrichmentSidecars(): Promise<void> {
   const db = await getDb();
   const enriched = await db
@@ -148,7 +144,6 @@ export async function backfillEnrichmentSidecars(): Promise<void> {
         isNotNull(savesTable.aesthetic),
         isNotNull(savesTable.autoTitleModel),
         isNotNull(savesTable.suggestedTags),
-        /** Array columns default to '[]' (never null); check length instead. */
         sql`json_array_length(${savesTable.videoNotes}) > 0`,
         sql`json_array_length(${savesTable.dominantColors}) > 0`,
       ),

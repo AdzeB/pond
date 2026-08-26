@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync } from "node:fs";
+import type { Server as NetServer } from "node:net";
 import { join, resolve as resolvePath } from "node:path";
 import { app, globalShortcut, ipcMain } from "electron";
 import log from "electron-log/main.js";
@@ -49,6 +50,8 @@ import { ensureIngestToken } from "./keychain";
 import { broadcast } from "./lib/broadcast";
 import { rotateBundleBackups } from "./lib/library-config";
 import { installAppMenu, setMenuRecents } from "./menu";
+import { writeNativeHostManifests } from "./native/manifests";
+import { startNativeServer, stopNativeServer } from "./native/server";
 import { libraryRoot, resolvePaths } from "./paths";
 import { registerProtocol, registerScheme } from "./protocol";
 import { configureSessionDefaults } from "./session-config";
@@ -71,7 +74,6 @@ import {
 /** Force app.name before any menu/dock work; dev falls back to "Electron" otherwise. */
 app.setName("Pond");
 
-/** POND_SANDBOX redirects all app state for first-run testing; dev and packaged builds otherwise share ~/Library/Application Support/Pond and ~/Pond. */
 if (process.env.POND_SANDBOX) {
   const sandbox = resolvePath(process.env.POND_SANDBOX);
   /** setPath does not create directories, and Chromium expects sessionData to exist. */
@@ -79,7 +81,6 @@ if (process.env.POND_SANDBOX) {
     ["userData", join(sandbox, "app-data")],
     ["sessionData", join(sandbox, "chromium")],
     ["logs", join(sandbox, "logs")],
-    /** Home too, so the default ~/Pond/My Pond.pond bundle lands in the sandbox instead of adopting the real one. */
     ["home", join(sandbox, "home")],
   ] as const) {
     mkdirSync(dir, { recursive: true });
@@ -101,6 +102,7 @@ log.info("[pond] main starting", {
 });
 
 let httpServer: RunningServer | null = null;
+let nativeServer: NetServer | null = null;
 
 const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
   broadcast(IPC.syncStatus, status);
@@ -139,7 +141,6 @@ app.on("second-instance", (_event, argv) => {
 });
 
 app.whenReady().then(async () => {
-  /** Packaged builds take the Dock icon from the app bundle until prefs load. */
   if (process.platform === "darwin" && !app.isPackaged) {
     const { applyAppIcon } = await import("./core/app-icon");
     await applyAppIcon(DEFAULT_APP_ICON);
@@ -166,7 +167,6 @@ app.whenReady().then(async () => {
     openLibraryWindow: () => void openLibraryWindow(),
   });
 
-  /** The renderer owns the recently-visited saves; mirror them into the native History menu whenever they change. */
   ipcMain.on(IPC.menuRecents, (_event, entries: RecentMenuEntry[]) => {
     setMenuRecents(Array.isArray(entries) ? entries : []);
   });
@@ -201,7 +201,6 @@ async function postLaunchInit(): Promise<void> {
 
   try {
     await syncLibraryRootMetadata();
-    /** Don't snapshot a not-yet-created library; it materializes on first write. */
     if (existsSync(libraryRoot())) {
       snapshotBundleJsons();
     }
@@ -209,7 +208,6 @@ async function postLaunchInit(): Promise<void> {
     log.warn("[pond] recording active library failed", err);
   }
 
-  /** Tag catalog and groups live in the bundle's tags.json; a fresh index hydrates from it before anything queries tags. */
   try {
     await hydrateTagsFromBundle();
   } catch (err) {
@@ -218,7 +216,6 @@ async function postLaunchInit(): Promise<void> {
 
   void reconcileLibrary()
     .catch((err) => log.warn("[pond] scan failed", err))
-    /** Preview warming can begin as soon as the durable index is reconciled; slower maintenance backfills continue alongside it. */
     .finally(() => startMediaWarmer())
     .then(() => startArchiveBackfill())
     .catch((err) => log.warn("[pond] archive backfill failed", err))
@@ -227,7 +224,7 @@ async function postLaunchInit(): Promise<void> {
     .then(() => startPosterBackfill())
     .catch((err) => log.warn("[pond] poster backfill failed", err))
     .then(() => startThreadsCardBackfill())
-    .catch((err) => log.warn("[pond] threads card backfill failed", err))
+    .catch((err) => log.warn("[pond] native card backfill failed", err))
     .then(() => startThreadsLandingOgTrash())
     .catch((err) => log.warn("[pond] threads landing-og trash failed", err))
     .then(() => backfillSourceIcons())
@@ -247,7 +244,13 @@ async function postLaunchInit(): Promise<void> {
     log.error("[pond] http server failed to start", err);
   }
 
-  /** Legacy single-account prefs must fold into the account registry before recovery/crons touch per-account sync state. */
+  try {
+    nativeServer = await startNativeServer();
+    writeNativeHostManifests();
+  } catch (err) {
+    log.error("[pond] native host failed to start", err);
+  }
+
   try {
     await migrateLegacySyncPrefs();
   } catch (err) {
@@ -273,7 +276,6 @@ async function postLaunchInit(): Promise<void> {
   subscribeToSyncStatus(broadcastSyncStatus);
 }
 
-/** Guards the single-writer root JSONs against a bad cloud sync or crash with a rolling snapshot on every open. */
 function snapshotBundleJsons(): void {
   try {
     const paths = resolvePaths();
@@ -376,6 +378,12 @@ app.on("before-quit", async () => {
     disposeRenderCardWindow();
   } catch (err) {
     log.warn("[pond] render-card window dispose failed", err);
+  }
+  try {
+    await stopNativeServer(nativeServer);
+    nativeServer = null;
+  } catch (err) {
+    log.warn("[pond] native host close failed", err);
   }
   try {
     await httpServer?.close();

@@ -5,7 +5,6 @@ import { getSourceDef } from "@/lib/save/sources-registry";
 import { formatNumber } from "@/lib/util/format";
 import type { SyncSourceStatus } from "@/stores/sync-monitor";
 
-/** The global background-sync cadence, surfaced per-account; it applies to all. */
 export const FREQUENCY_OPTIONS = [
   { hours: 1, label: "Every Hour" },
   { hours: 2, label: "Every 2 Hours" },
@@ -22,7 +21,6 @@ export function accountName(account: AccountRow): string {
 
 export function watchName(watch: WatchRow): string {
   if (watch.label) return watch.label;
-  /** Playlist/list ids are opaque tokens, not handles, so no @ prefix. */
   return watch.kind === "playlist" || watch.kind === "list"
     ? watch.handle
     : `@${watch.handle}`;
@@ -32,7 +30,6 @@ function itemCount(count: number): string {
   return `${formatNumber(count)} item${count === 1 ? "" : "s"}`;
 }
 
-/** Live sync/error copy while active; item count when the source is resting. */
 export function tileValue(
   tone: CardModel["tone"],
   statusText: string,
@@ -42,7 +39,6 @@ export function tileValue(
   return itemCount(count);
 }
 
-/** 0..1 while syncing with a known total; null when indeterminate or resting. */
 export function syncFraction(
   tone: CardModel["tone"],
   status: SyncSourceStatus | undefined,

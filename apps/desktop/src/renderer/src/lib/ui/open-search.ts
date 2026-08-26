@@ -11,13 +11,11 @@ function showLibrary(): void {
   }
 }
 
-/** Search filters the library grid, so leave other surfaces before focusing the find field. */
 export function openLibrarySearch(): void {
   showLibrary();
   dockMode.open("search");
 }
 
-/** Narrow the library to one connected account or watch, then leave Sources so the grid is visible. */
 export function viewAccountItems(accountId: string): void {
   setSearchInput([{ field: "account", operator: "eq", value: accountId }], "");
   dockMode.close();

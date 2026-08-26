@@ -1,18 +1,13 @@
-/** Records a scrape window's network traffic into a .warc.gz via CDP; wabac.js replays it in the archive viewer with working JavaScript. */
-
 import { once } from "node:events";
 import { createWriteStream, type WriteStream } from "node:fs";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
 import { WARCRecord, WARCSerializer } from "warcio";
 
-/** A single body above this is skipped (typically video); replay shows the page without it. */
 const MAX_BODY_BYTES = 30 * 1024 * 1024;
-/** Total archive budget; once exceeded, later resources are dropped rather than ballooning the library. */
 const MAX_TOTAL_BYTES = 250 * 1024 * 1024;
 /** CDP commands can hang forever on a wedged window; a hung getResponseBody would otherwise stall the crawl into the watchdog. */
 const CDP_TIMEOUT_MS = 10_000;
-/** Sites with constant chatter (analytics beacons, looping video) never go quiet, so a flush must give up rather than chase them. */
 const FLUSH_BUDGET_MS = 15_000;
 
 export async function withTimeout<T>(
@@ -32,7 +27,6 @@ export async function withTimeout<T>(
     ]);
   } finally {
     clearTimeout(timer);
-    /** A promise that loses to the timeout may still reject later; keep that off the unhandled-rejection channel. */
     promise.catch(() => {});
   }
 }
@@ -87,7 +81,6 @@ export class WarcRecorder {
   private readonly responses = new Map<string, CdpResponse>();
   private readonly writtenUrls = new Set<string>();
   private readonly pending = new Set<Promise<void>>();
-  /** Serializes record writes so gzip members land whole and ordered. */
   private writeChain: Promise<void> = Promise.resolve();
   private totalBytes = 0;
   private attached = false;
@@ -135,9 +128,7 @@ export class WarcRecorder {
       dbg.off("message", recorder.onMessage);
       try {
         dbg.detach();
-      } catch {
-        /** Window may already be gone. */
-      }
+      } catch {}
       recorder.attached = false;
       recorder.stream.destroy();
       throw err;
@@ -168,7 +159,6 @@ export class WarcRecorder {
         const p = params as {
           redirectResponse?: CdpResponse;
         };
-        /** Redirect hops never get loadingFinished; record them here so replayed links follow Location. */
         if (p.redirectResponse && isArchivableUrl(p.redirectResponse.url)) {
           this.enqueueWrite(p.redirectResponse, new Uint8Array(0));
         }
@@ -208,7 +198,6 @@ export class WarcRecorder {
   private async capturePausedResponse(p: FetchRequestPaused): Promise<void> {
     try {
       const status = p.responseStatusCode;
-      /** Redirect hops have no body here; the Network redirectResponse path records them. */
       if (
         status != null &&
         (status < 300 || status >= 400) &&
@@ -236,7 +225,6 @@ export class WarcRecorder {
           statusText: p.responseStatusText ?? "",
           headers,
         };
-        /** Same lost-body rule as captureBody: an empty 200 script poisons replay, so leave a hole instead. */
         const lost = body.byteLength === 0 && this.expectsBody(meta);
         if (!lost && body.byteLength <= MAX_BODY_BYTES) {
           this.enqueueWrite(meta, body);
@@ -250,9 +238,7 @@ export class WarcRecorder {
           }),
           CDP_TIMEOUT_MS,
         );
-      } catch {
-        /** Already continued, detached, or the window is gone. */
-      }
+      } catch {}
     }
   }
 
@@ -274,13 +260,7 @@ export class WarcRecorder {
         ? new Uint8Array(Buffer.from(res.body, "base64"))
         : new Uint8Array(Buffer.from(res.body, "utf8"));
       bodyRetrieved = true;
-    } catch {
-      /** 204s, opaque and evicted bodies land here. */
-    }
-    /**
-     * A lost body must become a hole, not an empty 200: replay 404s fail soft, but an empty script/stylesheet poisons the replayed page's JS.
-     * getResponseBody "succeeds" with an empty string for prefetch-cache serves, so an empty result counts as lost too; skipping also keeps writtenUrls clear for a later real capture of the same URL.
-     */
+    } catch {}
     if ((!bodyRetrieved || body.byteLength === 0) && this.expectsBody(meta)) {
       return;
     }
@@ -288,7 +268,6 @@ export class WarcRecorder {
     this.enqueueWrite(meta, body);
   }
 
-  /** True when the response should carry a body, so an empty capture means the body was lost rather than absent. */
   private expectsBody(meta: CdpResponse): boolean {
     if (meta.status === 204 || meta.status === 205 || meta.status === 304) {
       return false;
@@ -330,7 +309,6 @@ export class WarcRecorder {
     void task.catch(() => {}).finally(() => this.pending.delete(task));
   }
 
-  /** Waits until the page has gone quietMs without network events, so lazy data fetches (pricing APIs, deferred JSON) land in the capture; SPAs that render from runtime fetches replay blank without them. */
   async waitForNetworkIdle(quietMs: number, budgetMs: number): Promise<void> {
     const deadline = Date.now() + budgetMs;
     while (Date.now() < deadline) {
@@ -340,7 +318,6 @@ export class WarcRecorder {
     }
   }
 
-  /** Await in-flight body fetches and writes; call before navigating away or the bodies are evicted. Time-bounded because chatty pages enqueue new work faster than old work settles. */
   async flush(budgetMs: number = FLUSH_BUDGET_MS): Promise<void> {
     const deadline = Date.now() + budgetMs;
     while (this.pending.size > 0 && Date.now() < deadline) {
@@ -368,14 +345,10 @@ export class WarcRecorder {
           })(),
           CDP_TIMEOUT_MS,
         );
-      } catch {
-        /** The window may have been destroyed mid-crawl; the pool recycles it. */
-      }
+      } catch {}
       try {
         dbg.detach();
-      } catch {
-        /** Already detached or destroyed. */
-      }
+      } catch {}
       this.attached = false;
     }
     await new Promise<void>((resolvePromise, reject) => {

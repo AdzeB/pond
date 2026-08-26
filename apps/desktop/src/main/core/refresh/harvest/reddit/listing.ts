@@ -26,7 +26,6 @@ export function handleFromMeJson(json: unknown): string | null {
   return handle;
 }
 
-/** Profile icon from `/api/me.json` or `/user/<name>/about.json`; prefers the circular icon over the full snoovatar. */
 export function avatarFromMeJson(json: unknown): string | null {
   if (!json || typeof json !== "object") return null;
   const data = asRecord((json as { data?: unknown }).data);

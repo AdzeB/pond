@@ -26,17 +26,13 @@ interface VideoPlayerProps {
   artist?: string | null;
   chapters?: readonly ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
-  /** Publishes the seek handle and current time to the active-media store so out-of-tree chrome can drive this player. */
   active?: boolean;
-  /** Seeds the aspect ratio so it's known before metadata loads. */
   width?: number | null;
   height?: number | null;
-  /** Reports the resolved aspect ratio so the slide can size its box; the player doesn't know the slide layout. */
   onRatio?: (ratio: number) => void;
   onError?: () => void;
 }
 
-/** Lives inside Video.Root so it can read the player context and push seek/time to the active-media store. */
 function MediaBridge({
   active,
   title,
@@ -58,7 +54,6 @@ function MediaBridge({
     { play, pause, seek, seekBy },
   );
 
-  /** Only one video ever plays; keyed on `active` so a manual pause isn't overridden. */
   useEffect(() => {
     if (active) play();
     else pause();
@@ -110,7 +105,6 @@ function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
   );
 }
 
-/** The object URL is revoked when chapters change or the player unmounts. */
 function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -124,7 +118,6 @@ function useChaptersTrackUrl(chapters?: readonly ChapterCue[]): string | null {
   return url;
 }
 
-/** Desktop skin over the @pond/ui Video compound parts; playback, controls, and hotkeys live in @pond/ui. */
 export function VideoPlayer({
   src,
   poster,
@@ -140,7 +133,6 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const trackUrl = useChaptersTrackUrl(chapters);
 
-  /** Seeded from stored dimensions, then corrected to the true frame ratio on load so the slide's box avoids letterboxing. */
   const [ratio, setRatio] = useState<number | null>(
     width && height ? width / height : null,
   );

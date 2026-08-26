@@ -38,7 +38,6 @@ export {
   snapshotSourceGate,
 } from "./rate-governor-state";
 
-/** Earliest time the source is allowed to be hit again (0 = now). */
 export function sourcePausedUntil(source: Source): number {
   loadState();
   if (allPaused) return Number.MAX_SAFE_INTEGER;
@@ -89,7 +88,6 @@ export function noteTransientFailure(source: Source): void {
   }
 }
 
-/** Success closes the breaker window and gently relaxes pacing; explicit cooldowns and at-risk parking stay until expiry. */
 export function noteSuccess(source: Source): void {
   breakerCounters.delete(source);
   const m = multiplier.get(source) ?? MULTIPLIER_MIN;
@@ -105,7 +103,6 @@ export function markAtRisk(source: Source, kind: AtRiskKind, note = ""): void {
   schedulePersist(true);
 }
 
-/** Clears the manual pause and any active cooldown/breaker/at-risk: the "I understand the risk, try now" override. */
 export function resumeSource(source: Source): void {
   manualPaused.delete(source);
   cooldownUntil.delete(source);
@@ -134,9 +131,7 @@ function pruneLog(source: Source): number[] {
 
 interface AcquireOptions {
   signal?: AbortSignal;
-  /** Apply the stricter first/full-sync pacing profile. */
   firstSync?: boolean;
-  /** Max time to wait before giving up (throws). Default: no limit. */
   maxWaitMs?: number;
 }
 
@@ -161,7 +156,6 @@ const wait = (ms: number, signal?: AbortSignal): Promise<void> =>
     signal?.addEventListener("abort", onAbort, { once: true });
   });
 
-/** Blocks until it is safe to hit `source`, then records the request: hard pauses first, then rolling budget and minimum spacing. Throws GovernorAbortError if the signal aborts or maxWaitMs elapses. */
 export async function acquire(
   source: Source,
   opts: AcquireOptions = {},
@@ -170,13 +164,11 @@ export async function acquire(
   const deadline =
     opts.maxWaitMs != null ? now() + opts.maxWaitMs : Number.MAX_SAFE_INTEGER;
 
-  /** Loop because a long pause may be lifted (resumeSource) while waiting. */
   for (;;) {
     if (opts.signal?.aborted) throw new GovernorAbortError();
     const until = sourcePausedUntil(source);
     if (until === 0) break;
     if (until >= Number.MAX_SAFE_INTEGER) {
-      /** Indefinite pause: poll so a manual resume can release us, but bail at the caller's deadline. */
       const slice = Math.min(2_000, deadline - now());
       if (slice <= 0) throw new GovernorAbortError();
       await wait(slice, opts.signal);
@@ -187,7 +179,6 @@ export async function acquire(
     await wait(Math.min(sleepMs, 5_000), opts.signal);
   }
 
-  /** Rolling budget: when the window is full, wait for the oldest request to age out. */
   const p = profile(source);
   for (;;) {
     const log_ = pruneLog(source);
@@ -218,17 +209,14 @@ interface ReportInput {
   ok: boolean;
   status?: number;
   headers?: HeaderBag;
-  /** Explicit rate-limit hint when status/headers aren't available in-page. */
   rateLimited?: boolean;
   retryAfterSec?: number;
 }
 
 interface ReportResult {
-  /** Cooldown applied as a result, in ms (0 = none). */
   cooldownMs: number;
 }
 
-/** Feeds a request outcome back to the governor; returns the cooldown applied so callers can surface an accurate "resuming at" time. */
 export function report(source: Source, input: ReportInput): ReportResult {
   loadState();
   const signal = input.headers ? parseRateSignal(input.headers) : null;
@@ -239,7 +227,6 @@ export function report(source: Source, input: ReportInput): ReportResult {
     const sec =
       input.retryAfterSec ??
       signal?.retryAfterSec ??
-      /** No server hint: exponential-ish default tied to the current multiplier. */
       Math.min(900, 60 * (multiplier.get(source) ?? 1));
     bumpMultiplier(source);
     const ms = Math.max(1_000, sec * 1000);
@@ -247,7 +234,6 @@ export function report(source: Source, input: ReportInput): ReportResult {
     return { cooldownMs: ms };
   }
 
-  /** Proactive slow-down when the platform says we're nearly out of budget. */
   if (
     signal?.remaining != null &&
     signal.remaining <= 2 &&
@@ -268,7 +254,6 @@ function bumpMultiplier(source: Source): void {
   multiplier.set(source, Math.min(MULTIPLIER_MAX, m * MULTIPLIER_INCREASE));
 }
 
-/** Flush state to disk (call on app quit). */
 export function flushGovernor(): void {
   schedulePersist(true);
 }

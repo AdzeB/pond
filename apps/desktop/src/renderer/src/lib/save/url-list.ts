@@ -3,7 +3,6 @@ function looksLikeUrl(value: string): boolean {
   return v.startsWith("http://") || v.startsWith("https://");
 }
 
-/** Forgive a missing scheme so "example.com/page" classifies as a real URL. */
 function withScheme(value: string): string {
   if (/^[a-z][a-z0-9+.-]*:/i.test(value)) return value;
   if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(value)) return `https://${value}`;
@@ -17,7 +16,6 @@ function clipboardTokens(value: string): string[] {
     .filter((t) => t && !t.startsWith("#"));
 }
 
-/** Absolute paths from `file://` tokens (Finder/Explorer paste often ships these instead of File objects). */
 export function filePathsFromText(value: string): string[] {
   const out: string[] = [];
   for (const token of clipboardTokens(value)) {
@@ -28,14 +26,11 @@ export function filePathsFromText(value: string): string[] {
       let path = decodeURIComponent(url.pathname);
       if (/^\/[A-Za-z]:\//.test(path)) path = path.slice(1);
       if (path) out.push(path);
-    } catch {
-      /** Skip malformed file URLs. */
-    }
+    } catch {}
   }
   return out;
 }
 
-/** Splits free text into normalized URLs, or null when any part isn't clearly a link. */
 export function asUrlList(value: string): string[] | null {
   const tokens = clipboardTokens(value).map(withScheme);
   if (tokens.length === 0) return null;

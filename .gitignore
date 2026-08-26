@@ -60,3 +60,6 @@ apps/desktop/src/renderer/src/routeTree.gen.ts
 # replayweb.page viewer bundles (copied by apps/desktop/scripts/copy-replay-assets.mjs)
 apps/desktop/resources/replay/ui.js
 apps/desktop/resources/replay/sw.js
+
+# compiled Chrome native-messaging host
+apps/desktop/resources/bin/pond-native-host

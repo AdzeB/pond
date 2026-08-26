@@ -1,15 +1,9 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import {
-  app,
-  type NativeImage,
-  nativeImage,
-  systemPreferences,
-} from "electron";
+import { app, type NativeImage, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import {
-  appIconLabel,
   DEFAULT_APP_ICON,
   resolveAppIconId,
   sortAppIconIds,
@@ -17,27 +11,12 @@ import {
 import { resolveMainOut } from "../lib/resolve-preload";
 import { getPrefs } from "./prefs";
 
-export interface AppIconOption {
-  id: string;
-  label: string;
-  preview: string;
-}
-
-/** Same inset as prepare-app-icon so Dock tiles match native macOS sizing. */
 const DOCK_CONTENT_SCALE = 0.8;
-const PREVIEW_SIZE = 96;
-/** Smaller canvas for in-flight frames; the Dock scales the bitmap to the tile either way. */
-const POP_CANVAS = 256;
-const POP_FRAME_MS = 16;
-const POP_OUT = [0.72, 0.62, 0.52];
-const POP_IN = [0.52, 0.66, 0.84, 0.9, 0.84, 0.8];
 
-const previewCache = new Map<string, string>();
 const dockCache = new Map<string, NativeImage>();
 let lastAppliedPath: string | null = null;
-let popGeneration = 0;
+let warming = false;
 
-/** Packaged: extraResources `app-icons`. Dev: this file emits under `out/main/chunks/`. */
 function tintsRoot(): string {
   if (app.isPackaged) return join(process.resourcesPath, "app-icons");
   const packagedDev = join(
@@ -78,7 +57,6 @@ export function resolveAppIconPath(id: string): string | null {
   return iconFile(resolved);
 }
 
-/** Keep the bitmap square and scale the glyph inside it. A smaller image is upscaled by the Dock, so the pop would vanish. */
 async function insetIcon(
   path: string,
   contentScale: number,
@@ -114,77 +92,24 @@ async function dockImage(path: string): Promise<NativeImage> {
   return image;
 }
 
-function prefersReducedMotion(reduceMotion: string | undefined): boolean {
-  if (reduceMotion === "always") return true;
-  if (reduceMotion === "never") return false;
-  return (
-    systemPreferences.getAnimationSettings?.()?.prefersReducedMotion === true
-  );
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function popDockIcon(
-  fromPath: string,
-  toPath: string,
-  rest: NativeImage,
-): Promise<void> {
-  const generation = ++popGeneration;
-  const stillCurrent = () => generation === popGeneration;
-  for (const scale of POP_OUT) {
-    if (!stillCurrent()) return;
-    app.dock?.setIcon(await insetIcon(fromPath, scale, POP_CANVAS));
-    await wait(POP_FRAME_MS);
-  }
-  for (const scale of POP_IN) {
-    if (!stillCurrent()) return;
-    app.dock?.setIcon(await insetIcon(toPath, scale, POP_CANVAS));
-    await wait(POP_FRAME_MS);
-  }
-  if (stillCurrent()) app.dock?.setIcon(rest);
-}
-
-async function previewDataUrl(path: string): Promise<string> {
-  const cached = previewCache.get(path);
-  if (cached) return cached;
-  const buf = await sharp(path)
-    .ensureAlpha()
-    .resize(PREVIEW_SIZE, PREVIEW_SIZE)
-    .png()
-    .toBuffer();
-  const url = `data:image/png;base64,${buf.toString("base64")}`;
-  previewCache.set(path, url);
-  return url;
-}
-
-export async function listAppIcons(): Promise<AppIconOption[]> {
-  const options: AppIconOption[] = [];
-  for (const id of availableIds()) {
-    const path = iconFile(id);
-    if (!path) continue;
-    try {
-      options.push({
-        id,
-        label: appIconLabel(id),
-        preview: await previewDataUrl(path),
-      });
-    } catch (err) {
-      log.warn("[pond] app icon preview failed", id, err);
+function warmDockCache(): void {
+  if (warming) return;
+  warming = true;
+  void (async () => {
+    for (const id of availableIds()) {
+      const path = iconFile(id);
+      if (!path || dockCache.has(path)) continue;
+      try {
+        await dockImage(path);
+      } catch (err) {
+        log.warn("[pond] app icon warm failed", id, err);
+      }
     }
-  }
-  return options;
+  })();
 }
 
-export async function applyAppIcon(
-  id?: string,
-  opts?: { animate?: boolean },
-): Promise<void> {
-  const prefs =
-    id == null || opts?.animate ? await getPrefs().catch(() => null) : null;
+export async function applyAppIcon(id?: string): Promise<void> {
+  const prefs = id == null ? await getPrefs().catch(() => null) : null;
   const path = resolveAppIconPath(
     id ?? prefs?.window.appIcon ?? DEFAULT_APP_ICON,
   );
@@ -192,7 +117,10 @@ export async function applyAppIcon(
     log.warn("[pond] app icon file missing", id);
     return;
   }
-  const previous = lastAppliedPath;
+  if (path === lastAppliedPath) {
+    warmDockCache();
+    return;
+  }
   lastAppliedPath = path;
   try {
     const image = await dockImage(path);
@@ -200,19 +128,10 @@ export async function applyAppIcon(
       const { getMainWindow } = await import("../window");
       const win = getMainWindow();
       if (win && !win.isDestroyed()) win.setIcon(image);
-      return;
-    }
-    const animate =
-      opts?.animate === true &&
-      previous != null &&
-      previous !== path &&
-      !prefersReducedMotion(prefs?.preferences.reduceMotion);
-    if (!animate) {
-      popGeneration += 1;
+    } else {
       app.dock?.setIcon(image);
-      return;
     }
-    await popDockIcon(previous, path, image);
+    warmDockCache();
   } catch (err) {
     log.warn("[pond] apply app icon failed", err);
   }

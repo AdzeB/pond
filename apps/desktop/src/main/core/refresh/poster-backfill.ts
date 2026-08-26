@@ -1,4 +1,3 @@
-/** One-shot: probe video dims onto the save; restore YouTube platform thumbs. */
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type Save, saves } from "@pond/schema/db";
@@ -40,7 +39,6 @@ function needsBackfill(
   );
 }
 
-/** Walks the library once; safe to call alongside media warming. */
 export async function startPosterBackfill(): Promise<{
   ok: true;
   repaired: number;

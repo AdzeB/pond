@@ -23,7 +23,6 @@ import {
 import { sourcePausedUntil } from "./source-gate";
 import { maxAttemptsFor, planOps } from "./specs";
 
-/** NOT EXISTS enforces the sequential op gate in SQL so the window isn't filled with non-runnable tasks; pulls 3x the dispatch window for round-robin. */
 export async function pullDueTasks(): Promise<DueTask[]> {
   const db = await getDb();
   const now = new Date();
@@ -62,7 +61,6 @@ export async function pullDueTasks(): Promise<DueTask[]> {
 
   if (rows.length === 0) return rows;
 
-  /** Per-save round-robin (newest saves first from the query order) so one save can't monopolise progress; paused sources are skipped so inflight slots aren't pinned on stalled work. */
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
     if (isSourceTask(row.op) && sourcePausedUntil(row.source as never) > 0) {
@@ -87,7 +85,6 @@ export async function pullDueTasks(): Promise<DueTask[]> {
   return interleaved;
 }
 
-/** Fails `pending` tasks on non-ingesting saves; they can't run and starve the window. */
 export async function sweepOrphanTasks(): Promise<void> {
   const db = await getDb();
   const orphans = db
@@ -115,10 +112,6 @@ export async function sweepOrphanTasks(): Promise<void> {
   });
 }
 
-/**
- * Heals `ingesting` saves with no task rows (a save synced in from another device mid-ingest arrives taskless); nothing else can ever move them, so they'd sit in the saving pill forever.
- * Re-seeds the source's op plan; sources with no plan settle as complete.
- */
 export async function sweepTasklessIngestingSaves(): Promise<void> {
   const db = await getDb();
   const stuck = db
@@ -142,7 +135,6 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
   for (const { id, source } of stuck) {
     const ops = planOps(source as Source);
     if (ops.length === 0) {
-      /** Via persistSave so the flip broadcasts to the renderer pool. */
       await persistSave(
         id,
         { status: "complete", ingestCompletedAt: now },

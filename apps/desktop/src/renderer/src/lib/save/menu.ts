@@ -45,13 +45,10 @@ import { selection } from "@/stores/selection";
 import { tumbleToTrash } from "@/stores/trash-tumble";
 
 interface BuildSaveMenuOptions {
-  /** Whether the tag clipboard is empty (controls the Paste Tags item). */
   clipboardEmpty: boolean;
-  /** When set (viewer slide under the cursor), file actions target that asset instead of the cover. */
   fileIndex?: number | null;
 }
 
-/** Finder-style: batch only when the clicked card is already in a multi-selection. */
 export function contextMenuSaves(clicked: Save): Save[] {
   if (selection.has(clicked.id) && selection.size() > 1) {
     const out: Save[] = [];
@@ -64,7 +61,6 @@ export function contextMenuSaves(clicked: Save): Save[] {
   return [clicked];
 }
 
-/** Plain function rather than a hook so a card never subscribes to the tag clipboard just to host a menu; the list is assembled lazily on open. */
 export function buildSaveMenu(
   saveOrSaves: Save | readonly Save[],
   { clipboardEmpty, fileIndex = null }: BuildSaveMenuOptions,
@@ -78,7 +74,6 @@ export function buildSaveMenu(
   const hasTags = saves.some((s) => s.tags.length > 0);
   const allTrashed = saves.every((s) => Boolean(s.deletedAt));
   const hasUrl = saves.some((s) => Boolean(s.url));
-  /** Videos and other non-image saves never get a Copy Image item; the viewer offers Copy Current Frame instead. */
   const hasImage = !batch && copyableImageIndex(save, fileIndex) != null;
   const targetIndex = resolveFileIndex(save, fileIndex);
   const targetFile =
@@ -209,7 +204,6 @@ export function buildSaveMenu(
     },
     {
       label: "Paste Tags",
-      /** Stays visible but disabled: the clipboard is transient app state, not a missing capability. */
       disabled: clipboardEmpty,
       shortcut: shortcutGlyphs("save.paste-tags"),
       onClick: () => {
@@ -221,7 +215,6 @@ export function buildSaveMenu(
     {
       type: "submenu",
       label: "Reverse Image Search",
-      /** Reverse search needs a public image URL from the capture metadata; local-only saves have none. */
       hidden: !hasUrl,
       items: reverseSearchItems,
     },

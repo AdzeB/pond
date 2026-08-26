@@ -63,7 +63,6 @@ describe("rotateBundleBackups", () => {
 
     for (let i = 0; i < 12; i++) {
       rotateBundleBackups(backupDir, [file, join(root, "missing.json")]);
-      /** Snapshot dirs are named by ISO timestamp; keep them distinct. */
       await new Promise((r) => setTimeout(r, 2));
     }
 

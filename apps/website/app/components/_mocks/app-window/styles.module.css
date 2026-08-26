@@ -1,5 +1,3 @@
-/* Native-resolution replica of the desktop shell: 1280x800, tab chrome, inset library panel, bottom dock. */
-
 .window {
   --window-inset: 16px;
   --window-radius: 12px;

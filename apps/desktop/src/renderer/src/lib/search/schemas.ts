@@ -21,7 +21,6 @@ export const librarySearchSchema = z.looseObject({
   url: z.string().optional(),
 });
 
-/** Strips a trailing /save/:id to get the parent list base. */
 export function listBaseFromPath(pathname: string): string {
   return pathname.replace(/\/save\/[^/]+\/?$/, "").replace(/\/+$/, "") || "/";
 }

@@ -34,7 +34,6 @@ const VIDEO_EXT: Record<string, string> = {
 };
 const TEXT_EXT = new Set([".txt", ".md", ".markdown"]);
 
-/** Cap imported text bodies so a huge markdown dump cannot blow memory or covers. */
 const MAX_TEXT_BODY_BYTES = 100_000;
 
 type Classified =
@@ -79,9 +78,7 @@ export interface ManualSaveInput {
   url?: string | null;
   note?: string | null;
   tags?: string[];
-  /** Absolute paths on disk the main process can read. */
   filePaths?: string[];
-  /** Override the local sourceId (e.g. eagle:<id> for idempotent re-import). */
   sourceId?: string | null;
   source?: Source;
   width?: number;
@@ -107,7 +104,6 @@ interface ReadableText {
   body: string;
 }
 
-/** Builds a complete local save without the URL pipeline; no ops are enqueued. */
 export async function createManualSave(
   input: ManualSaveInput,
 ): Promise<ManualSaveResult> {
@@ -165,9 +161,7 @@ export async function createManualSave(
           bytes: await readFile(path),
         });
       }
-    } catch {
-      /** Skip unreadable files rather than failing the whole import. */
-    }
+    } catch {}
   }
 
   if (
@@ -203,7 +197,6 @@ export async function createManualSave(
 
   const hasMedia = readableMedia.length > 0;
   const hasUrl = Boolean(input.url?.trim());
-  /** URL bookmarks stay links even when a note is attached; prose-only entries are text. */
   const isTextSave = !hasMedia && !hasUrl && Boolean(textBody);
   const mediaType: MediaType = hasMedia
     ? (majorityMediaType(readableMedia.map((f) => f.mediaType)) ?? "image")
@@ -221,7 +214,6 @@ export async function createManualSave(
     notes: isTextSave ? null : note,
     mediaType,
     siteName: null,
-    /** Local files are copied in-process; never park them in the ingest queue. */
     status: "complete",
     tags,
     files: [],

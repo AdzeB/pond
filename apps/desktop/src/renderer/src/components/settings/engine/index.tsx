@@ -178,7 +178,6 @@ function Group({
 }) {
   if (group.visible && !group.visible(binding.values)) return null;
 
-  /** Items bound to their own slice resolve visibility in their wrapper; group-bound items are filtered here so the empty short-circuit stays correct. */
   const items = (group.items ?? []).filter(
     (item) =>
       item.prefsKey !== undefined ||
@@ -228,7 +227,6 @@ function Group({
   );
 }
 
-/** Items with their own `prefsKey` bind to that slice and self-resolve visibility; everything else uses the group binding. */
 function ItemRow({
   item,
   groupBinding,

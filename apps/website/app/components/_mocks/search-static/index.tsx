@@ -8,7 +8,6 @@ const RESULTS = [1, 9, 15, 21];
 const aspectOf = (seed: number) =>
   SAVES.find((save) => save.seed === seed)?.aspect ?? 1;
 
-/** The library dock frozen mid-search: a source token stacked with free text, results narrowed above. */
 export function SearchStatic() {
   return (
     <div className={styles.panel} aria-hidden>

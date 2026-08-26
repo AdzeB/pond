@@ -15,7 +15,6 @@ export function inPageScrollCollect() {
     nextSelector?: string;
     nextFinder?: () => HTMLElement | null;
     nextDelayMs?: number;
-    /** Consecutive all-known batches before stopping; the lists are newest-first, so an all-known batch means we've scrolled into the synced backlog. 0 disables early-stop. */
     stopAfterKnownBatches?: number;
   }) {
     const {
@@ -35,11 +34,9 @@ export function inPageScrollCollect() {
 
     const known = new Set(knownIds.map(String));
     const collected = new Map<string, T>();
-    /** Early-stop only applies on incremental syncs, where there is a baseline to hit. */
     const earlyStopEnabled = stopAfterKnownBatches > 0 && known.size > 0;
     let knownBatchStreak = 0;
 
-    /** Returns true once enough consecutive all-known batches have been added. */
     function ingest(rows: T[]): boolean {
       let addedAny = false;
       let addedFresh = false;
@@ -53,7 +50,6 @@ export function inPageScrollCollect() {
       if (addedFresh) {
         knownBatchStreak = 0;
       } else if (addedAny) {
-        /** New rows appeared, but every one was already in the library. */
         knownBatchStreak += 1;
       }
       return knownBatchStreak >= stopAfterKnownBatches;

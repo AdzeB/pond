@@ -5,16 +5,13 @@ import { colorCopyFormats } from "@/lib/util/color";
 import { setQuery } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
-/** Hug the widest copy label but stay menu-sized, mirroring the native menu host. */
 const POPUP_STYLE = {
   "--popup-width": "max-content",
   "--popup-min-width": "200px",
 } as CSSProperties;
 
-/** How long the swatch reports a successful copy. */
 const COPIED_HOLD_MS = 1200;
 
-/** Leaves the save page so the freshly-filtered grid is what the user lands on. */
 function findSimilar(hex: string): void {
   setQuery({
     combinator: "and",

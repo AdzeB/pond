@@ -1,4 +1,3 @@
-/** Coerce IPC/DB timestamps (number, Date, numeric string, ISO) to epoch ms. */
 export function toMs(v: unknown): number | null {
   if (v == null) return null;
   if (typeof v === "number") return Number.isFinite(v) ? v : null;

@@ -1,10 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-/**
- * The user-driven half of the dock pill's state ("nav" is resting); the rendered DockView also accounts for the selection store, which takes priority.
- * @remarks Lives in a store so surfaces outside the dock, like the application menu, can open a view without threading callbacks.
- */
 export type DockMode =
   | "nav"
   | "search"
@@ -50,7 +46,6 @@ export const dockMode = {
   close(): void {
     store.setState((s) => (s.mode === "nav" ? s : { mode: "nav" }));
   },
-  /** For module-level listeners; components should use useDockMode instead. */
   subscribe(fn: (mode: DockMode) => void): () => void {
     const sub = store.subscribe(() => fn(store.state.mode));
     return () => sub.unsubscribe();

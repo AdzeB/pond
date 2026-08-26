@@ -73,7 +73,6 @@ export function useFilteredSaves(
   const empty = !query || isEmptyQuery(query);
   const useSql = !empty && queryIsFullySqlSupported(query);
 
-  /** Client-only projections and non-recency sorts need the complete pool, not just the current recency page. */
   useEffect(() => {
     if (!needsFullPoolHydration(empty, useSql, sortKey, sortDir)) return;
     void hydrateFullPool().catch((error) => {
@@ -138,7 +137,6 @@ export function useFilteredSaves(
         sortKey === "savedAt" && sortDir === "desc"
           ? filtered
           : sortSaves(filtered, sortKey, sortDir);
-      /** Incomplete pool can match nothing while SQL is in flight; keep the last grid instead of flashing empty. */
       return preview.length > 0 ? preview : prevRef.current;
     }
     const filtered = saves.filter((s) => matches(query as Query, s));
@@ -150,7 +148,6 @@ export function useFilteredSaves(
   return next;
 }
 
-/** Preserve the SQL sort order without widening a previously narrowed input (for example, FTS search hits). */
 export function intersectSqlResults(
   saves: ReadonlyArray<Save>,
   sqlIds: ReadonlyArray<string>,
@@ -218,7 +215,6 @@ function cmp(a: Save, b: Save, key: SortKey): number {
   }
 }
 
-/** Missing values sort last regardless of direction's sign convention. */
 function nullableNumber(a: number | null, b: number | null): number {
   if (a == null && b == null) return 0;
   if (a == null) return 1;
@@ -250,6 +246,7 @@ function textFor(value: string | null | undefined): string {
 }
 
 function typeFor(s: Save): string {
+  if (s.source === "web") return "link";
   return (s.mediaType ?? s.files[0]?.kind ?? "").toLowerCase();
 }
 

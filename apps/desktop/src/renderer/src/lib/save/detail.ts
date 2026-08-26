@@ -20,17 +20,15 @@ export interface DetailRow {
   watch?: boolean;
 }
 
-/** The link-card destination URL, read from the harvested capture. */
 function readCardUrl(save: Save): string | undefined {
   const raw = save.rawJson as
-    | { capture?: { extras?: { card?: { url?: unknown } } } }
+    | { capture?: { card?: { url?: unknown } } }
     | null
     | undefined;
-  const url = raw?.capture?.extras?.card?.url;
+  const url = raw?.capture?.card?.url;
   return typeof url === "string" && url.length > 0 ? url : undefined;
 }
 
-/** X's own shortener; hiding it keeps Content focused on real destinations and prose. */
 function isTwitterShortUrl(url: string): boolean {
   try {
     return new URL(url).hostname.replace(/^www\./, "") === "t.co";
@@ -168,7 +166,6 @@ export function collectIdentityRows(
   return rows;
 }
 
-/** Unknown ids fall through into Properties. */
 export function groupDetailRows(rows: DetailRow[]): DetailGroup[] {
   const byId = new Map(rows.map((row) => [row.id, row]));
   const placed = new Set<string>();
@@ -203,14 +200,12 @@ function normalizeForCompare(text: string): string {
     .toLowerCase();
 }
 
-/** Title that is the content plus a trailing URL (or the same words) should not get its own island. */
 export function isSameTitleAndContent(title: string, content: string): boolean {
   const a = normalizeForCompare(title);
   const b = normalizeForCompare(content);
   return a.length > 0 && a === b;
 }
 
-/** X strips the trailing link from a tweet's visible text once it becomes a card; surface that destination here when it isn't just another t.co shortlink. */
 export function composeContentDescription(save: Save): string {
   const base = stripTwitterShortUrls(save.description?.trim() ?? "");
   const cardUrl = readCardUrl(save);

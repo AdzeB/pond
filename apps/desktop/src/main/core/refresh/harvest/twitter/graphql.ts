@@ -245,7 +245,6 @@ interface CardBindingValue {
   image_value?: { url?: string; width?: number; height?: number };
 }
 
-/** binding_values arrives as either an array of { key, value } or a key->value map depending on the GraphQL surface; normalize both to a lookup. */
 function cardBindings(raw: unknown): Map<string, CardBindingValue> {
   const map = new Map<string, CardBindingValue>();
   if (Array.isArray(raw)) {
@@ -265,7 +264,6 @@ function cardBindings(raw: unknown): Map<string, CardBindingValue> {
   return map;
 }
 
-/** Prefer the *_original / *_large card image variants, then widest. */
 function pickCardImage(map: Map<string, CardBindingValue>): string | undefined {
   let best: { url: string; score: number } | null = null;
   for (const [key, value] of map) {
@@ -280,7 +278,6 @@ function pickCardImage(map: Map<string, CardBindingValue>): string | undefined {
   return best?.url;
 }
 
-/** Link-card embed from `card.legacy.binding_values`, the OG preview X renders for summary / summary_large_image links. */
 function pickCard(tweet: TweetLike): RichTweetCard | undefined {
   const legacy = tweet.card?.legacy;
   if (!legacy) return undefined;
@@ -329,7 +326,6 @@ function pickAuthorName(tweet: TweetLike): string | null {
   return legacy ?? null;
 }
 
-/** Promotes the default `_normal` avatar crop to `_400x400` so it isn't blurry on retina. */
 function pickAuthorAvatar(tweet: TweetLike): string | null {
   const user = tweet.core?.user_results?.result;
   const raw = user?.avatar?.image_url ?? user?.legacy?.profile_image_url_https;
@@ -376,7 +372,6 @@ function mapMedia(item: MediaLike): RichTweetMedia | null {
   };
 }
 
-/** Prefer true pixel dimensions; fall back to the video's reduced aspect ratio so single-video tiles can size themselves. */
 function pickDims(
   item: MediaLike,
 ): { width: number; height: number } | undefined {

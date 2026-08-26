@@ -1,5 +1,3 @@
-/** Every entry is a Transformers.js model published with ONNX weights, so it runs locally via the same pipelines as the defaults; ratings are coarse and only comparable within a catalog. */
-
 interface ModelSpec {
   label: string;
   value: string;
@@ -8,15 +6,11 @@ interface ModelSpec {
 export interface PickerModel {
   id: string;
   name: string;
-  /** Provider/family heading used to group the list. */
   group: string;
-  /** Relative ratings, 1 (low) to 5 (high). */
   speed: number;
   quality: number;
   multilingual?: boolean;
-  /** Short right-aligned tag shown in the row, e.g. "384d" or "270 MB". */
   meta?: string;
-  /** Key/value rows shown in the info panel. */
   specs: ModelSpec[];
   summary: string;
 }

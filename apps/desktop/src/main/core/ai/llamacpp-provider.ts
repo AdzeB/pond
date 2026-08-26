@@ -8,8 +8,6 @@ import log from "electron-log/main.js";
 import { buildSystemPrompt, queryJsonSchema } from "./schema-prompt";
 import type { AiProvider, CompileContext } from "./types";
 
-/** Offline LLM provider via node-llama-cpp; the native dep is optional (the app runs without it) and the GGUF model downloads to userData on first use to keep the installer small. */
-
 /** Small, permissively-licensed instruct model that's good at structured output. */
 const MODEL_FILE = "Llama-3.2-1B-Instruct-Q4_K_M.gguf";
 const MODEL_URL =
@@ -24,7 +22,6 @@ async function loadModule(): Promise<LlamaModule | null> {
   if (!modulePromise) {
     modulePromise = (async () => {
       try {
-        /** Computed specifier so bundlers don't try to resolve the optional dep. */
         const specifier = ["node", "llama", "cpp"].join("-");
         const mod = (await import(specifier)) as LlamaModule;
         return mod;
@@ -112,7 +109,6 @@ export class LlamaCppProvider implements AiProvider {
     return { mod, session: this.session };
   }
 
-  /** Grammar output is a filter object; wrap it as a QueryPlan. Each prompt starts from a clean chat so prior compiles don't leak. */
   async compilePlan(input: string, ctx: CompileContext): Promise<unknown> {
     const { mod, session } = await this.ensureSession();
     const grammar = await mod

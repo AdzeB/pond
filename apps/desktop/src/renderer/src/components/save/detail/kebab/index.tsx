@@ -45,10 +45,10 @@ import {
   reverseImageSearch,
 } from "@/lib/save/reverse-image-search";
 import { shortcutGlyphs } from "@/lib/save/shortcuts";
+import { statusFeed } from "@/lib/status-feed";
 import type { Save } from "@/lib/types";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
 import { closeSave } from "@/lib/ui/save-nav";
-import { activity } from "@/stores/activity";
 import { usePrefsValue } from "@/stores/prefs";
 
 export function KebabMenu({
@@ -56,7 +56,6 @@ export function KebabMenu({
   fileIndex = null,
 }: {
   save: Save;
-  /** Active viewer file; when set, Open/Copy/Reveal target that asset. */
   fileIndex?: number | null;
 }) {
   const prefs = usePrefsValue();
@@ -96,7 +95,6 @@ export function KebabMenu({
     closeDetail();
   }, [save, closeDetail]);
 
-  /** Silent, matching the system convention that Cmd+C confirms nothing. */
   const copyRawJson = useCallback(async () => {
     if (!save.rawJson) return;
     await window.pond.query("clipboard.writeText", {
@@ -208,7 +206,8 @@ export function KebabMenu({
             disabled: !TASK_ENABLED.reembed(prefs),
             onClick: () => {
               const result = reembed([save.id]);
-              if (!result.ok) activity.error("Semantic Index", result.message);
+              if (!result.ok)
+                statusFeed.error("Semantic Index", result.message);
             },
           },
           {
@@ -217,7 +216,7 @@ export function KebabMenu({
             disabled: !TASK_ENABLED.clip(prefs),
             onClick: () => {
               const result = rebuildVisualIndex([save.id]);
-              if (!result.ok) activity.error("Visual Index", result.message);
+              if (!result.ok) statusFeed.error("Visual Index", result.message);
             },
           },
         ],

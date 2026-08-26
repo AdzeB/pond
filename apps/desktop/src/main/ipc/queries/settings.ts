@@ -26,7 +26,6 @@ export const settingsQueries: QueryHandlerMap = {
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.id, "singleton"));
-    /** Read through normalizing getters so a partial blob doesn't blank UI controls. */
     const videoDownload = await getVideoDownloadPrefs();
     const imageDownload = await getImageDownloadPrefs();
     if (rows[0]) {
@@ -100,11 +99,6 @@ export const settingsQueries: QueryHandlerMap = {
     return await getPrefs();
   },
 
-  async "appIcons.list"() {
-    const { listAppIcons } = await import("../../core/app-icon");
-    return await listAppIcons();
-  },
-
   async "settings.setPrefs"(params) {
     const next = await setPrefs(params as Parameters<typeof setPrefs>[0]);
     if (params && typeof params === "object" && "preferences" in params) {
@@ -119,7 +113,8 @@ export const settingsQueries: QueryHandlerMap = {
       "appIcon" in params.window
     ) {
       const { applyAppIcon } = await import("../../core/app-icon");
-      await applyAppIcon(undefined, { animate: true });
+      const nextIcon = params.window.appIcon;
+      await applyAppIcon(typeof nextIcon === "string" ? nextIcon : undefined);
     }
     return { ok: true, prefs: next };
   },

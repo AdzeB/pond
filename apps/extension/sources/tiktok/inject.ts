@@ -124,9 +124,7 @@ export function inject(): void {
     for (const k of Object.keys(obj)) {
       try {
         walkForAweme(obj[k]);
-      } catch {
-        /* ignore */
-      }
+      } catch {}
     }
   }
 

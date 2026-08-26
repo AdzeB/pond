@@ -1,4 +1,3 @@
-/** Resolves theme prefs into the CSS anchors shared by the shell boot hint and the local HTTP API. */
 import { nativeTheme } from "electron";
 import { getPrefs } from "./core/prefs";
 

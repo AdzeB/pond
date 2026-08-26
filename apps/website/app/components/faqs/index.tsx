@@ -32,13 +32,13 @@ const FAQS: FaqItem[] = [
     value: "sync",
     question: "Does anything sync to a Pond server?",
     answer:
-      "No. The browser extension talks to a local server on 127.0.0.1:41610 that only your Mac can reach.",
+      "No. The browser extension talks to Pond on your Mac through native messaging. Nothing is sent to a Pond server.",
   },
   {
     value: "gatekeeper",
     question: "macOS says the developer cannot be verified.",
     answer:
-      "v0.1 ships unsigned. Right-click Pond.app and choose Open, or go to System Settings → Privacy & Security → Open Anyway.",
+      "v0.0.1 ships unsigned. Right-click Pond.app and choose Open, or go to System Settings → Privacy & Security → Open Anyway.",
   },
   {
     value: "ai",
@@ -49,7 +49,8 @@ const FAQS: FaqItem[] = [
   {
     value: "platforms",
     question: "Does it work on Windows or Linux?",
-    answer: "Not yet. Mac-first, by design.",
+    answer:
+      "Windows should work. It hasn't been tested. Linux is not supported.",
   },
 ];
 

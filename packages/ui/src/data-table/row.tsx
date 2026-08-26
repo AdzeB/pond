@@ -102,6 +102,7 @@ function RowImpl<T>({
       selected,
       cells,
       rowProps,
+      onToggleExpand: () => api.toggleExpand(rowId),
     });
   }
 

@@ -6,7 +6,6 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/** Seconds -> "m:ss", or "h:mm:ss" past an hour. */
 export function formatTime(sec: number): string {
   const total = Number.isFinite(sec) ? Math.max(0, Math.floor(sec)) : 0;
   const h = Math.floor(total / 3600);
@@ -18,7 +17,6 @@ export function formatTime(sec: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** End of the buffered range around the playhead, for painting the scrubber. */
 export function bufferedEnd(video: HTMLVideoElement): number {
   const { buffered, currentTime } = video;
   let end = 0;

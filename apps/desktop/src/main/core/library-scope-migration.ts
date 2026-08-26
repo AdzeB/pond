@@ -34,7 +34,6 @@ function fileMediaKind(file: SaveFile): "image" | "video" | null {
   return null;
 }
 
-/** Keep text only for local prose and Are.na text blocks; otherwise rederive from files or link. */
 function repairTextMediaType(row: {
   source: string;
   description: string | null;
@@ -54,7 +53,6 @@ function repairTextMediaType(row: {
   return "link";
 }
 
-/** Purge file saves, collapse mixed types, and backfill siteName from URLs. */
 export async function runLibraryScopeMigration(): Promise<void> {
   const db = await getDb();
 

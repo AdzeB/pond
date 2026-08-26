@@ -1,6 +1,10 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
+/** Pinned public key so unpacked and store builds share `EXTENSION_ID` in `@pond/schema/native`. */
+const EXTENSION_KEY =
+  "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA3Zo8eCTaDeFH3Cc8yLtm6FiH3ALU8SMbH+oTFnjzBbD1+zUy1chc0P4c62tYvW4rBiO3CKt2Ycn3u1PmbkBPzuu/65YA7AZMA9+Oyp3QHhsjC1lED4EdCKQJK2WuyLv0k4kG22HQGUN83n9vdx/fPYRk3IL4yFplWUrcsApFOVAIVvhoMizpYfnBvey64aY9FTAFSKd+iYyA7J/yVzRh4AyjYRJFlmdA8K9aMaGZ/Ta4UvUrqoGBkgyGGH+hoVsPvgxW/+w5+JWAThT9ApAVEeuuZp9LeNwmnI2zUFxS0JRf6LHIDy7kbtTOVW5g9eOaS9G3Gs13j2VPC1Yyu7zxTQIDAQAB";
+
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   /** Pin to 3001 with strictPort so dev never collides with the website's Next server. */
@@ -22,16 +26,13 @@ export default defineConfig({
       },
     },
   }),
-  /** Keep the popup state gallery out of release zips; the browser-action popup is replaced by the in-page toolbar. */
   hooks: {
     "entrypoints:found"(wxt, infos) {
-      if (wxt.config.command !== "build") {
-        /** Dev still loads gallery; strip the action popup so the toolbar toggle works. */
-        const popup = infos.findIndex((info) => info.name === "popup");
-        if (popup >= 0) infos.splice(popup, 1);
-        return;
-      }
-      for (const name of ["gallery", "popup"] as const) {
+      const strip =
+        wxt.config.command === "build"
+          ? (["gallery", "popup"] as const)
+          : (["popup"] as const);
+      for (const name of strip) {
         const index = infos.findIndex((info) => info.name === name);
         if (index >= 0) infos.splice(index, 1);
       }
@@ -39,7 +40,8 @@ export default defineConfig({
   },
   manifest: {
     name: "Pond",
-    version: "0.1.0",
+    version: "0.0.1",
+    key: EXTENSION_KEY,
     description:
       "Capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, Threads, and web articles into one place.",
     icons: {
@@ -49,7 +51,7 @@ export default defineConfig({
       128: "icons/128.png",
     },
     action: {
-      default_title: "Pond",
+      default_title: "Save to Pond",
       default_icon: {
         16: "icons/16.png",
         32: "icons/32.png",
@@ -67,8 +69,9 @@ export default defineConfig({
       "storage",
       "activeTab",
       "tabs",
-      /** Required by the "Push session to Pond" flow: reads httpOnly cookies the renderer can't see. */
       "cookies",
+      "contextMenus",
+      "nativeMessaging",
     ],
     host_permissions: [
       "https://x.com/*",
@@ -83,8 +86,6 @@ export default defineConfig({
       "https://www.tiktok.com/*",
       "https://www.youtube.com/*",
       "https://m.youtube.com/*",
-      "http://127.0.0.1/*",
-      "http://localhost/*",
       "<all_urls>",
     ],
   },

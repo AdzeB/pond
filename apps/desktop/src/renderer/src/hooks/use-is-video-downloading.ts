@@ -1,6 +1,5 @@
 import type { Save } from "@/lib/types";
 
-/** True only while yt-dlp is actively fetching; pending video tasks stay off the card. */
 export function useIsVideoDownloading(save: Save | null | undefined): boolean {
   if (!save) return false;
   if (save.status === "complete" || save.status === "failed") return false;

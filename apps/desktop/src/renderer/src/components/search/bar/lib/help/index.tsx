@@ -6,7 +6,6 @@ import { FIELD_ICONS } from "@/lib/search/fields";
 import { buildGroups, GROUP_LABELS } from "../filters-menu";
 import styles from "./styles.module.css";
 
-/** The search card's drill-down reference page: every filter key with its accepted values. */
 export function SearchHelpSection() {
   const dock = useDock();
   const groups = useMemo(buildGroups, []);

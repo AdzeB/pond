@@ -1,6 +1,5 @@
 import type { NextConfig } from "next";
 
-/** Swap the tab icon outside prod so local/preview tabs are obvious at a glance. */
 const FAVICONS = {
   preview: "/favicon.preview.svg",
   development: "/favicon.development.svg",

@@ -4,13 +4,11 @@ import { resolvePreload } from "../../../lib/resolve-preload";
 import { acquire } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
 
-/** Hard ceiling on live scrape windows (~150 MB each). */
 export const GLOBAL_POOL_CAP = 6;
 
 /** Idle windows keep a heavy SPA resident in a full renderer process; blank on release and tear down after this grace so a finished sync doesn't pin CPU/memory. */
 const IDLE_EVICT_MS = 60_000;
 
-/** Per-source budgets deliberately sum past the global cap to prevent head-of-line blocking. */
 const PER_SOURCE_CAP: Record<Source, number> = {
   twitter: 3,
   instagram: 2,
@@ -21,9 +19,7 @@ const PER_SOURCE_CAP: Record<Source, number> = {
   arena: 2,
   reddit: 2,
   threads: 2,
-  /** Web metadata fetches over HTTP; the window budget serves archive_page crawls. */
   web: 2,
-  /** Local never leases a window; present only to complete the record. */
   local: 0,
 };
 
@@ -48,7 +44,6 @@ const busyBySource: Record<Source, number> = Object.fromEntries(
 const waitQueues: Record<Source, Waiter[]> = Object.fromEntries(
   SOURCES.map((s) => [s, [] as Waiter[]]),
 ) as Record<Source, Waiter[]>;
-/** Round-robin cursor so a hot queue can't monopolise released slots. */
 let roundRobinCursor = 0;
 
 function createHiddenWindow(partition: string): BrowserWindow {
@@ -94,7 +89,6 @@ function cancelEviction(slot: PoolSlot): void {
   }
 }
 
-/** Drops the heavy page so an idle window stops running its timers, then arms a teardown so a fully idle pool releases its renderer processes. */
 function blankAndScheduleEviction(slot: PoolSlot): void {
   cancelEviction(slot);
   if (slot.win.isDestroyed()) return;
@@ -103,7 +97,6 @@ function blankAndScheduleEviction(slot: PoolSlot): void {
     slot.evictTimer = null;
     if (!slot.busy && !slot.win.isDestroyed()) slot.win.destroy();
   }, IDLE_EVICT_MS);
-  /** Never let the eviction timer keep the process alive on its own. */
   slot.evictTimer.unref?.();
 }
 
@@ -122,22 +115,17 @@ function claimSlot(slot: PoolSlot, source: Source): Lease {
       slot.source = null;
       busyBySource[source] = Math.max(0, busyBySource[source] - 1);
       drainQueues();
-      /** If a waiter didn't immediately re-claim the slot, free its page. */
       if (!slot.busy) blankAndScheduleEviction(slot);
     },
   };
 }
 
 interface LeaseOptions {
-  /** Apply the stricter first/full-sync pacing profile. */
   firstSync?: boolean;
-  /** Abort the governor wait (e.g. on sync cancel). */
   signal?: AbortSignal;
-  /** Session partition the leased window must run on; defaults to the legacy shared partition. */
   partition?: string;
 }
 
-/** A window's session is fixed at creation, so an idle slot on the wrong partition gets its window swapped rather than reused. */
 function retargetSlot(slot: PoolSlot, partition: string): void {
   if (slot.partition === partition) return;
   const old = slot.win;
@@ -146,7 +134,6 @@ function retargetSlot(slot: PoolSlot, partition: string): void {
   if (!old.isDestroyed()) old.destroy();
 }
 
-/** Queued waiters must honor the caller's abort signal, or a watchdog-killed task waits here forever and its retry piles up behind it. */
 function enqueueWaiter(
   source: Source,
   partition: string,
@@ -179,12 +166,10 @@ export async function leaseWindow(
   opts: LeaseOptions = {},
 ): Promise<Lease> {
   const partition = opts.partition ?? PARTITION;
-  /** Acquire from the governor before claiming a slot, so a paused source never pins a pool window. */
   await acquire(source, { firstSync: opts.firstSync, signal: opts.signal });
   if (busyBySource[source] >= PER_SOURCE_CAP[source]) {
     return enqueueWaiter(source, partition, opts.signal);
   }
-  /** Prefer an idle slot already on the right partition to keep its page cache. */
   const idle =
     pool.find(
       (s) => !s.busy && !s.win.isDestroyed() && s.partition === partition,
@@ -208,7 +193,6 @@ export async function leaseWindow(
   return enqueueWaiter(source, partition, opts.signal);
 }
 
-/** Round-robin, one grant per source per pass, until nothing can be served. */
 function drainQueues(): void {
   let progress = true;
   while (progress) {

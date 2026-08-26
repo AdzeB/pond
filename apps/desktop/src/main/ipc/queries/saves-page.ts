@@ -3,7 +3,6 @@ export interface SavePageCursor {
   id: string;
 }
 
-/** Whether a descending `(savedAt, id)` query should include `row` after `cursor`. */
 export function pageAfter(
   row: SavePageCursor,
   cursor: SavePageCursor,

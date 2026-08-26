@@ -69,7 +69,6 @@ export function ColorField({
     setText(value);
   }, [value]);
 
-  /** Auto-apply as the user types: input that resolves to a real colour commits immediately; invalid input stays in the field. */
   const handleChange = (next: string) => {
     setText(next);
     const normalized = normalize(next);
@@ -131,10 +130,6 @@ function usePicker(): PickerContextValue {
   return context;
 }
 
-/**
- * Headless colour-picker state provider; compose the visual parts inside it.
- * For the common bundled layout use `<ColorPicker />` directly.
- */
 function ColorPickerRoot({
   value,
   ariaLabel,

@@ -56,7 +56,6 @@
   composes: backdrop from "../shared/styles/popup/styles.module.css";
 }
 
-/* At least as wide as the trigger, growing to fit the widest item so long labels never wrap, capped at the viewport where labels ellipsize. */
 .popup {
   composes: popup from "../shared/styles/popup/styles.module.css";
   width: var(--popup-width, max-content);

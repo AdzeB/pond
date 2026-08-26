@@ -5,7 +5,6 @@ import { SettingsSectionView } from "@/components/settings/engine";
 import { isBespokeSection, sectionForPath } from "@/lib/settings/registry";
 import styles from "./styles.module.css";
 
-/** Retries across a few frames so the hash-targeted field still lands after lazy content and prefs-bound rows have mounted. */
 function useScrollToHashField(hash: string | null) {
   const reduceMotion = useReducedMotion();
 
@@ -38,7 +37,6 @@ function useScrollToHashField(hash: string | null) {
   }, [hash, reduceMotion]);
 }
 
-/** Field-style sections flow into a centered column; bespoke sections bring their own full layout. */
 export function SettingsDetail({
   section,
   hash = null,

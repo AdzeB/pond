@@ -1,16 +1,13 @@
 import type { MediaType } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
-import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
+import type { RawJson } from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import {
+  captureFromTweetShaped,
+  draftFromRichPost,
+} from "../capture/tweet-shaped";
 import { pickTitle } from "../refresh/harvest/lib/title";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
-
-/** Cap on quote-chain depth to keep media merges and the screenshot walker bounded. */
-const QUOTE_DEPTH_CAP = 3;
-
-interface QuotedTweetRef {
-  tweetId: string;
-  url: string;
-}
 
 interface SaveSeed {
   rawJson: RawJson;
@@ -23,78 +20,38 @@ interface SaveSeed {
   lang?: string | null;
 }
 
-/** Builds a seed from GraphQL data so the pipeline skips the rate-limited re-scrape. */
 export function buildTwitterBookmarkSeed(
   entry: BookmarksEntry,
 ): SaveSeed | null {
   const rich = entry.rich;
   if (!rich) return null;
 
-  const handle =
-    rich.author.handle || (entry.author ? entry.author.replace(/^@/, "") : "");
-  const name = rich.author.name || handle || null;
-  const avatarUrl = rich.author.avatarUrl ?? null;
-
-  const media: CaptureMedia[] = [];
-  const seenMedia = new Set<string>();
-  const pushMedia = (list: RichTweet["media"]): void => {
-    for (const m of list) {
-      if (seenMedia.has(m.url)) continue;
-      seenMedia.add(m.url);
-      media.push({
-        url: m.url,
-        type: m.type === "video" ? "video" : "image",
-        ...(m.poster ? { posterUrl: m.poster } : {}),
-        ...(typeof m.width === "number" ? { width: m.width } : {}),
-        ...(typeof m.height === "number" ? { height: m.height } : {}),
-        ...(typeof m.durationSec === "number"
-          ? { durationSec: m.durationSec }
-          : {}),
-      });
-    }
-  };
-  pushMedia(rich.media);
-
-  /** Walk the quote chain, merging media and recording it for the screenshot walker. */
-  const quotedTweets: QuotedTweetRef[] = [];
-  let quoted = rich.quoted;
-  for (let depth = 0; quoted && depth < QUOTE_DEPTH_CAP; depth += 1) {
-    quotedTweets.push({ tweetId: quoted.tweetId, url: quoted.url });
-    pushMedia(quoted.media);
-    quoted = quoted.quoted;
-  }
-
   const publishedAt = readLegacyCreatedAt(rich.raw);
+  const capture = captureFromTweetShaped(
+    draftFromRichPost({
+      source: "twitter",
+      id: entry.tweetId,
+      url: entry.url,
+      text: rich.fullText,
+      author: {
+        handle:
+          rich.author.handle ||
+          (entry.author ? entry.author.replace(/^@/, "") : ""),
+        name: rich.author.name || rich.author.handle,
+        ...(rich.author.avatarUrl ? { avatarUrl: rich.author.avatarUrl } : {}),
+      },
+      media: rich.media,
+      metrics: rich.metrics,
+      ...(rich.quoted ? { quoted: richQuoted(rich.quoted) } : {}),
+      ...(rich.card ? { card: rich.card } : {}),
+      ...(publishedAt ? { publishedAt: publishedAt.toISOString() } : {}),
+    }),
+  );
 
-  const title = pickTitle(rich.fullText, entry.title);
-  const description = rich.fullText || entry.description || null;
-
-  const extras: Record<string, unknown> = {};
-  if (quotedTweets.length > 0) extras.quotedTweets = quotedTweets;
-  if (rich.card) extras.card = rich.card;
-
-  const capture: Capture = {
-    id: entry.tweetId,
-    source: "twitter",
-    url: entry.url,
-    ...(title ? { title } : {}),
-    ...(description ? { description } : {}),
-    ...(name || handle || avatarUrl
-      ? {
-          author: {
-            ...(name ? { name } : {}),
-            ...(handle ? { handle } : {}),
-            ...(avatarUrl ? { avatarUrl } : {}),
-          },
-        }
-      : {}),
-    ...(publishedAt ? { publishedAt: publishedAt.toISOString() } : {}),
-    media,
-    ...(rich.metrics && Object.keys(rich.metrics).length > 0
-      ? { metrics: { ...rich.metrics } }
-      : {}),
-    ...(Object.keys(extras).length > 0 ? { extras } : {}),
-  };
+  const handle = capture.author?.handle;
+  const name = capture.author?.name;
+  const media = walkCaptureMedia(capture);
+  const title = capture.title ?? pickTitle(rich.fullText, entry.title);
 
   const rawJson: RawJson = {
     capture,
@@ -105,14 +62,36 @@ export function buildTwitterBookmarkSeed(
   return {
     rawJson,
     title: title ?? null,
-    description: description ?? null,
+    description: capture.description ?? null,
     author: name ?? (handle ? `@${handle}` : (entry.author ?? null)),
-    mediaUrl: media[0]?.url ?? null,
+    mediaUrl: capture.media[0]?.url ?? media[0]?.url ?? null,
     mediaType: majorityMediaType(
-      media.map((m) => (m.type === "video" ? "video" : "image")),
+      capture.media.map((m) => (m.type === "video" ? "video" : "image")),
     ),
     publishedAt,
     lang: null,
+  };
+}
+
+function richQuoted(
+  quoted: RichTweet,
+): Parameters<typeof draftFromRichPost>[0] {
+  return {
+    source: "twitter",
+    id: quoted.tweetId,
+    url: quoted.url,
+    text: quoted.fullText,
+    author: {
+      handle: quoted.author.handle,
+      name: quoted.author.name,
+      ...(quoted.author.avatarUrl
+        ? { avatarUrl: quoted.author.avatarUrl }
+        : {}),
+    },
+    media: quoted.media,
+    metrics: quoted.metrics,
+    ...(quoted.quoted ? { quoted: richQuoted(quoted.quoted) } : {}),
+    ...(quoted.card ? { card: quoted.card } : {}),
   };
 }
 

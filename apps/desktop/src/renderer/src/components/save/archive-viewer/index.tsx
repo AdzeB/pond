@@ -9,7 +9,6 @@ import {
 import type { Save } from "@/lib/types";
 import styles from "./styles.module.css";
 
-/** Replays the crawled WARC archive (JS included) through replayweb.page in a sandboxed webview. */
 export function SaveArchiveViewer({ save }: { save: Save }) {
   const [manifest, setManifest] = useState<ArchiveManifest | null>(null);
   useEffect(() => {
@@ -64,7 +63,6 @@ function ArchiveFrame({
     });
   }, []);
 
-  /** Main forwards escaped top-level guest navigations here; archived targets swap the page, the rest open in the browser. */
   useEffect(() => {
     return window.pond.onArchiveNavigate(({ guestId, url }) => {
       if (guestId == null || guestId !== guestIdRef.current) return;

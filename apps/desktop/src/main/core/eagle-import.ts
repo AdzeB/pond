@@ -58,9 +58,7 @@ async function resolveImagesDir(libraryPath: string): Promise<string | null> {
   const direct = join(libraryPath, "images");
   try {
     if ((await stat(direct)).isDirectory()) return direct;
-  } catch {
-    /* try nested .library */
-  }
+  } catch {}
 
   try {
     const entries = await readdir(libraryPath, { withFileTypes: true });
@@ -69,9 +67,7 @@ async function resolveImagesDir(libraryPath: string): Promise<string | null> {
       const nested = join(libraryPath, entry.name, "images");
       try {
         if ((await stat(nested)).isDirectory()) return nested;
-      } catch {
-        /* keep looking */
-      }
+      } catch {}
     }
   } catch {
     return null;
@@ -93,7 +89,6 @@ async function resolveLibraryMeta(
   return { folders: [] };
 }
 
-/** Imports an Eagle `.library` folder into the open Pond library. */
 export async function importEagleLibrary(
   libraryPath: string,
 ): Promise<EagleImportResult> {

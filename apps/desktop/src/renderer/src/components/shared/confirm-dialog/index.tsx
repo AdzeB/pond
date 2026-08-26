@@ -9,14 +9,12 @@ export interface ConfirmOptions {
   confirmLabel: ReactNode;
   cancelLabel?: ReactNode;
   confirmVariant?: ButtonVariant;
-  /** Swapped in for confirmLabel while an async onConfirm is pending. */
   busyLabel?: ReactNode;
   onConfirm: () => void | Promise<void>;
 }
 
 const handle = AlertDialog.createHandle<ConfirmOptions>();
 
-/** Opens the app-wide confirm dialog; a single host near the root renders every request. */
 export function confirm(options: ConfirmOptions): void {
   handle.openWithPayload(options);
 }

@@ -8,7 +8,6 @@ import {
 } from "@/lib/save/shortcuts";
 import styles from "./styles.module.css";
 
-/** Linear-style keycap cluster for a shortcut id (chords or `G then L` sequences). */
 export function ShortcutKeys({ id }: { id: ShortcutId }) {
   const sequence = shortcutSequence(id);
   if (sequence) {

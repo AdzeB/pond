@@ -36,7 +36,6 @@ let activeJobs = 0;
 let scanCursor: { savedAt: number; id: string } | null = null;
 let scanComplete = false;
 let loadingPage = false;
-/** Bumped on every start so an in-flight page load cannot corrupt the next run. */
 let scanGeneration = 0;
 
 function publish(patch: Partial<MediaIndexStatus>): void {
@@ -157,7 +156,6 @@ async function tick(): Promise<void> {
       schedule(0);
       return;
     }
-    /** A page can contain only text saves; continue scanning without retaining their JSON. */
     if (candidates.length === 0 && !scanComplete) {
       schedule(0);
       return;

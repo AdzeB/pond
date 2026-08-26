@@ -30,7 +30,6 @@ function profileUrl(
   return null;
 }
 
-/** In-page collector, serialized as an expression for executeJavaScript. */
 function buildCollectorExpression(source: Source): string {
   const pattern =
     source === "instagram"

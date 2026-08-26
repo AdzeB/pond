@@ -1,4 +1,3 @@
-import { liftCleared } from "@/components/settings/funnel/lib/queue";
 import { resolveFileIndex } from "@/lib/save/actions";
 import {
   purgeSaves,
@@ -7,15 +6,14 @@ import {
   untrashSaves,
 } from "@/lib/save/mutate";
 import { REVERSE_SEARCH_ENGINES } from "@/lib/save/reverse-image-search";
+import { statusFeed } from "@/lib/status-feed";
 import type { Save } from "@/lib/types";
 import { notify } from "@/lib/ui/toast";
-import { activity } from "@/stores/activity";
 import { libraryViewContext } from "@/stores/library-view-context";
 import { pool } from "@/stores/pool";
 import { selection } from "@/stores/selection";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
-/** Inline feedback for the card that triggered the action. */
 export interface SelectionActionResult {
   ok: boolean;
   message: string;
@@ -55,29 +53,25 @@ export function isAllSelected(): boolean {
   return all.length > 0 && selection.size() >= all.length;
 }
 
-/** The subset "Retry failed" acts on. */
 export function failedIdsIn(ids: readonly string[]): string[] {
   return resolve(ids)
     .filter((s) => s.status === "failed")
     .map((s) => s.id);
 }
 
-/** The main process resets each failed save's tasks and flips it back to ingesting, broadcasting the change to the pool; the requeued items reappear in the saving pill and queue. */
 export async function retryFailedSelection(
   ids: readonly string[],
 ): Promise<void> {
   const failed = failedIdsIn(ids);
   if (failed.length === 0) return;
-  liftCleared(failed);
   const result = (await window.pond.query("saves.retryFailed", {
     ids: failed,
   })) as { ok: boolean; requeued: number };
   if (!result.ok || result.requeued === 0) {
-    activity.error("Retry failed items", "Couldn't retry failed items.");
+    statusFeed.error("Retry failed items", "Couldn't retry failed items.");
   }
 }
 
-/** Silent: the grid shows the change and Cmd+Z undoes it. */
 export async function trashSelection(ids: readonly string[]): Promise<void> {
   if (ids.length === 0) return;
   await trashSaves([...ids]);
@@ -98,7 +92,6 @@ export async function deleteSelectionForever(
   selection.clear();
 }
 
-/** Batch apply from the tag card; the tag chips on the cards are the confirmation. */
 export async function addTagsToSelection(
   ids: readonly string[],
   tags: readonly string[],
@@ -152,7 +145,7 @@ export async function exportSelectionFiles(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
-  const job = activity.start("Exporting files");
+  const job = statusFeed.start("Exporting files");
   const result = (await window.pond.query("saves.exportFiles", {
     ids: [...ids],
   })) as
@@ -160,14 +153,14 @@ export async function exportSelectionFiles(
     | { ok: false; error: string };
   if (!result.ok) {
     if (result.error === "canceled") {
-      activity.dismiss(job);
+      statusFeed.dismiss(job);
       return { ok: true, message: "Export canceled" };
     }
-    activity.fail(job, "Export failed.");
+    statusFeed.fail(job, "Export failed.");
     return { ok: false, message: "Export failed" };
   }
   const message = `Exported ${pluralize(result.exported, "file")}`;
-  activity.done(job, message);
+  statusFeed.done(job, message);
   return { ok: true, message };
 }
 
@@ -175,7 +168,7 @@ export async function exportSelectionCsv(
   ids: readonly string[],
 ): Promise<SelectionActionResult> {
   if (ids.length === 0) return { ok: false, message: "Nothing selected" };
-  const job = activity.start("Exporting CSV");
+  const job = statusFeed.start("Exporting CSV");
   const result = (await window.pond.query("saves.exportCsv", {
     ids: [...ids],
   })) as
@@ -183,14 +176,14 @@ export async function exportSelectionCsv(
     | { ok: false; error: string };
   if (!result.ok) {
     if (result.error === "canceled") {
-      activity.dismiss(job);
+      statusFeed.dismiss(job);
       return { ok: true, message: "Export canceled" };
     }
-    activity.fail(job, "Export failed.");
+    statusFeed.fail(job, "Export failed.");
     return { ok: false, message: "Export failed" };
   }
   const message = `Exported ${pluralize(result.count, "row")} to CSV`;
-  activity.done(job, message);
+  statusFeed.done(job, message);
   return { ok: true, message };
 }
 
@@ -251,7 +244,7 @@ export async function openDefaultAppForSelection(
     if (!result?.ok) failed += 1;
   }
   if (attempted === 0 || failed === 0) return;
-  activity.error(
+  statusFeed.error(
     "Open",
     failed === attempted
       ? "Couldn't open these files."
@@ -274,7 +267,7 @@ export async function revealFilesForSelection(
     if (!result?.ok) failed += 1;
   }
   if (attempted === 0 || failed === 0) return;
-  activity.error(
+  statusFeed.error(
     "Reveal",
     failed === attempted
       ? "Couldn't find these files on disk."
@@ -293,9 +286,7 @@ export async function openInBrowserForSelection(
       if (parsed.protocol === "http:" || parsed.protocol === "https:") {
         await window.pond.openExternal(parsed.toString());
       }
-    } catch {
-      /** Malformed URL; skip. */
-    }
+    } catch {}
   }
 }
 
@@ -315,7 +306,10 @@ export async function reverseImageSearchForSelection(
     opened += 1;
   }
   if (opened === 0) {
-    activity.error("Reverse Image Search", "No public image URL is available.");
+    statusFeed.error(
+      "Reverse Image Search",
+      "No public image URL is available.",
+    );
   }
 }
 

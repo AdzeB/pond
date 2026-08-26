@@ -18,7 +18,6 @@ export const rawQueryPlanSchema = z.object({
   filter: z.unknown().optional(),
 });
 
-/** Structurally valid but with `filter` still unknown; the renderer turns this into a QueryPlan. */
 export type RawQueryPlan = z.infer<typeof rawQueryPlanSchema>;
 
 export function parseQueryPlan(raw: unknown): RawQueryPlan | null {

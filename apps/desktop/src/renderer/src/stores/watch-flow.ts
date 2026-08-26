@@ -2,16 +2,9 @@ import type { Source, WatchKind } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-/**
- * The in-flight "watch an account" hand-off between the tray's cards and the sources page.
- * @remarks Lives in a store because the picker, kind, and handle cards (dock tray) and the detail dialog (sources page) are separate trees.
- */
 interface WatchFlowState {
-  /** Platform picked on the first card; the kind and handle cards read it. */
   source: Source | null;
-  /** What to watch on that platform, picked on the kind card; null for single-kind sources. */
   kind: WatchKind | null;
-  /** Watch created by the handle card, waiting for the sources page to refetch and open its detail. */
   addedId: string | null;
 }
 

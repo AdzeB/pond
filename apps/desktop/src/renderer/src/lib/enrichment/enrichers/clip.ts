@@ -23,7 +23,6 @@ export const clipEnricher: Enricher = {
     if (!url) return null;
     const image = await loadImage(url);
     const vec = await clipImageEmbedding(image);
-    /** Self-persists into the clip store + DB (non-synced), so no derived fields are returned. */
     setClipEmbedding(save.id, vec, clipModelVersion());
     return {};
   },

@@ -8,7 +8,6 @@ import {
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
 
-/** Side-car in userData pointing at the user's library folder; read before the DB opens. */
 const POINTER_FILE = "library-location.json";
 
 interface PointerFile {
@@ -28,7 +27,6 @@ export function readLibraryPointer(): string | null {
     const candidate = parsed?.path;
     if (typeof candidate !== "string" || candidate.length === 0) return null;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
-    /** Refuse a pointer into userData: it would recurse (library inside its metadata). */
     if (abs.startsWith(`${app.getPath("userData")}/`)) return null;
     return abs;
   } catch {
@@ -50,7 +48,6 @@ export function writeLibraryPointer(absPath: string): void {
   writeFileSync(file, JSON.stringify(body, null, 2));
 }
 
-/** Reports whether `target` is safe as a library root: exists or creatable, outside userData. */
 interface PointerSafetyReport {
   ok: boolean;
   reason?:
@@ -72,7 +69,6 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
     } else {
       mkdirSync(abs, { recursive: true });
     }
-    /** Probe-write to catch read-only mounts and sandboxed paths. */
     const probe = join(abs, `.pond-probe-${Date.now()}`);
     writeFileSync(probe, "ok");
     try {

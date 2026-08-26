@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-/** The entities Twitter colors: URLs, @mentions, #hashtags, $cashtags. */
 const ENTITY = /(https?:\/\/[^\s]+|www\.[^\s]+|[@#$][\w]+)/g;
 
 function renderTokens(text: string): ReactNode[] {

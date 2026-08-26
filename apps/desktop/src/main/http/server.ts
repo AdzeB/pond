@@ -12,7 +12,6 @@ import { itemGetHandler } from "./item-get";
 import { itemInfoHandler } from "./item-info";
 import { itemThumbHandler } from "./item-thumb";
 import { libraryInfoHandler } from "./library-info";
-import { pairingHandler } from "./pairing";
 import { sessionImportHandler } from "./session-import";
 import { sessionPendingHandler } from "./session-pending";
 
@@ -26,9 +25,7 @@ function isAllowedOrigin(
   try {
     const u = new URL(origin);
     if (u.hostname === "localhost" || u.hostname === "127.0.0.1") return true;
-  } catch {
-    /* fall through */
-  }
+  } catch {}
   for (const allowed of extraAllowed) {
     if (!allowed) continue;
     if (origin === allowed) return true;
@@ -125,7 +122,6 @@ function buildApp(): Hono {
   api.use("/api/v2/item/*", requireAuth);
   api.use("/api/v2/library/*", requireAuth);
   api.use("/api/v2/session/*", requireAuth);
-  api.use("/api/v2/pair", requireAuth);
 
   api.post("/api/v2/enqueue", enqueueHandler);
   api.post("/api/v2/item/get", itemGetHandler);
@@ -135,7 +131,6 @@ function buildApp(): Hono {
   api.get("/api/v2/library/info", libraryInfoHandler);
   api.post("/api/v2/session/import", sessionImportHandler);
   api.get("/api/v2/session/pending", sessionPendingHandler);
-  api.get("/api/v2/pair", pairingHandler);
 
   api.notFound((c) => c.json({ status: "error", error: "not found" }, 404));
   api.onError((err, c) => {

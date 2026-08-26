@@ -1,6 +1,5 @@
 import { Fragment, type ReactNode } from "react";
 
-/** Display-only keyboard hint, e.g. "⌘C" or ["⇧", "⌘", "C"]. */
 type MenuShortcut = string | string[];
 
 interface MenuActionItem {
@@ -9,10 +8,8 @@ interface MenuActionItem {
   icon?: ReactNode;
   shortcut?: MenuShortcut;
   disabled?: boolean;
-  /** Omit entirely instead of rendering disabled; for actions the target can never support. */
   hidden?: boolean;
   stale?: boolean;
-  /** Keep the menu open after selecting (defaults to closing). */
   closeOnClick?: boolean;
   onClick?: () => void;
 }
@@ -45,30 +42,25 @@ interface MenuCheckboxItem {
   shortcut?: MenuShortcut;
   disabled?: boolean;
   hidden?: boolean;
-  /** Keep the menu open after toggling (defaults to closing). */
   closeOnClick?: boolean;
 }
 
 interface MenuLinkItem {
   type: "link";
   label: ReactNode;
-  /** Real destination, exposed for a11y and platform affordances. */
   href: string;
   icon?: ReactNode;
   shortcut?: MenuShortcut;
   disabled?: boolean;
   hidden?: boolean;
-  /** Invoked with the default navigation prevented; delegate opening to the platform. */
   onClick?: () => void;
 }
 
-/** Escape hatch for dynamic/stateful content (search inputs, empty states). */
 interface MenuCustomItem {
   type: "custom";
   render: () => ReactNode;
 }
 
-/** A single node in a data-driven menu. */
 export type MenuItemSpec =
   | MenuActionItem
   | MenuSeparatorItem
@@ -78,10 +70,6 @@ export type MenuItemSpec =
   | MenuLinkItem
   | MenuCustomItem;
 
-/**
- * The wrapped Base UI parts a renderer needs; injected so the same logic drives
- * both `Menu` and `ContextMenu`, which share these primitives.
- */
 interface MenuParts {
   Item: React.ComponentType<{
     disabled?: boolean;
@@ -130,7 +118,6 @@ function shortcutToString(shortcut: MenuShortcut): string {
   return Array.isArray(shortcut) ? shortcut.join("") : shortcut;
 }
 
-/** Drop hidden items, then collapse the leading/trailing/doubled separators they leave behind. */
 function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
   const visible = items.filter(
     (spec) =>
@@ -268,7 +255,6 @@ function renderSpec(
   );
 }
 
-/** Render a flat array of menu specs into the supplied wrapped parts. */
 export function renderMenuSpec(
   items: MenuItemSpec[],
   parts: MenuParts,

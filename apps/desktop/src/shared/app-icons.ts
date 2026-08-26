@@ -2,7 +2,6 @@ import { DEFAULT_APP_ICON } from "@pond/schema/db";
 
 export { DEFAULT_APP_ICON };
 
-/** Preferred picker order: default first, then the saturated crayons, then the rest. */
 const APP_ICON_ORDER = [
   DEFAULT_APP_ICON,
   "maraschino",
@@ -25,6 +24,27 @@ const APP_ICON_ORDER = [
   "plum",
   "blue",
 ] as const;
+
+const APP_ICON_TINT: Record<string, string> = {
+  aqua: "#59a6fc",
+  maraschino: "#f46950",
+  tangerine: "#f7ab51",
+  blueberry: "#435dfc",
+  grape: "#9952fb",
+  strawberry: "#f35ca2",
+  mocha: "#aa7f4d",
+  asparagus: "#adab56",
+  fern: "#83aa54",
+  clover: "#69ac57",
+  moss: "#65a97e",
+  teal: "#62a9ab",
+  plum: "#a558aa",
+  blue: "#59a6fc",
+};
+
+export function appIconTint(id: string): string | undefined {
+  return APP_ICON_TINT[id];
+}
 
 export function appIconLabel(id: string): string {
   return id

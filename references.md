@@ -56,7 +56,7 @@ Shared config files: `tsconfig.base.json`, `biome.json`, `commitlint.config.js`,
 ## `apps/desktop` — Electron app
 
 Local-first archive that runs in the background, owns a SQLite index + filesystem
-library, and accepts saves from the browser extension over `http://127.0.0.1:41610`.
+library, and accepts saves from the browser extension over Chrome native messaging.
 
 ### Runtime dependencies
 
@@ -179,8 +179,9 @@ Captures saves from supported platforms into the local Pond library.
 
 Manifest host permissions cover: `x.com`, `twitter.com`, `instagram.com`,
 `pinterest.com`, `are.na`, `cosmos.so`, `tiktok.com`, `youtube.com`, plus
-`127.0.0.1` / `localhost` for the local ingest endpoint, and `<all_urls>` for
-generic articles.
+`<all_urls>` for generic articles. The extension talks to Pond through native
+messaging (`so.pond.host`); a loopback HTTP API on `127.0.0.1:41610` remains
+for debugging.
 
 ---
 

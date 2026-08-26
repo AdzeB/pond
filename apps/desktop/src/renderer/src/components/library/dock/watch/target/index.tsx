@@ -14,7 +14,6 @@ import { WatchTargetMatch } from "../target-match";
 import { WatchTargetSkeleton } from "../target-skeleton";
 import styles from "./styles.module.css";
 
-/** Mirrors the main-process WatchTarget from `watches.resolve`. */
 interface WatchTargetMatchData {
   kind?: WatchKind;
   handle: string;
@@ -57,7 +56,6 @@ function watchHint(
   }
 }
 
-/** The idle telescope slowly scans the horizon, hinting at what watching does. */
 function TelescopeSweep() {
   const reduce = useReducedMotion();
   return (
@@ -81,12 +79,10 @@ function TelescopeSweep() {
   );
 }
 
-/** Handle-entry card for a new watch; a successful add hands the id to the sources page through the watch-flow store. */
 export function WatchTargetSection() {
   const dock = useDock();
   const { accounts } = useAccounts();
   const picked = useWatchSource();
-  /** The pick clears before the card swaps out; any watchable brand keeps the exit render intact. */
   const source = picked ?? "youtube";
   const kinds = watchKindsFor(source);
   const pickedKind = useWatchKind();
@@ -122,7 +118,6 @@ export function WatchTargetSection() {
         })) as { ok: boolean; target?: WatchTargetMatchData };
         if (!cancelled && res.ok && res.target) setResolved(res.target);
       } catch {
-        /** Resolution is a preview; add re-resolves and reports its own errors. */
       } finally {
         if (!cancelled) setChecking(false);
       }
@@ -242,7 +237,6 @@ export function WatchTargetSection() {
         <TrayCard.Confirm
           disabled={!canStart}
           onClick={(e) => {
-            /** Adding closes the tray itself on success and keeps the card open with the error on failure. */
             e.preventDefault();
             void start();
           }}

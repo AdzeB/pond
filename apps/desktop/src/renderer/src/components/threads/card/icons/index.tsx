@@ -45,7 +45,6 @@ export function ShareIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-/** Meta's filled-circle check, not the X starburst. */
 export function MetaVerifiedIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 22 22" fill="currentColor" role="img" {...props}>
@@ -63,7 +62,6 @@ export function MetaVerifiedIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-/** Compact Threads wordmark for the card header. */
 export function ThreadsWordmark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" role="img" {...props}>

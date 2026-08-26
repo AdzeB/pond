@@ -9,7 +9,6 @@ import { closeSave } from "@/lib/ui/save-nav";
 import { setSearchInput } from "@/stores/view-store";
 import styles from "./styles.module.css";
 
-/** Quick actions only; full tag management stays in settings. */
 function buildTagPillMenu(
   tag: string,
   remove: (name: string) => Promise<void>,
@@ -25,9 +24,7 @@ function buildTagPillMenu(
     {
       label: "Copy Tag Name",
       onClick: () => {
-        navigator.clipboard.writeText(tag).catch(() => {
-          /** Clipboard unavailable; drop silently. */
-        });
+        navigator.clipboard.writeText(tag).catch(() => {});
       },
     },
     { type: "separator" },

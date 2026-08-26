@@ -2,9 +2,6 @@ import type { RawImage } from "@huggingface/transformers";
 import { pickPrimaryUnit } from "@/lib/media/units";
 import type { Save } from "@/lib/types";
 
-/** Kept free of model logic so enrichers depend on it only for resolving and fetching a save's representative frame. */
-
-/** Primary image or video poster; null until something's classifiable. */
 export function representativeImageUrl(save: Save): string | null {
   const unit = pickPrimaryUnit(save);
   if (!unit) return null;

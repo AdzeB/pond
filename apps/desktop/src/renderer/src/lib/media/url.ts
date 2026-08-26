@@ -6,7 +6,6 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
-/** Requests a downscaled WebP preview (width in device px) for grid cards; the detail view keeps the original via `buildPondUrl`. */
 export function withThumbWidth(url: string, width: number): string {
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}tw=${Math.round(width)}`;
@@ -21,7 +20,6 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
   return null;
 }
 
-/** Downloaded favicon for web saves; remote fallback covers saves still mid-pipeline. */
 export function pickSourceIconUrl(save: Save): string | null {
   const local = (save.files ?? []).find((f) => f.kind === "source_icon");
   if (local) return buildPondUrl(save.id, local);

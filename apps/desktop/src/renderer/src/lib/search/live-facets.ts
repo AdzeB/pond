@@ -3,8 +3,6 @@ import type { NlFacets } from "@/lib/search/nl-query";
 import type { Save } from "@/lib/types";
 import { onPoolDirty, pool } from "@/stores/pool";
 
-/** Distinct facet values present in the library, ordered by frequency; maintained incrementally from pool mutations. */
-
 function bump(map: Map<string, number>, key: string, delta: number): void {
   const next = (map.get(key) ?? 0) + delta;
   if (next <= 0) map.delete(key);
@@ -21,7 +19,6 @@ const sources = new Map<string, number>();
 const tags = new Map<string, number>();
 const types = new Map<string, number>();
 const creators = new Map<string, number>();
-/** Last save snapshot that contributed to the counters (for undo on upsert/delete). */
 const contributed = new Map<string, Save>();
 let attached = false;
 let cached: NlFacets | null = null;
@@ -31,7 +28,8 @@ function applySave(save: Save, sign: 1 | -1): void {
   const identity = sourceIdentity(save);
   if (identity) bump(sources, identity, sign);
   for (const tag of save.tags ?? []) bump(tags, tag.toLowerCase(), sign);
-  const type = (save.mediaType ?? "").toLowerCase();
+  const type =
+    save.source === "web" ? "link" : (save.mediaType ?? "").toLowerCase();
   if (
     type === "image" ||
     type === "video" ||

@@ -13,7 +13,6 @@ import { WebPageExtractor } from "./sources/web";
 import { YouTubeWatchExtractor } from "./sources/youtube";
 import type { Extractor } from "./types";
 
-/** One extractor per source; missing one is a compile error. Order = URL match order. */
 const EXTRACTORS = {
   twitter: new TwitterTweetExtractor(),
   instagram: new InstagramPostExtractor(),
@@ -26,13 +25,10 @@ const EXTRACTORS = {
   threads: new ThreadsPostExtractor(),
 } as const satisfies Record<ExternalSource, Extractor>;
 
-/** Generic-link catch-all; lives outside EXTRACTOR_LIST so it can't shadow the source-specific extractors. */
 const WEB_EXTRACTOR = new WebPageExtractor();
 
-/** All extractors in URL-resolution order. Exported for the test runner. */
 export const EXTRACTOR_LIST: readonly Extractor[] = Object.values(EXTRACTORS);
 
-/** The extractor for a source, or `null` for `local` (which has none). */
 export function extractorFor(source: Source): Extractor | null {
   if (source === "local") return null;
   if (source === "web") return WEB_EXTRACTOR;

@@ -19,7 +19,6 @@ interface TrayCardProviderProps {
   children: ReactNode;
 }
 
-/** Injects the dismiss action once so cards stay decoupled from whoever owns the tray's state. */
 function Provider({ onDismiss, children }: TrayCardProviderProps) {
   const value = useMemo(
     () => ({ actions: { dismiss: onDismiss } }),
@@ -73,7 +72,6 @@ interface TrayCardActionProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   position?: "start" | "end";
 }
 
-/** Corner circle button; anchors to the enclosing Header, or to the card when there is none. */
 function Action({
   className,
   position = "start",
@@ -89,7 +87,6 @@ function Action({
   );
 }
 
-/** Navigation is the caller's: pass onClick to step back to the previous card. */
 function Back(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <Action aria-label="Back" {...props}>
@@ -98,7 +95,6 @@ function Back(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   );
 }
 
-/** Navigation is the caller's: pass onClick to open the card's help view. */
 function Help(props: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <Action aria-label="Help" {...props}>
@@ -113,7 +109,6 @@ function Close({ onClick, ...props }: ButtonHTMLAttributes<HTMLButtonElement>) {
     <Action
       position="end"
       aria-label="Close"
-      /** onClick may preventDefault to take over, for cards that step back instead of dismissing. */
       onClick={(e) => {
         onClick?.(e);
         if (!e.defaultPrevented) actions.dismiss();
@@ -165,7 +160,6 @@ function Confirm({
   return (
     <Button
       variant="accent"
-      /** onClick may preventDefault to keep the card open, for async submits that close themselves on success. */
       onClick={(e) => {
         onClick?.(e);
         if (!e.defaultPrevented) actions.dismiss();

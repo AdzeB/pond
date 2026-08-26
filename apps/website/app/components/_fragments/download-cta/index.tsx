@@ -8,7 +8,6 @@ import { LinkButton } from "../link-button";
 import styles from "./styles.module.css";
 
 interface DownloadCtaProps {
-  /** Compact row for the hero; full stack for the footer. */
   variant?: "hero" | "get";
 }
 

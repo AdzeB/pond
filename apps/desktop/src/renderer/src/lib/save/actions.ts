@@ -10,13 +10,12 @@ import {
   purgeSave,
   setSaveTags,
 } from "@/lib/save/mutate";
+import { statusFeed } from "@/lib/status-feed";
 import type { Save, SaveFile } from "@/lib/types";
 import { notify } from "@/lib/ui/toast";
-import { activity } from "@/stores/activity";
 import { pool } from "@/stores/pool";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
-/** Prefer an explicit slide index, else the primary visual, else the cover slot. */
 export function resolveFileIndex(
   save: Save,
   preferred?: number | null,
@@ -82,7 +81,6 @@ export async function copyId(id: string): Promise<void> {
 }
 
 export function focusPaneTitle(): void {
-  /** Drawer is already open; wait a couple of frames for the title to mount before giving up. */
   let tries = 0;
   const tick = () => {
     const el = document.querySelector<HTMLElement>("[data-pane-title]");
@@ -128,7 +126,7 @@ export async function openDefaultApp(
   const result = (await window.pond.openSaveFile(save.id, fileIndex)) as {
     ok: boolean;
   };
-  if (!result?.ok) activity.error("Open", "Couldn't open this file.");
+  if (!result?.ok) statusFeed.error("Open", "Couldn't open this file.");
 }
 
 export async function revealFile(
@@ -141,7 +139,7 @@ export async function revealFile(
     ok: boolean;
   };
   if (!result?.ok) {
-    activity.error("Reveal", "Couldn't find this file on disk.");
+    statusFeed.error("Reveal", "Couldn't find this file on disk.");
   }
 }
 
@@ -189,9 +187,7 @@ export async function openInBrowser(save: Save): Promise<void> {
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
       await window.pond.openExternal(parsed.toString());
     }
-  } catch {
-    /** Malformed URL; drop silently. */
-  }
+  } catch {}
 }
 
 export async function refreshSaveMetadata(save: Save): Promise<void> {
@@ -203,7 +199,6 @@ export async function refreshSaveMetadata(save: Save): Promise<void> {
   await window.pond.refreshSave(save.id);
 }
 
-/** Index of the file "Copy Image" targets; null for videos (use Copy Current Frame), posters, docs, and link-only saves. */
 export function copyableImageIndex(
   save: Save,
   preferredIndex?: number | null,
@@ -246,7 +241,6 @@ export async function copyImage(
   });
 }
 
-/** Copies raster image data when available; otherwise copies the primary file (e.g. video). */
 export async function copyPrimaryMedia(
   save: Save,
   preferredIndex?: number | null,

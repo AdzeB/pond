@@ -9,19 +9,14 @@ import { getAccountSync, patchAccountSync } from "./accounts";
 
 export { patchAccountSync } from "./accounts";
 
-/** Most-recent known ids loaded for an incremental run; lists are newest-first, so this window is enough to detect the synced backlog and early-stop. */
 const RECENT_KNOWN_WINDOW = 1500;
 
 export interface SyncBaseline {
-  /** Known source ids for dedup + harvester early-stop; full set on a full sync, a bounded recent window on an incremental one. */
   knownIds: Set<string>;
-  /** True library size for this account. */
   total: number;
-  /** Whether this run is a full walk (first sync or forced). */
   full: boolean;
 }
 
-/** Saves owned by this account plus unattributed rows for its source; trashed rows are unknown so a re-sync can recapture them. */
 export function syncBaselineWhere(account: ConnectedAccount) {
   return and(
     eq(saves.source, account.source),
@@ -30,7 +25,6 @@ export function syncBaselineWhere(account: ConnectedAccount) {
   );
 }
 
-/** Decides full vs incremental and loads the right baseline; a full walk happens on the very first sync or when forced. */
 export async function loadSyncBaseline(
   account: ConnectedAccount,
   forceFull: boolean,
@@ -61,7 +55,6 @@ export async function loadSyncBaseline(
   return { knownIds, total: totalRow?.c ?? knownIds.size, full: false };
 }
 
-/** Persists the incremental cursor; `lastFullSyncAt` only advances on a full walk so the next run can go incremental. */
 export async function persistWatermark(
   accountId: string,
   opts: { full: boolean; newestId: string | null; total: number },

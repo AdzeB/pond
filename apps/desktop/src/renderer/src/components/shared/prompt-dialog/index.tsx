@@ -16,13 +16,11 @@ export interface PromptOptions {
 
 const handle = Dialog.createHandle<PromptOptions>();
 
-/** Opens the app-wide prompt dialog; a single host near the root renders every request. */
 export function prompt(options: PromptOptions): void {
   handle.openWithPayload(options);
 }
 
 export function PromptDialogHost() {
-  /** Uncontrolled: the popup unmounts on close, so defaultValue re-applies on every open. */
   const inputRef = useRef<HTMLInputElement>(null);
 
   const submit = (options: PromptOptions) => {

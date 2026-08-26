@@ -2,8 +2,6 @@ import { FIELD_IDS, FIELD_META } from "@pond/schema/filters/meta";
 import { COMPARATORS_BY_TYPE } from "@pond/schema/filters/types";
 import type { CompileContext } from "./types";
 
-/** Grounding prompts + JSON schema for the LLM query compiler; Stage D re-validates all output, so these affect quality, not safety. */
-
 function fieldLines(): string {
   return FIELD_IDS.map((id) => {
     const meta = FIELD_META[id];
@@ -60,7 +58,6 @@ export function buildSystemPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-/** JSON schema the bundled model must satisfy when the llama.cpp grammar is available. */
 export function queryJsonSchema(): Record<string, unknown> {
   return {
     type: "object",

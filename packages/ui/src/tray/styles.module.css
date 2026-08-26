@@ -1,4 +1,3 @@
-/* Floating capsule surface shared by every tray (dock, navigation rail). */
 .pill {
   position: relative;
   box-sizing: border-box;
@@ -29,7 +28,6 @@
   outline: none;
   background: none;
   border: 0;
-  /* The -4px focus ring inherits this radius minus the offset, landing on radius-md, concentric with the pill's xl. */
   border-radius: var(--ds-radius-xl);
   transition: color var(--ds-duration-medium) var(--ds-easing-standard);
 
@@ -50,7 +48,6 @@
     transform: scale(0.82);
   }
 
-  /* Ring sits inside the item so it never crowds the pill edge. */
   &:focus-visible {
     color: var(--ds-gray-12);
     outline: 2px solid var(--ds-gray-a8);
@@ -66,7 +63,6 @@
   }
 }
 
-/* Active-tab backdrop inside an item; rounded square so it reads as a tile, not a pill. */
 .indicator {
   position: absolute;
   inset: 2px;

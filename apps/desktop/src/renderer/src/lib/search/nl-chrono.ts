@@ -2,21 +2,14 @@ import type { FieldId, Predicate } from "@pond/schema/filters/types";
 import * as chrono from "chrono-node";
 import { ROLLING_WINDOWS } from "@/lib/search/nl-vocabulary";
 
-/**
- * Date half of the Stage A compiler: chrono-node owns the date grammar, except rolling windows ("last 3 months" = the last ~90 days, not the previous calendar quarter) which a curated table claims first as relative ISO durations.
- * @remarks extractDates is a char-span pre-pass — it returns date predicates plus the input with those spans blanked, so the token walker never sees a date.
- */
-
 type ChronoResult = ReturnType<typeof chrono.parse>[number];
 type ChronoComponents = ChronoResult["start"];
 
 interface DateExtraction {
   predicates: Predicate[];
-  /** Input with every matched date span replaced by spaces, offsets preserved. */
   rest: string;
 }
 
-/** Direction words that flip a date into an open-ended comparison. */
 const DIRECTION: Record<string, "before" | "after" | "since"> = {
   before: "before",
   older: "before",
@@ -26,7 +19,6 @@ const DIRECTION: Record<string, "before" | "after" | "since"> = {
   since: "since",
 };
 
-/** Qualifier words that retarget which date field a phrase constrains. */
 const QUALIFIER: Record<string, FieldId> = {
   published: "publishedAt",
   posted: "publishedAt",
@@ -39,7 +31,6 @@ const QUALIFIER: Record<string, FieldId> = {
   created: "savedAt",
 };
 
-/** A leading "<qualifier>? <direction>? (than|to)? <preposition>?" run before a date phrase ("published before", "updated in"). */
 const PREFIX_RE =
   /(?:\b(published|posted|modified|updated|edited|changed|saved|added|created)\b\s+)?(?:\b(before|after|since|older|newer|earlier)\b\s+(?:than\s+|to\s+)?)?(?:\b(?:in|on|from|during|of)\b\s+)?$/i;
 
@@ -49,7 +40,6 @@ const DURATION_TEXT =
 
 const YEAR_RE = /\b(?:19|20)\d{2}\b/g;
 
-/** Joins two date references into one range ("march to june"); chrono returns these as two separate results. */
 const RANGE_CONNECTOR = /^\s*(?:and|to|through|until|-|–|—)\s*$/i;
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -71,7 +61,6 @@ interface Span {
   end: number;
 }
 
-/** Widens a date to the half-open [lo, hi) range of its coarsest certain unit ("march 2023" spans the month); `date` is split out so a range can borrow a sibling's year. */
 function widen(c: ChronoComponents, date: Date): [Date, Date] {
   if (c.isCertain("day")) {
     const lo = startOfDay(date);
@@ -89,7 +78,6 @@ function impliedRange(c: ChronoComponents): [Date, Date] {
   return widen(c, c.date());
 }
 
-/** Borrows `year` when `c` omitted one, so the start of "march to june 2023" inherits 2023 instead of defaulting to this year. */
 function lowerWithYear(c: ChronoComponents, year: number | null): Date {
   if (year == null || c.isCertain("year")) return impliedRange(c)[0];
   const month = (c.get("month") ?? 1) - 1;
@@ -101,7 +89,6 @@ function yearRange(year: number): [Date, Date] {
   return [new Date(year, 0, 1), new Date(year + 1, 0, 1)];
 }
 
-/** Time-only references ("3pm") carry no date and are left for the duration matcher or dropped. */
 function isTimeOnly(c: ChronoComponents): boolean {
   const hasDate =
     c.isCertain("day") ||
@@ -113,7 +100,6 @@ function isTimeOnly(c: ChronoComponents): boolean {
   return hasTime && !hasDate;
 }
 
-/** Returns the resolved field, direction, and how far back the run reaches so it can be folded into the consumed span and kept out of the residual. */
 function readPrefix(
   input: string,
   start: number,
@@ -147,7 +133,6 @@ function directionalPredicate(
   return { field, operator: "between", value: [isoDay(lo), isoDay(hi)] };
 }
 
-/** Rolling phrases only claim a span when no direction precedes them, so chrono can own "before last week"; returns null when a direction is present. */
 function rollingPrefix(
   input: string,
   start: number,
@@ -177,7 +162,6 @@ export function extractDates(
     predicates.push(pred);
   };
 
-  /** Rolling windows are claimed first so chrono can't re-read them as bounded calendar ranges. */
   for (const [phrase, iso] of ROLLING_WINDOWS) {
     const re = new RegExp(`\\b${phrase.replace(/\s+/g, "\\s+")}\\b`, "gi");
     for (let m = re.exec(input); m; m = re.exec(input)) {
@@ -194,7 +178,6 @@ export function extractDates(
     }
   }
 
-  /** chrono owns everything else: absolute dates, ranges, relative and qualifier-scoped phrases. */
   const results = chrono.parse(input, ref, { forwardDate: false });
   for (let idx = 0; idx < results.length; idx += 1) {
     const r = results[idx];
@@ -207,7 +190,6 @@ export function extractDates(
 
     const { field, dir, from } = readPrefix(input, start);
 
-    /** Stitch "march to june 2023": chrono returns two results joined only by a connector, so the second's year flows back to the first. */
     const next = results[idx + 1];
     if (next && RANGE_CONNECTOR.test(input.slice(end, next.index))) {
       const tail = next.end ?? next.start;
@@ -227,7 +209,6 @@ export function extractDates(
     claim(from, end, directionalPredicate(field, dir, lo, hi));
   }
 
-  /** Bare years chrono may not parse on their own ("from 2024", "before 2020"). */
   for (let m = YEAR_RE.exec(input); m; m = YEAR_RE.exec(input)) {
     const start = m.index;
     const end = start + m[0].length;
@@ -237,7 +218,6 @@ export function extractDates(
     claim(from, end, directionalPredicate(field, dir, lo, hi));
   }
 
-  /** Blank every consumed span so the token walker never sees a date word. */
   let rest = input;
   for (const { start, end } of consumed) {
     rest = rest.slice(0, start) + " ".repeat(end - start) + rest.slice(end);

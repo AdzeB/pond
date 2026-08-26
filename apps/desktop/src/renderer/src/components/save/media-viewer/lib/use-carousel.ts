@@ -7,7 +7,6 @@ function slideNodes(scroller: HTMLElement) {
   return scroller.querySelectorAll<HTMLElement>(SLIDE_SELECTOR);
 }
 
-/** Blossom is a native scroll container, so live geometry beats a carousel API and stays correct while slides are still resizing. */
 function centeredIndex(scroller: HTMLElement): number {
   const viewportCenter =
     scroller.getBoundingClientRect().left + scroller.clientWidth / 2;
@@ -84,12 +83,10 @@ export function useActiveSlide(
   return active;
 }
 
-/** Works off live geometry instead of Blossom's cached snap positions, which go stale when slides resize from the fallback ratio and make arrow presses skip a slide. */
 export function useCarouselNavigation(
   scroller: HTMLElement | null,
   _ratios: ReadonlyMap<string, number>,
 ) {
-  /** Once the viewer scrolls or drags, stop re-centring the first slide. */
   const interactedRef = useRef(false);
   useEffect(() => {
     if (!scroller) return;

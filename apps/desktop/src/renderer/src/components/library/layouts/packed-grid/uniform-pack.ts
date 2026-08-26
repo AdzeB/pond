@@ -3,9 +3,7 @@ export interface PackedItem {
   top: number;
   left: number;
   width: number;
-  /** Span used for band windowing (includes meta chrome for masonry layouts). */
   height: number;
-  /** Media box height for `--packed-h`. */
   mediaHeight: number;
 }
 
@@ -14,10 +12,8 @@ export interface PackResult {
   totalHeight: number;
 }
 
-/** Matches the library save packers so sources share the same column rhythm. */
 export const LIBRARY_ITEM_GAP = 16;
 
-/** Uniform cells packed manually so they ride the PackedGrid windowing path. */
 export function packUniform(
   ids: ReadonlyArray<string>,
   containerWidth: number,
@@ -37,7 +33,6 @@ export function packUniform(
     const row = Math.floor(idx / cols);
     return {
       width: colW,
-      /** `height` feeds viewport windowing, so it spans the whole cell. */
       height: cellH,
       mediaHeight: cellH,
       top: row * (cellH + gap),

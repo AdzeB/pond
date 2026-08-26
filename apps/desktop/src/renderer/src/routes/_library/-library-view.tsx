@@ -38,7 +38,6 @@ export function LibraryView() {
     void loadNextPage();
   }, []);
 
-  /** Source, untagged, recents, and trash cannot truthfully filter a recency page, so fill the pool only when one is opened. */
   useEffect(() => {
     if (data.mode === "library") return;
     void hydrateFullPool().catch((err) => {
@@ -46,7 +45,6 @@ export function LibraryView() {
     });
   }, [data.mode]);
 
-  /** Only the active tab's view owns the dock/context snapshot; background tabs stay mounted for state but must not overwrite it. */
   useEffect(() => {
     const sync = () => {
       if (getAppRouter() !== router) return;

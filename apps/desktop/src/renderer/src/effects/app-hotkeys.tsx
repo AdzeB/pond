@@ -35,10 +35,6 @@ function cycleAppearance(): void {
   patchPrefsSection("preferences", { appearance: next });
 }
 
-/**
- * Dock shortcuts owned by the renderer; the Go menu shows them display-only.
- * @remarks `ignoreInputs: false` so the dock opens even while a field is focused.
- */
 export function AppHotkeys() {
   useHotkeySequences(
     [

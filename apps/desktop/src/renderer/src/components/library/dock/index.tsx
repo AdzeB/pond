@@ -27,12 +27,8 @@ import {
 } from "./lib/types";
 import styles from "./styles.module.css";
 
-/** Module-level store calls stay referentially stable without useCallback. */
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
-
-const COLLAPSED_BAR = { width: 64, height: 6 };
-const COLLAPSE_MS = 240;
 
 export function LibraryTray() {
   const selectionSize = useSelectionSize();
@@ -46,22 +42,19 @@ export function LibraryTray() {
 
   const dockRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
-  const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [navOpen, setNavOpen] = useState(false);
-  /** The pill's real width/height animates to the measured viewport size with a spring, so a mid-flight view change retargets instead of restarting. */
+  const popoverOpenRef = useRef(false);
+  const [popoverOpen, setPopoverOpenState] = useState(false);
   const [bounds, setBounds] = useState<{
     width: number;
     height: number;
   } | null>(null);
 
-  /** The first measurement must apply instantly because the pill starts at 0x0; only later size changes animate. */
   const hasMeasured = useRef(false);
   const isFirstMeasure = bounds !== null && !hasMeasured.current;
   useEffect(() => {
     if (bounds) hasMeasured.current = true;
   }, [bounds]);
 
-  /** Measure via a callback ref: the viewport DOM is torn down and recreated on some routes while the component stays alive, and a mount-only effect would keep watching the detached node. */
   const viewportObserver = useRef<ResizeObserver | null>(null);
   const viewportRef = useCallback((el: HTMLDivElement | null) => {
     viewportObserver.current?.disconnect();
@@ -77,7 +70,6 @@ export function LibraryTray() {
 
   const { destructive, confirmDeleteForever } = useDockActions();
 
-  /** Priority: selection-card modes, then any explicitly opened surface (search/menus), then selection commandeering the resting nav. */
   const view: DockView = (SELECTION_CARD_MODES as readonly string[]).includes(
     mode,
   )
@@ -100,41 +92,16 @@ export function LibraryTray() {
   );
 
   const isCard = view === "search" || isViewMenu(view);
-  const collapsed = view === "nav" && !navOpen;
 
-  const cancelLeave = useCallback(() => {
-    if (!leaveTimer.current) return;
-    clearTimeout(leaveTimer.current);
-    leaveTimer.current = null;
+  const setPopoverOpen = useCallback((open: boolean) => {
+    popoverOpenRef.current = open;
+    setPopoverOpenState(open);
   }, []);
 
-  const expandNav = useCallback(() => {
-    cancelLeave();
-    setNavOpen(true);
-  }, [cancelLeave]);
-
-  const collapseNav = useCallback(() => {
-    cancelLeave();
-    leaveTimer.current = setTimeout(() => {
-      setNavOpen(false);
-      leaveTimer.current = null;
-    }, COLLAPSE_MS);
-  }, [cancelLeave]);
-
-  useEffect(
-    () => () => {
-      if (!leaveTimer.current) return;
-      clearTimeout(leaveTimer.current);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    if (view !== "nav") {
-      cancelLeave();
-      setNavOpen(false);
-    }
-  }, [view, cancelLeave]);
+  const dismissDock = useCallback(() => {
+    if (popoverOpenRef.current) return;
+    closeToNav();
+  }, []);
 
   useEffect(() => {
     if (!isMenuView) return;
@@ -151,7 +118,6 @@ export function LibraryTray() {
   const { pillTransition, quickTransition, swapTransition, swap } =
     buildDockMotion(reduceMotion ?? false);
 
-  /** View swaps get the deliberate morph; collapsing to the handle and other within-view growth ride the quick spring. */
   const lastView = useRef(view);
   const viewChangedAt = useRef(0);
   if (lastView.current !== view) {
@@ -175,7 +141,7 @@ export function LibraryTray() {
       isTabActive,
       isCard,
       openSearch: openLibrarySearch,
-      closeSearch: closeToNav,
+      closeSearch: dismissDock,
       openViewMenu,
       closeViewMenu: closeToNav,
       destructive,
@@ -186,6 +152,8 @@ export function LibraryTray() {
       quickTransition,
       pillRef,
       dockRef,
+      popoverOpen,
+      setPopoverOpen,
     }),
     [
       view,
@@ -201,11 +169,14 @@ export function LibraryTray() {
       swapTransition,
       pillTransition,
       quickTransition,
+      popoverOpen,
+      setPopoverOpen,
+      dismissDock,
     ],
   );
 
   return (
-    <div className={styles.dock} data-collapsed={collapsed || undefined}>
+    <div className={styles.dock}>
       <TrayCard.Provider onDismiss={closeToNav}>
         <DockProvider value={context}>
           {isCard ? (
@@ -213,76 +184,62 @@ export function LibraryTray() {
               type="button"
               aria-label="Close"
               className={styles.backdrop}
-              onClick={closeToNav}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                dismissDock();
+              }}
             />
           ) : null}
-          <div
-            ref={dockRef}
-            className={styles.shell}
-            data-collapsed={collapsed || undefined}
-            onPointerEnter={expandNav}
-            onPointerLeave={collapseNav}
-            onFocusCapture={expandNav}
-            onBlurCapture={(event) => {
-              if (
-                !event.currentTarget.contains(
-                  event.relatedTarget as Node | null,
-                )
-              ) {
-                collapseNav();
-              }
-            }}
-          >
-            <ActiveFilter />
-            <Tray.Pill
-              className={styles.pill}
-              render={
-                <motion.div
-                  ref={pillRef}
-                  initial={false}
-                  animate={
-                    collapsed
-                      ? COLLAPSED_BAR
-                      : bounds
+          <div className={styles.shell}>
+            <div ref={dockRef} className={styles.hit}>
+              <ActiveFilter />
+              <Tray.Pill
+                className={styles.pill}
+                render={
+                  <motion.div
+                    ref={pillRef}
+                    initial={false}
+                    animate={
+                      bounds
                         ? { width: bounds.width, height: bounds.height }
                         : {}
-                  }
-                  transition={boundsTransition}
-                />
-              }
-            >
-              <div
-                ref={viewportRef}
-                className={styles.viewport}
-                data-card={isCard || undefined}
-                inert={collapsed}
+                    }
+                    transition={boundsTransition}
+                  />
+                }
               >
-                <AnimatePresence initial={false}>
-                  {view === "selection" ? (
-                    <SelectionContent key="selection" />
-                  ) : view === "search" ? (
-                    <motion.div
-                      key="search"
-                      className={styles["search-row"]}
-                      {...swap}
-                      transition={swapTransition}
-                    >
-                      <SearchComposer autoFocus onCollapse={closeToNav} />
-                    </motion.div>
-                  ) : isViewMenu(view) ? (
-                    <motion.div
-                      key={view}
-                      {...swap}
-                      transition={swapTransition}
-                    >
-                      <OptionsContent section={view} />
-                    </motion.div>
-                  ) : (
-                    <NavContent key="nav" />
-                  )}
-                </AnimatePresence>
-              </div>
-            </Tray.Pill>
+                <div
+                  ref={viewportRef}
+                  className={styles.viewport}
+                  data-card={isCard || undefined}
+                >
+                  <AnimatePresence initial={false}>
+                    {view === "selection" ? (
+                      <SelectionContent key="selection" />
+                    ) : view === "search" ? (
+                      <motion.div
+                        key="search"
+                        className={styles["search-row"]}
+                        {...swap}
+                        transition={swapTransition}
+                      >
+                        <SearchComposer autoFocus onCollapse={closeToNav} />
+                      </motion.div>
+                    ) : isViewMenu(view) ? (
+                      <motion.div
+                        key={view}
+                        {...swap}
+                        transition={swapTransition}
+                      >
+                        <OptionsContent section={view} />
+                      </motion.div>
+                    ) : (
+                      <NavContent key="nav" />
+                    )}
+                  </AnimatePresence>
+                </div>
+              </Tray.Pill>
+            </div>
           </div>
         </DockProvider>
       </TrayCard.Provider>

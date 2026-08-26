@@ -3,8 +3,6 @@ import type { SessionImportResponse } from "@pond/schema/session";
 
 export const POND_EVENT = "pond:capture";
 
-const DEFAULT_PORT = 41610;
-
 export interface PondCapturePayload {
   url: string;
   trigger?: string;
@@ -32,19 +30,15 @@ export type PushSessionResult =
   | { ok: true; data: SessionImportResponse }
   | {
       ok: false;
-      reason: "unpaired" | "no_cookies" | "network";
+      reason: "offline" | "no_cookies" | "network";
       detail?: string;
     };
 
 export interface PondSettings {
-  port: number;
-  apiKey: string;
   enabled: Record<Source, boolean>;
 }
 
 export const DEFAULT_SETTINGS: PondSettings = {
-  port: DEFAULT_PORT,
-  apiKey: "",
   enabled: {
     twitter: true,
     instagram: true,
@@ -55,53 +49,17 @@ export const DEFAULT_SETTINGS: PondSettings = {
     youtube: true,
     reddit: true,
     threads: true,
-    /** Generic web links are a desktop-side fallback, not an extension toggle. */
     web: false,
     local: false,
   },
 };
 
-/** Migrate legacy `endpoint` URL to the stored `port`, salvaging the port when possible. */
+/** Keep `enabled` from older stored shapes; drop port, apiKey, and endpoint. */
 export function normalizeStoredSettings(stored: unknown): PondSettings {
   const base = (stored ?? {}) as Partial<PondSettings> & {
-    endpoint?: string;
-    port?: number;
+    enabled?: Partial<Record<Source, boolean>>;
   };
-  const port =
-    typeof base.port === "number" && Number.isFinite(base.port)
-      ? base.port
-      : (portFromLegacyEndpoint(base.endpoint) ?? DEFAULT_SETTINGS.port);
   return {
-    ...DEFAULT_SETTINGS,
-    ...base,
-    port,
     enabled: { ...DEFAULT_SETTINGS.enabled, ...(base.enabled ?? {}) },
   };
-}
-
-function portFromLegacyEndpoint(endpoint: string | undefined): number | null {
-  if (!endpoint) return null;
-  try {
-    const u = new URL(endpoint);
-    const p = Number.parseInt(u.port || "0", 10);
-    return Number.isFinite(p) && p > 0 ? p : null;
-  } catch {
-    return null;
-  }
-}
-
-export function enqueueUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/enqueue`;
-}
-
-export function libraryInfoUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/library/info`;
-}
-
-export function sessionImportUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/session/import`;
-}
-
-export function sessionPendingUrl(port: number): string {
-  return `http://127.0.0.1:${port}/api/v2/session/pending`;
 }

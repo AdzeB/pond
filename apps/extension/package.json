@@ -1,6 +1,6 @@
 {
   "name": "@pond/extension",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "description": "Pond browser extension: capture saves from Twitter/X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube and any article into the local Pond library.",

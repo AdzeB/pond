@@ -1,5 +1,3 @@
-/* Structure mirrors apps/desktop library-dock: pill surface comes from @pond/ui Tray. */
-
 .viewport {
   padding: 4px;
 }

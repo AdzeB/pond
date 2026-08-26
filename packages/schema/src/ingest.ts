@@ -1,9 +1,11 @@
 import { z } from "zod";
+import { extensionCookieSchema } from "./session";
 
-/** HTTP enqueue contract; the desktop pipeline derives everything else from the URL. */
 export const enqueueRequestSchema = z.object({
   url: z.string().url(),
   trigger: z.string().max(64).optional(),
+  /** Live-tab cookies for generic web captures so archive_page can replay the signed-in page. */
+  cookies: z.array(extensionCookieSchema).max(500).optional(),
 });
 
 export type EnqueueRequest = z.infer<typeof enqueueRequestSchema>;

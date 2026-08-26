@@ -10,7 +10,6 @@ const STRIP_THUMBS = [21, 14, 4];
 const aspectOf = (seed: number) =>
   SAVES.find((save) => save.seed === seed)?.aspect ?? 1;
 
-/** Browser window frozen mid-save: Pond button pressed, toast up, thumbs landing in the library strip. */
 export function SaveStatic() {
   return (
     <div className={styles.window} aria-hidden>

@@ -10,9 +10,7 @@ import { fillMissingAvatars } from "../../core/sync/avatars";
 import type { QueryHandlerMap } from "../helpers";
 
 export const accountsQueries: QueryHandlerMap = {
-  /** Every connected account, oldest first, with live connectivity and in-flight sync state; one row per account, not per platform. */
   async "accounts.list"() {
-    /** Backfill profile pictures in the background; they show up on the next list call once resolved. */
     fillMissingAvatars();
     const accounts = await listAccounts();
     const rows = await Promise.all(
@@ -25,7 +23,6 @@ export const accountsQueries: QueryHandlerMap = {
     return { accounts: rows };
   },
 
-  /** Manual handle entry: most sources can't probe it from the session, and without one there's no profile picture; clearing the avatar stamps re-checks under the new handle. */
   async "accounts.setHandle"(params) {
     const accountId = String(params.accountId ?? "");
     const raw = params.handle;
@@ -40,7 +37,6 @@ export const accountsQueries: QueryHandlerMap = {
     return { ok: account !== null, account };
   },
 
-  /** Renames the user-facing nickname; null clears it. */
   async "accounts.setLabel"(params) {
     const accountId = String(params.accountId ?? "");
     const raw = params.label;
@@ -50,7 +46,6 @@ export const accountsQueries: QueryHandlerMap = {
     return { ok: account !== null, account };
   },
 
-  /** Signs the account out: drops the registry entry and wipes its cookie jar; attributed saves keep their account_id. */
   async "accounts.disconnect"(params) {
     const accountId = String(params.accountId ?? "");
     const account = await getAccount(accountId);

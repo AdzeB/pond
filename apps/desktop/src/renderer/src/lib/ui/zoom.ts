@@ -1,6 +1,5 @@
 import { clamp } from "@/lib/util/math";
 
-/** Shared grid zoom bounds and storage key; live state lives in stores/view-store. */
 const ZOOM_MIN = 80;
 const ZOOM_MAX = 240;
 export const ZOOM_DEFAULT = 130;

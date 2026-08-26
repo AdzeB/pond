@@ -29,7 +29,6 @@ export async function signInToSource(
   }
 }
 
-/** True when the account's own partition holds a live auth cookie. */
 export async function isAccountConnected(
   account: ConnectedAccount,
 ): Promise<boolean> {
@@ -40,7 +39,6 @@ export async function isAccountConnected(
   return cookies.some((c) => isAuthCookie(account.source, c));
 }
 
-/** True when any connected account exists; the legacy shared partition is also checked so a not-yet-migrated session still reads as connected. */
 export async function isSourceConnected(source: Source): Promise<boolean> {
   const accounts = await listAccountsForSource(source);
   for (const account of accounts) {
@@ -64,7 +62,6 @@ export interface ImportableCookie {
 
 export async function writePartitionCookies(args: {
   cookies: ImportableCookie[];
-  /** Target session partition (an account's jar, or a staging jar). */
   partition: string;
 }): Promise<{ written: number; skipped: number }> {
   const persistent = session.fromPartition(args.partition);
@@ -99,7 +96,6 @@ export async function writePartitionCookies(args: {
   return { written, skipped };
 }
 
-/** Probes the hidden window for the user's handle off the top-nav profile link; null when unauth. The partition selects whose session is probed. */
 export async function probeUserHandle(
   source: Source,
   partition?: string,
@@ -142,17 +138,13 @@ export async function probeUserHandle(
   }
 }
 
-/** The login URL trips auth-wall detection and shows no nav, so probe a page that renders the signed-in shell with the user's handle. */
 function probeUrlForSource(source: Source): string {
   if (source === "tiktok") return "https://www.tiktok.com/";
   if (source === "arena") return "https://www.are.na/";
-  /** /home redirects signed-out sessions to the login flow, which the auth-wall check catches cleanly. */
   if (source === "twitter") return "https://x.com/home";
   if (source === "instagram") return "https://www.instagram.com/";
   if (source === "pinterest") return "https://www.pinterest.com/";
-  /** The account settings page shows the channel handle; signed-out it redirects to accounts.google.com, which reads as an auth wall. */
   if (source === "youtube") return "https://www.youtube.com/account";
-  /** Home renders the signed-in shell; signed-out redirects to /login and trips the auth-wall check. */
   if (source === "reddit") return "https://www.reddit.com/";
   if (source === "threads") return "https://www.threads.com/";
   if (source === "cosmos") return "https://www.cosmos.so/";

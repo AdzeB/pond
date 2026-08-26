@@ -1,6 +1,5 @@
 import {
   IconColorPaletteOutline18 as Appearance,
-  IconDownloadOutline18 as Downloads,
   IconOrbitSparkleOutline18 as Enrichment,
   IconGear3Outline18 as General,
   IconImageOutline18 as Images,
@@ -26,7 +25,6 @@ const ICONS: Record<string, IconComponent> = {
   tags: Tags,
   trash: Trash,
   storage: Storage,
-  funnel: Downloads,
   videos: Videos,
   images: Images,
   enrichment: Enrichment,
@@ -46,14 +44,12 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
   return { ...section, icon, config };
 });
 
-/** Bespoke sections bring their own full-page layout, opting their whole tab out of the two-column masonry. */
 const BESPOKE_SECTION_IDS = new Set(["tags"]);
 
 export function isBespokeSection(section: SectionDef): boolean {
   return BESPOKE_SECTION_IDS.has(section.id);
 }
 
-/** Hidden sections are routable but never shown as their own row in the index. */
 function isIndexSection(section: SectionDef): boolean {
   return !section.hidden;
 }

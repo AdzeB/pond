@@ -6,7 +6,6 @@ export interface ToggleProps extends Base.Props {
   size?: "sm" | "md";
 }
 
-/** Standalone it's a quiet ghost button that fills when pressed; inside a ToggleGroup it restyles as a segmented-control item. */
 export function Toggle({ className, size = "md", ...props }: ToggleProps) {
   return (
     <Base data-size={size} className={cn(styles.root, className)} {...props} />

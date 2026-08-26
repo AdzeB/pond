@@ -29,7 +29,6 @@ export function looksLikeAuthWall(currentUrl: string): boolean {
   }
 }
 
-/** Anti-abuse interstitials mean the platform is suspicious of the account; callers should hard-stop and mark the source at-risk rather than retry. */
 export function looksLikeChallenge(currentUrl: string): null | {
   kind: "challenge" | "checkpoint" | "captcha";
 } {
@@ -74,7 +73,6 @@ export async function navigateWithTimeout(
       failedUrl: string,
       isMainFrame: boolean,
     ) => {
-      /** Subframe misses (blocked trackers, dead ad iframes) and ERR_ABORTED from the page's own redirects don't fail the navigation. */
       if (!isMainFrame || code === -3) return;
       log.info("[pond scrape] nav load failed", { code, desc, failedUrl });
       cleanup();
@@ -92,7 +90,6 @@ export async function navigateWithTimeout(
   const navPromise = wc.loadURL(url).then(
     () => finished,
     (err: unknown) => {
-      /** ERR_ABORTED means the page replaced the navigation (JS redirect, SPA takeover); wait for the successor load instead of failing. */
       if (err instanceof Error && err.message.includes("ERR_ABORTED")) {
         return finished;
       }
@@ -111,9 +108,7 @@ export async function navigateWithTimeout(
   if (result === TIMEOUT) {
     try {
       wc.stop();
-    } catch {
-      /** wc may be destroyed mid-flight; pool drops it. */
-    }
+    } catch {}
     return false;
   }
   return result === true;

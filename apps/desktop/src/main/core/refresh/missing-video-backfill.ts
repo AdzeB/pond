@@ -1,4 +1,3 @@
-/** Re-queue video download for settled saves that are missing some or all expected clips. */
 import { type NewTask, type Save, saves, tasks } from "@pond/schema/db";
 import { isVideoFile } from "@shared/media-index";
 import { and, eq, inArray, isNull } from "drizzle-orm";
@@ -21,7 +20,6 @@ function videoFileCount(files: Save["files"]): number {
   return (files ?? []).filter(isVideoFile).length;
 }
 
-/** Idempotent: only settled saves still short of the expected video file count. */
 export async function startMissingVideoBackfill(): Promise<{
   ok: true;
   queued: number;

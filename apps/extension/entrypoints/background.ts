@@ -4,18 +4,14 @@ import type {
   SessionImportResponse,
 } from "@pond/schema/session";
 import { onMessage } from "@/utils/messaging";
+import { nativeCall } from "@/utils/native";
 import { probe } from "@/utils/probe";
-import { ensureSettings, getSettings } from "@/utils/settings";
-import {
-  enqueueUrl,
-  type PondSettings,
-  type PushSessionResult,
-  sessionImportUrl,
-  sessionPendingUrl,
-} from "@/utils/types";
+import { ensureSettings } from "@/utils/settings";
+import type { PushSessionResult } from "@/utils/types";
 import { cookieDomainForSource, hostToSource } from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
+const SAVE_MENU_ID = "pond-save";
 
 export default defineBackground(() => {
   const recentAutoPush = new Map<Source, number>();
@@ -24,6 +20,13 @@ export default defineBackground(() => {
   chrome.runtime.onInstalled.addListener(async () => {
     await ensureSettings();
     clearStaleBadge();
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create({
+        id: SAVE_MENU_ID,
+        title: "Save to Pond",
+        contexts: ["page", "link", "image", "video", "audio"],
+      });
+    });
   });
 
   chrome.runtime.onStartup.addListener(clearStaleBadge);
@@ -37,14 +40,24 @@ export default defineBackground(() => {
 
   if (chrome.action?.onClicked) {
     chrome.action.onClicked.addListener((tab) => {
-      if (typeof tab.id !== "number") return;
-      void chrome.tabs
-        .sendMessage(tab.id, { type: "pond:toggle-toolbar" })
-        .catch(() => {
-          /** No content script on this page (chrome://, Web Store, etc.). */
-        });
+      const url = tab.url;
+      if (!url) {
+        flashBadge(tab.id, "!", "#dd9b00");
+        return;
+      }
+      void handleCapture({ url, trigger: "action" }, tab.id);
     });
   }
+
+  chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId !== SAVE_MENU_ID) return;
+    const url = info.linkUrl || info.srcUrl || info.pageUrl || tab?.url;
+    if (!url) {
+      flashBadge(tab?.id, "!", "#dd9b00");
+      return;
+    }
+    void handleCapture({ url, trigger: "context-menu" }, tab?.id);
+  });
 
   onMessage("log", ({ data }) => {
     const fn =
@@ -76,10 +89,9 @@ export default defineBackground(() => {
     }),
   );
 
-  onMessage("probe", async ({ data }) => {
+  onMessage("probe", async () => {
     try {
-      const settings = data ?? (await getSettings());
-      return await probe(settings);
+      return await probe();
     } catch (err) {
       console.warn("[pond] probe failed", err);
       return { state: "offline" as const };
@@ -110,36 +122,20 @@ export default defineBackground(() => {
     }
   }
 
-  async function fetchPendingSource(
-    settings: PondSettings,
-  ): Promise<Source | null> {
-    try {
-      const res = await fetch(sessionPendingUrl(settings.port), {
-        headers: { authorization: `Bearer ${settings.apiKey}` },
-        signal: AbortSignal.timeout(1500),
-      });
-      if (!res.ok) return null;
-      const body = (await res.json()) as {
-        status?: string;
-        data?: { source?: Source } | null;
-      };
-      if (body.status !== "success" || !body.data?.source) return null;
-      return body.data.source;
-    } catch {
+  async function fetchPendingSource(): Promise<Source | null> {
+    const result = await nativeCall({ type: "session.pending" });
+    if (!result.ok || !result.data || typeof result.data !== "object") {
       return null;
     }
+    const source = (result.data as { source?: Source }).source;
+    return source ?? null;
   }
 
   async function maybeAutoPush(): Promise<void> {
     if (autoPushInFlight) return;
     autoPushInFlight = true;
     try {
-      const settings = await getSettings();
-      if (!settings.apiKey) {
-        return;
-      }
-
-      const pending = await fetchPendingSource(settings);
+      const pending = await fetchPendingSource();
       if (!pending || !cookieDomainForSource(pending)) return;
 
       const last = recentAutoPush.get(pending);
@@ -172,10 +168,6 @@ export default defineBackground(() => {
   }
 
   async function pushSession(source: Source): Promise<PushSessionResult> {
-    const settings = await getSettings();
-    if (!settings.apiKey) {
-      return { ok: false, reason: "unpaired" };
-    }
     const domain = cookieDomainForSource(source);
     if (!domain) {
       return { ok: false, reason: "no_cookies", detail: "source is public" };
@@ -196,7 +188,24 @@ export default defineBackground(() => {
       return { ok: false, reason: "no_cookies" };
     }
 
-    const cookies: ExtensionCookie[] = raw.map((c) => ({
+    const cookies: ExtensionCookie[] = raw.map(cookieFromChrome);
+    const result = await nativeCall({
+      type: "session.import",
+      source,
+      cookies,
+    });
+    if (!result.ok) {
+      return { ok: false, reason: "network", detail: result.error };
+    }
+    const data = result.data as SessionImportResponse | undefined;
+    if (!data) {
+      return { ok: false, reason: "network", detail: "bad response shape" };
+    }
+    return { ok: true, data };
+  }
+
+  function cookieFromChrome(c: chrome.cookies.Cookie): ExtensionCookie {
+    return {
       name: c.name,
       value: c.value,
       domain: c.domain,
@@ -207,39 +216,7 @@ export default defineBackground(() => {
       expirationDate:
         typeof c.expirationDate === "number" ? c.expirationDate : null,
       hostOnly: c.hostOnly,
-    }));
-
-    let res: Response;
-    try {
-      res = await fetch(sessionImportUrl(settings.port), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${settings.apiKey}`,
-        },
-        body: JSON.stringify({ source, cookies }),
-      });
-    } catch (err) {
-      return {
-        ok: false,
-        reason: "network",
-        detail: err instanceof Error ? err.message : String(err),
-      };
-    }
-
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      return { ok: false, reason: "network", detail };
-    }
-
-    const body = (await res.json()) as {
-      status?: string;
-      data?: SessionImportResponse;
     };
-    if (body.status !== "success" || !body.data) {
-      return { ok: false, reason: "network", detail: "bad response shape" };
-    }
-    return { ok: true, data: body.data };
   }
 
   function normaliseSameSite(s: unknown): ExtensionCookie["sameSite"] {
@@ -247,40 +224,58 @@ export default defineBackground(() => {
     return "unspecified";
   }
 
+  /** Live-tab cookies for explicit saves; archive_page writes them into a throwaway partition then drops them. */
+  async function cookiesForUrl(url: string): Promise<ExtensionCookie[]> {
+    try {
+      const page = new URL(url);
+      if (page.protocol !== "http:" && page.protocol !== "https:") return [];
+      const [byUrl, byDomain] = await Promise.all([
+        chrome.cookies.getAll({ url }),
+        chrome.cookies.getAll({ domain: page.hostname }),
+      ]);
+      const seen = new Set<string>();
+      const out: ExtensionCookie[] = [];
+      for (const c of [...byUrl, ...byDomain]) {
+        const key = `${c.name}\0${c.domain}\0${c.path}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(cookieFromChrome(c));
+        if (out.length >= 500) break;
+      }
+      return out;
+    } catch (err) {
+      console.warn("[pond] cookiesForUrl failed", err);
+      return [];
+    }
+  }
+
+  function wantsPageCookies(trigger: string | undefined): boolean {
+    return (
+      trigger === "action" ||
+      trigger === "context-menu" ||
+      trigger === "toolbar"
+    );
+  }
+
   async function handleCapture(
     payload: { url: string; trigger?: string },
     tabId?: number,
   ): Promise<boolean> {
     if (!payload || typeof payload.url !== "string") return false;
-    const settings = await getSettings();
-    if (!settings.apiKey) {
-      console.warn("[pond] missing apiKey; pair the extension via the toolbar");
-      flashBadge(tabId, "!", "#dd9b00");
-      return false;
-    }
 
-    let res: Response;
-    try {
-      res = await fetch(enqueueUrl(settings.port), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${settings.apiKey}`,
-        },
-        body: JSON.stringify({
-          url: payload.url,
-          ...(payload.trigger ? { trigger: payload.trigger } : {}),
-        }),
-      });
-    } catch (err) {
-      console.error("[pond] enqueue fetch failed", err);
-      flashBadge(tabId, "x", "#cc3333");
-      return false;
-    }
+    const cookies = wantsPageCookies(payload.trigger)
+      ? await cookiesForUrl(payload.url)
+      : [];
 
-    if (!res.ok) {
-      const bodyText = await res.text();
-      console.warn("[pond] enqueue rejected", res.status, bodyText);
+    const result = await nativeCall({
+      type: "enqueue",
+      url: payload.url,
+      ...(payload.trigger ? { trigger: payload.trigger } : {}),
+      ...(cookies.length > 0 ? { cookies } : {}),
+    });
+
+    if (!result.ok) {
+      console.warn("[pond] enqueue rejected", result.error);
       flashBadge(tabId, "x", "#cc3333");
       return false;
     }

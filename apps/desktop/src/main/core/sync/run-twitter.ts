@@ -3,7 +3,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
-import { enqueueSavesBulk } from "../pipeline/enqueue-bulk";
+import { enqueue } from "../pipeline/enqueue";
 import { harvestTwitterBookmarks } from "../refresh/scrape-window";
 import { partitionForAccount } from "./accounts";
 import {
@@ -26,7 +26,6 @@ export async function syncTwitter(
   const db = await getDb();
   const baseline = await loadSyncBaseline(account, forceFull);
   const knownIds = baseline.knownIds;
-  /** Previously-failed tweets can be reseeded from GraphQL data when they reappear. */
   const failedRows = await db
     .select({ sourceId: saves.sourceId })
     .from(saves)
@@ -42,7 +41,6 @@ export async function syncTwitter(
     message: "Reading",
   });
 
-  /** On a full walk, hide known ids so the harvester scans the whole bookmark history instead of early-stopping; dedup still happens via `knownIds`. */
   const harvest = await harvestTwitterBookmarks(
     {
       knownIds: baseline.full ? [] : Array.from(knownIds),
@@ -156,9 +154,8 @@ export async function syncTwitter(
     progress: { current: 0, total },
   });
 
-  /** Each entry carries its GraphQL seed so harvest_metadata can skip a re-scrape; recovery items already exist, so the bulk path routes them to reseed. */
   const queue = [...fresh, ...recovery];
-  const bulk = await enqueueSavesBulk(
+  const bulk = await enqueue(
     queue.map((entry) => {
       const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
       return { url: entry.url, ...(seed ? { seed } : {}) };

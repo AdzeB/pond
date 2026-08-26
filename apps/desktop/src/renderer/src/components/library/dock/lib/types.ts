@@ -1,4 +1,3 @@
-/** The mutually exclusive surfaces the pill can show. */
 export type DockView =
   | "selection"
   | "search"
@@ -33,7 +32,6 @@ export type DockView =
   | "selection-export"
   | "nav";
 
-/** Includes drill-down subviews (sort groups, search help) so they render through the same registry and swap transition. */
 export type ViewMenuSection =
   | "options"
   | "layout"
@@ -97,7 +95,6 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "selection-export",
 ];
 
-/** Card modes opened from the selection pill; they must outrank the selection in the pill's priority so drilling in doesn't bounce back. */
 export const SELECTION_CARD_MODES: readonly ViewMenuSection[] = [
   "confirm",
   "selection-run",

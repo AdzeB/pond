@@ -4,7 +4,6 @@ import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
 import { resolvePaths } from "../paths";
 
-/** Prefs slices that travel with the bundle (settings.json); everything else is app-global. */
 const POND_PREF_KEYS = [
   "preferences",
   "sourcesView",
@@ -23,7 +22,6 @@ type AppPrefKey = Exclude<keyof Prefs, PondPrefKey>;
 export type PondPrefs = Pick<Prefs, PondPrefKey>;
 export type AppPrefs = Pick<Prefs, AppPrefKey>;
 
-/** Stored global.db prefs blob: the app slice plus a "pending" library slice consumed by the first bundle open. */
 export interface StoredPrefs {
   version: 3;
   app: Partial<AppPrefs>;
@@ -56,7 +54,6 @@ function isStoredPrefs(stored: unknown): stored is StoredPrefs {
   );
 }
 
-/** Coerces stored blobs to v3: a v2 blob keeps its app slice and unbound entry, dropping per-pond entries because the bundle's settings.json owns that data; a legacy flat blob is split by scope. */
 export function normalizeStoredPrefs(stored: unknown): StoredPrefs {
   if (isStoredPrefs(stored)) return stored;
 
@@ -90,7 +87,6 @@ export function normalizeStoredPrefs(stored: unknown): StoredPrefs {
   return { version: 3, app: {}, pending: null };
 }
 
-/** The app slice comes from global.db, the pond slice from the bundle's settings.json; both merge over their defaults. */
 export function mergePrefs(
   app: Partial<AppPrefs>,
   pond: Partial<PondPrefs>,
@@ -101,7 +97,6 @@ export function mergePrefs(
   };
 }
 
-/** mergeSlice only merges keys present in its base, so widen to the full defaults first. */
 export function mergePondSlice(
   base: Partial<PondPrefs>,
   patch: DeepPartial<PondPrefs> = {},
@@ -118,7 +113,6 @@ export function mergeAppSlice(
   return mergeSlice(full, patch) as AppPrefs;
 }
 
-/** The library slice lives inside the .pond bundle so it travels with the folder. */
 export function readBundlePondPrefs(): Partial<PondPrefs> | null {
   const paths = resolvePaths();
   if (!existsSync(paths.settingsFile)) return null;
@@ -132,8 +126,7 @@ export function readBundlePondPrefs(): Partial<PondPrefs> | null {
   return read.data;
 }
 
-/** Always writes the full slice so the file is self-describing on disk. */
-export function writeBundlePondPrefs(slice: PondPrefs): void {
+export function writeBundlePondPrefs(slice: Partial<PondPrefs>): void {
   writeBundleJson(resolvePaths().settingsFile, slice);
 }
 

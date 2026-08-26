@@ -1,7 +1,5 @@
 import { Store } from "@tanstack/store";
 
-/** Per-save embedding vectors: loaded once on startup (vectors are excluded from saves.list to keep it small), kept current by the sweep. */
-
 interface EmbeddingEntry {
   vec: Float32Array;
   model: string;
@@ -27,7 +25,6 @@ interface WireEmbedding {
 
 let loadInflight: Promise<void> | null = null;
 
-/** Idempotent. */
 export function loadEmbeddings(): Promise<void> {
   if (store.state.loaded) return Promise.resolve();
   if (loadInflight) return loadInflight;
@@ -59,7 +56,6 @@ export function loadEmbeddings(): Promise<void> {
   return loadInflight;
 }
 
-/** Persists through IPC, fire-and-forget. */
 export function setEmbedding(
   id: string,
   vec: Float32Array,
@@ -81,7 +77,6 @@ export function setEmbedding(
     });
 }
 
-/** Dropping in-memory vectors makes the enricher re-embed those saves; persisted rows are overwritten as each fresh vector lands, so nothing is permanently lost. */
 export function clearEmbeddings(ids?: readonly string[]): number {
   if (ids && ids.length > 0) {
     let count = 0;

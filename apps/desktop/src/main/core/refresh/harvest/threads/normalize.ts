@@ -5,7 +5,6 @@ export function isThreadsLandingMedia(url: string): boolean {
   return /static\.cdninstagram\.com\/rsrc\.php\//i.test(url);
 }
 
-/** SSR shell copy served for every unhydrated Threads URL. */
 export function isThreadsLandingCopy(text: string): boolean {
   const t = text.trim();
   return (
@@ -13,7 +12,6 @@ export function isThreadsLandingCopy(text: string): boolean {
   );
 }
 
-/** True when a live Threads save is the landing-page logo tile, not a real post. */
 export function isLandingOgThreadsSave(row: {
   source: string;
   title?: string | null;
@@ -325,9 +323,7 @@ export function inPageThreadsNormalize() {
     if (url) {
       try {
         domain = new URL(url).hostname.replace(/^www\./, "");
-      } catch {
-        /** Keep display_url when the href isn't absolute. */
-      }
+      } catch {}
     }
     if (domain) domain = domain.replace(/^www\./, "").split("/")[0];
     return {

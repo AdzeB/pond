@@ -29,7 +29,6 @@ async function inPagePinterestList(
     return { ok: false, reason: "auth_required" };
   }
 
-  /** The grid only exposes a tiny thumbnail per card; emit bare stubs so every pin goes through the per-pin harvester for real metadata and full-resolution images. */
   function collectFn() {
     const out: Array<{ sourceId: string; url: string }> = [];
     const seen = new Set<string>();

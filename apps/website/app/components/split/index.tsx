@@ -19,7 +19,7 @@ export function Split() {
             Never touches a <em>server</em>
           </Section.Title>
           <p className={styles.lead}>
-            The extension talks to a local port only your Mac can reach.
+            The extension talks to Pond on your Mac through native messaging.
             On-device enrichment never leaves the machine. Ask runs locally with
             Minnow.
           </p>

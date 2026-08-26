@@ -1,19 +1,50 @@
-/* Sits above the tray pill in the same slot as search typeahead. */
-.cluster {
+.chip {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 50%;
   z-index: 2;
   display: flex;
-  gap: 4px;
   align-items: center;
+  max-width: 240px;
+  height: 28px;
   pointer-events: auto;
+  background: var(--ds-gray-1);
+  border-radius: var(--ds-radius-md);
+  box-shadow:
+    0 0 0 1px var(--ds-gray-3),
+    0 1px 2px 0 var(--ds-gray-3);
   transform-origin: bottom center;
 }
 
+.edit {
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  min-width: 0;
+  height: 100%;
+  padding-inline: 10px 4px;
+  border-radius: var(--ds-radius-md) 0 0 var(--ds-radius-md);
+}
+
 .label {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  --scroll-fade-size: 16px;
+
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  font-weight: 550;
+  color: var(--ds-gray-12);
   white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.label::-webkit-scrollbar {
+  display: none;
+}
+
+.clear {
+  flex: none;
+  height: 100%;
+  border-radius: 0 var(--ds-radius-md) var(--ds-radius-md) 0;
 }

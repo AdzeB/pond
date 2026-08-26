@@ -32,37 +32,47 @@ describe("threads landing filters", () => {
   });
 
   it("drops landing OG from adapt so a failed hydrate cannot enqueue the logo tile", () => {
-    const harvest = adapt({
-      title: "Join Threads to share ideas, ask questions",
-      description:
-        "Join Threads to share ideas, ask questions, post random thoughts, find your people and more. Log in with your Instagram.",
-      mediaUrl:
-        "https://static.cdninstagram.com/rsrc.php/yd/r/kHwIMM5b8PW.webp",
-      mediaUrls: [
-        {
-          url: "https://static.cdninstagram.com/rsrc.php/yd/r/kHwIMM5b8PW.webp",
-          type: "image",
-        },
-      ],
-    });
+    const harvest = adapt(
+      {
+        description:
+          "Join Threads to share ideas, ask questions, post random thoughts, find your people and more. Log in with your Instagram.",
+        mediaUrl:
+          "https://static.cdninstagram.com/rsrc.php/yd/r/kHwIMM5b8PW.webp",
+        mediaUrls: [
+          {
+            url: "https://static.cdninstagram.com/rsrc.php/yd/r/kHwIMM5b8PW.webp",
+            type: "image",
+          },
+        ],
+      },
+      { source: "threads", url: "https://www.threads.com/t/x", sourceId: "x" },
+    );
     expect(harvest).toBeNull();
   });
 
   it("keeps a real post", () => {
-    const harvest = adapt({
-      title: "lately ୧(•.•)୨",
-      description: "lately ୧(•.•)୨",
-      author: "@gianniijones",
-      mediaUrl: "https://instagram.fdub8-1.fna.fbcdn.net/v/t51.82787-15/a.jpg",
-      mediaUrls: [
-        {
-          url: "https://instagram.fdub8-1.fna.fbcdn.net/v/t51.82787-15/a.jpg",
-          type: "image",
-        },
-      ],
-    });
+    const harvest = adapt(
+      {
+        title: "lately ୧(•.•)୨",
+        description: "lately ୧(•.•)୨",
+        author: "@gianniijones",
+        mediaUrl:
+          "https://instagram.fdub8-1.fna.fbcdn.net/v/t51.82787-15/a.jpg",
+        mediaUrls: [
+          {
+            url: "https://instagram.fdub8-1.fna.fbcdn.net/v/t51.82787-15/a.jpg",
+            type: "image",
+          },
+        ],
+      },
+      {
+        source: "threads",
+        url: "https://www.threads.com/@gianniijones/post/abc",
+        sourceId: "abc",
+      },
+    );
     expect(harvest?.title).toBe("lately ୧(•.•)୨");
-    expect(harvest?.mediaUrls).toHaveLength(1);
+    expect(harvest?.media).toHaveLength(1);
   });
 });
 

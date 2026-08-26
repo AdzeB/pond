@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import { saves } from "../../db";
 import { defineField } from "./descriptor";
 
-/** Enum picked from distinct authors; case-insensitive match. */
 export const creator = defineField({
   id: "creator",
   type: "enum",

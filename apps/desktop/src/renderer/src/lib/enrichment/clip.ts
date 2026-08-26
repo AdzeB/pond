@@ -2,8 +2,6 @@ import type { RawImage } from "@huggingface/transformers";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferClipAesthetic, inferClipImage } from "./inference-client";
 
-/** Model loading + execution live in the inference worker (inference-core); this module resolves the prefs-driven CLIP model id and stamp. */
-
 const DEFAULT_MODEL_ID = "Xenova/clip-vit-base-patch32";
 
 function modelId(): string {
@@ -35,12 +33,10 @@ const AESTHETIC_LABELS = [
   "typography",
 ] as const;
 
-/** Normalized CLIP image embedding for visual similarity. */
 export function clipImageEmbedding(image: RawImage): Promise<Float32Array> {
   return inferClipImage(image, modelId());
 }
 
-/** Top aesthetic/style labels for an image, above a confidence floor. */
 export function clipAesthetic(image: RawImage): Promise<string[]> {
   return inferClipAesthetic(image, [...AESTHETIC_LABELS], modelId());
 }

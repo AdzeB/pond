@@ -7,7 +7,6 @@ import { Button, TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import styles from "./styles.module.css";
 
-/** Chooser between the two ways of adding a source: sign in, or watch a public account. */
 export function SourceNewSection() {
   const dock = useDock();
 

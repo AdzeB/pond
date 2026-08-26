@@ -12,7 +12,6 @@ function readGridMin(): number {
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_COL_MIN;
 }
 
-/** `setZoom` writes zoom to the root's `--grid-min`; CSS layouts pick that up reactively but the JS packers can't, so observe the root style attribute and re-read on mutation. */
 export function useGridMin(): number {
   const [value, setValue] = useState<number>(readGridMin);
   const rootRef = useRef<HTMLElement | null>(

@@ -1,8 +1,8 @@
 import type { Source } from "@pond/schema/db";
+import type { Capture } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { partitionForIngest } from "../../sync/accounts";
 import { harvesterFor } from "../harvest";
-import type { ScrapedHarvest } from "../harvest/types";
 import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
@@ -16,13 +16,12 @@ interface HarvestArgs {
   url: string;
   source: Source;
   sourceId?: string;
-  /** Connected account whose session should load the page, when known. */
   accountId?: string | null;
 }
 
 interface HarvestResult {
   ok: boolean;
-  harvest?: ScrapedHarvest;
+  capture?: Capture;
   sourceId?: string;
   reason?: "navigate_failed" | "harvest_failed" | "auth_required" | "timeout";
 }
@@ -36,22 +35,7 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
     const { fetchRedditPostCapture } = await import("../harvest/reddit/api");
     const capture = await fetchRedditPostCapture(sourceId, partition);
     if (capture) {
-      return {
-        ok: true,
-        sourceId,
-        harvest: {
-          title: capture.title,
-          description: capture.description,
-          author: capture.author?.handle,
-          mediaUrl: capture.media[0]?.url,
-          mediaUrls: capture.media.map((m) => ({
-            url: m.url,
-            type: m.type,
-            ...(m.posterUrl ? { poster: m.posterUrl } : {}),
-          })),
-          mediaType: capture.media[0]?.type,
-        },
-      };
+      return { ok: true, sourceId, capture };
     }
   }
 
@@ -86,11 +70,15 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       return { ok: false, reason: "timeout", sourceId };
     }
 
-    const harvest = harv.adapt(raw);
-    if (!harvest) {
+    const capture = harv.adapt(raw, {
+      source: args.source,
+      url: args.url,
+      sourceId,
+    });
+    if (!capture) {
       return { ok: false, reason: "harvest_failed", sourceId };
     }
-    return { ok: true, harvest, sourceId };
+    return { ok: true, capture, sourceId };
   } catch (err) {
     log.warn("[pond refresh:window] unexpected error", args.url, err);
     return { ok: false, reason: "harvest_failed", sourceId };

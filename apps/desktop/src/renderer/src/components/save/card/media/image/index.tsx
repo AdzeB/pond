@@ -40,7 +40,6 @@ export function CardImage({
         src={src}
         alt=""
         decoding="async"
-        /** Packed-grid windowing is already the lazy boundary; request mounted runway cards immediately. */
         fetchPriority="auto"
         width={w ?? undefined}
         height={h ?? undefined}

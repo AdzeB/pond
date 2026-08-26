@@ -126,7 +126,6 @@ export function presetDef(
   return getPreset(id)?.def ?? fallback;
 }
 
-/** Lift a legacy `{ base, accent, contrast }` theme into the four-field shape. */
 export function migrateThemeDef(
   raw: unknown,
   appearance: "light" | "dark",
@@ -155,7 +154,6 @@ export function migrateThemeDef(
   return { accent, background, foreground, contrast };
 }
 
-/** Prefs slice needed to pick the active theme; avoids importing the full Prefs type. */
 export interface ThemePrefsSlice {
   preferences: {
     appearance: ThemeAppearance;

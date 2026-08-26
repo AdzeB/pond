@@ -1,17 +1,14 @@
-/** Downloads a web save's favicon once and persists it as the source badge image. */
 import type { Save } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { fetchSourceIconToTxFile } from "../../../lib/blob";
 import { persistSave } from "../../persist-save";
 
-/** Mirrored as a literal in the renderer's media/url.ts; the renderer can't import the main bundle. */
 const SOURCE_ICON_KIND = "source_icon";
 
 export function hasSourceIcon(files: Save["files"]): boolean {
   return (files ?? []).some((f) => f.kind === SOURCE_ICON_KIND);
 }
 
-/** Returns true when an icon file was written; false when one already exists or none could be fetched. */
 export async function fetchSourceIcon(
   saveId: string,
   save: Save,
@@ -58,7 +55,6 @@ function scrapedFaviconUrl(rawJson: unknown): string | null {
   return typeof url === "string" && url.length > 0 ? url : null;
 }
 
-/** Google's favicon service resolves any domain to a PNG, covering saves harvested before favicon capture existed. */
 function fallbackFaviconUrl(saveUrl: string): string | null {
   try {
     const host = new URL(saveUrl).hostname;

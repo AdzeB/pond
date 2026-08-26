@@ -64,9 +64,7 @@ export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(STORAGE_KEYS[key], value ? "1" : "0");
-    } catch {
-      /** Storage denied: keep the in-memory store in sync anyway. */
-    }
+    } catch {}
   }
   store.setState((s) => (s[key] === value ? s : { ...s, [key]: value }));
 }

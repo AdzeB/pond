@@ -19,12 +19,9 @@ import { clampZoom, ZOOM_DEFAULT, ZOOM_STORAGE_KEY } from "@/lib/ui/zoom";
 
 export type Combinator = "and" | "or";
 
-/** Only active predicates filter; inactive rows stay mid-edit. */
 function deriveQuery(rows: Predicate[], combinator: Combinator): Query {
   return { combinator, rules: rows.filter(predicateIsActive) };
 }
-
-/** Library view state, in a store rather than the URL (desktop app); layout/sort/zoom persist via `view-prefs`, q/query/capture are session-only. */
 
 function applyZoomVar(zoom: number): void {
   if (typeof document === "undefined") return;
@@ -33,19 +30,15 @@ function applyZoomVar(zoom: number): void {
 
 interface ViewStoreState {
   q: string;
-  /** Verbatim dock Search text, kept separate from `q` (the residual after structured terms parse out) so the field can re-seed when the dock swaps back. */
   searchInput: string;
-  /** Ordered draft conditions (incomplete rows allowed); `query` is the committed view. */
   rows: Predicate[];
   combinator: Combinator;
   query: Query;
   layout: LayoutValue;
-  /** Broad string: list view sorts by columns the grid filter doesn't model; grid consumers narrow first. */
   sortKey: string;
   sortDir: SortDir;
   zoom: number;
   capture: boolean;
-  /** Applied saved view; tabs compare live query/sort against it to show a "modified" state. */
   activeViewId: string | null;
 }
 
@@ -97,7 +90,6 @@ export function useSearchText(): string {
   return useSelector(store, (s) => s.q);
 }
 
-/** Verbatim dock Search field text for re-seeding when the composer remounts. */
 export function useSearchInput(): string {
   return useSelector(store, (s) => s.searchInput);
 }
@@ -120,10 +112,6 @@ export function setQuery(query: Query): void {
   });
 }
 
-/**
- * One update: predicates become the active filter (combinator stays "and") and the residual words become `q`.
- * @remarks Pass `verbatim` from the dock field; omit it for structured callers so the composer can reconstruct.
- */
 export function setSearchInput(
   predicates: Predicate[],
   q: string,
@@ -148,7 +136,6 @@ export function resetFilters(): void {
   }));
 }
 
-/** Duplicates are allowed, so this never no-ops. */
 export function addCondition(field?: FieldId): void {
   const next = field ?? FIELD_IDS[0];
   if (!next) return;
@@ -158,7 +145,6 @@ export function addCondition(field?: FieldId): void {
   });
 }
 
-/** Replaces the row at `idx`, or removes it when `next` is null. */
 export function updateRow(idx: number, next: Predicate | null): void {
   store.setState((s) => {
     if (idx < 0 || idx >= s.rows.length) return s;
@@ -257,9 +243,7 @@ export function setZoom(zoom: number): void {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(clamped));
-    } catch {
-      /** Storage denied: keep the in-memory value in sync anyway. */
-    }
+    } catch {}
   }
   applyZoomVar(clamped);
   store.setState((s) => ({ ...s, zoom: clamped }));
@@ -272,9 +256,7 @@ export function restoreDefaults(): void {
   if (typeof window !== "undefined") {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(ZOOM_DEFAULT));
-    } catch {
-      /** Storage denied. */
-    }
+    } catch {}
   }
   applyZoomVar(ZOOM_DEFAULT);
   store.setState((s) => ({

@@ -57,7 +57,6 @@ export function SettingsSidebar() {
     return [...bySection.values()];
   }, [needle, fuse]);
 
-  /** Hidden nested pages highlight their parent's row instead of nothing. */
   const highlightPath = activeSection
     ? (sectionForPath(activeSection)?.parent ?? activeSection)
     : null;

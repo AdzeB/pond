@@ -1,19 +1,14 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
 
-/** Resolves watch-add input (bare handle or pasted URL) into a concrete watch target once at add time, so runners never have to guess. */
-
 export interface WatchTarget {
   kind: WatchKind;
-  /** Stored slug: handle, playlist/list id, `user/board`, `user/cluster`… */
   handle: string;
-  /** Short human form for the confirm chip ("@mkbhd", "sulley/blocks"…). */
   display: string;
 }
 
 const ARENA_PROBE_TIMEOUT_MS = 8_000;
 
-/** Profile-page tabs that show up after a user slug but don't name a channel. */
 const ARENA_USER_TABS = new Set([
   "channels",
   "blocks",
@@ -23,7 +18,6 @@ const ARENA_USER_TABS = new Set([
   "all",
 ]);
 
-/** First path segments that are never a Pinterest username. */
 const PINTEREST_RESERVED = new Set([
   "pin",
   "search",
@@ -34,7 +28,6 @@ const PINTEREST_RESERVED = new Set([
   "news_hub",
 ]);
 
-/** First path segments that are never a Cosmos username. */
 const COSMOS_RESERVED = new Set([
   "e",
   "discover",
@@ -120,14 +113,12 @@ async function resolveArena(
     if (!first) return null;
     const second = segs[1];
     if (second && !ARENA_USER_TABS.has(second.toLowerCase())) {
-      /** are.na/{user}/{channel-slug}: the channel slug alone identifies it. */
       return target("channel", second, `${first}/${second}`);
     }
     return probeArena(first, ["user", "group", "channel"]);
   }
   const slug = cleanHandle(input);
   if (!/^[\w.-]+$/.test(slug)) return null;
-  /** Bare slugs are usually channels; a user or group name also fits, so pin the kind now instead of guessing on every check. */
   return probeArena(slug, ["channel", "user", "group"]);
 }
 
@@ -155,7 +146,6 @@ async function probeArena(
       );
       if (res.ok) return target(kind, slug);
       if (res.status !== 404) {
-        /** Rate limit / outage: don't block the add; assume the likeliest kind and let the first check sort it out. */
         return target(order[0], slug);
       }
     } catch (err) {

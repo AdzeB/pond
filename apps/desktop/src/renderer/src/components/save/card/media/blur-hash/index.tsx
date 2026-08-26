@@ -4,7 +4,6 @@ import styles from "./styles.module.css";
 
 const SIZE = 32;
 
-/** Inline cover stand-in decoded from the stored hash. Not an image request. */
 export function BlurHash({ hash }: { hash: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 

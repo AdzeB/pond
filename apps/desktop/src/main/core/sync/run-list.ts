@@ -2,7 +2,7 @@ import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
-import { enqueueSavesBulk } from "../pipeline/enqueue-bulk";
+import { enqueue } from "../pipeline/enqueue";
 import {
   harvestSourceList,
   harvestYoutubeLikedList,
@@ -72,7 +72,6 @@ export async function syncListSource(
     accountKey = account.handle ?? ((await inferAccountKey(source)) || "me");
   }
 
-  /** Pass known ids even on full walks so a timed-out resume can skip already-queued posts; early-stop stays off so we keep paging into older saves. */
   const harvest = await harvestSourceList(
     source,
     {
@@ -165,7 +164,6 @@ export async function syncListSource(
       `[pond sync:${source}] test cap active. Enqueueing ${fresh.length} of ${allFresh.length} fresh items`,
     );
   }
-  /** Honest seen: the harvester's scanned total, floored at the entries actually in hand. */
   ev.harvest = {
     seen: Math.max(harvest.seen ?? 0, combined.length),
     fresh: fresh.length,
@@ -203,8 +201,7 @@ export async function syncListSource(
     progress: { current: 0, total: fresh.length },
   });
 
-  /** One batched, transactional insert for the whole harvest instead of per-URL round-trips. */
-  const bulk = await enqueueSavesBulk(
+  const bulk = await enqueue(
     fresh.map((entry) => ({ url: entry.url })),
     { trigger: `sync:${source}`, accountId },
   );

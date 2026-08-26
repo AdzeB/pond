@@ -1,6 +1,5 @@
-/** Recapture Threads cards whose native PNG predates the carousel layout and inlined PFPs. */
 import { saves } from "@pond/schema/db";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
 import { getDb } from "../../db";
@@ -31,7 +30,7 @@ export async function startThreadsCardBackfill(): Promise<{
       .from(saves)
       .where(
         and(
-          eq(saves.source, "threads"),
+          inArray(saves.source, ["twitter", "threads"]),
           inArray(saves.status, ["complete", "failed"]),
           isNull(saves.deletedAt),
         ),
@@ -50,7 +49,7 @@ export async function startThreadsCardBackfill(): Promise<{
             const result = await runCaptureTweet(row.id, { nativeOnly: true });
             if (result.captured > 0) recaptured += 1;
           } catch (err) {
-            log.warn("[pond threads-card-backfill] failed", row.id, err);
+            log.warn("[pond native-card-backfill] failed", row.id, err);
           }
         }),
       );
@@ -61,7 +60,7 @@ export async function startThreadsCardBackfill(): Promise<{
 
   await Promise.all(jobs);
   if (recaptured > 0) {
-    log.info("[pond threads-card-backfill] recaptured", { recaptured });
+    log.info("[pond native-card-backfill] recaptured", { recaptured });
   }
   return { ok: true, recaptured };
 }

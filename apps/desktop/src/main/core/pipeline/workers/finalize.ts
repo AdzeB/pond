@@ -22,7 +22,6 @@ export async function runFinalize(saveId: string): Promise<void> {
   const report = computeCaptureReport(save);
 
   if (report.required.missing.length > 0) {
-    /** Re-pend harvest_metadata if it has retries left; otherwise accept the partial capture. */
     const harvestRow = taskRows.find((t) => t.op === "harvest_metadata");
     const harvestExhausted =
       !harvestRow ||
@@ -86,7 +85,6 @@ export async function runFinalize(saveId: string): Promise<void> {
   const { writeSaveBlurhash } = await import("../../../lib/blurhash");
   await writeSaveBlurhash(latest);
 
-  /** Authoritative info.json write after color extraction; writeInfo forces it. */
   await persistSave(
     saveId,
     {

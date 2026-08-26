@@ -24,7 +24,6 @@ export function hasMediaDims(
   );
 }
 
-/** YouTube resting posters use the platform thumbnail. */
 export function usesPlatformPoster(source: Source | null | undefined): boolean {
   return source === "youtube";
 }
@@ -60,7 +59,6 @@ export function videoFilename(index: number, ext: string): string {
   return index === 0 ? `video${ext}` : `video-${index}${ext}`;
 }
 
-/** Prefer yt-dlp info thumb, then capture media posterUrl. */
 export function youtubeThumbnailUrl(rawJson: unknown): string | null {
   if (!rawJson || typeof rawJson !== "object") return null;
   const root = rawJson as {

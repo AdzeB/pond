@@ -1,0 +1,31 @@
+export const MAX_NATIVE_MSG = 8 * 1024 * 1024;
+
+export function encodeFrame(value: unknown): Buffer {
+  const payload = Buffer.from(JSON.stringify(value), "utf8");
+  const header = Buffer.alloc(4);
+  header.writeUInt32LE(payload.length, 0);
+  return Buffer.concat([header, payload]);
+}
+
+export type DecodeFrame =
+  | { status: "need-more" }
+  | { status: "ok"; value: unknown }
+  | { status: "invalid"; error: string };
+
+/** Length-prefixed JSON: 32-bit little-endian size, then UTF-8 payload. */
+export function tryDecodeFrame(buf: Buffer): DecodeFrame {
+  if (buf.length < 4) return { status: "need-more" };
+  const len = buf.readUInt32LE(0);
+  if (len === 0 || len > MAX_NATIVE_MSG) {
+    return { status: "invalid", error: "invalid" };
+  }
+  if (buf.length < 4 + len) return { status: "need-more" };
+  try {
+    return {
+      status: "ok",
+      value: JSON.parse(buf.subarray(4, 4 + len).toString("utf8")),
+    };
+  } catch {
+    return { status: "invalid", error: "invalid" };
+  }
+}

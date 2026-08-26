@@ -1,5 +1,3 @@
-/** Renderer facade over main-process `saves.searchFts`. */
-
 export type FtsMode = "all" | "any";
 
 export async function searchFtsScores(

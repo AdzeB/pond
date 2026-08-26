@@ -134,9 +134,7 @@ export function TagMenu({
           tags: [label],
           group,
         });
-      } catch {
-        /* best-effort; surface nothing on a failed create */
-      }
+      } catch {}
       onToggle(label);
     } else {
       onToggle(createInfo.label);

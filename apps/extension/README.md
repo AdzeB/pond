@@ -21,13 +21,13 @@ pnpm --filter @pond/extension dev
 
 Load unpacked from `apps/extension/.output/chrome-mv3` while developing.
 
-## In-page toolbar
+## Capture
 
-Click the Pond toolbar icon to show a floating bar on the current page (same idea as Figma's capture HUD):
+Open Pond once so it can register the native host. Then:
 
-1. Paste a pairing token from Pond's menu bar → **Copy Pairing Token**.
-2. Once linked, **Capture Page** sends the current URL into your library.
-3. Session connect still happens in the background when Pond is waiting and you open the matching source site signed in.
+1. Click the Pond icon in the toolbar to save the current tab, or right-click a page, link, or image → **Save to Pond**.
+2. On supported sites, the usual save/bookmark control still sends the item into your library.
+3. Session connect happens in the background when Pond is waiting and you open that site signed in.
 
 ## State gallery
 

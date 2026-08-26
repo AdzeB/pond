@@ -38,7 +38,6 @@ export function formatSelector(
   const af = audioCodecFilter(prefs.audioCodec);
 
   const chain: string[] = [];
-  /** TikTok exposes a higher-bitrate "play" rendition; prefer it first. */
   if (source === "tiktok") {
     chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
   }

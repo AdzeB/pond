@@ -17,7 +17,6 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
 };
 
-/** The pond index is per-pond and swaps on a library switch; the global DB is shared. */
 let cachedPond: Db | null = null;
 let cachedGlobal: Db | null = null;
 
@@ -27,13 +26,9 @@ function openSqlite(file: string): Database.Database {
   sqlite.pragma("synchronous = NORMAL");
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("temp_store = MEMORY");
-  /** 256 MiB. */
   sqlite.pragma("mmap_size = 268435456");
-  /** Wait rather than throw SQLITE_BUSY when a write races a WAL checkpoint or a concurrent connection. */
   sqlite.pragma("busy_timeout = 5000");
-  /** ~64 MiB page cache (negative = KiB); keeps hot pages resident during bulk inserts and FTS rebuilds. */
   sqlite.pragma("cache_size = -65536");
-  /** Checkpoint less eagerly than the 1000-page default so a burst of batched writes isn't interrupted mid-transaction. */
   sqlite.pragma("wal_autocheckpoint = 2000");
   return sqlite;
 }
@@ -43,7 +38,6 @@ function wrap(sqlite: Database.Database): Db {
   return Object.assign(drizzled, { $raw: sqlite }) as Db;
 }
 
-/** App-global state in one file; readable at boot before any pond is resolved. */
 export async function getGlobalDb(): Promise<Db> {
   if (cachedGlobal) return cachedGlobal;
   const paths = resolvePaths();
@@ -54,7 +48,6 @@ export async function getGlobalDb(): Promise<Db> {
   return cachedGlobal;
 }
 
-/** Active pond's index cache; closeDb() drops it on a switch. */
 export async function getDb(): Promise<Db> {
   if (cachedPond) return cachedPond;
 
@@ -80,7 +73,6 @@ export async function getDb(): Promise<Db> {
   return cachedPond;
 }
 
-/** Drops the pond handle so the next getDb() reopens; pair with invalidatePaths(). */
 export function closeDb(): void {
   if (!cachedPond) return;
   try {
@@ -301,7 +293,6 @@ function migratePond(sqlite: Database.Database): void {
     "CREATE INDEX IF NOT EXISTS saves_account_idx ON saves(account_id);",
   );
 
-  /** Partial indexes: most rows have no vector, so these stay tiny and keep "has/needs an embedding" scans cheap. */
   sqlite.exec(`
 				CREATE INDEX IF NOT EXISTS saves_has_embedding_idx
 					ON saves(id) WHERE embedding IS NOT NULL;
@@ -309,11 +300,9 @@ function migratePond(sqlite: Database.Database): void {
 					ON saves(id) WHERE clip_embedding IS NOT NULL;
 			`);
 
-  /** FTS5 over save text; the virtual table can't be ALTERed, so on upgrade it and the triggers are rebuilt when columns drift. */
   ensureSavesFts(sqlite);
 }
 
-/** Columns the FTS index must carry; bump this list to force a rebuild on upgrade. */
 const SAVES_FTS_COLUMNS = [
   "id",
   "title",
@@ -343,7 +332,6 @@ function ensureSavesFts(sqlite: Database.Database): void {
 			`);
   }
 
-  /** The UPDATE trigger is scoped to FTS-indexed columns to avoid write amplification from high-churn ingest columns; drop any unscoped trigger first because CREATE IF NOT EXISTS won't replace it. */
   sqlite.exec("DROP TRIGGER IF EXISTS saves_au;");
 
   sqlite.exec(`
@@ -387,7 +375,6 @@ function ensureSavesFts(sqlite: Database.Database): void {
 				END;
 			`);
 
-  /** Repopulate after a rebuild so existing rows are searchable. */
   const count = sqlite.prepare("SELECT COUNT(*) AS n FROM saves_fts").get() as {
     n: number;
   };
@@ -403,7 +390,6 @@ function ensureSavesFts(sqlite: Database.Database): void {
   }
 }
 
-/** SQLite has no `ADD COLUMN IF NOT EXISTS`; guard against re-adding on upgrade. */
 function addColumnIfMissing(
   sqlite: Database.Database,
   table: string,
@@ -431,7 +417,6 @@ function dropColumnIfPresent(
 
 function ensureLibraryMetadata(): void {
   const paths = resolvePaths();
-  /** No bundle yet: the first write materializes it and writes metadata via one writer. */
   if (!existsSync(paths.libraryRoot)) return;
   if (existsSync(paths.libraryMetadata)) return;
   readOrCreatePondId(paths.libraryRoot);

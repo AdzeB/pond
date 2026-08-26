@@ -2,7 +2,6 @@ import { TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import styles from "./styles.module.css";
 
-/** Drill-down from the watch picker explaining what watching actually does. */
 export function WatchHelpSection() {
   const dock = useDock();
 

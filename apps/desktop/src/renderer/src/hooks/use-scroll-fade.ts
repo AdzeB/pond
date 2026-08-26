@@ -25,7 +25,6 @@ function edgesOf(element: HTMLElement, axis: ScrollAxis): ScrollEdges {
     .join(" ") as ScrollEdges;
 }
 
-/** Tracks which edges of a scroll viewport currently have clipped content. */
 export function useScrollFade<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [axis, setAxis] = useState<ScrollAxis>("y");

@@ -118,7 +118,6 @@ function hitsFor(raw: string, refs: readonly AccountRef[]): AccountRef[] {
   return refs.filter((ref) => aliases(ref).includes(key));
 }
 
-/** Canonical token written into `account:…`; qualified with the source id when a handle is shared. */
 export function displayAccountToken(
   id: string,
   refs: readonly AccountRef[] = liveRefs(),
@@ -134,7 +133,6 @@ export function accountDisplayName(ref: AccountRef): string {
   return localName(ref) || sourceLabel(ref.source);
 }
 
-/** Human chip copy: `@handle · Twitter`, falling back to the source name when the account has no handle yet. */
 export function accountChipLabel(
   id: string,
   refs: readonly AccountRef[] = liveRefs(),
@@ -146,7 +144,6 @@ export function accountChipLabel(
   return name ? `${name} · ${brand}` : brand;
 }
 
-/** Maps a typed `account:` value (id, @handle, or source/@handle) onto the stored account id. */
 export function resolveAccountToken(
   raw: string,
   refs: readonly AccountRef[] = liveRefs(),

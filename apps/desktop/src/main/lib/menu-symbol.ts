@@ -5,7 +5,6 @@ const MENU_SYMBOL_PX = 16;
 
 const cache = new Map<string, NativeImage | undefined>();
 
-/** SF Symbol sized for a native Mac menu item. No-op off darwin. */
 export function sym(
   name: string,
 ): { icon: NativeImage } | Record<string, never> {

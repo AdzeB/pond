@@ -23,7 +23,6 @@ export function SourceTile({
   name: string;
   value: string;
   tone: CardModel["tone"];
-  /** 0..1 while syncing with a known total; null when indeterminate or resting. */
   progress?: number | null;
   onOpen: () => void;
   menu?: () => MenuItemSpec[];
@@ -35,7 +34,6 @@ export function SourceTile({
   const blur = reduceMotion ? "blur(0px)" : "blur(3px)";
 
   const running = tone === "run";
-  /** Broken or in-flight artwork drains to grayscale; syncing pours color back in. */
   const drained = tone === "run" || tone === "err" || tone === "paused";
   const artSrc = pfp ?? logo ?? undefined;
   const artVariant = pfp ? "account" : "source";

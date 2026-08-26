@@ -8,8 +8,12 @@ exports.default = async function verifyBinaries(context) {
   const platform = normalizePlatform(context.electronPlatformName);
   const resourcesDir = resolveResourcesDir(context, platform);
   const ffmpegPath = join(resourcesDir, "bin", "ffmpeg");
+  const nativeHostPath = join(resourcesDir, "bin", "pond-native-host");
 
   assertPresent(ffmpegPath, "ffmpeg");
+  if (platform === "darwin") {
+    assertPresent(nativeHostPath, "pond-native-host");
+  }
 
   console.log(`[pond verify] bundled ffmpeg OK (${platform})`);
 };

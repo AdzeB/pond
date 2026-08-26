@@ -69,7 +69,6 @@ export function LocationRow() {
         | { ok: true; path: string }
         | { ok: false; reason: string };
       if (!picked.ok) return;
-      /** Switching relaunches, so there's no success state to settle into. */
       const res = (await window.pond.query("library.switchTo", {
         path: picked.path,
       })) as ActionResult;
@@ -80,7 +79,6 @@ export function LocationRow() {
   const move = useMutation({
     mutationFn: async () => {
       clearNotes();
-      /** Moving relaunches, so there's no success state to settle into. */
       const res = (await window.pond.query("library.move", {})) as MoveResult;
       if (!res.ok) {
         if (res.reason === "cancelled") return;

@@ -16,7 +16,6 @@ export async function setSettings(next: PondSettings): Promise<void> {
   await item.setValue(next);
 }
 
-/** Seed defaults on first install so the popup has a concrete value to edit. */
 export async function ensureSettings(): Promise<void> {
   if ((await item.getValue()) == null) {
     await item.setValue(DEFAULT_SETTINGS);

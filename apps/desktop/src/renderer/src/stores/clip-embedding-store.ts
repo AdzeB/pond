@@ -1,7 +1,5 @@
 import { Store } from "@tanstack/store";
 
-/** Per-save CLIP image vectors, mirroring stores/embedding-store.ts: hydrated once on startup (vectors are excluded from saves.list), kept current by the clip enricher, persisted non-synced via saves.patchDerived. */
-
 interface ClipEntry {
   vec: Float32Array;
   model: string;
@@ -57,7 +55,6 @@ export function loadClipEmbeddings(): Promise<void> {
   return loadInflight;
 }
 
-/** Persistence is non-synced and fire-and-forget. */
 export function setClipEmbedding(
   id: string,
   vec: Float32Array,
@@ -78,7 +75,6 @@ export function setClipEmbedding(
     });
 }
 
-/** Dropping in-memory vectors makes the clip enricher re-embed those saves; persisted rows are overwritten as each fresh vector lands. */
 export function clearClipEmbeddings(ids?: readonly string[]): number {
   if (ids && ids.length > 0) {
     let count = 0;

@@ -1,7 +1,6 @@
 import type { RawJson } from "@pond/schema/raw";
 import type Database from "better-sqlite3";
 
-/** Keeps only the rawJson fields the grid/filter/search read; stored in saves.raw_slim so `saves.list` can skip the heavy blob. */
 export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   if (!raw) return null;
   const cap = raw.capture;
@@ -28,7 +27,6 @@ export function slimRawJson(raw: RawJson | null | undefined): RawJson | null {
   };
 }
 
-/** Derives raw_slim whenever a write carries rawJson so the slim projection stays in lockstep with the source blob; untouched otherwise. */
 export function withRawSlim<T extends { rawJson?: unknown }>(
   values: T,
 ): T & { rawSlim?: RawJson | null } {
@@ -39,7 +37,6 @@ export function withRawSlim<T extends { rawJson?: unknown }>(
   };
 }
 
-/** One-time fill for rows without raw_slim; cheap no-op once done. */
 export function backfillRawSlim(sqlite: Database.Database): void {
   const rows = sqlite
     .prepare(
@@ -57,7 +54,6 @@ export function backfillRawSlim(sqlite: Database.Database): void {
       } catch {
         slim = null;
       }
-      /** Always write a non-NULL value so unparseable rows aren't re-scanned on every boot. */
       update.run(JSON.stringify(slim), row.id);
     }
   });

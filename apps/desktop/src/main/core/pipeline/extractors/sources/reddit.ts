@@ -1,13 +1,7 @@
 import { isLoggedInRedditToken } from "../../../../lib/reddit-token";
-import { fetchRedditPostCapture } from "../../../refresh/harvest/reddit/api";
+import { captureFromSource } from "../../../refresh/harvest/capture";
 import { TerminalError } from "../errors";
-import { fetchHtmlInWindow } from "../helpers";
-import type {
-  Capture,
-  ExtractInput,
-  Extractor,
-  MediaCandidate,
-} from "../types";
+import type { Capture, ExtractInput, Extractor } from "../types";
 import { firstMatch, REDDIT_PATTERNS } from "../url-patterns";
 
 export class RedditPostExtractor implements Extractor {
@@ -15,7 +9,6 @@ export class RedditPostExtractor implements Extractor {
   readonly source = "reddit" as const;
   readonly validUrl = REDDIT_PATTERNS;
   readonly cookieDomain = ".reddit.com";
-  /** Header avatar / user drawer link to /user/<name>/; shreddit-app `user` attr is the markup-independent fallback. */
   readonly probeExpression = `(() => {
         try {
           const app = document.querySelector('shreddit-app');
@@ -41,7 +34,6 @@ export class RedditPostExtractor implements Extractor {
     if ((segments[0] === "user" || segments[0] === "u") && segments[1]) {
       return segments[1];
     }
-    /** Bare handle for cache validation via `isCachedHandleValid`. */
     if (
       segments.length === 1 &&
       segments[0] &&
@@ -69,67 +61,10 @@ export class RedditPostExtractor implements Extractor {
     const match = firstMatch(input.url, this.validUrl);
     const postId = match?.[1] ?? null;
     if (!postId) throw new TerminalError("could not parse reddit post id");
-
-    /** redd.it short links redirect to the canonical permalink; navigating the original URL lets the scrape window follow the redirect. */
-    const canonical = input.url.href;
-
-    const fromJson = await fetchRedditPostCapture(postId).catch(() => null);
-    if (fromJson) return fromJson;
-
-    const result = await fetchHtmlInWindow(canonical, "reddit", postId);
-    const meta = (result.meta ?? {}) as Record<string, unknown>;
-
-    const media: MediaCandidate[] = (result.mediaUrls ?? []).map((m) => ({
-      url: m.url,
-      type: m.type === "video" ? "video" : "image",
-      ...(m.poster ? { posterUrl: m.poster } : {}),
-    }));
-
-    const author = {
-      ...(typeof meta.authorName === "string" ? { name: meta.authorName } : {}),
-      ...(typeof result.author === "string"
-        ? { handle: result.author.replace(/^u\//, "").replace(/^@/, "") }
-        : {}),
-      ...(typeof meta.authorUrl === "string"
-        ? { profileUrl: meta.authorUrl }
-        : {}),
-    };
-
-    const metricsRaw = (meta.metrics ?? {}) as Record<string, unknown>;
-    const metrics = pickNumbers(metricsRaw, ["likes", "comments"]);
-
-    const extras: Record<string, unknown> = {
-      ...(typeof meta.subreddit === "string"
-        ? { subreddit: meta.subreddit }
-        : {}),
-    };
-
-    return {
-      id: postId,
+    return captureFromSource({
+      url: input.url.href,
       source: "reddit",
-      url: canonical,
-      title: result.title,
-      description: result.description,
-      ...(Object.keys(author).length > 0 ? { author } : {}),
-      ...(typeof meta.publishedAt === "string"
-        ? { publishedAt: meta.publishedAt }
-        : {}),
-      ...(typeof result.lang === "string" ? { lang: result.lang } : {}),
-      media,
-      ...(Object.keys(metrics).length > 0 ? { metrics } : {}),
-      ...(Object.keys(extras).length > 0 ? { extras } : {}),
-    };
+      sourceId: postId,
+    });
   }
-}
-
-function pickNumbers<K extends string>(
-  obj: Record<string, unknown>,
-  keys: readonly K[],
-): Partial<Record<K, number>> {
-  const out: Partial<Record<K, number>> = {};
-  for (const key of keys) {
-    const v = obj[key];
-    if (typeof v === "number" && Number.isFinite(v)) out[key] = v;
-  }
-  return out;
 }

@@ -60,22 +60,18 @@ function entriesFromContents(value: ArenaContentsResponse): WatchEntry[] {
   for (const item of value.data ?? []) {
     const id = item?.id != null ? String(item.id) : null;
     if (!id) continue;
-    /** A channel inside a channel isn't a save. */
     const cls = (item.base_type ?? item.type ?? "").toLowerCase();
     if (cls === "channel") continue;
-    /** Newness is when the block landed in this listing: connected_at for channel contents, created_at for a user's own activity. */
     const stamp = item.connection?.connected_at ?? item.created_at ?? null;
     withTime.push({
       entry: { url: `https://www.are.na/block/${id}`, sourceId: id },
       at: stamp ? Date.parse(stamp) : 0,
     });
   }
-  /** v3 within-page order is inconsistent between the channel and user endpoints; the engine expects newest first (entries[0] = watermark). */
   withTime.sort((a, b) => b.at - a.at);
   return withTime.map((x) => x.entry);
 }
 
-/** Newest additions first: position_desc tracks connection order in channels, created_at_desc tracks activity in user/group feeds. */
 function contentsUrl(kind: "channel" | "user" | "group", slug: string): string {
   const s = encodeURIComponent(slug);
   if (kind === "channel") {
@@ -89,7 +85,6 @@ export async function listArenaWatch(
   handle: string,
   kind?: WatchKind,
 ): Promise<WatchHarvestResult> {
-  /** Kind is pinned at add time; kindless watches fall back to guessing channel, then user. */
   const order: Array<"channel" | "user" | "group"> =
     kind === "user"
       ? ["user"]

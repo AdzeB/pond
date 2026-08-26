@@ -7,15 +7,12 @@ URL-first ingest pipeline.
   world is "reset the task rows back to `pending` and bump the
   reconciler". The `harvest_metadata` worker re-runs and rebuilds the
   `Capture` from scratch.
-- `scrape-window.ts` is a small pool of hidden `BrowserWindow`s. The
-  pipeline's `fetch-in-window` helper calls `harvestUrl({ url, source,
-  sourceId })` against it for any auth-walled site that doesn't ship
-  usable SSR HTML.
+- `scrape-window.ts` is a small pool of hidden `BrowserWindow`s.
+  `captureFromSource` returns a Capture: Source APIs where they exist,
+  otherwise `harvestUrl` against the window pool.
 - `harvest/<source>/item.ts` are the in-page DOM scrapers. They serialise
-  themselves to a JS expression, run inside the hidden window, and the
-  main-side `adapt()` validates the JSON they return into a
-  `ScrapedHarvest`. Each extractor in
-  `core/pipeline/extractors/sources/` builds its `Capture` from that.
+  themselves to a JS expression, run inside the hidden window, and
+  `adapt()` validates the JSON into a `Capture`.
 - `harvest/<source>/list.ts` + `harvest/<source>/api.ts` cover the
   "import everything I've ever saved on X" flow. List harvesters emit
   `ListEntry { sourceId, url, ... }`; the sync layer just enqueues each

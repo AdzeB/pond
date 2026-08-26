@@ -3,7 +3,6 @@ import { createContext, type ReactNode, type RefObject, use } from "react";
 import type { DockTab } from "./nav-tabs";
 import type { DockView, ViewMenuSection } from "./types";
 
-/** Reduced-motion-aware enter/exit shared by every content module so they cross-fade in lockstep with the pill's width morph. */
 interface SwapVariants {
   initial: TargetAndTransition;
   animate: TargetAndTransition;
@@ -26,13 +25,12 @@ export interface DockContextValue {
   confirmDeleteForever: () => void;
   swap: SwapVariants;
   swapTransition: Transition;
-  /** Spring for a card view's nested `layout` scale-correction, matched to the pill so the box morph and its content settle together. */
   sizeTransition: Transition;
-  /** For size changes within one view (nav unfold), matched to the pill's quick within-view spring. */
   quickTransition: Transition;
   pillRef: RefObject<HTMLDivElement | null>;
-  /** Content-sized wrap around the pill; typeahead menus portal here so they sit above the overflow-clipped pill without stretching to the viewport. */
   dockRef: RefObject<HTMLDivElement | null>;
+  popoverOpen: boolean;
+  setPopoverOpen: (open: boolean) => void;
 }
 
 const DockContext = createContext<DockContextValue | null>(null);

@@ -24,7 +24,6 @@ const ACTIONS: { icon: Icon; label: string }[] = [
   { icon: IconSlidersOutline18, label: "Options" },
 ];
 
-/** Resting library dock: destinations, then the page actions. */
 export function DockNavRow() {
   return (
     <div className={styles.row}>
@@ -55,7 +54,6 @@ export function DockNavRow() {
   );
 }
 
-/** Static replica of the resting library dock. */
 export function Dock() {
   return (
     <Tray.Pill aria-hidden>

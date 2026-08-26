@@ -1,4 +1,3 @@
-/** Fills in source icons for web saves ingested before favicon capture existed. */
 import { saves } from "@pond/schema/db";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -11,10 +10,6 @@ import {
 
 const CONCURRENCY = 4;
 
-/**
- * Settled saves only: ingesting ones get their icon from the fetch_blobs worker.
- * Writes go through persistSave, so cards refresh live; misses retry on the next launch.
- */
 export async function backfillSourceIcons(): Promise<{
   ok: true;
   written: number;

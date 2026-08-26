@@ -5,13 +5,10 @@ import type { MediaUnit } from "@/lib/media/units";
 import { aspectCoverKey, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
 
-/** Seek can throw before metadata is available. */
 function seekToStart(el: HTMLVideoElement) {
   try {
     el.currentTime = 0;
-  } catch {
-    /* ignore */
-  }
+  } catch {}
 }
 
 export function HoverVideo({
@@ -23,7 +20,6 @@ export function HoverVideo({
   label,
   onBroken,
   onReady,
-  /** When set, the resting poster must not displace the stream's known aspect. */
   hasVideoDims = false,
 }: {
   saveId: string;

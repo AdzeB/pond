@@ -9,7 +9,6 @@ import styles from "./styles.module.css";
 
 type Scheme = "light" | "dark";
 
-/** Formats the timestamp the way a tweet's detail view does: "h:mm AM · MMM D, YYYY". */
 function formatTimestamp(iso: string): string | null {
   const d = new Date(iso);
   if (!Number.isFinite(d.getTime())) return null;

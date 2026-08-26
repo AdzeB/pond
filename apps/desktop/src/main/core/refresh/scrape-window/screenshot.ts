@@ -1,3 +1,4 @@
+import type { CaptureMedia } from "@pond/schema/raw";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -7,7 +8,6 @@ import {
   buildExpression as buildThreadsExpression,
 } from "../harvest/threads";
 import { adapt, buildExpression } from "../harvest/twitter";
-import type { ScrapedHarvest } from "../harvest/types";
 import { NAV_TIMEOUT_MS } from "./constants";
 import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
@@ -22,35 +22,26 @@ export interface TweetScreenshotResult {
   ok: boolean;
   png?: { bytes: Buffer; width: number; height: number };
   reason?: "navigate_failed" | "auth_required" | "no_article" | "timeout";
-  /** Quoted tweet's canonical URL, for walking the quote chain. */
   quotedUrl?: string;
-  /** Media harvested off the page when `harvestMedia` was requested. */
-  media?: ScrapedHarvest["mediaUrls"];
+  media?: CaptureMedia[];
 }
 
-/** Padding around the card in CSS pixels; scaled by the device factor. */
 const SCREENSHOT_PADDING_CSS = 24;
 
 const SCREENSHOT_ARTICLE_TIMEOUT_MS = 12_000;
 
-/** Override DPR via CDP so captures stay sharp regardless of host display. */
 const CAPTURE_DEVICE_SCALE_FACTOR = 3;
 
-/** Bottom padding so lazy-loaded media in the last row isn't clipped. */
 const SCREENSHOT_VERTICAL_PADDING = 40;
 
-/** Hard cap on hidden-window height; anything beyond is cropped. */
 const SCREENSHOT_MAX_HEIGHT = 8192;
 
-/** capturePage can hang indefinitely on a wedged hidden window; bound it so a stuck capture can't hold its window lease and starve the pool. */
 const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
 
 interface TweetDualScreenshotArgs {
   url: string;
   sourceId: string;
-  /** Harvest media off the loaded page (once); used by the quote walker. */
   harvestMedia?: boolean;
-  /** Connected account whose session should load the page, when known. */
   accountId?: string | null;
 }
 
@@ -58,10 +49,9 @@ interface TweetDualScreenshotResult {
   light: TweetScreenshotResult;
   dark: TweetScreenshotResult;
   quotedUrl?: string;
-  media?: ScrapedHarvest["mediaUrls"];
+  media?: CaptureMedia[];
 }
 
-/** Captures both color schemes from one window lease and, when X re-themes live, one navigation — halving X.com loads per tweet; reloads only when the flip doesn't take. */
 export async function screenshotTweetDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
@@ -99,8 +89,7 @@ export async function screenshotTweetDual(
       "tweet",
     );
 
-    /** Harvest media once on the light pass to avoid a second page evaluation on the dark pass. */
-    let media: ScrapedHarvest["mediaUrls"] | undefined;
+    let media: CaptureMedia[] | undefined;
     if (args.harvestMedia && light.ok) {
       const harvested = await harvestPageMedia(
         lease.win,
@@ -110,12 +99,10 @@ export async function screenshotTweetDual(
       if (harvested && harvested.length > 0) media = harvested;
     }
 
-    /** Clear the light override first so the flip detector reads X's own theme background, not our pinned html background. */
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     restoreEmulation = await emulateColorScheme(lease.win, "dark");
     const flipped = await waitForSchemeFlip(lease.win, "dark");
     if (!flipped) {
-      /** X ignores the live media change when the account pins an explicit theme; reload so the page re-mounts in dark. */
       log.debug("[pond screenshot:tweet] scheme flip needed reload", args.url);
       await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
     }
@@ -143,7 +130,6 @@ export async function screenshotTweetDual(
   }
 }
 
-/** Captures both color schemes from one Threads window lease; native card render is preferred, this is the live fallback. */
 export async function screenshotThreadsDual(
   args: TweetDualScreenshotArgs,
 ): Promise<TweetDualScreenshotResult> {
@@ -181,7 +167,7 @@ export async function screenshotThreadsDual(
       "threads",
     );
 
-    let media: ScrapedHarvest["mediaUrls"] | undefined;
+    let media: CaptureMedia[] | undefined;
     if (args.harvestMedia && light.ok) {
       const harvested = await harvestPageMedia(
         lease.win,
@@ -225,14 +211,12 @@ export async function screenshotThreadsDual(
   }
 }
 
-/** Captures the focused article in the window's current navigation and emulated scheme; pins the html background for this capture only. */
 async function captureCurrentScheme(
   win: BrowserWindow,
   sourceId: string,
   colorScheme: "light" | "dark",
   kind: "tweet" | "threads",
 ): Promise<TweetScreenshotResult> {
-  /** Pin html background to the scheme so rect rounding doesn't leak edge color. */
   const htmlBg = colorScheme === "light" ? "#fff" : "#000";
   const hideCss =
     kind === "tweet"
@@ -252,7 +236,6 @@ async function captureCurrentScheme(
       return { ok: false, reason: "no_article" };
     }
 
-    /** Resize to fit the whole article (capturePage crops overflow), then re-measure. */
     const [contentWidthRaw, originalContentHeightRaw] = win.getContentSize();
     const contentWidth = contentWidthRaw ?? 1280;
     const originalContentHeight = originalContentHeightRaw ?? 1024;
@@ -310,9 +293,7 @@ async function captureCurrentScheme(
       if (resized) {
         try {
           win.setContentSize(contentWidth, originalContentHeight);
-        } catch {
-          /** Window may have been destroyed mid-capture; pool drops it. */
-        }
+        } catch {}
       }
     }
   } finally {
@@ -320,7 +301,6 @@ async function captureCurrentScheme(
   }
 }
 
-/** Polls body background luminance until it matches the target scheme or the deadline passes; transparent/unknown counts as not flipped. */
 async function waitForSchemeFlip(
   win: BrowserWindow,
   target: "light" | "dark",
@@ -364,12 +344,11 @@ async function readBackgroundLuminance(
   }
 }
 
-/** Harvests media off the already-loaded page; best-effort, returns undefined on failure. */
 async function harvestPageMedia(
   win: BrowserWindow,
   sourceId: string,
   kind: "tweet" | "threads",
-): Promise<ScrapedHarvest["mediaUrls"]> {
+): Promise<CaptureMedia[] | undefined> {
   try {
     const expr =
       kind === "threads"
@@ -379,15 +358,20 @@ async function harvestPageMedia(
       win.webContents.executeJavaScript(expr, true),
       sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(() => null),
     ]);
-    const harvested = kind === "threads" ? adaptThreads(raw) : adapt(raw);
-    return harvested?.mediaUrls;
+    const ctx = {
+      source: kind === "threads" ? ("threads" as const) : ("twitter" as const),
+      url: win.webContents.getURL(),
+      sourceId,
+    };
+    const harvested =
+      kind === "threads" ? adaptThreads(raw, ctx) : adapt(raw, ctx);
+    return harvested?.media;
   } catch (err) {
     log.warn("[pond screenshot] media harvest failed", err);
     return undefined;
   }
 }
 
-/** Wraps the card in scheme-colored padding, scaled to the capture device factor. */
 async function padScreenshot(
   bytes: Buffer,
   raw: { width: number; height: number },

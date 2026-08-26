@@ -1,7 +1,5 @@
 import { formatForDisplay } from "@tanstack/react-hotkeys";
 
-/** Shared shortcut map for hotkeys, menus, and the cheat sheet. */
-
 export type ShortcutGroup =
   | "Navigate"
   | "View"
@@ -15,9 +13,7 @@ export type ShortcutGroup =
 export interface ShortcutDef {
   label: string;
   group: ShortcutGroup;
-  /** Simultaneous chord, e.g. `Mod+K`. Mutually exclusive with `sequence`. */
   keys?: string;
-  /** Sequential chords, e.g. `["G", "L"]` for Linear-style go. */
   sequence?: readonly string[];
 }
 
@@ -216,7 +212,7 @@ export const SHORTCUTS = {
   "sources.new": { keys: "Mod+N", label: "New Source", group: "Sources" },
   "sources.sync-all": {
     keys: "Mod+Shift+S",
-    label: "Sync All Sources",
+    label: "Sync All",
     group: "Sources",
   },
 
@@ -242,7 +238,6 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Library",
 ];
 
-/** Glyph tokens for a single chord (menu `shortcut: string[]` display). */
 export function chordGlyphs(keys: string): string[] {
   return formatForDisplay(keys)
     .split(/[\s+]+/)
@@ -253,7 +248,6 @@ function defOf(id: ShortcutId): ShortcutDef {
   return SHORTCUTS[id];
 }
 
-/** Glyph tokens for the menu renderer's `shortcut: string[]` display. */
 export function shortcutGlyphs(id: ShortcutId): string[] {
   const def = defOf(id);
   if (def.keys) return chordGlyphs(def.keys);
@@ -263,12 +257,10 @@ export function shortcutGlyphs(id: ShortcutId): string[] {
   return [];
 }
 
-/** Chord string for `useHotkeys`, or null when the shortcut is a sequence. */
 export function shortcutChord(id: ShortcutId): string | null {
   return defOf(id).keys ?? null;
 }
 
-/** Sequence steps for `useHotkeySequences`, or null when the shortcut is a chord. */
 export function shortcutSequence(id: ShortcutId): readonly string[] | null {
   return defOf(id).sequence ?? null;
 }

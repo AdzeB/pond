@@ -2,7 +2,6 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import type { SaveListMode } from "@/lib/save/list";
 
-/** Published by the library route and read by the globally-mounted dock, so selection actions don't re-run the heavy narrowing pipeline a second time. */
 interface ViewContextState {
   readonly filteredIds: ReadonlyArray<string>;
   readonly mode: SaveListMode;

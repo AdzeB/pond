@@ -60,14 +60,12 @@ function Popup({ className, ...props }: Base.Popup.Props) {
   return <Base.Popup {...props} className={cn(styles.popup, className)} />;
 }
 
-/** Popup chrome without Base UI Menu state; for hosts that own open/position (e.g. Lexical typeahead). */
 const Surface = forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
   function Surface({ className, ...props }, ref) {
     return <div ref={ref} className={cn(styles.popup, className)} {...props} />;
   },
 );
 
-/** Item chrome without Base UI Menu state; set `highlighted` for keyboard/hover active. */
 function Row({
   className,
   highlighted = false,
@@ -84,7 +82,6 @@ function Row({
   );
 }
 
-/** Group label chrome without Base UI Menu state. */
 function SectionLabel({ className, ...props }: React.ComponentProps<"div">) {
   return <div className={cn(styles["group-label"], className)} {...props} />;
 }

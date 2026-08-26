@@ -3,16 +3,10 @@ import type { TagRow } from "@/stores/tags";
 
 export interface GroupStats {
   members: TagRow[];
-  totalSaves: number;
-  recentMs: number | null;
-  createdMs: number | null;
 }
 
 export const EMPTY_STATS: GroupStats = {
   members: [],
-  totalSaves: 0,
-  recentMs: null,
-  createdMs: null,
 };
 
 export type TagsRowData =

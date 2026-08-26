@@ -2,14 +2,9 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { dockMode } from "@/stores/dock-mode";
 
-/**
- * Which account/watch the tray's detail card shows.
- * @remarks Lives in a store because the tiles (sources page) and the detail card (dock tray) are separate trees; visibility belongs to dockMode, so stale ids after close are harmless.
- */
 interface SourceDetailState {
   accountId: string | null;
   watchId: string | null;
-  /** Bumped after an edit inside the card so the sources page refetches its own list copies. */
   revision: number;
 }
 

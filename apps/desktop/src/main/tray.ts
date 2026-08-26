@@ -21,7 +21,6 @@ let lastOpts: TrayOptions | null = null;
 
 const SPINNER_INTERVAL_MS = 90;
 
-/** Icon shown when idle; restored after a sync finishes. */
 let idleIcon: NativeImage | null = null;
 let spinnerTimer: ReturnType<typeof setInterval> | null = null;
 let spinnerStep = 0;
@@ -88,7 +87,6 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   return instance;
 }
 
-/** Count is title text beside the template image; a 22pt glyph can't hold a readable badge. */
 function setTraySyncing(ingesting: number): void {
   const tray = handle?.tray;
   if (!tray) return;

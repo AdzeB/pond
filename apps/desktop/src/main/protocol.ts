@@ -18,11 +18,7 @@ const ONE_YEAR_SECONDS = 31_536_000;
 const META_HOST = "_meta";
 const META_DIR = "_meta";
 
-/** Hosts the replayweb.page viewer for the archive webview. */
 const REPLAY_HOST = "_replay";
-/**
- * sw.js is exposed under replay/ so its scope excludes index.html; a scope-wide worker would hijack viewer reloads with the full ReplayWeb.page app.
- */
 const REPLAY_ASSETS = new Map([
   ["index.html", "index.html"],
   ["ui.js", "ui.js"],
@@ -50,7 +46,6 @@ export function registerScheme() {
         secure: true,
         supportFetchAPI: true,
         stream: true,
-        /** Allow cross-origin reads (ACAO header below) so the renderer can fetch item bytes. */
         corsEnabled: true,
         /** wabac.js replays archives through a service worker registered from pond://_replay. */
         allowServiceWorkers: true,
@@ -74,7 +69,6 @@ export function registerProtocol() {
         return new Response("forbidden", { status: 403 });
       }
 
-      /** Serve a cached WebP when `?tw=` hits disk; else the original while thumbs generate off-path. */
       const version = url.searchParams.get("v");
       let target = resolved;
       let immutable = version !== null;
@@ -91,7 +85,6 @@ export function registerProtocol() {
             version,
           });
           if (thumb) {
-            /** Keyed by version + width, so the bytes never change: cache forever. */
             target = thumb.path;
             immutable = true;
           } else {
@@ -102,7 +95,6 @@ export function registerProtocol() {
               version,
               priority: "background",
             });
-            /** Don't cache the original under `?tw=`; the next request should pick up the thumb. */
             immutable = false;
           }
         }
@@ -122,7 +114,6 @@ export function registerProtocol() {
       headers.set("accept-ranges", "bytes");
       /** ACAO header so the renderer can read bytes into a canvas without tainting it. */
       headers.set("access-control-allow-origin", "*");
-      /** Content-addressed (`?v=`) URLs and thumbs are immutable; others get a short window. */
       headers.set(
         "cache-control",
         immutable
@@ -183,7 +174,6 @@ export function registerProtocol() {
   void net;
 }
 
-/** Streams local media instead of allocating an ArrayBuffer the size of the file. */
 function fileBody(
   path: string,
   range?: { start: number; end: number },
@@ -203,7 +193,6 @@ function resolveTarget(
   }
   if (host === REPLAY_HOST) {
     const base = replayAssetsDir();
-    /** Allowlist beats prefix checks here; the viewer only ever needs these files. */
     const asset = base ? REPLAY_ASSETS.get(file) : undefined;
     if (!base || !asset) {
       return { resolved: "", prefix: "\u0000" };

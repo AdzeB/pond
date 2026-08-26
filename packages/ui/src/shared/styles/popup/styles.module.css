@@ -1,5 +1,3 @@
-/* Shared by menu, context-menu, popover, and select; defaults match the anchored components and `menu` re-declares where it differs. `--popup-width` and `--popup-min-width` are the only consumer-facing knobs. */
-
 .positioner {
   z-index: 9999999999;
   -webkit-user-select: none;

@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 
-/** Single mount point for the background on-device enrichment sweep; every enricher is driven from here via the registry. */
 export function EnrichmentSweep() {
   useEffect(() => {
     let cancelled = false;

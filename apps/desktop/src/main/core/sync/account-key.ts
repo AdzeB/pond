@@ -18,7 +18,6 @@ export async function inferAccountKey(source: Source): Promise<string | null> {
     .from(saves)
     .where(eq(saves.source, source))
     .limit(50);
-  /** `author` is the saved item's creator, not the account owner; only trust it for sources without a path-based handle parser, or favorited items poison the account key. */
   const hasPathParser = Boolean(extractorFor(source)?.handleFromPath);
   let result: string | null = null;
   for (const row of rows) {
@@ -33,14 +32,12 @@ export async function inferAccountKey(source: Source): Promise<string | null> {
   return result;
 }
 
-/** A cached handle is only trustworthy if it still passes the source's own path validator; stops short-circuiting on persisted bad handles. */
 function isCachedHandleValid(source: Source, handle: string): boolean {
   const fn = extractorFor(source)?.handleFromPath;
   if (!fn) return true;
   return fn([handle]) != null;
 }
 
-/** Resolves the account's handle: registry cache, then DB inference, then hidden-window probe; a resolved handle is persisted onto the account. */
 export async function resolveAccountHandle(
   account: ConnectedAccount,
 ): Promise<string | null> {
@@ -53,7 +50,6 @@ export async function resolveAccountHandle(
     );
   }
 
-  /** DB inference can't tell accounts apart, so only trust it when this is the source's sole account. */
   const siblings = await listAccountsForSource(source);
   if (siblings.length === 1) {
     const inferred = await inferAccountKey(source);
@@ -73,10 +69,6 @@ export async function resolveAccountHandle(
   return null;
 }
 
-/**
- * Opportunistic, non-fatal handle learn via signed-in page probe for sources that don't need one to sync.
- * @remarks DB inference is skipped: bookmark-style saves carry the author's handle, which would poison the account.
- */
 export async function ensureAccountHandle(
   account: ConnectedAccount,
 ): Promise<void> {
@@ -100,7 +92,6 @@ async function persistAccountHandle(
   handle: string,
 ): Promise<void> {
   try {
-    /** A new handle invalidates the cached profile picture; clearing the stamps makes the next avatar sweep re-resolve under it. */
     await patchAccount(account.id, {
       handle,
       avatarUrl: null,

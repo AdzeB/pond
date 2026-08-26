@@ -8,7 +8,6 @@ import { useSaves } from "./use-saves";
 const MAX_RESULTS = 500;
 const DEBOUNCE_MS = 100;
 
-/** Survives LibraryView unmount (save detail) so remounting with the same query never falls back to the full library. */
 let lastHits: { query: string; deletedOnly: boolean; ids: string[] } | null =
   null;
 
@@ -36,7 +35,6 @@ function commitHits(query: string, deletedOnly: boolean, saves: Save[]): void {
   };
 }
 
-/** Ranks by SQLite FTS5 (same index Ask keyword ranking uses). */
 export function useSearchResults(
   query: string,
   opts?: { deletedOnly?: boolean },

@@ -5,8 +5,6 @@ import { binariesAvailable } from "../refresh/binaries";
 import { runWithTimeout } from "../refresh/yt-dlp-process";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
-/** YouTube/TikTok watch listing via yt-dlp's flat-playlist mode: enumerates without downloading, capped so a prolific channel stays cheap. */
-
 const LIST_TIMEOUT_MS = 60_000;
 const LIST_CAP = 60;
 
@@ -19,7 +17,6 @@ function listUrl(
     if (kind === "playlist") {
       return `https://www.youtube.com/playlist?list=${encodeURIComponent(handle)}`;
     }
-    /** Channel-id targets (UC…) use /channel/, handles use /@handle; a handle may carry a tab suffix from a pasted tab URL. */
     const [name = handle, tab] = handle.split("/", 2);
     const base = /^UC[\w-]{10,}$/.test(name)
       ? `https://www.youtube.com/channel/${encodeURIComponent(name)}`

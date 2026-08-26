@@ -11,7 +11,6 @@ import { useDetailAccountId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 import styles from "./styles.module.css";
 
-/** Maintenance actions live one level below the account overview. */
 export function AccountMaintenanceSection() {
   const dock = useDock();
   const { accounts } = useAccounts();

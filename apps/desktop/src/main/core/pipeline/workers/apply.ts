@@ -24,7 +24,6 @@ interface WriteFileMetadata {
   mimeType?: string;
   width?: number;
   height?: number;
-  /** Origin URL this file was downloaded from; persisted for smart per-URL skip. */
   sourceUrl?: string;
 }
 
@@ -46,7 +45,6 @@ export async function applySavePatch(
   opts: ApplyPatchOptions,
 ): Promise<Save | null> {
   const db = await getDb();
-  /** Select only the columns this patch needs, not the whole row; avoids loading `raw_json` on every patch. */
   const cols: Record<string, SQLiteColumn> = {
     id: saves.id,
     files: saves.files,
@@ -71,7 +69,6 @@ export async function applySavePatch(
             ? opts.replaceFilesWithKind
             : [opts.replaceFilesWithKind],
         );
-  /** Replaced kinds free their filenames, so regenerations overwrite in place instead of accumulating suffixed copies. */
   const baseFiles = replaceKinds
     ? (current.files ?? []).filter((f) => !replaceKinds.has(f.kind))
     : (current.files ?? []);
@@ -141,7 +138,6 @@ export async function applySavePatch(
   return updated;
 }
 
-/** Materialize a pending file without requiring large derivatives in memory. */
 export async function persistWriteFile(
   file: WriteFileArgs,
   targetPath: string,

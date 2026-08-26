@@ -6,12 +6,12 @@ Pond is a **local-first** application. Your library, index, and preferences live
 
 - **Library**: `~/Pond/My Pond.pond/` (or a location you choose). This is the source of truth for your saves.
 - **App state**: `~/Library/Application Support/pond/` (SQLite index, preferences, logs).
-- **Secrets**: The ingest token used by the browser extension is stored in the macOS Keychain via Electron `safeStorage`.
+- **Secrets**: The ingest token for the optional loopback HTTP API is stored via Electron `safeStorage` (macOS Keychain, Windows DPAPI).
 - **Pipeline logs**: Diagnostic events are written locally to SQLite and `electron-log` files. They are not sent to Pond or any third party.
 
 ## Browser extension
 
-The Pond extension talks only to a **local HTTP server** on `127.0.0.1:41610` on your Mac. Saves and session data sent from the extension never leave your machine through Pond's servers. There are no Pond-operated servers in this path.
+The Pond extension talks to Pond on your Mac through native messaging. Saves and session data never leave your machine through Pond's servers. There are no Pond-operated servers in this path.
 
 ## Platform sync
 

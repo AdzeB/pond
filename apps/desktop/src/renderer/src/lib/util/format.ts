@@ -12,7 +12,6 @@ const compactFormatter = new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 1,
 });
 
-/** Locale-aware integer with grouping separators: 1254 -> "1,254". */
 export function formatNumber(n: number): string {
   if (!Number.isFinite(n)) return "-";
   return numberFormatter.format(n);
@@ -23,13 +22,11 @@ export function formatBytes(bytes: number | null | undefined): string {
   return prettyBytes(bytes, { binary: true });
 }
 
-/** Compact count: 1_200 -> "1.2K", 3_000_000 -> "3M". */
 export function formatCount(n: number): string {
   if (!Number.isFinite(n)) return "-";
   return compactFormatter.format(n);
 }
 
-/** Seconds -> "m:ss", or "h:mm:ss" past an hour. */
 export function formatDuration(sec: number): string {
   const total = Math.max(0, Math.floor(sec));
   return prettyMs(total * 1000, {
@@ -49,7 +46,6 @@ const tsDate = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
 });
 
-/** "3:47 PM · Feb 11, 2026"; empty string for nullish/invalid input. */
 export function formatTimestampLine(
   value: string | number | null | undefined,
 ): string {
@@ -59,7 +55,6 @@ export function formatTimestampLine(
   return `${tsTime.format(d)} · ${tsDate.format(d)}`;
 }
 
-/** "yyyy/mm/dd hh:mi"; empty string for nullish/empty input. */
 export function formatAbsolute(
   value: string | number | null | undefined,
 ): string {

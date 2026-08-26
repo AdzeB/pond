@@ -18,9 +18,11 @@ export function DataTableExtraRow(_: { children?: ReactNode }): null {
 export function DataTableRoot<T>({
   children,
   className,
+  variant = "table",
 }: {
   children?: ReactNode;
   className?: string;
+  variant?: "table" | "list";
 }) {
   const { meta } = useDataTable<T>();
 
@@ -34,10 +36,15 @@ export function DataTableRoot<T>({
       emptyState = (child.props as { children?: ReactNode }).children;
   });
 
-  const showHeader = meta.rows.length > 0 || extraRow != null;
+  const hasRows = meta.rows.length > 0 || extraRow != null;
+  const showHeader = variant !== "list" && hasRows;
 
   return (
-    <div className={cn(styles.container, className)} role="grid">
+    <div
+      className={cn(styles.container, className)}
+      role="grid"
+      data-list={(variant === "list" && hasRows) || undefined}
+    >
       {showHeader ? <DataTableHeader<T> /> : null}
       <DataTableBody<T> extraRow={extraRow} emptyState={emptyState} />
     </div>

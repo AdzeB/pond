@@ -1,13 +1,14 @@
-import type { NewSave } from "@pond/schema/db";
+import type { NewSave, Source } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
+import { walkCaptureMedia } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
-import { resolveExtractor } from "../extractors";
+import { captureFromSource } from "../../refresh/harvest/capture";
+import { isFreshHarvest } from "../enqueue";
+import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";
 import { readSave } from "./apply";
-
-const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
 
 interface HarvestPayload {
   force?: boolean;
@@ -28,9 +29,16 @@ export async function runHarvestMetadata(
     return;
   }
 
-  const extractor = resolveExtractor(save.url);
-  const url = new URL(save.url);
-  const capture = await extractor.extract({ url });
+  const extractor = extractorFor(save.source) ?? resolveExtractor(save.url);
+  const capture =
+    save.source === "web" || save.source === "local"
+      ? await extractor.extract({ url: new URL(save.url) })
+      : await captureFromSource({
+          url: save.url,
+          source: save.source,
+          sourceId: save.sourceId ?? undefined,
+          accountId: save.accountId,
+        });
 
   const existingRaw =
     save.rawJson && typeof save.rawJson === "object"
@@ -44,35 +52,31 @@ export async function runHarvestMetadata(
     ...(existingRaw?.ytdlp ? { ytdlp: existingRaw.ytdlp } : {}),
   };
 
-  const patch = buildSavePatch(capture, rawJson, save.url);
+  const patch = buildSavePatch(capture, rawJson, save.url, save.source);
   await persistSave(saveId, patch, {
     actorReason: `harvest:${extractor.id}`,
   });
   log.info("[pond pipeline:harvest] captured", {
     saveId,
     extractor: extractor.id,
-    media: capture.media.length,
+    media: walkCaptureMedia(capture).length,
   });
-}
-
-function isFreshHarvest(rawJson: unknown): boolean {
-  if (!rawJson || typeof rawJson !== "object") return false;
-  const v = rawJson as { extractedAt?: unknown; capture?: unknown };
-  if (typeof v.extractedAt !== "string" || !v.capture) return false;
-  const ms = Date.parse(v.extractedAt);
-  if (!Number.isFinite(ms)) return false;
-  return Date.now() - ms < HARVEST_FRESH_MS;
 }
 
 function buildSavePatch(
   capture: Capture,
   rawJson: RawJson,
   pageUrl: string,
+  source: Source,
 ): Partial<NewSave> {
-  const mediaUrl = capture.media[0]?.url ?? null;
-  const mediaType = majorityMediaType(
-    (capture.media ?? []).map((m) => (m.type === "video" ? "video" : "image")),
-  );
+  const media = walkCaptureMedia(capture);
+  const mediaUrl = capture.media[0]?.url ?? media[0]?.url ?? null;
+  const mediaType =
+    source === "web"
+      ? "link"
+      : majorityMediaType(
+          capture.media.map((m) => (m.type === "video" ? "video" : "image")),
+        );
 
   const patch: Partial<NewSave> = {
     rawJson,

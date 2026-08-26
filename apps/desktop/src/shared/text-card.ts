@@ -2,7 +2,6 @@ export interface TextCardData {
   text: string;
 }
 
-/** Bump when capture output changes so stale covers are regenerated. */
 export const RENDER_TEXT_COVER_VERSION = 2;
 
 export const TEXT_COVER_LIGHT_KIND = "text_cover_light";
@@ -31,9 +30,8 @@ export function arenaBlockClassFromRawJson(rawJson: unknown): string | null {
 
 export function textCoverVersionFromRawJson(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
-  const v = (
-    rawJson as { capture?: { extras?: { renderTextCoverVersion?: unknown } } }
-  ).capture?.extras?.renderTextCoverVersion;
+  const v = (rawJson as { renderTextCoverVersion?: unknown })
+    .renderTextCoverVersion;
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 

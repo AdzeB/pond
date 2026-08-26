@@ -15,7 +15,6 @@ interface DockActions {
   confirmDeleteForever: () => void;
 }
 
-/** Handlers operate on the live selection store, so in preview mode they early-return against an empty selection. */
 export function useDockActions(): DockActions {
   const viewMode = useViewMode();
   const inTrash = viewMode === "trash";

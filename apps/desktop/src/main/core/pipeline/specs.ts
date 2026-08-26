@@ -1,8 +1,8 @@
 import { OPS, type Op, type Save, type Source } from "@pond/schema/db";
+import { walkCaptureMedia } from "@pond/schema/raw";
 
 const UNIVERSAL_SPEC: readonly Op[] = OPS;
 
-/** Per-op attempt budget, tuned to each worker's cost and recoverability. */
 const MAX_ATTEMPTS: Record<Op, number> = {
   harvest_metadata: 5,
   capture_tweet: 4,
@@ -20,9 +20,7 @@ export function maxAttemptsFor(op: Op): number {
 }
 
 export function planOps(source: Source): readonly Op[] {
-  /** Local saves carry everything at import time; no pipeline ops. */
   if (source === "local") return [];
-  /** Generic web links fetch metadata + cover, plus a replayable WARC site archive. */
   if (source === "web") {
     return [
       "harvest_metadata",
@@ -32,7 +30,6 @@ export function planOps(source: Source): readonly Op[] {
       "finalize",
     ];
   }
-  /** capture_tweet is twitter/threads; archive_page is web-only; text covers skip those (uses post screenshots). */
   if (source === "twitter" || source === "threads") {
     return UNIVERSAL_SPEC.filter(
       (op) => op !== "archive_page" && op !== "render_text_cover",
@@ -100,7 +97,6 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
     ],
   },
   cosmos: {
-    /** Identity is enough to finalize; text-only elements have no og:image, so mediaUrl stays recommended. */
     required: ["sourceId"],
     recommended: [
       "mediaUrl",
@@ -131,16 +127,13 @@ export const CAPTURE_EXPECTATIONS: Record<Source, CaptureExpectation> = {
       "capture.author.avatarUrl",
     ],
   },
-  /** Generic web links: a title is the bar; cover + description are nice-to-have. */
   web: {
     required: ["title"],
     recommended: ["description", "mediaUrl"],
   },
-  /** Local imports supply their own metadata; nothing to grade. */
   local: { required: [], recommended: [] },
 };
 
-/** Returns the upstream URL when set (an embedded host yt-dlp handles); null for pinterest. */
 export function resolveYtDlpTarget(save: Save): string | null {
   const raw = save.rawJson as {
     capture?: { upstream?: { url?: string } };
@@ -153,16 +146,14 @@ export function resolveYtDlpTarget(save: Save): string | null {
   return save.url;
 }
 
-/** Video entries on `capture.media`, including quoted clips merged into the parent list. */
 export function countCaptureVideos(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
-  const media = (rawJson as { capture?: { media?: Array<{ type?: string }> } })
-    .capture?.media;
-  if (!Array.isArray(media)) return 0;
-  return media.filter((m) => m.type === "video").length;
+  const capture = (
+    rawJson as { capture?: Parameters<typeof walkCaptureMedia>[0] }
+  ).capture;
+  return walkCaptureMedia(capture).filter((m) => m.type === "video").length;
 }
 
-/** How many video files the pipeline should end up with; `mediaType: "video"` counts as one when capture is empty. */
 export function expectedVideoDownloads(
   save: Pick<Save, "mediaType" | "rawJson">,
 ): number {

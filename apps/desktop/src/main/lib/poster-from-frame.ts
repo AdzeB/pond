@@ -3,7 +3,6 @@ import { extractFirstFrame } from "./ffmpeg-frame";
 import { probeImageDims } from "./image-process";
 import type { PosterWrite } from "./poster-policy";
 
-/** Decode the first video frame into a poster write payload. */
 export async function buildFirstFramePoster(
   videoPath: string,
   filename: string,

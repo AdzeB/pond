@@ -1,5 +1,3 @@
-/** LLM stage of the natural-language compiler. Always the bundled on-device model. */
-
 import log from "electron-log/main.js";
 import { LlamaCppProvider } from "./llamacpp-provider";
 import type { CompileContext } from "./types";
@@ -13,7 +11,6 @@ function getBundled(): LlamaCppProvider {
   return bundled;
 }
 
-/** Returns null on failure so the renderer falls back to its deterministic one-step plan. */
 export async function compilePlan(
   input: string,
   ctx: CompileContext,

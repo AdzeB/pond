@@ -15,7 +15,6 @@ type ChipProps = {
   className?: string;
 };
 
-/** Shared pill for mention and tag chips in composers and transcripts. */
 const Root = forwardRef<HTMLSpanElement, ChipProps>(function ChipRoot(
   { tone, lead, label, title, selected, onRemove, className },
   ref,

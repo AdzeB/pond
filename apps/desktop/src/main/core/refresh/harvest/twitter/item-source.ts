@@ -2,10 +2,6 @@
 
 import type { inPageTwitterNormalize } from "./normalize";
 
-/**
- * In-page DOM extraction for a single tweet, serialised via `.toString()` and injected into the scrape window.
- * @remarks Must stay one self-contained function referencing only its params and browser globals — never module-scope identifiers.
- */
 export function harvestSource(): string {
   function inPage(
     tweetId: string,
@@ -83,7 +79,6 @@ export function harvestSource(): string {
       if (dt) meta.publishedAt = dt;
     }
 
-    /** Fall back to any <time datetime>; newer X renders it outside User-Name. */
     if (!meta.publishedAt) {
       const time = Array.from(
         article.querySelectorAll<HTMLTimeElement>("time[datetime]"),
@@ -204,7 +199,6 @@ export function harvestSource(): string {
     }
     if (bookmarks !== undefined) metrics.bookmarks = bookmarks;
 
-    /** No stable testid for quote count; parse the "Quotes" link aria-label/text. */
     let quotes: number | undefined;
     {
       const quoteCandidates = Array.from(
@@ -239,22 +233,26 @@ export function harvestSource(): string {
       article.querySelectorAll<HTMLVideoElement>("video"),
     ).filter(notInNested);
     let capturedVideoPoster = false;
+    let videoDuration: number | undefined;
+    let videoWidth: number | undefined;
+    let videoHeight: number | undefined;
     for (const v of videos) {
-      if (v.poster) {
-        push({ url: v.poster, type: "video", poster: v.poster });
-        const dur = norm.readDuration(v);
-        const w = v.videoWidth;
-        const h = v.videoHeight;
-        mediaItems.push({
-          url: v.poster,
-          type: "video",
-          poster: v.poster,
-          ...(dur ? { durationSec: dur } : {}),
-          ...(w ? { width: w } : {}),
-          ...(h ? { height: h } : {}),
-        });
-        capturedVideoPoster = true;
-      }
+      const dur = norm.readDuration(v);
+      if (dur) videoDuration = dur;
+      if (v.videoWidth) videoWidth = v.videoWidth;
+      if (v.videoHeight) videoHeight = v.videoHeight;
+      const poster = norm.httpMediaUrl(v.poster);
+      if (!poster) continue;
+      push({ url: poster, type: "video", poster });
+      mediaItems.push({
+        url: poster,
+        type: "video",
+        poster,
+        ...(dur ? { durationSec: dur } : {}),
+        ...(v.videoWidth ? { width: v.videoWidth } : {}),
+        ...(v.videoHeight ? { height: v.videoHeight } : {}),
+      });
+      capturedVideoPoster = true;
     }
     if (!capturedVideoPoster) {
       const videoPosterImgs = Array.from(
@@ -266,17 +264,18 @@ export function harvestSource(): string {
         const best = img.srcset
           ? norm.pickLargestSrcset(img.srcset)
           : undefined;
-        const src = best ?? img.currentSrc ?? img.src;
-        if (src) {
-          const upgraded = norm.upgradeTwimgUrl(src);
-          push({ url: upgraded, type: "video", poster: upgraded });
-          mediaItems.push({
-            url: upgraded,
-            type: "video",
-            poster: upgraded,
-          });
-          capturedVideoPoster = true;
-        }
+        const poster = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
+        if (!poster) continue;
+        push({ url: poster, type: "video", poster });
+        mediaItems.push({
+          url: poster,
+          type: "video",
+          poster,
+          ...(videoDuration ? { durationSec: videoDuration } : {}),
+          ...(videoWidth ? { width: videoWidth } : {}),
+          ...(videoHeight ? { height: videoHeight } : {}),
+        });
+        capturedVideoPoster = true;
       }
     }
 
@@ -287,25 +286,22 @@ export function harvestSource(): string {
     ).filter(notInNested);
     for (const img of photoImgs) {
       const best = img.srcset ? norm.pickLargestSrcset(img.srcset) : undefined;
-      const src = best ?? img.currentSrc ?? img.src;
-      if (src) {
-        const upgraded = norm.upgradeTwimgUrl(src);
-        push({ url: upgraded, type: "image" });
-        const item: Record<string, unknown> = {
-          url: upgraded,
-          type: "image",
-        };
-        const alt = img.getAttribute("alt")?.trim();
-        if (alt) item.altText = alt;
-        const w = img.naturalWidth;
-        const h = img.naturalHeight;
-        if (w) item.width = w;
-        if (h) item.height = h;
-        mediaItems.push(item);
-      }
+      const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
+      if (!src) continue;
+      push({ url: src, type: "image" });
+      const item: Record<string, unknown> = {
+        url: src,
+        type: "image",
+      };
+      const alt = img.getAttribute("alt")?.trim();
+      if (alt) item.altText = alt;
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (w) item.width = w;
+      if (h) item.height = h;
+      mediaItems.push(item);
     }
 
-    /** Append the nested quote's media after the parent's; it is also recorded on `quoted.media` so the native card can render it inside the quote card. */
     if (innerArticle) {
       const quotedMedia: Array<Record<string, unknown>> = [];
       const pushQuoted = (m: Record<string, unknown>) => {
@@ -318,14 +314,15 @@ export function harvestSource(): string {
       );
       let capturedQuotedVideo = false;
       for (const v of quotedVideos) {
-        if (!v.poster) continue;
+        const poster = norm.httpMediaUrl(v.poster);
+        if (!poster) continue;
         const dur = norm.readDuration(v);
         const w = v.videoWidth;
         const h = v.videoHeight;
         pushQuoted({
-          url: v.poster,
+          url: poster,
           type: "video",
-          poster: v.poster,
+          poster,
           ...(dur ? { durationSec: dur } : {}),
           ...(w ? { width: w } : {}),
           ...(h ? { height: h } : {}),
@@ -342,10 +339,9 @@ export function harvestSource(): string {
           const best = img.srcset
             ? norm.pickLargestSrcset(img.srcset)
             : undefined;
-          const src = best ?? img.currentSrc ?? img.src;
-          if (!src) continue;
-          const upgraded = norm.upgradeTwimgUrl(src);
-          pushQuoted({ url: upgraded, type: "video", poster: upgraded });
+          const poster = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
+          if (!poster) continue;
+          pushQuoted({ url: poster, type: "video", poster });
         }
       }
 
@@ -358,10 +354,9 @@ export function harvestSource(): string {
         const best = img.srcset
           ? norm.pickLargestSrcset(img.srcset)
           : undefined;
-        const src = best ?? img.currentSrc ?? img.src;
+        const src = norm.httpMediaUrl(best ?? img.currentSrc ?? img.src);
         if (!src) continue;
-        const upgraded = norm.upgradeTwimgUrl(src);
-        const item: Record<string, unknown> = { url: upgraded, type: "image" };
+        const item: Record<string, unknown> = { url: src, type: "image" };
         const alt = img.getAttribute("alt")?.trim();
         if (alt) item.altText = alt;
         const w = img.naturalWidth;
@@ -381,22 +376,22 @@ export function harvestSource(): string {
         'meta[property="og:image"], meta[name="og:image"]',
       );
       const ogSrc = ogMeta?.content?.trim();
-      /** Skip X's default SSR og:image; it would mark every text tweet as having media. */
       const isSsrDefault =
         typeof ogSrc === "string" &&
         /^https?:\/\/abs\.twimg\.com\/rweb\/ssr\/default\//i.test(ogSrc);
-      /** X serves the author's profile image as og:image for text/video tweets; it would render as a bogus, 404-ing tile. */
       const isAvatar =
         typeof ogSrc === "string" && /\/profile_images\//i.test(ogSrc);
       if (ogSrc && !isSsrDefault && !isAvatar) {
-        const upgraded = norm.upgradeTwimgUrl(ogSrc);
-        const type = videos.length > 0 ? "video" : "image";
-        const entry =
-          type === "video"
-            ? { url: upgraded, type, poster: upgraded }
-            : { url: upgraded, type };
-        push(entry);
-        mediaItems.push(entry);
+        const upgraded = norm.httpMediaUrl(ogSrc);
+        if (upgraded) {
+          const type = videos.length > 0 ? "video" : "image";
+          const entry =
+            type === "video"
+              ? { url: upgraded, type, poster: upgraded }
+              : { url: upgraded, type };
+          push(entry);
+          mediaItems.push(entry);
+        }
       }
     }
 
@@ -408,7 +403,6 @@ export function harvestSource(): string {
 
     if (mediaItems.length > 0) meta.media = mediaItems;
 
-    /** X renders the linked page's OG preview as [data-testid="card.wrapper"]; capture it so the native card shows the embed instead of a bare t.co URL. */
     const cardWrap = Array.from(
       article.querySelectorAll<HTMLElement>('[data-testid="card.wrapper"]'),
     ).find(notInNested);
@@ -422,7 +416,6 @@ export function harvestSource(): string {
         '[data-testid="card.layoutLarge.media"]',
       );
 
-      /** X renders the card image as an <img> or a CSS background depending on layout; keep the URL as-is because card_img doesn't support the ?name=orig upgrade and forcing it 404s. */
       const mediaBlock =
         cardWrap.querySelector<HTMLElement>('[data-testid$=".media"]') ??
         cardWrap;

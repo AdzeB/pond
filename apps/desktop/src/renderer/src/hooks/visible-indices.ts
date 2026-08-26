@@ -5,10 +5,8 @@ export interface PositionedItem {
 
 export type VisibilityMode = "monotonic" | "scan";
 
-/** Roughly two laptop viewports: enough runway for local preview reads + decode during a fast trackpad scroll. */
 const OVERSCAN_PX = 1600;
 
-/** First index whose bottom edge reaches `viewMin` (items ordered by nondecreasing `top`). */
 function lowerBoundMonotonic<T extends PositionedItem>(
   items: T[],
   viewMin: number,
@@ -24,7 +22,6 @@ function lowerBoundMonotonic<T extends PositionedItem>(
   return lo;
 }
 
-/** First index whose `top` is strictly above `viewMax`. */
 function upperBoundMonotonic<T extends PositionedItem>(
   items: T[],
   viewMax: number,
@@ -68,7 +65,6 @@ function computeVisibleScan<T extends PositionedItem>(
   return out;
 }
 
-/** Waterfall tops are not monotonic by index; justified/uniform are. */
 export function computeVisible<T extends PositionedItem>(
   items: T[],
   offsetWithinGrid: number,

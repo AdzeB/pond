@@ -52,7 +52,6 @@ async function inPageCosmosList(
   const known = new Set(args.knownIds.map(String));
   const collected = new Map<string, CosmosEntry>();
 
-  /** cdn.cosmos.so images are downscaled by Cloudflare `w`/`h`/`q`/`dpr` params; strip them so the stored asset is full resolution. */
   const upgradeCosmosImage = (src: string): string => {
     try {
       const u = new URL(src, location.origin);
@@ -397,7 +396,6 @@ async function inPageCosmosList(
     stats.updatedAt = Date.now();
   };
 
-  /** Wait for at least one element to be rendered so SSR data is in place. */
   const hydrateDeadline = Date.now() + 20_000;
   while (Date.now() < hydrateDeadline) {
     if (
@@ -419,7 +417,6 @@ async function inPageCosmosList(
     return n;
   };
 
-  /** The grid is newest-first, so once scrolling only surfaces known items we've hit the synced backlog; off on full runs. */
   const earlyStopEnabled = known.size > 0;
   const STOP_AFTER_KNOWN_SCROLLS = 3;
   let knownScrollStreak = 0;
@@ -440,7 +437,6 @@ async function inPageCosmosList(
     const grew = collected.size !== lastSize;
     const freshNow = countFresh();
     if (earlyStopEnabled && grew && freshNow === lastFresh) {
-      /** New tiles appeared but every one was already in the library. */
       knownScrollStreak += 1;
       if (knownScrollStreak >= STOP_AFTER_KNOWN_SCROLLS) {
         return { ok: true, entries: freshEntries(), reachedEnd: true };

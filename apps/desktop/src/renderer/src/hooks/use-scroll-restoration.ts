@@ -17,7 +17,6 @@ const positions = new Map<string, ScrollPosition>();
 
 export function rememberScroll(key: string, top: number): void {
   const current = positions.get(key);
-  /** Refresh insertion order so pruning retains the most recently viewed routes. */
   positions.delete(key);
   positions.set(key, { ...current, top: Math.max(0, top) });
   prune();
@@ -63,7 +62,6 @@ export interface ScrollRestorationScope {
 export const ScrollRestorationContext =
   createContext<ScrollRestorationScope | null>(null);
 
-/** Remembers an element scroller across route changes, then restores after the packed grid has laid out. */
 export function useScrollRestoration(key: string) {
   const ref = useRef<HTMLElement | null>(null);
 
@@ -76,7 +74,6 @@ export function useScrollRestoration(key: string) {
     let restoreAttempts = 0;
     const restore = () => {
       restoreFrame = 0;
-      /** Re-read each attempt so PackedGrid identity-anchor corrections win over a stale pixel. */
       const target = recallScroll(key);
       if (target <= 0) {
         restoring = false;
@@ -112,10 +109,6 @@ export function useScrollRestoration(key: string) {
       if (saveFrame !== 0) cancelAnimationFrame(saveFrame);
       element.removeEventListener("scroll", save);
       delete element.dataset.restoringScroll;
-      /**
-       * Skip when the library scroller is parked under a save overlay.
-       * A suppressed box can report a stale scrollTop and clobber the real offset.
-       */
       if (element.closest("[data-suppressed]") != null) return;
       rememberScroll(key, restoring ? recallScroll(key) : element.scrollTop);
     };

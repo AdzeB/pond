@@ -85,7 +85,6 @@ export async function purgeSave(id: string): Promise<void> {
   );
 }
 
-/** Batched so the whole set restores with a single undo. */
 export async function trashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
@@ -114,7 +113,6 @@ export async function trashSaves(
   return changes.length;
 }
 
-/** Batched so the whole set can be re-trashed in one undo. */
 export async function untrashSaves(
   ids: readonly string[],
   opts: MutateOpts = {},
@@ -142,7 +140,6 @@ export async function untrashSaves(
   return changes.length;
 }
 
-/** Irreversible, so no undo path is offered. */
 export async function purgeSaves(ids: readonly string[]): Promise<number> {
   const changes: { prev: Save; tx: unknown }[] = [];
   for (const id of ids) {

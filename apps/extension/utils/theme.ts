@@ -1,4 +1,3 @@
-/** Mirrors the desktop renderer's boot script: the whole --ds-* palette derives from these anchors. */
 export interface ThemeVars {
   mode: "light" | "dark";
   bgL: number;

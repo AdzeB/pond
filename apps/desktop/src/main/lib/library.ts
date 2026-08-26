@@ -81,7 +81,6 @@ function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
   return { filename: file.filename, buf };
 }
 
-/** Writes info.json (clean content) and source.json (raw payload) into an item folder. */
 async function writeInfoFiles(
   id: string,
   info: InfoDoc,
@@ -96,7 +95,6 @@ async function writeInfoFiles(
   );
 }
 
-/** Writes a save's info.json + source.json from its row; covers blob-less saves too. */
 export async function writeSaveInfo(save: Save): Promise<void> {
   const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
     kind: f.kind,
@@ -133,7 +131,6 @@ export async function writeItemFiles(
   return { written: decoded };
 }
 
-/** Applies a patch to an item's on-disk info.json; false when no readable info exists. */
 export async function applyItemPatch(
   id: string,
   patch: Partial<Save>,
@@ -187,7 +184,6 @@ async function readSourceDoc(id: string): Promise<unknown> {
   }
 }
 
-/** Reads an item's info.json for editing, carrying rawSource so it isn't dropped. */
 async function readInfoForEdit(
   id: string,
 ): Promise<{ info: InfoDoc; rawSource: unknown } | null> {
@@ -259,7 +255,6 @@ function parseTimestamp(value: unknown): number | null {
   return null;
 }
 
-/** Trash is an in-place `deletedAt` flag; Date trashes, null restores. */
 export async function setItemDeleted(
   id: string,
   deletedAt: Date | null,

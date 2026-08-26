@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Save, SaveFile } from "@/lib/types";
-import { buildMediaUnits, pickPrimaryUnit } from "./units";
+import {
+  buildMediaUnits,
+  deriveTypeKind,
+  deriveTypeLabel,
+  pickPrimaryUnit,
+} from "./units";
 
 function file(kind: string, path: string, mimeType: string): SaveFile {
   return { kind, path, mimeType, sha256: "abcdef1234567890", size: 10 };
@@ -129,5 +134,31 @@ describe("pickPrimaryUnit Threads post cover", () => {
       tweetCover: "media",
     });
     expect(unit?.key).toBe("tweet-light.png");
+  });
+});
+
+describe("deriveTypeLabel web pages", () => {
+  it("labels a web save as Web even when the cover is a PNG", () => {
+    const save = {
+      id: "page-1",
+      source: "web",
+      mediaType: "image",
+      files: [file("cover", "cover.png", "image/png")],
+    } as Save;
+    const cover = save.files[0] ?? null;
+    expect(deriveTypeLabel(cover, save)).toBe("Web");
+    expect(deriveTypeKind(cover, save)).toBe("link");
+  });
+
+  it("still uses the file extension for non-web image saves", () => {
+    const save = {
+      id: "photo-1",
+      source: "instagram",
+      mediaType: "image",
+      files: [file("image", "photo.png", "image/png")],
+    } as Save;
+    const image = save.files[0] ?? null;
+    expect(deriveTypeLabel(image, save)).toBe("PNG");
+    expect(deriveTypeKind(image, save)).toBe("image");
   });
 });

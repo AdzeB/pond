@@ -10,7 +10,6 @@ const ACTIONS = [
   "seekto",
 ] as const;
 
-/** Monotonic owner id so a replacement session can claim before the previous cleanup clears. */
 let sessionOwner = 0;
 
 interface MediaSessionMeta {
@@ -82,9 +81,7 @@ function bindAction(
 ): void {
   try {
     navigator.mediaSession.setActionHandler(action, handler);
-  } catch {
-    /** Platform may omit this action. */
-  }
+  } catch {}
 }
 
 function clearSession(): void {
@@ -94,7 +91,6 @@ function clearSession(): void {
   for (const action of ACTIONS) bindAction(action, null);
 }
 
-/** Publishes Now Playing metadata and Control Center / media-key handlers for the active video. */
 export function useMediaSession(
   meta: MediaSessionMeta,
   playback: MediaSessionPlayback,
@@ -162,8 +158,6 @@ export function useMediaSession(
           playback.duration,
         ),
       });
-    } catch {
-      /** Rejected when values are briefly out of range mid-seek. */
-    }
+    } catch {}
   }, [playback.active, playback.currentTime, playback.duration, playback.rate]);
 }

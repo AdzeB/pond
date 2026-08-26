@@ -46,7 +46,6 @@ function toEntry(row: {
   };
 }
 
-/** Items a run contributed: prefer the enqueue count, falling back to harvested-fresh so older events without `enqueue` still register. */
 function itemsOf(run: SyncRunHistoryEntry): number {
   return run.enqueue?.succeeded ?? run.harvest?.fresh ?? 0;
 }
@@ -74,7 +73,6 @@ interface SyncStats {
 }
 
 export const syncHistoryQueries: QueryHandlerMap = {
-  /** Past sync runs for one source, newest first; `accountId` narrows to one account's runs, and pre-multi-account rows only return when the filter is omitted. */
   async "sync.history"(params) {
     const source = params.source;
     if (!isSource(source)) return { runs: [] as SyncRunHistoryEntry[] };
@@ -106,7 +104,6 @@ export const syncHistoryQueries: QueryHandlerMap = {
     return { runs: rows.map(toEntry) };
   },
 
-  /** Past sync runs across every source, newest first; powers the "Recent runs" activity table on the Sources page. */
   async "sync.recent"(params) {
     const rawLimit = Number(params.limit ?? 50);
     const limit = Number.isFinite(rawLimit)
@@ -125,7 +122,6 @@ export const syncHistoryQueries: QueryHandlerMap = {
     return { runs: rows.map(toEntry) };
   },
 
-  /** Every sync run inside a rolling window, newest first; capped so a dense history can't flood the IPC channel. */
   async "sync.runs"(params) {
     const rawDays = Number(params.days ?? 7);
     const days = Number.isFinite(rawDays)
@@ -150,7 +146,6 @@ export const syncHistoryQueries: QueryHandlerMap = {
     return { runs: rows.map(toEntry) };
   },
 
-  /** Rolling aggregate KPIs for the Sources header, reduced in JS over the recent run window so we never block on JSON aggregation in SQL. */
   async "sync.stats"(params) {
     const rawDays = Number(params.days ?? 7);
     const days = Number.isFinite(rawDays)

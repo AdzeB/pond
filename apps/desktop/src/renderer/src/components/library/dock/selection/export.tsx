@@ -13,7 +13,6 @@ import {
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-/** Long enough to read the swapped label before the card closes. */
 const STATUS_HOLD_MS = 1200;
 
 type ExportKey = "files" | "csv";
@@ -22,7 +21,6 @@ interface Status extends SelectionActionResult {
   key: ExportKey;
 }
 
-/** Export chooser opened from the selection pill's Export tile; running and outcome states swap into the row instead of toasting. */
 export function SelectionExportSection() {
   const dock = useDock();
   const [runningKey, setRunningKey] = useState<ExportKey | null>(null);

@@ -14,11 +14,9 @@ interface SegmentedProps<T> {
   options: ReadonlyArray<SegmentedOption<T>>;
   value: T;
   onChange: (value: T) => void;
-  /** When false, cells are icon-only and rely on the group header and aria for the label. */
   showLabels?: boolean;
 }
 
-/** The active cell shares a motion layoutId across options, so the selection springs between positions rather than blinking. */
 export function Segmented<T extends string | number>({
   ariaLabel,
   options,

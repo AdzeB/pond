@@ -8,7 +8,6 @@ import styles from "./styles.module.css";
 
 const TOKEN_CLASS = styles.token ?? "filter-token";
 
-/** Highlighted but fully editable text, the same pattern Lexical uses for hashtags; the token-plugin transform reverts it to plain text the moment the syntax breaks. */
 export class FilterTokenNode extends TextNode {
   static getType(): string {
     return "filter-token";
@@ -38,7 +37,6 @@ export class FilterTokenNode extends TextNode {
     return { ...super.exportJSON(), type: "filter-token", version: 1 };
   }
 
-  /** Typing right before a token must not merge into it, matching hashtag behavior. */
   canInsertTextBefore(): boolean {
     return false;
   }

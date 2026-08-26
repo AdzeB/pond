@@ -10,7 +10,6 @@ import {
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 import { isGroup } from "./types";
 
-/** Custom `ruleGroupProcessor` compiles each clause to a drizzle `SQL` fragment; the default `drizzle` processor can't handle our computed projections. */
 export function buildWhere(query: Query): SQL | undefined {
   return formatQuery(query, { ruleGroupProcessor: compileGroup }) ?? undefined;
 }

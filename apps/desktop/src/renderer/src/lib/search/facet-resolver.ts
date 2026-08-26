@@ -2,11 +2,6 @@ import type { Predicate } from "@pond/schema/filters/types";
 import type { NlFacets } from "@/lib/search/nl-query";
 import { dot } from "@/lib/util/vector";
 
-/**
- * Compiler Stage B: resolves words Stage A couldn't match to the nearest real facet value by embedding similarity ("tweets" -> source twitter); only returns values that exist in the library, so it cannot hallucinate a facet.
- * @remarks The vocabulary is embedded lazily and cached per facet signature, rebuilding when the library's distinct values change.
- */
-
 type FacetField = "source" | "type" | "tags" | "creator";
 
 interface VocabEntry {
@@ -15,7 +10,6 @@ interface VocabEntry {
   vec: Float32Array;
 }
 
-/** A word must clear this cosine similarity to a facet value to be accepted. */
 const MATCH_THRESHOLD = 0.55;
 
 let vocabSignature = "";
@@ -34,7 +28,6 @@ async function buildVocab(facets: NlFacets): Promise<VocabEntry[]> {
   const items: { field: FacetField; value: string }[] = [];
   for (const v of facets.sources) items.push({ field: "source", value: v });
   for (const v of facets.types) items.push({ field: "type", value: v });
-  /** Open-vocabulary fields are capped so vocab embedding stays bounded on huge libraries. */
   for (const v of facets.tags.slice(0, 200))
     items.push({ field: "tags", value: v });
   for (const v of facets.creators.slice(0, 200))
@@ -76,7 +69,6 @@ function toPredicate(field: FacetField, value: string): Predicate {
   }
 }
 
-/** Returns the matched predicates plus the words that stayed unresolved. */
 export async function resolveFacets(
   residual: string,
   facets: NlFacets,

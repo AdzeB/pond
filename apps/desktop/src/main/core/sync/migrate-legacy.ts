@@ -21,10 +21,6 @@ import {
   partitionForAccount,
 } from "./accounts";
 
-/**
- * One-time upgrade from the single-account-per-source model: each legacy entry becomes one ConnectedAccount with the watermark, cookies, and unattributed saves.
- * @remarks Legacy maps are drained afterwards, so re-running is a no-op; runs per library.
- */
 export async function migrateLegacySyncPrefs(): Promise<void> {
   const prefs = await getPrefs();
   const handles = prefs.sync.handles ?? {};
@@ -50,7 +46,6 @@ export async function migrateLegacySyncPrefs(): Promise<void> {
     }
   }
 
-  /** Drain the legacy maps so the migration never runs twice and new code never reads them. */
   await setPrefs({ sync: { handles: {}, sources: {} } });
   log.info(
     "[pond accounts] legacy sync prefs migrated:",
@@ -63,7 +58,6 @@ async function migrateSource(
   handle: string | null,
   sync: SourceSyncPrefs | null,
 ): Promise<void> {
-  /** A session import may already have created an account for this source; fold the legacy state into the oldest account instead of minting a duplicate. */
   const existing = (await listAccountsForSource(source))[0];
   const account =
     existing ??
@@ -77,7 +71,6 @@ async function migrateSource(
     await copyLegacyCookies(source, partitionForAccount(account.id));
   }
 
-  /** Attribute this source's pre-multi-account saves to the migrated account; local/web saves and future accounts' rows are untouched. */
   const db = await getDb();
   db.update(saves)
     .set({ accountId: account.id })
@@ -85,7 +78,6 @@ async function migrateSource(
     .run();
 }
 
-/** Copies the source's cookies out of the shared legacy jar so the migrated account stays signed in; the jar is left intact for not-yet-migrated libraries. */
 async function copyLegacyCookies(
   source: Source,
   partition: string,

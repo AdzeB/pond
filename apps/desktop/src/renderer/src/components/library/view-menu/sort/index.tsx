@@ -83,7 +83,6 @@ const DIRECTIONS = [
 
 type SortState = { key: SortKey; dir: SortDir };
 
-/** Cancel restores the sort from when the family opened; the main card unmounts while a subview is shown, so the snapshot outlives the components and clears when the dock leaves the sort family. */
 let snapshot: SortState | null = null;
 dockMode.subscribe((mode) => {
   if (!mode.startsWith("sort")) snapshot = null;

@@ -1,6 +1,5 @@
 import { createContext, type ReactNode, use } from "react";
 
-/** Kept separate from grid state so toggling multi-select doesn't re-render memoized cards. */
 interface LibraryCardCallbacks {
   onClick: (id: string, e: React.MouseEvent) => void;
   onAuxClick: (id: string, e: React.MouseEvent) => void;
@@ -17,7 +16,6 @@ export function useLibraryCardCallbacks(): LibraryCardCallbacks {
   return ctx;
 }
 
-/** Grid-level multi-select flag, consumed by the grid containers only. */
 const MultiSelectContext = createContext(false);
 
 export function useMultiSelectActive(): boolean {

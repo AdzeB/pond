@@ -58,7 +58,6 @@ export function shapeFromDims(
   return "portrait";
 }
 
-/** First matching preset within tolerance, same order as `aspectSql`. */
 export function aspectFromDims(
   width: number | null | undefined,
   height: number | null | undefined,

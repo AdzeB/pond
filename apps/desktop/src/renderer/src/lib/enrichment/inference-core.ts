@@ -9,14 +9,8 @@ import {
 } from "@huggingface/transformers";
 import { pickDevice } from "@/lib/enrichment/inference-device";
 
-/**
- * Shared transformers.js model host, intentionally free of DOM and prefs access so it runs unchanged in the inference Web Worker and on the main thread as a fallback.
- * @remarks Models are cached per id so a prefs override loads a second model rather than thrashing the default.
- */
-
 export type FlorenceTask = "<CAPTION>" | "<DETAILED_CAPTION>" | "<OCR>";
 
-/** Builds on WebGPU when available, falling back to WASM. */
 async function withDevice<T>(
   tag: string,
   build: (device: "webgpu" | "wasm") => Promise<T>,
@@ -32,7 +26,6 @@ async function withDevice<T>(
   return build("wasm");
 }
 
-/** Clears the cache entry on failure so an offline/transient load can be retried on the next call. */
 function memo<T>(
   cache: Map<string, Promise<T>>,
   key: string,

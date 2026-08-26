@@ -1,7 +1,5 @@
 import type { ReactNode, SVGProps } from "react";
 
-/** Authentic Twitter/X glyphs, inlined because the metric glyphs have no close match in @pond/icons. */
-
 function Glyph({
   title,
   children,

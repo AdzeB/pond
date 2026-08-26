@@ -24,7 +24,6 @@ const BACKOFF_SCHEDULE_MS = [
   6 * 60 * 60_000,
 ];
 
-/** ±20% jitter so a synchronised failure burst doesn't retry in lockstep. */
 const JITTER_FRACTION = 0.2;
 
 function backoffFor(attempts: number): number {
@@ -76,7 +75,6 @@ export function classifyError(
       lastError,
     };
   }
-  /** Plain Errors and TransientError are transient; give up after maxAttempts. */
   const isTransient =
     err instanceof TransientError || !(err instanceof ExtractorError);
   if (isTransient) {

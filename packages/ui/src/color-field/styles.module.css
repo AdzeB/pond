@@ -21,7 +21,6 @@
   }
 }
 
-/* No valid colour parsed yet. */
 .swatch[data-empty] {
   background: transparent;
   border: 1.5px dashed var(--ds-gray-a7);

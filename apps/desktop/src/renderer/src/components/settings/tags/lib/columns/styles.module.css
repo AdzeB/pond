@@ -1,9 +1,0 @@
-.meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 12px;
-  font-weight: 450;
-  font-variant-numeric: tabular-nums;
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-}

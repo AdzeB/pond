@@ -5,12 +5,10 @@ import { SourcePicker } from "@/components/shared/source-picker";
 import { useAccounts } from "@/hooks/use-accounts";
 import { connectFlow } from "@/stores/connect-flow";
 
-/** `local` and `web` aren't sources you sign in to. */
 const SYNCABLE: readonly Source[] = SOURCES.filter(
   (s) => s !== "local" && s !== "web",
 );
 
-/** Source picker in the dock tray; picking starts the browser sign-in and moves to the connect-wait card. */
 export function ConnectSourceSection() {
   const dock = useDock();
   const { accounts } = useAccounts();

@@ -65,7 +65,6 @@ interface SeedMerge {
   rawJson: RawJson | null;
 }
 
-/** Additive merge: fills missing `capture.author.*`, `capture.metrics`, and `capture.extras.card` from the seed, never overwriting existing values, so a re-sync can backfill cards/metrics. */
 export function mergeSeedIntoExistingSave(
   current: Save,
   seed: EnqueueSeed,
@@ -111,15 +110,12 @@ export function mergeSeedIntoExistingSave(
     filled.push("capture.metrics");
   }
 
-  const existingExtras = (existingCapture?.extras ?? {}) as Record<
-    string,
-    unknown
-  >;
-  const seedExtras = (seedCapture?.extras ?? {}) as Record<string, unknown>;
-  let nextExtras = existingExtras;
-  if (!existingExtras.card && seedExtras.card) {
-    nextExtras = { ...existingExtras, card: seedExtras.card };
-    filled.push("capture.extras.card");
+  const existingCard = existingCapture?.card;
+  const seedCard = seedCapture?.card;
+  let nextCard = existingCard;
+  if (!existingCard && seedCard) {
+    nextCard = seedCard;
+    filled.push("capture.card");
   }
 
   if (filled.length === 0) {
@@ -134,7 +130,7 @@ export function mergeSeedIntoExistingSave(
       ...baseCapture,
       author: nextAuthor,
       ...(nextMetrics ? { metrics: nextMetrics } : {}),
-      ...(Object.keys(nextExtras).length > 0 ? { extras: nextExtras } : {}),
+      ...(nextCard ? { card: nextCard } : {}),
     },
   };
 
@@ -165,7 +161,6 @@ export async function persistEnrichment(
   if (inserted) broadcastSyncAction(inserted);
 }
 
-/** Re-pends only `done` fetch_avatar rows so the newly-filled URL lands on disk. */
 export async function rependFetchAvatar(saveId: string): Promise<void> {
   const db = await getDb();
   const now = new Date();

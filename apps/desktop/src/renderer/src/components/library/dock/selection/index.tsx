@@ -13,7 +13,6 @@ import { useDock } from "@/components/library/dock/lib/context";
 import { selection } from "@/stores/selection";
 import styles from "./styles.module.css";
 
-/** Every selection action as a labeled tile, so nothing hides behind a menu. */
 export const SelectionContent = forwardRef<HTMLDivElement>((_, ref) => {
   const dock = useDock();
 

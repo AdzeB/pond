@@ -5,7 +5,6 @@ import type {
 } from "@pond/schema/session";
 import { session } from "electron";
 import log from "electron-log/main.js";
-import { identityKeyFromCookies } from "../http/session-identity";
 import { clearPendingSessionSource } from "../pending-session";
 import { extractorFor } from "./pipeline/extractors";
 import {
@@ -14,6 +13,7 @@ import {
   probeUserHandle,
   writePartitionCookies,
 } from "./refresh/scrape-window";
+import { identityKeyFromCookies } from "./session-identity";
 import { syncAccount } from "./sync";
 import {
   createAccount,
@@ -26,7 +26,6 @@ import {
 } from "./sync/accounts";
 import { fillMissingAvatars } from "./sync/avatars";
 
-/** Writes a signed-in cookie jar into an account partition and kicks sync. */
 export async function importSessionCookies(
   source: Source,
   cookies: ExtensionCookie[],
@@ -56,7 +55,6 @@ export async function importSessionCookies(
     };
   }
 
-  /** Reject unauthenticated sessions before touching any partition; the extension pushes whatever the browser has, signed-in or not. */
   if (
     !filtered.some((cookie) =>
       isAuthCookieName(source, cookie.name, cookie.value),
@@ -164,7 +162,6 @@ async function resolveTargetAccount(
 
   const accounts = await listAccountsForSource(source);
 
-  /** For sources without an identity cookie, the probed handle is the only way to tell accounts apart; costs one hidden-window navigation against a staging partition. */
   let probedHandle: string | null = null;
   if (extractorFor(source)?.probeExpression) {
     probedHandle = await probeStagedHandle(source, cookies);
@@ -176,7 +173,6 @@ async function resolveTargetAccount(
     }
   }
 
-  /** A migrated account carries no identityKey, so a fresh push from its owner matches nothing above; adopt a sole unclaimed account the probed handle doesn't contradict instead of minting a duplicate. */
   const sole = accounts.length === 1 ? accounts[0] : undefined;
   if (
     sole &&
@@ -210,7 +206,6 @@ async function resolveTargetAccount(
   return { account: first, kind: "reauth", probedHandle };
 }
 
-/** Stages the pushed cookies into a throwaway in-memory partition and probes the handle there, leaving every real account jar untouched. */
 async function probeStagedHandle(
   source: Source,
   cookies: ExtensionCookie[],

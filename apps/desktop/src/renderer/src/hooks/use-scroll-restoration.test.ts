@@ -43,7 +43,6 @@ describe("scroll restoration", () => {
       id: "save-123",
       offset: 42,
     });
-    /** Later pixel saves must retain the identity anchor. */
     rememberScroll("tab-anchor:/", 7010);
     expect(recallScrollAnchor("tab-anchor:/")).toEqual({
       id: "save-123",

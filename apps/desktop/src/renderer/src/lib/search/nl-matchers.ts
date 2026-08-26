@@ -19,13 +19,9 @@ import {
   WITHOUT_WORDS,
 } from "@/lib/search/nl-vocabulary";
 
-/** Phrase-matching half of the Stage A compiler: pure, stateless matchers driven in order by `compileStageA` in nl-query. */
-
 interface Candidate {
-  /** Lowercased phrase to match, longest-first. */
   phrase: string;
   field: Predicate["field"];
-  /** Resolved value to accumulate for that field. */
   value: string;
 }
 
@@ -45,7 +41,6 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
   for (const [word, source] of Object.entries(SOURCE_SYNONYMS)) {
     push(word, "source", source);
   }
-  /** Live site domains present in the library. */
   for (const source of facets.sources) push(source, "source", source);
 
   for (const color of COLOR_PRESETS) {
@@ -59,7 +54,6 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
     push(word, "aspect", aspect);
   }
 
-  /** Open vocabulary: only values that exist in the library. */
   for (const tag of facets.tags) push(tag, "tags", tag);
   for (const creator of facets.creators) push(creator, "creator", creator);
 
@@ -78,7 +72,6 @@ interface Accumulator {
   tags: Set<string>;
   creators: Set<string>;
   colors: string[];
-  /** Negated counterparts. */
   negSources: Set<string>;
   negTypes: Set<string>;
   negShapes: Set<string>;
@@ -202,13 +195,11 @@ function parseCount(word: string): number | null {
   return null;
 }
 
-/** Spoken quantities for durations ("an hour", "a minute"). */
 function parseQuantity(word: string): number | null {
   if (word === "a" || word === "an") return 1;
   return parseCount(word);
 }
 
-/** Reads either one glued token ("30s") or a number + unit pair ("5 minutes"); returns seconds plus tokens used. */
 function parseDurationAt(
   words: string[],
   i: number,
@@ -230,7 +221,6 @@ function parseDurationAt(
   return null;
 }
 
-/** Runs before the file-count intent so "more than 5 minutes" reads as a duration, not a file count. */
 export function matchDurationIntent(
   words: string[],
   i: number,
@@ -258,7 +248,6 @@ export function matchDurationIntent(
   return null;
 }
 
-/** The trailing media noun is left for the type matcher, so "more than one image" also constrains type. */
 export function matchCountIntent(
   words: string[],
   i: number,
@@ -286,7 +275,6 @@ export function matchCountIntent(
   return null;
 }
 
-/** Recognizes ordering / cap phrasing ("newest", "top 10", "10 newest"); returns a partial directive plus tokens consumed. */
 export function matchSortLimit(
   words: string[],
   i: number,
@@ -305,7 +293,6 @@ export function matchSortLimit(
     if (n !== null && n > 0) return { limit: n, len: 2 };
   }
 
-  /** "10 newest" emits just the cap; the sort word matches on the next pass. */
   const lead = parseCount(at(0));
   if (lead !== null && lead > 0) {
     if (SORT_WORDS[at(1)] || (at(1) === "most" && at(2) === "recent")) {
@@ -356,7 +343,6 @@ export function matchIntent(
   if (!WITH_WORDS.has(head) && !WITHOUT_WORDS.has(head)) return null;
   const negated = WITHOUT_WORDS.has(head);
 
-  /** Skip an optional article: "with a note", "without any captions". */
   let k = 1;
   if (at(k) === "a" || at(k) === "an" || at(k) === "any") k += 1;
   const noun = at(k);

@@ -30,7 +30,6 @@ import { syncFraction, tileValue, watchName } from "./lib/helpers";
 import { SourceTile } from "./source-tile";
 import styles from "./styles.module.css";
 
-/** Avatar + name + meta chrome; columns follow library `--grid-min`, height stays tile-sized. */
 const SOURCE_CELL_HEIGHT = 120;
 
 type SourceEntry =
@@ -87,7 +86,6 @@ export function SourcesPage() {
   const byAccount = useSyncByAccount();
   const width = useGridWidth();
   const colMin = useGridMin();
-  /** Connect and watch flows live in the dock tray; this page polls for the outcome and opens the detail card. */
   const waiting = useConnectWaiting();
   const connectedBefore = useConnectedBefore();
   const addedWatchId = useWatchAdded();
@@ -118,7 +116,6 @@ export function SourcesPage() {
     [entries, width, colMin],
   );
 
-  /** Poll the registry until the extension delivers the session, then kick that account's first sync. */
   useEffect(() => {
     if (!waiting) return;
     const source = waiting;
@@ -141,7 +138,6 @@ export function SourcesPage() {
           arrivedOnce = true;
           syncMonitor.seed(arrived.id, source, { connected: true });
           void window.pond.syncRunNow(arrived.id);
-          /** Let the wait card show Connected briefly before the detail card takes over. */
           connectFlow.complete();
           window.setTimeout(() => {
             if (cancelled) return;
@@ -149,7 +145,6 @@ export function SourcesPage() {
             sourceDetail.openAccount(arrived.id);
           }, 1100);
         } catch {
-          /* keep polling */
         } finally {
           inflight = false;
         }
@@ -164,7 +159,6 @@ export function SourcesPage() {
     };
   }, [waiting, connectedBefore, refetch]);
 
-  /** A watch added from the tray card lands here: refresh the grid and open its detail. */
   useEffect(() => {
     if (!addedWatchId) return;
     void refetchWatches();
@@ -172,15 +166,12 @@ export function SourcesPage() {
     watchFlow.consumeAdded();
   }, [addedWatchId, refetchWatches]);
 
-  /** Edits made inside the tray's detail card refresh this page's list copies. */
   useEffect(() => {
     if (detailRevision === 0) return;
     void refetch();
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  /** Both lists begin as empty while their IPC queries are in flight. Wait for them
-   * to settle before showing the empty page. */
   if (!accountsLoading && !watchesLoading && entries.length === 0) {
     return <SourcesEmpty />;
   }

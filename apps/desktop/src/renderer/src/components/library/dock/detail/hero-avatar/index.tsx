@@ -4,7 +4,6 @@ import { BrandTile } from "@/components/library/sources/sync-monitor-source-tile
 import { getSourceDef } from "@/lib/save/sources-registry";
 import styles from "./styles.module.css";
 
-/** Hero face for the detail cards, mirroring the sources grid tile: profile picture with a brand badge, brand tile otherwise. */
 export function HeroAvatar({
   source,
   avatarUrl,
@@ -14,7 +13,6 @@ export function HeroAvatar({
   source: Source;
   avatarUrl: string | null | undefined;
   size?: number;
-  /** Keyline around the brand-tile fallback; watches use it, accounts do not. */
   ring?: boolean;
 }) {
   const [failed, setFailed] = useState(false);

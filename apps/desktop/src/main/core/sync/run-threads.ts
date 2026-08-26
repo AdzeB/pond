@@ -3,7 +3,7 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
-import { enqueueSavesBulk } from "../pipeline/enqueue-bulk";
+import { enqueue } from "../pipeline/enqueue";
 import { harvestThreadsSaved } from "../refresh/scrape-window";
 import { partitionForAccount } from "./accounts";
 import {
@@ -153,7 +153,7 @@ export async function syncThreads(
   });
 
   const queue = [...fresh, ...recovery];
-  const bulk = await enqueueSavesBulk(
+  const bulk = await enqueue(
     queue.map((entry) => {
       const seed = buildThreadsSavedSeed(entry) ?? undefined;
       return { url: entry.url, ...(seed ? { seed } : {}) };

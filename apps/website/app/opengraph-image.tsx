@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { POND_VERSION } from "@/lib/release";
 
 export const alt = "Pond. A local-first archive for the open web.";
 export const size = { width: 1200, height: 630 };
@@ -46,7 +47,7 @@ export default function OpengraphImage() {
             textTransform: "uppercase",
           }}
         >
-          v0.1.0 · Mac · Open source
+          v{POND_VERSION} · Mac · Open source
         </span>
       </div>
       <div

@@ -1,8 +1,6 @@
 import type { ListHarvestArgs } from "../list-types";
 import { inPageScrollCollect } from "./scroll";
 
-/** Builds the self-contained IIFE string, inlined via `.toString()`, run in the scrape window. */
-
 export function buildItemExpression<Norm>(
   normalizeFactory: () => Norm,
   harvestFn: (id: string, norm: Norm) => unknown,

@@ -36,7 +36,6 @@ export function closeSave(): void {
   router.history.push(getLastListPath());
 }
 
-/** Sync primary selection from the active tab path so save hotkeys follow the visible tab. */
 export function syncPrimaryFromPath(pathname: string): void {
   const id = saveIdFromPath(pathname);
   if (primarySelection.get() !== id) primarySelection.set(id);

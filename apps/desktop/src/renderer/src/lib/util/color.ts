@@ -1,5 +1,3 @@
-/** Colour-space conversions for the swatch copy menu, mirroring the formats Eagle exposes (hex / rgb / rgba / hsl / hsv / hwb / cmyk). */
-
 import { normalizeHex } from "@pond/schema/color";
 
 interface Rgb {
@@ -85,7 +83,6 @@ interface ColorFormat {
   value: string;
 }
 
-/** Grouped the way Eagle groups them: everyday spaces first, then the print/specialist trio. */
 export function colorCopyFormats(
   input: string,
 ): { primary: ColorFormat[]; secondary: ColorFormat[] } | null {

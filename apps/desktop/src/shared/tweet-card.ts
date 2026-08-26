@@ -1,6 +1,5 @@
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
 
-/** Normalized shape the TweetCard renders from; shared by the renderer and main so the card matches wherever it's drawn. */
 export interface TweetCardAuthor {
   name: string;
   handle: string;
@@ -27,7 +26,6 @@ export interface TweetCardMetrics {
   shares?: number;
 }
 
-/** The linked page's OG preview X renders below a tweet; `url` is the destination, the rest is best-effort. */
 export interface TweetCardLink {
   url?: string;
   domain?: string;
@@ -50,15 +48,6 @@ export interface TweetCardData {
   card?: TweetCardLink;
 }
 
-/** Rich quoted-tweet content persisted by the extractor; older saves only carry { tweetId, url }, so every field is optional. */
-interface QuotedExtra {
-  tweetId?: string;
-  url?: string;
-  author?: { name?: string; handle?: string; avatarUrl?: string };
-  text?: string;
-  media?: CaptureMedia[];
-}
-
 function handleFromUrl(url: string): string | undefined {
   try {
     const first = new URL(url).pathname.split("/").filter(Boolean)[0];
@@ -70,13 +59,23 @@ function handleFromUrl(url: string): string | undefined {
   }
 }
 
-/** twimg avatar URLs leak into media via the og:image fallback and 404 once a sizing param is appended; drop them before they render broken. */
 function isAvatarUrl(url: string): boolean {
   try {
     const u = new URL(url);
     return (
       u.hostname === "pbs.twimg.com" && u.pathname.includes("/profile_images/")
     );
+  } catch {
+    return false;
+  }
+}
+
+/** Hidden capture windows cannot load blob: posters harvested from X's <video> element. */
+function isRenderableImageUrl(url: string): boolean {
+  if (url.startsWith("data:image/")) return true;
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:";
   } catch {
     return false;
   }
@@ -90,13 +89,27 @@ function mapMedia(
   for (const m of media) {
     if (m.type === "link") continue;
     if (isAvatarUrl(m.url)) continue;
+    const poster =
+      typeof m.posterUrl === "string" && isRenderableImageUrl(m.posterUrl)
+        ? m.posterUrl
+        : undefined;
+    if (m.type === "video") {
+      out.push({
+        url: m.url,
+        type: "video",
+        ...(poster ? { posterUrl: poster } : {}),
+        ...(typeof m.durationSec === "number"
+          ? { durationSec: m.durationSec }
+          : {}),
+        ...(typeof m.width === "number" ? { width: m.width } : {}),
+        ...(typeof m.height === "number" ? { height: m.height } : {}),
+      });
+      continue;
+    }
+    if (!isRenderableImageUrl(m.url)) continue;
     out.push({
       url: m.url,
-      type: m.type === "video" ? "video" : "image",
-      ...(m.posterUrl ? { posterUrl: m.posterUrl } : {}),
-      ...(typeof m.durationSec === "number"
-        ? { durationSec: m.durationSec }
-        : {}),
+      type: "image",
       ...(typeof m.width === "number" ? { width: m.width } : {}),
       ...(typeof m.height === "number" ? { height: m.height } : {}),
     });
@@ -104,47 +117,33 @@ function mapMedia(
   return out;
 }
 
-function buildQuoted(
-  extras: Record<string, unknown> | undefined,
-): TweetCardData | undefined {
-  if (!extras) return undefined;
-
-  const rich = extras.quotedTweet as QuotedExtra | undefined;
-  if (rich && (rich.text || rich.author || rich.media)) {
-    const handle =
-      rich.author?.handle ??
-      (rich.url ? handleFromUrl(rich.url) : undefined) ??
-      "";
-    return {
-      author: {
-        name: rich.author?.name ?? handle,
-        handle,
-        ...(rich.author?.avatarUrl ? { avatarUrl: rich.author.avatarUrl } : {}),
-      },
-      ...(rich.text ? { text: rich.text } : {}),
-      ...(rich.media && rich.media.length > 0
-        ? { media: mapMedia(rich.media) }
-        : {}),
-    };
-  }
-
-  /** Legacy { tweetId, url } saves yield only a handle. */
-  const list = extras.quotedTweets;
-  if (Array.isArray(list) && list[0]) {
-    const q = list[0] as { url?: string };
-    const handle = q.url ? handleFromUrl(q.url) : undefined;
+function buildQuoted(quoted: Capture | undefined): TweetCardData | undefined {
+  if (!quoted) return undefined;
+  if (!quoted.description && !quoted.author && quoted.media.length === 0) {
+    const handle = quoted.url ? handleFromUrl(quoted.url) : undefined;
     if (handle) return { author: { name: handle, handle } };
+    return undefined;
   }
-  return undefined;
+  const handle =
+    quoted.author?.handle ??
+    (quoted.url ? handleFromUrl(quoted.url) : undefined) ??
+    "";
+  return {
+    author: {
+      name: quoted.author?.name ?? handle,
+      handle,
+      ...(quoted.author?.avatarUrl
+        ? { avatarUrl: quoted.author.avatarUrl }
+        : {}),
+    },
+    ...(quoted.description ? { text: quoted.description } : {}),
+    ...(quoted.media.length > 0 ? { media: mapMedia(quoted.media) } : {}),
+  };
 }
 
-function buildCard(
-  extras: Record<string, unknown> | undefined,
-): TweetCardLink | undefined {
-  if (!extras) return undefined;
-  const raw = extras.card;
-  if (!raw || typeof raw !== "object") return undefined;
-  const c = raw as Partial<TweetCardLink>;
+function buildCard(capture: Capture): TweetCardLink | undefined {
+  const c = capture.card;
+  if (!c) return undefined;
   const url = typeof c.url === "string" ? c.url : undefined;
   const domain = typeof c.domain === "string" ? c.domain : undefined;
   const title = typeof c.title === "string" ? c.title : undefined;
@@ -162,7 +161,6 @@ function buildCard(
   };
 }
 
-/** Adapts a captured tweet to the card model; `fallbackAuthor` is the save's `@handle` string. */
 export function buildTweetCardData(
   capture: Capture | undefined | null,
   fallbackAuthor?: string | null,
@@ -188,18 +186,15 @@ export function buildTweetCardData(
     ...(capture.lang ? { lang: capture.lang } : {}),
   };
 
-  const extras = capture.extras as Record<string, unknown> | undefined;
-  if (extras?.isReply === true) data.isReply = true;
-  if (typeof extras?.replyingTo === "string")
-    data.replyingTo = extras.replyingTo;
+  if (capture.isReply) data.isReply = true;
+  if (capture.replyingTo) data.replyingTo = capture.replyingTo;
 
-  const quoted = buildQuoted(extras);
+  const quoted = buildQuoted(capture.quoted);
   if (quoted) data.quoted = quoted;
 
-  const card = buildCard(extras);
+  const card = buildCard(capture);
   if (card) data.card = card;
 
-  /** The harvester merges quoted media into the parent capture list, so exclude anything already shown in the quoted card. */
   const quotedUrls = new Set((quoted?.media ?? []).map((m) => m.url));
   const media = mapMedia(capture.media).filter((m) => !quotedUrls.has(m.url));
   if (media.length > 0) data.media = media;

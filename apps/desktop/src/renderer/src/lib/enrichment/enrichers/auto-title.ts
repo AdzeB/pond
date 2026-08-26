@@ -24,7 +24,6 @@ function firstLine(text: string | null | undefined): string | null {
   return line ? line.trim() : null;
 }
 
-/** Non-destructive: only writes when the title is still empty at run time, so it never clobbers a user edit. */
 export const autoTitleEnricher: Enricher = {
   id: "autoTitle",
   dependsOn: ["caption", "ocr"],
@@ -38,12 +37,10 @@ export const autoTitleEnricher: Enricher = {
   async run(save: Save) {
     const title = deriveTitle(save);
     if (!title) return null;
-    /** Re-check against the live pool so a concurrent user edit always wins. */
     const current = pool.get(save.id) ?? save;
     if (!hasTitle(current)) {
       await mutateSave(save.id, { title }, { actorReason: "ai:auto-title" });
     }
-    /** Stamp regardless so a save the user intentionally left empty is never retried. */
     return { derived: { autoTitleModel: AUTO_TITLE_VERSION } };
   },
 };

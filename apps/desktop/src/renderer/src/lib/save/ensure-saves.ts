@@ -2,7 +2,6 @@ import { normalise } from "@/lib/save/reconcile";
 import type { Save } from "@/lib/types";
 import { bulkUpsertSaves, pool } from "@/stores/pool";
 
-/** Hydrate slim rows for ids missing from the pool (cold rows after hot-set boot). */
 export async function ensureSaves(ids: readonly string[]): Promise<void> {
   const missing: string[] = [];
   for (const id of ids) {

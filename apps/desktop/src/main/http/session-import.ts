@@ -1,9 +1,7 @@
-import type { SessionImportResponse } from "@pond/schema/session";
 import { sessionImportPayloadSchema } from "@pond/schema/session";
 import log from "electron-log/main.js";
 import type { Context } from "hono";
-import { primaryDomainForSource } from "../core/refresh/scrape-window";
-import { importSessionCookies } from "../core/session-import";
+import { sessionImport } from "../ops";
 
 export async function sessionImportHandler(c: Context): Promise<Response> {
   let raw: unknown;
@@ -22,21 +20,6 @@ export async function sessionImportHandler(c: Context): Promise<Response> {
     return c.json({ status: "error", error: parsed.error.flatten() }, 400);
   }
 
-  const { source, cookies } = parsed.data;
-  const domain = primaryDomainForSource(source);
-  if (!domain) {
-    return c.json(
-      {
-        status: "error",
-        error: `source ${source} has no cookie domain configured`,
-      },
-      400,
-    );
-  }
-
-  const body: SessionImportResponse = await importSessionCookies(
-    source,
-    cookies,
-  );
-  return c.json({ status: "success", data: body });
+  const data = await sessionImport(parsed.data.source, parsed.data.cookies);
+  return c.json({ status: "success", data });
 }

@@ -2,7 +2,6 @@ import { TrayCard } from "@pond/ui";
 import { useDock } from "@/components/library/dock/lib/context";
 import styles from "./styles.module.css";
 
-/** Drill-down from the connect picker explaining what connecting actually does. */
 export function ConnectHelpSection() {
   const dock = useDock();
 

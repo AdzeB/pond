@@ -1,4 +1,3 @@
-/* Fixed-height stage so hint, skeleton, match, and no-result states swap without resizing the card. */
 .body {
   display: flex;
   flex-direction: column;
@@ -33,7 +32,6 @@
   border-radius: var(--ds-radius-lg);
 }
 
-/* Empty-state guidance in the body, swapped for the exact-match row once the input resolves. */
 .hint {
   padding-inline: 4px;
   margin: 0;
@@ -42,11 +40,9 @@
   line-height: 22px;
   color: var(--ds-gray-10);
   text-align: center;
-  /* Hints break lines with \n in their strings. */
   white-space: pre-line;
 }
 
-/* Tinted status pill under the handle field for the add error. */
 .chip {
   align-self: center;
   max-width: 100%;

@@ -48,9 +48,7 @@ export async function emulateColorScheme(
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {
-        /** Attach failed mid-flight; nothing to detach. */
-      }
+      } catch {}
     }
     return async () => {};
   }
@@ -62,20 +60,15 @@ export async function emulateColorScheme(
         { features: [] },
         CDP_COMMAND_TIMEOUT_MS,
       );
-    } catch {
-      /** Override may already be cleared. */
-    }
+    } catch {}
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {
-        /** wc may have been destroyed mid-capture; pool drops it. */
-      }
+      } catch {}
     }
   };
 }
 
-/** Overrides device scale factor for `fn` via CDP; the lever for sharper PNGs. */
 export async function withDeviceScaleFactor<T>(
   win: BrowserWindow,
   factor: number,
@@ -110,15 +103,11 @@ export async function withDeviceScaleFactor<T>(
         undefined,
         CDP_COMMAND_TIMEOUT_MS,
       );
-    } catch {
-      /** Override may already be cleared. */
-    }
+    } catch {}
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {
-        /** Detach can throw if the wc was destroyed mid-capture. */
-      }
+      } catch {}
     }
   }
 }

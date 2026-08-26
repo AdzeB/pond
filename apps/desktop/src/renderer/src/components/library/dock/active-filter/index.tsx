@@ -3,6 +3,7 @@ import { isPredicate } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
+import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
   accountChipLabel,
   accountRefsFromSync,
@@ -20,7 +21,6 @@ import {
 import { useDock } from "../lib/context";
 import styles from "./styles.module.css";
 
-/** Shown while the composer is collapsed so a live filter still has a clear and edit control. */
 export function ActiveFilter() {
   const dock = useDock();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -28,6 +28,7 @@ export function ActiveFilter() {
   const q = useSearchText();
   const [sync] = usePrefs("sync");
   const refs = accountRefsFromSync(sync);
+  const scrollFade = useScrollFade<HTMLSpanElement>();
 
   const serialized = [
     ...query.rules.filter(isPredicate).map((rule) => {
@@ -53,7 +54,7 @@ export function ActiveFilter() {
       {show ? (
         <motion.div
           key="active-filter"
-          className={styles.cluster}
+          className={styles.chip}
           initial={{ opacity: 0, y: 6, x: "-50%", scale: 0.98 }}
           animate={{ opacity: 1, y: 0, x: "-50%", scale: 1 }}
           exit={{ opacity: 0, y: 6, x: "-50%", scale: 0.98 }}
@@ -61,16 +62,20 @@ export function ActiveFilter() {
         >
           <Button
             size="sm"
-            variant="secondary"
+            variant="ghost"
+            className={styles.edit}
             aria-label="Edit Filter"
             onClick={() => openLibrarySearch()}
           >
-            <span className={styles.label}>{label || "Filter"}</span>
+            <span className={styles.label} {...scrollFade}>
+              {label || "Filter"}
+            </span>
           </Button>
           <Button
             icon
             size="sm"
-            variant="secondary"
+            variant="ghost"
+            className={styles.clear}
             aria-label="Clear Filter"
             onClick={() => {
               resetFilters();

@@ -1,7 +1,3 @@
-/**
- * Parse a simplified ISO 8601 period (Y/M/W/D only) into a signed millisecond offset. Months approximate to 30 days
- * and years to 365, matching the relative date-filter semantics of both the in-memory matcher and the SQL translator.
- */
 export function isoDurationToMillis(input: string): number | null {
   const m = input.match(
     /^([+-]?)P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?$/,

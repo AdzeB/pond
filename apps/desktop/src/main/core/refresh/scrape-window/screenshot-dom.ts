@@ -1,4 +1,3 @@
-/** Page-side script that isolates the focused tweet's article and returns a tight bounding box plus any quoted-tweet URL; runs via executeJavaScript. */
 export function buildArticleRectExpression(tweetId: string): string {
   /** Scroll to top, not center: centering yields a negative top that clips the article. */
   return `(async () => {
@@ -119,7 +118,6 @@ export function buildArticleRectExpression(tweetId: string): string {
   })()`;
 }
 
-/** Isolates the focused Threads post card and returns a bounding box plus any quoted-post URL. */
 export function buildThreadsPostRectExpression(code: string): string {
   return `(async () => {
     try {

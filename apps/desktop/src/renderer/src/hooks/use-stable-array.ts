@@ -1,6 +1,5 @@
 import { useRef } from "react";
 
-/** Reuses the previous array reference when length and id sequence match, so a field-only update doesn't invalidate downstream memos. */
 export function useStableById<T extends { id: string }>(
   next: ReadonlyArray<T>,
 ): ReadonlyArray<T> {

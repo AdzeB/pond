@@ -47,7 +47,6 @@ async function inPageInstagramList(
     const entries: Entry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
-    /** Full walks pass known ids for resume dedup but keep early-stop off so older saves stay reachable. */
     const earlyStopEnabled = args.earlyStop ?? known.size > 0;
     let knownPageStreak = 0;
     const STOP_AFTER_KNOWN_PAGES = 2;
@@ -109,7 +108,6 @@ async function inPageInstagramList(
         if (res.status === 401 || res.status === 403) {
           return { ok: false, reason: "auth_required" };
         }
-        /** Back off with the server's retry hint; never keep hammering the saved-feed API. */
         if (res.status === 429) {
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;

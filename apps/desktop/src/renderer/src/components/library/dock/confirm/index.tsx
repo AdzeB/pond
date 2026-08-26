@@ -10,13 +10,10 @@ export interface TrayConfirmSpec {
   title: string;
   description: string;
   confirmLabel: string;
-  /** Where Cancel returns to; null dismisses the tray. */
   returnTo: Exclude<ViewMenuSection, "confirm"> | null;
-  /** Rejection keeps the card open; resolution closes the tray. */
   onConfirm: () => Promise<void> | void;
 }
 
-/** The spec is reached from several cards; module state survives the card swap, like openFrequencyPage. */
 let current: TrayConfirmSpec | null = null;
 
 export function openTrayConfirm(spec: TrayConfirmSpec): void {
@@ -24,7 +21,6 @@ export function openTrayConfirm(spec: TrayConfirmSpec): void {
   dockMode.open("confirm");
 }
 
-/** Confirming clears the spec before the card swaps out; the sample keeps the exit render intact. */
 const FALLBACK: TrayConfirmSpec = {
   title: "Delete Forever",
   description:

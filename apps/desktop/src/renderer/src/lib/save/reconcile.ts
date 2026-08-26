@@ -76,7 +76,6 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     fileSize: raw.fileSize ?? null,
     phash: raw.phash ?? null,
     blurhash: raw.blurhash ?? null,
-    /** Enrichment outputs must be carried through: sync U/A patches rarely re-send them, so dropping them here would wipe captions/OCR/transcripts on every unrelated update. */
     caption: raw.caption ?? null,
     captionModel: raw.captionModel ?? null,
     ocrText: raw.ocrText ?? null,

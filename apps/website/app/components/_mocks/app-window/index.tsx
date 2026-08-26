@@ -19,10 +19,8 @@ import { SaveThumb } from "../save-thumb";
 import { demoImage, packMasonry, SAVES } from "../saves";
 import styles from "./styles.module.css";
 
-/** Window inset 16px, library page padding-inline 20px. */
 const CONTENT_WIDTH = 1280 - 32 - 40;
 
-/** App defaults: 130px zoom, 16px gap, name + date chrome. */
 const PACKED = packMasonry(SAVES, CONTENT_WIDTH, 130, 16, 44);
 
 const TOOLBAR_ACTIONS = [
@@ -55,7 +53,6 @@ function ChromeButton({
   );
 }
 
-/** Native-resolution (1280x800) replica of the desktop Library window. */
 export function AppWindow() {
   return (
     <div className={styles.window} aria-hidden inert>

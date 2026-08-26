@@ -45,7 +45,6 @@ function canCopyPrimaryMedia(save: Save): boolean {
   return copyableImageIndex(save) != null || resolveFileIndex(save) != null;
 }
 
-/** Binds the shortcuts advertised in the save menus; `enabled` gates on selection state so unbound keys pass through untouched. */
 export function SaveHotkeys() {
   const hasPrimary = useSelector(primarySelectionStore, (s) => s.id) != null;
   const hasMulti = useSelectionSize() > 0;
@@ -57,7 +56,6 @@ export function SaveHotkeys() {
       options: { enabled: hasPrimary },
     },
     {
-      /** Ordinary text copy must keep working: never preventDefault when text is selected or the target is editable. */
       hotkey: SHORTCUTS["save.copy-image"].keys!,
       callback: (event) => {
         const save = primarySave();
@@ -163,7 +161,6 @@ export function SaveHotkeys() {
       options: { enabled: hasPrimary || hasMulti, ignoreInputs: true },
     },
     {
-      /** Multi-selection wins so bulk trash matches the app menu's save.bulk-trash; a trashed primary restores instead, matching its menu. */
       hotkey: SHORTCUTS["save.trash"].keys!,
       callback: () => {
         const ids = selection.snapshot();

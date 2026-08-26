@@ -6,15 +6,12 @@ const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
 const DEFAULT_PATH = SETTINGS_SECTIONS[0]?.path ?? "general";
 
 interface SettingsModalState {
-  /** null means the modal is closed. */
   section: string | null;
-  /** Element id to scroll to and highlight once the section renders. */
   hash: string | null;
 }
 
 const store = new Store<SettingsModalState>({ section: null, hash: null });
 
-/** Reopening without an explicit section resumes where the user left off. */
 let lastSection = DEFAULT_PATH;
 
 export const settingsModal = {

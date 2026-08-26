@@ -20,13 +20,10 @@ interface LibraryTask {
   id: string;
   label: string;
   description: string;
-  /** Verb shown on the settings run button (Run / Apply / Rebuild / Re-run). */
   action: string;
   group: TaskGroup;
   keywords: string[];
-  /** Whether the task can run on a selection subset and so appears in the selection menu. */
   selectable: boolean;
-  /** Hint shown on a disabled row when a required pref is off; null means runnable. */
   precondition?: (prefs: Prefs | null) => string | null;
   run: (ids?: TaskScope) => TaskResult | Promise<TaskResult>;
 }

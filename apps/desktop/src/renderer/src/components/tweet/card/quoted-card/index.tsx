@@ -7,7 +7,6 @@ import styles from "./styles.module.css";
 
 type VerifiedGlyph = ComponentType<SVGProps<SVGSVGElement>>;
 
-/** Matches X's embedded-quote treatment: inline header, clamped text, at most one media tile. */
 export function QuotedCard({
   data,
   Verified = VerifiedIcon,

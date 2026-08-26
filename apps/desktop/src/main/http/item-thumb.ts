@@ -16,7 +16,6 @@ const IMAGE_TYPES: Record<string, string> = {
   ".avif": "image/avif",
 };
 
-/** Serves the save's cover image; 404 for missing saves and non-image covers so clients just skip the thumb. */
 export async function itemThumbHandler(c: Context): Promise<Response> {
   const id = c.req.query("id");
   if (!id) return c.json({ status: "error", error: "missing id" }, 400);

@@ -51,7 +51,6 @@
   }
 }
 
-/* Labels sit above the group's sliding pill; fill and shadow live on the pill, not the item. */
 [data-pond-toggle-group] > .root {
   z-index: 1;
   flex: 1;

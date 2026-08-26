@@ -21,9 +21,7 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEYS[key], value);
-  } catch {
-    /** Storage denied: fall back to URL-only behaviour. */
-  }
+  } catch {}
 }
 
 export type LayoutValue = "waterfall" | "grid" | "justified";

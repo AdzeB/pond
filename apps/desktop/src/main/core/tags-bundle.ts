@@ -15,15 +15,12 @@ import {
 } from "../lib/library-config";
 import { resolvePaths } from "../paths";
 
-/** Mirror of the tag tables inside the .pond bundle (tags.json) so tag data survives index deletion and travels with the folder. */
-
 const TAG_MODELS = new Set(["tag", "tag_group", "tag_group_member"]);
 
 export function isTagModel(model: string): boolean {
   return TAG_MODELS.has(model);
 }
 
-/** Dates cross the JSON boundary as epoch ms. */
 interface WireTag {
   id: string;
   name: string;
@@ -82,7 +79,6 @@ export async function flushTagsDump(): Promise<void> {
   await debouncedDump.flush();
 }
 
-/** Inserts rows missing from the index without clobbering local edits, then re-dumps so both sides converge; deletes only propagate through live transactions, per the bundle's last-write-wins contract. */
 export async function hydrateTagsFromBundle(): Promise<void> {
   const paths = resolvePaths();
   const read = readBundleJson<TagsBundle>(paths.tagsFile, paths.backupDir);
@@ -130,7 +126,6 @@ export async function hydrateTagsFromBundle(): Promise<void> {
       inserted += 1;
     }
     for (const member of wireMembers) {
-      /** Skip rows whose endpoints exist neither in the index nor the bundle. */
       const tagOk =
         knownTagIds.has(member.tagId) || bundleTagIds.has(member.tagId);
       const groupOk =
@@ -146,7 +141,6 @@ export async function hydrateTagsFromBundle(): Promise<void> {
   if (inserted > 0) {
     log.info(`[pond tags-bundle] hydrated ${inserted} rows from tags.json`);
   }
-  /** Converge the file with the possibly richer index state. */
   await dumpTagsToBundle();
 }
 

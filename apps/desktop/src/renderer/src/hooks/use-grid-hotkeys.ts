@@ -6,7 +6,6 @@ import { openSave, saveIdFromPath } from "@/lib/ui/save-nav";
 import { dockMode } from "@/stores/dock-mode";
 import { selection } from "@/stores/selection";
 
-/** Arrows and Enter must not fire while focus sits in toolbars, dialogs, or the dock. */
 function gridFocusFree(): boolean {
   const el = document.activeElement;
   if (!el || el === document.body) return true;
@@ -24,14 +23,9 @@ function scrollToCard(id: string): void {
     ?.scrollIntoView({ block: "nearest" });
 }
 
-/**
- * Keyboard cursor for the library grid: arrows move the anchor, Shift extends
- * the multi selection, Enter/Space open, Mod+A selects all, Escape clears.
- */
 export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
   const idsRef = useRef(filteredIds);
   idsRef.current = filteredIds;
-  /** Shift-extension endpoint; the anchor stays put as the range origin. */
   const cursorRef = useRef<string | null>(null);
 
   const move = (delta: number, extend: boolean, event: KeyboardEvent) => {
@@ -120,7 +114,6 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       options: { preventDefault: false },
     },
     {
-      /** Save page, dock, and expanded pill own Escape while open; only a bare grid clears. */
       hotkey: SHORTCUTS["grid.clear"].keys!,
       callback: (event) => {
         if (event.defaultPrevented) return;

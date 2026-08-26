@@ -16,10 +16,6 @@ interface Swatch {
   score: number;
 }
 
-/**
- * Top-N representative colors as #rrggbb, ranked by vibrancy rather than raw frequency: the commonest pixels are usually desaturated background.
- * @remarks Falls back to the most frequent neutrals so greyscale images still return something.
- */
 export async function extractPalette(
   path: string,
   count = 5,
@@ -39,7 +35,6 @@ export async function extractPalette(
       const g = data[i + 1];
       const b = data[i + 2];
       if (r === undefined || g === undefined || b === undefined) continue;
-      /** Quantize to a 4-bit-per-channel grid to merge near-identical pixels. */
       const key = `${r >> 4}-${g >> 4}-${b >> 4}`;
       const entry = buckets.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
       entry.count++;
@@ -54,7 +49,6 @@ export async function extractPalette(
       const g = Math.round(e.g / e.count);
       const b = Math.round(e.b / e.count);
       const { s, l } = toHsl(r, g, b);
-      /** Peaks for mid-tones and tapers toward pure black/white so highlights don't dominate, but never fully zero so they stay eligible as a fallback. */
       const lightWeight = 0.15 + 0.85 * (1 - Math.abs(l - 0.5) / 0.5);
       const score = e.count * (0.2 + s) * lightWeight;
       return { r, g, b, count: e.count, saturation: s, score };
@@ -72,7 +66,6 @@ export async function extractPalette(
     };
     for (const sw of vibrant) pushUnique(sw);
 
-    /** Top up with the most frequent remaining buckets so neutral images and de-duplicated slots still fill. */
     if (chosen.length < count) {
       const byFrequency = swatches
         .filter((sw) => !chosen.includes(sw))
@@ -86,7 +79,6 @@ export async function extractPalette(
   }
 }
 
-/** Cheap RGB distance for dedupe so two adjacent buckets don't both land. */
 function distance(a: Swatch, b: Swatch): number {
   return Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
 }

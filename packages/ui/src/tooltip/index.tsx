@@ -59,7 +59,6 @@ function Arrow({ className, ...props }: Base.Arrow.Props) {
 
 interface TooltipProps {
   label: ReactNode;
-  /** Keycap hint rendered after the label (e.g. `<Keyboard.Cluster />`). */
   shortcut?: ReactNode;
   children: ReactElement;
   side?: Base.Positioner.Props["side"];

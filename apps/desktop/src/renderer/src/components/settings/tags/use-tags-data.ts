@@ -2,7 +2,6 @@ import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useSaves } from "@/hooks/use-saves";
 import { type TagGroupRow, useTagGroups } from "@/stores/tag-groups";
 import { type TagRow, useTags } from "@/stores/tags";
-import { colorForName } from "./lib/helpers";
 import { EMPTY_STATS, type GroupStats, type TagsRowData } from "./lib/types";
 
 export function useTagsData() {
@@ -49,31 +48,12 @@ export function useTagsData() {
       const members = g.tagIds
         .map((id) => tagsById.get(id))
         .filter((t): t is TagRow => Boolean(t));
-      let totalSaves = 0;
-      let recentMs: number | null = null;
-      let createdMs: number | null = null;
-      for (const t of members) {
-        totalSaves += countFor(t.name);
-        if (t.lastUsedAt != null)
-          recentMs =
-            recentMs == null ? t.lastUsedAt : Math.max(recentMs, t.lastUsedAt);
-        if (t.createdAt != null)
-          createdMs =
-            createdMs == null ? t.createdAt : Math.min(createdMs, t.createdAt);
-      }
-      m.set(g.id, { members, totalSaves, recentMs, createdMs });
+      m.set(g.id, { members });
     }
     return m;
-  }, [groups, tagsById, countFor]);
+  }, [groups, tagsById]);
 
-  const groupOptions = useMemo(
-    () =>
-      groups.map((g) => ({
-        name: g.name,
-        color: g.color ?? colorForName(g.name),
-      })),
-    [groups],
-  );
+  const groupOptions = useMemo(() => groups.map((g) => g.name), [groups]);
   const needle = deferredQ.trim().toLowerCase();
 
   const data = useMemo<TagsRowData[]>(() => {
@@ -90,7 +70,13 @@ export function useTagsData() {
             tag,
             inGroup: group.name,
             saves: countFor(tag.name),
-          }));
+          }))
+          .sort((a, b) => {
+            if (a.kind !== "tag" || b.kind !== "tag") return 0;
+            return a.tag.name.localeCompare(b.tag.name, undefined, {
+              sensitivity: "base",
+            });
+          });
         return {
           id: group.id,
           kind: "group" as const,
@@ -104,7 +90,14 @@ export function useTagsData() {
         if (!needle) return true;
         if (row.group.name.toLowerCase().includes(needle)) return true;
         return row.group.tagNames.some((n) => n.toLowerCase().includes(needle));
-      });
+      })
+      .sort((a, b) =>
+        a.kind === "group" && b.kind === "group"
+          ? a.group.name.localeCompare(b.group.name, undefined, {
+              sensitivity: "base",
+            })
+          : 0,
+      );
 
     const tagRows: TagsRowData[] = tags
       .filter((t) => !taggedIds.has(t.id))
@@ -115,7 +108,12 @@ export function useTagsData() {
         tag,
         inGroup: null,
         saves: countFor(tag.name),
-      }));
+      }))
+      .sort((a, b) =>
+        a.tag.name.localeCompare(b.tag.name, undefined, {
+          sensitivity: "base",
+        }),
+      );
 
     return [...groupRows, ...tagRows];
   }, [tags, groups, groupStats, taggedIds, needle, countFor]);

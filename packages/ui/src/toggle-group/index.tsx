@@ -8,7 +8,6 @@ function pressedToggle(root: HTMLElement): HTMLElement | null {
   return pressed.length === 1 ? pressed.item(0) : null;
 }
 
-/** Geometry is measured from the pressed toggle so CSS can tween between the previous and next boxes. */
 function placePill(
   pill: HTMLElement,
   tab: HTMLElement | null,
@@ -29,10 +28,6 @@ function placePill(
   }
 }
 
-/**
- * Segmented control track for Toggles sharing pressed state; single-select by default, `multiple` for independent toggles.
- * The marker attribute lets the Toggle stylesheet restyle its items.
- */
 export function ToggleGroup({
   className,
   children,

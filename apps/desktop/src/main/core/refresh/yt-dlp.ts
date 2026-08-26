@@ -19,13 +19,10 @@ import { runWithTimeout } from "./yt-dlp-process";
 interface DownloadVideoArgs {
   url: string;
   source: Source | null;
-  /** Connected account that owns the save; picks whose cookies to export. */
   accountId?: string | null;
-  /** Aborts the in-flight yt-dlp process. */
   signal?: AbortSignal;
   /** Quoted/carousel tweets are a yt-dlp playlist; YouTube watch URLs must never expand. */
   allowPlaylist?: boolean;
-  /** Scales the hard timeout; capped so a long carousel cannot run unbounded. */
   expectedCount?: number;
 }
 
@@ -102,14 +99,12 @@ export async function downloadVideo(
       "-o",
       join(outputDir, "%(id)s.%(ext)s"),
     ];
-    /** Platform thumbs are the resting poster for YouTube; embed-thumbnail also needs a downloaded still. */
     if (args.source === "youtube" || prefs.embedThumbnail) {
       argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
     }
     const filesize = maxFilesizeArg(prefs);
     if (filesize) argv.unshift("--max-filesize", filesize);
 
-    /** Muxing/embedding/SponsorBlock need ffmpeg; without it, fall back to progressive mp4. */
     if (ffmpeg) {
       argv.push("--ffmpeg-location", ffmpeg);
       if (prefs.container !== "auto") {

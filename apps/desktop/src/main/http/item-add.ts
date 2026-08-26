@@ -1,8 +1,8 @@
 import { enqueueRequestSchema } from "@pond/schema/ingest";
 import log from "electron-log/main.js";
 import type { Context } from "hono";
-import { enqueueSaveByUrl } from "../core/pipeline/enqueue";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
+import { enqueue } from "../ops";
 
 export async function enqueueHandler(c: Context) {
   let raw: unknown;
@@ -19,8 +19,10 @@ export async function enqueueHandler(c: Context) {
   }
 
   try {
-    const result = await enqueueSaveByUrl(parsed.data.url, {
+    const cookies = parsed.data.cookies;
+    const result = await enqueue(parsed.data.url, {
       ...(parsed.data.trigger ? { trigger: parsed.data.trigger } : {}),
+      ...(cookies && cookies.length > 0 ? { cookies } : {}),
     });
     return c.json({ status: "success", data: result });
   } catch (err) {

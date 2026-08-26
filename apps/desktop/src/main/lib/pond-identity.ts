@@ -5,9 +5,6 @@ import {
   LIBRARY_SCHEMA_VERSION,
 } from "../../shared/constants";
 
-/** A bundle's metadata.json id keys its local SQLite index (kept in userData, not the synced bundle). */
-
-/** Sentinel id for an uncommitted pond, used until the first write materializes the bundle. */
 export const UNBOUND_POND_ID = "unbound";
 
 interface LibraryMetadata {
@@ -18,7 +15,6 @@ interface LibraryMetadata {
   appVersion: string;
 }
 
-/** Index key for a library root: the bundle's metadata id, else the unbound sentinel. */
 export function resolvePondId(root: string, committed: boolean): string {
   if (committed && existsSync(root)) {
     const id = readOrCreatePondId(root);
@@ -27,7 +23,6 @@ export function resolvePondId(root: string, committed: boolean): string {
   return UNBOUND_POND_ID;
 }
 
-/** Reads the bundle id from metadata.json, writing a fresh file if missing. */
 export function readOrCreatePondId(root: string): string {
   const file = join(root, "metadata.json");
   try {
@@ -43,14 +38,12 @@ export function readOrCreatePondId(root: string): string {
     name: DEFAULT_LIBRARY_NAME,
     createdAt: Date.now(),
     schemaVersion: LIBRARY_SCHEMA_VERSION,
-    appVersion: process.env.npm_package_version ?? "0.1.0",
+    appVersion: process.env.npm_package_version ?? "0.0.1",
   };
   try {
     mkdirSync(root, { recursive: true });
     writeFileSync(file, JSON.stringify(body, null, 2));
-  } catch {
-    /** Best-effort; the returned id still keys the index this session. */
-  }
+  } catch {}
   return body.id;
 }
 

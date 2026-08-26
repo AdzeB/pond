@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import type { SyncActionEvent } from "@/lib/save/reconcile";
 import { notify } from "@/lib/ui/toast";
 
-/** Actor reasons stamped by the browser extension's per-source capture injectors. */
 const EXTENSION_CAPTURE_RE =
   /^(twitter|instagram|pinterest|arena|cosmos|tiktok|youtube|reddit|threads):/;
 

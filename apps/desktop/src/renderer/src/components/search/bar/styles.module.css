@@ -1,4 +1,3 @@
-/* Sits in the dock pill surface: no nested card or inset well. */
 .wrap {
   display: flex;
   flex-direction: column;
@@ -24,7 +23,6 @@
   min-width: 0;
 }
 
-/* Single-line query: long input scrolls horizontally behind a hidden scrollbar instead of wrapping. */
 .input {
   display: block;
   width: 100%;

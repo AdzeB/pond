@@ -1,6 +1,5 @@
 import { tabs } from "@/stores/tabs";
 
-/** Meta/ctrl opens a background tab; otherwise runs the in-tab fallback. */
 export function openInNewTabIfMeta(
   e: React.MouseEvent | MouseEvent,
   path: string,

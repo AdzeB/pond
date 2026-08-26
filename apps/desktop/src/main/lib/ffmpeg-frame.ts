@@ -22,7 +22,6 @@ export async function extractFirstFrame(
   );
 }
 
-/** `-ss` after `-i` so the grab matches the player's currentTime, not the prior keyframe. */
 export async function extractFrameAt(
   videoPath: string,
   timeSec: number,
@@ -148,9 +147,7 @@ function runWithTimeout(
       settled = true;
       try {
         child.kill("SIGKILL");
-      } catch {
-        /* already exited */
-      }
+      } catch {}
       resolve({ code: 124, stderr: `${stderr}\n[pond ffmpeg-frame] timeout` });
     }, timeoutMs);
 

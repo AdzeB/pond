@@ -94,7 +94,6 @@ export function useCardActions(
         selection.setRange(filteredIds, anchor, id);
         return;
       }
-      /** Read live size so this callback identity stays stable across multi-select enter/exit. */
       if (selection.size() > 0) selection.clear();
       selection.setAnchor(id);
       openSave(id);
@@ -108,7 +107,6 @@ export function useCardActions(
     selection.clear();
   }, [mode, sourceFilter]);
 
-  /** Paste files, images, or links into the library when focus isn't in an editable field. */
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
       const el = document.activeElement as HTMLElement | null;

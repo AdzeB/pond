@@ -54,6 +54,7 @@ function AvatarInner({
           alt=""
           className={styles.image}
           draggable={false}
+          decoding="sync"
           referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
         />

@@ -2,7 +2,6 @@ import type { MenuItemSpec } from "@pond/ui";
 import type { CardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/hooks/use-accounts";
 
-/** Maintenance actions shared by the dock account "More" dropdown and the source tile right-click menu. */
 export function buildAccountMenu(
   account: AccountRow,
   model: CardModel,

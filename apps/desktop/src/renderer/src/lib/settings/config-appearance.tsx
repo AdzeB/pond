@@ -7,8 +7,7 @@ import {
 } from "@/components/settings/sections/appearance";
 import { AppIconRow } from "@/components/settings/sections/appearance/app-icon";
 import { defineCustomSection, group } from "@/lib/settings/engine-types";
-import { SOUND_FEEL_OPTIONS } from "@/lib/ui/sound-feel-options";
-import { previewSoundFeel } from "@/lib/ui/sounds";
+import { previewUiSound } from "@/lib/ui/sounds";
 
 export const appearanceSection = defineCustomSection({
   title: "Appearance",
@@ -165,30 +164,7 @@ export const appearanceSection = defineCustomSection({
           description: "Play feedback for clicks and toggles.",
           keywords: ["audio", "click", "feedback", "sfx", "mute", "silence"],
           apply: () => {
-            previewSoundFeel();
-          },
-        },
-        {
-          control: "select",
-          key: "soundFeel",
-          title: "Sound Style",
-          description: "Character of clicks and toggles.",
-          keywords: [
-            "soft",
-            "crisp",
-            "thock",
-            "glass",
-            "metal",
-            "lofi",
-            "retro",
-            "organic",
-            "airy",
-            "punchy",
-          ],
-          options: [...SOUND_FEEL_OPTIONS],
-          visible: (v) => v.soundsEnabled !== false,
-          apply: () => {
-            previewSoundFeel();
+            previewUiSound();
           },
         },
       ],

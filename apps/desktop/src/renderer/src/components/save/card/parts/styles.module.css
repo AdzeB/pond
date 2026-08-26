@@ -51,7 +51,6 @@
   border-color: color-mix(in srgb, var(--ds-accent-9), transparent 50%);
 }
 
-/* Keyboard cursor: dimmer than a real selection so arrows have a visible landing spot. */
 .item[data-cursor] .media::before {
   border-color: color-mix(in srgb, var(--ds-accent-9), transparent 60%);
 }
@@ -245,6 +244,5 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Decorative badges only; hover/scrub events must reach the thumb beneath. */
   pointer-events: none;
 }

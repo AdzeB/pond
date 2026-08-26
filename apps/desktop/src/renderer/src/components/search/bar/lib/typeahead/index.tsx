@@ -16,6 +16,7 @@ import { motion } from "motion/react";
 import {
   type MouseEvent as ReactMouseEvent,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -51,7 +52,6 @@ interface TypeaheadFacets {
   accounts: ReadonlyArray<{ value: string; label: string }>;
 }
 
-/** Free-form fields return null so the caret keeps plain text. */
 function valueSuggestionsFor(
   field: FieldId,
   facets: TypeaheadFacets,
@@ -97,7 +97,6 @@ type MenuItem =
       token: string;
     };
 
-/** Suggests field keys while typing the key, concrete values once a `key:` prefix is present. */
 function buildMenu(
   raw: string,
   facets: TypeaheadFacets,
@@ -166,7 +165,6 @@ class FilterOption extends MenuOption {
   }
 }
 
-/** Only fires on a run that starts with a letter or its negation, so ordinary words don't pop the menu. */
 function triggerFn(text: string): MenuTextMatch | null {
   const match = /(?:^|\s)(-?[A-Za-z][^\s]*)$/.exec(text);
   if (!match) return null;
@@ -213,7 +211,6 @@ export function FilterTypeahead({
     (option: FilterOption, node: TextNode | null, close: () => void) => {
       const item = option.item;
       if (item.kind === "field") {
-        /** Drop the `key:` and reopen for value suggestions rather than closing. */
         editor.update(() => {
           if (node) {
             node.setTextContent(item.token);
@@ -222,7 +219,6 @@ export function FilterTypeahead({
         });
         return;
       }
-      /** Inserted as plain text; the token entity plugin wraps it into an editable highlighted token on the next transform. */
       editor.update(() => {
         if (!node) return;
         const replacement = $createTextNode(`${item.token} `);
@@ -258,7 +254,6 @@ export function FilterTypeahead({
   );
 }
 
-/** Portaled into the dock shell; sits above the tray pill like the ask bar popover. */
 function MenuPanel({
   menu,
   options,
@@ -272,28 +267,36 @@ function MenuPanel({
   selectOptionAndCleanUp: (option: FilterOption) => void;
   setHighlightedIndex: (index: number) => void;
 }) {
+  const { setPopoverOpen } = useDock();
   const scrollFade = useScrollFade<HTMLDivElement>();
+  useEffect(() => {
+    setPopoverOpen(true);
+    return () => setPopoverOpen(false);
+  }, [setPopoverOpen]);
   return (
     <motion.div
       className={styles.anchor}
       initial={{ opacity: 0, y: 6, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={bouncySpring}
+      onPointerDown={(event) => event.stopPropagation()}
     >
-      <Menu.Surface className={styles.menu} {...scrollFade}>
+      <Menu.Surface className={styles.menu}>
         <Menu.SectionLabel>{menu.title}</Menu.SectionLabel>
-        {menu.items.map((item, index) => {
-          const option = options[index];
-          return (
-            <MenuRow
-              key={item.key}
-              item={item}
-              active={selectedIndex === index}
-              onHover={() => setHighlightedIndex(index)}
-              onSelect={() => option && selectOptionAndCleanUp(option)}
-            />
-          );
-        })}
+        <div className={styles.list} {...scrollFade}>
+          {menu.items.map((item, index) => {
+            const option = options[index];
+            return (
+              <MenuRow
+                key={item.key}
+                item={item}
+                active={selectedIndex === index}
+                onHover={() => setHighlightedIndex(index)}
+                onSelect={() => option && selectOptionAndCleanUp(option)}
+              />
+            );
+          })}
+        </div>
       </Menu.Surface>
     </motion.div>
   );
@@ -313,7 +316,10 @@ function MenuRow({
   return (
     <Menu.Row
       highlighted={active}
-      onMouseDown={(e: ReactMouseEvent) => e.preventDefault()}
+      onMouseDown={(e: ReactMouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       onMouseEnter={onHover}
       onClick={onSelect}
     >

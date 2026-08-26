@@ -17,10 +17,8 @@ function titleFor(id: string): string | null {
   return save.url || "Untitled";
 }
 
-/** Mirrors recently-visited saves into the native History menu; choosing an entry comes back over `onMenuOpenSave` and opens the save like a card click. */
 export function MenuRecentsBridge(): null {
   const recents = useRecents();
-  /** Saves hydrate lazily; revision wakes when pool rows change without cloning the Map. */
   const revision = useSelector(savesStore, (s) => s.revision);
 
   const entries = useMemo<RecentMenuEntry[]>(() => {

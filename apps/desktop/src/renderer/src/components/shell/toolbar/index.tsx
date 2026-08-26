@@ -41,7 +41,6 @@ import { RecentPanel } from "./recent";
 import styles from "./styles.module.css";
 import { OngoingPanel } from "./sync";
 
-/** Linear-style sibling slides; idle:false skips open/close layout motion. */
 const SORT_TRANSITION = {
   duration: 120,
   easing: "linear",
@@ -217,7 +216,6 @@ const TabItem = memo(function TabItem({
     tabs.close(tab.id);
   }, [onBeginRapidClose, tab.id]);
 
-  /** Activate on click so a drag-to-reorder does not also switch tabs mid-gesture. */
   const onClick = useCallback(() => {
     if (!isActive) tabs.activate(tab.id);
   }, [isActive, tab.id]);
@@ -371,7 +369,6 @@ export function Toolbar() {
     setFrozenWidths({});
   }, []);
 
-  /** Persist order when the gesture ends; dnd-kit handles optimistic motion mid-drag. */
   const onDragEnd = useCallback(
     (event: DragEndEvent) => {
       if (event.canceled || !event.operation.source) return;

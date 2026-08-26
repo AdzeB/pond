@@ -1,8 +1,8 @@
 import type { SaveFile } from "@pond/schema/db";
 import type { CaptureMedia, RawJson } from "@pond/schema/raw";
+import { QUOTE_DEPTH_CAP } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
-import type { ScrapedHarvest } from "../../refresh/harvest/types";
 import {
   screenshotThreadsDual,
   screenshotTweetDual,
@@ -16,37 +16,24 @@ import {
 import { readSave } from "./apply";
 import { inlineCaptureAvatars } from "./inline-card-avatars";
 
-/** Distinct kind so the renderer shows the screenshot as thumbnail, keeping media in the carousel. */
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
 
-/** Suffixed with 1-based quote depth; renderer matches by prefix. */
 function quoteScreenshotKind(depth: number, scheme: "light" | "dark"): string {
   return `tweet_screenshot_quote${depth}_${scheme}`;
 }
 
-/** Bump when capture output changes so stale screenshots are regenerated. */
-const CAPTURE_TWEET_VERSION = 10;
-
-/** Quote-chain walk depth cap; keeps navigation bounded. */
-const QUOTE_DEPTH_CAP = 3;
+const CAPTURE_TWEET_VERSION = 12;
 
 interface CaptureTweetResult {
-  /** Number of screenshot variants written this run. */
   captured: number;
-  /** At least one variant hit X's auth wall; lets the caller bail or retry. */
   authWall: boolean;
-  /** Quoted media merged into `capture.media`; a follow-up fetch_blobs picks it up. */
   mediaAdded: boolean;
 }
 
-/** Capture version the save was last processed at; absent reads as 0. */
 function readCaptureTweetVersion(rawJson: unknown): number {
   if (!rawJson || typeof rawJson !== "object") return 0;
-  const extras = (rawJson as RawJson).capture?.extras as
-    | Record<string, unknown>
-    | undefined;
-  const v = extras?.captureTweetVersion;
+  const v = (rawJson as RawJson).captureTweetVersion;
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
@@ -54,7 +41,6 @@ export function isCaptureTweetStale(rawJson: unknown): boolean {
   return readCaptureTweetVersion(rawJson) < CAPTURE_TWEET_VERSION;
 }
 
-/** Idempotent via `CAPTURE_TWEET_VERSION`; returns silently on any failure so a screenshot miss never fails the save. */
 export async function runCaptureTweet(
   saveId: string,
   opts?: { nativeOnly?: boolean },
@@ -74,7 +60,6 @@ export async function runCaptureTweet(
     return idle;
   }
 
-  /** Preferred path: rasterize the native TweetCard — deterministic, offline, and embeds quotes inline; falls through to live screenshots when captured data or rendering is missing. */
   const rendered = await tryNativeRender(saveId, save);
   if (rendered) {
     await finalizeRawJson(saveId, save.rawJson, [], { stampVersion: true });
@@ -92,9 +77,8 @@ export async function runCaptureTweet(
 
   let captured = 0;
   let authWall = false;
-  const harvested: NonNullable<ScrapedHarvest["mediaUrls"]> = [];
+  const harvested: CaptureMedia[] = [];
 
-  /** Replace existing files so a version bump regenerates them. */
   const main = await captureVariants(saveId, {
     url: save.url,
     sourceId: save.sourceId,
@@ -108,14 +92,12 @@ export async function runCaptureTweet(
   captured += main.captured;
   if (main.authWall) authWall = true;
 
-  /** Session dead: bail before walking the chain, leave unstamped to retry. */
   if (main.authWall && main.captured === 0) {
     return { captured, authWall: true, mediaAdded: false };
   }
 
-  /** Only stamp once both variants exist; a single-variant capture stays unstamped to retry. */
   let completed = main.complete;
-  let nextUrl = main.quotedUrl ?? quotedUrlFromExtras(save.rawJson);
+  let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(save.rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
     const quotedId =
       save.source === "threads"
@@ -139,12 +121,10 @@ export async function runCaptureTweet(
       completed = false;
       break;
     }
-    /** A one-scheme quote capture keeps the save unstamped to retry. */
     if (!quote.complete) completed = false;
     nextUrl = quote.quotedUrl;
   }
 
-  /** Merge quoted media and stamp the version in one write; only stamp if the walk completed. */
   const mediaAdded = await finalizeRawJson(saveId, save.rawJson, harvested, {
     stampVersion: completed,
   });
@@ -158,7 +138,6 @@ export async function runCaptureTweet(
   return { captured, authWall, mediaAdded };
 }
 
-/** Returns true only when both schemes succeed; any miss falls back to x.com. */
 async function tryNativeRender(
   saveId: string,
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
@@ -257,14 +236,12 @@ interface CaptureVariantsArgs {
 
 interface CaptureVariantsResult {
   captured: number;
-  /** Both variants written this run; drives the version stamp. */
   complete: boolean;
   authWall: boolean;
   quotedUrl?: string;
-  media?: ScrapedHarvest["mediaUrls"];
+  media?: CaptureMedia[];
 }
 
-/** Both schemes come from a single navigation; returns the quoted-tweet URL for chain walking. */
 async function captureVariants(
   saveId: string,
   args: CaptureVariantsArgs,
@@ -344,11 +321,10 @@ async function writeScreenshot(
   );
 }
 
-/** Appends deduped quoted media and/or stamps the version in one write; returns whether media was added. */
 async function finalizeRawJson(
   saveId: string,
   rawJsonRaw: unknown,
-  harvested: NonNullable<ScrapedHarvest["mediaUrls"]>,
+  harvested: CaptureMedia[],
   opts: { stampVersion: boolean },
 ): Promise<boolean> {
   if (!rawJsonRaw || typeof rawJsonRaw !== "object") return false;
@@ -361,12 +337,7 @@ async function finalizeRawJson(
   for (const m of harvested) {
     if (!m.url || seen.has(m.url)) continue;
     seen.add(m.url);
-    const entry: CaptureMedia = {
-      url: m.url,
-      type: m.type === "video" ? "video" : "image",
-      ...(m.poster ? { posterUrl: m.poster } : {}),
-    };
-    existing.push(entry);
+    existing.push(m);
     mediaAdded = true;
   }
   if (mediaAdded) rawJson.capture.media = existing;
@@ -375,9 +346,7 @@ async function finalizeRawJson(
     readCaptureTweetVersion(rawJson) >= CAPTURE_TWEET_VERSION;
   const willStamp = opts.stampVersion && !alreadyStamped;
   if (willStamp) {
-    const extras = (rawJson.capture.extras ?? {}) as Record<string, unknown>;
-    extras.captureTweetVersion = CAPTURE_TWEET_VERSION;
-    rawJson.capture.extras = extras;
+    rawJson.captureTweetVersion = CAPTURE_TWEET_VERSION;
   }
 
   if (!mediaAdded && !willStamp) return mediaAdded;
@@ -413,17 +382,8 @@ function parsePostCode(url: string): string | null {
   }
 }
 
-function quotedUrlFromExtras(rawJson: unknown): string | undefined {
+function quotedUrlFromCapture(rawJson: unknown): string | undefined {
   if (!rawJson || typeof rawJson !== "object") return undefined;
-  const extras = (rawJson as RawJson).capture?.extras as
-    | Record<string, unknown>
-    | undefined;
-  const rich = extras?.quotedTweet as { url?: unknown } | undefined;
-  if (typeof rich?.url === "string" && rich.url.length > 0) return rich.url;
-  const list = extras?.quotedTweets;
-  if (Array.isArray(list) && list[0] && typeof list[0] === "object") {
-    const url = (list[0] as { url?: unknown }).url;
-    if (typeof url === "string" && url.length > 0) return url;
-  }
-  return undefined;
+  const url = (rawJson as RawJson).capture?.quoted?.url;
+  return typeof url === "string" && url.length > 0 ? url : undefined;
 }

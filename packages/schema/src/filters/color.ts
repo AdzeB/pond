@@ -11,7 +11,6 @@ export function parseHex(hex: string): Rgb | null {
   return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
 }
 
-/** Tolerance for squared Euclidean distance in RGB; 60 is a moderate match. */
 export const DEFAULT_COLOR_TOLERANCE = 60;
 
 export function colorNear(
@@ -33,7 +32,6 @@ export function colorNear(
   return false;
 }
 
-/** Named swatches for the filter UI. */
 export const COLOR_PRESETS: ReadonlyArray<{ label: string; hex: string }> = [
   { label: "Red", hex: "#e5484d" },
   { label: "Orange", hex: "#f76b15" },

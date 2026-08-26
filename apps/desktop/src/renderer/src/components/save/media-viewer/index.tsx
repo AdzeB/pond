@@ -22,7 +22,6 @@ import styles from "./styles.module.css";
 
 interface MediaViewerProps {
   save: Save;
-  /** Fires whenever the centred slide changes so detail actions can target it. */
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
 }
 
@@ -98,7 +97,6 @@ export function MediaViewer({
     return null;
   }
 
-  /** A single media item renders directly so there is no scroller, snapping, or coverflow scaling to settle. */
   if (slides.length === 1) {
     const only = slides[0];
     if (!only) return null;
@@ -130,12 +128,10 @@ export function MediaViewer({
   );
 }
 
-/** The right-click menu lives one level up on the save page, covering media and chrome alike. */
 function Frame({
   activeIndex = 0,
   children,
 }: {
-  /** Index of the slide the frame shortcuts act on. */
   activeIndex?: number;
   children: React.ReactNode;
 }) {
@@ -147,7 +143,6 @@ function Frame({
     return video?.videoWidth ? video : null;
   };
 
-  /** preventDefault only when a live video is under the keys, so Shift+C/S stay inert on image slides. */
   useHotkey(
     SHORTCUTS["viewer.copy-frame"].keys!,
     (event) => {
@@ -259,7 +254,6 @@ function Carousel({
             key={s.src}
             slide={s}
             active={i === active}
-            /** The live player mounts only near the centre; neighbours stay posters. */
             inView={Math.abs(i - active) <= 1}
             title={save.title}
             artist={save.author}

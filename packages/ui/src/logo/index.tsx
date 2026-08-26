@@ -5,10 +5,6 @@ export interface LogoProps extends Omit<SVGProps<SVGSVGElement>, "children"> {
   size?: number | string;
 }
 
-/**
- * Pond app mark.
- * @see packages/icons/brand/icon.svg
- */
 export function Logo({ size = 18, className, ...props }: LogoProps) {
   return (
     <svg

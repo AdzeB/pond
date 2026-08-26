@@ -1,9 +1,5 @@
 import type { DisplayPrefs } from "@/stores/display-prefs";
 
-/**
- * Mirrors the card CSS: `.item` has a 12px gap above the meta block, each meta line is ~14px tall, and `.meta` has a 4px inner gap.
- * @remarks Packers need the total chrome height below the media so row/column advances match what the DOM actually consumes.
- */
 const META_GAP_ABOVE = 12;
 const META_LINE_H = 14;
 const META_INNER_GAP = 4;

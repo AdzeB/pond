@@ -1,7 +1,13 @@
 /// <reference lib="dom" />
 
+import type { Capture } from "@pond/schema/raw";
+import {
+  captureFromTweetShaped,
+  draftFromDomHarvest,
+} from "../../../capture/tweet-shaped";
+import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import type { ScrapedHarvest } from "../types";
+import { bindSourceId } from "../source-id";
 import {
   inPageThreadsNormalize,
   isThreadsLandingCopy,
@@ -37,9 +43,7 @@ async function inPageThreadsHarvest(
       const node = json?.items?.[0] ?? null;
       if (node) return norm.normalizeMediaNode(node);
     }
-  } catch {
-    /** Fall through to the DOM scrape. */
-  }
+  } catch {}
 
   const articleDeadline = Date.now() + 12_000;
   let card: Element | null = null;
@@ -201,7 +205,7 @@ function dropLanding<T extends { url?: string }>(
   return kept.length > 0 ? kept : undefined;
 }
 
-export function adapt(raw: unknown): ScrapedHarvest | null {
+export function adapt(raw: unknown, ctx: HarvestAdaptCtx): Capture | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   const title =
@@ -214,7 +218,7 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
       : undefined;
   const mediaUrls = dropLanding(
     Array.isArray(o.mediaUrls)
-      ? (o.mediaUrls as NonNullable<ScrapedHarvest["mediaUrls"]>)
+      ? (o.mediaUrls as Array<{ url?: string; type?: string; poster?: string }>)
       : undefined,
   );
   const mediaUrl =
@@ -233,31 +237,23 @@ export function adapt(raw: unknown): ScrapedHarvest | null {
     if (media) metaObj.media = media;
     else delete metaObj.media;
   }
-  return {
-    title,
-    description,
-    author: typeof o.author === "string" ? o.author : undefined,
-    lang:
-      typeof metaObj?.lang === "string" ? (metaObj.lang as string) : undefined,
-    mediaUrl,
-    mediaUrls,
-    mediaType:
-      typeof o.mediaType === "string"
-        ? (o.mediaType as ScrapedHarvest["mediaType"])
-        : undefined,
-    meta: metaObj,
-  };
+  const page = parsePageBlob({
+    ...o,
+    ...(title ? { title } : { title: undefined }),
+    ...(description ? { description } : { description: undefined }),
+    ...(mediaUrl ? { mediaUrl } : {}),
+    ...(mediaUrls ? { mediaUrls } : {}),
+    ...(metaObj ? { meta: metaObj } : {}),
+  });
+  if (!page) return null;
+  return captureFromTweetShaped(
+    draftFromDomHarvest({
+      source: "threads",
+      id: ctx.sourceId,
+      url: ctx.url,
+      ...page,
+    }),
+  );
 }
 
-export function sourceIdFromUrl(rawUrl: string): string | null {
-  try {
-    const u = new URL(rawUrl);
-    return (
-      u.pathname.match(/\/post\/([A-Za-z0-9_-]+)/)?.[1] ??
-      u.pathname.match(/\/t\/([A-Za-z0-9_-]+)/)?.[1] ??
-      null
-    );
-  } catch {
-    return null;
-  }
-}
+export const sourceIdFromUrl = bindSourceId("threads");

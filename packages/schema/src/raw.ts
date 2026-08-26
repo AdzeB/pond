@@ -71,7 +71,6 @@ export interface RawYtdlp {
   n_entries?: number;
 }
 
-/** v1 capture schema; mirrors the main-process `Capture` so the renderer can read it. */
 export interface CaptureAuthor {
   name?: string;
   handle?: string;
@@ -90,7 +89,6 @@ export interface CaptureMedia {
   mimeType?: string;
 }
 
-/** Superset of public per-item metrics; each extractor fills the subset its source exposes. */
 export interface CaptureMetrics {
   likes?: number;
   views?: number;
@@ -113,6 +111,17 @@ export interface CaptureUpstream {
   host: string;
 }
 
+export interface CaptureLinkCard {
+  url?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  large?: boolean;
+}
+
+export const QUOTE_DEPTH_CAP = 3;
+
 export interface Capture {
   id: string;
   source: Source;
@@ -126,6 +135,11 @@ export interface Capture {
   metrics?: CaptureMetrics;
   duration?: number;
   upstream?: CaptureUpstream;
+  quoted?: Capture;
+  card?: CaptureLinkCard;
+  isReply?: boolean;
+  replyingTo?: string;
+  conversationId?: string;
   extras?: Record<string, unknown>;
 }
 
@@ -134,4 +148,24 @@ export interface RawJson {
   extractorId: string;
   extractedAt: string;
   ytdlp?: RawYtdlp;
+  captureTweetVersion?: number;
+  renderTextCoverVersion?: number;
+}
+
+export function walkCaptureMedia(
+  capture: Capture | undefined | null,
+): CaptureMedia[] {
+  if (!capture) return [];
+  const out: CaptureMedia[] = [];
+  const seen = new Set<string>();
+  let current: Capture | undefined = capture;
+  for (let depth = 0; current && depth <= QUOTE_DEPTH_CAP; depth += 1) {
+    for (const m of current.media ?? []) {
+      if (seen.has(m.url)) continue;
+      seen.add(m.url);
+      out.push(m);
+    }
+    current = current.quoted;
+  }
+  return out;
 }

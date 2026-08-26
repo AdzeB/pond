@@ -6,6 +6,7 @@ import {
   DEFAULT_LIGHT_PRESET_ID,
   DEFAULT_LIGHT_THEME,
   DEFAULT_SOURCE_METRICS,
+  DEFAULT_SYNC_CRON,
   type SourceMetricDisplay,
   type SyncAccounts,
   type SyncHandles,
@@ -17,21 +18,6 @@ import {
 import { getPreset, migrateThemeDef, presetDef } from "./theme-presets";
 
 export * from "./prefs.types";
-
-const soundFeel = z
-  .enum([
-    "soft",
-    "crisp",
-    "thock",
-    "glass",
-    "metal",
-    "lofi",
-    "retro",
-    "organic",
-    "airy",
-    "punchy",
-  ])
-  .catch("soft");
 
 const lightThemeDefSchema = z
   .object({
@@ -51,7 +37,6 @@ const darkThemeDefSchema = z
   })
   .catch(DEFAULT_DARK_THEME);
 
-/** Lift themeMode/presetId/custom into appearance + light/dark sides. */
 function migratePreferencesTheme(
   raw: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -145,7 +130,7 @@ const preferences = z.preprocess(
     if (!raw || typeof raw !== "object") return raw;
     let prefs = raw as Record<string, unknown>;
     if (prefs.soundFeel === "off") {
-      prefs = { ...prefs, soundFeel: "soft", soundsEnabled: false };
+      prefs = { ...prefs, soundsEnabled: false };
     }
     return migratePreferencesTheme(prefs);
   },
@@ -159,10 +144,8 @@ const preferences = z.preprocess(
     dark: darkThemeDefSchema.catch(DEFAULT_DARK_THEME),
     pointerCursors: z.boolean().catch(false),
     reduceMotion: z.enum(["system", "always", "never"]).catch("system"),
-    /** "media" prefers attached media; "screenshot" always renders the card. */
     tweetCover: z.enum(["media", "screenshot"]).catch("media"),
     soundsEnabled: z.boolean().catch(true),
-    soundFeel,
   }),
 );
 
@@ -176,11 +159,9 @@ const windowSlice = z.object({
   launchHidden: z.boolean().catch(false),
   restorePosition: z.boolean().catch(true),
   bounds: z.custom<WindowBounds | null>().default(null),
-  /** "continue" restores the last route; the others jump to a fixed page. */
   startupPage: z
     .enum(["continue", "library", "sources", "trash", "settings"])
     .catch("continue"),
-  /** Crayon folder name under packages/icons/brand/tints; missing files fall back to aqua. */
   appIcon: z.string().min(1).catch(DEFAULT_APP_ICON),
 });
 
@@ -206,7 +187,6 @@ const allTags = z.object({
   sort: z.enum(["name", "count", "recent"]).catch("name"),
 });
 
-/** `metrics` is the ordered list of pinned metric ids; `days` is the rolling window the KPIs summarize. */
 const sourcesView = z.object({
   metrics: z.custom<string[]>().default(DEFAULT_SOURCE_METRICS),
   metricDisplay: z.custom<Record<string, SourceMetricDisplay>>().default({}),
@@ -224,20 +204,17 @@ const updates = z.object({
 });
 
 const sync = z.object({
-  /** Connected accounts keyed by account id; several may share one source. */
   accounts: z.custom<SyncAccounts>().default({}),
-  /** Watched public accounts keyed by watch id. */
   watches: z.custom<SyncWatches>().default({}),
   /** @deprecated Drained into `accounts` by the one-time migration and kept empty afterwards. */
   sources: z.custom<SyncSources>().default({}),
   handles: z.custom<SyncHandles>().default({}),
-  /** Background sync scheduler; defers to the rate governor. */
   cron: z
     .object({
       enabled: z.boolean().catch(true),
-      intervalHours: z.number().min(1).catch(6),
+      intervalHours: z.number().min(1).catch(DEFAULT_SYNC_CRON.intervalHours),
     })
-    .catch({ enabled: true, intervalHours: 6 }),
+    .catch({ ...DEFAULT_SYNC_CRON }),
 });
 
 const storage = z.object({
@@ -248,26 +225,17 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
-/**
- * Ask and enrichments always run on-device; embeddings use Transformers.js in the renderer.
- */
 const ai = z.object({
-  /** Natural-language -> structured-query compiler LLM stage. */
   nlCompiler: z.boolean().catch(false),
-  /** On-device embeddings plus semantic ranking of free-text search. */
   semanticSearch: z.boolean().catch(false),
-  /** Transformers.js feature-extraction model for embeddings. */
   embedModelId: z.string().catch("Xenova/all-MiniLM-L6-v2"),
-  /** Heavy enrichers (caption/OCR, transcript, CLIP) default off given download size; all run locally via Transformers.js. */
   enableCaption: z.boolean().catch(false),
   enableOcr: z.boolean().catch(false),
   enableTranscript: z.boolean().catch(false),
   enableClip: z.boolean().catch(false),
   enableAesthetic: z.boolean().catch(false),
-  /** Non-destructive text enrichers that only suggest; cheap but opt-in. */
   enableAutoTitle: z.boolean().catch(false),
   enableSuggestedTags: z.boolean().catch(false),
-  /** Optional model-id overrides for the heavy enrichers; empty means default. */
   captionModelId: z.string().catch(""),
   clipModelId: z.string().catch(""),
   whisperModelId: z.string().catch(""),
@@ -280,12 +248,10 @@ const recentSaveVisit = z.object({
 
 export type RecentSaveVisit = z.infer<typeof recentSaveVisit>;
 
-/** Feeds the native History menu; save ids are pond-specific, so this is pond-scoped too. */
 const saveRecents = z.object({
   entries: z.array(recentSaveVisit).catch([]),
 });
 
-/** Each slice catches to its own defaults so a corrupt slice resets in isolation. */
 const PrefsObject = z.object({
   preferences: preferences.catch(preferences.parse({})),
   trash: trash.catch(trash.parse({})),
@@ -306,7 +272,6 @@ export type Prefs = z.infer<typeof PrefsObject>;
 
 export const DEFAULT_PREFS: Prefs = PrefsObject.parse({});
 
-/** Top-level catch keeps parsing non-throwing for wholly corrupt input. */
 export const PrefsSchema = PrefsObject.catch(DEFAULT_PREFS);
 
 export type PrefsParsed = z.infer<typeof PrefsSchema>;

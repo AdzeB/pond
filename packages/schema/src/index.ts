@@ -4,6 +4,7 @@ export * from "./domain";
 export * from "./events";
 export * from "./ingest";
 export * from "./media-type";
+export * from "./native";
 export * from "./query-plan";
 export * from "./raw";
 export * from "./session";

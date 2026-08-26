@@ -20,7 +20,6 @@ import {
 import type { QueryHandlerMap } from "../helpers";
 
 export const libraryLocationQueries: QueryHandlerMap = {
-  /** Creates a fresh .pond bundle at `parentDir/name.pond`, writes the pointer, and resolves paths. */
   async "library.createAt"(params) {
     return createPondBundle(
       String(params.path ?? ""),
@@ -28,7 +27,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     );
   },
 
-  /** Opens a native folder picker for choosing where to store the pond. */
   async "library.pickFolder"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -46,7 +44,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     return { ok: true as const, path: result.filePaths[0] };
   },
 
-  /** Picks an existing `.pond` bundle to open; pair with `library.switchTo`. */
   async "library.pickExisting"() {
     const win = BrowserWindow.getFocusedWindow() ?? undefined;
     const dialogOpts = {
@@ -65,7 +62,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     return { ok: true as const, path: dest };
   },
 
-  /** Opens an existing library (no copy): write pointer, relaunch. */
   async "library.switchTo"(params) {
     const dest = String(params.path ?? "").trim();
     if (!dest) return { ok: false as const, reason: "no_path" as const };
@@ -74,7 +70,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     const pointerNorm = readLibraryPointer()?.replace(/\/+$/, "") ?? "";
     const cachedNorm = libraryRootDir().replace(/\/+$/, "");
 
-    /** A prior switch can update the pointer on disk while the main process still holds the old library in its path cache; reconcile before deciding this is a no-op. */
     if (pointerNorm && pointerNorm !== cachedNorm) {
       invalidatePaths();
     }
@@ -99,7 +94,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     }
   },
 
-  /** Copies the active library to a new path, switches the pointer, and relaunches. Leaves the source intact. */
   async "library.move"(params) {
     const src = libraryRootDir().replace(/\/+$/, "");
     if (!src || !existsSync(src)) {
@@ -159,7 +153,6 @@ export const libraryLocationQueries: QueryHandlerMap = {
     }
   },
 
-  /** Copies the active `.pond` bundle to a user-chosen path without switching libraries. */
   async "library.backupTo"() {
     const src = libraryRootDir().replace(/\/+$/, "");
     if (!src || !existsSync(src)) {
@@ -233,13 +226,11 @@ export const libraryLocationQueries: QueryHandlerMap = {
   },
 };
 
-/** Normalizes to exactly one `.pond` suffix. */
 function ensurePondSuffix(path: string): string {
   const trimmed = path.replace(/\/+$/, "");
   return trimmed.endsWith(".pond") ? trimmed : `${trimmed}.pond`;
 }
 
-/** Defers relaunch so the IPC response lands first; dev soft-repoints in place because app.exit would kill the renderer dev server. */
 function relaunchSoon(): void {
   if (process.env.ELECTRON_RENDERER_URL) {
     setTimeout(() => {
@@ -277,7 +268,6 @@ async function softRepointInDev(): Promise<void> {
   } catch (err) {
     log.warn("[pond library-ops] tags.json hydrate failed", err);
   }
-  /** Prod covers this at relaunch; the dev soft re-point never restarts, so fold the target library's legacy sync prefs into accounts here. */
   try {
     await migrateLegacySyncPrefs();
   } catch (err) {

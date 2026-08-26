@@ -1,4 +1,4 @@
-import { fetchPinterestCapture } from "../../../refresh/harvest/pinterest/api";
+import { captureFromSource } from "../../../refresh/harvest/capture";
 import { TerminalError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { firstMatch, PINTEREST_PATTERNS } from "../url-patterns";
@@ -8,7 +8,6 @@ export class PinterestPinExtractor implements Extractor {
   readonly source = "pinterest" as const;
   readonly validUrl = PINTEREST_PATTERNS;
   readonly cookieDomain = ".pinterest.com";
-  /** The __PWS_DATA__ state blob carries the signed-in user; the header profile link is the markup fallback. */
   readonly probeExpression = `(() => {
         try {
           const pws = document.getElementById('__PWS_DATA__');
@@ -53,9 +52,10 @@ export class PinterestPinExtractor implements Extractor {
     const pinId = match?.[1] ?? null;
     if (!pinId) throw new TerminalError("could not parse pinterest id");
 
-    const result = await fetchPinterestCapture({ sourceId: pinId });
-    if (!result.ok)
-      throw new TerminalError(`pinterest relay: ${result.reason}`);
-    return result.capture;
+    return captureFromSource({
+      url: input.url.href,
+      source: "pinterest",
+      sourceId: pinId,
+    });
   }
 }

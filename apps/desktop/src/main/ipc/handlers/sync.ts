@@ -14,7 +14,7 @@ import {
   syncAllSources,
 } from "../../core/sync";
 import { getWatch, getWatchSync } from "../../core/sync/watches";
-import { watchAll, watchNow } from "../../core/watch/run";
+import { watchNow } from "../../core/watch/run";
 import { safeHandle } from "../helpers";
 
 export function registerSyncHandlers(): void {
@@ -25,12 +25,10 @@ export function registerSyncHandlers(): void {
       if (isSyncing(id)) {
         return { ok: false as const, reason: "already_running" as const };
       }
-      /** Watch ids share this entry point because the renderer treats watches as accounts; route them to the watch engine. */
       if (await getWatch(id)) {
         void watchNow(id, { trigger: "manual" });
         return { ok: true as const };
       }
-      /** forceFull is the "Full re-sync" escape hatch: ignore the incremental watermark and walk the whole remote list. */
       void syncAccount(id, {
         trigger: "manual",
         forceFull: opts?.forceFull ?? false,
@@ -53,14 +51,10 @@ export function registerSyncHandlers(): void {
   });
 
   safeHandle(IPC.syncRunAll, async (_, opts?: { forceFull?: boolean }) => {
-    /** Same sequence as the sync cron: connected accounts first, then watched public accounts. */
-    void (async () => {
-      await syncAllSources({
-        trigger: "manual",
-        forceFull: opts?.forceFull ?? false,
-      });
-      await watchAll({ trigger: "manual" });
-    })();
+    void syncAllSources({
+      trigger: "manual",
+      forceFull: opts?.forceFull ?? false,
+    });
     return { ok: true as const };
   });
 

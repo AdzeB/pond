@@ -26,6 +26,11 @@ export function inPageTwitterNormalize() {
     return url;
   }
 
+  function httpMediaUrl(url: string | undefined): string | undefined {
+    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return undefined;
+    return upgradeTwimgUrl(url);
+  }
+
   function parseMetric(label: string | null | undefined): number | undefined {
     if (!label) return undefined;
     const m = label.match(/([\d.,]+)\s*([KMB]?)/i);
@@ -67,6 +72,7 @@ export function inPageTwitterNormalize() {
   return {
     pickLargestSrcset,
     upgradeTwimgUrl,
+    httpMediaUrl,
     parseMetric,
     metricFromTestid,
     readDuration,

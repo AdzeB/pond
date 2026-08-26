@@ -12,7 +12,6 @@ function stackOf(error: unknown): string | undefined {
   return error instanceof Error ? error.stack : undefined;
 }
 
-/** Keeps the full stack one click away so crashes stay diagnosable instead of vanishing behind a generic page. */
 export function ErrorScreen({
   error,
   reset,

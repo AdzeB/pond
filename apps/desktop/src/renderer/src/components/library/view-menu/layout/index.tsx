@@ -22,7 +22,6 @@ const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
 export function LayoutSection() {
   const dock = useDock();
   const { state, actions } = useView();
-  /** Layout applies live while the card is open; Cancel restores this snapshot. */
   const initialLayout = useRef(state.layout);
 
   return (

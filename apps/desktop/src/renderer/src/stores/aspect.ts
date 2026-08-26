@@ -13,10 +13,8 @@ import { clamp } from "@/lib/util/math";
 const MIN_RATIO = 0.4;
 const MAX_RATIO = 2.5;
 const MAX_MEASURED = 5000;
-/** Quiet measurements flush on the next frame; scroll bursts wait so packing does not run every rAF. */
 const BURST_DEBOUNCE_MS = 120;
 const BURST_WINDOW_MS = 50;
-/** Video stream dims are noisier than posters; only displace an existing measurement past this. */
 const SOFT_MIN_DELTA = 0.03;
 const HARD_MIN_DELTA = 0.001;
 
@@ -27,7 +25,6 @@ const HARD_MIN_DELTA = 0.001;
 const STORAGE_KEY = pondScopedKey("pond:aspects:v4");
 const PERSIST_DEBOUNCE_MS = 800;
 
-/** Insertion-ordered map so the oldest measured entries can be evicted. */
 const measuredAspects = new Map<string, number>();
 const fallbackCache = new WeakMap<Save, Map<string, number>>();
 const coverKeyCache = new WeakMap<Save, Map<string, string>>();
@@ -36,7 +33,6 @@ export function clampRatio(w: number, h: number): number {
   return clamp(w / h, MIN_RATIO, MAX_RATIO);
 }
 
-/** Cover path used as the measured-aspect key suffix for a media unit. */
 export function aspectCoverKey(unit: MediaUnit | null): string {
   if (!unit) return "";
   return unit.isVideo ? (unit.posterKey ?? unit.key) : unit.key;
@@ -132,9 +128,7 @@ function hydrateFromStorage(): void {
     for (const [id, value] of entries.slice(start)) {
       measuredAspects.set(id, value);
     }
-  } catch {
-    /** Storage corrupt / unavailable: start with an empty cache. */
-  }
+  } catch {}
 }
 
 const persistSoon = debounce(
@@ -144,9 +138,7 @@ const persistSoon = debounce(
       const obj: Record<string, number> = {};
       for (const [id, ratio] of measuredAspects) obj[id] = ratio;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-    } catch {
-      /** Storage full / private browsing: drop the persistence pass. */
-    }
+    } catch {}
   },
   { wait: PERSIST_DEBOUNCE_MS },
 );
@@ -158,7 +150,6 @@ export function aspectFor(save: Save, opts: MediaPickOptions = {}): number {
   const key = measuredKey(save.id, coverKey);
   const measured = measuredAspects.get(key);
   if (measured !== undefined) return measured;
-  /** Bare save-id keys still apply when a cover-scoped entry is missing. */
   if (coverKey) {
     const legacy = measuredAspects.get(save.id);
     if (legacy !== undefined) {

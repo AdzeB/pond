@@ -5,7 +5,6 @@ import { SourcePicker } from "@/components/shared/source-picker";
 import { WATCHABLE, watchKindsFor } from "@/hooks/use-watches";
 import { watchFlow } from "@/stores/watch-flow";
 
-/** Watch-source picker in the dock tray; picking moves to the kind card, or straight to the handle card for single-kind sources. */
 export function WatchSourceSection() {
   const dock = useDock();
 

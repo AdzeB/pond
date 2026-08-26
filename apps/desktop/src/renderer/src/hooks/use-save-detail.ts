@@ -24,7 +24,6 @@ interface SaveDetailView {
   sourceIcon: SourceIcon;
 }
 
-/** Lazily hydrates full rawJson (list rows omit it) and derives the panel view-model. */
 export function useSaveDetail(id: string): SaveDetailView {
   const save = useSave(id);
   const [sync] = usePrefs("sync");

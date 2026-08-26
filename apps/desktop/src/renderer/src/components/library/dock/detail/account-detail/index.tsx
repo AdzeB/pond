@@ -20,13 +20,11 @@ import { sourceDetail, useDetailAccountId } from "@/stores/source-detail";
 import { useSyncByAccount } from "@/stores/sync-monitor";
 import styles from "./styles.module.css";
 
-/** Account settings card in the dock tray; the id arrives through the source-detail store. */
 export function AccountDetailSection() {
   const { accounts, refetch } = useAccounts();
   const accountId = useDetailAccountId();
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
 
-  /** Nothing to show while the list loads. */
   if (!account) return <TrayCard.Close />;
   return (
     <AccountDetail
@@ -204,7 +202,6 @@ function AccountDetail({
         <TrayCard.Confirm
           onClick={(e) => {
             void primary.run();
-            /** A running sync stays visible so it can be cancelled. */
             if (model.tone === "run") e.preventDefault();
           }}
         >

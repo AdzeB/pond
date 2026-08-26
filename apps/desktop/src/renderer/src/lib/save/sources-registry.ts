@@ -20,9 +20,7 @@ type GlyphIcon = React.ComponentType<{ width?: number; height?: number }>;
 interface SourceDef {
   source: Source;
   label: string;
-  /** Full-bleed 512px app-icon PNG; null for sources without a brand image. */
   logo: string | null;
-  /** Generic glyph for sources without a brand logo. */
   icon: GlyphIcon | null;
 }
 
@@ -54,13 +52,11 @@ export function getSourceDef(source: Source): SourceDef {
   };
 }
 
-/** Null for unknown or logo-less sources; callers fall back to a glyph or text label. */
 export function getSourceLogo(source: string): string | null {
   const normalized = resolveSourceId(source);
   return normalized ? SOURCE_LOGOS[normalized] : null;
 }
 
-/** Null for unknown sources; callers fall back to a text label. */
 export function getSourceIcon(source: string): GlyphIcon | null {
   const normalized = resolveSourceId(source);
   return normalized ? (GLYPH_ICONS[normalized] ?? null) : null;

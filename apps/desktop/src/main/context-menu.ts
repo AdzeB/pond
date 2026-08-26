@@ -1,4 +1,3 @@
-/** Native right-click menu for editable fields; non-editable surfaces get renderer-driven Base UI menus instead. */
 import {
   Menu,
   type MenuItemConstructorOptions,

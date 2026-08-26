@@ -30,7 +30,6 @@ export interface StorageGuardStatusWire {
   appliedAt: string;
 }
 
-/** Resolved synchronously once per (re)load so pond-scoped renderer caches can namespace their localStorage keys before any module hydrates. */
 let cachedPondId: string | null = null;
 
 const api = {
@@ -101,7 +100,6 @@ const api = {
     return () => ipcRenderer.off(IPC.menuAction, listener);
   },
 
-  /** Main renders these entries in the History menu. */
   sendMenuRecents(entries: RecentMenuEntry[]): void {
     ipcRenderer.send(IPC.menuRecents, entries);
   },
@@ -272,7 +270,6 @@ const api = {
     return ipcRenderer.invoke(IPC.governorResumeSource, source);
   },
 
-  /** Fired when an archive webview guest tries to navigate off pond://; payload carries the guest webContents id and target URL. */
   onArchiveNavigate(
     cb: (payload: { guestId: number; url: string }) => void,
   ): () => void {
@@ -306,7 +303,6 @@ interface ShellHint {
   pointerCursors?: boolean;
 }
 
-/** Main forwards `--pond-shell=<json>` via additionalArguments; the inline boot script in index.html reads `window.__pondShell` to set theme and pointer cursors before any bundle parses. */
 function readShellHint(): ShellHint {
   const prefix = "--pond-shell=";
   const arg = process.argv.find((a) => a.startsWith(prefix));

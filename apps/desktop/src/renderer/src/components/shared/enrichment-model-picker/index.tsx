@@ -11,12 +11,10 @@ import styles from "./styles.module.css";
 
 interface Props {
   catalog: ModelCatalog;
-  /** Empty string means "use the catalog default". */
   value: string;
   onChange: (id: string) => void;
 }
 
-/** The free-form "use this id" candidate is appended as its own "Custom" group. */
 type Group = { value: string; items: string[] };
 
 export function EnrichmentModelPicker({ catalog, value, onChange }: Props) {
@@ -28,7 +26,6 @@ export function EnrichmentModelPicker({ catalog, value, onChange }: Props) {
   const selected = findModel(catalog, selectedId);
   const triggerLabel = selected?.name ?? selectedId;
 
-  /** Offer a custom id when the search looks like a model path and matches nothing. */
   const trimmed = query.trim();
   const customCandidate =
     trimmed.includes("/") && !findModel(catalog, trimmed) ? trimmed : null;

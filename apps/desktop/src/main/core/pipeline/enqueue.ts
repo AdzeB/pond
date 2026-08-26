@@ -1,6 +1,9 @@
 import {
   type NewSave,
+  type NewSyncAction,
   type NewTask,
+  type Source,
+  type SyncAction,
   saves,
   syncActions,
   tasks,
@@ -12,8 +15,10 @@ import { ulid } from "ulid";
 import { getDb } from "../../db";
 import { broadcastSyncAction } from "../executor";
 import { persistSave } from "../persist-save";
+import type { ImportableCookie } from "../refresh/scrape-window/session";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
+import { stashPageCookies } from "./page-cookies";
 import { kickReconciler } from "./reconciler";
 import {
   applySeedToExistingSave,
@@ -26,26 +31,98 @@ import {
 import { maxAttemptsFor, planOps } from "./specs";
 import { sourceIdFromUrl } from "./url";
 
-interface EnqueueResult {
+function stashWebCookiesThenKick(
+  saveId: string,
+  source: Source,
+  cookies: ImportableCookie[] | undefined,
+): void {
+  if (source === "web" && cookies && cookies.length > 0) {
+    stashPageCookies(saveId, cookies);
+  }
+  kickReconciler();
+}
+
+async function rependArchiveForCookies(saveId: string): Promise<void> {
+  const db = await getDb();
+  const now = new Date();
+  db.update(tasks)
+    .set({
+      status: "pending",
+      attempts: 0,
+      lastError: null,
+      nextRunAt: now,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(tasks.saveId, saveId),
+        inArray(tasks.op, ["archive_page", "finalize"]),
+      ),
+    )
+    .run();
+  await persistSave(
+    saveId,
+    { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
+    { actorReason: "pipeline:enqueue:page-cookies" },
+  );
+}
+
+export interface EnqueueItem {
+  url: string;
+  seed?: EnqueueSeed;
+}
+
+export interface EnqueueOneResult {
   id: string;
   created: boolean;
-  /** Set when a previously-failed save was reset with a fresh seed. */
   reseeded?: boolean;
+}
+
+export interface EnqueueManyResult {
+  created: number;
+  existing: number;
+  failed: number;
 }
 
 export interface EnqueueOptions {
   trigger?: string;
   force?: boolean;
-  /** Pre-extracted capture data; lets harvest_metadata skip its scrape via isFreshHarvest(). */
   seed?: EnqueueSeed;
-  /** Connected account that produced this save (sync runs); stamped on new rows. */
   accountId?: string | null;
+  cookies?: ImportableCookie[];
 }
 
-export async function enqueueSaveByUrl(
+const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
+
+export function isFreshHarvest(rawJson: unknown, now = Date.now()): boolean {
+  if (!rawJson || typeof rawJson !== "object") return false;
+  const v = rawJson as { extractedAt?: unknown; capture?: unknown };
+  if (typeof v.extractedAt !== "string" || !v.capture) return false;
+  const ms = Date.parse(v.extractedAt);
+  if (!Number.isFinite(ms)) return false;
+  return now - ms < HARVEST_FRESH_MS;
+}
+
+export function enqueue(
+  url: string,
+  opts?: EnqueueOptions,
+): Promise<EnqueueOneResult>;
+export function enqueue(
+  items: readonly EnqueueItem[],
+  opts?: EnqueueOptions,
+): Promise<EnqueueManyResult>;
+export async function enqueue(
+  input: string | readonly EnqueueItem[],
+  opts: EnqueueOptions = {},
+): Promise<EnqueueOneResult | EnqueueManyResult> {
+  if (typeof input === "string") return enqueueOne(input, opts);
+  return enqueueMany(input, opts);
+}
+
+async function enqueueOne(
   rawUrl: string,
   opts: EnqueueOptions = {},
-): Promise<EnqueueResult> {
+): Promise<EnqueueOneResult> {
   const normalizedUrl = normalizeUrl(rawUrl);
   const classification = classifyUrlToSource(normalizedUrl);
   if (!classification.source) {
@@ -67,14 +144,13 @@ export async function enqueueSaveByUrl(
   const current = existing[0];
 
   if (current) {
-    /** Failed save + seed = recovery: reset tasks to pending and write the seed. */
     if (opts.seed && current.status === "failed") {
       await resetTasksForSave(
         current.id,
         opts.trigger ?? "enqueue:reseed-failed",
       );
       await applySeedToExistingSave(current.id, opts.seed);
-      kickReconciler();
+      stashWebCookiesThenKick(current.id, source, opts.cookies);
       log.info("[pond pipeline:enqueue] reseeded failed save", {
         id: current.id,
         source,
@@ -85,7 +161,6 @@ export async function enqueueSaveByUrl(
     if (opts.force) {
       await resetTasksForSave(current.id, opts.trigger ?? "enqueue:force");
     } else if (opts.seed) {
-      /** Additive enrichment: merge new seed fields into rawJson without overwriting existing. */
       const merge = mergeSeedIntoExistingSave(current, opts.seed);
       if (merge.changed) {
         await persistEnrichment(current.id, merge);
@@ -99,8 +174,14 @@ export async function enqueueSaveByUrl(
           filled: merge.filled,
         });
       }
+    } else if (
+      source === "web" &&
+      (opts.cookies?.length ?? 0) > 0 &&
+      (current.status === "complete" || current.status === "failed")
+    ) {
+      await rependArchiveForCookies(current.id);
     }
-    kickReconciler();
+    stashWebCookiesThenKick(current.id, source, opts.cookies);
     log.info("[pond pipeline:enqueue] existing save", {
       id: current.id,
       source,
@@ -168,7 +249,7 @@ export async function enqueueSaveByUrl(
     sourceId,
     trigger: opts.trigger,
   });
-  kickReconciler();
+  stashWebCookiesThenKick(id, source, opts.cookies);
   return { id, created: true };
 }
 
@@ -195,7 +276,6 @@ export async function resetTasksForSave(
   log.info("[pond pipeline:enqueue] reset tasks", { saveId, reason });
 }
 
-/** Resets only each save's failed tasks back to pending (done steps stay done); flipping to `ingesting` via persistSave lets the reconciler pick it up and broadcasts the change. */
 export async function retryFailedSaves(
   ids?: readonly string[],
 ): Promise<number> {
@@ -245,7 +325,6 @@ export function normalizeUrl(rawUrl: string): string {
   try {
     const u = new URL(rawUrl);
     u.hash = "";
-    /** Strip common tracking parameters; harmless for canonical equality. */
     for (const key of Array.from(u.searchParams.keys())) {
       if (
         key.startsWith("utm_") ||
@@ -260,4 +339,177 @@ export function normalizeUrl(rawUrl: string): string {
   } catch {
     return rawUrl;
   }
+}
+
+const BULK_INSERT_CHUNK = 100;
+
+function chunk<T>(rows: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) out.push(rows.slice(i, i + size));
+  return out;
+}
+
+async function enqueueMany(
+  items: readonly EnqueueItem[],
+  opts: EnqueueOptions = {},
+): Promise<EnqueueManyResult> {
+  const db = await getDb();
+  const result: EnqueueManyResult = { created: 0, existing: 0, failed: 0 };
+
+  interface Candidate {
+    url: string;
+    source: Source;
+    sourceId: string;
+    seed?: EnqueueSeed;
+  }
+  const candidates: Candidate[] = [];
+  const seenKeys = new Set<string>();
+  for (const item of items) {
+    const url = normalizeUrl(item.url);
+    const { source } = classifyUrlToSource(url);
+    if (!source) {
+      result.failed += 1;
+      continue;
+    }
+    const sourceId = sourceIdFromUrl(source, url);
+    if (!sourceId) {
+      result.failed += 1;
+      continue;
+    }
+    const key = `${source}\u0000${sourceId}`;
+    if (seenKeys.has(key)) continue;
+    seenKeys.add(key);
+    candidates.push({ url, source, sourceId, seed: item.seed });
+  }
+  if (candidates.length === 0) return result;
+
+  const bySource = new Map<string, Candidate[]>();
+  for (const c of candidates) {
+    const list = bySource.get(c.source) ?? [];
+    list.push(c);
+    bySource.set(c.source, list);
+  }
+  const existingKeys = new Set<string>();
+  for (const [source, group] of bySource) {
+    const ids = group.map((c) => c.sourceId);
+    for (const idChunk of chunk(ids, 400)) {
+      const rows = db
+        .select({ sourceId: saves.sourceId })
+        .from(saves)
+        .where(
+          and(
+            eq(saves.source, source as Candidate["source"]),
+            inArray(saves.sourceId, idChunk),
+          ),
+        )
+        .all();
+      for (const r of rows) existingKeys.add(`${source}\u0000${r.sourceId}`);
+    }
+  }
+
+  const fresh: Candidate[] = [];
+  const existing: Candidate[] = [];
+  for (const c of candidates) {
+    if (existingKeys.has(`${c.source}\u0000${c.sourceId}`)) existing.push(c);
+    else fresh.push(c);
+  }
+
+  for (const c of existing) {
+    try {
+      await enqueueOne(c.url, {
+        trigger: opts.trigger,
+        force: opts.force,
+        accountId: opts.accountId,
+        ...(c.seed ? { seed: c.seed } : {}),
+      });
+      result.existing += 1;
+    } catch (err) {
+      result.failed += 1;
+      log.warn("[pond pipeline:enqueue] many existing item failed", c.url, err);
+    }
+  }
+
+  if (fresh.length === 0) {
+    if (result.existing > 0) kickReconciler();
+    return result;
+  }
+
+  const now = new Date();
+  const actorOf = (): "user" | "system" =>
+    opts.trigger?.startsWith("user:") ? "user" : "system";
+  interface Bundle {
+    save: NewSave;
+    tasks: NewTask[];
+    action: NewSyncAction;
+  }
+  const bundles: Bundle[] = fresh.map((c) => {
+    const id = ulid();
+    const save: NewSave = {
+      id,
+      source: c.source,
+      sourceId: c.sourceId,
+      accountId: opts.accountId ?? null,
+      url: c.url,
+      siteName: domainFromUrl(c.url),
+      status: "ingesting",
+      ingestStartedAt: now,
+      tags: [],
+      files: [],
+      coverIndex: 0,
+      savedAt: now,
+      createdAt: now,
+      ...(c.seed ? seedToInsertColumns(c.seed) : {}),
+    };
+    const taskRows: NewTask[] = planOps(c.source).map((op) => ({
+      id: ulid(),
+      saveId: id,
+      op,
+      status: "pending",
+      attempts: 0,
+      maxAttempts: maxAttemptsFor(op),
+      nextRunAt: now,
+      createdAt: now,
+      updatedAt: now,
+    }));
+    const action: NewSyncAction = {
+      modelName: "save",
+      modelId: id,
+      action: "I",
+      data: save as unknown,
+      actor: actorOf(),
+      actorReason: opts.trigger ?? "pipeline:enqueue:many",
+      batchId: ulid(),
+    };
+    return { save, tasks: taskRows, action };
+  });
+
+  const insertedActions: SyncAction[] = [];
+  for (const group of chunk(bundles, BULK_INSERT_CHUNK)) {
+    const groupActions = db.transaction((tx) => {
+      tx.insert(saves)
+        .values(group.map((b) => b.save))
+        .run();
+      tx.insert(tasks)
+        .values(group.flatMap((b) => b.tasks))
+        .run();
+      return tx
+        .insert(syncActions)
+        .values(group.map((b) => b.action))
+        .returning()
+        .all();
+    });
+    insertedActions.push(...groupActions);
+    await new Promise<void>((resolve) => setImmediate(resolve));
+  }
+
+  result.created = fresh.length;
+  for (const action of insertedActions) broadcastSyncAction(action);
+  kickReconciler();
+  log.info("[pond pipeline:enqueue] many", {
+    created: result.created,
+    existing: result.existing,
+    failed: result.failed,
+    trigger: opts.trigger,
+  });
+  return result;
 }

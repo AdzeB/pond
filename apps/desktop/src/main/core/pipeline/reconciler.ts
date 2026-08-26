@@ -69,7 +69,6 @@ export function resumeReconciler(): void {
   kickReconciler();
 }
 
-/** Workers that ignore the abort signal finish their current attempt, but no further tasks are dispatched for the save. */
 export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   const db = await getDb();
   const save = db
@@ -89,9 +88,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
     if (controller) {
       try {
         controller.abort();
-      } catch {
-        /** Worker may already have settled. */
-      }
+      } catch {}
     }
   }
 
@@ -113,7 +110,6 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   return true;
 }
 
-/** Pausing first stops the reconciler from re-leasing slots mid-sweep; resumed after so new saves still ingest. */
 export async function cancelAllIngest(): Promise<number> {
   const wasPaused = paused;
   pauseReconciler();
@@ -160,10 +156,6 @@ export function kickReconciler(): void {
   });
 }
 
-/**
- * A task `running` in the DB but absent from this process's in-flight set can only be a leftover from a dead process; without this sweep it stays `running` forever because `pullDueTasks` only pulls `pending`.
- * Runs at startup (empty set, so all running rows recover) and on the periodic sweep cadence.
- */
 async function recoverOrphanedRunningTasks(): Promise<void> {
   const db = await getDb();
   const running = db
@@ -183,7 +175,6 @@ async function recoverOrphanedRunningTasks(): Promise<void> {
       nextRunAt: now,
       updatedAt: now,
     })
-    /** Guard against a task settling between the read above and this write. */
     .where(and(inArray(tasks.id, orphanIds), eq(tasks.status, "running")))
     .run();
   log.info("[pond pipeline:reconciler] recovered orphaned running tasks", {
@@ -239,7 +230,6 @@ async function dispatchTask(task: DueTask): Promise<void> {
   metrics.tasksDispatched++;
   const controller = new AbortController();
   runningTasks.set(task.id, controller);
-  /** One wide event per task attempt, committed in the finally. */
   const ev: PipelineTaskEvent = startTaskEvent({
     saveId: task.saveId,
     source: task.source as PipelineTaskEvent["source"],
@@ -263,9 +253,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
         metrics.watchdogTrips++;
         try {
           controller.abort();
-        } catch {
-          /** Worker may already have settled. */
-        }
+        } catch {}
         reject(new WorkerWatchdogError(task.op, budget));
       }, budget);
     });

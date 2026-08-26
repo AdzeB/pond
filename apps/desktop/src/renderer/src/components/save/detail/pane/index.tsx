@@ -57,7 +57,6 @@ export function SaveAbout({
   fileIndex = null,
 }: {
   save: Save;
-  /** Active media file in the viewer; kebab file actions target this asset. */
   fileIndex?: number | null;
 }) {
   const { description } = useSaveDetail(save.id);

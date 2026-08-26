@@ -66,7 +66,6 @@ function Tile({
   count: number;
 }) {
   const src = media.type === "video" ? media.posterUrl : media.url;
-  /** In a 3-tile grid the first image spans the full left column. */
   const span = count === 3 && index === 0;
   return (
     <div className={styles["media-tile"]} data-span={span ? "true" : undefined}>
@@ -76,6 +75,8 @@ function Tile({
           alt={media.altText ?? ""}
           className={styles["media-image"]}
           draggable={false}
+          decoding="sync"
+          referrerPolicy="no-referrer"
         />
       ) : (
         <div className={styles["media-placeholder"]} aria-hidden />

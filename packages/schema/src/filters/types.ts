@@ -5,7 +5,6 @@ export interface Predicate extends RuleType<FieldId, ComparatorId, unknown> {
   negate?: boolean;
 }
 
-/** The UI keeps the root flat, but the type allows nested groups and "or". */
 export type Group = RuleGroupType<Predicate, "and" | "or">;
 
 export type Clause = Predicate | Group;
@@ -19,7 +18,6 @@ export function isEmptyQuery(q: Query | null | undefined): boolean {
   return q.rules.length === 0;
 }
 
-/** RQB has no `kind` tag; a group is identified by its `rules` array. */
 export function isGroup(clause: Clause): clause is Group {
   return "rules" in clause;
 }

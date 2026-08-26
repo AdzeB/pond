@@ -126,7 +126,6 @@ export default defineConfig({
           capture: resolve(__dirname, "src/renderer/capture.html"),
         },
         output: {
-          /** One chunk per npm package: a dependency bump invalidates one hash instead of vendor.js, and chunks parse in parallel on cold start. */
           manualChunks(id: string) {
             if (!id.includes("node_modules")) return;
             const match = id.match(

@@ -41,17 +41,14 @@ export interface DataTableProviderProps<T> {
   columns: TableColumn<T>[];
   getRowId: (row: T) => string;
   getSubRows?: (row: T) => T[] | undefined;
-  /** Presence enables row selection. Called whenever selection changes. */
+  expandCaret?: boolean;
   onSelectionChange?: (ids: string[]) => void;
   defaultSort?: { id: string; desc: boolean };
-  /** Controlled expansion: list of expanded row ids. */
   expandedIds?: string[];
   onToggleExpand?: (id: string, next: boolean) => void;
-  /** Presence enables virtualization. */
   height?: number;
   rowHeight?: number;
   overscan?: number;
-  /** Escape hatch to wrap each row. */
   renderRow?: (args: RenderRowArgs<T>) => ReactNode;
   onRowClick?: (row: T, e: ReactMouseEvent) => void;
   children: ReactNode;
@@ -62,6 +59,7 @@ export function DataTableProvider<T>({
   columns,
   getRowId,
   getSubRows,
+  expandCaret = true,
   onSelectionChange,
   defaultSort,
   expandedIds,
@@ -74,7 +72,7 @@ export function DataTableProvider<T>({
   children,
 }: DataTableProviderProps<T>) {
   const selectionEnabled = onSelectionChange !== undefined;
-  const expansionEnabled = getSubRows !== undefined;
+  const expansionEnabled = getSubRows !== undefined && expandCaret;
 
   const [selectionStore] = useState(
     () => new Store<SelectionState>({ selectedIds: new Set<string>() }),
@@ -122,7 +120,6 @@ export function DataTableProvider<T>({
   const rows = table.getRowModel().rows;
   const flatRows = table.getRowModel().flatRows;
 
-  /** Kept in refs so selection actions stay referentially stable. */
   const orderedIdsRef = useRef<string[]>([]);
   const anchorRef = useRef<string | null>(null);
   const rowChildrenRef = useRef<Map<string, string[]>>(new Map());

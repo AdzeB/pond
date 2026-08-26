@@ -1,4 +1,3 @@
-/* Placeholder rows while a lookup is in flight, matching the exact-match row's metrics so the swap doesn't jump. */
 .skeleton {
   display: flex;
   flex-direction: column;

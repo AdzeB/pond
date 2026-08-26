@@ -20,7 +20,6 @@ function Thumb({ seed }: { seed: number }) {
   );
 }
 
-/** Mini waterfall with the layout switcher resting on Waterfall. */
 function LayoutsFragment() {
   const columns = packColumns(
     SAVES.filter((save) => WATERFALL_SEEDS.has(save.seed)),
@@ -52,7 +51,6 @@ function LayoutsFragment() {
   );
 }
 
-/** Two large tiles under a zoom slider dragged toward the big end. */
 function ZoomFragment() {
   return (
     <div className={styles.fragment}>
@@ -72,7 +70,6 @@ function ZoomFragment() {
   );
 }
 
-/** Source chips with Pinterest pinned, grid narrowed to the match. */
 function FiltersFragment() {
   return (
     <div className={styles.fragment}>

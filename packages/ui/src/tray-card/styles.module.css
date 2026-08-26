@@ -80,7 +80,6 @@
   right: var(--tray-card-padding);
 }
 
-/* Nested in a header, corners anchor to the header instead of the card. */
 .header .action {
   top: 0;
 

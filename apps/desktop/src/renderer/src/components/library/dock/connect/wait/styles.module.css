@@ -43,24 +43,7 @@
   }
 }
 
-.spinner {
-  flex: none;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--ds-gray-a4);
-  border-top-color: var(--ds-accent-9);
-  border-radius: 50%;
-  animation: spin 1.4s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .spinner,
   .mark {
     animation: none;
   }

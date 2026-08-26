@@ -1,4 +1,3 @@
-/** Crawls a web save's site while recording network traffic into a WARC archive, powering the in-app replay viewer. */
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -11,43 +10,40 @@ import {
   navigateWithTimeout,
 } from "../../refresh/scrape-window/navigation";
 import { leaseWindow } from "../../refresh/scrape-window/pool";
+import {
+  type ImportableCookie,
+  writePartitionCookies,
+} from "../../refresh/scrape-window/session";
 import { sleep } from "../../refresh/scrape-window/util";
 import { TransientError } from "../extractors/errors";
+import {
+  dropPageCookies,
+  pageCookiePartition,
+  peekPageCookies,
+} from "../page-cookies";
 import type { WriteFileArgs } from "./apply";
 import { readSave } from "./apply";
 import { WarcRecorder, withTimeout } from "./warc-recorder";
 
-/** Hard page cap so one save can't balloon the library. */
 const ARCHIVE_MAX_PAGES = 25;
-/** Link-follow depth from the saved URL; 2 covers a landing page and its section pages. */
 const ARCHIVE_MAX_DEPTH = 2;
-/** Post-load settle so client-rendered content and its lazy requests land in the capture. */
 const SETTLE_MS = 2_000;
 /** Runtime data fetches (pricing APIs, deferred JSON) can trail the load event; the capture waits for this quiet gap so they land in the WARC. */
 const NETWORK_QUIET_MS = 1_500;
-/** Cap on the idle wait; chatty pages (analytics beacons) never go quiet. */
 const NETWORK_IDLE_BUDGET_MS = 10_000;
-/** Per-page cap on force-loaded images; galleries beyond this replay partially rather than blowing the crawl budget. */
 const MAX_PRELOAD_IMAGES = 400;
-/** Wall-clock cap for the image preload pass. */
 const IMAGE_PRELOAD_BUDGET_MS = 45_000;
-/** Spacing between page navigations, on top of the governor's lease pacing. */
 const PAGE_GAP_MS = 750;
 const NAV_TIMEOUT_MS = 25_000;
-/** executeJavaScript can hang forever on a wedged or dialog-blocked page; the whole crawl would ride into the watchdog without this. */
 const HARVEST_TIMEOUT_MS = 10_000;
-/** Per-page harvest cap; a mega-nav page shouldn't flood the queue. */
 const MAX_LINKS_PER_PAGE = 200;
-/** Total navigation budget; dead links would otherwise churn until the watchdog trips. */
 const MAX_NAV_ATTEMPTS = 40;
-/** Wall-clock budget kept under the reconciler watchdog so partial crawls persist instead of being killed mid-write. */
 const CRAWL_BUDGET_MS = 4 * 60_000;
 
 const ARCHIVE_KIND = "archive";
 const ARCHIVE_MANIFEST_KIND = "archive_manifest";
 const ARCHIVE_MANIFEST_FILENAME = "archive-manifest.json";
 const ARCHIVE_WARC_FILENAME = "archive.warc.gz";
-/** v8: lazy images, srcset variants and CSS backgrounds force-loaded during capture; older archives replay with image holes. */
 export const ARCHIVE_VERSION = 8;
 
 export type ArchiveScope = "page" | "site";
@@ -65,7 +61,6 @@ interface ArchiveManifest {
   pages: ArchiveManifestPage[];
 }
 
-/** True once the save carries a replayable WARC archive; older MHTML-era archives don't count and get re-crawled. */
 export function hasWarcArchive(
   files: readonly { kind: string; path: string }[] | null | undefined,
 ): boolean {
@@ -74,7 +69,6 @@ export function hasWarcArchive(
   );
 }
 
-/** Scope and format version of the existing archive; manifests written before the scope field carried site crawls. */
 export async function readArchivedMeta(
   saveId: string,
 ): Promise<{ scope: ArchiveScope; version: number }> {
@@ -100,19 +94,24 @@ export async function runArchivePage(
 ): Promise<void> {
   const scope: ArchiveScope = payload.scope === "site" ? "site" : "page";
   const save = await readSave(saveId);
-  if (!save) return;
-  if (save.source !== "web") return;
+  if (save?.source !== "web") {
+    dropPageCookies(saveId);
+    return;
+  }
+
+  const cookies = peekPageCookies(saveId);
+  const hasCookies = (cookies?.length ?? 0) > 0;
 
   if (hasWarcArchive(save.files)) {
-    /** Re-crawl on a page-to-site upgrade or an outdated archive format; everything else keeps the existing archive. */
     const archived = await readArchivedMeta(saveId);
     const upgrade = scope === "site" && archived.scope === "page";
-    if (!upgrade && archived.version >= ARCHIVE_VERSION) {
+    if (!upgrade && !hasCookies && archived.version >= ARCHIVE_VERSION) {
       log.debug("[pond pipeline:archive-page] already archived, skipping", {
         saveId,
         scope,
         archived,
       });
+      dropPageCookies(saveId);
       return;
     }
   }
@@ -121,11 +120,18 @@ export async function runArchivePage(
   try {
     rootUrl = new URL(save.url);
   } catch {
+    dropPageCookies(saveId);
     return;
   }
-  if (rootUrl.protocol !== "http:" && rootUrl.protocol !== "https:") return;
+  if (rootUrl.protocol !== "http:" && rootUrl.protocol !== "https:") {
+    dropPageCookies(saveId);
+    return;
+  }
 
-  const result = await crawlSite(rootUrl, scope, ctx.signal);
+  const result = await crawlSite(rootUrl, scope, ctx.signal, {
+    partition: hasCookies ? pageCookiePartition(saveId) : undefined,
+    cookies,
+  });
   if (result.pages.length === 0 || result.warcBytes.byteLength === 0) {
     throw new TransientError("archive_page: no pages captured");
   }
@@ -173,6 +179,7 @@ export async function runArchivePage(
     pages: result.pages.length,
     bytes: result.warcBytes.byteLength,
   });
+  dropPageCookies(saveId);
 }
 
 interface CrawlResult {
@@ -180,23 +187,29 @@ interface CrawlResult {
   warcBytes: Buffer;
 }
 
-/** Breadth-first, same-host crawl; every miss (nav failure, auth wall, harvest error) skips the page rather than failing the run. */
 async function crawlSite(
   rootUrl: URL,
   scope: ArchiveScope,
   signal: AbortSignal,
+  opts: {
+    partition?: string;
+    cookies?: ImportableCookie[] | null;
+  } = {},
 ): Promise<CrawlResult> {
   const maxPages = scope === "site" ? ARCHIVE_MAX_PAGES : 1;
   const maxDepth = scope === "site" ? ARCHIVE_MAX_DEPTH : 0;
-  /** Clock starts before the lease: pool wait counts against the watchdog too. */
   const started = Date.now();
   const deadline = started + CRAWL_BUDGET_MS;
   const elapsed = () => Date.now() - started;
   log.info("[pond pipeline:archive-page] crawl start", {
     url: rootUrl.href,
     scope,
+    cookies: opts.cookies?.length ?? 0,
   });
-  const lease = await leaseWindow("web", { signal });
+  const lease = await leaseWindow("web", {
+    signal,
+    ...(opts.partition ? { partition: opts.partition } : {}),
+  });
   log.info("[pond pipeline:archive-page] window leased", { ms: elapsed() });
   const tmpDir = await mkdtemp(join(tmpdir(), "pond-archive-"));
   const warcPath = join(tmpDir, ARCHIVE_WARC_FILENAME);
@@ -222,6 +235,19 @@ async function crawlSite(
       origin: rootUrl.origin,
       storages: ["localstorage", "indexdb", "cachestorage", "serviceworkers"],
     });
+    if (opts.partition && opts.cookies && opts.cookies.length > 0) {
+      await lease.win.webContents.session.clearStorageData({
+        storages: ["cookies"],
+      });
+      const written = await writePartitionCookies({
+        cookies: opts.cookies,
+        partition: opts.partition,
+      });
+      log.info("[pond pipeline:archive-page] page cookies written", {
+        written: written.written,
+        skipped: written.skipped,
+      });
+    }
     recorder = await WarcRecorder.start(lease.win.webContents, warcPath);
     log.info("[pond pipeline:archive-page] recorder started", {
       ms: elapsed(),
@@ -249,21 +275,17 @@ async function crawlSite(
         continue;
       }
       await sleep(SETTLE_MS);
-      /** Lazy sections fetch their data on scroll; without this pass the replayed page throws on missing runtime JSON. */
       await autoScroll(lease.win.webContents);
-      /** Lazy images and unpicked srcset variants never load on their own; fetch them all so the replay isn't full of holes. */
       await preloadImages(lease.win.webContents);
       await recorder.waitForNetworkIdle(
         NETWORK_QUIET_MS,
         NETWORK_IDLE_BUDGET_MS,
       );
-      /** Bodies are evicted on cross-document navigation; drain them while the page is still current. */
       await recorder.flush();
 
       const wc = lease.win.webContents;
       const finalUrl = wc.getURL();
       const finalKey = dedupeKey(finalUrl);
-      /** Redirects can land several queued URLs on the same page. */
       if (capturedKeys.has(finalKey)) continue;
       if (looksLikeAuthWall(finalUrl)) continue;
 
@@ -314,14 +336,12 @@ async function crawlSite(
   try {
     warcBytes = await readFile(warcPath);
   } catch {
-    /** No warc file means every navigation failed; caller raises TransientError. */
   } finally {
     void rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   }
   return { pages, warcBytes };
 }
 
-/** Fetches every image the DOM and stylesheets reference (srcset variants, lazy data-src, CSS backgrounds); lazy or off-viewport images never load during the crawl and would replay as holes. */
 async function preloadImages(wc: WebContents): Promise<void> {
   const expr = `(async () => {
     const urls = new Set();
@@ -376,12 +396,9 @@ async function preloadImages(wc: WebContents): Promise<void> {
       wc.executeJavaScript(expr, true) as Promise<unknown>,
       IMAGE_PRELOAD_BUDGET_MS,
     );
-  } catch {
-    /** Image-heavy pages just keep whatever landed inside the budget. */
-  }
+  } catch {}
 }
 
-/** Steps through the page so IntersectionObserver-gated images and data fetches fire, then returns to the top for a clean first paint in replay. */
 async function autoScroll(wc: WebContents): Promise<void> {
   const expr = `(async () => {
     const step = window.innerHeight;
@@ -397,9 +414,7 @@ async function autoScroll(wc: WebContents): Promise<void> {
       wc.executeJavaScript(expr, true) as Promise<unknown>,
       HARVEST_TIMEOUT_MS,
     );
-  } catch {
-    /** A wedged page just skips the scroll pass. */
-  }
+  } catch {}
 }
 
 interface PageHarvest {
@@ -435,7 +450,6 @@ async function harvestPage(wc: WebContents): Promise<PageHarvest | null> {
   }
 }
 
-/** Extensions that are never HTML documents worth a page visit; their bytes still land in the WARC when pages reference them. */
 const NON_PAGE_EXTENSIONS = new Set([
   ".png",
   ".jpg",

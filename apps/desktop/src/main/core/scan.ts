@@ -29,7 +29,6 @@ export async function reconcileLibrary(): Promise<{
 
     if (existing[0] && existing[0].mtimeMs === mtimeMs) continue;
     if (!metadata) {
-      /** Stamp the scan row so unreadable metadata isn't re-read every tick. */
       await stampScan(db, id, mtimeMs);
       continue;
     }
@@ -54,7 +53,6 @@ export async function reconcileLibrary(): Promise<{
     const tags = metadata.tags ?? [];
 
     try {
-      /** Recover pipeline outputs from the sidecar so an index rebuild only recomputes embeddings, never transcripts/OCR/captions. */
       const enrichment = readEnrichmentSidecar(id) ?? {};
       const insertValues: typeof saves.$inferInsert = {
         ...enrichment,
@@ -100,7 +98,6 @@ export async function reconcileLibrary(): Promise<{
           metadata.deletedAt != null ? new Date(metadata.deletedAt) : null,
       };
 
-      /** Row presence decides I vs U so the renderer reconciles without re-hydrating. */
       const prior = await db
         .select({ id: saves.id })
         .from(saves)

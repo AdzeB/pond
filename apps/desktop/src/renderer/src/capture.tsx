@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { TextCard } from "./components/save/text-card";
 import { ThreadsCard } from "./components/threads/card";
 import { TweetCard } from "./components/tweet/card";
+import "@pond/theme/radius.css";
 
 const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
@@ -34,22 +35,18 @@ const TWEET_PAYLOAD = decodePayload<TweetCardData>({
 const TEXT_PAYLOAD = decodePayload<TextCardData>({ text: "" });
 
 function waitForImages(root: HTMLElement): Promise<void> {
-  const pending = Array.from(root.querySelectorAll("img")).filter(
-    (img) => !img.complete,
+  const imgs = Array.from(root.querySelectorAll("img")).filter((img) =>
+    Boolean(img.currentSrc || img.src),
   );
-  if (pending.length === 0) return Promise.resolve();
-  return new Promise((resolve) => {
-    let remaining = pending.length;
-    const done = () => {
-      remaining -= 1;
-      if (remaining <= 0) resolve();
-    };
-    for (const img of pending) {
-      img.addEventListener("load", done, { once: true });
-      img.addEventListener("error", done, { once: true });
-    }
-    setTimeout(resolve, IMAGE_WAIT_MS);
-  });
+  if (imgs.length === 0) return Promise.resolve();
+  return Promise.race([
+    Promise.all(imgs.map((img) => img.decode().catch(() => undefined))).then(
+      () => undefined,
+    ),
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, IMAGE_WAIT_MS);
+    }),
+  ]);
 }
 
 function CaptureCard() {
@@ -60,9 +57,7 @@ function CaptureCard() {
     const run = async () => {
       try {
         if (document.fonts?.ready) await document.fonts.ready;
-      } catch {
-        /** Fonts API may be unavailable; proceed without waiting. */
-      }
+      } catch {}
       if (ref.current) await waitForImages(ref.current);
       await new Promise((r) => requestAnimationFrame(() => r(null)));
       if (!cancelled) document.documentElement.dataset.ready = "1";

@@ -1,0 +1,17 @@
+.slot {
+  display: grid;
+  justify-items: start;
+}
+
+.sizer,
+.value {
+  grid-area: 1 / 1;
+}
+
+.sizer {
+  visibility: hidden;
+  height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}

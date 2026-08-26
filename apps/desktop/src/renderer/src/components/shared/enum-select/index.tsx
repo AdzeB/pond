@@ -1,5 +1,7 @@
 import { Select } from "@pond/ui";
+import { clsx as cn } from "clsx";
 import type { ReactNode } from "react";
+import styles from "./styles.module.css";
 
 export interface EnumOption<T> {
   value: T;
@@ -12,12 +14,20 @@ interface EnumSelectProps<T> {
   options: readonly EnumOption<T>[];
   placeholder?: ReactNode;
   disabled?: boolean;
-  /** Applied to the trigger. */
   className?: string;
   align?: "start" | "center" | "end";
   side?: "top" | "right" | "bottom" | "left";
   sideOffset?: number;
   "aria-label"?: string;
+}
+
+function longestStringLabel<T>(options: readonly EnumOption<T>[]): string {
+  let longest = "";
+  for (const option of options) {
+    if (typeof option.label !== "string") continue;
+    if (option.label.length > longest.length) longest = option.label;
+  }
+  return longest;
 }
 
 export function EnumSelect<T>({
@@ -34,6 +44,7 @@ export function EnumSelect<T>({
 }: EnumSelectProps<T>) {
   const selected = options.find((option) => Object.is(option.value, value));
   const hasNullOption = options.some((option) => option.value === null);
+  const sizer = longestStringLabel(options);
 
   return (
     <Select.Root<T>
@@ -45,7 +56,16 @@ export function EnumSelect<T>({
       }}
     >
       <Select.Trigger className={className} aria-label={ariaLabel}>
-        <Select.Value>{selected?.label ?? placeholder}</Select.Value>
+        <span className={styles.slot}>
+          {sizer ? (
+            <span className={styles.sizer} aria-hidden>
+              {sizer}
+            </span>
+          ) : null}
+          <Select.Value className={cn(sizer && styles.value)}>
+            {selected?.label ?? placeholder}
+          </Select.Value>
+        </span>
       </Select.Trigger>
       <Select.Portal>
         <Select.Positioner sideOffset={sideOffset} align={align} side={side}>

@@ -14,20 +14,13 @@ import {
 import { FILLER, NEGATORS } from "@/lib/search/nl-vocabulary";
 import { serializePredicate } from "@/lib/search/syntax";
 
-/**
- * Compiler Stage A: a deterministic natural-language -> structured-query resolver that only maps onto values that actually exist, so it can never invent a facet; it runs offline with no model and is the floor every other stage falls back to.
- * @remarks Vocabulary tables live in nl-vocabulary, phrase matchers in nl-matchers; this module is the orchestration and public API.
- */
-
 export interface NlFacets {
-  /** Distinct lowercased values present in the library; ground matching to real data. */
   sources: string[];
   tags: string[];
   types: string[];
   creators: string[];
 }
 
-/** An explicit ordering pulled from phrasing like "newest" / "longest videos". */
 export interface AskSort {
   key: "savedAt" | "duration" | "fileCount";
   dir: "asc" | "desc";
@@ -35,9 +28,7 @@ export interface AskSort {
 
 interface NlResult {
   query: Query;
-  /** Words that didn't resolve to a predicate, for free-text / semantic ranking. */
   residual: string;
-  /** Explicit ordering / cap pulled from the phrasing, when present. */
   sort: AskSort | null;
   limit: number | null;
 }
@@ -62,7 +53,6 @@ export function dedupePredicates(predicates: Predicate[]): Predicate[] {
 }
 
 export function compileStageA(input: string, facets: NlFacets): NlResult {
-  /** Dates are pulled out first, leaving the token walker a date-free string to reason about. */
   const { predicates: datePreds, rest } = extractDates(input);
 
   const words = rest
@@ -83,7 +73,6 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   while (i < words.length) {
     const word = words[i] as string;
 
-    /** Ordering / cap phrasing; last write wins. */
     const order = matchSortLimit(words, i);
     if (order) {
       if (order.sort) sort = order.sort;
@@ -93,7 +82,6 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    /** Duration before count so "more than 5 minutes" is a length, not a tally. */
     const dur = matchDurationIntent(words, i);
     if (dur) {
       intentPreds.push(dur.pred);
@@ -111,7 +99,6 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
       continue;
     }
 
-    /** Presence intents own their negation ("no caption"), so they precede the generic negator. */
     const intent = matchIntent(words, i);
     if (intent) {
       intentPreds.push(intent.pred);
@@ -148,7 +135,6 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   return { query, residual: residual.join(" "), sort, limit };
 }
 
-/** Flattens a possibly nested query into its predicates, for chip display. */
 export function flattenPredicates(clause: Clause): Predicate[] {
   if ("rules" in clause) return clause.rules.flatMap(flattenPredicates);
   return [clause];

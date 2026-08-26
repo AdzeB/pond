@@ -8,7 +8,6 @@ import { selection } from "@/stores/selection";
 import { useTags } from "@/stores/tags";
 import styles from "./styles.module.css";
 
-/** Tag picker opened from the selection pill's Tag tile; toggle existing tags or type to create one, then apply in one batch. */
 export function SelectionTagSection() {
   const dock = useDock();
   const tags = useTags();
@@ -19,11 +18,7 @@ export function SelectionTagSection() {
 
   const names = tags.map((t) => t.name);
   const trimmed = query.trim();
-  const shown = [
-    /** Keep picked-but-created tags visible even though they aren't in the store yet. */
-    ...picked.filter((p) => !names.includes(p)),
-    ...names,
-  ].filter(
+  const shown = [...picked.filter((p) => !names.includes(p)), ...names].filter(
     (name) =>
       trimmed === "" || name.toLowerCase().includes(trimmed.toLowerCase()),
   );

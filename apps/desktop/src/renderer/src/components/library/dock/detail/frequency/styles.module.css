@@ -1,4 +1,3 @@
-/* Option list matching the tray's other cards: separate 44px rounded rows. */
 .rows {
   display: flex;
   flex-direction: column;

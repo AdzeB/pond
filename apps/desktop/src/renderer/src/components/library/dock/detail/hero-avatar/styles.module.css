@@ -1,4 +1,3 @@
-/* Keyline around the brand-tile fallback for watches. */
 .wavatar {
   position: relative;
   display: grid;
@@ -14,7 +13,6 @@
   border-radius: calc(var(--ds-radius-xs) + 2px);
 }
 
-/* Round profile face with the brand badge, mirroring the sources grid tile. */
 .avatar {
   position: relative;
   display: grid;

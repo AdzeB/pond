@@ -61,7 +61,6 @@ export type BookmarksHarvestResult =
   | {
       ok: false;
       reason: "auth_required" | "no_match" | "timeout" | "rate_limited";
-      /** Server-requested wait in seconds; present on rate_limited. */
       retryAfterSec?: number;
       debug?: BookmarksHarvestDebug;
     };
@@ -233,13 +232,13 @@ async function inPageBookmarks(
     for (const node of photoNodes) {
       const video = node.querySelector<HTMLVideoElement>("video");
       const img = node.querySelector<HTMLImageElement>("img");
-      if (video?.poster) {
+      if (video?.poster && /^https?:\/\//i.test(video.poster)) {
         const upgraded = upgradeTwimgUrl(video.poster);
         if (!seenMedia.has(upgraded)) {
           seenMedia.add(upgraded);
           mediaUrls.push({ url: upgraded, type: "video", poster: upgraded });
         }
-      } else if (img?.src) {
+      } else if (img?.src && /^https?:\/\//i.test(img.src)) {
         const upgraded = upgradeTwimgUrl(img.src);
         if (!seenMedia.has(upgraded)) {
           seenMedia.add(upgraded);

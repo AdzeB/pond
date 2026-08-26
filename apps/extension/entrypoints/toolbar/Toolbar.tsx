@@ -4,46 +4,28 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import styles from "./styles.module.css";
 
 export type ToolbarMode =
+  | "checking"
   | "idle-connected"
   | "idle-offline"
-  | "link-empty"
-  | "link-pasted"
-  | "link-loading"
-  | "link-error"
+  | "action-busy"
+  | "action-done"
   | "action-error";
 
 export interface ToolbarProps {
   mode: ToolbarMode;
-  /** Hostname shown while connecting, e.g. `x.com`. */
-  siteName?: string;
-  tokenValue?: string;
   errorMessage?: string;
   onCapturePage?: () => void;
-  onTokenChange?: (value: string) => void;
-  onTokenSubmit?: () => void;
   onRetry?: () => void;
 }
 
 type SwapPhase = "idle" | "exit" | "enter-start";
 
-/** Matches `--text-swap-dur` in styles.module.css. */
 const TEXT_SWAP_MS = 150;
 
 function slotFor(mode: ToolbarMode): string {
-  if (mode === "link-empty" || mode === "link-pasted") return "link-field";
-  if (
-    mode === "link-error" ||
-    mode === "action-error" ||
-    mode === "idle-offline"
-  ) {
-    return "error";
-  }
+  if (mode === "idle-offline" || mode === "action-error") return "error";
+  if (mode === "checking" || mode === "action-busy") return "busy";
   return mode;
-}
-
-function connectingCopy(siteName?: string): string {
-  const site = siteName?.trim();
-  return site ? `Connecting ${site} to Pond` : "Connecting to Pond";
 }
 
 function Divider() {
@@ -79,23 +61,13 @@ function Spinner() {
   );
 }
 
-/** Floating in-page Pond toolbar matching the extension HUD design. */
 export function Toolbar({
   mode,
-  siteName,
-  tokenValue = "",
   errorMessage = "Couldn't finish that",
   onCapturePage,
-  onTokenChange,
-  onTokenSubmit,
   onRetry,
 }: ToolbarProps) {
-  const [shown, setShown] = useState({
-    mode,
-    siteName,
-    tokenValue,
-    errorMessage,
-  });
+  const [shown, setShown] = useState({ mode, errorMessage });
   const [phase, setPhase] = useState<SwapPhase>("idle");
   const [shaking, setShaking] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -105,31 +77,25 @@ export function Toolbar({
 
   const targetSlot = slotFor(mode);
   const shownSlot = slotFor(shown.mode);
-  const error =
-    shown.mode === "link-error" ||
-    shown.mode === "action-error" ||
-    shown.mode === "idle-offline";
-  const loading = shown.mode === "link-loading";
+  const error = shown.mode === "action-error" || shown.mode === "idle-offline";
+  const loading = shown.mode === "checking" || shown.mode === "action-busy";
 
   useEffect(() => {
     const sameSlot = targetSlot === shownSlot;
     const samePayload =
-      mode === shown.mode &&
-      siteName === shown.siteName &&
-      tokenValue === shown.tokenValue &&
-      errorMessage === shown.errorMessage;
+      mode === shown.mode && errorMessage === shown.errorMessage;
 
     if (samePayload) return;
 
     if (sameSlot) {
-      setShown({ mode, siteName, tokenValue, errorMessage });
+      setShown({ mode, errorMessage });
       return;
     }
 
     if (swapTimer.current !== null) window.clearTimeout(swapTimer.current);
     setPhase("exit");
     swapTimer.current = window.setTimeout(() => {
-      setShown({ mode, siteName, tokenValue, errorMessage });
+      setShown({ mode, errorMessage });
       setPhase("enter-start");
     }, TEXT_SWAP_MS);
 
@@ -138,14 +104,10 @@ export function Toolbar({
     };
   }, [
     mode,
-    siteName,
-    tokenValue,
     errorMessage,
     targetSlot,
     shownSlot,
     shown.mode,
-    shown.siteName,
-    shown.tokenValue,
     shown.errorMessage,
   ]);
 
@@ -156,10 +118,7 @@ export function Toolbar({
   }, [phase]);
 
   useEffect(() => {
-    const nextError =
-      mode === "link-error" ||
-      mode === "action-error" ||
-      mode === "idle-offline";
+    const nextError = mode === "action-error" || mode === "idle-offline";
     if (nextError && !prevError.current) {
       setShaking(true);
       if (shakeTimer.current !== null) window.clearTimeout(shakeTimer.current);
@@ -240,34 +199,19 @@ export function Toolbar({
             </div>
           ) : null}
 
-          {shown.mode === "link-empty" || shown.mode === "link-pasted" ? (
-            <div className={styles.field}>
-              <input
-                className={styles.input}
-                type="text"
-                placeholder="Pairing token"
-                value={shown.tokenValue}
-                autoComplete="off"
-                spellCheck={false}
-                aria-label="Pairing token"
-                onChange={(e) => onTokenChange?.(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && shown.tokenValue.trim()) {
-                    onTokenSubmit?.();
-                  }
-                }}
-              />
-              {shown.mode === "link-pasted" ? (
-                <span className={styles.fade} aria-hidden />
-              ) : null}
-            </div>
+          {shown.mode === "checking" ? (
+            <p className={styles.status}>Looking for Pond</p>
           ) : null}
 
-          {shown.mode === "link-loading" ? (
-            <p className={styles.status}>{connectingCopy(shown.siteName)}</p>
+          {shown.mode === "action-busy" ? (
+            <p className={styles.status}>Capturing page</p>
           ) : null}
 
-          {shown.mode === "link-error" || shown.mode === "action-error" ? (
+          {shown.mode === "action-done" ? (
+            <p className={styles.status}>Page captured</p>
+          ) : null}
+
+          {shown.mode === "action-error" ? (
             <p className={styles.error}>{shown.errorMessage}</p>
           ) : null}
         </div>

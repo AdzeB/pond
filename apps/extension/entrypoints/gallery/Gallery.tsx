@@ -21,65 +21,54 @@ function Frame({ label, note, children }: FrameProps) {
   );
 }
 
-function Bar({
-  mode,
-  token = "",
-  error,
-  siteName,
-}: {
-  mode: ToolbarMode;
-  token?: string;
-  error?: string;
-  siteName?: string;
-}) {
+function Bar({ mode, error }: { mode: ToolbarMode; error?: string }) {
   return (
     <Toolbar
       mode={mode}
-      siteName={siteName}
-      tokenValue={token}
       errorMessage={error}
       onCapturePage={() => undefined}
-      onTokenChange={() => undefined}
-      onTokenSubmit={() => undefined}
       onRetry={() => undefined}
     />
   );
 }
 
-type SoloState =
-  | "idle-connected"
-  | "link-empty"
-  | "link-pasted"
-  | "link-loading"
-  | "link-error";
+type SoloState = ToolbarMode;
 
 function SoloScreen({ state }: { state: SoloState }) {
   switch (state) {
     case "idle-connected":
       return <Bar mode="idle-connected" />;
-    case "link-empty":
-      return <Bar mode="link-empty" />;
-    case "link-pasted":
+    case "checking":
+      return <Bar mode="checking" />;
+    case "idle-offline":
       return (
         <Bar
-          mode="link-pasted"
-          token="pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d"
+          mode="idle-offline"
+          error="Pond isn't running. Open the app and try again."
         />
       );
-    case "link-loading":
-      return <Bar mode="link-loading" siteName="x.com" />;
-    case "link-error":
-      return <Bar mode="link-error" error="This isn't a pairing token" />;
+    case "action-busy":
+      return <Bar mode="action-busy" />;
+    case "action-done":
+      return <Bar mode="action-done" />;
+    case "action-error":
+      return (
+        <Bar
+          mode="action-error"
+          error="Couldn't capture this page. Try again."
+        />
+      );
   }
 }
 
 function parseSolo(value: string | null): SoloState | null {
   switch (value) {
     case "idle-connected":
-    case "link-empty":
-    case "link-pasted":
-    case "link-loading":
-    case "link-error":
+    case "checking":
+    case "idle-offline":
+    case "action-busy":
+    case "action-done":
+    case "action-error":
       return value;
     default:
       return null;
@@ -114,26 +103,20 @@ export function Gallery() {
         <Frame label="Idle" note="connected">
           <Bar mode="idle-connected" />
         </Frame>
+        <Frame label="Idle" note="checking">
+          <Bar mode="checking" />
+        </Frame>
         <Frame label="Idle" note="offline">
           <Bar
             mode="idle-offline"
             error="Pond isn't running. Open the app and try again."
           />
         </Frame>
-        <Frame label="Link" note="empty">
-          <Bar mode="link-empty" />
+        <Frame label="Action" note="capturing">
+          <Bar mode="action-busy" />
         </Frame>
-        <Frame label="Link" note="pasted">
-          <Bar
-            mode="link-pasted"
-            token="pond://pair?port=41610&token=321c302c7b047638d8d60abf8ac14d332fdca3224727426d"
-          />
-        </Frame>
-        <Frame label="Link" note="loading">
-          <Bar mode="link-loading" siteName="x.com" />
-        </Frame>
-        <Frame label="Link" note="error">
-          <Bar mode="link-error" error="This isn't a pairing token" />
+        <Frame label="Action" note="captured">
+          <Bar mode="action-done" />
         </Frame>
         <Frame label="Action" note="error">
           <Bar

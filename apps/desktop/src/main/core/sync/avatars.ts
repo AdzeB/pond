@@ -8,14 +8,11 @@ import log from "electron-log/main.js";
 import { listAccounts, partitionForAccount, patchAccount } from "./accounts";
 import { listWatches, patchWatch } from "./watches";
 
-/** Best-effort profile pictures for the Sources page cards, resolved from public profile pages or APIs, never a session partition. */
-
 /** Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly; misses retry sooner. */
 const FOUND_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MISS_TTL_MS = 6 * 60 * 60 * 1000;
 
 const FETCH_TIMEOUT_MS = 10_000;
-/** How much profile HTML to scan; og tags live in <head>. */
 const HTML_SCAN_BYTES = 300_000;
 
 const BROWSER_UA =
@@ -31,21 +28,18 @@ interface AvatarSubject {
   avatarCheckedAt?: string | null;
 }
 
-/** Site-wide share images that pages fall back to when there's no real image; not a pfp. */
 function isGenericOgImage(url: string): boolean {
   return /opengraph-image|default_open_graph|rweb\/ssr\/default/i.test(url);
 }
 
 function needsCheck(row: AvatarSubject): boolean {
   if (!row.handle) return false;
-  /** Rows holding a generic share image need re-resolving. */
   if (row.avatarUrl && isGenericOgImage(row.avatarUrl)) return true;
   const checked = row.avatarCheckedAt ? Date.parse(row.avatarCheckedAt) : 0;
   const ttl = row.avatarUrl ? FOUND_TTL_MS : MISS_TTL_MS;
   return !Number.isFinite(checked) || Date.now() - checked > ttl;
 }
 
-/** The profile page whose og:image is the pfp; null when the slug names no user or the source has no public profile page. */
 function profilePageUrl(
   source: Source,
   handle: string,
@@ -56,7 +50,6 @@ function profilePageUrl(
   const h = encodeURIComponent(owner);
   switch (source) {
     case "youtube":
-      /** Channel-id slugs (from /channel/UC… URLs) aren't @handles. */
       return /^UC[\w-]{20,}$/.test(owner)
         ? `https://www.youtube.com/channel/${h}`
         : `https://www.youtube.com/@${h}`;
@@ -200,7 +193,6 @@ async function resolveAvatarUrl(
   partition?: string,
 ): Promise<string | null> {
   if (source === "arena") {
-    /** Channels have covers, not faces; leave them to the brand tile. */
     if (kind === undefined || kind === "user") {
       return arenaAvatar(handle, "users");
     }
@@ -216,7 +208,6 @@ async function resolveAvatarUrl(
   return pageUrl ? fetchOgImage(pageUrl) : null;
 }
 
-/** One background sweep over accounts and watches, sequential so a page of cards never fans out into a burst of profile fetches; re-entry is a no-op. */
 let sweeping = false;
 
 export function fillMissingAvatars(): void {

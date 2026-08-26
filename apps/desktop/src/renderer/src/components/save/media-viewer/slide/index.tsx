@@ -5,7 +5,6 @@ import styles from "./styles.module.css";
 
 export interface MediaSlide {
   src: string;
-  /** Absolute index into `save.files` for the asset this slide represents. */
   fileIndex: number;
   isVideo: boolean;
   posterUrl?: string;
@@ -21,7 +20,6 @@ interface SlideProps {
   artist?: string | null;
   chapters?: ChapterCue[];
   noteMarkers?: readonly NoteMarker[];
-  /** Controlled ratio from the carousel's cache, kept identical for the player and its placeholder so toggling in-view never resizes the slide. */
   ratio?: number;
   onRatio?: (src: string, ratio: number) => void;
   onError: () => void;
@@ -62,7 +60,6 @@ export function Slide({
       data-active={active ? "true" : undefined}
     >
       {slide.isVideo ? (
-        /** VideoPlayer mounts only near the centre; the poster placeholder reserves the identical box so swapping never shifts layout. */
         inView ? (
           <VideoSlide
             slide={slide}
@@ -92,7 +89,6 @@ export function Slide({
   );
 }
 
-/** The loaded ratio overrides the stored dims, which can be stale or rotated and would otherwise letterbox the media inside the shell. */
 function useResolvedRatio(slide: MediaSlide, override?: number) {
   const [local, setLocal] = useState<number | null>(() => knownRatio(slide));
   const ratio = override ?? local ?? FALLBACK_RATIO;
