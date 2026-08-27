@@ -35,7 +35,7 @@ interface SyncOptions {
   forceFull?: boolean;
 }
 
-const SYNC_WATCHDOG_MS: Record<Source, number> = {
+const SYNC_WATCHDOG_MS = {
   twitter: 30 * 60_000,
   youtube: 20 * 60_000,
   cosmos: 20 * 60_000,
@@ -47,7 +47,7 @@ const SYNC_WATCHDOG_MS: Record<Source, number> = {
   threads: 20 * 60_000,
   web: 20 * 60_000,
   local: 20 * 60_000,
-};
+} satisfies Record<Source, number>;
 
 const SYNCABLE_SOURCES: readonly Source[] = [
   "twitter",

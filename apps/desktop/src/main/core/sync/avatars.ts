@@ -5,12 +5,17 @@ import type {
   WatchKind,
 } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { listAccounts, partitionForAccount, patchAccount } from "./accounts";
 import { listWatches, patchWatch } from "./watches";
 
 /** Signed CDN URLs (Instagram, TikTok) expire, so found avatars refresh weekly; misses retry sooner. */
 const FOUND_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const MISS_TTL_MS = 6 * 60 * 60 * 1000;
+
+const AvatarResponseSchema = z.object({
+  avatar: z.string().min(1).optional().catch(undefined),
+});
 
 const FETCH_TIMEOUT_MS = 10_000;
 const HTML_SCAN_BYTES = 300_000;
@@ -130,8 +135,8 @@ async function arenaAvatar(
       },
     );
     if (!res.ok) return null;
-    const body = (await res.json()) as { avatar?: string };
-    return typeof body.avatar === "string" && body.avatar ? body.avatar : null;
+    const body = AvatarResponseSchema.safeParse(await res.json());
+    return body.success ? (body.data.avatar ?? null) : null;
   } catch {
     return null;
   }

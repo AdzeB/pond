@@ -159,7 +159,7 @@ export async function partitionForIngest(
 }
 
 export function normalizeHandle(handle: string | null): string | null {
-  if (typeof handle !== "string") return null;
+  if (handle === null) return null;
   const trimmed = handle.trim().replace(/^@/, "");
   return trimmed.length > 0 ? trimmed : null;
 }

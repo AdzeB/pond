@@ -2,10 +2,12 @@ import type { MediaType } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { RawJson } from "@pond/schema/raw";
 import { walkCaptureMedia } from "@pond/schema/raw";
+import { z } from "zod";
 import {
-  captureFromTweetShaped,
+  captureFromTweetDraft,
   draftFromRichPost,
-} from "../capture/tweet-shaped";
+  type RichPostDraft,
+} from "../capture/tweet-draft";
 import { pickTitle } from "../refresh/harvest/lib/title";
 import type { BookmarksEntry, RichTweet } from "../refresh/harvest/twitter";
 
@@ -26,27 +28,32 @@ export function buildTwitterBookmarkSeed(
   const rich = entry.rich;
   if (!rich) return null;
 
-  const publishedAt = readLegacyCreatedAt(rich.raw);
-  const capture = captureFromTweetShaped(
-    draftFromRichPost({
-      source: "twitter",
-      id: entry.tweetId,
-      url: entry.url,
-      text: rich.fullText,
-      author: {
-        handle:
-          rich.author.handle ||
-          (entry.author ? entry.author.replace(/^@/, "") : ""),
-        name: rich.author.name || rich.author.handle,
-        ...(rich.author.avatarUrl ? { avatarUrl: rich.author.avatarUrl } : {}),
-      },
-      media: rich.media,
-      metrics: rich.metrics,
-      ...(rich.quoted ? { quoted: richQuoted(rich.quoted) } : {}),
-      ...(rich.card ? { card: rich.card } : {}),
-      ...(publishedAt ? { publishedAt: publishedAt.toISOString() } : {}),
-    }),
-  );
+  const legacy = LegacyCreatedAtSchema.safeParse(rich.raw);
+  const publishedAt = legacy.success
+    ? toDate(legacy.data.legacy.created_at)
+    : null;
+  const author: RichPostDraft["author"] = {
+    handle:
+      rich.author.handle ||
+      (entry.author ? entry.author.replace(/^@/, "") : ""),
+    name: rich.author.name || rich.author.handle,
+  };
+  if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+
+  const draft: RichPostDraft = {
+    source: "twitter",
+    id: entry.tweetId,
+    url: entry.url,
+    text: rich.fullText,
+    author,
+    media: rich.media,
+    metrics: rich.metrics,
+  };
+  if (rich.quoted) draft.quoted = richQuoted(rich.quoted);
+  if (rich.card) draft.card = rich.card;
+  if (publishedAt) draft.publishedAt = publishedAt.toISOString();
+
+  const capture = captureFromTweetDraft(draftFromRichPost(draft));
 
   const handle = capture.author?.handle;
   const name = capture.author?.name;
@@ -73,32 +80,32 @@ export function buildTwitterBookmarkSeed(
   };
 }
 
-function richQuoted(
-  quoted: RichTweet,
-): Parameters<typeof draftFromRichPost>[0] {
-  return {
+function richQuoted(quoted: RichTweet): RichPostDraft {
+  const author: RichPostDraft["author"] = {
+    handle: quoted.author.handle,
+    name: quoted.author.name,
+  };
+  if (quoted.author.avatarUrl) author.avatarUrl = quoted.author.avatarUrl;
+
+  const draft: RichPostDraft = {
     source: "twitter",
     id: quoted.tweetId,
     url: quoted.url,
     text: quoted.fullText,
-    author: {
-      handle: quoted.author.handle,
-      name: quoted.author.name,
-      ...(quoted.author.avatarUrl
-        ? { avatarUrl: quoted.author.avatarUrl }
-        : {}),
-    },
+    author,
     media: quoted.media,
     metrics: quoted.metrics,
-    ...(quoted.quoted ? { quoted: richQuoted(quoted.quoted) } : {}),
-    ...(quoted.card ? { card: quoted.card } : {}),
   };
+  if (quoted.quoted) draft.quoted = richQuoted(quoted.quoted);
+  if (quoted.card) draft.card = quoted.card;
+  return draft;
 }
 
-function readLegacyCreatedAt(raw: unknown): Date | null {
-  const legacy = (raw as { legacy?: { created_at?: unknown } } | null)?.legacy;
-  const createdAt = legacy?.created_at;
-  if (typeof createdAt !== "string") return null;
-  const ms = Date.parse(createdAt);
+const LegacyCreatedAtSchema = z.object({
+  legacy: z.object({ created_at: z.string() }),
+});
+
+function toDate(value: string): Date | null {
+  const ms = Date.parse(value);
   return Number.isFinite(ms) ? new Date(ms) : null;
 }

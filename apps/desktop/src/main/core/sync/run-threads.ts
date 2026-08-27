@@ -155,8 +155,8 @@ export async function syncThreads(
   const queue = [...fresh, ...recovery];
   const bulk = await enqueue(
     queue.map((entry) => {
-      const seed = buildThreadsSavedSeed(entry) ?? undefined;
-      return { url: entry.url, ...(seed ? { seed } : {}) };
+      const seed = buildThreadsSavedSeed(entry);
+      return seed ? { url: entry.url, seed } : { url: entry.url };
     }),
     { trigger: "sync:threads", accountId },
   );

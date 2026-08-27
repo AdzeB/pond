@@ -2,9 +2,10 @@ import type { MediaType } from "@pond/schema/db";
 import { majorityMediaType } from "@pond/schema/media-type";
 import type { RawJson } from "@pond/schema/raw";
 import {
-  captureFromTweetShaped,
+  captureFromTweetDraft,
   draftFromRichPost,
-} from "../capture/tweet-shaped";
+  type RichPostDraft,
+} from "../capture/tweet-draft";
 import type { RichThread } from "../refresh/harvest/threads/graphql";
 import type { SavedEntry } from "../refresh/harvest/threads/saved-types";
 
@@ -24,7 +25,7 @@ export function buildThreadsSavedSeed(entry: SavedEntry): SaveSeed | null {
   if (!rich) return null;
 
   const publishedAt = rich.publishedAt ? new Date(rich.publishedAt) : null;
-  const capture = captureFromTweetShaped(draftFromRichPost(richPost(rich)));
+  const capture = captureFromTweetDraft(draftFromRichPost(richPost(rich)));
 
   const handle = capture.author?.handle;
   const name = capture.author?.name;
@@ -52,24 +53,27 @@ export function buildThreadsSavedSeed(entry: SavedEntry): SaveSeed | null {
   };
 }
 
-function richPost(rich: RichThread): Parameters<typeof draftFromRichPost>[0] {
-  return {
+function richPost(rich: RichThread): RichPostDraft {
+  const author: RichPostDraft["author"] = {
+    handle: rich.author.handle,
+    name: rich.author.name,
+  };
+  if (rich.author.avatarUrl) author.avatarUrl = rich.author.avatarUrl;
+  if (rich.author.verified) author.verified = true;
+
+  const draft: RichPostDraft = {
     source: "threads",
     id: rich.postId,
     url: rich.url,
     text: rich.fullText,
-    author: {
-      handle: rich.author.handle,
-      name: rich.author.name,
-      ...(rich.author.avatarUrl ? { avatarUrl: rich.author.avatarUrl } : {}),
-      ...(rich.author.verified ? { verified: true } : {}),
-    },
+    author,
     media: rich.media,
     metrics: rich.metrics,
-    ...(rich.quoted ? { quoted: richPost(rich.quoted) } : {}),
-    ...(rich.card ? { card: rich.card } : {}),
-    ...(rich.isReply ? { isReply: true } : {}),
-    ...(rich.replyingTo ? { replyingTo: rich.replyingTo } : {}),
-    ...(rich.publishedAt ? { publishedAt: rich.publishedAt } : {}),
   };
+  if (rich.quoted) draft.quoted = richPost(rich.quoted);
+  if (rich.card) draft.card = rich.card;
+  if (rich.isReply) draft.isReply = true;
+  if (rich.replyingTo) draft.replyingTo = rich.replyingTo;
+  if (rich.publishedAt) draft.publishedAt = rich.publishedAt;
+  return draft;
 }

@@ -157,8 +157,8 @@ export async function syncTwitter(
   const queue = [...fresh, ...recovery];
   const bulk = await enqueue(
     queue.map((entry) => {
-      const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
-      return { url: entry.url, ...(seed ? { seed } : {}) };
+      const seed = buildTwitterBookmarkSeed(entry);
+      return seed ? { url: entry.url, seed } : { url: entry.url };
     }),
     { trigger: "sync:twitter", accountId },
   );
