@@ -3,21 +3,19 @@ import {
   installInterceptor,
   type RequestLens,
 } from "@/utils/intercept";
+import {
+  asNumber,
+  asText,
+  isRecord,
+  type JsonValue,
+  parseJsonValue,
+} from "@/utils/json";
 
 /** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching; likes ("digg") are excluded. */
 const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;
 /** Feed/detail payloads that carry author handles; TikTok reshuffles these often and uses POST as well as GET. */
 const FEED_RE =
   /\/api\/(?:[a-z_]+\/)*(?:aweme|item|feed|post|recommend|detail|list)/i;
-
-function readJson(text: string | null): any {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
-}
 
 const ID_KEYS = ["aweme_id", "awemeId", "item_id", "itemId"] as const;
 
@@ -52,12 +50,13 @@ async function awemeIdFromBody(req: RequestLens): Promise<string | null> {
   } catch {
     /* not form-encoded */
   }
-  const json = readJson(body);
-  if (json && typeof json === "object") {
+  const json = parseJsonValue(body);
+  if (isRecord(json)) {
     for (const key of ID_KEYS) {
-      const v = (json as Record<string, unknown>)[key];
-      if (typeof v === "string" && v) return v;
-      if (typeof v === "number") return String(v);
+      const text = asText(json[key]);
+      if (text) return text;
+      const numeric = asNumber(json[key]);
+      if (numeric !== undefined) return String(numeric);
     }
   }
   return null;
@@ -104,28 +103,21 @@ export function inject(): void {
   const usernameByAwemeId = new Map<string, string>();
   const emitted = new Set<string>();
 
-  function walkForAweme(obj: any): void {
-    if (!obj || typeof obj !== "object") return;
-    if (Array.isArray(obj)) {
-      for (const x of obj) walkForAweme(x);
+  function walkForAweme(node: JsonValue): void {
+    if (Array.isArray(node)) {
+      for (const child of node) walkForAweme(child);
       return;
     }
-    const id = obj.aweme_id ?? obj.awemeId ?? obj.id;
-    if (id && obj.author) {
-      const username =
-        obj.author.unique_id ??
-        obj.author.uniqueId ??
-        obj.author.handle ??
-        null;
-      if (typeof username === "string" && username.length > 0) {
-        usernameByAwemeId.set(String(id), username);
-      }
+    if (!isRecord(node)) return;
+    const id = node.aweme_id ?? node.awemeId ?? node.id;
+    const author = node.author;
+    if (id && isRecord(author)) {
+      const handle = asText(
+        author.unique_id ?? author.uniqueId ?? author.handle,
+      );
+      if (handle) usernameByAwemeId.set(String(id), handle);
     }
-    for (const k of Object.keys(obj)) {
-      try {
-        walkForAweme(obj[k]);
-      } catch {}
-    }
+    for (const child of Object.values(node)) walkForAweme(child);
   }
 
   function emitFavorite(id: string): void {
@@ -150,13 +142,13 @@ export function inject(): void {
       if (FAVORITE_RE.test(req.url) && isFavoriteType(req.url)) {
         const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
         if (id) {
-          walkForAweme(readJson(await res.readText()));
+          walkForAweme(parseJsonValue(await res.readText()));
           emitFavorite(id);
         }
         return;
       }
       if (FEED_RE.test(req.url)) {
-        walkForAweme(readJson(await res.readText()));
+        walkForAweme(parseJsonValue(await res.readText()));
       }
     },
   });

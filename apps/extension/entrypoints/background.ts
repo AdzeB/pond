@@ -1,17 +1,26 @@
-import type { Source } from "@pond/schema/db";
-import type {
-  ExtensionCookie,
-  SessionImportResponse,
+import { SOURCES, type Source } from "@pond/schema/db";
+import type { EnqueueRequest } from "@pond/schema/ingest";
+import {
+  type ExtensionCookie,
+  sessionImportResponseSchema,
 } from "@pond/schema/session";
+import { z } from "zod";
 import { onMessage } from "@/utils/messaging";
 import { nativeCall } from "@/utils/native";
 import { probe } from "@/utils/probe";
 import { ensureSettings } from "@/utils/settings";
-import type { PushSessionResult } from "@/utils/types";
+import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
 import { cookieDomainForSource, hostToSource } from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
 const SAVE_MENU_ID = "pond-save";
+
+const capturePayloadSchema = z.object({
+  url: z.string(),
+  trigger: z.string().optional(),
+});
+
+const pendingSessionSchema = z.object({ source: z.enum(SOURCES) });
 
 export default defineBackground(() => {
   const recentAutoPush = new Map<Source, number>();
@@ -69,12 +78,14 @@ export default defineBackground(() => {
     fn("[pond]", data.message, data.data);
   });
 
-  onMessage("capture", ({ data, sender }) =>
-    handleCapture(data, sender.tab?.id).catch((err) => {
+  onMessage("capture", ({ data, sender }) => {
+    const payload = capturePayloadSchema.safeParse(data);
+    if (!payload.success) return false;
+    return handleCapture(payload.data, sender.tab?.id).catch((err) => {
       console.error("[pond] capture failed", err);
       return false;
-    }),
-  );
+    });
+  });
 
   onMessage("openPond", ({ data }) => openPondTab(data));
 
@@ -124,11 +135,9 @@ export default defineBackground(() => {
 
   async function fetchPendingSource(): Promise<Source | null> {
     const result = await nativeCall({ type: "session.pending" });
-    if (!result.ok || !result.data || typeof result.data !== "object") {
-      return null;
-    }
-    const source = (result.data as { source?: Source }).source;
-    return source ?? null;
+    if (!result.ok) return null;
+    const pending = pendingSessionSchema.safeParse(result.data);
+    return pending.success ? pending.data.source : null;
   }
 
   async function maybeAutoPush(): Promise<void> {
@@ -197,11 +206,11 @@ export default defineBackground(() => {
     if (!result.ok) {
       return { ok: false, reason: "network", detail: result.error };
     }
-    const data = result.data as SessionImportResponse | undefined;
-    if (!data) {
+    const imported = sessionImportResponseSchema.safeParse(result.data);
+    if (!imported.success) {
       return { ok: false, reason: "network", detail: "bad response shape" };
     }
-    return { ok: true, data };
+    return { ok: true, data: imported.data };
   }
 
   function cookieFromChrome(c: chrome.cookies.Cookie): ExtensionCookie {
@@ -213,13 +222,14 @@ export default defineBackground(() => {
       secure: c.secure,
       httpOnly: c.httpOnly,
       sameSite: normaliseSameSite(c.sameSite),
-      expirationDate:
-        typeof c.expirationDate === "number" ? c.expirationDate : null,
+      expirationDate: c.expirationDate ?? null,
       hostOnly: c.hostOnly,
     };
   }
 
-  function normaliseSameSite(s: unknown): ExtensionCookie["sameSite"] {
+  function normaliseSameSite(
+    s: chrome.cookies.Cookie["sameSite"],
+  ): ExtensionCookie["sameSite"] {
     if (s === "no_restriction" || s === "lax" || s === "strict") return s;
     return "unspecified";
   }
@@ -258,21 +268,21 @@ export default defineBackground(() => {
   }
 
   async function handleCapture(
-    payload: { url: string; trigger?: string },
+    payload: PondCapturePayload,
     tabId?: number,
   ): Promise<boolean> {
-    if (!payload || typeof payload.url !== "string") return false;
-
     const cookies = wantsPageCookies(payload.trigger)
       ? await cookiesForUrl(payload.url)
       : [];
 
-    const result = await nativeCall({
+    const request: EnqueueRequest & { type: "enqueue" } = {
       type: "enqueue",
       url: payload.url,
-      ...(payload.trigger ? { trigger: payload.trigger } : {}),
-      ...(cookies.length > 0 ? { cookies } : {}),
-    });
+    };
+    if (payload.trigger) request.trigger = payload.trigger;
+    if (cookies.length > 0) request.cookies = cookies;
+
+    const result = await nativeCall(request);
 
     if (!result.ok) {
       console.warn("[pond] enqueue rejected", result.error);
@@ -285,17 +295,17 @@ export default defineBackground(() => {
 
   function flashBadge(tabId: number | undefined, text: string, color: string) {
     if (!chrome.action) return;
-    const opts: { text: string; tabId?: number } = { text };
-    const colorOpts: { color: string; tabId?: number } = { color };
-    if (typeof tabId === "number") {
-      opts.tabId = tabId;
-      colorOpts.tabId = tabId;
+    const badge: chrome.action.BadgeTextDetails = { text };
+    const badgeColor: chrome.action.BadgeColorDetails = { color };
+    if (tabId !== undefined) {
+      badge.tabId = tabId;
+      badgeColor.tabId = tabId;
     }
-    chrome.action.setBadgeBackgroundColor(colorOpts);
-    chrome.action.setBadgeText(opts);
+    chrome.action.setBadgeBackgroundColor(badgeColor);
+    chrome.action.setBadgeText(badge);
     setTimeout(() => {
-      const clear: { text: string; tabId?: number } = { text: "" };
-      if (typeof tabId === "number") clear.tabId = tabId;
+      const clear: chrome.action.BadgeTextDetails = { text: "" };
+      if (tabId !== undefined) clear.tabId = tabId;
       chrome.action.setBadgeText(clear);
     }, 1500);
   }

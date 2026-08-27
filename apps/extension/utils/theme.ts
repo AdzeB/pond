@@ -1,14 +1,16 @@
-export interface ThemeVars {
-  mode: "light" | "dark";
-  bgL: number;
-  bgC: number;
-  bgH: number;
-  fgL: number;
-  fgC: number;
-  fgH: number;
-  accentL: number;
-  accentC: number;
-  accentH: number;
-  contrast: number;
-  background?: string;
-}
+import { z } from "zod";
+
+export const themeVarsSchema = z.object({
+  mode: z.enum(["light", "dark"]),
+  bgL: z.number(),
+  bgC: z.number(),
+  bgH: z.number(),
+  fgL: z.number(),
+  fgC: z.number(),
+  fgH: z.number(),
+  accentL: z.number(),
+  accentC: z.number(),
+  accentH: z.number(),
+  contrast: z.number(),
+  background: z.string().optional(),
+});

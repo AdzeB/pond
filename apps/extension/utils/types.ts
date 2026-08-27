@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { SessionImportResponse } from "@pond/schema/session";
+import { at, isRecord, type JsonValue } from "./json";
 
 export const POND_EVENT = "pond:capture";
 
@@ -34,9 +35,9 @@ export type PushSessionResult =
       detail?: string;
     };
 
-export interface PondSettings {
+export type PondSettings = {
   enabled: Record<Source, boolean>;
-}
+};
 
 export const DEFAULT_SETTINGS: PondSettings = {
   enabled: {
@@ -55,11 +56,15 @@ export const DEFAULT_SETTINGS: PondSettings = {
 };
 
 /** Keep `enabled` from older stored shapes; drop port, apiKey, and endpoint. */
-export function normalizeStoredSettings(stored: unknown): PondSettings {
-  const base = (stored ?? {}) as Partial<PondSettings> & {
-    enabled?: Partial<Record<Source, boolean>>;
-  };
-  return {
-    enabled: { ...DEFAULT_SETTINGS.enabled, ...(base.enabled ?? {}) },
-  };
+export function normalizeStoredSettings(stored: JsonValue): PondSettings {
+  const storedEnabled = at(stored, "enabled");
+  if (!isRecord(storedEnabled)) {
+    return { enabled: { ...DEFAULT_SETTINGS.enabled } };
+  }
+  // Stored flags are only read for truthiness, so legacy non-boolean entries keep behaving as they did.
+  const enabled: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(storedEnabled)) {
+    enabled[key] = Boolean(value);
+  }
+  return { enabled: { ...DEFAULT_SETTINGS.enabled, ...enabled } };
 }

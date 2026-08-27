@@ -8,6 +8,12 @@ import {
 const ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
+declare global {
+  interface Window {
+    __pondInstagramInjected?: boolean;
+  }
+}
+
 function looksLikeSaveLabel(label: string | null): boolean {
   if (!label) return false;
   const l = label.toLowerCase().trim();
@@ -130,8 +136,8 @@ function isGraphqlUrl(url: string): boolean {
 }
 
 export function inject(): void {
-  if ((window as any).__pondInstagramInjected) return;
-  (window as any).__pondInstagramInjected = true;
+  if (window.__pondInstagramInjected) return;
+  window.__pondInstagramInjected = true;
 
   document.addEventListener(
     "click",
