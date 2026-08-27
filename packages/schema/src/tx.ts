@@ -4,12 +4,7 @@ import type {
   NewTag,
   NewTagGroup,
   NewTagGroupMember,
-  Save,
-  SavedView,
   SyncAction,
-  Tag,
-  TagGroup,
-  TagGroupMember,
 } from "./db";
 
 export type ActorKind = "user" | "system";
@@ -41,7 +36,7 @@ export type Transaction =
       model: "save";
       id: string;
       patch: Partial<NewSave>;
-      before: Partial<Save>;
+      before: Partial<NewSave>;
       files?: TxSaveFile[];
       meta?: TxMeta;
     }
@@ -49,7 +44,7 @@ export type Transaction =
       kind: "delete";
       model: "save";
       id: string;
-      before: Save;
+      before: NewSave;
       meta?: TxMeta;
     }
   | {
@@ -68,7 +63,7 @@ export type Transaction =
       kind: "purge";
       model: "save";
       id: string;
-      before: Save;
+      before: NewSave;
       meta?: TxMeta;
     }
   | {
@@ -83,14 +78,14 @@ export type Transaction =
       model: "tag";
       id: string;
       patch: Partial<NewTag>;
-      before: Partial<Tag>;
+      before: Partial<NewTag>;
       meta?: TxMeta;
     }
   | {
       kind: "delete";
       model: "tag";
       id: string;
-      before: Tag;
+      before: NewTag;
       meta?: TxMeta;
     }
   | {
@@ -105,14 +100,14 @@ export type Transaction =
       model: "tag_group";
       id: string;
       patch: Partial<NewTagGroup>;
-      before: Partial<TagGroup>;
+      before: Partial<NewTagGroup>;
       meta?: TxMeta;
     }
   | {
       kind: "delete";
       model: "tag_group";
       id: string;
-      before: TagGroup;
+      before: NewTagGroup;
       meta?: TxMeta;
     }
   | {
@@ -126,7 +121,7 @@ export type Transaction =
       kind: "delete";
       model: "tag_group_member";
       id: string;
-      before: TagGroupMember;
+      before: NewTagGroupMember;
       meta?: TxMeta;
     }
   | {
@@ -141,16 +136,23 @@ export type Transaction =
       model: "saved_view";
       id: string;
       patch: Partial<NewSavedView>;
-      before: Partial<SavedView>;
+      before: Partial<NewSavedView>;
       meta?: TxMeta;
     }
   | {
       kind: "delete";
       model: "saved_view";
       id: string;
-      before: SavedView;
+      before: NewSavedView;
       meta?: TxMeta;
     };
+
+/** The row image a sync action records: whatever a transaction carries as `data` or `patch`. */
+export type SyncActionPayload =
+  | Extract<Transaction, { data: unknown }>["data"]
+  | Extract<Transaction, { patch: unknown }>["patch"]
+  | { deletedAt: Date | null }
+  | null;
 
 export type TransactionKind = Transaction["kind"];
 export type TransactionModel = Transaction["model"];
@@ -169,7 +171,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "delete",
             model: "save",
             id: tx.id,
-            before: tx.data as Save,
+            before: tx.data,
             meta: tx.meta,
           };
         case "tag":
@@ -177,7 +179,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "delete",
             model: "tag",
             id: tx.id,
-            before: tx.data as Tag,
+            before: tx.data,
             meta: tx.meta,
           };
         case "tag_group":
@@ -185,7 +187,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "delete",
             model: "tag_group",
             id: tx.id,
-            before: tx.data as TagGroup,
+            before: tx.data,
             meta: tx.meta,
           };
         case "tag_group_member":
@@ -193,7 +195,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "delete",
             model: "tag_group_member",
             id: tx.id,
-            before: tx.data as TagGroupMember,
+            before: tx.data,
             meta: tx.meta,
           };
         case "saved_view":
@@ -201,7 +203,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "delete",
             model: "saved_view",
             id: tx.id,
-            before: tx.data as SavedView,
+            before: tx.data,
             meta: tx.meta,
           };
       }
@@ -214,7 +216,7 @@ export function inverse(tx: Transaction): Transaction {
             model: "save",
             id: tx.id,
             patch: tx.before,
-            before: tx.patch as Partial<Save>,
+            before: tx.patch,
             meta: tx.meta,
           };
         case "tag":
@@ -223,7 +225,7 @@ export function inverse(tx: Transaction): Transaction {
             model: "tag",
             id: tx.id,
             patch: tx.before,
-            before: tx.patch as Partial<Tag>,
+            before: tx.patch,
             meta: tx.meta,
           };
         case "tag_group":
@@ -232,7 +234,7 @@ export function inverse(tx: Transaction): Transaction {
             model: "tag_group",
             id: tx.id,
             patch: tx.before,
-            before: tx.patch as Partial<TagGroup>,
+            before: tx.patch,
             meta: tx.meta,
           };
         case "saved_view":
@@ -241,7 +243,7 @@ export function inverse(tx: Transaction): Transaction {
             model: "saved_view",
             id: tx.id,
             patch: tx.before,
-            before: tx.patch as Partial<SavedView>,
+            before: tx.patch,
             meta: tx.meta,
           };
       }
@@ -253,7 +255,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "create",
             model: "save",
             id: tx.id,
-            data: tx.before as NewSave,
+            data: tx.before,
             meta: tx.meta,
           };
         case "tag":
@@ -261,7 +263,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "create",
             model: "tag",
             id: tx.id,
-            data: tx.before as NewTag,
+            data: tx.before,
             meta: tx.meta,
           };
         case "tag_group":
@@ -269,7 +271,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "create",
             model: "tag_group",
             id: tx.id,
-            data: tx.before as NewTagGroup,
+            data: tx.before,
             meta: tx.meta,
           };
         case "tag_group_member":
@@ -277,7 +279,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "create",
             model: "tag_group_member",
             id: tx.id,
-            data: tx.before as NewTagGroupMember,
+            data: tx.before,
             meta: tx.meta,
           };
         case "saved_view":
@@ -285,7 +287,7 @@ export function inverse(tx: Transaction): Transaction {
             kind: "create",
             model: "saved_view",
             id: tx.id,
-            data: tx.before as NewSavedView,
+            data: tx.before,
             meta: tx.meta,
           };
       }
@@ -299,7 +301,7 @@ export function inverse(tx: Transaction): Transaction {
         kind: "create",
         model: "save",
         id: tx.id,
-        data: tx.before as NewSave,
+        data: tx.before,
         meta: tx.meta,
       };
   }
