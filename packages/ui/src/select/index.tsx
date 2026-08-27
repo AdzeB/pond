@@ -33,7 +33,7 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
           <Button
             size={size}
             icon={icon}
-            variant={"secondary"}
+            variant={variant ?? "secondary"}
             className={cn(styles.trigger, className)}
           >
             {props.children}
