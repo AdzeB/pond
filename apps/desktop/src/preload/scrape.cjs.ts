@@ -453,8 +453,7 @@ const THREADS_HOOK = `
   })();
 `;
 
-const host =
-  typeof location !== "undefined" ? location.hostname.toLowerCase() : "";
+const host = globalThis.location?.hostname.toLowerCase() ?? "";
 const isTwitter =
   host === "x.com" ||
   host === "twitter.com" ||

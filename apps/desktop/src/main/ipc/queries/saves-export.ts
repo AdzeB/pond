@@ -2,11 +2,19 @@ import { copyFile, writeFile } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { saves } from "@pond/schema/db";
 import { desc, eq, inArray, isNull } from "drizzle-orm";
-import { BrowserWindow, dialog } from "electron";
+import { dialog } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
-import { type QueryHandlerMap, resolveSaveFilePath } from "../helpers";
+import { resolveSaveFilePath } from "../helpers";
+import {
+  FileIndexParam,
+  type QueryHandlerMap,
+  query,
+  StringListParam,
+  StringParam,
+} from "./params";
 
 function sanitizeName(s: string): string {
   return s
@@ -15,51 +23,46 @@ function sanitizeName(s: string): string {
     .slice(0, 120);
 }
 
+const IdListParams = z.object({ ids: StringListParam });
+
 export const savesExportQueries: QueryHandlerMap = {
-  async "saves.exportFile"(params, event) {
-    const id = String(params.id ?? "");
-    const fileIndex = Number(params.fileIndex ?? 0);
-    if (!id) return { ok: false as const, reason: "not_found" as const };
-    const target = await resolveSaveFilePath(
-      id,
-      Number.isFinite(fileIndex) ? fileIndex : 0,
-    );
-    if (!target.ok) return target;
+  "saves.exportFile": query(
+    z.object({ id: StringParam, fileIndex: FileIndexParam }),
+    async (params) => {
+      const id = params.id;
+      if (!id) return { ok: false as const, reason: "not_found" as const };
+      const target = await resolveSaveFilePath(id, params.fileIndex);
+      if (!target.ok) return target;
 
-    const db = await getDb();
-    const rows = await db.select().from(saves).where(eq(saves.id, id));
-    const row = rows[0];
-    const ext = extname(target.path);
-    const base = (row?.title ?? row?.id ?? "save")
-      .replace(/[\\/:*?"<>|]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .slice(0, 120);
-    const defaultName = `${base || "save"}${ext}`;
+      const db = await getDb();
+      const rows = await db.select().from(saves).where(eq(saves.id, id));
+      const row = rows[0];
+      const ext = extname(target.path);
+      const base = (row?.title ?? row?.id ?? "save")
+        .replace(/[\\/:*?"<>|]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 120);
+      const defaultName = `${base || "save"}${ext}`;
 
-    const win = event
-      ? (BrowserWindow.fromWebContents(event.sender) ?? undefined)
-      : undefined;
-    try {
-      const result = await dialog.showSaveDialog({
-        ...(win ? { browserWindow: win } : {}),
-        defaultPath: defaultName,
-      } as Electron.SaveDialogOptions);
-      if (result.canceled || !result.filePath) {
-        return { ok: false as const, reason: "cancelled" as const };
+      try {
+        const result = await dialog.showSaveDialog({
+          defaultPath: defaultName,
+        });
+        if (result.canceled || !result.filePath) {
+          return { ok: false as const, reason: "cancelled" as const };
+        }
+        await copyFile(target.path, result.filePath);
+        return { ok: true as const, path: result.filePath };
+      } catch (err) {
+        log.warn("[pond ipc] saves.exportFile failed", err);
+        return { ok: false as const, reason: "internal_error" as const };
       }
-      await copyFile(target.path, result.filePath);
-      return { ok: true as const, path: result.filePath };
-    } catch (err) {
-      log.warn("[pond ipc] saves.exportFile failed", err);
-      return { ok: false as const, reason: "internal_error" as const };
-    }
-  },
+    },
+  ),
 
-  async "saves.exportFiles"(params) {
-    const ids = Array.isArray(params.ids)
-      ? (params.ids as unknown[]).map(String).filter(Boolean)
-      : [];
+  "saves.exportFiles": query(IdListParams, async (params) => {
+    const ids = params.ids.filter(Boolean);
     if (ids.length === 0) return { ok: false as const, error: "no_selection" };
 
     const picked = await dialog.showOpenDialog({
@@ -89,16 +92,14 @@ export const savesExportQueries: QueryHandlerMap = {
       exported++;
     }
     return { ok: true as const, exported, dir };
-  },
+  }),
 
-  async "saves.exportCsv"(params) {
-    const ids = Array.isArray(params.ids)
-      ? (params.ids as unknown[]).map(String).filter(Boolean)
-      : null;
+  "saves.exportCsv": query(IdListParams, async (params) => {
+    const ids = params.ids.filter(Boolean);
 
     const db = await getDb();
     const rows =
-      ids && ids.length > 0
+      ids.length > 0
         ? await db.select().from(saves).where(inArray(saves.id, ids))
         : await db
             .select()
@@ -122,11 +123,22 @@ export const savesExportQueries: QueryHandlerMap = {
       "status",
       "savedAt",
     ];
-    const records = rows.map((r) => ({
-      ...r,
-      tags: (r.tags ?? []).join("; "),
-      savedAt: r.savedAt ? new Date(r.savedAt).toISOString() : "",
-    }));
+    const records = rows.map((r) => [
+      r.id,
+      r.source,
+      r.url,
+      r.title,
+      r.author,
+      r.description,
+      r.notes,
+      r.tags,
+      r.mediaType,
+      r.width,
+      r.height,
+      r.fileSize,
+      r.status,
+      r.savedAt ? new Date(r.savedAt).toISOString() : "",
+    ]);
     const csv = toCsv(records, columns);
 
     const picked = await dialog.showSaveDialog({
@@ -138,5 +150,5 @@ export const savesExportQueries: QueryHandlerMap = {
     }
     await writeFile(picked.filePath, csv, "utf8");
     return { ok: true as const, count: rows.length, path: picked.filePath };
-  },
+  }),
 };

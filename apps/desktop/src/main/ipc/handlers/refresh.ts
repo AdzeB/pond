@@ -1,4 +1,3 @@
-import type { Source } from "@pond/schema/db";
 import { isSource } from "@pond/schema/sources";
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
@@ -41,9 +40,10 @@ export function registerRefreshHandlers(): void {
         overwrite?: boolean;
       } = {},
     ) => {
+      const source = opts?.source ?? "";
       try {
         return await startRefreshBackfill({
-          source: (opts?.source ?? null) as Source | null,
+          source: isSource(source) ? source : null,
           onlyMissing: Boolean(opts?.onlyMissing),
           overwrite: Boolean(opts?.overwrite),
         });
@@ -90,9 +90,9 @@ export function registerRefreshHandlers(): void {
 
   safeHandle(IPC.sourceStatus, async (_, source: string) => {
     try {
-      const connected = await isSourceConnected(
-        source as Parameters<typeof isSourceConnected>[0],
-      );
+      const connected = isSource(source)
+        ? await isSourceConnected(source)
+        : false;
       return { ok: true as const, connected };
     } catch (err) {
       log.warn("[pond ipc] sourceStatus failed", err);
@@ -101,7 +101,7 @@ export function registerRefreshHandlers(): void {
   });
 
   safeHandle(IPC.sessionPendingClear, async (_, source?: string) => {
-    if (typeof source === "string" && isSource(source)) {
+    if (source !== undefined && isSource(source)) {
       clearPendingSessionSource(source);
     } else {
       clearPendingSessionSource();

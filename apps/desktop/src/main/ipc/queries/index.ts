@@ -1,13 +1,10 @@
 import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
-import {
-  type QueryHandler,
-  type QueryHandlerMap,
-  safeHandle,
-} from "../helpers";
+import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
 import { aiQueries } from "./ai";
 import { libraryQueries } from "./library";
+import type { QueryHandlerMap, QueryParams } from "./params";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
@@ -32,12 +29,11 @@ const queryRegistry: QueryHandlerMap = {
 };
 
 export function registerQueryHandler(): void {
-  safeHandle(IPC.query, async (event, name: string, raw: unknown) => {
-    const handler: QueryHandler | undefined = queryRegistry[name];
+  safeHandle(IPC.query, async (event, name: string, raw?: QueryParams) => {
+    const handler = queryRegistry[name];
     if (!handler) throw new Error(`unknown query: ${name}`);
     try {
-      const params = (raw ?? {}) as Record<string, unknown>;
-      return await handler(params, event);
+      return await handler(raw, event);
     } catch (err) {
       log.error("[pond ipc] query failed", name, err);
       throw err;

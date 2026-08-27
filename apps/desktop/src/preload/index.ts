@@ -1,9 +1,36 @@
-import { contextBridge, ipcRenderer, webUtils } from "electron";
+import type { Transaction } from "@pond/schema/tx";
+import {
+  contextBridge,
+  type IpcRendererEvent,
+  ipcRenderer,
+  webUtils,
+} from "electron";
 import {
   IPC,
   type MenuActionId,
   type RecentMenuEntry,
 } from "../shared/constants";
+import type {
+  WireFilterQueryParams,
+  WireJson,
+  WirePrefsPatch,
+  WireQueryParams,
+  WireSyncAction,
+  WireSyncStatusUpdate,
+  WireUndoState,
+} from "../shared/wire";
+
+/** One channel for every read: the handler picked by `name` decides the reply shape, so callers parse it. */
+interface QueryFn {
+  (name: "saves.query", params: WireFilterQueryParams): Promise<WireJson>;
+  (name: "settings.setPrefs", params: WirePrefsPatch): Promise<WireJson>;
+  (name: string, params?: WireQueryParams): Promise<WireJson>;
+}
+
+const query: QueryFn = (
+  name: string,
+  params?: WireQueryParams | WireFilterQueryParams | WirePrefsPatch,
+): Promise<WireJson> => ipcRenderer.invoke(IPC.query, name, params);
 
 export interface RelocatePreviewWire {
   currentPath: string;
@@ -33,51 +60,50 @@ export interface StorageGuardStatusWire {
 let cachedPondId: string | null = null;
 
 const api = {
-  tx(tx: unknown): Promise<unknown> {
+  /** Resolves once main has committed the change; the reply is a raw database row, so the renderer learns what changed from `onSyncAction` instead. */
+  tx(tx: Transaction): Promise<void> {
     return ipcRenderer.invoke(IPC.tx, tx);
   },
 
   pondId(): string {
     if (cachedPondId) return cachedPondId;
     try {
-      const value = ipcRenderer.sendSync(IPC.pondId) as unknown;
-      cachedPondId =
-        typeof value === "string" && value.length > 0 ? value : "unbound";
+      const value: string = ipcRenderer.sendSync(IPC.pondId);
+      cachedPondId = value.length > 0 ? value : "unbound";
     } catch {
       cachedPondId = "unbound";
     }
     return cachedPondId;
   },
 
-  batch(txs: unknown[]): Promise<unknown[]> {
+  batch(txs: Transaction[]): Promise<void> {
     return ipcRenderer.invoke(IPC.txBatch, txs);
   },
 
-  undo(): Promise<unknown> {
+  undo(): Promise<WireUndoState> {
     return ipcRenderer.invoke(IPC.undo);
   },
 
-  redo(): Promise<unknown> {
+  redo(): Promise<WireUndoState> {
     return ipcRenderer.invoke(IPC.redo);
   },
 
-  query(name: string, params?: unknown): Promise<unknown> {
-    return ipcRenderer.invoke(IPC.query, name, params);
-  },
+  query,
 
   /** Electron 41 removed File.path; resolve dropped/picked files here so main can read them without the bytes crossing IPC. */
   pathForFile(file: File): string {
     return webUtils.getPathForFile(file);
   },
 
-  onSyncAction(cb: (action: unknown) => void): () => void {
-    const listener = (_: unknown, action: unknown) => cb(action);
+  onSyncAction(cb: (action: WireSyncAction) => void): () => void {
+    const listener = (_: IpcRendererEvent, action: WireSyncAction) =>
+      cb(action);
     ipcRenderer.on(IPC.syncAction, listener);
     return () => ipcRenderer.off(IPC.syncAction, listener);
   },
 
   onNavigate(cb: (path: string) => void): () => void {
-    const listener = (_: unknown, path: string) => cb(path);
+    const listener = (_: IpcRendererEvent, path: string) => cb(path);
     ipcRenderer.on(IPC.nav, listener);
     return () => ipcRenderer.off(IPC.nav, listener);
   },
@@ -95,7 +121,7 @@ const api = {
   },
 
   onMenuAction(cb: (id: MenuActionId) => void): () => void {
-    const listener = (_: unknown, id: MenuActionId) => cb(id);
+    const listener = (_: IpcRendererEvent, id: MenuActionId) => cb(id);
     ipcRenderer.on(IPC.menuAction, listener);
     return () => ipcRenderer.off(IPC.menuAction, listener);
   },
@@ -105,7 +131,7 @@ const api = {
   },
 
   onMenuOpenSave(cb: (id: string) => void): () => void {
-    const listener = (_: unknown, id: string) => cb(id);
+    const listener = (_: IpcRendererEvent, id: string) => cb(id);
     ipcRenderer.on(IPC.menuOpenSave, listener);
     return () => ipcRenderer.off(IPC.menuOpenSave, listener);
   },
@@ -237,25 +263,16 @@ const api = {
     return ipcRenderer.invoke(IPC.syncCancel, accountId);
   },
 
-  onSyncStatus(
-    cb: (update: {
-      accountId: string;
-      source: string;
-      state: "idle" | "running" | "done" | "error" | "auth_required" | "paused";
-      message?: string;
-      progress?: { current: number; total: number };
-      lastSyncedAt?: string | null;
-      lastError?: string | null;
-    }) => void,
-  ): () => void {
-    const listener = (_: unknown, update: Parameters<typeof cb>[0]) =>
+  onSyncStatus(cb: (update: WireSyncStatusUpdate) => void): () => void {
+    const listener = (_: IpcRendererEvent, update: WireSyncStatusUpdate) =>
       cb(update);
     ipcRenderer.on(IPC.syncStatus, listener);
     return () => ipcRenderer.off(IPC.syncStatus, listener);
   },
 
   onStorageStatus(cb: (status: StorageGuardStatusWire) => void): () => void {
-    const listener = (_: unknown, status: StorageGuardStatusWire) => cb(status);
+    const listener = (_: IpcRendererEvent, status: StorageGuardStatusWire) =>
+      cb(status);
     ipcRenderer.on(IPC.storageStatus, listener);
     return () => ipcRenderer.off(IPC.storageStatus, listener);
   },
@@ -273,8 +290,10 @@ const api = {
   onArchiveNavigate(
     cb: (payload: { guestId: number; url: string }) => void,
   ): () => void {
-    const listener = (_: unknown, payload: { guestId: number; url: string }) =>
-      cb(payload);
+    const listener = (
+      _: IpcRendererEvent,
+      payload: { guestId: number; url: string },
+    ) => cb(payload);
     ipcRenderer.on(IPC.archiveNavigate, listener);
     return () => ipcRenderer.off(IPC.archiveNavigate, listener);
   },
@@ -308,8 +327,8 @@ function readShellHint(): ShellHint {
   const arg = process.argv.find((a) => a.startsWith(prefix));
   if (!arg) return {};
   try {
-    const parsed = JSON.parse(arg.slice(prefix.length));
-    return parsed && typeof parsed === "object" ? parsed : {};
+    const parsed: ShellHint | null = JSON.parse(arg.slice(prefix.length));
+    return parsed ?? {};
   } catch {
     return {};
   }
