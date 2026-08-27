@@ -254,13 +254,18 @@ export interface PackedSave<T> {
   width: number;
 }
 
+export interface PackedLayout<T> {
+  items: PackedSave<T>[];
+  totalHeight: number;
+}
+
 export function packMasonry<T extends { aspect?: number }>(
   saves: T[],
   containerWidth: number,
   colMin: number,
   gap: number,
   chromeHeight: number,
-): { items: PackedSave<T>[]; totalHeight: number } {
+): PackedLayout<T> {
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
   const heights = new Array<number>(cols).fill(0);
@@ -286,7 +291,7 @@ export function packUniform<T>(
   colMin: number,
   gap: number,
   chromeHeight: number,
-): { items: PackedSave<T>[]; totalHeight: number } {
+): PackedLayout<T> {
   const cols = Math.max(1, Math.floor((containerWidth + gap) / (colMin + gap)));
   const colW = (containerWidth - gap * (cols - 1)) / cols;
   const cellH = colW + chromeHeight;

@@ -2,6 +2,7 @@
 
 import { Button, Input } from "@pond/ui";
 import { type FormEvent, useState } from "react";
+import { z } from "zod";
 import styles from "./styles.module.css";
 
 type Status = "idle" | "loading" | "success" | "error";
@@ -10,6 +11,10 @@ interface SubscribeFormProps {
   buttonLabel?: string;
   successMessage?: string;
 }
+
+const ErrorBodySchema = z.object({
+  error: z.string().optional().catch(undefined),
+});
 
 export function SubscribeForm({
   buttonLabel = "Request Early Access",
@@ -34,8 +39,10 @@ export function SubscribeForm({
       });
 
       if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        setError(body.error ?? "Couldn't subscribe. Try again in a moment.");
+        const body = ErrorBodySchema.safeParse(await response.json());
+        setError(
+          body.data?.error ?? "Couldn't subscribe. Try again in a moment.",
+        );
         setStatus("error");
         return;
       }

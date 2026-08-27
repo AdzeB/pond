@@ -1,23 +1,27 @@
 import Image from "next/image";
 import styles from "./styles.module.css";
 
-const TYPE_LABELS: Record<string, string> = {
-  image: "JPG",
-  video: "MP4",
-  post: "PNG",
-};
+const TYPE_LABELS = new Map<string, string>(
+  Object.entries({
+    image: "JPG",
+    video: "MP4",
+    post: "PNG",
+  }),
+);
 
-const SOURCE_LOGOS: Record<string, string> = {
-  x: "/demo/logos/twitter.png",
-  instagram: "/demo/logos/instagram.png",
-  pinterest: "/demo/logos/pinterest.png",
-  arena: "/demo/logos/arena.png",
-  cosmos: "/demo/logos/cosmos.png",
-  tiktok: "/demo/logos/tiktok.png",
-  youtube: "/demo/logos/youtube.png",
-  reddit: "/demo/logos/reddit.png",
-  threads: "/demo/logos/threads.png",
-};
+const SOURCE_LOGOS = new Map<string, string>(
+  Object.entries({
+    x: "/demo/logos/twitter.png",
+    instagram: "/demo/logos/instagram.png",
+    pinterest: "/demo/logos/pinterest.png",
+    arena: "/demo/logos/arena.png",
+    cosmos: "/demo/logos/cosmos.png",
+    tiktok: "/demo/logos/tiktok.png",
+    youtube: "/demo/logos/youtube.png",
+    reddit: "/demo/logos/reddit.png",
+    threads: "/demo/logos/threads.png",
+  }),
+);
 
 export interface SaveThumbProps {
   seed: number;
@@ -43,8 +47,8 @@ export function SaveThumb({
   time,
   mediaHeight,
 }: SaveThumbProps) {
-  const typeLabel = kind ? TYPE_LABELS[kind] : undefined;
-  const sourceLogo = source ? SOURCE_LOGOS[source] : undefined;
+  const typeLabel = kind ? TYPE_LABELS.get(kind) : undefined;
+  const sourceLogo = source ? SOURCE_LOGOS.get(source) : undefined;
 
   return (
     <div

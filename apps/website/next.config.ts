@@ -5,8 +5,14 @@ const FAVICONS = {
   development: "/favicon.development.svg",
 } as const;
 
+function isFaviconEnv(
+  value: string | undefined,
+): value is keyof typeof FAVICONS {
+  return value !== undefined && value in FAVICONS;
+}
+
 const env = process.env.VERCEL_ENV ?? process.env.NODE_ENV;
-const favicon = FAVICONS[env as keyof typeof FAVICONS];
+const favicon = isFaviconEnv(env) ? FAVICONS[env] : null;
 
 const config: NextConfig = {
   reactStrictMode: true,
