@@ -22,22 +22,13 @@ export function createIcon(
     height,
     ...props
   }: SVGProps<SVGSVGElement> & { size?: number | string }) {
-    const resolvedStroke =
-      typeof strokeWidth === "number"
-        ? strokeWidth
-        : typeof strokeWidth === "string" && strokeWidth !== ""
-          ? Number(strokeWidth)
-          : (defaults?.strokeWidth ?? 1.5);
-    const resolved =
-      width ??
-      (typeof size === "number" ? size : undefined) ??
-      defaults?.size ??
-      18;
-    const resolvedHeight =
-      height ??
-      (typeof size === "number" ? size : undefined) ??
-      defaults?.size ??
-      18;
+    const strokeNumber = Number(strokeWidth ?? "");
+    const resolvedStroke = Number.isFinite(strokeNumber)
+      ? strokeNumber
+      : (defaults?.strokeWidth ?? 1.5);
+    const fallbackSize = size ?? defaults?.size ?? 18;
+    const resolved = width ?? fallbackSize;
+    const resolvedHeight = height ?? fallbackSize;
 
     return (
       <svg

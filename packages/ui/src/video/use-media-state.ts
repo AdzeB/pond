@@ -51,13 +51,15 @@ const INITIAL: MediaState = {
   fullscreenSupported: false,
 };
 
-export function useMediaState(): {
+export interface MediaStateApi {
   state: MediaState;
   actions: MediaActions;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   rootRef: React.RefObject<HTMLDivElement | null>;
   registerVideo: (el: HTMLVideoElement | null) => void;
-} {
+}
+
+export function useMediaState(): MediaStateApi {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);

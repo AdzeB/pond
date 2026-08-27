@@ -2,18 +2,23 @@
 
 import { useSelector } from "@tanstack/react-store";
 import { clsx as cn } from "clsx";
-import { Children, isValidElement, type ReactNode } from "react";
+import {
+  Children,
+  type FunctionComponent,
+  isValidElement,
+  type ReactNode,
+} from "react";
 import { DataTableBody } from "./body";
 import { useDataTable } from "./context";
 import { DataTableHeader } from "./header";
 import styles from "./styles.module.css";
 
-export function DataTableEmpty(_: { children?: ReactNode }): null {
-  return null;
+interface SlotProps {
+  children?: ReactNode;
 }
-export function DataTableExtraRow(_: { children?: ReactNode }): null {
-  return null;
-}
+
+export const DataTableEmpty: FunctionComponent<SlotProps> = () => null;
+export const DataTableExtraRow: FunctionComponent<SlotProps> = () => null;
 
 export function DataTableRoot<T>({
   children,
@@ -29,11 +34,9 @@ export function DataTableRoot<T>({
   let extraRow: ReactNode = null;
   let emptyState: ReactNode = null;
   Children.forEach(children, (child) => {
-    if (!isValidElement(child)) return;
-    if (child.type === DataTableExtraRow)
-      extraRow = (child.props as { children?: ReactNode }).children;
-    else if (child.type === DataTableEmpty)
-      emptyState = (child.props as { children?: ReactNode }).children;
+    if (!isValidElement<SlotProps>(child)) return;
+    if (child.type === DataTableExtraRow) extraRow = child.props.children;
+    else if (child.type === DataTableEmpty) emptyState = child.props.children;
   });
 
   const hasRows = meta.rows.length > 0 || extraRow != null;
@@ -88,7 +91,7 @@ export function DataTableActionBar<T>({
       role="toolbar"
       aria-label="Bulk actions"
     >
-      {typeof children === "function" ? children(selection) : children}
+      {children instanceof Function ? children(selection) : children}
     </div>
   );
 }

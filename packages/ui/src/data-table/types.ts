@@ -2,6 +2,9 @@ import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
 
 type ColumnAlign = "start" | "center" | "end";
 
+export type SortValue = string | number | null | undefined;
+export type SortKind = "text" | "number";
+
 export interface CellContext {
   depth: number;
   expanded: boolean;
@@ -16,7 +19,9 @@ export interface TableColumn<T> {
   id: string;
   header?: ReactNode | ((ctx: HeaderContext) => ReactNode);
   cell: (row: T, ctx: CellContext) => ReactNode;
-  accessor?: (row: T) => string | number | null | undefined;
+  accessor?: (row: T) => SortValue;
+  /** How `accessor` values are ordered. Text uses a locale-aware collator. */
+  sort?: SortKind;
   width?: string;
   minWidth?: number;
   align?: ColumnAlign;

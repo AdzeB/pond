@@ -2,10 +2,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const HIDE_DELAY_MS = 2500;
 
+export interface AutoHideApi {
+  controlsVisible: boolean;
+  showControls: () => void;
+}
+
 export function useAutoHide(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
-}): { controlsVisible: boolean; showControls: () => void } {
+}): AutoHideApi {
   const { rootRef, videoRef } = opts;
   const [controlsVisible, setControlsVisible] = useState(false);
   const timer = useRef<number | null>(null);

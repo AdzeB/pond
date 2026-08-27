@@ -22,15 +22,16 @@ import {
   type RowApi,
   type SelectionState,
 } from "./context";
-import type { RenderRowArgs, TableColumn } from "./types";
+import type { RenderRowArgs, SortKind, SortValue, TableColumn } from "./types";
 
 const SELECT_WIDTH = "40px";
 const CARET_WIDTH = "28px";
 
-function defaultCompare(a: unknown, b: unknown): number {
-  if (typeof a === "string" && typeof b === "string") {
-    return a.localeCompare(b, undefined, { sensitivity: "base" });
-  }
+const collator = new Intl.Collator(undefined, { sensitivity: "base" });
+
+function compareValues(a: SortValue, b: SortValue, sort: SortKind): number {
+  if (sort === "text")
+    return collator.compare(String(a ?? ""), String(b ?? ""));
   const an = a == null ? Number.NEGATIVE_INFINITY : Number(a);
   const bn = b == null ? Number.NEGATIVE_INFINITY : Number(b);
   return an === bn ? 0 : an > bn ? 1 : -1;
@@ -98,7 +99,12 @@ export function DataTableProvider<T>({
         id: col.id,
         accessorFn: col.accessor ? (row) => col.accessor?.(row) : undefined,
         enableSorting: Boolean(col.accessor),
-        sortingFn: (a, b, id) => defaultCompare(a.getValue(id), b.getValue(id)),
+        sortingFn: (a, b, id) =>
+          compareValues(
+            a.getValue<SortValue>(id),
+            b.getValue<SortValue>(id),
+            col.sort ?? "text",
+          ),
       })),
     [columns],
   );
@@ -159,8 +165,8 @@ export function DataTableProvider<T>({
           const to = ids.indexOf(id);
           if (from >= 0 && to >= 0) {
             const [lo, hi] = from <= to ? [from, to] : [to, from];
-            for (let i = lo; i <= hi; i += 1) {
-              for (const d of withDescendants(ids[i] as string)) next.add(d);
+            for (const rowId of ids.slice(lo, hi + 1)) {
+              for (const d of withDescendants(rowId)) next.add(d);
             }
             return { selectedIds: next };
           }
@@ -188,17 +194,17 @@ export function DataTableProvider<T>({
     const clearSelection = () => toggleAll(false);
 
     const toggleExpand = (id: string) => {
+      const expandedRecord =
+        internalExpanded === true ? null : internalExpanded;
       const isOpen = Boolean(
-        expandedIds?.includes(id) ||
-          (!expandedIds && (internalExpanded as Record<string, boolean>)[id]),
+        expandedIds?.includes(id) || (!expandedIds && expandedRecord?.[id]),
       );
       if (expandedIds) {
         onToggleExpand?.(id, !isOpen);
       } else {
-        setInternalExpanded((prev) => ({
-          ...(prev as Record<string, boolean>),
-          [id]: !isOpen,
-        }));
+        setInternalExpanded((prev) =>
+          prev === true ? { [id]: !isOpen } : { ...prev, [id]: !isOpen },
+        );
       }
     };
 
@@ -226,7 +232,8 @@ export function DataTableProvider<T>({
         if (from < 0 || to < 0) return base;
         const next = [...base];
         const [moved] = next.splice(from, 1);
-        next.splice(to, 0, moved as string);
+        if (moved === undefined) return base;
+        next.splice(to, 0, moved);
         return next;
       });
     };
