@@ -1,6 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import type { WatchEntry, WatchHarvestResult } from "./types";
 
 /**
@@ -12,17 +13,23 @@ const API_BASE = "https://api.are.na/v3";
 const REQUEST_TIMEOUT_MS = 15_000;
 const PER_PAGE = 60;
 
-interface ArenaV3Item {
-  id?: number | string | null;
-  base_type?: string | null;
-  type?: string | null;
-  created_at?: string | null;
-  connection?: { connected_at?: string | null } | null;
-}
+const ArenaV3ItemSchema = z.object({
+  id: z.union([z.number(), z.string()]).nullish().catch(null),
+  base_type: z.string().nullish().catch(null),
+  type: z.string().nullish().catch(null),
+  created_at: z.string().nullish().catch(null),
+  connection: z
+    .object({ connected_at: z.string().nullish().catch(null) })
+    .nullish()
+    .catch(null),
+});
 
-interface ArenaContentsResponse {
-  data?: ArenaV3Item[] | null;
-}
+const ArenaContentsSchema = z.object({
+  data: z.array(ArenaV3ItemSchema).nullish().catch(null),
+});
+
+type ArenaV3Item = z.infer<typeof ArenaV3ItemSchema>;
+type ArenaContentsResponse = z.infer<typeof ArenaContentsSchema>;
 
 type FetchResult =
   | { ok: true; value: ArenaContentsResponse }
@@ -49,7 +56,7 @@ async function fetchContents(url: string, attempt = 0): Promise<FetchResult> {
   }
   if (!res.ok) return { ok: false, status: res.status };
   try {
-    return { ok: true, value: (await res.json()) as ArenaContentsResponse };
+    return { ok: true, value: ArenaContentsSchema.parse(await res.json()) };
   } catch {
     return { ok: false, status: res.status };
   }

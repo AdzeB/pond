@@ -1,5 +1,6 @@
 import type { Source, WatchKind } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { sourceIdFromUrl } from "../pipeline/url";
 import { binariesAvailable } from "../refresh/binaries";
 import { runWithTimeout } from "../refresh/yt-dlp-process";
@@ -29,11 +30,22 @@ function listUrl(
   return null;
 }
 
-interface FlatEntry {
-  id?: string | null;
-  url?: string | null;
-  webpage_url?: string | null;
-}
+const FlatEntrySchema = z.preprocess(
+  (text) => {
+    try {
+      return JSON.parse(String(text));
+    } catch {
+      return null;
+    }
+  },
+  z.object({
+    id: z.string().nullish().catch(null),
+    url: z.string().nullish().catch(null),
+    webpage_url: z.string().nullish().catch(null),
+  }),
+);
+
+type FlatEntry = z.infer<typeof FlatEntrySchema>;
 
 export async function listYtdlpWatch(
   source: Source,
@@ -81,12 +93,9 @@ export async function listYtdlpWatch(
   for (const line of stdout.split("\n")) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("{")) continue;
-    let parsed: FlatEntry;
-    try {
-      parsed = JSON.parse(trimmed) as FlatEntry;
-    } catch {
-      continue;
-    }
+    const decoded = FlatEntrySchema.safeParse(trimmed);
+    if (!decoded.success) continue;
+    const parsed = decoded.data;
     const url =
       parsed.webpage_url ??
       parsed.url ??

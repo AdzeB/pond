@@ -129,11 +129,12 @@ async function probeArena(
     ...Array<"channel" | "user" | "group">,
   ],
 ): Promise<WatchTarget | null> {
-  const paths: Record<"channel" | "user" | "group", string> = {
+  const paths = {
     channel: "channels",
     user: "users",
     group: "groups",
-  };
+  } satisfies Record<"channel" | "user" | "group", string>;
+
   for (const kind of order) {
     try {
       const res = await fetch(
