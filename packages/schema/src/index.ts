@@ -3,6 +3,7 @@ export * from "./db";
 export * from "./domain";
 export * from "./events";
 export * from "./ingest";
+export * from "./list-kinds";
 export * from "./media-type";
 export * from "./native";
 export * from "./query-plan";

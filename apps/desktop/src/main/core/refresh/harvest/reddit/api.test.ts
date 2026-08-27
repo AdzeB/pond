@@ -3,6 +3,7 @@ import {
   avatarFromMeJson,
   entriesFromListing,
   handleFromMeJson,
+  redditListingUrl,
 } from "./listing";
 
 describe("handleFromMeJson", () => {
@@ -86,5 +87,16 @@ describe("entriesFromListing", () => {
     expect(entries[0]?.likes).toBe(42);
     expect(entries[0]?.comments).toBe(7);
     expect(entries[0]?.subreddit).toBe("r/pics");
+  });
+});
+
+describe("redditListingUrl", () => {
+  it("builds saved and upvoted listing URLs", () => {
+    expect(redditListingUrl("spez", "saved", null)).toBe(
+      "https://www.reddit.com/user/spez/saved.json?limit=100&raw_json=1&type=links",
+    );
+    expect(redditListingUrl("spez", "upvoted", "t3_next")).toBe(
+      "https://www.reddit.com/user/spez/upvoted.json?limit=100&raw_json=1&type=links&after=t3_next",
+    );
   });
 });

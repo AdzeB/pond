@@ -57,8 +57,8 @@ export async function harvestSourceList(
   } = {},
 ): Promise<ListHarvestResult> {
   if (source === "reddit") {
-    const { harvestRedditSavedJson } = await import("../harvest/reddit/api");
-    return harvestRedditSavedJson(args, opts.partition);
+    const { harvestRedditLists } = await import("../harvest/reddit/api");
+    return harvestRedditLists(args, opts.partition);
   }
   const target = listUrlForSource(source, args.accountKey);
   if (!target) {

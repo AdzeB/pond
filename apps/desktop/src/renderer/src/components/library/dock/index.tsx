@@ -118,10 +118,11 @@ export function LibraryTray() {
   const { pillTransition, quickTransition, swapTransition, swap } =
     buildDockMotion(reduceMotion ?? false);
 
-  const lastView = useRef(view);
+  const morphKey = `${view}:${inTrash}`;
+  const lastMorphKey = useRef(morphKey);
   const viewChangedAt = useRef(0);
-  if (lastView.current !== view) {
-    lastView.current = view;
+  if (lastMorphKey.current !== morphKey) {
+    lastMorphKey.current = morphKey;
     viewChangedAt.current = performance.now();
   }
   const inViewMorph = performance.now() - viewChangedAt.current < 450;
@@ -208,11 +209,7 @@ export function LibraryTray() {
                   />
                 }
               >
-                <div
-                  ref={viewportRef}
-                  className={styles.viewport}
-                  data-card={isCard || undefined}
-                >
+                <div ref={viewportRef} className={styles.viewport}>
                   <AnimatePresence initial={false}>
                     {view === "selection" ? (
                       <SelectionContent key="selection" />

@@ -1,23 +1,35 @@
-import { type SQL, sql } from "drizzle-orm";
+import { type SQL, type SQLWrapper, sql } from "drizzle-orm";
 import { saves } from "../../db";
 
-export function tagsExists(needle: SQL): SQL {
+export function jsonArrayExists(column: SQLWrapper, needle: SQL): SQL {
   return sql`exists (
-    select 1 from json_each(${saves.tags}) where ${needle}
+    select 1 from json_each(${column}) where ${needle}
   )`;
+}
+
+export function jsonArrayEmpty(column: SQLWrapper): SQL {
+  return sql`not exists (
+    select 1 from json_each(${column})
+  )`;
+}
+
+export function jsonArrayDistinctCount(column: SQLWrapper, needle: SQL): SQL {
+  return sql`(
+    select count(distinct lower(value)) from json_each(${column})
+    where ${needle}
+  )`;
+}
+
+export function tagsExists(needle: SQL): SQL {
+  return jsonArrayExists(saves.tags, needle);
 }
 
 export function tagsEmpty(): SQL {
-  return sql`not exists (
-    select 1 from json_each(${saves.tags})
-  )`;
+  return jsonArrayEmpty(saves.tags);
 }
 
 export function tagsDistinctCount(needle: SQL): SQL {
-  return sql`(
-    select count(distinct lower(value)) from json_each(${saves.tags})
-    where ${needle}
-  )`;
+  return jsonArrayDistinctCount(saves.tags, needle);
 }
 
 export function durationProjection(): SQL {

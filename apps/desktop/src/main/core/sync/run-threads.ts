@@ -4,8 +4,13 @@ import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { enqueue } from "../pipeline/enqueue";
-import { harvestThreadsSaved } from "../refresh/scrape-window";
+import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
+import {
+  harvestThreadsLikes,
+  harvestThreadsSaved,
+} from "../refresh/scrape-window";
 import { partitionForAccount } from "./accounts";
+import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -107,8 +112,31 @@ export async function syncThreads(
     return;
   }
 
-  const allFresh = harvest.entries.filter((e) => !knownIds.has(e.postId));
-  const recovery = harvest.entries.filter((e) => failedSourceIds.has(e.postId));
+  const likes = await harvestThreadsLikes(
+    {
+      knownIds: baseline.full ? [] : Array.from(knownIds),
+    },
+    { partition: partitionForAccount(accountId) },
+  );
+  const entries = likes.ok
+    ? unionById(
+        stampListKind(harvest.entries, "saved"),
+        stampListKind(likes.entries, "liked"),
+        (e) => e.postId,
+        mergeEntryListKinds,
+      )
+    : stampListKind(harvest.entries, "saved");
+
+  await mergeListKindsOntoExisting(
+    source,
+    entries.map((e) => ({
+      sourceId: e.postId,
+      listKinds: e.listKinds,
+    })),
+  );
+
+  const allFresh = entries.filter((e) => !knownIds.has(e.postId));
+  const recovery = entries.filter((e) => failedSourceIds.has(e.postId));
   const fresh =
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
   if (maxItems && allFresh.length > fresh.length) {
@@ -118,7 +146,7 @@ export async function syncThreads(
   }
   const total = fresh.length + recovery.length;
   ev.harvest = {
-    seen: harvest.entries.length,
+    seen: entries.length,
     fresh: fresh.length,
     recovery: recovery.length,
   };
@@ -156,7 +184,11 @@ export async function syncThreads(
   const bulk = await enqueue(
     queue.map((entry) => {
       const seed = buildThreadsSavedSeed(entry) ?? undefined;
-      return { url: entry.url, ...(seed ? { seed } : {}) };
+      return {
+        url: entry.url,
+        ...(seed ? { seed } : {}),
+        ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
+      };
     }),
     { trigger: "sync:threads", accountId },
   );

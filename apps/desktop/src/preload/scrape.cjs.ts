@@ -7,24 +7,31 @@ const TWITTER_HOOK = `
     if (globalThis.__pondBookmarksHookInstalled) return;
     globalThis.__pondBookmarksHookInstalled = true;
     globalThis.__pondBookmarksCaptures = [];
-    /** Capture the page's first Bookmarks request verbatim; X validates auth via bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them. */
+    globalThis.__pondLikesCaptures = [];
+    /** Capture the page's first Bookmarks/Likes request verbatim; X validates auth via bearer + csrf + per-request transaction id, so cloning its headers beats rebuilding them. */
     globalThis.__pondBookmarksRequest = null;
+    globalThis.__pondLikesRequest = null;
 
-    const isBookmarksUrl = (u) => {
+    const twitterListOp = (u) => {
       try {
-        return (
-          typeof u === "string" &&
-          /\\/i\\/api\\/graphql\\/[^\\/]+\\/Bookmarks/.test(u)
-        );
+        if (typeof u !== "string") return null;
+        const m = u.match(/\\/i\\/api\\/graphql\\/[^\\/]+\\/(Bookmarks|Likes)(?:\\?|$)/);
+        return m ? m[1] : null;
       } catch (e) {
-        return false;
+        return null;
       }
     };
 
-    const captureRequest = (url, method, headers) => {
+    const requestKey = (op) =>
+      op === "Likes" ? "__pondLikesRequest" : "__pondBookmarksRequest";
+    const capturesKey = (op) =>
+      op === "Likes" ? "__pondLikesCaptures" : "__pondBookmarksCaptures";
+
+    const captureRequest = (op, url, method, headers) => {
       try {
-        if (globalThis.__pondBookmarksRequest) return;
-        globalThis.__pondBookmarksRequest = {
+        const key = requestKey(op);
+        if (globalThis[key]) return;
+        globalThis[key] = {
           url: url,
           method: method || "GET",
           headers: headers || {},
@@ -34,23 +41,30 @@ const TWITTER_HOOK = `
       }
     };
 
+    const pushCapture = (op, url, body, status) => {
+      try {
+        const key = capturesKey(op);
+        if (!Array.isArray(globalThis[key])) globalThis[key] = [];
+        globalThis[key].push({ url: url, body: body, status: status });
+      } catch (e) {
+        /* response body not readable; skip */
+      }
+    };
+
     const xhrOpen = XMLHttpRequest.prototype.open;
     const xhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
     XMLHttpRequest.prototype.open = function (method, url) {
       try {
-        if (isBookmarksUrl(url)) {
-          this.__pondIsBookmarks = true;
+        const op = twitterListOp(url);
+        if (op) {
+          this.__pondTwitterListOp = op;
           this.__pondMethod = method;
           this.__pondUrl = url;
           this.__pondHeaders = {};
           this.addEventListener("load", () => {
             try {
-              captureRequest(url, method, this.__pondHeaders);
-              globalThis.__pondBookmarksCaptures.push({
-                url: url,
-                body: this.responseText,
-                status: this.status,
-              });
+              captureRequest(op, url, method, this.__pondHeaders);
+              pushCapture(op, url, this.responseText, this.status);
             } catch (e) {
               /* response body not readable; skip */
             }
@@ -63,7 +77,7 @@ const TWITTER_HOOK = `
     };
     XMLHttpRequest.prototype.setRequestHeader = function (name, value) {
       try {
-        if (this.__pondIsBookmarks && this.__pondHeaders) {
+        if (this.__pondTwitterListOp && this.__pondHeaders) {
           this.__pondHeaders[String(name).toLowerCase()] = String(value);
         }
       } catch (e) {
@@ -110,13 +124,14 @@ const TWITTER_HOOK = `
           /* ignore */
         }
         const promise = origFetch.apply(this, arguments);
-        if (isBookmarksUrl(url)) {
+        const op = twitterListOp(url);
+        if (op) {
           try {
             const method =
               (init && init.method) ||
               (input && typeof input !== "string" && input.method) ||
               "GET";
-            captureRequest(url, method, readHeaders(input, init));
+            captureRequest(op, url, method, readHeaders(input, init));
           } catch (e) {
             /* ignore */
           }
@@ -128,11 +143,7 @@ const TWITTER_HOOK = `
                   .text()
                   .then((body) => {
                     try {
-                      globalThis.__pondBookmarksCaptures.push({
-                        url: url,
-                        body: body,
-                        status: res.status,
-                      });
+                      pushCapture(op, url, body, res.status);
                     } catch (e) {
                       /* ignore */
                     }
@@ -247,7 +258,7 @@ const THREADS_HOOK = `
         const friendly =
           (headers && headers["x-fb-friendly-name"]) || "";
         const blob = String(url || "") + "\\n" + String(body || "") + "\\n" + String(friendly);
-        return /saved|bookmark|favorit/i.test(blob) || /BarcelonaSaved/i.test(blob);
+        return /saved|bookmark|favorit|liked|activity/i.test(blob) || /BarcelonaSaved|BarcelonaLike/i.test(blob);
       } catch (e) {
         return false;
       }
@@ -255,7 +266,7 @@ const THREADS_HOOK = `
 
     const onSavedPage = () => {
       try {
-        return /\\/saved/i.test((typeof location !== "undefined" && location.pathname) || "");
+        return /\\/(saved|liked|activity)/i.test((typeof location !== "undefined" && location.pathname) || "");
       } catch (e) {
         return false;
       }

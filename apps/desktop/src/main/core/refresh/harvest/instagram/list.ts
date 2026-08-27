@@ -37,13 +37,55 @@ async function inPageInstagramList(
     mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
     mediaType?: MediaType;
     meta?: Record<string, unknown>;
+    listKinds?: Array<"liked" | "saved">;
   };
 
-  const apiResult = await fetchSavedViaApi();
-  if (apiResult) return apiResult;
-  return await fallbackDomScroll();
+  function withListKind(entries: Entry[], kind: "liked" | "saved"): Entry[] {
+    return entries.map((e) => ({
+      ...e,
+      listKinds: Array.from(new Set([...(e.listKinds ?? []), kind])),
+    }));
+  }
 
-  async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
+  function unionList(primary: Entry[], extra: Entry[]): Entry[] {
+    const map = new Map<string, Entry>();
+    for (const e of [...primary, ...extra]) {
+      const prev = map.get(e.sourceId);
+      if (!prev) {
+        map.set(e.sourceId, e);
+        continue;
+      }
+      map.set(e.sourceId, {
+        ...prev,
+        listKinds: Array.from(
+          new Set([...(prev.listKinds ?? []), ...(e.listKinds ?? [])]),
+        ),
+      });
+    }
+    return Array.from(map.values());
+  }
+
+  const apiResult = await fetchFeedViaApi("/api/v1/feed/saved/posts/", true);
+  if (apiResult && !apiResult.ok) return apiResult;
+  if (!apiResult) return await fallbackDomScroll();
+
+  const savedEntries = withListKind(apiResult.entries, "saved");
+  const liked = await fetchFeedViaApi("/api/v1/feed/liked/", false);
+  if (!liked?.ok) {
+    return { ...apiResult, entries: savedEntries };
+  }
+  const entries = unionList(savedEntries, withListKind(liked.entries, "liked"));
+  return {
+    ok: true,
+    entries,
+    reachedEnd: apiResult.reachedEnd && liked.reachedEnd,
+    seen: entries.length,
+  };
+
+  async function fetchFeedViaApi(
+    path: string,
+    required: boolean,
+  ): Promise<ListHarvestResult | null> {
     const entries: Entry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
@@ -84,11 +126,9 @@ async function inPageInstagramList(
         return { ok: true, entries, reachedEnd: false };
       }
 
-      const url = cursor
-        ? `/api/v1/feed/saved/posts/?max_id=${cursor}`
-        : "/api/v1/feed/saved/posts/";
+      const url = cursor ? `${path}?max_id=${cursor}` : path;
 
-      reportProgress("api_fetch", { page, cursor: cursor ?? null });
+      reportProgress("api_fetch", { page, cursor: cursor ?? null, path });
 
       let json: any;
       try {
@@ -106,9 +146,10 @@ async function inPageInstagramList(
         reportProgress("api_response", { page, status: res.status });
 
         if (res.status === 401 || res.status === 403) {
-          return { ok: false, reason: "auth_required" };
+          return required ? { ok: false, reason: "auth_required" } : null;
         }
         if (res.status === 429) {
+          if (!required) return null;
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
           return {
@@ -118,7 +159,7 @@ async function inPageInstagramList(
           };
         }
         if (!res.ok) {
-          reportProgress("api_not_ok", { page, status: res.status });
+          reportProgress("api_not_ok", { page, status: res.status, path });
           return null;
         }
 
@@ -132,19 +173,19 @@ async function inPageInstagramList(
       }
 
       if (json?.require_login || json?.message === "login_required") {
-        return { ok: false, reason: "auth_required" };
+        return required ? { ok: false, reason: "auth_required" } : null;
       }
 
-      const items: any[] = json?.items ?? [];
+      const items: any[] = json?.items ?? json?.feed_items ?? [];
       if (items.length === 0 && page === 0) {
-        reportProgress("api_empty", { page });
-        return null;
+        reportProgress("api_empty", { page, path });
+        return required ? null : { ok: true, entries: [], reachedEnd: true };
       }
 
       let pageFresh = 0;
       let pageNorm = 0;
       for (const item of items) {
-        const raw = norm.normalizeMediaNode(item?.media, {
+        const raw = norm.normalizeMediaNode(item?.media ?? item, {
           savedTimestamp: item?.timestamp,
         });
         if (!raw) continue;
@@ -201,7 +242,11 @@ async function inPageInstagramList(
     };
     const _known = new Set(args.knownIds.map(String));
 
-    type StubEntry = { sourceId: string; url: string };
+    type StubEntry = {
+      sourceId: string;
+      url: string;
+      listKinds?: Array<"liked" | "saved">;
+    };
 
     function collect(): StubEntry[] {
       const out: StubEntry[] = [];
@@ -227,6 +272,7 @@ async function inPageInstagramList(
         out.push({
           sourceId: id,
           url: `https://www.instagram.com/${kind}/${id}/`,
+          listKinds: ["saved"],
         });
       }
       return out;

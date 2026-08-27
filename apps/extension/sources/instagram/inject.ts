@@ -19,6 +19,12 @@ function looksLikeSaveLabel(label: string | null): boolean {
   );
 }
 
+function looksLikeLikeLabel(label: string | null): boolean {
+  if (!label) return false;
+  const l = label.toLowerCase().trim();
+  return l === "like";
+}
+
 function shortcodeFromHref(href: string | null): string | null {
   if (!href) return null;
   const m = String(href).match(/\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/);
@@ -54,13 +60,16 @@ function findShortcodeAroundClick(
   return null;
 }
 
-function findSaveElementFromTarget(target: EventTarget | null): Element | null {
+function findLabeledElementFromTarget(
+  target: EventTarget | null,
+  looksLike: (label: string | null) => boolean,
+): Element | null {
   if (!(target instanceof Element)) return null;
   let cur: Element | null = target;
   let depth = 0;
   while (cur && depth < 8) {
     const lbl = cur.getAttribute?.("aria-label");
-    if (lbl && looksLikeSaveLabel(lbl)) return cur;
+    if (lbl && looksLike(lbl)) return cur;
     cur = cur.parentElement;
     depth++;
   }
@@ -71,10 +80,18 @@ function findSaveElementFromTarget(target: EventTarget | null): Element | null {
     const inner = button.querySelector?.("svg[aria-label]");
     if (inner) {
       const lbl = inner.getAttribute("aria-label");
-      if (lbl && looksLikeSaveLabel(lbl)) return inner;
+      if (lbl && looksLike(lbl)) return inner;
     }
   }
   return null;
+}
+
+function findSaveElementFromTarget(target: EventTarget | null): Element | null {
+  return findLabeledElementFromTarget(target, looksLikeSaveLabel);
+}
+
+function findLikeElementFromTarget(target: EventTarget | null): Element | null {
+  return findLabeledElementFromTarget(target, looksLikeLikeLabel);
 }
 
 function mediaIdToShortcode(id: string): string | null {
@@ -111,6 +128,45 @@ function isSaveMutation(
   return false;
 }
 
+function isLikeRestUrl(url: string): boolean {
+  if (/unlike/i.test(url)) return false;
+  return /\/(?:web\/likes\/[^/]+\/like|api\/v1\/(?:web\/likes\/[^/]+\/like|media\/[^/]+\/like))\b/i.test(
+    url,
+  );
+}
+
+function isLikeMutation(
+  getHeader: (name: string) => string | null,
+  url: string,
+  bodyStr: string | null,
+): boolean {
+  if (isLikeRestUrl(url)) return true;
+  const friendly = getHeader("x-fb-friendly-name") ?? "";
+  if (/unlike/i.test(friendly)) return false;
+  if (/like/i.test(friendly) && /mutation/i.test(friendly)) return true;
+  const root = getHeader("x-root-field-name");
+  if (root && /__like$/.test(root) && !/unlike/i.test(root)) return true;
+  if (bodyStr) {
+    if (/Unlike/i.test(bodyStr) && /usePolarisLikeMediaUnlike/.test(bodyStr)) {
+      return false;
+    }
+    if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) return true;
+    if (
+      /use\w*Like\w*Mutation/.test(bodyStr) &&
+      !/Unlike/i.test(bodyStr) &&
+      !/Save|Bookmark/i.test(bodyStr)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function mediaIdFromLikeUrl(url: string): string | null {
+  const m = url.match(/\/(?:likes|media)\/(\d+)(?:\/like)?\b/i);
+  return m?.[1] ?? null;
+}
+
 function extractMediaIdFromBody(bodyStr: string | null): string | null {
   if (!bodyStr) return null;
   try {
@@ -137,12 +193,14 @@ export function inject(): void {
     "click",
     (ev) => {
       try {
-        if (!findSaveElementFromTarget(ev.target)) return;
+        const save = findSaveElementFromTarget(ev.target);
+        const like = save ? null : findLikeElementFromTarget(ev.target);
+        if (!save && !like) return;
         const ctx = findShortcodeAroundClick(ev.target);
         if (!ctx) return;
         capture(
           `https://www.instagram.com/${ctx.kind}/${ctx.shortcode}/`,
-          "instagram:save",
+          save ? "instagram:save" : "instagram:like",
         );
       } catch (e) {
         log("warn", "instagram dom-click hook error", String(e));
@@ -153,9 +211,20 @@ export function inject(): void {
 
   installInterceptor({
     id: "instagram",
-    match: (req: RequestLens) => req.method === "POST" && isGraphqlUrl(req.url),
+    match: (req: RequestLens) =>
+      req.method === "POST" &&
+      (isGraphqlUrl(req.url) || isLikeRestUrl(req.url)),
     async onResponse(req) {
       const bodyStr = await req.readBody();
+      if (isLikeMutation(req.getHeader, req.url, bodyStr)) {
+        const mediaId =
+          extractMediaIdFromBody(bodyStr) ?? mediaIdFromLikeUrl(req.url);
+        if (!mediaId) return;
+        const shortcode = mediaIdToShortcode(mediaId);
+        if (!shortcode) return;
+        capture(`https://www.instagram.com/p/${shortcode}/`, "instagram:like");
+        return;
+      }
       if (!isSaveMutation(req.getHeader, bodyStr)) return;
       const mediaId = extractMediaIdFromBody(bodyStr);
       if (!mediaId) return;

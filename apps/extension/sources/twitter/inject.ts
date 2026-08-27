@@ -15,6 +15,10 @@ function isCapturedEndpoint(url: string): boolean {
   return CAPTURED.some((re) => re.test(url));
 }
 
+function triggerForUrl(url: string): "twitter:like" | "twitter:bookmark" {
+  return /FavoriteTweet/.test(url) ? "twitter:like" : "twitter:bookmark";
+}
+
 function extractTweetId(body: string | null): string | null {
   if (!body) return null;
   try {
@@ -38,7 +42,9 @@ export function inject(): void {
     async onResponse(req, res) {
       if (!res.ok) return;
       const id = extractTweetId(await req.readBody());
-      if (id) capture(`https://x.com/i/web/status/${id}`, "twitter:bookmark");
+      if (id) {
+        capture(`https://x.com/i/web/status/${id}`, triggerForUrl(req.url));
+      }
     },
   });
 }

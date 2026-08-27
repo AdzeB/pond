@@ -58,19 +58,24 @@
   justify-items: center;
   /* Without max-content the element collapses to min-content inside the 0-width morphing pill and the dock appears to vanish. */
   width: max-content;
-  padding: 4px;
   margin-inline: auto;
-}
-
-.viewport[data-card="true"] {
-  padding: 0;
 }
 
 .viewport > * {
   grid-area: 1 / 1;
 }
 
+/* Outgoing views stay painted but must not contribute to the measured box. */
+.viewport > *:not(:last-child) {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  pointer-events: none;
+  translate: -50% 0;
+}
+
 .search-row {
   display: inline-flex;
   align-items: center;
+  padding: 4px;
 }

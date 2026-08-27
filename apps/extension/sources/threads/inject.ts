@@ -22,6 +22,12 @@ function looksLikeSaveLabel(label: string | null): boolean {
   );
 }
 
+function looksLikeLikeLabel(label: string | null): boolean {
+  if (!label) return false;
+  const l = label.toLowerCase().trim();
+  return l === "like";
+}
+
 function isSaveMenuText(raw: string | null): boolean {
   const t = (raw ?? "").replace(/\s+/g, " ").trim().toLowerCase();
   return t === "save" || t === "bookmark" || t === "save post";
@@ -89,6 +95,30 @@ function isSaveClick(target: EventTarget | null): boolean {
   return false;
 }
 
+function isLikeClick(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  const clickable = target.closest(
+    'button, [role="button"], a[role="button"], div[role="button"], [tabindex="0"]',
+  );
+  if (clickable) {
+    const label =
+      clickable.getAttribute("aria-label") ??
+      clickable.querySelector("svg[aria-label]")?.getAttribute("aria-label") ??
+      null;
+    if (looksLikeLikeLabel(label)) return true;
+  }
+  let cur: Element | null = target;
+  let depth = 0;
+  while (cur && depth < 12) {
+    if (looksLikeLikeLabel(cur.getAttribute("aria-label"))) return true;
+    const svg = cur.querySelector?.("svg[aria-label]");
+    if (svg && looksLikeLikeLabel(svg.getAttribute("aria-label"))) return true;
+    cur = cur.parentElement;
+    depth++;
+  }
+  return false;
+}
+
 function mediaIdToShortcode(id: string): string | null {
   try {
     let n = BigInt(String(id).split("_")[0]);
@@ -110,6 +140,13 @@ function isGraphqlUrl(url: string): boolean {
 function isSaveRestUrl(url: string): boolean {
   if (/unsave/i.test(url)) return false;
   return /\/api\/v1\/(?:media\/[^/]+\/save|web\/save\/[^/]+\/save)\b/i.test(
+    url,
+  );
+}
+
+function isLikeRestUrl(url: string): boolean {
+  if (/unlike/i.test(url)) return false;
+  return /\/api\/v1\/(?:media\/[^/]+\/like|web\/likes\/[^/]+\/like)\b/i.test(
     url,
   );
 }
@@ -149,6 +186,36 @@ function isSaveMutation(
   if (
     /use\w*(Save|Bookmark)\w*Mutation/.test(bodyStr) &&
     !/Unsave/i.test(bodyStr)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isLikeMutation(
+  getHeader: (name: string) => string | null,
+  url: string,
+  bodyStr: string | null,
+): boolean {
+  if (isLikeRestUrl(url)) return true;
+  const name = friendlyName(getHeader, bodyStr);
+  if (/unlike/i.test(name)) return false;
+  if (
+    /mutation/i.test(name) &&
+    /like/i.test(name) &&
+    !/save|bookmark/i.test(name)
+  ) {
+    return true;
+  }
+  if (!bodyStr) return false;
+  if (/Unlike/i.test(bodyStr) && /usePolarisLikeMediaUnlike/.test(bodyStr)) {
+    return false;
+  }
+  if (bodyStr.includes("usePolarisLikeMediaLikeMutation")) return true;
+  if (
+    /use\w*Like\w*Mutation/.test(bodyStr) &&
+    !/Unlike/i.test(bodyStr) &&
+    !/Save|Bookmark/i.test(bodyStr)
   ) {
     return true;
   }
@@ -199,7 +266,7 @@ function firstString(
 }
 
 function mediaIdFromRestUrl(url: string): string | null {
-  const m = url.match(/\/(?:media|save)\/(\d+)(?:\/save)?\b/i);
+  const m = url.match(/\/(?:media|save|likes)\/(\d+)(?:\/(?:save|like))?\b/i);
   return m?.[1] ?? null;
 }
 
@@ -246,9 +313,14 @@ export function inject(): void {
       try {
         const nearby = postUrlAround(ev.target);
         if (nearby) pendingPostUrl = nearby;
-        if (!isSaveClick(ev.target)) return;
+        if (isSaveClick(ev.target)) {
+          const url = nearby ?? pendingPostUrl ?? postUrlFromPath();
+          if (url) emit(url, "threads:save");
+          return;
+        }
+        if (!isLikeClick(ev.target)) return;
         const url = nearby ?? pendingPostUrl ?? postUrlFromPath();
-        if (url) emit(url, "threads:save");
+        if (url) emit(url, "threads:like");
       } catch (e) {
         log("warn", "threads dom-click hook error", String(e));
       }
@@ -260,10 +332,17 @@ export function inject(): void {
     id: "threads",
     match: (req: RequestLens) =>
       req.method === "POST" &&
-      (isGraphqlUrl(req.url) || isSaveRestUrl(req.url)),
+      (isGraphqlUrl(req.url) ||
+        isSaveRestUrl(req.url) ||
+        isLikeRestUrl(req.url)),
     async onResponse(req, res) {
       if (!res.ok) return;
       const bodyStr = await req.readBody();
+      if (isLikeMutation(req.getHeader, req.url, bodyStr)) {
+        const url = postUrlFromSaveRequest(req.url, bodyStr) ?? pendingPostUrl;
+        if (url) emit(url, "threads:like");
+        return;
+      }
       if (!isSaveMutation(req.getHeader, req.url, bodyStr)) return;
       const url = postUrlFromSaveRequest(req.url, bodyStr) ?? pendingPostUrl;
       if (url) emit(url, "threads:graphql-save");

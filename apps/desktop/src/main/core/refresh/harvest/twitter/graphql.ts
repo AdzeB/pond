@@ -2,13 +2,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 
 const bookmarksEnvelope = z.object({
-  data: z.object({
-    bookmark_timeline_v2: z.object({
-      timeline: z.object({
-        instructions: z.array(z.object({ type: z.string() }).passthrough()),
-      }),
-    }),
-  }),
+  data: z.record(z.string(), z.unknown()),
 });
 
 let envelopeFailureLogged = false;
@@ -110,10 +104,27 @@ interface EntryLike {
 
 function pickInstructions(json: unknown): InstructionLike[] | null {
   const data = (json as { data?: unknown })?.data;
-  const timeline = (
-    data as { bookmark_timeline_v2?: { timeline?: { instructions?: unknown } } }
-  )?.bookmark_timeline_v2?.timeline?.instructions;
-  return Array.isArray(timeline) ? (timeline as InstructionLike[]) : null;
+  if (!data || typeof data !== "object") return null;
+  const bookmark = (
+    data as {
+      bookmark_timeline_v2?: { timeline?: { instructions?: unknown } };
+    }
+  ).bookmark_timeline_v2?.timeline?.instructions;
+  if (Array.isArray(bookmark)) return bookmark as InstructionLike[];
+  const user = (
+    data as {
+      user?: {
+        result?: {
+          timeline_v2?: { timeline?: { instructions?: unknown } };
+          timeline?: { timeline?: { instructions?: unknown } };
+        };
+      };
+    }
+  ).user?.result;
+  const v2 = user?.timeline_v2?.timeline?.instructions;
+  if (Array.isArray(v2)) return v2 as InstructionLike[];
+  const v1 = user?.timeline?.timeline?.instructions;
+  return Array.isArray(v1) ? (v1 as InstructionLike[]) : null;
 }
 
 function* iterateAddedEntries(

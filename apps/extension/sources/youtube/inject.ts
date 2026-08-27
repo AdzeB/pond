@@ -129,10 +129,10 @@ function classifyYoutubeiPost(
 export function inject(): void {
   const emitted = new Set<string>();
 
-  function emitSave(videoId: string): void {
+  function emitSave(videoId: string, trigger = "youtube:save"): void {
     if (!videoId || emitted.has(videoId)) return;
     emitted.add(videoId);
-    capture(`https://www.youtube.com/watch?v=${videoId}`, "youtube:save");
+    capture(`https://www.youtube.com/watch?v=${videoId}`, trigger);
   }
 
   function handleYoutubeiPost(
@@ -154,7 +154,7 @@ export function inject(): void {
       if (!res.ok) return;
       if (LIKE_RE.test(req.url)) {
         const id = extractLikeVideoId(await req.readBody());
-        if (id) emitSave(id);
+        if (id) emitSave(id, "youtube:like");
         return;
       }
       if (YOUTUBEI_RE.test(req.url)) {

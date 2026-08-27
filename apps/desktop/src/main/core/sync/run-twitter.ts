@@ -4,8 +4,13 @@ import { and, eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { enqueue } from "../pipeline/enqueue";
-import { harvestTwitterBookmarks } from "../refresh/scrape-window";
+import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
+import {
+  harvestTwitterBookmarks,
+  harvestTwitterLikes,
+} from "../refresh/scrape-window";
 import { partitionForAccount } from "./accounts";
+import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -107,10 +112,35 @@ export async function syncTwitter(
     return;
   }
 
-  const allFresh = harvest.entries.filter((e) => !knownIds.has(e.tweetId));
-  const recovery = harvest.entries.filter((e) =>
-    failedSourceIds.has(e.tweetId),
+  const handle = account.handle?.replace(/^@/, "").trim();
+  const likes =
+    handle && !signal.aborted
+      ? await harvestTwitterLikes(
+          {
+            knownIds: baseline.full ? [] : Array.from(knownIds),
+          },
+          { partition: partitionForAccount(accountId), handle },
+        )
+      : { ok: false as const, reason: "no_match" as const };
+  const entries = likes.ok
+    ? unionById(
+        stampListKind(harvest.entries, "saved"),
+        stampListKind(likes.entries, "liked"),
+        (e) => e.tweetId,
+        mergeEntryListKinds,
+      )
+    : stampListKind(harvest.entries, "saved");
+
+  await mergeListKindsOntoExisting(
+    source,
+    entries.map((e) => ({
+      sourceId: e.tweetId,
+      listKinds: e.listKinds,
+    })),
   );
+
+  const allFresh = entries.filter((e) => !knownIds.has(e.tweetId));
+  const recovery = entries.filter((e) => failedSourceIds.has(e.tweetId));
   const fresh =
     maxItems && maxItems > 0 ? allFresh.slice(0, maxItems) : allFresh;
   if (maxItems && allFresh.length > fresh.length) {
@@ -120,7 +150,7 @@ export async function syncTwitter(
   }
   const total = fresh.length + recovery.length;
   ev.harvest = {
-    seen: harvest.entries.length,
+    seen: entries.length,
     fresh: fresh.length,
     recovery: recovery.length,
   };
@@ -158,7 +188,11 @@ export async function syncTwitter(
   const bulk = await enqueue(
     queue.map((entry) => {
       const seed = buildTwitterBookmarkSeed(entry) ?? undefined;
-      return { url: entry.url, ...(seed ? { seed } : {}) };
+      return {
+        url: entry.url,
+        ...(seed ? { seed } : {}),
+        ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
+      };
     }),
     { trigger: "sync:twitter", accountId },
   );

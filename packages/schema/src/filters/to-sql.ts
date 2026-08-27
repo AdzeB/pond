@@ -1,12 +1,19 @@
 import { formatQuery, type RuleGroupProcessor } from "@react-querybuilder/core";
-import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
-import { isoDurationToMillis } from "./duration";
 import {
-  FIELD_DESCRIPTORS,
-  tagsDistinctCount,
-  tagsEmpty,
-  tagsExists,
-} from "./fields";
+  and as drizzleAnd,
+  or as drizzleOr,
+  type SQL,
+  type SQLWrapper,
+  sql,
+} from "drizzle-orm";
+import { saves } from "../db";
+import { isoDurationToMillis } from "./duration";
+import { FIELD_DESCRIPTORS } from "./fields";
+import {
+  jsonArrayDistinctCount,
+  jsonArrayEmpty,
+  jsonArrayExists,
+} from "./fields/sql";
 import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
 import { isGroup } from "./types";
 
@@ -42,7 +49,8 @@ function compileForField(
   operator: ComparatorId,
   raw: unknown,
 ): SQL | null {
-  if (field === "tags") return tagsClause(operator, raw);
+  if (field === "tags") return jsonArrayClause(saves.tags, operator, raw);
+  if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
@@ -50,8 +58,12 @@ function compileForField(
   return scalarClause(column, field, operator, raw);
 }
 
-function tagsClause(operator: ComparatorId, raw: unknown): SQL | null {
-  if (operator === "empty") return tagsEmpty();
+function jsonArrayClause(
+  column: SQLWrapper,
+  operator: ComparatorId,
+  raw: unknown,
+): SQL | null {
+  if (operator === "empty") return jsonArrayEmpty(column);
   if (!Array.isArray(raw) || raw.length === 0) return null;
   const lowered = raw
     .map((v) => String(v).toLowerCase())
@@ -64,11 +76,11 @@ function tagsClause(operator: ComparatorId, raw: unknown): SQL | null {
   const matchExpr = sql`lower(value) in (${inList})`;
   switch (operator) {
     case "some":
-      return tagsExists(matchExpr);
+      return jsonArrayExists(column, matchExpr);
     case "every":
-      return sql`${tagsDistinctCount(matchExpr)} = ${lowered.length}`;
+      return sql`${jsonArrayDistinctCount(column, matchExpr)} = ${lowered.length}`;
     case "none":
-      return sql`not ${tagsExists(matchExpr)}`;
+      return sql`not ${jsonArrayExists(column, matchExpr)}`;
     default:
       return null;
   }

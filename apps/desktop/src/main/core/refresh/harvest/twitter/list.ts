@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import type { MediaType } from "@pond/schema/db";
+import type { ListKind, MediaType } from "@pond/schema/db";
 import type { BookmarksCapture, RichTweet } from "./graphql";
 
 export interface BookmarksHarvestArgs {
@@ -21,6 +21,7 @@ export interface BookmarksEntry {
     poster?: string;
   }>;
   rich?: RichTweet;
+  listKinds?: ListKind[];
 }
 
 interface BookmarksHarvestDebug {
@@ -123,13 +124,14 @@ async function inPageBookmarks(
   };
 
   const drainCaptures = (): void => {
-    const buf = (
-      globalThis as unknown as {
-        __pondBookmarksCaptures?: BookmarksCapture[];
-      }
-    ).__pondBookmarksCaptures;
-    if (!Array.isArray(buf) || buf.length === 0) return;
-    for (const item of buf.splice(0)) captures.push(item);
+    const g = globalThis as unknown as {
+      __pondBookmarksCaptures?: BookmarksCapture[];
+      __pondLikesCaptures?: BookmarksCapture[];
+    };
+    for (const buf of [g.__pondBookmarksCaptures, g.__pondLikesCaptures]) {
+      if (!Array.isArray(buf) || buf.length === 0) continue;
+      for (const item of buf.splice(0)) captures.push(item);
+    }
   };
 
   const stats: {

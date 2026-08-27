@@ -137,3 +137,14 @@
   color: var(--ds-orange-11);
   white-space: nowrap;
 }
+
+.pending-action {
+  flex: 1;
+  height: 40px;
+}
+
+.hero[data-pending],
+.row[data-pending],
+.pending-action {
+  visibility: hidden;
+}

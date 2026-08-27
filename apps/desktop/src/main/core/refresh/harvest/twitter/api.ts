@@ -38,9 +38,21 @@ const MAX_PAGES = 2000;
 export function buildBookmarksApiExpression(
   args: BookmarksHarvestArgs,
 ): string {
+  return buildTwitterListApiExpression(args, "bookmarks");
+}
+
+export function buildLikesApiExpression(args: BookmarksHarvestArgs): string {
+  return buildTwitterListApiExpression(args, "likes");
+}
+
+function buildTwitterListApiExpression(
+  args: BookmarksHarvestArgs,
+  kind: "bookmarks" | "likes",
+): string {
   const fnSrc = `(${inPageBookmarksApi.toString()})`;
   const enriched = {
     ...args,
+    kind,
     deadlineMs: API_DEADLINE_MS,
     throttleMs: PAGE_THROTTLE_MS,
     maxPages: MAX_PAGES,
@@ -54,6 +66,7 @@ export function buildBookmarksApiExpression(
 
 async function inPageBookmarksApi(
   args: BookmarksHarvestArgs & {
+    kind?: "bookmarks" | "likes";
     deadlineMs: number;
     throttleMs: number;
     maxPages: number;
@@ -92,11 +105,12 @@ async function inPageBookmarksApi(
   };
 
   const getRequest = (): BookmarksRequestTemplate | null => {
-    const req = (
-      globalThis as unknown as {
-        __pondBookmarksRequest?: BookmarksRequestTemplate | null;
-      }
-    ).__pondBookmarksRequest;
+    const g = globalThis as unknown as {
+      __pondBookmarksRequest?: BookmarksRequestTemplate | null;
+      __pondLikesRequest?: BookmarksRequestTemplate | null;
+    };
+    const req =
+      args.kind === "likes" ? g.__pondLikesRequest : g.__pondBookmarksRequest;
     if (!req || typeof req.url !== "string" || req.url.length === 0) {
       return null;
     }
@@ -156,14 +170,28 @@ async function inPageBookmarksApi(
     }>;
   }
   const readInstructions = (json: unknown): Instruction[] => {
-    const ins = (
-      json as {
-        data?: {
-          bookmark_timeline_v2?: { timeline?: { instructions?: unknown } };
+    const data = (json as { data?: Record<string, unknown> })?.data;
+    if (!data || typeof data !== "object") return [];
+    const bookmark = (
+      data as {
+        bookmark_timeline_v2?: { timeline?: { instructions?: unknown } };
+      }
+    ).bookmark_timeline_v2?.timeline?.instructions;
+    if (Array.isArray(bookmark)) return bookmark as Instruction[];
+    const user = (
+      data as {
+        user?: {
+          result?: {
+            timeline_v2?: { timeline?: { instructions?: unknown } };
+            timeline?: { timeline?: { instructions?: unknown } };
+          };
         };
       }
-    )?.data?.bookmark_timeline_v2?.timeline?.instructions;
-    return Array.isArray(ins) ? (ins as Instruction[]) : [];
+    ).user?.result;
+    const v2 = user?.timeline_v2?.timeline?.instructions;
+    if (Array.isArray(v2)) return v2 as Instruction[];
+    const v1 = user?.timeline?.timeline?.instructions;
+    return Array.isArray(v1) ? (v1 as Instruction[]) : [];
   };
   const extractCursor = (json: unknown): string | null => {
     for (const ix of readInstructions(json)) {

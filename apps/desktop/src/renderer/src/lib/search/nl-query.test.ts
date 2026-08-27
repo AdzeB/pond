@@ -51,4 +51,13 @@ describe("compileStageA — dates compose with the rest of the compiler", () => 
     });
     expect(res.residual).toBe("sunset");
   });
+
+  it("reads liked as a list filter", () => {
+    expect(rules("liked videos")).toEqual(
+      expect.arrayContaining([
+        { field: "list", operator: "some", value: ["liked"] },
+        { field: "type", operator: "eq", value: "video" },
+      ]),
+    );
+  });
 });

@@ -70,6 +70,7 @@ export const COMPARATORS_BY_TYPE: Record<FieldTypeId, readonly ComparatorId[]> =
 
 export type FieldId =
   | "tags"
+  | "list"
   | "source"
   | "type"
   | "fileCount"

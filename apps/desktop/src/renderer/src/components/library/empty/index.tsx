@@ -20,8 +20,8 @@ export function LibraryEmpty() {
         <Keyboard.Cluster keys={["⌘", "V"]} />.
       </Empty.Description>
       <Empty.Description>
-        Connect a source to sync the bookmarks you already have, or watch an
-        account to sync their feed with your library.
+        Connect a source to sync the likes and saves you already have, or watch
+        an account to sync their feed with your library.
       </Empty.Description>
       <Empty.Action>
         <Button

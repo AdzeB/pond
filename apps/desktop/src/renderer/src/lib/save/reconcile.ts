@@ -92,6 +92,7 @@ export function normalise(raw: Partial<Save> | null | undefined): Save | null {
     videoNotes: raw.videoNotes ?? [],
     dominantColors: raw.dominantColors ?? [],
     tags: raw.tags ?? [],
+    listKinds: raw.listKinds ?? [],
     rawJson: raw.rawJson ?? undefined,
     status: raw.status,
     ingestStartedAt: toMs(raw.ingestStartedAt) ?? null,

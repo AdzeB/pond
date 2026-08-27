@@ -1,3 +1,4 @@
+import type { ListKind } from "../../list-kinds";
 import type { RawJson } from "../../raw";
 
 export interface SaveLike {
@@ -9,6 +10,7 @@ export interface SaveLike {
   description?: string | null;
   author?: string | null;
   tags?: string[];
+  listKinds?: ListKind[];
   notes?: string | null;
   caption?: string | null;
   ocrText?: string | null;

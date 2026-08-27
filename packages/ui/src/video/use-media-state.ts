@@ -3,6 +3,7 @@ import { bufferedEnd, clamp, FRAME_STEP_SECONDS } from "./lib";
 
 interface MediaState {
   playing: boolean;
+  ended: boolean;
   currentTime: number;
   duration: number;
   buffered: number;
@@ -30,6 +31,8 @@ interface MediaActions {
 const MEDIA_EVENTS = [
   "play",
   "pause",
+  "ended",
+  "seeked",
   "timeupdate",
   "durationchange",
   "loadedmetadata",
@@ -40,6 +43,7 @@ const MEDIA_EVENTS = [
 
 const INITIAL: MediaState = {
   playing: false,
+  ended: false,
   currentTime: 0,
   duration: 0,
   buffered: 0,
@@ -75,6 +79,7 @@ export function useMediaState(): {
       setState((s) => ({
         ...s,
         playing: !v.paused,
+        ended: v.ended,
         currentTime: v.currentTime,
         duration: Number.isFinite(v.duration) ? v.duration : 0,
         volume: v.volume,

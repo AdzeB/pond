@@ -216,6 +216,7 @@ export async function createManualSave(
     siteName: null,
     status: "complete",
     tags,
+    listKinds: ["saved"],
     files: [],
     coverIndex: 0,
     ...(input.width != null ? { width: input.width } : {}),

@@ -33,6 +33,7 @@ Guidelines:
 - For orientation use field "shape" with values square | landscape | portrait | panoramic-landscape | panoramic-portrait.
 - For common ratios use field "aspect" with values 1:1 | 4:3 | 3:4 | 16:9 | 9:16.
 - For tags use operator "some" with an array. For "untagged" use field "tags", operator "empty".
+- For whether you liked or saved an item use field "list" with values liked | saved and operator "some" with an array. An item can be both. "liked" covers likes and upvotes. "saved" covers bookmarks, favorites, Watch Later, and saved posts.
 - For the number of attached files/images/photos use field "fileCount" (number), e.g. "more than one image" -> fileCount gt 1, "multiple images" -> fileCount gt 1, "at least 3 photos" -> fileCount gte 3. Pair it with a "type" filter when the user names a media kind.
 - For "has a note" use field "note", operator "exists", value true; for "no note" value false.
 - Omit anything you are unsure about rather than guessing a field.

@@ -3,12 +3,14 @@ import type { SyncRunEvent } from "@pond/schema/events";
 import { sourceLabel } from "@pond/schema/sources";
 import log from "electron-log/main.js";
 import { enqueue } from "../pipeline/enqueue";
+import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import {
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
 import { inferAccountKey, resolveAccountHandle } from "./account-key";
 import { partitionForAccount } from "./accounts";
+import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -139,7 +141,11 @@ export async function syncListSource(
     return;
   }
 
-  const combined = harvest.entries;
+  const dualHarvest =
+    source === "reddit" || source === "instagram" || source === "tiktok";
+  let combined = dualHarvest
+    ? harvest.entries
+    : stampListKind(harvest.entries, "saved");
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList(
       {
@@ -149,12 +155,16 @@ export async function syncListSource(
       { partition },
     );
     if (liked.ok) {
-      const seen = new Set(combined.map((e) => e.sourceId));
-      for (const e of liked.entries) {
-        if (!seen.has(e.sourceId)) combined.push(e);
-      }
+      combined = unionById(
+        combined,
+        stampListKind(liked.entries, "liked"),
+        (e) => e.sourceId,
+        mergeEntryListKinds,
+      );
     }
   }
+
+  await mergeListKindsOntoExisting(source, combined);
 
   const allFresh = combined.filter((e) => !knownIds.has(e.sourceId));
   const fresh =
@@ -202,7 +212,10 @@ export async function syncListSource(
   });
 
   const bulk = await enqueue(
-    fresh.map((entry) => ({ url: entry.url })),
+    fresh.map((entry) => ({
+      url: entry.url,
+      ...(entry.listKinds ? { listKinds: entry.listKinds } : {}),
+    })),
     { trigger: `sync:${source}`, accountId },
   );
   const succeeded = bulk.created + bulk.existing;

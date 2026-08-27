@@ -121,6 +121,18 @@ export const TYPE_SYNONYMS: Record<string, string> = {
   notes: "text",
 };
 
+export const LIST_SYNONYMS: Record<string, string> = {
+  liked: "liked",
+  likes: "liked",
+  upvoted: "liked",
+  upvote: "liked",
+  bookmarked: "saved",
+  bookmarks: "saved",
+  favorites: "saved",
+  favourites: "saved",
+  "watch later": "saved",
+};
+
 export const SHAPE_SYNONYMS: Record<string, string> = {
   square: "square",
   squares: "square",

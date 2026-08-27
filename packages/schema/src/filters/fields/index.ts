@@ -7,6 +7,7 @@ import type { FieldDescriptor } from "./descriptor";
 import { aspect, shape } from "./dims";
 import { duration } from "./duration";
 import { fileCount } from "./file-count";
+import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
 import { publishedAt } from "./published-at";
@@ -31,6 +32,7 @@ export {
 
 export const FIELD_DESCRIPTORS: Record<FieldId, FieldDescriptor> = {
   tags,
+  list,
   source,
   type: typeField,
   fileCount,

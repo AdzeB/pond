@@ -89,21 +89,24 @@ export function NavContent() {
     >
       {ORDERED_TABS.map(renderTab)}
 
-      <AnimatePresence initial={false}>
-        <motion.div
-          key={actionSet}
-          className={styles.expand}
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: "auto", opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
-          transition={dock.quickTransition}
-        >
-          <div className={styles["expand-inner"]}>
+      <div className={styles.actions}>
+        <AnimatePresence initial={false}>
+          <motion.div
+            key={actionSet}
+            className={styles.set}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={dock.quickTransition}
+          >
             <Tray.Separator />
             <NavActions actionSet={actionSet} />
-          </div>
-        </motion.div>
-      </AnimatePresence>
+            {actionSet === "trash" ? (
+              <span className={styles.slot} aria-hidden />
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 }

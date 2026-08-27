@@ -6,6 +6,7 @@ import {
 } from "@/utils/intercept";
 
 const LEGACY_SAVE_RE = /\/api\/save\b/i;
+const LEGACY_VOTE_RE = /\/api\/vote\b/i;
 const GRAPHQL_SAVE_RE = /\/svc\/shreddit\/graphql\b|gql\.reddit\.com/i;
 const POST_ID_RE = /t3_([a-z0-9]+)/i;
 const COMMENT_ID_RE = /t1_[a-z0-9]+/i;
@@ -200,6 +201,43 @@ function isGraphqlSave(body: string | null): boolean {
   return action === "save" || input.saved === true || input.save === true;
 }
 
+function voteDir(url: string, body: string | null): string | null {
+  try {
+    const fromQuery = new URL(url, location.href).searchParams.get("dir");
+    if (fromQuery != null) return fromQuery;
+  } catch {
+    /* fall through to body */
+  }
+  if (!body) return null;
+  try {
+    const v = new URLSearchParams(body).get("dir");
+    if (v != null) return v;
+  } catch {
+    /* not form-encoded */
+  }
+  const m = body.match(/"?dir"?\s*[:=]\s*"?(-?1|0)"?/i);
+  return m?.[1] ?? null;
+}
+
+function isGraphqlUpvote(body: string | null): boolean {
+  if (!body || !/vote/i.test(body)) return false;
+  if (COMMENT_ID_RE.test(body) && !POST_ID_RE.test(body)) return false;
+  const json = parseJson(body);
+  const op = operationName(json, body);
+  if (/comment/i.test(op) && /vote/i.test(op)) return false;
+  if (!/vote/i.test(op) && !/updatePostVoteState/i.test(body)) return false;
+  const input = graphqlInput(json);
+  const state = String(
+    input.voteState ?? input.vote_state ?? input.vote ?? input.direction ?? "",
+  ).toLowerCase();
+  if (/down|none|unvote/.test(state) || state === "-1" || state === "0") {
+    return false;
+  }
+  if (state === "up" || state === "upvote" || state === "1") return true;
+  const dir = String(input.dir ?? "");
+  return dir === "1";
+}
+
 function postIdFromGraphql(body: string | null): string | null {
   if (!body) return null;
   const json = parseJson(body);
@@ -252,13 +290,27 @@ export function inject(): void {
     id: "reddit",
     match: (req: RequestLens) =>
       req.method === "POST" &&
-      (LEGACY_SAVE_RE.test(req.url) || GRAPHQL_SAVE_RE.test(req.url)),
+      (LEGACY_SAVE_RE.test(req.url) ||
+        LEGACY_VOTE_RE.test(req.url) ||
+        GRAPHQL_SAVE_RE.test(req.url)),
     async onResponse(req, res) {
       if (!res.ok) return;
       const body = await req.readBody();
+      if (LEGACY_VOTE_RE.test(req.url)) {
+        if (voteDir(req.url, body) !== "1") return;
+        const url = fullnameToUrl(readLegacyFullname(req.url, body));
+        if (url) emit(url, "reddit:upvote");
+        return;
+      }
       if (LEGACY_SAVE_RE.test(req.url)) {
         const url = fullnameToUrl(readLegacyFullname(req.url, body));
         if (url) emit(url, "reddit:save");
+        return;
+      }
+      if (isGraphqlUpvote(body)) {
+        const id = postIdFromGraphql(body);
+        const url = id ? `https://redd.it/${id}` : pendingPermalink;
+        if (url) emit(url, "reddit:upvote");
         return;
       }
       if (!isGraphqlSave(body)) return;

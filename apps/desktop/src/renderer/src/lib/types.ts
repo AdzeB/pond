@@ -1,4 +1,10 @@
-import type { Op, SaveStatus, TaskStatus, VideoNote } from "@pond/schema/db";
+import type {
+  ListKind,
+  Op,
+  SaveStatus,
+  TaskStatus,
+  VideoNote,
+} from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 
 export type ViewMode = "waterfall" | "justified" | "grid";
@@ -58,6 +64,7 @@ export interface Save {
   videoNotes?: VideoNote[];
   dominantColors?: string[];
   tags: string[];
+  listKinds?: ListKind[];
   rawJson?: RawJson | null;
   status?: SaveStatus;
   ingestStartedAt?: number | null;

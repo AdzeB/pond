@@ -8,9 +8,12 @@ import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
 import { sleep } from "./util";
 
-export { harvestTwitterBookmarks } from "./harvest-bookmarks";
+export {
+  harvestTwitterBookmarks,
+  harvestTwitterLikes,
+} from "./harvest-bookmarks";
 export { harvestSourceList, harvestYoutubeLikedList } from "./harvest-list";
-export { harvestThreadsSaved } from "./harvest-saved";
+export { harvestThreadsLikes, harvestThreadsSaved } from "./harvest-saved";
 
 interface HarvestArgs {
   url: string;
