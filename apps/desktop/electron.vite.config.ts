@@ -16,6 +16,10 @@ const CJS_SHIM = [
   "const require = __cjs_mod__.createRequire(import.meta.url);",
 ].join("\n");
 
+interface ChunkInfo {
+  fileName: string;
+}
+
 const CJS_SHIM_RE =
   /\/\/ -- CommonJS Shims --\nimport __cjs_mod__.*\nconst __filename.*\nconst __dirname.*\nconst require.*\n/g;
 
@@ -24,7 +28,7 @@ function cjsShimPlugin(): Plugin {
     name: "pond:cjs-shim",
     apply: "build",
     enforce: "post",
-    renderChunk(code: string, _chunk: unknown, options: { format: string }) {
+    renderChunk(code: string, _chunk: ChunkInfo, options: { format: string }) {
       if (options.format !== "es") return null;
       const stripped = code.replace(CJS_SHIM_RE, "");
       if (!/(__filename|__dirname|require\()/.test(stripped)) return null;
