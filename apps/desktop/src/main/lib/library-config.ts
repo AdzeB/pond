@@ -10,6 +10,7 @@ import {
 } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import log from "electron-log/main.js";
+import { z } from "zod";
 
 const BUNDLE_JSON_SCHEMA = 1;
 
@@ -56,17 +57,22 @@ export function readBundleJson<T>(
   return null;
 }
 
+const EnvelopeSchema = z.object({
+  updatedAt: z.number().catch(0),
+  data: z.unknown(),
+});
+
 function parseEnvelope<T>(file: string): BundleJsonRead<T> | null {
   try {
-    const parsed = JSON.parse(readFileSync(file, "utf-8")) as
-      | Partial<BundleEnvelope<T>>
-      | undefined;
-    if (!parsed || typeof parsed !== "object" || parsed.data === undefined) {
-      return null;
-    }
+    const parsed = EnvelopeSchema.safeParse(
+      JSON.parse(readFileSync(file, "utf-8")),
+    );
+    if (!parsed.success || parsed.data.data === undefined) return null;
+    // SAFETY: `T` is what the caller wrote through `writeBundleJson`, and every reader
+    // re-validates the payload with its own schema before using it.
     return {
-      updatedAt: typeof parsed.updatedAt === "number" ? parsed.updatedAt : 0,
-      data: parsed.data,
+      updatedAt: parsed.data.updatedAt,
+      data: parsed.data.data as T,
     };
   } catch {
     return null;

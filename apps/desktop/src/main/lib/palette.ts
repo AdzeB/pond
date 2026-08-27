@@ -88,7 +88,12 @@ function isMidtone(sw: Swatch): boolean {
   return l > 0.08 && l < 0.95;
 }
 
-function toHsl(r: number, g: number, b: number): { s: number; l: number } {
+interface Hsl {
+  s: number;
+  l: number;
+}
+
+function toHsl(r: number, g: number, b: number): Hsl {
   const rr = r / 255;
   const gg = g / 255;
   const bb = b / 255;

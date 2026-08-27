@@ -5,12 +5,18 @@ import {
   redditIdentityFromToken,
 } from "./reddit-token";
 
-function jwtWith(payload: Record<string, unknown>): string {
+function jwtWith(payload: RedditTokenClaims): string {
   const header = Buffer.from(JSON.stringify({ alg: "none" })).toString(
     "base64url",
   );
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   return `${header}.${body}.sig`;
+}
+
+interface RedditTokenClaims {
+  sub?: string | number;
+  lid?: string | number;
+  exp?: number;
 }
 
 describe("reddit token_v2", () => {

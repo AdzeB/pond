@@ -1,4 +1,5 @@
 import type { SaveFile, Source } from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 
 export type PosterWrite = {
@@ -28,10 +29,7 @@ export function usesPlatformPoster(source: Source | null | undefined): boolean {
   return source === "youtube";
 }
 
-export function videoPosterSlots(files: readonly SaveFile[]): {
-  videos: SaveFile[];
-  posters: SaveFile[];
-} {
+export function videoPosterSlots(files: readonly SaveFile[]) {
   const videos = files.filter(isVideoFile);
   const posters = files.filter((f) => f.kind === "poster");
   return { videos, posters };
@@ -59,28 +57,19 @@ export function videoFilename(index: number, ext: string): string {
   return index === 0 ? `video${ext}` : `video-${index}${ext}`;
 }
 
-export function youtubeThumbnailUrl(rawJson: unknown): string | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const root = rawJson as {
-    ytdlp?: { thumbnail?: unknown };
-    capture?: {
-      media?: Array<{ type?: string; posterUrl?: unknown; url?: unknown }>;
-    };
-  };
-  const fromInfo = root.ytdlp?.thumbnail;
-  if (typeof fromInfo === "string" && fromInfo.length > 0) return fromInfo;
+export function youtubeThumbnailUrl(
+  rawJson: RawJson | null | undefined,
+): string | null {
+  if (!rawJson) return null;
+  if (rawJson.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
 
-  const media = root.capture?.media;
-  if (!Array.isArray(media)) return null;
+  const media = rawJson.capture?.media ?? [];
   for (const entry of media) {
-    if (typeof entry.posterUrl === "string" && entry.posterUrl.length > 0) {
-      return entry.posterUrl;
-    }
+    if (entry.posterUrl) return entry.posterUrl;
   }
   for (const entry of media) {
     if (
       entry.type !== "video" &&
-      typeof entry.url === "string" &&
       /ytimg\.com|i\.ytimg\.com|ggpht\.com/i.test(entry.url)
     ) {
       return entry.url;

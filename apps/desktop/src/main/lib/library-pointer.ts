@@ -3,10 +3,12 @@ import {
   mkdirSync,
   readFileSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { app } from "electron";
+import { z } from "zod";
 
 const POINTER_FILE = "library-location.json";
 
@@ -16,6 +18,8 @@ interface PointerFile {
   schemaVersion: 1;
 }
 
+const StoredPointerSchema = z.object({ path: z.string().min(1) });
+
 function pointerPath(): string {
   return join(app.getPath("userData"), POINTER_FILE);
 }
@@ -23,9 +27,9 @@ function pointerPath(): string {
 export function readLibraryPointer(): string | null {
   try {
     const raw = readFileSync(pointerPath(), "utf-8");
-    const parsed = JSON.parse(raw) as Partial<PointerFile>;
-    const candidate = parsed?.path;
-    if (typeof candidate !== "string" || candidate.length === 0) return null;
+    const parsed = StoredPointerSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return null;
+    const candidate = parsed.data.path;
     const abs = isAbsolute(candidate) ? candidate : resolve(candidate);
     if (abs.startsWith(`${app.getPath("userData")}/`)) return null;
     return abs;
@@ -75,15 +79,18 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
       readFileSync(probe);
     } finally {
       try {
-        const { unlinkSync } = require("node:fs") as typeof import("node:fs");
         unlinkSync(probe);
       } catch {}
     }
     return { ok: true };
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException)?.code === "EACCES") {
+  } catch (cause) {
+    if (errnoCode(cause) === "EACCES") {
       return { ok: false, reason: "not_writable" };
     }
     return { ok: false, reason: "unknown_error" };
   }
+}
+
+function errnoCode(cause: unknown): string | null {
+  return cause instanceof Error && "code" in cause ? String(cause.code) : null;
 }

@@ -1,7 +1,11 @@
-interface RedditTokenPayload {
-  sub?: unknown;
-  lid?: unknown;
-}
+import { z } from "zod";
+
+const RedditTokenPayloadSchema = z.object({
+  sub: z.string().optional().catch(undefined),
+  lid: z.string().optional().catch(undefined),
+});
+
+type RedditTokenPayload = z.infer<typeof RedditTokenPayloadSchema>;
 
 /** Logged-in `token_v2` JWTs use `sub: "user"`; anonymous visitors get `sub: "loid"`. */
 export function isLoggedInRedditToken(value: string): boolean {
@@ -13,9 +17,7 @@ export function isLoggedInRedditToken(value: string): boolean {
 export function redditIdentityFromToken(value: string): string | null {
   const payload = decodeRedditToken(value);
   if (payload?.sub !== "user") return null;
-  return typeof payload.lid === "string" && payload.lid.length > 0
-    ? payload.lid
-    : null;
+  return payload.lid || null;
 }
 
 export function decodeRedditToken(value: string): RedditTokenPayload | null {
@@ -26,10 +28,8 @@ export function decodeRedditToken(value: string): RedditTokenPayload | null {
     const json = Buffer.from(base64UrlToBase64(parts[1]), "base64").toString(
       "utf8",
     );
-    const parsed: unknown = JSON.parse(json);
-    return parsed && typeof parsed === "object"
-      ? (parsed as RedditTokenPayload)
-      : null;
+    const parsed = RedditTokenPayloadSchema.safeParse(JSON.parse(json));
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }

@@ -21,10 +21,10 @@ export function startTaskEvent(
     kind: "pipeline.task.completed",
     ts: Date.now(),
     saveId: base.saveId ?? "",
-    source: base.source ?? ("twitter" as PipelineTaskEvent["source"]),
+    source: base.source ?? "twitter",
     sourceId: base.sourceId ?? null,
     url: base.url ?? null,
-    op: base.op ?? ("harvest_metadata" as PipelineTaskEvent["op"]),
+    op: base.op ?? "harvest_metadata",
     taskId: base.taskId ?? "",
     outcome: base.outcome ?? "ok",
     durationMs: base.durationMs ?? 0,
@@ -44,7 +44,7 @@ export function startSyncEvent(
   return {
     kind: "sync.run.completed",
     ts: Date.now(),
-    source: base.source ?? ("twitter" as SyncRunEvent["source"]),
+    source: base.source ?? "twitter",
     accountId: base.accountId ?? null,
     trigger: base.trigger ?? "manual",
     outcome: base.outcome ?? "ok",
@@ -64,7 +64,7 @@ function startIngestEvent(
     kind: "save.ingest.completed",
     ts: Date.now(),
     saveId: base.saveId ?? "",
-    source: base.source ?? ("twitter" as SaveIngestEvent["source"]),
+    source: base.source ?? "twitter",
     sourceId: base.sourceId ?? null,
     url: base.url ?? "",
     outcome: base.outcome ?? "complete",
@@ -102,7 +102,7 @@ export async function commitSaveIngestEvent(
       : 0;
     const event = startIngestEvent({
       saveId,
-      source: save.source as SaveIngestEvent["source"],
+      source: save.source,
       sourceId: save.sourceId,
       url: save.url,
       outcome: override.outcome,
@@ -119,10 +119,12 @@ export async function commitSaveIngestEvent(
   }
 }
 
-export function toErrorInfo(err: unknown): ErrorInfo | null {
-  if (!err) return null;
-  if (err instanceof Error) return { name: err.name, message: err.message };
-  return { name: "Error", message: String(err) };
+export function toErrorInfo(cause: unknown): ErrorInfo | null {
+  if (!cause) return null;
+  if (cause instanceof Error) {
+    return { name: cause.name, message: cause.message };
+  }
+  return { name: "Error", message: String(cause) };
 }
 
 export async function commitEvent(ev: WideEvent): Promise<void> {

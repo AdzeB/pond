@@ -9,7 +9,15 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { extname, join } from "node:path";
-import type { Save } from "@pond/schema/db";
+import {
+  MEDIA_TYPES,
+  type MediaType,
+  type Save,
+  SOURCES,
+  type Source,
+} from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
+import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import type { TxSaveFile } from "@pond/schema/tx";
 import log from "electron-log/main.js";
 import { itemDir, itemFile, resolvePaths } from "../paths";
@@ -21,11 +29,13 @@ import {
   type InfoFile,
   infoDocFromSave,
   SOURCE_FILE,
+  type StoredInfoDoc,
+  StoredInfoDocSchema,
 } from "./library-format";
 
 interface ItemMetadata {
   id: string;
-  source: string;
+  source: Source;
   sourceId: string;
   url: string;
   name: string | null;
@@ -49,11 +59,11 @@ interface ItemMetadata {
   }>;
   pond: {
     schemaVersion: number;
-    rawSource?: unknown;
+    rawSource?: RawJson | null;
     description?: string | null;
     author?: string | null;
     notes?: string | null;
-    mediaType?: string | null;
+    mediaType?: MediaType | null;
     coverIndex?: number;
   };
 }
@@ -74,7 +84,7 @@ function inferKindFromFilename(filename: string): string {
   return "other";
 }
 
-function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
+function decodeFile(file: TxSaveFile) {
   const buf = Buffer.isBuffer(file.bytes)
     ? file.bytes
     : Buffer.from(file.bytes);
@@ -84,7 +94,7 @@ function decodeFile(file: TxSaveFile): { filename: string; buf: Buffer } {
 async function writeInfoFiles(
   id: string,
   info: InfoDoc,
-  rawSource: unknown,
+  rawSource: RawJson | null | undefined,
 ): Promise<void> {
   const dir = itemDir(id);
   await mkdir(dir, { recursive: true });
@@ -96,15 +106,18 @@ async function writeInfoFiles(
 }
 
 export async function writeSaveInfo(save: Save): Promise<void> {
-  const manifest: InfoFile[] = (save.files ?? []).map((f) => ({
-    kind: f.kind,
-    path: f.path,
-    sha256: f.sha256,
-    size: f.size,
-    ...(f.mimeType ? { mimeType: f.mimeType } : {}),
-    ...(f.width ? { width: f.width } : {}),
-    ...(f.height ? { height: f.height } : {}),
-  }));
+  const manifest: InfoFile[] = (save.files ?? []).map((f) => {
+    const entry: InfoFile = {
+      kind: f.kind,
+      path: f.path,
+      sha256: f.sha256,
+      size: f.size,
+    };
+    if (f.mimeType) entry.mimeType = f.mimeType;
+    if (f.width) entry.width = f.width;
+    if (f.height) entry.height = f.height;
+    return entry;
+  });
   await writeInfoFiles(save.id, infoDocFromSave(save, manifest), save.rawJson);
 }
 
@@ -166,7 +179,9 @@ export async function readItemMetadata(
   const infoPath = itemFile(id, INFO_FILE);
   if (!existsSync(infoPath)) return null;
   try {
-    const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+    const info = StoredInfoDocSchema.parse(
+      JSON.parse(await readFile(infoPath, "utf8")),
+    );
     return metadataFromInfo(id, info, await readSourceDoc(id));
   } catch (err) {
     log.warn("[pond library] corrupt info.json", id, err);
@@ -174,23 +189,32 @@ export async function readItemMetadata(
   }
 }
 
-async function readSourceDoc(id: string): Promise<unknown> {
+async function readSourceDoc(id: string): Promise<RawJson | null> {
   const path = itemFile(id, SOURCE_FILE);
   if (!existsSync(path)) return null;
+  let text: string;
   try {
-    return JSON.parse(await readFile(path, "utf8"));
+    text = await readFile(path, "utf8");
   } catch {
     return null;
   }
+  const parsed = StoredRawJsonSchema.safeParse(JSON.parse(text));
+  if (!parsed.success) {
+    log.warn("[pond library] corrupt source.json", id, parsed.error.message);
+    return null;
+  }
+  return storedAsRawJson(parsed.data);
 }
 
 async function readInfoForEdit(
   id: string,
-): Promise<{ info: InfoDoc; rawSource: unknown } | null> {
+): Promise<{ info: StoredInfoDoc; rawSource: RawJson | null } | null> {
   const infoPath = itemFile(id, INFO_FILE);
   if (!existsSync(infoPath)) return null;
   try {
-    const info = JSON.parse(await readFile(infoPath, "utf8")) as InfoDoc;
+    const info = StoredInfoDocSchema.parse(
+      JSON.parse(await readFile(infoPath, "utf8")),
+    );
     return { info, rawSource: await readSourceDoc(id) };
   } catch (err) {
     log.warn("[pond library] corrupt info.json", id, err);
@@ -200,33 +224,32 @@ async function readInfoForEdit(
 
 function metadataFromInfo(
   id: string,
-  info: InfoDoc,
-  rawSource: unknown,
+  info: StoredInfoDoc,
+  rawSource: RawJson | null,
 ): ItemMetadata {
-  const files = (info.files ?? []).map((f) => ({
-    kind: String(f.kind ?? "other"),
-    path: String(f.path ?? ""),
-    sha256: String(f.sha256 ?? ""),
-    size: Number(f.size ?? 0),
+  const files = info.files.map((f) => ({
+    kind: f.kind,
+    path: f.path,
+    sha256: f.sha256,
+    size: f.size,
   }));
-  const coverIndex = typeof info.coverIndex === "number" ? info.coverIndex : 0;
-  const coverFile = files[coverIndex] ?? files[0];
+  const coverFile = files[info.coverIndex] ?? files[0];
   const createdMs = parseTimestamp(info.createdAt);
   const savedMs = parseTimestamp(info.savedAt);
   const deletedMs = parseTimestamp(info.deletedAt);
   return {
     id,
-    source: info.source,
+    source: toSource(info.source),
     sourceId: info.sourceId,
-    url: typeof info.url === "string" ? info.url : "",
+    url: info.url,
     name: info.title ?? null,
     annotation: info.notes ?? "",
-    tags: Array.isArray(info.tags) ? info.tags.map(String) : [],
+    tags: info.tags,
     folders: [],
     ext: files[0]?.path ? extname(files[0].path).slice(1) || null : null,
     size: coverFile?.size ?? null,
-    width: typeof info.width === "number" ? info.width : null,
-    height: typeof info.height === "number" ? info.height : null,
+    width: info.width,
+    height: info.height,
     btime: createdMs ?? Date.now(),
     mtime: savedMs ?? createdMs ?? Date.now(),
     importedAt: savedMs ?? Date.now(),
@@ -239,20 +262,16 @@ function metadataFromInfo(
       description: info.description ?? null,
       author: info.author ?? null,
       notes: info.notes ?? null,
-      mediaType: info.mediaType ?? null,
-      coverIndex,
+      mediaType: toMediaType(info.mediaType),
+      coverIndex: info.coverIndex,
     },
   };
 }
 
-function parseTimestamp(value: unknown): number | null {
-  if (value == null) return null;
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string") {
-    const ms = Date.parse(value);
-    return Number.isFinite(ms) ? ms : null;
-  }
-  return null;
+function parseTimestamp(value: string | null): number | null {
+  if (value === null) return null;
+  const ms = Date.parse(value);
+  return Number.isFinite(ms) ? ms : null;
 }
 
 export async function setItemDeleted(
@@ -297,4 +316,12 @@ export async function* scanLibrary(): AsyncGenerator<{
       log.warn("[pond library] scan stat failed", id, err);
     }
   }
+}
+
+function toSource(value: string): Source {
+  return SOURCES.find((source) => source === value) ?? "web";
+}
+
+function toMediaType(value: string | null): MediaType | null {
+  return MEDIA_TYPES.find((type) => type === value) ?? null;
 }

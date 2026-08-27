@@ -11,19 +11,19 @@ interface ProcessedImage {
   height?: number;
 }
 
-const TARGET_EXT: Record<Exclude<ImageFormat, "original">, string> = {
+const TARGET_EXT = {
   jpeg: ".jpg",
   png: ".png",
   webp: ".webp",
   avif: ".avif",
-};
+} satisfies Record<Exclude<ImageFormat, "original">, string>;
 
-const TARGET_MIME: Record<Exclude<ImageFormat, "original">, string> = {
+const TARGET_MIME = {
   jpeg: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
   avif: "image/avif",
-};
+} satisfies Record<Exclude<ImageFormat, "original">, string>;
 
 export async function processImage(
   bytes: Buffer,
@@ -97,19 +97,16 @@ export async function probeImageDims(
   return null;
 }
 
-function dimsFromMeta(meta: { width?: number; height?: number }): {
+interface ImageDims {
   width?: number;
   height?: number;
-} {
-  if (
-    meta.width &&
-    meta.height &&
-    Number.isFinite(meta.width) &&
-    Number.isFinite(meta.height)
-  ) {
-    return { width: meta.width, height: meta.height };
-  }
-  return {};
+}
+
+function dimsFromMeta(meta: ImageDims): ImageDims {
+  const { width, height } = meta;
+  if (!width || !height) return {};
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return {};
+  return { width, height };
 }
 
 function applyFormat(

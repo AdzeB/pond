@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { z } from "zod";
 import {
   DEFAULT_LIBRARY_NAME,
   LIBRARY_SCHEMA_VERSION,
@@ -23,15 +24,15 @@ export function resolvePondId(root: string, committed: boolean): string {
   return UNBOUND_POND_ID;
 }
 
+const StoredMetadataSchema = z.object({ id: z.string().min(1) });
+
 export function readOrCreatePondId(root: string): string {
   const file = join(root, "metadata.json");
   try {
-    const parsed = JSON.parse(readFileSync(file, "utf-8")) as
-      | Partial<LibraryMetadata>
-      | undefined;
-    if (typeof parsed?.id === "string" && parsed.id.length > 0) {
-      return parsed.id;
-    }
+    const parsed = StoredMetadataSchema.safeParse(
+      JSON.parse(readFileSync(file, "utf-8")),
+    );
+    if (parsed.success) return parsed.data.id;
   } catch {}
   const body: LibraryMetadata = {
     id: randomId(),
