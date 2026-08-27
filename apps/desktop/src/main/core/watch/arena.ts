@@ -28,7 +28,6 @@ const ArenaContentsSchema = z.object({
   data: z.array(ArenaV3ItemSchema).nullish().catch(null),
 });
 
-type ArenaV3Item = z.infer<typeof ArenaV3ItemSchema>;
 type ArenaContentsResponse = z.infer<typeof ArenaContentsSchema>;
 
 type FetchResult =

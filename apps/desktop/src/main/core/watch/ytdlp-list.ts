@@ -45,8 +45,6 @@ const FlatEntrySchema = z.preprocess(
   }),
 );
 
-type FlatEntry = z.infer<typeof FlatEntrySchema>;
-
 export async function listYtdlpWatch(
   source: Source,
   handle: string,

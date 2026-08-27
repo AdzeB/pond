@@ -37,8 +37,6 @@ const EagleItemMetaSchema = z.object({
   isDeleted: z.boolean().optional().catch(undefined),
 });
 
-type EagleItemMeta = z.infer<typeof EagleItemMetaSchema>;
-
 export interface EagleImportResult {
   ok: boolean;
   imported: number;
