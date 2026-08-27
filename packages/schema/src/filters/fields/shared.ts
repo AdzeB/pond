@@ -4,32 +4,23 @@ export function toMillis(
   v: string | Date | number | null | undefined,
 ): number | null {
   if (v == null) return null;
-  if (v instanceof Date) {
-    const t = v.getTime();
-    return Number.isFinite(t) ? t : null;
-  }
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  const t = Date.parse(v);
-  return Number.isFinite(t) ? t : null;
+  const ms = v instanceof Date ? v.getTime() : Number.parseFloat(String(v));
+  if (Number.isFinite(ms)) return ms;
+  const parsed = Date.parse(String(v));
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function durationSeconds(s: SaveLike): number | null {
   const raw = s.rawJson;
   if (!raw) return null;
 
-  const fromCapture = raw.capture?.duration;
-  if (typeof fromCapture === "number" && fromCapture > 0) return fromCapture;
+  const fromCapture = raw.capture?.duration ?? 0;
+  if (fromCapture > 0) return fromCapture;
 
   for (const m of raw.capture?.media ?? []) {
-    if (typeof m.durationSec === "number" && m.durationSec > 0) {
-      return m.durationSec;
-    }
+    if ((m.durationSec ?? 0) > 0) return m.durationSec ?? null;
   }
 
-  const ytdlpDuration = raw.ytdlp?.duration;
-  if (typeof ytdlpDuration === "number" && ytdlpDuration > 0) {
-    return ytdlpDuration;
-  }
-
-  return null;
+  const ytdlpDuration = raw.ytdlp?.duration ?? 0;
+  return ytdlpDuration > 0 ? ytdlpDuration : null;
 }

@@ -1,5 +1,6 @@
 import { formatQuery, type RuleGroupProcessor } from "@react-querybuilder/core";
 import { and as drizzleAnd, or as drizzleOr, type SQL, sql } from "drizzle-orm";
+import { z } from "zod";
 import { isoDurationToMillis } from "./duration";
 import {
   FIELD_DESCRIPTORS,
@@ -7,15 +8,25 @@ import {
   tagsEmpty,
   tagsExists,
 } from "./fields";
-import type { Clause, ComparatorId, FieldId, Predicate, Query } from "./types";
+import type {
+  Clause,
+  ComparatorId,
+  FieldId,
+  Predicate,
+  PredicateValue,
+  Query,
+} from "./types";
 import { isGroup } from "./types";
 
 export function buildWhere(query: Query): SQL | undefined {
   return formatQuery(query, { ruleGroupProcessor: compileGroup }) ?? undefined;
 }
 
-const compileGroup: RuleGroupProcessor<SQL | null> = (ruleGroup) =>
-  compileClause(ruleGroup as Query);
+const compileGroup: RuleGroupProcessor<SQL | null> = (ruleGroup) => {
+  // SAFETY: formatQuery hands back the same group `buildWhere` passed it, typed as the
+  // library's RuleGroupTypeAny because the processor signature is not parameterised.
+  return compileClause(ruleGroup as Query);
+};
 
 function compileClause(c: Clause): SQL | null {
   if (isGroup(c)) {
@@ -40,7 +51,7 @@ function compilePredicate(p: Predicate): SQL | null {
 function compileForField(
   field: FieldId,
   operator: ComparatorId,
-  raw: unknown,
+  raw: PredicateValue,
 ): SQL | null {
   if (field === "tags") return tagsClause(operator, raw);
 
@@ -50,7 +61,7 @@ function compileForField(
   return scalarClause(column, field, operator, raw);
 }
 
-function tagsClause(operator: ComparatorId, raw: unknown): SQL | null {
+function tagsClause(operator: ComparatorId, raw: PredicateValue): SQL | null {
   if (operator === "empty") return tagsEmpty();
   if (!Array.isArray(raw) || raw.length === 0) return null;
   const lowered = raw
@@ -78,7 +89,7 @@ function scalarClause(
   column: SQL,
   field: FieldId,
   operator: ComparatorId,
-  raw: unknown,
+  raw: PredicateValue,
 ): SQL | null {
   switch (operator) {
     case "eq": {
@@ -163,43 +174,48 @@ function scalarClause(
   }
 }
 
-function scalarValue(field: FieldId, raw: unknown): string | number | null {
+const FiniteNumber = z.number().refine(Number.isFinite);
+const Text = z.string();
+
+function scalarValue(
+  field: FieldId,
+  raw: PredicateValue,
+): string | number | null {
   if (raw == null) return null;
-  if (isDateField(field)) {
-    return numericValue(field, raw);
-  }
-  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
-  if (typeof raw === "string") {
-    const trimmed = raw.trim();
-    if (!trimmed) return null;
-    return trimmed.toLowerCase();
-  }
-  return null;
+  if (isDateField(field)) return numericValue(field, raw);
+  const num = FiniteNumber.safeParse(raw);
+  if (num.success) return num.data;
+  return stringValue(raw);
 }
 
-function numericValue(field: FieldId, raw: unknown): number | null {
-  if (typeof raw === "number") return Number.isFinite(raw) ? raw : null;
-  if (typeof raw === "string") {
-    if (isDateField(field)) {
-      if (raw.startsWith("P") || raw.startsWith("-P") || raw.startsWith("+P")) {
-        const ms = isoDurationToMillis(raw);
-        if (ms === null) return null;
-        return Date.now() + ms;
-      }
-      const t = Date.parse(raw);
-      return Number.isFinite(t) ? t : null;
-    }
-    const n = Number.parseFloat(raw);
-    return Number.isFinite(n) ? n : null;
+function numericValue(field: FieldId, raw: PredicateValue): number | null {
+  const num = FiniteNumber.safeParse(raw);
+  if (num.success) return num.data;
+  const text = Text.safeParse(raw);
+  if (!text.success) return null;
+
+  if (!isDateField(field)) {
+    const parsed = Number.parseFloat(text.data);
+    return Number.isFinite(parsed) ? parsed : null;
   }
-  return null;
+  const value = text.data;
+  if (
+    value.startsWith("P") ||
+    value.startsWith("-P") ||
+    value.startsWith("+P")
+  ) {
+    const ms = isoDurationToMillis(value);
+    return ms === null ? null : Date.now() + ms;
+  }
+  const at = Date.parse(value);
+  return Number.isFinite(at) ? at : null;
 }
 
-function stringValue(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const trimmed = raw.trim();
-  if (!trimmed) return null;
-  return trimmed.toLowerCase();
+function stringValue(raw: PredicateValue): string | null {
+  const text = Text.safeParse(raw);
+  if (!text.success) return null;
+  const trimmed = text.data.trim();
+  return trimmed ? trimmed.toLowerCase() : null;
 }
 
 function isDateField(field: FieldId): boolean {

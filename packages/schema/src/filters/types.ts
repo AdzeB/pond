@@ -1,7 +1,16 @@
 import type { RuleGroupType, RuleType } from "@react-querybuilder/core";
 
 /** RQB `RuleType` narrowed to our unions, plus per-rule `negate`; RQB only has group `not`. */
-export interface Predicate extends RuleType<FieldId, ComparatorId, unknown> {
+/** What a saved filter can compare against: scalars, or a list of them for the set comparators. */
+export type PredicateValue =
+  | string
+  | number
+  | boolean
+  | null
+  | ReadonlyArray<string | number>;
+
+export interface Predicate
+  extends RuleType<FieldId, ComparatorId, PredicateValue> {
   negate?: boolean;
 }
 
@@ -56,17 +65,16 @@ export type ComparatorId =
   | "empty"
   | "near";
 
-export const COMPARATORS_BY_TYPE: Record<FieldTypeId, readonly ComparatorId[]> =
-  {
-    string: ["eq", "neq", "in", "nin", "contains", "startsWith", "endsWith"],
-    stringArray: ["some", "every", "none", "empty"],
-    enum: ["eq", "neq", "in", "nin"],
-    number: ["eq", "neq", "lt", "lte", "gt", "gte", "between"],
-    boolean: ["eq"],
-    date: ["lt", "lte", "gt", "gte", "between"],
-    optional: ["exists"],
-    color: ["near"],
-  };
+export const COMPARATORS_BY_TYPE = {
+  string: ["eq", "neq", "in", "nin", "contains", "startsWith", "endsWith"],
+  stringArray: ["some", "every", "none", "empty"],
+  enum: ["eq", "neq", "in", "nin"],
+  number: ["eq", "neq", "lt", "lte", "gt", "gte", "between"],
+  boolean: ["eq"],
+  date: ["lt", "lte", "gt", "gte", "between"],
+  optional: ["exists"],
+  color: ["near"],
+} satisfies Record<FieldTypeId, readonly ComparatorId[]>;
 
 export type FieldId =
   | "tags"
@@ -91,5 +99,5 @@ export interface FieldMeta {
   type: FieldTypeId;
   label: string;
   group: "content" | "media" | "time" | "people";
-  presets?: ReadonlyArray<{ id: string; label: string; value: unknown }>;
+  presets?: ReadonlyArray<{ id: string; label: string; value: PredicateValue }>;
 }
