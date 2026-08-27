@@ -17,7 +17,7 @@ import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
 import { openLibrarySearch } from "@/lib/ui/open-search";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
-import type { LayoutValue } from "@/lib/ui/view-prefs";
+import { isLayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
@@ -82,9 +82,11 @@ export function MenuBridge() {
         case "view.layout.waterfall":
         case "view.layout.grid":
         case "view.layout.justified":
-        case "view.layout.list":
-          setLayout(id.slice("view.layout.".length) as LayoutValue);
+        case "view.layout.list": {
+          const next = id.slice("view.layout.".length);
+          if (isLayoutValue(next)) setLayout(next);
           return;
+        }
 
         case "theme.light":
           patchPreferences({
