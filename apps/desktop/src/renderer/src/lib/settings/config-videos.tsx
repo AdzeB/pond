@@ -1,9 +1,11 @@
 import { useVideoDownloadBinding } from "@/components/settings/sections/downloads";
-import { defineCustomSection, group } from "@/lib/settings/engine-types";
+import {
+  defineCustomSection,
+  group,
+  type SettingsValues,
+} from "@/lib/settings/engine-types";
 
-type Values = Record<string, unknown>;
-
-const subtitlesEnabled = (v: Values) => v.subtitles !== "off";
+const subtitlesEnabled = (v: SettingsValues) => v.subtitles !== "off";
 
 export const videosSection = defineCustomSection({
   title: "Videos",

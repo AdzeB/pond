@@ -1,6 +1,13 @@
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferTranscribe } from "./inference-client";
 
+declare global {
+  /** Legacy Safari spelling, absent from lib.dom. */
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
+
 const DEFAULT_MODEL_ID = "Xenova/whisper-tiny";
 /** decodeAudioData on a large video has aborted the renderer (Chromium exit 5). */
 export const MAX_TRANSCRIPT_BYTES = 16 * 1024 * 1024;
@@ -23,10 +30,8 @@ async function decodeMono16k(url: string): Promise<Float32Array> {
   if (bytes.byteLength > MAX_TRANSCRIPT_BYTES) {
     throw new Error(`audio too large (${bytes.byteLength})`);
   }
-  const Ctx: typeof AudioContext =
-    window.AudioContext ??
-    (window as unknown as { webkitAudioContext: typeof AudioContext })
-      .webkitAudioContext;
+  const Ctx = window.AudioContext ?? window.webkitAudioContext;
+  if (!Ctx) throw new Error("no AudioContext available");
   const ctx = new Ctx({ sampleRate: 16000 });
   try {
     const buffer = await ctx.decodeAudioData(bytes);

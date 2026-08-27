@@ -127,9 +127,7 @@ export function useMediaSession(
       actionsRef.current.seekBy(details.seekOffset ?? SEEK_SECONDS);
     });
     bindAction("seekto", (details) => {
-      if (typeof details.seekTime === "number") {
-        actionsRef.current.seek(details.seekTime);
-      }
+      if (details.seekTime != null) actionsRef.current.seek(details.seekTime);
     });
 
     return () => {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   deriveTypeKind,
   isImageFile,
@@ -15,6 +16,18 @@ import type { Save, SaveFile } from "@/lib/types";
 import { notify } from "@/lib/ui/toast";
 import { pool } from "@/stores/pool";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
+
+/** Replies from this app's own IPC queries; anything that does not fit counts as a failure. */
+const OkSchema = z
+  .object({ ok: z.boolean().catch(false) })
+  .catch({ ok: false });
+
+const FilePathReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    path: z.string().nullish().catch(null),
+  })
+  .catch({ ok: false, path: null });
 
 export function resolveFileIndex(
   save: Save,
@@ -123,10 +136,10 @@ export async function openDefaultApp(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.openSaveFile(save.id, fileIndex)) as {
-    ok: boolean;
-  };
-  if (!result?.ok) statusFeed.error("Open", "Couldn't open this file.");
+  const result = OkSchema.parse(
+    await window.pond.openSaveFile(save.id, fileIndex),
+  );
+  if (!result.ok) statusFeed.error("Open", "Couldn't open this file.");
 }
 
 export async function revealFile(
@@ -135,10 +148,10 @@ export async function revealFile(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.revealSave(save.id, fileIndex)) as {
-    ok: boolean;
-  };
-  if (!result?.ok) {
+  const result = OkSchema.parse(
+    await window.pond.revealSave(save.id, fileIndex),
+  );
+  if (!result.ok) {
     statusFeed.error("Reveal", "Couldn't find this file on disk.");
   }
 }
@@ -149,11 +162,10 @@ export async function copyFilePath(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.query("saves.filePath", {
-    id: save.id,
-    fileIndex,
-  })) as { ok: true; path: string } | { ok: false; reason: string };
-  if (!result.ok) return;
+  const result = FilePathReplySchema.parse(
+    await window.pond.query("saves.filePath", { id: save.id, fileIndex }),
+  );
+  if (!result.ok || !result.path) return;
   await writeClipboardText(result.path);
   notify({
     id: "copy-path",
@@ -167,11 +179,10 @@ export async function copyFile(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.query("saves.copyFile", {
-    id: save.id,
-    fileIndex,
-  })) as { ok: boolean };
-  if (!result?.ok) return;
+  const result = OkSchema.parse(
+    await window.pond.query("saves.copyFile", { id: save.id, fileIndex }),
+  );
+  if (!result.ok) return;
   const file = save.files[fileIndex];
   const title =
     file && deriveTypeKind(file, save) === "video"
@@ -230,11 +241,10 @@ export async function copyImage(
 ): Promise<void> {
   const fileIndex = copyableImageIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.query("saves.copyImage", {
-    id: save.id,
-    fileIndex,
-  })) as { ok: boolean };
-  if (!result?.ok) return;
+  const result = OkSchema.parse(
+    await window.pond.query("saves.copyImage", { id: save.id, fileIndex }),
+  );
+  if (!result.ok) return;
   notify({
     id: "copy-media",
     title: "Image copied to clipboard",
@@ -277,10 +287,9 @@ export async function exportFile(
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
   if (fileIndex == null) return;
-  const result = (await window.pond.query("saves.exportFile", {
-    id: save.id,
-    fileIndex,
-  })) as { ok: true; path: string } | { ok: false; reason: string };
+  const result = FilePathReplySchema.parse(
+    await window.pond.query("saves.exportFile", { id: save.id, fileIndex }),
+  );
   if (!result.ok) return;
   notify({
     id: "export-file",

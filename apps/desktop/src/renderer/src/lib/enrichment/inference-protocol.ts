@@ -4,7 +4,7 @@ export interface SerializedImage {
   data: ArrayBuffer;
   width: number;
   height: number;
-  channels: number;
+  channels: 1 | 2 | 3 | 4;
 }
 
 export type InferenceRequest =

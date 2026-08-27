@@ -84,19 +84,16 @@ export function buildMediaUnits(
     const video = videos[0];
     if (!video) return [];
     const poster = posters[0] ?? covers[0] ?? images[0];
-    return [
-      {
-        key: video.path,
-        url: buildPondUrl(save.id, video),
-        isVideo: true,
-        ...(poster
-          ? {
-              posterUrl: buildPondUrl(save.id, poster),
-              posterKey: poster.path,
-            }
-          : {}),
-      },
-    ];
+    const unit: MediaUnit = {
+      key: video.path,
+      url: buildPondUrl(save.id, video),
+      isVideo: true,
+    };
+    if (poster) {
+      unit.posterUrl = buildPondUrl(save.id, poster);
+      unit.posterKey = poster.path;
+    }
+    return [unit];
   }
 
   const units: MediaUnit[] = [];
@@ -104,17 +101,16 @@ export function buildMediaUnits(
   for (const f of slides) {
     if (isVideoFile(f)) {
       const poster = posters[videoSeen] ?? posters[0] ?? covers[0];
-      units.push({
+      const unit: MediaUnit = {
         key: f.path,
         url: buildPondUrl(save.id, f),
         isVideo: true,
-        ...(poster
-          ? {
-              posterUrl: buildPondUrl(save.id, poster),
-              posterKey: poster.path,
-            }
-          : {}),
-      });
+      };
+      if (poster) {
+        unit.posterUrl = buildPondUrl(save.id, poster);
+        unit.posterKey = poster.path;
+      }
+      units.push(unit);
       videoSeen++;
     } else if (isImageFile(f)) {
       units.push({

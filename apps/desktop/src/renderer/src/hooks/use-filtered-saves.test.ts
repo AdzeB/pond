@@ -10,7 +10,23 @@ import {
 } from "./use-filtered-saves";
 
 function save(id: string): Save {
-  return { id } as Save;
+  return {
+    id,
+    source: "twitter",
+    sourceId: id,
+    url: "",
+    title: null,
+    description: null,
+    author: null,
+    notes: null,
+    mediaUrl: null,
+    mediaType: null,
+    files: [],
+    tags: [],
+    savedAt: 0,
+    createdAt: 0,
+    deletedAt: null,
+  };
 }
 
 describe("intersectSqlResults", () => {
@@ -57,7 +73,7 @@ describe("sortSaves", () => {
       rawJson: {
         capture: {
           id: "tagged",
-          source: "twitter",
+          source: "twitter" as const,
           url: "https://x.com/tagged",
           media: [],
           duration: 60,
@@ -65,8 +81,8 @@ describe("sortSaves", () => {
         extractorId: "test",
         extractedAt: "2026-01-01T00:00:00.000Z",
       },
-    } as Save;
-    const untagged = { ...save("untagged"), tags: [] } as Save;
+    };
+    const untagged = { ...save("untagged"), tags: [] };
     const longer = {
       ...save("longer"),
       tags: ["beta"],
@@ -76,7 +92,7 @@ describe("sortSaves", () => {
       rawJson: {
         capture: {
           id: "longer",
-          source: "twitter",
+          source: "twitter" as const,
           url: "https://x.com/longer",
           media: [],
           duration: 120,
@@ -84,7 +100,7 @@ describe("sortSaves", () => {
         extractorId: "test",
         extractedAt: "2026-01-01T00:00:00.000Z",
       },
-    } as Save;
+    };
 
     expect(sortSaves([tagged, longer, untagged], "tagName", "asc")).toEqual([
       tagged,

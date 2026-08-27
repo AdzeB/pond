@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import { z } from "zod";
 
 interface EmbeddingEntry {
   vec: Float32Array;
@@ -17,11 +18,13 @@ const store = new Store<EmbeddingState>({
 
 export const embeddingStore = store;
 
-interface WireEmbedding {
-  id: string;
-  embedding: number[] | null;
-  embeddingModel: string | null;
-}
+const WireRowsSchema = z.array(
+  z.object({
+    id: z.string(),
+    embedding: z.array(z.number()).nullable().catch(null),
+    embeddingModel: z.string().nullable().catch(null),
+  }),
+);
 
 let loadInflight: Promise<void> | null = null;
 
@@ -30,10 +33,9 @@ export function loadEmbeddings(): Promise<void> {
   if (loadInflight) return loadInflight;
   loadInflight = (async () => {
     try {
-      const rows = (await window.pond.query(
-        "saves.embeddings",
-        {},
-      )) as WireEmbedding[];
+      const rows = WireRowsSchema.parse(
+        await window.pond.query("saves.embeddings", {}),
+      );
       const byId = new Map<string, EmbeddingEntry>();
       for (const row of rows) {
         if (!row.embedding || !row.embeddingModel) continue;

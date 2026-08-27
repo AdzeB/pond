@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { z } from "zod";
 import type { GroupConfig, Item } from "@/lib/settings/engine-types";
 import { SECTIONS, type SectionDef } from "@/lib/settings/registry";
 
@@ -14,8 +15,11 @@ export interface SettingsSearchEntry {
   keywords: string[];
 }
 
+/** Titles and descriptions are typed as ReactNode; only the plain-string ones are indexable. */
+const TextNodeSchema = z.string().optional().catch(undefined);
+
 function asText(node: ReactNode): string | undefined {
-  return typeof node === "string" ? node : undefined;
+  return TextNodeSchema.parse(node);
 }
 
 function itemTitle(item: Item): string | undefined {

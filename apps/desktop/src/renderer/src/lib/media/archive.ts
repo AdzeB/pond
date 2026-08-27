@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { buildPondUrl } from "@/lib/media/url";
 import type { Save, SaveFile } from "@/lib/types";
 
@@ -18,6 +19,14 @@ export interface ArchiveManifest {
   scope: ArchiveScope;
   pages: ArchiveManifestPage[];
 }
+
+const ManifestSchema = z.object({
+  version: z.number().catch(0),
+  rootUrl: z.string().catch(""),
+  archivedAt: z.string().catch(""),
+  scope: z.literal("page").nullish().catch(null),
+  pages: z.array(z.object({ url: z.string(), title: z.string().catch("") })),
+});
 
 export function isArchiveFile(file: SaveFile): boolean {
   return file.kind === ARCHIVE_KIND || file.kind === ARCHIVE_MANIFEST_KIND;
@@ -49,9 +58,12 @@ export async function loadArchiveManifest(
   try {
     const res = await fetch(buildPondUrl(save.id, file));
     if (!res.ok) return null;
-    const raw = (await res.json()) as ArchiveManifest;
-    if (!Array.isArray(raw.pages)) return null;
-    return { ...raw, scope: raw.scope === "page" ? "page" : "site" };
+    const parsed = ManifestSchema.safeParse(await res.json());
+    if (!parsed.success) return null;
+    return {
+      ...parsed.data,
+      scope: parsed.data.scope === "page" ? "page" : "site",
+    };
   } catch {
     return null;
   }

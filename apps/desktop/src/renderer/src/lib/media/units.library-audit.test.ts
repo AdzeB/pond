@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { normalise, SavePatchSchema } from "@/lib/save/reconcile";
 import type { Save } from "@/lib/types";
 import { buildMediaUnits } from "./units";
 
@@ -20,14 +21,17 @@ describeLibrary("live library media units", () => {
 
     for (const entry of entries) {
       if (!entry.isDirectory() || !entry.name.endsWith(".info")) continue;
-      let save: Save;
+      let save: Save | null;
       try {
-        save = JSON.parse(
-          await readFile(join(itemsDir, entry.name, "info.json"), "utf8"),
-        ) as Save;
+        const raw = await readFile(
+          join(itemsDir, entry.name, "info.json"),
+          "utf8",
+        );
+        save = normalise(SavePatchSchema.parse(JSON.parse(raw)));
       } catch {
         continue;
       }
+      if (!save) continue;
       saveCount += 1;
 
       const files = save.files ?? [];

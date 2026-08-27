@@ -1,25 +1,24 @@
 import { env } from "@huggingface/transformers";
+import { z } from "zod";
 
 type InferenceDevice = "webgpu" | "wasm";
+
+const CoreCountSchema = z.number().catch(4);
 
 let wasmConfigured = false;
 /** transformers.js/onnxruntime-web default to all logical cores, which pegs the machine on the CPU path; half the cores keeps the UI responsive while still making progress. */
 function capWasmThreads(): void {
   if (wasmConfigured) return;
   wasmConfigured = true;
-  const cores =
-    typeof navigator !== "undefined" &&
-    typeof navigator.hardwareConcurrency === "number"
-      ? navigator.hardwareConcurrency
-      : 4;
-  const isolated =
-    typeof crossOriginIsolated !== "undefined" ? crossOriginIsolated : false;
-  const hasSAB = typeof SharedArrayBuffer !== "undefined";
+  const cores = CoreCountSchema.parse(
+    globalThis.navigator?.hardwareConcurrency,
+  );
+  const isolated = globalThis.crossOriginIsolated === true;
+  const hasSAB = "SharedArrayBuffer" in globalThis;
   /** Multi-threaded WASM needs cross-origin isolation AND SharedArrayBuffer; otherwise onnxruntime silently runs single-threaded. */
   const threads = isolated && hasSAB ? Math.max(1, Math.floor(cores / 2)) : 1;
   try {
-    const wasm = (env.backends as { onnx?: { wasm?: { numThreads?: number } } })
-      ?.onnx?.wasm;
+    const wasm = env.backends.onnx.wasm;
     if (wasm) wasm.numThreads = threads;
   } catch {}
   console.info(
@@ -44,11 +43,7 @@ export function pickDevice(): Promise<InferenceDevice> {
     devicePromise = (async (): Promise<InferenceDevice> => {
       capWasmThreads();
       try {
-        const gpu = (
-          navigator as Navigator & {
-            gpu?: { requestAdapter: () => Promise<unknown> };
-          }
-        ).gpu;
+        const gpu = navigator.gpu;
         if (gpu) {
           const adapter = await gpu.requestAdapter();
           if (adapter) {

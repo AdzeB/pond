@@ -13,18 +13,21 @@ const TagsSection = lazy(() =>
     default: m.TagsSection,
   })),
 );
-export const SECTION_CONFIGS: Record<string, SectionConfig> = {
-  general: generalSection,
-  appearance: appearanceSection,
-  tags: {
-    component: TagsSection,
-    title: "Tags",
-    description: "Organize, merge, and archive tags.",
-    keywords: ["labels", "groups", "merge", "archive", "rename", "organize"],
-  },
-  trash: trashSection,
-  storage: storageSection,
-  videos: videosSection,
-  images: imagesSection,
-  enrichment: enrichmentSection,
-};
+export const SECTION_CONFIGS = new Map<string, SectionConfig>([
+  ["general", generalSection],
+  ["appearance", appearanceSection],
+  [
+    "tags",
+    {
+      component: TagsSection,
+      title: "Tags",
+      description: "Organize, merge, and archive tags.",
+      keywords: ["labels", "groups", "merge", "archive", "rename", "organize"],
+    },
+  ],
+  ["trash", trashSection],
+  ["storage", storageSection],
+  ["videos", videosSection],
+  ["images", imagesSection],
+  ["enrichment", enrichmentSection],
+]);

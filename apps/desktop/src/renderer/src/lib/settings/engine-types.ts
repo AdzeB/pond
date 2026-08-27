@@ -1,9 +1,24 @@
 import type { Prefs } from "@pond/schema/db";
 import type { ComponentType, ReactNode } from "react";
 
-export interface Binding<V = Record<string, unknown>> {
+/** A settings slice as the engine addresses it: JSON values under string keys, narrowed by whichever control renders each key. */
+export type SettingValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | readonly SettingValue[]
+  | { readonly [key: string]: SettingValue };
+
+export interface SettingsValues {
+  [key: string]: SettingValue;
+}
+
+export interface Binding<V = SettingsValues> {
   values: V;
-  patch: (delta: Partial<V>) => void;
+  /** A method, not a function property: bivariance is what lets a `Binding<Slice>` be erased to `Binding<SettingsValues>` for the engine, which only ever patches keys of the slice the binding came from. */
+  patch(delta: Partial<V>): void;
   loaded: boolean;
 }
 
@@ -17,8 +32,8 @@ interface ItemBase {
   title: string;
   description?: ReactNode;
   keywords?: string[];
-  visible?: (values: Record<string, unknown>) => boolean;
-  disabled?: (values: Record<string, unknown>) => boolean;
+  visible?: (values: SettingsValues) => boolean;
+  disabled?: (values: SettingsValues) => boolean;
   apply?: () => void;
   prefsKey?: keyof Prefs;
 }
@@ -59,8 +74,8 @@ export interface ButtonItem {
   keywords?: string[];
   label: ReactNode;
   variant?: "secondary" | "destructive";
-  visible?: (values: Record<string, unknown>) => boolean;
-  disabled?: (values: Record<string, unknown>) => boolean;
+  visible?: (values: SettingsValues) => boolean;
+  disabled?: (values: SettingsValues) => boolean;
   prefsKey?: keyof Prefs;
   onClick: () => void;
 }
@@ -70,7 +85,7 @@ export interface CustomItem {
   key: string;
   title?: string;
   keywords?: string[];
-  visible?: (values: Record<string, unknown>) => boolean;
+  visible?: (values: SettingsValues) => boolean;
   prefsKey?: keyof Prefs;
   render: (binding: Binding) => ReactNode;
 }
@@ -79,7 +94,7 @@ export type Item = FieldItem | ButtonItem | CustomItem;
 
 export interface GroupConfig {
   title?: ReactNode;
-  visible?: (values: Record<string, unknown>) => boolean;
+  visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
@@ -99,8 +114,6 @@ export interface SectionConfig {
   groups?: GroupConfig[];
   component?: ComponentType;
 }
-
-type Values = Record<string, unknown>;
 
 type FieldControl =
   | { control: "switch" }
@@ -132,8 +145,8 @@ interface FieldMeta {
   title: string;
   description?: ReactNode;
   keywords?: string[];
-  visible?: (values: Values) => boolean;
-  disabled?: (values: Values) => boolean;
+  visible?: (values: SettingsValues) => boolean;
+  disabled?: (values: SettingsValues) => boolean;
   apply?: () => void;
 }
 
@@ -152,7 +165,7 @@ type TypedItem<V> =
 
 interface TypedGroupInput<V> {
   title?: ReactNode;
-  visible?: (values: Values) => boolean;
+  visible?: (values: SettingsValues) => boolean;
   fullWidth?: boolean;
   collapsible?: boolean;
   defaultCollapsed?: boolean;
@@ -180,7 +193,7 @@ export function defineSection<K extends keyof Prefs>(
   prefsKey: K,
   input: TypedSectionInput<Prefs[K]>,
 ): SectionConfig {
-  return { ...input, prefsKey, groups: input.groups as GroupConfig[] };
+  return { ...input, prefsKey, groups: input.groups };
 }
 
 export function defineCustomSection(input: CustomSectionInput): SectionConfig {
@@ -192,19 +205,19 @@ export const group = {
     prefsKey: K,
     input: TypedGroupInput<Prefs[K]>,
   ): GroupConfig {
-    return { ...input, prefsKey, items: input.items as Item[] };
+    return { ...input, prefsKey, items: input.items };
   },
-  with<V>(
+  with<V extends SettingsValues>(
     useBinding: () => Binding<V>,
     input: TypedGroupInput<V>,
   ): GroupConfig {
     return {
       ...input,
-      useBinding: useBinding as unknown as () => Binding,
-      items: input.items as Item[],
+      useBinding,
+      items: input.items,
     };
   },
-  plain(input: TypedGroupInput<Values>): GroupConfig {
-    return { ...input, items: input.items as Item[] };
+  plain(input: TypedGroupInput<SettingsValues>): GroupConfig {
+    return { ...input, items: input.items };
   },
 };

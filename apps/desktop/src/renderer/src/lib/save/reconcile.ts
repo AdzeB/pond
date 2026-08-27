@@ -1,31 +1,121 @@
+import {
+  MEDIA_TYPES,
+  OPS,
+  SAVE_STATUSES,
+  SOURCES,
+  TASK_STATUSES,
+} from "@pond/schema/db";
+import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { toMs } from "@shared/to-ms";
+import { z } from "zod";
 import type { Save } from "@/lib/types";
 import { deleteSave, pool, upsertSave } from "@/stores/pool";
 
-export interface SyncActionEvent {
-  id: number;
-  batchId: string | null;
-  modelName: "save" | "tag" | "tag_group" | "tag_group_member" | "settings";
-  modelId: string;
-  action: "I" | "U" | "D" | "A";
-  data: unknown;
-  prevData: unknown;
-  actor: "user" | "system";
-  actorReason: string | null;
-  createdAt: string;
-}
+const Text = z.string().nullish().catch(null);
+const Num = z.number().nullish().catch(null);
+const Texts = z.array(z.string()).nullish().catch(null);
+/** SQLite hands timestamps back as numbers, ISO strings, or Dates depending on the driver path. */
+const Timestamp = z
+  .union([z.number(), z.string(), z.date()])
+  .nullish()
+  .catch(null);
+
+const SaveFileSchema = z.object({
+  kind: z.string(),
+  path: z.string(),
+  sha256: z.string(),
+  size: z.number(),
+  mimeType: Text,
+  width: Num,
+  height: Num,
+});
+
+const SaveTaskSchema = z.object({
+  op: z.enum(OPS),
+  status: z.enum(TASK_STATUSES),
+  attempts: z.number(),
+  maxAttempts: z.number(),
+  lastError: z.string().nullable(),
+  nextRunAt: z.number(),
+  updatedAt: z.number(),
+});
+
+/** Every save reaching the renderer — list query, cached snapshot, or sync action — is decoded here before `normalise` fills its defaults. */
+export const SavePatchSchema = z.object({
+  id: z.string().min(1),
+  source: z.enum(SOURCES).nullish().catch(null),
+  sourceId: Text,
+  accountId: Text,
+  url: Text,
+  title: Text,
+  description: Text,
+  author: Text,
+  notes: Text,
+  mediaUrl: Text,
+  mediaType: z.enum(MEDIA_TYPES).nullish().catch(null),
+  files: z.array(SaveFileSchema).nullish().catch(null),
+  coverIndex: z.number().optional().catch(undefined),
+  width: Num,
+  height: Num,
+  fileSize: Num,
+  phash: Text,
+  blurhash: Text,
+  caption: Text,
+  captionModel: Text,
+  ocrText: Text,
+  ocrModel: Text,
+  transcript: Text,
+  transcriptModel: Text,
+  clipEmbedding: z.array(z.number()).nullish().catch(null),
+  clipModel: Text,
+  aesthetic: Texts,
+  aestheticModel: Text,
+  autoTitleModel: Text,
+  suggestedTags: Texts,
+  suggestedTagsModel: Text,
+  videoNotes: z
+    .array(z.object({ id: z.string(), timeSec: z.number(), text: z.string() }))
+    .nullish()
+    .catch(null),
+  dominantColors: Texts,
+  tags: Texts,
+  rawJson: StoredRawJsonSchema.transform(storedAsRawJson).nullish().catch(null),
+  status: z.enum(SAVE_STATUSES).optional().catch(undefined),
+  ingestStartedAt: Timestamp,
+  ingestCompletedAt: Timestamp,
+  tasks: z.array(SaveTaskSchema).optional().catch(undefined),
+  savedAt: Timestamp,
+  createdAt: Timestamp,
+  publishedAt: Timestamp,
+  deletedAt: Timestamp,
+});
+
+export type SavePatch = z.infer<typeof SavePatchSchema>;
+
+export const SavePatchesSchema = z.array(
+  SavePatchSchema.nullable().catch(null),
+);
+
+export const SyncActionEventSchema = z.object({
+  modelName: z.string().catch(""),
+  modelId: z.string().catch(""),
+  action: z.enum(["I", "U", "D", "A"]).nullish().catch(null),
+  data: SavePatchSchema.partial().nullish().catch(null),
+});
+
+export type SyncActionEvent = z.infer<typeof SyncActionEventSchema>;
 
 export function applyAction(event: SyncActionEvent): void {
   if (event.modelName !== "save") return;
 
   if (event.action === "I") {
-    const save = normalise(event.data as Partial<Save>);
+    const save = normalise(event.data);
     if (save) upsertSave(save);
     return;
   }
 
   if (event.action === "U") {
-    const patch = event.data as Partial<Save>;
+    const patch = event.data;
     const existing = pool.get(event.modelId);
     if (!existing) {
       const created = normalise(patch);
@@ -49,13 +139,14 @@ export function applyAction(event: SyncActionEvent): void {
   if (event.action === "A") {
     const existing = pool.get(event.modelId);
     if (!existing) return;
-    const patched = event.data as Partial<Save>;
-    const merged = normalise({ ...existing, ...patched });
+    const merged = normalise({ ...existing, ...event.data });
     if (merged) upsertSave(merged);
   }
 }
 
-export function normalise(raw: Partial<Save> | null | undefined): Save | null {
+export function normalise(
+  raw: Partial<SavePatch> | null | undefined,
+): Save | null {
   if (!raw?.id) return null;
   return {
     id: raw.id,

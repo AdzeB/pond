@@ -1,4 +1,5 @@
 import { Settings } from "@pond/ui";
+import { z } from "zod";
 import { EnrichmentModelPicker } from "@/components/shared/enrichment-model-picker";
 import {
   CAPTION_CATALOG,
@@ -9,14 +10,7 @@ import {
 } from "@/lib/enrichment/model-catalogs";
 import { type Binding, defineSection } from "@/lib/settings/engine-types";
 
-interface EnrichValues {
-  nlCompiler?: boolean;
-  semanticSearch?: boolean;
-  embedModelId?: string;
-  captionModelId?: string;
-  clipModelId?: string;
-  whisperModelId?: string;
-}
+const ModelIdSchema = z.string().catch("");
 
 type ModelField =
   | "embedModelId"
@@ -37,7 +31,6 @@ function ModelPickerRow({
   catalog: ModelCatalog;
   field: ModelField;
 }) {
-  const values = binding.values as EnrichValues;
   return (
     <>
       <Settings.ItemDetails>
@@ -49,7 +42,7 @@ function ModelPickerRow({
       <Settings.ItemControl>
         <EnrichmentModelPicker
           catalog={catalog}
-          value={values[field] ?? ""}
+          value={ModelIdSchema.parse(binding.values[field])}
           onChange={(id) => binding.patch({ [field]: id })}
         />
       </Settings.ItemControl>

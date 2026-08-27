@@ -19,16 +19,16 @@ import {
 import type { SectionConfig } from "@/components/settings/engine";
 import { SECTION_CONFIGS } from "@/lib/settings/sections";
 
-const ICONS: Record<string, IconComponent> = {
-  general: General,
-  appearance: Appearance,
-  tags: Tags,
-  trash: Trash,
-  storage: Storage,
-  videos: Videos,
-  images: Images,
-  enrichment: Enrichment,
-};
+const ICONS = new Map<string, IconComponent>([
+  ["general", General],
+  ["appearance", Appearance],
+  ["tags", Tags],
+  ["trash", Trash],
+  ["storage", Storage],
+  ["videos", Videos],
+  ["images", Images],
+  ["enrichment", Enrichment],
+]);
 
 export interface SectionDef extends SettingsSection {
   icon: IconComponent;
@@ -36,8 +36,8 @@ export interface SectionDef extends SettingsSection {
 }
 
 export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
-  const icon = ICONS[section.id];
-  const config = SECTION_CONFIGS[section.id];
+  const icon = ICONS.get(section.id);
+  const config = SECTION_CONFIGS.get(section.id);
   if (!icon || !config) {
     throw new Error(`settings registry missing renderer for "${section.id}"`);
   }

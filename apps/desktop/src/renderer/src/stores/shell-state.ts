@@ -4,7 +4,7 @@ const MAIN_PADDING_INLINE = 20;
 const GRID_PADDING = MAIN_PADDING_INLINE * 2;
 
 function fallbackWidth(): number {
-  if (typeof window === "undefined") return 0;
+  if (!globalThis.window) return 0;
   return Math.max(0, window.innerWidth - 64);
 }
 

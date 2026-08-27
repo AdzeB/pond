@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { statusFeed } from "@/lib/status-feed";
 import type { Save } from "@/lib/types";
 
@@ -29,10 +30,17 @@ export const REVERSE_SEARCH_ENGINES: ReadonlyArray<{
   },
 ];
 
+const PublicUrlReplySchema = z
+  .object({
+    ok: z.boolean().catch(false),
+    url: z.string().nullish().catch(null),
+  })
+  .catch({ ok: false, url: null });
+
 export async function hasPublicImageUrl(saveId: string): Promise<boolean> {
-  const result = (await window.pond.query("saves.publicImageUrl", {
-    id: saveId,
-  })) as { ok: true; url: string | null } | { ok: false; url: null };
+  const result = PublicUrlReplySchema.parse(
+    await window.pond.query("saves.publicImageUrl", { id: saveId }),
+  );
   return Boolean(result.ok && result.url);
 }
 
@@ -42,9 +50,9 @@ export async function reverseImageSearch(
 ): Promise<void> {
   const engine = REVERSE_SEARCH_ENGINES.find((e) => e.key === engineKey);
   if (!engine) return;
-  const result = (await window.pond.query("saves.publicImageUrl", {
-    id: save.id,
-  })) as { ok: true; url: string | null } | { ok: false; url: null };
+  const result = PublicUrlReplySchema.parse(
+    await window.pond.query("saves.publicImageUrl", { id: save.id }),
+  );
   if (!result.ok || !result.url) {
     statusFeed.error(
       "Reverse Image Search",

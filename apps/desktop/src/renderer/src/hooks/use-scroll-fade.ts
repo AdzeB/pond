@@ -20,9 +20,9 @@ function edgesOf(element: HTMLElement, axis: ScrollAxis): ScrollEdges {
     axis === "x"
       ? element.scrollLeft + element.clientWidth < element.scrollWidth - 1
       : element.scrollTop + element.clientHeight < element.scrollHeight - 1;
-  return [start && "start", end && "end"]
-    .filter(Boolean)
-    .join(" ") as ScrollEdges;
+  if (start && end) return "start end";
+  if (start) return "start";
+  return end ? "end" : "";
 }
 
 export function useScrollFade<T extends HTMLElement>() {

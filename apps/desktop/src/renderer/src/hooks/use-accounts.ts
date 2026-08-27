@@ -1,6 +1,7 @@
-import type { Source } from "@pond/schema/db";
+import { SOURCES, type Source } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
-import { syncMonitor } from "@/stores/sync-monitor";
+import { z } from "zod";
+import { type SyncAccountStatus, syncMonitor } from "@/stores/sync-monitor";
 
 export interface AccountRow {
   id: string;
@@ -18,28 +19,57 @@ export interface AccountRow {
   syncing: boolean;
 }
 
-export function useAccounts(): {
+const AccountsReplySchema = z
+  .object({
+    accounts: z
+      .array(
+        z.object({
+          id: z.string(),
+          source: z.enum(SOURCES),
+          handle: z.string().nullable().catch(null),
+          label: z.string().nullable().catch(null),
+          /** Absent means "not probed yet" and triggers the retry below; null means "no avatar". */
+          avatarUrl: z.string().nullable().optional().catch(null),
+          addedAt: z.string().catch(""),
+          sync: z
+            .object({
+              lastSyncedAt: z.string().nullable().catch(null),
+              lastError: z.string().nullable().catch(null),
+              knownCount: z.number().catch(0),
+            })
+            .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
+          connected: z.boolean().catch(false),
+          syncing: z.boolean().catch(false),
+        }),
+      )
+      .catch([]),
+  })
+  .catch({ accounts: [] });
+
+interface AccountsResult {
   accounts: AccountRow[];
   loading: boolean;
   refetch: () => Promise<AccountRow[]>;
-} {
+}
+
+export function useAccounts(): AccountsResult {
   const [accounts, setAccounts] = useState<AccountRow[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const refetch = useCallback(async (): Promise<AccountRow[]> => {
     try {
-      const res = (await window.pond.query("accounts.list", {})) as {
-        accounts: AccountRow[];
-      };
-      const rows = res?.accounts ?? [];
+      const rows = AccountsReplySchema.parse(
+        await window.pond.query("accounts.list", {}),
+      ).accounts;
       setAccounts(rows);
       for (const account of rows) {
-        syncMonitor.seed(account.id, account.source, {
+        const status: Partial<SyncAccountStatus> = {
           connected: account.connected,
-          lastSyncedAt: account.sync?.lastSyncedAt ?? null,
-          lastError: account.sync?.lastError ?? null,
-          ...(account.syncing ? { state: "running" as const } : {}),
-        });
+          lastSyncedAt: account.sync.lastSyncedAt,
+          lastError: account.sync.lastError,
+        };
+        if (account.syncing) status.state = "running";
+        syncMonitor.seed(account.id, account.source, status);
       }
       return rows;
     } catch {

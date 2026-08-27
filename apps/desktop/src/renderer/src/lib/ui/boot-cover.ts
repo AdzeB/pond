@@ -1,7 +1,7 @@
 const BOOT_FADE_MS = 220;
 
 export function dismissBootCover(): void {
-  if (typeof document === "undefined") return;
+  if (!globalThis.document) return;
   const el = document.getElementById("boot");
   if (!el || el.dataset.state === "out") return;
 

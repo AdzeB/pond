@@ -1,28 +1,11 @@
 import type { Source } from "@pond/schema/db";
+import type { WireSyncState, WireSyncStatusUpdate } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
-type SyncState =
-  | "idle"
-  | "running"
-  | "done"
-  | "error"
-  | "auth_required"
-  | "paused";
-
-interface SyncStatusUpdate {
-  accountId: string;
-  source: string;
-  state: SyncState;
-  message?: string;
-  progress?: { current: number; total: number };
-  lastSyncedAt?: string | null;
-  lastError?: string | null;
-}
-
 export interface SyncAccountStatus {
   source: Source;
-  state: SyncState;
+  state: WireSyncState;
   message?: string;
   progress?: { current: number; total: number };
   lastSyncedAt: string | null;
@@ -46,8 +29,8 @@ const EMPTY: Omit<SyncAccountStatus, "source"> = {
 const store = new Store<SyncMonitorState>({ byAccount: {} });
 
 export const syncMonitor = {
-  ingest(update: SyncStatusUpdate): void {
-    const source = update.source as Source;
+  ingest(update: WireSyncStatusUpdate): void {
+    const source = update.source;
     store.setState((s) => {
       const prev = s.byAccount[update.accountId] ?? { ...EMPTY, source };
       const next: SyncAccountStatus = {

@@ -3,6 +3,9 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 const VALID_PATHS = new Set(SETTINGS_SECTIONS.map((section) => section.path));
+const ALIASES = new Map<string, string>(
+  Object.entries(SETTINGS_SECTION_ALIASES),
+);
 const DEFAULT_PATH = SETTINGS_SECTIONS[0]?.path ?? "general";
 
 interface SettingsModalState {
@@ -17,7 +20,7 @@ let lastSection = DEFAULT_PATH;
 export const settingsModal = {
   open(section?: string, hash?: string): void {
     const requested = section ?? lastSection;
-    const resolved = SETTINGS_SECTION_ALIASES[requested] ?? requested;
+    const resolved = ALIASES.get(requested) ?? requested;
     const valid = VALID_PATHS.has(resolved) ? resolved : DEFAULT_PATH;
     lastSection = valid;
     store.setState(() => ({ section: valid, hash: hash ?? null }));

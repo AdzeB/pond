@@ -11,9 +11,29 @@ function file(kind: string, path: string, mimeType: string): SaveFile {
   return { kind, path, mimeType, sha256: "abcdef1234567890", size: 10 };
 }
 
+function makeSave(partial: Partial<Save> & { id: string }): Save {
+  return {
+    source: "web",
+    sourceId: partial.id,
+    url: "",
+    title: null,
+    description: null,
+    author: null,
+    notes: null,
+    mediaUrl: null,
+    mediaType: null,
+    files: [],
+    tags: [],
+    savedAt: 0,
+    createdAt: 0,
+    deletedAt: null,
+    ...partial,
+  };
+}
+
 describe("buildMediaUnits video posters", () => {
   it("uses a generic cover as the resting poster for every video", () => {
-    const save = {
+    const save = makeSave({
       id: "multi-video",
       source: "instagram",
       files: [
@@ -21,7 +41,7 @@ describe("buildMediaUnits video posters", () => {
         file("cover", "cover.jpg", "image/jpeg"),
         file("video", "video-2.mp4", "video/mp4"),
       ],
-    } as Save;
+    });
 
     const units = buildMediaUnits(save);
 
@@ -41,7 +61,7 @@ describe("buildMediaUnits video posters", () => {
   });
 
   it("uses the first poster for every video until the sweep fills missing slots", () => {
-    const save = {
+    const save = makeSave({
       id: "multi-video",
       source: "twitter",
       files: [
@@ -49,7 +69,7 @@ describe("buildMediaUnits video posters", () => {
         file("video", "video-2.mp4", "video/mp4"),
         file("poster", "poster.jpg", "image/jpeg"),
       ],
-    } as Save;
+    });
 
     expect(buildMediaUnits(save).map((unit) => unit.posterUrl)).toEqual([
       "pond://multi-video/poster.jpg?v=abcdef123456",
@@ -58,14 +78,14 @@ describe("buildMediaUnits video posters", () => {
   });
 
   it("keeps a cover as the visible unit for an image-only save", () => {
-    const save = {
+    const save = makeSave({
       id: "image-cover",
       source: "instagram",
       files: [
         file("cover", "cover.jpg", "image/jpeg"),
         file("avatar", "avatar.jpg", "image/jpeg"),
       ],
-    } as Save;
+    });
 
     expect(buildMediaUnits(save)).toEqual([
       {
@@ -77,11 +97,11 @@ describe("buildMediaUnits video posters", () => {
   });
 
   it("keeps a legacy extensionless cover as visible image media", () => {
-    const save = {
+    const save = makeSave({
       id: "legacy-cover",
       source: "cosmos",
       files: [file("cover", "cover.", "")],
-    } as Save;
+    });
 
     expect(buildMediaUnits(save)).toEqual([
       {
@@ -94,7 +114,7 @@ describe("buildMediaUnits video posters", () => {
 });
 
 describe("pickPrimaryUnit Threads post cover", () => {
-  const threadsSave = {
+  const threadsSave = makeSave({
     id: "thread-1",
     source: "threads",
     files: [
@@ -102,7 +122,7 @@ describe("pickPrimaryUnit Threads post cover", () => {
       file("tweet_screenshot_light", "tweet-light.png", "image/png"),
       file("tweet_screenshot_dark", "tweet-dark.png", "image/png"),
     ],
-  } as Save;
+  });
 
   it("uses extracted media when tweetCover is media", () => {
     const unit = pickPrimaryUnit(threadsSave, {
@@ -121,14 +141,14 @@ describe("pickPrimaryUnit Threads post cover", () => {
   });
 
   it("falls back to the card PNG for a text-only Threads post", () => {
-    const textOnly = {
+    const textOnly = makeSave({
       id: "thread-text",
       source: "threads",
       files: [
         file("tweet_screenshot_light", "tweet-light.png", "image/png"),
         file("avatar", "avatar.jpg", "image/jpeg"),
       ],
-    } as Save;
+    });
     const unit = pickPrimaryUnit(textOnly, {
       theme: "light",
       tweetCover: "media",
@@ -139,24 +159,24 @@ describe("pickPrimaryUnit Threads post cover", () => {
 
 describe("deriveTypeLabel web pages", () => {
   it("labels a web save as Web even when the cover is a PNG", () => {
-    const save = {
+    const save = makeSave({
       id: "page-1",
       source: "web",
       mediaType: "image",
       files: [file("cover", "cover.png", "image/png")],
-    } as Save;
+    });
     const cover = save.files[0] ?? null;
     expect(deriveTypeLabel(cover, save)).toBe("Web");
     expect(deriveTypeKind(cover, save)).toBe("link");
   });
 
   it("still uses the file extension for non-web image saves", () => {
-    const save = {
+    const save = makeSave({
       id: "photo-1",
       source: "instagram",
       mediaType: "image",
       files: [file("image", "photo.png", "image/png")],
-    } as Save;
+    });
     const image = save.files[0] ?? null;
     expect(deriveTypeLabel(image, save)).toBe("PNG");
     expect(deriveTypeKind(image, save)).toBe("image");

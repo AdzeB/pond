@@ -4,9 +4,15 @@ import {
   CLIPVisionModelWithProjection,
   env,
   Florence2ForConditionalGeneration,
+  Florence2Processor,
+  type PreTrainedModel,
+  type PreTrainedTokenizer,
+  type Processor,
   pipeline,
   type RawImage,
+  Tensor,
 } from "@huggingface/transformers";
+import { z } from "zod";
 import { pickDevice } from "@/lib/enrichment/inference-device";
 
 export type FlorenceTask = "<CAPTION>" | "<DETAILED_CAPTION>" | "<OCR>";
@@ -39,41 +45,17 @@ function memo<T>(
   return p;
 }
 
-interface FlorenceProcessor {
-  construct_prompts: (task: string) => string | string[];
-  post_process_generation: (
-    text: string,
-    task: string,
-    imageSize: [number, number],
-  ) => Record<string, unknown>;
-  (
-    image: RawImage,
-    prompts: string | string[],
-  ): Promise<Record<string, unknown>>;
-}
-
-interface FlorenceModel {
-  generate: (opts: Record<string, unknown>) => Promise<unknown>;
-}
-
-interface FlorenceTokenizer {
-  batch_decode: (
-    ids: unknown,
-    opts?: { skip_special_tokens?: boolean },
-  ) => string[];
-}
-
 interface FlorenceBundle {
-  model: FlorenceModel;
-  processor: FlorenceProcessor;
-  tokenizer: FlorenceTokenizer;
+  model: PreTrainedModel;
+  processor: Florence2Processor;
+  tokenizer: PreTrainedTokenizer;
 }
 
 const florenceCache = new Map<string, Promise<FlorenceBundle>>();
 function getFlorence(modelId: string): Promise<FlorenceBundle> {
   return memo(florenceCache, modelId, () =>
     withDevice("florence", async (device) => {
-      const model = (await Florence2ForConditionalGeneration.from_pretrained(
+      const model = await Florence2ForConditionalGeneration.from_pretrained(
         modelId,
         {
           device,
@@ -87,18 +69,20 @@ function getFlorence(modelId: string): Promise<FlorenceBundle> {
                 }
               : "q8",
         },
-      )) as unknown as FlorenceModel;
-      const processor = (await AutoProcessor.from_pretrained(
-        modelId,
-      )) as unknown as FlorenceProcessor;
-      const tokenizer = (await AutoTokenizer.from_pretrained(
-        modelId,
-      )) as unknown as FlorenceTokenizer;
+      );
+      const processor = await AutoProcessor.from_pretrained(modelId);
+      if (!(processor instanceof Florence2Processor)) {
+        throw new Error(`[florence] ${modelId} has no Florence-2 processor`);
+      }
+      const tokenizer = await AutoTokenizer.from_pretrained(modelId);
       console.info(`[florence] ready (${device})`);
       return { model, processor, tokenizer };
     }),
   );
 }
+
+/** Florence returns either the caption string or a boxed-region object, depending on the task. */
+const CaptionSchema = z.string().catch("");
 
 export async function coreFlorence(
   image: RawImage,
@@ -108,48 +92,42 @@ export async function coreFlorence(
   const { model, processor, tokenizer } = await getFlorence(modelId);
   const prompts = processor.construct_prompts(task);
   const inputs = await processor(image, prompts);
-  const generatedIds = await model.generate({
-    ...(inputs as Record<string, unknown>),
+  const generated = await model.generate({
+    ...inputs,
     max_new_tokens: 256,
     num_beams: 1,
     do_sample: false,
   });
-  const decoded = tokenizer.batch_decode(generatedIds, {
+  if (!(generated instanceof Tensor)) return "";
+  const decoded = tokenizer.batch_decode(generated, {
     skip_special_tokens: false,
   });
-  const text = decoded[0] ?? "";
-  const result = processor.post_process_generation(text, task, [
+  const result = processor.post_process_generation(decoded[0] ?? "", task, [
     image.width,
     image.height,
   ]);
-  const value = result[task];
-  return typeof value === "string" ? value.trim() : "";
+  return CaptionSchema.parse(result[task]).trim();
 }
-
-type ClipVisionModel = (inputs: Record<string, unknown>) => Promise<{
-  image_embeds: { normalize: () => { tolist: () => number[][] } };
-}>;
-type ClipProcessor = (image: RawImage) => Promise<Record<string, unknown>>;
 
 const clipVisionCache = new Map<
   string,
-  Promise<{ model: ClipVisionModel; processor: ClipProcessor }>
+  Promise<{ model: PreTrainedModel; processor: Processor }>
 >();
 function getClipVision(modelId: string) {
   return memo(clipVisionCache, modelId, () =>
     withDevice("clip", async (device) => {
-      const model = (await CLIPVisionModelWithProjection.from_pretrained(
+      const model = await CLIPVisionModelWithProjection.from_pretrained(
         modelId,
         { device, dtype: "q8" },
-      )) as unknown as ClipVisionModel;
-      const processor = (await AutoProcessor.from_pretrained(
-        modelId,
-      )) as unknown as ClipProcessor;
+      );
+      const processor = await AutoProcessor.from_pretrained(modelId);
       console.info(`[clip] vision ready (${device})`);
       return { model, processor };
     }),
   );
 }
+
+const EmbeddingRowsSchema = z.array(z.array(z.number()));
 
 export async function coreClipImage(
   image: RawImage,
@@ -158,25 +136,23 @@ export async function coreClipImage(
   const { model, processor } = await getClipVision(modelId);
   const inputs = await processor(image);
   const out = await model(inputs);
-  const vec = out.image_embeds.normalize().tolist()[0] ?? [];
-  return Float32Array.from(vec);
+  const rows = EmbeddingRowsSchema.parse(out.image_embeds.normalize().tolist());
+  return Float32Array.from(rows[0] ?? []);
 }
 
-type ZeroShotClassifier = (
-  image: RawImage,
-  labels: string[],
-) => Promise<Array<{ label: string; score: number }>>;
+type ZeroShotClassifier = Awaited<
+  ReturnType<typeof pipeline<"zero-shot-image-classification">>
+>;
 
 const clipZeroShotCache = new Map<string, Promise<ZeroShotClassifier>>();
 function getClipZeroShot(modelId: string): Promise<ZeroShotClassifier> {
   return memo(clipZeroShotCache, modelId, () =>
-    withDevice("clip", async (device) => {
-      const pipe = await pipeline("zero-shot-image-classification", modelId, {
+    withDevice("clip", (device) =>
+      pipeline("zero-shot-image-classification", modelId, {
         device,
         dtype: "q8",
-      });
-      return pipe as unknown as ZeroShotClassifier;
-    }),
+      }),
+    ),
   );
 }
 
@@ -195,10 +171,7 @@ export async function coreClipAesthetic(
     .map((r) => r.label);
 }
 
-type Extractor = (
-  text: string | string[],
-  opts?: { pooling?: "mean" | "cls" | "none"; normalize?: boolean },
-) => Promise<{ data: Float32Array; dims: number[] }>;
+type Extractor = Awaited<ReturnType<typeof pipeline<"feature-extraction">>>;
 
 const extractorCache = new Map<string, Promise<Extractor>>();
 function getExtractor(modelId: string): Promise<Extractor> {
@@ -209,7 +182,7 @@ function getExtractor(modelId: string): Promise<Extractor> {
         dtype: "q8",
       });
       console.info(`[embeddings] extractor ready (${device}/q8)`);
-      return pipe as unknown as Extractor;
+      return pipe;
     }),
   );
 }
@@ -235,10 +208,9 @@ export async function coreEmbedTexts(
   return out.map((o) => Float32Array.from(o.data));
 }
 
-type Transcriber = (
-  audio: Float32Array,
-  opts?: Record<string, unknown>,
-) => Promise<{ text: string } | Array<{ text: string }>>;
+type Transcriber = Awaited<
+  ReturnType<typeof pipeline<"automatic-speech-recognition">>
+>;
 
 const transcriberCache = new Map<string, Promise<Transcriber>>();
 function getTranscriber(modelId: string): Promise<Transcriber> {
@@ -249,7 +221,7 @@ function getTranscriber(modelId: string): Promise<Transcriber> {
         dtype: device === "webgpu" ? "fp16" : "q8",
       });
       console.info(`[whisper] ready (${device})`);
-      return pipe as unknown as Transcriber;
+      return pipe;
     }),
   );
 }

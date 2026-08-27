@@ -1,4 +1,5 @@
 import { Store } from "@tanstack/store";
+import { z } from "zod";
 
 interface ClipEntry {
   vec: Float32Array;
@@ -19,11 +20,13 @@ const store = new Store<ClipState>({
 
 export const clipEmbeddingStore = store;
 
-interface WireClipEmbedding {
-  id: string;
-  clipEmbedding: number[] | null;
-  clipModel: string | null;
-}
+const WireRowsSchema = z.array(
+  z.object({
+    id: z.string(),
+    clipEmbedding: z.array(z.number()).nullable().catch(null),
+    clipModel: z.string().nullable().catch(null),
+  }),
+);
 
 let loadInflight: Promise<void> | null = null;
 
@@ -32,10 +35,9 @@ export function loadClipEmbeddings(): Promise<void> {
   if (loadInflight) return loadInflight;
   loadInflight = (async () => {
     try {
-      const rows = (await window.pond.query(
-        "saves.clipEmbeddings",
-        {},
-      )) as WireClipEmbedding[];
+      const rows = WireRowsSchema.parse(
+        await window.pond.query("saves.clipEmbeddings", {}),
+      );
       const byId = new Map<string, ClipEntry>();
       for (const row of rows) {
         if (!row.clipEmbedding || !row.clipModel) continue;

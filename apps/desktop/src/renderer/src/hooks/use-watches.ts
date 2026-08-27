@@ -1,6 +1,7 @@
-import type { Source, WatchKind } from "@pond/schema/db";
+import { SOURCES, type Source, type WatchKind } from "@pond/schema/db";
 import { useCallback, useEffect, useState } from "react";
-import { syncMonitor } from "@/stores/sync-monitor";
+import { z } from "zod";
+import { type SyncAccountStatus, syncMonitor } from "@/stores/sync-monitor";
 
 export interface WatchRow {
   id: string;
@@ -29,16 +30,16 @@ export const WATCHABLE: readonly Source[] = [
   "cosmos",
 ];
 
-const WATCH_KINDS: Partial<Record<Source, readonly WatchKind[]>> = {
-  arena: ["channel", "user", "group"],
-  youtube: ["channel", "playlist"],
-  twitter: ["user", "list"],
-  pinterest: ["user", "board"],
-  cosmos: ["user", "cluster"],
-};
+const WATCH_KINDS = new Map<Source, readonly WatchKind[]>([
+  ["arena", ["channel", "user", "group"]],
+  ["youtube", ["channel", "playlist"]],
+  ["twitter", ["user", "list"]],
+  ["pinterest", ["user", "board"]],
+  ["cosmos", ["user", "cluster"]],
+]);
 
 export function watchKindsFor(source: Source): readonly WatchKind[] {
-  return WATCH_KINDS[source] ?? ["user"];
+  return WATCH_KINDS.get(source) ?? ["user"];
 }
 
 export function watchKindLabel(kind: WatchKind | undefined): string {
@@ -62,28 +63,69 @@ export function watchKindLabel(kind: WatchKind | undefined): string {
 
 export const WATCH_NEEDS_SESSION: readonly Source[] = ["instagram", "twitter"];
 
-export function useWatches(): {
+const WatchesReplySchema = z
+  .object({
+    watches: z
+      .array(
+        z.object({
+          id: z.string(),
+          source: z.enum(SOURCES),
+          handle: z.string().catch(""),
+          kind: z
+            .enum([
+              "channel",
+              "user",
+              "group",
+              "playlist",
+              "board",
+              "cluster",
+              "list",
+            ])
+            .optional()
+            .catch(undefined),
+          label: z.string().nullable().catch(null),
+          /** Absent means "not probed yet" and triggers the retry below; null means "no avatar". */
+          avatarUrl: z.string().nullable().optional().catch(null),
+          via: z.string().nullable().catch(null),
+          addedAt: z.string().catch(""),
+          sync: z
+            .object({
+              lastSyncedAt: z.string().nullable().catch(null),
+              lastError: z.string().nullable().catch(null),
+              knownCount: z.number().catch(0),
+            })
+            .catch({ lastSyncedAt: null, lastError: null, knownCount: 0 }),
+          syncing: z.boolean().catch(false),
+        }),
+      )
+      .catch([]),
+  })
+  .catch({ watches: [] });
+
+interface WatchesResult {
   watches: WatchRow[];
   loading: boolean;
   refetch: () => Promise<WatchRow[]>;
-} {
+}
+
+export function useWatches(): WatchesResult {
   const [watches, setWatches] = useState<WatchRow[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const refetch = useCallback(async (): Promise<WatchRow[]> => {
     try {
-      const res = (await window.pond.query("watches.list", {})) as {
-        watches: WatchRow[];
-      };
-      const rows = res?.watches ?? [];
+      const rows = WatchesReplySchema.parse(
+        await window.pond.query("watches.list", {}),
+      ).watches;
       setWatches(rows);
       for (const watch of rows) {
-        syncMonitor.seed(watch.id, watch.source, {
+        const status: Partial<SyncAccountStatus> = {
           connected: true,
-          lastSyncedAt: watch.sync?.lastSyncedAt ?? null,
-          lastError: watch.sync?.lastError ?? null,
-          ...(watch.syncing ? { state: "running" as const } : {}),
-        });
+          lastSyncedAt: watch.sync.lastSyncedAt,
+          lastError: watch.sync.lastError,
+        };
+        if (watch.syncing) status.state = "running";
+        syncMonitor.seed(watch.id, watch.source, status);
       }
       return rows;
     } catch {

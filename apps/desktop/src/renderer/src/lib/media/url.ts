@@ -16,8 +16,7 @@ export function pickAuthorAvatarUrl(save: Save): string | null {
   if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.author?.avatarUrl;
-  if (typeof url === "string" && url.trim().length > 0) return url;
-  return null;
+  return url && url.trim().length > 0 ? url : null;
 }
 
 export function pickSourceIconUrl(save: Save): string | null {
@@ -25,8 +24,7 @@ export function pickSourceIconUrl(save: Save): string | null {
   if (local) return buildPondUrl(save.id, local);
 
   const url = save.rawJson?.capture?.extras?.faviconUrl;
-  if (typeof url === "string" && url.trim().length > 0) return url;
-  return null;
+  return url && url.trim().length > 0 ? url : null;
 }
 
 function cacheBuster(file: SaveFile): string | null {

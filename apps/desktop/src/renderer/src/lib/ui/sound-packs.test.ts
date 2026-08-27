@@ -1,47 +1,33 @@
+import type { Layer, SoundDefinition } from "@web-kits/audio";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { SOUND_AUDITIONS, SOUND_PATCH, UI_SOUND_NAMES } from "./sound-packs";
 
-interface LayerLike {
-  envelope?: {
-    attack?: number;
-    decay?: number;
-    sustain?: number;
-    release?: number;
-  };
-  delay?: number;
-  gain?: number;
-  source?: {
-    frequency?: number | { start: number; end: number };
-  };
-  filter?: {
-    frequency?: number;
-    envelope?: { peak?: number };
-  };
+const HertzSchema = z.number();
+const SweepSchema = z.object({ start: z.number(), end: z.number() });
+
+function layersOf(sound: SoundDefinition | undefined): Layer[] {
+  if (!sound) return [];
+  return "layers" in sound ? sound.layers : [sound];
 }
 
-function layersOf(sound: unknown): LayerLike[] {
-  if (!sound || typeof sound !== "object") return [];
-  if ("layers" in sound && Array.isArray(sound.layers)) {
-    return sound.layers as LayerLike[];
-  }
-  return [sound as LayerLike];
-}
-
-function frequencies(layer: LayerLike): number[] {
+function frequencies(layer: Layer): number[] {
   const values: number[] = [];
-  const freq = layer.source?.frequency;
-  if (typeof freq === "number") values.push(freq);
-  else if (freq) values.push(freq.start, freq.end);
-  if (typeof layer.filter?.frequency === "number") {
-    values.push(layer.filter.frequency);
-  }
-  if (typeof layer.filter?.envelope?.peak === "number") {
-    values.push(layer.filter.envelope.peak);
-  }
+  const source = layer.source;
+  const freq = "frequency" in source ? source.frequency : undefined;
+  const hertz = HertzSchema.safeParse(freq);
+  const sweep = SweepSchema.safeParse(freq);
+  if (hertz.success) values.push(hertz.data);
+  else if (sweep.success) values.push(sweep.data.start, sweep.data.end);
+  const filter = Array.isArray(layer.filter) ? undefined : layer.filter;
+  if (filter && "frequency" in filter) values.push(filter.frequency);
+  const peak =
+    filter && "envelope" in filter ? filter.envelope?.peak : undefined;
+  if (peak !== undefined) values.push(peak);
   return values;
 }
 
-function durationMs(layer: LayerLike): number {
+function durationMs(layer: Layer): number {
   const env = layer.envelope;
   const attack = env?.attack ?? 0;
   const decay = env?.decay ?? 0;

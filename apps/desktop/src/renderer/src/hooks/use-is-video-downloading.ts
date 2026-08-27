@@ -11,14 +11,7 @@ export function useIsVideoDownloading(save: Save | null | undefined): boolean {
 function hasVideoEvidence(save: Save): boolean {
   if (save.mediaType === "video") return true;
   if ((save.files ?? []).some((f) => f.kind === "video")) return true;
-  const captureMedia = (
-    save.rawJson as
-      | {
-          capture?: { media?: Array<{ type?: string }> };
-        }
-      | null
-      | undefined
-  )?.capture?.media;
+  const captureMedia = save.rawJson?.capture?.media;
   if (Array.isArray(captureMedia)) {
     return captureMedia.some((m) => m?.type === "video");
   }

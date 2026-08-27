@@ -2,6 +2,7 @@ import { toMs } from "@shared/to-ms";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { z } from "zod";
 import { byName } from "@/lib/util/sort";
 
 export interface TagRow {
@@ -23,17 +24,25 @@ const tagsStore = new Store<TagsState>({ rows: [], loaded: false });
 let inflight: Promise<ReadonlyArray<TagRow>> | null = null;
 let subscribed = false;
 
-function normaliseRow(raw: Partial<TagRow> & { id?: string }): TagRow | null {
-  if (!raw.id || typeof raw.name !== "string") return null;
-  return {
-    id: raw.id,
-    name: raw.name,
-    description: typeof raw.description === "string" ? raw.description : null,
-    lastUsedAt: toMs(raw.lastUsedAt as unknown),
-    usageCount: typeof raw.usageCount === "number" ? raw.usageCount : 0,
-    createdAt: toMs(raw.createdAt as unknown),
-  };
-}
+/** SQLite hands timestamps back as numbers, ISO strings, or Dates depending on the driver path. */
+const Timestamp = z
+  .union([z.number(), z.string(), z.date()])
+  .nullish()
+  .catch(null);
+
+/** Rows arrive from the `tags.list` query and from sync-action payloads; a row that does not fit is dropped. */
+const TagRowSchema = z.object({
+  id: z.string().min(1),
+  name: z.string(),
+  description: z.string().nullable().catch(null),
+  lastUsedAt: Timestamp.transform(toMs),
+  usageCount: z.number().catch(0),
+  createdAt: Timestamp.transform(toMs),
+});
+
+const TagRowsSchema = z.array(TagRowSchema.nullable().catch(null));
+
+const TagPatchSchema = TagRowSchema.partial().nullish().catch(null);
 
 function setRows(rows: ReadonlyArray<TagRow>): void {
   tagsStore.setState(() => ({ rows, loaded: true }));
@@ -43,13 +52,8 @@ async function load(): Promise<ReadonlyArray<TagRow>> {
   if (tagsStore.state.loaded) return tagsStore.state.rows;
   if (inflight) return inflight;
   inflight = (async () => {
-    const rows = (await window.pond.query("tags.list", {})) as Array<
-      Partial<TagRow> & { id?: string }
-    >;
-    const normalised = rows
-      .map(normaliseRow)
-      .filter((r): r is TagRow => r !== null)
-      .sort(byName);
+    const rows = TagRowsSchema.parse(await window.pond.query("tags.list", {}));
+    const normalised = rows.filter((r): r is TagRow => r !== null).sort(byName);
     setRows(normalised);
     inflight = null;
     return normalised;
@@ -60,21 +64,16 @@ async function load(): Promise<ReadonlyArray<TagRow>> {
 function ensureSubscribed(): void {
   if (subscribed) return;
   subscribed = true;
-  window.pond.onSyncAction((raw) => {
-    const event = raw as {
-      modelName?: string;
-      action?: "I" | "U" | "D" | "A";
-      modelId?: string;
-      data?: unknown;
-    };
+  window.pond.onSyncAction((event) => {
     if (event.modelName !== "tag") return;
     if (!tagsStore.state.loaded) return;
 
     const cache = tagsStore.state.rows;
 
     if (event.action === "I") {
-      const row = normaliseRow(event.data as Partial<TagRow>);
-      if (!row) return;
+      const inserted = TagRowSchema.safeParse(event.data);
+      if (!inserted.success) return;
+      const row = inserted.data;
       const idx = cache.findIndex((r) => r.id === row.id);
       const next = cache.slice();
       if (idx >= 0) next[idx] = row;
@@ -85,15 +84,18 @@ function ensureSubscribed(): void {
     }
 
     if (event.action === "U") {
-      const patch = (event.data ?? {}) as Partial<TagRow>;
       const idx = cache.findIndex((r) => r.id === event.modelId);
       if (idx < 0) return;
       const existing = cache[idx];
       if (!existing) return;
-      const merged = normaliseRow({ ...existing, ...patch, id: existing.id });
-      if (!merged) return;
+      const merged = TagRowSchema.safeParse({
+        ...existing,
+        ...TagPatchSchema.parse(event.data),
+        id: existing.id,
+      });
+      if (!merged.success) return;
       const next = cache.slice();
-      next[idx] = merged;
+      next[idx] = merged.data;
       next.sort(byName);
       setRows(next);
       return;

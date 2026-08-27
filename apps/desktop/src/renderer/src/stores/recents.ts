@@ -2,11 +2,19 @@ import type { RecentSaveVisit } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
+import { z } from "zod";
 import { loadPrefs, patchPrefsSection } from "@/stores/prefs";
 
 const RECENTS_CAP = 20;
 
 const store = new Store<RecentSaveVisit[]>([]);
+
+const RecentsSchema = z.array(
+  z
+    .object({ saveId: z.string(), visitedAt: z.number() })
+    .nullable()
+    .catch(null),
+);
 
 let hydrated = false;
 function hydrate(): void {
@@ -14,16 +22,11 @@ function hydrate(): void {
   hydrated = true;
   void loadPrefs()
     .then((prefs) => {
-      const entries = prefs.saveRecents?.entries;
-      if (Array.isArray(entries)) {
+      const entries = RecentsSchema.safeParse(prefs.saveRecents?.entries);
+      if (entries.success) {
         store.setState(() =>
-          entries
-            .filter(
-              (e): e is RecentSaveVisit =>
-                e != null &&
-                typeof e.saveId === "string" &&
-                typeof e.visitedAt === "number",
-            )
+          entries.data
+            .filter((e): e is RecentSaveVisit => e !== null)
             .slice(0, RECENTS_CAP),
         );
       }

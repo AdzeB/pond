@@ -20,14 +20,17 @@ function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
     if (!c) continue;
     const title = (c.title ?? "").trim();
     if (!title) continue;
-    const startRaw =
-      "startSec" in c ? c.startSec : "start_time" in c ? c.start_time : null;
-    const start = typeof startRaw === "number" ? startRaw : null;
+    const start =
+      ("startSec" in c
+        ? c.startSec
+        : "start_time" in c
+          ? c.start_time
+          : null) ?? null;
     if (start === null || !Number.isFinite(start) || start < 0) continue;
     const endRaw =
-      "endSec" in c ? c.endSec : "end_time" in c ? c.end_time : null;
+      ("endSec" in c ? c.endSec : "end_time" in c ? c.end_time : null) ?? null;
     const end =
-      typeof endRaw === "number" && Number.isFinite(endRaw) && endRaw > start
+      endRaw !== null && Number.isFinite(endRaw) && endRaw > start
         ? endRaw
         : undefined;
     cues.push({ title, startSec: start, endSec: end });
