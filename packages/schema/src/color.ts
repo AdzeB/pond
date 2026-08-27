@@ -23,7 +23,6 @@ function parseHex(hex: string): [number, number, number] | null {
 }
 
 export function normalizeHex(input: string): string | null {
-  if (typeof input !== "string") return null;
   const trimmed = input.trim().replace(/^#/, "");
   const expanded =
     trimmed.length === 3

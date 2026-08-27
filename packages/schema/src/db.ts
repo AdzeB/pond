@@ -9,12 +9,12 @@ import {
 import type { Query } from "./filters/types";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
-  DEFAULT_PREFS,
   DEFAULT_VIDEO_DOWNLOAD,
   type ImageDownloadSettings,
-  type Prefs,
+  type StoredPrefsEnvelope,
   type VideoDownloadSettings,
 } from "./prefs";
+import type { RawJson } from "./raw";
 import { EXTERNAL_SOURCE_IDS } from "./sources/registry";
 
 export * from "./color";
@@ -86,8 +86,8 @@ export const saves = sqliteTable(
     notes: text("notes"),
     mediaUrl: text("media_url"),
     mediaType: text("media_type").$type<MediaType>(),
-    rawJson: text("raw_json", { mode: "json" }),
-    rawSlim: text("raw_slim", { mode: "json" }),
+    rawJson: text("raw_json", { mode: "json" }).$type<RawJson | null>(),
+    rawSlim: text("raw_slim", { mode: "json" }).$type<RawJson | null>(),
     tags: text("tags", { mode: "json" })
       .$type<string[]>()
       .notNull()
@@ -325,9 +325,9 @@ export const settings = sqliteTable("settings", {
     .notNull()
     .$defaultFn(() => DEFAULT_IMAGE_DOWNLOAD),
   prefs: text("prefs", { mode: "json" })
-    .$type<Prefs>()
+    .$type<StoredPrefsEnvelope>()
     .notNull()
-    .$defaultFn(() => DEFAULT_PREFS),
+    .$defaultFn(() => ({ version: 3, app: {}, pending: null })),
   libraryRoot: text("library_root"),
   onboarded: integer("onboarded", { mode: "boolean" }).notNull().default(false),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" })

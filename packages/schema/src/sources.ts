@@ -24,10 +24,10 @@ export type {
 
 const SOURCE_SET: ReadonlySet<string> = new Set(SOURCES);
 
-const SOURCE_ALIASES: Readonly<Record<string, Source>> = {
-  x: "twitter",
-  "are.na": "arena",
-};
+const SOURCE_ALIASES = new Map<string, Source>([
+  ["x", "twitter"],
+  ["are.na", "arena"],
+]);
 
 const SOURCE_LABELS = new Map<string, string>(
   SOURCE_DESCRIPTORS.map((d) => [d.id, d.label]),
@@ -41,7 +41,7 @@ export function isSource(value: string): value is Source {
 
 export function resolveSourceId(value: string): Source | null {
   const key = value.toLowerCase();
-  const normalized = SOURCE_ALIASES[key] ?? key;
+  const normalized = SOURCE_ALIASES.get(key) ?? key;
   return isSource(normalized) ? normalized : null;
 }
 

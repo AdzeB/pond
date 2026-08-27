@@ -20,7 +20,9 @@ export const rawQueryPlanSchema = z.object({
 
 export type RawQueryPlan = z.infer<typeof rawQueryPlanSchema>;
 
-export function parseQueryPlan(raw: unknown): RawQueryPlan | null {
+export function parseQueryPlan(
+  raw: z.input<typeof rawQueryPlanSchema>,
+): RawQueryPlan | null {
   const res = rawQueryPlanSchema.safeParse(raw);
   return res.success ? res.data : null;
 }

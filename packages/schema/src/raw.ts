@@ -122,6 +122,19 @@ export interface CaptureLinkCard {
 
 export const QUOTE_DEPTH_CAP = 3;
 
+/** The per-source odds and ends a capture carries; every writer declares its key here. */
+export interface CaptureExtras {
+  blockClass?: string;
+  board?: { name?: string; url: string };
+  clusters?: unknown;
+  dominantColor?: string;
+  externalLink?: string;
+  faviconUrl?: string;
+  publisher?: string;
+  subreddit?: string;
+  tileType?: string;
+}
+
 export interface Capture {
   id: string;
   source: Source;
@@ -140,7 +153,7 @@ export interface Capture {
   isReply?: boolean;
   replyingTo?: string;
   conversationId?: string;
-  extras?: Record<string, unknown>;
+  extras?: CaptureExtras;
 }
 
 export interface RawJson {

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import {
   CONTRAST_DEFAULT,
   DEFAULT_DARK_THEME,
@@ -126,32 +127,32 @@ export function presetDef(
   return getPreset(id)?.def ?? fallback;
 }
 
+export const StoredThemeDefSchema = z
+  .object({
+    accent: z.string().optional().catch(undefined),
+    background: z.string().optional().catch(undefined),
+    /** Pre-`background` name for the same colour. */
+    base: z.string().optional().catch(undefined),
+    foreground: z.string().optional().catch(undefined),
+    contrast: z.number().refine(Number.isFinite).optional().catch(undefined),
+  })
+  .catch({});
+
+export type StoredThemeDef = z.infer<typeof StoredThemeDefSchema>;
+
 export function migrateThemeDef(
-  raw: unknown,
+  stored: StoredThemeDef,
   appearance: "light" | "dark",
 ): ThemeDef {
   const fallback =
     appearance === "light" ? DEFAULT_LIGHT_THEME : DEFAULT_DARK_THEME;
-  if (!raw || typeof raw !== "object") return fallback;
-  const t = raw as Record<string, unknown>;
-  const accent = typeof t.accent === "string" ? t.accent : fallback.accent;
-  const background =
-    typeof t.background === "string"
-      ? t.background
-      : typeof t.base === "string"
-        ? t.base
-        : fallback.background;
-  const contrast =
-    typeof t.contrast === "number" && Number.isFinite(t.contrast)
-      ? t.contrast
-      : fallback.contrast;
-  const foreground =
-    typeof t.foreground === "string"
-      ? t.foreground
-      : appearance === "dark"
-        ? "#EEEEEE"
-        : "#1B1B1B";
-  return { accent, background, foreground, contrast };
+  return {
+    accent: stored.accent ?? fallback.accent,
+    background: stored.background ?? stored.base ?? fallback.background,
+    foreground:
+      stored.foreground ?? (appearance === "dark" ? "#EEEEEE" : "#1B1B1B"),
+    contrast: stored.contrast ?? fallback.contrast,
+  };
 }
 
 export interface ThemePrefsSlice {
