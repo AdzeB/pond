@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { SaveFile, Source } from "@pond/schema/db";
+import type { NewSave, SaveFile, Source } from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
@@ -52,16 +53,15 @@ async function ensurePoster(
   files = hydrated.files;
   if (hydrated.changed) {
     const primary = videoPosterSlots(files).videos[0];
-    await persistSave(
-      saveId,
-      {
-        files,
-        ...(primary && hasMediaDims(primary)
-          ? { width: primary.width, height: primary.height }
-          : {}),
-      },
-      { actorReason: "pipeline:ensure-poster:dims", writeInfo: true },
-    );
+    const patch: Partial<NewSave> = { files };
+    if (primary && hasMediaDims(primary)) {
+      patch.width = primary.width;
+      patch.height = primary.height;
+    }
+    await persistSave(saveId, patch, {
+      actorReason: "pipeline:ensure-poster:dims",
+      writeInfo: true,
+    });
   }
 
   const forcePlatform =
@@ -118,15 +118,12 @@ async function ensurePoster(
 
   if (newFiles.length === 0) return;
 
-  await persistSave(
-    saveId,
-    {},
-    {
-      actorReason: "pipeline:ensure-poster",
-      newFiles,
-      ...(replacing ? { replaceFilesWithKind: "poster" as const } : {}),
-    },
-  );
+  const options: Parameters<typeof persistSave>[2] = {
+    actorReason: "pipeline:ensure-poster",
+    newFiles,
+  };
+  if (replacing) options.replaceFilesWithKind = "poster";
+  await persistSave(saveId, {}, options);
   log.info(
     "[pond pipeline:ensure-poster] wrote posters",
     saveId,
@@ -159,7 +156,7 @@ async function producePoster(args: {
   video: SaveFile;
   index: number;
   source: Source | null;
-  rawJson: unknown;
+  rawJson: RawJson | null;
 }): Promise<PosterWrite | null> {
   if (usesPlatformPoster(args.source)) {
     const platform = await platformPosterFromSave(args.rawJson, args.index);
@@ -170,7 +167,7 @@ async function producePoster(args: {
 }
 
 async function platformPosterFromSave(
-  rawJson: unknown,
+  rawJson: RawJson | null,
   index: number,
 ): Promise<PosterWrite | null> {
   const url = youtubeThumbnailUrl(rawJson);
@@ -203,15 +200,17 @@ async function readExistingPoster(
     const ext = poster.path.includes(".")
       ? `.${poster.path.split(".").pop()}`
       : ".jpg";
-    return {
+    const write: PosterWrite = {
       kind: "poster",
       filename: posterFilename(index, ext),
       bytes,
       mimeType: poster.mimeType ?? "image/jpeg",
-      ...(poster.width && poster.height
-        ? { width: poster.width, height: poster.height }
-        : {}),
     };
+    if (poster.width && poster.height) {
+      write.width = poster.width;
+      write.height = poster.height;
+    }
+    return write;
   } catch {
     return null;
   }

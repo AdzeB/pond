@@ -1,4 +1,4 @@
-import { saves, type Task, tasks } from "@pond/schema/db";
+import { type Source, saves, type Task, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "../../db";
@@ -40,7 +40,7 @@ export async function enrichTaskEventWithSave(
   } catch {}
 }
 
-export function gateForSource(source: string): PipelineTaskEvent["gate"] {
+export function gateForSource(source: Source): PipelineTaskEvent["gate"] {
   const snap = snapshotSourceGate();
   const hit = snap.find((e) => e.source === source);
   return hit ? { reason: hit.reason, until: hit.until } : null;
@@ -75,16 +75,16 @@ export interface FailureResult {
 
 export async function handleFailure(
   task: DueTask,
-  err: unknown,
+  cause: unknown,
 ): Promise<FailureResult> {
-  if (err instanceof FinalizeIncompleteError) {
+  if (cause instanceof FinalizeIncompleteError) {
     const db = await getDb();
     const nextRun = new Date(Date.now() + 30_000);
     db.update(tasks)
       .set({
         status: "pending",
         nextRunAt: nextRun,
-        lastError: err.message,
+        lastError: cause.message,
         updatedAt: new Date(),
       })
       .where(eq(tasks.id, task.id))
@@ -97,19 +97,19 @@ export async function handleFailure(
   }
 
   if (isSourceTask(task.op)) {
-    const source = task.source as never;
-    if (err instanceof RateLimitedError) {
-      const ms = (err.retryAfterSec ?? 60) * 1000;
+    const source = task.source;
+    if (cause instanceof RateLimitedError) {
+      const ms = (cause.retryAfterSec ?? 60) * 1000;
       setSourceCooldown(source, ms);
     } else if (
-      err instanceof TransientError ||
-      err instanceof WorkerWatchdogError
+      cause instanceof TransientError ||
+      cause instanceof WorkerWatchdogError
     ) {
       noteTransientFailure(source);
     }
   }
 
-  const decision = classifyError(err, {
+  const decision = classifyError(cause, {
     attempts: task.attempts,
     maxAttempts: task.maxAttempts,
   });
@@ -179,7 +179,7 @@ export async function handleFailure(
       void commitSaveIngestEvent(task.saveId, {
         outcome: "failed",
         failedOp: task.op,
-        error: toErrorInfo(err),
+        error: toErrorInfo(cause),
       });
     }
   }

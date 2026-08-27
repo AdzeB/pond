@@ -9,8 +9,7 @@ import {
   saves,
   syncActions,
 } from "@pond/schema/db";
-import { eq } from "drizzle-orm";
-import type { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import { eq, getTableColumns } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../../db";
@@ -45,16 +44,16 @@ export async function applySavePatch(
   opts: ApplyPatchOptions,
 ): Promise<Save | null> {
   const db = await getDb();
-  const cols: Record<string, SQLiteColumn> = {
-    id: saves.id,
-    files: saves.files,
-  };
-  const columnByKey = saves as unknown as Record<string, SQLiteColumn>;
-  for (const key of Object.keys(patch)) {
-    const col = columnByKey[key];
-    if (col) cols[key] = col;
-  }
-  const rows = await db.select(cols).from(saves).where(eq(saves.id, saveId));
+  const wanted = new Set(["id", "files", ...Object.keys(patch)]);
+  const selection = Object.fromEntries(
+    Object.entries(getTableColumns(saves)).filter(([key]) => wanted.has(key)),
+  );
+  const rows = await db
+    .select(selection)
+    .from(saves)
+    .where(eq(saves.id, saveId));
+  // SAFETY: the selection is built from the saves table's own columns, so every key on
+  // the returned row is a Save key holding that column's value.
   const current = rows[0] as Partial<Save> | undefined;
   if (!current) {
     log.warn("[pond pipeline] applySavePatch: save vanished", saveId);
@@ -94,21 +93,19 @@ export async function applySavePatch(
         path: target,
         sha256: details.sha256,
         size: details.size,
-        ...(file.mimeType ? { mimeType: file.mimeType } : {}),
-        ...(file.width ? { width: file.width } : {}),
-        ...(file.height ? { height: file.height } : {}),
-        ...(file.sourceUrl ? { sourceUrl: file.sourceUrl } : {}),
       };
+      if (file.mimeType) entry.mimeType = file.mimeType;
+      if (file.width) entry.width = file.width;
+      if (file.height) entry.height = file.height;
+      if (file.sourceUrl) entry.sourceUrl = file.sourceUrl;
       written.push(entry);
     }
   }
   const nextFiles =
     written.length > 0 ? [...baseFiles, ...written] : current.files;
 
-  const fullPatch: Partial<NewSave> = {
-    ...patch,
-    ...(written.length > 0 ? { files: nextFiles } : {}),
-  };
+  const fullPatch: Partial<NewSave> = { ...patch };
+  if (written.length > 0) fullPatch.files = nextFiles;
 
   db.update(saves)
     .set(withRawSlim(fullPatch))
@@ -125,7 +122,7 @@ export async function applySavePatch(
       modelName: "save",
       modelId: saveId,
       action: "U",
-      data: fullPatch as unknown,
+      data: fullPatch,
       prevData: pickPrev(current, fullPatch),
       actor: "system",
       actorReason: opts.actorReason,
@@ -168,12 +165,14 @@ export async function readSave(saveId: string): Promise<Save | null> {
   return rows[0] ?? null;
 }
 
-function pickPrev(current: Partial<Save>, patch: Partial<NewSave>): unknown {
-  const prev: Record<string, unknown> = {};
-  for (const key of Object.keys(patch)) {
-    prev[key] = (current as Record<string, unknown>)[key];
-  }
-  return prev;
+function pickPrev(
+  current: Partial<Save>,
+  patch: Partial<NewSave>,
+): Partial<Save> {
+  const keys = new Set(Object.keys(patch));
+  return Object.fromEntries(
+    Object.entries(current).filter(([key]) => keys.has(key)),
+  );
 }
 
 function uniqueFilename(

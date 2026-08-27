@@ -2,7 +2,7 @@ import { enqueueRequestSchema } from "@pond/schema/ingest";
 import log from "electron-log/main.js";
 import type { Context } from "hono";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
-import { enqueue } from "../ops";
+import { type EnqueueOptions, enqueue } from "../ops";
 
 export async function enqueueHandler(c: Context) {
   let raw: unknown;
@@ -20,10 +20,10 @@ export async function enqueueHandler(c: Context) {
 
   try {
     const cookies = parsed.data.cookies;
-    const result = await enqueue(parsed.data.url, {
-      ...(parsed.data.trigger ? { trigger: parsed.data.trigger } : {}),
-      ...(cookies && cookies.length > 0 ? { cookies } : {}),
-    });
+    const options: EnqueueOptions = {};
+    if (parsed.data.trigger) options.trigger = parsed.data.trigger;
+    if (cookies && cookies.length > 0) options.cookies = cookies;
+    const result = await enqueue(parsed.data.url, options);
     return c.json({ status: "success", data: result });
   } catch (err) {
     if (err instanceof UnsupportedError) {

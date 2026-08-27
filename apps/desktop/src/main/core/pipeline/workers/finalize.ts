@@ -4,7 +4,7 @@ import log from "electron-log/main.js";
 import { getDb } from "../../../db";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
 import { persistSave } from "../../persist-save";
-import { CAPTURE_EXPECTATIONS } from "../specs";
+import { CAPTURE_EXPECTATIONS, type CaptureField } from "../specs";
 import { readSave } from "./apply";
 
 export class FinalizeIncompleteError extends Error {
@@ -104,18 +104,57 @@ async function fetchTaskRows(saveId: string): Promise<Task[]> {
   return db.select().from(tasks).where(eq(tasks.saveId, saveId));
 }
 
+interface FieldPartition {
+  present: CaptureField[];
+  missing: CaptureField[];
+}
+
 interface CaptureReport {
-  required: { present: string[]; missing: string[] };
-  recommended: { present: string[]; missing: string[] };
+  required: FieldPartition;
+  recommended: FieldPartition;
   score: number;
 }
 
+function hasText(value: string | null | undefined): boolean {
+  return value != null && value.trim().length > 0;
+}
+
+function hasNumber(value: number | undefined): boolean {
+  return value !== undefined && Number.isFinite(value);
+}
+
+const FIELD_PRESENT = {
+  author: (s) => hasText(s.author),
+  description: (s) => hasText(s.description),
+  mediaUrl: (s) => hasText(s.mediaUrl),
+  sourceId: (s) => hasText(s.sourceId),
+  title: (s) => hasText(s.title),
+  "capture.author.avatarUrl": (s) =>
+    hasText(s.rawJson?.capture?.author?.avatarUrl),
+  "capture.author.handle": (s) => hasText(s.rawJson?.capture?.author?.handle),
+  "capture.author.name": (s) => hasText(s.rawJson?.capture?.author?.name),
+  "capture.duration": (s) => hasNumber(s.rawJson?.capture?.duration),
+  "capture.id": (s) => hasText(s.rawJson?.capture?.id),
+  "capture.media": (s) => (s.rawJson?.capture?.media?.length ?? 0) > 0,
+  "capture.metrics.comments": (s) =>
+    hasNumber(s.rawJson?.capture?.metrics?.comments),
+  "capture.metrics.likes": (s) => hasNumber(s.rawJson?.capture?.metrics?.likes),
+  "capture.metrics.replies": (s) =>
+    hasNumber(s.rawJson?.capture?.metrics?.replies),
+  "capture.metrics.retweets": (s) =>
+    hasNumber(s.rawJson?.capture?.metrics?.retweets),
+  "capture.metrics.shares": (s) =>
+    hasNumber(s.rawJson?.capture?.metrics?.shares),
+  "capture.metrics.views": (s) => hasNumber(s.rawJson?.capture?.metrics?.views),
+  "capture.publishedAt": (s) => hasText(s.rawJson?.capture?.publishedAt),
+  "capture.upstream.url": (s) => hasText(s.rawJson?.capture?.upstream?.url),
+} satisfies Record<CaptureField, (save: Save) => boolean>;
+
 function computeCaptureReport(save: Save): CaptureReport {
   const expectation = CAPTURE_EXPECTATIONS[save.source];
-  const view = buildExpectationView(save);
 
-  const required = partition(expectation.required, view);
-  const recommended = partition(expectation.recommended, view);
+  const required = partition(expectation.required, save);
+  const recommended = partition(expectation.recommended, save);
   const total = required.present.length + recommended.present.length;
   const denom = expectation.required.length + expectation.recommended.length;
   const score = denom === 0 ? 1 : total / denom;
@@ -123,42 +162,14 @@ function computeCaptureReport(save: Save): CaptureReport {
 }
 
 function partition(
-  paths: readonly string[],
-  view: Record<string, unknown>,
-): { present: string[]; missing: string[] } {
-  const present: string[] = [];
-  const missing: string[] = [];
-  for (const path of paths) {
-    if (hasMeaningfulValue(getPath(view, path))) present.push(path);
-    else missing.push(path);
+  fields: readonly CaptureField[],
+  save: Save,
+): FieldPartition {
+  const present: CaptureField[] = [];
+  const missing: CaptureField[] = [];
+  for (const field of fields) {
+    if (FIELD_PRESENT[field](save)) present.push(field);
+    else missing.push(field);
   }
   return { present, missing };
-}
-
-function buildExpectationView(save: Save): Record<string, unknown> {
-  const row = save as unknown as Record<string, unknown>;
-  return {
-    ...row,
-    capture:
-      (save.rawJson as { capture?: unknown } | null)?.capture ?? undefined,
-  };
-}
-
-function getPath(root: unknown, path: string): unknown {
-  const parts = path.split(".");
-  let cur: unknown = root;
-  for (const part of parts) {
-    if (cur == null || typeof cur !== "object") return undefined;
-    cur = (cur as Record<string, unknown>)[part];
-  }
-  return cur;
-}
-
-function hasMeaningfulValue(v: unknown): boolean {
-  if (v == null) return false;
-  if (typeof v === "string") return v.trim().length > 0;
-  if (typeof v === "number") return Number.isFinite(v);
-  if (Array.isArray(v)) return v.length > 0;
-  if (typeof v === "object") return Object.keys(v).length > 0;
-  return true;
 }

@@ -8,6 +8,12 @@ import metascraperPublisher from "metascraper-publisher";
 import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
 import { TerminalError, TransientError } from "../errors";
+
+type WebExtras = {
+  publisher?: string;
+  faviconUrl?: string;
+};
+
 import type {
   Capture,
   ExtractInput,
@@ -64,24 +70,24 @@ export class WebPageExtractor implements Extractor {
     const publishedAt = pickString(meta.date);
     const publisher = pickString(meta.publisher);
 
-    const extras = {
-      ...(publisher ? { publisher } : {}),
-      ...(faviconUrl ? { faviconUrl } : {}),
-    };
+    const extras: WebExtras = {};
+    if (publisher) extras.publisher = publisher;
+    if (faviconUrl) extras.faviconUrl = faviconUrl;
 
-    return {
+    const title = pickString(meta.title);
+    const description = pickString(meta.description);
+    const capture: Capture = {
       id: canonical,
       source: "web",
       url: canonical,
-      ...(pickString(meta.title) ? { title: pickString(meta.title) } : {}),
-      ...(pickString(meta.description)
-        ? { description: pickString(meta.description) }
-        : {}),
-      ...(author ? { author } : {}),
-      ...(publishedAt ? { publishedAt } : {}),
       media,
-      ...(Object.keys(extras).length > 0 ? { extras } : {}),
     };
+    if (title) capture.title = title;
+    if (description) capture.description = description;
+    if (author) capture.author = author;
+    if (publishedAt) capture.publishedAt = publishedAt;
+    if (Object.keys(extras).length > 0) capture.extras = extras;
+    return capture;
   }
 }
 
@@ -125,7 +131,7 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 function pickString(value: string | undefined): string | undefined {
-  if (typeof value !== "string") return undefined;
+  if (value === undefined) return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }

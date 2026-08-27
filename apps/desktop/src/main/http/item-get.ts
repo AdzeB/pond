@@ -1,21 +1,39 @@
-import { saves } from "@pond/schema/db";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { SOURCES, saves } from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { Context } from "hono";
+import { z } from "zod";
 import { getDb } from "../db";
 
-export async function itemGetHandler(c: Context) {
-  const method = c.req.method;
-  let params: Record<string, unknown> = {};
-  if (method === "POST") {
-    try {
-      params = (await c.req.json()) as Record<string, unknown>;
-    } catch {
-      params = {};
-    }
-  } else {
-    const url = new URL(c.req.url);
-    params = Object.fromEntries(url.searchParams.entries());
+const ItemGetParamsSchema = z
+  .object({
+    limit: z.union([z.string(), z.number()]).optional().catch(undefined),
+    offset: z.union([z.string(), z.number()]).optional().catch(undefined),
+    includeDeleted: z
+      .union([z.string(), z.boolean()])
+      .optional()
+      .catch(undefined),
+    ids: z
+      .union([z.array(z.coerce.string()), z.string()])
+      .optional()
+      .catch(undefined),
+    source: z.string().optional().catch(undefined),
+  })
+  .catch({});
+
+async function readParams(c: Context): Promise<JsonValue> {
+  if (c.req.method !== "POST") {
+    return Object.fromEntries(new URL(c.req.url).searchParams.entries());
   }
+  try {
+    return await c.req.json();
+  } catch {
+    return {};
+  }
+}
+
+export async function itemGetHandler(c: Context) {
+  const params = ItemGetParamsSchema.parse(await readParams(c));
 
   const db = await getDb();
   const limit = Math.min(Number(params.limit ?? 200), 1000);
@@ -27,17 +45,15 @@ export async function itemGetHandler(c: Context) {
   if (!includeDeleted) filters.push(isNull(saves.deletedAt));
 
   const ids = Array.isArray(params.ids)
-    ? (params.ids as string[])
-    : typeof params.ids === "string"
-      ? (params.ids as string).split(",").filter(Boolean)
-      : [];
+    ? params.ids
+    : (params.ids?.split(",").filter(Boolean) ?? []);
   if (ids.length > 0) filters.push(inArray(saves.id, ids));
 
-  const source = params.source as string | undefined;
-  if (source)
-    filters.push(
-      eq(saves.source, source as unknown as typeof saves.$inferSelect.source),
-    );
+  if (params.source) {
+    const source = SOURCES.find((s) => s === params.source);
+    /** An unrecognised source matched no rows before this was a checked enum; `0` keeps that. */
+    filters.push(source ? eq(saves.source, source) : sql`0`);
+  }
 
   const rows = await db
     .select()

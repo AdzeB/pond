@@ -1,5 +1,7 @@
-import type { Op, Task, tasks } from "@pond/schema/db";
+import type { Op, Source, Task, tasks } from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
 import { sql } from "drizzle-orm";
+import { z } from "zod";
 import { TransientError } from "./extractors/errors";
 import { runArchivePage } from "./workers/archive-page";
 import { runCaptureTweet } from "./workers/capture-tweet";
@@ -13,7 +15,7 @@ import { runRenderTextCover } from "./workers/render-text-cover";
 
 export const POLL_INTERVAL_MS = 5_000;
 export const MAX_GLOBAL_INFLIGHT = 8;
-export const PER_OP_CONCURRENCY: Record<Op, number> = {
+export const PER_OP_CONCURRENCY = {
   harvest_metadata: 3,
   capture_tweet: 3,
   render_text_cover: 2,
@@ -23,9 +25,9 @@ export const PER_OP_CONCURRENCY: Record<Op, number> = {
   ensure_poster: 3,
   fetch_avatar: 4,
   finalize: 3,
-};
+} satisfies Record<Op, number>;
 
-export const TASK_WATCHDOG_MS: Record<Op, number> = {
+export const TASK_WATCHDOG_MS = {
   harvest_metadata: 90_000,
   capture_tweet: 120_000,
   render_text_cover: 60_000,
@@ -52,13 +54,21 @@ interface WorkerContext {
 
 type Worker = (
   saveId: string,
-  payload: Record<string, unknown>,
+  payload: JsonValue,
   ctx: WorkerContext,
 ) => Promise<void>;
 
-export const WORKERS: Record<Op, Worker> = {
+const HarvestPayloadSchema = z
+  .object({ force: z.coerce.boolean().optional() })
+  .catch({});
+
+const ArchivePayloadSchema = z
+  .object({ scope: z.enum(["page", "site"]).optional().catch(undefined) })
+  .catch({});
+
+export const WORKERS = {
   harvest_metadata: (saveId, payload) =>
-    runHarvestMetadata(saveId, payload as { force?: boolean }),
+    runHarvestMetadata(saveId, HarvestPayloadSchema.parse(payload)),
   capture_tweet: async (saveId) => {
     const result = await runCaptureTweet(saveId);
     if (result.authWall && result.captured === 0) {
@@ -72,12 +82,12 @@ export const WORKERS: Record<Op, Worker> = {
   },
   fetch_blobs: (saveId) => runFetchBlobs(saveId),
   archive_page: (saveId, payload, ctx) =>
-    runArchivePage(saveId, payload as { scope?: "page" | "site" }, ctx),
+    runArchivePage(saveId, ArchivePayloadSchema.parse(payload), ctx),
   fetch_video_ytdlp: (saveId, _payload, ctx) => runFetchVideoYtdlp(saveId, ctx),
   ensure_poster: (saveId) => runEnsurePoster(saveId),
   fetch_avatar: (saveId) => runFetchAvatar(saveId),
   finalize: (saveId) => runFinalize(saveId),
-};
+} satisfies Record<Op, Worker>;
 
 export const NON_FATAL_OPS: ReadonlySet<Op> = new Set<Op>([
   "capture_tweet",
@@ -97,7 +107,7 @@ export const metrics = {
 };
 
 export interface DueTask extends Task {
-  source: string;
+  source: Source;
 }
 
 export function isSourceTask(op: Op): boolean {

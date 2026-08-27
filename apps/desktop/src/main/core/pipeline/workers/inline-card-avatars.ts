@@ -47,11 +47,10 @@ export async function inlineCaptureAvatars(
 
   await inlineCardMedia(next, save);
 
-  return {
-    capture: next,
-    ...(avatarFile ? { avatarFile } : {}),
-    ...(sourceUrl && avatarFile ? { avatarSourceUrl: sourceUrl } : {}),
-  };
+  const inlined: InlinedAvatars = { capture: next };
+  if (avatarFile) inlined.avatarFile = avatarFile;
+  if (sourceUrl && avatarFile) inlined.avatarSourceUrl = sourceUrl;
+  return inlined;
 }
 
 function quotedAuthor(capture: Capture): { avatarUrl?: string } | undefined {

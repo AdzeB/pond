@@ -1,8 +1,9 @@
+import type { RawJson } from "@pond/schema/raw";
 import log from "electron-log/main.js";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { persistSave } from "../../persist-save";
 import { TransientError } from "../extractors/errors";
-import { readSave } from "./apply";
+import { readSave, type WriteFileArgs } from "./apply";
 
 export async function runFetchAvatar(saveId: string): Promise<void> {
   const save = await readSave(saveId);
@@ -28,29 +29,25 @@ export async function runFetchAvatar(saveId: string): Promise<void> {
     return;
   }
   const tx = outcome.file;
+  const avatarFile: WriteFileArgs = {
+    kind: "avatar",
+    filename: tx.filename,
+    bytes: Buffer.from(tx.bytes),
+    sourceUrl: avatarUrl,
+  };
+  if (tx.mimeType) avatarFile.mimeType = tx.mimeType;
 
   await persistSave(
     saveId,
     {},
     {
       actorReason: "pipeline:fetch-avatar",
-      newFiles: [
-        {
-          kind: "avatar",
-          filename: tx.filename,
-          bytes: Buffer.from(tx.bytes),
-          sourceUrl: avatarUrl,
-          ...(tx.mimeType ? { mimeType: tx.mimeType } : {}),
-        },
-      ],
+      newFiles: [avatarFile],
     },
   );
   log.info("[pond pipeline:fetch-avatar] wrote", saveId);
 }
 
-function pickAvatarUrl(rawJson: unknown): string | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const v = rawJson as { capture?: { author?: { avatarUrl?: string } } };
-  const url = v.capture?.author?.avatarUrl;
-  return typeof url === "string" && url.length > 0 ? url : null;
+function pickAvatarUrl(rawJson: RawJson | null): string | null {
+  return rawJson?.capture?.author?.avatarUrl || null;
 }

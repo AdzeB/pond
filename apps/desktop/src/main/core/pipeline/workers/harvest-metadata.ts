@@ -40,17 +40,12 @@ export async function runHarvestMetadata(
           accountId: save.accountId,
         });
 
-  const existingRaw =
-    save.rawJson && typeof save.rawJson === "object"
-      ? (save.rawJson as RawJson)
-      : null;
-
   const rawJson: RawJson = {
     capture,
     extractorId: extractor.id,
     extractedAt: new Date().toISOString(),
-    ...(existingRaw?.ytdlp ? { ytdlp: existingRaw.ytdlp } : {}),
   };
+  if (save.rawJson?.ytdlp) rawJson.ytdlp = save.rawJson.ytdlp;
 
   const patch = buildSavePatch(capture, rawJson, save.url, save.source);
   await persistSave(saveId, patch, {

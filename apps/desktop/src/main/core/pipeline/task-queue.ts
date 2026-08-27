@@ -1,4 +1,4 @@
-import { type NewTask, type Source, saves, tasks } from "@pond/schema/db";
+import { type NewTask, saves, tasks } from "@pond/schema/db";
 import {
   and,
   asc,
@@ -57,13 +57,13 @@ export async function pullDueTasks(): Promise<DueTask[]> {
       ),
     )
     .orderBy(desc(saves.createdAt), asc(tasks.nextRunAt))
-    .limit(60)) as unknown as DueTask[];
+    .limit(60)) satisfies DueTask[];
 
   if (rows.length === 0) return rows;
 
   const buckets = new Map<string, DueTask[]>();
   for (const row of rows) {
-    if (isSourceTask(row.op) && sourcePausedUntil(row.source as never) > 0) {
+    if (isSourceTask(row.op) && sourcePausedUntil(row.source) > 0) {
       continue;
     }
     const bucket = buckets.get(row.saveId);
@@ -133,7 +133,7 @@ export async function sweepTasklessIngestingSaves(): Promise<void> {
 
   const now = new Date();
   for (const { id, source } of stuck) {
-    const ops = planOps(source as Source);
+    const ops = planOps(source);
     if (ops.length === 0) {
       await persistSave(
         id,

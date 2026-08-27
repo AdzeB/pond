@@ -1,4 +1,4 @@
-import type { SaveFile, Source } from "@pond/schema/db";
+import type { SaveFile } from "@pond/schema/db";
 import type { Capture, RawJson } from "@pond/schema/raw";
 import {
   RENDER_TEXT_COVER_VERSION,
@@ -65,7 +65,7 @@ function stubCapture(
 ): Capture {
   return {
     id: save.sourceId || save.id,
-    source: save.source as Source,
+    source: save.source,
     url: save.url,
     media: [],
   };
@@ -74,21 +74,15 @@ function stubCapture(
 async function stampVersion(
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
 ): Promise<void> {
-  const base =
-    save.rawJson && typeof save.rawJson === "object"
-      ? (save.rawJson as RawJson)
-      : null;
+  const base = save.rawJson;
   const capture = base?.capture ?? stubCapture(save);
-  const extras = {
-    ...((capture.extras as Record<string, unknown> | undefined) ?? {}),
-  };
   const rawJson: RawJson = {
-    capture: { ...capture, extras },
+    capture: { ...capture, extras: { ...capture.extras } },
     extractorId: base?.extractorId ?? "text-cover",
     extractedAt: base?.extractedAt ?? new Date().toISOString(),
     renderTextCoverVersion: RENDER_TEXT_COVER_VERSION,
-    ...(base?.ytdlp ? { ytdlp: base.ytdlp } : {}),
   };
+  if (base?.ytdlp) rawJson.ytdlp = base.ytdlp;
   await persistSave(
     save.id,
     { rawJson },

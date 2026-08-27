@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { WebContents } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { itemFile } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import {
@@ -53,6 +54,13 @@ interface ArchiveManifestPage {
   title: string;
 }
 
+const StoredArchiveManifestSchema = z
+  .object({
+    version: z.number().optional().catch(undefined),
+    scope: z.string().optional().catch(undefined),
+  })
+  .catch({});
+
 interface ArchiveManifest {
   version: number;
   rootUrl: string;
@@ -77,10 +85,10 @@ export async function readArchivedMeta(
       itemFile(saveId, ARCHIVE_MANIFEST_FILENAME),
       "utf8",
     );
-    const manifest = JSON.parse(raw) as Partial<ArchiveManifest>;
+    const manifest = StoredArchiveManifestSchema.parse(JSON.parse(raw));
     return {
       scope: manifest.scope === "page" ? "page" : "site",
-      version: typeof manifest.version === "number" ? manifest.version : 0,
+      version: manifest.version ?? 0,
     };
   } catch {
     return { scope: "site", version: 0 };
@@ -206,10 +214,9 @@ async function crawlSite(
     scope,
     cookies: opts.cookies?.length ?? 0,
   });
-  const lease = await leaseWindow("web", {
-    signal,
-    ...(opts.partition ? { partition: opts.partition } : {}),
-  });
+  const leaseOptions: Parameters<typeof leaseWindow>[1] = { signal };
+  if (opts.partition) leaseOptions.partition = opts.partition;
+  const lease = await leaseWindow("web", leaseOptions);
   log.info("[pond pipeline:archive-page] window leased", { ms: elapsed() });
   const tmpDir = await mkdtemp(join(tmpdir(), "pond-archive-"));
   const warcPath = join(tmpDir, ARCHIVE_WARC_FILENAME);
@@ -393,7 +400,7 @@ async function preloadImages(wc: WebContents): Promise<void> {
   })()`;
   try {
     await withTimeout(
-      wc.executeJavaScript(expr, true) as Promise<unknown>,
+      wc.executeJavaScript(expr, true),
       IMAGE_PRELOAD_BUDGET_MS,
     );
   } catch {}
@@ -410,17 +417,21 @@ async function autoScroll(wc: WebContents): Promise<void> {
     window.scrollTo(0, 0);
   })()`;
   try {
-    await withTimeout(
-      wc.executeJavaScript(expr, true) as Promise<unknown>,
-      HARVEST_TIMEOUT_MS,
-    );
+    await withTimeout(wc.executeJavaScript(expr, true), HARVEST_TIMEOUT_MS);
   } catch {}
 }
 
-interface PageHarvest {
-  title: string;
-  links: string[];
-}
+const PageHarvestSchema = z.object({
+  title: z.string().catch(""),
+  links: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => z.string().safeParse(item).data ?? []),
+    )
+    .catch([]),
+});
+
+type PageHarvest = z.infer<typeof PageHarvestSchema>;
 
 async function harvestPage(wc: WebContents): Promise<PageHarvest | null> {
   const expr = `(() => {
@@ -433,18 +444,11 @@ async function harvestPage(wc: WebContents): Promise<PageHarvest | null> {
     };
   })()`;
   try {
-    const raw = (await withTimeout(
-      wc.executeJavaScript(expr, true) as Promise<unknown>,
+    const raw = await withTimeout(
+      wc.executeJavaScript(expr, true),
       HARVEST_TIMEOUT_MS,
-    )) as unknown;
-    if (!raw || typeof raw !== "object") return null;
-    const value = raw as { title?: unknown; links?: unknown };
-    return {
-      title: typeof value.title === "string" ? value.title : "",
-      links: Array.isArray(value.links)
-        ? value.links.filter((l): l is string => typeof l === "string")
-        : [],
-    };
+    );
+    return PageHarvestSchema.safeParse(raw).data ?? null;
   } catch {
     return null;
   }

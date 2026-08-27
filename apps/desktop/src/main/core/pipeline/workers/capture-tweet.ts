@@ -1,4 +1,3 @@
-import type { SaveFile } from "@pond/schema/db";
 import type { CaptureMedia, RawJson } from "@pond/schema/raw";
 import { QUOTE_DEPTH_CAP } from "@pond/schema/raw";
 import log from "electron-log/main.js";
@@ -13,7 +12,7 @@ import {
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
-import { readSave } from "./apply";
+import { readSave, type WriteFileArgs } from "./apply";
 import { inlineCaptureAvatars } from "./inline-card-avatars";
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
@@ -31,13 +30,12 @@ interface CaptureTweetResult {
   mediaAdded: boolean;
 }
 
-function readCaptureTweetVersion(rawJson: unknown): number {
-  if (!rawJson || typeof rawJson !== "object") return 0;
-  const v = (rawJson as RawJson).captureTweetVersion;
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+function readCaptureTweetVersion(rawJson: RawJson | null): number {
+  const version = rawJson?.captureTweetVersion;
+  return version !== undefined && Number.isFinite(version) ? version : 0;
 }
 
-export function isCaptureTweetStale(rawJson: unknown): boolean {
+export function isCaptureTweetStale(rawJson: RawJson | null): boolean {
   return readCaptureTweetVersion(rawJson) < CAPTURE_TWEET_VERSION;
 }
 
@@ -142,8 +140,7 @@ async function tryNativeRender(
   saveId: string,
   save: NonNullable<Awaited<ReturnType<typeof readSave>>>,
 ): Promise<boolean> {
-  const rawJson = save.rawJson as RawJson | null | undefined;
-  const capture = rawJson?.capture ?? null;
+  const capture = save.rawJson?.capture ?? null;
   if (!capture) return false;
   const inlined = await inlineCaptureAvatars(capture, save);
   const render =
@@ -165,25 +162,21 @@ async function tryNativeRender(
     dark,
   );
   if (inlined.avatarFile) {
+    const avatar: WriteFileArgs = {
+      kind: "avatar",
+      filename: inlined.avatarFile.filename,
+      bytes: Buffer.from(inlined.avatarFile.bytes),
+    };
+    if (inlined.avatarFile.mimeType)
+      avatar.mimeType = inlined.avatarFile.mimeType;
+    if (inlined.avatarSourceUrl) avatar.sourceUrl = inlined.avatarSourceUrl;
     try {
       await persistSave(
         saveId,
         {},
         {
           actorReason: "pipeline:capture-tweet:avatar",
-          newFiles: [
-            {
-              kind: "avatar",
-              filename: inlined.avatarFile.filename,
-              bytes: Buffer.from(inlined.avatarFile.bytes),
-              ...(inlined.avatarFile.mimeType
-                ? { mimeType: inlined.avatarFile.mimeType }
-                : {}),
-              ...(inlined.avatarSourceUrl
-                ? { sourceUrl: inlined.avatarSourceUrl }
-                : {}),
-            },
-          ],
+          newFiles: [avatar],
         },
       );
     } catch (err) {
@@ -208,10 +201,10 @@ async function writeCardPng(
     {},
     {
       actorReason: `pipeline:capture-tweet:${kind}`,
-      replaceFilesWithKind: kind as SaveFile["kind"],
+      replaceFilesWithKind: kind,
       newFiles: [
         {
-          kind: kind as SaveFile["kind"],
+          kind,
           filename,
           bytes: card.bytes,
           mimeType: "image/png",
@@ -285,13 +278,14 @@ async function captureVariants(
   const quotedUrl = dual.quotedUrl;
   const media = dual.media;
 
-  return {
+  const result: CaptureVariantsResult = {
     captured,
     complete: lightOk && darkOk,
     authWall,
-    ...(quotedUrl ? { quotedUrl } : {}),
-    ...(media ? { media } : {}),
   };
+  if (quotedUrl) result.quotedUrl = quotedUrl;
+  if (media) result.media = media;
+  return result;
 }
 
 async function writeScreenshot(
@@ -306,10 +300,10 @@ async function writeScreenshot(
     {},
     {
       actorReason: `pipeline:capture-tweet:${kind}`,
-      replaceFilesWithKind: kind as SaveFile["kind"],
+      replaceFilesWithKind: kind,
       newFiles: [
         {
-          kind: kind as SaveFile["kind"],
+          kind,
           filename,
           bytes: result.png.bytes,
           mimeType: "image/png",
@@ -323,12 +317,12 @@ async function writeScreenshot(
 
 async function finalizeRawJson(
   saveId: string,
-  rawJsonRaw: unknown,
+  stored: RawJson | null,
   harvested: CaptureMedia[],
   opts: { stampVersion: boolean },
 ): Promise<boolean> {
-  if (!rawJsonRaw || typeof rawJsonRaw !== "object") return false;
-  const rawJson = structuredClone(rawJsonRaw) as RawJson;
+  if (!stored) return false;
+  const rawJson = structuredClone(stored);
   if (!rawJson.capture) return false;
 
   const existing = rawJson.capture.media ?? [];
@@ -382,8 +376,6 @@ function parsePostCode(url: string): string | null {
   }
 }
 
-function quotedUrlFromCapture(rawJson: unknown): string | undefined {
-  if (!rawJson || typeof rawJson !== "object") return undefined;
-  const url = (rawJson as RawJson).capture?.quoted?.url;
-  return typeof url === "string" && url.length > 0 ? url : undefined;
+function quotedUrlFromCapture(rawJson: RawJson | null): string | undefined {
+  return rawJson?.capture?.quoted?.url || undefined;
 }
