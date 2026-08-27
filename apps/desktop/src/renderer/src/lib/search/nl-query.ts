@@ -1,4 +1,4 @@
-import type { Clause, Predicate, Query } from "@pond/schema/filters/types";
+import type { Clause, Group, Predicate } from "@pond/schema/filters/types";
 import { extractDates } from "@/lib/search/nl-chrono";
 import {
   accumulate,
@@ -14,20 +14,26 @@ import {
 import { FILLER, NEGATORS } from "@/lib/search/nl-vocabulary";
 import { serializePredicate } from "@/lib/search/syntax";
 
-export interface NlFacets {
+export type NlFacets = {
   sources: string[];
   tags: string[];
   types: string[];
   creators: string[];
-}
+};
 
 export interface AskSort {
   key: "savedAt" | "duration" | "fileCount";
   dir: "asc" | "desc";
 }
 
+/** Stage A only ever emits a flat AND of predicates, and its callers depend on that. */
+export interface FlatQuery extends Group {
+  combinator: "and";
+  rules: Predicate[];
+}
+
 interface NlResult {
-  query: Query;
+  query: FlatQuery;
   residual: string;
   sort: AskSort | null;
   limit: number | null;
@@ -71,7 +77,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
   let sort: AskSort | null = null;
   let limit: number | null = null;
   while (i < words.length) {
-    const word = words[i] as string;
+    const word = words[i] ?? "";
 
     const order = matchSortLimit(words, i);
     if (order) {
@@ -131,7 +137,7 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
     ...intentPreds,
     ...datePreds,
   ]);
-  const query: Query = { combinator: "and", rules };
+  const query: FlatQuery = { combinator: "and", rules };
   return { query, residual: residual.join(" "), sort, limit };
 }
 

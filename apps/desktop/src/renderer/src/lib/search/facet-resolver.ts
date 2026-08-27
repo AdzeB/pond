@@ -36,11 +36,10 @@ async function buildVocab(facets: NlFacets): Promise<VocabEntry[]> {
   if (items.length === 0) return [];
   const { embedTexts } = await import("@/lib/enrichment/embeddings");
   const vecs = await embedTexts(items.map((i) => i.value));
-  return items.map((item, idx) => ({
-    field: item.field,
-    value: item.value,
-    vec: vecs[idx] as Float32Array,
-  }));
+  return items.flatMap((item, idx) => {
+    const vec = vecs[idx];
+    return vec ? [{ field: item.field, value: item.value, vec }] : [];
+  });
 }
 
 function getVocab(facets: NlFacets): Promise<VocabEntry[]> {

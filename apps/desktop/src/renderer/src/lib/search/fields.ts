@@ -6,9 +6,9 @@ import {
   IconCloneFill18 as FilesIcon,
   IconLink2Fill18 as LinkIcon,
   IconMicrophoneFill18 as Mic,
+  IconGridLayoutColsFill18 as OrientationIcon,
   IconColorPaletteFill18 as Palette,
   IconPencilFill18 as Pencil,
-  IconGridLayoutColsFill18 as ShapeIcon,
   IconTagFill18 as Tag,
   IconStopwatchFill18 as Timer,
   IconUploadFill18 as Upload,
@@ -30,13 +30,13 @@ type FieldIcon = ComponentType<{
   height?: string | number;
 }>;
 
-export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
+export const FIELD_ICONS = {
   tags: Tag,
   source: LinkIcon,
   type: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
-  shape: ShapeIcon,
+  shape: OrientationIcon,
   aspect: AspectIcon,
   creator: User,
   account: User,
@@ -47,9 +47,9 @@ export const FIELD_ICONS: Record<FieldId, FieldIcon> = {
   savedAt: Upload,
   publishedAt: Calendar,
   modifiedAt: Calendar,
-};
+} satisfies Record<FieldId, FieldIcon>;
 
-export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
+export const FIELD_HINTS = {
   tags: "any tag",
   source: "dribbble.com, instagram.com, local",
   type: "image, video, link, text",
@@ -66,15 +66,15 @@ export const FIELD_HINTS: Partial<Record<FieldId, string>> = {
   savedAt: "past-week, 2024-01-01",
   publishedAt: "past-week, 2024-01-01",
   modifiedAt: "past-week, 2024-01-01",
-};
+} satisfies Partial<Record<FieldId, string>>;
 
-const COMPARATOR_SYMBOL: Partial<Record<ComparatorId, string>> = {
-  gt: ">",
-  gte: "≥",
-  lt: "<",
-  lte: "≤",
-  neq: "≠",
-};
+const COMPARATOR_SYMBOL = new Map<ComparatorId, string>([
+  ["gt", ">"],
+  ["gte", "≥"],
+  ["lt", "<"],
+  ["lte", "≤"],
+  ["neq", "≠"],
+]);
 
 interface PredicateChip {
   icon: FieldIcon;
@@ -84,14 +84,13 @@ interface PredicateChip {
   negated: boolean;
 }
 
-function dateLabel(value: unknown): string {
-  const text = String(value ?? "");
-  const preset = DATE_PRESETS.find((d) => d.iso === text);
-  return preset ? preset.label : text;
+function dateLabel(iso: string): string {
+  const preset = DATE_PRESETS.find((d) => d.iso === iso);
+  return preset ? preset.label : iso;
 }
 
-function isDatePreset(value: unknown): boolean {
-  return DATE_PRESETS.some((d) => d.iso === String(value ?? ""));
+function isDatePreset(iso: string): boolean {
+  return DATE_PRESETS.some((d) => d.iso === iso);
 }
 
 function shortDateField(field: FieldId): string {
@@ -147,7 +146,7 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       if (operator === "between" && Array.isArray(value)) {
         return { ...base, label: `${value[0]}–${value[1]}`, negated: false };
       }
-      const sym = COMPARATOR_SYMBOL[operator];
+      const sym = COMPARATOR_SYMBOL.get(operator);
       return {
         ...base,
         label: sym ? `${sym} ${value}` : String(value),
@@ -159,14 +158,15 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       if (operator === "between" && Array.isArray(value)) {
         return {
           ...base,
-          label: `${name} · ${dateLabel(value[0])}–${dateLabel(value[1])}`,
+          label: `${name} · ${dateLabel(String(value[0] ?? ""))}–${dateLabel(String(value[1] ?? ""))}`,
           negated: false,
         };
       }
-      const sym = COMPARATOR_SYMBOL[operator];
-      const text = dateLabel(value);
+      const iso = String(value ?? "");
+      const sym = COMPARATOR_SYMBOL.get(operator);
+      const text = dateLabel(iso);
       const valuePart =
-        sym && !(operator === "gte" && isDatePreset(value))
+        sym && !(operator === "gte" && isDatePreset(iso))
           ? `${sym} ${text}`
           : text;
       return {

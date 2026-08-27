@@ -11,7 +11,7 @@ import {
   DURATION_UNITS,
   MULTI_WORDS,
   NUMBER_WORDS,
-  SHAPE_SYNONYMS,
+  ORIENTATION_SYNONYMS,
   SORT_WORDS,
   SOURCE_SYNONYMS,
   TYPE_SYNONYMS,
@@ -32,13 +32,13 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
     if (p) out.push({ phrase: p, field, value });
   };
 
-  for (const [word, type] of Object.entries(TYPE_SYNONYMS)) {
-    if ((MEDIA_TYPES as readonly string[]).includes(type)) {
+  for (const [word, type] of TYPE_SYNONYMS) {
+    if (MEDIA_TYPES.some((mediaType) => mediaType === type)) {
       push(word, "type", type);
     }
   }
 
-  for (const [word, source] of Object.entries(SOURCE_SYNONYMS)) {
+  for (const [word, source] of SOURCE_SYNONYMS) {
     push(word, "source", source);
   }
   for (const source of facets.sources) push(source, "source", source);
@@ -47,10 +47,10 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
     push(color.label, "color", color.hex.toLowerCase());
   }
 
-  for (const [word, shape] of Object.entries(SHAPE_SYNONYMS)) {
-    push(word, "shape", shape);
+  for (const [word, orientation] of ORIENTATION_SYNONYMS) {
+    push(word, "shape", orientation);
   }
-  for (const [word, aspect] of Object.entries(ASPECT_SYNONYMS)) {
+  for (const [word, aspect] of ASPECT_SYNONYMS) {
     push(word, "aspect", aspect);
   }
 
@@ -67,14 +67,14 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
 interface Accumulator {
   sources: Set<string>;
   types: Set<string>;
-  shapes: Set<string>;
+  orientations: Set<string>;
   aspects: Set<string>;
   tags: Set<string>;
   creators: Set<string>;
   colors: string[];
   negSources: Set<string>;
   negTypes: Set<string>;
-  negShapes: Set<string>;
+  negOrientations: Set<string>;
   negAspects: Set<string>;
   negTags: Set<string>;
   negCreators: Set<string>;
@@ -84,14 +84,14 @@ export function newAccumulator(): Accumulator {
   return {
     sources: new Set(),
     types: new Set(),
-    shapes: new Set(),
+    orientations: new Set(),
     aspects: new Set(),
     tags: new Set(),
     creators: new Set(),
     colors: [],
     negSources: new Set(),
     negTypes: new Set(),
-    negShapes: new Set(),
+    negOrientations: new Set(),
     negAspects: new Set(),
     negCreators: new Set(),
     negTags: new Set(),
@@ -111,7 +111,7 @@ export function accumulate(
       (negate ? acc.negTypes : acc.types).add(c.value);
       return;
     case "shape":
-      (negate ? acc.negShapes : acc.shapes).add(c.value);
+      (negate ? acc.negOrientations : acc.orientations).add(c.value);
       return;
     case "aspect":
       (negate ? acc.negAspects : acc.aspects).add(c.value);
@@ -138,37 +138,49 @@ export function toPredicates(acc: Accumulator): Predicate[] {
     values: Set<string>,
     negate: boolean,
   ) => {
-    const list = [...values];
-    if (list.length === 0) return;
-    if (list.length === 1) {
-      out.push({ field, operator: negate ? "neq" : "eq", value: list[0] });
+    const [first, ...rest] = [...values];
+    if (first === undefined) return;
+    if (rest.length === 0) {
+      out.push({ field, operator: negate ? "neq" : "eq", value: first });
     } else {
-      out.push({ field, operator: negate ? "nin" : "in", value: list });
+      out.push({
+        field,
+        operator: negate ? "nin" : "in",
+        value: [first, ...rest],
+      });
     }
   };
   enumPred("source", acc.sources, false);
   enumPred("source", acc.negSources, true);
   enumPred("type", acc.types, false);
   enumPred("type", acc.negTypes, true);
-  enumPred("shape", acc.shapes, false);
-  enumPred("shape", acc.negShapes, true);
+  enumPred("shape", acc.orientations, false);
+  enumPred("shape", acc.negOrientations, true);
   enumPred("aspect", acc.aspects, false);
   enumPred("aspect", acc.negAspects, true);
 
-  if (acc.creators.size > 0) {
-    const list = [...acc.creators];
+  const [creator, ...moreCreators] = [...acc.creators];
+  if (creator !== undefined) {
     out.push(
-      list.length === 1
-        ? { field: "creator", operator: "eq", value: list[0] }
-        : { field: "creator", operator: "in", value: list },
+      moreCreators.length === 0
+        ? { field: "creator", operator: "eq", value: creator }
+        : {
+            field: "creator",
+            operator: "in",
+            value: [creator, ...moreCreators],
+          },
     );
   }
-  if (acc.negCreators.size > 0) {
-    const list = [...acc.negCreators];
+  const [negCreator, ...moreNegCreators] = [...acc.negCreators];
+  if (negCreator !== undefined) {
     out.push(
-      list.length === 1
-        ? { field: "creator", operator: "neq", value: list[0] }
-        : { field: "creator", operator: "nin", value: list },
+      moreNegCreators.length === 0
+        ? { field: "creator", operator: "neq", value: negCreator }
+        : {
+            field: "creator",
+            operator: "nin",
+            value: [negCreator, ...moreNegCreators],
+          },
     );
   }
 
@@ -187,7 +199,8 @@ export function toPredicates(acc: Accumulator): Predicate[] {
 }
 
 function parseCount(word: string): number | null {
-  if (word in NUMBER_WORDS) return NUMBER_WORDS[word] ?? null;
+  const known = NUMBER_WORDS.get(word);
+  if (known !== undefined) return known;
   if (/^\d+$/.test(word)) {
     const n = Number.parseInt(word, 10);
     return Number.isFinite(n) ? n : null;
@@ -208,14 +221,14 @@ function parseDurationAt(
   const glued = COMBINED_DURATION_RE.exec(w0);
   if (glued) {
     const n = Number.parseFloat(glued[1] ?? "");
-    const unit = DURATION_UNITS[glued[2] ?? ""];
+    const unit = DURATION_UNITS.get(glued[2] ?? "");
     if (Number.isFinite(n) && unit) {
       return { seconds: Math.round(n * unit), len: 1 };
     }
   }
   const n = parseQuantity(w0);
   if (n !== null) {
-    const unit = DURATION_UNITS[(words[i + 1] ?? "").toLowerCase()];
+    const unit = DURATION_UNITS.get((words[i + 1] ?? "").toLowerCase());
     if (unit) return { seconds: Math.round(n * unit), len: 2 };
   }
   return null;
@@ -285,7 +298,7 @@ export function matchSortLimit(
     return { sort: { key: "savedAt", dir: "desc" }, len: 2 };
   }
 
-  const sort = SORT_WORDS[at(0)];
+  const sort = SORT_WORDS.get(at(0));
   if (sort) return { sort, len: 1 };
 
   if (at(0) === "top" || at(0) === "first") {
@@ -295,7 +308,7 @@ export function matchSortLimit(
 
   const lead = parseCount(at(0));
   if (lead !== null && lead > 0) {
-    if (SORT_WORDS[at(1)] || (at(1) === "most" && at(2) === "recent")) {
+    if (SORT_WORDS.has(at(1)) || (at(1) === "most" && at(2) === "recent")) {
       return { limit: lead, len: 1 };
     }
   }
@@ -348,15 +361,9 @@ export function matchIntent(
   const noun = at(k);
 
   if (/^tags?$/.test(noun)) {
-    return {
-      pred: {
-        field: "tags",
-        operator: "empty",
-        value: true,
-        ...(negated ? {} : { negate: true }),
-      },
-      len: k + 1,
-    };
+    const pred: Predicate = { field: "tags", operator: "empty", value: true };
+    if (!negated) pred.negate = true;
+    return { pred, len: k + 1 };
   }
 
   const field = optionalFieldForNoun(noun);

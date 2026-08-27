@@ -5,10 +5,11 @@ import {
   type FieldId,
   type Predicate,
 } from "@pond/schema/filters/types";
+import { z } from "zod";
 
 export function defaultPredicateFor(field: FieldId): Predicate {
   const meta = FIELD_META[field];
-  const operator = (COMPARATORS_BY_TYPE[meta.type][0] ?? "eq") as ComparatorId;
+  const operator = COMPARATORS_BY_TYPE[meta.type][0] ?? "eq";
   return {
     field,
     operator,
@@ -16,7 +17,7 @@ export function defaultPredicateFor(field: FieldId): Predicate {
   };
 }
 
-function emptyValueFor(operator: ComparatorId): unknown {
+function emptyValueFor(operator: ComparatorId) {
   switch (operator) {
     case "in":
     case "nin":
@@ -40,10 +41,6 @@ export function predicateIsActive(p: Predicate): boolean {
   if (Array.isArray(v)) {
     return v.some((x) => x !== "" && x !== 0 && x != null);
   }
-  if (typeof v === "string") return v.trim().length > 0;
-  if (typeof v === "object") {
-    const hex = (v as { hex?: unknown }).hex;
-    return typeof hex === "string" && hex.length > 0;
-  }
-  return true;
+  const text = z.string().safeParse(v);
+  return text.success ? text.data.trim().length > 0 : true;
 }
