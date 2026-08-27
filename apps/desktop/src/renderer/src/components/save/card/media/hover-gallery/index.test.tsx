@@ -25,13 +25,40 @@ describe("HoverGallery preview scheduling", () => {
     document.body.append(container);
     root = createRoot(container);
 
-    const save = {
+    const save: Save = {
       id: "gallery",
+      source: "web",
+      sourceId: "gallery",
+      url: "https://example.test/gallery",
+      title: null,
+      description: null,
+      author: null,
+      notes: null,
+      mediaUrl: null,
+      mediaType: null,
       files: [
-        { path: "first.jpg", width: 800, height: 600 },
-        { path: "second.jpg", width: 800, height: 600 },
+        {
+          kind: "image",
+          path: "first.jpg",
+          sha256: "a",
+          size: 1,
+          width: 800,
+          height: 600,
+        },
+        {
+          kind: "image",
+          path: "second.jpg",
+          sha256: "b",
+          size: 1,
+          width: 800,
+          height: 600,
+        },
       ],
-    } as Save;
+      tags: [],
+      savedAt: 0,
+      createdAt: 0,
+      deletedAt: null,
+    };
     const slides: MediaUnit[] = [
       { key: "first.jpg", url: "pond://gallery/first.jpg", isVideo: false },
       { key: "second.jpg", url: "pond://gallery/second.jpg", isVideo: false },

@@ -9,6 +9,10 @@ import {
 } from "react";
 import styles from "./styles.module.css";
 
+interface ClipStyle extends CSSProperties {
+  "--clip-fade": string;
+}
+
 interface ClippedScrollProps {
   maxHeight: number;
   children: ReactNode;
@@ -42,10 +46,11 @@ export function ClippedScroll({
     }
     const budget = maxHeight - peek;
     let base = 0;
-    for (const child of Array.from(el.children) as HTMLElement[]) {
+    for (const child of el.children) {
+      if (!(child instanceof HTMLElement)) break;
       const bottom = child.offsetTop + child.offsetHeight;
-      if (bottom <= budget) base = bottom;
-      else break;
+      if (bottom > budget) break;
+      base = bottom;
     }
     setHeight(Math.min(base + peek, maxHeight));
   }, [maxHeight, peek]);
@@ -82,11 +87,13 @@ export function ClippedScroll({
     return () => ro.disconnect();
   }, [measure, updateOverflow]);
 
+  const rootStyle: ClipStyle = { height, "--clip-fade": `${fade}px` };
+
   return (
     <div
       ref={rootRef}
       className={`${styles.root}${className ? ` ${className}` : ""}`}
-      style={{ height, "--clip-fade": `${fade}px` } as CSSProperties}
+      style={rootStyle}
     >
       <div
         ref={scrollRef}

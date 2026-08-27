@@ -1,6 +1,13 @@
 import { Button, Settings } from "@pond/ui";
 import { useState } from "react";
+import { z } from "zod";
 import { loadAppInfo } from "@/lib/app-info";
+
+const UpdateCheckSchema = z.object({
+  ok: z.boolean(),
+  version: z.string().optional(),
+  reason: z.string().optional(),
+});
 
 export function CheckNowRow() {
   const [busy, setBusy] = useState(false);
@@ -10,14 +17,11 @@ export function CheckNowRow() {
     setBusy(true);
     setMessage(null);
     try {
-      const [info, result] = await Promise.all([
+      const [info, raw] = await Promise.all([
         loadAppInfo(),
-        window.pond.query("updates.checkNow", {}) as Promise<{
-          ok: boolean;
-          version?: string;
-          reason?: string;
-        }>,
+        window.pond.query("updates.checkNow", {}),
       ]);
+      const result = UpdateCheckSchema.parse(raw);
       if (!result.ok) {
         setMessage(
           result.reason === "dev_build"

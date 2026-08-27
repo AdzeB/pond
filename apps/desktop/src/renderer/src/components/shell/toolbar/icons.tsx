@@ -6,11 +6,11 @@ import { SECTION_ICONS } from "@/lib/ui/section-icons";
 
 type TabIcon = React.ComponentType<{ width?: number; height?: number }>;
 
-const ROUTE_ICONS: Record<string, TabIcon> = {
-  "/": SECTION_ICONS.library,
-  "/sources": SECTION_ICONS.sources,
-  "/trash": SECTION_ICONS.trash,
-};
+const ROUTE_ICONS: ReadonlyMap<string, TabIcon> = new Map([
+  ["/", SECTION_ICONS.library],
+  ["/sources", SECTION_ICONS.sources],
+  ["/trash", SECTION_ICONS.trash],
+]);
 
 function sourceIcon(path: string): TabIcon | null {
   const m = path.match(/^\/source\/([^/?]+)/);
@@ -22,7 +22,7 @@ function sourceIcon(path: string): TabIcon | null {
 function iconForPath(path: string): TabIcon {
   const clean = listBaseFromPath(path.split("?")[0] ?? path);
 
-  const exact = ROUTE_ICONS[clean];
+  const exact = ROUTE_ICONS.get(clean);
   if (exact) return exact;
 
   const source = sourceIcon(clean);

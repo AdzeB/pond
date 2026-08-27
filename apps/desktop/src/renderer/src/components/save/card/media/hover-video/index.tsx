@@ -60,10 +60,8 @@ export function HoverVideo({
     if (!active || !primed) return;
     const el = internalRef.current;
     if (!el) return;
-    const promise = el.play();
-    if (promise && typeof promise.catch === "function") {
-      promise.catch(() => {});
-    }
+    // Autoplay rejections are expected; older Chromium returns undefined here.
+    el.play()?.catch(() => {});
   }, [active, primed]);
 
   const onEnter = useCallback(() => {

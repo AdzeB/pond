@@ -66,14 +66,14 @@ declare module "@tanstack/react-router" {
 const LAST_PATH_KEY = pondScopedKey("pond:lastPath");
 const STARTUP_PAGE_KEY = "pond:startupPage";
 
-const STARTUP_ROUTES: Record<string, string> = {
-  library: "/",
-  sources: "/sources",
-  trash: "/trash",
-};
+const STARTUP_ROUTES: ReadonlyMap<string, string> = new Map([
+  ["library", "/"],
+  ["sources", "/sources"],
+  ["trash", "/trash"],
+]);
 
 function readStored(key: string): string | null {
-  if (typeof localStorage === "undefined") return null;
+  if (!("localStorage" in globalThis)) return null;
   try {
     return localStorage.getItem(key);
   } catch {
@@ -84,9 +84,8 @@ function readStored(key: string): string | null {
 function initialPath(): string {
   const startup = readStored(STARTUP_PAGE_KEY) ?? "continue";
   if (startup === "settings") return "/";
-  if (startup !== "continue" && STARTUP_ROUTES[startup]) {
-    return STARTUP_ROUTES[startup];
-  }
+  const startupRoute = STARTUP_ROUTES.get(startup);
+  if (startup !== "continue" && startupRoute) return startupRoute;
   const last = readStored(LAST_PATH_KEY) || "/";
   if (last.startsWith("/settings") || last.startsWith("/dev")) return "/";
   return last;

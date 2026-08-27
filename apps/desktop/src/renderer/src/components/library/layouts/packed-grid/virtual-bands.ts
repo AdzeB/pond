@@ -10,7 +10,7 @@ export function buildVirtualBands(
   if (totalHeight <= 0 || bandSize <= 0) return [];
 
   const bandCount = Math.ceil(totalHeight / bandSize);
-  const bands = Array.from({ length: bandCount }, () => [] as number[]);
+  const bands: number[][] = Array.from({ length: bandCount }, () => []);
 
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];

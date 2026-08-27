@@ -7,9 +7,14 @@ export interface TagNavItem {
   count: number;
 }
 
+interface RecentPartition<T> {
+  recent: T[];
+  others: T[];
+}
+
 export function partitionRecent<
   T extends { lastUsedAt: number | null; name: string },
->(tags: readonly T[]): { recent: T[]; others: T[] } {
+>(tags: readonly T[]): RecentPartition<T> {
   const recent: T[] = [];
   const others: T[] = [];
   for (const tag of tags) {

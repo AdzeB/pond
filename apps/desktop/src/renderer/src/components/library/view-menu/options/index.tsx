@@ -14,30 +14,30 @@ import styles from "./styles.module.css";
 
 type OptionsLeaf = "layout" | "zoom" | "sort" | "display";
 
-const LAYOUT_LABELS: Record<LayoutValue, string> = {
+const LAYOUT_LABELS = {
   waterfall: "Waterfall",
   grid: "Grid",
   justified: "Justified",
-};
+} satisfies Record<LayoutValue, string>;
 
-const SORT_LABELS: Partial<Record<SortKey, string>> = {
-  savedAt: "Date Saved",
-  createdAt: "Date Added",
-  publishedAt: "Date Published",
-  title: "Title",
-  type: "Type",
-  creator: "Creator",
-  source: "Source",
-  tagName: "First Tag",
-  tagCount: "Tag Count",
-  duration: "Duration",
-  width: "Width",
-  height: "Height",
-  dimensions: "Dimensions",
-  aspectRatio: "Aspect Ratio",
-  fileSize: "Size",
-  fileCount: "Count",
-};
+const SORT_LABELS: ReadonlyMap<SortKey, string> = new Map([
+  ["savedAt", "Date Saved"],
+  ["createdAt", "Date Added"],
+  ["publishedAt", "Date Published"],
+  ["title", "Title"],
+  ["type", "Type"],
+  ["creator", "Creator"],
+  ["source", "Source"],
+  ["tagName", "First Tag"],
+  ["tagCount", "Tag Count"],
+  ["duration", "Duration"],
+  ["width", "Width"],
+  ["height", "Height"],
+  ["dimensions", "Dimensions"],
+  ["aspectRatio", "Aspect Ratio"],
+  ["fileSize", "Size"],
+  ["fileCount", "Count"],
+]);
 
 function zoomLabel(zoom: number): string {
   return ZOOM_STEPS[nearestZoomIndex(zoom)]?.label ?? "Medium";
@@ -65,7 +65,7 @@ const ROWS: Array<{
     section: "sort",
     label: "Sort",
     icon: <SortIcon />,
-    value: (state) => SORT_LABELS[state.sort.key] ?? state.sort.key,
+    value: (state) => SORT_LABELS.get(state.sort.key) ?? state.sort.key,
   },
   {
     section: "display",

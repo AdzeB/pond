@@ -19,6 +19,15 @@ import {
 } from "@/stores/selection";
 import { useIsTumbling } from "@/stores/trash-tumble";
 
+interface PackedCardStyle extends React.CSSProperties {
+  "--packed-h": string;
+}
+
+interface MediaAspectStyle extends React.CSSProperties {
+  "--card-aspect"?: string;
+  "--card-aspect-num"?: string;
+}
+
 const MotionCardRoot = motion.create(Card.Root);
 
 const TUMBLE_TRANSITION = {
@@ -55,11 +64,11 @@ export const SaveCard = memo(function SaveCard({
   const isAnchor = useIsAnchor(id);
   const tumbling = useIsTumbling(id);
 
-  const liStyle = useMemo<React.CSSProperties | undefined>(() => {
+  const liStyle = useMemo<PackedCardStyle | undefined>(() => {
     if (packedWidth == null || packedHeight == null) return undefined;
-    const base: React.CSSProperties = {
+    const base: PackedCardStyle = {
       width: `${packedWidth}px`,
-      ["--packed-h" as never]: `${packedHeight}px`,
+      "--packed-h": `${packedHeight}px`,
     };
     if (packedTop != null && packedLeft != null) {
       base.position = "absolute";
@@ -170,14 +179,14 @@ const SaveCardBody = memo(function SaveCardBody({
     if (!unit) return null;
     return (save.files ?? []).find((f) => f.path === unit.key) ?? null;
   }, [save.files, unit]);
-  const mediaStyle = useMemo<React.CSSProperties>(() => {
-    if (packed) return {} as React.CSSProperties;
+  const mediaStyle = useMemo<MediaAspectStyle>(() => {
+    if (packed) return {};
     const { w, h } = aspectDimsFor(save, pickOpts, unit);
     const ratio = w && h ? clampRatio(w, h) : 1;
     return {
       "--card-aspect": w && h ? `${w} / ${h}` : "1 / 1",
       "--card-aspect-num": String(ratio),
-    } as React.CSSProperties;
+    };
   }, [packed, save, pickOpts, unit]);
   const dateLabel = useMemo(() => formatAbsolute(save.savedAt), [save.savedAt]);
   return (

@@ -40,11 +40,12 @@ export function buildTagMenuItems(a: TagMenuActions): MenuItemSpec[] {
     icon: <Folder {...ICON} />,
     onClick: () => a.onAddToGroup(g),
   }));
-  if (a.inGroup) {
+  const inGroup = a.inGroup;
+  if (inGroup) {
     if (moveSubmenu.length > 0) moveSubmenu.push({ type: "separator" });
     moveSubmenu.push({
       label: "Remove from Group",
-      onClick: () => a.onRemoveFromGroup(a.inGroup as string),
+      onClick: () => a.onRemoveFromGroup(inGroup),
     });
   }
   if (moveSubmenu.length > 0) {

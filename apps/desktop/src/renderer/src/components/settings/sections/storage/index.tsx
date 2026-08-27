@@ -1,22 +1,46 @@
 import { Button, Settings } from "@pond/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { z } from "zod";
 import { REVEAL_LABEL } from "@/lib/ui/platform";
 import { playUiSuccess } from "@/lib/ui/sounds";
 import { prettyPath } from "@/lib/util/pretty-path";
 import styles from "./styles.module.css";
 
-interface LibraryInfo {
-  path: string;
-}
+const LibraryInfoSchema = z.object({ path: z.string() });
 
-type ActionResult = { ok: true } | { ok: false; reason: string };
+const ActionResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true) }),
+  z.object({ ok: z.literal(false), reason: z.string() }),
+]);
 
-type BackupResult =
-  | { ok: true; path: string; copied: number }
-  | { ok: false; reason: string };
+const BackupResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), path: z.string(), copied: z.number() }),
+  z.object({ ok: z.literal(false), reason: z.string() }),
+]);
 
-type MoveResult = { ok: true; path: string } | { ok: false; reason: string };
+const MoveResultSchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), path: z.string() }),
+  z.object({ ok: z.literal(false), reason: z.string() }),
+]);
+
+const PickedLibrarySchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), path: z.string() }),
+  z.object({ ok: z.literal(false), reason: z.string() }),
+]);
+
+const PickedEagleLibrarySchema = z.discriminatedUnion("ok", [
+  z.object({ ok: z.literal(true), path: z.string() }),
+  z.object({ ok: z.literal(false), path: z.null() }),
+]);
+
+const EagleImportSchema = z.object({
+  ok: z.boolean(),
+  imported: z.number(),
+  skipped: z.number(),
+  failed: z.number(),
+  error: z.string().optional(),
+});
 
 const FIRST_BACKUP_KEY = "pond.first-library-backup";
 
@@ -40,7 +64,7 @@ function pathActionError(
   }
 }
 
-function mutationError(error: unknown, fallback: string): string {
+function mutationError(error: Error | null, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
@@ -48,7 +72,7 @@ export function LocationRow() {
   const { data: info } = useQuery({
     queryKey: ["library-info"],
     queryFn: async () =>
-      (await window.pond.query("library.info", {})) as LibraryInfo,
+      LibraryInfoSchema.parse(await window.pond.query("library.info", {})),
   });
 
   const [note, setNote] = useState<{
@@ -65,13 +89,13 @@ export function LocationRow() {
   const openExisting = useMutation({
     mutationFn: async () => {
       clearNotes();
-      const picked = (await window.pond.query("library.pickExisting", {})) as
-        | { ok: true; path: string }
-        | { ok: false; reason: string };
+      const picked = PickedLibrarySchema.parse(
+        await window.pond.query("library.pickExisting", {}),
+      );
       if (!picked.ok) return;
-      const res = (await window.pond.query("library.switchTo", {
-        path: picked.path,
-      })) as ActionResult;
+      const res = ActionResultSchema.parse(
+        await window.pond.query("library.switchTo", { path: picked.path }),
+      );
       if (!res.ok) throw new Error(`Couldn't open library: ${res.reason}`);
     },
   });
@@ -79,7 +103,9 @@ export function LocationRow() {
   const move = useMutation({
     mutationFn: async () => {
       clearNotes();
-      const res = (await window.pond.query("library.move", {})) as MoveResult;
+      const res = MoveResultSchema.parse(
+        await window.pond.query("library.move", {}),
+      );
       if (!res.ok) {
         if (res.reason === "cancelled") return;
         throw new Error(
@@ -96,10 +122,9 @@ export function LocationRow() {
   const backup = useMutation({
     mutationFn: async () => {
       clearNotes();
-      const res = (await window.pond.query(
-        "library.backupTo",
-        {},
-      )) as BackupResult;
+      const res = BackupResultSchema.parse(
+        await window.pond.query("library.backupTo", {}),
+      );
       if (!res.ok) {
         if (res.reason === "cancelled") return;
         throw new Error(
@@ -115,7 +140,7 @@ export function LocationRow() {
     onSuccess: (res) => {
       if (!res) return;
       const first =
-        typeof localStorage !== "undefined" &&
+        "localStorage" in globalThis &&
         localStorage.getItem(FIRST_BACKUP_KEY) !== "1";
       if (first) {
         localStorage.setItem(FIRST_BACKUP_KEY, "1");
@@ -132,19 +157,15 @@ export function LocationRow() {
   const importEagle = useMutation({
     mutationFn: async () => {
       clearNotes();
-      const picked = (await window.pond.query("saves.pickEagleLibrary", {})) as
-        | { ok: true; path: string }
-        | { ok: false; path: null };
+      const picked = PickedEagleLibrarySchema.parse(
+        await window.pond.query("saves.pickEagleLibrary", {}),
+      );
       if (!picked.ok || !picked.path) return null;
-      const res = (await window.pond.query("saves.importEagleLibrary", {
-        path: picked.path,
-      })) as {
-        ok: boolean;
-        imported: number;
-        skipped: number;
-        failed: number;
-        error?: string;
-      };
+      const res = EagleImportSchema.parse(
+        await window.pond.query("saves.importEagleLibrary", {
+          path: picked.path,
+        }),
+      );
       if (!res.ok && res.error === "not_eagle_library") {
         throw new Error("That folder doesn't look like an Eagle library.");
       }

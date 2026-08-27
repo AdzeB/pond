@@ -55,14 +55,14 @@ const CUES: ReadonlyArray<{
   },
 ];
 
-const HOLD_MS: Record<UiSoundName, number> = {
+const HOLD_MS = {
   tap: 220,
   soft: 200,
   toggleOn: 260,
   toggleOff: 280,
   success: 380,
   trash: 420,
-};
+} satisfies Record<UiSoundName, number>;
 
 const GROUPS = ["Clicks", "Toggles", "Confirms", "Finder"] as const;
 

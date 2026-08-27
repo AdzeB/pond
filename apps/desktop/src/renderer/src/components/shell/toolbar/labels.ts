@@ -4,11 +4,11 @@ import { listBaseFromPath } from "@/lib/search/schemas";
 import type { Save } from "@/lib/types";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 
-const ROUTE_LABELS: Record<string, string> = {
-  "/": "Library",
-  "/sources": "Sources",
-  "/trash": "Trash",
-};
+const ROUTE_LABELS: ReadonlyMap<string, string> = new Map([
+  ["/", "Library"],
+  ["/sources", "Sources"],
+  ["/trash", "Trash"],
+]);
 
 function titleCase(slug: string): string {
   return slug
@@ -33,7 +33,7 @@ function labelForPath(path: string): string {
   const pathname = path.split("?")[0] ?? path;
   const clean = listBaseFromPath(pathname);
 
-  const exact = ROUTE_LABELS[clean];
+  const exact = ROUTE_LABELS.get(clean);
   if (exact) return exact;
 
   if (clean.startsWith("/source/")) {

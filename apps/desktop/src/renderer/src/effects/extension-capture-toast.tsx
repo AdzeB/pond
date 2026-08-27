@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import type { SyncActionEvent } from "@/lib/save/reconcile";
 import { notify } from "@/lib/ui/toast";
 
 const EXTENSION_CAPTURE_RE =
@@ -7,10 +6,9 @@ const EXTENSION_CAPTURE_RE =
 
 export function ExtensionCaptureToast() {
   useEffect(() => {
-    return window.pond.onSyncAction((raw) => {
-      const event = raw as SyncActionEvent;
-      if (event.modelName !== "save" || event.action !== "I") return;
-      if (!EXTENSION_CAPTURE_RE.test(event.actorReason ?? "")) return;
+    return window.pond.onSyncAction((action) => {
+      if (action.modelName !== "save" || action.action !== "I") return;
+      if (!EXTENSION_CAPTURE_RE.test(action.actorReason ?? "")) return;
       notify({
         id: "extension-capture",
         title: "Saved to Pond",

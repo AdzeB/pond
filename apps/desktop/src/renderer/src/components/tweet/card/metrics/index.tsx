@@ -22,7 +22,7 @@ export function Metrics({ metrics }: { metrics: TweetCardMetrics }) {
     { key: "bookmarks", Icon: BookmarkIcon, value: metrics.bookmarks },
   ];
 
-  const shown = items.filter((i) => typeof i.value === "number");
+  const shown = items.filter((i) => i.value !== undefined);
   if (shown.length === 0) return null;
 
   return (

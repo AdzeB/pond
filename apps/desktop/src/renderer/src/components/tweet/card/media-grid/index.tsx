@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { PlayIcon } from "@/components/tweet/card/icons";
 import type { TweetCardMedia } from "@/components/tweet/card/lib/data";
 import { formatDuration } from "@/lib/util/format";
@@ -9,6 +10,10 @@ const MAX_TILES = 4;
 /** Twitter's timeline window clamps a single video between 9:16 and 16:9, so wider or taller videos letterbox instead of stretching the card. */
 const VIDEO_MIN_RATIO = 9 / 16;
 const VIDEO_MAX_RATIO = 16 / 9;
+
+interface MediaGridStyle extends CSSProperties {
+  "--tweet-media-ratio": string;
+}
 
 function singleRatio(m: TweetCardMedia): string | undefined {
   if (!m.width || !m.height) return undefined;
@@ -36,6 +41,8 @@ export function MediaGrid({
   const single = count === 1 ? tiles[0] : undefined;
   const ratio = single ? singleRatio(single) : undefined;
   const singleVideo = single?.type === "video";
+  const style: MediaGridStyle | undefined =
+    count === 1 && ratio ? { "--tweet-media-ratio": ratio } : undefined;
 
   return (
     <div
@@ -43,11 +50,7 @@ export function MediaGrid({
       data-count={count}
       data-compact={compact ? "true" : undefined}
       data-single-video={singleVideo ? "true" : undefined}
-      style={
-        count === 1 && ratio
-          ? ({ "--tweet-media-ratio": ratio } as React.CSSProperties)
-          : undefined
-      }
+      style={style}
     >
       {tiles.map((m, i) => (
         <Tile key={m.url} media={m} index={i} count={count} />
@@ -86,7 +89,7 @@ function Tile({
           <span className={styles["play-badge"]} aria-hidden>
             <PlayIcon width={22} height={22} />
           </span>
-          {typeof media.durationSec === "number" ? (
+          {media.durationSec !== undefined ? (
             <span className={styles["duration-badge"]}>
               {formatDuration(media.durationSec)}
             </span>

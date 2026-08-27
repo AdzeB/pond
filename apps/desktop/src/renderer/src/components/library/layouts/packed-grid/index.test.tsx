@@ -17,6 +17,14 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
+/** jsdom has no scroll layout, so scrolling has to move `scrollTop` by hand. */
+function stubScrollTo(node: HTMLElement): void {
+  node.scrollTo = (optionsOrX?: ScrollToOptions | number, y?: number) => {
+    const top = optionsOrX instanceof Object ? optionsOrX.top : y;
+    if (top != null) node.scrollTop = top;
+  };
+}
+
 function RestorationHarness({
   detail,
   rowHeight = 100,
@@ -39,9 +47,7 @@ function RestorationHarness({
         configurable: true,
         value: 1000,
       });
-      node.scrollTo = ((options?: ScrollToOptions) => {
-        if (options?.top != null) node.scrollTop = options.top;
-      }) as typeof node.scrollTo;
+      stubScrollTo(node);
     },
     [restoration],
   );
@@ -159,18 +165,17 @@ describe("PackedGrid", () => {
     Object.defineProperty(container, "clientHeight", { value: 600 });
     Object.defineProperty(container, "offsetHeight", { value: 600 });
     Object.defineProperty(container, "offsetWidth", { value: 1000 });
-    container.getBoundingClientRect = () =>
-      ({
-        x: 0,
-        y: 0,
-        top: 0,
-        left: 0,
-        right: 1000,
-        bottom: 600,
-        width: 1000,
-        height: 600,
-        toJSON: () => ({}),
-      }) as DOMRect;
+    container.getBoundingClientRect = () => ({
+      x: 0,
+      y: 0,
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 600,
+      width: 1000,
+      height: 600,
+      toJSON: () => ({}),
+    });
     document.body.append(container);
     root = createRoot(container);
 
@@ -210,12 +215,7 @@ describe("PackedGrid", () => {
     container.style.overflowY = "auto";
     Object.defineProperty(container, "offsetHeight", { value: 600 });
     Object.defineProperty(container, "offsetWidth", { value: 1000 });
-    container.scrollTo = vi.fn(
-      (optionsOrX?: ScrollToOptions | number, y?: number) => {
-        const top = typeof optionsOrX === "number" ? y : optionsOrX?.top;
-        if (top != null && container) container.scrollTop = top;
-      },
-    ) as typeof container.scrollTo;
+    stubScrollTo(container);
     document.body.append(container);
     root = createRoot(container);
 

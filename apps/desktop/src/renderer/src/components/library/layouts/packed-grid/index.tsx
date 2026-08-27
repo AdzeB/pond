@@ -40,8 +40,8 @@ const RUNWAY_BANDS = 6;
 const estimateBandSize = () => PACKED_GRID_BAND_PX;
 const virtualBandKey = (index: number) => `packed-grid-band-${index}`;
 const INITIAL_VIEWPORT_RECT = {
-  width: typeof window === "undefined" ? 0 : window.innerWidth,
-  height: typeof window === "undefined" ? 1000 : window.innerHeight,
+  width: "window" in globalThis ? window.innerWidth : 0,
+  height: "window" in globalThis ? window.innerHeight : 1000,
 };
 const RESTORATION_SETTLE_MS = 750;
 const MISSING_ANCHOR_TIMEOUT_MS = 5000;
@@ -168,9 +168,7 @@ export function PackedGrid({
     measure();
 
     const observer =
-      typeof ResizeObserver === "undefined"
-        ? null
-        : new ResizeObserver(measure);
+      "ResizeObserver" in globalThis ? new ResizeObserver(measure) : null;
     observer?.observe(node);
     observer?.observe(parent);
     if (node.parentElement) observer?.observe(node.parentElement);

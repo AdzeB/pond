@@ -111,7 +111,7 @@ export function SourcesPage() {
         width,
         colMin,
         LIBRARY_ITEM_GAP,
-        SOURCE_CELL_HEIGHT,
+        () => SOURCE_CELL_HEIGHT,
       ),
     [entries, width, colMin],
   );

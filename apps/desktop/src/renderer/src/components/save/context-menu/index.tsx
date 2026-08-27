@@ -6,7 +6,7 @@ import { tagClipboard } from "@/stores/tag-clipboard";
 
 interface SaveContextMenuProps {
   save: Save;
-  children: ReactElement<Record<string, unknown>>;
+  children: ReactElement;
 }
 
 export function SaveContextMenu({ save, children }: SaveContextMenuProps) {

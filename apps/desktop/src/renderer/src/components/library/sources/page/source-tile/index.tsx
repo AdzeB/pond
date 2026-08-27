@@ -8,6 +8,10 @@ import { getSourceDef } from "@/lib/save/sources-registry";
 import { gentleSpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
+interface WipeStyle extends CSSProperties {
+  "--sources-wipe-p": number;
+}
+
 export function SourceTile({
   source,
   avatarUrl,
@@ -38,15 +42,17 @@ export function SourceTile({
   const artSrc = pfp ?? logo ?? undefined;
   const artVariant = pfp ? "account" : "source";
 
+  const wipeStyle: WipeStyle | undefined =
+    progress == null ? undefined : { "--sources-wipe-p": progress };
   const wipe =
-    running && artSrc && progress != null ? (
+    running && artSrc && wipeStyle ? (
       <img
         src={artSrc}
         alt=""
         className={styles.wipe}
         referrerPolicy="no-referrer"
         data-variant={artVariant}
-        style={{ "--sources-wipe-p": progress } as CSSProperties}
+        style={wipeStyle}
       />
     ) : null;
 

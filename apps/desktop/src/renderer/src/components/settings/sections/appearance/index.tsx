@@ -17,6 +17,7 @@ import {
   type ThemeDef,
 } from "@pond/schema/db";
 import { ColorField, Input, Select, Settings, Slider } from "@pond/ui";
+import { z } from "zod";
 import type { Binding } from "@/components/settings/engine";
 import { PresetSelect } from "@/components/settings/theme";
 import { clamp as clampNum } from "@/lib/util/math";
@@ -26,8 +27,26 @@ const DEFAULTS = DEFAULT_PREFS.preferences;
 type ThemePrefs = Prefs["preferences"];
 type ThemeSide = "light" | "dark";
 
+const ThemeDefSchema = z.object({
+  accent: z.string(),
+  background: z.string(),
+  foreground: z.string(),
+  contrast: z.number(),
+});
+
+/** The slice of `prefs.preferences` these rows read, as the engine hands it over. */
+const ThemeValuesSchema = z.object({
+  appearance: z.enum(["system", "light", "dark"]).optional().catch(undefined),
+  lightPresetId: z.string().optional().catch(undefined),
+  darkPresetId: z.string().optional().catch(undefined),
+  light: ThemeDefSchema.optional().catch(undefined),
+  dark: ThemeDefSchema.optional().catch(undefined),
+});
+
 function readTheme(binding: Binding) {
-  const values = binding.values as Partial<ThemePrefs>;
+  const values = ThemeValuesSchema.parse(binding.values);
+  // SAFETY: these rows are rendered only inside the section bound to
+  // `prefs.preferences`, so the deltas they send are theme keys.
   const patch = binding.patch as (delta: Partial<ThemePrefs>) => void;
   return {
     patch,
@@ -46,18 +65,16 @@ const APPEARANCE_OPTIONS: { value: ThemeAppearance; label: string }[] = [
 ];
 
 export function customColorsVisible(side: ThemeSide) {
-  return (values: Record<string, unknown>) => {
-    const key = side === "light" ? "lightPresetId" : "darkPresetId";
+  return (values: Binding["values"]) => {
+    const theme = ThemeValuesSchema.parse(values);
     const presetId =
-      typeof values[key] === "string"
-        ? values[key]
-        : side === "light"
-          ? DEFAULT_LIGHT_PRESET_ID
-          : DEFAULT_DARK_PRESET_ID;
-    const def = (values[side] ??
-      (side === "light"
-        ? DEFAULT_LIGHT_THEME
-        : DEFAULT_DARK_THEME)) as ThemeDef;
+      side === "light"
+        ? (theme.lightPresetId ?? DEFAULT_LIGHT_PRESET_ID)
+        : (theme.darkPresetId ?? DEFAULT_DARK_PRESET_ID);
+    const def =
+      side === "light"
+        ? (theme.light ?? DEFAULT_LIGHT_THEME)
+        : (theme.dark ?? DEFAULT_DARK_THEME);
     return isCustomTheme(presetId, def);
   };
 }
@@ -274,9 +291,7 @@ export function ThemeContrastRow({
           step={5}
           value={contrast}
           onValueChange={(next) => {
-            setContrast(
-              typeof next === "number" ? next : (next[0] ?? contrast),
-            );
+            setContrast(Array.isArray(next) ? (next[0] ?? contrast) : next);
           }}
         >
           <Slider.Control>

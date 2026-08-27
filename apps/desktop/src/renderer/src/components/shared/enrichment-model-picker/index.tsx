@@ -1,6 +1,6 @@
 import { IconGlobeOutline18 as Globe } from "@pond/icons/outline/18";
 import { Combobox } from "@pond/ui";
-import { useMemo, useState } from "react";
+import { type CSSProperties, useMemo, useState } from "react";
 import {
   findModel,
   groupedModels,
@@ -8,6 +8,12 @@ import {
   type PickerModel,
 } from "@/lib/enrichment/model-catalogs";
 import styles from "./styles.module.css";
+
+interface PopupStyle extends CSSProperties {
+  "--popup-width": string;
+}
+
+const POPUP_STYLE: PopupStyle = { "--popup-width": "auto" };
 
 interface Props {
   catalog: ModelCatalog;
@@ -69,10 +75,7 @@ export function EnrichmentModelPicker({ catalog, value, onChange }: Props) {
 
       <Combobox.Portal>
         <Combobox.Backdrop />
-        <Combobox.Positioner
-          align="end"
-          style={{ "--popup-width": "auto" } as React.CSSProperties}
-        >
+        <Combobox.Positioner align="end" style={POPUP_STYLE}>
           <Combobox.Popup className={styles.popup}>
             <div className={styles.panel}>
               <div className={styles.left}>

@@ -10,7 +10,13 @@ const CLAMPED_HEIGHT = CLAMP_LINES * LINE_HEIGHT_PX;
 
 const URL_RE = /(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi;
 
-function splitUrl(raw: string): { href: string; label: string; trail: string } {
+interface SplitUrl {
+  href: string;
+  label: string;
+  trail: string;
+}
+
+function splitUrl(raw: string): SplitUrl {
   let url = raw;
   let trail = "";
   while (/[.,;:!?)\]}'"]$/u.test(url)) {

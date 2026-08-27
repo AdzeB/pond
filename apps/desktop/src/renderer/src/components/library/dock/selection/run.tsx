@@ -19,14 +19,14 @@ import styles from "./styles.module.css";
 
 const STATUS_HOLD_MS = 1200;
 
-const TASK_ICONS: Record<string, ReactNode> = {
-  "auto-tag": <Tag size={18} />,
-  caption: <ImageSparkle size={18} />,
-  ocr: <ScanText size={18} />,
-  transcribe: <Waveform size={18} />,
-  "re-embed": <MagnifierSparkle size={18} />,
-  "rebuild-visual": <EyeSparkle size={18} />,
-};
+const TASK_ICONS: ReadonlyMap<string, ReactNode> = new Map([
+  ["auto-tag", <Tag size={18} />],
+  ["caption", <ImageSparkle size={18} />],
+  ["ocr", <ScanText size={18} />],
+  ["transcribe", <Waveform size={18} />],
+  ["re-embed", <MagnifierSparkle size={18} />],
+  ["rebuild-visual", <EyeSparkle size={18} />],
+]);
 
 interface Status {
   id: string;
@@ -95,7 +95,7 @@ export function SelectionRunSection() {
               disabled={busy || status !== null || hint !== null}
               onClick={() => void run(task)}
             >
-              <span className={styles.icon}>{TASK_ICONS[task.id]}</span>
+              <span className={styles.icon}>{TASK_ICONS.get(task.id)}</span>
               <span className={styles.text}>
                 <span
                   className={styles.label}

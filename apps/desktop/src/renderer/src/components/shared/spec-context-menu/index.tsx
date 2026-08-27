@@ -4,15 +4,20 @@ import type { CSSProperties, ReactElement } from "react";
 type RootProps = React.ComponentProps<typeof ContextMenu.Root>;
 type OpenChangeDetails = Parameters<NonNullable<RootProps["onOpenChange"]>>[1];
 
-const POPUP_STYLE = {
+interface PopupStyle extends CSSProperties {
+  "--popup-width": string;
+  "--popup-min-width": string;
+}
+
+const POPUP_STYLE: PopupStyle = {
   "--popup-width": "max-content",
   "--popup-min-width": "180px",
-} as CSSProperties;
+};
 
 interface SpecContextMenuProps {
   buildItems: () => MenuItemSpec[];
   onOpen?: (eventDetails: OpenChangeDetails) => void;
-  children: ReactElement<Record<string, unknown>>;
+  children: ReactElement;
 }
 
 function LazyItems({ build }: { build: () => MenuItemSpec[] }) {

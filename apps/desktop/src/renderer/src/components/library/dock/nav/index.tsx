@@ -12,15 +12,14 @@ import styles from "./styles.module.css";
 
 function pathForTab(tab: (typeof NAV_TABS)[number]): string | null {
   if (tab.id === "trash") return "/trash";
-  if (typeof tab.to === "string") return tab.to;
-  return null;
+  return tab.to ?? null;
 }
 
-const TAB_SHORTCUT: Record<DockTab, ShortcutId> = {
+const TAB_SHORTCUT = {
   library: "nav.library",
   sources: "nav.sources",
   trash: "nav.trash",
-};
+} satisfies Record<DockTab, ShortcutId>;
 
 const NAV_ORDER: readonly DockTab[] = ["library", "trash", "sources"];
 

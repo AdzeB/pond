@@ -17,7 +17,7 @@ import { getSourceDef } from "@/lib/save/sources-registry";
 import { useWatchSource, watchFlow } from "@/stores/watch-flow";
 import styles from "./styles.module.css";
 
-const KIND_ROWS: Record<WatchKind, { label: string; icon: ReactNode }> = {
+const KIND_ROWS = {
   user: { label: "Account", icon: <User size={18} /> },
   channel: { label: "Channel", icon: <Channel size={18} /> },
   group: { label: "Group", icon: <Group size={18} /> },
@@ -25,7 +25,7 @@ const KIND_ROWS: Record<WatchKind, { label: string; icon: ReactNode }> = {
   board: { label: "Board", icon: <Board size={18} /> },
   cluster: { label: "Cluster", icon: <Cluster size={18} /> },
   list: { label: "List", icon: <List size={18} /> },
-};
+} satisfies Record<WatchKind, { label: string; icon: ReactNode }>;
 
 export function WatchKindSection() {
   const dock = useDock();
