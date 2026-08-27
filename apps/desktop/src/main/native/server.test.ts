@@ -2,14 +2,19 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { createConnection } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { JsonValue } from "@pond/schema/json";
+import type { NativeMessage } from "@pond/schema/native";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { encodeFrame, tryDecodeFrame } from "./frame";
 import { startNativeServer, stopNativeServer } from "./server";
 
-async function readFrame(path: string, request: unknown): Promise<unknown> {
+async function readFrame(
+  path: string,
+  request: NativeMessage,
+): Promise<JsonValue> {
   const socket = createConnection(path);
   const chunks: Buffer[] = [];
-  const done = new Promise<unknown>((resolve, reject) => {
+  const done = new Promise<JsonValue>((resolve, reject) => {
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));
@@ -72,10 +77,10 @@ describe("native unix server", () => {
   });
 });
 
-async function readFrameRaw(path: string, bytes: Buffer): Promise<unknown> {
+async function readFrameRaw(path: string, bytes: Buffer): Promise<JsonValue> {
   const socket = createConnection(path);
   const chunks: Buffer[] = [];
-  const done = new Promise<unknown>((resolve, reject) => {
+  const done = new Promise<JsonValue>((resolve, reject) => {
     socket.on("data", (chunk) => {
       chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       const decoded = tryDecodeFrame(Buffer.concat(chunks));

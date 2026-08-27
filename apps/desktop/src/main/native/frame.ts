@@ -1,6 +1,8 @@
+import type { JsonValue } from "@pond/schema/json";
+import type { NativeMessage } from "@pond/schema/native";
 export const MAX_NATIVE_MSG = 8 * 1024 * 1024;
 
-export function encodeFrame(value: unknown): Buffer {
+export function encodeFrame(value: NativeMessage): Buffer {
   const payload = Buffer.from(JSON.stringify(value), "utf8");
   const header = Buffer.alloc(4);
   header.writeUInt32LE(payload.length, 0);
@@ -9,7 +11,7 @@ export function encodeFrame(value: unknown): Buffer {
 
 export type DecodeFrame =
   | { status: "need-more" }
-  | { status: "ok"; value: unknown }
+  | { status: "ok"; value: JsonValue }
   | { status: "invalid"; error: string };
 
 /** Length-prefixed JSON: 32-bit little-endian size, then UTF-8 payload. */
