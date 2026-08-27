@@ -3,11 +3,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { app, safeStorage } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { KEYCHAIN_INGEST_TOKEN, KEYCHAIN_SERVICE } from "../shared/constants";
 
 const SECRETS_FILE = "secrets.json";
 
-type SecretMap = Record<string, string>;
+const SecretMapSchema = z.record(z.string(), z.string());
+
+type SecretMap = z.infer<typeof SecretMapSchema>;
 
 function secretsPath(): string {
   return join(app.getPath("userData"), SECRETS_FILE);
@@ -20,12 +23,13 @@ function entryKey(service: string, account: string): string {
 async function readAll(): Promise<SecretMap> {
   try {
     const buf = await readFile(secretsPath(), "utf8");
-    const parsed = JSON.parse(buf) as unknown;
-    if (parsed && typeof parsed === "object") return parsed as SecretMap;
-    return {};
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return {};
-    log.warn("[pond] failed to read secrets file, starting empty", err);
+    const parsed = SecretMapSchema.safeParse(JSON.parse(buf));
+    return parsed.success ? parsed.data : {};
+  } catch (cause) {
+    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") {
+      return {};
+    }
+    log.warn("[pond] failed to read secrets file, starting empty", cause);
     return {};
   }
 }

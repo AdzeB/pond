@@ -1,3 +1,4 @@
+import type { BrowserWindowConstructorOptions } from "electron";
 import { app, BrowserWindow, nativeTheme, shell } from "electron";
 import log from "electron-log/main.js";
 import { DEFAULT_APP_ICON } from "../shared/app-icons";
@@ -111,17 +112,16 @@ export async function createWindow(): Promise<BrowserWindow> {
   );
 
   const themedBackground =
-    typeof shellHint.background === "string" && shellHint.background.length > 0
-      ? shellHint.background
-      : shellHint.theme === "dark" ||
-          (shellHint.theme !== "light" && nativeTheme.shouldUseDarkColors)
-        ? "#000000"
-        : "#ffffff";
+    shellHint.background ||
+    (shellHint.theme === "dark" ||
+    (shellHint.theme !== "light" && nativeTheme.shouldUseDarkColors)
+      ? "#000000"
+      : "#ffffff");
 
   const { applyAppIcon, resolveAppIconPath } = await import("./core/app-icon");
   const appIcon = resolveAppIconPath(prefs?.window.appIcon ?? DEFAULT_APP_ICON);
 
-  const win = new BrowserWindow({
+  const options: BrowserWindowConstructorOptions = {
     width: restored?.width ?? 1280,
     height: restored?.height ?? 800,
     x: restored?.x,
@@ -133,7 +133,6 @@ export async function createWindow(): Promise<BrowserWindow> {
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
     trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
-    ...(!isMac && appIcon ? { icon: appIcon } : {}),
     webPreferences: {
       preload: resolvePreload("index.cjs"),
       contextIsolation: true,
@@ -143,7 +142,10 @@ export async function createWindow(): Promise<BrowserWindow> {
       webviewTag: true,
       additionalArguments: [`--pond-shell=${JSON.stringify(shellHint)}`],
     },
-  });
+  };
+  if (!isMac && appIcon) options.icon = appIcon;
+
+  const win = new BrowserWindow(options);
 
   hardenArchiveWebviews(win);
   attachEditableContextMenu(win.webContents);

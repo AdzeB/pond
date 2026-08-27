@@ -1,7 +1,8 @@
-import type { Save, SaveFile } from "@pond/schema/db";
+import type { SaveFile } from "@pond/schema/db";
 import { saves } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
+import type { RawJson } from "@pond/schema/raw";
 import type { Transaction } from "@pond/schema/tx";
 import {
   arenaBlockClassFromRawJson,
@@ -38,7 +39,7 @@ function repairTextMediaType(row: {
   source: string;
   description: string | null;
   files: SaveFile[] | null;
-  rawJson: unknown;
+  rawJson: RawJson | null;
 }): "image" | "video" | "link" | "text" {
   const kinds = (row.files ?? [])
     .map(fileMediaKind)
@@ -60,7 +61,7 @@ export async function runLibraryScopeMigration(): Promise<void> {
     .select()
     .from(saves)
     .where(sql`${saves.mediaType} = 'file'`)
-    .all() as Save[];
+    .all();
 
   if (fileRows.length > 0) {
     const txs: Transaction[] = fileRows.map((row) => ({
@@ -86,7 +87,7 @@ export async function runLibraryScopeMigration(): Promise<void> {
     .all();
 
   for (const row of mixedRows) {
-    const kinds = ((row.files as SaveFile[] | null) ?? [])
+    const kinds = (row.files ?? [])
       .map(fileMediaKind)
       .filter((k): k is "image" | "video" => k != null);
     const next = majorityMediaType(kinds) ?? "image";
@@ -113,10 +114,7 @@ export async function runLibraryScopeMigration(): Promise<void> {
 
   let repairedText = 0;
   for (const row of textRows) {
-    const next = repairTextMediaType({
-      ...row,
-      files: row.files as SaveFile[] | null,
-    });
+    const next = repairTextMediaType(row);
     if (next === "text") continue;
     db.update(saves).set({ mediaType: next }).where(eq(saves.id, row.id)).run();
     repairedText += 1;

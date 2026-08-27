@@ -1,3 +1,6 @@
+import type { RawJson } from "@pond/schema/raw";
+import { z } from "zod";
+
 export interface TextCardData {
   text: string;
 }
@@ -21,18 +24,20 @@ export function textBodyFromFields(
   return title?.trim() ?? "";
 }
 
-export function arenaBlockClassFromRawJson(rawJson: unknown): string | null {
-  if (!rawJson || typeof rawJson !== "object") return null;
-  const cls = (rawJson as { capture?: { extras?: { blockClass?: unknown } } })
-    .capture?.extras?.blockClass;
-  return typeof cls === "string" ? cls.toLowerCase() : null;
+const BlockClassSchema = z.object({ blockClass: z.string() });
+
+export function arenaBlockClassFromRawJson(
+  rawJson: RawJson | null | undefined,
+): string | null {
+  const parsed = BlockClassSchema.safeParse(rawJson?.capture?.extras);
+  return parsed.success ? parsed.data.blockClass.toLowerCase() : null;
 }
 
-export function textCoverVersionFromRawJson(rawJson: unknown): number {
-  if (!rawJson || typeof rawJson !== "object") return 0;
-  const v = (rawJson as { renderTextCoverVersion?: unknown })
-    .renderTextCoverVersion;
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+export function textCoverVersionFromRawJson(
+  rawJson: RawJson | null | undefined,
+): number {
+  const version = rawJson?.renderTextCoverVersion;
+  return version !== undefined && Number.isFinite(version) ? version : 0;
 }
 
 export function buildTextCardData(

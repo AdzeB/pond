@@ -7,7 +7,7 @@ import {
   tagGroups as tagGroupsTable,
   tags as tagsTable,
 } from "@pond/schema/db";
-import type { Transaction, TxMeta } from "@pond/schema/tx";
+import type { SyncActionPayload, Transaction, TxMeta } from "@pond/schema/tx";
 import { and, eq } from "drizzle-orm";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
@@ -30,9 +30,9 @@ interface ExecuteOptions {
 
 type TagRow = Tag;
 
-function dataForSyncAction(tx: Transaction): unknown {
-  if ("data" in tx) return tx.data as unknown;
-  if ("patch" in tx) return tx.patch as unknown;
+function dataForSyncAction(tx: Transaction): SyncActionPayload {
+  if ("data" in tx) return tx.data;
+  if ("patch" in tx) return tx.patch;
   switch (tx.kind) {
     case "trash":
       return { deletedAt: new Date() };
@@ -58,10 +58,7 @@ function toActionKind(tx: Transaction): "I" | "U" | "D" | "A" {
   }
 }
 
-function resolveActor(meta: TxMeta | undefined): {
-  actor: "user" | "system";
-  reason: string | null;
-} {
+function resolveActor(meta: TxMeta | undefined) {
   return {
     actor: meta?.actor ?? "user",
     reason: meta?.actorReason ?? null,
@@ -91,14 +88,14 @@ export async function executeTransaction(
         modelId: tx.id,
         action: toActionKind(tx),
         data: dataForSyncAction(tx),
-        prevData: "before" in tx ? (tx.before as unknown) : null,
+        prevData: "before" in tx ? tx.before : null,
         actor: resolveActor(tx.meta).actor,
         actorReason: resolveActor(tx.meta).reason,
       })
       .returning()
       .all()[0];
     if (!inserted) throw new Error("sync_actions insert returned no row");
-    return inserted as SyncAction;
+    return inserted;
   })();
 
   if (isTagModel(tx.model)) scheduleTagsDump();
@@ -134,9 +131,10 @@ export async function executeBatch(
   const db = await getDb();
   const raw = db.$raw;
 
-  const withBatch = txs.map(
-    (tx) => ({ ...tx, meta: { ...(tx.meta ?? {}), batchId } }) as Transaction,
-  );
+  const withBatch = txs.map((tx) => ({
+    ...tx,
+    meta: { ...(tx.meta ?? {}), batchId },
+  }));
 
   /** File writes happen outside the transaction; better-sqlite3 cannot await mid-transaction. */
   for (const tx of withBatch) {
@@ -155,14 +153,14 @@ export async function executeBatch(
           modelId: tx.id,
           action: toActionKind(tx),
           data: dataForSyncAction(tx),
-          prevData: "before" in tx ? (tx.before as unknown) : null,
+          prevData: "before" in tx ? tx.before : null,
           actor: resolveActor(tx.meta).actor,
           actorReason: resolveActor(tx.meta).reason,
         })
         .returning()
         .all()[0];
       if (!inserted) throw new Error("sync_actions insert returned no row");
-      out.push(inserted as SyncAction);
+      out.push(inserted);
     }
     return out;
   })();
@@ -198,10 +196,14 @@ async function applyToDisk(tx: Transaction): Promise<void> {
   if (tx.model !== "save") return;
   switch (tx.kind) {
     case "create": {
+      // SAFETY: a create carries the full row it is inserting; `NewSave` only differs by
+      // the columns the DB defaults, none of which `writeItemFiles` reads.
       await writeItemFiles(tx.id, tx.data as Save, tx.files ?? []);
       return;
     }
     case "update": {
+      // SAFETY: `Partial<NewSave>` and `Partial<Save>` differ only in the timestamp columns'
+      // nullability, and `applyItemPatch` writes them straight back out.
       const patched = await applyItemPatch(
         tx.id,
         (tx.patch ?? {}) as Partial<Save>,
@@ -223,6 +225,7 @@ async function applyToDisk(tx: Transaction): Promise<void> {
           );
           return;
         }
+        // SAFETY: `current` is a full row from the DB; the patch only narrows its columns.
         const merged = { ...current, ...(tx.patch ?? {}) } as Save;
         log.info(
           "[pond executor] healing orphan: rebuilding items dir",

@@ -141,9 +141,8 @@ export async function updateGroup(
   if (!row) return { ok: false };
   const next: Partial<NewTagGroup> = { ...patch };
   if ("description" in next) {
-    const d =
-      typeof next.description === "string" ? next.description.trim() : "";
-    next.description = d ? d : null;
+    const description = next.description?.trim() ?? "";
+    next.description = description || null;
   }
   await executeTransaction({
     kind: "update",

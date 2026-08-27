@@ -5,6 +5,7 @@ import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
 import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
+import { z } from "zod";
 
 export interface RenderedCard {
   bytes: Buffer;
@@ -106,12 +107,14 @@ async function loadCapture(
   await withTimeout(load, LOAD_TIMEOUT_MS, "capture load");
 }
 
-interface CardRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
+const CardRectSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+});
+
+type CardRect = z.infer<typeof CardRectSchema>;
 
 async function readCardRect(target: BrowserWindow): Promise<CardRect | null> {
   const expr = `(async () => {
@@ -129,16 +132,10 @@ async function readCardRect(target: BrowserWindow): Promise<CardRect | null> {
     READY_TIMEOUT_MS + 2000,
     "card rect",
   );
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Partial<CardRect>;
-  if (
-    typeof r.x !== "number" ||
-    typeof r.y !== "number" ||
-    typeof r.width !== "number" ||
-    typeof r.height !== "number" ||
-    r.width < 8 ||
-    r.height < 8
-  ) {
+  const parsed = CardRectSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  const r = parsed.data;
+  if (r.width < 8 || r.height < 8) {
     return null;
   }
   return { x: r.x, y: r.y, width: r.width, height: r.height };

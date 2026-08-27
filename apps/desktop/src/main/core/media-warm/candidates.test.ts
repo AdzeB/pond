@@ -1,4 +1,4 @@
-import type { Save, Source } from "@pond/schema/db";
+import type { Save } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import { mediaWarmCandidates } from "./candidates";
 
@@ -17,7 +17,7 @@ function fixture(
     id: "save-1",
     title: "Example",
     status: "complete",
-    source: "tiktok" as Source,
+    source: "tiktok",
     files: [],
     blurhash: null,
     coverIndex: 0,

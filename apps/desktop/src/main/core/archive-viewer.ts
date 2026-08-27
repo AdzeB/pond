@@ -58,7 +58,7 @@ export function hardenArchiveWebviews(win: BrowserWindow): void {
     webPreferences.nodeIntegration = false;
     webPreferences.contextIsolation = true;
     webPreferences.sandbox = true;
-    if (typeof params.src === "string" && !params.src.startsWith("pond://")) {
+    if (params.src && !params.src.startsWith("pond://")) {
       log.warn("[pond archive] blocked webview attach", params.src);
       event.preventDefault();
     }

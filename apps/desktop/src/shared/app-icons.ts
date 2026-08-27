@@ -25,25 +25,27 @@ const APP_ICON_ORDER = [
   "blue",
 ] as const;
 
-const APP_ICON_TINT: Record<string, string> = {
-  aqua: "#59a6fc",
-  maraschino: "#f46950",
-  tangerine: "#f7ab51",
-  blueberry: "#435dfc",
-  grape: "#9952fb",
-  strawberry: "#f35ca2",
-  mocha: "#aa7f4d",
-  asparagus: "#adab56",
-  fern: "#83aa54",
-  clover: "#69ac57",
-  moss: "#65a97e",
-  teal: "#62a9ab",
-  plum: "#a558aa",
-  blue: "#59a6fc",
-};
+const APP_ICON_TINT = new Map<string, string>(
+  Object.entries({
+    aqua: "#59a6fc",
+    maraschino: "#f46950",
+    tangerine: "#f7ab51",
+    blueberry: "#435dfc",
+    grape: "#9952fb",
+    strawberry: "#f35ca2",
+    mocha: "#aa7f4d",
+    asparagus: "#adab56",
+    fern: "#83aa54",
+    clover: "#69ac57",
+    moss: "#65a97e",
+    teal: "#62a9ab",
+    plum: "#a558aa",
+    blue: "#59a6fc",
+  }),
+);
 
 export function appIconTint(id: string): string | undefined {
-  return APP_ICON_TINT[id];
+  return APP_ICON_TINT.get(id);
 }
 
 export function appIconLabel(id: string): string {
@@ -54,13 +56,12 @@ export function appIconLabel(id: string): string {
 }
 
 export function resolveAppIconId(
-  raw: unknown,
+  raw: string | null | undefined,
   available: ReadonlySet<string>,
 ): string {
-  if (typeof raw === "string" && available.has(raw)) return raw;
+  if (raw && available.has(raw)) return raw;
   if (available.has(DEFAULT_APP_ICON)) return DEFAULT_APP_ICON;
-  const first = available.values().next().value;
-  return typeof first === "string" ? first : DEFAULT_APP_ICON;
+  return available.values().next().value ?? DEFAULT_APP_ICON;
 }
 
 export function sortAppIconIds(ids: Iterable<string>): string[] {

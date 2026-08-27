@@ -7,6 +7,7 @@ import {
   drizzle,
 } from "drizzle-orm/better-sqlite3";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { readOrCreatePondId } from "./lib/pond-identity";
 import { backfillRawSlim } from "./lib/raw-slim";
 import { resolvePaths } from "./paths";
@@ -33,9 +34,12 @@ function openSqlite(file: string): Database.Database {
   return sqlite;
 }
 
+const TableInfoSchema = z.array(z.object({ name: z.string() }));
+const CountRowSchema = z.object({ n: z.number() });
+
 function wrap(sqlite: Database.Database): Db {
   const drizzled = drizzle(sqlite, { schema: combinedSchema });
-  return Object.assign(drizzled, { $raw: sqlite }) as Db;
+  return Object.assign(drizzled, { $raw: sqlite });
 }
 
 export async function getGlobalDb(): Promise<Db> {
@@ -317,10 +321,8 @@ const SAVES_FTS_COLUMNS = [
 ] as const;
 
 function ensureSavesFts(sqlite: Database.Database): void {
-  const existing = (
-    sqlite.prepare("PRAGMA table_info(saves_fts)").all() as Array<{
-      name: string;
-    }>
+  const existing = TableInfoSchema.parse(
+    sqlite.prepare("PRAGMA table_info(saves_fts)").all(),
   ).map((c) => c.name);
   const hasAll = SAVES_FTS_COLUMNS.every((c) => existing.includes(c));
   if (existing.length > 0 && !hasAll) {
@@ -375,9 +377,9 @@ function ensureSavesFts(sqlite: Database.Database): void {
 				END;
 			`);
 
-  const count = sqlite.prepare("SELECT COUNT(*) AS n FROM saves_fts").get() as {
-    n: number;
-  };
+  const count = CountRowSchema.parse(
+    sqlite.prepare("SELECT COUNT(*) AS n FROM saves_fts").get(),
+  );
   if (count.n === 0) {
     sqlite.exec(`
 					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
@@ -396,9 +398,9 @@ function addColumnIfMissing(
   column: string,
   type: string,
 ): void {
-  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
-    name: string;
-  }>;
+  const cols = TableInfoSchema.parse(
+    sqlite.prepare(`PRAGMA table_info(${table})`).all(),
+  );
   if (cols.some((c) => c.name === column)) return;
   sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
 }
@@ -408,9 +410,9 @@ function dropColumnIfPresent(
   table: string,
   column: string,
 ): void {
-  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as Array<{
-    name: string;
-  }>;
+  const cols = TableInfoSchema.parse(
+    sqlite.prepare(`PRAGMA table_info(${table})`).all(),
+  );
   if (!cols.some((c) => c.name === column)) return;
   sqlite.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`);
 }

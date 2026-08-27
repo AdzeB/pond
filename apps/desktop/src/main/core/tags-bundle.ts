@@ -1,12 +1,12 @@
 import {
   type Tag,
   type TagGroup,
-  type TagGroupMember,
   tagGroupMembers as tagGroupMembersTable,
   tagGroups as tagGroupsTable,
   tags as tagsTable,
 } from "@pond/schema/db";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { getDb } from "../db";
 import {
   createDebouncedTask,
@@ -54,6 +54,70 @@ interface TagsBundle {
   members: WireTagGroupMember[];
 }
 
+/** Timestamps have been written as epoch millis and as ISO strings; both still land in the file. */
+const StoredInstantSchema = z
+  .union([
+    z
+      .number()
+      .refine(Number.isFinite)
+      .transform((ms) => new Date(ms)),
+    z
+      .string()
+      .transform((text) => Date.parse(text))
+      .refine(Number.isFinite)
+      .transform((ms) => new Date(ms)),
+  ])
+  .nullable()
+  .catch(null);
+
+const StoredTagSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullish().catch(null),
+  starred: z.boolean().optional().catch(undefined),
+  archived: z.boolean().optional().catch(undefined),
+  lastUsedAt: StoredInstantSchema,
+  usageCount: z.number().optional().catch(undefined),
+  createdAt: StoredInstantSchema,
+});
+
+const StoredTagGroupSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullish().catch(null),
+  color: z.string().nullish().catch(null),
+  sortOrder: z.number().optional().catch(undefined),
+  collapsed: z.boolean().optional().catch(undefined),
+  createdAt: StoredInstantSchema,
+});
+
+const StoredTagGroupMemberSchema = z.object({
+  tagId: z.string(),
+  groupId: z.string(),
+  sortOrder: z.number().catch(0),
+});
+
+function storedList<T>(schema: z.ZodType<T>) {
+  return z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => schema.safeParse(item).data ?? []),
+    )
+    .optional()
+    .catch(undefined);
+}
+
+const StoredTagsBundleSchema = z
+  .object({
+    tags: storedList(StoredTagSchema),
+    groups: storedList(StoredTagGroupSchema),
+    members: storedList(StoredTagGroupMemberSchema),
+  })
+  .catch({});
+
+type StoredTag = z.infer<typeof StoredTagSchema>;
+type StoredTagGroup = z.infer<typeof StoredTagGroupSchema>;
+
 async function dumpTagsToBundle(): Promise<void> {
   const db = await getDb();
   const [tagRows, groupRows, memberRows] = await Promise.all([
@@ -90,7 +154,8 @@ export async function hydrateTagsFromBundle(): Promise<void> {
     .from(tagGroupsTable);
   const indexHasRows = existingTags.length > 0 || existingGroups.length > 0;
 
-  if (!read || !Array.isArray(read.data?.tags)) {
+  const bundle = StoredTagsBundleSchema.parse(read?.data);
+  if (!read || !bundle.tags) {
     if (indexHasRows) {
       await dumpTagsToBundle();
       log.info("[pond tags-bundle] seeded tags.json from index");
@@ -98,11 +163,9 @@ export async function hydrateTagsFromBundle(): Promise<void> {
     return;
   }
 
-  const {
-    tags: wireTags,
-    groups: wireGroups,
-    members: wireMembers,
-  } = normalizeBundle(read.data);
+  const wireTags = bundle.tags;
+  const wireGroups = bundle.groups ?? [];
+  const wireMembers = bundle.members ?? [];
 
   const knownTagIds = new Set(existingTags.map((t) => t.id));
   const knownGroupIds = new Set(existingGroups.map((g) => g.id));
@@ -169,61 +232,27 @@ function groupToWire(group: TagGroup): WireTagGroup {
   };
 }
 
-function tagFromWire(tag: WireTag): Tag {
+function tagFromWire(tag: StoredTag): Tag {
   return {
     id: tag.id,
     name: tag.name,
     description: tag.description ?? null,
     starred: tag.starred === true,
     archived: tag.archived === true,
-    lastUsedAt: toDate(tag.lastUsedAt),
-    usageCount: typeof tag.usageCount === "number" ? tag.usageCount : 0,
-    createdAt: toDate(tag.createdAt) ?? new Date(),
+    lastUsedAt: tag.lastUsedAt,
+    usageCount: tag.usageCount ?? 0,
+    createdAt: tag.createdAt ?? new Date(),
   };
 }
 
-function groupFromWire(group: WireTagGroup): TagGroup {
+function groupFromWire(group: StoredTagGroup): TagGroup {
   return {
     id: group.id,
     name: group.name,
     description: group.description ?? null,
     color: group.color ?? null,
-    sortOrder: typeof group.sortOrder === "number" ? group.sortOrder : 0,
+    sortOrder: group.sortOrder ?? 0,
     collapsed: group.collapsed === true,
-    createdAt: toDate(group.createdAt) ?? new Date(),
+    createdAt: group.createdAt ?? new Date(),
   };
-}
-
-function toDate(value: unknown): Date | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return new Date(value);
-  }
-  if (typeof value === "string") {
-    const ms = Date.parse(value);
-    if (Number.isFinite(ms)) return new Date(ms);
-  }
-  return null;
-}
-
-function normalizeBundle(data: TagsBundle): {
-  tags: WireTag[];
-  groups: WireTagGroup[];
-  members: TagGroupMember[];
-} {
-  const tags = (Array.isArray(data.tags) ? data.tags : []).filter(
-    (t) => typeof t?.id === "string" && typeof t?.name === "string",
-  );
-  const groups = (Array.isArray(data.groups) ? data.groups : []).filter(
-    (g) => typeof g?.id === "string" && typeof g?.name === "string",
-  );
-  const members = (Array.isArray(data.members) ? data.members : [])
-    .filter(
-      (m) => typeof m?.tagId === "string" && typeof m?.groupId === "string",
-    )
-    .map((m) => ({
-      tagId: m.tagId,
-      groupId: m.groupId,
-      sortOrder: typeof m.sortOrder === "number" ? m.sortOrder : 0,
-    }));
-  return { tags, groups, members };
 }

@@ -1,3 +1,4 @@
+import type { DeepPartial } from "@pond/schema/db";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_PREFS,
@@ -10,6 +11,7 @@ import {
 } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { getGlobalDb } from "../db";
 import { createMemoCache } from "../lib/memo-cache";
 import {
@@ -22,6 +24,7 @@ import {
   type PondPrefs,
   readBundlePondPrefs,
   type StoredPrefs,
+  type StoredPrefsInput,
   splitPrefsPatch,
   writeBundlePondPrefs,
 } from "./prefs-scope";
@@ -67,7 +70,7 @@ async function fetchSettings(): Promise<SettingsCache> {
 async function resolvePondSlice(
   stored: StoredPrefs,
   pondId: string,
-): Promise<Partial<PondPrefs>> {
+): Promise<DeepPartial<PondPrefs>> {
   if (isUnboundPondId(pondId)) return stored.pending ?? {};
 
   const bundle = readBundlePondPrefs();
@@ -108,7 +111,7 @@ async function loadSettings(): Promise<SettingsCache> {
   }
 }
 
-function isSameStored(raw: unknown, stored: StoredPrefs): boolean {
+function isSameStored(raw: StoredPrefsInput, stored: StoredPrefs): boolean {
   try {
     return JSON.stringify(raw) === JSON.stringify(stored);
   } catch {
@@ -122,11 +125,11 @@ async function persistStoredPrefs(stored: StoredPrefs): Promise<void> {
     .insert(settingsTable)
     .values({
       id: "singleton",
-      prefs: stored as unknown as Prefs,
+      prefs: stored,
     })
     .onConflictDoUpdate({
       target: settingsTable.id,
-      set: { prefs: stored as unknown as Prefs, updatedAt: new Date() },
+      set: { prefs: stored, updatedAt: new Date() },
     })
     .run();
 }
@@ -182,7 +185,7 @@ export async function setPrefs(patch: DeepPartial<Prefs>): Promise<Prefs> {
   return merged;
 }
 
-async function readRawStoredPrefs(): Promise<unknown> {
+async function readRawStoredPrefs(): Promise<StoredPrefsInput> {
   const db = await getGlobalDb();
   const rows = await db
     .select({ prefs: settingsTable.prefs })
@@ -247,17 +250,31 @@ const VIDEO_CONTAINERS = ["auto", "mp4", "mkv", "webm", "mov"] as const;
 const SUBTITLE_MODES = ["off", "download", "embed"] as const;
 const IMAGE_FORMATS = ["original", "jpeg", "png", "webp", "avif"] as const;
 
-function oneOf<T extends string>(
-  value: unknown,
-  allowed: readonly T[],
-  fallback: T,
-): T {
-  return allowed.includes(value as T) ? (value as T) : fallback;
-}
+const StoredVideoSettingsSchema = z.object({
+  enabled: z.boolean().optional().catch(undefined),
+  maxHeight: z.number().nullish().catch(undefined),
+  maxFps: z.number().nullish().catch(undefined),
+  videoCodec: z.enum(VIDEO_CODECS).optional().catch(undefined),
+  audioCodec: z.enum(AUDIO_CODECS).optional().catch(undefined),
+  container: z.enum(VIDEO_CONTAINERS).optional().catch(undefined),
+  maxFileSizeMb: z.number().nullish().catch(undefined),
+  subtitles: z.enum(SUBTITLE_MODES).optional().catch(undefined),
+  subtitleLang: z.string().trim().min(1).optional().catch(undefined),
+  embedMetadata: z.boolean().optional().catch(undefined),
+  embedThumbnail: z.boolean().optional().catch(undefined),
+  embedChapters: z.boolean().optional().catch(undefined),
+  sponsorblockRemove: z.boolean().optional().catch(undefined),
+});
 
-function bool(value: unknown, fallback: boolean): boolean {
-  return typeof value === "boolean" ? value : fallback;
-}
+const StoredImageSettingsSchema = z.object({
+  maxLongEdge: z.number().nullish().catch(undefined),
+  format: z.enum(IMAGE_FORMATS).optional().catch(undefined),
+  quality: z.number().optional().catch(undefined),
+  lossless: z.boolean().optional().catch(undefined),
+  progressive: z.boolean().optional().catch(undefined),
+  preserveMetadata: z.boolean().optional().catch(undefined),
+  maxFileSizeMb: z.number().nullish().catch(undefined),
+});
 
 function snapToSet(
   value: number | null | undefined,
@@ -280,33 +297,39 @@ function snapToSet(
   return best;
 }
 
-function normalizeVideo(value: VideoDownloadSettings): VideoDownloadSettings {
+function normalizeVideo(
+  input: z.input<typeof StoredVideoSettingsSchema>,
+): VideoDownloadSettings {
+  const stored = StoredVideoSettingsSchema.catch({}).parse(input);
   return {
-    enabled: bool(value.enabled, true),
-    maxHeight: snapToSet(value.maxHeight, ALLOWED_HEIGHTS, 1080),
-    maxFps: snapToSet(value.maxFps, ALLOWED_FPS, 60),
-    videoCodec: oneOf(value.videoCodec, VIDEO_CODECS, "h264"),
-    audioCodec: oneOf(value.audioCodec, AUDIO_CODECS, "aac"),
-    container: oneOf(value.container, VIDEO_CONTAINERS, "auto"),
-    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 10_000),
-    subtitles: oneOf(value.subtitles, SUBTITLE_MODES, "off"),
-    subtitleLang: sanitizeLang(value.subtitleLang),
-    embedMetadata: bool(value.embedMetadata, true),
-    embedThumbnail: bool(value.embedThumbnail, false),
-    embedChapters: bool(value.embedChapters, false),
-    sponsorblockRemove: bool(value.sponsorblockRemove, false),
+    enabled: stored.enabled ?? true,
+    maxHeight: snapToSet(stored.maxHeight, ALLOWED_HEIGHTS, 1080),
+    maxFps: snapToSet(stored.maxFps, ALLOWED_FPS, 60),
+    videoCodec: stored.videoCodec ?? "h264",
+    audioCodec: stored.audioCodec ?? "aac",
+    container: stored.container ?? "auto",
+    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 10_000),
+    subtitles: stored.subtitles ?? "off",
+    subtitleLang: stored.subtitleLang ?? "en",
+    embedMetadata: stored.embedMetadata ?? true,
+    embedThumbnail: stored.embedThumbnail ?? false,
+    embedChapters: stored.embedChapters ?? false,
+    sponsorblockRemove: stored.sponsorblockRemove ?? false,
   };
 }
 
-function normalizeImage(value: ImageDownloadSettings): ImageDownloadSettings {
+function normalizeImage(
+  input: z.input<typeof StoredImageSettingsSchema>,
+): ImageDownloadSettings {
+  const stored = StoredImageSettingsSchema.catch({}).parse(input);
   return {
-    maxLongEdge: snapToSet(value.maxLongEdge, ALLOWED_LONG_EDGES, 2048),
-    format: oneOf(value.format, IMAGE_FORMATS, "original"),
-    quality: clampQuality(value.quality),
-    lossless: bool(value.lossless, false),
-    progressive: bool(value.progressive, false),
-    preserveMetadata: bool(value.preserveMetadata, false),
-    maxFileSizeMb: clampFilesize(value.maxFileSizeMb, 1_000),
+    maxLongEdge: snapToSet(stored.maxLongEdge, ALLOWED_LONG_EDGES, 2048),
+    format: stored.format ?? "original",
+    quality: clampQuality(stored.quality),
+    lossless: stored.lossless ?? false,
+    progressive: stored.progressive ?? false,
+    preserveMetadata: stored.preserveMetadata ?? false,
+    maxFileSizeMb: clampFilesize(stored.maxFileSizeMb, 1_000),
   };
 }
 
@@ -314,12 +337,6 @@ function clampQuality(q: number | null | undefined): number {
   const n = Math.floor(Number(q));
   if (!Number.isFinite(n)) return 80;
   return Math.min(100, Math.max(1, n));
-}
-
-function sanitizeLang(value: unknown): string {
-  if (typeof value !== "string") return "en";
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : "en";
 }
 
 function clampFilesize(
@@ -331,9 +348,5 @@ function clampFilesize(
   if (!Number.isFinite(n) || n <= 0) return null;
   return Math.min(n, ceiling);
 }
-
-type DeepPartial<T> = T extends object
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : T;
 
 void PrefsSchema;

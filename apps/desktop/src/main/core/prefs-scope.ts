@@ -1,5 +1,14 @@
 import { existsSync } from "node:fs";
-import { DEFAULT_PREFS, type Prefs, PrefsSchema } from "@pond/schema/db";
+import {
+  DEFAULT_PREFS,
+  type DeepPartial,
+  type Prefs,
+  type PrefsPatchDeep,
+  PrefsSchema,
+  type StoredPrefsEnvelope,
+  type StoredPrefsEnvelopeV2,
+} from "@pond/schema/db";
+import { z } from "zod";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { resolvePondId, UNBOUND_POND_ID } from "../lib/pond-identity";
 import { resolvePaths } from "../paths";
@@ -24,16 +33,19 @@ export type AppPrefs = Pick<Prefs, AppPrefKey>;
 
 export interface StoredPrefs {
   version: 3;
-  app: Partial<AppPrefs>;
-  pending: Partial<PondPrefs> | null;
+  app: DeepPartial<AppPrefs>;
+  pending: DeepPartial<PondPrefs> | null;
 }
 
-const APP_PREF_KEYS = Object.keys(DEFAULT_PREFS).filter(
-  (key) => !POND_PREF_KEYS.includes(key as PondPrefKey),
-) as AppPrefKey[];
+const APP_PREF_KEYS = [
+  "window",
+  "quickCapture",
+  "api",
+  "updates",
+] as const satisfies readonly AppPrefKey[];
 
-const DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
-const DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
+const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
+const _DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
 
 export function currentPondId(): string {
   const paths = resolvePaths();
@@ -45,140 +57,159 @@ export function isUnboundPondId(pondId: string): boolean {
   return pondId === UNBOUND_POND_ID;
 }
 
-function isStoredPrefs(stored: unknown): stored is StoredPrefs {
-  return (
-    typeof stored === "object" &&
-    stored !== null &&
-    (stored as StoredPrefs).version === 3 &&
-    typeof (stored as StoredPrefs).app === "object"
-  );
+const StoredSliceSchema = z.custom<PrefsPatchDeep>(
+  (value) => value instanceof Object && !Array.isArray(value),
+);
+
+/** Whatever the settings row or the bundle file held; every branch below re-validates it. */
+export type StoredPrefsInput =
+  | StoredPrefsEnvelope
+  | StoredPrefsEnvelopeV2
+  | PrefsPatchDeep
+  | string
+  | number
+  | boolean
+  | null
+  | undefined;
+
+const StoredPrefsV3Schema = z.object({
+  version: z.literal(3),
+  app: StoredSliceSchema,
+  pending: StoredSliceSchema.nullish(),
+});
+
+const StoredPrefsV2Schema = z.object({
+  version: z.literal(2),
+  app: StoredSliceSchema.optional(),
+  ponds: z.record(z.string(), StoredSliceSchema).optional(),
+});
+
+function storedSlice(value: PrefsPatchDeep | null | undefined): PrefsPatchDeep {
+  return value ?? {};
 }
 
-export function normalizeStoredPrefs(stored: unknown): StoredPrefs {
+function isStoredPrefs(
+  stored: StoredPrefsInput,
+): stored is StoredPrefsInput & StoredPrefs {
+  return StoredPrefsV3Schema.safeParse(stored).success;
+}
+
+export function normalizeStoredPrefs(stored: StoredPrefsInput): StoredPrefs {
   if (isStoredPrefs(stored)) return stored;
 
-  if (
-    typeof stored === "object" &&
-    stored !== null &&
-    (stored as { version?: unknown }).version === 2
-  ) {
-    const v2 = stored as {
-      app?: Partial<AppPrefs>;
-      ponds?: Record<string, Partial<PondPrefs>>;
-    };
+  const v2 = StoredPrefsV2Schema.safeParse(stored);
+  if (v2.success) {
     return {
       version: 3,
-      app: v2.app ?? {},
-      pending: v2.ponds?.[UNBOUND_POND_ID] ?? null,
+      app: storedSlice(v2.data.app),
+      pending: storedSlice(v2.data.ponds?.[UNBOUND_POND_ID]) ?? null,
     };
   }
 
-  if (typeof stored === "object" && stored !== null) {
-    const parsed = PrefsSchema.safeParse(stored);
-    if (parsed.success) {
-      const flat = parsed.data as Prefs;
-      return {
-        version: 3,
-        app: pickPrefs(flat, APP_PREF_KEYS),
-        pending: pickPrefs(flat, POND_PREF_KEYS),
-      };
-    }
+  const flat = PrefsSchema.safeParse(stored);
+  if (flat.success && StoredSliceSchema.safeParse(stored).success) {
+    return {
+      version: 3,
+      app: pickPrefs(flat.data, APP_PREF_KEYS),
+      pending: pickPrefs(flat.data, POND_PREF_KEYS),
+    };
   }
+
   return { version: 3, app: {}, pending: null };
 }
 
+function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
+  return PrefsSchema.parse({
+    preferences: { ...base.preferences, ...patch.preferences },
+    trash: { ...base.trash, ...patch.trash },
+    window: { ...base.window, ...patch.window },
+    quickCapture: { ...base.quickCapture, ...patch.quickCapture },
+    tagPicker: { ...base.tagPicker, ...patch.tagPicker },
+    allTags: { ...base.allTags, ...patch.allTags },
+    sourcesView: { ...base.sourcesView, ...patch.sourcesView },
+    api: { ...base.api, ...patch.api },
+    updates: { ...base.updates, ...patch.updates },
+    sync: { ...base.sync, ...patch.sync },
+    storage: { ...base.storage, ...patch.storage },
+    ai: { ...base.ai, ...patch.ai },
+    saveRecents: { ...base.saveRecents, ...patch.saveRecents },
+  });
+}
+
 export function mergePrefs(
-  app: Partial<AppPrefs>,
-  pond: Partial<PondPrefs>,
+  app: DeepPartial<AppPrefs>,
+  pond: DeepPartial<PondPrefs>,
 ): Prefs {
-  return {
-    ...(mergeSlice(DEFAULT_APP_PREFS, app) as AppPrefs),
-    ...(mergeSlice(DEFAULT_POND_PREFS, pond) as PondPrefs),
-  };
+  return mergeAll(mergeAll(DEFAULT_PREFS, app), pond);
 }
 
 export function mergePondSlice(
-  base: Partial<PondPrefs>,
+  base: DeepPartial<PondPrefs>,
   patch: DeepPartial<PondPrefs> = {},
 ): PondPrefs {
-  const full = mergeSlice(DEFAULT_POND_PREFS, base) as PondPrefs;
-  return mergeSlice(full, patch) as PondPrefs;
+  return pickPrefs(
+    mergeAll(mergeAll(DEFAULT_PREFS, base), patch),
+    POND_PREF_KEYS,
+  );
 }
 
 export function mergeAppSlice(
-  base: Partial<AppPrefs>,
+  base: DeepPartial<AppPrefs>,
   patch: DeepPartial<AppPrefs> = {},
 ): AppPrefs {
-  const full = mergeSlice(DEFAULT_APP_PREFS, base) as AppPrefs;
-  return mergeSlice(full, patch) as AppPrefs;
+  return pickPrefs(
+    mergeAll(mergeAll(DEFAULT_PREFS, base), patch),
+    APP_PREF_KEYS,
+  );
 }
 
-export function readBundlePondPrefs(): Partial<PondPrefs> | null {
+export function readBundlePondPrefs(): DeepPartial<PondPrefs> | null {
   const paths = resolvePaths();
   if (!existsSync(paths.settingsFile)) return null;
   const read = readBundleJson<Partial<PondPrefs>>(
     paths.settingsFile,
     paths.backupDir,
   );
-  if (!read || typeof read.data !== "object" || read.data === null) {
-    return null;
-  }
-  return read.data;
+  const slice = StoredSliceSchema.safeParse(read?.data);
+  return slice.success ? storedSlice(slice.data) : null;
 }
 
-export function writeBundlePondPrefs(slice: Partial<PondPrefs>): void {
+export function writeBundlePondPrefs(slice: DeepPartial<PondPrefs>): void {
   writeBundleJson(resolvePaths().settingsFile, slice);
 }
 
-export function splitPrefsPatch(patch: DeepPartial<Prefs>): {
+export interface SplitPrefsPatch {
   app: DeepPartial<AppPrefs>;
   pond: DeepPartial<PondPrefs>;
-} {
-  const app: Record<string, unknown> = {};
-  const pond: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(patch)) {
-    if (value === undefined) continue;
-    if (POND_PREF_KEYS.includes(key as PondPrefKey)) {
-      pond[key] = value;
-    } else {
-      app[key] = value;
-    }
-  }
-  return {
-    app: app as DeepPartial<AppPrefs>,
-    pond: pond as DeepPartial<PondPrefs>,
-  };
 }
 
-type DeepPartial<T> = T extends object
-  ? { [K in keyof T]?: DeepPartial<T[K]> }
-  : T;
+export function splitPrefsPatch(patch: DeepPartial<Prefs>): SplitPrefsPatch {
+  const pond: DeepPartial<PondPrefs> = {};
+  const app: DeepPartial<AppPrefs> = {};
+  for (const key of POND_PREF_KEYS) {
+    if (patch[key] !== undefined) assignSlice(pond, key, patch[key]);
+  }
+  for (const key of APP_PREF_KEYS) {
+    if (patch[key] !== undefined) assignSlice(app, key, patch[key]);
+  }
+  return { app, pond };
+}
+
+function assignSlice<T extends object, K extends keyof Prefs>(
+  target: T,
+  key: K,
+  value: DeepPartial<Prefs>[K],
+): void {
+  // SAFETY: `key` indexes both objects with the same `Prefs` key, so the value type matches.
+  (target as Record<K, DeepPartial<Prefs>[K]>)[key] = value;
+}
 
 function pickPrefs<K extends keyof Prefs>(
   prefs: Prefs,
   keys: readonly K[],
 ): Pick<Prefs, K> {
+  // SAFETY: filled from `keys` on the line below, which is exactly the picked key set.
   const out = {} as Pick<Prefs, K>;
   for (const key of keys) out[key] = prefs[key];
   return out;
-}
-
-function mergeSlice<T extends object>(
-  base: T,
-  patch: DeepPartial<T> | Partial<T> | undefined,
-): T {
-  if (!patch || typeof patch !== "object") return base;
-  const baseRec = base as Record<string, unknown>;
-  const patchRec = patch as Record<string, unknown>;
-  const out: Record<string, unknown> = { ...baseRec };
-  for (const key of Object.keys(baseRec)) {
-    const baseVal = baseRec[key];
-    const patchVal = patchRec[key];
-    if (patchVal && typeof patchVal === "object" && !Array.isArray(patchVal)) {
-      out[key] = { ...(baseVal as object), ...(patchVal as object) };
-    } else if (patchVal !== undefined) {
-      out[key] = patchVal;
-    }
-  }
-  return out as T;
 }

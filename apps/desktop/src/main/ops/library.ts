@@ -4,7 +4,14 @@ import { getDb } from "../db";
 import { libraryRoot } from "../paths";
 import { resolveTheme } from "../theme";
 
-export async function libraryInfo() {
+export interface LibraryInfo {
+  path: string;
+  name: string;
+  counts: { active: number };
+  theme: Awaited<ReturnType<typeof resolveTheme>>;
+}
+
+export async function libraryInfo(): Promise<LibraryInfo> {
   const db = await getDb();
   const [total] = await db
     .select({ n: count() })

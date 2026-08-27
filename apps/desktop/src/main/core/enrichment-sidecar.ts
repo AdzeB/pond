@@ -1,12 +1,8 @@
 import { existsSync } from "node:fs";
-import {
-  type NewSave,
-  type Save,
-  saves as savesTable,
-  type VideoNote,
-} from "@pond/schema/db";
+import { type NewSave, type Save, saves as savesTable } from "@pond/schema/db";
 import { eq, isNotNull, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { getDb } from "../db";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
 import { itemFile } from "../paths";
@@ -42,24 +38,28 @@ function sidecarPath(id: string): string {
   return itemFile(id, SIDECAR_FILE);
 }
 
-function hasValue(value: unknown): boolean {
-  if (value == null) return false;
-  if (Array.isArray(value)) return value.length > 0;
-  if (typeof value === "string") return value.length > 0;
-  return true;
-}
-
 export function writeEnrichmentSidecar(save: Save): void {
-  const data: Record<string, unknown> = {};
-  let any = false;
-  for (const key of ENRICHMENT_KEYS) {
-    const value = save[key];
-    if (!hasValue(value)) continue;
-    data[key] = value;
-    any = true;
+  const data: EnrichmentFields = {};
+  if (save.phash) data.phash = save.phash;
+  if (save.blurhash) data.blurhash = save.blurhash;
+  if (save.caption) data.caption = save.caption;
+  if (save.captionModel) data.captionModel = save.captionModel;
+  if (save.ocrText) data.ocrText = save.ocrText;
+  if (save.ocrModel) data.ocrModel = save.ocrModel;
+  if (save.transcript) data.transcript = save.transcript;
+  if (save.transcriptModel) data.transcriptModel = save.transcriptModel;
+  if (save.aesthetic?.length) data.aesthetic = save.aesthetic;
+  if (save.aestheticModel) data.aestheticModel = save.aestheticModel;
+  if (save.autoTitleModel) data.autoTitleModel = save.autoTitleModel;
+  if (save.suggestedTags?.length) data.suggestedTags = save.suggestedTags;
+  if (save.suggestedTagsModel) {
+    data.suggestedTagsModel = save.suggestedTagsModel;
   }
+  if (save.videoNotes?.length) data.videoNotes = save.videoNotes;
+  if (save.dominantColors?.length) data.dominantColors = save.dominantColors;
+
   const file = sidecarPath(save.id);
-  if (!any && !existsSync(file)) return;
+  if (Object.keys(data).length === 0 && !existsSync(file)) return;
   try {
     writeBundleJson(file, data);
   } catch (err) {
@@ -67,66 +67,75 @@ export function writeEnrichmentSidecar(save: Save): void {
   }
 }
 
+const text = z.string().min(1).optional().catch(undefined);
+
+const textList = z
+  .array(z.unknown())
+  .transform((items) =>
+    items.flatMap((item) => z.string().safeParse(item).data ?? []),
+  )
+  .optional()
+  .catch(undefined);
+
+const VideoNoteSchema = z.object({
+  id: z.string(),
+  timeSec: z.number(),
+  text: z.string(),
+});
+
+const EnrichmentSidecarSchema = z.object({
+  phash: text,
+  blurhash: text,
+  caption: text,
+  captionModel: text,
+  ocrText: text,
+  ocrModel: text,
+  transcript: text,
+  transcriptModel: text,
+  aesthetic: textList,
+  aestheticModel: text,
+  autoTitleModel: text,
+  suggestedTags: textList,
+  suggestedTagsModel: text,
+  dominantColors: textList,
+  videoNotes: z
+    .array(z.unknown())
+    .transform((items) =>
+      items.flatMap((item) => VideoNoteSchema.safeParse(item).data ?? []),
+    )
+    .optional()
+    .catch(undefined),
+});
+
 export function readEnrichmentSidecar(id: string): EnrichmentFields | null {
   const file = sidecarPath(id);
   if (!existsSync(file)) return null;
-  const read = readBundleJson<Record<string, unknown>>(file);
-  if (!read || typeof read.data !== "object" || read.data === null) return null;
+  const read = readBundleJson<EnrichmentFields>(file);
+  const parsed = EnrichmentSidecarSchema.safeParse(read?.data);
+  if (!parsed.success) return null;
 
-  const out: Record<string, unknown> = {};
-  const raw = read.data;
-  copyString(raw, out, "phash");
-  copyString(raw, out, "blurhash");
-  copyString(raw, out, "caption");
-  copyString(raw, out, "captionModel");
-  copyString(raw, out, "ocrText");
-  copyString(raw, out, "ocrModel");
-  copyString(raw, out, "transcript");
-  copyString(raw, out, "transcriptModel");
-  copyStringArray(raw, out, "aesthetic");
-  copyString(raw, out, "aestheticModel");
-  copyString(raw, out, "autoTitleModel");
-  copyStringArray(raw, out, "suggestedTags");
-  copyString(raw, out, "suggestedTagsModel");
-  copyVideoNotes(raw, out);
-  copyStringArray(raw, out, "dominantColors");
-  return Object.keys(out).length > 0 ? (out as EnrichmentFields) : null;
-}
-
-function copyString(
-  raw: Record<string, unknown>,
-  out: Record<string, unknown>,
-  key: string,
-): void {
-  if (typeof raw[key] === "string" && raw[key].length > 0) out[key] = raw[key];
-}
-
-function copyStringArray(
-  raw: Record<string, unknown>,
-  out: Record<string, unknown>,
-  key: string,
-): void {
-  const value = raw[key];
-  if (!Array.isArray(value)) return;
-  const items = value.filter((v): v is string => typeof v === "string");
-  if (items.length > 0) out[key] = items;
-}
-
-function copyVideoNotes(
-  raw: Record<string, unknown>,
-  out: Record<string, unknown>,
-): void {
-  const value = raw.videoNotes;
-  if (!Array.isArray(value)) return;
-  const notes = value.filter(
-    (n): n is VideoNote =>
-      n != null &&
-      typeof n === "object" &&
-      typeof (n as VideoNote).id === "string" &&
-      typeof (n as VideoNote).timeSec === "number" &&
-      typeof (n as VideoNote).text === "string",
-  );
-  if (notes.length > 0) out.videoNotes = notes;
+  const stored = parsed.data;
+  const out: EnrichmentFields = {};
+  if (stored.phash) out.phash = stored.phash;
+  if (stored.blurhash) out.blurhash = stored.blurhash;
+  if (stored.caption) out.caption = stored.caption;
+  if (stored.captionModel) out.captionModel = stored.captionModel;
+  if (stored.ocrText) out.ocrText = stored.ocrText;
+  if (stored.ocrModel) out.ocrModel = stored.ocrModel;
+  if (stored.transcript) out.transcript = stored.transcript;
+  if (stored.transcriptModel) out.transcriptModel = stored.transcriptModel;
+  if (stored.aesthetic?.length) out.aesthetic = stored.aesthetic;
+  if (stored.aestheticModel) out.aestheticModel = stored.aestheticModel;
+  if (stored.autoTitleModel) out.autoTitleModel = stored.autoTitleModel;
+  if (stored.suggestedTags?.length) out.suggestedTags = stored.suggestedTags;
+  if (stored.suggestedTagsModel) {
+    out.suggestedTagsModel = stored.suggestedTagsModel;
+  }
+  if (stored.videoNotes?.length) out.videoNotes = stored.videoNotes;
+  if (stored.dominantColors?.length) {
+    out.dominantColors = stored.dominantColors;
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 export async function backfillEnrichmentSidecars(): Promise<void> {
