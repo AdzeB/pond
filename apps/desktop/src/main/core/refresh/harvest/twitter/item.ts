@@ -1,17 +1,18 @@
+import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import {
-  captureFromTweetShaped,
+  captureFromTweetDraft,
   draftFromDomHarvest,
-} from "../../../capture/tweet-shaped";
+} from "../../../capture/tweet-draft";
 import { type HarvestAdaptCtx, parsePageBlob } from "../from-page";
 import { bindSourceId } from "../source-id";
 import { harvestSource } from "./item-source";
 import { inPageTwitterNormalize } from "./normalize";
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx): Capture | null {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx): Capture | null {
   const page = parsePageBlob(raw);
   if (!page) return null;
-  return captureFromTweetShaped(
+  return captureFromTweetDraft(
     draftFromDomHarvest({
       source: "twitter",
       id: ctx.sourceId,

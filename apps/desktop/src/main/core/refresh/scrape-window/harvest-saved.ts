@@ -1,11 +1,11 @@
+import { MEDIA_TYPES } from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { pickTitle } from "../harvest/lib/title";
-import {
-  buildSavedApiExpression,
-  type SavedApiResult,
-} from "../harvest/threads/api";
+import { buildSavedApiExpression } from "../harvest/threads/api";
 import { parseSavedResponses } from "../harvest/threads/graphql";
 import {
   buildThreadsListExpression,
@@ -32,6 +32,116 @@ interface SavedHarvestProgress {
   articles: number;
   captures: number;
   scrolls: number;
+}
+
+const OptionalText = z.string().optional().catch(undefined);
+const OptionalCount = z.number().optional().catch(undefined);
+const TextSchema = z.string().catch("");
+
+const SavedStatsSchema = z
+  .object({
+    phase: z.enum(["hydrate", "scroll", "done"]),
+    seen: z.number().catch(0),
+    fresh: z.number().catch(0),
+    articles: z.number().catch(0),
+    captures: z.number().catch(0),
+    scrolls: z.number().catch(0),
+  })
+  .nullable()
+  .catch(null);
+
+const SavedCaptureSchema = z
+  .object({ url: z.string(), body: z.string(), status: OptionalCount })
+  .nullable()
+  .catch(null);
+
+const MediaUrlsSchema = z
+  .array(
+    z.object({
+      url: z.string(),
+      type: z.enum(MEDIA_TYPES).optional().catch(undefined),
+      poster: OptionalText,
+    }),
+  )
+  .optional()
+  .catch(undefined);
+
+/** One drifted entry must not cost the page; each falls back to null and is dropped. */
+const SavedEntrySchema = z
+  .object({
+    postId: z.string(),
+    url: z.string(),
+    title: OptionalText,
+    description: OptionalText,
+    author: OptionalText,
+    mediaUrl: OptionalText,
+    mediaUrls: MediaUrlsSchema,
+  })
+  .nullable()
+  .catch(null);
+
+const SavedApiResultSchema = z
+  .union([
+    z.object({
+      ok: z.literal(true),
+      entries: z.array(SavedEntrySchema).catch([]),
+      captures: z.array(SavedCaptureSchema).catch([]),
+      reachedEnd: z.boolean().catch(false),
+      apiDebug: z
+        .object({
+          pages: OptionalCount,
+          posts: OptionalCount,
+          reason: OptionalText,
+        })
+        .optional()
+        .catch(undefined),
+    }),
+    z.object({
+      ok: z.literal(false),
+      reason: z
+        .enum(["auth_required", "rate_limited", "fallback"])
+        .catch("fallback"),
+      retryAfterSec: z.number().nullable().optional().catch(null),
+      detail: OptionalText,
+    }),
+  ])
+  .nullable()
+  .catch(null);
+
+const ScrollResultSchema = z
+  .object({
+    ok: z.boolean().optional().catch(undefined),
+    reason: z
+      .enum(["auth_required", "no_match", "timeout", "rate_limited"])
+      .optional()
+      .catch(undefined),
+    entries: z
+      .array(
+        z
+          .object({
+            sourceId: z.string(),
+            url: z.string(),
+            title: OptionalText,
+            description: OptionalText,
+            author: OptionalText,
+            mediaUrl: OptionalText,
+            mediaUrls: MediaUrlsSchema,
+          })
+          .nullable()
+          .catch(null),
+      )
+      .catch([]),
+    reachedEnd: z.boolean().optional().catch(undefined),
+  })
+  .nullable()
+  .catch(null);
+
+function readStats(raw: string): z.infer<typeof SavedStatsSchema> {
+  try {
+    return SavedStatsSchema.parse(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
 export async function harvestThreadsSaved(
@@ -74,16 +184,8 @@ export async function harvestThreadsSaved(
           true,
         )
         .then((raw) => {
-          if (typeof raw !== "string" || raw === "null") return;
-          let stats: Omit<SavedHarvestProgress, "phase"> & {
-            phase: "hydrate" | "scroll" | "done";
-          };
-          try {
-            stats = JSON.parse(raw);
-          } catch {
-            return;
-          }
-          if (stats.phase === "done") return;
+          const stats = readStats(TextSchema.parse(raw));
+          if (!stats || stats.phase === "done") return;
           const moved = stats.seen !== lastSeen || stats.phase !== lastPhase;
           if (!moved) return;
           lastSeen = stats.seen;
@@ -100,7 +202,7 @@ export async function harvestThreadsSaved(
         .catch(() => {});
     }, 1500);
 
-    const runExpr = (expr: string): Promise<unknown> =>
+    const runExpr = (expr: string): Promise<JsonValue> =>
       Promise.race([
         lease.win.webContents.executeJavaScript(expr, true),
         sleep(6 * 60_000).then(() => "__pond_saved_timeout__"),
@@ -112,9 +214,7 @@ export async function harvestThreadsSaved(
       if (apiRaw === "__pond_saved_timeout__") {
         log.warn("[pond threads-saved] api harvest timed out; falling back");
       }
-      const api = (
-        apiRaw && typeof apiRaw === "object" ? apiRaw : null
-      ) as SavedApiResult | null;
+      const api = SavedApiResultSchema.parse(apiRaw);
 
       if (api?.ok) {
         log.info(
@@ -123,8 +223,8 @@ export async function harvestThreadsSaved(
         report("threads", { ok: true });
         result = {
           ok: true,
-          entries: api.entries,
-          captures: api.captures,
+          entries: api.entries.flatMap((e) => (e ? [e] : [])),
+          captures: api.captures.flatMap((c) => (c ? [c] : [])),
           reachedEnd: api.reachedEnd,
         };
       } else if (api && api.reason === "auth_required") {
@@ -152,43 +252,26 @@ export async function harvestThreadsSaved(
           log.warn("[pond threads-saved] harvest timed out");
           return { ok: false, reason: "timeout" };
         }
-        if (!scrollRaw || typeof scrollRaw !== "object") {
+        const scroll = ScrollResultSchema.parse(scrollRaw);
+        if (!scroll) {
           return { ok: false, reason: "no_match" };
         }
-        const scroll = scrollRaw as {
-          ok?: boolean;
-          reason?: SavedHarvestResult extends { ok: false }
-            ? SavedHarvestResult["reason"]
-            : never;
-          entries?: Array<{
-            sourceId: string;
-            url: string;
-            title?: string;
-            description?: string;
-            author?: string;
-            mediaUrl?: string;
-            mediaUrls?: SavedEntry["mediaUrls"];
-          }>;
-          reachedEnd?: boolean;
-        };
         if (!scroll.ok) {
-          return {
-            ok: false,
-            reason: scroll.reason ?? "no_match",
-          };
+          return { ok: false, reason: scroll.reason ?? "no_match" };
         }
         const hookCaptures = await drainHookCaptures(lease.win);
         result = {
           ok: true,
-          entries: (scroll.entries ?? []).map((e) => ({
-            postId: e.sourceId,
-            url: e.url,
-            ...(e.title ? { title: e.title } : {}),
-            ...(e.description ? { description: e.description } : {}),
-            ...(e.author ? { author: e.author } : {}),
-            ...(e.mediaUrl ? { mediaUrl: e.mediaUrl } : {}),
-            ...(e.mediaUrls ? { mediaUrls: e.mediaUrls } : {}),
-          })),
+          entries: scroll.entries.flatMap((e) => {
+            if (!e) return [];
+            const entry: SavedEntry = { postId: e.sourceId, url: e.url };
+            if (e.title) entry.title = e.title;
+            if (e.description) entry.description = e.description;
+            if (e.author) entry.author = e.author;
+            if (e.mediaUrl) entry.mediaUrl = e.mediaUrl;
+            if (e.mediaUrls) entry.mediaUrls = e.mediaUrls;
+            return [entry];
+          }),
           captures: hookCaptures,
           reachedEnd: scroll.reachedEnd === true,
         };
@@ -258,16 +341,11 @@ async function drainHookCaptures(
       "JSON.stringify(globalThis.__pondThreadsSavedCaptures ?? [])",
       true,
     );
-    if (typeof raw !== "string") return [];
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (c): c is { url: string; body: string; status?: number } =>
-        !!c &&
-        typeof c === "object" &&
-        typeof (c as { url?: unknown }).url === "string" &&
-        typeof (c as { body?: unknown }).body === "string",
-    );
+    const rows = z
+      .array(SavedCaptureSchema)
+      .catch([])
+      .parse(JSON.parse(TextSchema.parse(raw)));
+    return rows.flatMap((c) => (c ? [c] : []));
   } catch {
     return [];
   }

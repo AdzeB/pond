@@ -1,5 +1,87 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+declare global {
+  var __UNIVERSAL_DATA_FOR_REHYDRATION__: TiktokHydration | undefined;
+  var SIGI_STATE: TiktokHydration | undefined;
+}
+
+interface TiktokItemStruct {
+  id?: string;
+  desc?: string;
+  description?: string;
+  createTime?: number;
+  author?: {
+    uniqueId?: string;
+    nickname?: string;
+    avatarThumb?: string;
+    verified?: boolean;
+  };
+  stats?: {
+    diggCount?: number;
+    commentCount?: number;
+    shareCount?: number;
+    playCount?: number;
+    collectCount?: number;
+  };
+  music?: { title?: string };
+  video?: {
+    downloadAddr?: string;
+    playAddr?: string;
+    cover?: string;
+    originCover?: string;
+    duration?: number;
+  };
+}
+
+/** The legacy hydration blob keys items by video id; the newer one nests a single item. */
+interface TiktokItemModule {
+  [videoId: string]: TiktokItemStruct;
+}
+
+interface TiktokHydration {
+  __DEFAULT_SCOPE__?: {
+    "webapp.video-detail"?: { itemInfo?: { itemStruct?: TiktokItemStruct } };
+  };
+  ItemModule?: TiktokItemModule;
+}
+
+export interface TiktokMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+}
+
+export interface TiktokVideoMeta {
+  authorUrl?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  verified?: boolean;
+  soundName?: string;
+  metrics?: {
+    likes?: number;
+    comments?: number;
+    shares?: number;
+    plays?: number;
+    bookmarks?: number;
+  };
+  durationSec?: number;
+  publishedAt?: string;
+  lang?: string;
+}
+
+export interface TiktokVideoPage {
+  title?: string;
+  description?: string;
+  author?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: TiktokMedia[];
+  mediaType?: MediaType;
+  meta?: TiktokVideoMeta;
+}
+
 export function inPageTiktokNormalize() {
   function extractVideoId(href: string): string | null {
     try {
@@ -10,13 +92,15 @@ export function inPageTiktokNormalize() {
     }
   }
 
-  function extractVideoPageMeta(): Record<string, unknown> | null {
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+  function extractVideoPageMeta(): TiktokVideoPage | null {
+    const out: TiktokVideoPage = {};
+    const meta: TiktokVideoMeta = {};
 
     const hydrationData =
-      tryParseHydration("__UNIVERSAL_DATA_FOR_REHYDRATION__") ??
-      tryParseHydration("SIGI_STATE");
+      readHydration(
+        "__UNIVERSAL_DATA_FOR_REHYDRATION__",
+        globalThis.__UNIVERSAL_DATA_FOR_REHYDRATION__,
+      ) ?? readHydration("SIGI_STATE", globalThis.SIGI_STATE);
 
     if (hydrationData) {
       return extractFromHydration(hydrationData);
@@ -68,14 +152,10 @@ export function inPageTiktokNormalize() {
     const video = document.querySelector<HTMLVideoElement>("video");
     if (video?.src) {
       const poster = video.poster || undefined;
+      const clip: TiktokMedia = { url: video.src, type: "video" };
+      if (poster) clip.poster = poster;
       out.mediaUrl = poster || video.src;
-      out.mediaUrls = [
-        {
-          url: video.src,
-          type: "video",
-          ...(poster ? { poster } : {}),
-        },
-      ];
+      out.mediaUrls = [clip];
       out.mediaType = "video";
       const dur = video.duration;
       if (Number.isFinite(dur) && dur > 0) {
@@ -94,7 +174,10 @@ export function inPageTiktokNormalize() {
     return out;
   }
 
-  function tryParseHydration(varName: string): any {
+  function readHydration(
+    varName: string,
+    inlined: TiktokHydration | undefined,
+  ): TiktokHydration | null {
     try {
       const script = document.querySelector<HTMLScriptElement>(
         `script#${varName}, script[id="${varName}"]`,
@@ -102,33 +185,28 @@ export function inPageTiktokNormalize() {
       if (script?.textContent) {
         return JSON.parse(script.textContent);
       }
-      const win = window as any;
-      if (win[varName]) return win[varName];
     } catch {}
-    return null;
+    return inlined || null;
   }
 
-  function extractFromHydration(data: any): Record<string, unknown> | null {
-    const itemModule =
-      data?.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct ??
-      data?.ItemModule ??
-      null;
+  function isItemStruct(
+    container: TiktokItemStruct | TiktokItemModule,
+  ): container is TiktokItemStruct {
+    return Boolean(container.id);
+  }
 
-    let item: any = null;
-    if (itemModule && typeof itemModule === "object") {
-      if (itemModule.id) {
-        item = itemModule;
-      } else {
-        const keys = Object.keys(itemModule);
-        const firstKey = keys[0];
-        if (firstKey) item = itemModule[firstKey];
-      }
-    }
-
+  function extractFromHydration(data: TiktokHydration): TiktokVideoPage | null {
+    const container =
+      data.__DEFAULT_SCOPE__?.["webapp.video-detail"]?.itemInfo?.itemStruct ??
+      data.ItemModule;
+    if (!container) return null;
+    const item = isItemStruct(container)
+      ? container
+      : Object.values(container)[0];
     if (!item) return null;
 
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+    const out: TiktokVideoPage = {};
+    const meta: TiktokVideoMeta = {};
 
     const desc = item.desc ?? item.description ?? "";
     if (desc) {
@@ -151,7 +229,7 @@ export function inPageTiktokNormalize() {
 
     const stats = item.stats;
     if (stats) {
-      const metrics: Record<string, number> = {};
+      const metrics: NonNullable<TiktokVideoMeta["metrics"]> = {};
       if (typeof stats.diggCount === "number") metrics.likes = stats.diggCount;
       if (typeof stats.commentCount === "number")
         metrics.comments = stats.commentCount;
@@ -172,14 +250,10 @@ export function inPageTiktokNormalize() {
       const videoUrl = videoData.downloadAddr || videoData.playAddr || "";
       const cover = videoData.cover || videoData.originCover || "";
       if (videoUrl || cover) {
+        const clip: TiktokMedia = { url: videoUrl || cover, type: "video" };
+        if (cover) clip.poster = cover;
         out.mediaUrl = cover || videoUrl;
-        out.mediaUrls = [
-          {
-            url: videoUrl || cover,
-            type: "video",
-            ...(cover ? { poster: cover } : {}),
-          },
-        ];
+        out.mediaUrls = [clip];
         out.mediaType = "video";
       }
       if (typeof videoData.duration === "number") {

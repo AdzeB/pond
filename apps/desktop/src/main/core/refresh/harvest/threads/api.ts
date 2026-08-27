@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 import type { SavedCapture } from "./graphql";
 import type { SavedHarvestArgs, SavedHarvestResult } from "./saved-types";
 
@@ -8,6 +9,31 @@ interface SavedRequestTemplate {
   method: string;
   headers: Record<string, string>;
   body?: string;
+}
+
+declare global {
+  /** The scrape preload records the saved-feed GraphQL request on the page for this harvest to replay. */
+  var __pondThreadsSavedRequest: SavedRequestTemplate | null | undefined;
+}
+
+/** Only `variables` is read; every other key rides along untouched on the replay. */
+interface GraphqlRequestBody {
+  variables?: string | JsonObject;
+}
+
+interface GraphqlRequest {
+  url: string;
+  body?: string;
+}
+
+interface HarvestStats {
+  seen: number;
+  fresh: number;
+  articles: number;
+  captures: number;
+  scrolls: number;
+  phase: "hydrate" | "scroll" | "done";
+  updatedAt: number;
 }
 
 interface SavedApiDebug {
@@ -79,15 +105,25 @@ async function inPageSavedApi(
     return null;
   };
 
-  const getRequest = (): SavedRequestTemplate | null => {
-    const req = (
-      globalThis as unknown as {
-        __pondThreadsSavedRequest?: SavedRequestTemplate | null;
-      }
-    ).__pondThreadsSavedRequest;
-    if (!req || typeof req.url !== "string" || req.url.length === 0) {
-      return null;
+  const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
+    value instanceof Object && !Array.isArray(value);
+
+  /** Sound because JSON carries no NaN or Infinity. */
+  const isJsonNumber = (value: JsonValue): value is number =>
+    Number.isFinite(value);
+
+  const jsonString = (value: JsonValue | undefined): string | undefined => {
+    if (value === undefined || value === null) return undefined;
+    if (value === true || value === false) return undefined;
+    if (Array.isArray(value) || isJsonObject(value) || isJsonNumber(value)) {
+      return undefined;
     }
+    return value;
+  };
+
+  const getRequest = (): SavedRequestTemplate | null => {
+    const req = globalThis.__pondThreadsSavedRequest;
+    if (!req?.url) return null;
     return req;
   };
 
@@ -98,7 +134,7 @@ async function inPageSavedApi(
     if (!nudged && Date.now() - (waitDeadline - 20_000) > 4_000) {
       nudged = true;
       try {
-        window.scrollBy({ top: 600, behavior: "instant" as ScrollBehavior });
+        window.scrollBy({ top: 600, behavior: "instant" });
       } catch {}
     }
     await sleep(250);
@@ -121,51 +157,42 @@ async function inPageSavedApi(
   }
   if (!("accept" in headers)) headers.accept = "*/*";
 
-  const parseVariables = (raw: string | null): Record<string, unknown> => {
+  const parseVariables = (raw: string | null): JsonObject => {
     if (!raw) return {};
     try {
-      const parsed = JSON.parse(raw) as unknown;
-      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-        ? (parsed as Record<string, unknown>)
-        : {};
+      const parsed: JsonValue = JSON.parse(raw);
+      return isJsonObject(parsed) ? parsed : {};
     } catch {
       return {};
     }
   };
 
-  const asObj = (v: unknown): Record<string, unknown> =>
-    v && typeof v === "object" && !Array.isArray(v)
-      ? (v as Record<string, unknown>)
-      : {};
-
   const form =
     template.body && !template.body.trim().startsWith("{")
       ? new URLSearchParams(template.body)
       : null;
-  let jsonBody: Record<string, unknown> | null = null;
+  let jsonBody: GraphqlRequestBody | null = null;
   if (template.body?.trim().startsWith("{")) {
     try {
-      jsonBody = JSON.parse(template.body) as Record<string, unknown>;
+      jsonBody = JSON.parse(template.body);
     } catch {
       jsonBody = null;
     }
   }
 
-  let baseVariables: Record<string, unknown> = {};
+  let baseVariables: JsonObject = {};
   const urlVars = base.searchParams.get("variables");
   if (urlVars) baseVariables = parseVariables(urlVars);
   else if (form?.get("variables")) {
     baseVariables = parseVariables(form.get("variables"));
   } else if (jsonBody?.variables) {
-    baseVariables =
-      typeof jsonBody.variables === "string"
-        ? parseVariables(jsonBody.variables)
-        : asObj(jsonBody.variables);
+    const rawVariables = jsonBody.variables;
+    baseVariables = isJsonObject(rawVariables)
+      ? rawVariables
+      : parseVariables(rawVariables);
   }
 
-  const buildRequest = (
-    cursor: string | null,
-  ): { url: string; body?: string } => {
+  const buildRequest = (cursor: string | null): GraphqlRequest => {
     const vars = { ...baseVariables };
     if (cursor) {
       vars.after = cursor;
@@ -195,47 +222,49 @@ async function inPageSavedApi(
     };
   };
 
-  const pageCursor = (json: unknown): string | null => {
+  const pageCursor = (json: JsonValue): string | null => {
     let found: string | null = null;
-    const visit = (value: unknown): void => {
-      if (found || !value || typeof value !== "object") return;
+    const visit = (value: JsonValue): void => {
+      if (found) return;
       if (Array.isArray(value)) {
         for (const item of value) visit(item);
         return;
       }
-      const obj = value as Record<string, unknown>;
-      const info = asObj(obj.page_info);
-      if (typeof info.end_cursor === "string" && info.end_cursor) {
-        found = info.end_cursor;
+      if (!isJsonObject(value)) return;
+      const pageInfo = value.page_info;
+      const endCursor = isJsonObject(pageInfo)
+        ? jsonString(pageInfo.end_cursor)
+        : undefined;
+      if (endCursor) {
+        found = endCursor;
         return;
       }
-      for (const child of Object.values(obj)) visit(child);
+      for (const child of Object.values(value)) visit(child);
     };
     visit(json);
     return found;
   };
 
-  const pagePostIds = (json: unknown): string[] => {
+  const pagePostIds = (json: JsonValue): string[] => {
     const ids: string[] = [];
     const seen = new Set<string>();
-    const visit = (value: unknown, skip: boolean): void => {
-      if (!value || typeof value !== "object") return;
+    const visit = (value: JsonValue, skip: boolean): void => {
       if (Array.isArray(value)) {
         for (const item of value) visit(item, skip);
         return;
       }
-      const obj = value as Record<string, unknown>;
-      const code = typeof obj.code === "string" ? obj.code : null;
+      if (!isJsonObject(value)) return;
+      const code = jsonString(value.code);
       if (
         !skip &&
         code &&
         !seen.has(code) &&
-        (obj.text_post_app_info || obj.user || obj.owner)
+        (value.text_post_app_info || value.user || value.owner)
       ) {
         seen.add(code);
         ids.push(code);
       }
-      for (const [key, child] of Object.entries(obj)) {
+      for (const [key, child] of Object.entries(value)) {
         const nestedSkip =
           skip ||
           key === "share_info" ||
@@ -248,18 +277,16 @@ async function inPageSavedApi(
     return ids;
   };
 
-  const stats = {
+  const stats: HarvestStats = {
     seen: 0,
     fresh: 0,
     articles: 0,
     captures: 0,
     scrolls: 0,
-    phase: "scroll" as "hydrate" | "scroll" | "done",
+    phase: "scroll",
     updatedAt: Date.now(),
   };
-  (
-    globalThis as unknown as { __pondHarvestStats?: typeof stats }
-  ).__pondHarvestStats = stats;
+  Object.assign(globalThis, { __pondHarvestStats: stats });
 
   const captures: SavedCapture[] = [];
   const deadline = Date.now() + args.deadlineMs;
@@ -268,11 +295,7 @@ async function inPageSavedApi(
   const STOP_AFTER_KNOWN_PAGES = 2;
   let knownPageStreak = 0;
   let cursor: string | null =
-    typeof baseVariables.after === "string"
-      ? baseVariables.after
-      : typeof baseVariables.cursor === "string"
-        ? baseVariables.cursor
-        : null;
+    jsonString(baseVariables.after) ?? jsonString(baseVariables.cursor) ?? null;
   let prevCursor: string | null = null;
   let pages = 0;
   let postTotal = 0;
@@ -281,14 +304,15 @@ async function inPageSavedApi(
 
   while (pages < args.maxPages && Date.now() < deadline) {
     const built = buildRequest(cursor);
+    const init: RequestInit = {
+      method: template.method || "POST",
+      headers,
+      credentials: "include",
+    };
+    if (built.body) init.body = built.body;
     let res: Response;
     try {
-      res = await fetch(built.url, {
-        method: template.method || "POST",
-        headers,
-        credentials: "include",
-        ...(built.body ? { body: built.body } : {}),
-      });
+      res = await fetch(built.url, init);
     } catch {
       if (pages === 0) {
         return { ok: false, reason: "fallback", detail: "fetch_threw" };
@@ -317,7 +341,7 @@ async function inPageSavedApi(
     }
 
     const body = await res.text();
-    let json: unknown;
+    let json: JsonValue;
     try {
       json = JSON.parse(body);
     } catch {

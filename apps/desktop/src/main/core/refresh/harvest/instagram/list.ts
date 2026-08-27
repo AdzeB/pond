@@ -1,8 +1,47 @@
 /// <reference lib="dom" />
 
-import type { MediaType } from "@pond/schema/db";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
-import { inPageInstagramNormalize } from "./normalize";
+import {
+  type InstagramEntry,
+  type InstagramMediaNode,
+  inPageInstagramNormalize,
+} from "./normalize";
+
+declare global {
+  /** Set from the main process to ask a running list harvest to stop and hand back what it has. */
+  var __pondHarvestAbort: boolean | undefined;
+}
+
+interface SavedFeedPage {
+  items?: Array<{ media?: InstagramMediaNode; timestamp?: number }>;
+  more_available?: boolean;
+  next_max_id?: string | number;
+  require_login?: boolean;
+  message?: string;
+}
+
+interface ListProgress {
+  phase: string;
+  collected: number;
+  fresh: number;
+  path: string;
+  earlyStop?: boolean;
+  known?: number;
+  page?: number;
+  cursor?: string | null;
+  status?: number;
+  error?: string;
+  items?: number;
+  pageNorm?: number;
+  pageFresh?: number;
+  more?: boolean;
+  capped?: boolean;
+}
+
+type ListProgressExtra = Omit<
+  ListProgress,
+  "phase" | "collected" | "fresh" | "path"
+>;
 
 export function buildInstagramListExpression(args: ListHarvestArgs): string {
   const normSrc = `(${inPageInstagramNormalize.toString()})()`;
@@ -26,25 +65,12 @@ async function inPageInstagramList(
     return { ok: false, reason: "auth_required" };
   }
 
-  type Entry = {
-    sourceId: string;
-    url: string;
-    savedAt?: string;
-    title?: string;
-    description?: string;
-    author?: string;
-    mediaUrl?: string;
-    mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
-    mediaType?: MediaType;
-    meta?: Record<string, unknown>;
-  };
-
   const apiResult = await fetchSavedViaApi();
   if (apiResult) return apiResult;
   return await fallbackDomScroll();
 
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
-    const entries: Entry[] = [];
+    const entries: InstagramEntry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
     const earlyStopEnabled = args.earlyStop ?? known.size > 0;
@@ -53,18 +79,17 @@ async function inPageInstagramList(
     let freshCount = 0;
 
     function checkpoint(): void {
-      (globalThis as any).__pondHarvestPartial = entries.map((e) => ({
-        sourceId: e.sourceId,
-        url: e.url,
-        savedAt: e.savedAt,
-      }));
+      Object.assign(globalThis, {
+        __pondHarvestPartial: entries.map((e) => ({
+          sourceId: e.sourceId,
+          url: e.url,
+          savedAt: e.savedAt,
+        })),
+      });
     }
 
-    function reportProgress(
-      phase: string,
-      extra: Record<string, unknown> = {},
-    ) {
-      (globalThis as any).__pondHarvestStats = {
+    function reportProgress(phase: string, extra: ListProgressExtra = {}) {
+      const stats: ListProgress = {
         phase,
         collected: entries.length,
         fresh: freshCount,
@@ -73,12 +98,13 @@ async function inPageInstagramList(
         known: known.size,
         ...extra,
       };
+      Object.assign(globalThis, { __pondHarvestStats: stats });
     }
 
     reportProgress("connecting", {});
 
     for (let page = 0; page < 200; page++) {
-      if ((globalThis as any).__pondHarvestAbort) {
+      if (globalThis.__pondHarvestAbort) {
         reportProgress("aborted", { page });
         checkpoint();
         return { ok: true, entries, reachedEnd: false };
@@ -90,7 +116,7 @@ async function inPageInstagramList(
 
       reportProgress("api_fetch", { page, cursor: cursor ?? null });
 
-      let json: any;
+      let json: SavedFeedPage;
       try {
         const res = await fetch(url, {
           method: "GET",
@@ -111,11 +137,12 @@ async function inPageInstagramList(
         if (res.status === 429) {
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
-          return {
+          const limited: Extract<ListHarvestResult, { ok: false }> = {
             ok: false,
             reason: "rate_limited",
-            ...(Number.isFinite(n) ? { retryAfterSec: Math.max(0, n) } : {}),
           };
+          if (Number.isFinite(n)) limited.retryAfterSec = Math.max(0, n);
+          return limited;
         }
         if (!res.ok) {
           reportProgress("api_not_ok", { page, status: res.status });
@@ -135,7 +162,7 @@ async function inPageInstagramList(
         return { ok: false, reason: "auth_required" };
       }
 
-      const items: any[] = json?.items ?? [];
+      const items = json?.items ?? [];
       if (items.length === 0 && page === 0) {
         reportProgress("api_empty", { page });
         return null;
@@ -144,16 +171,17 @@ async function inPageInstagramList(
       let pageFresh = 0;
       let pageNorm = 0;
       for (const item of items) {
-        const raw = norm.normalizeMediaNode(item?.media, {
-          savedTimestamp: item?.timestamp,
+        if (!item?.media) continue;
+        const entry = norm.normalizeMediaNode(item.media, {
+          savedTimestamp: item.timestamp,
         });
-        if (!raw) continue;
+        if (!entry) continue;
         pageNorm += 1;
-        if (!known.has(String((raw as Entry).sourceId))) {
+        if (!known.has(entry.sourceId)) {
           pageFresh += 1;
           freshCount += 1;
         }
-        entries.push(raw as Entry);
+        entries.push(entry);
       }
 
       checkpoint();
@@ -193,12 +221,13 @@ async function inPageInstagramList(
   }
 
   async function fallbackDomScroll(): Promise<ListHarvestResult> {
-    (globalThis as any).__pondHarvestStats = {
+    const stats: ListProgress = {
       phase: "dom_fallback",
       collected: 0,
       fresh: 0,
       path: location.pathname,
     };
+    Object.assign(globalThis, { __pondHarvestStats: stats });
     const _known = new Set(args.knownIds.map(String));
 
     type StubEntry = { sourceId: string; url: string };
@@ -256,10 +285,7 @@ async function inPageInstagramList(
     let lastHeight = document.documentElement.scrollHeight;
     let stable = 0;
     while (Date.now() < scrollDeadline) {
-      window.scrollBy({
-        top: window.innerHeight * 0.9,
-        behavior: "instant" as ScrollBehavior,
-      });
+      window.scrollBy({ top: window.innerHeight * 0.9, behavior: "instant" });
       await new Promise((r) => setTimeout(r, 700));
       ingestRows(collect());
       const sh = document.documentElement.scrollHeight;

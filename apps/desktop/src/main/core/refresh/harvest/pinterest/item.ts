@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPagePinterestNormalize } from "./normalize";
+import { inPagePinterestNormalize, type PinterestPinPage } from "./normalize";
 
 export function buildExpression(pinId: string): string {
   return buildItemExpression(
@@ -16,7 +17,7 @@ export function buildExpression(pinId: string): string {
 async function inPagePinterestHarvest(
   _pinId: string,
   norm: ReturnType<typeof inPagePinterestNormalize>,
-): Promise<unknown> {
+): Promise<PinterestPinPage | null> {
   const deadline = Date.now() + 12_000;
   while (Date.now() < deadline) {
     if (
@@ -30,7 +31,7 @@ async function inPagePinterestHarvest(
   return norm.extractPinPageMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

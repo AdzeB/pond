@@ -1,6 +1,7 @@
 import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { type Cookie, session, shell } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { extractorFor } from "../../pipeline/extractors";
 import {
   listAccountsForSource,
@@ -70,18 +71,19 @@ export async function writePartitionCookies(args: {
   for (const c of args.cookies) {
     const hostForUrl = c.domain.replace(/^\./, "");
     const url = `${c.secure === false ? "http" : "https"}://${hostForUrl}${c.path ?? "/"}`;
+    const details: Electron.CookiesSetDetails = {
+      url,
+      name: c.name,
+      value: c.value,
+      path: c.path ?? "/",
+      secure: c.secure,
+      httpOnly: c.httpOnly,
+      sameSite: c.sameSite ?? "unspecified",
+      expirationDate: c.expirationDate ?? undefined,
+    };
+    if (!c.hostOnly) details.domain = c.domain;
     try {
-      await persistent.cookies.set({
-        url,
-        name: c.name,
-        value: c.value,
-        ...(c.hostOnly ? {} : { domain: c.domain }),
-        path: c.path ?? "/",
-        secure: c.secure,
-        httpOnly: c.httpOnly,
-        sameSite: c.sameSite ?? "unspecified",
-        expirationDate: c.expirationDate ?? undefined,
-      });
+      await persistent.cookies.set(details);
       written += 1;
     } catch (err) {
       skipped += 1;
@@ -95,6 +97,8 @@ export async function writePartitionCookies(args: {
   }
   return { written, skipped };
 }
+
+const ProbeHandleSchema = z.string().catch("");
 
 export async function probeUserHandle(
   source: Source,
@@ -120,11 +124,13 @@ export async function probeUserHandle(
     }
 
     const expr = buildProbeExpression(source);
-    const raw = await Promise.race([
-      lease.win.webContents.executeJavaScript(expr, true),
-      sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_probe_timeout__"),
-    ]);
-    if (typeof raw !== "string" || raw === "__pond_probe_timeout__") {
+    const raw = ProbeHandleSchema.parse(
+      await Promise.race([
+        lease.win.webContents.executeJavaScript(expr, true),
+        sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_probe_timeout__"),
+      ]),
+    );
+    if (!raw || raw === "__pond_probe_timeout__") {
       log.warn("[pond refresh:probe] no handle in DOM", source);
       return null;
     }

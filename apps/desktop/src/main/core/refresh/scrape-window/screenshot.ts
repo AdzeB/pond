@@ -2,6 +2,7 @@ import type { CaptureMedia } from "@pond/schema/raw";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
+import { z } from "zod";
 import { partitionForIngest } from "../../sync/accounts";
 import {
   adapt as adaptThreads,
@@ -114,12 +115,10 @@ export async function screenshotTweetDual(
     );
 
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
-    return {
-      light,
-      dark,
-      ...(quotedUrl ? { quotedUrl } : {}),
-      ...(media ? { media } : {}),
-    };
+    const dual: TweetDualScreenshotResult = { light, dark };
+    if (quotedUrl) dual.quotedUrl = quotedUrl;
+    if (media) dual.media = media;
+    return dual;
   } catch (err) {
     log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
     const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
@@ -195,12 +194,10 @@ export async function screenshotThreadsDual(
     );
 
     const quotedUrl = light.quotedUrl ?? dark.quotedUrl;
-    return {
-      light,
-      dark,
-      ...(quotedUrl ? { quotedUrl } : {}),
-      ...(media ? { media } : {}),
-    };
+    const dual: TweetDualScreenshotResult = { light, dark };
+    if (quotedUrl) dual.quotedUrl = quotedUrl;
+    if (media) dual.media = media;
+    return dual;
   } catch (err) {
     log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
     const fail: TweetScreenshotResult = { ok: false, reason: "no_article" };
@@ -282,11 +279,9 @@ async function captureCurrentScheme(
             return { ok: false, reason: "no_article" } as const;
           }
           const padded = await padScreenshot(rawBytes, size, colorScheme);
-          return {
-            ok: true,
-            png: padded,
-            ...(rect.quotedUrl ? { quotedUrl: rect.quotedUrl } : {}),
-          } as const;
+          const shot: TweetScreenshotResult = { ok: true, png: padded };
+          if (rect.quotedUrl) shot.quotedUrl = rect.quotedUrl;
+          return shot;
         },
       );
     } finally {
@@ -317,6 +312,12 @@ async function waitForSchemeFlip(
   return false;
 }
 
+const LuminanceSchema = z
+  .number()
+  .refine(Number.isFinite)
+  .nullable()
+  .catch(null);
+
 async function readBackgroundLuminance(
   win: BrowserWindow,
 ): Promise<number | null> {
@@ -338,7 +339,7 @@ async function readBackgroundLuminance(
       win.webContents.executeJavaScript(expr, true),
       sleep(1000).then(() => null),
     ]);
-    return typeof raw === "number" && Number.isFinite(raw) ? raw : null;
+    return LuminanceSchema.parse(raw);
   } catch {
     return null;
   }
@@ -394,13 +395,18 @@ async function padScreenshot(
   }
 }
 
-interface ArticleRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  quotedUrl?: string;
-}
+const ArticleRectSchema = z
+  .object({
+    x: z.number(),
+    y: z.number(),
+    width: z.number(),
+    height: z.number(),
+    quotedUrl: z.string().optional().catch(undefined),
+  })
+  .nullable()
+  .catch(null);
+
+type ArticleRect = NonNullable<z.infer<typeof ArticleRectSchema>>;
 
 async function readArticleRect(
   win: BrowserWindow,
@@ -418,22 +424,7 @@ async function readArticleRect(
     ),
   ]);
   if (raw === "__pond_screenshot_timeout__") return null;
-  if (!raw || typeof raw !== "object") return null;
-  const r = raw as Partial<ArticleRect>;
-  if (
-    typeof r.x !== "number" ||
-    typeof r.y !== "number" ||
-    typeof r.width !== "number" ||
-    typeof r.height !== "number"
-  ) {
-    return null;
-  }
-  if (r.width < 8 || r.height < 8) return null;
-  return {
-    x: r.x,
-    y: r.y,
-    width: r.width,
-    height: r.height,
-    ...(typeof r.quotedUrl === "string" ? { quotedUrl: r.quotedUrl } : {}),
-  };
+  const rect = ArticleRectSchema.parse(raw);
+  if (!rect || rect.width < 8 || rect.height < 8) return null;
+  return rect;
 }

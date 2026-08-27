@@ -1,5 +1,7 @@
 /// <reference lib="dom" />
 
+import { z } from "zod";
+
 /** Threads' static brand OG (the black logo tile) lives on rsrc.php, never on post CDN paths. */
 export function isThreadsLandingMedia(url: string): boolean {
   return /static\.cdninstagram\.com\/rsrc\.php\//i.test(url);
@@ -12,6 +14,24 @@ export function isThreadsLandingCopy(text: string): boolean {
   );
 }
 
+const StoredLandingRowSchema = z
+  .object({
+    capture: z
+      .object({
+        title: z.string().optional().catch(undefined),
+        description: z.string().optional().catch(undefined),
+        media: z
+          .array(
+            z.object({ url: z.string().optional().catch(undefined) }).catch({}),
+          )
+          .optional()
+          .catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .catch({});
+
 export function isLandingOgThreadsSave(row: {
   source: string;
   title?: string | null;
@@ -21,29 +41,159 @@ export function isLandingOgThreadsSave(row: {
   if (row.source !== "threads") return false;
   if (row.title && isThreadsLandingCopy(row.title)) return true;
   if (row.description && isThreadsLandingCopy(row.description)) return true;
-  const capture = (row.rawJson as { capture?: Record<string, unknown> } | null)
-    ?.capture;
+  const capture = StoredLandingRowSchema.parse(row.rawJson).capture;
   if (!capture) return false;
-  if (
-    typeof capture.title === "string" &&
-    isThreadsLandingCopy(capture.title)
-  ) {
+  if (capture.title !== undefined && isThreadsLandingCopy(capture.title)) {
     return true;
   }
   if (
-    typeof capture.description === "string" &&
+    capture.description !== undefined &&
     isThreadsLandingCopy(capture.description)
   ) {
     return true;
   }
-  const media = capture.media;
-  if (Array.isArray(media)) {
-    for (const m of media) {
-      const url = (m as { url?: unknown })?.url;
-      if (typeof url === "string" && isThreadsLandingMedia(url)) return true;
-    }
+  for (const m of capture.media ?? []) {
+    if (m.url !== undefined && isThreadsLandingMedia(m.url)) return true;
   }
   return false;
+}
+
+interface ThreadsMediaVersion {
+  url?: string;
+  width?: number;
+  height?: number;
+}
+
+interface ThreadsImageVersions {
+  candidates?: ThreadsMediaVersion[];
+}
+
+interface PickedVersion {
+  url: string;
+  width?: number;
+  height?: number;
+}
+
+interface ThreadsUser {
+  username?: string;
+  full_name?: string;
+  profile_pic_url?: string;
+  is_verified?: boolean;
+}
+
+interface ThreadsCaption {
+  text?: string;
+}
+
+interface ThreadsLinkPreview {
+  url?: string;
+  display_url?: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+  image?: { url?: string; uri?: string };
+  image_versions2?: { url?: string; uri?: string };
+}
+
+/** A quoted post either is the post node or wraps it under `post`/`media`. */
+interface ThreadsQuotedPost extends ThreadsMediaNode {
+  post?: ThreadsMediaNode;
+  media?: ThreadsMediaNode;
+}
+
+interface ThreadsPostInfo {
+  direct_reply_count?: number;
+  quote_count?: number;
+  repost_count?: number;
+  is_reply?: boolean;
+  reply_to_author?: { username?: string };
+  share_info?: {
+    quoted_post?: ThreadsQuotedPost;
+    reposted_post?: ThreadsQuotedPost;
+  };
+  link_preview_attachment?: ThreadsLinkPreview;
+  link_preview_response?: ThreadsLinkPreview;
+}
+
+export interface ThreadsMediaNode {
+  pk?: string | number;
+  code?: string;
+  media_type?: number;
+  taken_at?: number;
+  like_count?: number;
+  comment_count?: number;
+  video_duration?: number;
+  original_width?: number;
+  original_height?: number;
+  accessibility_caption?: string;
+  caption?: ThreadsCaption | string | null;
+  user?: ThreadsUser;
+  owner?: ThreadsUser;
+  image_versions2?: ThreadsImageVersions;
+  video_versions?: ThreadsMediaVersion[];
+  carousel_media?: ThreadsMediaNode[];
+  text_post_app_info?: ThreadsPostInfo;
+}
+
+export interface HarvestedMedia {
+  url: string;
+  type: "image" | "video";
+  poster?: string;
+  altText?: string;
+  durationSec?: number;
+  width?: number;
+  height?: number;
+}
+
+interface HarvestedMetrics {
+  likes?: number;
+  replies?: number;
+  retweets?: number;
+  quotes?: number;
+}
+
+interface HarvestedQuote {
+  tweetId?: string;
+  url?: string;
+  author?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  text?: string;
+  media?: HarvestedMedia[];
+}
+
+interface HarvestedCard {
+  url?: string;
+  domain?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+}
+
+export interface HarvestedMeta {
+  authorUrl?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  verified?: boolean;
+  publishedAt?: string;
+  lang?: string;
+  metrics?: HarvestedMetrics;
+  media?: HarvestedMedia[];
+  quotedTweet?: HarvestedQuote;
+  card?: HarvestedCard;
+  isReply?: boolean;
+  replyingTo?: string;
+}
+
+export interface HarvestedPost {
+  author?: string;
+  title?: string;
+  description?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: HarvestedMedia[];
+  mediaType?: "image" | "video";
+  meta?: HarvestedMeta;
 }
 
 export function inPageThreadsNormalize() {
@@ -85,42 +235,39 @@ export function inPageThreadsNormalize() {
   }
 
   function pickBestImage(
-    iv2: {
-      candidates?: Array<{ url?: string; width?: number; height?: number }>;
-    } | null,
-  ): { url: string; width?: number; height?: number } | null {
+    iv2: ThreadsImageVersions | null,
+  ): PickedVersion | null {
     if (!iv2) return null;
     const cands = iv2.candidates || [];
     let best: { url: string; width: number; height?: number } | null = null;
     for (const c of cands) {
-      if (typeof c?.url !== "string") continue;
+      if (!c?.url) continue;
       const w = Number(c.width) || 0;
       const h = Number(c.height) || 0;
       if (!best || w > best.width) {
-        best = { url: c.url, width: w, ...(h ? { height: h } : {}) };
+        best = { url: c.url, width: w };
+        if (h) best.height = h;
       }
     }
     if (!best) return null;
-    return {
-      url: best.url,
-      ...(best.width ? { width: best.width } : {}),
-      ...(best.height ? { height: best.height } : {}),
-    };
+    const picked: PickedVersion = { url: best.url };
+    if (best.width) picked.width = best.width;
+    if (best.height) picked.height = best.height;
+    return picked;
   }
 
   function pickBestVideo(
-    versions: Array<{ url?: string; width?: number; height?: number }> | null,
-  ): { url: string; width?: number; height?: number } | null {
+    versions: ThreadsMediaVersion[] | null,
+  ): PickedVersion | null {
     if (!Array.isArray(versions)) return null;
     for (const v of versions) {
-      if (typeof v?.url !== "string") continue;
+      if (!v?.url) continue;
       const w = Number(v.width) || 0;
       const h = Number(v.height) || 0;
-      return {
-        url: v.url,
-        ...(w ? { width: w } : {}),
-        ...(h ? { height: h } : {}),
-      };
+      const picked: PickedVersion = { url: v.url };
+      if (w) picked.width = w;
+      if (h) picked.height = h;
+      return picked;
     }
     return null;
   }
@@ -132,102 +279,72 @@ export function inPageThreadsNormalize() {
       : `${firstLine.slice(0, 89).trimEnd()}…`;
   }
 
-  function applyCaption(out: Record<string, unknown>, text: string): void {
+  function applyCaption(out: HarvestedPost, text: string): void {
     out.description = text.length > 4000 ? `${text.slice(0, 4000)}…` : text;
     out.title = titleFromText(text);
   }
 
-  function asRecord(v: unknown): Record<string, unknown> | null {
-    return v && typeof v === "object" && !Array.isArray(v)
-      ? (v as Record<string, unknown>)
-      : null;
+  function count(value: number | undefined): number | undefined {
+    return value !== undefined && Number.isFinite(value) ? value : undefined;
   }
 
-  function str(v: unknown): string | undefined {
-    return typeof v === "string" && v.length > 0 ? v : undefined;
+  function captionText(
+    caption: ThreadsCaption | string | null | undefined,
+  ): string | undefined {
+    if (!caption) return undefined;
+    return (caption instanceof Object ? caption.text : caption) || undefined;
   }
 
-  function captionText(caption: unknown): string | undefined {
-    if (caption && typeof caption === "object") {
-      return str((caption as { text?: unknown }).text);
-    }
-    return str(caption);
-  }
-
-  type MediaNode = {
-    media_type?: number;
-    accessibility_caption?: string;
-    video_duration?: number;
-    original_width?: number;
-    original_height?: number;
-    image_versions2?: {
-      candidates?: Array<{ url?: string; width?: number; height?: number }>;
-    };
-    video_versions?: Array<{
-      url?: string;
-      width?: number;
-      height?: number;
-    }>;
-    carousel_media?: MediaNode[];
-  };
-
-  function collectNodeMedia(node: MediaNode): Array<Record<string, unknown>> {
-    const media: Array<Record<string, unknown>> = [];
+  function collectNodeMedia(node: ThreadsMediaNode): HarvestedMedia[] {
+    const media: HarvestedMedia[] = [];
     const seen = new Set<string>();
-    const push = (entry: Record<string, unknown> | null) => {
-      const url = entry && typeof entry.url === "string" ? entry.url : null;
-      if (!url || /^blob:/i.test(url) || isBrandAsset(url) || seen.has(url)) {
-        return;
-      }
+    const push = (entry: HarvestedMedia | null) => {
+      const url = entry?.url;
+      if (!entry || !url || /^blob:/i.test(url) || isBrandAsset(url)) return;
+      if (seen.has(url)) return;
       seen.add(url);
-      media.push(entry as Record<string, unknown>);
+      media.push(entry);
     };
 
-    const dims = (
-      img: { width?: number; height?: number } | null,
+    const applyDims = (
+      entry: HarvestedMedia,
+      img: PickedVersion | null,
       nodeW?: number,
       nodeH?: number,
-    ): { width?: number; height?: number } => {
+    ): void => {
       const width = nodeW || img?.width;
       const height = nodeH || img?.height;
-      return {
-        ...(width ? { width } : {}),
-        ...(height ? { height } : {}),
-      };
+      if (width) entry.width = width;
+      if (height) entry.height = height;
     };
 
     if (node.media_type === 8 && Array.isArray(node.carousel_media)) {
       for (const child of node.carousel_media) {
-        const altText =
-          typeof child.accessibility_caption === "string"
-            ? child.accessibility_caption
-            : undefined;
-        const dur =
-          typeof child.video_duration === "number"
-            ? Math.round(child.video_duration)
-            : undefined;
+        const altText = child.accessibility_caption;
+        const dur = Math.round(count(child.video_duration) ?? 0);
         if (child.media_type === 2) {
           const v = pickBestVideo(child.video_versions ?? null);
           const img = pickBestImage(child.image_versions2 ?? null);
           const src = v ?? img;
           if (!src) continue;
-          push({
-            url: src.url,
-            type: "video",
-            ...(img ? { poster: img.url } : {}),
-            ...(altText ? { altText } : {}),
-            ...(dur ? { durationSec: dur } : {}),
-            ...dims(v ?? img, child.original_width, child.original_height),
-          });
+          const entry: HarvestedMedia = { url: src.url, type: "video" };
+          if (img) entry.poster = img.url;
+          if (altText) entry.altText = altText;
+          if (dur) entry.durationSec = dur;
+          applyDims(
+            entry,
+            v ?? img,
+            child.original_width,
+            child.original_height,
+          );
+          push(entry);
         } else {
           const img = pickBestImage(child.image_versions2 ?? null);
           if (!img) continue;
-          push({
-            url: img.url,
-            type: "image",
-            ...(altText ? { altText } : {}),
-            ...dims(img, child.original_width, child.original_height),
-          });
+          const entry: HarvestedMedia = { url: img.url, type: "image" };
+          if (altText) entry.altText = altText;
+          applyDims(entry, img, child.original_width, child.original_height);
+          push(entry);
         }
       }
     } else if (node.media_type === 2) {
@@ -235,62 +352,52 @@ export function inPageThreadsNormalize() {
       const img = pickBestImage(node.image_versions2 ?? null);
       const src = v ?? img;
       if (src) {
-        const dur =
-          typeof node.video_duration === "number"
-            ? Math.round(node.video_duration)
-            : undefined;
-        push({
-          url: src.url,
-          type: "video",
-          ...(img ? { poster: img.url } : {}),
-          ...(dur ? { durationSec: dur } : {}),
-          ...dims(v ?? img, node.original_width, node.original_height),
-        });
+        const dur = Math.round(count(node.video_duration) ?? 0);
+        const entry: HarvestedMedia = { url: src.url, type: "video" };
+        if (img) entry.poster = img.url;
+        if (dur) entry.durationSec = dur;
+        applyDims(entry, v ?? img, node.original_width, node.original_height);
+        push(entry);
       }
     } else {
       const img = pickBestImage(node.image_versions2 ?? null);
       if (img) {
-        const altText =
-          typeof node.accessibility_caption === "string"
-            ? node.accessibility_caption
-            : undefined;
-        push({
-          url: img.url,
-          type: "image",
-          ...(altText ? { altText } : {}),
-          ...dims(img, node.original_width, node.original_height),
-        });
+        const altText = node.accessibility_caption;
+        const entry: HarvestedMedia = { url: img.url, type: "image" };
+        if (altText) entry.altText = altText;
+        applyDims(entry, img, node.original_width, node.original_height);
+        push(entry);
       }
     }
     return media;
   }
 
-  function unwrapQuotedPost(raw: unknown): Record<string, unknown> | null {
-    const rec = asRecord(raw);
-    if (!rec) return null;
-    if (typeof rec.code === "string" || rec.user || rec.owner) return rec;
-    const nested = asRecord(rec.post) ?? asRecord(rec.media);
-    return nested;
+  function unwrapQuotedPost(
+    raw: ThreadsQuotedPost | null | undefined,
+  ): ThreadsMediaNode | null {
+    if (!raw) return null;
+    if (raw.code !== undefined || raw.user || raw.owner) return raw;
+    return raw.post ?? raw.media ?? null;
   }
 
   function quotedFromShare(
-    info: Record<string, unknown> | null | undefined,
+    info: ThreadsPostInfo | null | undefined,
     parentCode: string,
-  ): Record<string, unknown> | null {
-    const share = asRecord(info?.share_info);
+  ): HarvestedQuote | null {
+    const share = info?.share_info;
     if (!share) return null;
     const quotedNode = unwrapQuotedPost(share.quoted_post);
     if (!quotedNode) return null;
-    const code = str(quotedNode.code);
+    const code = quotedNode.code;
     if (code && code === parentCode) return null;
 
-    const user = asRecord(quotedNode.user) ?? asRecord(quotedNode.owner);
-    const handle = str(user?.username);
+    const user = quotedNode.user ?? quotedNode.owner;
+    const handle = user?.username;
     const text = captionText(quotedNode.caption);
-    const media = collectNodeMedia(quotedNode as MediaNode);
+    const media = collectNodeMedia(quotedNode);
     if (!handle && !text && media.length === 0) return null;
 
-    const quoted: Record<string, unknown> = {};
+    const quoted: HarvestedQuote = {};
     if (code) quoted.tweetId = code;
     if (handle && code) {
       quoted.url = `https://www.threads.com/@${handle}/post/${code}`;
@@ -298,171 +405,103 @@ export function inPageThreadsNormalize() {
       quoted.url = `https://www.threads.com/t/${code}`;
     }
     if (handle) quoted.author = `@${handle}`;
-    if (str(user?.full_name)) quoted.authorName = user?.full_name;
-    if (str(user?.profile_pic_url)) quoted.authorAvatar = user?.profile_pic_url;
+    if (user?.full_name) quoted.authorName = user.full_name;
+    if (user?.profile_pic_url) quoted.authorAvatar = user.profile_pic_url;
     if (text) quoted.text = text;
     if (media.length > 0) quoted.media = media;
     return quoted;
   }
 
   function cardFromPreview(
-    info: Record<string, unknown> | null | undefined,
-  ): Record<string, unknown> | null {
-    const att =
-      asRecord(info?.link_preview_attachment) ??
-      asRecord(info?.link_preview_response);
+    info: ThreadsPostInfo | null | undefined,
+  ): HarvestedCard | null {
+    const att = info?.link_preview_attachment ?? info?.link_preview_response;
     if (!att) return null;
-    const url = str(att.url) ?? str(att.display_url);
-    const title = str(att.title);
-    const description = str(att.description);
-    const image = asRecord(att.image) ?? asRecord(att.image_versions2);
-    const imageUrl =
-      str(att.image_url) ?? str(image?.url) ?? str(asRecord(image)?.uri);
+    const url = att.url || att.display_url;
+    const title = att.title;
+    const description = att.description;
+    const image = att.image ?? att.image_versions2;
+    const imageUrl = att.image_url || image?.url || image?.uri;
     if (!url && !title && !imageUrl) return null;
-    let domain: string | undefined = str(att.display_url);
+    let domain: string | undefined = att.display_url;
     if (url) {
       try {
         domain = new URL(url).hostname.replace(/^www\./, "");
       } catch {}
     }
     if (domain) domain = domain.replace(/^www\./, "").split("/")[0];
-    return {
-      ...(url ? { url } : {}),
-      ...(domain ? { domain } : {}),
-      ...(title ? { title } : {}),
-      ...(description ? { description } : {}),
-      ...(imageUrl ? { imageUrl } : {}),
-    };
+    const card: HarvestedCard = {};
+    if (url) card.url = url;
+    if (domain) card.domain = domain;
+    if (title) card.title = title;
+    if (description) card.description = description;
+    if (imageUrl) card.imageUrl = imageUrl;
+    return card;
   }
 
-  function normalizeMediaNode(node: {
-    pk?: string | number;
-    code?: string;
-    media_type?: number;
-    taken_at?: number;
-    like_count?: number;
-    comment_count?: number;
-    video_duration?: number;
-    original_width?: number;
-    original_height?: number;
-    accessibility_caption?: string;
-    caption?: { text?: string } | string | null;
-    user?: {
-      username?: string;
-      full_name?: string;
-      profile_pic_url?: string;
-      is_verified?: boolean;
-    };
-    owner?: {
-      username?: string;
-      full_name?: string;
-      profile_pic_url?: string;
-      is_verified?: boolean;
-    };
-    image_versions2?: {
-      candidates?: Array<{ url?: string; width?: number; height?: number }>;
-    };
-    video_versions?: Array<{
-      url?: string;
-      width?: number;
-      height?: number;
-    }>;
-    carousel_media?: Array<{
-      media_type?: number;
-      accessibility_caption?: string;
-      video_duration?: number;
-      original_width?: number;
-      original_height?: number;
-      image_versions2?: {
-        candidates?: Array<{ url?: string; width?: number; height?: number }>;
-      };
-      video_versions?: Array<{
-        url?: string;
-        width?: number;
-        height?: number;
-      }>;
-    }>;
-    text_post_app_info?: {
-      direct_reply_count?: number;
-      quote_count?: number;
-      repost_count?: number;
-      is_reply?: boolean;
-      reply_to_author?: { username?: string };
-      share_info?: {
-        quoted_post?: unknown;
-        reposted_post?: unknown;
-      };
-      link_preview_attachment?: unknown;
-      link_preview_response?: unknown;
-    };
-  }): Record<string, unknown> | null {
-    const code = typeof node.code === "string" ? node.code : null;
+  function normalizeMediaNode(node: ThreadsMediaNode): HarvestedPost | null {
+    const code = node.code;
     if (!code) return null;
 
     const user = node.user ?? node.owner;
     const handle = user?.username;
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+    const out: HarvestedPost = {};
+    const meta: HarvestedMeta = {};
 
     if (handle) {
       out.author = `@${handle}`;
       meta.authorUrl = `https://www.threads.com/@${handle}`;
       if (user?.full_name) meta.authorName = user.full_name;
       if (user?.profile_pic_url) meta.authorAvatar = user.profile_pic_url;
-      if (typeof user?.is_verified === "boolean") {
+      if (user?.is_verified !== undefined) {
         meta.verified = user.is_verified;
       }
     }
 
-    if (typeof node.taken_at === "number") {
-      meta.publishedAt = new Date(node.taken_at * 1000).toISOString();
+    const takenAt = count(node.taken_at);
+    if (takenAt !== undefined) {
+      meta.publishedAt = new Date(takenAt * 1000).toISOString();
     }
 
     const htmlLang =
-      typeof document !== "undefined"
-        ? document.documentElement.lang?.trim()
-        : null;
+      "document" in globalThis ? document.documentElement.lang?.trim() : null;
     if (htmlLang) {
       out.lang = htmlLang;
       meta.lang = htmlLang;
     }
 
     const info = node.text_post_app_info;
-    const metrics: Record<string, number> = {};
-    if (typeof node.like_count === "number") metrics.likes = node.like_count;
-    if (typeof info?.direct_reply_count === "number") {
-      metrics.replies = info.direct_reply_count;
-    } else if (typeof node.comment_count === "number") {
-      metrics.replies = node.comment_count;
-    }
-    if (typeof info?.repost_count === "number") {
-      metrics.retweets = info.repost_count;
-    }
-    if (typeof info?.quote_count === "number") {
-      metrics.quotes = info.quote_count;
-    }
+    const metrics: HarvestedMetrics = {};
+    const likes = count(node.like_count);
+    if (likes !== undefined) metrics.likes = likes;
+    const replies =
+      count(info?.direct_reply_count) ?? count(node.comment_count);
+    if (replies !== undefined) metrics.replies = replies;
+    const reposts = count(info?.repost_count);
+    if (reposts !== undefined) metrics.retweets = reposts;
+    const quotes = count(info?.quote_count);
+    if (quotes !== undefined) metrics.quotes = quotes;
     if (Object.keys(metrics).length > 0) meta.metrics = metrics;
 
-    const caption = node.caption;
-    const text = captionText(caption);
+    const text = captionText(node.caption);
     if (text) applyCaption(out, text);
 
     const media = collectNodeMedia(node);
-    if (media.length > 0) {
+    const first = media[0];
+    if (first) {
       out.mediaUrls = media;
-      out.mediaUrl = (media[0] as Record<string, unknown>).url;
-      out.mediaType = (media[0] as Record<string, unknown>).type ?? "image";
+      out.mediaUrl = first.url;
+      out.mediaType = first.type;
       meta.media = media;
     }
 
-    const infoRec = info as Record<string, unknown> | undefined;
-    const quoted = quotedFromShare(infoRec, code);
+    const quoted = quotedFromShare(info, code);
     if (quoted) meta.quotedTweet = quoted;
-    const card = cardFromPreview(infoRec);
+    const card = cardFromPreview(info);
     if (card) meta.card = card;
     if (info?.is_reply === true) {
       meta.isReply = true;
-      const replyHandle = str(info.reply_to_author?.username);
+      const replyHandle = info.reply_to_author?.username;
       if (replyHandle) meta.replyingTo = replyHandle;
     }
 

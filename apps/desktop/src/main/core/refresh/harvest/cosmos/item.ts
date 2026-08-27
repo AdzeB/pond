@@ -1,9 +1,10 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageCosmosNormalize } from "./normalize";
+import { type CosmosElementPage, inPageCosmosNormalize } from "./normalize";
 
 export function buildExpression(elementId: string): string {
   return buildItemExpression(
@@ -16,7 +17,7 @@ export function buildExpression(elementId: string): string {
 async function inPageCosmosHarvest(
   _elementId: string,
   norm: ReturnType<typeof inPageCosmosNormalize>,
-): Promise<unknown> {
+): Promise<CosmosElementPage | null> {
   const deadline = Date.now() + 12_000;
   const ready = (): boolean =>
     !!document.querySelector('meta[property="og:image"]') ||
@@ -28,7 +29,7 @@ async function inPageCosmosHarvest(
   return norm.extractElementPageMeta();
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

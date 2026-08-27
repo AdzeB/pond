@@ -1,5 +1,28 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+export interface YoutubeWatchMeta {
+  authorUrl?: string;
+  authorAvatar?: string;
+  views?: number;
+  publishedAt?: string;
+  likes?: number;
+  durationSec?: number;
+  lang?: string;
+}
+
+export interface YoutubeWatchPage {
+  title: string;
+  author?: string;
+  description?: string;
+  lang?: string;
+  mediaUrl?: string;
+  mediaUrls?: Array<{ url: string; type: MediaType }>;
+  mediaType?: MediaType;
+  meta?: YoutubeWatchMeta;
+}
+
 export function inPageYoutubeNormalize() {
   function extractVideoId(href: string): string | null {
     try {
@@ -30,15 +53,15 @@ export function inPageYoutubeNormalize() {
     return Math.round(num * mult);
   }
 
-  function extractWatchPageMeta(): Record<string, unknown> | null {
+  function extractWatchPageMeta(): YoutubeWatchPage | null {
     const titleEl = document.querySelector<HTMLElement>(
       "#title h1 yt-formatted-string, #title h1",
     );
     const title = titleEl?.textContent?.trim();
     if (!title) return null;
 
-    const out: Record<string, unknown> = { title };
-    const meta: Record<string, unknown> = {};
+    const out: YoutubeWatchPage = { title };
+    const meta: YoutubeWatchMeta = {};
 
     const channelEl = document.querySelector<HTMLElement>(
       "#channel-name yt-formatted-string a, ytd-channel-name yt-formatted-string a",

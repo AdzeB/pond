@@ -1,12 +1,44 @@
 /// <reference lib="dom" />
 
 import type { BookmarksCapture } from "./graphql";
-import type { BookmarksHarvestArgs, BookmarksHarvestResult } from "./list";
+import type {
+  BookmarksHarvestArgs,
+  BookmarksHarvestResult,
+  HarvestStats,
+} from "./list";
 
 interface BookmarksRequestTemplate {
   url: string;
   method: string;
   headers: Record<string, string>;
+}
+
+declare global {
+  /** The scrape preload records the bookmarks GraphQL request on the page for this harvest to replay. */
+  var __pondBookmarksRequest: BookmarksRequestTemplate | null | undefined;
+}
+
+/** Only `cursor` is read or rewritten; every other key rides along untouched on the replay. */
+interface BookmarksVariables {
+  cursor?: string;
+}
+
+interface TimelineEntry {
+  entryId?: string;
+  content?: { value?: string };
+}
+
+interface TimelineInstruction {
+  type?: string;
+  entries?: TimelineEntry[];
+}
+
+interface BookmarksResponse {
+  data?: {
+    bookmark_timeline_v2?: {
+      timeline?: { instructions?: TimelineInstruction[] };
+    };
+  };
 }
 
 interface BookmarksApiDebug {
@@ -92,15 +124,8 @@ async function inPageBookmarksApi(
   };
 
   const getRequest = (): BookmarksRequestTemplate | null => {
-    const req = (
-      globalThis as unknown as {
-        __pondBookmarksRequest?: BookmarksRequestTemplate | null;
-      }
-    ).__pondBookmarksRequest;
-    if (!req || typeof req.url !== "string" || req.url.length === 0) {
-      return null;
-    }
-    return req;
+    const req = globalThis.__pondBookmarksRequest;
+    return req?.url ? req : null;
   };
 
   let template = getRequest();
@@ -110,7 +135,7 @@ async function inPageBookmarksApi(
     if (!nudged && Date.now() - (waitDeadline - 20_000) > 4_000) {
       nudged = true;
       try {
-        window.scrollBy({ top: 600, behavior: "instant" as ScrollBehavior });
+        window.scrollBy({ top: 600, behavior: "instant" });
       } catch {}
     }
     await sleep(250);
@@ -127,10 +152,10 @@ async function inPageBookmarksApi(
     return { ok: false, reason: "fallback", detail: "bad_url" };
   }
 
-  let baseVariables: Record<string, unknown> = {};
+  let baseVariables: BookmarksVariables = {};
   try {
     const raw = base.searchParams.get("variables");
-    if (raw) baseVariables = JSON.parse(raw) as Record<string, unknown>;
+    if (raw) baseVariables = JSON.parse(raw);
   } catch {}
 
   const headers: Record<string, string> = {};
@@ -148,81 +173,45 @@ async function inPageBookmarksApi(
     return u.toString();
   };
 
-  interface Instruction {
-    type?: string;
-    entries?: Array<{
-      entryId?: string;
-      content?: { value?: string };
-    }>;
-  }
-  const readInstructions = (json: unknown): Instruction[] => {
-    const ins = (
-      json as {
-        data?: {
-          bookmark_timeline_v2?: { timeline?: { instructions?: unknown } };
-        };
-      }
-    )?.data?.bookmark_timeline_v2?.timeline?.instructions;
-    return Array.isArray(ins) ? (ins as Instruction[]) : [];
-  };
-  const extractCursor = (json: unknown): string | null => {
-    for (const ix of readInstructions(json)) {
+  const addedEntries = (json: BookmarksResponse): TimelineEntry[] => {
+    const ins = json.data?.bookmark_timeline_v2?.timeline?.instructions;
+    if (!Array.isArray(ins)) return [];
+    const out: TimelineEntry[] = [];
+    for (const ix of ins) {
       if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
         continue;
       }
-      for (const e of ix.entries) {
-        if (
-          typeof e.entryId === "string" &&
-          e.entryId.startsWith("cursor-bottom") &&
-          typeof e.content?.value === "string"
-        ) {
-          return e.content.value;
-        }
-      }
+      out.push(...ix.entries);
+    }
+    return out;
+  };
+  const extractCursor = (json: BookmarksResponse): string | null => {
+    for (const e of addedEntries(json)) {
+      if (!e.entryId?.startsWith("cursor-bottom")) continue;
+      if (e.content?.value !== undefined) return e.content.value;
     }
     return null;
   };
-  const countTweets = (json: unknown): number => {
-    let n = 0;
-    for (const ix of readInstructions(json)) {
-      if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
-        continue;
-      }
-      for (const e of ix.entries) {
-        if (typeof e.entryId === "string" && e.entryId.startsWith("tweet-")) {
-          n += 1;
-        }
-      }
-    }
-    return n;
-  };
-  const pageTweetIds = (json: unknown): string[] => {
+  const pageTweetIds = (json: BookmarksResponse): string[] => {
     const ids: string[] = [];
-    for (const ix of readInstructions(json)) {
-      if (ix.type !== "TimelineAddEntries" || !Array.isArray(ix.entries)) {
-        continue;
-      }
-      for (const e of ix.entries) {
-        if (typeof e.entryId === "string" && e.entryId.startsWith("tweet-")) {
-          ids.push(e.entryId.slice("tweet-".length));
-        }
+    for (const e of addedEntries(json)) {
+      if (e.entryId?.startsWith("tweet-")) {
+        ids.push(e.entryId.slice("tweet-".length));
       }
     }
     return ids;
   };
 
-  const stats = {
+  const stats: HarvestStats = {
     seen: 0,
     fresh: 0,
     articles: 0,
     captures: 0,
     scrolls: 0,
-    phase: "scroll" as "hydrate" | "scroll" | "done",
+    phase: "scroll",
     updatedAt: Date.now(),
   };
-  (
-    globalThis as unknown as { __pondHarvestStats?: typeof stats }
-  ).__pondHarvestStats = stats;
+  globalThis.__pondHarvestStats = stats;
 
   const captures: BookmarksCapture[] = [];
   const deadline = Date.now() + args.deadlineMs;
@@ -230,8 +219,7 @@ async function inPageBookmarksApi(
   const earlyStopEnabled = known.size > 0;
   const STOP_AFTER_KNOWN_PAGES = 2;
   let knownPageStreak = 0;
-  let cursor: string | null =
-    typeof baseVariables.cursor === "string" ? baseVariables.cursor : null;
+  let cursor: string | null = baseVariables.cursor ?? null;
   let prevCursor: string | null = null;
   let pages = 0;
   let tweetTotal = 0;
@@ -275,7 +263,7 @@ async function inPageBookmarksApi(
     }
 
     const body = await res.text();
-    let json: unknown;
+    let json: BookmarksResponse;
     try {
       json = JSON.parse(body);
     } catch {
@@ -286,7 +274,8 @@ async function inPageBookmarksApi(
       break;
     }
 
-    const tweets = countTweets(json);
+    const ids = pageTweetIds(json);
+    const tweets = ids.length;
     const next = extractCursor(json);
     captures.push({ url, body, status: res.status });
     pages += 1;
@@ -298,7 +287,6 @@ async function inPageBookmarksApi(
     stats.updatedAt = Date.now();
 
     if (earlyStopEnabled && tweets > 0) {
-      const ids = pageTweetIds(json);
       const hasFresh = ids.some((id) => !known.has(id));
       if (!hasFresh) {
         knownPageStreak += 1;

@@ -1,5 +1,82 @@
 /// <reference lib="dom" />
 
+import type { MediaType } from "@pond/schema/db";
+
+export interface InstagramMediaVersion {
+  url?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface InstagramImageVersions {
+  candidates?: InstagramMediaVersion[];
+}
+
+export interface InstagramUser {
+  username?: string;
+  full_name?: string;
+  profile_pic_url?: string;
+  is_verified?: boolean;
+}
+
+export interface InstagramMediaNode {
+  pk?: string | number;
+  code?: string;
+  media_type?: number;
+  taken_at?: number;
+  like_count?: number;
+  comment_count?: number;
+  play_count?: number;
+  video_duration?: number;
+  is_paid_partnership?: boolean;
+  accessibility_caption?: string;
+  location?: { name?: string };
+  caption?: { text?: string } | string | null;
+  user?: InstagramUser;
+  owner?: InstagramUser;
+  image_versions2?: InstagramImageVersions;
+  video_versions?: InstagramMediaVersion[];
+  carousel_media?: InstagramMediaNode[];
+}
+
+export interface InstagramMedia {
+  url: string;
+  type: MediaType;
+  poster?: string;
+  altText?: string;
+  durationSec?: number;
+}
+
+export interface InstagramMeta {
+  authorUrl?: string;
+  authorName?: string;
+  authorAvatar?: string;
+  verified?: boolean;
+  publishedAt?: string;
+  lang?: string;
+  metrics?: { likes?: number; comments?: number; plays?: number };
+  isPaidPartnership?: boolean;
+  location?: string;
+  accessibilityCaption?: string;
+  videoDurationSec?: number;
+}
+
+export interface InstagramPost {
+  title?: string;
+  description?: string;
+  author?: string;
+  mediaUrl?: string;
+  mediaUrls?: InstagramMedia[];
+  mediaType?: MediaType;
+  meta?: InstagramMeta;
+}
+
+export interface InstagramEntry extends InstagramPost {
+  sourceId: string;
+  url: string;
+  savedAt?: string;
+}
+
 export function inPageInstagramNormalize() {
   const ALPHABET =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -27,7 +104,9 @@ export function inPageInstagramNormalize() {
     return n.toString();
   }
 
-  function pickBestImage(iv2: any): string | null {
+  function pickBestImage(
+    iv2: InstagramImageVersions | undefined,
+  ): string | null {
     if (!iv2) return null;
     const cands = iv2.candidates || [];
     let best: { url: string; w: number } | null = null;
@@ -39,7 +118,9 @@ export function inPageInstagramNormalize() {
     return best?.url ?? null;
   }
 
-  function pickBestVideo(versions: any): string | null {
+  function pickBestVideo(
+    versions: InstagramMediaVersion[] | undefined,
+  ): string | null {
     if (!Array.isArray(versions)) return null;
     for (const v of versions) {
       if (typeof v?.url === "string") return v.url;
@@ -48,16 +129,16 @@ export function inPageInstagramNormalize() {
   }
 
   function normalizeMediaNode(
-    node: any,
+    node: InstagramMediaNode,
     opts?: { savedTimestamp?: number },
-  ): Record<string, unknown> | null {
+  ): InstagramEntry | null {
     const pk = node.pk != null ? String(node.pk) : null;
     const code =
       typeof node.code === "string" ? node.code : pk ? pkToShortcode(pk) : null;
     if (!code) return null;
 
     const kind = node.media_type === 2 ? "reel" : "p";
-    const out: Record<string, unknown> = {
+    const out: InstagramEntry = {
       sourceId: code,
       url: `https://www.instagram.com/${kind}/${code}/`,
     };
@@ -66,7 +147,7 @@ export function inPageInstagramNormalize() {
       out.savedAt = new Date(opts.savedTimestamp * 1000).toISOString();
     }
 
-    const meta: Record<string, unknown> = {};
+    const meta: InstagramMeta = {};
 
     const user = node.user ?? node.owner;
     if (user?.username) {
@@ -88,7 +169,7 @@ export function inPageInstagramNormalize() {
         : null;
     if (htmlLang) meta.lang = htmlLang;
 
-    const metrics: Record<string, number> = {};
+    const metrics: NonNullable<InstagramMeta["metrics"]> = {};
     if (typeof node.like_count === "number") metrics.likes = node.like_count;
     if (typeof node.comment_count === "number")
       metrics.comments = node.comment_count;
@@ -105,7 +186,7 @@ export function inPageInstagramNormalize() {
 
     const caption = node.caption;
     const text =
-      caption?.text ?? (typeof caption === "string" ? caption : null);
+      typeof caption === "string" ? caption : (caption?.text ?? null);
     if (text) {
       out.description = text.length > 4000 ? `${text.slice(0, 4000)}…` : text;
       const firstLine = text.split(/\n+/)[0]?.trim() ?? text;
@@ -115,12 +196,12 @@ export function inPageInstagramNormalize() {
           : `${firstLine.slice(0, 89).trimEnd()}…`;
     }
 
-    const media: Array<Record<string, unknown>> = [];
+    const media: InstagramMedia[] = [];
     const seen = new Set<string>();
     const push = (
       url: string | null,
-      type: string,
-      extra?: Record<string, unknown>,
+      type: MediaType,
+      extra?: Omit<InstagramMedia, "url" | "type">,
     ) => {
       if (!url || /^blob:/i.test(url) || seen.has(url)) return;
       seen.add(url);
@@ -140,11 +221,11 @@ export function inPageInstagramNormalize() {
         if (child.media_type === 2) {
           const v = pickBestVideo(child.video_versions);
           const img = pickBestImage(child.image_versions2);
-          push(v || img, "video", {
-            ...(img ? { poster: img } : {}),
-            ...(altText ? { altText } : {}),
-            ...(dur ? { durationSec: dur } : {}),
-          });
+          const extra: Omit<InstagramMedia, "url" | "type"> = {};
+          if (img) extra.poster = img;
+          if (altText) extra.altText = altText;
+          if (dur) extra.durationSec = dur;
+          push(v || img, "video", extra);
         } else {
           const img = pickBestImage(child.image_versions2);
           push(img, "image", altText ? { altText } : {});
@@ -159,10 +240,11 @@ export function inPageInstagramNormalize() {
       push(img, "image");
     }
 
-    if (media.length > 0) {
+    const first = media[0];
+    if (first) {
       out.mediaUrls = media;
-      out.mediaUrl = (media[0] as Record<string, unknown>).url;
-      out.mediaType = (media[0] as Record<string, unknown>).type ?? "image";
+      out.mediaUrl = first.url;
+      out.mediaType = first.type;
     }
 
     if (Object.keys(meta).length > 0) out.meta = meta;

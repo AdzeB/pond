@@ -135,27 +135,27 @@ describe("threads extras from text_post_app_info", () => {
       },
     });
     expect(out).not.toBeNull();
-    const meta = out?.meta as Record<string, unknown>;
-    expect(meta.quotedTweet).toMatchObject({
+    const meta = out?.meta;
+    expect(meta?.quotedTweet).toMatchObject({
       tweetId: "QuotedCode01",
       url: "https://www.threads.com/@carol/post/QuotedCode01",
       author: "@carol",
       authorName: "Carol",
       text: "original thought",
     });
-    expect(
-      (meta.quotedTweet as { media: Array<{ url: string }> }).media[0]?.url,
-    ).toBe("https://cdn.example.com/quoted.jpg");
-    expect(meta.card).toMatchObject({
+    expect(meta?.quotedTweet?.media?.[0]?.url).toBe(
+      "https://cdn.example.com/quoted.jpg",
+    );
+    expect(meta?.card).toMatchObject({
       url: "https://www.example.com/article",
       domain: "example.com",
       title: "An article",
       description: "About something",
       imageUrl: "https://cdn.example.com/og.jpg",
     });
-    expect(meta.isReply).toBe(true);
-    expect(meta.replyingTo).toBe("bob");
-    expect((meta.media as Array<{ url: string }>).map((m) => m.url)).toEqual([
+    expect(meta?.isReply).toBe(true);
+    expect(meta?.replyingTo).toBe("bob");
+    expect(meta?.media?.map((m) => m.url)).toEqual([
       "https://cdn.example.com/parent.jpg",
     ]);
   });

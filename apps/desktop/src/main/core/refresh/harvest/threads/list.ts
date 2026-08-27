@@ -8,6 +8,22 @@ import { inPageThreadsNormalize } from "./normalize";
 
 export const THREADS_LIST_URL = "https://www.threads.com/saved";
 
+interface ThreadsListMedia {
+  url: string;
+  type?: MediaType;
+  poster?: string;
+}
+
+interface ThreadsListEntry {
+  sourceId: string;
+  url: string;
+  title?: string;
+  author?: string;
+  mediaUrl?: string;
+  mediaUrls?: ThreadsListMedia[];
+  mediaType?: MediaType;
+}
+
 export function buildThreadsListExpression(args: ListHarvestArgs): string {
   return buildScrollListExpression(
     inPageThreadsNormalize,
@@ -29,15 +45,7 @@ async function inPageThreadsList(
   }
 
   function collectFn() {
-    const out: Array<{
-      sourceId: string;
-      url: string;
-      title?: string;
-      author?: string;
-      mediaUrl?: string;
-      mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
-      mediaType?: MediaType;
-    }> = [];
+    const out: ThreadsListEntry[] = [];
     const seen = new Set<string>();
     const links = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href*="/post/"]'),
@@ -72,11 +80,7 @@ async function inPageThreadsList(
         });
       const text = texts[0];
 
-      const mediaUrls: Array<{
-        url: string;
-        type?: MediaType;
-        poster?: string;
-      }> = [];
+      const mediaUrls: ThreadsListMedia[] = [];
       const seenMedia = new Set<string>();
       const push = (
         url: string | undefined,
@@ -86,7 +90,9 @@ async function inPageThreadsList(
         if (!url || url.startsWith("data:") || url.startsWith("blob:")) return;
         if (norm.isBrandAsset(url) || seenMedia.has(url)) return;
         seenMedia.add(url);
-        mediaUrls.push({ url, type, ...(poster ? { poster } : {}) });
+        const entry: ThreadsListMedia = { url, type };
+        if (poster) entry.poster = poster;
+        mediaUrls.push(entry);
       };
 
       for (const v of Array.from(
@@ -107,21 +113,21 @@ async function inPageThreadsList(
       }
 
       const cleanUrl = href.split("?")[0] ?? href;
-      out.push({
+      const entry: ThreadsListEntry = {
         sourceId: id,
         url: cleanUrl.startsWith("http")
           ? cleanUrl
           : `https://www.threads.com${cleanUrl}`,
-        ...(text ? { title: norm.titleFromText(text) } : {}),
-        ...(handle ? { author: handle } : {}),
-        ...(mediaUrls.length > 0
-          ? {
-              mediaUrl: mediaUrls[0]?.url,
-              mediaUrls,
-              mediaType: mediaUrls[0]?.type ?? ("image" as MediaType),
-            }
-          : {}),
-      });
+      };
+      if (text) entry.title = norm.titleFromText(text);
+      if (handle) entry.author = handle;
+      const firstMedia = mediaUrls[0];
+      if (firstMedia) {
+        entry.mediaUrl = firstMedia.url;
+        entry.mediaUrls = mediaUrls;
+        entry.mediaType = firstMedia.type ?? "image";
+      }
+      out.push(entry);
     }
     return out;
   }

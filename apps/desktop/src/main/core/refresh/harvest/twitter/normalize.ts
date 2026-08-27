@@ -27,7 +27,7 @@ export function inPageTwitterNormalize() {
   }
 
   function httpMediaUrl(url: string | undefined): string | undefined {
-    if (typeof url !== "string" || !/^https?:\/\//i.test(url)) return undefined;
+    if (url === undefined || !/^https?:\/\//i.test(url)) return undefined;
     return upgradeTwimgUrl(url);
   }
 
@@ -63,10 +63,7 @@ export function inPageTwitterNormalize() {
   function readDuration(video: HTMLVideoElement | null): number | undefined {
     if (!video) return undefined;
     const d = video.duration;
-    if (typeof d === "number" && Number.isFinite(d) && d > 0) {
-      return Math.round(d);
-    }
-    return undefined;
+    return Number.isFinite(d) && d > 0 ? Math.round(d) : undefined;
   }
 
   return {

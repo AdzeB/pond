@@ -1,7 +1,9 @@
+import { MEDIA_TYPES } from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import {
-  type BookmarksApiResult,
   type BookmarksEntry,
   type BookmarksHarvestArgs,
   type BookmarksHarvestResult,
@@ -25,6 +27,104 @@ interface BookmarksHarvestProgress {
   articles: number;
   captures: number;
   scrolls: number;
+}
+
+const OptionalText = z.string().optional().catch(undefined);
+const OptionalCount = z.number().optional().catch(undefined);
+const TextSchema = z.string().catch("");
+
+const BookmarksStatsSchema = z
+  .object({
+    phase: z.enum(["hydrate", "scroll", "done"]),
+    seen: z.number().catch(0),
+    fresh: z.number().catch(0),
+    articles: z.number().catch(0),
+    captures: z.number().catch(0),
+    scrolls: z.number().catch(0),
+  })
+  .nullable()
+  .catch(null);
+
+/** One drifted entry must not cost the page; each falls back to null and is dropped. */
+const BookmarksEntrySchema = z
+  .object({
+    tweetId: z.string(),
+    url: z.string(),
+    bookmarkedAt: OptionalText,
+    title: OptionalText,
+    description: OptionalText,
+    author: OptionalText,
+    mediaUrl: OptionalText,
+    mediaUrls: z
+      .array(
+        z.object({
+          url: z.string(),
+          type: z.enum(MEDIA_TYPES).optional().catch(undefined),
+          poster: OptionalText,
+        }),
+      )
+      .optional()
+      .catch(undefined),
+  })
+  .nullable()
+  .catch(null);
+
+const BookmarksCaptureSchema = z
+  .object({ url: z.string(), body: z.string(), status: OptionalCount })
+  .nullable()
+  .catch(null);
+
+const HarvestedPageSchema = z.object({
+  ok: z.literal(true),
+  entries: z.array(BookmarksEntrySchema).catch([]),
+  captures: z.array(BookmarksCaptureSchema).catch([]),
+  reachedEnd: z.boolean().catch(false),
+});
+
+const BookmarksApiResultSchema = z
+  .union([
+    HarvestedPageSchema.extend({
+      apiDebug: z
+        .object({
+          pages: OptionalCount,
+          tweets: OptionalCount,
+          reason: OptionalText,
+        })
+        .optional()
+        .catch(undefined),
+    }),
+    z.object({
+      ok: z.literal(false),
+      reason: z
+        .enum(["auth_required", "rate_limited", "fallback"])
+        .catch("fallback"),
+      retryAfterSec: z.number().nullable().optional().catch(null),
+      detail: OptionalText,
+    }),
+  ])
+  .nullable()
+  .catch(null);
+
+const BookmarksScrollResultSchema = z
+  .union([
+    HarvestedPageSchema,
+    z.object({
+      ok: z.literal(false),
+      reason: z
+        .enum(["auth_required", "no_match", "timeout", "rate_limited"])
+        .catch("no_match"),
+      retryAfterSec: OptionalCount,
+    }),
+  ])
+  .nullable()
+  .catch(null);
+
+function readStats(raw: string): z.infer<typeof BookmarksStatsSchema> {
+  try {
+    return BookmarksStatsSchema.parse(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
 export async function harvestTwitterBookmarks(
@@ -67,16 +167,8 @@ export async function harvestTwitterBookmarks(
           true,
         )
         .then((raw) => {
-          if (typeof raw !== "string" || raw === "null") return;
-          let stats: Omit<BookmarksHarvestProgress, "phase"> & {
-            phase: "hydrate" | "scroll" | "done";
-          };
-          try {
-            stats = JSON.parse(raw);
-          } catch {
-            return;
-          }
-          if (stats.phase === "done") return;
+          const stats = readStats(TextSchema.parse(raw));
+          if (!stats || stats.phase === "done") return;
           const moved = stats.seen !== lastSeen || stats.phase !== lastPhase;
           if (!moved) return;
           lastSeen = stats.seen;
@@ -93,7 +185,7 @@ export async function harvestTwitterBookmarks(
         .catch(() => {});
     }, 1500);
 
-    const runExpr = (expr: string): Promise<unknown> =>
+    const runExpr = (expr: string): Promise<JsonValue> =>
       Promise.race([
         lease.win.webContents.executeJavaScript(expr, true),
         sleep(6 * 60_000).then(() => "__pond_bookmarks_timeout__"),
@@ -105,9 +197,7 @@ export async function harvestTwitterBookmarks(
       if (apiRaw === "__pond_bookmarks_timeout__") {
         log.warn("[pond bookmarks] api harvest timed out; falling back");
       }
-      const api = (
-        apiRaw && typeof apiRaw === "object" ? apiRaw : null
-      ) as BookmarksApiResult | null;
+      const api = BookmarksApiResultSchema.parse(apiRaw);
 
       if (api?.ok) {
         log.info(
@@ -116,8 +206,8 @@ export async function harvestTwitterBookmarks(
         report("twitter", { ok: true });
         result = {
           ok: true,
-          entries: api.entries,
-          captures: api.captures,
+          entries: api.entries.flatMap((e) => (e ? [e] : [])),
+          captures: api.captures.flatMap((c) => (c ? [c] : [])),
           reachedEnd: api.reachedEnd,
         };
       } else if (api && api.reason === "auth_required") {
@@ -145,12 +235,17 @@ export async function harvestTwitterBookmarks(
           log.warn("[pond bookmarks] harvest timed out");
           return { ok: false, reason: "timeout" };
         }
-        if (!scrollRaw || typeof scrollRaw !== "object") {
+        const scroll = BookmarksScrollResultSchema.parse(scrollRaw);
+        if (!scroll) {
           return { ok: false, reason: "no_match" };
         }
-        const scrollResult = scrollRaw as BookmarksHarvestResult;
-        if (!scrollResult.ok) return scrollResult;
-        result = scrollResult;
+        if (!scroll.ok) return scroll;
+        result = {
+          ok: true,
+          entries: scroll.entries.flatMap((e) => (e ? [e] : [])),
+          captures: scroll.captures.flatMap((c) => (c ? [c] : [])),
+          reachedEnd: scroll.reachedEnd,
+        };
       }
     } finally {
       stopPolling = true;
@@ -196,17 +291,13 @@ export async function harvestTwitterBookmarks(
             ? firstLine
             : `${firstLine.slice(0, 89).trimEnd()}…`;
       const richMediaUrls = r.media.length > 0 ? r.media : undefined;
-      const entry: BookmarksEntry = {
-        tweetId,
-        url: r.url,
-        ...(r.bookmarkedAt ? { bookmarkedAt: r.bookmarkedAt } : {}),
-        ...(richTitle ? { title: richTitle } : {}),
-        ...(r.fullText ? { description: r.fullText } : {}),
-        ...(r.author.handle ? { author: `@${r.author.handle}` } : {}),
-        ...(richMediaUrls ? { mediaUrls: richMediaUrls } : {}),
-        ...(r.media[0]?.url ? { mediaUrl: r.media[0].url } : {}),
-        rich: r,
-      };
+      const entry: BookmarksEntry = { tweetId, url: r.url, rich: r };
+      if (r.bookmarkedAt) entry.bookmarkedAt = r.bookmarkedAt;
+      if (richTitle) entry.title = richTitle;
+      if (r.fullText) entry.description = r.fullText;
+      if (r.author.handle) entry.author = `@${r.author.handle}`;
+      if (richMediaUrls) entry.mediaUrls = richMediaUrls;
+      if (r.media[0]?.url) entry.mediaUrl = r.media[0].url;
       merged.push(entry);
     }
     log.info(

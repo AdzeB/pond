@@ -1,8 +1,9 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { Source } from "@pond/schema/db";
+import { MEDIA_TYPES, type Source } from "@pond/schema/db";
 import { app, type BrowserWindow } from "electron";
 import log from "electron-log/main.js";
+import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import { arenaProfileUrl, buildArenaListExpression } from "../harvest/arena";
 import {
@@ -42,10 +43,82 @@ interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
 }
 
-interface ListHarvestProgress {
-  phase: string;
-  collected: number;
-  fresh: number;
+const OptionalText = z.string().optional().catch(undefined);
+const OptionalCount = z.number().optional().catch(undefined);
+const StatsTextSchema = z.string().catch("");
+
+const HarvestStatsSchema = z
+  .object({
+    phase: OptionalText,
+    collected: OptionalCount,
+    fresh: OptionalCount,
+  })
+  .nullable()
+  .catch(null);
+
+type ListHarvestProgress = NonNullable<z.infer<typeof HarvestStatsSchema>>;
+
+const PartialEntrySchema = z
+  .object({ sourceId: z.string(), url: z.string(), savedAt: OptionalText })
+  .nullable()
+  .catch(null);
+
+/** One drifted entry must not cost the page; each falls back to null and is dropped. */
+const ListEntrySchema = z
+  .object({
+    sourceId: z.string(),
+    url: z.string(),
+    savedAt: OptionalText,
+    title: OptionalText,
+    description: OptionalText,
+    author: OptionalText,
+    mediaUrl: OptionalText,
+    mediaUrls: z
+      .array(
+        z.object({
+          url: z.string(),
+          type: z.enum(MEDIA_TYPES).optional().catch(undefined),
+          poster: OptionalText,
+        }),
+      )
+      .optional()
+      .catch(undefined),
+    mediaType: z.enum(MEDIA_TYPES).optional().catch(undefined),
+  })
+  .nullable()
+  .catch(null);
+
+const ListResultSchema = z
+  .union([
+    z.object({
+      ok: z.literal(true),
+      entries: z.array(ListEntrySchema).catch([]),
+      reachedEnd: z.boolean().catch(false),
+      seen: OptionalCount,
+    }),
+    z.object({
+      ok: z.literal(false),
+      reason: z
+        .enum([
+          "auth_required",
+          "no_match",
+          "timeout",
+          "unknown",
+          "rate_limited",
+        ])
+        .catch("unknown"),
+      retryAfterSec: OptionalCount,
+    }),
+  ])
+  .nullable()
+  .catch(null);
+
+function readStats(raw: string): ListHarvestProgress | null {
+  try {
+    return HarvestStatsSchema.parse(JSON.parse(raw));
+  } catch {
+    return null;
+  }
 }
 
 export async function harvestSourceList(
@@ -86,7 +159,7 @@ export async function harvestSourceList(
 
     let stopPolling = false;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
-    let lastStats: Record<string, unknown> | null = null;
+    let lastStats: ListHarvestProgress | null = null;
     {
       let lastCollected = -1;
       pollInterval = setInterval(() => {
@@ -96,21 +169,18 @@ export async function harvestSourceList(
             "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
             true,
           )
-          .then((raw: unknown) => {
-            if (typeof raw !== "string" || raw === "null") return;
-            try {
-              const stats = JSON.parse(raw) as ListHarvestProgress &
-                Record<string, unknown>;
-              lastStats = stats;
-              if (
-                opts.onProgress &&
-                typeof stats.collected === "number" &&
-                stats.collected !== lastCollected
-              ) {
-                lastCollected = stats.collected;
-                opts.onProgress?.(stats);
-              }
-            } catch {}
+          .then((raw) => {
+            const stats = readStats(StatsTextSchema.parse(raw));
+            if (!stats) return;
+            lastStats = stats;
+            if (
+              opts.onProgress &&
+              stats.collected !== undefined &&
+              stats.collected !== lastCollected
+            ) {
+              lastCollected = stats.collected;
+              opts.onProgress(stats);
+            }
           })
           .catch(() => {});
       }, 1500);
@@ -153,26 +223,35 @@ export async function harvestSourceList(
       );
     }
 
-    if (!raw || typeof raw !== "object") {
+    const parsed = ListResultSchema.parse(raw);
+    if (!parsed) {
       return { ok: false, reason: "no_match" };
     }
-    const result = raw as ListHarvestResult;
-    if (result.ok && result.seen == null) {
+    if (!parsed.ok) {
+      if (parsed.reason === "rate_limited") {
+        const { cooldownMs } = report(source, {
+          ok: false,
+          rateLimited: true,
+          retryAfterSec: parsed.retryAfterSec,
+        });
+        log.warn(
+          `[pond list:${source}] rate limited; backing off ${Math.round(cooldownMs / 1000)}s`,
+        );
+      }
+      return parsed;
+    }
+    const result: Extract<ListHarvestResult, { ok: true }> = {
+      ok: true,
+      entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
+      reachedEnd: parsed.reachedEnd,
+    };
+    if (parsed.seen != null) {
+      result.seen = parsed.seen;
+    } else {
       const collected = await readHarvestCollected(lease.win);
       if (collected != null) result.seen = collected;
     }
-    if (!result.ok && result.reason === "rate_limited") {
-      const { cooldownMs } = report(source, {
-        ok: false,
-        rateLimited: true,
-        retryAfterSec: result.retryAfterSec,
-      });
-      log.warn(
-        `[pond list:${source}] rate limited; backing off ${Math.round(cooldownMs / 1000)}s`,
-      );
-    } else if (result.ok) {
-      report(source, { ok: true });
-    }
+    report(source, { ok: true });
     return result;
   } catch (err) {
     log.warn("[pond list]", source, "unexpected error", err);
@@ -190,9 +269,7 @@ async function readHarvestCollected(
       "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
       true,
     );
-    if (typeof raw !== "string" || raw === "null") return null;
-    const stats = JSON.parse(raw) as { collected?: number };
-    return typeof stats.collected === "number" ? stats.collected : null;
+    return readStats(StatsTextSchema.parse(raw))?.collected ?? null;
   } catch {
     return null;
   }
@@ -200,32 +277,17 @@ async function readHarvestCollected(
 
 async function readHarvestPartial(
   win: Electron.BrowserWindow,
-): Promise<Array<{ sourceId: string; url: string; savedAt?: string }> | null> {
+): Promise<Array<NonNullable<z.infer<typeof PartialEntrySchema>>> | null> {
   try {
     const raw = await win.webContents.executeJavaScript(
       "JSON.stringify(globalThis.__pondHarvestPartial ?? null)",
       true,
     );
-    if (typeof raw !== "string" || raw === "null") return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed) || parsed.length === 0) return null;
-    const entries: Array<{ sourceId: string; url: string; savedAt?: string }> =
-      [];
-    for (const row of parsed) {
-      if (
-        row &&
-        typeof row === "object" &&
-        typeof (row as { sourceId?: unknown }).sourceId === "string" &&
-        typeof (row as { url?: unknown }).url === "string"
-      ) {
-        const savedAt = (row as { savedAt?: unknown }).savedAt;
-        entries.push({
-          sourceId: (row as { sourceId: string }).sourceId,
-          url: (row as { url: string }).url,
-          ...(typeof savedAt === "string" ? { savedAt } : {}),
-        });
-      }
-    }
+    const rows = z
+      .array(PartialEntrySchema)
+      .catch([])
+      .parse(JSON.parse(StatsTextSchema.parse(raw)));
+    const entries = rows.flatMap((row) => (row ? [row] : []));
     return entries.length > 0 ? entries : null;
   } catch {
     return null;
@@ -315,10 +377,14 @@ export async function harvestYoutubeLikedList(
     if (raw === "__pond_yt_ll_timeout__") {
       return { ok: false, reason: "timeout" };
     }
-    if (!raw || typeof raw !== "object") {
-      return { ok: false, reason: "no_match" };
-    }
-    return raw as ListHarvestResult;
+    const parsed = ListResultSchema.parse(raw);
+    if (!parsed) return { ok: false, reason: "no_match" };
+    if (!parsed.ok) return parsed;
+    return {
+      ok: true,
+      entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
+      reachedEnd: parsed.reachedEnd,
+    };
   } catch (err) {
     log.warn("[pond list] youtube LL unexpected error", err);
     return { ok: false, reason: "timeout" };
@@ -332,7 +398,8 @@ async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
     "JSON.stringify(globalThis.__pondCosmosCapturesArchive ?? [])",
     true,
   );
-  if (typeof raw !== "string" || raw === "[]") {
+  const captures = StatsTextSchema.parse(raw);
+  if (!captures || captures === "[]") {
     log.info("[pond list:cosmos] no captures to dump");
     return;
   }
@@ -340,6 +407,6 @@ async function dumpCosmosCaptures(win: BrowserWindow): Promise<void> {
   await mkdir(dir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
   const path = join(dir, `${stamp}.json`);
-  await writeFile(path, raw, "utf-8");
+  await writeFile(path, captures, "utf-8");
   log.info("[pond list:cosmos] dumped captures to", path);
 }

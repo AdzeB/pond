@@ -2,6 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 import type { MediaType } from "@pond/schema/db";
 import type { Capture, CaptureMedia, CaptureMetrics } from "@pond/schema/raw";
 import log from "electron-log/main.js";
+import { z } from "zod";
 
 interface ArenaChannelInfo {
   id?: string;
@@ -38,6 +39,7 @@ type ArenaApiResult<T> = { ok: true; value: T } | ArenaApiFailure;
 
 async function fetchJson<T>(
   url: string,
+  schema: z.ZodType<T>,
   attempt = 0,
 ): Promise<ArenaApiResult<T>> {
   await acquireToken();
@@ -65,7 +67,7 @@ async function fetchJson<T>(
       : 1_000;
     log.info("[pond arena:api] 429; retrying after", waitMs, url);
     await delay(waitMs);
-    return fetchJson<T>(url, attempt + 1);
+    return fetchJson(url, schema, attempt + 1);
   }
   if (res.status === 429) {
     return { ok: false, status: 429, reason: "rate_limited" };
@@ -81,87 +83,91 @@ async function fetchJson<T>(
     return { ok: false, status: res.status, reason: "network" };
   }
   try {
-    const json = (await res.json()) as T;
-    return { ok: true, value: json };
+    return { ok: true, value: schema.parse(await res.json()) };
   } catch (err) {
     log.warn("[pond arena:api] bad json", url, err);
     return { ok: false, status: res.status, reason: "network" };
   }
 }
 
-interface ArenaImageVariant {
-  url?: string | null;
-}
-interface ArenaOriginalVariant extends ArenaImageVariant {
-  width?: number | null;
-  height?: number | null;
-}
-interface ArenaImage {
-  original?: ArenaOriginalVariant | null;
-  large?: ArenaImageVariant | null;
-  display?: ArenaImageVariant | null;
-  thumb?: ArenaImageVariant | null;
-}
-interface ArenaUser {
-  id?: number | string | null;
-  full_name?: string | null;
-  username?: string | null;
-  slug?: string | null;
-  avatar?: string | null;
-  avatar_image?: { thumb?: string | null; display?: string | null } | null;
-}
-interface ArenaSource {
-  url?: string | null;
-  title?: string | null;
-}
-interface ArenaAttachment {
-  url?: string | null;
-  content_type?: string | null;
-  file_name?: string | null;
-}
-interface ArenaEmbed {
-  url?: string | null;
-  type?: string | null;
-  source_url?: string | null;
-  width?: number | null;
-  height?: number | null;
-}
-interface ArenaConnectionsCount {
-  count?: number | null;
-}
-interface ArenaChannelLite {
-  id?: number | string | null;
-  title?: string | null;
-  slug?: string | null;
-  href?: string | null;
-}
+/** Are.na retypes and renames fields without notice, so every field falls back on its own. */
+const OptionalText = z.string().optional().catch(undefined);
+const OptionalCount = z.number().optional().catch(undefined);
+const OptionalIdentifier = z
+  .union([z.number(), z.string()])
+  .optional()
+  .catch(undefined);
 
-interface ArenaBlock {
-  id?: number | string | null;
-  class?: string | null;
-  title?: string | null;
-  generated_title?: string | null;
-  description?: string | null;
-  content?: string | null;
-  created_at?: string | null;
-  updated_at?: string | null;
-  image?: ArenaImage | null;
-  user?: ArenaUser | null;
-  source?: ArenaSource | null;
-  attachment?: ArenaAttachment | null;
-  embed?: ArenaEmbed | null;
-  connections?: ArenaConnectionsCount | null;
-  connections_count?: number | null;
-  comment_count?: number | null;
-  channels?: ArenaChannelLite[] | null;
-}
+const ArenaImageVariantSchema = z
+  .object({ url: OptionalText })
+  .optional()
+  .catch(undefined);
+
+const ArenaChannelLiteSchema = z
+  .object({
+    id: OptionalIdentifier,
+    title: OptionalText,
+    slug: OptionalText,
+    href: OptionalText,
+  })
+  .nullable()
+  .catch(null);
+
+const ArenaBlockSchema = z
+  .object({
+    id: OptionalIdentifier,
+    class: OptionalText,
+    title: OptionalText,
+    generated_title: OptionalText,
+    description: OptionalText,
+    content: OptionalText,
+    created_at: OptionalText,
+    image: z
+      .object({
+        original: z
+          .object({
+            url: OptionalText,
+            width: OptionalCount,
+            height: OptionalCount,
+          })
+          .optional()
+          .catch(undefined),
+        large: ArenaImageVariantSchema,
+        display: ArenaImageVariantSchema,
+        thumb: ArenaImageVariantSchema,
+      })
+      .optional()
+      .catch(undefined),
+    user: z
+      .object({
+        full_name: OptionalText,
+        slug: OptionalText,
+        avatar: OptionalText,
+        avatar_image: z
+          .object({ thumb: OptionalText, display: OptionalText })
+          .optional()
+          .catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+    source: z.object({ url: OptionalText }).optional().catch(undefined),
+    attachment: z.object({ url: OptionalText }).optional().catch(undefined),
+    embed: z.object({ url: OptionalText }).optional().catch(undefined),
+    connections: z.object({ count: OptionalCount }).optional().catch(undefined),
+    connections_count: OptionalCount,
+    comment_count: OptionalCount,
+    channels: z.array(ArenaChannelLiteSchema).optional().catch(undefined),
+  })
+  .catch({});
+
+type ArenaBlock = z.infer<typeof ArenaBlockSchema>;
 
 function fetchArenaBlock(blockId: string): Promise<ArenaApiResult<ArenaBlock>> {
   const url = `${API_BASE}/blocks/${encodeURIComponent(blockId)}`;
-  return fetchJson<ArenaBlock>(url);
+  return fetchJson(url, ArenaBlockSchema);
 }
 
-function pickMediaUrlAndDims(block: ArenaBlock): {
+interface ArenaPickedMedia {
   url: string | null;
   width: number | null;
   height: number | null;
@@ -169,26 +175,22 @@ function pickMediaUrlAndDims(block: ArenaBlock): {
   poster: string | null;
   embedUrl: string | null;
   attachmentUrl: string | null;
-} {
+}
+
+function pickMediaUrlAndDims(block: ArenaBlock): ArenaPickedMedia {
   const original = block.image?.original ?? null;
-  const originalUrl = typeof original?.url === "string" ? original.url : null;
-  const largeUrl =
-    typeof block.image?.large?.url === "string" ? block.image.large.url : null;
-  const displayUrl =
-    typeof block.image?.display?.url === "string"
-      ? block.image.display.url
-      : null;
-  const thumbUrl =
-    typeof block.image?.thumb?.url === "string" ? block.image.thumb.url : null;
+  const originalUrl = original?.url ?? null;
+  const largeUrl = block.image?.large?.url ?? null;
+  const displayUrl = block.image?.display?.url ?? null;
+  const thumbUrl = block.image?.thumb?.url ?? null;
   const cls = (block.class ?? "").toLowerCase();
 
   const poster = originalUrl ?? largeUrl ?? displayUrl ?? thumbUrl ?? null;
-  const width = typeof original?.width === "number" ? original.width : null;
-  const height = typeof original?.height === "number" ? original.height : null;
+  const width = original?.width ?? null;
+  const height = original?.height ?? null;
 
   if (cls === "media") {
-    const embedUrl =
-      typeof block.embed?.url === "string" ? block.embed.url : null;
+    const embedUrl = block.embed?.url ?? null;
     return {
       url: poster,
       width,
@@ -243,9 +245,9 @@ function channelsFromBlock(block: ArenaBlock): ArenaChannelInfo[] {
     seen.add(key);
     const entry: ArenaChannelInfo = {};
     if (id) entry.id = id;
-    if (typeof c.title === "string") entry.title = c.title;
-    if (typeof c.slug === "string") entry.slug = c.slug;
-    if (typeof c.href === "string") entry.href = c.href;
+    if (c.title !== undefined) entry.title = c.title;
+    if (c.slug !== undefined) entry.slug = c.slug;
+    if (c.href !== undefined) entry.href = c.href;
     if (Object.keys(entry).length > 0) out.push(entry);
   }
   return out;
@@ -254,6 +256,11 @@ function channelsFromBlock(block: ArenaBlock): ArenaChannelInfo[] {
 function clampDescription(value: string): string {
   return value.length > 4_000 ? `${value.slice(0, 4_000)}…` : value;
 }
+
+type ArenaExtras = {
+  blockClass?: string;
+  channels?: ArenaChannelInfo[];
+};
 
 type ArenaCaptureResult =
   | { ok: true; capture: Capture }
@@ -313,10 +320,9 @@ export async function fetchArenaCapture(args: {
     const out: CaptureMetrics = {};
     const connFromObj = block.connections?.count;
     const connFromCount = block.connections_count;
-    if (typeof connFromObj === "number") out.connections = connFromObj;
-    else if (typeof connFromCount === "number") out.connections = connFromCount;
-    if (typeof block.comment_count === "number")
-      out.comments = block.comment_count;
+    if (connFromObj !== undefined) out.connections = connFromObj;
+    else if (connFromCount !== undefined) out.connections = connFromCount;
+    if (block.comment_count !== undefined) out.comments = block.comment_count;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
@@ -336,17 +342,14 @@ export async function fetchArenaCapture(args: {
   })();
 
   const channels = channelsFromBlock(block);
-  const extras = ((): Record<string, unknown> | undefined => {
-    const out: Record<string, unknown> = {};
-    if (typeof block.class === "string") out.blockClass = block.class;
+  const extras = ((): ArenaExtras | undefined => {
+    const out: ArenaExtras = {};
+    if (block.class !== undefined) out.blockClass = block.class;
     if (channels.length > 0) out.channels = channels;
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  const url =
-    typeof block.source?.url === "string" && block.source.url
-      ? block.source.url
-      : arenaUrl;
+  const url = block.source?.url || arenaUrl;
 
   const capture: Capture = {
     id,
@@ -365,8 +368,8 @@ export async function fetchArenaCapture(args: {
   return { ok: true, capture };
 }
 
-function pickNonEmpty(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
+function pickNonEmpty(value: string | undefined): string | undefined {
+  if (value === undefined) return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }

@@ -1,9 +1,16 @@
 /// <reference lib="dom" />
 
+import type { JsonValue } from "@pond/schema/json";
 import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { bindSourceId } from "../source-id";
-import { inPageInstagramNormalize } from "./normalize";
+import {
+  type InstagramMedia,
+  type InstagramMediaNode,
+  type InstagramMeta,
+  type InstagramPost,
+  inPageInstagramNormalize,
+} from "./normalize";
 
 export function buildExpression(shortcode: string): string {
   return buildItemExpression(
@@ -16,9 +23,9 @@ export function buildExpression(shortcode: string): string {
 async function inPageInstagramHarvest(
   sc: string,
   norm: ReturnType<typeof inPageInstagramNormalize>,
-): Promise<unknown> {
+): Promise<InstagramPost | null> {
   const pk = norm.shortcodeToPk(sc);
-  let node: any = null;
+  let node: InstagramMediaNode | null = null;
   try {
     const res = await fetch(`/api/v1/media/${pk}/info/`, {
       method: "GET",
@@ -31,9 +38,8 @@ async function inPageInstagramHarvest(
       },
     });
     if (res.ok) {
-      const json = await res.json();
-      const items = json?.items ?? [];
-      node = items[0] ?? null;
+      const json: { items?: InstagramMediaNode[] } | null = await res.json();
+      node = json?.items?.[0] ?? null;
     }
   } catch {}
 
@@ -47,7 +53,7 @@ async function inPageInstagramHarvest(
   }
   return scrapeDom(sc);
 
-  function scrapeDom(shortcode: string) {
+  function scrapeDom(shortcode: string): InstagramPost | null {
     function pickLargestSrcset(srcset: string | null) {
       if (!srcset) return null;
       const parts = srcset
@@ -73,8 +79,8 @@ async function inPageInstagramHarvest(
     const article = document.querySelector("article");
     if (!article) return null;
 
-    const out: Record<string, unknown> = {};
-    const meta: Record<string, unknown> = {};
+    const out: InstagramPost = {};
+    const meta: InstagramMeta = {};
 
     const handleAnchor = Array.from(
       article.querySelectorAll<HTMLAnchorElement>("a[href^='/']"),
@@ -103,18 +109,18 @@ async function inPageInstagramHarvest(
     if (time?.dateTime) meta.publishedAt = time.dateTime;
     const htmlLang = document.documentElement.lang?.trim();
     if (htmlLang) meta.lang = htmlLang;
-    if (typeof out.author === "string") {
-      const handle = (out.author as string).replace(/^@/, "");
+    if (out.author) {
+      const handle = out.author.replace(/^@/, "");
       if (handle) meta.authorUrl = `https://www.instagram.com/${handle}/`;
     }
 
-    const media: Array<Record<string, unknown>> = [];
+    const media: InstagramMedia[] = [];
     const seen = new Set<string>();
-    const push = (entry: Record<string, unknown> | undefined) => {
-      const url = entry && typeof entry.url === "string" ? entry.url : null;
+    const push = (entry: InstagramMedia) => {
+      const url = entry.url;
       if (!url || /^blob:/i.test(url) || seen.has(url)) return;
       seen.add(url);
-      media.push(entry as Record<string, unknown>);
+      media.push(entry);
     };
 
     for (const v of Array.from(
@@ -136,10 +142,11 @@ async function inPageInstagramHarvest(
     }
     if (avatarUrl) meta.authorAvatar = avatarUrl;
 
-    if (media.length > 0) {
+    const first = media[0];
+    if (first) {
       out.mediaUrls = media;
-      out.mediaUrl = (media[0] as Record<string, unknown>).url;
-      out.mediaType = (media[0] as Record<string, unknown>).type ?? "image";
+      out.mediaUrl = first.url;
+      out.mediaType = first.type;
     }
 
     if (Object.keys(meta).length > 0) out.meta = meta;
@@ -156,7 +163,7 @@ async function inPageInstagramHarvest(
   }
 }
 
-export function adapt(raw: unknown, ctx: HarvestAdaptCtx) {
+export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {
   return captureFromPageDom(raw, ctx);
 }
 

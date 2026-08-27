@@ -93,10 +93,7 @@ export function inPageScrollCollect() {
     let lastHeight = document.documentElement.scrollHeight;
     let stable = 0;
     while (Date.now() < scrollDeadline) {
-      window.scrollBy({
-        top: window.innerHeight * 0.9,
-        behavior: "instant" as ScrollBehavior,
-      });
+      window.scrollBy({ top: window.innerHeight * 0.9, behavior: "instant" });
       await new Promise((r) => setTimeout(r, scrollDelayMs));
       if (ingest(collectFn())) return result(true);
       const sh = document.documentElement.scrollHeight;

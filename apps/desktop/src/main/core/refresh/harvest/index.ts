@@ -1,4 +1,5 @@
 import type { Source } from "@pond/schema/db";
+import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { sourceIdFromUrl } from "@pond/schema/sources";
 import * as arena from "./arena";
@@ -16,11 +17,11 @@ export type { HarvestAdaptCtx } from "./from-page";
 
 interface Harvester {
   buildExpression: (sourceId: string) => string;
-  adapt: (raw: unknown, ctx: HarvestAdaptCtx) => Capture | null;
+  adapt: (raw: JsonValue, ctx: HarvestAdaptCtx) => Capture | null;
   sourceIdFromUrl: (url: string) => string | null;
 }
 
-const REGISTRY: Record<Source, Harvester> = {
+const REGISTRY = {
   twitter: {
     buildExpression: twitter.buildExpression,
     adapt: twitter.adapt,
@@ -80,7 +81,7 @@ const REGISTRY: Record<Source, Harvester> = {
     adapt: () => null,
     sourceIdFromUrl: (url) => sourceIdFromUrl("local", url),
   },
-};
+} satisfies Record<Source, Harvester>;
 
 export function harvesterFor(source: Source): Harvester {
   return REGISTRY[source];
