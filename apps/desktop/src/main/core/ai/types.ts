@@ -1,3 +1,4 @@
+import type { RawQueryPlan } from "@pond/schema/query-plan";
 export interface CompileFacets {
   sources: string[];
   types: string[];
@@ -11,7 +12,7 @@ export interface CompileContext {
 
 export interface AiProvider {
   readonly id: string;
-  /** Result is untrusted and re-validated (validatePlan) before the renderer applies it. */
-  compilePlan(input: string, ctx: CompileContext): Promise<unknown>;
+  /** The model's raw proposal; the renderer re-validates it with `validatePlan` before applying. */
+  compilePlan(input: string, ctx: CompileContext): Promise<RawQueryPlan | null>;
   available(): Promise<boolean>;
 }
