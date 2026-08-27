@@ -1,14 +1,11 @@
 import { appIconLabel, appIconTint, sortAppIconIds } from "@shared/app-icons";
+import { z } from "zod";
 
-const defaults = import.meta.glob(
-  "../../../../../../packages/icons/brand/tints/*/default.png",
-  { eager: true, import: "default" },
-);
-
-const dumped = import.meta.glob(
-  "../../../../../../packages/icons/brand/tints/*/Pond-iOS-Default-1024x1024@1x.png",
-  { eager: true, import: "default" },
-);
+/** Generated 128px previews; globbing the 1024px tints would pull ~18 MB into the bundle. */
+const previews = import.meta.glob("../generated/app-icon-previews/*.png", {
+  eager: true,
+  import: "default",
+});
 
 export interface AppIconPreview {
   id: string;
@@ -17,27 +14,19 @@ export interface AppIconPreview {
   tint?: string;
 }
 
-function idFromTintPath(path: string): string | null {
-  const match = path.match(/brand\/tints\/([^/]+)\//);
-  return match?.[1] ?? null;
+function idFromPreviewPath(path: string): string | null {
+  return path.match(/([^/]+)\.png$/)?.[1] ?? null;
 }
 
-function collect(
-  modules: Record<string, unknown>,
-  into: Map<string, string>,
-  overwrite: boolean,
-): void {
-  for (const [path, url] of Object.entries(modules)) {
-    if (typeof url !== "string") continue;
-    const id = idFromTintPath(path);
-    if (!id) continue;
-    if (overwrite || !into.has(id)) into.set(id, url);
-  }
-}
+const PreviewUrlSchema = z.string();
 
 const previewById = new Map<string, string>();
-collect(dumped, previewById, false);
-collect(defaults, previewById, true);
+for (const [path, url] of Object.entries(previews)) {
+  const parsed = PreviewUrlSchema.safeParse(url);
+  if (!parsed.success) continue;
+  const id = idFromPreviewPath(path);
+  if (id) previewById.set(id, parsed.data);
+}
 
 export function listAppIconPreviews(): AppIconPreview[] {
   return sortAppIconIds(previewById.keys()).map((id) => ({
