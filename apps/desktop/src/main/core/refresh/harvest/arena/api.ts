@@ -90,7 +90,6 @@ async function fetchJson<T>(
   }
 }
 
-/** Are.na retypes and renames fields without notice, so every field falls back on its own. */
 const OptionalText = z.string().optional().catch(undefined);
 const OptionalCount = z.number().optional().catch(undefined);
 const OptionalIdentifier = z

@@ -39,7 +39,6 @@ describe("sync config totality", () => {
       expect(cfg.rate.maxPerWindow).toBeGreaterThan(0);
       expect(cfg.rate.windowMs).toBeGreaterThan(0);
       expect(cfg.rate.firstSyncSlowdown).toBeGreaterThanOrEqual(1);
-      /** A ceiling below the per-minute allowance would never bind. */
       expect(cfg.rate.maxPerHour).toBeGreaterThan(cfg.rate.maxPerWindow);
       expect(cfg.rate.maxPerDay).toBeGreaterThan(cfg.rate.maxPerHour);
     });

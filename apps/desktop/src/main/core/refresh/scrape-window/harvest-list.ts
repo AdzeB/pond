@@ -67,7 +67,6 @@ const PartialEntrySchema = z
   .nullable()
   .catch(null);
 
-/** One drifted entry must not cost the page; each falls back to null and is dropped. */
 const ListEntrySchema = z
   .object({
     sourceId: z.string(),

@@ -67,7 +67,6 @@ const MediaUrlsSchema = z
   .optional()
   .catch(undefined);
 
-/** One drifted entry must not cost the page; each falls back to null and is dropped. */
 const SavedEntrySchema = z
   .object({
     postId: z.string(),

@@ -4,7 +4,6 @@ import { z } from "zod";
 import type { Save } from "@/lib/types";
 import { humanizeError, preferIngestError, stageLabel } from "./queue";
 
-/** What `downloads.history` answers over the bridge. */
 export const HistoryPageSchema = z.object({
   rows: z.array(
     z.object({
@@ -78,7 +77,6 @@ export function defaultDownloadFilters(): DownloadFilters {
   };
 }
 
-/** Stopping a download is a choice, not a failure; it should not read as an error. */
 function wasCancelled(save: Save): boolean {
   const stopped = (save.tasks ?? []).filter(
     (t) => t.status === "failed" || t.status === "blocked",

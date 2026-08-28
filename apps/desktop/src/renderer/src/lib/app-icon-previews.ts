@@ -1,7 +1,6 @@
 import { appIconLabel, appIconTint, sortAppIconIds } from "@shared/app-icons";
 import { z } from "zod";
 
-/** Generated 128px previews; globbing the 1024px tints would pull ~18 MB into the bundle. */
 const previews = import.meta.glob("../generated/app-icon-previews/*.png", {
   eager: true,
   import: "default",

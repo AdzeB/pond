@@ -143,7 +143,6 @@ export async function syncListSource(
   }
 
   const gaps: string[] = [];
-  /** Reddit and TikTok harvest both lists in one pass and stamp their own kinds. */
   const dualHarvest = source === "reddit" || source === "tiktok";
   let combined = dualHarvest
     ? harvest.entries

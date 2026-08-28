@@ -28,7 +28,6 @@ const AccountsReplySchema = z
           source: z.enum(SOURCES),
           handle: z.string().nullable().catch(null),
           label: z.string().nullable().catch(null),
-          /** Absent means "not probed yet" and triggers the retry below; null means "no avatar". */
           avatarUrl: z.string().nullable().optional().catch(null),
           addedAt: z.string().catch(""),
           sync: z

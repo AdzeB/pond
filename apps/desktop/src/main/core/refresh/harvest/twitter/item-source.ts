@@ -40,7 +40,6 @@ interface TweetPageMetrics {
   quotes?: number;
 }
 
-/** Extra fields `draftFromDomHarvest` reads off `meta`. */
 interface TweetPageMeta {
   lang?: string;
   authorUrl?: string;

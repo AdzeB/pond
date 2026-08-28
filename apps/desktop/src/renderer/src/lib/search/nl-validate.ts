@@ -30,7 +30,6 @@ interface RawGroup {
 
 type RawClause = RawGroup | RawPredicate;
 
-/** Model output: a rule that does not fit is dropped on its own, so one bad rule cannot lose the rest of the plan. */
 const RawClauseSchema: z.ZodType<RawClause> = z.lazy(() =>
   z.union([RawGroupSchema, RawPredicateSchema]),
 );

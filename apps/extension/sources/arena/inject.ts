@@ -24,7 +24,6 @@ const SAVE_OPERATIONS = new Set([
   "CreateBlockMutation",
 ]);
 
-/** Are.na batches GraphQL calls, so a body is either one operation or an array of them. */
 function asOperations(json: JsonValue | null): JsonRecord[] {
   if (Array.isArray(json)) return json.filter(isRecord);
   return isRecord(json) ? [json] : [];

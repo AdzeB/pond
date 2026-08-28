@@ -122,7 +122,6 @@ export interface CaptureLinkCard {
 
 export const QUOTE_DEPTH_CAP = 3;
 
-/** The per-source odds and ends a capture carries; every writer declares its key here. */
 export interface CaptureExtras {
   blockClass?: string;
   board?: { name?: string; url: string };

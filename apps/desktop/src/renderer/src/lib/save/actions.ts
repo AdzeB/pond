@@ -17,7 +17,6 @@ import { notify } from "@/lib/ui/toast";
 import { pool } from "@/stores/pool";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
-/** Replies from this app's own IPC queries; anything that does not fit counts as a failure. */
 const OkSchema = z
   .object({ ok: z.boolean().catch(false) })
   .catch({ ok: false });

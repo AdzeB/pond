@@ -26,7 +26,6 @@ export interface AskSort {
   dir: "asc" | "desc";
 }
 
-/** Stage A only ever emits a flat AND of predicates, and its callers depend on that. */
 export interface FlatQuery extends Group {
   combinator: "and";
   rules: Predicate[];

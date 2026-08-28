@@ -24,13 +24,11 @@ const tagsStore = new Store<TagsState>({ rows: [], loaded: false });
 let inflight: Promise<ReadonlyArray<TagRow>> | null = null;
 let subscribed = false;
 
-/** SQLite hands timestamps back as numbers, ISO strings, or Dates depending on the driver path. */
 const Timestamp = z
   .union([z.number(), z.string(), z.date()])
   .nullish()
   .catch(null);
 
-/** Rows arrive from the `tags.list` query and from sync-action payloads; a row that does not fit is dropped. */
 const TagRowSchema = z.object({
   id: z.string().min(1),
   name: z.string(),

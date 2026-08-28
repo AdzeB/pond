@@ -34,7 +34,6 @@ const ThemeDefSchema = z.object({
   contrast: z.number(),
 });
 
-/** The slice of `prefs.preferences` these rows read, as the engine hands it over. */
 const ThemeValuesSchema = z.object({
   appearance: z.enum(["system", "light", "dark"]).optional().catch(undefined),
   lightPresetId: z.string().optional().catch(undefined),

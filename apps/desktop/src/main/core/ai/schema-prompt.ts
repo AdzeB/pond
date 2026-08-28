@@ -60,7 +60,6 @@ export function buildSystemPrompt(ctx: CompileContext): string {
   ].join("\n");
 }
 
-/** The JSON-schema document handed to the model's grammar builder. */
 export function queryJsonSchema(): JsonObject {
   return {
     type: "object",

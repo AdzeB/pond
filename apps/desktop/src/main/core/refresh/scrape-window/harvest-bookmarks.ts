@@ -46,7 +46,6 @@ const BookmarksStatsSchema = z
   .nullable()
   .catch(null);
 
-/** One drifted entry must not cost the page; each falls back to null and is dropped. */
 const BookmarksEntrySchema = z
   .object({
     tweetId: z.string(),

@@ -15,7 +15,6 @@ export interface SettingsSearchEntry {
   keywords: string[];
 }
 
-/** Titles and descriptions are typed as ReactNode; only the plain-string ones are indexable. */
 const TextNodeSchema = z.string().optional().catch(undefined);
 
 function asText(node: ReactNode): string | undefined {

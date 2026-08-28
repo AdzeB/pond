@@ -34,5 +34,4 @@ export const nativeResponseSchema = z.union([
 
 export type NativeResponse = z.infer<typeof nativeResponseSchema>;
 
-/** Either direction of the native-host protocol. */
 export type NativeMessage = NativeRequest | NativeResponse;

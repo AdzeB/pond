@@ -25,7 +25,6 @@ const tagGroupsStore = new Store<TagGroupsState>({
   loaded: false,
 });
 
-/** Rows arrive from the `tagGroups.list` query and from sync-action payloads; a row that does not fit is dropped. */
 const TagGroupRowSchema = z.object({
   id: z.string().min(1),
   name: z.string(),

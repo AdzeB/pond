@@ -1,7 +1,6 @@
 import type { Prefs } from "@pond/schema/db";
 import type { ComponentType, ReactNode } from "react";
 
-/** A settings slice as the engine addresses it: JSON values under string keys, narrowed by whichever control renders each key. */
 export type SettingValue =
   | string
   | number
@@ -17,7 +16,6 @@ export interface SettingsValues {
 
 export interface Binding<V = SettingsValues> {
   values: V;
-  /** A method, not a function property: bivariance is what lets a `Binding<Slice>` be erased to `Binding<SettingsValues>` for the engine, which only ever patches keys of the slice the binding came from. */
   patch(delta: Partial<V>): void;
   loaded: boolean;
 }

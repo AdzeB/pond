@@ -51,7 +51,6 @@ export async function itemGetHandler(c: Context) {
 
   if (params.source) {
     const source = SOURCES.find((s) => s === params.source);
-    /** An unrecognised source matched no rows before this was a checked enum; `0` keeps that. */
     filters.push(source ? eq(saves.source, source) : sql`0`);
   }
 

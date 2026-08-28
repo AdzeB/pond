@@ -256,7 +256,6 @@ function variablesFromJson(bodyStr: string): JsonRecord | null {
   return isRecord(json.variables) ? json.variables : json;
 }
 
-/** Threads sends each id as a string, a number, or a single-element list. */
 function firstString(vars: JsonRecord, keys: readonly string[]): string | null {
   for (const key of keys) {
     const value = vars[key];

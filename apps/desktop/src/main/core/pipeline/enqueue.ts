@@ -111,7 +111,6 @@ export interface EnqueueOptions {
 
 const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
 
-/** yt-dlp rows carry no capture and pre-harvest rows no `extractedAt`, so both are optional at rest. */
 interface HarvestedRawJson {
   capture?: Partial<Capture>;
   extractedAt?: string;
@@ -347,7 +346,6 @@ export async function retryFailedSaves(
           and(
             eq(saves.status, "failed"),
             isNull(saves.deletedAt),
-            /** A save the user stopped is not a failure to retry in bulk; picking it by hand still works. */
             or(
               notExists(
                 db

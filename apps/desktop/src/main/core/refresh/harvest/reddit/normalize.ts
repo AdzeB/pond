@@ -13,7 +13,6 @@ interface RedditPostPageMetrics {
   comments?: number;
 }
 
-/** Extra fields `captureFromPageDom` reads off `meta`. */
 interface RedditPostPageMeta {
   authorName?: string;
   authorUrl?: string;

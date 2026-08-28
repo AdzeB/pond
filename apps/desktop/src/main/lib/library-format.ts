@@ -41,7 +41,6 @@ export interface InfoDoc {
 
 const nullableText = z.string().nullable().catch(null);
 
-/** info.json as older builds also wrote it: every field falls back on its own rather than failing the read. */
 export const StoredInfoDocSchema = z.object({
   id: z.string().catch(""),
   source: z.string().catch(""),

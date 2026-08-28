@@ -16,7 +16,6 @@ export interface FieldPreset {
   value: PredicateValue;
 }
 
-/** Everything a field projection can yield. */
 export type FieldValue =
   | string
   | number

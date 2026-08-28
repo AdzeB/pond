@@ -133,7 +133,6 @@ const {
   ...SAVE_LIST_COLUMNS
 } = getTableColumns(saves);
 
-/** The columns the renderer's enrichers may write back, typed as the `saves` table declares them. */
 const DerivedPatchSchema = z
   .object({
     caption: z.string().nullable().optional(),

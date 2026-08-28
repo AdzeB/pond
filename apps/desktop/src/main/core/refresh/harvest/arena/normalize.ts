@@ -8,7 +8,6 @@ interface ArenaBlockPageMedia {
   poster?: string;
 }
 
-/** Extra fields `captureFromPageDom` reads off `meta`. */
 interface ArenaBlockPageMeta {
   authorUrl?: string;
   sourceUrl?: string;

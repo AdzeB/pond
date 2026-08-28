@@ -2,7 +2,6 @@ import { z } from "zod";
 import { type CompileFacets, compilePlan } from "../../core/ai";
 import { type QueryHandlerMap, query, StringParam } from "./params";
 
-/** Non-string entries were dropped one by one, not rejected wholesale. */
 const facetList = (cap: number) =>
   z
     .array(z.string().nullable().catch(null))

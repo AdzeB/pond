@@ -95,7 +95,6 @@ interface ThreadsLinkPreview {
   image_versions2?: { url?: string; uri?: string };
 }
 
-/** A quoted post either is the post node or wraps it under `post`/`media`. */
 interface ThreadsQuotedPost extends ThreadsMediaNode {
   post?: ThreadsMediaNode;
   media?: ThreadsMediaNode;

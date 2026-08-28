@@ -21,7 +21,6 @@ function serializeImage(image: RawImage): SerializedImage {
 }
 
 interface Pending {
-  /** Methods, not function properties: each caller resolves with its own op's result type. */
   resolve(value: InferenceResult): void;
   reject(error: Error): void;
 }

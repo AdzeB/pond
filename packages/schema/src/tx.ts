@@ -147,7 +147,6 @@ export type Transaction =
       meta?: TxMeta;
     };
 
-/** The row image a sync action records: whatever a transaction carries as `data` or `patch`. */
 export type SyncActionPayload =
   | Extract<Transaction, { data: unknown }>["data"]
   | Extract<Transaction, { patch: unknown }>["patch"]

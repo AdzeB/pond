@@ -12,7 +12,6 @@ export interface CompileContext {
 
 export interface AiProvider {
   readonly id: string;
-  /** The model's raw proposal; the renderer re-validates it with `validatePlan` before applying. */
   compilePlan(input: string, ctx: CompileContext): Promise<RawQueryPlan | null>;
   available(): Promise<boolean>;
 }

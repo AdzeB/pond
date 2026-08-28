@@ -8,11 +8,9 @@ import {
 } from "./normalize";
 
 declare global {
-  /** Set from the main process to ask a running list harvest to stop and hand back what it has. */
   var __pondHarvestAbort: boolean | undefined;
 }
 
-/** The saved feed wraps each post in `media`; the liked feed returns the media node itself. */
 type FeedItem = InstagramMediaNode & {
   media?: InstagramMediaNode;
   timestamp?: number;
@@ -76,7 +74,6 @@ async function inPageInstagramList(
   if (apiResult) return apiResult;
   return await fallbackDomScroll();
 
-  /** Likes live on the Bloks activity screen, not here; `/api/v1/feed/liked/` rejects web sessions. */
   async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
     const path = "/api/v1/feed/saved/posts/";
     const entries: InstagramEntry[] = [];

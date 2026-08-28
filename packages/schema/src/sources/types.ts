@@ -6,7 +6,6 @@ export interface RateProfile {
   readonly maxPerWindow: number;
   readonly windowMs: number;
   readonly firstSyncSlowdown: number;
-  /** Ceilings a burst cannot spend its way past: a big backfill spreads over hours instead of hammering one host. */
   readonly maxPerHour: number;
   readonly maxPerDay: number;
 }

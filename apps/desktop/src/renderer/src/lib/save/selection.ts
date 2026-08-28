@@ -15,7 +15,6 @@ import { pool } from "@/stores/pool";
 import { selection } from "@/stores/selection";
 import { mergeUniqueTags, tagClipboard } from "@/stores/tag-clipboard";
 
-/** Every reply below comes from this app's own IPC queries; a reply that does not fit is treated as a failure. */
 const OkSchema = z
   .object({ ok: z.boolean().catch(false) })
   .catch({ ok: false });

@@ -50,7 +50,6 @@ function rememberClosed(
   return [...entries, ...existing].slice(0, 10);
 }
 
-/** What `writeNow` persists to localStorage; anything else there is treated as no saved tabs. */
 const PersistedTabsSchema = z.object({
   tabs: z
     .array(

@@ -38,7 +38,6 @@ export function useLibraryState(): LibraryState {
   const mode: SaveListMode = recognized ?? "library";
   const unknown = recognized === null;
 
-  /** No route declares a `source` param, so a source-scoped list never narrows further today. */
   const sourceFilter = "";
   const hasActiveSearch = searchText.trim().length > 0;
   const hasActiveFilter = filterQuery.rules.length > 0;

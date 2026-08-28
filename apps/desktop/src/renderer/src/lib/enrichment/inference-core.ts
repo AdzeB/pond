@@ -81,7 +81,6 @@ function getFlorence(modelId: string): Promise<FlorenceBundle> {
   );
 }
 
-/** Florence returns either the caption string or a boxed-region object, depending on the task. */
 const CaptionSchema = z.string().catch("");
 
 export async function coreFlorence(

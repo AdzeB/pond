@@ -35,7 +35,6 @@ interface TiktokItemStruct {
   };
 }
 
-/** The legacy hydration blob keys items by video id; the newer one nests a single item. */
 interface TiktokItemModule {
   [videoId: string]: TiktokItemStruct;
 }

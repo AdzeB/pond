@@ -20,7 +20,6 @@ export interface TableColumn<T> {
   header?: ReactNode | ((ctx: HeaderContext) => ReactNode);
   cell: (row: T, ctx: CellContext) => ReactNode;
   accessor?: (row: T) => SortValue;
-  /** How `accessor` values are ordered. Text uses a locale-aware collator. */
   sort?: SortKind;
   width?: string;
   minWidth?: number;

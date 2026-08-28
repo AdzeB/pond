@@ -20,7 +20,6 @@ import type {
   WireUndoState,
 } from "../shared/wire";
 
-/** One channel for every read: the handler picked by `name` decides the reply shape, so callers parse it. */
 interface QueryFn {
   (name: "saves.query", params: WireFilterQueryParams): Promise<WireJson>;
   (name: "settings.setPrefs", params: WirePrefsPatch): Promise<WireJson>;
@@ -60,7 +59,6 @@ export interface StorageGuardStatusWire {
 let cachedPondId: string | null = null;
 
 const api = {
-  /** Resolves once main has committed the change; the reply is a raw database row, so the renderer learns what changed from `onSyncAction` instead. */
   tx(tx: Transaction): Promise<void> {
     return ipcRenderer.invoke(IPC.tx, tx);
   },

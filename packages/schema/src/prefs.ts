@@ -54,9 +54,7 @@ const StoredPreferencesSchema = z
     reduceMotion: z.string().optional().catch(undefined),
     tweetCover: z.string().optional().catch(undefined),
     soundsEnabled: z.boolean().optional().catch(undefined),
-    /** Pre-`soundsEnabled` mute flag. */
     soundFeel: z.string().optional().catch(undefined),
-    /** Pre-`appearance` theme selection. */
     themeMode: z.string().optional().catch(undefined),
     presetId: z.string().optional().catch(undefined),
     systemLightId: z.string().optional().catch(undefined),
@@ -300,26 +298,22 @@ export const DEFAULT_PREFS: Prefs = PrefsObject.parse({});
 
 export const PrefsSchema = PrefsObject.catch(DEFAULT_PREFS);
 
-/** Every slice optional: what a stored config holds before it is merged over the defaults. */
 export const PrefsPatchSchema = PrefsObject.partial();
 
 export type PrefsPatch = z.infer<typeof PrefsPatchSchema>;
 
-/** A stored prefs blob: any slice may be present with only some of its keys. */
 export type PrefsPatchDeep = DeepPartial<Prefs>;
 
 export type DeepPartial<T> = T extends object
   ? { [K in keyof T]?: DeepPartial<T[K]> }
   : T;
 
-/** What the `settings.prefs` column holds: the app-wide slice plus the slice waiting for a library to bind to. */
 export interface StoredPrefsEnvelope {
   version: number;
   app: PrefsPatchDeep;
   pending: PrefsPatchDeep | null;
 }
 
-/** The pre-v3 layout, kept so the migration can still read blobs written by older builds. */
 export interface StoredPrefsEnvelopeV2 {
   version: number;
   app?: PrefsPatchDeep;

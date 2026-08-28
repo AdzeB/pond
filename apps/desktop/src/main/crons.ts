@@ -37,7 +37,6 @@ export function registerYtDlpUpdateCron() {
 
 let lastSyncCronRunAt = 0;
 const SYNC_CRON_JITTER_MS = 10 * 60_000;
-/** A background round trickles: at most this many new items per account, so a first sync spreads over rounds instead of dumping thousands into the queue. */
 const CRON_BATCH_LIMIT = 150;
 
 export function registerSyncCron() {

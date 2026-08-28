@@ -84,7 +84,6 @@ const WatchesReplySchema = z
             .optional()
             .catch(undefined),
           label: z.string().nullable().catch(null),
-          /** Absent means "not probed yet" and triggers the retry below; null means "no avatar". */
           avatarUrl: z.string().nullable().optional().catch(null),
           via: z.string().nullable().catch(null),
           addedAt: z.string().catch(""),

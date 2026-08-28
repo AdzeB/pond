@@ -15,7 +15,6 @@ import { deleteSave, pool, upsertSave } from "@/stores/pool";
 const Text = z.string().nullish().catch(null);
 const Num = z.number().nullish().catch(null);
 const Texts = z.array(z.string()).nullish().catch(null);
-/** SQLite hands timestamps back as numbers, ISO strings, or Dates depending on the driver path. */
 const Timestamp = z
   .union([z.number(), z.string(), z.date()])
   .nullish()
@@ -41,7 +40,6 @@ const SaveTaskSchema = z.object({
   updatedAt: z.number(),
 });
 
-/** Every save reaching the renderer — list query, cached snapshot, or sync action — is decoded here before `normalise` fills its defaults. */
 export const SavePatchSchema = z.object({
   id: z.string().min(1),
   source: z.enum(SOURCES).nullish().catch(null),
@@ -120,7 +118,6 @@ export function applyAction(event: SyncActionEvent): void {
     const patch = event.data;
     const existing = pool.get(event.modelId);
     if (!existing) {
-      /** An update carries only the changed columns; without a url it would render as a blank row. */
       if (!patch?.url) return;
       const created = normalise(patch);
       if (created) upsertSave(created);

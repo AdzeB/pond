@@ -35,7 +35,6 @@ const RelayImageSchema = z
   .optional()
   .catch(undefined);
 
-/** Pinterest ships several partial copies of a pin per page; each field falls back on its own. */
 const RelayPinSchema = z
   .object({
     title: OptionalText,
@@ -76,7 +75,6 @@ const RelayPinSchema = z
 
 type RelayPin = z.infer<typeof RelayPinSchema>;
 
-/** Kept by reference so the partial copies can be merged before anything is decoded. */
 const JsonObjectSchema = z.custom<JsonObject>(
   (value) => value instanceof Object && !Array.isArray(value),
 );
@@ -165,7 +163,6 @@ function extractPin(html: string): RelayPin | null {
   return RelayPinSchema.parse(mergePins(candidates));
 }
 
-/** Each copy is partial, so keep the richest value per field. */
 function mergePins(pins: JsonObject[]): JsonObject {
   const out: JsonObject = {};
   const keys = new Set<string>();

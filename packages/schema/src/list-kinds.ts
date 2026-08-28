@@ -23,7 +23,6 @@ export const LIST_KIND_LABELS = {
   saved: "Saved",
 } satisfies Record<ListKind, string>;
 
-/** What callers hold before normalizing: a source's own label, a stored list, or nothing. */
 export type ListKindInput =
   | string
   | null
@@ -34,7 +33,6 @@ export function canonicalListKind(raw: string): ListKind | null {
   return ALIASES.get(raw.trim().toLowerCase()) ?? null;
 }
 
-/** `Array.isArray` alone does not narrow a readonly array out of the union. */
 function isKindList(value: ListKindInput): value is readonly ListKindInput[] {
   return Array.isArray(value);
 }

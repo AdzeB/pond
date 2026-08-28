@@ -61,7 +61,6 @@ const StoredSliceSchema = z.custom<PrefsPatchDeep>(
   (value) => value instanceof Object && !Array.isArray(value),
 );
 
-/** Whatever the settings row or the bundle file held; every branch below re-validates it. */
 export type StoredPrefsInput =
   | StoredPrefsEnvelope
   | StoredPrefsEnvelopeV2

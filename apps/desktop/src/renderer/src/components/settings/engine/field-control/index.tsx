@@ -26,7 +26,6 @@ import type {
 import { clamp as clampNum } from "@/lib/util/math";
 import styles from "./styles.module.css";
 
-/** What a settings control can hold once the engine's untyped value bag is decoded. */
 const ControlValueSchema = z
   .union([z.string(), z.number(), z.boolean(), z.null()])
   .catch(null);

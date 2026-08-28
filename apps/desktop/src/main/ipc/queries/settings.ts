@@ -18,7 +18,6 @@ import { getIngestToken, rotateIngestToken } from "../../keychain";
 import { syncShellChrome } from "../../window";
 import { type QueryHandlerMap, query } from "./params";
 
-/** Each field falls back on its own; `normalizeVideo`/`normalizeImage` already read a missing field as "use the default". */
 const VideoDownloadPatchSchema = z.object({
   enabled: z.boolean().optional().catch(undefined),
   maxHeight: z.number().nullable().optional().catch(undefined),
@@ -54,7 +53,6 @@ const ImageDownloadPatchSchema = z.object({
   maxFileSizeMb: z.number().nullable().optional().catch(undefined),
 });
 
-/** Forwarded to `setPrefs` as it arrives; only the two slices this handler reacts to are spelled out. */
 const PrefsPatchParamsSchema = z.looseObject({
   preferences: z.looseObject({}).catch({}).optional(),
   window: z

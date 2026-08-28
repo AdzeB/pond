@@ -45,7 +45,6 @@ export interface ListingPage {
   after: string | null;
 }
 
-/** Reddit reshapes these payloads without notice, so every field falls back on its own. */
 const OptionalText = z.string().min(1).optional().catch(undefined);
 const OptionalNumber = z
   .number()
@@ -53,7 +52,6 @@ const OptionalNumber = z
   .optional()
   .catch(undefined);
 
-/** `me.json` and `about.json`. */
 export const RedditAccountSchema = z
   .object({
     kind: OptionalText,
@@ -157,7 +155,6 @@ export const RedditListingSchema = z
 
 export type RedditListing = z.infer<typeof RedditListingSchema>;
 
-/** A post permalink response is `[listing, comments]`; everything else is a plain listing. */
 export const RedditPostResponseSchema = z.union([
   z.array(RedditListingSchema),
   RedditListingSchema,

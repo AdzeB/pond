@@ -2,7 +2,6 @@ import { z } from "zod";
 import { SOURCES } from "./db";
 import type { RawJson } from "./raw";
 
-/** Mirrors the `./raw` interfaces for the two places capture JSON re-enters the app: the `source.json` sidecar and the `raw_json` column. */
 const CaptureAuthorSchema = z.object({
   name: z.string().optional(),
   handle: z.string().optional(),
@@ -73,7 +72,6 @@ export const CaptureSchema = z.object({
 const text = z.string().optional().catch(undefined);
 const count = z.number().optional().catch(undefined);
 
-/** The subset of yt-dlp's dump worth keeping; parsing drops everything else. */
 export const RawYtdlpSchema = z.object({
   id: text,
   title: text,
@@ -135,7 +133,6 @@ export const RawYtdlpSchema = z.object({
   playlist: text,
   playlist_id: text,
   playlist_title: text,
-  /** Some extractors emit this as a string. */
   playlist_index: z.coerce.number().optional().catch(undefined),
   n_entries: count,
 });

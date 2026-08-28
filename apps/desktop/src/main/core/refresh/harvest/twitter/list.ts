@@ -4,7 +4,6 @@ import type { ListKind, MediaType } from "@pond/schema/db";
 import type { BookmarksCapture, RichTweet } from "./graphql";
 
 declare global {
-  /** The scrape preload installs the bookmarks network hook on the page and buffers every response it sees. */
   var __pondBookmarksHookInstalled: boolean | undefined;
   var __pondBookmarksCaptures: BookmarksCapture[] | undefined;
   var __pondLikesCaptures: BookmarksCapture[] | undefined;

@@ -44,7 +44,6 @@ const METRIC_FIELDS = {
   shares: scrapedNumber,
 };
 
-/** Loose: the twitter and threads adapters forward `meta` untouched to `draftFromDomHarvest`, which reads keys this file never looks at. */
 const PageMetaSchema = z.looseObject({
   ...METRIC_FIELDS,
   lang: scrapedText,
@@ -94,7 +93,6 @@ const PageBlobSchema = z
 
 export type PageBlob = z.infer<typeof PageBlobSchema>;
 
-/** Threads rebuilds its blob to drop landing-page junk before decoding, so this takes either raw page JSON or an adapter's own object. */
 export interface PageBlobInput {
   title?: string;
   description?: string;

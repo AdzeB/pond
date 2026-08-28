@@ -129,7 +129,6 @@ export function useCarouselNavigation(
     };
   }, [scroller]);
 
-  /** Returns false when the carousel is already at that end, so the caller can move on to the next save. */
   const step = useCallback(
     (delta: number): boolean => {
       if (!scroller) return false;

@@ -40,7 +40,6 @@ export function planOps(source: Source): readonly Op[] {
   );
 }
 
-/** Every field `finalize` scores a capture on; each one has a reader in `workers/finalize.ts`. */
 export type CaptureField =
   | "author"
   | "description"

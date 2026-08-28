@@ -54,7 +54,6 @@ interface TagsBundle {
   members: WireTagGroupMember[];
 }
 
-/** Timestamps have been written as epoch millis and as ISO strings; both still land in the file. */
 const StoredInstantSchema = z
   .union([
     z

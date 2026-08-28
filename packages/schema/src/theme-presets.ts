@@ -131,7 +131,6 @@ export const StoredThemeDefSchema = z
   .object({
     accent: z.string().optional().catch(undefined),
     background: z.string().optional().catch(undefined),
-    /** Pre-`background` name for the same colour. */
     base: z.string().optional().catch(undefined),
     foreground: z.string().optional().catch(undefined),
     contrast: z.number().refine(Number.isFinite).optional().catch(undefined),

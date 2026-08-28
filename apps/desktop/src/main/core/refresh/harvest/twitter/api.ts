@@ -14,12 +14,10 @@ interface BookmarksRequestTemplate {
 }
 
 declare global {
-  /** The scrape preload records the bookmarks/likes GraphQL request on the page for this harvest to replay. */
   var __pondBookmarksRequest: BookmarksRequestTemplate | null | undefined;
   var __pondLikesRequest: BookmarksRequestTemplate | null | undefined;
 }
 
-/** Only `cursor` is read or rewritten; every other key rides along untouched on the replay. */
 interface BookmarksVariables {
   cursor?: string;
 }
@@ -38,7 +36,6 @@ interface Timeline {
   timeline?: { instructions?: TimelineInstruction[] };
 }
 
-/** Bookmarks answer under `bookmark_timeline_v2`; likes answer under the user timeline. */
 interface BookmarksResponse {
   data?: {
     bookmark_timeline_v2?: Timeline;

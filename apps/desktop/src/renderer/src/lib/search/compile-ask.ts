@@ -26,7 +26,6 @@ export interface CompileAskResult {
 
 const FACET_TOKEN_BUDGET = 1200;
 
-/** 2.4 MB of BPE tables, only reachable from the model path: keep it off the startup graph. */
 let encoderPromise: Promise<(text: string) => number[]> | null = null;
 
 function loadEncoder(): Promise<(text: string) => number[]> {

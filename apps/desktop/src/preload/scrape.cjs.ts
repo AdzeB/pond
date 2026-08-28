@@ -470,7 +470,6 @@ const INSTAGRAM_HOOK = `
     globalThis.__pondIgBloksHookInstalled = true;
     globalThis.__pondIgBloksCaptures = [];
 
-    /** The activity centre screens (likes, comments) are Bloks apps that page through this endpoint. */
     const isBloksUrl = (u) => {
       try {
         return typeof u === "string" && u.indexOf("/async/wbloks/fetch/") !== -1;
@@ -483,7 +482,6 @@ const INSTAGRAM_HOOK = `
       try {
         const buf = globalThis.__pondIgBloksCaptures;
         if (!Array.isArray(buf)) return;
-        /** Each page is ~150 kB; drop the oldest so a long scroll cannot grow the buffer without bound. */
         if (buf.length > 400) buf.shift();
         buf.push(text);
       } catch (e) {

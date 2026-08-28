@@ -62,7 +62,6 @@ export interface RichThread {
   raw: unknown;
 }
 
-/** Threads drops and renames fields without notice, so every field falls back on its own. */
 const OptionalText = z.string().min(1).optional().catch(undefined);
 const OptionalCount = z
   .number()
@@ -70,7 +69,6 @@ const OptionalCount = z
   .optional()
   .catch(undefined);
 
-/** Kept by reference, not copied, so a collected node can be re-read as a post. */
 const JsonObjectSchema = z.custom<JsonObject>(
   (value) => value instanceof Object && !Array.isArray(value),
 );
@@ -104,7 +102,6 @@ const UserSchema = z
   .optional()
   .catch(undefined);
 
-/** Threads sends the caption as `{ text }` or as a bare string. */
 const CaptionTextSchema = z
   .union([
     z.object({ text: OptionalText }).transform((caption) => caption.text),
@@ -128,7 +125,6 @@ const LinkPreviewSchema = z
   .optional()
   .catch(undefined);
 
-/** A quoted post either is the post node or wraps it under `post`/`media`. */
 const QuotedWrapperSchema = z
   .object({
     code: z.string().optional().catch(undefined),

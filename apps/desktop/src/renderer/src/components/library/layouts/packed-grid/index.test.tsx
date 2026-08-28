@@ -17,7 +17,6 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
-/** jsdom has no scroll layout, so scrolling has to move `scrollTop` by hand. */
 function stubScrollTo(node: HTMLElement): void {
   node.scrollTo = (optionsOrX?: ScrollToOptions | number, y?: number) => {
     const top = optionsOrX instanceof Object ? optionsOrX.top : y;

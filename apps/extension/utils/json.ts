@@ -30,7 +30,6 @@ export function asNumber(value: JsonValue | undefined): number | undefined {
     : undefined;
 }
 
-/** Reads a nested field; platform payloads nest ids several levels deep. */
 export function at(
   value: JsonValue | undefined,
   ...path: string[]

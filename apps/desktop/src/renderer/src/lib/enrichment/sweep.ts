@@ -7,7 +7,6 @@ import { ENRICHERS, ENRICHERS_BY_ID } from "./registry";
 import type { Enricher } from "./types";
 
 declare global {
-  /** Chromium-only battery API, absent from lib.dom; the sweep backs off while unplugged. */
   interface Navigator {
     getBattery?(): Promise<EventTarget & { charging: boolean }>;
   }

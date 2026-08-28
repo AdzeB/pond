@@ -1,7 +1,6 @@
 import type { RuleGroupType, RuleType } from "@react-querybuilder/core";
 
 /** RQB `RuleType` narrowed to our unions, plus per-rule `negate`; RQB only has group `not`. */
-/** What a saved filter can compare against: scalars, or a list of them for the set comparators. */
 export type PredicateValue =
   | string
   | number

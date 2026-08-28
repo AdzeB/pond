@@ -2,7 +2,6 @@ import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferTranscribe } from "./inference-client";
 
 declare global {
-  /** Legacy Safari spelling, absent from lib.dom. */
   interface Window {
     webkitAudioContext?: typeof AudioContext;
   }

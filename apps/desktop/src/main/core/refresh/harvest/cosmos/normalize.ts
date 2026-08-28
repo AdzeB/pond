@@ -8,7 +8,6 @@ interface CosmosElementPageMedia {
   poster?: string;
 }
 
-/** Extra fields `captureFromPageDom` reads off `meta`. */
 interface CosmosElementPageMeta {
   authorUrl?: string;
   authorAvatar?: string;

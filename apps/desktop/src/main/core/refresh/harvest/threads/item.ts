@@ -189,7 +189,6 @@ async function inPageThreadsHarvest(
   }
 }
 
-/** Per-entry fallback: one drifted entry must not drop the rest. */
 const HarvestedMediaSchema = z
   .object({
     url: z.string().optional().catch(undefined),
@@ -213,7 +212,6 @@ const HarvestedPostSchema = z
     mediaUrl: z.string().optional().catch(undefined),
     mediaUrls: z.array(HarvestedMediaSchema).optional().catch(undefined),
     mediaType: z.string().optional().catch(undefined),
-    /** Loose: `draftFromDomHarvest` re-parses `meta` itself, so its other keys must survive. */
     meta: z
       .looseObject({
         media: z.array(HarvestedMediaSchema).optional().catch(undefined),

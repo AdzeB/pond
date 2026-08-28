@@ -1,6 +1,5 @@
 import type { WireJson } from "./wire";
 
-/** Timestamps reach the wire as a `Date` from drizzle, epoch ms, or an ISO string. */
 export function toMs(v: WireJson | undefined): number | null {
   if (v == null) return null;
   if (v instanceof Date) {

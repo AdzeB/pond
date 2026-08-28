@@ -28,7 +28,6 @@ export interface DownloadHistoryRow {
   ts: number;
 }
 
-/** `Number(x ?? PAGE_DEFAULT)`, clamped; anything unreadable falls back to the default page size. */
 const LimitParam = z.coerce
   .number()
   .nullish()
@@ -45,7 +44,6 @@ const CursorParam = z
   .catch(null)
   .transform((value) => value ?? null);
 
-/** Unknown ids drop out of the list rather than rejecting the whole filter, as the old `filter(isSource)` did. */
 const SourceListParam = z
   .array(z.enum(SOURCES).nullable().catch(null))
   .catch([])
@@ -64,7 +62,6 @@ type HistoryRow = Pick<
   url: string | null;
 };
 
-/** The query filters on the kind that carries a `SaveIngestEvent`; other payloads cannot reach here. */
 function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
   const payload = row.payload;
   if (payload.kind !== "save.ingest.completed") return null;

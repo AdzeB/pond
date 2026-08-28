@@ -35,7 +35,6 @@ const ImageDownloadSchema = z.object({
   maxFileSizeMb: z.number().nullable(),
 }) satisfies z.ZodType<ImageDownloadPrefs>;
 
-/** Stored sections are merged over their defaults, so every field is optional here. */
 const SettingsRowSchema = z.object({
   id: z.string().catch(""),
   libraryRoot: z.string().nullable().catch(null),

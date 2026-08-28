@@ -24,7 +24,6 @@ export const SOURCE_DESCRIPTORS = [
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/[^/]+\/status\/(\d+)/i,
       /^https?:\/\/(?:www\.)?(?:x|twitter)\.com\/i\/web\/status\/(\d+)/i,
     ],
-    /** X soft-blocks an account that browses like a crawler, so a backfill here is paced in hours. */
     sync: {
       strategy: "cursor",
       rate: { minDelayMs: 3000, maxPerHour: 150, maxPerDay: 1000 },

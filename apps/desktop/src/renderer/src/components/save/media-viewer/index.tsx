@@ -27,9 +27,7 @@ import {
 } from "./lib/use-carousel";
 import styles from "./styles.module.css";
 
-/** Lets the page walk this save's slides before it moves to the next save. */
 export interface ViewerNav {
-  /** False once the carousel is at that end, which is the page's cue to change save. */
   step: (delta: number) => boolean;
 }
 
@@ -133,7 +131,6 @@ export function MediaViewer({
 
   return (
     <Carousel
-      /** A new save gets a fresh carousel, so a half-finished scroll intent cannot leak into it. */
       key={save.id}
       save={save}
       slides={slides}

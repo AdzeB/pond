@@ -8,10 +8,6 @@ interface MutateOpts {
   actorReason?: string;
 }
 
-/**
- * What the UI may change on a save: every column except its identity and the timestamps, which the
- * pool holds as epoch ms and the database as `Date`.
- */
 export type SaveEdit = Partial<
   Omit<
     Save,
@@ -31,7 +27,6 @@ function metaFor(opts: MutateOpts): TxMeta | undefined {
   return { actor: "user", actorReason: opts.actorReason };
 }
 
-/** The pool row as a database row: `Date` timestamps, and no `tasks`, which live in their own table. */
 function toNewSave(save: Save): NewSave {
   const { tasks: _tasks, ...columns } = save;
   return {

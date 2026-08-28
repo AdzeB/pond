@@ -12,11 +12,9 @@ interface SavedRequestTemplate {
 }
 
 declare global {
-  /** The scrape preload records the saved-feed GraphQL request on the page for this harvest to replay. */
   var __pondThreadsSavedRequest: SavedRequestTemplate | null | undefined;
 }
 
-/** Only `variables` is read; every other key rides along untouched on the replay. */
 interface GraphqlRequestBody {
   variables?: string | JsonObject;
 }
@@ -108,7 +106,6 @@ async function inPageSavedApi(
   const isJsonObject = (value: JsonValue | undefined): value is JsonObject =>
     value instanceof Object && !Array.isArray(value);
 
-  /** Sound because JSON carries no NaN or Infinity. */
   const isJsonNumber = (value: JsonValue): value is number =>
     Number.isFinite(value);
 

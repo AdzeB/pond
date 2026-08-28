@@ -217,7 +217,6 @@ const HarvestQuotedTweetSchema = z
 
 type HarvestQuotedTweet = NonNullable<z.infer<typeof HarvestQuotedTweetSchema>>;
 
-/** X and Threads reshuffle the scraped page without notice, so every field falls back on its own. */
 const DomHarvestMetaSchema = z
   .object({
     authorName: scrapedText,

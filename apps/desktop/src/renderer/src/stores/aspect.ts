@@ -113,7 +113,6 @@ function touchMeasured(key: string, ratio: number): void {
   }
 }
 
-/** Persisted as a plain `{ [saveId]: ratio }` map; a ratio that is not a usable number is dropped. */
 const StoredAspectsSchema = z.record(
   z.string(),
   z

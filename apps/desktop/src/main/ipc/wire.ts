@@ -56,7 +56,6 @@ function toWireTask(task: Task): WireTask {
   };
 }
 
-/** Sync payloads are model rows, or arrays of them, straight out of the `data`/`prev_data` JSON columns. */
 const WireRowSchema = z.custom<WireRow>(
   (value) => value instanceof Object && !Array.isArray(value),
 );

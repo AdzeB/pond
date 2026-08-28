@@ -1,7 +1,6 @@
 import type { Prefs } from "@pond/schema/db";
 import type { Save } from "@/lib/types";
 
-/** The `saves` columns an enricher may write back; mirrors `saves.patchDerived`'s schema in main. */
 export type DerivedFields = {
   caption?: string | null;
   captionModel?: string | null;

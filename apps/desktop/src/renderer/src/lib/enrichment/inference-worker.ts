@@ -15,7 +15,6 @@ import type {
   SerializedImage,
 } from "./inference-protocol";
 
-/** Only ever loaded through `new Worker()` (see inference-client); the project's DOM lib would otherwise type `self` as a Window. */
 declare const self: DedicatedWorkerGlobalScope;
 
 function toRawImage(s: SerializedImage): RawImage {

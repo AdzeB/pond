@@ -20,7 +20,6 @@ export interface SaveFile {
   height?: number | null;
 }
 
-/** The pool row: a `WireSave` narrowed to the columns the UI reads, with the same types. */
 export interface Save {
   id: string;
   source: Source;

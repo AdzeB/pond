@@ -29,7 +29,6 @@ interface SyncRunHistoryEntry {
   watchdogTripped: boolean;
 }
 
-/** Every query below filters on the kind that carries a `SyncRunEvent`; other payloads cannot reach here. */
 function toEntry(row: PipelineEventRow): SyncRunHistoryEntry | null {
   const payload = row.payload;
   if (payload.kind !== "sync.run.completed") return null;
@@ -78,7 +77,6 @@ function toEntries(rows: PipelineEventRow[]): SyncRunHistoryEntry[] {
   return rows.map(toEntry).filter((entry) => entry !== null);
 }
 
-/** `Number.isFinite(n) ? min(max(trunc(n), 1), ceiling) : fallback` */
 function clampWindow(value: number, ceiling: number, fallback: number): number {
   return Number.isFinite(value)
     ? Math.min(Math.max(Math.trunc(value), 1), ceiling)

@@ -87,7 +87,6 @@ const UserSchema = z
   .optional()
   .catch(undefined);
 
-/** X reshuffles this payload without notice, so every field falls back on its own; `created_at` is here only because `buildTwitterBookmarkSeed` reads it back off `RichTweet.raw`. */
 const TweetNodeSchema = z
   .object({
     __typename: scrapedText,
@@ -204,7 +203,6 @@ const TimelineSchema = z
   .optional()
   .catch(undefined);
 
-/** Bookmarks answer under `bookmark_timeline_v2`; likes answer under the user timeline. */
 const BookmarksResponseSchema = z
   .object({
     data: z

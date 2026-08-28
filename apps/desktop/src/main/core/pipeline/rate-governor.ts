@@ -140,7 +140,6 @@ function effectiveDelay(source: Source, firstSync: boolean): number {
 const HOUR_MS = 60 * 60_000;
 const DAY_MS = 24 * HOUR_MS;
 
-/** Keeps a day of history so the hourly and daily ceilings survive a restart. */
 function pruneLog(source: Source): number[] {
   const cutoff = now() - DAY_MS;
   const log_ = (requestLog.get(source) ?? []).filter((ts) => ts >= cutoff);
@@ -159,7 +158,6 @@ function recentCount(log_: number[], windowMs: number): number {
   return count;
 }
 
-/** When a ceiling is spent, the source is parked until the oldest request in that window ages out. */
 function budgetUntil(source: Source): number {
   const p = profile(source);
   const log_ = pruneLog(source);

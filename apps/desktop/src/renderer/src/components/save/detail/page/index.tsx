@@ -47,7 +47,6 @@ export function SaveDetailPage() {
 
   const viewerNav = useRef<ViewerNav | null>(null);
 
-  /** Walk this save's images first; the arrow only leaves the save once the carousel says it is at that end. */
   const stepImageOrSave = useCallback(
     (delta: number) => {
       if (viewerNav.current?.step(delta)) return;

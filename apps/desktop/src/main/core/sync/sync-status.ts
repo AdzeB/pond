@@ -20,7 +20,6 @@ const GAP_TEXT = new Map<string, string>([
   ["unknown", "failed"],
 ]);
 
-/** Half a sync coming back empty has to be said out loud; "All caught up" would be a lie. */
 export function listGapNote(label: string, reason: string): string {
   return `${label} unavailable (${GAP_TEXT.get(reason) ?? reason}).`;
 }
