@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import type { Capture } from "@pond/schema/raw";
 import { buildTextCardData, type TextCardData } from "@shared/text-card";
 import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
@@ -6,6 +5,7 @@ import { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import { z } from "zod";
+import { resolveMainOut } from "../../lib/resolve-preload";
 
 export interface RenderedCard {
   bytes: Buffer;
@@ -100,7 +100,7 @@ async function loadCapture(
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
     ? target.loadURL(`${devUrl}/capture.html?${search}#${hash}`)
-    : target.loadFile(join(__dirname, "../renderer/capture.html"), {
+    : target.loadFile(resolveMainOut("../renderer/capture.html"), {
         search,
         hash,
       });
