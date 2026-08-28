@@ -141,7 +141,6 @@ export const sourcesColumns: TableColumn<SourceTableRow>[] = [
     header: "Last Synced",
     accessor: (row) => row.lastSyncedMs,
     width: "120px",
-    align: "end",
     cell: (row) => (
       <span className={styles.metric}>
         {row.lastSyncedAt ? relativeTime(row.lastSyncedAt) : "—"}
