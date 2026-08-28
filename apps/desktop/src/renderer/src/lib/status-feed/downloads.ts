@@ -1,4 +1,4 @@
-import { OPS, type Op, SOURCES, type Source } from "@pond/schema/db";
+import { OPS, type Op, SOURCES } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { z } from "zod";
 import type { Save } from "@/lib/types";

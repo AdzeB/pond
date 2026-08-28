@@ -1,10 +1,8 @@
 import type {
   ListKind,
   MediaType,
-  Op,
   SaveStatus,
   Source,
-  TaskStatus,
   VideoNote,
 } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
