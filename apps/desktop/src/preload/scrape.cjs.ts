@@ -464,6 +464,81 @@ const THREADS_HOOK = `
   })();
 `;
 
+const INSTAGRAM_HOOK = `
+  (() => {
+    if (globalThis.__pondIgBloksHookInstalled) return;
+    globalThis.__pondIgBloksHookInstalled = true;
+    globalThis.__pondIgBloksCaptures = [];
+
+    /** The activity centre screens (likes, comments) are Bloks apps that page through this endpoint. */
+    const isBloksUrl = (u) => {
+      try {
+        return typeof u === "string" && u.indexOf("/async/wbloks/fetch/") !== -1;
+      } catch (e) {
+        return false;
+      }
+    };
+
+    const push = (text) => {
+      try {
+        const buf = globalThis.__pondIgBloksCaptures;
+        if (!Array.isArray(buf)) return;
+        /** Each page is ~150 kB; drop the oldest so a long scroll cannot grow the buffer without bound. */
+        if (buf.length > 400) buf.shift();
+        buf.push(text);
+      } catch (e) {
+        /* buffer unavailable; skip */
+      }
+    };
+
+    const xhrOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url) {
+      try {
+        if (isBloksUrl(url)) {
+          this.addEventListener("load", () => {
+            try {
+              push(this.responseText);
+            } catch (e) {
+              /* response body not readable; skip */
+            }
+          });
+        }
+      } catch (e) {
+        /* URL match threw; never block the request */
+      }
+      return xhrOpen.apply(this, arguments);
+    };
+
+    const origFetch = globalThis.fetch;
+    if (typeof origFetch === "function") {
+      globalThis.fetch = function (input, init) {
+        let url = "";
+        try {
+          url = typeof input === "string" ? input : (input && input.url) || "";
+        } catch (e) {
+          /* opaque request; leave url empty */
+        }
+        const promise = origFetch.apply(this, arguments);
+        if (isBloksUrl(url)) {
+          promise
+            .then((res) => {
+              try {
+                res.clone().text().then(push).catch(() => {});
+              } catch (e) {
+                /* body already consumed; skip */
+              }
+              return res;
+            })
+            .catch(() => {
+              /* don't disturb the caller's error path */
+            });
+        }
+        return promise;
+      };
+    }
+  })();
+`;
+
 const host = globalThis.location?.hostname.toLowerCase() ?? "";
 const isTwitter =
   host === "x.com" ||
@@ -471,6 +546,7 @@ const isTwitter =
   host.endsWith(".x.com") ||
   host.endsWith(".twitter.com");
 const isCosmos = host === "cosmos.so" || host.endsWith(".cosmos.so");
+const isInstagram = host === "instagram.com" || host.endsWith(".instagram.com");
 const isThreads =
   host === "threads.com" ||
   host === "threads.net" ||
@@ -483,6 +559,10 @@ if (isTwitter) {
 
 if (isCosmos) {
   webFrame.executeJavaScript(COSMOS_HOOK).catch(() => {});
+}
+
+if (isInstagram) {
+  webFrame.executeJavaScript(INSTAGRAM_HOOK).catch(() => {});
 }
 
 if (isThreads) {

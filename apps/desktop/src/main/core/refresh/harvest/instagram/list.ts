@@ -1,11 +1,6 @@
 /// <reference lib="dom" />
 
-import type { ListKind } from "@pond/schema/db";
-import type {
-  ListEntry,
-  ListHarvestArgs,
-  ListHarvestResult,
-} from "../list-types";
+import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   type InstagramEntry,
   type InstagramMediaNode,
@@ -77,52 +72,13 @@ async function inPageInstagramList(
     return { ok: false, reason: "auth_required" };
   }
 
-  function withListKind(entries: ListEntry[], kind: ListKind): ListEntry[] {
-    return entries.map((e) => ({
-      ...e,
-      listKinds: Array.from(new Set([...(e.listKinds ?? []), kind])),
-    }));
-  }
+  const apiResult = await fetchSavedViaApi();
+  if (apiResult) return apiResult;
+  return await fallbackDomScroll();
 
-  function unionList(primary: ListEntry[], extra: ListEntry[]): ListEntry[] {
-    const map = new Map<string, ListEntry>();
-    for (const e of [...primary, ...extra]) {
-      const prev = map.get(e.sourceId);
-      if (!prev) {
-        map.set(e.sourceId, e);
-        continue;
-      }
-      map.set(e.sourceId, {
-        ...prev,
-        listKinds: Array.from(
-          new Set([...(prev.listKinds ?? []), ...(e.listKinds ?? [])]),
-        ),
-      });
-    }
-    return Array.from(map.values());
-  }
-
-  const apiResult = await fetchFeedViaApi("/api/v1/feed/saved/posts/", true);
-  if (apiResult && !apiResult.ok) return apiResult;
-  if (!apiResult) return await fallbackDomScroll();
-
-  const savedEntries = withListKind(apiResult.entries, "saved");
-  const liked = await fetchFeedViaApi("/api/v1/feed/liked/", false);
-  if (!liked?.ok) {
-    return { ...apiResult, entries: savedEntries };
-  }
-  const entries = unionList(savedEntries, withListKind(liked.entries, "liked"));
-  return {
-    ok: true,
-    entries,
-    reachedEnd: apiResult.reachedEnd && liked.reachedEnd,
-    seen: entries.length,
-  };
-
-  async function fetchFeedViaApi(
-    path: string,
-    required: boolean,
-  ): Promise<ListHarvestResult | null> {
+  /** Likes live on the Bloks activity screen, not here; `/api/v1/feed/liked/` rejects web sessions. */
+  async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
+    const path = "/api/v1/feed/saved/posts/";
     const entries: InstagramEntry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
@@ -183,10 +139,9 @@ async function inPageInstagramList(
         reportProgress("api_response", { page, status: res.status });
 
         if (res.status === 401 || res.status === 403) {
-          return required ? { ok: false, reason: "auth_required" } : null;
+          return { ok: false, reason: "auth_required" };
         }
         if (res.status === 429) {
-          if (!required) return null;
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
           const limited: Extract<ListHarvestResult, { ok: false }> = {
@@ -211,13 +166,13 @@ async function inPageInstagramList(
       }
 
       if (json?.require_login || json?.message === "login_required") {
-        return required ? { ok: false, reason: "auth_required" } : null;
+        return { ok: false, reason: "auth_required" };
       }
 
       const items = json?.items ?? json?.feed_items ?? [];
       if (items.length === 0 && page === 0) {
         reportProgress("api_empty", { page, path });
-        return required ? null : { ok: true, entries: [], reachedEnd: true };
+        return null;
       }
 
       let pageFresh = 0;

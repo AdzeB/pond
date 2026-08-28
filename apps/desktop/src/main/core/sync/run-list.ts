@@ -5,6 +5,7 @@ import log from "electron-log/main.js";
 import { type EnqueueItem, enqueue } from "../pipeline/enqueue";
 import { mergeListKindsOntoExisting } from "../pipeline/list-kinds";
 import {
+  harvestInstagramLikedList,
   harvestSourceList,
   harvestYoutubeLikedList,
 } from "../refresh/scrape-window";
@@ -141,11 +142,30 @@ export async function syncListSource(
     return;
   }
 
-  const dualHarvest =
-    source === "reddit" || source === "instagram" || source === "tiktok";
+  /** Reddit and TikTok harvest both lists in one pass and stamp their own kinds. */
+  const dualHarvest = source === "reddit" || source === "tiktok";
   let combined = dualHarvest
     ? harvest.entries
     : stampListKind(harvest.entries, "saved");
+  if (source === "instagram") {
+    const liked = await harvestInstagramLikedList(
+      {
+        knownIds: Array.from(knownIds),
+        earlyStop: !baseline.full,
+      },
+      { partition },
+    );
+    if (liked.ok) {
+      combined = unionById(
+        combined,
+        stampListKind(liked.entries, "liked"),
+        (e) => e.sourceId,
+        mergeEntryListKinds,
+      );
+    } else {
+      log.warn(`[pond sync:instagram] likes harvest failed: ${liked.reason}`);
+    }
+  }
   if (source === "youtube") {
     const liked = await harvestYoutubeLikedList(
       {

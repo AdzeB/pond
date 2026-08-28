@@ -11,7 +11,11 @@ import {
   COSMOS_LIST_URL,
   cosmosProfileUrl,
 } from "../harvest/cosmos";
-import { buildInstagramListExpression } from "../harvest/instagram";
+import {
+  buildInstagramLikesExpression,
+  buildInstagramListExpression,
+  INSTAGRAM_LIKES_URL,
+} from "../harvest/instagram";
 import type { ListHarvestArgs, ListHarvestResult } from "../harvest/list-types";
 import {
   buildPinterestListExpression,
@@ -351,6 +355,76 @@ function buildListExpressionFor(
       return null;
     case "local":
       return null;
+  }
+}
+
+export async function harvestInstagramLikedList(
+  args: ListHarvestArgs,
+  opts: { partition?: string } = {},
+): Promise<ListHarvestResult> {
+  const lease = await leaseWindow("instagram", { partition: opts.partition });
+  try {
+    const navOk = await navigateWithTimeout(
+      lease.win,
+      INSTAGRAM_LIKES_URL,
+      NAV_TIMEOUT_MS,
+    );
+    if (!navOk) return { ok: false, reason: "timeout" };
+    const landedUrl = lease.win.webContents.getURL();
+    const challenge = looksLikeChallenge(landedUrl);
+    if (challenge) {
+      markAtRisk(
+        "instagram",
+        challenge.kind,
+        `likes harvest landed on ${challenge.kind}`,
+      );
+      return { ok: false, reason: "auth_required" };
+    }
+    if (looksLikeAuthWall(landedUrl))
+      return { ok: false, reason: "auth_required" };
+
+    await lease.win.webContents
+      .executeJavaScript(
+        "globalThis.__pondHarvestAbort = false; globalThis.__pondHarvestPartial = null;",
+        true,
+      )
+      .catch(() => {});
+    const raw = await Promise.race([
+      lease.win.webContents.executeJavaScript(
+        buildInstagramLikesExpression(args),
+        true,
+      ),
+      sleep(9 * 60_000).then(() => "__pond_ig_likes_timeout__"),
+    ]);
+    if (raw === "__pond_ig_likes_timeout__") {
+      await lease.win.webContents
+        .executeJavaScript("globalThis.__pondHarvestAbort = true;", true)
+        .catch(() => {});
+      await sleep(750);
+      const partial = await readHarvestPartial(lease.win);
+      if (partial && partial.length > 0) {
+        log.info(
+          `[pond list] instagram likes recovered ${partial.length} entries after timeout`,
+        );
+        return { ok: true, entries: partial, reachedEnd: false };
+      }
+      return { ok: false, reason: "timeout" };
+    }
+    const parsed = ListResultSchema.parse(raw);
+    if (!parsed) return { ok: false, reason: "no_match" };
+    if (!parsed.ok) return parsed;
+    report("instagram", { ok: true });
+    return {
+      ok: true,
+      entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
+      reachedEnd: parsed.reachedEnd,
+      seen: parsed.seen ?? parsed.entries.length,
+    };
+  } catch (err) {
+    log.warn("[pond list] instagram likes unexpected error", err);
+    return { ok: false, reason: "unknown" };
+  } finally {
+    lease.release();
   }
 }
 
