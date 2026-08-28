@@ -4,6 +4,7 @@ import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import {
   bindPanel,
   closeThen,
+  openDownloads,
   openSaveFromPanel,
   openSources,
   type Panel,
@@ -25,6 +26,7 @@ export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
     activityErrors.length === 0;
 
   const goSources = closeThen(onOpenChange, openSources);
+  const goDownloads = closeThen(onOpenChange, openDownloads);
 
   return (
     <StatusPanel
@@ -74,6 +76,7 @@ export function ErrorsPanel({ open, onOpenChange }: ErrorsPanelProps) {
               meta={relativeTimeFromMs(entry.endedAt ?? entry.startedAt)}
             />
           ))}
+          <Row title="View All" onClick={goDownloads} />
         </List>
       )}
     </StatusPanel>

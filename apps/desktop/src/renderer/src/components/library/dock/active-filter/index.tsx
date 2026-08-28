@@ -3,6 +3,10 @@ import { isPredicate } from "@pond/schema/filters/types";
 import { Button } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
+import {
+  describeSourcesFilters,
+  sourcesFiltersActive,
+} from "@/components/library/sources/page/lib/filters";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
   accountChipLabel,
@@ -11,8 +15,10 @@ import {
 import { describePredicate } from "@/lib/search/fields";
 import { serializePredicate } from "@/lib/search/syntax";
 import { bouncySpring } from "@/lib/ui/motion";
-import { openLibrarySearch } from "@/lib/ui/open-search";
+import { openDockSearch, openLibrarySearch } from "@/lib/ui/open-search";
+import { dockMode } from "@/stores/dock-mode";
 import { usePrefs } from "@/stores/prefs";
+import { sourcesFilters, useSourcesFilters } from "@/stores/sources-filters";
 import {
   resetFilters,
   useFilterQuery,
@@ -28,9 +34,11 @@ export function ActiveFilter() {
   const q = useSearchText();
   const [sync] = usePrefs("sync");
   const refs = accountRefsFromSync(sync);
+  const sourceFilters = useSourcesFilters();
   const scrollFade = useScrollFade<HTMLSpanElement>();
 
-  const serialized = [
+  const onSources = pathname.startsWith("/sources");
+  const librarySerialized = [
     ...query.rules.filter(isPredicate).map((rule) => {
       if (rule.field === "account") {
         const values = Array.isArray(rule.value) ? rule.value : [rule.value];
@@ -42,12 +50,16 @@ export function ActiveFilter() {
   ]
     .filter(Boolean)
     .join(" · ");
-  const label = serialized;
-  const active = serialized.length > 0;
+
+  const sourcesLabel = describeSourcesFilters(sourceFilters);
+  const label = onSources ? sourcesLabel : librarySerialized;
+  const active = onSources
+    ? sourcesFiltersActive(sourceFilters)
+    : librarySerialized.length > 0;
   const show =
     active &&
     (dock.view === "nav" || dock.view === "selection") &&
-    !pathname.startsWith("/sources");
+    !pathname.startsWith("/downloads");
 
   return (
     <AnimatePresence>
@@ -65,7 +77,14 @@ export function ActiveFilter() {
             variant="ghost"
             className={styles.edit}
             aria-label="Edit Filter"
-            onClick={() => openLibrarySearch()}
+            onClick={() => {
+              if (onSources) {
+                if (sourceFilters.q.trim()) openDockSearch();
+                else dockMode.open("sources-filter");
+                return;
+              }
+              openLibrarySearch();
+            }}
           >
             <span className={styles.label} {...scrollFade}>
               {label || "Filter"}
@@ -78,7 +97,8 @@ export function ActiveFilter() {
             className={styles.clear}
             aria-label="Clear Filter"
             onClick={() => {
-              resetFilters();
+              if (onSources) sourcesFilters.reset();
+              else resetFilters();
             }}
           >
             <Clear />

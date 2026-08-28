@@ -18,11 +18,15 @@
 }
 
 .title {
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: 14px;
   font-weight: 600;
   color: var(--ds-gray-12);
+  white-space: nowrap;
 
   &[data-position="center"] {
+    padding-inline: 32px;
     text-align: center;
   }
 }

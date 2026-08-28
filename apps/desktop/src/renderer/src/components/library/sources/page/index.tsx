@@ -1,77 +1,56 @@
 import type { MenuItemSpec } from "@pond/ui";
-import { type CSSProperties, useEffect, useMemo } from "react";
-import { SourcesEmpty } from "@/components/library/empty";
-import {
-  LIBRARY_ITEM_GAP,
-  PackedGrid,
-  type PackedItem,
-  packUniform,
-} from "@/components/library/layouts/packed-grid";
-import {
-  type CardModel,
-  cardModel,
-} from "@/components/library/sources/sync-monitor/lib/helpers";
-import { type AccountRow, useAccounts } from "@/hooks/use-accounts";
-import { useGridMin } from "@/hooks/use-grid-min";
-import { useWatches, type WatchRow } from "@/hooks/use-watches";
-import { getSourceDef } from "@/lib/save/sources-registry";
+import { DataTable } from "@pond/ui";
+import { useCallback, useEffect, useMemo } from "react";
+import { MatchesEmpty, SourcesEmpty } from "@/components/library/empty";
+import { cardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
+import { TableSelectionSync } from "@/components/library/table-selection-sync";
+import { SpecContextMenu } from "@/components/shared/spec-context-menu";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useClientHeight } from "@/hooks/use-client-height";
+import { useWatches } from "@/hooks/use-watches";
 import { viewAccountItems } from "@/lib/ui/open-search";
 import {
   connectFlow,
   useConnectedBefore,
   useConnectWaiting,
 } from "@/stores/connect-flow";
-import { useGridWidth } from "@/stores/shell-state";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
+import { useSourcesFilters } from "@/stores/sources-filters";
+import { sourcesSelection } from "@/stores/sources-selection";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
+import { sourcesColumns } from "./columns";
 import { buildAccountMenu } from "./lib/account-menu";
-import { syncFraction, tileValue, watchName } from "./lib/helpers";
-import { SourceTile } from "./source-tile";
+import { matchesSourceFilters } from "./lib/filters";
+import {
+  type SourceEntry,
+  type SourceTableRow,
+  sourceCanSyncNow,
+  toSourceTableRow,
+} from "./lib/helpers";
 import styles from "./styles.module.css";
-
-const SOURCE_CELL_HEIGHT = 120;
-
-type SourceEntry =
-  | { kind: "account"; row: AccountRow }
-  | { kind: "watch"; row: WatchRow };
-
-function cellStyle(item: PackedItem): CSSProperties {
-  return {
-    position: "absolute",
-    top: `${item.top}px`,
-    left: `${item.left}px`,
-    width: `${item.width}px`,
-    height: `${item.height}px`,
-  };
-}
-
-function entryName(entry: SourceEntry): string {
-  if (entry.kind === "account") {
-    return entry.row.label ?? getSourceDef(entry.row.source).label;
-  }
-  return watchName(entry.row);
-}
 
 function openEntry(entry: SourceEntry): void {
   if (entry.kind === "account") sourceDetail.openAccount(entry.row.id);
   else sourceDetail.openWatch(entry.row.id);
 }
 
-function buildTileMenu(entry: SourceEntry, model: CardModel): MenuItemSpec[] {
-  const running = model.tone === "run";
+function buildRowMenu(row: SourceTableRow): MenuItemSpec[] {
   const now =
-    entry.kind === "account"
-      ? { label: "Sync Now", disabled: !(model.connected && !running) }
-      : { label: "Check Now", disabled: running };
+    row.kind === "account"
+      ? { label: "Sync Now", disabled: !sourceCanSyncNow(row) }
+      : { label: "Check Now", disabled: !sourceCanSyncNow(row) };
   return [
-    { ...now, onClick: () => void window.pond.syncRunNow(entry.row.id) },
+    { ...now, onClick: () => void window.pond.syncRunNow(row.id) },
     {
       label: "View Items in Library",
-      onClick: () => viewAccountItems(entry.row.id),
+      onClick: () => viewAccountItems(row.id),
     },
-    ...(entry.kind === "account"
-      ? [{ type: "separator" as const }, ...buildAccountMenu(entry.row, model)]
+    ...(row.entry.kind === "account"
+      ? [
+          { type: "separator" as const },
+          ...buildAccountMenu(row.entry.row, row.model),
+        ]
       : []),
   ];
 }
@@ -84,12 +63,12 @@ export function SourcesPage() {
     refetch: refetchWatches,
   } = useWatches();
   const byAccount = useSyncByAccount();
-  const width = useGridWidth();
-  const colMin = useGridMin();
   const waiting = useConnectWaiting();
   const connectedBefore = useConnectedBefore();
   const addedWatchId = useWatchAdded();
   const detailRevision = useSourceDetailRevision();
+  const filters = useSourcesFilters();
+  const { ref: tableRef, height: tableHeight } = useClientHeight();
 
   const entries = useMemo<SourceEntry[]>(() => {
     const next: SourceEntry[] = [];
@@ -98,23 +77,24 @@ export function SourcesPage() {
     return next;
   }, [accounts, watches]);
 
-  const byId = useMemo(() => {
-    const map = new Map<string, SourceEntry>();
-    for (const entry of entries) map.set(entry.row.id, entry);
-    return map;
-  }, [entries]);
+  const tableRows = useMemo<SourceTableRow[]>(() => {
+    const next: SourceTableRow[] = [];
+    for (const entry of entries) {
+      next.push(toSourceTableRow(entry, cardModel(byAccount[entry.row.id])));
+    }
+    return next;
+  }, [entries, byAccount]);
 
-  const { items, totalHeight } = useMemo(
-    () =>
-      packUniform(
-        entries.map((e) => e.row.id),
-        width,
-        colMin,
-        LIBRARY_ITEM_GAP,
-        () => SOURCE_CELL_HEIGHT,
-      ),
-    [entries, width, colMin],
+  const rows = useMemo(
+    () => tableRows.filter((row) => matchesSourceFilters(row, filters)),
+    [tableRows, filters],
   );
+
+  const rowsById = useMemo(() => {
+    const next = new Map<string, SourceTableRow>();
+    for (const row of rows) next.set(row.id, row);
+    return next;
+  }, [rows]);
 
   useEffect(() => {
     if (!waiting) return;
@@ -128,9 +108,9 @@ export function SourcesPage() {
       inflight = true;
       void (async () => {
         try {
-          const rows = await refetch();
+          const list = await refetch();
           if (cancelled || arrivedOnce) return;
-          const arrived = rows.find(
+          const arrived = list.find(
             (a) =>
               a.source === source && a.connected && !connectedBefore.has(a.id),
           );
@@ -172,41 +152,60 @@ export function SourcesPage() {
     void refetchWatches();
   }, [detailRevision, refetch, refetchWatches]);
 
-  if (!accountsLoading && !watchesLoading && entries.length === 0) {
-    return <SourcesEmpty />;
+  const loaded = !accountsLoading && !watchesLoading;
+  const showMatchesEmpty = loaded && entries.length > 0 && rows.length === 0;
+
+  const onRowClick = useCallback((row: SourceTableRow) => {
+    openEntry(row.entry);
+  }, []);
+
+  if (loaded && entries.length === 0) {
+    return (
+      <div className={styles.page}>
+        <SourcesEmpty />
+      </div>
+    );
   }
 
   return (
-    <div className={styles.root}>
-      <PackedGrid
-        layout="grid"
-        items={items}
-        totalHeight={totalHeight}
-        renderItem={(item) => {
-          const entry = byId.get(item.id);
-          if (!entry) return null;
-          const status = byAccount[entry.row.id];
-          const model = cardModel(status);
-          return (
-            <li key={item.id} className={styles.cell} style={cellStyle(item)}>
-              <SourceTile
-                source={entry.row.source}
-                avatarUrl={entry.row.avatarUrl}
-                name={entryName(entry)}
-                value={tileValue(
-                  model.tone,
-                  model.statusText,
-                  entry.row.sync?.knownCount ?? 0,
-                )}
-                tone={model.tone}
-                progress={syncFraction(model.tone, status)}
-                onOpen={() => openEntry(entry)}
-                menu={() => buildTileMenu(entry, model)}
-              />
-            </li>
-          );
-        }}
-      />
-    </div>
+    <DataTable.Provider
+      data={rows}
+      columns={sourcesColumns}
+      getRowId={(row) => row.id}
+      onSelectionChange={(ids) => {
+        sourcesSelection.set(
+          ids
+            .map((id) => rowsById.get(id))
+            .filter((row): row is SourceTableRow => row != null),
+        );
+      }}
+      defaultSort={{ id: "name", desc: false }}
+      height={
+        showMatchesEmpty || tableHeight < 76 ? undefined : tableHeight - 28
+      }
+      onRowClick={onRowClick}
+      renderRow={({ cells, rowProps, row }) => (
+        <SpecContextMenu buildItems={() => buildRowMenu(row)}>
+          <div {...rowProps}>{cells}</div>
+        </SpecContextMenu>
+      )}
+    >
+      <div className={styles.page}>
+        {showMatchesEmpty ? (
+          <div className={styles.empty}>
+            <MatchesEmpty />
+          </div>
+        ) : (
+          <div ref={tableRef} className={styles.table}>
+            <DataTable.Root>
+              <DataTable.Empty>
+                {loaded ? <MatchesEmpty /> : null}
+              </DataTable.Empty>
+            </DataTable.Root>
+          </div>
+        )}
+      </div>
+      <TableSelectionSync selection={sourcesSelection} rowsById={rowsById} />
+    </DataTable.Provider>
   );
 }

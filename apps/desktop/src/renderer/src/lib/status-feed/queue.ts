@@ -17,7 +17,7 @@ export interface QueueRow {
   error: string | null;
 }
 
-const STAGE_LABELS = {
+export const STAGE_LABELS = {
   harvest_metadata: "Reading page",
   capture_tweet: "Capturing tweet",
   render_text_cover: "Rendering text cover",
@@ -29,9 +29,23 @@ const STAGE_LABELS = {
   finalize: "Finalizing",
 } satisfies Record<Op, string>;
 
-function stageLabel(op: Op, source: string): string {
+export function stageLabel(op: Op, source: string): string {
   if (op === "capture_tweet" && source === "threads") return "Capturing post";
   return STAGE_LABELS[op];
+}
+
+export function preferIngestError(
+  current: string | null,
+  next: string | null | undefined,
+): string | null {
+  if (!next) return current;
+  if (
+    !current ||
+    (current.startsWith("blocked by") && !next.startsWith("blocked by"))
+  ) {
+    return next;
+  }
+  return current;
 }
 
 function toRow(save: Save): QueueRow | null {
@@ -49,13 +63,7 @@ function toRow(save: Save): QueueRow | null {
     else if (t.status === "running") stage = stageLabel(t.op, save.source);
     else if (t.status === "failed") {
       stage ??= stageLabel(t.op, save.source);
-      if (
-        !error ||
-        (error.startsWith("blocked by") &&
-          !t.lastError?.startsWith("blocked by"))
-      ) {
-        error = t.lastError;
-      }
+      error = preferIngestError(error, t.lastError);
     }
   }
   if (status === "saving" && !stage) {

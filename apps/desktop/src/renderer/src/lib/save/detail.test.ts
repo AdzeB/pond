@@ -209,4 +209,15 @@ describe("collectIdentityRows", () => {
     ]).find((r) => r.id === "from");
     expect(from?.watch).toBe(true);
   });
+
+  it("shows liked and saved as a List property", () => {
+    const row = collectIdentityRows(
+      save({ id: "s1", listKinds: ["saved", "liked"], mediaType: null }),
+    ).find((r) => r.id === "list");
+    expect(row).toMatchObject({
+      id: "list",
+      label: "List",
+      value: "Liked, Saved",
+    });
+  });
 });

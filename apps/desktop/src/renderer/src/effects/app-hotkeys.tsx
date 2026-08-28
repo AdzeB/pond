@@ -1,7 +1,7 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { openLibrarySearch } from "@/lib/ui/open-search";
+import { openDockSearch } from "@/lib/ui/open-search";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
 import { dockMode } from "@/stores/dock-mode";
 import { getPrefsSnapshot, patchPrefsSection } from "@/stores/prefs";
@@ -47,6 +47,10 @@ export function AppHotkeys() {
         callback: () => go("/sources"),
       },
       {
+        sequence: [...SHORTCUTS["nav.downloads"].sequence!],
+        callback: () => go("/downloads"),
+      },
+      {
         sequence: [...SHORTCUTS["nav.trash"].sequence!],
         callback: () => go("/trash"),
       },
@@ -61,7 +65,7 @@ export function AppHotkeys() {
   useHotkeys([
     {
       hotkey: SHORTCUTS["dock.search"].keys!,
-      callback: () => openLibrarySearch(),
+      callback: () => openDockSearch(),
       options: { ignoreInputs: false },
     },
     {

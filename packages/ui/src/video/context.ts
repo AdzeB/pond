@@ -2,6 +2,7 @@ import { createContext, use } from "react";
 
 interface VideoState {
   playing: boolean;
+  ended: boolean;
   currentTime: number;
   duration: number;
   buffered: number;

@@ -11,8 +11,10 @@ import {
   parseJsonValue,
 } from "@/utils/json";
 
-/** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching; likes ("digg") are excluded. */
+/** Match the favorite/collect verb at the end of any /api/ path so prefix reshuffles keep matching. */
 const FAVORITE_RE = /\/api\/(?:[a-z_]+\/)*(?:favorite|collect)\/?(?:\?|$)/i;
+/** TikTok likes POST to /digg. */
+const DIGG_RE = /\/api\/(?:[a-z_]+\/)*digg\/?(?:\?|$)/i;
 /** Feed/detail payloads that carry author handles; TikTok reshuffles these often and uses POST as well as GET. */
 const FEED_RE =
   /\/api\/(?:[a-z_]+\/)*(?:aweme|item|feed|post|recommend|detail|list)/i;
@@ -120,7 +122,7 @@ export function inject(): void {
     for (const child of Object.values(node)) walkForAweme(child);
   }
 
-  function emitFavorite(id: string): void {
+  function emitVideo(id: string, trigger: string): void {
     if (!id || emitted.has(id)) return;
     emitted.add(id);
     const fromCache = usernameByAwemeId.get(id) ?? null;
@@ -130,20 +132,30 @@ export function inject(): void {
     const url = username
       ? `https://www.tiktok.com/@${username}/video/${id}`
       : `https://www.tiktok.com/video/${id}`;
-    capture(url, "tiktok:favorite");
+    capture(url, trigger);
   }
 
   installInterceptor({
     id: "tiktok",
     match: (req: RequestLens) =>
-      FAVORITE_RE.test(req.url) || FEED_RE.test(req.url),
+      FAVORITE_RE.test(req.url) ||
+      DIGG_RE.test(req.url) ||
+      FEED_RE.test(req.url),
     async onResponse(req, res) {
       if (!res.ok) return;
+      if (DIGG_RE.test(req.url) && isFavoriteType(req.url)) {
+        const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
+        if (id) {
+          walkForAweme(parseJsonValue(await res.readText()));
+          emitVideo(id, "tiktok:like");
+        }
+        return;
+      }
       if (FAVORITE_RE.test(req.url) && isFavoriteType(req.url)) {
         const id = awemeIdFromUrl(req.url) ?? (await awemeIdFromBody(req));
         if (id) {
           walkForAweme(parseJsonValue(await res.readText()));
-          emitFavorite(id);
+          emitVideo(id, "tiktok:favorite");
         }
         return;
       }

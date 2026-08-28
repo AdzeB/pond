@@ -5,6 +5,7 @@ import {
   IconFileFill18 as FileIcon,
   IconCloneFill18 as FilesIcon,
   IconLink2Fill18 as LinkIcon,
+  IconListFavsFill18 as ListIcon,
   IconMicrophoneFill18 as Mic,
   IconGridLayoutColsFill18 as OrientationIcon,
   IconColorPaletteFill18 as Palette,
@@ -32,6 +33,7 @@ type FieldIcon = ComponentType<{
 
 export const FIELD_ICONS = {
   tags: Tag,
+  list: ListIcon,
   source: LinkIcon,
   type: FileIcon,
   fileCount: FilesIcon,
@@ -51,6 +53,7 @@ export const FIELD_ICONS = {
 
 export const FIELD_HINTS = {
   tags: "any tag",
+  list: "liked, saved",
   source: "dribbble.com, instagram.com, local",
   type: "image, video, link, text",
   fileCount: "3, >2, 2..5",
@@ -118,7 +121,10 @@ export function describePredicate(predicate: Predicate): PredicateChip {
     }
     case "stringArray": {
       const negated = operator === "none";
-      const list = (Array.isArray(value) ? value : [value]).map(String);
+      const list = (Array.isArray(value) ? value : [value]).map((v) => {
+        const preset = meta.presets?.find((p) => String(p.value) === String(v));
+        return preset?.label ?? String(v);
+      });
       return { ...base, label: list.join(", "), negated };
     }
     case "optional": {

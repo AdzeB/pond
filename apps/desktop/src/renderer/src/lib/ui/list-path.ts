@@ -13,6 +13,7 @@ function isLibraryListPath(pathname: string): boolean {
   if (pathname.startsWith("/sources")) {
     return false;
   }
+  if (pathname.startsWith("/downloads")) return true;
   return parseMode(listBaseFromPath(pathname)) !== null;
 }
 

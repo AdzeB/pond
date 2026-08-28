@@ -7,6 +7,10 @@ import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import { inPageThreadsNormalize } from "./normalize";
 
 export const THREADS_LIST_URL = "https://www.threads.com/saved";
+export const THREADS_LIKES_URLS = [
+  "https://www.threads.com/liked",
+  "https://www.threads.com/activity",
+] as const;
 
 interface ThreadsListMedia {
   url: string;

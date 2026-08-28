@@ -22,7 +22,8 @@ export function Library() {
   const activeTabId = useActiveTabId();
   const isSave = saveIdFromPath(pathname) !== null;
   const isSources = pathname.startsWith("/sources");
-  const showLibraryGrid = !isSources;
+  const isDownloads = pathname.startsWith("/downloads");
+  const showLibraryGrid = !isSources && !isDownloads;
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
@@ -63,7 +64,7 @@ export function Library() {
         <div className={styles.overlay}>
           <Outlet />
         </div>
-      ) : isSources ? (
+      ) : isSources || isDownloads ? (
         <Outlet />
       ) : null}
     </div>

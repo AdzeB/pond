@@ -1,16 +1,22 @@
 .row {
   display: inline-flex;
   align-items: center;
+  padding: 4px;
 }
 
-.expand {
-  display: flex;
+.actions {
+  display: grid;
   align-items: center;
-  overflow: hidden;
 }
 
-.expand-inner {
+.set {
   display: flex;
+  grid-area: 1 / 1;
+  align-items: center;
+}
+
+.slot {
   flex-shrink: 0;
-  align-items: center;
+  width: 32px;
+  height: 32px;
 }

@@ -214,6 +214,7 @@ export async function createManualSave(
     siteName: null,
     status: "complete",
     tags,
+    listKinds: ["saved"],
     files: [],
     coverIndex: 0,
     ingestStartedAt: now,

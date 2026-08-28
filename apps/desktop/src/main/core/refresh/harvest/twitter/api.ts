@@ -14,8 +14,9 @@ interface BookmarksRequestTemplate {
 }
 
 declare global {
-  /** The scrape preload records the bookmarks GraphQL request on the page for this harvest to replay. */
+  /** The scrape preload records the bookmarks/likes GraphQL request on the page for this harvest to replay. */
   var __pondBookmarksRequest: BookmarksRequestTemplate | null | undefined;
+  var __pondLikesRequest: BookmarksRequestTemplate | null | undefined;
 }
 
 /** Only `cursor` is read or rewritten; every other key rides along untouched on the replay. */
@@ -33,11 +34,15 @@ interface TimelineInstruction {
   entries?: TimelineEntry[];
 }
 
+interface Timeline {
+  timeline?: { instructions?: TimelineInstruction[] };
+}
+
+/** Bookmarks answer under `bookmark_timeline_v2`; likes answer under the user timeline. */
 interface BookmarksResponse {
   data?: {
-    bookmark_timeline_v2?: {
-      timeline?: { instructions?: TimelineInstruction[] };
-    };
+    bookmark_timeline_v2?: Timeline;
+    user?: { result?: { timeline_v2?: Timeline; timeline?: Timeline } };
   };
 }
 
@@ -70,9 +75,21 @@ const MAX_PAGES = 2000;
 export function buildBookmarksApiExpression(
   args: BookmarksHarvestArgs,
 ): string {
+  return buildTwitterListApiExpression(args, "bookmarks");
+}
+
+export function buildLikesApiExpression(args: BookmarksHarvestArgs): string {
+  return buildTwitterListApiExpression(args, "likes");
+}
+
+function buildTwitterListApiExpression(
+  args: BookmarksHarvestArgs,
+  kind: "bookmarks" | "likes",
+): string {
   const fnSrc = `(${inPageBookmarksApi.toString()})`;
   const enriched = {
     ...args,
+    kind,
     deadlineMs: API_DEADLINE_MS,
     throttleMs: PAGE_THROTTLE_MS,
     maxPages: MAX_PAGES,
@@ -86,6 +103,7 @@ export function buildBookmarksApiExpression(
 
 async function inPageBookmarksApi(
   args: BookmarksHarvestArgs & {
+    kind?: "bookmarks" | "likes";
     deadlineMs: number;
     throttleMs: number;
     maxPages: number;
@@ -124,7 +142,10 @@ async function inPageBookmarksApi(
   };
 
   const getRequest = (): BookmarksRequestTemplate | null => {
-    const req = globalThis.__pondBookmarksRequest;
+    const req =
+      args.kind === "likes"
+        ? globalThis.__pondLikesRequest
+        : globalThis.__pondBookmarksRequest;
     return req?.url ? req : null;
   };
 
@@ -174,7 +195,11 @@ async function inPageBookmarksApi(
   };
 
   const addedEntries = (json: BookmarksResponse): TimelineEntry[] => {
-    const ins = json.data?.bookmark_timeline_v2?.timeline?.instructions;
+    const user = json.data?.user?.result;
+    const ins =
+      json.data?.bookmark_timeline_v2?.timeline?.instructions ??
+      user?.timeline_v2?.timeline?.instructions ??
+      user?.timeline?.timeline?.instructions;
     if (!Array.isArray(ins)) return [];
     const out: TimelineEntry[] = [];
     for (const ix of ins) {

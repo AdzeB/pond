@@ -1,4 +1,5 @@
 import {
+  type ListKind,
   type NewSave,
   type NewSyncAction,
   type NewTask,
@@ -9,6 +10,7 @@ import {
   tasks,
 } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
+import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
 import type { Capture } from "@pond/schema/raw";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -19,6 +21,7 @@ import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/scrape-window/session";
 import { classifyUrlToSource } from "./extractors";
 import { UnsupportedError } from "./extractors/errors";
+import { listKindsFromTrigger } from "./list-kinds";
 import { stashPageCookies } from "./page-cookies";
 import { kickReconciler } from "./reconciler";
 import {
@@ -71,6 +74,7 @@ async function rependArchiveForCookies(saveId: string): Promise<void> {
 export interface EnqueueItem {
   url: string;
   seed?: EnqueueSeed;
+  listKinds?: ListKind[];
 }
 
 export interface EnqueueOneResult {
@@ -91,6 +95,7 @@ export interface EnqueueOptions {
   seed?: EnqueueSeed;
   accountId?: string | null;
   cookies?: ImportableCookie[];
+  listKinds?: ListKind[];
 }
 
 const HARVEST_FRESH_MS = 24 * 60 * 60 * 1000;
@@ -156,8 +161,18 @@ async function enqueueOne(
     .from(saves)
     .where(and(eq(saves.source, source), eq(saves.sourceId, sourceId)));
   const current = existing[0];
+  const incomingKinds = mergeListKinds(
+    opts.listKinds,
+    listKindsFromTrigger(opts.trigger),
+  );
 
   if (current) {
+    await persistMergedListKinds(
+      current.id,
+      current.listKinds,
+      incomingKinds,
+      opts.trigger ?? "pipeline:enqueue",
+    );
     if (opts.seed && current.status === "failed") {
       await resetTasksForSave(
         current.id,
@@ -217,6 +232,7 @@ async function enqueueOne(
     status: "ingesting",
     ingestStartedAt: now,
     tags: [],
+    listKinds: incomingKinds,
     files: [],
     coverIndex: 0,
     savedAt: now,
@@ -265,6 +281,18 @@ async function enqueueOne(
   });
   stashWebCookiesThenKick(id, source, opts.cookies);
   return { id, created: true };
+}
+
+async function persistMergedListKinds(
+  saveId: string,
+  current: ListKind[] | null | undefined,
+  incoming: ListKind[],
+  reason: string,
+): Promise<void> {
+  if (incoming.length === 0) return;
+  const merged = mergeListKinds(current, incoming);
+  if (listKindsEqual(current, merged)) return;
+  await persistSave(saveId, { listKinds: merged }, { actorReason: reason });
 }
 
 export async function resetTasksForSave(
@@ -375,9 +403,10 @@ async function enqueueMany(
     source: Source;
     sourceId: string;
     seed?: EnqueueSeed;
+    listKinds: ListKind[];
   }
   const candidates: Candidate[] = [];
-  const seenKeys = new Set<string>();
+  const byKey = new Map<string, Candidate>();
   for (const item of items) {
     const url = normalizeUrl(item.url);
     const { source } = classifyUrlToSource(url);
@@ -390,10 +419,20 @@ async function enqueueMany(
       result.failed += 1;
       continue;
     }
+    const kinds = mergeListKinds(
+      item.listKinds,
+      listKindsFromTrigger(opts.trigger),
+    );
     const key = `${source}\u0000${sourceId}`;
-    if (seenKeys.has(key)) continue;
-    seenKeys.add(key);
-    candidates.push({ url, source, sourceId, seed: item.seed });
+    const prev = byKey.get(key);
+    if (prev) {
+      prev.listKinds = mergeListKinds(prev.listKinds, kinds);
+      continue;
+    }
+    const candidate: Candidate = { url, source, sourceId, listKinds: kinds };
+    if (item.seed) candidate.seed = item.seed;
+    byKey.set(key, candidate);
+    candidates.push(candidate);
   }
   if (candidates.length === 0) return result;
 
@@ -429,6 +468,7 @@ async function enqueueMany(
         trigger: opts.trigger,
         force: opts.force,
         accountId: opts.accountId,
+        listKinds: c.listKinds,
       };
       if (c.seed) one.seed = c.seed;
       await enqueueOne(c.url, one);
@@ -464,6 +504,7 @@ async function enqueueMany(
       status: "ingesting",
       ingestStartedAt: now,
       tags: [],
+      listKinds: c.listKinds,
       files: [],
       coverIndex: 0,
       savedAt: now,

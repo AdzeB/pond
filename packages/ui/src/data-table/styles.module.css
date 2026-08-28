@@ -4,7 +4,6 @@
   user-select: none;
 }
 
-/* Keep real text fields selectable even though the grid disables selection. */
 .container :is(input, textarea, [contenteditable="true"]) {
   user-select: text;
 }
@@ -123,20 +122,15 @@
 
 .row[data-selected] {
   background: var(--ds-accent-a1);
-}
-
-.container:not([data-list]) .row[data-selected] {
   border-radius: 0;
 }
 
-.container:not([data-list])
-  .row[data-selected]:not(.row[data-selected] + .row[data-selected]) {
+.row[data-selected][data-selected-start] {
   border-top-left-radius: var(--ds-radius-md);
   border-top-right-radius: var(--ds-radius-md);
 }
 
-.container:not([data-list])
-  .row[data-selected]:not(:has(+ .row[data-selected])) {
+.row[data-selected][data-selected-end] {
   border-bottom-right-radius: var(--ds-radius-md);
   border-bottom-left-radius: var(--ds-radius-md);
 }

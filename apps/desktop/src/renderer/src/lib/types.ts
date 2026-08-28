@@ -1,4 +1,12 @@
-import type { MediaType, SaveStatus, Source, VideoNote } from "@pond/schema/db";
+import type {
+  ListKind,
+  MediaType,
+  Op,
+  SaveStatus,
+  Source,
+  TaskStatus,
+  VideoNote,
+} from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import type { WireTask } from "@shared/wire";
 
@@ -50,6 +58,7 @@ export interface Save {
   videoNotes?: VideoNote[];
   dominantColors?: string[];
   tags: string[];
+  listKinds?: ListKind[];
   rawJson?: RawJson | null;
   status?: SaveStatus;
   ingestStartedAt?: number | null;

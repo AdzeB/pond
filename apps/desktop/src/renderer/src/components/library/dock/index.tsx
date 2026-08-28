@@ -6,16 +6,27 @@ import { ActiveFilter } from "@/components/library/dock/active-filter";
 import { NavContent } from "@/components/library/dock/nav";
 import { OptionsContent } from "@/components/library/dock/options";
 import { SelectionContent } from "@/components/library/dock/selection";
+import { DownloadsSelectionContent } from "@/components/library/dock/selection/downloads";
+import { SourcesSelectionContent } from "@/components/library/dock/selection/sources";
+import { SourcesSearch } from "@/components/library/dock/sources-search";
 import { SearchComposer } from "@/components/search/bar";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion } from "@/lib/ui/motion";
-import { openLibrarySearch } from "@/lib/ui/open-search";
+import { openDockSearch } from "@/lib/ui/open-search";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
+import {
+  downloadsSelection,
+  useDownloadsSelectionSize,
+} from "@/stores/downloads-selection";
 import {
   useViewFilteredCount,
   useViewMode,
 } from "@/stores/library-view-context";
-import { useSelectionSize } from "@/stores/selection";
+import { selection, useSelectionSize } from "@/stores/selection";
+import {
+  sourcesSelection,
+  useSourcesSelectionSize,
+} from "@/stores/sources-selection";
 import { useDockActions } from "./lib/actions";
 import { type DockContextValue, DockProvider } from "./lib/context";
 import { type DockTab, NAV_TABS } from "./lib/nav-tabs";
@@ -31,7 +42,9 @@ const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
 
 export function LibraryTray() {
-  const selectionSize = useSelectionSize();
+  const librarySelectionSize = useSelectionSize();
+  const downloadsSelectionSize = useDownloadsSelectionSize();
+  const sourcesSelectionSize = useSourcesSelectionSize();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const reduceMotion = useReducedMotion();
   const viewMode = useViewMode();
@@ -39,6 +52,13 @@ export function LibraryTray() {
   const mode = useDockMode();
 
   const inTrash = viewMode === "trash";
+  const isDownloads = pathname.startsWith("/downloads");
+  const isSources = pathname.startsWith("/sources");
+  const selectionSize = isDownloads
+    ? downloadsSelectionSize
+    : isSources
+      ? sourcesSelectionSize
+      : librarySelectionSize;
 
   const dockRef = useRef<HTMLDivElement | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
@@ -79,6 +99,19 @@ export function LibraryTray() {
         : "nav";
   const isMenuView = isViewMenu(view);
 
+  useEffect(() => {
+    if (isDownloads) {
+      selection.clear();
+      sourcesSelection.clear();
+      return () => downloadsSelection.clear();
+    }
+    if (isSources) {
+      selection.clear();
+      downloadsSelection.clear();
+      return () => sourcesSelection.clear();
+    }
+  }, [isDownloads, isSources]);
+
   const allSelected = isAllSelected();
 
   const isTabActive = useCallback(
@@ -116,10 +149,11 @@ export function LibraryTray() {
   const { pillTransition, quickTransition, swapTransition, swap } =
     buildDockMotion(reduceMotion ?? false);
 
-  const lastView = useRef(view);
+  const morphKey = `${view}:${inTrash}`;
+  const lastMorphKey = useRef(morphKey);
   const viewChangedAt = useRef(0);
-  if (lastView.current !== view) {
-    lastView.current = view;
+  if (lastMorphKey.current !== morphKey) {
+    lastMorphKey.current = morphKey;
     viewChangedAt.current = performance.now();
   }
   const inViewMorph = performance.now() - viewChangedAt.current < 450;
@@ -138,7 +172,7 @@ export function LibraryTray() {
       allSelected,
       isTabActive,
       isCard,
-      openSearch: openLibrarySearch,
+      openSearch: openDockSearch,
       closeSearch: dismissDock,
       openViewMenu,
       closeViewMenu: closeToNav,
@@ -206,22 +240,28 @@ export function LibraryTray() {
                   />
                 }
               >
-                <div
-                  ref={viewportRef}
-                  className={styles.viewport}
-                  data-card={isCard || undefined}
-                >
+                <div ref={viewportRef} className={styles.viewport}>
                   <AnimatePresence initial={false}>
                     {view === "selection" ? (
-                      <SelectionContent key="selection" />
+                      isDownloads ? (
+                        <DownloadsSelectionContent key="downloads-selection" />
+                      ) : isSources ? (
+                        <SourcesSelectionContent key="sources-selection" />
+                      ) : (
+                        <SelectionContent key="selection" />
+                      )
                     ) : view === "search" ? (
                       <motion.div
-                        key="search"
+                        key={isSources ? "sources-search" : "search"}
                         className={styles["search-row"]}
                         {...swap}
                         transition={swapTransition}
                       >
-                        <SearchComposer autoFocus onCollapse={closeToNav} />
+                        {isSources ? (
+                          <SourcesSearch onCollapse={closeToNav} />
+                        ) : (
+                          <SearchComposer autoFocus onCollapse={closeToNav} />
+                        )}
                       </motion.div>
                     ) : isViewMenu(view) ? (
                       <motion.div

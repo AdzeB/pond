@@ -34,6 +34,7 @@ function Root({ className, children, ...props }: RootProps) {
   const { controlsVisible, showControls } = useAutoHide({
     rootRef,
     videoRef,
+    ended: state.ended,
   });
 
   const actions = useMemo<VideoActions>(

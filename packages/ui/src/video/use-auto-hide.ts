@@ -10,8 +10,9 @@ export interface AutoHideApi {
 export function useAutoHide(opts: {
   rootRef: React.RefObject<HTMLDivElement | null>;
   videoRef: React.RefObject<HTMLVideoElement | null>;
+  ended?: boolean;
 }): AutoHideApi {
-  const { rootRef, videoRef } = opts;
+  const { rootRef, videoRef, ended } = opts;
   const [controlsVisible, setControlsVisible] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -41,6 +42,10 @@ export function useAutoHide(opts: {
       root.removeEventListener("pointerleave", onLeave);
     };
   }, [rootRef, showControls]);
+
+  useEffect(() => {
+    if (ended) setControlsVisible(true);
+  }, [ended]);
 
   useEffect(
     () => () => {

@@ -7,6 +7,7 @@ import type {
   Query,
 } from "@pond/schema/filters/types";
 import { isPredicate } from "@pond/schema/filters/types";
+import { canonicalListKind } from "@pond/schema/list-kinds";
 import {
   displayAccountToken,
   resolveAccountToken,
@@ -35,6 +36,7 @@ interface TokenFieldSpec {
 
 export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "tags", keys: ["tag", "tags"] },
+  { field: "list", keys: ["list"] },
   { field: "source", keys: ["source", "from"] },
   { field: "type", keys: ["type", "kind"] },
   { field: "fileCount", keys: ["files", "filecount"] },
@@ -211,7 +213,13 @@ function buildPredicate(token: FieldToken): Predicate | null {
       };
     }
     case "stringArray": {
-      const list = splitList(raw).map((v) => v.toLowerCase());
+      const list =
+        field === "list"
+          ? splitList(raw).flatMap((v) => {
+              const kind = canonicalListKind(v);
+              return kind ? [kind] : [];
+            })
+          : splitList(raw).map((v) => v.toLowerCase());
       if (list.length === 0) return null;
       return { field, operator: negate ? "none" : "some", value: list };
     }

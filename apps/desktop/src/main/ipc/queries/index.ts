@@ -3,6 +3,7 @@ import { IPC } from "../../../shared/constants";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
 import { aiQueries } from "./ai";
+import { downloadsQueries } from "./downloads";
 import { libraryQueries } from "./library";
 import type { QueryHandlerMap, QueryParams } from "./params";
 import { savedViewsQueries } from "./saved-views";
@@ -16,6 +17,7 @@ import { watchesQueries } from "./watches";
 
 const queryRegistry: QueryHandlerMap = {
   ...savesQueries,
+  ...downloadsQueries,
   ...settingsQueries,
   ...tagsQueries,
   ...tagGroupsQueries,

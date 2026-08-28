@@ -409,6 +409,13 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           click: navTo("/sources"),
         },
         {
+          ...sym("arrow.down.to.line"),
+          label: "Downloads",
+          accelerator: "G D",
+          registerAccelerator: false,
+          click: navTo("/downloads"),
+        },
+        {
           ...sym("trash"),
           label: "Trash",
           accelerator: "G T",

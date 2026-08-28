@@ -13,7 +13,9 @@ function clauseIsSqlSupported(c: Clause): boolean {
   if (isGroup(c)) return c.rules.every(clauseIsSqlSupported);
   if (!isPredicate(c)) return false;
   return (
-    c.field === "tags" || Boolean(FIELD_DESCRIPTORS[c.field].sqlProjection)
+    c.field === "tags" ||
+    c.field === "list" ||
+    Boolean(FIELD_DESCRIPTORS[c.field].sqlProjection)
   );
 }
 

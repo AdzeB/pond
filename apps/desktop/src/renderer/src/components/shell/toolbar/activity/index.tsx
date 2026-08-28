@@ -1,7 +1,13 @@
 import { IconStopwatchOutline18 as ProgressIcon } from "@pond/icons/outline/18";
 import { AnimatePresence, motion } from "motion/react";
 import { useStatusFeed } from "@/lib/status-feed";
-import { bindPanel, closeThen, openSaveFromPanel, type Panel } from "../lib";
+import {
+  bindPanel,
+  closeThen,
+  openDownloads,
+  openSaveFromPanel,
+  type Panel,
+} from "../lib";
 import { Empty, List, Row, StatusPanel } from "../panel";
 import { StatusSpinner, statusIconTransition } from "../spinner";
 import styles from "./styles.module.css";
@@ -22,6 +28,8 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
     0,
     Math.max(0, PREVIEW_LIMIT - savingPreview.length),
   );
+
+  const goDownloads = closeThen(onOpenChange, openDownloads);
 
   return (
     <StatusPanel
@@ -81,6 +89,7 @@ export function ProgressPanel({ open, onOpenChange }: ProgressPanelProps) {
               meta="now"
             />
           ))}
+          <Row title="View All" onClick={goDownloads} />
         </List>
       )}
     </StatusPanel>

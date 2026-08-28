@@ -9,6 +9,7 @@ import {
   COUNT_PHRASES,
   DURATION_PHRASES,
   DURATION_UNITS,
+  LIST_SYNONYMS,
   MULTI_WORDS,
   NUMBER_WORDS,
   ORIENTATION_SYNONYMS,
@@ -36,6 +37,10 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
     if (MEDIA_TYPES.some((mediaType) => mediaType === type)) {
       push(word, "type", type);
     }
+  }
+
+  for (const [word, kind] of LIST_SYNONYMS) {
+    push(word, "list", kind);
   }
 
   for (const [word, source] of SOURCE_SYNONYMS) {
@@ -67,6 +72,7 @@ export function buildCandidates(facets: NlFacets): Candidate[] {
 interface Accumulator {
   sources: Set<string>;
   types: Set<string>;
+  lists: Set<string>;
   orientations: Set<string>;
   aspects: Set<string>;
   tags: Set<string>;
@@ -74,6 +80,7 @@ interface Accumulator {
   colors: string[];
   negSources: Set<string>;
   negTypes: Set<string>;
+  negLists: Set<string>;
   negOrientations: Set<string>;
   negAspects: Set<string>;
   negTags: Set<string>;
@@ -84,6 +91,7 @@ export function newAccumulator(): Accumulator {
   return {
     sources: new Set(),
     types: new Set(),
+    lists: new Set(),
     orientations: new Set(),
     aspects: new Set(),
     tags: new Set(),
@@ -91,6 +99,7 @@ export function newAccumulator(): Accumulator {
     colors: [],
     negSources: new Set(),
     negTypes: new Set(),
+    negLists: new Set(),
     negOrientations: new Set(),
     negAspects: new Set(),
     negCreators: new Set(),
@@ -109,6 +118,9 @@ export function accumulate(
       return;
     case "type":
       (negate ? acc.negTypes : acc.types).add(c.value);
+      return;
+    case "list":
+      (negate ? acc.negLists : acc.lists).add(c.value);
       return;
     case "shape":
       (negate ? acc.negOrientations : acc.orientations).add(c.value);
@@ -154,6 +166,12 @@ export function toPredicates(acc: Accumulator): Predicate[] {
   enumPred("source", acc.negSources, true);
   enumPred("type", acc.types, false);
   enumPred("type", acc.negTypes, true);
+  if (acc.lists.size > 0) {
+    out.push({ field: "list", operator: "some", value: [...acc.lists] });
+  }
+  if (acc.negLists.size > 0) {
+    out.push({ field: "list", operator: "none", value: [...acc.negLists] });
+  }
   enumPred("shape", acc.orientations, false);
   enumPred("shape", acc.negOrientations, true);
   enumPred("aspect", acc.aspects, false);

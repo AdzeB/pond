@@ -7,6 +7,10 @@ export function openSources(): void {
   void getAppRouter()?.navigate({ to: "/sources" });
 }
 
+export function openDownloads(): void {
+  void getAppRouter()?.navigate({ to: "/downloads" });
+}
+
 export function openSaveFromPanel(id: string): void {
   openSave(id);
 }

@@ -1,5 +1,6 @@
 import {
   IconArchiveContent2Fill18,
+  IconDownloadFill18,
   IconGlobeFill18,
   IconTrash2ContentFill18,
 } from "@pond/icons/fill/18";
@@ -20,8 +21,8 @@ export function LibraryEmpty() {
         <Keyboard.Cluster keys={["⌘", "V"]} />.
       </Empty.Description>
       <Empty.Description>
-        Connect a source to sync the bookmarks you already have, or watch an
-        account to sync their feed with your library.
+        Connect a source to sync the likes and saves you already have, or watch
+        an account to sync their feed with your library.
       </Empty.Description>
       <Empty.Action>
         <Button
@@ -72,6 +73,23 @@ export function SourcesEmpty() {
           Watch Account
         </Button>
       </Empty.Action>
+    </Empty.Root>
+  );
+}
+
+export function DownloadsEmpty() {
+  return (
+    <Empty.Root align="start">
+      <Empty.Media>
+        <IconDownloadFill18 />
+      </Empty.Media>
+      <Empty.Title>Downloads</Empty.Title>
+      <Empty.Description>
+        Saves show up here while Pond is fetching their files.
+      </Empty.Description>
+      <Empty.Description>
+        Pause, retry, or cancel from this page.
+      </Empty.Description>
     </Empty.Root>
   );
 }

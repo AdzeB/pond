@@ -2,7 +2,7 @@
   display: flex;
   gap: 6px;
   align-items: stretch;
-  padding: 2px;
+  padding: 6px;
 }
 
 .tile {

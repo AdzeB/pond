@@ -25,7 +25,7 @@ export function AccountDetailSection() {
   const accountId = useDetailAccountId();
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
 
-  if (!account) return <TrayCard.Close />;
+  if (!account) return <AccountDetailPending />;
   return (
     <AccountDetail
       key={account.id}
@@ -35,6 +35,25 @@ export function AccountDetailSection() {
         sourceDetail.changed();
       }}
     />
+  );
+}
+
+function AccountDetailPending() {
+  return (
+    <>
+      <TrayCard.Close />
+      <div className={styles.hero} data-pending />
+      <div className={styles.rows}>
+        <div className={styles.row} data-pending />
+        <div className={styles.row} data-pending />
+        <div className={styles.row} data-pending />
+        <div className={styles.row} data-pending />
+      </div>
+      <TrayCard.Footer>
+        <span className={styles["pending-action"]} />
+        <span className={styles["pending-action"]} />
+      </TrayCard.Footer>
+    </>
   );
 }
 

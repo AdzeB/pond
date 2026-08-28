@@ -3,6 +3,11 @@ import { session } from "electron";
 import log from "electron-log/main.js";
 import type { z } from "zod";
 import { partitionForIngest } from "../../../sync/accounts";
+import {
+  mergeEntryListKinds,
+  stampListKind,
+  unionById,
+} from "../../../sync/harvest-union";
 import { PARTITION } from "../../scrape-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
@@ -10,8 +15,10 @@ import {
   entriesFromListing,
   handleFromMeJson,
   RedditAccountSchema,
+  type RedditListingKind,
   RedditListingSchema,
   RedditPostResponseSchema,
+  redditListingUrl,
 } from "./listing";
 
 const CHROME_UA =
@@ -94,8 +101,9 @@ export async function fetchRedditAvatar(
   return avatarFromMeJson(about.json);
 }
 
-export async function harvestRedditSavedJson(
+export async function harvestRedditListingJson(
   args: ListHarvestArgs & { accountKey?: string },
+  kind: RedditListingKind,
   partition?: string,
 ): Promise<ListHarvestResult> {
   const jar = partition ?? (await partitionForIngest("reddit"));
@@ -107,13 +115,7 @@ export async function harvestRedditSavedJson(
   let knownPageStreak = 0;
 
   for (let page = 0; page < 200; page++) {
-    const params = new URLSearchParams({
-      limit: "100",
-      raw_json: "1",
-      type: "links",
-    });
-    if (after) params.set("after", after);
-    const url = `https://www.reddit.com/user/${encodeURIComponent(handle)}/saved.json?${params}`;
+    const url = redditListingUrl(handle, kind, after);
     const result = await fetchRedditJson(jar, url, RedditListingSchema);
     if (!result.ok) {
       if (result.status === 401 || result.status === 403 || result.html) {
@@ -144,7 +146,7 @@ export async function harvestRedditSavedJson(
     }
     if (!pageData.after) {
       log.info(
-        `[pond reddit-api] saved json handle=${handle} entries=${entries.length}`,
+        `[pond reddit-api] ${kind} json handle=${handle} entries=${entries.length}`,
       );
       return { ok: true, entries, reachedEnd: true, seen: entries.length };
     }
@@ -152,9 +154,39 @@ export async function harvestRedditSavedJson(
     await sleep(400);
   }
   log.info(
-    `[pond reddit-api] saved json handle=${handle} entries=${entries.length} pages=200`,
+    `[pond reddit-api] ${kind} json handle=${handle} entries=${entries.length} pages=200`,
   );
   return { ok: true, entries, reachedEnd: false, seen: entries.length };
+}
+
+export async function harvestRedditSavedJson(
+  args: ListHarvestArgs & { accountKey?: string },
+  partition?: string,
+): Promise<ListHarvestResult> {
+  return harvestRedditListingJson(args, "saved", partition);
+}
+
+export async function harvestRedditLists(
+  args: ListHarvestArgs & { accountKey?: string },
+  partition?: string,
+): Promise<ListHarvestResult> {
+  const saved = await harvestRedditListingJson(args, "saved", partition);
+  if (!saved.ok) return saved;
+  const savedEntries = stampListKind(saved.entries, "saved");
+  const upvoted = await harvestRedditListingJson(args, "upvoted", partition);
+  if (!upvoted.ok) return { ...saved, entries: savedEntries };
+  const entries = unionById(
+    savedEntries,
+    stampListKind(upvoted.entries, "liked"),
+    (e) => e.sourceId,
+    mergeEntryListKinds,
+  );
+  return {
+    ok: true,
+    entries,
+    reachedEnd: saved.reachedEnd && upvoted.reachedEnd,
+    seen: Math.max(saved.seen ?? 0, upvoted.seen ?? 0, entries.length),
+  };
 }
 
 type RedditCaptureExtras = { subreddit?: string };

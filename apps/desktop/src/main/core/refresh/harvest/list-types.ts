@@ -1,11 +1,11 @@
-import type { MediaType } from "@pond/schema/db";
+import type { ListKind, MediaType } from "@pond/schema/db";
 
 export interface ListHarvestArgs {
   knownIds: string[];
   earlyStop?: boolean;
 }
 
-interface ListEntry {
+export interface ListEntry {
   sourceId: string;
   url: string;
   savedAt?: string;
@@ -15,6 +15,7 @@ interface ListEntry {
   mediaUrl?: string;
   mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
   mediaType?: MediaType;
+  listKinds?: ListKind[];
 }
 
 export type ListHarvestResult =

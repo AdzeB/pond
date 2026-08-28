@@ -7,6 +7,7 @@ import {
   unique,
 } from "drizzle-orm/sqlite-core";
 import type { Query } from "./filters/types";
+import type { ListKind } from "./list-kinds";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
@@ -18,6 +19,7 @@ import type { RawJson } from "./raw";
 import { EXTERNAL_SOURCE_IDS } from "./sources/registry";
 
 export * from "./color";
+export type { ListKind } from "./list-kinds";
 export * from "./prefs";
 export * from "./theme-presets";
 
@@ -90,6 +92,10 @@ export const saves = sqliteTable(
     rawSlim: text("raw_slim", { mode: "json" }).$type<RawJson | null>(),
     tags: text("tags", { mode: "json" })
       .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    listKinds: text("list_kinds", { mode: "json" })
+      .$type<ListKind[]>()
       .notNull()
       .default(sql`'[]'`),
     files: text("files", { mode: "json" })

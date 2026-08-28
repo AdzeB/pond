@@ -44,7 +44,7 @@ function stripTwitterShortUrls(text: string): string {
 }
 
 const DETAIL_GROUPS = [
-  { title: "Properties", ids: ["author", "from", "platform", "type"] },
+  { title: "Properties", ids: ["author", "from", "platform", "type", "list"] },
   {
     title: "Activity",
     ids: [

@@ -160,6 +160,15 @@ describe("queryIsFullySqlSupported", () => {
     ).toBe(true);
   });
 
+  it("compiles list filters to SQL", () => {
+    expect(
+      queryIsFullySqlSupported({
+        combinator: "and",
+        rules: [{ field: "list", operator: "some", value: ["liked"] }],
+      }),
+    ).toBe(true);
+  });
+
   it("compiles account filters to SQL", () => {
     expect(
       queryIsFullySqlSupported({
@@ -196,6 +205,40 @@ describe("structured source search", () => {
         url: "https://www.tiktok.com/@example/video/1",
       }),
     ).toBe(false);
+  });
+});
+
+describe("structured list search", () => {
+  it("matches liked items that are also saved", () => {
+    const parsed = parseSearchInput("list:liked");
+    const query = { combinator: "and" as const, rules: parsed.predicates };
+
+    expect(parsed.predicates).toEqual([
+      { field: "list", operator: "some", value: ["liked"] },
+    ]);
+    expect(
+      matches(query, {
+        id: "both",
+        source: "twitter",
+        url: "https://x.com/a/status/1",
+        listKinds: ["liked", "saved"],
+      }),
+    ).toBe(true);
+    expect(
+      matches(query, {
+        id: "saved-only",
+        source: "twitter",
+        url: "https://x.com/a/status/2",
+        listKinds: ["saved"],
+      }),
+    ).toBe(false);
+  });
+
+  it("treats bookmark as saved", () => {
+    const parsed = parseSearchInput("list:bookmark");
+    expect(parsed.predicates).toEqual([
+      { field: "list", operator: "some", value: ["saved"] },
+    ]);
   });
 });
 

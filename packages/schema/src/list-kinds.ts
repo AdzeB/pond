@@ -1,0 +1,73 @@
+export const LIST_KINDS = ["liked", "saved"] as const;
+export type ListKind = (typeof LIST_KINDS)[number];
+
+const ALIASES = new Map<string, ListKind>([
+  ["liked", "liked"],
+  ["like", "liked"],
+  ["likes", "liked"],
+  ["upvote", "liked"],
+  ["upvoted", "liked"],
+  ["saved", "saved"],
+  ["save", "saved"],
+  ["bookmark", "saved"],
+  ["bookmarks", "saved"],
+  ["bookmarked", "saved"],
+  ["favorite", "saved"],
+  ["favorites", "saved"],
+  ["favourite", "saved"],
+  ["favourites", "saved"],
+]);
+
+export const LIST_KIND_LABELS = {
+  liked: "Liked",
+  saved: "Saved",
+} satisfies Record<ListKind, string>;
+
+/** What callers hold before normalizing: a source's own label, a stored list, or nothing. */
+export type ListKindInput =
+  | string
+  | null
+  | undefined
+  | readonly ListKindInput[];
+
+export function canonicalListKind(raw: string): ListKind | null {
+  return ALIASES.get(raw.trim().toLowerCase()) ?? null;
+}
+
+/** `Array.isArray` alone does not narrow a readonly array out of the union. */
+function isKindList(value: ListKindInput): value is readonly ListKindInput[] {
+  return Array.isArray(value);
+}
+
+export function normalizeListKinds(raw: ListKindInput): ListKind[] {
+  const found = new Set<ListKind>();
+  const visit = (value: ListKindInput): void => {
+    if (isKindList(value)) {
+      for (const item of value) visit(item);
+      return;
+    }
+    if (!value) return;
+    const kind = canonicalListKind(value);
+    if (kind) found.add(kind);
+  };
+  visit(raw);
+  return LIST_KINDS.filter((kind) => found.has(kind));
+}
+
+export function mergeListKinds(...parts: ListKindInput[]): ListKind[] {
+  return normalizeListKinds(parts);
+}
+
+export function listKindsEqual(a: ListKindInput, b: ListKindInput): boolean {
+  const left = normalizeListKinds(a);
+  const right = normalizeListKinds(b);
+  return (
+    left.length === right.length && left.every((kind, i) => kind === right[i])
+  );
+}
+
+export function formatListKinds(raw: ListKindInput): string | null {
+  const kinds = normalizeListKinds(raw);
+  if (kinds.length === 0) return null;
+  return kinds.map((kind) => LIST_KIND_LABELS[kind]).join(", ");
+}

@@ -30,10 +30,8 @@ async function inPageTiktokList(
     return { ok: false, reason: "auth_required" };
   }
 
-  const findFavoritesTab = (): HTMLElement | null => {
-    const direct = document.querySelector<HTMLElement>(
-      '[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]',
-    );
+  const findTab = (selectors: string, labels: string[]): HTMLElement | null => {
+    const direct = document.querySelector<HTMLElement>(selectors);
     if (direct) return direct;
     const tabs = Array.from(
       document.querySelectorAll<HTMLElement>(
@@ -43,21 +41,26 @@ async function inPageTiktokList(
     return (
       tabs.find((el) => {
         const t = (el.textContent ?? "").trim().toLowerCase();
-        return t === "favorites" || t === "favourites";
+        return labels.includes(t);
       }) ?? null
     );
   };
 
-  const tabDeadline = Date.now() + 8_000;
-  let favTab: HTMLElement | null = null;
-  while (Date.now() < tabDeadline) {
-    favTab = findFavoritesTab();
-    if (favTab) break;
-    await new Promise((r) => setTimeout(r, 250));
-  }
-  if (favTab) {
-    favTab.click();
+  async function clickTab(
+    selectors: string,
+    labels: string[],
+  ): Promise<boolean> {
+    const deadline = Date.now() + 8_000;
+    let tab: HTMLElement | null = null;
+    while (Date.now() < deadline) {
+      tab = findTab(selectors, labels);
+      if (tab) break;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    if (!tab) return false;
+    tab.click();
     await new Promise((r) => setTimeout(r, 1_500));
+    return true;
   }
 
   function collectFn() {
@@ -68,6 +71,7 @@ async function inPageTiktokList(
       author?: string;
       mediaUrl?: string;
       mediaType?: MediaType;
+      listKinds?: Array<"liked" | "saved">;
     }> = [];
     const seen = new Set<string>();
     const links = Array.from(
@@ -109,9 +113,72 @@ async function inPageTiktokList(
     return out;
   }
 
-  return scroll({
+  await clickTab('[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]', [
+    "favorites",
+    "favourites",
+  ]);
+  const favorites = await scroll({
     collectFn,
     knownIds: args.knownIds,
     hydrateSelector: 'a[href*="/video/"]',
   });
+  if (!favorites.ok) return favorites;
+
+  type Kind = "liked" | "saved";
+  type Entry = (typeof favorites.entries)[number];
+
+  function withListKind(entries: Entry[], kind: Kind): Entry[] {
+    return entries.map((e) => ({
+      ...e,
+      listKinds: Array.from(new Set([...(e.listKinds ?? []), kind])),
+    }));
+  }
+
+  function unionList(primary: Entry[], extra: Entry[]): Entry[] {
+    const map = new Map<string, Entry>();
+    for (const e of [...primary, ...extra]) {
+      const prev = map.get(e.sourceId);
+      if (!prev) {
+        map.set(e.sourceId, e);
+        continue;
+      }
+      map.set(e.sourceId, {
+        ...prev,
+        listKinds: Array.from(
+          new Set([...(prev.listKinds ?? []), ...(e.listKinds ?? [])]),
+        ),
+      });
+    }
+    return Array.from(map.values());
+  }
+
+  const favoriteEntries = withListKind(favorites.entries, "saved");
+
+  const likedClicked = await clickTab(
+    '[data-e2e="liked-tab"], [data-e2e="likes-tab"]',
+    ["liked"],
+  );
+  if (!likedClicked) {
+    return { ...favorites, entries: favoriteEntries };
+  }
+
+  const liked = await scroll({
+    collectFn,
+    knownIds: args.knownIds,
+    hydrateSelector: 'a[href*="/video/"]',
+  });
+  if (!liked.ok) {
+    return { ...favorites, entries: favoriteEntries };
+  }
+
+  const entries = unionList(
+    favoriteEntries,
+    withListKind(liked.entries, "liked"),
+  );
+  return {
+    ok: true,
+    entries,
+    reachedEnd: favorites.reachedEnd && liked.reachedEnd,
+    seen: entries.length,
+  };
 }

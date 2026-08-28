@@ -76,6 +76,14 @@ function MediaBridge({
   return null;
 }
 
+function EndPoster({ src }: { src?: string }) {
+  const { state } = useVideo();
+  if (!src || !state.ended) return null;
+  return (
+    <img src={src} alt="" className={styles["end-poster"]} draggable={false} />
+  );
+}
+
 function NoteMarkers({ markers }: { markers: readonly NoteMarker[] }) {
   const { state, actions } = useVideo();
   if (markers.length === 0 || state.duration <= 0) return null;
@@ -165,7 +173,6 @@ export function VideoPlayer({
       />
       <Video.Media
         src={src}
-        poster={poster}
         preload="metadata"
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
@@ -174,6 +181,7 @@ export function VideoPlayer({
           <track kind="chapters" src={trackUrl} default label="Chapters" />
         ) : null}
       </Video.Media>
+      <EndPoster src={poster} />
       <Video.Controls>
         <Video.TimeDisplay />
         <Video.Row className={styles.scrubRow}>

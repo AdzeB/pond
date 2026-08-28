@@ -1,0 +1,20 @@
+import type { SourceTableRow } from "@/components/library/sources/page/lib/helpers";
+import {
+  createRowSelectionStore,
+  type RowSelectionStore,
+} from "./row-selection";
+
+const created = createRowSelectionStore<SourceTableRow>(
+  (a, b) =>
+    a.id === b.id &&
+    a.model.tone === b.model.tone &&
+    a.model.connected === b.model.connected,
+);
+
+export const sourcesSelection: RowSelectionStore<SourceTableRow> = created;
+export function useSourcesSelectionSize(): number {
+  return created.useSize();
+}
+export function useSourcesSelectionRows(): readonly SourceTableRow[] {
+  return created.useRows();
+}

@@ -26,7 +26,7 @@ const FAQS: FaqItem[] = [
     value: "sources",
     question: "Which sources sync in the background?",
     answer:
-      "X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, and Threads sync saved lists once you connect an account. Any web URL can still be saved one at a time via the extension.",
+      "X, Instagram, Pinterest, Are.na, Cosmos, TikTok, YouTube, Reddit, and Threads sync likes and saved lists once you connect an account. Any web URL can still be saved one at a time via the extension.",
   },
   {
     value: "sync",

@@ -1,6 +1,11 @@
 /// <reference lib="dom" />
 
-import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
+import type { ListKind } from "@pond/schema/db";
+import type {
+  ListEntry,
+  ListHarvestArgs,
+  ListHarvestResult,
+} from "../list-types";
 import {
   type InstagramEntry,
   type InstagramMediaNode,
@@ -12,8 +17,15 @@ declare global {
   var __pondHarvestAbort: boolean | undefined;
 }
 
+/** The saved feed wraps each post in `media`; the liked feed returns the media node itself. */
+type FeedItem = InstagramMediaNode & {
+  media?: InstagramMediaNode;
+  timestamp?: number;
+};
+
 interface SavedFeedPage {
-  items?: Array<{ media?: InstagramMediaNode; timestamp?: number }>;
+  items?: FeedItem[];
+  feed_items?: FeedItem[];
   more_available?: boolean;
   next_max_id?: string | number;
   require_login?: boolean;
@@ -41,7 +53,7 @@ interface ListProgress {
 type ListProgressExtra = Omit<
   ListProgress,
   "phase" | "collected" | "fresh" | "path"
->;
+> & { path?: string };
 
 export function buildInstagramListExpression(args: ListHarvestArgs): string {
   const normSrc = `(${inPageInstagramNormalize.toString()})()`;
@@ -65,11 +77,52 @@ async function inPageInstagramList(
     return { ok: false, reason: "auth_required" };
   }
 
-  const apiResult = await fetchSavedViaApi();
-  if (apiResult) return apiResult;
-  return await fallbackDomScroll();
+  function withListKind(entries: ListEntry[], kind: ListKind): ListEntry[] {
+    return entries.map((e) => ({
+      ...e,
+      listKinds: Array.from(new Set([...(e.listKinds ?? []), kind])),
+    }));
+  }
 
-  async function fetchSavedViaApi(): Promise<ListHarvestResult | null> {
+  function unionList(primary: ListEntry[], extra: ListEntry[]): ListEntry[] {
+    const map = new Map<string, ListEntry>();
+    for (const e of [...primary, ...extra]) {
+      const prev = map.get(e.sourceId);
+      if (!prev) {
+        map.set(e.sourceId, e);
+        continue;
+      }
+      map.set(e.sourceId, {
+        ...prev,
+        listKinds: Array.from(
+          new Set([...(prev.listKinds ?? []), ...(e.listKinds ?? [])]),
+        ),
+      });
+    }
+    return Array.from(map.values());
+  }
+
+  const apiResult = await fetchFeedViaApi("/api/v1/feed/saved/posts/", true);
+  if (apiResult && !apiResult.ok) return apiResult;
+  if (!apiResult) return await fallbackDomScroll();
+
+  const savedEntries = withListKind(apiResult.entries, "saved");
+  const liked = await fetchFeedViaApi("/api/v1/feed/liked/", false);
+  if (!liked?.ok) {
+    return { ...apiResult, entries: savedEntries };
+  }
+  const entries = unionList(savedEntries, withListKind(liked.entries, "liked"));
+  return {
+    ok: true,
+    entries,
+    reachedEnd: apiResult.reachedEnd && liked.reachedEnd,
+    seen: entries.length,
+  };
+
+  async function fetchFeedViaApi(
+    path: string,
+    required: boolean,
+  ): Promise<ListHarvestResult | null> {
     const entries: InstagramEntry[] = [];
     let cursor: string | undefined;
     const known = new Set(args.knownIds.map(String));
@@ -93,10 +146,10 @@ async function inPageInstagramList(
         phase,
         collected: entries.length,
         fresh: freshCount,
-        path: location.pathname,
         earlyStop: earlyStopEnabled,
         known: known.size,
         ...extra,
+        path: extra.path ?? location.pathname,
       };
       Object.assign(globalThis, { __pondHarvestStats: stats });
     }
@@ -110,11 +163,9 @@ async function inPageInstagramList(
         return { ok: true, entries, reachedEnd: false };
       }
 
-      const url = cursor
-        ? `/api/v1/feed/saved/posts/?max_id=${cursor}`
-        : "/api/v1/feed/saved/posts/";
+      const url = cursor ? `${path}?max_id=${cursor}` : path;
 
-      reportProgress("api_fetch", { page, cursor: cursor ?? null });
+      reportProgress("api_fetch", { page, cursor: cursor ?? null, path });
 
       let json: SavedFeedPage;
       try {
@@ -132,9 +183,10 @@ async function inPageInstagramList(
         reportProgress("api_response", { page, status: res.status });
 
         if (res.status === 401 || res.status === 403) {
-          return { ok: false, reason: "auth_required" };
+          return required ? { ok: false, reason: "auth_required" } : null;
         }
         if (res.status === 429) {
+          if (!required) return null;
           const retryAfter = res.headers.get("retry-after");
           const n = retryAfter ? Number(retryAfter) : Number.NaN;
           const limited: Extract<ListHarvestResult, { ok: false }> = {
@@ -145,7 +197,7 @@ async function inPageInstagramList(
           return limited;
         }
         if (!res.ok) {
-          reportProgress("api_not_ok", { page, status: res.status });
+          reportProgress("api_not_ok", { page, status: res.status, path });
           return null;
         }
 
@@ -159,20 +211,19 @@ async function inPageInstagramList(
       }
 
       if (json?.require_login || json?.message === "login_required") {
-        return { ok: false, reason: "auth_required" };
+        return required ? { ok: false, reason: "auth_required" } : null;
       }
 
-      const items = json?.items ?? [];
+      const items = json?.items ?? json?.feed_items ?? [];
       if (items.length === 0 && page === 0) {
-        reportProgress("api_empty", { page });
-        return null;
+        reportProgress("api_empty", { page, path });
+        return required ? null : { ok: true, entries: [], reachedEnd: true };
       }
 
       let pageFresh = 0;
       let pageNorm = 0;
       for (const item of items) {
-        if (!item?.media) continue;
-        const entry = norm.normalizeMediaNode(item.media, {
+        const entry = norm.normalizeMediaNode(item.media ?? item, {
           savedTimestamp: item.timestamp,
         });
         if (!entry) continue;
@@ -230,7 +281,11 @@ async function inPageInstagramList(
     Object.assign(globalThis, { __pondHarvestStats: stats });
     const _known = new Set(args.knownIds.map(String));
 
-    type StubEntry = { sourceId: string; url: string };
+    type StubEntry = {
+      sourceId: string;
+      url: string;
+      listKinds?: Array<"liked" | "saved">;
+    };
 
     function collect(): StubEntry[] {
       const out: StubEntry[] = [];
@@ -256,6 +311,7 @@ async function inPageInstagramList(
         out.push({
           sourceId: id,
           url: `https://www.instagram.com/${kind}/${id}/`,
+          listKinds: ["saved"],
         });
       }
       return out;

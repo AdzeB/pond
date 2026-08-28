@@ -10,6 +10,7 @@ const ROUTE_ICONS: ReadonlyMap<string, TabIcon> = new Map([
   ["/", SECTION_ICONS.library],
   ["/sources", SECTION_ICONS.sources],
   ["/trash", SECTION_ICONS.trash],
+  ["/downloads", SECTION_ICONS.downloads],
 ]);
 
 function sourceIcon(path: string): TabIcon | null {

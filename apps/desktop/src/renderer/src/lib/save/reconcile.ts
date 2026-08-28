@@ -5,6 +5,7 @@ import {
   SOURCES,
   TASK_STATUSES,
 } from "@pond/schema/db";
+import { LIST_KINDS } from "@pond/schema/list-kinds";
 import { StoredRawJsonSchema, storedAsRawJson } from "@pond/schema/raw-schema";
 import { toMs } from "@shared/to-ms";
 import { z } from "zod";
@@ -79,6 +80,7 @@ export const SavePatchSchema = z.object({
     .catch(null),
   dominantColors: Texts,
   tags: Texts,
+  listKinds: z.array(z.enum(LIST_KINDS)).nullish().catch(null),
   rawJson: StoredRawJsonSchema.transform(storedAsRawJson).nullish().catch(null),
   status: z.enum(SAVE_STATUSES).optional().catch(undefined),
   ingestStartedAt: Timestamp,
@@ -183,6 +185,7 @@ export function normalise(
     videoNotes: raw.videoNotes ?? [],
     dominantColors: raw.dominantColors ?? [],
     tags: raw.tags ?? [],
+    listKinds: raw.listKinds ?? [],
     rawJson: raw.rawJson ?? undefined,
     status: raw.status,
     ingestStartedAt: toMs(raw.ingestStartedAt) ?? null,

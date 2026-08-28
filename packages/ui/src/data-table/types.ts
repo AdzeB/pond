@@ -46,6 +46,8 @@ export interface RenderRowArgs<T> {
     onClick: (e: ReactMouseEvent) => void;
     "aria-selected"?: boolean;
     "data-selected"?: "";
+    "data-selected-start"?: "";
+    "data-selected-end"?: "";
     "data-depth"?: number;
   };
 }

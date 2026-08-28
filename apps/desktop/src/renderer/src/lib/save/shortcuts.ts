@@ -28,6 +28,11 @@ export const SHORTCUTS = {
     label: "Go to Sources",
     group: "Navigate",
   },
+  "nav.downloads": {
+    sequence: ["G", "D"],
+    label: "Go to Downloads",
+    group: "Navigate",
+  },
   "nav.trash": {
     sequence: ["G", "T"],
     label: "Go to Trash",

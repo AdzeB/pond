@@ -1,3 +1,4 @@
+import { formatListKinds } from "@pond/schema/list-kinds";
 import type { Save } from "@/lib/types";
 import {
   formatBytes,
@@ -25,6 +26,15 @@ export function collectInfoRows(save: Save): PaneRow[] {
       id: "type",
       label: "Type",
       value: prettifyType(type),
+    });
+  }
+
+  const list = formatListKinds(save.listKinds);
+  if (list) {
+    out.push({
+      id: "list",
+      label: "List",
+      value: list,
     });
   }
 

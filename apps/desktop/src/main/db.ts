@@ -121,6 +121,7 @@ function migratePond(sqlite: Database.Database): void {
 					raw_json TEXT,
 					raw_slim TEXT,
 					tags TEXT NOT NULL DEFAULT '[]',
+					list_kinds TEXT NOT NULL DEFAULT '[]',
 					files TEXT NOT NULL DEFAULT '[]',
 					cover_index INTEGER NOT NULL DEFAULT 0,
 					width INTEGER,
@@ -275,6 +276,12 @@ function migratePond(sqlite: Database.Database): void {
   addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");
   dropColumnIfPresent(sqlite, "tags", "color");
   addColumnIfMissing(sqlite, "saves", "raw_slim", "TEXT");
+  addColumnIfMissing(
+    sqlite,
+    "saves",
+    "list_kinds",
+    "TEXT NOT NULL DEFAULT '[]'",
+  );
   addColumnIfMissing(sqlite, "saves", "embedding", "TEXT");
   addColumnIfMissing(sqlite, "saves", "embedding_model", "TEXT");
   addColumnIfMissing(sqlite, "saves", "caption", "TEXT");

@@ -2,13 +2,7 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 
 const bookmarksEnvelope = z.object({
-  data: z.object({
-    bookmark_timeline_v2: z.object({
-      timeline: z.object({
-        instructions: z.array(z.object({ type: z.string() }).passthrough()),
-      }),
-    }),
-  }),
+  data: z.record(z.string(), z.unknown()),
 });
 
 let envelopeFailureLogged = false;
@@ -195,19 +189,31 @@ const TimelineInstructionSchema = z
 
 type TimelineInstruction = z.infer<typeof TimelineInstructionSchema>;
 
+const TimelineSchema = z
+  .object({
+    timeline: z
+      .object({
+        instructions: z
+          .array(TimelineInstructionSchema)
+          .optional()
+          .catch(undefined),
+      })
+      .optional()
+      .catch(undefined),
+  })
+  .optional()
+  .catch(undefined);
+
+/** Bookmarks answer under `bookmark_timeline_v2`; likes answer under the user timeline. */
 const BookmarksResponseSchema = z
   .object({
     data: z
       .object({
-        bookmark_timeline_v2: z
+        bookmark_timeline_v2: TimelineSchema,
+        user: z
           .object({
-            timeline: z
-              .object({
-                instructions: z
-                  .array(TimelineInstructionSchema)
-                  .optional()
-                  .catch(undefined),
-              })
+            result: z
+              .object({ timeline_v2: TimelineSchema, timeline: TimelineSchema })
               .optional()
               .catch(undefined),
           })
@@ -286,9 +292,12 @@ export function parseBookmarksResponses(
         env.error.issues.map((i) => i.path.join(".")).join(", "),
       );
     }
+    const data = BookmarksResponseSchema.parse(json).data;
+    const user = data?.user?.result;
     const instructions =
-      BookmarksResponseSchema.parse(json).data?.bookmark_timeline_v2?.timeline
-        ?.instructions;
+      data?.bookmark_timeline_v2?.timeline?.instructions ??
+      user?.timeline_v2?.timeline?.instructions ??
+      user?.timeline?.timeline?.instructions;
     if (!instructions) continue;
     for (const entry of iterateAddedEntries(instructions)) {
       const tweet = extractEntryTweet(entry);

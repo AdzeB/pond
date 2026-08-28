@@ -3,7 +3,7 @@
   display: block;
   flex-shrink: 0;
   overflow: hidden;
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--ds-radius-source);
   box-shadow: var(--ds-shadow-2);
 }
 

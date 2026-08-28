@@ -1,12 +1,13 @@
 /// <reference lib="dom" />
 
-import type { MediaType } from "@pond/schema/db";
+import type { ListKind, MediaType } from "@pond/schema/db";
 import type { BookmarksCapture, RichTweet } from "./graphql";
 
 declare global {
   /** The scrape preload installs the bookmarks network hook on the page and buffers every response it sees. */
   var __pondBookmarksHookInstalled: boolean | undefined;
   var __pondBookmarksCaptures: BookmarksCapture[] | undefined;
+  var __pondLikesCaptures: BookmarksCapture[] | undefined;
   var __pondHarvestStats: HarvestStats | undefined;
 }
 
@@ -38,6 +39,7 @@ export interface BookmarksEntry {
     poster?: string;
   }>;
   rich?: RichTweet;
+  listKinds?: ListKind[];
 }
 
 interface Scroller {
@@ -141,9 +143,13 @@ async function inPageBookmarks(
   };
 
   const drainCaptures = (): void => {
-    const buf = globalThis.__pondBookmarksCaptures;
-    if (!Array.isArray(buf) || buf.length === 0) return;
-    for (const item of buf.splice(0)) captures.push(item);
+    for (const buf of [
+      globalThis.__pondBookmarksCaptures,
+      globalThis.__pondLikesCaptures,
+    ]) {
+      if (!Array.isArray(buf) || buf.length === 0) continue;
+      for (const item of buf.splice(0)) captures.push(item);
+    }
   };
 
   const stats: HarvestStats = {

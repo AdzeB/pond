@@ -1,4 +1,4 @@
-import type { MediaType } from "@pond/schema/db";
+import type { ListKind, MediaType } from "@pond/schema/db";
 import { z } from "zod";
 
 export interface ListingMedia {
@@ -21,6 +21,23 @@ export interface ListingEntry {
   mediaUrl?: string;
   mediaUrls?: ListingMedia[];
   mediaType?: MediaType;
+  listKinds?: ListKind[];
+}
+
+export type RedditListingKind = "saved" | "upvoted";
+
+export function redditListingUrl(
+  handle: string,
+  kind: RedditListingKind,
+  after: string | null,
+): string {
+  const params = new URLSearchParams({
+    limit: "100",
+    raw_json: "1",
+    type: "links",
+  });
+  if (after) params.set("after", after);
+  return `https://www.reddit.com/user/${encodeURIComponent(handle)}/${kind}.json?${params}`;
 }
 
 export interface ListingPage {

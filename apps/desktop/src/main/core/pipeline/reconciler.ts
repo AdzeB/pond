@@ -59,6 +59,15 @@ export function isReconcilerPaused(): boolean {
   return paused;
 }
 
+export interface PipelineSnapshot {
+  paused: boolean;
+  inflight: number;
+}
+
+export function pipelineSnapshot(): PipelineSnapshot {
+  return { paused, inflight: inflightGlobal };
+}
+
 export function pauseReconciler(): void {
   if (paused) return;
   paused = true;

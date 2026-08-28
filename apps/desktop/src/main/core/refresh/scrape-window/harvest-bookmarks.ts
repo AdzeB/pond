@@ -9,6 +9,7 @@ import {
   type BookmarksHarvestResult,
   buildBookmarksApiExpression,
   buildBookmarksExpression,
+  buildLikesApiExpression,
   parseBookmarksResponses,
 } from "../harvest/twitter";
 import { NAV_TIMEOUT_MS } from "./constants";
@@ -134,13 +135,47 @@ export async function harvestTwitterBookmarks(
     partition?: string;
   } = {},
 ): Promise<BookmarksHarvestResult> {
+  return harvestTwitterTimeline(
+    "https://x.com/i/bookmarks",
+    "bookmarks",
+    buildBookmarksApiExpression(args),
+    args,
+    opts,
+  );
+}
+
+export async function harvestTwitterLikes(
+  args: BookmarksHarvestArgs,
+  opts: {
+    onProgress?: (p: BookmarksHarvestProgress) => void;
+    partition?: string;
+    handle: string;
+  },
+): Promise<BookmarksHarvestResult> {
+  const handle = opts.handle.replace(/^@/, "").trim();
+  if (!handle) return { ok: false, reason: "no_match" };
+  return harvestTwitterTimeline(
+    `https://x.com/${encodeURIComponent(handle)}/likes`,
+    "likes",
+    buildLikesApiExpression(args),
+    args,
+    opts,
+  );
+}
+
+async function harvestTwitterTimeline(
+  listUrl: string,
+  logTag: "bookmarks" | "likes",
+  apiExpr: string,
+  args: BookmarksHarvestArgs,
+  opts: {
+    onProgress?: (p: BookmarksHarvestProgress) => void;
+    partition?: string;
+  } = {},
+): Promise<BookmarksHarvestResult> {
   const lease = await leaseWindow("twitter", { partition: opts.partition });
   try {
-    const navOk = await navigateWithTimeout(
-      lease.win,
-      "https://x.com/i/bookmarks",
-      NAV_TIMEOUT_MS,
-    );
+    const navOk = await navigateWithTimeout(lease.win, listUrl, NAV_TIMEOUT_MS);
     if (!navOk) return { ok: false, reason: "timeout" };
     const bookmarksUrl = lease.win.webContents.getURL();
     const bookmarksChallenge = looksLikeChallenge(bookmarksUrl);
@@ -148,7 +183,7 @@ export async function harvestTwitterBookmarks(
       markAtRisk(
         "twitter",
         bookmarksChallenge.kind,
-        `bookmarks harvest landed on ${bookmarksChallenge.kind}`,
+        `${logTag} harvest landed on ${bookmarksChallenge.kind}`,
       );
       return { ok: false, reason: "auth_required" };
     }
@@ -193,15 +228,15 @@ export async function harvestTwitterBookmarks(
 
     let result: Extract<BookmarksHarvestResult, { ok: true }>;
     try {
-      const apiRaw = await runExpr(buildBookmarksApiExpression(args));
+      const apiRaw = await runExpr(apiExpr);
       if (apiRaw === "__pond_bookmarks_timeout__") {
-        log.warn("[pond bookmarks] api harvest timed out; falling back");
+        log.warn(`[pond ${logTag}] api harvest timed out; falling back`);
       }
       const api = BookmarksApiResultSchema.parse(apiRaw);
 
       if (api?.ok) {
         log.info(
-          `[pond bookmarks] api ok pages=${api.apiDebug?.pages ?? "?"} tweets=${api.apiDebug?.tweets ?? "?"} reason=${api.apiDebug?.reason ?? "?"}`,
+          `[pond ${logTag}] api ok pages=${api.apiDebug?.pages ?? "?"} tweets=${api.apiDebug?.tweets ?? "?"} reason=${api.apiDebug?.reason ?? "?"}`,
         );
         report("twitter", { ok: true });
         result = {
@@ -219,7 +254,7 @@ export async function harvestTwitterBookmarks(
           retryAfterSec: api.retryAfterSec ?? undefined,
         });
         log.warn(
-          `[pond bookmarks] rate limited; backing off ${Math.round(cooldownMs / 1000)}s (no scroll fallback)`,
+          `[pond ${logTag}] rate limited; backing off ${Math.round(cooldownMs / 1000)}s (no scroll fallback)`,
         );
         return {
           ok: false,
@@ -228,11 +263,11 @@ export async function harvestTwitterBookmarks(
         };
       } else {
         log.info(
-          `[pond bookmarks] api fallback (${api && "detail" in api ? api.detail : "timeout"}); scrolling`,
+          `[pond ${logTag}] api fallback (${api && "detail" in api ? api.detail : "timeout"}); scrolling`,
         );
         const scrollRaw = await runExpr(buildBookmarksExpression(args));
         if (scrollRaw === "__pond_bookmarks_timeout__") {
-          log.warn("[pond bookmarks] harvest timed out");
+          log.warn(`[pond ${logTag}] harvest timed out`);
           return { ok: false, reason: "timeout" };
         }
         const scroll = BookmarksScrollResultSchema.parse(scrollRaw);
@@ -301,7 +336,7 @@ export async function harvestTwitterBookmarks(
       merged.push(entry);
     }
     log.info(
-      `[pond bookmarks] DOM=${result.entries.length} rich=${rich.size} merged=${merged.length} captures=${result.captures.length}`,
+      `[pond ${logTag}] DOM=${result.entries.length} rich=${rich.size} merged=${merged.length} captures=${result.captures.length}`,
     );
     return {
       ok: true,
@@ -310,7 +345,7 @@ export async function harvestTwitterBookmarks(
       reachedEnd: result.reachedEnd,
     };
   } catch (err) {
-    log.warn("[pond bookmarks] unexpected error", err);
+    log.warn(`[pond ${logTag}] unexpected error`, err);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();

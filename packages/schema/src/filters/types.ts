@@ -78,6 +78,7 @@ export const COMPARATORS_BY_TYPE = {
 
 export type FieldId =
   | "tags"
+  | "list"
   | "source"
   | "type"
   | "fileCount"
