@@ -133,6 +133,9 @@ export function DownloadsPage() {
   });
   const paused = pipeline.data?.paused === true;
 
+  const countLabel =
+    rows.length === 1 ? "1 item" : `${rows.length.toLocaleString()} items`;
+
   const hasDefault =
     filters.statuses.has("in-progress") &&
     filters.statuses.has("failed") &&
@@ -252,6 +255,7 @@ export function DownloadsPage() {
           <FilterMenu label="Status" items={statusItems} />
           <FilterMenu label="Source" items={sourceItems} />
           <FilterMenu label="Stage" items={stageItems} />
+          <span className={styles.count}>{countLabel}</span>
           <span className={styles.spacer} />
           <Button
             variant="secondary"

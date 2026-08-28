@@ -1,4 +1,4 @@
-import { saves, tasks } from "@pond/schema/db";
+import { CANCEL_REASON, saves, tasks } from "@pond/schema/db";
 import type { PipelineTaskEvent } from "@pond/schema/events";
 import { and, eq, inArray } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -107,7 +107,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
   db.update(tasks)
     .set({
       status: "failed",
-      lastError: "cancelled by user",
+      lastError: CANCEL_REASON,
       updatedAt: new Date(),
     })
     .where(and(eq(tasks.saveId, saveId), eq(tasks.status, "pending")))

@@ -1,4 +1,4 @@
-import { OPS, type Op, SOURCES } from "@pond/schema/db";
+import { CANCEL_REASON, OPS, type Op, SOURCES } from "@pond/schema/db";
 import { INGEST_OUTCOMES } from "@pond/schema/events";
 import { z } from "zod";
 import type { Save } from "@/lib/types";
@@ -35,9 +35,10 @@ export type DownloadStatus =
   | "running"
   | "blocked"
   | "failed"
+  | "cancelled"
   | "complete";
 
-export type StatusFilter = "in-progress" | "failed" | "complete";
+export type StatusFilter = "in-progress" | "failed" | "cancelled" | "complete";
 
 export interface DownloadRow {
   id: string;
@@ -77,8 +78,20 @@ export function defaultDownloadFilters(): DownloadFilters {
   };
 }
 
+/** Stopping a download is a choice, not a failure; it should not read as an error. */
+function wasCancelled(save: Save): boolean {
+  const stopped = (save.tasks ?? []).filter(
+    (t) => t.status === "failed" || t.status === "blocked",
+  );
+  return (
+    stopped.length > 0 && stopped.every((t) => t.lastError === CANCEL_REASON)
+  );
+}
+
 function liveStatus(save: Save): DownloadStatus | null {
-  if (save.status === "failed") return "failed";
+  if (save.status === "failed") {
+    return wasCancelled(save) ? "cancelled" : "failed";
+  }
   if (save.status !== "ingesting") return null;
   const tasks = save.tasks ?? [];
   if (tasks.some((t) => t.status === "running")) return "running";
@@ -142,6 +155,7 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
 
 export function statusBucket(status: DownloadStatus): StatusFilter {
   if (status === "failed") return "failed";
+  if (status === "cancelled") return "cancelled";
   if (status === "complete") return "complete";
   return "in-progress";
 }

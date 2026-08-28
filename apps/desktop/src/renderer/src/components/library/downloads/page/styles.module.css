@@ -93,6 +93,14 @@
   border: 0;
 }
 
+.count {
+  flex: none;
+  margin-inline-start: 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-gray-10);
+}
+
 .mark {
   display: inline-flex;
   flex: none;

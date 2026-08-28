@@ -10,6 +10,7 @@ const STATUS_LABEL = {
   running: "In progress",
   blocked: "Blocked",
   failed: "Failed",
+  cancelled: "Cancelled",
   complete: "Complete",
 } satisfies Record<DownloadRow["status"], string>;
 

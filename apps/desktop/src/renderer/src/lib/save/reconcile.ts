@@ -120,6 +120,8 @@ export function applyAction(event: SyncActionEvent): void {
     const patch = event.data;
     const existing = pool.get(event.modelId);
     if (!existing) {
+      /** An update carries only the changed columns; without a url it would render as a blank row. */
+      if (!patch?.url) return;
       const created = normalise(patch);
       if (created) upsertSave(created);
       return;

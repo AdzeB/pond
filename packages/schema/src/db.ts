@@ -30,6 +30,9 @@ export const MEDIA_TYPES = ["image", "video", "link", "text"] as const;
 export type MediaType = (typeof MEDIA_TYPES)[number];
 
 export const SAVE_STATUSES = ["ingesting", "complete", "failed"] as const;
+
+/** Written onto a task the user cancelled, so the UI can tell "you stopped this" from "this broke". */
+export const CANCEL_REASON = "cancelled by user";
 export type SaveStatus = (typeof SAVE_STATUSES)[number];
 
 export const OPS = [
