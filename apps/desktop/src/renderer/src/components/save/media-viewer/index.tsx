@@ -29,9 +29,8 @@ import styles from "./styles.module.css";
 
 /** Lets the page walk this save's slides before it moves to the next save. */
 export interface ViewerNav {
-  index: number;
-  count: number;
-  go: (delta: number) => void;
+  /** False once the carousel is at that end, which is the page's cue to change save. */
+  step: (delta: number) => boolean;
 }
 
 interface MediaViewerProps {
@@ -134,6 +133,8 @@ export function MediaViewer({
 
   return (
     <Carousel
+      /** A new save gets a fresh carousel, so a half-finished scroll intent cannot leak into it. */
+      key={save.id}
       save={save}
       slides={slides}
       chapters={slideChapters}
@@ -234,7 +235,7 @@ function Carousel({
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
   const active = useActiveSlide(scroller, slides.length);
   const { ratios, reportRatio } = useRatioCache();
-  const { goPrev, goNext } = useCarouselNavigation(scroller, ratios);
+  const { goPrev, goNext, step } = useCarouselNavigation(scroller, ratios);
 
   useHotkey(
     SHORTCUTS["viewer.prev-slide"].keys!,
@@ -263,15 +264,11 @@ function Carousel({
 
   useEffect(() => {
     if (!navRef) return;
-    navRef.current = {
-      index: active,
-      count: slides.length,
-      go: (delta) => (delta < 0 ? goPrev() : goNext()),
-    };
+    navRef.current = { step };
     return () => {
       navRef.current = null;
     };
-  }, [navRef, active, slides.length, goPrev, goNext]);
+  }, [navRef, step]);
 
   return (
     <Frame activeIndex={active}>
