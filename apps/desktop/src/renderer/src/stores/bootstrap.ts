@@ -103,7 +103,9 @@ export function bootPool(): Promise<void> {
 
 async function primeSnapshot(): Promise<void> {
   const cached = await readSnapshot();
-  applyListRows(cached.slice(0, PAGE_SIZE));
+  /** A cached row with no url is a placeholder an older build wrote; it renders as an empty row forever. */
+  const usable = cached.filter((row) => row?.url);
+  applyListRows(usable.slice(0, PAGE_SIZE));
 }
 
 export function loadNextPage(): Promise<void> {

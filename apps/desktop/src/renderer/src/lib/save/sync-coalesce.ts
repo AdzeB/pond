@@ -52,6 +52,8 @@ export function applyActionCoalesced(event: SyncActionEvent): void {
   if (event.action === "U") {
     const patch = event.data;
     const base = pending.get(event.modelId) ?? pool.get(event.modelId);
+    /** An update carries only the changed columns, so without a base it would render as a blank row. */
+    if (!base && !patch?.url) return;
     const merged = normalise(
       base
         ? { ...base, ...patch, id: base.id }
