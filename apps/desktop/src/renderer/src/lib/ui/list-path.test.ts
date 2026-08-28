@@ -17,6 +17,9 @@ describe("list-path", () => {
     rememberListPath("/sources");
     expect(getLastListPath()).toBe("/trash");
 
+    rememberListPath("/downloads");
+    expect(getLastListPath()).toBe("/downloads");
+
     rememberListPath("/");
     expect(getLastListPath()).toBe("/");
   });

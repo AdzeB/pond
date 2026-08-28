@@ -126,7 +126,7 @@
 
 .row-source-icon img {
   display: block;
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--ds-radius-source);
 }
 
 .colors {

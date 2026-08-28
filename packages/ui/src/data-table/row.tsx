@@ -16,6 +16,8 @@ import type { CellContext, RenderRowArgs } from "./types";
 interface RowProps<T> {
   api: RowApi<T>;
   rowId: string;
+  prevId?: string;
+  nextId?: string;
   data: T;
   depth: number;
   expanded: boolean;
@@ -25,6 +27,8 @@ interface RowProps<T> {
 function RowImpl<T>({
   api,
   rowId,
+  prevId,
+  nextId,
   data,
   depth,
   expanded,
@@ -32,6 +36,18 @@ function RowImpl<T>({
 }: RowProps<T>) {
   const selected = useSelector(api.selectionStore, (s) =>
     s.selectedIds.has(rowId),
+  );
+  const selectedStart = useSelector(
+    api.selectionStore,
+    (s) =>
+      s.selectedIds.has(rowId) &&
+      (prevId == null || !s.selectedIds.has(prevId)),
+  );
+  const selectedEnd = useSelector(
+    api.selectionStore,
+    (s) =>
+      s.selectedIds.has(rowId) &&
+      (nextId == null || !s.selectedIds.has(nextId)),
   );
   const selecting = useSelector(
     api.selectionStore,
@@ -89,6 +105,8 @@ function RowImpl<T>({
     onClick,
     "aria-selected": api.selectionEnabled ? selected : undefined,
     "data-selected": selected ? "" : undefined,
+    "data-selected-start": selectedStart ? "" : undefined,
+    "data-selected-end": selectedEnd ? "" : undefined,
     "data-depth": depth || undefined,
   };
 

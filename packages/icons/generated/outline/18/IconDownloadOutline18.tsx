@@ -1,34 +1,40 @@
-/** Generated from Nucleo. Do not edit by hand. */
+/** Hand-authored inbox-stack outline. */
 import { createIcon } from "../../../lib/create-icon";
 
 const inner = ({ strokeWidth = 1.5 }) => (
   <>
-    <path
-      d="M12 6.25H12.335C13.3 6.25 14.127 6.939 14.302 7.888L15.315 13.388C15.541 14.617 14.598 15.75 13.348 15.75H4.65199C3.40199 15.75 2.45899 14.617 2.68499 13.388L3.69799 7.888C3.87299 6.939 4.69999 6.25 5.66499 6.25H5.99999"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <line
+      x1="3.75"
+      y1="5.75"
+      x2="14.25"
+      y2="5.75"
       fill="none"
-    ></path>
-    <path
-      d="M12 9.5L9 12.5L6 9.5"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
+      strokeWidth={strokeWidth}
       data-color="color-2"
+    />
+    <line
+      x1="5.75"
+      y1="2.75"
+      x2="12.25"
+      y2="2.75"
       fill="none"
-    ></path>
-    <path
-      d="M9 12.5V1.25"
       stroke="currentColor"
-      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
+      strokeWidth={strokeWidth}
       data-color="color-2"
+    />
+    <path
+      d="M11.75,8.75v1c0,.552-.448,1-1,1h-3.5c-.552,0-1-.448-1-1v-1H1.787c-.024,.125-.037,.251-.037,.379v3.121c0,1.104,.895,2,2,2H14.25c1.105,0,2-.896,2-2v-3.121c0-.127-.013-.254-.037-.379h-4.463Z"
       fill="none"
-    ></path>
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={strokeWidth}
+    />
   </>
 );
 

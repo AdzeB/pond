@@ -2,10 +2,21 @@
 
 import type { Row as TanstackRow } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { type ReactNode, useRef } from "react";
+import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import { useDataTable } from "./context";
 import { Row } from "./row";
 import styles from "./styles.module.css";
+
+type ScrollEdges = "" | "start" | "end" | "start end";
+
+function scrollEdgesOf(element: HTMLDivElement): ScrollEdges {
+  const start = element.scrollTop > 1;
+  const end =
+    element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+  return [start && "start", end && "end"]
+    .filter(Boolean)
+    .join(" ") as ScrollEdges;
+}
 
 export function DataTableBody<T>({
   extraRow,
@@ -18,6 +29,7 @@ export function DataTableBody<T>({
   const { rows, rowApi, height, rowHeight, overscan } = meta;
 
   const parentRef = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState<ScrollEdges>("");
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -26,11 +38,35 @@ export function DataTableBody<T>({
     enabled: height !== undefined,
   });
 
-  const renderRow = (row: TanstackRow<T>) => (
+  useLayoutEffect(() => {
+    if (height === undefined) return;
+    const element = parentRef.current;
+    if (!element) return;
+    const update = () =>
+      setEdges((prev) => {
+        const next = scrollEdgesOf(element);
+        return prev === next ? prev : next;
+      });
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(element);
+    if (element.firstElementChild) {
+      resizeObserver.observe(element.firstElementChild);
+    }
+    element.addEventListener("scroll", update, { passive: true });
+    update();
+    return () => {
+      element.removeEventListener("scroll", update);
+      resizeObserver.disconnect();
+    };
+  }, [height]);
+
+  const renderRow = (row: TanstackRow<T>, index: number) => (
     <Row
       key={row.id}
       api={rowApi}
       rowId={row.id}
+      prevId={rows[index - 1]?.id}
+      nextId={rows[index + 1]?.id}
       data={row.original}
       depth={row.depth}
       expanded={row.getIsExpanded()}
@@ -45,8 +81,9 @@ export function DataTableBody<T>({
         className={styles.body}
         role="rowgroup"
         style={{ height, overflow: "auto" }}
+        data-scroll-fade="y"
+        data-scrollable={edges}
       >
-        {extraRow}
         <div
           style={{ height: virtualizer.getTotalSize(), position: "relative" }}
         >
@@ -64,19 +101,22 @@ export function DataTableBody<T>({
                   transform: `translateY(${vi.start}px)`,
                 }}
               >
-                {renderRow(row)}
+                {renderRow(row, vi.index)}
               </div>
             );
           })}
         </div>
+        {extraRow}
       </div>
     );
   }
 
   return (
     <div className={styles.body} role="rowgroup">
-      {extraRow}
-      {rows.length === 0 && !extraRow ? emptyState : rows.map(renderRow)}
+      {rows.length === 0
+        ? (extraRow ?? emptyState)
+        : rows.map((row, index) => renderRow(row, index))}
+      {rows.length > 0 ? extraRow : null}
     </div>
   );
 }

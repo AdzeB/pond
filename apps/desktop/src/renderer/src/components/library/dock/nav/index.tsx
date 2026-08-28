@@ -20,9 +20,15 @@ const TAB_SHORTCUT: Record<DockTab, ShortcutId> = {
   library: "nav.library",
   sources: "nav.sources",
   trash: "nav.trash",
+  downloads: "nav.downloads",
 };
 
-const NAV_ORDER: readonly DockTab[] = ["library", "trash", "sources"];
+const NAV_ORDER: readonly DockTab[] = [
+  "library",
+  "trash",
+  "sources",
+  "downloads",
+];
 
 const ORDERED_TABS = NAV_ORDER.flatMap((id) =>
   NAV_TABS.filter((tab) => tab.id === id),

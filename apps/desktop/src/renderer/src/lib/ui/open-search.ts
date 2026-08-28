@@ -16,6 +16,16 @@ export function openLibrarySearch(): void {
   dockMode.open("search");
 }
 
+export function openDockSearch(): void {
+  const pathname = getAppRouter()?.state.location.pathname ?? "";
+  if (pathname.startsWith("/sources")) {
+    settingsModal.close();
+    dockMode.open("search");
+    return;
+  }
+  openLibrarySearch();
+}
+
 export function viewAccountItems(accountId: string): void {
   setSearchInput([{ field: "account", operator: "eq", value: accountId }], "");
   dockMode.close();

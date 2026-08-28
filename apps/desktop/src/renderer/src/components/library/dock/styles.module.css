@@ -11,7 +11,6 @@
   transition: bottom 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* Width/height are animated by motion/react, not CSS, so mid-flight view changes retarget with preserved velocity. */
 .pill {
   z-index: 1;
 }
@@ -22,7 +21,6 @@
   pointer-events: none;
 }
 
-/* Hover slop lives on a pseudo so it doesn't inflate the box the typeahead and filter chip position against. */
 .hit {
   position: relative;
   pointer-events: auto;
@@ -47,25 +45,21 @@
   border: 0;
 }
 
-/* Pinned to the pill's bottom edge (which stays put while the height morphs) so content doesn't jump; all views share one grid cell so outgoing + incoming stack instead of summing widths. */
 .viewport {
   position: absolute;
-  right: 0;
   bottom: 0;
-  left: 0;
+  left: 50%;
   display: grid;
   align-items: center;
   justify-items: center;
-  /* Without max-content the element collapses to min-content inside the 0-width morphing pill and the dock appears to vanish. */
   width: max-content;
-  margin-inline: auto;
+  translate: -50% 0;
 }
 
 .viewport > * {
   grid-area: 1 / 1;
 }
 
-/* Outgoing views stay painted but must not contribute to the measured box. */
 .viewport > *:not(:last-child) {
   position: absolute;
   bottom: 0;

@@ -1,9 +1,12 @@
 import type { CardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/hooks/use-accounts";
-import type { WatchRow } from "@/hooks/use-watches";
+import { type WatchRow, watchKindLabel } from "@/hooks/use-watches";
 import { getSourceDef } from "@/lib/save/sources-registry";
-import { formatNumber } from "@/lib/util/format";
-import type { SyncSourceStatus } from "@/stores/sync-monitor";
+import {
+  type FilterableSource,
+  sourceStatusId,
+  sourceStatusLabel,
+} from "./filters";
 
 export const FREQUENCY_OPTIONS = [
   { hours: 1, label: "Every Hour" },
@@ -12,6 +15,22 @@ export const FREQUENCY_OPTIONS = [
   { hours: 12, label: "Every 12 Hours" },
   { hours: 24, label: "Once a Day" },
 ] as const;
+
+export type SourceEntry =
+  | { kind: "account"; row: AccountRow }
+  | { kind: "watch"; row: WatchRow };
+
+export interface SourceTableRow extends FilterableSource {
+  id: string;
+  avatarUrl: string | null | undefined;
+  items: number;
+  lastSyncedAt: string | null;
+  lastSyncedMs: number;
+  statusLabel: string;
+  kindLabel: string;
+  model: CardModel;
+  entry: SourceEntry;
+}
 
 export function accountName(account: AccountRow): string {
   const suffix = account.label ?? (account.handle ? `@${account.handle}` : "");
@@ -26,25 +45,51 @@ export function watchName(watch: WatchRow): string {
     : `@${watch.handle}`;
 }
 
-function itemCount(count: number): string {
-  return `${formatNumber(count)} item${count === 1 ? "" : "s"}`;
+export function sourceRowName(entry: SourceEntry): string {
+  if (entry.kind === "account") {
+    if (entry.row.label) return entry.row.label;
+    if (entry.row.handle) return `@${entry.row.handle}`;
+    return getSourceDef(entry.row.source).label;
+  }
+  return watchName(entry.row);
 }
 
-export function tileValue(
-  tone: CardModel["tone"],
-  statusText: string,
-  count: number,
-): string {
-  if (tone === "run" || tone === "paused" || tone === "err") return statusText;
-  return itemCount(count);
+function typeLabel(entry: SourceEntry): string {
+  if (entry.kind === "account") return "Account";
+  const kind = watchKindLabel(entry.row.kind);
+  return kind.charAt(0).toUpperCase() + kind.slice(1);
 }
 
-export function syncFraction(
-  tone: CardModel["tone"],
-  status: SyncSourceStatus | undefined,
-): number | null {
-  if (tone !== "run") return null;
-  const p = status?.progress;
-  if (!p?.total) return null;
-  return Math.min(1, p.current / p.total);
+export function sourceCanSyncNow(row: SourceTableRow): boolean {
+  const running = row.model.tone === "run";
+  if (row.kind === "account") return row.model.connected && !running;
+  return !running;
+}
+
+export function toSourceTableRow(
+  entry: SourceEntry,
+  model: CardModel,
+): SourceTableRow {
+  const statusId = sourceStatusId(model.tone, model.connected);
+  const lastSyncedAt = entry.row.sync?.lastSyncedAt ?? null;
+  const lastSyncedMs = lastSyncedAt
+    ? new Date(lastSyncedAt).getTime()
+    : Number.NEGATIVE_INFINITY;
+  return {
+    id: entry.row.id,
+    kind: entry.kind,
+    source: entry.row.source,
+    name: sourceRowName(entry),
+    handle: entry.row.handle,
+    avatarUrl: entry.row.avatarUrl,
+    items: entry.row.sync?.knownCount ?? 0,
+    lastSyncedAt,
+    lastSyncedMs,
+    statusId,
+    statusLabel: sourceStatusLabel(statusId),
+    sourceLabel: getSourceDef(entry.row.source).label,
+    kindLabel: typeLabel(entry),
+    model,
+    entry,
+  };
 }

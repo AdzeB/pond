@@ -25,6 +25,10 @@ export type DockView =
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
+  | "sources-filter"
+  | "sources-filter-status"
+  | "sources-filter-source"
+  | "sources-filter-type"
   | "confirm"
   | "selection-run"
   | "selection-tag"
@@ -57,6 +61,10 @@ export type ViewMenuSection =
   | "watch-detail"
   | "sync-frequency"
   | "source-new"
+  | "sources-filter"
+  | "sources-filter-status"
+  | "sources-filter-source"
+  | "sources-filter-type"
   | "confirm"
   | "selection-run"
   | "selection-tag"
@@ -88,6 +96,10 @@ const VIEW_MENU_SECTIONS: readonly ViewMenuSection[] = [
   "watch-detail",
   "sync-frequency",
   "source-new",
+  "sources-filter",
+  "sources-filter-status",
+  "sources-filter-source",
+  "sources-filter-type",
   "confirm",
   "selection-run",
   "selection-tag",

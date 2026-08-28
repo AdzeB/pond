@@ -17,6 +17,12 @@ import { SelectionExportSection } from "@/components/library/dock/selection/expo
 import { SelectionRunSection } from "@/components/library/dock/selection/run";
 import { SelectionTagSection } from "@/components/library/dock/selection/tag";
 import { SourceNewSection } from "@/components/library/dock/source-new";
+import {
+  SourcesFilterSection,
+  SourcesFilterSourceSection,
+  SourcesFilterStatusSection,
+  SourcesFilterTypeSection,
+} from "@/components/library/dock/sources-filter";
 import { WatchSourceSection } from "@/components/library/dock/watch";
 import { WatchHelpSection } from "@/components/library/dock/watch/help";
 import { WatchKindSection } from "@/components/library/dock/watch/kind";
@@ -57,6 +63,10 @@ const SECTIONS: Record<ViewMenuSection, () => React.JSX.Element | null> = {
   "watch-detail": WatchDetailSection,
   "sync-frequency": FrequencySection,
   "source-new": SourceNewSection,
+  "sources-filter": SourcesFilterSection,
+  "sources-filter-status": SourcesFilterStatusSection,
+  "sources-filter-source": SourcesFilterSourceSection,
+  "sources-filter-type": SourcesFilterTypeSection,
   confirm: ConfirmSection,
   "selection-run": SelectionRunSection,
   "selection-tag": SelectionTagSection,

@@ -8,6 +8,7 @@ const ROUTE_LABELS: Record<string, string> = {
   "/": "Library",
   "/sources": "Sources",
   "/trash": "Trash",
+  "/downloads": "Downloads",
 };
 
 function titleCase(slug: string): string {

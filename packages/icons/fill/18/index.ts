@@ -18,6 +18,7 @@ export { IconColorPaletteFill18 } from "../../generated/fill/18/IconColorPalette
 export { IconCopyFill18 } from "../../generated/fill/18/IconCopyFill18";
 export { IconDescendingSortingFill18 } from "../../generated/fill/18/IconDescendingSortingFill18";
 export { IconDotsFill18 } from "../../generated/fill/18/IconDotsFill18";
+export { IconDownloadFill18 } from "../../generated/fill/18/IconDownloadFill18";
 export { IconEarthFill18 } from "../../generated/fill/18/IconEarthFill18";
 export { IconEyeFill18 } from "../../generated/fill/18/IconEyeFill18";
 export { IconEyeSparkleFill18 } from "../../generated/fill/18/IconEyeSparkleFill18";

@@ -109,7 +109,7 @@
   width: 18px;
   height: 18px;
   overflow: hidden;
-  border-radius: var(--ds-radius-xs);
+  border-radius: var(--ds-radius-source);
   box-shadow: var(--ds-shadow-2);
 }
 

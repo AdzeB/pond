@@ -68,3 +68,7 @@ _Avoid_: NL query, compiler, semantic search (as the product word)
 **Status feed**:
 What is in progress, recent, failing, or syncing, as shown in the toolbar.
 _Avoid_: funnel, activity log, queue (as the product word for the whole thing)
+
+**Downloads**:
+The page that lists ingest work you can inspect, pause, retry, or cancel: Saves being harvested and files being fetched, plus recent completed ingest.
+_Avoid_: queue, pipeline, jobs, activity log
