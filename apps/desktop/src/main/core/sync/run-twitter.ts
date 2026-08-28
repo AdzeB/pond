@@ -16,7 +16,7 @@ import {
   patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
-import { emit } from "./sync-status";
+import { emit, listGapNote } from "./sync-status";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
 export async function syncTwitter(
@@ -122,6 +122,11 @@ export async function syncTwitter(
           { partition: partitionForAccount(accountId), handle },
         )
       : { ok: false as const, reason: "no_match" as const };
+  const gaps: string[] = [];
+  if (!likes.ok) {
+    log.warn(`[pond sync:twitter] likes harvest failed: ${likes.reason}`);
+    gaps.push(listGapNote("Likes", likes.reason));
+  }
   const entries = likes.ok
     ? unionById(
         stampListKind(harvest.entries, "saved"),
@@ -164,7 +169,7 @@ export async function syncTwitter(
       accountId,
       source,
       state: "done",
-      message: "All caught up.",
+      message: ["All caught up.", ...gaps].join(" "),
       lastSyncedAt,
       lastError: null,
     });
@@ -211,10 +216,12 @@ export async function syncTwitter(
     accountId,
     source,
     state: "done",
-    message:
+    message: [
       recovery.length > 0
         ? `Queued ${fresh.length} new + recovered ${recovery.length} failed.`
         : `Queued ${succeeded} bookmark${succeeded === 1 ? "" : "s"} for ingest.`,
+      ...gaps,
+    ].join(" "),
     progress: { current: total, total },
     lastSyncedAt,
     lastError: null,

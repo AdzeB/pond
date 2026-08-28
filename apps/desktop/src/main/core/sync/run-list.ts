@@ -17,7 +17,7 @@ import {
   patchAccountSync,
   persistWatermark,
 } from "./sync-baseline";
-import { emit } from "./sync-status";
+import { emit, listGapNote } from "./sync-status";
 
 export const LIST_HARVEST_SOURCES = new Set<Source>([
   "youtube",
@@ -142,6 +142,7 @@ export async function syncListSource(
     return;
   }
 
+  const gaps: string[] = [];
   /** Reddit and TikTok harvest both lists in one pass and stamp their own kinds. */
   const dualHarvest = source === "reddit" || source === "tiktok";
   let combined = dualHarvest
@@ -164,6 +165,7 @@ export async function syncListSource(
       );
     } else {
       log.warn(`[pond sync:instagram] likes harvest failed: ${liked.reason}`);
+      gaps.push(listGapNote("Likes", liked.reason));
     }
   }
   if (source === "youtube") {
@@ -181,6 +183,11 @@ export async function syncListSource(
         (e) => e.sourceId,
         mergeEntryListKinds,
       );
+    } else {
+      log.warn(
+        `[pond sync:youtube] liked list harvest failed: ${liked.reason}`,
+      );
+      gaps.push(listGapNote("Liked videos", liked.reason));
     }
   }
 
@@ -209,9 +216,12 @@ export async function syncListSource(
       accountId,
       source,
       state: "done",
-      message: harvest.reachedEnd
-        ? "All caught up."
-        : "Paused mid-list. Will keep going next sync.",
+      message: [
+        harvest.reachedEnd
+          ? "All caught up."
+          : "Paused mid-list. Will keep going next sync.",
+        ...gaps,
+      ].join(" "),
       lastSyncedAt,
       lastError: null,
     });
@@ -255,9 +265,12 @@ export async function syncListSource(
     accountId,
     source,
     state: "done",
-    message: harvest.reachedEnd
-      ? `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`
-      : `Queued ${succeeded} item${succeeded === 1 ? "" : "s"}. More remain for the next sync.`,
+    message: [
+      harvest.reachedEnd
+        ? `Queued ${succeeded} item${succeeded === 1 ? "" : "s"} for ingest.`
+        : `Queued ${succeeded} item${succeeded === 1 ? "" : "s"}. More remain for the next sync.`,
+      ...gaps,
+    ].join(" "),
     progress: { current: fresh.length, total: fresh.length },
     lastSyncedAt,
     lastError: null,
