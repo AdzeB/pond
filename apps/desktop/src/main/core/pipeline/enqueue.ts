@@ -1,4 +1,5 @@
 import {
+  CANCEL_REASON,
   type ListKind,
   type NewSave,
   type NewSyncAction,
@@ -12,7 +13,18 @@ import {
 import { domainFromUrl } from "@pond/schema/domain";
 import { listKindsEqual, mergeListKinds } from "@pond/schema/list-kinds";
 import type { Capture } from "@pond/schema/raw";
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import {
+  and,
+  eq,
+  exists,
+  inArray,
+  isNull,
+  ne,
+  not,
+  notExists,
+  or,
+  sql,
+} from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getDb } from "../../db";
@@ -332,7 +344,41 @@ export async function retryFailedSaves(
     : db
         .select({ id: saves.id })
         .from(saves)
-        .where(and(eq(saves.status, "failed"), isNull(saves.deletedAt)))
+        .where(
+          and(
+            eq(saves.status, "failed"),
+            isNull(saves.deletedAt),
+            /** A save the user stopped is not a failure to retry in bulk; picking it by hand still works. */
+            or(
+              notExists(
+                db
+                  .select({ one: sql`1` })
+                  .from(tasks)
+                  .where(
+                    and(
+                      eq(tasks.saveId, saves.id),
+                      eq(tasks.lastError, CANCEL_REASON),
+                    ),
+                  ),
+              ),
+              exists(
+                db
+                  .select({ one: sql`1` })
+                  .from(tasks)
+                  .where(
+                    and(
+                      eq(tasks.saveId, saves.id),
+                      inArray(tasks.status, ["failed", "blocked"]),
+                      or(
+                        isNull(tasks.lastError),
+                        ne(tasks.lastError, CANCEL_REASON),
+                      ),
+                    ),
+                  ),
+              ),
+            ),
+          ),
+        )
         .all();
   if (rows.length === 0) return 0;
 
