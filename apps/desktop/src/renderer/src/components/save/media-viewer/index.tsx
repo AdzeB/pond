@@ -4,7 +4,14 @@ import {
 } from "@blossom-carousel/react";
 import "@blossom-carousel/react/style.css";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NavButtons } from "@/components/save/media-viewer/controls";
 import { type MediaSlide, Slide } from "@/components/save/media-viewer/slide";
 import { useResolvedTheme } from "@/hooks/use-resolved-theme";
@@ -20,14 +27,23 @@ import {
 } from "./lib/use-carousel";
 import styles from "./styles.module.css";
 
+/** Lets the page walk this save's slides before it moves to the next save. */
+export interface ViewerNav {
+  index: number;
+  count: number;
+  go: (delta: number) => void;
+}
+
 interface MediaViewerProps {
   save: Save;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
+  navRef?: RefObject<ViewerNav | null>;
 }
 
 export function MediaViewer({
   save,
   onActiveFileIndexChange,
+  navRef,
 }: MediaViewerProps) {
   const theme = useResolvedTheme();
   const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
@@ -124,6 +140,7 @@ export function MediaViewer({
       noteMarkers={noteMarkers}
       onError={markBroken}
       onActiveFileIndexChange={onActiveFileIndexChange}
+      navRef={navRef}
     />
   );
 }
@@ -203,6 +220,7 @@ function Carousel({
   noteMarkers,
   onError,
   onActiveFileIndexChange,
+  navRef,
 }: {
   save: Save;
   slides: MediaSlide[];
@@ -210,6 +228,7 @@ function Carousel({
   noteMarkers?: readonly { id: string; timeSec: number }[];
   onError: (src: string) => void;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
+  navRef?: RefObject<ViewerNav | null>;
 }) {
   const handleRef = useRef<BlossomCarouselHandle>(null);
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
@@ -241,6 +260,18 @@ function Carousel({
   useEffect(() => {
     onActiveFileIndexChange?.(slides[active]?.fileIndex ?? null);
   }, [active, slides, onActiveFileIndexChange]);
+
+  useEffect(() => {
+    if (!navRef) return;
+    navRef.current = {
+      index: active,
+      count: slides.length,
+      go: (delta) => (delta < 0 ? goPrev() : goNext()),
+    };
+    return () => {
+      navRef.current = null;
+    };
+  }, [navRef, active, slides.length, goPrev, goNext]);
 
   return (
     <Frame activeIndex={active}>

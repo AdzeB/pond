@@ -177,6 +177,16 @@ export const SHORTCUTS = {
     group: "Saves",
   },
 
+  "viewer.step-prev": {
+    keys: "ArrowLeft",
+    label: "Previous Image or Save",
+    group: "Viewer",
+  },
+  "viewer.step-next": {
+    keys: "ArrowRight",
+    label: "Next Image or Save",
+    group: "Viewer",
+  },
   "viewer.prev-save": {
     keys: "Mod+ArrowLeft",
     label: "Previous Save",
