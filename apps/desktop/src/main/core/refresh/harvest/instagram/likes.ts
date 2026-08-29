@@ -29,7 +29,7 @@ interface LikesArgs extends ListHarvestArgs {
   maxPages: number;
 }
 
-/** A backfill walks the whole history in one pass — there is no cursor to resume from next run. */
+/** No cursor survives a run, so a backfill has to reach the end of the history in one pass. */
 const BACKFILL_DEADLINE_MS = 25 * 60_000;
 const INCREMENTAL_DEADLINE_MS = 3 * 60_000;
 const PAGE_DELAY_MS = 2500;
@@ -54,9 +54,8 @@ export function buildInstagramLikesExpression(args: ListHarvestArgs): string {
 
 /**
  * `/api/v1/feed/liked/` answers "useragent mismatch" to any web session, so this reads the Bloks
- * activity screen. Scrolling that screen only pages until the pane sits at the bottom and stops
- * emitting scroll events, which is where it used to stall, so each payload's own "load the next
- * page" arguments are replayed here instead.
+ * activity screen. That screen pages on pane scroll, which dead-ends once the pane sits at the
+ * bottom and stops emitting scroll events, so each payload's own next-page arguments are replayed.
  */
 async function inPageInstagramLikes(
   args: LikesArgs,
@@ -89,13 +88,11 @@ async function inPageInstagramLikes(
 
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-  interface Collected {
+  function collect(text: string): {
     added: number;
     fresh: number;
     next: NextPage | null;
-  }
-
-  function collect(text: string): Collected {
+  } {
     let added = 0;
     let fresh = 0;
     for (const match of text.matchAll(ITEM_RE)) {
@@ -136,28 +133,29 @@ async function inPageInstagramLikes(
     }));
   }
 
-  function bodyForPage(template: LikesRequest, page: NextPage): string | null {
+  function pageRequest(
+    template: LikesRequest,
+    page: NextPage,
+  ): RequestInit | null {
     const form = new URLSearchParams(template.body);
     const params = form.get("params");
     if (!params) return null;
     form.set("params", JSON.stringify({ ...JSON.parse(params), ...page }));
-    return form.toString();
-  }
-
-  /** Without the form content type the endpoint ignores `__a=1` and answers with the HTML shell. */
-  function pageHeaders(
-    template: LikesRequest,
-    body: string,
-  ): Record<string, string> {
     return {
-      ...template.headers,
-      "content-type": "application/x-www-form-urlencoded",
-      "x-fb-lsd": new URLSearchParams(body).get("lsd") ?? "",
-      "x-requested-with": "XMLHttpRequest",
+      method: "POST",
+      body: form.toString(),
+      credentials: "include",
+      /** Without the form content type the endpoint ignores `__a=1` and returns the HTML shell. */
+      headers: {
+        ...template.headers,
+        "content-type": "application/x-www-form-urlencoded",
+        "x-fb-lsd": form.get("lsd") ?? "",
+        "x-requested-with": "XMLHttpRequest",
+      },
     };
   }
 
-  /** The screen scrolls an inner pane, not the document, and only that pane's scroll fetches a page. */
+  /** The list lives in an inner pane; scrolling the document fetches nothing. */
   function findPane(): HTMLElement | null {
     for (const el of document.querySelectorAll<HTMLElement>("div")) {
       if (
@@ -182,41 +180,32 @@ async function inPageInstagramLikes(
   }
   publish();
 
+  const done = (reachedEnd: boolean): ListHarvestResult => ({
+    ok: true,
+    entries,
+    reachedEnd,
+    seen: entries.length,
+  });
+
   const template = globalThis.__pondIgLikesRequest;
-  if (!template || !next) {
-    return {
-      ok: true,
-      entries,
-      reachedEnd: entries.length === 0,
-      seen: entries.length,
-    };
-  }
+  if (!template || !next) return done(entries.length === 0);
 
   const deadline = Date.now() + args.deadlineMs;
   for (let attempt = 0; attempt < args.maxPages; attempt++) {
-    if (Date.now() > deadline || globalThis.__pondHarvestAbort) {
-      return { ok: true, entries, reachedEnd: false, seen: entries.length };
-    }
-    const body = bodyForPage(template, next);
-    if (!body) break;
+    if (Date.now() > deadline || globalThis.__pondHarvestAbort)
+      return done(false);
+    const init = pageRequest(template, next);
+    if (!init) break;
     await sleep(args.pageDelayMs);
-    const res = await fetch(template.url, {
-      method: "POST",
-      body,
-      headers: pageHeaders(template, body),
-      credentials: "include",
-    });
+    const res = await fetch(template.url, init);
     if (!res.ok) {
-      if (entries.length > 0) {
-        return { ok: true, entries, reachedEnd: false, seen: entries.length };
-      }
+      if (entries.length > 0) return done(false);
       return {
         ok: false,
         reason: res.status === 429 ? "rate_limited" : "no_match",
       };
     }
     const page = collect(await res.text());
-    /** The hook buffers these replies too; nothing reads them once they are parsed here. */
     globalThis.__pondIgBloksCaptures?.splice(0);
     publish();
     if (page.added === 0 || !page.next || page.next.cursor === next.cursor) {
@@ -227,5 +216,5 @@ async function inPageInstagramLikes(
     knownPageStreak = page.fresh === 0 ? knownPageStreak + 1 : 0;
     if (knownPageStreak >= 3) break;
   }
-  return { ok: true, entries, reachedEnd: true, seen: entries.length };
+  return done(true);
 }
