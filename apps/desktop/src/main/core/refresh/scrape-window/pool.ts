@@ -4,7 +4,7 @@ import { resolvePreload } from "../../../lib/resolve-preload";
 import { acquire } from "../../pipeline/rate-governor";
 import { PARTITION } from "./constants";
 
-export const GLOBAL_POOL_CAP = 6;
+export const GLOBAL_POOL_CAP = 3;
 
 /** Idle windows keep a heavy SPA resident in a full renderer process; blank on release and tear down after this grace so a finished sync doesn't pin CPU/memory. */
 const IDLE_EVICT_MS = 60_000;

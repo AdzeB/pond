@@ -482,7 +482,7 @@ const INSTAGRAM_HOOK = `
       try {
         const buf = globalThis.__pondIgBloksCaptures;
         if (!Array.isArray(buf)) return;
-        if (buf.length > 400) buf.shift();
+        if (buf.length > 60) buf.shift();
         buf.push(text);
       } catch (e) {
         /* buffer unavailable; skip */
@@ -507,6 +507,31 @@ const INSTAGRAM_HOOK = `
       return xhrOpen.apply(this, arguments);
     };
 
+    /** Keep the likes screen's paging request so the harvest can replay it with later cursors. */
+    const rememberTemplate = (url, init) => {
+      if (url.indexOf("activity_center.liked_next") === -1) return;
+      try {
+        const body = init && init.body;
+        let form = "";
+        if (typeof body === "string") form = body;
+        else if (body && typeof body.entries === "function") {
+          const parts = [];
+          for (const [k, v] of body.entries()) {
+            parts.push(encodeURIComponent(k) + "=" + encodeURIComponent(String(v)));
+          }
+          form = parts.join("&");
+        }
+        if (!form) return;
+        const headers = {};
+        const raw = init && init.headers;
+        if (raw && typeof raw.forEach === "function") raw.forEach((v, k) => { headers[k] = String(v); });
+        else if (raw && typeof raw === "object") for (const k of Object.keys(raw)) headers[k] = String(raw[k]);
+        globalThis.__pondIgLikesRequest = { url: url, body: form, headers: headers };
+      } catch (e) {
+        /* template unreadable; the harvest reports what it managed to read */
+      }
+    };
+
     const origFetch = globalThis.fetch;
     if (typeof origFetch === "function") {
       globalThis.fetch = function (input, init) {
@@ -516,6 +541,7 @@ const INSTAGRAM_HOOK = `
         } catch (e) {
           /* opaque request; leave url empty */
         }
+        rememberTemplate(url, init);
         const promise = origFetch.apply(this, arguments);
         if (isBloksUrl(url)) {
           promise

@@ -14,10 +14,10 @@ import { runHarvestMetadata } from "./workers/harvest-metadata";
 import { runRenderTextCover } from "./workers/render-text-cover";
 
 export const POLL_INTERVAL_MS = 5_000;
-export const MAX_GLOBAL_INFLIGHT = 8;
+export const MAX_GLOBAL_INFLIGHT = 4;
 export const PER_OP_CONCURRENCY = {
-  harvest_metadata: 3,
-  capture_tweet: 3,
+  harvest_metadata: 2,
+  capture_tweet: 2,
   render_text_cover: 2,
   fetch_blobs: 4,
   archive_page: 1,

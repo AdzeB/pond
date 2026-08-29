@@ -14,6 +14,7 @@ import {
 import {
   buildInstagramLikesExpression,
   buildInstagramListExpression,
+  INSTAGRAM_LIKES_TIMEOUT_MS,
   INSTAGRAM_LIKES_URL,
 } from "../harvest/instagram";
 import type { ListHarvestArgs, ListHarvestResult } from "../harvest/list-types";
@@ -393,7 +394,7 @@ export async function harvestInstagramLikedList(
         buildInstagramLikesExpression(args),
         true,
       ),
-      sleep(9 * 60_000).then(() => "__pond_ig_likes_timeout__"),
+      sleep(INSTAGRAM_LIKES_TIMEOUT_MS).then(() => "__pond_ig_likes_timeout__"),
     ]);
     if (raw === "__pond_ig_likes_timeout__") {
       await lease.win.webContents
@@ -411,8 +412,14 @@ export async function harvestInstagramLikedList(
     }
     const parsed = ListResultSchema.parse(raw);
     if (!parsed) return { ok: false, reason: "no_match" };
-    if (!parsed.ok) return parsed;
+    if (!parsed.ok) {
+      log.warn(`[pond list] instagram likes stopped: ${parsed.reason}`);
+      return parsed;
+    }
     report("instagram", { ok: true });
+    log.info(
+      `[pond list] instagram likes read ${parsed.entries.length} (reachedEnd=${parsed.reachedEnd})`,
+    );
     return {
       ok: true,
       entries: parsed.entries.flatMap((e) => (e ? [e] : [])),

@@ -9,8 +9,15 @@ import type {
 export const INSTAGRAM_LIKES_URL =
   "https://www.instagram.com/your_activity/interactions/likes/";
 
+interface LikesRequest {
+  url: string;
+  body: string;
+  headers: Record<string, string>;
+}
+
 declare global {
   var __pondIgBloksCaptures: string[] | undefined;
+  var __pondIgLikesRequest: LikesRequest | undefined;
   var __pondHarvestPartial:
     | Array<{ sourceId: string; url: string }>
     | undefined;
@@ -18,21 +25,25 @@ declare global {
 
 interface LikesArgs extends ListHarvestArgs {
   deadlineMs: number;
-  scrollPauseMs: number;
-  maxScrolls: number;
+  pageDelayMs: number;
+  maxPages: number;
 }
 
-const LIKES_DEADLINE_MS = 8 * 60_000;
-const SCROLL_PAUSE_MS = 900;
-const MAX_SCROLLS = 600;
+/** A backfill walks the whole history in one pass — there is no cursor to resume from next run. */
+const BACKFILL_DEADLINE_MS = 25 * 60_000;
+const INCREMENTAL_DEADLINE_MS = 3 * 60_000;
+const PAGE_DELAY_MS = 2500;
+const MAX_PAGES = 800;
+
+export const INSTAGRAM_LIKES_TIMEOUT_MS = BACKFILL_DEADLINE_MS + 60_000;
 
 export function buildInstagramLikesExpression(args: ListHarvestArgs): string {
   const fnSrc = `(${inPageInstagramLikes.toString()})`;
   const enriched: LikesArgs = {
     ...args,
-    deadlineMs: LIKES_DEADLINE_MS,
-    scrollPauseMs: SCROLL_PAUSE_MS,
-    maxScrolls: MAX_SCROLLS,
+    deadlineMs: args.earlyStop ? INCREMENTAL_DEADLINE_MS : BACKFILL_DEADLINE_MS,
+    pageDelayMs: PAGE_DELAY_MS,
+    maxPages: MAX_PAGES,
   };
   return `(async () => {
     const args = ${JSON.stringify(enriched)};
@@ -41,7 +52,12 @@ export function buildInstagramLikesExpression(args: ListHarvestArgs): string {
   })()`;
 }
 
-/** `/api/v1/feed/liked/` answers "useragent mismatch" to any web session, so this reads the Bloks activity screen instead. */
+/**
+ * `/api/v1/feed/liked/` answers "useragent mismatch" to any web session, so this reads the Bloks
+ * activity screen. Scrolling that screen only pages until the pane sits at the bottom and stops
+ * emitting scroll events, which is where it used to stall, so each payload's own "load the next
+ * page" arguments are replayed here instead.
+ */
 async function inPageInstagramLikes(
   args: LikesArgs,
 ): Promise<ListHarvestResult> {
@@ -54,53 +70,63 @@ async function inPageInstagramLikes(
 
   const ITEM_RE =
     /\(bk\.action\.array\.Make,\s*\\?"\d{6,25}_\d+\\?",\s*\\?"([A-Za-z0-9_-]{5,20})\\?",\s*\\?"([a-z_]+)\\?",\s*\(bk\.action\.i32\.Const,\s*(\d+)\)/g;
+  const NEXT_APP_ID = "com.instagram.privacy.activity_center.liked_next";
+  /** Trailing three arguments of that action: cursor, container id, element id. */
+  const NEXT_RE =
+    /\\?"([A-Za-z0-9+/=_-]{20,})\\?",\s*\\?"(\d{6,})\\?",\s*\\?"(\d{6,})\\?"\)\)/;
+
+  interface NextPage {
+    cursor: string;
+    container_id: string;
+    element_id: string;
+  }
 
   const entries: ListEntry[] = [];
   const seen = new Set<string>();
   const known = new Set(args.knownIds.map(String));
   const earlyStopEnabled = args.earlyStop ?? known.size > 0;
-  let knownRoundStreak = 0;
+  let knownPageStreak = 0;
 
-  interface DrainCount {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  interface Collected {
     added: number;
     fresh: number;
+    next: NextPage | null;
   }
 
-  function drain(): DrainCount {
-    const buf = globalThis.__pondIgBloksCaptures;
-    if (!Array.isArray(buf) || buf.length === 0) return { added: 0, fresh: 0 };
+  function collect(text: string): Collected {
     let added = 0;
     let fresh = 0;
-    for (const text of buf.splice(0)) {
-      for (const match of text.matchAll(ITEM_RE)) {
-        const code = match[1];
-        const productType = match[2] ?? "";
-        if (!code || productType === "ad" || seen.has(code)) continue;
-        seen.add(code);
-        added += 1;
-        if (!known.has(code)) fresh += 1;
-        const isVideo = productType === "clips" || match[3] === "2";
-        entries.push({
-          sourceId: code,
-          url: `https://www.instagram.com/${isVideo ? "reel" : "p"}/${code}/`,
-          mediaType: isVideo ? "video" : "image",
-        });
-      }
+    for (const match of text.matchAll(ITEM_RE)) {
+      const code = match[1];
+      const productType = match[2] ?? "";
+      if (!code || productType === "ad" || seen.has(code)) continue;
+      seen.add(code);
+      added += 1;
+      if (!known.has(code)) fresh += 1;
+      const isVideo = productType === "clips" || match[3] === "2";
+      entries.push({
+        sourceId: code,
+        url: `https://www.instagram.com/${isVideo ? "reel" : "p"}/${code}/`,
+        mediaType: isVideo ? "video" : "image",
+      });
     }
-    return { added, fresh };
+    const at = text.indexOf(NEXT_APP_ID);
+    const found = at === -1 ? null : NEXT_RE.exec(text.slice(at));
+    const next =
+      found?.[1] && found[2] && found[3]
+        ? { cursor: found[1], container_id: found[2], element_id: found[3] }
+        : null;
+    return { added, fresh, next };
   }
 
-  function findScroller(): HTMLElement | null {
-    for (const el of document.querySelectorAll<HTMLElement>("div")) {
-      const style = getComputedStyle(el);
-      if (
-        /auto|scroll/.test(style.overflowY) &&
-        el.scrollHeight > el.clientHeight + 40
-      ) {
-        return el;
-      }
-    }
-    return null;
+  function drain(): NextPage | null {
+    const buf = globalThis.__pondIgBloksCaptures;
+    if (!Array.isArray(buf)) return null;
+    let next: NextPage | null = null;
+    for (const text of buf.splice(0)) next = collect(text).next ?? next;
+    return next;
   }
 
   function publish(): void {
@@ -110,42 +136,96 @@ async function inPageInstagramLikes(
     }));
   }
 
-  const hydrateDeadline = Date.now() + 20_000;
-  while (Date.now() < hydrateDeadline) {
-    if (drain().added > 0) break;
-    await new Promise((r) => setTimeout(r, 500));
+  function bodyForPage(template: LikesRequest, page: NextPage): string | null {
+    const form = new URLSearchParams(template.body);
+    const params = form.get("params");
+    if (!params) return null;
+    form.set("params", JSON.stringify({ ...JSON.parse(params), ...page }));
+    return form.toString();
   }
-  if (entries.length === 0) {
-    return { ok: true, entries: [], reachedEnd: true, seen: 0 };
+
+  /** Without the form content type the endpoint ignores `__a=1` and answers with the HTML shell. */
+  function pageHeaders(
+    template: LikesRequest,
+    body: string,
+  ): Record<string, string> {
+    return {
+      ...template.headers,
+      "content-type": "application/x-www-form-urlencoded",
+      "x-fb-lsd": new URLSearchParams(body).get("lsd") ?? "",
+      "x-requested-with": "XMLHttpRequest",
+    };
+  }
+
+  /** The screen scrolls an inner pane, not the document, and only that pane's scroll fetches a page. */
+  function findPane(): HTMLElement | null {
+    for (const el of document.querySelectorAll<HTMLElement>("div")) {
+      if (
+        el.scrollHeight > el.clientHeight + 40 &&
+        /auto|scroll/.test(getComputedStyle(el).overflowY)
+      ) {
+        return el;
+      }
+    }
+    return null;
+  }
+
+  let pane: HTMLElement | null = null;
+  let next: NextPage | null = null;
+  const hydrateDeadline = Date.now() + 30_000;
+  while (Date.now() < hydrateDeadline) {
+    next = drain() ?? next;
+    if (globalThis.__pondIgLikesRequest && next) break;
+    pane ??= findPane();
+    if (pane) pane.scrollTop = pane.scrollHeight;
+    await sleep(600);
   }
   publish();
 
+  const template = globalThis.__pondIgLikesRequest;
+  if (!template || !next) {
+    return {
+      ok: true,
+      entries,
+      reachedEnd: entries.length === 0,
+      seen: entries.length,
+    };
+  }
+
   const deadline = Date.now() + args.deadlineMs;
-  let stableRounds = 0;
-  for (let scrolls = 0; scrolls < args.maxScrolls; scrolls++) {
+  for (let attempt = 0; attempt < args.maxPages; attempt++) {
     if (Date.now() > deadline || globalThis.__pondHarvestAbort) {
       return { ok: true, entries, reachedEnd: false, seen: entries.length };
     }
-    const scroller = findScroller();
-    if (!scroller) break;
-    scroller.scrollTop = scroller.scrollHeight;
-    await new Promise((r) => setTimeout(r, args.scrollPauseMs));
-
-    const { added, fresh } = drain();
-    publish();
-    if (added === 0) {
-      stableRounds += 1;
-      if (stableRounds >= 3) {
-        return { ok: true, entries, reachedEnd: true, seen: entries.length };
+    const body = bodyForPage(template, next);
+    if (!body) break;
+    await sleep(args.pageDelayMs);
+    const res = await fetch(template.url, {
+      method: "POST",
+      body,
+      headers: pageHeaders(template, body),
+      credentials: "include",
+    });
+    if (!res.ok) {
+      if (entries.length > 0) {
+        return { ok: true, entries, reachedEnd: false, seen: entries.length };
       }
-      continue;
+      return {
+        ok: false,
+        reason: res.status === 429 ? "rate_limited" : "no_match",
+      };
     }
-    stableRounds = 0;
+    const page = collect(await res.text());
+    /** The hook buffers these replies too; nothing reads them once they are parsed here. */
+    globalThis.__pondIgBloksCaptures?.splice(0);
+    publish();
+    if (page.added === 0 || !page.next || page.next.cursor === next.cursor) {
+      break;
+    }
+    next = page.next;
     if (!earlyStopEnabled) continue;
-    knownRoundStreak = fresh === 0 ? knownRoundStreak + 1 : 0;
-    if (knownRoundStreak >= 2) {
-      return { ok: true, entries, reachedEnd: true, seen: entries.length };
-    }
+    knownPageStreak = page.fresh === 0 ? knownPageStreak + 1 : 0;
+    if (knownPageStreak >= 3) break;
   }
-  return { ok: true, entries, reachedEnd: false, seen: entries.length };
+  return { ok: true, entries, reachedEnd: true, seen: entries.length };
 }
