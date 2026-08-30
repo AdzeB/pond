@@ -118,6 +118,16 @@ function rowError(save: Save): string | null {
   return error;
 }
 
+/** Thousands of rows queue behind a handful in flight, so the work happening now sorts to the top. */
+const LIVE_ORDER: Record<DownloadStatus, number> = {
+  running: 0,
+  blocked: 1,
+  pending: 2,
+  failed: 3,
+  cancelled: 4,
+  complete: 5,
+};
+
 export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
   const rows: DownloadRow[] = [];
   for (const save of saves) {
@@ -147,7 +157,9 @@ export function projectLiveDownloads(saves: readonly Save[]): DownloadRow[] {
       live: true,
     });
   }
-  rows.sort((a, b) => b.ts - a.ts);
+  rows.sort(
+    (a, b) => LIVE_ORDER[a.status] - LIVE_ORDER[b.status] || b.ts - a.ts,
+  );
   return rows;
 }
 

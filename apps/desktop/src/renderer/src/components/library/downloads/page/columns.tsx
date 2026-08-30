@@ -6,7 +6,7 @@ import { relativeTimeFromMs } from "@/lib/util/relative-time";
 import styles from "./styles.module.css";
 
 const STATUS_LABEL = {
-  pending: "Pending",
+  pending: "Queued",
   running: "In progress",
   blocked: "Blocked",
   failed: "Failed",
@@ -104,6 +104,14 @@ function StatusGlyph({
   );
 }
 
+/** A queue thousands deep reads as broken when every waiting row shows the same 0%. */
+function readoutOf(row: DownloadRow, progress: number): string {
+  if (row.status === "running" || row.status === "blocked") {
+    return `${Math.round(progress * 100)}%`;
+  }
+  return STATUS_LABEL[row.status];
+}
+
 function StatusMark({ row }: { row: DownloadRow }) {
   const label = row.error ?? statusOf(row);
   const progress = progressOf(row);
@@ -113,7 +121,7 @@ function StatusMark({ row }: { row: DownloadRow }) {
         <span className={styles.mark} data-status={row.status}>
           <StatusGlyph status={row.status} progress={progress} />
         </span>
-        <span className={styles.percent}>{Math.round(progress * 100)}%</span>
+        <span className={styles.percent}>{readoutOf(row, progress)}</span>
       </button>
     </Tooltip>
   );
