@@ -27,6 +27,7 @@ import {
 } from "@/lib/status-feed";
 import { openSave } from "@/lib/ui/save-nav";
 import { toggleInSet } from "@/lib/util/set";
+import { hydrateFullPool } from "@/stores/bootstrap";
 import { downloadsSelection } from "@/stores/downloads-selection";
 import { SOURCE_OPTIONS, STAGE_OPTIONS, STATUS_OPTIONS } from "../lib/filters";
 import { downloadsColumns } from "./columns";
@@ -60,6 +61,12 @@ function FilterMenu({
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
+  /** Saves in flight are the oldest by savedAt, so paged loading never reaches them. */
+  useEffect(() => {
+    void hydrateFullPool().catch((err) => {
+      console.warn("[pond pool] full hydrate for downloads failed", err);
+    });
+  }, []);
   const [filters, setFilters] = useState<DownloadFilters>(
     defaultDownloadFilters,
   );
