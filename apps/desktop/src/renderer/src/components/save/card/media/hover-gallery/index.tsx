@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import type { MediaUnit } from "@/lib/media/units";
+import { thumbUrlFor } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
 import { aspectCoverKey, aspectDimsFor, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
@@ -11,6 +12,7 @@ export function HoverGallery({
   slides,
   active,
   seen,
+  width,
   onBroken,
   onReady,
 }: {
@@ -18,6 +20,7 @@ export function HoverGallery({
   slides: MediaUnit[];
   active: number;
   seen: ReadonlySet<number>;
+  width?: number;
   onBroken: () => void;
   onReady?: () => void;
 }) {
@@ -31,6 +34,7 @@ export function HoverGallery({
             unit={unit}
             primary={i === 0}
             active={i === active}
+            width={width}
             onBroken={onBroken}
             onReady={onReady}
           />
@@ -45,6 +49,7 @@ function GallerySlide({
   unit,
   primary,
   active,
+  width,
   onBroken,
   onReady,
 }: {
@@ -52,6 +57,7 @@ function GallerySlide({
   unit: MediaUnit;
   primary: boolean;
   active: boolean;
+  width?: number;
   onBroken: () => void;
   onReady?: () => void;
 }) {
@@ -59,7 +65,7 @@ function GallerySlide({
   const dims = primary ? aspectDimsFor(save, {}, unit) : null;
   const w = dims?.w ?? undefined;
   const h = dims?.h ?? undefined;
-  const src = unit.url;
+  const src = thumbUrlFor(unit.url, width);
   const reportReady = useCallback(
     (image: HTMLImageElement) => {
       if (!primary) return;

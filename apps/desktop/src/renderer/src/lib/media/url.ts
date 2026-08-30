@@ -6,9 +6,21 @@ export function buildPondUrl(saveId: string, file: SaveFile): string {
   return bust ? `${base}?v=${bust}` : base;
 }
 
+/** Buckets keep the on-disk thumbnail cache to a handful of sizes per file instead of one per zoom step. */
+const THUMB_BUCKETS = [256, 384, 512, 768, 1024, 1536] as const;
+
 export function withThumbWidth(url: string, width: number): string {
   const sep = url.includes("?") ? "&" : "?";
   return `${url}${sep}tw=${Math.round(width)}`;
+}
+
+/** Cards paint at a few hundred CSS pixels; decoding the multi-megapixel original for them costs ~10MB each. */
+export function thumbUrlFor(url: string, cssWidth: number | undefined): string {
+  if (!cssWidth || cssWidth <= 0) return url;
+  const dpr = globalThis.devicePixelRatio || 1;
+  const wanted = cssWidth * dpr;
+  const bucket = THUMB_BUCKETS.find((b) => b >= wanted) ?? THUMB_BUCKETS.at(-1);
+  return bucket ? withThumbWidth(url, bucket) : url;
 }
 
 export function pickAuthorAvatarUrl(save: Save): string | null {

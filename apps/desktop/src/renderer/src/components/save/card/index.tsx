@@ -131,7 +131,7 @@ export const SaveCard = memo(function SaveCard({
         onAuxClick={onSelectAuxClick}
         onDoubleClick={onSelectDoubleClick}
       >
-        <SaveCardBody save={save} layout={layout} />
+        <SaveCardBody save={save} layout={layout} width={packedWidth} />
       </Card.Select>
     </>
   );
@@ -166,9 +166,11 @@ export const SaveCard = memo(function SaveCard({
 const SaveCardBody = memo(function SaveCardBody({
   save,
   layout,
+  width,
 }: {
   save: Save;
   layout?: CardLayout;
+  width?: number;
 }) {
   const pickOpts = useMediaPickOptions();
   const showName = useDisplayPref("name");
@@ -192,7 +194,7 @@ const SaveCardBody = memo(function SaveCardBody({
   return (
     <>
       <Card.Media style={mediaStyle}>
-        <CardThumb save={save} layout={layout} />
+        <CardThumb save={save} layout={layout} width={width} />
         <Card.Overlay save={save} primary={primary} />
       </Card.Media>
       <Card.Meta

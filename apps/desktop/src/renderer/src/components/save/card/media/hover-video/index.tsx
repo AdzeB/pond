@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BlurHash } from "@/components/save/card/media/blur-hash";
 import { useImageReady } from "@/components/save/card/media/lib/use-image-ready";
 import type { MediaUnit } from "@/lib/media/units";
+import { thumbUrlFor } from "@/lib/media/url";
 import { aspectCoverKey, recordAspect } from "@/stores/aspect";
 import styles from "./styles.module.css";
 
@@ -16,6 +17,7 @@ export function HoverVideo({
   src,
   unit,
   posterUrl,
+  posterWidth,
   blurhash,
   label,
   onBroken,
@@ -26,6 +28,7 @@ export function HoverVideo({
   src: string;
   unit: MediaUnit;
   posterUrl?: string;
+  posterWidth?: number;
   blurhash?: string | null;
   label: string;
   onBroken: () => void;
@@ -38,7 +41,9 @@ export function HoverVideo({
   const [videoReady, setVideoReady] = useState(false);
   const [posterBroken, setPosterBroken] = useState(false);
   const coverKey = aspectCoverKey(unit);
-  const effectivePosterUrl = posterBroken ? undefined : posterUrl;
+  const effectivePosterUrl = posterBroken
+    ? undefined
+    : posterUrl && thumbUrlFor(posterUrl, posterWidth);
   const needsRestingVideo = !effectivePosterUrl;
   const primed = hoverPrimed || needsRestingVideo;
 

@@ -38,12 +38,15 @@ export function LibraryView() {
     void loadNextPage();
   }, []);
 
+  /** Paging stops while narrowing, so every save has to be in the pool for the result to be whole. */
+  const needsFullPool =
+    data.mode !== "library" || data.hasActiveSearch || data.hasActiveFilter;
   useEffect(() => {
-    if (data.mode === "library") return;
+    if (!needsFullPool) return;
     void hydrateFullPool().catch((err) => {
       console.warn("[pond pool] full hydrate for library mode failed", err);
     });
-  }, [data.mode]);
+  }, [needsFullPool]);
 
   useEffect(() => {
     const sync = () => {

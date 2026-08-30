@@ -17,9 +17,11 @@ export type CardLayout = GridLayout;
 export const CardThumb = memo(function CardThumb({
   save,
   layout,
+  width,
 }: {
   save: Save;
   layout?: CardLayout;
+  width?: number;
 }) {
   const pickOpts = useMediaPickOptions();
   const unit = useMemo(() => pickPrimaryUnit(save, pickOpts), [save, pickOpts]);
@@ -106,10 +108,17 @@ export const CardThumb = memo(function CardThumb({
           slides={slides}
           active={safeActive}
           seen={seen}
+          width={width}
           onBroken={onBroken}
         />
       ) : unit && !broken && !unit.isVideo ? (
-        <CardImage key={unit.url} save={save} unit={unit} onBroken={onBroken} />
+        <CardImage
+          key={unit.url}
+          save={save}
+          unit={unit}
+          width={width}
+          onBroken={onBroken}
+        />
       ) : null}
       {unit?.isVideo && !broken ? (
         <HoverVideo
@@ -118,6 +127,7 @@ export const CardThumb = memo(function CardThumb({
           src={unit.url}
           unit={unit}
           posterUrl={unit.posterUrl}
+          posterWidth={width}
           blurhash={save.blurhash}
           hasVideoDims={hasVideoDims}
           label={save.title ?? "video"}
