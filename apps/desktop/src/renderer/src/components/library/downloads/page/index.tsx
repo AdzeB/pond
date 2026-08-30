@@ -7,11 +7,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { z } from "zod";
 import { DownloadsEmpty, MatchesEmpty } from "@/components/library/empty";
 import { TableSelectionSync } from "@/components/library/table-selection-sync";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { useClientHeight } from "@/hooks/use-client-height";
 import { useSaves } from "@/hooks/use-saves";
+import { refreshSaves } from "@/lib/save/ensure-saves";
 import {
   type DownloadFilters,
   type DownloadRow,
@@ -58,6 +60,8 @@ function FilterMenu({
   );
 }
 
+const InflightIdsSchema = z.array(z.string()).catch([]);
+
 export function DownloadsPage() {
   const saves = useSaves();
   const qc = useQueryClient();
@@ -66,6 +70,27 @@ export function DownloadsPage() {
     void hydrateFullPool().catch((err) => {
       console.warn("[pond pool] full hydrate for downloads failed", err);
     });
+  }, []);
+
+  /** A task moving to running writes no sync action, so the rows in flight are re-read on a timer. */
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const ids = InflightIdsSchema.parse(
+          await window.pond.query("pipeline.inflight", {}),
+        );
+        if (!stopped) await refreshSaves(ids);
+      } catch (err) {
+        console.warn("[pond downloads] inflight refresh failed", err);
+      }
+    };
+    void tick();
+    const timer = setInterval(tick, 2_000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
   }, []);
   const [filters, setFilters] = useState<DownloadFilters>(
     defaultDownloadFilters,

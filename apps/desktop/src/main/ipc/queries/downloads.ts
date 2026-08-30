@@ -1,4 +1,11 @@
-import { OPS, type Op, SOURCES, type Source, saves } from "@pond/schema/db";
+import {
+  OPS,
+  type Op,
+  SOURCES,
+  type Source,
+  saves,
+  tasks,
+} from "@pond/schema/db";
 import {
   type PipelineEventRow,
   pipelineEvents,
@@ -84,6 +91,16 @@ function toHistoryRow(row: HistoryRow): DownloadHistoryRow | null {
 
 export const downloadsQueries: QueryHandlerMap = {
   "pipeline.status": query(z.object({}), () => pipelineSnapshot()),
+
+  /** Task rows change state without a sync action, so the downloads view polls for what is in flight. */
+  "pipeline.inflight": query(z.object({}), async () => {
+    const db = await getDb();
+    const rows = await db
+      .selectDistinct({ saveId: tasks.saveId })
+      .from(tasks)
+      .where(eq(tasks.status, "running"));
+    return rows.map((row) => row.saveId);
+  }),
 
   "downloads.history": query(
     z.object({
