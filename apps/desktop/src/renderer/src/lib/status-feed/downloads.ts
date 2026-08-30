@@ -119,7 +119,7 @@ function rowError(save: Save): string | null {
 }
 
 /** Thousands of rows queue behind a handful in flight, so the work happening now sorts to the top. */
-const LIVE_ORDER: Record<DownloadStatus, number> = {
+export const LIVE_ORDER: Record<DownloadStatus, number> = {
   running: 0,
   blocked: 1,
   pending: 2,

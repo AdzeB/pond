@@ -261,7 +261,7 @@ export function DownloadsPage() {
             .filter((row): row is DownloadRow => row != null),
         );
       }}
-      defaultSort={{ id: "time", desc: true }}
+      defaultSort={{ id: "status", desc: false }}
       height={
         showPlaceEmpty || showMatchesEmpty || tableHeight < 76
           ? undefined
