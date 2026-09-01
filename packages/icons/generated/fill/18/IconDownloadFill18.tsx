@@ -1,4 +1,4 @@
-/** Hand-authored inbox-stack glyph. */
+/** Hand-authored download-stack glyph. */
 import { createIcon } from "../../../lib/create-icon";
 
 const inner = ({ strokeWidth = 1.5 }) => (

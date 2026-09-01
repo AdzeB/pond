@@ -1,8 +1,10 @@
 .wrap {
+  position: relative;
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 8px;
-  width: 400px;
+  min-width: 0;
 }
 
 .bar {
@@ -10,13 +12,12 @@
   gap: 6px;
   align-items: center;
   width: 100%;
-  height: 40px;
-  padding-inline: 12px 6px;
+  min-width: 0;
 }
 
 .editor {
   position: relative;
-  display: flex;
+  display: grid;
   flex: 1;
   align-items: center;
   align-self: stretch;
@@ -30,7 +31,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--ds-text-small);
   line-height: 1.5;
   color: var(--ds-gray-12);
   word-break: normal;
@@ -62,7 +63,7 @@
   align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-size: var(--ds-text-small);
   font-weight: 450;
   line-height: 1.5;
   color: var(--ds-gray-9);
@@ -73,14 +74,17 @@
 
 .clear {
   flex: none;
+  color: var(--ds-gray-9);
 }
 
-.close {
+.thinking {
   flex: none;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-10);
 }
 
 .status {
-  padding-inline: 12px 6px;
+  padding-inline: 0 6px;
   padding-bottom: 4px;
   font-size: 13px;
   color: var(--ds-gray-10);

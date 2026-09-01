@@ -1,0 +1,38 @@
+.actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 0 0 0 -6px;
+}
+.action {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 5px 6px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ds-gray-10);
+  border-radius: 5px;
+}
+.action:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+.action svg {
+  width: 13px;
+  height: 13px;
+}
+.action:focus-visible {
+  outline: 2px solid var(--ds-gray-8);
+  outline-offset: 1px;
+}
+.copy {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.copy > [role="alert"] {
+  font-size: 11px;
+  color: var(--ds-orange-11);
+}

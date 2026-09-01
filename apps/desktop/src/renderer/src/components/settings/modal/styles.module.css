@@ -6,7 +6,7 @@
   padding: 0;
   overflow: hidden;
   background-color: var(--ds-gray-2);
-  box-shadow: var(--ds-shadow-4);
+  box-shadow: var(--ds-shadow-dialog);
 }
 
 @media (max-width: 860px) {
@@ -48,6 +48,6 @@
   height: 100%;
   overflow-y: auto;
   background-color: var(--ds-gray-1);
-  border-radius: var(--ds-radius-md);
-  box-shadow: var(--ds-shadow-2);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-1);
 }

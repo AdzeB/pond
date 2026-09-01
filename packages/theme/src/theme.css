@@ -9,6 +9,9 @@
 :root {
   --ds-mac-inset: 16px;
 
+  --ds-border-width: 0.5px;
+  --ds-border-subtle: color-mix(in oklch, var(--ds-fg) 8%, var(--ds-bg));
+
   --ds-background-1: var(--ds-gray-1);
   --ds-background-2: var(--ds-gray-2);
   --ds-bg-default: var(--ds-gray-1);

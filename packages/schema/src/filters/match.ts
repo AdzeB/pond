@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { colorNear } from "./color";
+import { colorNear, readColorMatch } from "./color";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import type { FieldValue } from "./fields/descriptor";
@@ -119,9 +119,9 @@ function runComparator(
         ? projected.length === 0
         : projected == null;
     case "near": {
-      const needle = Text.safeParse(value);
-      return Array.isArray(projected) && needle.success
-        ? colorNear(needle.data, projected)
+      const color = readColorMatch(value);
+      return Array.isArray(projected) && color !== null
+        ? colorNear(color.hex, projected, color.tolerance)
         : false;
     }
   }

@@ -4,7 +4,10 @@ import {
   applyModeSort,
   type SaveListMode,
 } from "@/lib/save/list";
+import { applyNavFilter } from "@/lib/save/nav-filter";
 import type { Save } from "@/lib/types";
+import { useFolderMemberships, useFolders } from "@/stores/folders";
+import { useLibraryNav } from "@/stores/library-chrome";
 import { useRecents } from "@/stores/recents";
 import {
   useFilterQuery,
@@ -32,6 +35,9 @@ export function useNarrowedSaves(
   const q = useSearchText();
   const viewSortKey = useSortKey();
   const viewSortDir = useSortDir();
+  const nav = useLibraryNav();
+  const memberships = useFolderMemberships();
+  const folderRows = useFolders();
 
   const searchHits = useSearchResults(q, { deletedOnly: mode === "trash" });
 
@@ -47,13 +53,33 @@ export function useNarrowedSaves(
 
   const narrowedFresh = useMemo(() => {
     const base = searchHits.results ?? saves;
-    const filteredList = applyModeFilter(base, {
-      mode,
-      sourceFilter,
-      recentsOrder,
-    });
-    return applyModeSort(filteredList, { mode, recentsOrder });
-  }, [saves, searchHits.results, sourceFilter, mode, recentsOrder]);
+    const filteredList = applyNavFilter(
+      applyModeFilter(base, {
+        mode,
+        sourceFilter,
+        recentsOrder,
+      }),
+      nav,
+      memberships,
+      folderRows,
+    );
+    return applyModeSort(
+      filteredList.map((save) => ({
+        ...save,
+        folderIds: memberships[save.id] ?? [],
+      })),
+      { mode, recentsOrder },
+    );
+  }, [
+    saves,
+    searchHits.results,
+    sourceFilter,
+    mode,
+    recentsOrder,
+    nav,
+    memberships,
+    folderRows,
+  ]);
 
   const narrowed = useStableById(narrowedFresh);
 

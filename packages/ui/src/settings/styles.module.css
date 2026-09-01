@@ -45,16 +45,16 @@
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 550;
+  font-size: var(--ds-text-title);
+  font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-12);
 }
 
 .description {
   max-width: 64ch;
-  font-size: 14px;
-  font-weight: 450;
-  line-height: 24px;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-normal);
+  line-height: 1.5;
   color: var(--ds-gray-11);
 }
 
@@ -80,8 +80,8 @@
 
 .section-title {
   padding: 0 var(--settings-padding-inline-inset) 8px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-11);
 }
 
@@ -100,7 +100,7 @@
   padding: 16px;
 
   &:not(:last-child) {
-    border-bottom: 1px solid var(--ds-gray-3);
+    border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
   }
 }
 
@@ -138,14 +138,14 @@
 }
 
 .item-title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
 }
 
 .item-description {
-  font-size: 13px;
-  font-weight: 400;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-11);
 }
 

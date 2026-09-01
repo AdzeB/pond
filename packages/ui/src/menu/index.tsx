@@ -5,6 +5,7 @@ import { clsx as cn } from "clsx";
 import { forwardRef } from "react";
 import { Button, type ButtonProps } from "../button";
 import { Checkbox } from "../checkbox";
+import { Keyboard } from "../keyboard";
 import { Switch } from "../switch";
 import { type MenuItemSpec, renderMenuSpec } from "./items";
 
@@ -15,9 +16,16 @@ function Root(props: Base.Root.Props) {
 }
 
 type TriggerProps = Base.Trigger.Props &
-  Pick<ButtonProps, "variant" | "size" | "icon">;
+  Pick<ButtonProps, "variant" | "size" | "icon" | "rounding">;
 
-function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
+function Trigger({
+  className,
+  variant,
+  size,
+  icon,
+  rounding,
+  ...props
+}: TriggerProps) {
   return (
     <Base.Trigger
       render={
@@ -27,6 +35,7 @@ function Trigger({ className, variant, size, icon, ...props }: TriggerProps) {
           <Button
             size={size}
             icon={icon}
+            rounding={rounding}
             variant={variant}
             className={cn(styles.trigger, className)}
           />
@@ -129,16 +138,12 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
 }
 
 function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
-  const letters = props.children?.toString().split("");
-
   return (
-    <span className={cn(styles["item-keyboard"], className)} {...props}>
-      {letters?.map((letter) => (
-        <kbd className={styles.key} key={letter}>
-          {letter}
-        </kbd>
-      ))}
-    </span>
+    <Keyboard.Shortcut
+      density="flat"
+      className={cn(styles["item-keyboard"], className)}
+      {...props}
+    />
   );
 }
 

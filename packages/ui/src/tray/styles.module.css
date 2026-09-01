@@ -3,11 +3,10 @@
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  overflow: hidden;
   pointer-events: auto;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-5);
+  box-shadow: var(--ds-shadow-dialog);
 }
 
 .pill[data-orientation="vertical"] {
@@ -51,7 +50,7 @@
   &:focus-visible {
     color: var(--ds-gray-12);
     outline: 2px solid var(--ds-gray-a8);
-    outline-offset: -4px;
+    outline-offset: 0;
   }
 
   &[data-disabled="true"] {

@@ -1,6 +1,6 @@
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import { dockMode } from "@/stores/dock-mode";
+import { sourceFlow } from "@/stores/source-flow";
 
 interface SourceDetailState {
   accountId: string | null;
@@ -17,11 +17,11 @@ const store = new Store<SourceDetailState>({
 export const sourceDetail = {
   openAccount(id: string): void {
     store.setState((s) => ({ ...s, accountId: id }));
-    dockMode.open("account-detail");
+    sourceFlow.open("account-detail");
   },
   openWatch(id: string): void {
     store.setState((s) => ({ ...s, watchId: id }));
-    dockMode.open("watch-detail");
+    sourceFlow.open("watch-detail");
   },
   changed(): void {
     store.setState((s) => ({ ...s, revision: s.revision + 1 }));

@@ -10,6 +10,7 @@ export interface SaveLike {
   description?: string | null;
   author?: string | null;
   tags?: string[];
+  folderIds?: string[];
   listKinds?: ListKind[];
   notes?: string | null;
   caption?: string | null;

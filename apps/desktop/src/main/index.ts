@@ -101,6 +101,8 @@ log.info("[pond] main starting", {
   platform: process.platform,
 });
 
+const wantsMcp = process.argv.includes("--mcp");
+
 let httpServer: RunningServer | null = null;
 let nativeServer: NetServer | null = null;
 
@@ -109,7 +111,7 @@ const broadcastSyncStatus = (status: SyncStatusUpdate): void =>
 
 registerScheme();
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
+const gotSingleInstanceLock = wantsMcp || app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
 }
@@ -159,6 +161,12 @@ app.whenReady().then(async () => {
     await getDb();
   } catch (err) {
     log.error("[pond] db init failed", err);
+  }
+
+  if (wantsMcp) {
+    const { startPondMcp } = await import("./core/agent/mcp");
+    await startPondMcp();
+    return;
   }
 
   registerIpc();

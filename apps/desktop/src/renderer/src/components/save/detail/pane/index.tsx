@@ -1,6 +1,6 @@
 import { IconXmarkOutline18 as Cross } from "@pond/icons/outline/18";
 import { Button, TitleBar, Tooltip } from "@pond/ui";
-import { type ComponentType, type ReactNode, useEffect, useState } from "react";
+import { type ComponentType, useEffect, useState } from "react";
 import { KebabMenu } from "@/components/save/detail/kebab";
 import { Section } from "@/components/save/detail/section";
 import { SaveTags } from "@/components/save/detail/tags";
@@ -9,6 +9,7 @@ import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { ColorSwatch } from "@/components/shared/color-swatch";
 import { ExpandableText } from "@/components/shared/expandable-text";
 import { useSaveDetail } from "@/hooks/use-save-detail";
+import { useSave } from "@/hooks/use-saves";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { buildMediaUnits } from "@/lib/media/units";
 import {
@@ -19,46 +20,48 @@ import {
 import { mutateSave } from "@/lib/save/mutate";
 import { isTextOnlySave } from "@/lib/save/text";
 import type { Save } from "@/lib/types";
-import { closeSave } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
+import { libraryChrome } from "@/stores/library-chrome";
+import { useSaveViewerFileIndex } from "@/stores/save-viewer";
 import { sourceDetail } from "@/stores/source-detail";
 import styles from "./styles.module.css";
 
-function DetailCard({
-  title,
-  start,
-  end,
-  children,
-}: {
-  title: string;
-  start?: ReactNode;
-  end?: ReactNode;
-  children: ReactNode;
-}) {
+export function SaveInspector({ saveId }: { saveId: string }) {
+  const save = useSave(saveId);
+  const fileIndex = useSaveViewerFileIndex();
   const scrollFade = useScrollFade<HTMLDivElement>();
+
   return (
-    <div className={styles.card}>
+    <div className={styles.root}>
       <TitleBar.Root className={styles.header}>
-        <TitleBar.Start>{start}</TitleBar.Start>
-        <TitleBar.Title>
-          <TitleBar.Label>{title}</TitleBar.Label>
-        </TitleBar.Title>
-        <TitleBar.End>{end}</TitleBar.End>
+        <TitleBar.Start>
+          <TitleBar.Label>Details</TitleBar.Label>
+        </TitleBar.Start>
+        <TitleBar.End>
+          {save ? <KebabMenu save={save} fileIndex={fileIndex} /> : null}
+          <Button
+            type="button"
+            icon
+            size="xs"
+            variant="ghost"
+            aria-label="Close Details"
+            onClick={libraryChrome.closeRightPane}
+          >
+            <Cross />
+          </Button>
+        </TitleBar.End>
       </TitleBar.Root>
-      <div className={styles.scroll} {...scrollFade}>
-        {children}
-      </div>
+      {save ? (
+        <div className={styles.scroll} {...scrollFade}>
+          <AboutSections save={save} />
+          <InfoSections save={save} />
+        </div>
+      ) : null}
     </div>
   );
 }
 
-export function SaveAbout({
-  save,
-  fileIndex = null,
-}: {
-  save: Save;
-  fileIndex?: number | null;
-}) {
+function AboutSections({ save }: { save: Save }) {
   const { description } = useSaveDetail(save.id);
   const displayTitle = save.title?.trim() || save.author?.trim() || "Untitled";
   const local = save.source === "local";
@@ -87,13 +90,10 @@ export function SaveAbout({
   };
 
   return (
-    <DetailCard
-      title="About"
-      start={<KebabMenu save={save} fileIndex={fileIndex} />}
-    >
-      {showTitle ? (
-        <Section title="Title">
-          {local ? (
+    <>
+      <div className={styles.about}>
+        {showTitle ? (
+          local ? (
             <input
               data-pane-title
               className={`${styles["heading-title"]} ${styles["heading-input"]}`}
@@ -110,26 +110,23 @@ export function SaveAbout({
             />
           ) : (
             <h2 className={styles["heading-title"]}>{displayTitle}</h2>
-          )}
-        </Section>
-      ) : null}
+          )
+        ) : null}
 
-      {showContent ? (
-        <Section title="Content">
-          <ExpandableText text={description} compact />
-        </Section>
-      ) : null}
+        {showContent ? <ExpandableText text={description} compact /> : null}
+      </div>
 
-      <Section title="Tags">
+      <div className={styles.tags}>
+        <span className={styles.label}>Tags</span>
         <SaveTags save={save} />
-      </Section>
+      </div>
 
       {hasVideo ? <VideoNotesSection save={save} /> : null}
-    </DetailCard>
+    </>
   );
 }
 
-export function SaveInfo({ save }: { save: Save }) {
+function InfoSections({ save }: { save: Save }) {
   const {
     rows,
     colors,
@@ -142,23 +139,13 @@ export function SaveInfo({ save }: { save: Save }) {
   const hasProperties = groups.some((group) => group.title === "Properties");
 
   return (
-    <DetailCard
-      title="Details"
-      end={
-        <Button
-          type="button"
-          icon
-          size="xs"
-          variant="ghost"
-          aria-label="Close"
-          onClick={() => closeSave()}
-        >
-          <Cross />
-        </Button>
-      }
-    >
+    <>
       {groups.map((group) => (
-        <Section key={group.title} title={group.title}>
+        <Section
+          key={group.title}
+          title={group.title}
+          defaultOpen={group.title !== "File" && group.title !== "Dates"}
+        >
           <div className={styles.rows}>
             {group.rows.map((row) => (
               <PropertyRow
@@ -183,7 +170,7 @@ export function SaveInfo({ save }: { save: Save }) {
           </div>
         </Section>
       ) : null}
-    </DetailCard>
+    </>
   );
 }
 
@@ -208,19 +195,22 @@ function AuthorAvatar({
   name: string;
   avatarUrl: string | null;
 }) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
   return (
     <span
       className={styles["row-avatar"]}
       style={{ background: pickAuthorColor(name) }}
       aria-hidden
     >
-      {avatarUrl ? (
+      {avatarUrl && avatarUrl !== failedUrl ? (
         <img
           src={avatarUrl}
           alt=""
           loading="lazy"
           decoding="async"
           draggable={false}
+          onError={() => setFailedUrl(avatarUrl)}
         />
       ) : (
         initials(name)
@@ -260,7 +250,7 @@ function PropertyRow({
               }}
             >
               <AuthorAvatar name={row.value} avatarUrl={avatarUrl} />
-              {row.value}
+              <span className={styles.value}>{row.value}</span>
             </Button>
           </Tooltip>
         ) : (
@@ -284,7 +274,7 @@ function PropertyRow({
             }}
           >
             <AuthorAvatar name={row.value} avatarUrl={row.avatarUrl ?? null} />
-            {row.value}
+            <span className={styles.value}>{row.value}</span>
           </Button>
         </Tooltip>
       ) : row.kind === "platform" ? (

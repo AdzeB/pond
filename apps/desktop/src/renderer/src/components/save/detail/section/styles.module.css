@@ -1,8 +1,7 @@
 .section {
-  padding: 10px 12px;
-  background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-2);
+  flex-shrink: 0;
+  padding: 14px 0;
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 .item {
@@ -20,11 +19,9 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
+  min-height: 20px;
   padding: 0;
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.2;
   color: inherit;
   text-align: left;
   appearance: none;
@@ -35,16 +32,16 @@
 
 .trigger:focus-visible {
   outline: 2px solid var(--ds-accent-9);
-  outline-offset: 2px;
+  outline-offset: 0;
   border-radius: var(--ds-radius-xs);
 }
 
 .title {
   min-width: 0;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.2;
-  color: var(--ds-gray-10);
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
+  line-height: 1.5;
+  color: var(--ds-gray-11);
 }
 
 .chevron {
@@ -62,11 +59,11 @@
   transform: rotate(180deg);
 }
 
-.body {
+.panel {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding-top: 8px;
+  min-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

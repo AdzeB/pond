@@ -1,23 +1,30 @@
 .root {
+  position: relative;
+  box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 2px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
   color: var(--ds-gray-1);
   cursor: var(--ds-cursor-interactive, pointer);
   background: transparent;
   border: 1px solid var(--ds-gray-4);
-  border-radius: var(--ds-radius-sm);
+  border-radius: var(--ds-radius-xs);
   transition: all var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &::before {
+    position: absolute;
+    inset: -5px;
+    content: "";
+  }
 
   &[data-size="sm"] {
     width: 14px;
     height: 14px;
-    padding: 0;
-    border-radius: var(--ds-radius-xs);
+    border-radius: 3px;
   }
 
   &[data-checked] {
@@ -40,7 +47,7 @@
     outline-width: 2px;
     outline-style: solid;
     outline-color: var(--ds-gray-6);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 
   &[data-disabled] {
@@ -53,6 +60,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  padding: 0;
   color: var(--ds-gray-1);
+
+  > svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.root[data-size="sm"] .indicator > svg {
+  width: 10px;
+  height: 10px;
 }

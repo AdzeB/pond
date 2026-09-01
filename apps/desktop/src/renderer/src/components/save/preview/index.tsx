@@ -38,9 +38,11 @@ function buildTagPillMenu(
 export function TagsEditor({
   save,
   children,
+  addLabel,
 }: {
   save: Save;
   children?: React.ReactNode;
+  addLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -77,8 +79,14 @@ export function TagsEditor({
           </SpecContextMenu>
         ))}
         {children}
-        <TagPicker.Trigger icon size="xs" variant="ghost" aria-label="Add Tag">
+        <TagPicker.Trigger
+          icon={!addLabel}
+          size="xs"
+          variant="ghost"
+          aria-label="Add Tag"
+        >
           <Plus />
+          {addLabel}
         </TagPicker.Trigger>
         <TagPicker.Content
           anchor={() => listRef.current}

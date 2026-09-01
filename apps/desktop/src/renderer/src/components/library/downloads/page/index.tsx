@@ -1,14 +1,29 @@
-import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
+import { IconMediaPauseFill18, IconMediaPlayFill18 } from "@pond/icons/fill/18";
+import {
+  IconBarsFilterOutline18,
+  IconDotsOutline18,
+  IconMagnifierOutline18,
+  IconRefreshOutline18,
+} from "@pond/icons/outline/18";
 import type { Op, Source } from "@pond/schema/db";
-import { Button, DataTable, Input, Menu, type MenuItemSpec } from "@pond/ui";
+import {
+  Button,
+  DataTable,
+  Menu,
+  type MenuItemSpec,
+  type RenderRowArgs,
+  Tooltip,
+} from "@pond/ui";
 import {
   useInfiniteQuery,
+  useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { DownloadsEmpty, MatchesEmpty } from "@/components/library/empty";
+import { FilterSelect } from "@/components/library/filter-menu/filter-select";
 import { TableSelectionSync } from "@/components/library/table-selection-sync";
 import { confirm } from "@/components/shared/confirm-dialog";
 import { useClientHeight } from "@/hooks/use-client-height";
@@ -26,16 +41,33 @@ import {
   PipelineStatusSchema,
   projectLiveDownloads,
   type StatusFilter,
+  statusFeed,
 } from "@/lib/status-feed";
 import { openSave } from "@/lib/ui/save-nav";
 import { toggleInSet } from "@/lib/util/set";
 import { hydrateFullPool } from "@/stores/bootstrap";
 import { downloadsSelection } from "@/stores/downloads-selection";
-import { SOURCE_OPTIONS, STAGE_OPTIONS, STATUS_OPTIONS } from "../lib/filters";
-import { downloadsColumns } from "./columns";
+import { retryDownloadRows } from "../lib/actions";
+import { SOURCE_OPTIONS, STAGE_OPTIONS } from "../lib/filters";
+import { DownloadQueueRow, downloadsColumns } from "./columns";
 import styles from "./styles.module.css";
 
 const INITIAL_CURSOR: HistoryCursor = null;
+type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
+
+const STATUS_VIEWS = {
+  current: ["in-progress", "failed"],
+  attention: ["failed"],
+  saved: ["complete"],
+  all: [],
+} satisfies Record<string, StatusFilter[]>;
+
+const STATUS_ITEMS = [
+  { value: "current", label: "Current" },
+  { value: "attention", label: "Attention" },
+  { value: "saved", label: "Saved" },
+  { value: "all", label: "All Downloads" },
+] satisfies { value: keyof typeof STATUS_VIEWS; label: string }[];
 
 function FilterMenu({
   label,
@@ -51,7 +83,7 @@ function FilterMenu({
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="start" side="bottom">
-          <Menu.Popup>
+          <Menu.Popup className={styles.filterMenu}>
             <Menu.Items items={items} />
           </Menu.Popup>
         </Menu.Positioner>
@@ -95,7 +127,20 @@ export function DownloadsPage() {
   const [filters, setFilters] = useState<DownloadFilters>(
     defaultDownloadFilters,
   );
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const { ref: tableRef, height: tableHeight } = useClientHeight();
+  const showHistory =
+    filters.statuses.size === 0 || filters.statuses.has("complete");
+  const view =
+    filters.statuses.size === 0
+      ? "all"
+      : filters.statuses.has("complete")
+        ? "saved"
+        : filters.statuses.has("in-progress")
+          ? "current"
+          : "attention";
+  const hasFilters =
+    view !== "current" || filters.sources.size > 0 || filters.ops.size > 0;
 
   const live = useMemo(() => projectLiveDownloads(saves), [saves]);
   const liveIds = useMemo(() => new Set(live.map((row) => row.saveId)), [live]);
@@ -108,7 +153,7 @@ export function DownloadsPage() {
       [...filters.sources].sort(),
       [...filters.ops].sort(),
     ],
-    enabled: filters.statuses.has("complete"),
+    enabled: showHistory,
     queryFn: async ({ pageParam }) =>
       HistoryPageSchema.parse(
         await window.pond.query("downloads.history", {
@@ -126,21 +171,21 @@ export function DownloadsPage() {
   useEffect(() => {
     const prev = prevLiveIds.current;
     prevLiveIds.current = liveIds;
-    if (!filters.statuses.has("complete")) return;
+    if (!showHistory) return;
     for (const id of prev) {
       if (!liveIds.has(id)) {
         void qc.invalidateQueries({ queryKey: ["downloads.history"] });
         break;
       }
     }
-  }, [liveIds, filters.statuses, qc]);
+  }, [liveIds, showHistory, qc]);
 
   const history = useMemo(() => {
-    if (!filters.statuses.has("complete")) return [];
+    if (!showHistory) return [];
     return (historyQuery.data?.pages ?? []).flatMap((page) =>
       page.rows.map(historyToDownloadRow),
     );
-  }, [filters.statuses, historyQuery.data]);
+  }, [showHistory, historyQuery.data]);
 
   const rows = useMemo(
     () =>
@@ -164,28 +209,22 @@ export function DownloadsPage() {
       ),
   });
   const paused = pipeline.data?.paused === true;
-
-  const countLabel =
-    rows.length === 1 ? "1 item" : `${rows.length.toLocaleString()} items`;
-
-  const hasDefault =
-    filters.statuses.has("in-progress") &&
-    filters.statuses.has("failed") &&
-    !filters.statuses.has("complete") &&
-    filters.sources.size === 0 &&
-    filters.ops.size === 0 &&
-    filters.q.trim() === "";
-  const emptyLibrary = live.length === 0 && !filters.statuses.has("complete");
-  const historyPending =
-    filters.statuses.has("complete") && historyQuery.isPending;
+  const hasDefault = !hasFilters && filters.q.trim() === "";
+  const emptyLibrary = live.length === 0 && !showHistory;
+  const historyPending = showHistory && historyQuery.isPending;
+  const historyError = showHistory && historyQuery.isError;
   const showPlaceEmpty = emptyLibrary && hasDefault && rows.length === 0;
   const showMatchesEmpty =
-    rows.length === 0 && !showPlaceEmpty && !historyPending;
+    rows.length === 0 &&
+    !showPlaceEmpty &&
+    !historyPending &&
+    !historyError &&
+    !(showHistory && historyQuery.hasNextPage);
 
-  const setStatuses = (id: StatusFilter, on: boolean) => {
+  const setView = (next: keyof typeof STATUS_VIEWS) => {
     setFilters((cur) => ({
       ...cur,
-      statuses: toggleInSet(cur.statuses, id, on),
+      statuses: new Set<StatusFilter>(STATUS_VIEWS[next]),
     }));
   };
   const setSource = (id: Source, on: boolean) => {
@@ -201,13 +240,6 @@ export function DownloadsPage() {
     }));
   };
 
-  const statusItems: MenuItemSpec[] = STATUS_OPTIONS.map((opt) => ({
-    type: "checkbox",
-    label: opt.label,
-    checked: filters.statuses.has(opt.id),
-    closeOnClick: false,
-    onCheckedChange: (on) => setStatuses(opt.id, on),
-  }));
   const sourceItems: MenuItemSpec[] = SOURCE_OPTIONS.map((opt) => ({
     type: "checkbox",
     label: opt.label,
@@ -227,24 +259,51 @@ export function DownloadsPage() {
     openSave(row.saveId);
   }, []);
 
-  const togglePause = async () => {
-    await window.pond.pipelinePause(!paused);
-    await qc.invalidateQueries({ queryKey: ["pipeline.status"] });
-  };
-
-  const retryFailed = async () => {
-    await window.pond.query("saves.retryFailed", {});
-  };
+  const pause = useMutation({
+    mutationFn: () => window.pond.pipelinePause(!paused),
+    onSuccess: (result) =>
+      qc.setQueryData<PipelineStatus>(["pipeline.status"], {
+        paused: result.paused,
+      }),
+    onError: () =>
+      statusFeed.error(
+        "Pause downloads",
+        "Couldn't change the queue. Try again.",
+      ),
+  });
+  const failedRows = rows.filter((row) => row.status === "failed");
+  const retry = useMutation({
+    mutationFn: () => retryDownloadRows(failedRows),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["downloads.history"] }),
+    onError: () =>
+      statusFeed.error(
+        "Retry downloads",
+        "Couldn't retry these downloads. Try again.",
+      ),
+  });
+  const renderRow = useCallback(
+    (args: RenderRowArgs<DownloadRow>) => (
+      <DownloadQueueRow {...args} paused={paused} />
+    ),
+    [paused],
+  );
 
   const cancelAll = () => {
     confirm({
       title: "Cancel All",
       description:
-        "Pond stops every save that is ingesting. Failed items stay so you can retry them.",
+        "Pond stops every current download. You can retry them later.",
       confirmLabel: "Cancel All",
       confirmVariant: "destructive",
       onConfirm: async () => {
-        await window.pond.pipelineCancelAll();
+        try {
+          await window.pond.pipelineCancelAll();
+        } catch {
+          statusFeed.error(
+            "Cancel downloads",
+            "Couldn't cancel these downloads. Try again.",
+          );
+        }
       },
     });
   };
@@ -261,52 +320,157 @@ export function DownloadsPage() {
             .filter((row): row is DownloadRow => row != null),
         );
       }}
-      defaultSort={{ id: "status", desc: false }}
-      height={
-        showPlaceEmpty || showMatchesEmpty || tableHeight < 76
-          ? undefined
-          : tableHeight - 28
-      }
+      height={rows.length === 0 || tableHeight < 80 ? undefined : tableHeight}
+      rowHeight={80}
       onRowClick={onRowClick}
+      renderRow={renderRow}
     >
       <div className={styles.page}>
-        <DataTable.Toolbar className={styles.toolbar}>
-          <Input.Root className={styles.search} size="sm">
-            <Input.Icon>
-              <Magnifier />
-            </Input.Icon>
-            <Input.Field
+        <div className={styles.header}>
+          <div className={styles.toolbar}>
+            <span className={styles.searchIcon} aria-hidden="true">
+              <IconMagnifierOutline18 />
+            </span>
+            <input
+              className={styles.search}
               value={filters.q}
               onChange={(e) =>
                 setFilters((cur) => ({ ...cur, q: e.target.value }))
               }
               spellCheck={false}
-              placeholder="Search…"
+              placeholder="Search downloads…"
+              aria-label="Search Downloads"
+              data-downloads-search=""
             />
-          </Input.Root>
-          <FilterMenu label="Status" items={statusItems} />
-          <FilterMenu label="Source" items={sourceItems} />
-          <FilterMenu label="Stage" items={stageItems} />
-          <span className={styles.count}>{countLabel}</span>
-          <span className={styles.spacer} />
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void retryFailed()}
+            <div className={styles.actions}>
+              <Tooltip
+                label={filtersOpen ? "Hide Filters" : "Show Filters"}
+                side="bottom"
+              >
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  className={styles.filterTrigger}
+                  aria-label={
+                    hasFilters
+                      ? "Filter Downloads (Active)"
+                      : "Filter Downloads"
+                  }
+                  aria-expanded={filtersOpen}
+                  aria-controls="downloads-filters"
+                  data-active={filtersOpen || hasFilters || undefined}
+                  onClick={() => setFiltersOpen((open) => !open)}
+                >
+                  <IconBarsFilterOutline18 />
+                  {hasFilters ? <span className={styles.filterDot} /> : null}
+                </Button>
+              </Tooltip>
+              <Tooltip label="Retry Failed" side="bottom">
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  aria-label="Retry Failed"
+                  disabled={failedRows.length === 0 || retry.isPending}
+                  onClick={() => retry.mutate()}
+                >
+                  <IconRefreshOutline18 />
+                </Button>
+              </Tooltip>
+              <Tooltip
+                label={
+                  paused
+                    ? "Resume Queue"
+                    : "Pause Queue. Running downloads will finish."
+                }
+                side="bottom"
+              >
+                <Button
+                  icon
+                  size="sm"
+                  variant="ghost"
+                  aria-label={paused ? "Resume Queue" : "Pause Queue"}
+                  disabled={!pipeline.data || pause.isPending}
+                  aria-pressed={paused}
+                  onClick={() => pause.mutate()}
+                >
+                  {paused ? <IconMediaPlayFill18 /> : <IconMediaPauseFill18 />}
+                </Button>
+              </Tooltip>
+              <Menu.Root>
+                <Tooltip label="More Actions" side="bottom">
+                  <Menu.Trigger
+                    icon
+                    size="sm"
+                    variant="ghost"
+                    aria-label="More Download Actions"
+                  >
+                    <IconDotsOutline18 />
+                  </Menu.Trigger>
+                </Tooltip>
+                <Menu.Portal>
+                  <Menu.Positioner align="end" side="bottom">
+                    <Menu.Popup>
+                      <Menu.Items
+                        items={[
+                          {
+                            label: "Cancel All",
+                            disabled: !live.some(
+                              (row) => row.status !== "failed",
+                            ),
+                            onClick: cancelAll,
+                          },
+                        ]}
+                      />
+                    </Menu.Popup>
+                  </Menu.Positioner>
+                </Menu.Portal>
+              </Menu.Root>
+            </div>
+          </div>
+          <fieldset
+            id="downloads-filters"
+            className={styles.filters}
+            aria-label="Download Filters"
+            hidden={!filtersOpen}
           >
-            Retry Failed
-          </Button>
-          <Button variant="secondary" size="sm" onClick={cancelAll}>
-            Cancel All
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void togglePause()}
-          >
-            {paused ? "Resume" : "Pause"}
-          </Button>
-        </DataTable.Toolbar>
+            <FilterSelect
+              label="Download Status"
+              value={view}
+              items={STATUS_ITEMS}
+              onChange={setView}
+            />
+            <FilterMenu
+              label={
+                filters.sources.size
+                  ? `Sources (${filters.sources.size})`
+                  : "All Sources"
+              }
+              items={sourceItems}
+            />
+            <FilterMenu
+              label={
+                filters.ops.size ? `Stages (${filters.ops.size})` : "All Stages"
+              }
+              items={stageItems}
+            />
+            {hasFilters ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setFilters((cur) => ({
+                    ...defaultDownloadFilters(),
+                    q: cur.q,
+                  }))
+                }
+              >
+                Clear Filters
+              </Button>
+            ) : null}
+          </fieldset>
+        </div>
 
         {showPlaceEmpty ? (
           <div className={styles.empty}>
@@ -316,22 +480,49 @@ export function DownloadsPage() {
           <div className={styles.empty}>
             <MatchesEmpty />
           </div>
+        ) : rows.length === 0 && historyError ? (
+          <div className={styles.message} role="alert">
+            Couldn't load download history.
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={historyQuery.isFetching}
+              onClick={() => void historyQuery.refetch()}
+            >
+              Try Again
+            </Button>
+          </div>
+        ) : rows.length === 0 && historyPending ? (
+          <div className={styles.message} role="status">
+            Loading download history
+          </div>
         ) : (
           <div ref={tableRef} className={styles.table}>
-            <DataTable.Root>
+            <DataTable.Root variant="list">
               <DataTable.Empty>
                 {historyPending ? null : <MatchesEmpty />}
               </DataTable.Empty>
-              {historyQuery.hasNextPage ? (
+              {showHistory && (historyQuery.hasNextPage || historyError) ? (
                 <DataTable.ExtraRow>
                   <div className={styles.more}>
+                    {historyError ? (
+                      <span role="alert">Couldn't load more history.</span>
+                    ) : null}
                     <Button
                       variant="secondary"
                       size="sm"
                       disabled={historyQuery.isFetchingNextPage}
-                      onClick={() => void historyQuery.fetchNextPage()}
+                      onClick={() =>
+                        void (historyQuery.isFetchNextPageError || !historyError
+                          ? historyQuery.fetchNextPage()
+                          : historyQuery.refetch())
+                      }
                     >
-                      Load More
+                      {historyError
+                        ? "Try Again"
+                        : historyQuery.isFetchingNextPage
+                          ? "Loading"
+                          : "Load More"}
                     </Button>
                   </div>
                 </DataTable.ExtraRow>

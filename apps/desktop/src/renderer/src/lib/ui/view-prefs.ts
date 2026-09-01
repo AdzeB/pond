@@ -1,4 +1,11 @@
-type ViewPrefKey = "view" | "sort" | "dir" | "inspector" | "sidebar";
+type ViewPrefKey =
+  | "view"
+  | "sort"
+  | "dir"
+  | "inspector"
+  | "sidebar"
+  | "filters"
+  | "filterFields";
 
 const STORAGE_KEYS = {
   view: "pond.view",
@@ -6,6 +13,8 @@ const STORAGE_KEYS = {
   dir: "pond.dir",
   inspector: "pond.inspector",
   sidebar: "pond.sidebar",
+  filters: "pond.filters",
+  filterFields: "pond.filterFields",
 } satisfies Record<ViewPrefKey, string>;
 
 export function readViewPref(key: ViewPrefKey): string | null {
@@ -24,12 +33,13 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
   } catch {}
 }
 
-export type LayoutValue = "waterfall" | "grid" | "justified";
+export type LayoutValue = "waterfall" | "grid" | "justified" | "list";
 
 const LAYOUT_CYCLE: ReadonlyArray<LayoutValue> = [
   "waterfall",
   "grid",
   "justified",
+  "list",
 ];
 
 export function isLayoutValue(value: string): value is LayoutValue {

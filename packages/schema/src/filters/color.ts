@@ -13,6 +13,36 @@ export function parseHex(hex: string): Rgb | null {
 
 export const DEFAULT_COLOR_TOLERANCE = 60;
 
+export function readColorMatch(
+  value: unknown,
+): { hex: string; tolerance: number } | null {
+  const raw =
+    typeof value === "string"
+      ? { hex: value, tolerance: DEFAULT_COLOR_TOLERANCE }
+      : value;
+  if (
+    !raw ||
+    typeof raw !== "object" ||
+    !("hex" in raw) ||
+    typeof raw.hex !== "string" ||
+    !parseHex(raw.hex)
+  )
+    return null;
+  const tolerance =
+    "tolerance" in raw ? raw.tolerance : DEFAULT_COLOR_TOLERANCE;
+  if (
+    typeof tolerance !== "number" ||
+    !Number.isFinite(tolerance) ||
+    tolerance < 0 ||
+    tolerance > 150
+  )
+    return null;
+  return {
+    hex: `#${raw.hex.trim().replace(/^#/, "").toLowerCase()}`,
+    tolerance,
+  };
+}
+
 export function colorNear(
   targetHex: string,
   palette: ReadonlyArray<string>,

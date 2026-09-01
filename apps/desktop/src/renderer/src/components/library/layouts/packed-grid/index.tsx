@@ -15,6 +15,7 @@ import {
 } from "@/components/library/layouts/grid";
 import { SaveCard } from "@/components/save/card";
 import { useMultiSelectActive } from "@/components/shared/grid-context";
+import { useLibraryLayoutTransition } from "@/hooks/use-library-layout-transition";
 import {
   recallScroll,
   recallScrollAnchor,
@@ -108,6 +109,7 @@ export function PackedGrid({
   onRunwayChange,
 }: PackedGridProps) {
   const ref = useRef<HTMLUListElement>(null);
+  useLibraryLayoutTransition(ref, items);
   const restoration = useContext(ScrollRestorationContext);
   const restorationKey = restoration?.key ?? null;
   const initializedRestorationKey = useRef<string | null | undefined>(

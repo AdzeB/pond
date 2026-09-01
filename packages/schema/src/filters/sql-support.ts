@@ -14,6 +14,7 @@ function clauseIsSqlSupported(c: Clause): boolean {
   if (!isPredicate(c)) return false;
   return (
     c.field === "tags" ||
+    c.field === "folder" ||
     c.field === "list" ||
     Boolean(FIELD_DESCRIPTORS[c.field].sqlProjection)
   );

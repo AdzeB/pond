@@ -1,36 +1,15 @@
 .rows {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-width: 0;
-  padding: 12px 16px;
+  composes: row from "../styles.module.css";
   cursor: var(--ds-cursor-interactive, pointer);
-  background: var(--ds-gray-2);
-  border-radius: var(--ds-radius-lg);
-  transition: background var(--ds-duration-medium) var(--ds-easing-standard);
-
-  &:hover {
-    background: var(--ds-gray-3);
-  }
-}
-
-.icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  color: var(--ds-gray-9);
 }
 
 .label {
+  composes: label from "../styles.module.css";
   flex: 1;
-  font-size: 14px;
-  font-weight: 550;
-  color: var(--ds-gray-12);
 }

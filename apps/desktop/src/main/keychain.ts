@@ -65,17 +65,41 @@ function decrypt(value: string): string | null {
   }
 }
 
-export async function getIngestToken(): Promise<string | null> {
+export async function getSecret(account: string): Promise<string | null> {
+  const all = await getSecrets([account]);
+  return all[account] ?? null;
+}
+
+export async function getSecrets(
+  accounts: string[],
+): Promise<Record<string, string | null>> {
   const all = await readAll();
-  const value = all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN)];
-  if (!value) return null;
-  return decrypt(value);
+  const out: Record<string, string | null> = {};
+  for (const account of accounts) {
+    const value = all[entryKey(KEYCHAIN_SERVICE, account)];
+    out[account] = value ? decrypt(value) : null;
+  }
+  return out;
+}
+
+export async function setSecret(account: string, plain: string): Promise<void> {
+  const all = await readAll();
+  all[entryKey(KEYCHAIN_SERVICE, account)] = encrypt(plain);
+  await writeAll(all);
+}
+
+export async function deleteSecret(account: string): Promise<void> {
+  const all = await readAll();
+  delete all[entryKey(KEYCHAIN_SERVICE, account)];
+  await writeAll(all);
+}
+
+export async function getIngestToken(): Promise<string | null> {
+  return getSecret(KEYCHAIN_INGEST_TOKEN);
 }
 
 async function setIngestToken(token: string): Promise<void> {
-  const all = await readAll();
-  all[entryKey(KEYCHAIN_SERVICE, KEYCHAIN_INGEST_TOKEN)] = encrypt(token);
-  await writeAll(all);
+  await setSecret(KEYCHAIN_INGEST_TOKEN, token);
 }
 
 export async function ensureIngestToken(): Promise<string> {

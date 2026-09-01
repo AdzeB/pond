@@ -145,9 +145,11 @@ export function MediaViewer({
 
 function Frame({
   activeIndex = 0,
+  slideNav = false,
   children,
 }: {
   activeIndex?: number;
+  slideNav?: boolean;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -205,7 +207,11 @@ function Frame({
   );
 
   return (
-    <div ref={ref} className={styles.carousel}>
+    <div
+      ref={ref}
+      className={styles.carousel}
+      data-slide-nav={slideNav || undefined}
+    >
       {children}
     </div>
   );
@@ -240,7 +246,7 @@ function Carousel({
       event.preventDefault();
       goPrev();
     },
-    { preventDefault: false, ignoreInputs: true },
+    { preventDefault: false, ignoreInputs: true, conflictBehavior: "allow" },
   );
   useHotkey(
     SHORTCUTS["viewer.next-slide"].keys!,
@@ -248,7 +254,7 @@ function Carousel({
       event.preventDefault();
       goNext();
     },
-    { preventDefault: false, ignoreInputs: true },
+    { preventDefault: false, ignoreInputs: true, conflictBehavior: "allow" },
   );
 
   useEffect(() => {
@@ -268,7 +274,7 @@ function Carousel({
   }, [navRef, step]);
 
   return (
-    <Frame activeIndex={active}>
+    <Frame activeIndex={active} slideNav>
       <BlossomCarousel
         ref={handleRef}
         className={styles.scroller}

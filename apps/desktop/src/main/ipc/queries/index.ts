@@ -2,8 +2,10 @@ import log from "electron-log/main.js";
 import { IPC } from "../../../shared/constants";
 import { safeHandle } from "../helpers";
 import { accountsQueries } from "./accounts";
+import { agentQueries } from "./agent";
 import { aiQueries } from "./ai";
 import { downloadsQueries } from "./downloads";
+import { foldersQueries } from "./folders";
 import { libraryQueries } from "./library";
 import type { QueryHandlerMap, QueryParams } from "./params";
 import { savedViewsQueries } from "./saved-views";
@@ -22,10 +24,12 @@ const queryRegistry: QueryHandlerMap = {
   ...tagsQueries,
   ...tagGroupsQueries,
   ...savedViewsQueries,
+  ...foldersQueries,
   ...libraryQueries,
   ...videoQueries,
   ...syncHistoryQueries,
   ...aiQueries,
+  ...agentQueries,
   ...accountsQueries,
   ...watchesQueries,
 };

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pond · AI interface references</title>
+    <style>
+      * { box-sizing: border-box; }
+      :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #242424; color-scheme: light; background: #f7f7f5; }
+      body { margin: 0; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      button { font: inherit; cursor: pointer; }
+      a { color: inherit; text-underline-offset: 4px; }
+      :focus-visible { outline: 2px solid #426951; outline-offset: 4px; }
+      main { max-width: 1260px; padding: 64px 40px; margin: auto; }
+      .eyebrow { font-size: 12px; color: #6d726b; text-transform: uppercase; letter-spacing: .08em; }
+      h1 { margin: 24px 0 16px; font-size: clamp(32px, 4vw, 52px); font-weight: 500; line-height: 1.1; letter-spacing: -.04em; }
+      .intro { max-width: 670px; font-size: 17px; line-height: 1.65; color: #666b64; }
+      .direction { padding: 20px 24px; margin: 28px 0 30px; line-height: 1.6; background: #eef1eb; border-left: 2px solid #7f9787; }
+      .direction strong { display: block; margin-bottom: 4px; font-weight: 550; }
+      .direction p { max-width: 890px; margin: 0; font-size: 14px; color: #566050; }
+      nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 36px 0 22px; }
+      nav button { padding: 9px 15px; font-size: 13px; color: #696d66; background: transparent; border: 1px solid transparent; border-radius: 20px; }
+      nav button[aria-pressed="true"] { color: white; background: #292d28; }
+      nav button:hover:not([aria-pressed="true"]) { background: #eaece6; }
+      #references { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 42px 28px; }
+      article { min-width: 0; }
+      article[hidden] { display: none; }
+      .art { display: grid; place-items: center; width: 100%; height: 370px; padding: 20px; overflow: hidden; background: #eeeeeb; border: 1px solid #e0e2dc; border-radius: 14px; }
+      .art:hover { border-color: #a6afa0; }
+      .art img { display: block; width: 100%; height: 100%; object-fit: contain; }
+      .caption { padding: 17px 3px 0; }
+      .source-line { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; font-size: 11px; color: #74796f; }
+      .source-line a { white-space: nowrap; }
+      h2 { margin: 11px 0 9px; font-size: 19px; font-weight: 550; letter-spacing: -.02em; }
+      .caption p { margin: 8px 0; font-size: 13px; line-height: 1.65; color: #656b60; }
+      .caption p strong { font-weight: 550; color: #333c2c; }
+      .credit { font-size: 11px; color: #7f847a; }
+      footer { padding-top: 24px; margin-top: 50px; font-size: 12px; line-height: 1.7; color: #72786d; border-top: 1px solid #ddd; }
+      footer p { max-width: 860px; }
+      dialog { width: min(1200px, 96vw); max-height: 94vh; padding: 16px; color: inherit; background: #f7f7f5; border: 1px solid #deded9; border-radius: 16px; }
+      dialog::backdrop { background: #171c1788; backdrop-filter: blur(8px); }
+      .dialog-top { display: flex; gap: 20px; align-items: center; justify-content: space-between; padding: 0 4px 14px; }
+      .dialog-top h2 { margin: 0; font-size: 15px; }
+      .dialog-top button { padding: 6px 10px; background: white; border: 1px solid #d4d7cf; border-radius: 6px; }
+      dialog img { display: block; width: 100%; max-height: 75vh; object-fit: contain; }
+      dialog p { margin: 15px 4px 2px; font-size: 12px; color: #676d61; }
+      @media (max-width: 700px) { main { padding: 36px 20px; } #references { grid-template-columns: 1fr; gap: 32px; } .art { height: 320px; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">Pond / Assistant study / August 31, 2026</div>
+      <h1>AI interface references</h1>
+      <p class="intro">Seven actual response and interaction designs sourced from Cosmos, Are.na, and Pinterest. Each reference has a specific use in Pond. Open an image to inspect it.</p>
+      <aside class="direction">
+        <strong>The direction for Pond: short prose, inline Saves, contextual actions.</strong>
+        <p>Let the answer explain what matters. Put a compact group of visual references beside the relevant text, open a Save for detail, and keep tool activity secondary. Use a dedicated component only when the answer needs comparison, a question, or a proposed change.</p>
+      </aside>
+      <nav aria-label="Reference categories">
+        <button type="button" aria-pressed="true" data-filter="all">All References</button>
+        <button type="button" aria-pressed="false" data-filter="output">Answers &amp; Sources</button>
+        <button type="button" aria-pressed="false" data-filter="action">Questions &amp; Actions</button>
+        <button type="button" aria-pressed="false" data-filter="activity">Activity</button>
+      </nav>
+      <section id="references" aria-label="Design references"></section>
+      <footer>
+        <p>These are visual references, not Pond mockups or verified live product behavior. Descriptive titles and recommendations are our analysis. Screenshots belong to their respective creators; unknown authors are left unattributed. No Pins, Cosmos elements, or Are.na blocks were saved or modified.</p>
+        <p>Collections inspected: <a href="https://www.are.na/raphael-salaja/ui-ai-zp4xtuo9miw" target="_blank" rel="noreferrer">Raphael's ui / ai</a>, <a href="https://www.are.na/manu-hun/ai-aqfedf4m-g4" target="_blank" rel="noreferrer">manu hun's ai</a>, <a href="https://www.are.na/magic-balasinski/ui-conversational-ai-agents" target="_blank" rel="noreferrer">Conversational AI Agents</a>, <a href="https://www.cosmos.so/asantanilla/ai-ui" target="_blank" rel="noreferrer">AI UI</a>, and Pinterest search results for AI chat and AI search interfaces.</p>
+      </footer>
+    </main>
+    <dialog aria-labelledby="zoom-title">
+      <div class="dialog-top"><h2 id="zoom-title">Reference preview</h2><button type="button" id="close">Close</button></div>
+      <img id="zoom-image" alt="" />
+      <p><a id="zoom-source" href="#references" target="_blank" rel="noreferrer">Open Original Reference</a></p>
+    </dialog>
+    <script type="module">
+      const references = [
+        {
+          title: "An answer with images and source cards",
+          site: "Cosmos", category: "output", url: "https://www.cosmos.so/e/161283060",
+          image: "https://cdn.cosmos.so/dcf3c8ce-c4fa-4f05-a218-b54805d16f27?format=webp",
+          alt: "Three dark mobile assistant screens; the final answer includes musical notation and two Wikipedia source cards.",
+          observed: "The answer flows from prose to an inline visual, then to two compact source cards. The content has different shapes without becoming a dashboard.",
+          pond: "Render a Save or a small reference strip at the relevant point in an answer. Keep citations near the claim and let the preview open the saved item.",
+          credit: "Found in @asantanilla's AI UI collection. Original designer not identified."
+        },
+        {
+          title: "A compact set of visual search results",
+          site: "Pinterest", category: "output", url: "https://ie.pinterest.com/pin/3729612269037186/",
+          image: "https://i.pinimg.com/736x/88/66/a5/8866a51e2d2a75525eee88b6b78ac4a6.jpg",
+          alt: "Mobile AI search concept showing a short answer and a horizontal row of photographer profiles.",
+          observed: "A short introduction leads directly into three visual choices. Each has one image and a short caption; the result set does not need its own large enclosing panel.",
+          pond: "For a lookup, show a compact strip of real Save previews with title and source. Keep additional results behind one clear expansion control.",
+          credit: "Pin by lakedeworld. Original designer not verified."
+        },
+        {
+          title: "Proposals that can be reviewed in place",
+          site: "Cosmos / Are.na", category: "action", url: "https://www.cosmos.so/e/1696638438",
+          image: "https://d2w9rnfcy7mm78.cloudfront.net/45860795/original_3801411f39f3749559fa6c14b28ef108.jpeg?1777984625?bc=0",
+          alt: "Three dark assistant panels showing an inline report, a proposed issue, and a proposed edit with Accept and Dismiss controls.",
+          observed: "Normal answers stay as prose. A report becomes a compact object; a proposed change becomes a focused card with its own Accept and Dismiss controls.",
+          pond: "Make tag, title, and folder proposals readable inline, with the exact affected Saves and a clear review action. Do not treat search results as pending changes.",
+          credit: "From Raphael's ui / ai collection, Are.na block 45860795. Original designer not identified."
+        },
+        {
+          title: "Questions belong inside the conversation",
+          site: "Are.na", category: "action", url: "https://www.are.na/block/44690441",
+          image: "https://d2w9rnfcy7mm78.cloudfront.net/44690441/original_bb645de2711d55cfc9216e1fdd02b7a1.png?1774340355?bc=0",
+          alt: "A generated-table placeholder, a four-option inline question, and a composer with a compact replying-to strip.",
+          observed: "One question sits immediately above a small set of numbered options. The reply context stays attached to the composer instead of becoming another message.",
+          pond: "Ask for a direction only when needed, using keyboard-friendly options and free text. Keep quoted context compact. Use table skeletons only for a real table-producing operation.",
+          credit: "Found in Magic Balasinski's collection. The block links to @xchylerdrenth's source post. Also supplied by the user."
+        },
+        {
+          title: "A work trace that stays subordinate",
+          site: "Are.na / Cosmos", category: "activity", url: "https://www.are.na/block/43558664",
+          image: "https://d2w9rnfcy7mm78.cloudfront.net/43558664/original_527c95f561f579a3d1ee36c12200ce86.jpg?1770910057?bc=0",
+          alt: "A compact assistant work trace with a group heading, nested operations, a file chip, and status markers.",
+          observed: "The grouped work trace gives operations a hierarchy. A file appears as a small object chip, and individual steps sit beneath a single summary row.",
+          pond: "Use one quiet status disclosure such as Searched your library, with real tool events inside. Referenced Saves can be small chips. Do not expose private reasoning or raw payloads.",
+          credit: "Found in manu hun's ai collection; the block was added by Raphael. Original designer not identified."
+        },
+        {
+          title: "Media participates in the conversation",
+          site: "Pinterest", category: "output", url: "https://ie.pinterest.com/pin/875176140102491333/",
+          image: "https://i.pinimg.com/736x/29/fc/ec/29fcecedd5066a540208c5b70fa6583d.jpg",
+          alt: "Travel assistant conversation with a small stack of destination images between the answer and the user's follow-up.",
+          observed: "The returned images live between two conversational turns. They feel like something to refer to and act on, rather than a separate search page.",
+          pond: "Keep returned Saves in the thread so a follow-up can build on them. Use stable, straight previews rather than decorative rotations that make scanning harder.",
+          credit: "AI Travel Planner App. The Pin credits Pickolab Studio; shared by Focotik. Attribution is from the Pin."
+        },
+        {
+          title: "Completion should reveal the useful summary",
+          site: "Are.na", category: "activity", url: "https://www.are.na/block/40087086",
+          image: "https://d2w9rnfcy7mm78.cloudfront.net/40087086/original_cc1dd1520d905c8cd527bb83e916f9f0.png?1759674266?bc=0",
+          alt: "Joyce Jiang's Cobot feed study comparing an in-progress workflow with a resting summary and compact message-count chips.",
+          observed: "The resting state emphasizes what was accomplished. Detailed activity survives in a small message-count affordance rather than filling the whole surface.",
+          pond: "While searching, show the active operation. Once done, give the answer visual priority and keep the completed trace available but collapsed.",
+          credit: "Feed for Cobot by Joyce Jiang. Are.na links to joyceis.online/posts/cobot-feed."
+        }
+      ];
+      const section = document.querySelector('#references');
+      const dialog = document.querySelector('dialog');
+      references.forEach((reference, index) => {
+        const article = document.createElement('article');
+        article.dataset.category = reference.category;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'art';
+        button.setAttribute('aria-label', `Enlarge reference ${index + 1}: ${reference.title}`);
+        const img = document.createElement('img');
+        img.src = reference.image;
+        img.alt = reference.alt;
+        img.loading = 'lazy';
+        button.append(img);
+        button.addEventListener('click', () => {
+          document.querySelector('#zoom-title').textContent = reference.title;
+          const zoom = document.querySelector('#zoom-image');
+          zoom.src = reference.image;
+          zoom.alt = reference.alt;
+          document.querySelector('#zoom-source').href = reference.url;
+          dialog.showModal();
+        });
+        const caption = document.createElement('div');
+        caption.className = 'caption';
+        const line = document.createElement('div');
+        line.className = 'source-line';
+        const label = document.createElement('span');
+        label.textContent = `${String(index + 1).padStart(2, '0')} / ${reference.site}`;
+        const link = document.createElement('a');
+        link.href = reference.url;
+        link.target = '_blank';
+        link.rel = 'noreferrer';
+        link.textContent = 'View Source ↗';
+        line.append(label, link);
+        const title = document.createElement('h2');
+        title.textContent = reference.title;
+        const observed = document.createElement('p');
+        observed.textContent = reference.observed;
+        const application = document.createElement('p');
+        const strong = document.createElement('strong');
+        strong.textContent = 'For Pond: ';
+        application.append(strong, reference.pond);
+        const credit = document.createElement('p');
+        credit.className = 'credit';
+        credit.textContent = reference.credit;
+        caption.append(line, title, observed, application, credit);
+        article.append(button, caption);
+        section.append(article);
+      });
+      document.querySelectorAll('[data-filter]').forEach(button => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('[data-filter]').forEach(item => {
+            item.setAttribute('aria-pressed', String(item === button));
+          });
+          document.querySelectorAll('article').forEach(article => {
+            article.hidden = button.dataset.filter !== 'all' && article.dataset.category !== button.dataset.filter;
+          });
+        });
+      });
+      document.querySelector('#close').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('keydown', event => {
+        if (event.key === 'Escape') dialog.close();
+      });
+    </script>
+  </body>
+</html>

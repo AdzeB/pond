@@ -28,14 +28,14 @@ function Toolbar({ ...props }: ToolbarProps) {
 
 interface HeaderProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Header({ ...props }: HeaderProps) {
-  return <div className={styles.header} {...props} />;
+function Header({ className, ...props }: HeaderProps) {
+  return <div className={cn(styles.header, className)} {...props} />;
 }
 
 interface ItemProps extends Button.Props {}
 
-function Item({ ...props }: ItemProps) {
-  return <Button className={styles.item} {...props} />;
+function Item({ className, ...props }: ItemProps) {
+  return <Button className={cn(styles.item, className)} {...props} />;
 }
 
 interface AnchorProps extends LinkProps {}
@@ -54,8 +54,14 @@ interface IconProps extends React.ComponentPropsWithoutRef<"span"> {
   source?: boolean | undefined;
 }
 
-function Icon({ ...props }: IconProps) {
-  return <span data-source={props.source} className={styles.icon} {...props} />;
+function Icon({ className, source, ...props }: IconProps) {
+  return (
+    <span
+      data-source={source || undefined}
+      className={cn(styles.icon, className)}
+      {...props}
+    />
+  );
 }
 
 interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
@@ -66,14 +72,14 @@ function Count({ ...props }: CountProps) {
 
 interface GroupProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Group({ ...props }: GroupProps) {
-  return <div className={styles.group} {...props} />;
+function Group({ className, ...props }: GroupProps) {
+  return <div className={cn(styles.group, className)} {...props} />;
 }
 
 interface GroupLabelProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function GroupLabel({ ...props }: GroupLabelProps) {
-  return <div className={styles.label} {...props} />;
+function GroupLabel({ className, ...props }: GroupLabelProps) {
+  return <div className={cn(styles.label, className)} {...props} />;
 }
 
 interface GroupContentProps extends React.ComponentPropsWithoutRef<"div"> {}
@@ -84,14 +90,14 @@ function GroupContent({ ...props }: GroupContentProps) {
 
 interface FooterProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Footer({ ...props }: FooterProps) {
-  return <div className={styles.footer} {...props} />;
+function Footer({ className, ...props }: FooterProps) {
+  return <div className={cn(styles.footer, className)} {...props} />;
 }
 
 interface ScrollProps extends React.ComponentPropsWithoutRef<"div"> {}
 
-function Scroll({ ...props }: ScrollProps) {
-  return <div className={styles.scroll} {...props} />;
+function Scroll({ className, ...props }: ScrollProps) {
+  return <div className={cn(styles.scroll, className)} {...props} />;
 }
 
 interface SearchProps extends ComponentProps<typeof Input.Field> {}
@@ -147,6 +153,7 @@ function CollapsibleGroup({
   defaultOpen = true,
   open: openProp,
   onOpenChange,
+  className,
   ...props
 }: CollapsibleGroupProps) {
   const [openState, setOpenState] = useState(defaultOpen);
@@ -161,7 +168,7 @@ function CollapsibleGroup({
 
   return (
     <CollapsibleContext value={{ id, open, toggle }}>
-      <div className={styles.group} {...props} />
+      <div className={cn(styles.group, className)} {...props} />
     </CollapsibleContext>
   );
 }
@@ -171,6 +178,7 @@ interface CollapsibleGroupLabelProps
 
 function CollapsibleGroupLabel({
   children,
+  className,
   onClick,
   ...props
 }: CollapsibleGroupLabelProps) {
@@ -179,7 +187,7 @@ function CollapsibleGroupLabel({
   return (
     <button
       type="button"
-      className={styles.label}
+      className={cn(styles.label, className)}
       data-panel-open={open || undefined}
       aria-expanded={open}
       aria-controls={id}
@@ -201,6 +209,7 @@ interface CollapsibleGroupContentProps extends HTMLMotionProps<"div"> {
 
 function CollapsibleGroupContent({
   children,
+  className,
   ...props
 }: CollapsibleGroupContentProps) {
   const { open, id } = useCollapsibleGroup();
@@ -208,7 +217,7 @@ function CollapsibleGroupContent({
   return (
     <motion.div
       id={id}
-      className={styles.panel}
+      className={cn(styles.panel, className)}
       transition={{
         duration: 0.18,
         ease: [0.25, 0.1, 0.25, 1],

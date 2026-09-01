@@ -12,7 +12,6 @@ import {
   toPredicates,
 } from "@/lib/search/nl-matchers";
 import { FILLER, NEGATORS } from "@/lib/search/nl-vocabulary";
-import { serializePredicate } from "@/lib/search/syntax";
 
 export type NlFacets = {
   sources: string[];
@@ -49,7 +48,12 @@ export function dedupePredicates(predicates: Predicate[]): Predicate[] {
   const seen = new Set<string>();
   const out: Predicate[] = [];
   for (const p of predicates) {
-    const key = serializePredicate(p) ?? JSON.stringify(p);
+    const key = JSON.stringify([
+      p.field,
+      p.operator,
+      p.value,
+      p.negate ?? false,
+    ]);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(p);

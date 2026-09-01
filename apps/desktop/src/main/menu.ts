@@ -141,33 +141,20 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
       label: "File",
       submenu: [
         {
-          ...sym("plus.square.on.square"),
-          label: "New Tab",
-          accelerator: "CmdOrCtrl+T",
-          click: () => {
-            focusedOrMain()?.webContents.send(IPC.tabNew);
-          },
-        },
-        {
           ...sym("xmark"),
-          label: "Close Tab",
+          role: "close",
+          label: "Close Window",
           accelerator: "CmdOrCtrl+W",
-          click: () => {
-            focusedOrMain()?.webContents.send(IPC.tabClose);
-          },
-        },
-        {
-          ...sym("arrow.uturn.backward"),
-          label: "Reopen Closed Tab",
-          accelerator: "CmdOrCtrl+Shift+T",
-          click: () => {
-            focusedOrMain()?.webContents.send(IPC.tabReopen);
-          },
         },
         {
           ...sym("books.vertical"),
           label: "Open Library",
           click: () => openLibraryWindow(),
+        },
+        {
+          ...sym("link"),
+          label: "Connect Source",
+          click: sendMenuAction("library.connect"),
         },
         { type: "separator" },
         {
@@ -326,6 +313,20 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
         },
         { type: "separator" },
         {
+          ...sym("sidebar.left"),
+          label: "Toggle Sidebar",
+          accelerator: "[",
+          registerAccelerator: false,
+          click: sendMenuAction("view.sidebar.toggle"),
+        },
+        {
+          ...sym("sidebar.right"),
+          label: "Toggle Assistant",
+          accelerator: "]",
+          registerAccelerator: false,
+          click: sendMenuAction("view.agent.toggle"),
+        },
+        {
           ...sym("sidebar.right"),
           label: "Toggle Details",
           accelerator: "CmdOrCtrl+I",
@@ -435,7 +436,7 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           label: "Search",
           accelerator: "CmdOrCtrl+F",
           registerAccelerator: false,
-          click: sendMenuAction("dock.search"),
+          click: sendMenuAction("library.search"),
         },
       ],
     },
@@ -519,6 +520,11 @@ function buildAndSetMenu(deps: AppMenuDeps): void {
           {
             label: "Developer",
             submenu: [
+              {
+                ...sym("square.grid.2x2"),
+                label: "Components",
+                click: navTo("/dev/components"),
+              },
               {
                 ...sym("rectangle.on.rectangle"),
                 label: "Card Renders",

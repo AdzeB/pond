@@ -62,7 +62,7 @@ export const enrichmentSection = defineSection("ai", {
           key: "nlCompiler",
           title: "Natural-Language Search",
           description:
-            "Turn questions into filters. Minnow downloads on first use.",
+            "Turn questions into filters. Uses your Agent model, or Minnow.",
           keywords: [
             "nlp",
             "query",

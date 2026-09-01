@@ -2,8 +2,8 @@
   display: inline-flex;
   gap: 6px;
   align-items: baseline;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-9);
 }
 

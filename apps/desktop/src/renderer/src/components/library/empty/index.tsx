@@ -6,7 +6,7 @@ import {
 } from "@pond/icons/fill/18";
 import { Button, Empty, Keyboard } from "@pond/ui";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { dockMode } from "@/stores/dock-mode";
+import { sourceFlow } from "@/stores/source-flow";
 import styles from "./styles.module.css";
 
 export function LibraryEmpty() {
@@ -28,14 +28,14 @@ export function LibraryEmpty() {
         <Button
           variant="primary"
           size="md"
-          onClick={() => dockMode.open("connect-source")}
+          onClick={() => sourceFlow.open("connect-source")}
         >
           New Source
         </Button>
         <Button
           variant="secondary"
           size="md"
-          onClick={() => dockMode.open("watch-source")}
+          onClick={() => sourceFlow.open("watch-source")}
         >
           Watch Account
         </Button>
@@ -61,14 +61,14 @@ export function SourcesEmpty() {
         <Button
           variant="primary"
           size="md"
-          onClick={() => dockMode.open("connect-source")}
+          onClick={() => sourceFlow.open("connect-source")}
         >
           New Source
         </Button>
         <Button
           variant="secondary"
           size="md"
-          onClick={() => dockMode.open("watch-source")}
+          onClick={() => sourceFlow.open("watch-source")}
         >
           Watch Account
         </Button>
@@ -119,7 +119,7 @@ export function TrashEmpty() {
         <Button
           variant="secondary"
           size="md"
-          onClick={() => dockMode.open("connect-source")}
+          onClick={() => sourceFlow.open("connect-source")}
         >
           New Source
         </Button>

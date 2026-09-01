@@ -118,7 +118,13 @@ export async function writeSaveInfo(save: Save): Promise<void> {
     if (f.height) entry.height = f.height;
     return entry;
   });
-  await writeInfoFiles(save.id, infoDocFromSave(save, manifest), save.rawJson);
+  const { folderIdsForSave } = await import("../core/folders");
+  const folderIds = await folderIdsForSave(save.id);
+  await writeInfoFiles(
+    save.id,
+    infoDocFromSave(save, manifest, folderIds),
+    save.rawJson,
+  );
 }
 
 export async function writeItemFiles(
@@ -140,7 +146,13 @@ export async function writeItemFiles(
     sha256: sha256(f.buf),
     size: f.buf.length,
   }));
-  await writeInfoFiles(id, infoDocFromSave(save, manifest), save.rawJson);
+  const { folderIdsForSave } = await import("../core/folders");
+  const folderIds = await folderIdsForSave(id);
+  await writeInfoFiles(
+    id,
+    infoDocFromSave(save, manifest, folderIds),
+    save.rawJson,
+  );
   return { written: decoded };
 }
 

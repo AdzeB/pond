@@ -43,7 +43,7 @@ function labelForPath(path: string): string {
   }
 
   if (clean.length > 1) return titleCase(clean.slice(1));
-  return "Tab";
+  return "Library";
 }
 
 export function computeLabel(path: string, save: Save | undefined): string {

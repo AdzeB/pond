@@ -9,7 +9,7 @@ import { parseQueryPlan } from "@pond/schema/query-plan";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { buildSystemPrompt, queryJsonSchema } from "./schema-prompt";
-import type { AiProvider, CompileContext } from "./types";
+import type { AiProvider, ChatInput, CompileContext } from "./types";
 
 /** Small, permissively-licensed instruct model that's good at structured output. */
 const MODEL_FILE = "Llama-3.2-1B-Instruct-Q4_K_M.gguf";
@@ -93,41 +93,54 @@ export class LlamaCppProvider implements AiProvider {
   private session: any = null;
   // biome-ignore lint/suspicious/noExplicitAny: native model handle
   private model: any = null;
+  // biome-ignore lint/suspicious/noExplicitAny: native runtime handle
+  private llama: any = null;
 
   async available(): Promise<boolean> {
     return (await loadModule()) != null;
   }
 
   private async ensureSession(): Promise<{
-    mod: LlamaModule;
+    llama: LlamaModule;
     session: unknown;
   }> {
     const mod = await loadModule();
     if (!mod) throw new Error("node-llama-cpp not installed");
     if (!this.session) {
       const path = await ensureModel();
-      const llama = await mod.getLlama();
-      this.model = await llama.loadModel({ modelPath: path });
+      this.llama = await mod.getLlama();
+      this.model = await this.llama.loadModel({ modelPath: path });
       const context = await this.model.createContext();
       this.session = new mod.LlamaChatSession({
         contextSequence: context.getSequence(),
       });
     }
-    return { mod, session: this.session };
+    return { llama: this.llama, session: this.session };
   }
 
-  async compilePlan(
+  private pending: Promise<unknown> = Promise.resolve();
+
+  private serial<T>(run: () => Promise<T>): Promise<T> {
+    const result = this.pending.then(run);
+    this.pending = result.catch(() => undefined);
+    return result;
+  }
+
+  compilePlan(
     input: string,
     ctx: CompileContext,
   ): Promise<RawQueryPlan | null> {
-    const { mod, session } = await this.ensureSession();
-    const grammar = await mod
-      .getLlama()
-      .then((l: LlamaModule) =>
-        l.createGrammarForJsonSchema
-          ? l.createGrammarForJsonSchema(queryJsonSchema())
-          : undefined,
-      );
+    return this.serial(() => this.runPlan(input, ctx));
+  }
+
+  private async runPlan(
+    input: string,
+    ctx: CompileContext,
+  ): Promise<RawQueryPlan | null> {
+    const { llama, session } = await this.ensureSession();
+    const grammar = llama.createGrammarForJsonSchema
+      ? await llama.createGrammarForJsonSchema(queryJsonSchema())
+      : undefined;
     const system = buildSystemPrompt(ctx);
     // SAFETY: the session comes from the untyped optional module above.
     // biome-ignore lint/suspicious/noExplicitAny: native session
@@ -148,6 +161,51 @@ export class LlamaCppProvider implements AiProvider {
     const end = answer.lastIndexOf("}");
     if (start < 0 || end <= start) return null;
     return tryPlan(() => JSON.parse(answer.slice(start, end + 1)));
+  }
+
+  completeChat(input: ChatInput, signal?: AbortSignal): Promise<string> {
+    return this.serial(() => this.runChat(input, signal));
+  }
+
+  private async runChat(
+    input: ChatInput,
+    signal?: AbortSignal,
+  ): Promise<string> {
+    signal?.throwIfAborted();
+    const { llama, session } = await this.ensureSession();
+    const s = session as {
+      prompt: (text: string, opts?: object) => Promise<string>;
+      setChatHistory: (history: object[]) => void;
+    };
+    const grammar = input.responseSchema
+      ? llama.createGrammarForJsonSchema
+        ? await llama.createGrammarForJsonSchema(input.responseSchema)
+        : undefined
+      : undefined;
+    signal?.throwIfAborted();
+    const latest = input.messages.at(-1);
+    if (latest?.role !== "user") throw new Error("A user message is required.");
+    s.setChatHistory([
+      { type: "system", text: input.system },
+      ...input.messages
+        .slice(0, -1)
+        .map((message) =>
+          message.role === "user"
+            ? { type: "user", text: message.content }
+            : { type: "model", response: [message.content] },
+        ),
+    ]);
+    return s.prompt(
+      input.context
+        ? `<library_context>\n${input.context}\n</library_context>\n\n${latest.content}`
+        : latest.content,
+      {
+        grammar,
+        temperature: input.responseSchema ? 0 : 0.2,
+        maxTokens: 1024,
+        signal,
+      },
+    );
   }
 }
 

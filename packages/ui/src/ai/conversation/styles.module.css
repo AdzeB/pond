@@ -21,9 +21,9 @@
   align-items: flex-start;
   justify-content: flex-start;
   padding: 12px 4px 24px;
-  font-size: 14px;
-  font-weight: 400;
-  line-height: 24px;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-normal);
+  line-height: 1.6;
   color: var(--ds-gray-12);
 }
 
@@ -44,9 +44,7 @@
   background: var(--ds-gray-3);
   border: 0;
   border-radius: var(--ds-radius-full);
-  box-shadow:
-    var(--ds-shadow-3),
-    inset 0 0 0 0.5px var(--ds-gray-a4);
+  box-shadow: var(--ds-shadow-3);
   transform: translateX(-50%);
   transition: opacity var(--ds-duration-medium) var(--ds-easing-standard);
 
@@ -57,7 +55,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--ds-gray-6);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 
   &[inert] {

@@ -1,5 +1,6 @@
+import { IconMagnifierOutline12 as Magnifier } from "@pond/icons/outline/12";
 import type { MenuItemSpec } from "@pond/ui";
-import { DataTable } from "@pond/ui";
+import { Button, DataTable, Input, Menu } from "@pond/ui";
 import { useCallback, useEffect, useMemo } from "react";
 import { MatchesEmpty, SourcesEmpty } from "@/components/library/empty";
 import { cardModel } from "@/components/library/sources/sync-monitor/lib/helpers";
@@ -15,13 +16,19 @@ import {
   useConnectWaiting,
 } from "@/stores/connect-flow";
 import { sourceDetail, useSourceDetailRevision } from "@/stores/source-detail";
-import { useSourcesFilters } from "@/stores/sources-filters";
+import { sourceFlow } from "@/stores/source-flow";
+import { sourcesFilters, useSourcesFilters } from "@/stores/sources-filters";
 import { sourcesSelection } from "@/stores/sources-selection";
 import { syncMonitor, useSyncByAccount } from "@/stores/sync-monitor";
 import { useWatchAdded, watchFlow } from "@/stores/watch-flow";
 import { sourcesColumns } from "./columns";
 import { buildAccountMenu } from "./lib/account-menu";
-import { matchesSourceFilters } from "./lib/filters";
+import {
+  KIND_OPTIONS,
+  matchesSourceFilters,
+  SOURCE_OPTIONS,
+  STATUS_OPTIONS,
+} from "./lib/filters";
 import {
   type SourceEntry,
   type SourceTableRow,
@@ -53,6 +60,29 @@ function buildRowMenu(row: SourceTableRow): MenuItemSpec[] {
         ]
       : []),
   ];
+}
+
+function FilterMenu({
+  label,
+  items,
+}: {
+  label: string;
+  items: MenuItemSpec[];
+}) {
+  return (
+    <Menu.Root>
+      <Menu.Trigger variant="secondary" size="sm">
+        {label}
+      </Menu.Trigger>
+      <Menu.Portal>
+        <Menu.Positioner align="start" side="bottom">
+          <Menu.Popup>
+            <Menu.Items items={items} />
+          </Menu.Popup>
+        </Menu.Positioner>
+      </Menu.Portal>
+    </Menu.Root>
+  );
 }
 
 export function SourcesPage() {
@@ -191,6 +221,65 @@ export function SourcesPage() {
       )}
     >
       <div className={styles.page}>
+        <DataTable.Toolbar className={styles.toolbar}>
+          <Input.Root className={styles.search} size="sm">
+            <Input.Icon>
+              <Magnifier />
+            </Input.Icon>
+            <Input.Field
+              value={filters.q}
+              onChange={(e) => sourcesFilters.setQ(e.target.value)}
+              spellCheck={false}
+              placeholder="Find by name…"
+              data-sources-search=""
+            />
+          </Input.Root>
+          <FilterMenu
+            label="Status"
+            items={STATUS_OPTIONS.map((opt) => ({
+              type: "checkbox",
+              label: opt.label,
+              checked: filters.statuses.has(opt.id),
+              closeOnClick: false,
+              onCheckedChange: (on) => sourcesFilters.toggleStatus(opt.id, on),
+            }))}
+          />
+          <FilterMenu
+            label="Source"
+            items={SOURCE_OPTIONS.map((opt) => ({
+              type: "checkbox",
+              label: opt.label,
+              checked: filters.sources.has(opt.id),
+              closeOnClick: false,
+              onCheckedChange: (on) => sourcesFilters.toggleSource(opt.id, on),
+            }))}
+          />
+          <FilterMenu
+            label="Type"
+            items={KIND_OPTIONS.map((opt) => ({
+              type: "checkbox",
+              label: opt.label,
+              checked: filters.kinds.has(opt.id),
+              closeOnClick: false,
+              onCheckedChange: (on) => sourcesFilters.toggleKind(opt.id, on),
+            }))}
+          />
+          <span className={styles.spacer} />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void window.pond.syncRunAll()}
+          >
+            Sync All
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => sourceFlow.open("source-new")}
+          >
+            New Source
+          </Button>
+        </DataTable.Toolbar>
         {showMatchesEmpty ? (
           <div className={styles.empty}>
             <MatchesEmpty />

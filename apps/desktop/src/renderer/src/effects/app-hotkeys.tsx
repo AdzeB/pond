@@ -1,11 +1,13 @@
 import { useHotkeySequences, useHotkeys } from "@tanstack/react-hotkeys";
 import { SHORTCUTS } from "@/lib/save/shortcuts";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { openDockSearch } from "@/lib/ui/open-search";
+import { focusLibrarySearch } from "@/lib/ui/open-search";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
-import { dockMode } from "@/stores/dock-mode";
+import { libraryChrome } from "@/stores/library-chrome";
+import { libraryHeader } from "@/stores/library-header";
 import { getPrefsSnapshot, patchPrefsSection } from "@/stores/prefs";
 import { settingsModal } from "@/stores/settings-modal";
+import { sourceFlow } from "@/stores/source-flow";
 import { cycleSortKey, setLayout, toggleSortDir } from "@/stores/view-store";
 
 function scrollActiveViewport(position: "top" | "bottom"): void {
@@ -33,6 +35,10 @@ function cycleAppearance(): void {
   const idx = order.indexOf(current);
   const next = order[(idx < 0 ? 0 : idx + 1) % order.length] ?? "system";
   patchPrefsSection("preferences", { appearance: next });
+}
+
+function slideNavActive(): boolean {
+  return document.querySelector("[data-slide-nav]") != null;
 }
 
 export function AppHotkeys() {
@@ -64,8 +70,8 @@ export function AppHotkeys() {
 
   useHotkeys([
     {
-      hotkey: SHORTCUTS["dock.search"].keys!,
-      callback: () => openDockSearch(),
+      hotkey: SHORTCUTS["library.search"].keys!,
+      callback: () => focusLibrarySearch(),
       options: { ignoreInputs: false },
     },
     {
@@ -100,13 +106,34 @@ export function AppHotkeys() {
       options: { ignoreInputs: true },
     },
     {
+      hotkey: SHORTCUTS["view.layout-list"].keys!,
+      callback: () => setLayout("list"),
+      options: { ignoreInputs: true },
+    },
+    {
+      hotkey: SHORTCUTS["view.sidebar"].keys!,
+      callback: () => {
+        if (slideNavActive()) return;
+        libraryChrome.toggleSidebar();
+      },
+      options: { ignoreInputs: true, conflictBehavior: "allow" },
+    },
+    {
+      hotkey: SHORTCUTS["view.agent"].keys!,
+      callback: () => {
+        if (slideNavActive()) return;
+        libraryChrome.toggleAgent();
+      },
+      options: { ignoreInputs: true, conflictBehavior: "allow" },
+    },
+    {
       hotkey: SHORTCUTS["view.options"].keys!,
-      callback: () => dockMode.open("options"),
+      callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
       hotkey: SHORTCUTS["view.display"].keys!,
-      callback: () => dockMode.open("display"),
+      callback: () => libraryHeader.togglePopover(),
       options: { ignoreInputs: true },
     },
     {
@@ -128,7 +155,7 @@ export function AppHotkeys() {
       hotkey: SHORTCUTS["sources.new"].keys!,
       callback: () => {
         go("/sources");
-        dockMode.open("source-new");
+        sourceFlow.open("source-new");
       },
       options: { ignoreInputs: true },
     },

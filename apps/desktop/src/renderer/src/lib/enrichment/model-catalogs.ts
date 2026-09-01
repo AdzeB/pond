@@ -44,7 +44,7 @@ export function groupedModels(
 }
 
 export const EMBEDDING_CATALOG: ModelCatalog = {
-  defaultId: "Xenova/all-MiniLM-L6-v2",
+  defaultId: DEFAULT_TEXT_EMBEDDING_MODEL,
   searchPlaceholder: "Search embedding models…",
   models: [
     {
@@ -241,7 +241,7 @@ export const CAPTION_CATALOG: ModelCatalog = {
 };
 
 export const CLIP_CATALOG: ModelCatalog = {
-  defaultId: "Xenova/clip-vit-base-patch32",
+  defaultId: DEFAULT_CLIP_MODEL,
   searchPlaceholder: "Search models…",
   models: [
     {
@@ -385,3 +385,8 @@ export const WHISPER_CATALOG: ModelCatalog = {
     },
   ],
 };
+
+import {
+  DEFAULT_CLIP_MODEL,
+  DEFAULT_TEXT_EMBEDDING_MODEL,
+} from "@shared/embeddings";

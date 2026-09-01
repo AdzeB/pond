@@ -83,7 +83,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--ds-white-a10);
-    outline-offset: 1px;
+    outline-offset: 0;
   }
 }
 
@@ -262,5 +262,5 @@
 
 .speed:focus-visible {
   outline: 2px solid var(--ds-white-a10);
-  outline-offset: 1px;
+  outline-offset: 0;
 }

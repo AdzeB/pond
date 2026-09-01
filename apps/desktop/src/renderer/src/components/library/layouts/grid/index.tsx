@@ -2,7 +2,7 @@ import { cn } from "@pond/ui";
 import type { ReactNode } from "react";
 import styles from "./styles.module.css";
 
-type GridLayout = "waterfall" | "grid" | "justified";
+type GridLayout = "waterfall" | "grid" | "justified" | "list";
 
 interface RootProps extends React.ComponentPropsWithoutRef<"div"> {
   children: ReactNode;
@@ -32,7 +32,9 @@ function Grid({
       ? styles["grid-waterfall"]
       : layout === "justified"
         ? styles["grid-justified"]
-        : styles["grid-grid"];
+        : layout === "list"
+          ? styles["grid-list"]
+          : styles["grid-grid"];
   return (
     <ul
       className={cn(styles.grid, layoutClass, className)}

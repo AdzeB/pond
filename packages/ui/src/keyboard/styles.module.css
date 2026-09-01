@@ -3,6 +3,11 @@
   gap: 2px;
   align-items: center;
   vertical-align: middle;
+
+  &[data-density="flat"] {
+    gap: 4px;
+    color: var(--ds-gray-10);
+  }
 }
 
 .row {
@@ -40,5 +45,19 @@
     justify-content: center;
     width: 18px;
     height: 18px;
+  }
+
+  &[data-density="flat"] {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    font-size: inherit;
+    font-weight: var(--ds-weight-medium);
+    line-height: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    border-radius: 0;
   }
 }

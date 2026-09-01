@@ -1,0 +1,103 @@
+.assistant .assistant-add-trigger {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  padding: 5px;
+  color: var(--ds-gray-10);
+  border: 0;
+  border-radius: 7px;
+  box-shadow: none;
+}
+.assistant .assistant-add-trigger:hover,
+.assistant .assistant-add-trigger[data-popup-open] {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-5);
+}
+.assistant .assistant-add-trigger:focus-visible {
+  outline: 2px solid var(--ds-gray-8);
+  outline-offset: 2px;
+}
+.assistant-add-menu {
+  --popup-width: 380px;
+  --popup-min-width: 0px;
+  max-width: min(380px, calc(100vw - 24px), var(--available-width));
+  max-height: min(420px, var(--available-height));
+  padding: 6px;
+  overflow-y: auto;
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-5);
+  border-radius: 14px;
+  box-shadow:
+    0 14px 44px #0003,
+    0 2px 8px #0001;
+}
+.assistant-add-menu .add-menu-heading {
+  padding: 8px 9px 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ds-gray-10);
+}
+.assistant-add-menu > [role="group"] + [role="group"] {
+  margin-top: 5px;
+}
+.assistant-add-menu .assistant-add-row {
+  gap: 8px;
+  height: 34px;
+  padding: 0 9px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.assistant-add-row::before {
+  inset: 0;
+}
+.add-row-icon {
+  display: grid;
+  flex: 0 0 17px;
+  place-items: center;
+  color: var(--ds-gray-11);
+}
+.add-row-icon svg {
+  width: 16px;
+  height: 16px;
+}
+.add-row-title {
+  flex-shrink: 0;
+  color: var(--ds-gray-12);
+}
+.add-row-detail {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ds-gray-10);
+  white-space: nowrap;
+}
+.assistant-add-row > svg:last-child {
+  margin-left: auto;
+}
+.assistant-folder-menu {
+  --popup-width: 216px;
+  --popup-min-width: 0px;
+  padding: 5px;
+}
+.assistant-folder-menu .assistant-folder-row {
+  gap: 8px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+.assistant-folder-row svg {
+  width: 15px;
+  height: 15px;
+}
+.assistant-folder-row small {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--ds-gray-10);
+}
+@media (max-width: 480px) {
+  .assistant-add-menu {
+    --popup-width: 352px;
+  }
+  .assistant-add-menu .assistant-add-row {
+    height: 38px;
+  }
+}

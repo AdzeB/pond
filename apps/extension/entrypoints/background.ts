@@ -10,7 +10,7 @@ import { nativeCall } from "@/utils/native";
 import { probe } from "@/utils/probe";
 import { ensureSettings } from "@/utils/settings";
 import type { PondCapturePayload, PushSessionResult } from "@/utils/types";
-import { cookieDomainForSource, hostToSource } from "@/utils/url";
+import { cookieDomainsForSource } from "@/utils/url";
 
 const AUTO_PUSH_COOLDOWN_MS = 60_000;
 const SAVE_MENU_ID = "pond-save";
@@ -122,6 +122,12 @@ export default defineBackground(() => {
     void maybeAutoPush();
   });
 
+  chrome.alarms.create("pond-session", { periodInMinutes: 0.5 });
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === "pond-session") void maybeAutoPush();
+  });
+  void maybeAutoPush();
+
   async function openPondTab(path: string | undefined): Promise<boolean> {
     const target = path ? `pond://${path}` : "pond://";
     try {
@@ -145,25 +151,15 @@ export default defineBackground(() => {
     autoPushInFlight = true;
     try {
       const pending = await fetchPendingSource();
-      if (!pending || !cookieDomainForSource(pending)) return;
+      if (!pending || cookieDomainsForSource(pending).length === 0) return;
 
       const last = recentAutoPush.get(pending);
       if (last && Date.now() - last < AUTO_PUSH_COOLDOWN_MS) return;
 
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (!tab?.url) return;
-      const tabSource = hostToSource(tab.url);
-      if (tabSource !== pending) {
-        return;
-      }
-
       recentAutoPush.set(pending, Date.now());
       const result = await pushSession(pending);
       if (result.ok && result.data.connected) {
-        flashBadge(tab.id, "ok", "#1f9d55");
+        flashBadge(undefined, "ok", "#1f9d55");
         return;
       }
       recentAutoPush.delete(pending);
@@ -177,14 +173,23 @@ export default defineBackground(() => {
   }
 
   async function pushSession(source: Source): Promise<PushSessionResult> {
-    const domain = cookieDomainForSource(source);
-    if (!domain) {
+    const domains = cookieDomainsForSource(source);
+    if (domains.length === 0) {
       return { ok: false, reason: "no_cookies", detail: "source is public" };
     }
 
-    let raw: chrome.cookies.Cookie[];
+    const raw: chrome.cookies.Cookie[] = [];
     try {
-      raw = await chrome.cookies.getAll({ domain });
+      const batches = await Promise.all(
+        domains.map((domain) => chrome.cookies.getAll({ domain })),
+      );
+      const seen = new Set<string>();
+      for (const cookie of batches.flat()) {
+        const key = `${cookie.name}\0${cookie.domain}\0${cookie.path}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        raw.push(cookie);
+      }
     } catch (err) {
       return {
         ok: false,

@@ -3,12 +3,14 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import log from "electron-log/main.js";
 import { z } from "zod";
+import { importFolderTree, setSaveFolders } from "./folders";
 import { createManualSave, type ManualSaveInput } from "./manual-import";
 
 interface EagleFolder {
   id?: string;
   name?: string;
   password?: string;
+  color?: string;
   children?: EagleFolder[];
 }
 
@@ -45,16 +47,31 @@ export interface EagleImportResult {
   error?: string;
 }
 
-function buildFolderMap(
+export interface FlattenedEagleFolder {
+  id: string;
+  name: string;
+  parentId: string | null;
+  color?: string | null;
+}
+
+export function flattenEagleFolders(
   folders: EagleFolder[],
-  map: Map<string, string> = new Map(),
-): Map<string, string> {
+  parentId: string | null = null,
+): FlattenedEagleFolder[] {
+  const out: FlattenedEagleFolder[] = [];
   for (const folder of folders) {
     if (!folder.id || folder.password) continue;
-    if (folder.name) map.set(folder.id, folder.name);
-    if (folder.children?.length) buildFolderMap(folder.children, map);
+    out.push({
+      id: folder.id,
+      name: folder.name?.trim() || "Untitled",
+      parentId,
+      color: folder.color ?? null,
+    });
+    if (folder.children?.length) {
+      out.push(...flattenEagleFolders(folder.children, folder.id));
+    }
   }
-  return map;
+  return out;
 }
 
 async function readJson<T>(
@@ -128,7 +145,9 @@ export async function importEagleLibrary(
   }
 
   const libraryMeta = await resolveLibraryMeta(libraryPath, imagesDir);
-  const folderMap = buildFolderMap(libraryMeta.folders);
+  const mapped = await importFolderTree(
+    flattenEagleFolders(libraryMeta.folders),
+  );
 
   let imported = 0;
   let skipped = 0;
@@ -184,10 +203,7 @@ export async function importEagleLibrary(
       continue;
     }
 
-    const folderTags = (meta.folders ?? [])
-      .map((id) => folderMap.get(id))
-      .filter((name): name is string => Boolean(name));
-    const tags = [...(meta.tags ?? []), ...folderTags];
+    const tags = [...(meta.tags ?? [])];
     const filePaths = mediaFiles.map((name) => join(itemDir, name));
 
     try {
@@ -205,6 +221,12 @@ export async function importEagleLibrary(
       if (!res.ok) {
         failed += 1;
         continue;
+      }
+      const pondFolderIds = (meta.folders ?? [])
+        .map((id) => mapped.get(id))
+        .filter((id): id is string => Boolean(id));
+      if (res.id && pondFolderIds.length > 0) {
+        await setSaveFolders(res.id, pondFolderIds);
       }
       if (res.skipped) skipped += 1;
       else imported += 1;

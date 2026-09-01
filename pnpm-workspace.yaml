@@ -23,6 +23,7 @@ allowBuilds:
   # Icon assets pulled in transitively by replaywebpage; its postinstall is
   # funding output only, nothing needs building.
   "@fortawesome/fontawesome-free": false
+  "@google/genai": false
   better-sqlite3: false
   core-js: false
   electron: true
@@ -54,3 +55,12 @@ minimumReleaseAgeExclude:
   - '@next/swc-win32-arm64-msvc@16.3.1'
   - '@next/swc-win32-x64-msvc@16.3.1'
   - next@16.3.1
+  - '@tanstack/ai-anthropic@0.18.3'
+  - '@tanstack/ai-client@0.29.2'
+  - '@tanstack/ai-event-client@0.11.2'
+  - '@tanstack/ai-gemini@0.26.4'
+  - '@tanstack/ai-ollama@0.10.3'
+  - '@tanstack/ai-openai@0.22.3'
+  - '@tanstack/ai-react@0.22.4'
+  - '@tanstack/ai@0.52.0'
+  - '@tanstack/openai-base@0.10.8'

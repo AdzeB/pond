@@ -11,6 +11,7 @@ import { saves } from "../db";
 import { isoDurationToMillis } from "./duration";
 import { FIELD_DESCRIPTORS } from "./fields";
 import {
+  folderExists,
   jsonArrayDistinctCount,
   jsonArrayEmpty,
   jsonArrayExists,
@@ -61,12 +62,36 @@ function compileForField(
   raw: PredicateValue,
 ): SQL | null {
   if (field === "tags") return jsonArrayClause(saves.tags, operator, raw);
+  if (field === "folder") return folderClause(operator, raw);
   if (field === "list") return jsonArrayClause(saves.listKinds, operator, raw);
 
   const column = FIELD_DESCRIPTORS[field].sqlProjection?.() ?? null;
   if (!column) return null;
 
   return scalarClause(column, field, operator, raw);
+}
+
+function folderClause(operator: ComparatorId, raw: unknown): SQL | null {
+  if (operator === "empty") return folderExists([]);
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const ids = raw.map((v) => String(v)).filter((v) => v.length > 0);
+  if (ids.length === 0) return null;
+  switch (operator) {
+    case "some":
+      return folderExists(ids);
+    case "every":
+      return sql`(
+        select count(distinct folder_id) from save_folders
+        where save_id = ${saves.id} and folder_id in (${sql.join(
+          ids.map((id) => sql`${id}`),
+          sql`, `,
+        )})
+      ) = ${ids.length}`;
+    case "none":
+      return sql`not ${folderExists(ids)}`;
+    default:
+      return null;
+  }
 }
 
 function jsonArrayClause(
@@ -165,17 +190,17 @@ function scalarClause(
     case "contains": {
       const v = stringValue(raw);
       if (!v) return null;
-      return sql`${column} like ${`%${v}%`}`;
+      return sql`${column} like ${`%${escapeLike(v)}%`} escape '\\'`;
     }
     case "startsWith": {
       const v = stringValue(raw);
       if (!v) return null;
-      return sql`${column} like ${`${v}%`}`;
+      return sql`${column} like ${`${escapeLike(v)}%`} escape '\\'`;
     }
     case "endsWith": {
       const v = stringValue(raw);
       if (!v) return null;
-      return sql`${column} like ${`%${v}`}`;
+      return sql`${column} like ${`%${escapeLike(v)}`} escape '\\'`;
     }
     case "exists":
       return raw === false
@@ -188,6 +213,10 @@ function scalarClause(
 
 const FiniteNumber = z.number().refine(Number.isFinite);
 const Text = z.string();
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
 
 function scalarValue(
   field: FieldId,

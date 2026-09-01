@@ -1,4 +1,4 @@
-/** Hand-authored inbox-stack outline. */
+/** Hand-authored download-stack outline. */
 import { createIcon } from "../../../lib/create-icon";
 
 const inner = ({ strokeWidth = 1.5 }) => (

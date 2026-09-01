@@ -1,5 +1,7 @@
 import type { TargetAndTransition, Transition } from "motion/react";
 
+export const standardEase = [0.2, 0, 0, 1] as const;
+
 export const gentleSpring: Transition = {
   type: "spring",
   duration: 0.22,

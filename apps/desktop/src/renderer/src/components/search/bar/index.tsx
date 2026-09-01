@@ -5,24 +5,27 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import { Button, Loader } from "@pond/ui";
+import { IconCircleXmarkFill18 } from "@pond/icons/fill/18";
+import { Button, Loader, Tooltip } from "@pond/ui";
 import {
   $createTextNode,
+  $getRoot,
   COMMAND_PRIORITY_LOW,
   INSERT_LINE_BREAK_COMMAND,
   INSERT_PARAGRAPH_COMMAND,
   KEY_ESCAPE_COMMAND,
   LineBreakNode,
+  SKIP_DOM_SELECTION_TAG,
 } from "lexical";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useDock } from "@/components/library/dock/lib/context";
 import { useNlCompiler, useNlFacets } from "@/hooks/use-nl-query";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
-import { flattenPredicates } from "@/lib/search/nl-query";
-import { parseSearchInput, serializeQuery } from "@/lib/search/syntax";
+import { dedupePredicates, flattenPredicates } from "@/lib/search/nl-query";
+import { parseSearchInput } from "@/lib/search/syntax";
+import { useSearchNonce } from "@/stores/library-header";
 import { useTags } from "@/stores/tags";
 import {
+  setSearchDraft,
   setSearchInput,
   useFilterQuery,
   useSearchInput,
@@ -34,12 +37,7 @@ import { FilterTokenPlugin } from "./lib/token-plugin";
 import { FilterTypeahead } from "./lib/typeahead";
 import styles from "./styles.module.css";
 
-interface ComposerProps {
-  autoFocus?: boolean;
-  onCollapse?: () => void;
-}
-
-export function SearchComposer(props: ComposerProps) {
+export function SearchComposer() {
   const initialConfig = useMemo(
     () => ({
       namespace: "search-composer",
@@ -54,23 +52,26 @@ export function SearchComposer(props: ComposerProps) {
 
   return (
     <LexicalComposer initialConfig={initialConfig}>
-      <SearchField {...props} />
+      <SearchField />
     </LexicalComposer>
   );
 }
 
-function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
+function SearchField() {
   const [editor] = useLexicalComposerContext();
-  const { popoverOpen } = useDock();
   const tags = useTags();
   const facets = useNlFacets();
   const compile = useNlCompiler();
+  const searchNonce = useSearchNonce();
+  const hostRef = useRef<HTMLDivElement>(null);
+  const [typeaheadOpen, setTypeaheadOpen] = useState(false);
   const [status, setStatus] = useState<"idle" | "thinking" | "error">("idle");
-  const seededRef = useRef(false);
   const compileRef = useRef(compile);
   compileRef.current = compile;
   const statusRef = useRef(status);
   statusRef.current = status;
+  const typeaheadOpenRef = useRef(typeaheadOpen);
+  typeaheadOpenRef.current = typeaheadOpen;
   const runRef = useRef(0);
   const scrollFade = useScrollFade<HTMLDivElement>();
 
@@ -79,32 +80,48 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
   const seedInput = useSearchInput();
   const seedQuery = useFilterQuery();
   const seedText = useSearchText();
+  const lastQueryRef = useRef(seedQuery);
   useEffect(() => {
-    if (seededRef.current) return;
-    seededRef.current = true;
-    const serialized =
-      seedInput.trim() ||
-      [serializeQuery(seedQuery), seedText].filter(Boolean).join(" ");
-    if (!serialized.trim()) return;
-    editor.update(() => {
-      $writeSearchString(serialized);
-    });
+    const serialized = seedInput.trim() || seedText;
+    const current = editor.getEditorState().read($readSearchString);
+    const queryChanged = lastQueryRef.current !== seedQuery;
+    lastQueryRef.current = seedQuery;
+    if (!queryChanged && current === serialized.trim()) return;
+    runRef.current += 1;
+    setStatus("idle");
+    if (current === serialized.trim()) return;
+    editor.update(
+      () => {
+        $writeSearchString(serialized);
+      },
+      { tag: ["search-store-sync", SKIP_DOM_SELECTION_TAG] },
+    );
   }, [editor, seedInput, seedQuery, seedText]);
 
   useEffect(() => {
-    return editor.registerUpdateListener(({ editorState }) => {
-      editorState.read(() => {
-        const raw = $readSearchString();
-        const parsed = parseSearchInput(raw);
-        setSearchInput(parsed.predicates, parsed.text, raw);
-      });
-    });
+    return editor.registerUpdateListener(
+      ({ editorState, prevEditorState, tags }) => {
+        if (tags.has("search-store-sync")) return;
+        editorState.read(() => {
+          const raw = $readSearchString();
+          const commitFilters =
+            /\s$/.test($getRoot().getTextContent()) &&
+            (raw.match(/"/g)?.length ?? 0) % 2 === 0 &&
+            parseSearchInput(raw).predicates.length > 0;
+          if (raw === prevEditorState.read($readSearchString) && !commitFilters)
+            return;
+          runRef.current += 1;
+          setStatus("idle");
+          setSearchDraft(raw, commitFilters);
+        });
+      },
+    );
   }, [editor]);
 
-  const onCollapseRef = useRef(onCollapse);
-  onCollapseRef.current = onCollapse;
-  const popoverOpenRef = useRef(popoverOpen);
-  popoverOpenRef.current = popoverOpen;
+  useEffect(() => {
+    if (searchNonce === 0) return;
+    editor.focus();
+  }, [editor, searchNonce]);
 
   const cancelAi = useCallback(() => {
     runRef.current += 1;
@@ -118,21 +135,26 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
       raw = $readSearchString();
     });
     if (!raw) return;
+    const parsed = parseSearchInput(raw);
+    if (!parsed.text.trim()) {
+      setSearchDraft(raw, true);
+      return;
+    }
     runRef.current += 1;
     const nonce = runRef.current;
     setStatus("thinking");
     try {
-      const compiled = await compileRef.current(raw);
+      const compiled = await compileRef.current(parsed.text);
       if (runRef.current !== nonce) return;
-      const query = compiled.plan.filter;
       const residual = compiled.residual.trim();
-      const predicates = flattenPredicates(query);
-      const serialized = [serializeQuery(query), residual]
-        .filter(Boolean)
-        .join(" ");
-      setSearchInput(predicates, residual, serialized);
-      editor.update(() => {
-        $writeSearchString(serialized);
+      const predicates = dedupePredicates([
+        ...flattenPredicates(seedQuery),
+        ...parsed.predicates,
+        ...flattenPredicates(compiled.plan.filter),
+      ]);
+      setSearchInput(predicates, residual, residual);
+      editor.update(() => $writeSearchString(residual), {
+        tag: "search-store-sync",
       });
       setStatus("idle");
     } catch {
@@ -152,8 +174,8 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
           cancelAi();
           return true;
         }
-        if (popoverOpenRef.current) return true;
-        onCollapseRef.current?.();
+        if (typeaheadOpenRef.current) return true;
+        editor.getRootElement()?.blur();
         return true;
       },
       COMMAND_PRIORITY_LOW,
@@ -192,14 +214,14 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
 
   const clearField = () => {
     cancelAi();
-    setSearchInput([], "", "");
+    setSearchDraft("");
     editor.update(() => {
       $writeSearchString("");
     });
   };
 
   return (
-    <div className={styles.wrap}>
+    <div ref={hostRef} className={styles.wrap}>
       <div className={styles.bar}>
         <div className={styles.editor}>
           <PlainTextPlugin
@@ -208,48 +230,53 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
                 className={styles.input}
                 spellCheck={false}
                 ariaLabel="Search"
+                aria-busy={status === "thinking"}
+                data-library-search=""
                 {...scrollFade}
               />
             }
-            placeholder={<span className={styles.placeholder}>Search…</span>}
+            placeholder={
+              <span className={styles.placeholder}>Search your library…</span>
+            }
             ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
-          {autoFocus ? <AutoFocusPlugin /> : null}
+          {searchNonce > 0 ? <AutoFocusPlugin /> : null}
           <FilterTokenPlugin />
           <FilterTypeahead
+            hostRef={hostRef}
+            onOpenChange={setTypeaheadOpen}
             tags={tagNames}
             sources={facets.sources}
             creators={facets.creators}
           />
         </div>
-        {hasText ? (
-          <Button
-            size="xs"
-            variant="ghost"
-            className={styles.clear}
-            onClick={clearField}
-          >
-            Clear Search
-          </Button>
+        {status === "thinking" ? (
+          <Loader.Root className={styles.thinking}>
+            <Loader.Dots />
+            Finding filters
+          </Loader.Root>
         ) : null}
-        {onCollapse ? (
-          <Button
-            icon
-            size="xs"
-            variant="ghost"
-            aria-label="Close Search"
-            className={styles.close}
-            onClick={onCollapse}
-          >
-            <IconXmarkOutline12 />
-          </Button>
+        {hasText ? (
+          <Tooltip label="Clear Search" side="bottom">
+            <Button
+              icon
+              size="xs"
+              variant="ghost"
+              className={styles.clear}
+              aria-label="Clear Search"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={clearField}
+            >
+              <IconCircleXmarkFill18 />
+            </Button>
+          </Tooltip>
         ) : null}
       </div>
       {status === "error" ? (
         <div className={styles.status}>
-          <Loader.Root>
-            Couldn’t search
+          <span role="status">
+            Couldn't interpret filters. Keyword search is still active.
             <Button
               size="xs"
               variant="ghost"
@@ -258,7 +285,7 @@ function SearchField({ autoFocus = false, onCollapse }: ComposerProps) {
             >
               Retry
             </Button>
-          </Loader.Root>
+          </span>
         </div>
       ) : null}
     </div>

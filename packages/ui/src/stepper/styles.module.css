@@ -7,7 +7,7 @@
 .input {
   width: 44px;
   padding: 0;
-  font-weight: 500;
+  font-weight: var(--ds-weight-medium);
   font-variant-numeric: tabular-nums;
   text-align: center;
   background: transparent;

@@ -66,6 +66,7 @@
 
   font-family: var(--ds-ui-font-family);
   font-size: var(--ds-ui-font-size);
+  font-weight: var(--ds-weight-normal);
 
   font-feature-settings:
     "liga" 1,

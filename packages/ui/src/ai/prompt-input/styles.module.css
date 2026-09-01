@@ -6,9 +6,8 @@
   width: 100%;
   padding: 14px;
   background: var(--ds-gray-1);
-  border: 0;
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-2);
+  box-shadow: var(--ds-shadow-1);
 }
 
 .body {

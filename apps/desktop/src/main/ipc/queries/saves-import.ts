@@ -14,6 +14,7 @@ import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setSaveTags } from "../../core/tags";
 import { walkImportPaths } from "../../core/walk-import-paths";
 import { resolveSaveFilePath } from "../helpers";
+import { pickImportPaths } from "./import-picker";
 import {
   FileIndexParam,
   NullableStringParam,
@@ -68,6 +69,11 @@ function clipboardFilePaths(): string[] {
 }
 
 export const savesImportQueries: QueryHandlerMap = {
+  "saves.pickImportPaths": query(
+    z.object({ kind: z.enum(["files", "folders"]) }),
+    (params) => pickImportPaths(params.kind),
+  ),
+
   "saves.classifyUrl": query(z.object({ url: StringParam }), (params) => {
     const url = params.url.trim();
     if (!url) return { source: null };

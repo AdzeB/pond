@@ -1,7 +1,7 @@
 import { getAppRouter } from "@/lib/ui/app-router";
 import { getLastListPath, rememberListPath } from "@/lib/ui/list-path";
+import { libraryChrome } from "@/stores/library-chrome";
 import { primarySelection } from "@/stores/selection";
-import { tabs } from "@/stores/tabs";
 
 export function saveIdFromPath(pathname: string): string | null {
   const m = pathname.match(/^\/save\/([^/]+)\/?$/);
@@ -13,12 +13,8 @@ export function saveIdFromPath(pathname: string): string | null {
   }
 }
 
-export function openSave(id: string, opts?: { background?: boolean }): void {
+export function openSave(id: string): void {
   const path = `/save/${encodeURIComponent(id)}`;
-  if (opts?.background) {
-    tabs.open(path, { background: true });
-    return;
-  }
   primarySelection.set(id);
   const router = getAppRouter();
   if (!router) return;
@@ -38,6 +34,7 @@ export function closeSave(): void {
 
 export function syncPrimaryFromPath(pathname: string): void {
   const id = saveIdFromPath(pathname);
+  libraryChrome.inspectSave(id);
   if (primarySelection.get() !== id) primarySelection.set(id);
   rememberListPath(pathname);
 }

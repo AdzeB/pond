@@ -50,12 +50,10 @@ export function VideoNotesSection({ save }: { save: Save }) {
   };
 
   return (
-    <Section title="Video notes">
-      <div className={styles.list}>
-        {notes.length === 0 ? (
-          <p className={styles.empty}>No notes yet.</p>
-        ) : (
-          notes.map((note) => (
+    <Section title="Video Notes">
+      {notes.length > 0 ? (
+        <div className={styles.list}>
+          {notes.map((note) => (
             <div key={note.id} className={styles.row}>
               <button
                 type="button"
@@ -77,14 +75,15 @@ export function VideoNotesSection({ save }: { save: Save }) {
                 <IconXmarkOutline12 />
               </Button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : null}
       <div className={styles.compose}>
         <Input.Field
           className={styles.input}
           value={draft}
-          placeholder={`Note at ${formatDuration(currentTime)}`}
+          aria-label="Video note"
+          placeholder={`Add a note at ${formatDuration(currentTime)}`}
           disabled={busy}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -96,7 +95,7 @@ export function VideoNotesSection({ save }: { save: Save }) {
         />
         <Button
           type="button"
-          size="sm"
+          size="xs"
           variant="ghost"
           disabled={busy || !draft.trim()}
           onClick={() => void addNote()}

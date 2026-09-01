@@ -1,5 +1,5 @@
 import { getAppRouter } from "@/lib/ui/app-router";
-import { dockMode } from "@/stores/dock-mode";
+import { libraryHeader } from "@/stores/library-header";
 import { settingsModal } from "@/stores/settings-modal";
 import { setSearchInput } from "@/stores/view-store";
 
@@ -11,23 +11,27 @@ function showLibrary(): void {
   }
 }
 
-export function openLibrarySearch(): void {
-  showLibrary();
-  dockMode.open("search");
-}
-
-export function openDockSearch(): void {
+export function focusLibrarySearch(): void {
   const pathname = getAppRouter()?.state.location.pathname ?? "";
   if (pathname.startsWith("/sources")) {
     settingsModal.close();
-    dockMode.open("search");
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>("[data-sources-search]")?.focus();
+    });
     return;
   }
-  openLibrarySearch();
+  if (pathname.startsWith("/downloads")) {
+    settingsModal.close();
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>("[data-downloads-search]")?.focus();
+    });
+    return;
+  }
+  showLibrary();
+  libraryHeader.focusSearch();
 }
 
 export function viewAccountItems(accountId: string): void {
   setSearchInput([{ field: "account", operator: "eq", value: accountId }], "");
-  dockMode.close();
   showLibrary();
 }

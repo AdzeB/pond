@@ -118,7 +118,25 @@ export function useGridHotkeys(filteredIds: ReadonlyArray<string>): void {
       callback: (event) => {
         if (event.defaultPrevented) return;
         if (saveRouteOpen()) return;
-        if (dockMode.current() !== "nav") return;
+        const focused = document.activeElement;
+        if (
+          focused instanceof HTMLElement &&
+          focused.closest("[data-library-search]")
+        ) {
+          return;
+        }
+        const mode = dockMode.current();
+        if (
+          mode === "selection-run" ||
+          mode === "selection-tag" ||
+          mode === "selection-copy" ||
+          mode === "selection-export" ||
+          mode === "confirm"
+        ) {
+          dockMode.close();
+          return;
+        }
+        if (mode !== "nav") return;
         if (selection.size() === 0 && !selection.getAnchor()) return;
         selection.clear();
         cursorRef.current = null;

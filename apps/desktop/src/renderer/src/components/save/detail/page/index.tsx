@@ -2,7 +2,6 @@ import { useHotkeys } from "@tanstack/react-hotkeys";
 import { useParams } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SaveArchiveViewer } from "@/components/save/archive-viewer";
-import { SaveAbout, SaveInfo } from "@/components/save/detail/pane";
 import { MediaViewer, type ViewerNav } from "@/components/save/media-viewer";
 import {
   buildViewerMenu,
@@ -18,6 +17,7 @@ import { isTextOnlySave } from "@/lib/save/text";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
 import { libraryViewContext } from "@/stores/library-view-context";
 import { useTrackVisit } from "@/stores/recents";
+import { setSaveViewerFileIndex } from "@/stores/save-viewer";
 import { primarySelection, selection } from "@/stores/selection";
 import { tagClipboard } from "@/stores/tag-clipboard";
 import styles from "./styles.module.css";
@@ -88,11 +88,15 @@ export function SaveDetailPage() {
   const [activeFileIndex, setActiveFileIndex] = useState<number | null>(null);
   const onActiveFileIndexChange = useCallback((fileIndex: number | null) => {
     setActiveFileIndex(fileIndex);
+    setSaveViewerFileIndex(fileIndex);
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: id is the trigger, not a read
   useEffect(() => {
     setActiveFileIndex(null);
-  }, []);
+    setSaveViewerFileIndex(null);
+    return () => setSaveViewerFileIndex(null);
+  }, [id]);
 
   const menuVideo = useRef<HTMLVideoElement | null>(null);
   const menuFileIndex = useRef<number | null>(null);
@@ -127,10 +131,6 @@ export function SaveDetailPage() {
         }}
       >
         <div className={styles.page}>
-          <div className={styles.pane}>
-            <SaveAbout save={save} fileIndex={activeFileIndex} />
-          </div>
-
           <div className={styles.main}>
             {hasArchive(save) ? (
               <SaveArchiveViewer save={save} />
@@ -143,10 +143,6 @@ export function SaveDetailPage() {
                 navRef={viewerNav}
               />
             )}
-          </div>
-
-          <div className={styles.pane}>
-            <SaveInfo save={save} />
           </div>
         </div>
       </SpecContextMenu>

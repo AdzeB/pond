@@ -1,0 +1,14 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.control {
+  width: 100%;
+}
+
+.error {
+  font-size: var(--ds-text-small);
+  color: var(--ds-red-11);
+}

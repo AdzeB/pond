@@ -8,7 +8,7 @@ import type {
 import type { RawJson } from "@pond/schema/raw";
 import type { WireTask } from "@shared/wire";
 
-export type ViewMode = "waterfall" | "justified" | "grid";
+export type ViewMode = "waterfall" | "justified" | "grid" | "list";
 
 export interface SaveFile {
   kind: string;
@@ -55,6 +55,7 @@ export interface Save {
   videoNotes?: VideoNote[];
   dominantColors?: string[];
   tags: string[];
+  folderIds?: string[];
   listKinds?: ListKind[];
   rawJson?: RawJson | null;
   status?: SaveStatus;

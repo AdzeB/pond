@@ -36,6 +36,7 @@ interface TokenFieldSpec {
 
 export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "tags", keys: ["tag", "tags"] },
+  { field: "folder", keys: ["folder", "folders"] },
   { field: "list", keys: ["list"] },
   { field: "source", keys: ["source", "from"] },
   { field: "type", keys: ["type", "kind"] },
@@ -46,6 +47,8 @@ export const TOKEN_FIELDS: readonly TokenFieldSpec[] = [
   { field: "creator", keys: ["by", "creator", "author"] },
   { field: "account", keys: ["account"] },
   { field: "note", keys: ["note", "notes"] },
+  { field: "caption", keys: ["caption", "captions"] },
+  { field: "transcript", keys: ["transcript", "transcripts"] },
   { field: "color", keys: ["color", "colour"] },
   { field: "savedAt", keys: ["saved", "savedat"] },
   { field: "publishedAt", keys: ["published", "publishedat"] },
@@ -337,9 +340,11 @@ export function serializePredicate(predicate: Predicate): string | null {
       return `${negate ? "-" : ""}${key}:${list.join(",")}`;
     }
     case "optional": {
+      if (operator !== "exists") return null;
       return `${key}:${value === false ? "without" : "with"}`;
     }
     case "color": {
+      if (typeof value !== "string") return null;
       const hex = String(value ?? "");
       if (!hex) return null;
       const preset = COLOR_PRESETS.find(

@@ -20,7 +20,7 @@
 
 .aside {
   display: flex;
-  width: 250px;
+  width: 220px;
   padding-block: 16px;
   padding-inline: 8px;
 }
@@ -51,7 +51,7 @@
   flex: 1;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: var(--ds-text-small);
   color: var(--ds-text-secondary, currentColor);
 }
 

@@ -8,8 +8,8 @@
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
 
@@ -46,17 +46,18 @@
   border-radius: var(--ds-radius-full);
   box-shadow: var(--ds-shadow-2);
 
-  &:focus-visible {
+  &:focus-visible,
+  &:has(> input:focus-visible) {
     outline-width: 2px;
     outline-style: solid;
     outline-color: var(--ds-gray-6);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 }
 
 .value {
   min-width: 36px;
-  font-size: 12px;
+  font-size: var(--ds-text-mini);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-11);
   text-align: right;

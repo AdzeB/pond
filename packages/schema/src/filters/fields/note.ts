@@ -7,7 +7,7 @@ export const note = defineField({
   type: "optional",
   label: "Note",
   group: "content",
-  project: (s) => ((s.notes ?? s.description ?? "").trim() ? true : null),
+  project: (s) => (s.notes ?? s.description ?? "").trim().toLowerCase() || null,
   sqlProjection: () => sql`nullif(
     trim(coalesce(${saves.notes}, ${saves.description}, '')),
     ''

@@ -1,11 +1,29 @@
 :root {
   --ds-duration-fast: 80ms;
-  --ds-duration-snap: 120ms;
-  --ds-duration-medium: 180ms;
+  --ds-duration-snap: 150ms;
+  --ds-duration-medium: 200ms;
   --ds-duration-emphasized: 250ms;
-  --ds-duration-slow: 420ms;
-  --ds-easing-standard: ease;
+  --ds-duration-slow: 350ms;
+  --ds-easing-standard: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --ds-easing-snap: cubic-bezier(0.22, 1, 0.36, 1);
-  --ds-easing-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
-  --ds-easing-emphasized: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ds-easing-decelerate: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ds-easing-emphasized: var(--ds-easing-decelerate);
+}
+
+@property --window-left-width {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --window-right-width {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+@property --window-right-inset {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
 }

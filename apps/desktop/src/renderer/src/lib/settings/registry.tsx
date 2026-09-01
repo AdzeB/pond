@@ -1,8 +1,8 @@
 import {
   IconColorPaletteOutline18 as Appearance,
-  IconOrbitSparkleOutline18 as Enrichment,
   IconGear3Outline18 as General,
   IconImageOutline18 as Images,
+  IconOrbitSparkleOutline18 as Sparkle,
   IconServerOutline18 as Storage,
   IconLabelOutline18 as Tags,
   IconTrash2Outline18 as Trash,
@@ -23,11 +23,12 @@ const ICONS = new Map<string, IconComponent>([
   ["general", General],
   ["appearance", Appearance],
   ["tags", Tags],
+  ["agent", Sparkle],
   ["trash", Trash],
   ["storage", Storage],
   ["videos", Videos],
   ["images", Images],
-  ["enrichment", Enrichment],
+  ["enrichment", Sparkle],
 ]);
 
 export interface SectionDef extends SettingsSection {
@@ -44,7 +45,7 @@ export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
   return { ...section, icon, config };
 });
 
-const BESPOKE_SECTION_IDS = new Set(["tags"]);
+const BESPOKE_SECTION_IDS = new Set(["tags", "agent"]);
 
 export function isBespokeSection(section: SectionDef): boolean {
   return BESPOKE_SECTION_IDS.has(section.id);

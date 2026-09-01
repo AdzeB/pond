@@ -118,7 +118,6 @@ export const saves = sqliteTable(
     ocrModel: text("ocr_model"),
     transcript: text("transcript"),
     transcriptModel: text("transcript_model"),
-    /** CLIP image embedding as a JSON float array; loaded separately. */
     clipEmbedding: text("clip_embedding", { mode: "json" }).$type<number[]>(),
     clipModel: text("clip_model"),
     aesthetic: text("aesthetic", { mode: "json" }).$type<string[]>(),
@@ -242,6 +241,66 @@ export const tagGroupMembers = sqliteTable(
   }),
 );
 
+export const folders = sqliteTable("folders", {
+  id: text("id").primaryKey(),
+  parentId: text("parent_id"),
+  name: text("name").notNull(),
+  color: text("color"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const saveFolders = sqliteTable(
+  "save_folders",
+  {
+    saveId: text("save_id")
+      .notNull()
+      .references(() => saves.id, { onDelete: "cascade" }),
+    folderId: text("folder_id")
+      .notNull()
+      .references(() => folders.id, { onDelete: "cascade" }),
+  },
+  (t) => ({
+    pk: unique("save_folders_pk").on(t.saveId, t.folderId),
+    saveIdx: index("save_folders_save_idx").on(t.saveId),
+    folderIdx: index("save_folders_folder_idx").on(t.folderId),
+  }),
+);
+
+export const agentChats = sqliteTable("agent_chats", {
+  id: text("id").primaryKey(),
+  title: text("title"),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .default(sql`(unixepoch() * 1000)`),
+});
+
+export const agentMessages = sqliteTable(
+  "agent_messages",
+  {
+    id: text("id").primaryKey(),
+    chatId: text("chat_id")
+      .notNull()
+      .references(() => agentChats.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    metadata: text("metadata", { mode: "json" }).$type<
+      Record<string, unknown>
+    >(),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .default(sql`(unixepoch() * 1000)`),
+  },
+  (t) => ({
+    chatIdx: index("agent_messages_chat_idx").on(t.chatId, t.createdAt),
+  }),
+);
+
 export const savedViews = sqliteTable("saved_views", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -268,6 +327,8 @@ export const SYNC_MODELS = [
   "tag_group",
   "tag_group_member",
   "saved_view",
+  "folder",
+  "save_folder",
   "settings",
 ] as const;
 export type SyncModel = (typeof SYNC_MODELS)[number];
@@ -353,6 +414,14 @@ export type TagGroupMember = typeof tagGroupMembers.$inferSelect;
 export type NewTagGroupMember = typeof tagGroupMembers.$inferInsert;
 export type SavedView = typeof savedViews.$inferSelect;
 export type NewSavedView = typeof savedViews.$inferInsert;
+export type Folder = typeof folders.$inferSelect;
+export type NewFolder = typeof folders.$inferInsert;
+export type SaveFolder = typeof saveFolders.$inferSelect;
+export type NewSaveFolder = typeof saveFolders.$inferInsert;
+export type AgentChat = typeof agentChats.$inferSelect;
+export type NewAgentChat = typeof agentChats.$inferInsert;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type NewAgentMessage = typeof agentMessages.$inferInsert;
 export type SyncAction = typeof syncActions.$inferSelect;
 export type NewSyncAction = typeof syncActions.$inferInsert;
 export type TransactionRow = typeof transactionsLog.$inferSelect;

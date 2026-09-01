@@ -1,6 +1,7 @@
 import { Shell } from "@pond/ui";
 import { Outlet, useRouterState } from "@tanstack/react-router";
 import { useLayoutEffect } from "react";
+import { LibraryChrome } from "@/components/library/chrome";
 import { AppShell } from "@/components/shell/app-shell";
 import {
   ScrollRestorationContext,
@@ -13,17 +14,17 @@ import {
 } from "@/lib/ui/list-path";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
 import { LibraryView } from "@/routes/_library/-library-view";
-import { useActiveTabId } from "@/stores/tabs";
 import styles from "./styles.module.css";
 
 export function Library() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const search = useRouterState({ select: (s) => s.location.searchStr });
-  const activeTabId = useActiveTabId();
   const isSave = saveIdFromPath(pathname) !== null;
   const isSources = pathname.startsWith("/sources");
   const isDownloads = pathname.startsWith("/downloads");
-  const showLibraryGrid = !isSources && !isDownloads;
+  const isAssistant = pathname === "/assistant";
+  const isTags = pathname === "/tags";
+  const showLibraryGrid = !isSources && !isDownloads && !isAssistant && !isTags;
 
   useLayoutEffect(() => {
     rememberListPath(pathname, search);
@@ -31,9 +32,7 @@ export function Library() {
 
   const listPath = isSave ? getLastListPath() : pathname;
   const listSearch = isSave ? getLastListSearch() : search;
-  const restoration = useScrollRestoration(
-    `${activeTabId}:${listPath}${listSearch}`,
-  );
+  const restoration = useScrollRestoration(`${listPath}${listSearch}`);
 
   return (
     <div className={styles.stage}>
@@ -46,6 +45,7 @@ export function Library() {
         >
           <AppShell.Content>
             <Shell.Body className={styles.body}>
+              {isSave ? null : <LibraryChrome />}
               <ScrollRestorationContext.Provider value={restoration}>
                 <Shell.Main
                   ref={restoration.ref}
@@ -64,7 +64,7 @@ export function Library() {
         <div className={styles.overlay}>
           <Outlet />
         </div>
-      ) : isSources || isDownloads ? (
+      ) : isSources || isDownloads || isAssistant || isTags ? (
         <Outlet />
       ) : null}
     </div>

@@ -17,6 +17,12 @@
   border-radius: var(--ds-radius-xs);
 }
 
+.thumb[data-layout="list"] {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--ds-radius-sm);
+}
+
 .placeholder {
   position: absolute;
   inset: 0;

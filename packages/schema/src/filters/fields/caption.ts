@@ -7,6 +7,6 @@ export const caption = defineField({
   type: "optional",
   label: "Caption",
   group: "content",
-  project: (s) => ((s.caption ?? "").trim() ? true : null),
+  project: (s) => (s.caption ?? "").trim().toLowerCase() || null,
   sqlProjection: () => sql`nullif(trim(coalesce(${saves.caption}, '')), '')`,
 });

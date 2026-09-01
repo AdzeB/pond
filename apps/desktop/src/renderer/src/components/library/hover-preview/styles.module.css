@@ -1,0 +1,19 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgb(0 0 0 / 40%);
+}
+
+.frame {
+  width: min(72vw, 720px);
+  height: min(72vh, 720px);
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-3);
+}

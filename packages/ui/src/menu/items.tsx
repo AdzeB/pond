@@ -114,10 +114,6 @@ interface MenuParts {
   Popup: React.ComponentType<{ children?: ReactNode }>;
 }
 
-function shortcutToString(shortcut: MenuShortcut): string {
-  return Array.isArray(shortcut) ? shortcut.join("") : shortcut;
-}
-
 function pruneSpecs(items: MenuItemSpec[]): MenuItemSpec[] {
   const visible = items.filter(
     (spec) =>
@@ -172,9 +168,7 @@ function renderSpec(
         <parts.CheckboxItemIndicator />
         <parts.ItemLabel>{spec.label}</parts.ItemLabel>
         {spec.shortcut != null ? (
-          <parts.ItemKeyboard>
-            {shortcutToString(spec.shortcut)}
-          </parts.ItemKeyboard>
+          <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
       </parts.CheckboxItem>
     );
@@ -201,9 +195,7 @@ function renderSpec(
         ) : null}
         <parts.ItemLabel>{spec.label}</parts.ItemLabel>
         {spec.shortcut != null ? (
-          <parts.ItemKeyboard>
-            {shortcutToString(spec.shortcut)}
-          </parts.ItemKeyboard>
+          <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
         ) : null}
       </parts.LinkItem>
     );
@@ -247,9 +239,7 @@ function renderSpec(
       {spec.icon != null ? <parts.ItemIcon>{spec.icon}</parts.ItemIcon> : null}
       <parts.ItemLabel>{spec.label}</parts.ItemLabel>
       {spec.shortcut != null ? (
-        <parts.ItemKeyboard>
-          {shortcutToString(spec.shortcut)}
-        </parts.ItemKeyboard>
+        <parts.ItemKeyboard>{spec.shortcut}</parts.ItemKeyboard>
       ) : null}
     </parts.Item>
   );

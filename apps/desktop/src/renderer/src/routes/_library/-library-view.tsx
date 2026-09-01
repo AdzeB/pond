@@ -1,4 +1,3 @@
-import { useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect } from "react";
 import {
   LibraryEmpty,
@@ -6,19 +5,17 @@ import {
   MatchesEmpty,
   TrashEmpty,
 } from "@/components/library/empty";
+import { HoverPreview } from "@/components/library/hover-preview";
 import { LibraryGrid } from "@/components/library/layouts/grid";
 import { LayoutSwitcher } from "@/components/shared/layout-switcher";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { useGridHotkeys } from "@/hooks/use-grid-hotkeys";
 import { useLibraryState } from "@/hooks/use-library-state";
 import { useSavePaging } from "@/hooks/use-saves";
-import { getAppRouter } from "@/lib/ui/app-router";
 import { hydrateFullPool, loadNextPage } from "@/stores/bootstrap";
 import { libraryViewContext } from "@/stores/library-view-context";
-import { tabs } from "@/stores/tabs";
 
 export function LibraryView() {
-  const router = useRouter();
   const data = useLibraryState();
   const paging = useSavePaging();
   const actions = useCardActions(
@@ -49,13 +46,8 @@ export function LibraryView() {
   }, [needsFullPool]);
 
   useEffect(() => {
-    const sync = () => {
-      if (getAppRouter() !== router) return;
-      libraryViewContext.set(data.filteredIds, data.mode);
-    };
-    sync();
-    return tabs.subscribe(sync);
-  }, [router, data.filteredIds, data.mode]);
+    libraryViewContext.set(data.filteredIds, data.mode);
+  }, [data.filteredIds, data.mode]);
 
   return (
     <LibraryGrid.Root
@@ -85,6 +77,7 @@ export function LibraryView() {
           onEndReached={canLoadAnotherPage ? onEndReached : undefined}
         />
       )}
+      <HoverPreview />
     </LibraryGrid.Root>
   );
 }

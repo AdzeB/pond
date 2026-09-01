@@ -1,0 +1,157 @@
+.response {
+  min-width: 0;
+  font-size: inherit;
+  line-height: var(--assistant-line-height, 1.75);
+  color: var(--ds-gray-12);
+  overflow-wrap: anywhere;
+}
+.response > :first-child {
+  margin-top: 0;
+}
+.response > :last-child {
+  margin-bottom: 0;
+}
+.response :is(p, ul, ol, pre, blockquote) {
+  margin-block: 12px;
+}
+.response :is(h1, h2, h3, h4, h5, h6) {
+  margin: 22px 0 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.response :is(ul, ol) {
+  padding-left: 22px;
+}
+.response ul {
+  list-style: disc;
+}
+.response ol {
+  list-style: decimal;
+}
+.response li {
+  padding-left: 2px;
+  margin-block: 5px;
+}
+.response :global(.contains-task-list) {
+  padding-left: 0;
+  list-style: none;
+}
+.response :global(.task-list-item) {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.response input[type="checkbox"] {
+  accent-color: var(--ds-gray-11);
+}
+.response li > p {
+  margin-block: 5px;
+}
+.response a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.response strong {
+  font-weight: 600;
+}
+.response em {
+  font-style: italic;
+}
+.response blockquote {
+  padding-left: 14px;
+  color: var(--ds-gray-11);
+  border-left: 2px solid var(--ds-gray-6);
+}
+.response code {
+  padding: 2px 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--ds-gray-3);
+  border-radius: 4px;
+}
+.response pre {
+  padding: 14px;
+  overflow: auto;
+  white-space: pre;
+  background: var(--ds-gray-2);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: 8px;
+}
+.code-block {
+  margin-block: 16px;
+  overflow: hidden;
+  border: 1px solid var(--ds-gray-5);
+  border-radius: 10px;
+}
+.code-block figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px 5px 14px;
+  font-size: 11px;
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-2);
+  border-bottom: 1px solid var(--ds-gray-4);
+}
+.code-block pre {
+  max-height: 400px;
+  padding: 14px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+}
+.code-block code {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.response pre code {
+  padding: 0;
+  background: none;
+}
+.response hr {
+  margin-block: 20px;
+  border: 0;
+  border-top: 1px solid var(--ds-gray-5);
+}
+.table {
+  max-width: 100%;
+  margin-block: 16px;
+  overflow-x: auto;
+  border: 1px solid var(--ds-gray-5);
+  border-radius: 8px;
+}
+.table table {
+  width: 100%;
+  min-width: 480px;
+  font-size: 0.95em;
+  overflow-wrap: normal;
+  border-collapse: collapse;
+}
+.table :is(th, td) {
+  min-width: 100px;
+  padding: 9px 12px;
+  vertical-align: top;
+  text-align: left;
+}
+.table th {
+  font-weight: 500;
+  background: var(--ds-gray-2);
+}
+.table :is(th, td)[align="center"] {
+  text-align: center;
+}
+.table :is(th, td)[align="right"] {
+  text-align: right;
+}
+.table tr + tr,
+.table tbody {
+  border-top: 1px solid var(--ds-gray-4);
+}
+.table :is(th, td) + :is(th, td) {
+  border-left: 1px solid var(--ds-gray-4);
+}
+.response :is(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--ds-gray-8);
+  outline-offset: 0;
+}

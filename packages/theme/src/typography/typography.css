@@ -2,4 +2,14 @@
   --ds-font-mono:
     "IBM Plex Mono", ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
+
+  --ds-weight-normal: 450;
+  --ds-weight-medium: 500;
+  --ds-weight-semibold: 600;
+
+  --ds-text-micro: 11px;
+  --ds-text-mini: 12px;
+  --ds-text-small: 13px;
+  --ds-text-body: 15px;
+  --ds-text-title: 24px;
 }

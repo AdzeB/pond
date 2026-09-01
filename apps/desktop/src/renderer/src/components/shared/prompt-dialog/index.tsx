@@ -1,5 +1,13 @@
 import { Button, Dialog, Input } from "@pond/ui";
-import { type ComponentProps, type ReactNode, useRef } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  type RefObject,
+  useId,
+  useRef,
+  useState,
+} from "react";
+import { useDialogSubmit } from "../use-dialog-submit";
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];
 
@@ -14,61 +22,104 @@ export interface PromptOptions {
   onConfirm: (value: string) => void | Promise<void>;
 }
 
-const handle = Dialog.createHandle<PromptOptions>();
+const handle = Dialog.createHandle<PromptOptions & { requestId: number }>();
+let requestId = 0;
 
 export function prompt(options: PromptOptions): void {
-  handle.openWithPayload(options);
+  handle.openWithPayload({ ...options, requestId: ++requestId });
 }
 
 export function PromptDialogHost() {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const submit = (options: PromptOptions) => {
-    const value = inputRef.current?.value ?? "";
-    handle.close();
-    void options.onConfirm(value);
-  };
+  const pending = useRef(false);
 
   return (
-    <Dialog.Root handle={handle}>
+    <Dialog.Root
+      handle={handle}
+      onOpenChange={(_, details) => {
+        if (pending.current) details.cancel();
+      }}
+    >
       {({ payload }) =>
         payload ? (
-          <Dialog.Portal>
-            <Dialog.Backdrop />
-            <Dialog.Popup>
-              <Dialog.Header>
-                <Dialog.Title>{payload.title}</Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Content>
-                {payload.description ? (
-                  <Dialog.Description>{payload.description}</Dialog.Description>
-                ) : null}
-                <Input.Field
-                  ref={inputRef}
-                  data-size="sm"
-                  defaultValue={payload.initialValue ?? ""}
-                  placeholder={payload.placeholder}
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") submit(payload);
-                  }}
-                />
-              </Dialog.Content>
-              <Dialog.Footer>
-                <Dialog.Close render={<Button variant="ghost" />}>
-                  {payload.cancelLabel ?? "Cancel"}
-                </Dialog.Close>
-                <Button
-                  variant={payload.confirmVariant ?? "primary"}
-                  onClick={() => submit(payload)}
-                >
-                  {payload.confirmLabel}
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Popup>
-          </Dialog.Portal>
+          <PromptContent
+            key={payload.requestId}
+            options={payload}
+            pending={pending}
+          />
         ) : null
       }
     </Dialog.Root>
+  );
+}
+
+function PromptContent({
+  options,
+  pending,
+}: {
+  options: PromptOptions;
+  pending: RefObject<boolean>;
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const [value, setValue] = useState(options.initialValue ?? "");
+  const { busy, error, submit } = useDialogSubmit(pending, () =>
+    handle.close(),
+  );
+  return (
+    <Dialog.Portal>
+      <Dialog.Backdrop />
+      <Dialog.Popup>
+        <form
+          aria-busy={busy}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit(() => options.onConfirm(value));
+          }}
+        >
+          <Dialog.Header>
+            <Dialog.Title id={titleId}>{options.title}</Dialog.Title>
+            {options.description ? (
+              <Dialog.Description id={descriptionId}>
+                {options.description}
+              </Dialog.Description>
+            ) : null}
+          </Dialog.Header>
+          <Dialog.Content>
+            <Input.Root size="lg">
+              <Input.Field
+                aria-labelledby={titleId}
+                aria-describedby={
+                  options.description ? descriptionId : undefined
+                }
+                value={value}
+                onValueChange={setValue}
+                placeholder={options.placeholder}
+                disabled={busy}
+                autoFocus
+              />
+            </Input.Root>
+            {error ? (
+              <Dialog.Description role="alert" data-error>
+                {error}
+              </Dialog.Description>
+            ) : null}
+          </Dialog.Content>
+          <Dialog.Footer>
+            <Dialog.Close
+              render={<Button variant="secondary" disabled={busy} />}
+            >
+              {options.cancelLabel ?? "Cancel"}
+            </Dialog.Close>
+            <Button
+              type="submit"
+              variant={options.confirmVariant ?? "primary"}
+              disabled={busy}
+            >
+              {options.confirmLabel}
+            </Button>
+          </Dialog.Footer>
+        </form>
+      </Dialog.Popup>
+    </Dialog.Portal>
   );
 }

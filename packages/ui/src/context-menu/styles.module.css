@@ -7,8 +7,9 @@
 }
 
 .popup {
+  --popup-width: max-content;
   composes: popup from "../shared/styles/popup/styles.module.css";
-  width: var(--popup-width, max-content);
+  max-width: var(--available-width);
 }
 
 .arrow {
@@ -29,10 +30,6 @@
 
 .item-keyboard {
   composes: item-keyboard from "../shared/styles/popup/styles.module.css";
-}
-
-.key {
-  composes: key from "../shared/styles/popup/styles.module.css";
 }
 
 .indicator {

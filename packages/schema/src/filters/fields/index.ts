@@ -7,6 +7,7 @@ import type { FieldDescriptor } from "./descriptor";
 import { aspect, shape } from "./dims";
 import { duration } from "./duration";
 import { fileCount } from "./file-count";
+import { folder } from "./folder";
 import { list } from "./list";
 import { modifiedAt } from "./modified-at";
 import { note } from "./note";
@@ -25,6 +26,7 @@ export type {
 export { aspectFromDims, shapeFromDims } from "./dims";
 export {
   durationProjection,
+  folderExists,
   tagsDistinctCount,
   tagsEmpty,
   tagsExists,
@@ -32,6 +34,7 @@ export {
 
 export const FIELD_DESCRIPTORS = {
   tags,
+  folder,
   list,
   source,
   type: typeField,

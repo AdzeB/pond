@@ -1,21 +1,22 @@
 import {
-  IconGridLayoutRowsFill18 as AspectIcon,
-  IconCalendarFill18 as Calendar,
-  IconChatBubbleFill18 as Caption,
-  IconFileFill18 as FileIcon,
-  IconCloneFill18 as FilesIcon,
-  IconLink2Fill18 as LinkIcon,
-  IconListFavsFill18 as ListIcon,
-  IconMicrophoneFill18 as Mic,
-  IconGridLayoutColsFill18 as OrientationIcon,
-  IconColorPaletteFill18 as Palette,
-  IconPencilFill18 as Pencil,
-  IconTagFill18 as Tag,
-  IconStopwatchFill18 as Timer,
-  IconUploadFill18 as Upload,
-  IconUserFill18 as User,
-} from "@pond/icons/fill/18";
-import { COLOR_PRESETS } from "@pond/schema/filters/color";
+  IconGridLayoutRowsOutline18 as AspectIcon,
+  IconCalendarOutline18 as Calendar,
+  IconChatBubbleOutline18 as Caption,
+  IconFileOutline18 as FileIcon,
+  IconClone2Outline18 as FilesIcon,
+  IconFolderOutline18 as FolderIcon,
+  IconLink2Outline18 as LinkIcon,
+  IconListFavsOutline18 as ListIcon,
+  IconMicrophoneOutline18 as Mic,
+  IconColorPaletteOutline18 as Palette,
+  IconPencilOutline18 as Pencil,
+  IconGridLayoutColsOutline18 as ShapeIcon,
+  IconTagOutline18 as Tag,
+  IconStopwatchOutline18 as Timer,
+  IconUploadOutline18 as Upload,
+  IconUserOutline18 as User,
+} from "@pond/icons/outline/18";
+import { COLOR_PRESETS, readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import type {
   ComparatorId,
@@ -33,12 +34,13 @@ type FieldIcon = ComponentType<{
 
 export const FIELD_ICONS = {
   tags: Tag,
+  folder: FolderIcon,
   list: ListIcon,
   source: LinkIcon,
   type: FileIcon,
   fileCount: FilesIcon,
   duration: Timer,
-  shape: OrientationIcon,
+  shape: ShapeIcon,
   aspect: AspectIcon,
   creator: User,
   account: User,
@@ -53,6 +55,7 @@ export const FIELD_ICONS = {
 
 export const FIELD_HINTS = {
   tags: "any tag",
+  folder: "any folder",
   list: "liked, saved",
   source: "dribbble.com, instagram.com, local",
   type: "image, video, link, text",
@@ -128,6 +131,12 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       return { ...base, label: list.join(", "), negated };
     }
     case "optional": {
+      if (operator === "contains")
+        return {
+          ...base,
+          label: `${meta.label}: ${String(value)}`,
+          negated: false,
+        };
       const has = value !== false;
       const noun = meta.label.toLowerCase();
       return {
@@ -137,7 +146,7 @@ export function describePredicate(predicate: Predicate): PredicateChip {
       };
     }
     case "color": {
-      const hex = String(value ?? "");
+      const hex = readColorMatch(value)?.hex ?? "";
       const preset = COLOR_PRESETS.find(
         (c) => c.hex.toLowerCase() === hex.toLowerCase(),
       );

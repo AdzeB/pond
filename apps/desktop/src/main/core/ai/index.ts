@@ -1,7 +1,7 @@
 import type { RawQueryPlan } from "@pond/schema/query-plan";
 import log from "electron-log/main.js";
 import { LlamaCppProvider } from "./llamacpp-provider";
-import type { CompileContext } from "./types";
+import type { ChatInput, CompileContext } from "./types";
 
 export type { CompileFacets } from "./types";
 
@@ -22,4 +22,11 @@ export async function compilePlan(
     log.warn("[ai] compilePlan failed", err);
     return null;
   }
+}
+
+export async function completeChat(
+  input: ChatInput,
+  signal?: AbortSignal,
+): Promise<string> {
+  return getBundled().completeChat(input, signal);
 }

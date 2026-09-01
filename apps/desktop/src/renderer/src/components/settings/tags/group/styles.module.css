@@ -1,8 +1,8 @@
 .card {
   overflow: hidden;
   background: var(--ds-gray-1);
-  border-radius: var(--ds-radius-lg);
-  box-shadow: var(--ds-shadow-2);
+  border-radius: var(--ds-radius-xl);
+  box-shadow: var(--ds-shadow-1);
 }
 
 .header {
@@ -37,7 +37,7 @@
 
 .trigger:focus-visible {
   outline: 2px solid var(--ds-accent-9);
-  outline-offset: 2px;
+  outline-offset: 0;
   border-radius: var(--ds-radius-xs);
 }
 
@@ -61,8 +61,8 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 550;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
   white-space: nowrap;
 }
@@ -81,7 +81,7 @@
   height: 24px;
   padding: 0;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--ds-text-small);
   color: var(--ds-gray-12);
   outline: none;
   background: transparent;
@@ -93,7 +93,7 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--ds-gray-1);
-  border-top: 1px solid var(--ds-gray-a4);
+  border-top: var(--ds-border-width) solid var(--ds-border-subtle);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2,6 +2,7 @@ import { ContextMenu as Base } from "@base-ui/react/context-menu";
 import { IconCaretRightFill12 as CaretRight } from "@pond/icons/fill/12";
 import { clsx as cn } from "clsx";
 import { Checkbox } from "../checkbox";
+import { Keyboard } from "../keyboard";
 import { type MenuItemSpec, renderMenuSpec } from "../menu/items";
 import styles from "./styles.module.css";
 
@@ -74,16 +75,12 @@ function ItemLabel({ className, ...props }: React.ComponentProps<"span">) {
 }
 
 function ItemKeyboard({ className, ...props }: React.ComponentProps<"span">) {
-  const letters = props.children?.toString().split("");
-
   return (
-    <span className={cn(styles["item-keyboard"], className)} {...props}>
-      {letters?.map((letter) => (
-        <kbd className={styles.key} key={letter}>
-          {letter}
-        </kbd>
-      ))}
-    </span>
+    <Keyboard.Shortcut
+      density="flat"
+      className={cn(styles["item-keyboard"], className)}
+      {...props}
+    />
   );
 }
 

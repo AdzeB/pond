@@ -7,6 +7,6 @@ export const transcript = defineField({
   type: "optional",
   label: "Transcript",
   group: "content",
-  project: (s) => ((s.transcript ?? "").trim() ? true : null),
+  project: (s) => (s.transcript ?? "").trim().toLowerCase() || null,
   sqlProjection: () => sql`nullif(trim(coalesce(${saves.transcript}, '')), '')`,
 });

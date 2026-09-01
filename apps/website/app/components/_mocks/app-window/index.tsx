@@ -1,20 +1,17 @@
 "use client";
 
 import { IconArchiveContent2Fill18, IconPlusFill18 } from "@pond/icons/fill/18";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
 import {
   IconArrowLeftOutline18,
   IconArrowRightOutline18,
   IconArrowRotateClockwiseOutline18,
   IconClockRotateClockwiseOutline18,
-  IconGear3Outline18,
   IconStopwatchOutline18,
   IconTriangleWarningOutline18,
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
-import { Button } from "@pond/ui";
+import { Button, Tab } from "@pond/ui";
 import type { ReactNode } from "react";
-import { Dock } from "../dock";
 import { SaveThumb } from "../save-thumb";
 import { demoImage, packMasonry, SAVES } from "../saves";
 import styles from "./styles.module.css";
@@ -28,7 +25,6 @@ const TOOLBAR_ACTIONS = [
   { label: "Recent", icon: IconClockRotateClockwiseOutline18 },
   { label: "Errors", icon: IconTriangleWarningOutline18 },
   { label: "Ongoing", icon: IconArrowRotateClockwiseOutline18 },
-  { label: "Settings", icon: IconGear3Outline18 },
 ] as const;
 
 function ChromeButton({
@@ -74,23 +70,15 @@ export function AppWindow() {
           </ChromeButton>
         </div>
         <div className={styles.tabs}>
-          <div className={styles.group}>
-            <div className={styles.tab} data-active>
-              <span className={styles["tab-icon"]}>
+          <Tab.List className={styles.group}>
+            <Tab.Item data-active>
+              <Tab.Icon>
                 <IconArchiveContent2Fill18 />
-              </span>
-              <span className={styles["tab-label"]}>Library</span>
-              <Button
-                icon
-                size="xs"
-                variant="ghost"
-                className={styles["tab-close"]}
-                aria-label="Close Tab"
-              >
-                <IconXmarkOutline12 />
-              </Button>
-            </div>
-          </div>
+              </Tab.Icon>
+              <Tab.Label>Library</Tab.Label>
+              <Tab.Close aria-label="Close Tab" />
+            </Tab.Item>
+          </Tab.List>
           <ChromeButton label="New tab">
             <IconPlusFill18 />
           </ChromeButton>
@@ -127,9 +115,6 @@ export function AppWindow() {
             </div>
           </div>
         </div>
-      </div>
-      <div className={styles["dock-slot"]}>
-        <Dock />
       </div>
     </div>
   );

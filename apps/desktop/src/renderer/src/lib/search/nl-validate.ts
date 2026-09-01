@@ -1,4 +1,5 @@
 import type { QueryPlan } from "@pond/schema";
+import { readColorMatch } from "@pond/schema/filters/color";
 import { FIELD_META } from "@pond/schema/filters/meta";
 import {
   type Clause,
@@ -19,13 +20,13 @@ interface RawPredicate {
   field: string;
   operator: string;
   value?: unknown;
-  negate?: true;
+  negate?: boolean;
 }
 
 interface RawGroup {
-  combinator?: "or";
+  combinator?: "and" | "or";
   rules: (RawClause | null)[];
-  not?: true;
+  not?: boolean;
 }
 
 type RawClause = RawGroup | RawPredicate;
@@ -35,16 +36,16 @@ const RawClauseSchema: z.ZodType<RawClause> = z.lazy(() =>
 );
 
 const RawGroupSchema = z.object({
-  combinator: z.literal("or").optional().catch(undefined),
+  combinator: z.enum(["and", "or"]).optional().catch(undefined),
   rules: z.array(RawClauseSchema.nullable().catch(null)),
-  not: z.literal(true).optional().catch(undefined),
+  not: z.boolean().optional().catch(undefined),
 });
 
 const RawPredicateSchema = z.object({
   field: z.string(),
   operator: z.string(),
   value: z.unknown().optional(),
-  negate: z.literal(true).optional().catch(undefined),
+  negate: z.boolean().optional().catch(undefined),
 });
 
 const RawFilterSchema = z
@@ -58,6 +59,13 @@ const PrimitiveSchema = z.union([z.string(), z.number()]);
 
 function valueSchemaFor(operator: ComparatorId): z.ZodType<PredicateValue> {
   switch (operator) {
+    case "near":
+      return z.unknown().transform((value, context) => {
+        const color = readColorMatch(value);
+        if (color) return color;
+        context.addIssue({ code: "custom", message: "Invalid color match" });
+        return z.NEVER;
+      });
     case "in":
     case "nin":
     case "some":

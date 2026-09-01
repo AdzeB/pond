@@ -1,17 +1,19 @@
 import { IconChevronDownOutline12 } from "@pond/icons/outline/12";
 import { Accordion } from "@pond/ui";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { gentleSpring } from "@/lib/ui/motion";
 import styles from "./styles.module.css";
 
 interface SectionProps {
   title: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }
 
-export function Section({ title, children }: SectionProps) {
-  const [open, setOpen] = useState(true);
+export function Section({ title, defaultOpen = true, children }: SectionProps) {
+  const [open, setOpen] = useState(defaultOpen);
+  const id = useId();
   const reduceMotion = useReducedMotion();
 
   return (
@@ -23,7 +25,11 @@ export function Section({ title, children }: SectionProps) {
     >
       <Accordion.Item value={title} className={styles.item}>
         <Accordion.Header className={styles.header}>
-          <Accordion.Trigger className={styles.trigger}>
+          <Accordion.Trigger
+            className={styles.trigger}
+            id={`${id}-trigger`}
+            aria-controls={open ? `${id}-panel` : undefined}
+          >
             <span className={styles.title}>{title}</span>
             <span className={styles.chevron} aria-hidden>
               <IconChevronDownOutline12 />
@@ -33,6 +39,9 @@ export function Section({ title, children }: SectionProps) {
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <motion.div
+              id={`${id}-panel`}
+              role="region"
+              aria-labelledby={`${id}-trigger`}
               className={styles.panel}
               initial={{ height: 0, opacity: 0, marginTop: 0 }}
               animate={{ height: "auto", opacity: 1, marginTop: 8 }}

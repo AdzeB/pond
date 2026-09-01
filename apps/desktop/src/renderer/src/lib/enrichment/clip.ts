@@ -1,18 +1,17 @@
 import type { RawImage } from "@huggingface/transformers";
+import { clipEmbeddingVersion, DEFAULT_CLIP_MODEL } from "@shared/embeddings";
 import { getPrefsSnapshot } from "@/stores/prefs";
 import { inferClipAesthetic, inferClipImage } from "./inference-client";
-
-const DEFAULT_MODEL_ID = "Xenova/clip-vit-base-patch32";
 
 function modelId(): string {
   const fromPrefs = getPrefsSnapshot()?.ai?.clipModelId;
   return fromPrefs && fromPrefs.trim().length > 0
     ? fromPrefs
-    : DEFAULT_MODEL_ID;
+    : DEFAULT_CLIP_MODEL;
 }
 
 export function clipModelVersion(): string {
-  return `${modelId()}@1`;
+  return clipEmbeddingVersion(modelId());
 }
 
 const AESTHETIC_LABELS = [

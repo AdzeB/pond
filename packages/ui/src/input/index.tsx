@@ -1,5 +1,6 @@
 import { Input as Base } from "@base-ui/react/input";
 import { clsx as cn } from "clsx";
+import { forwardRef } from "react";
 import styles from "./styles.module.css";
 
 type InputSize = "xs" | "sm" | "md" | "lg" | "xl";
@@ -43,4 +44,29 @@ function Field({ className, ...props }: Base.Props) {
   );
 }
 
-export const Input = { Root, Icon, Field };
+const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  React.ComponentProps<"textarea"> & {
+    onValueChange?: (value: string) => void;
+  }
+>(function Textarea(
+  { className, rows = 5, onChange, onValueChange, ...props },
+  ref,
+) {
+  return (
+    <textarea
+      {...props}
+      ref={ref}
+      data-slot="field"
+      data-multiline
+      rows={rows}
+      className={cn(styles.field, className)}
+      onChange={(event) => {
+        onChange?.(event);
+        onValueChange?.(event.target.value);
+      }}
+    />
+  );
+});
+
+export const Input = { Root, Icon, Field, Textarea };

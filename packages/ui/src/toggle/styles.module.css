@@ -8,8 +8,8 @@
   min-width: 28px;
   height: 28px;
   padding: 0 8px;
-  font-size: 13px;
-  font-weight: 450;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-11);
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
@@ -25,7 +25,7 @@
     min-width: 24px;
     height: 24px;
     padding: 0 6px;
-    font-size: 12px;
+    font-size: var(--ds-text-mini);
   }
 
   &:hover,
@@ -42,7 +42,7 @@
   &:focus-visible,
   &[data-demo-state="focus"] {
     outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 
   &:disabled {
@@ -63,14 +63,9 @@
   }
 
   &[data-pressed] {
-    font-weight: 550;
+    font-weight: var(--ds-weight-medium);
     color: var(--ds-gray-12);
     background: none;
-  }
-
-  &:focus-visible,
-  &[data-demo-state="focus"] {
-    outline-offset: -2px;
   }
 }
 

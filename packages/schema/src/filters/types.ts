@@ -6,7 +6,8 @@ export type PredicateValue =
   | number
   | boolean
   | null
-  | ReadonlyArray<string | number>;
+  | ReadonlyArray<string | number>
+  | Readonly<{ hex: string; tolerance: number }>;
 
 export interface Predicate
   extends RuleType<FieldId, ComparatorId, PredicateValue> {
@@ -71,12 +72,13 @@ export const COMPARATORS_BY_TYPE = {
   number: ["eq", "neq", "lt", "lte", "gt", "gte", "between"],
   boolean: ["eq"],
   date: ["lt", "lte", "gt", "gte", "between"],
-  optional: ["exists"],
+  optional: ["exists", "contains"],
   color: ["near"],
 } satisfies Record<FieldTypeId, readonly ComparatorId[]>;
 
 export type FieldId =
   | "tags"
+  | "folder"
   | "list"
   | "source"
   | "type"

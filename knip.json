@@ -14,7 +14,8 @@
         "src/renderer/src/routes/**/*.{ts,tsx}",
         "scripts/*.{mjs,cjs,ts}"
       ],
-      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"]
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.{mjs,cjs,ts}"],
+      "ignoreDependencies": ["@tanstack/ai-react"]
     },
     "apps/website": {
       "entry": ["app/**/*.{ts,tsx}", "next.config.{js,ts,mjs}"],

@@ -59,14 +59,15 @@
 
 .title {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-semibold);
   color: var(--ds-gray-12);
 }
 
 .description {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-normal);
   line-height: 1.5;
   color: var(--ds-gray-11);
 }

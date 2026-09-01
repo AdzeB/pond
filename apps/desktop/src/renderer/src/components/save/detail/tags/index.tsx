@@ -20,7 +20,10 @@ export function SaveTags({ save }: { save: Save }) {
   };
 
   return (
-    <TagsEditor save={save}>
+    <TagsEditor
+      save={save}
+      addLabel={save.tags.length === 0 ? "Add Tag" : undefined}
+    >
       {suggested.map((tag) => (
         <button
           key={tag}

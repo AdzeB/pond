@@ -249,6 +249,18 @@ const storage = z.object({
   watchIntervalMinutes: z.number().catch(5),
 });
 
+const agent = z.object({
+  languageModel: z.string().catch("minnow"),
+  cloudAllowed: z.boolean().catch(false),
+  compatibleBaseUrl: z.string().catch(""),
+  ollamaBaseUrl: z.string().catch("http://127.0.0.1:11434/v1"),
+  lmstudioBaseUrl: z.string().catch("http://127.0.0.1:1234/v1"),
+  compatibleModelId: z.string().catch("gpt-5.6-sol"),
+  ollamaModelId: z.string().catch("llama3.2"),
+  lmstudioModelId: z.string().catch("local"),
+  enabledKeys: z.record(z.string(), z.boolean()).catch({}),
+});
+
 const ai = z.object({
   nlCompiler: z.boolean().catch(false),
   semanticSearch: z.boolean().catch(false),
@@ -289,6 +301,7 @@ const PrefsObject = z.object({
   sync: sync.catch(sync.parse({})),
   storage: storage.catch(storage.parse({})),
   ai: ai.catch(ai.parse({})),
+  agent: agent.catch(agent.parse({})),
   saveRecents: saveRecents.catch(saveRecents.parse({})),
 });
 

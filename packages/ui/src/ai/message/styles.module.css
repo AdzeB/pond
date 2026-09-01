@@ -38,9 +38,9 @@
 
 .response {
   margin: 0;
-  font-size: 14px;
-  font-weight: 450;
-  line-height: 24px;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-normal);
+  line-height: 1.6;
   color: var(--ds-gray-12);
   word-break: break-word;
   user-select: text;

@@ -15,13 +15,15 @@ import {
 import { confirmEmptyTrash } from "@/lib/save/empty-trash";
 import { trashSelection } from "@/lib/save/selection";
 import { getAppRouter } from "@/lib/ui/app-router";
-import { openDockSearch } from "@/lib/ui/open-search";
+import { focusLibrarySearch } from "@/lib/ui/open-search";
 import { closeSave, openSave } from "@/lib/ui/save-nav";
 import { isLayoutValue } from "@/lib/ui/view-prefs";
 import { ZOOM_DEFAULT } from "@/lib/ui/zoom";
+import { libraryChrome } from "@/stores/library-chrome";
 import { pool } from "@/stores/pool";
 import { usePrefs } from "@/stores/prefs";
 import { primarySelection, selection } from "@/stores/selection";
+import { sourceFlow } from "@/stores/source-flow";
 import { tumbleToTrash } from "@/stores/trash-tumble";
 import {
   adjustZoom,
@@ -75,8 +77,8 @@ export function MenuBridge() {
           openShortcutsSheet();
           return;
 
-        case "dock.search":
-          openDockSearch();
+        case "library.search":
+          focusLibrarySearch();
           return;
 
         case "view.layout.waterfall":
@@ -87,6 +89,19 @@ export function MenuBridge() {
           if (isLayoutValue(next)) setLayout(next);
           return;
         }
+
+        case "library.connect":
+          getAppRouter()?.history.push("/sources");
+          sourceFlow.open("connect-source");
+          return;
+
+        case "view.sidebar.toggle":
+          libraryChrome.toggleSidebar();
+          return;
+
+        case "view.agent.toggle":
+          libraryChrome.toggleAgent();
+          return;
 
         case "theme.light":
           patchPreferences({

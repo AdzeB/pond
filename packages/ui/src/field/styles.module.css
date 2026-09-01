@@ -5,8 +5,8 @@
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
 
@@ -16,12 +16,13 @@
 }
 
 .description {
-  font-size: 12px;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-10);
 }
 
 .error {
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-red-9);
 }

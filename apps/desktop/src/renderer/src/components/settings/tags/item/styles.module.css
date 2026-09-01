@@ -12,7 +12,7 @@
   }
 
   &[data-card] {
-    border-radius: var(--ds-radius-lg);
-    box-shadow: var(--ds-shadow-2);
+    border-radius: var(--ds-radius-xl);
+    box-shadow: var(--ds-shadow-1);
   }
 }

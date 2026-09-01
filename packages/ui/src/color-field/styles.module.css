@@ -17,7 +17,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 }
 
@@ -65,8 +65,8 @@
 }
 
 .hex-label {
-  font-size: 11px;
-  font-weight: 550;
+  font-size: var(--ds-text-micro);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
   text-transform: uppercase;
 }
@@ -74,7 +74,7 @@
 .hex-value {
   margin-left: auto;
   font-family: var(--ds-font-mono);
-  font-size: 12px;
+  font-size: var(--ds-text-mini);
   font-variant-numeric: tabular-nums;
   color: var(--ds-gray-12);
   text-transform: uppercase;
@@ -128,5 +128,5 @@
 .saturation-handle[data-focus],
 .hue-handle[data-focus] {
   outline: 2px solid var(--ds-focus-outline);
-  outline-offset: 2px;
+  outline-offset: 0;
 }

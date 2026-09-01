@@ -21,8 +21,8 @@
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 550;
+  font-size: var(--ds-text-mini);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-11);
 }
 
@@ -41,7 +41,7 @@
   align-items: center;
   justify-content: center;
   height: 20px;
-  font-size: 11px;
+  font-size: var(--ds-text-micro);
   color: var(--ds-gray-11);
   cursor: default;
   background: var(--ds-gray-2);
@@ -60,7 +60,6 @@
   composes: popup from "../shared/styles/popup/styles.module.css";
   width: var(--popup-width, max-content);
   min-width: var(--anchor-width);
-  max-width: var(--available-width);
 }
 
 .arrow {
@@ -73,6 +72,10 @@
 
 .item-label {
   composes: item-label from "../shared/styles/popup/styles.module.css";
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .indicator {

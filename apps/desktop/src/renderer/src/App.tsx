@@ -12,29 +12,22 @@ import { ConfirmDialogHost } from "./components/shared/confirm-dialog";
 import { PromptDialogHost } from "./components/shared/prompt-dialog";
 import { ShortcutsSheetHost } from "./components/shared/shortcuts-sheet";
 import { ToastHost } from "./components/shared/toast-host";
-import { AppShell } from "./components/shell/app-shell";
 import { BootScreen } from "./components/shell/boot-screen";
 import { ErrorBoundary } from "./components/shell/error-boundary";
 import { ErrorScreen } from "./components/shell/error-screen";
-import { Toolbar } from "./components/shell/toolbar";
-import { AppHotkeys } from "./effects/app-hotkeys";
 import { EnrichmentSweep } from "./effects/enrichment-sweep";
 import { ExtensionCaptureToast } from "./effects/extension-capture-toast";
-import { MenuBridge } from "./effects/menu-bridge";
 import { MenuRecentsBridge } from "./effects/menu-recents-bridge";
-import { SaveHotkeys } from "./effects/save-hotkeys";
 import { SyncStatusBridge } from "./effects/sync-status-bridge";
-import { TabShortcuts } from "./effects/tab-shortcuts";
 import { ThemeApplier } from "./effects/theme-applier";
 import { UiSounds } from "./effects/ui-sounds";
-import { UndoRedoBridge } from "./effects/undo-redo-bridge";
 import { pondScopedKey } from "./lib/pond-scope";
 import { setAppRouter } from "./lib/ui/app-router";
 import { syncPrimaryFromPath } from "./lib/ui/save-nav";
 import { routeTree } from "./routeTree.gen";
+import { useHydrateFolders } from "./stores/folders";
 import { usePrefs } from "./stores/prefs";
 import { settingsModal } from "./stores/settings-modal";
-import { tabs, useActiveTabId, useTabs } from "./stores/tabs";
 
 declare global {
   interface Window {
@@ -102,15 +95,12 @@ function buildRouter(entry: string) {
   });
 }
 
-function TabContent({ path }: { path: string }) {
-  const [router] = useState(() => buildRouter(path));
+function AppContent() {
+  const [router] = useState(() => buildRouter(initialPath()));
 
   useEffect(() => {
     const unsub = router.subscribe("onResolved", () => {
       const loc = router.state.location;
-      const next = loc.pathname + loc.searchStr;
-      const activeId = tabs.getState().activeId;
-      tabs.updatePath(activeId, next);
       try {
         localStorage.setItem(LAST_PATH_KEY, loc.pathname);
       } catch {}
@@ -129,13 +119,7 @@ function TabContent({ path }: { path: string }) {
 }
 
 export function App() {
-  useState(() => {
-    tabs.ensureInitial(initialPath());
-  });
-
-  const tabList = useTabs();
-  const activeId = useActiveTabId();
-  const activeTab = tabList.find((tab) => tab.id === activeId);
+  useHydrateFolders();
 
   useEffect(() => {
     if (readStored(STARTUP_PAGE_KEY) === "settings") settingsModal.open();
@@ -169,22 +153,13 @@ export function App() {
         <Tooltip.Provider>
           <ThemeApplier />
           <UiSounds />
-          <UndoRedoBridge />
-          <MenuBridge />
           <MenuRecentsBridge />
-          <SaveHotkeys />
-          <AppHotkeys />
-          <TabShortcuts />
           <SyncStatusBridge />
           <ExtensionCaptureToast />
           <EnrichmentSweep />
           <BootScreen />
           <ErrorBoundary>
-            <AppShell.Root header={<Toolbar />}>
-              {activeTab ? (
-                <TabContent key={activeTab.id} path={activeTab.path} />
-              ) : null}
-            </AppShell.Root>
+            <AppContent />
           </ErrorBoundary>
           <ConfirmDialogHost />
           <PromptDialogHost />

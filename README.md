@@ -37,6 +37,31 @@ pnpm --filter @pond/desktop rebuild
 
 See [`apps/desktop/README.md`](apps/desktop/README.md) for architecture and on-disk layout.
 
+## Agent and MCP
+
+Agent lives in the right column. It searches this library with the model you pick in Settings: Minnow on this Mac, or a key you paste for OpenAI, Anthropic, Gemini, Ollama, LM Studio, or an OpenAI-compatible endpoint. Pond never stores those keys on a Pond server.
+
+Cursor, Claude, and other MCP hosts can search the same library. Pond speaks MCP over stdio. This block belongs in Cursor `mcp.json`. It launches Pond as a local stdio server (`--mcp`) against the library on this Mac:
+
+```json
+{
+  "mcpServers": {
+    "pond": {
+      "command": "/Applications/Pond.app/Contents/MacOS/Pond",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+Copy the exact command from Settings → Agent. Pond does not host a public MCP URL.
+
+## Library
+
+The desktop library is a three-column DAM: folder sidebar, image list, Agent. Folders, Uncategorized, List layout, and Eagle import that keeps folder trees ship in this cut.
+
+Later on the same app: ratings, duplicate merge, spacebar browse, GIF/video frame tools, annotations, batch rename, detached windows, a JS plugin host, and Agent as an MCP host. Not on the list: Eagle Cloud, their Plugin Center store, or Photoshop-class format preview.
+
 ## How sourcing works (and your responsibility)
 
 Pond's source adapters run entirely through **your own authenticated browser

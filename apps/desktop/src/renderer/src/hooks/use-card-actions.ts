@@ -82,7 +82,7 @@ export function useCardActions(
   const handleCardAuxClick = useCallback((id: string, e: React.MouseEvent) => {
     if (e.button !== 1) return;
     e.preventDefault();
-    openSave(id, { background: true });
+    openSave(id);
   }, []);
 
   const handleCardClick = useCallback(

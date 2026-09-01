@@ -1,18 +1,19 @@
 .viewport {
   position: fixed;
-  right: 24px;
   bottom: 24px;
+  left: 50%;
   z-index: 10000;
   display: flex;
   flex-direction: column-reverse;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
   width: max-content;
   max-width: calc(100vw - 32px);
   margin: 0;
   padding: 0;
   list-style: none;
   outline: none;
+  translate: -50% 0;
   -webkit-app-region: no-drag;
 }
 
@@ -22,12 +23,11 @@
   display: flex;
   gap: 8px;
   align-items: flex-start;
-  width: 383px;
+  width: 360px;
   max-width: calc(100vw - 32px);
   padding: 12px;
   color: var(--ds-gray-12);
   background: var(--ds-background-1);
-  border: 0.5px solid transparent;
   border-radius: var(--ds-radius-xl);
   box-shadow: var(--ds-shadow-3);
   transition:
@@ -104,18 +104,17 @@
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 16.25px;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
   white-space: nowrap;
 }
 
 .description {
   margin: 0;
-  font-size: 13px;
-  font-weight: 450;
-  line-height: 16.25px;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-normal);
+  line-height: 1.25;
   color: var(--ds-gray-11);
   overflow-wrap: break-word;
 }

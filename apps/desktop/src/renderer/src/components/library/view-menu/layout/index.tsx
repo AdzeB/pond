@@ -1,52 +1,39 @@
-import {
-  IconGridFill18 as GridIcon,
-  IconGridLayoutRowsFill18 as JustifiedIcon,
-  IconGridLayoutColsFill18 as WaterfallIcon,
-} from "@pond/icons/fill/18";
-import { TrayCard } from "@pond/ui";
-import { useRef } from "react";
-import { useDock } from "@/components/library/dock/lib/context";
-import {
-  Segmented,
-  type SegmentedOption,
-} from "@/components/library/view-menu/segmented";
+import { Select } from "@pond/ui";
 import { useView } from "@/hooks/use-view";
 import type { LayoutValue } from "@/lib/ui/view-prefs";
+import styles from "../styles.module.css";
 
-const options: ReadonlyArray<SegmentedOption<LayoutValue>> = [
-  { value: "waterfall", label: "Waterfall", icon: <WaterfallIcon size={18} /> },
-  { value: "grid", label: "Grid", icon: <GridIcon size={18} /> },
-  { value: "justified", label: "Justified", icon: <JustifiedIcon size={18} /> },
+const OPTIONS: { value: LayoutValue; label: string }[] = [
+  { value: "waterfall", label: "Waterfall" },
+  { value: "grid", label: "Grid" },
+  { value: "justified", label: "Justified" },
+  { value: "list", label: "List" },
 ];
 
 export function LayoutSection() {
-  const dock = useDock();
   const { state, actions } = useView();
-  const initialLayout = useRef(state.layout);
 
   return (
-    <>
-      <TrayCard.Header>
-        <TrayCard.Back onClick={() => dock.openViewMenu("options")} />
-        <TrayCard.Title position="center">Layout</TrayCard.Title>
-        <TrayCard.Close />
-        <TrayCard.Separator />
-        <TrayCard.Description>
-          Choose how items are arranged in your library.
-        </TrayCard.Description>
-      </TrayCard.Header>
-      <Segmented
-        ariaLabel="Layout"
-        options={options}
-        value={state.layout}
-        onChange={actions.setLayout}
-      />
-      <TrayCard.Footer>
-        <TrayCard.Cancel
-          onClick={() => actions.setLayout(initialLayout.current)}
-        />
-        <TrayCard.Confirm />
-      </TrayCard.Footer>
-    </>
+    <Select.Root
+      items={OPTIONS}
+      value={state.layout}
+      onValueChange={(value) => {
+        if (value !== null) actions.setLayout(value);
+      }}
+    >
+      <div className={styles.row}>
+        <Select.Label className={styles.label}>Layout</Select.Label>
+        <Select.Trigger size="sm" className={styles.select}>
+          <Select.Value />
+        </Select.Trigger>
+      </div>
+      <Select.Portal>
+        <Select.Positioner align="end" sideOffset={6}>
+          <Select.Popup>
+            <Select.Items items={OPTIONS} />
+          </Select.Popup>
+        </Select.Positioner>
+      </Select.Portal>
+    </Select.Root>
   );
 }

@@ -83,78 +83,9 @@
 }
 
 .group {
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  gap: 4px;
-  align-items: center;
-  min-width: 0;
-  height: 100%;
   padding-block: 6px;
   padding-right: 4px;
   padding-left: 2px;
-}
-
-.tab {
-  --tab-min: 72px;
-  --tab-active-min: 96px;
-
-  position: relative;
-  display: flex;
-  flex: 1 1 120px;
-  gap: 6px;
-  align-items: center;
-  min-width: var(--tab-min);
-  max-width: 200px;
-  padding: 2px 6px;
-  padding-right: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ds-gray-10);
-  white-space: nowrap;
-  background: transparent;
-  border-radius: var(--ds-radius-md);
-
-  &[data-active] {
-    z-index: 2;
-    min-width: var(--tab-active-min);
-    color: var(--ds-gray-12);
-    background: var(--ds-gray-1);
-    box-shadow: var(--ds-shadow-2);
-  }
-}
-
-.tab-icon {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  overflow: hidden;
-  color: var(--ds-gray-9);
-}
-
-.tab[data-active] .tab-icon {
-  color: var(--ds-gray-12);
-}
-
-.tab-label {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tab-close {
-  flex-shrink: 0;
-  opacity: 0;
-}
-
-.tab[data-active] .tab-close {
-  opacity: 1;
 }
 
 .spacer {
@@ -200,12 +131,4 @@
 
 .cell {
   position: absolute;
-}
-
-.dock-slot {
-  position: absolute;
-  bottom: calc(var(--window-inset) + 16px);
-  left: 50%;
-  z-index: 20;
-  transform: translateX(-50%);
 }

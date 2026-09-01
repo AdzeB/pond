@@ -72,6 +72,7 @@ export default defineConfig({
       "cookies",
       "contextMenus",
       "nativeMessaging",
+      "alarms",
     ],
     host_permissions: [
       "https://x.com/*",

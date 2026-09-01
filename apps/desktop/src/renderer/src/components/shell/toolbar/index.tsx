@@ -1,469 +1,151 @@
-import { RestrictToHorizontalAxis } from "@dnd-kit/abstract/modifiers";
-import { PointerActivationConstraints } from "@dnd-kit/dom";
-import { RestrictToElement } from "@dnd-kit/dom/modifiers";
-import { move } from "@dnd-kit/helpers";
-import {
-  DragDropProvider,
-  type DragEndEvent,
-  PointerSensor,
-} from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
-import { IconPlusFill18 } from "@pond/icons/fill/18";
-import { IconXmarkOutline12 } from "@pond/icons/outline/12";
-import { IconGear3Outline18 } from "@pond/icons/outline/18";
-import { Button, type MenuItemSpec } from "@pond/ui";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
-import { SpecContextMenu } from "@/components/shared/spec-context-menu";
+import { IconAlbum2Outline18, IconDotsOutline18 } from "@pond/icons/outline/18";
+import { Button, Menu } from "@pond/ui";
+import { useRouter, useRouterState } from "@tanstack/react-router";
+import { InspectorToggle } from "@/components/library/agent-toggle";
+import { SidebarToggle } from "@/components/library/sidebar-toggle";
 import { ChromeHistoryNav } from "@/components/shell/chrome-toolbar";
 import { useSave } from "@/hooks/use-saves";
-import { useScrollFade } from "@/hooks/use-scroll-fade";
-import { pickAuthorAvatarUrl } from "@/lib/media/url";
-import type { Save } from "@/lib/types";
+import { getLastListPath } from "@/lib/ui/list-path";
 import { saveIdFromPath } from "@/lib/ui/save-nav";
-import { initials } from "@/lib/util/initials";
-import { settingsModal } from "@/stores/settings-modal";
-import { type Tab, tabs, useActiveTabId, useTabs } from "@/stores/tabs";
-import { ProgressPanel } from "./activity";
-import { ErrorsPanel } from "./attention";
-import { iconForTab } from "./icons";
+import { useFolders } from "@/stores/folders";
+import {
+  libraryChrome,
+  useLibraryNav,
+  useRightPane,
+  useSidebarOpen,
+} from "@/stores/library-chrome";
+import { resetFilters } from "@/stores/view-store";
+import { type Breadcrumb, buildBreadcrumbs } from "./breadcrumbs";
 import { computeLabel } from "./labels";
-import type { Panel } from "./lib";
-import { RecentPanel } from "./recent";
 import styles from "./styles.module.css";
-import { OngoingPanel } from "./sync";
 
-const SORT_TRANSITION = {
-  duration: 120,
-  easing: "linear",
-  idle: false,
-} as const;
-
-function focusTabEl(id: string): void {
-  requestAnimationFrame(() => {
-    const el = document.querySelector<HTMLElement>(
-      `[data-tab-id="${CSS.escape(id)}"]`,
-    );
-    el?.focus();
+function Breadcrumbs() {
+  const router = useRouter();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
   });
-}
+  const nav = useLibraryNav();
+  const folders = useFolders();
+  const save = useSave(saveIdFromPath(pathname));
+  const crumbs = buildBreadcrumbs({
+    pathname,
+    listPath: getLastListPath(),
+    nav,
+    folders,
+    saveLabel: computeLabel(pathname, save),
+  });
+  const hidden = crumbs.length > 3 ? crumbs.slice(1, -2) : [];
 
-function stopPropagation(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-interface TabBodyProps {
-  path: string;
-  pinned: boolean;
-  label: string;
-  save: Save | undefined;
-  onClose: () => void;
-}
-
-const TabBody = memo(function TabBody({
-  path,
-  pinned,
-  label,
-  save,
-  onClose,
-}: TabBodyProps) {
-  const Icon = iconForTab(path, save);
-  const avatarUrl = save ? pickAuthorAvatarUrl(save) : null;
-  const author = save?.author?.trim() ?? "";
-  const [failedUrl, setFailedUrl] = useState<string | null>(null);
-  const labelRef = useRef<HTMLSpanElement>(null);
-  const [overflow, setOverflow] = useState(false);
-  const showAvatar = Boolean(save && (avatarUrl || author));
-  const showImg = Boolean(avatarUrl && failedUrl !== avatarUrl);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: label is the trigger, not a read
-  useLayoutEffect(() => {
-    const el = labelRef.current;
-    if (!el) return;
-    const sync = () => {
-      const next = el.scrollWidth - el.clientWidth > 1;
-      setOverflow((current) => (current === next ? current : next));
-    };
-    sync();
-    const ro = new ResizeObserver(sync);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [label]);
+  function navigate(crumb: Breadcrumb) {
+    if (crumb.nav) libraryChrome.setNav(crumb.nav);
+    if (crumb.nav?.kind === "all" && crumb.path === "/") resetFilters();
+    router.history.push(crumb.path);
+  }
 
   return (
-    <>
-      {showAvatar ? (
-        <span
-          aria-hidden
-          className={styles.avatar}
-          style={
-            showImg
-              ? undefined
-              : { background: pickAuthorColor(author || label) }
+    <nav className={styles.breadcrumbs} aria-label="Breadcrumb">
+      <ol className={styles.trail}>
+        {crumbs.map((crumb, index) => {
+          if (hidden.length && index > 1 && index < crumbs.length - 2)
+            return null;
+          if (hidden.length && index === 1) {
+            return (
+              <li className={styles.overflow} key="ancestors">
+                <span className={styles.separator} aria-hidden="true">
+                  /
+                </span>
+                <Menu.Root>
+                  <Menu.Trigger
+                    icon
+                    variant="ghost"
+                    size="sm"
+                    className={styles.more}
+                    aria-label="Show Parent Folders"
+                  >
+                    <IconDotsOutline18 />
+                  </Menu.Trigger>
+                  <Menu.Portal>
+                    <Menu.Positioner align="start" side="bottom">
+                      <Menu.Popup>
+                        <Menu.Items
+                          items={hidden.map((parent) => ({
+                            label: parent.label,
+                            onClick: () => navigate(parent),
+                          }))}
+                        />
+                      </Menu.Popup>
+                    </Menu.Positioner>
+                  </Menu.Portal>
+                </Menu.Root>
+              </li>
+            );
           }
-        >
-          {showImg && avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt=""
-              loading="lazy"
-              decoding="async"
-              draggable={false}
-              onError={() => setFailedUrl(avatarUrl)}
-            />
-          ) : (
-            initials(author || label)
-          )}
-        </span>
-      ) : (
-        <span aria-hidden className={styles.icon}>
-          <Icon />
-        </span>
-      )}
-      <span
-        ref={labelRef}
-        className={styles.label}
-        data-overflow={overflow || undefined}
-      >
-        {label}
-      </span>
-      {!pinned && (
-        <Button
-          icon
-          size="xs"
-          variant="ghost"
-          className={styles.close}
-          onPointerDown={stopPropagation}
-          onMouseDown={stopPropagation}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          aria-label="Close Tab"
-        >
-          <IconXmarkOutline12 />
-        </Button>
-      )}
-    </>
-  );
-});
-
-function tabMenu(tab: Tab, onClose: () => void): MenuItemSpec[] {
-  const canReopen = tabs.getState().recentlyClosed.length > 0;
-  return [
-    tab.pinned
-      ? { label: "Unpin Tab", onClick: () => tabs.unpin(tab.id) }
-      : { label: "Pin Tab", onClick: () => tabs.pin(tab.id) },
-    { label: "Duplicate Tab", onClick: () => tabs.duplicate(tab.id) },
-    { type: "separator" },
-    ...(tab.pinned
-      ? []
-      : [{ label: "Close", onClick: onClose } satisfies MenuItemSpec]),
-    { label: "Close Others", onClick: () => tabs.closeOthers(tab.id) },
-    { label: "Close to the Right", onClick: () => tabs.closeToRight(tab.id) },
-    { label: "Close All", onClick: () => tabs.closeAll() },
-    { type: "separator" },
-    {
-      label: "Reopen Closed Tab",
-      disabled: !canReopen,
-      onClick: () => tabs.reopenClosed(),
-    },
-  ];
-}
-
-const TabItem = memo(function TabItem({
-  tab,
-  index,
-  isActive,
-  frozenWidth,
-  onBeginRapidClose,
-}: {
-  tab: Tab;
-  index: number;
-  isActive: boolean;
-  frozenWidth: number | undefined;
-  onBeginRapidClose: () => void;
-}) {
-  const itemRef = useRef<HTMLDivElement | null>(null);
-  const { ref: sortableRef, isDragging } = useSortable({
-    id: tab.id,
-    index,
-    transition: SORT_TRANSITION,
-  });
-
-  const saveId = saveIdFromPath(tab.path.split("?")[0] ?? tab.path);
-  const save = useSave(saveId);
-  const label = computeLabel(tab.path, save);
-
-  const setRefs = useCallback(
-    (node: HTMLDivElement | null) => {
-      itemRef.current = node;
-      sortableRef(node);
-    },
-    [sortableRef],
-  );
-
-  const handleClose = useCallback(() => {
-    onBeginRapidClose();
-    tabs.close(tab.id);
-  }, [onBeginRapidClose, tab.id]);
-
-  const onClick = useCallback(() => {
-    if (!isActive) tabs.activate(tab.id);
-  }, [isActive, tab.id]);
-
-  const onKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      const focusActive = () => focusTabEl(tabs.getState().activeId);
-
-      switch (e.key) {
-        case "ArrowRight":
-          e.preventDefault();
-          tabs.activateNext();
-          focusActive();
-          return;
-        case "ArrowLeft":
-          e.preventDefault();
-          tabs.activatePrev();
-          focusActive();
-          return;
-        case "Home":
-          e.preventDefault();
-          tabs.activateByIndex(0);
-          focusActive();
-          return;
-        case "End": {
-          e.preventDefault();
-          const n = tabs.getState().tabs.length;
-          if (n > 0) tabs.activateByIndex(n - 1);
-          focusActive();
-          return;
-        }
-        case "Delete":
-        case "Backspace": {
-          if (tab.pinned || tabs.getState().tabs.length <= 1) return;
-          e.preventDefault();
-          onBeginRapidClose();
-          tabs.close(tab.id);
-          focusActive();
-          return;
-        }
-        case "Enter":
-        case " ":
-          e.preventDefault();
-          if (!isActive) tabs.activate(tab.id);
-          return;
-        default:
-          return;
-      }
-    },
-    [isActive, onBeginRapidClose, tab.id, tab.pinned],
-  );
-
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button === 1) {
-        e.preventDefault();
-        handleClose();
-      }
-    },
-    [handleClose],
-  );
-
-  useEffect(() => {
-    if (!isActive) return;
-    itemRef.current?.scrollIntoView({
-      inline: "nearest",
-      block: "nearest",
-    });
-  }, [isActive]);
-
-  return (
-    <SpecContextMenu buildItems={() => tabMenu(tab, handleClose)}>
-      <div
-        ref={setRefs}
-        className={styles.tab}
-        data-active={isActive || undefined}
-        data-pinned={tab.pinned || undefined}
-        data-lifted={isDragging || undefined}
-        data-frozen={frozenWidth != null || undefined}
-        style={
-          frozenWidth != null
-            ? {
-                flexGrow: 0,
-                flexShrink: 0,
-                flexBasis: frozenWidth,
-                minWidth: frozenWidth,
-                maxWidth: frozenWidth,
+          const current = index === crumbs.length - 1;
+          return (
+            <li
+              key={
+                crumb.nav?.kind === "folder"
+                  ? `folder:${crumb.nav.id}`
+                  : `${crumb.path}:${crumb.nav?.kind ?? "save"}`
               }
-            : undefined
-        }
-        role="tab"
-        data-tab-id={tab.id}
-        tabIndex={isActive ? 0 : -1}
-        aria-selected={isActive}
-        title={label}
-        onClick={onClick}
-        onKeyDown={onKeyDown}
-        onMouseDown={onMouseDown}
-      >
-        <TabBody
-          path={tab.path}
-          pinned={tab.pinned}
-          label={label}
-          save={save}
-          onClose={handleClose}
-        />
-      </div>
-    </SpecContextMenu>
+              className={styles.segment}
+              data-current={current || undefined}
+            >
+              {index > 0 ? (
+                <span className={styles.separator} aria-hidden="true">
+                  /
+                </span>
+              ) : null}
+              {current ? (
+                <span
+                  className={styles.current}
+                  aria-current="page"
+                  title={crumb.label}
+                >
+                  {index === 0 ? (
+                    <IconAlbum2Outline18 aria-hidden="true" />
+                  ) : null}
+                  <span className={styles.label}>{crumb.label}</span>
+                </span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={styles.crumb}
+                  title={crumb.label}
+                  onClick={() => navigate(crumb)}
+                >
+                  {index === 0 ? (
+                    <IconAlbum2Outline18 aria-hidden="true" />
+                  ) : null}
+                  <span className={styles.label}>{crumb.label}</span>
+                </Button>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
-});
+}
 
 export function Toolbar() {
-  const tabList = useTabs();
-  const activeId = useActiveTabId();
-  const groupRef = useRef<HTMLDivElement | null>(null);
-  const scrollFade = useScrollFade<HTMLDivElement>();
-  const frozenRef = useRef(false);
-  const [open, setOpen] = useState<Panel | null>(null);
-  const [frozenWidths, setFrozenWidths] = useState<Record<string, number>>({});
-
-  const ids = useMemo(() => tabList.map((t) => t.id), [tabList]);
-
-  const modifiers = useMemo(
-    () => [
-      RestrictToHorizontalAxis,
-      RestrictToElement.configure({
-        element: () => groupRef.current,
-      }),
-    ],
-    [],
-  );
-
-  const beginRapidClose = useCallback(() => {
-    if (frozenRef.current) return;
-    const el = groupRef.current;
-    if (!el) return;
-    const next: Record<string, number> = {};
-    for (const node of el.querySelectorAll<HTMLElement>("[data-tab-id]")) {
-      const id = node.dataset.tabId;
-      if (!id) continue;
-      next[id] = node.getBoundingClientRect().width;
-    }
-    if (Object.keys(next).length === 0) return;
-    frozenRef.current = true;
-    setFrozenWidths(next);
-  }, []);
-
-  const endRapidClose = useCallback(() => {
-    if (!frozenRef.current) return;
-    frozenRef.current = false;
-    setFrozenWidths({});
-  }, []);
-
-  const onDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      if (event.canceled || !event.operation.source) return;
-      const next = move(ids, event);
-      if (next === ids) return;
-      tabs.setOrder(next.map(String));
-    },
-    [ids],
-  );
-
-  useEffect(() => {
-    const el = groupRef.current;
-    if (!el) return;
-
-    const onWheel = (e: WheelEvent) => {
-      if (el.scrollWidth - el.clientWidth <= 1) return;
-      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-      e.preventDefault();
-      el.scrollLeft += e.deltaY;
-    };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("mouseleave", endRapidClose);
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("mouseleave", endRapidClose);
-    };
-  }, [endRapidClose]);
-
+  const ownsRightPane = useRouterState({
+    select: (s) => s.location.pathname === "/assistant",
+  });
+  const sidebarOpen = useSidebarOpen();
+  const rightPane = useRightPane();
   return (
     <div className={styles.bar}>
-      <ChromeHistoryNav />
-      <div className={styles.tabs}>
-        <DragDropProvider
-          modifiers={modifiers}
-          sensors={(defaults) => [
-            ...defaults.filter((sensor) => sensor !== PointerSensor),
-            PointerSensor.configure({
-              activationConstraints: [
-                new PointerActivationConstraints.Distance({ value: 6 }),
-              ],
-            }),
-          ]}
-          onDragEnd={onDragEnd}
-        >
-          <div
-            className={styles.group}
-            role="tablist"
-            aria-label="Open Tabs"
-            aria-orientation="horizontal"
-            {...scrollFade}
-            ref={(node) => {
-              groupRef.current = node;
-              scrollFade.ref.current = node;
-            }}
-          >
-            {tabList.map((tab, index) => (
-              <TabItem
-                key={tab.id}
-                tab={tab}
-                index={index}
-                isActive={tab.id === activeId}
-                frozenWidth={frozenWidths[tab.id]}
-                onBeginRapidClose={beginRapidClose}
-              />
-            ))}
-          </div>
-        </DragDropProvider>
-        <Button
-          variant="ghost"
-          size="sm"
-          icon
-          className={styles["new-tab"]}
-          onClick={() => tabs.open("/")}
-          aria-label="New Tab"
-        >
-          <IconPlusFill18 />
-        </Button>
-        <div className={styles["drag-spacer"]} aria-hidden />
+      <div className={styles.chrome}>
+        <SidebarToggle open={sidebarOpen} />
+        <ChromeHistoryNav />
       </div>
-
+      <div className={styles.main}>
+        <Breadcrumbs />
+      </div>
       <div className={styles.actions}>
-        <ProgressPanel open={open === "progress"} onOpenChange={setOpen} />
-        <RecentPanel open={open === "recent"} onOpenChange={setOpen} />
-        <ErrorsPanel open={open === "errors"} onOpenChange={setOpen} />
-        <OngoingPanel open={open === "ongoing"} onOpenChange={setOpen} />
-        <Button
-          variant="ghost"
-          size="sm"
-          icon
-          onClick={() => settingsModal.open()}
-          aria-label="Settings"
-        >
-          <IconGear3Outline18 />
-        </Button>
+        {ownsRightPane ? null : <InspectorToggle open={rightPane !== null} />}
       </div>
     </div>
   );

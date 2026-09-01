@@ -42,6 +42,7 @@ const APP_PREF_KEYS = [
   "quickCapture",
   "api",
   "updates",
+  "agent",
 ] as const satisfies readonly AppPrefKey[];
 
 const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
@@ -131,6 +132,7 @@ function mergeAll(base: Prefs, patch: DeepPartial<Prefs>): Prefs {
     sync: { ...base.sync, ...patch.sync },
     storage: { ...base.storage, ...patch.storage },
     ai: { ...base.ai, ...patch.ai },
+    agent: { ...base.agent, ...patch.agent },
     saveRecents: { ...base.saveRecents, ...patch.saveRecents },
   });
 }

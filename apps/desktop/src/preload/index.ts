@@ -5,6 +5,7 @@ import {
   ipcRenderer,
   webUtils,
 } from "electron";
+import type { AssistantChunk } from "../shared/assistant";
 import {
   IPC,
   type MenuActionId,
@@ -132,24 +133,6 @@ const api = {
     const listener = (_: IpcRendererEvent, id: string) => cb(id);
     ipcRenderer.on(IPC.menuOpenSave, listener);
     return () => ipcRenderer.off(IPC.menuOpenSave, listener);
-  },
-
-  onTabNew(cb: () => void): () => void {
-    const listener = () => cb();
-    ipcRenderer.on(IPC.tabNew, listener);
-    return () => ipcRenderer.off(IPC.tabNew, listener);
-  },
-
-  onTabClose(cb: () => void): () => void {
-    const listener = () => cb();
-    ipcRenderer.on(IPC.tabClose, listener);
-    return () => ipcRenderer.off(IPC.tabClose, listener);
-  },
-
-  onTabReopen(cb: () => void): () => void {
-    const listener = () => cb();
-    ipcRenderer.on(IPC.tabReopen, listener);
-    return () => ipcRenderer.off(IPC.tabReopen, listener);
   },
 
   appInfo(): Promise<{
@@ -301,6 +284,24 @@ const api = {
   },
   archiveSite(id: string): Promise<{ ok: boolean }> {
     return ipcRenderer.invoke(IPC.archiveSite, id);
+  },
+
+  onAgentChunk(cb: (chunk: AssistantChunk) => void): () => void {
+    const listener = (_: unknown, chunk: AssistantChunk) => cb(chunk);
+    ipcRenderer.on(IPC.agentChunk, listener);
+    return () => ipcRenderer.off(IPC.agentChunk, listener);
+  },
+
+  onAgentFilter(cb: (query: unknown) => void): () => void {
+    const listener = (_: unknown, query: unknown) => cb(query);
+    ipcRenderer.on(IPC.agentFilter, listener);
+    return () => ipcRenderer.off(IPC.agentFilter, listener);
+  },
+
+  onAgentCite(cb: (ids: string[]) => void): () => void {
+    const listener = (_: unknown, ids: string[]) => cb(ids);
+    ipcRenderer.on(IPC.agentCite, listener);
+    return () => ipcRenderer.off(IPC.agentCite, listener);
   },
 };
 

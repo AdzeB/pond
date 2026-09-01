@@ -109,11 +109,17 @@ library, and accepts saves from the browser extension over Chrome native messagi
 | [`warcio`](https://github.com/webrecorder/warcio.js) | `^2.4.10` | WARC recording for archived pages |
 | [`which`](https://github.com/npm/node-which) | `^7.0.0` | Locate executables on PATH |
 | [`zod`](https://zod.dev/) | `^4.4.3` | Runtime validation |
+| [`@tanstack/ai`](https://tanstack.com/ai) | `^0.52.0` | Agent `chat()` loop in main |
+| [`@tanstack/ai-react`](https://tanstack.com/ai) | `^0.22.4` | Renderer chat hooks |
+| [`@tanstack/ai-openai`](https://tanstack.com/ai) | `^0.22.3` | OpenAI and OpenAI-compatible adapters |
+| [`@tanstack/ai-anthropic`](https://tanstack.com/ai) | `^0.18.3` | Anthropic adapter |
+| [`@tanstack/ai-gemini`](https://tanstack.com/ai) | `^0.26.4` | Gemini adapter |
+| [`@tanstack/ai-ollama`](https://tanstack.com/ai) | `^0.10.3` | Ollama adapter |
+| [`@modelcontextprotocol/sdk`](https://modelcontextprotocol.io/) | `^1.30.0` | Pond as a local MCP server |
 
 Plus the workspace packages `@pond/icons`, `@pond/schema`, `@pond/theme`, `@pond/ui`.
 
-Ask and enrichments run on-device only. There is no Vercel AI SDK, no hosted
-provider SDK, and no API-key keychain.
+Enrichments run on-device. Agent uses a key you paste (OpenAI, Anthropic, Gemini, or OpenAI-compatible) stored in `safeStorage`, or Minnow when no key is set. Pond does not host a model gateway. Pond also speaks MCP over stdio so Cursor and Claude can search this library.
 
 ### Optional dependency
 

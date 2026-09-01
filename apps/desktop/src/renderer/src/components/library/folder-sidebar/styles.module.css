@@ -1,0 +1,177 @@
+.root {
+  --folder-indent: 24px;
+
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0 8px 12px;
+}
+
+.workspace {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+  height: 44px;
+  padding: 4px 0 4px 2px;
+}
+
+.identity {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  justify-content: start;
+  min-width: 96px;
+  padding-block: 2px;
+  padding-right: 6px;
+  padding-left: 4px;
+  color: var(--ds-gray-12);
+
+  /* last element should align end */
+  > :last-child {
+    justify-self: end;
+  }
+
+  &[data-popup-open] {
+    background: var(--ds-gray-a3);
+  }
+}
+
+.menu {
+  --popup-min-width: 240px;
+}
+
+.mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--ds-accent-11);
+  background: var(--ds-accent-3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-semibold);
+  white-space: nowrap;
+}
+
+.chevron {
+  flex: 0 0 auto;
+  color: var(--ds-gray-9);
+}
+
+.workspace-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 8px;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--sidebar-height-md);
+}
+
+.title {
+  flex: none;
+  width: auto;
+  max-width: calc(100% - 28px);
+}
+
+.heading .title:hover {
+  background: var(--ds-gray-a3);
+}
+
+.trigger {
+  position: relative;
+  width: 100%;
+  padding-inline-start: calc(var(--folder-depth, 0) * var(--folder-indent));
+}
+
+.guide {
+  position: absolute;
+  inset-block: -1px 0;
+  inset-inline-start: calc(var(--guide-depth) * var(--folder-indent) + 16px);
+  z-index: 1;
+  width: 6px;
+  pointer-events: none;
+}
+
+.guide[data-branch]::before {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 100%;
+  height: calc(50% + 1px);
+  content: "";
+  border-block-end: 1px solid var(--ds-gray-a5);
+  border-inline-start: 1px solid var(--ds-gray-a5);
+  border-end-start-radius: 6px;
+}
+
+.guide[data-continues]::after {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  content: "";
+  border-inline-start: 1px solid var(--ds-gray-a5);
+}
+
+.root .item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.root .item:hover {
+  background: var(--ds-gray-a3);
+}
+
+.root .item[data-pressed],
+.root .item[data-status="active"],
+.root .item[data-popup-open] {
+  background: var(--ds-gray-a4);
+}
+
+.progress {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+}
+
+.ring {
+  display: block;
+  animation: spin 0.7s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring {
+    animation: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

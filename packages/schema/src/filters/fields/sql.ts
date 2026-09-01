@@ -20,6 +20,20 @@ export function jsonArrayDistinctCount(column: SQLWrapper, needle: SQL): SQL {
   )`;
 }
 
+export function folderExists(folderIds: string[]): SQL {
+  if (folderIds.length === 0) {
+    return sql`not exists (select 1 from save_folders where save_id = ${saves.id})`;
+  }
+  const inList = sql.join(
+    folderIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+  return sql`exists (
+    select 1 from save_folders
+    where save_id = ${saves.id} and folder_id in (${inList})
+  )`;
+}
+
 export function tagsExists(needle: SQL): SQL {
   return jsonArrayExists(saves.tags, needle);
 }

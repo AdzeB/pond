@@ -1,10 +1,11 @@
 .root {
+  position: relative;
   box-sizing: border-box;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
-  width: 28px;
-  height: 16px;
+  width: 22px;
+  height: 14px;
   padding: 2px;
   cursor: var(--ds-cursor-interactive, pointer);
   outline: none;
@@ -14,6 +15,12 @@
   transition:
     background var(--ds-duration-snap) var(--ds-easing-standard),
     box-shadow var(--ds-duration-snap) var(--ds-easing-standard);
+
+  &::before {
+    position: absolute;
+    inset: -6px;
+    content: "";
+  }
 
   &[data-checked] {
     background: var(--ds-accent-9);
@@ -32,7 +39,7 @@
   &:focus-visible,
   &[data-demo-state="focus"] {
     outline: 2px solid var(--ds-focus-outline);
-    outline-offset: 2px;
+    outline-offset: 0;
   }
 
   &:disabled {
@@ -42,8 +49,9 @@
 }
 
 .thumb {
-  width: 12px;
-  height: 12px;
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
   background: var(--ds-gray-1);
   border-radius: var(--ds-radius-full);
   transition:
@@ -52,6 +60,6 @@
 
   &[data-checked] {
     background: light-dark(var(--ds-gray-1), var(--ds-gray-12));
-    translate: 100% 0;
+    translate: 8px 0;
   }
 }

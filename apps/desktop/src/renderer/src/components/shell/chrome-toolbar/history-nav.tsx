@@ -4,18 +4,17 @@ import {
   IconVersionsOutline18,
 } from "@pond/icons/outline/18";
 import { Button, Menu } from "@pond/ui";
+import { useRouter } from "@tanstack/react-router";
 import { useSelector } from "@tanstack/react-store";
 import { useEffect, useMemo, useState } from "react";
 import { pickAuthorColor } from "@/components/save/preview/lib/helpers";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import { pickAuthorAvatarUrl } from "@/lib/media/url";
 import type { Save } from "@/lib/types";
-import { getAppRouter } from "@/lib/ui/app-router";
 import { openSave } from "@/lib/ui/save-nav";
 import { initials } from "@/lib/util/initials";
 import { pool, savesStore } from "@/stores/pool";
 import { useRecents } from "@/stores/recents";
-import { useActiveTabId } from "@/stores/tabs";
 import styles from "./styles.module.css";
 
 function titleFor(save: Save): string {
@@ -53,7 +52,7 @@ function HistoryAvatar({ save, title }: { save: Save; title: string }) {
 }
 
 export function ChromeHistoryNav() {
-  const activeId = useActiveTabId();
+  const router = useRouter();
   const [canBack, setCanBack] = useState(false);
   const [canForward, setCanForward] = useState(false);
   const recents = useRecents();
@@ -71,50 +70,21 @@ export function ChromeHistoryNav() {
   }, [recents, revision]);
 
   useEffect(() => {
-    void activeId;
-
-    const router = getAppRouter();
-    if (!router) {
-      setCanBack(false);
-      setCanForward(false);
-      return;
-    }
-
     const sync = () => {
-      const r = getAppRouter();
-      if (!r) return;
-      setCanBack(r.history.canGoBack());
-      const index = r.state.location.state.__TSR_index ?? 0;
-      setCanForward(index < r.history.length - 1);
+      setCanBack(router.history.canGoBack());
+      const index =
+        (router.history.location.state as { __TSR_index?: number } | undefined)
+          ?.__TSR_index ?? 0;
+      setCanForward(index < router.history.length - 1);
     };
 
     sync();
 
     return router.history.subscribe(sync);
-  }, [activeId]);
+  }, [router]);
 
   return (
     <div className={styles.nav}>
-      <Button
-        icon
-        size="sm"
-        variant="ghost"
-        aria-label="Back"
-        disabled={!canBack}
-        onClick={() => getAppRouter()?.history.back()}
-      >
-        <IconArrowLeftOutline18 />
-      </Button>
-      <Button
-        icon
-        size="sm"
-        variant="ghost"
-        aria-label="Forward"
-        disabled={!canForward}
-        onClick={() => getAppRouter()?.history.forward()}
-      >
-        <IconArrowRightOutline18 />
-      </Button>
       <Menu.Root>
         <Menu.Trigger
           icon
@@ -145,6 +115,26 @@ export function ChromeHistoryNav() {
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
+      <Button
+        icon
+        size="sm"
+        variant="ghost"
+        aria-label="Back"
+        disabled={!canBack}
+        onClick={() => router.history.back()}
+      >
+        <IconArrowLeftOutline18 />
+      </Button>
+      <Button
+        icon
+        size="sm"
+        variant="ghost"
+        aria-label="Forward"
+        disabled={!canForward}
+        onClick={() => router.history.forward()}
+      >
+        <IconArrowRightOutline18 />
+      </Button>
     </div>
   );
 }

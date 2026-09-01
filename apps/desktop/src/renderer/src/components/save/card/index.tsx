@@ -140,6 +140,7 @@ export const SaveCard = memo(function SaveCard({
     selected: isPrimary,
     multi: isMulti,
     "data-save-id": id,
+    "data-layout": layout,
     "data-cursor": isAnchor || undefined,
     style: liStyle,
     draggable: save.files.length > 0,

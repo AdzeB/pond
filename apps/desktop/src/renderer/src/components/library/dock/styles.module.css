@@ -2,7 +2,7 @@
   position: fixed;
   right: var(--window-right-width, 0px);
   bottom: calc(var(--ds-mac-inset, 16px) + 16px);
-  left: 0;
+  left: var(--window-left-width, 0px);
   z-index: 20;
   display: flex;
   align-items: center;
@@ -68,8 +68,6 @@
   translate: -50% 0;
 }
 
-.search-row {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px;
+.card {
+  width: 384px;
 }

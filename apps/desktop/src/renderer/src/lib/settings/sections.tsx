@@ -13,6 +13,12 @@ const TagsSection = lazy(() =>
     default: m.TagsSection,
   })),
 );
+const AgentSection = lazy(() =>
+  import("@/components/settings/agent").then((m) => ({
+    default: m.AgentSection,
+  })),
+);
+
 export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["general", generalSection],
   ["appearance", appearanceSection],
@@ -23,6 +29,15 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
       title: "Tags",
       description: "Organize, merge, and archive tags.",
       keywords: ["labels", "groups", "merge", "archive", "rename", "organize"],
+    },
+  ],
+  [
+    "agent",
+    {
+      component: AgentSection,
+      title: "Assistant",
+      description: "Paste a provider key or stay on Minnow on this Mac.",
+      keywords: ["ai", "openai", "anthropic", "gemini", "minnow", "key", "mcp"],
     },
   ],
   ["trash", trashSection],

@@ -213,6 +213,40 @@ function migratePond(sqlite: Database.Database): void {
 				CREATE INDEX IF NOT EXISTS tag_group_members_tag_idx ON tag_group_members(tag_id);
 				CREATE INDEX IF NOT EXISTS tag_group_members_group_idx ON tag_group_members(group_id);
 
+				CREATE TABLE IF NOT EXISTS folders (
+					id TEXT PRIMARY KEY,
+					parent_id TEXT,
+					name TEXT NOT NULL,
+					color TEXT,
+					sort_order INTEGER NOT NULL DEFAULT 0,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+				CREATE INDEX IF NOT EXISTS folders_parent_idx ON folders(parent_id, sort_order);
+
+				CREATE TABLE IF NOT EXISTS save_folders (
+					save_id TEXT NOT NULL REFERENCES saves(id) ON DELETE CASCADE,
+					folder_id TEXT NOT NULL REFERENCES folders(id) ON DELETE CASCADE,
+					PRIMARY KEY (save_id, folder_id)
+				);
+				CREATE INDEX IF NOT EXISTS save_folders_save_idx ON save_folders(save_id);
+				CREATE INDEX IF NOT EXISTS save_folders_folder_idx ON save_folders(folder_id);
+
+				CREATE TABLE IF NOT EXISTS agent_chats (
+					id TEXT PRIMARY KEY,
+					title TEXT,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+					updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+
+				CREATE TABLE IF NOT EXISTS agent_messages (
+					id TEXT PRIMARY KEY,
+					chat_id TEXT NOT NULL REFERENCES agent_chats(id) ON DELETE CASCADE,
+					role TEXT NOT NULL,
+					content TEXT NOT NULL,
+					created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+				);
+				CREATE INDEX IF NOT EXISTS agent_messages_chat_idx ON agent_messages(chat_id, created_at);
+
 				CREATE TABLE IF NOT EXISTS saved_views (
 					id TEXT PRIMARY KEY,
 					name TEXT NOT NULL,
@@ -271,6 +305,7 @@ function migratePond(sqlite: Database.Database): void {
 			`);
 
   addColumnIfMissing(sqlite, "saved_views", "question", "TEXT");
+  addColumnIfMissing(sqlite, "agent_messages", "metadata", "TEXT");
   addColumnIfMissing(sqlite, "tags", "archived", "INTEGER NOT NULL DEFAULT 0");
   addColumnIfMissing(sqlite, "tags", "description", "TEXT");
   addColumnIfMissing(sqlite, "tag_groups", "description", "TEXT");

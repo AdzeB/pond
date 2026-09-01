@@ -8,6 +8,8 @@ export const KEYCHAIN_SERVICE = "so.pond.desktop";
 
 export const KEYCHAIN_INGEST_TOKEN = "ingest-token";
 
+export const KEYCHAIN_AGENT_PREFIX = "agent";
+
 export const POND_PROTOCOL = "pond";
 
 export const IPC = {
@@ -44,12 +46,12 @@ export const IPC = {
   pondId: "pond:pond-id",
   menuRecents: "pond:menu-recents",
   menuOpenSave: "pond:menu-open-save",
-  tabNew: "pond:tab-new",
-  tabClose: "pond:tab-close",
-  tabReopen: "pond:tab-reopen",
   archiveNavigate: "pond:archive-navigate",
   archiveBackfillStart: "pond:archive-backfill-start",
   archiveSite: "pond:archive-site",
+  agentChunk: "pond:agent-chunk",
+  agentFilter: "pond:agent-filter",
+  agentCite: "pond:agent-cite",
 } as const;
 
 export interface RecentMenuEntry {
@@ -65,7 +67,7 @@ export type MenuActionId =
   | "view.zoom-in"
   | "view.zoom-out"
   | "view.zoom-reset"
-  | "dock.search"
+  | "library.search"
   | "help.shortcuts"
   | "view.layout.waterfall"
   | "view.layout.grid"
@@ -92,4 +94,7 @@ export type MenuActionId =
   | "save.bulk-refresh"
   | "trash.empty"
   | "trash.restore-all"
-  | "library.move";
+  | "library.move"
+  | "library.connect"
+  | "view.sidebar.toggle"
+  | "view.agent.toggle";

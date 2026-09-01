@@ -1,0 +1,30 @@
+.root {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-width: 0;
+  border-bottom: 1px solid var(--ds-gray-a3);
+}
+
+.bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 8px 16px;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--ds-gray-9);
+}
+
+.actions {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  align-items: center;
+}

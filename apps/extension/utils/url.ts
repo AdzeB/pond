@@ -2,29 +2,32 @@ import type { Source } from "@pond/schema/db";
 
 export { hostToSource } from "@pond/schema/sources";
 
-export function cookieDomainForSource(source: Source): string | null {
+export function cookieDomainsForSource(source: Source): string[] {
   switch (source) {
     case "twitter":
-      return ".x.com";
+      return ["x.com", "twitter.com"];
     case "instagram":
-      return ".instagram.com";
+      return ["instagram.com"];
     case "tiktok":
-      return ".tiktok.com";
+      return ["tiktok.com"];
     case "pinterest":
-      return ".pinterest.com";
+      return ["pinterest.com"];
     case "youtube":
-      return ".youtube.com";
+      return ["youtube.com", "google.com"];
     case "cosmos":
-      return ".cosmos.so";
+      return ["cosmos.so"];
     case "arena":
-      return ".are.na";
+      return ["are.na"];
     case "reddit":
-      return ".reddit.com";
+      return ["reddit.com"];
     case "threads":
-      return ".threads.com";
+      return ["threads.net", "threads.com", "instagram.com"];
     case "web":
-      return null;
     case "local":
-      return null;
+      return [];
   }
+}
+
+export function cookieDomainForSource(source: Source): string | null {
+  return cookieDomainsForSource(source)[0] ?? null;
 }

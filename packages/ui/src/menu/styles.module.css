@@ -4,10 +4,10 @@
 }
 
 .popup {
+  --popup-width: max-content;
   composes: popup from "../shared/styles/popup/styles.module.css";
-  width: var(--popup-width, auto);
-  min-width: var(--popup-min-width, calc(100% + 48px));
-  max-width: 512px;
+  min-width: var(--popup-min-width, 200px);
+  max-width: var(--available-width);
 }
 
 /* Transition container per Base UI guidance: clip morphing content while the popup resizes. */
@@ -36,10 +36,6 @@
   composes: item-keyboard from "../shared/styles/popup/styles.module.css";
 }
 
-.key {
-  composes: key from "../shared/styles/popup/styles.module.css";
-}
-
 .indicator {
   composes: indicator from "../shared/styles/popup/styles.module.css";
 }
@@ -54,8 +50,8 @@
 
 .secondary-label {
   margin-left: auto;
-  font-size: 11px;
-  font-weight: 450;
+  font-size: var(--ds-text-micro);
+  font-weight: var(--ds-weight-normal);
   color: var(--ds-gray-10);
 }
 
@@ -65,16 +61,16 @@
   padding-inline: 12px;
   padding-bottom: 2px;
   margin-bottom: 2px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
   color: var(--ds-gray-12);
-  border-bottom: 1px solid var(--ds-gray-a3);
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &::placeholder {
     color: var(--ds-gray-8);
   }
 
   &:focus {
-    border-bottom: 1px solid var(--ds-gray-a4);
+    border-bottom: var(--ds-border-width) solid var(--ds-gray-a4);
   }
 }

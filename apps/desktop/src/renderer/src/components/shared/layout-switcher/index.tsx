@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { GridView } from "@/components/library/layouts/grid-view";
 import { JustifiedView } from "@/components/library/layouts/justified";
+import { ListView } from "@/components/library/layouts/list-view";
 import { WaterfallView } from "@/components/library/layouts/waterfall";
 import { LibraryGridProvider } from "@/components/shared/grid-context";
 import type { Save, ViewMode } from "@/lib/types";
@@ -40,6 +41,8 @@ export function LayoutSwitcher(props: LayoutSwitcherProps) {
         <JustifiedView saves={saves} onEndReached={onEndReached} />
       ) : viewMode === "waterfall" ? (
         <WaterfallView saves={saves} onEndReached={onEndReached} />
+      ) : viewMode === "list" ? (
+        <ListView saves={saves} onEndReached={onEndReached} />
       ) : (
         <GridView saves={saves} onEndReached={onEndReached} />
       )}

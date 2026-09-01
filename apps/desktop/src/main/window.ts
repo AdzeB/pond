@@ -132,7 +132,7 @@ export async function createWindow(): Promise<BrowserWindow> {
     backgroundColor: themedBackground,
     autoHideMenuBar: true,
     titleBarStyle: isMac ? "hiddenInset" : "default",
-    trafficLightPosition: isMac ? { x: 16, y: 13 } : undefined,
+    trafficLightPosition: isMac ? { x: 16, y: 15 } : undefined,
     webPreferences: {
       preload: resolvePreload("index.cjs"),
       contextIsolation: true,

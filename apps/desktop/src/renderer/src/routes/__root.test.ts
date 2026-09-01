@@ -18,6 +18,7 @@ describe("__root route", () => {
   it("mounts app chrome from RootShell", () => {
     const src = readFileSync(rootShellPath, "utf8");
     expect(src).toContain("Tray.Library");
+    expect(src).toContain("SourceFlowHost");
     expect(src).toContain("SettingsModal");
     expect(src).toContain("window.pond.onNavigate");
   });

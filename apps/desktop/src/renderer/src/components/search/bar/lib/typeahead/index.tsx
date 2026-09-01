@@ -2,162 +2,33 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import {
   LexicalTypeaheadMenuPlugin,
   MenuOption,
-  type MenuTextMatch,
 } from "@lexical/react/LexicalTypeaheadMenuPlugin";
-import { FIELD_META } from "@pond/schema/filters/meta";
-import type { FieldId } from "@pond/schema/filters/types";
 import { Menu } from "@pond/ui";
 import {
   $createTextNode,
   COMMAND_PRIORITY_NORMAL,
   type TextNode,
 } from "lexical";
-import { motion } from "motion/react";
 import {
   type MouseEvent as ReactMouseEvent,
+  type RefObject,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { useDock } from "@/components/library/dock/lib/context";
 import { useScrollFade } from "@/hooks/use-scroll-fade";
 import {
   accountChipLabel,
   accountRefsFromSync,
   displayAccountToken,
 } from "@/lib/search/account-aliases";
-import {
-  canonicalKey,
-  DATE_PRESETS,
-  fieldForKey,
-  TOKEN_FIELDS,
-} from "@/lib/search/syntax";
-import { bouncySpring } from "@/lib/ui/motion";
+import { FIELD_ICONS } from "@/lib/search/fields";
+import { useFolders } from "@/stores/folders";
 import { usePrefs } from "@/stores/prefs";
 import styles from "./styles.module.css";
-
-const LOOKUP_CAP = 8;
-
-interface ValueSuggestion {
-  value: string;
-  label: string;
-}
-
-interface TypeaheadFacets {
-  tags: ReadonlyArray<string>;
-  sources: ReadonlyArray<string>;
-  creators: ReadonlyArray<string>;
-  accounts: ReadonlyArray<{ value: string; label: string }>;
-}
-
-function valueSuggestionsFor(
-  field: FieldId,
-  facets: TypeaheadFacets,
-): ValueSuggestion[] | null {
-  if (field === "tags") {
-    return facets.tags.map((tag) => ({ value: tag, label: tag }));
-  }
-  if (field === "creator") {
-    return facets.creators.map((value) => ({ value, label: value }));
-  }
-  if (field === "source") {
-    const values = facets.sources.includes("local")
-      ? facets.sources
-      : [...facets.sources, "local"];
-    return values.map((value) => ({
-      value,
-      label: value === "local" ? "Local" : value,
-    }));
-  }
-  if (field === "account") {
-    return [...facets.accounts];
-  }
-  const meta = FIELD_META[field];
-  if (meta.presets) {
-    return meta.presets.map((p) => ({
-      value: String(p.value),
-      label: p.label,
-    }));
-  }
-  if (meta.type === "date") {
-    return DATE_PRESETS.map((d) => ({ value: d.slug, label: d.label }));
-  }
-  return null;
-}
-
-type MenuItem =
-  | { kind: "field"; key: string; field: FieldId; label: string; token: string }
-  | {
-      kind: "value";
-      key: string;
-      label: string;
-      description: string;
-      token: string;
-    };
-
-function buildMenu(
-  raw: string,
-  facets: TypeaheadFacets,
-): { title: string; items: MenuItem[] } | null {
-  const negate = raw.startsWith("-");
-  const body = negate ? raw.slice(1) : raw;
-  const prefix = negate ? "-" : "";
-
-  const opMatch = /^([A-Za-z][\w]*)(:|>=|<=|>|<)(.*)$/.exec(body);
-  const opKey = opMatch?.[1];
-  const opValue = opMatch?.[3];
-  if (opKey !== undefined && opValue !== undefined) {
-    const field = fieldForKey(opKey);
-    if (!field) return null;
-    const suggestions = valueSuggestionsFor(field, facets);
-    if (!suggestions) return null;
-    const q = opValue.toLowerCase();
-    const key = canonicalKey(field);
-    const matches = suggestions.filter(
-      (s) =>
-        !q ||
-        s.value.toLowerCase().includes(q) ||
-        s.label.toLowerCase().includes(q),
-    );
-    const limited =
-      field === "creator" ? matches : matches.slice(0, LOOKUP_CAP);
-    const items: MenuItem[] = limited.map((s) => ({
-      kind: "value" as const,
-      key: `value-${s.value}`,
-      label: s.label,
-      description: `${prefix}${key}:${s.value}`,
-      token: `${prefix}${key}:${quoteIfNeeded(s.value)}`,
-    }));
-    if (items.length === 0) return null;
-    return { title: FIELD_META[field].label, items };
-  }
-
-  const q = body.toLowerCase();
-  const items: MenuItem[] = TOKEN_FIELDS.filter(
-    (spec) =>
-      spec.keys.some((k) => k.includes(q)) ||
-      FIELD_META[spec.field].label.toLowerCase().includes(q),
-  )
-    .slice(0, LOOKUP_CAP)
-    .map((spec) => {
-      const key = canonicalKey(spec.field);
-      return {
-        kind: "field" as const,
-        key: `field-${spec.field}`,
-        field: spec.field,
-        label: FIELD_META[spec.field].label,
-        token: `${prefix}${key}:`,
-      };
-    });
-  if (items.length === 0) return null;
-  return { title: "Filters", items };
-}
-
-function quoteIfNeeded(value: string): string {
-  return /\s/.test(value) ? `"${value}"` : value;
-}
+import { buildMenu, type MenuItem, triggerFn } from "./suggestions";
 
 class FilterOption extends MenuOption {
   item: MenuItem;
@@ -167,27 +38,23 @@ class FilterOption extends MenuOption {
   }
 }
 
-function triggerFn(text: string): MenuTextMatch | null {
-  const match = /(?:^|\s)(-?[A-Za-z][^\s]*)$/.exec(text);
-  const token = match?.[1];
-  if (!match || token === undefined) return null;
-  const leadOffset = match.index + (match[0].length - token.length);
-  return { leadOffset, matchingString: token, replaceableString: token };
-}
-
 export function FilterTypeahead({
+  hostRef,
+  onOpenChange,
   tags,
   sources,
   creators,
 }: {
+  hostRef: RefObject<HTMLElement | null>;
+  onOpenChange: (open: boolean) => void;
   tags: ReadonlyArray<string>;
   sources: ReadonlyArray<string>;
   creators: ReadonlyArray<string>;
 }) {
   const [editor] = useLexicalComposerContext();
-  const { dockRef } = useDock();
   const [query, setQuery] = useState<string | null>(null);
   const [sync] = usePrefs("sync");
+  const folders = useFolders();
   const accounts = useMemo(() => {
     const refs = accountRefsFromSync(sync);
     return refs.map((ref) => ({
@@ -196,8 +63,17 @@ export function FilterTypeahead({
     }));
   }, [sync]);
   const facets = useMemo(
-    () => ({ tags, sources, creators, accounts }),
-    [tags, sources, creators, accounts],
+    () => ({
+      tags,
+      sources,
+      creators,
+      accounts,
+      folders: folders.map((folder) => ({
+        value: folder.id,
+        label: folder.name,
+      })),
+    }),
+    [tags, sources, creators, accounts, folders],
   );
 
   const menu = useMemo(
@@ -238,17 +114,22 @@ export function FilterTypeahead({
       triggerFn={triggerFn}
       onQueryChange={setQuery}
       commandPriority={COMMAND_PRIORITY_NORMAL}
+      preselectFirstItem={false}
       ignoreEntityBoundary
-      /** Hide Lexical's caret-sized anchor; we portal into the dock shell instead. */
+      /** Hide Lexical's caret-sized anchor; placement comes from the search host. */
       anchorClassName={styles["lexical-anchor"]}
       onSelectOption={(option, nodeToReplace, closeMenu) =>
         onSelect(option, nodeToReplace, closeMenu)
       }
       menuRenderFn={(lexicalAnchor, itemProps) =>
-        menu && lexicalAnchor.current && dockRef.current
+        menu && lexicalAnchor.current && hostRef.current
           ? createPortal(
-              <MenuPanel menu={menu} {...itemProps} />,
-              dockRef.current,
+              <MenuPanel
+                menu={menu}
+                onOpenChange={onOpenChange}
+                {...itemProps}
+              />,
+              hostRef.current,
             )
           : null
       }
@@ -258,40 +139,45 @@ export function FilterTypeahead({
 
 function MenuPanel({
   menu,
+  onOpenChange,
   options,
   selectedIndex,
   selectOptionAndCleanUp,
   setHighlightedIndex,
 }: {
   menu: { title: string; items: MenuItem[] };
+  onOpenChange: (open: boolean) => void;
   options: FilterOption[];
   selectedIndex: number | null;
   selectOptionAndCleanUp: (option: FilterOption) => void;
   setHighlightedIndex: (index: number) => void;
 }) {
-  const { setPopoverOpen } = useDock();
   const scrollFade = useScrollFade<HTMLDivElement>();
   useEffect(() => {
-    setPopoverOpen(true);
-    return () => setPopoverOpen(false);
-  }, [setPopoverOpen]);
+    onOpenChange(true);
+    return () => onOpenChange(false);
+  }, [onOpenChange]);
   return (
-    <motion.div
+    <div
       className={styles.anchor}
-      initial={{ opacity: 0, y: 6, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={bouncySpring}
       onPointerDown={(event) => event.stopPropagation()}
     >
       <Menu.Surface className={styles.menu}>
         <Menu.SectionLabel>{menu.title}</Menu.SectionLabel>
-        <div className={styles.list} {...scrollFade}>
+        <div
+          className={styles.list}
+          role="listbox"
+          aria-label={menu.title}
+          {...scrollFade}
+        >
           {menu.items.map((item, index) => {
             const option = options[index];
             return (
               <MenuRow
                 key={item.key}
                 item={item}
+                index={index}
+                option={option}
                 active={selectedIndex === index}
                 onHover={() => setHighlightedIndex(index)}
                 onSelect={() => option && selectOptionAndCleanUp(option)}
@@ -300,23 +186,33 @@ function MenuPanel({
           })}
         </div>
       </Menu.Surface>
-    </motion.div>
+    </div>
   );
 }
 
 function MenuRow({
   item,
+  index,
+  option,
   active,
   onHover,
   onSelect,
 }: {
   item: MenuItem;
+  index: number;
+  option: FilterOption | undefined;
   active: boolean;
   onHover: () => void;
   onSelect: () => void;
 }) {
+  const Icon = FIELD_ICONS[item.field];
   return (
     <Menu.Row
+      id={`typeahead-item-${index}`}
+      ref={option?.setRefElement}
+      role="option"
+      aria-selected={active}
+      tabIndex={-1}
       highlighted={active}
       onMouseDown={(e: ReactMouseEvent) => {
         e.preventDefault();
@@ -325,10 +221,11 @@ function MenuRow({
       onMouseEnter={onHover}
       onClick={onSelect}
     >
+      <Menu.ItemIcon>
+        <Icon />
+      </Menu.ItemIcon>
       <Menu.ItemLabel>{item.label}</Menu.ItemLabel>
-      <Menu.SecondaryLabel className={styles.description}>
-        {item.kind === "field" ? item.token : item.description}
-      </Menu.SecondaryLabel>
+      <Menu.SecondaryLabel>{item.description}</Menu.SecondaryLabel>
     </Menu.Row>
   );
 }

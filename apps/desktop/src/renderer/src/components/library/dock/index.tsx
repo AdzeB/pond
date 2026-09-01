@@ -1,18 +1,24 @@
 import { Tray, TrayCard } from "@pond/ui";
 import { useRouterState } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActiveFilter } from "@/components/library/dock/active-filter";
-import { NavContent } from "@/components/library/dock/nav";
-import { OptionsContent } from "@/components/library/dock/options";
+import {
+  type JSX,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { ConfirmSection } from "@/components/library/dock/confirm";
 import { SelectionContent } from "@/components/library/dock/selection";
+import { SelectionCopySection } from "@/components/library/dock/selection/copy";
 import { DownloadsSelectionContent } from "@/components/library/dock/selection/downloads";
+import { SelectionExportSection } from "@/components/library/dock/selection/export";
+import { SelectionRunSection } from "@/components/library/dock/selection/run";
 import { SourcesSelectionContent } from "@/components/library/dock/selection/sources";
-import { SourcesSearch } from "@/components/library/dock/sources-search";
-import { SearchComposer } from "@/components/search/bar";
+import { SelectionTagSection } from "@/components/library/dock/selection/tag";
 import { isAllSelected } from "@/lib/save/selection";
 import { buildDockMotion } from "@/lib/ui/motion";
-import { openDockSearch } from "@/lib/ui/open-search";
 import { dockMode, useDockMode } from "@/stores/dock-mode";
 import {
   downloadsSelection,
@@ -37,6 +43,23 @@ import {
   type ViewMenuSection,
 } from "./lib/types";
 import styles from "./styles.module.css";
+
+const CARD_SECTIONS: Record<ViewMenuSection, () => JSX.Element | null> = {
+  confirm: ConfirmSection,
+  "selection-run": SelectionRunSection,
+  "selection-tag": SelectionTagSection,
+  "selection-copy": SelectionCopySection,
+  "selection-export": SelectionExportSection,
+};
+
+function CardContent({ section }: { section: ViewMenuSection }) {
+  const Section = CARD_SECTIONS[section];
+  return (
+    <TrayCard.Root className={styles.card} data-section={section}>
+      <Section />
+    </TrayCard.Root>
+  );
+}
 
 const openViewMenu = (section: ViewMenuSection) => dockMode.open(section);
 const closeToNav = () => dockMode.close();
@@ -94,10 +117,9 @@ export function LibraryTray() {
     ? mode
     : mode !== "nav"
       ? mode
-      : selectionSize > 0
-        ? "selection"
-        : "nav";
+      : "selection";
   const isMenuView = isViewMenu(view);
+  const idle = mode === "nav" && selectionSize === 0;
 
   useEffect(() => {
     if (isDownloads) {
@@ -122,7 +144,7 @@ export function LibraryTray() {
     [pathname],
   );
 
-  const isCard = view === "search" || isViewMenu(view);
+  const isCard = isViewMenu(view);
 
   const setPopoverOpen = useCallback((open: boolean) => {
     popoverOpenRef.current = open;
@@ -172,7 +194,7 @@ export function LibraryTray() {
       allSelected,
       isTabActive,
       isCard,
-      openSearch: openDockSearch,
+      openSearch: () => {},
       closeSearch: dismissDock,
       openViewMenu,
       closeViewMenu: closeToNav,
@@ -207,6 +229,8 @@ export function LibraryTray() {
     ],
   );
 
+  if (idle) return null;
+
   return (
     <div className={styles.dock}>
       <TrayCard.Provider onDismiss={closeToNav}>
@@ -224,7 +248,6 @@ export function LibraryTray() {
           ) : null}
           <div className={styles.shell}>
             <div ref={dockRef} className={styles.hit}>
-              <ActiveFilter />
               <Tray.Pill
                 className={styles.pill}
                 render={
@@ -250,30 +273,15 @@ export function LibraryTray() {
                       ) : (
                         <SelectionContent key="selection" />
                       )
-                    ) : view === "search" ? (
-                      <motion.div
-                        key={isSources ? "sources-search" : "search"}
-                        className={styles["search-row"]}
-                        {...swap}
-                        transition={swapTransition}
-                      >
-                        {isSources ? (
-                          <SourcesSearch onCollapse={closeToNav} />
-                        ) : (
-                          <SearchComposer autoFocus onCollapse={closeToNav} />
-                        )}
-                      </motion.div>
                     ) : isViewMenu(view) ? (
                       <motion.div
                         key={view}
                         {...swap}
                         transition={swapTransition}
                       >
-                        <OptionsContent section={view} />
+                        <CardContent section={view} />
                       </motion.div>
-                    ) : (
-                      <NavContent key="nav" />
-                    )}
+                    ) : null}
                   </AnimatePresence>
                 </div>
               </Tray.Pill>

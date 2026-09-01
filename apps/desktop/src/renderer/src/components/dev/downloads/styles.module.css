@@ -1,0 +1,260 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  font-size: var(--ds-text-small);
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-1);
+}
+
+.header {
+  display: flex;
+  flex: none;
+  gap: 24px;
+  align-items: center;
+  min-height: 56px;
+  padding: 12px 24px 12px 84px;
+  border-bottom: 1px solid var(--ds-gray-4);
+  -webkit-app-region: drag;
+}
+
+.header button {
+  -webkit-app-region: no-drag;
+}
+
+.identity {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-weight: var(--ds-weight-medium);
+}
+
+.badge {
+  padding: 1px 6px;
+  font-size: var(--ds-text-micro);
+  color: var(--ds-gray-10);
+  background: var(--ds-gray-3);
+  border-radius: var(--ds-radius-sm);
+}
+
+.headerNote {
+  margin-left: auto;
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-10);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex: 0 0 220px;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 20px 12px;
+  background: var(--ds-gray-2);
+  border-right: 1px solid var(--ds-gray-4);
+}
+
+.sidebar p,
+.sidebar code {
+  padding-inline: 8px;
+  font-size: var(--ds-text-micro);
+  line-height: 1.55;
+  color: var(--ds-gray-10);
+}
+
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar a {
+  padding: 6px 8px;
+  color: var(--ds-gray-11);
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+}
+
+.sidebar a:hover {
+  color: var(--ds-gray-12);
+  background: var(--ds-gray-3);
+}
+
+.sidebar code {
+  margin-top: auto;
+  overflow-wrap: anywhere;
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 36px clamp(20px, 4vw, 56px) 96px;
+  overflow: auto;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: min(980px, 100%);
+  margin-inline: auto;
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.intro > span {
+  font-size: var(--ds-text-mini);
+  color: var(--ds-gray-10);
+}
+
+.intro h1 {
+  font-size: var(--ds-text-title);
+  font-weight: var(--ds-weight-semibold);
+  letter-spacing: -0.5px;
+}
+
+.intro p {
+  max-width: 660px;
+  line-height: 1.6;
+  color: var(--ds-gray-11);
+}
+
+.specimen {
+  min-width: 0;
+  overflow: hidden;
+  scroll-margin-top: 24px;
+  background: var(--ds-gray-1);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-lg);
+}
+
+.specimenHeader {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--ds-gray-4);
+}
+
+.specimenHeader h2 {
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+}
+
+.specimenHeader code {
+  font-size: var(--ds-text-micro);
+  color: var(--ds-gray-9);
+}
+
+.surface {
+  min-height: 116px;
+}
+
+.queue {
+  min-width: 0;
+  padding: 0 20px 8px;
+}
+
+.queue [role="gridcell"]:last-child {
+  pointer-events: none;
+}
+
+.emptyGrid,
+.feedbackGrid,
+.badgeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.emptyGrid > div {
+  min-height: 280px;
+  padding: 28px;
+}
+
+.emptyGrid > div + div,
+.feedbackGrid > div + div,
+.badgeGrid > div + div {
+  border-left: 1px solid var(--ds-gray-4);
+}
+
+.feedbackGrid > div {
+  min-height: 150px;
+  border-bottom: 1px solid var(--ds-gray-4);
+}
+
+.feedbackGrid > div:last-child {
+  grid-column: 1 / -1;
+  min-height: auto;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.centeredStage {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  background: var(--ds-gray-2);
+}
+
+.badgeGrid {
+  gap: 20px;
+  padding: 24px;
+  background: var(--ds-gray-2);
+}
+
+.badgeGrid > div + div {
+  border-left: 0;
+}
+
+.mediaMock {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  overflow: hidden;
+  color: var(--ds-gray-9);
+  background:
+    linear-gradient(135deg, var(--ds-gray-a3), transparent), var(--ds-gray-3);
+  border: 1px solid var(--ds-gray-4);
+  border-radius: var(--ds-radius-lg);
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    display: none;
+  }
+
+  .header {
+    padding-left: 24px;
+  }
+
+  .emptyGrid,
+  .feedbackGrid,
+  .badgeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .emptyGrid > div + div,
+  .feedbackGrid > div + div {
+    border-top: 1px solid var(--ds-gray-4);
+    border-left: 0;
+  }
+
+  .feedbackGrid > div:last-child {
+    grid-column: auto;
+  }
+}

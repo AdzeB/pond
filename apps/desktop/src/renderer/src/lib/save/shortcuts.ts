@@ -55,10 +55,21 @@ export const SHORTCUTS = {
     label: "Scroll to Bottom",
     group: "Navigate",
   },
-  "dock.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
+  "library.search": { keys: "Mod+F", label: "Search", group: "Navigate" },
+  "app.settings": {
+    keys: "Mod+,",
+    label: "Settings",
+    group: "Navigate",
+  },
   "app.shortcuts": {
     keys: "Mod+/",
     label: "Keyboard Shortcuts",
+    group: "Navigate",
+  },
+
+  "app.close-window": {
+    keys: "Mod+W",
+    label: "Close Window",
     group: "Navigate",
   },
 
@@ -81,7 +92,11 @@ export const SHORTCUTS = {
     label: "Justified Layout",
     group: "View",
   },
+  "view.layout-list": { keys: "4", label: "List Layout", group: "View" },
   "view.inspector": { keys: "Mod+I", label: "Toggle Details", group: "View" },
+  "view.sidebar": { keys: "[", label: "Toggle Sidebar", group: "View" },
+  "view.agent": { keys: "]", label: "Toggle Assistant", group: "View" },
+  "grid.hover-preview": { keys: "Z", label: "Hover Preview", group: "View" },
   "view.options": { keys: "V", label: "View Options", group: "View" },
   "view.display": { keys: "D", label: "Display Options", group: "View" },
   "view.sort-dir": {
@@ -253,10 +268,32 @@ export const SHORTCUT_GROUPS: readonly ShortcutGroup[] = [
   "Library",
 ];
 
+const MODIFIER_GLYPH = /[⌘⌃⌥⇧]/u;
+
+/** Peel fused modifier glyphs. formatForDisplay may emit `⌘,` with no separator. */
+function unfuseGlyphs(token: string): string[] {
+  if (token.length <= 1) return [token];
+  const parts: string[] = [];
+  let i = 0;
+  while (i < token.length) {
+    const ch = token[i];
+    if (ch === undefined) break;
+    if (MODIFIER_GLYPH.test(ch) && i < token.length - 1) {
+      parts.push(ch);
+      i += 1;
+      continue;
+    }
+    parts.push(token.slice(i));
+    break;
+  }
+  return parts;
+}
+
 export function chordGlyphs(keys: string): string[] {
   return formatForDisplay(keys)
     .split(/[\s+]+/)
-    .filter(Boolean);
+    .filter(Boolean)
+    .flatMap(unfuseGlyphs);
 }
 
 function defOf(id: ShortcutId): ShortcutDef {

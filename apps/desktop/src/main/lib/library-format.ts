@@ -28,6 +28,7 @@ export interface InfoDoc {
   siteName: string | null;
   notes: string | null;
   tags: string[];
+  folderIds: string[];
   mediaType: string | null;
   coverIndex: number;
   width: number | null;
@@ -53,6 +54,7 @@ export const StoredInfoDocSchema = z.object({
   siteName: nullableText,
   notes: nullableText,
   tags: z.array(z.string()).catch([]),
+  folderIds: z.array(z.string()).catch([]),
   mediaType: nullableText,
   coverIndex: z.number().int().nonnegative().catch(0),
   width: z.number().nullable().catch(null),
@@ -82,7 +84,11 @@ function toIso(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
 }
 
-export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
+export function infoDocFromSave(
+  save: Save,
+  files: InfoFile[],
+  folderIds: string[] = [],
+): InfoDoc {
   return {
     schema: INFO_SCHEMA,
     id: save.id,
@@ -96,6 +102,7 @@ export function infoDocFromSave(save: Save, files: InfoFile[]): InfoDoc {
     siteName: save.siteName ?? null,
     notes: save.notes ?? null,
     tags: save.tags ?? [],
+    folderIds: folderIds ?? [],
     mediaType: save.mediaType ?? null,
     coverIndex: save.coverIndex ?? 0,
     width: save.width ?? null,
@@ -117,6 +124,7 @@ const EXPORTED_SAVE_FIELDS = [
   "siteName",
   "notes",
   "tags",
+  "folderIds",
   "mediaType",
   "coverIndex",
   "width",
@@ -145,6 +153,12 @@ export function applyPatchToInfo(
   if (patch.siteName !== undefined) next.siteName = patch.siteName ?? null;
   if (patch.notes !== undefined) next.notes = patch.notes ?? null;
   if (patch.tags !== undefined) next.tags = patch.tags ?? [];
+  if (
+    "folderIds" in patch &&
+    Array.isArray((patch as { folderIds?: string[] }).folderIds)
+  ) {
+    next.folderIds = (patch as { folderIds: string[] }).folderIds;
+  }
   if (patch.mediaType !== undefined) next.mediaType = patch.mediaType ?? null;
   if (patch.coverIndex !== undefined) next.coverIndex = patch.coverIndex ?? 0;
   if (patch.width !== undefined) next.width = patch.width ?? null;

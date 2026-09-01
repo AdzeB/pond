@@ -8,6 +8,7 @@ import {
   defaultPredicateFor,
   predicateIsActive,
 } from "@/lib/search/filter-helpers";
+import { parseSearchInput } from "@/lib/search/syntax";
 import {
   isLayoutValue,
   type LayoutValue,
@@ -126,6 +127,36 @@ export function setSearchInput(
     query: deriveQuery(predicates, "and"),
   }));
 }
+
+export function setSearchDraft(raw: string, commitFilters = false): void {
+  const parsed = parseSearchInput(raw);
+  const key = (row: Predicate) =>
+    JSON.stringify([row.field, row.operator, row.value, row.negate ?? false]);
+  store.setState((state) => {
+    const previousTokens = new Set(
+      parseSearchInput(state.searchInput).predicates.map(key),
+    );
+    const rows = [
+      ...state.rows.filter((row) => !previousTokens.has(key(row))),
+      ...parsed.predicates,
+    ];
+    const seen = new Set<string>();
+    const unique = rows.filter((row) => {
+      const value = key(row);
+      if (seen.has(value)) return false;
+      seen.add(value);
+      return true;
+    });
+    return {
+      ...state,
+      q: parsed.text,
+      searchInput: commitFilters ? parsed.text : raw,
+      rows: unique,
+      query: deriveQuery(unique, state.combinator),
+    };
+  });
+}
+
 export function resetFilters(): void {
   store.setState((s) => ({
     ...s,

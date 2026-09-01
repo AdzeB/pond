@@ -19,6 +19,12 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
   },
   { id: "tags", path: "tags", label: "Tags", group: "library" },
   {
+    id: "agent",
+    path: "agent",
+    label: "Agent",
+    group: "library",
+  },
+  {
     id: "enrichment",
     path: "enrichment",
     label: "Enrichments",
@@ -44,8 +50,8 @@ export const SETTINGS_GROUP_LABELS = {
 
 export const SETTINGS_SECTION_ALIASES = {
   downloads: "videos",
-  ai: "enrichment",
-  "ai-models": "enrichment",
-  "ai-providers": "enrichment",
+  ai: "agent",
+  "ai-models": "agent",
+  "ai-providers": "agent",
   skills: "enrichment",
 } satisfies Readonly<Record<string, string>>;
